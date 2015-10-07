@@ -48,24 +48,24 @@ __device__ void transform(int n, int xOffset,float *dx,int incx,float *extraPara
 	// accumulate the intermediate sums in the remainder range.
 	int floorPow2 = blockDim.x;
 
-	if ( floorPow2 & (floorPow2 - 1) ) {
+	if (floorPow2 & (floorPow2 - 1)) {
 		while ( floorPow2 & (floorPow2 - 1) ) {
 			floorPow2 &= floorPow2 - 1;
 		}
-		if ( tid >= floorPow2 ) {
+		if (tid >= floorPow2) {
 			sPartials[tid - floorPow2] = merge(sPartials[tid - floorPow2],sPartials[tid],extraParams);
 		}
 		__syncthreads();
 	}
 
-	for ( int activeThreads = floorPow2 >> 1;activeThreads;	activeThreads >>= 1 ) {
-		if ( tid < activeThreads ) {
+	for (int activeThreads = floorPow2 >> 1;activeThreads;	activeThreads >>= 1) {
+		if (tid < activeThreads) {
 			sPartials[tid] = merge(sPartials[tid],sPartials[tid + activeThreads],extraParams);
 		}
 		__syncthreads();
 	}
 
-	if ( tid == 0 ) {
+	if (tid == 0) {
 		result[blockIdx.x] = postProcess(sPartials[0],n,xOffset,dx,incx,extraParams,result);
 	}
 

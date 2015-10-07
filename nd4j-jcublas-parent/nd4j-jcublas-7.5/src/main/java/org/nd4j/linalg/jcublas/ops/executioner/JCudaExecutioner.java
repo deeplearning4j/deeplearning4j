@@ -20,12 +20,9 @@
 package org.nd4j.linalg.jcublas.ops.executioner;
 
 
-
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
-import org.nd4j.linalg.api.complex.IComplexNumber;
-import org.nd4j.linalg.api.complex.LinearViewComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.LinearViewNDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
@@ -36,11 +33,11 @@ import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.SimpleJCublas;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
+import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
-import org.nd4j.linalg.jcublas.util.PointerUtil;
 import org.nd4j.linalg.jcublas.util.KernelParamsWrapper;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.jcublas.util.PointerUtil;
 
 
 /**
@@ -61,14 +58,13 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         }
         dummyFloatPointer = KernelFunctions.alloc(new float[]{1});
         dummyDoublePointer =KernelFunctions.alloc(new double[]{1});
+        parallelExecutioner().setParallelEnabled(false);
     }
 
     @Override
     public Op exec(Op op) {
         //linear views and oblong offsets can't be handled by the gpu (due to the way the buffers are interpeted as vectors)
-        if(op.x() instanceof LinearViewNDArray
-                || op.x() instanceof IComplexNDArray
-                || op.x().offset() > 0 && op.x().shape().length >= 2
+        if(op.x() instanceof IComplexNDArray
                 || executionMode() == ExecutionMode.JAVA || op.isPassThrough())
             return super.exec(op);
 
@@ -128,11 +124,20 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         if(!KernelFunctionLoader.getInstance().exists(op.name()) || executionMode() == ExecutionMode.JAVA || op.isPassThrough())
             super.exec(op);
 
-
-        INDArray result = Nd4j.create(2);
+        int threads = PointerUtil.getNumThreads(op.n(), KernelFunctions.THREADS);
+        INDArray result = Nd4j.create(threads);
 
 
         if (op.y() != null) {
+            int xStride = BlasBufferUtil.getBlasStride(op.x());
+            if(xStride < 0) {
+                op.setX(op.x().dup());
+            }
+
+            int yStride = BlasBufferUtil.getBlasStride(op.y());
+            if(yStride < 0) {
+                op.setY(op.y().dup());
+            }
 
             //int n,int xOffset,int yOffset, double *dx, double *dy,int incx,int incy,double *result
             Object[] kernelParams = new Object[] {
@@ -159,6 +164,11 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         } else {
             //int n, int xOffset,double *dx,int incx,double result
+            int xStride = BlasBufferUtil.getBlasStride(op.x());
+            if(xStride < 0) {
+                op.setX(op.x().dup());
+            }
+
             Object[] kernelParams = new Object[] {
                     op.n(),
                     op.x().offset(),
@@ -189,7 +199,10 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
          */
         String functionName = op instanceof TransformOp || op instanceof Accumulation ? op.name() + "_strided" : op.name();
         int blocks = PointerUtil.getNumBlocks(op.n(), KernelFunctions.BLOCKS, KernelFunctions.THREADS);
-        int threads = PointerUtil.getNumThreads(op.n(), KernelFunctions.THREADS);
+        int threads = ContextHolder.getInstance().getNumThreads(op);
+        //int blocks = 1;
+        //int threads = 1;
+
         KernelFunctions.invoke(
                 blocks
                 ,threads
@@ -209,6 +222,15 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             super.exec(op);
 
         if (op.y() != null) {
+            int xStride = BlasBufferUtil.getBlasStride(op.x());
+            if(xStride < 0) {
+                op.setX(op.x().dup());
+            }
+
+            int yStride = BlasBufferUtil.getBlasStride(op.y());
+            if(yStride < 0) {
+                op.setY(op.y().dup());
+            }
 
             Object[] kernelParams = new Object[]{
                     op.n(),
@@ -231,6 +253,12 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
         } else {
+            int xStride = BlasBufferUtil.getBlasStride(op.x());
+            if(xStride < 0) {
+                op.setX(op.x().dup());
+            }
+
+
             Object[] kernelParams = new Object[]{
                     op.n(),
                     op.x().offset(),
@@ -269,6 +297,15 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             return;
         }
         if (op.y() != null) {
+            int xStride = BlasBufferUtil.getBlasStride(op.x());
+            if(xStride < 0) {
+                op.setX(op.x().dup());
+            }
+
+            int yStride = BlasBufferUtil.getBlasStride(op.y());
+            if(yStride < 0) {
+                op.setY(op.y().dup());
+            }
 
             /**
              * Construct pointer arguments in the following order:
@@ -302,7 +339,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         } else {
             //int n,int idx,double *dy,int incy,double *result
-            Object[] kernelParams = new Object[]{
+            Object[] kernelParams = new Object[] {
                     op.n(),
                     op.x().offset(),
                     op.x(),

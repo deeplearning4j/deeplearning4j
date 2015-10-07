@@ -21,7 +21,6 @@ package org.nd4j.linalg.jcublas;
 
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;

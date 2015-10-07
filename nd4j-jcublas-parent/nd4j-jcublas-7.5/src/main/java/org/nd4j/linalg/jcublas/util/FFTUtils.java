@@ -1,7 +1,5 @@
 package org.nd4j.linalg.jcublas.util;
 
-import org.nd4j.linalg.api.buffer.DataBuffer;
-
 import jcuda.jcufft.cufftType;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 

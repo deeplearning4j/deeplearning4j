@@ -4,7 +4,6 @@ import jcuda.Pointer;
 import jcuda.cuComplex;
 import jcuda.cuDoubleComplex;
 import jcuda.jcublas.JCublas2;
-import jcuda.jcublas.cublasOperation;
 import org.nd4j.linalg.api.blas.impl.BaseLevel3;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
@@ -30,7 +29,7 @@ public class JcublasLevel3 extends BaseLevel3 {
         B = Shape.toOffsetZero(B);
 
 
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
         CublasPointer cAPointer = new CublasPointer(A);
         CublasPointer cBPointer = new CublasPointer(B);
         CublasPointer cCPointer = new CublasPointer(C);
@@ -54,7 +53,7 @@ public class JcublasLevel3 extends BaseLevel3 {
 
 
         cCPointer.copyToHost();
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
     }
 
@@ -103,7 +102,7 @@ public class JcublasLevel3 extends BaseLevel3 {
 
         DataTypeValidation.assertDouble(A, B, C);
 
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
 
         CublasPointer cAPointer = new CublasPointer(A);
@@ -128,7 +127,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                 ldc); // incy
 
         cCPointer.copyToHost();
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
 
     }
@@ -138,7 +137,18 @@ public class JcublasLevel3 extends BaseLevel3 {
         CublasPointer aPointer = new CublasPointer(A);
         CublasPointer bPointer = new CublasPointer(B);
         CublasPointer cPointer = new CublasPointer(C);
-        JCublas2.cublasDsymm(ContextHolder.getInstance().getHandle(), OpUtil.getOp(Order), OpUtil.getOp(Uplo), M, N, PointerUtil.getPointer(alpha), aPointer.getDevicePointer(), lda, bPointer.getDevicePointer(), ldb, PointerUtil.getPointer(beta), cPointer.getDevicePointer(), ldc);
+        JCublas2.cublasDsymm(
+                ContextHolder.getInstance().getHandle()
+                , OpUtil.getOp(Order)
+                , OpUtil.getOp(Uplo)
+                , M, N
+                , PointerUtil.getPointer(alpha)
+                , aPointer.getDevicePointer()
+                , lda, bPointer.getDevicePointer()
+                , ldb
+                , PointerUtil.getPointer(beta)
+                , cPointer.getDevicePointer()
+                , ldc);
         cPointer.copyToHost();
 
     }
@@ -190,8 +200,8 @@ public class JcublasLevel3 extends BaseLevel3 {
 
         JCublas2.cublasCgemm(
                 ContextHolder.getInstance().getHandle(),
-                cublasOperation.CUBLAS_OP_N, //trans
-                cublasOperation.CUBLAS_OP_N,
+                OpUtil.getOp(TransA), //trans
+                OpUtil.getOp(TransB),
                 M,  // m
                 N, // n
                 K, //k,
@@ -204,7 +214,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                 cCPointer.getDevicePointer(), // y
                 ldc); // ldc
 
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
         cCPointer.copyToHost();
     }
@@ -255,7 +265,7 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void zgemm(char Order, char TransA, char TransB, int M, int N, int K, IComplexDouble alpha, IComplexNDArray A, int lda, IComplexNDArray B, int ldb, IComplexDouble beta, IComplexNDArray C, int ldc) {
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
         CublasPointer cAPointer = new CublasPointer(A);
         CublasPointer cBPointer = new CublasPointer(B);
@@ -268,8 +278,8 @@ public class JcublasLevel3 extends BaseLevel3 {
 
         JCublas2.cublasZgemm(
                 ContextHolder.getInstance().getHandle(),
-                cublasOperation.CUBLAS_OP_N, //trans
-                cublasOperation.CUBLAS_OP_N,
+                OpUtil.getOp(TransA), //trans
+                OpUtil.getOp(TransB),
                 M,  // m
                 N, // n
                 K, //k,
@@ -282,7 +292,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                 cCPointer.getDevicePointer(), // y
                 ldc); // ldc
 
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
         cCPointer.copyToHost();
 

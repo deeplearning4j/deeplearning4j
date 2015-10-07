@@ -81,7 +81,6 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public Op exec(Op op) {
-
         if (op.isPassThrough()) {
             op.exec();
             return op;

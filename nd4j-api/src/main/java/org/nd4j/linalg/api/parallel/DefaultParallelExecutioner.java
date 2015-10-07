@@ -60,6 +60,14 @@ public class DefaultParallelExecutioner implements ParallelExecutioner {
 
 
     @Override
+    public void setParallelEnabled(boolean parallelEnabled) {
+        this.enable = parallelEnabled;
+        if(parallelEnabled) {
+            this.forkJoinPool = null;
+        }
+    }
+
+    @Override
     public boolean parallelEnabled() {
         return enable;
     }
@@ -101,11 +109,14 @@ public class DefaultParallelExecutioner implements ParallelExecutioner {
             List<RunnableFuture<INDArray>> futures = new ArrayList<>();
             for(Runnable runnable : runnables.getFirst())
                 futures.add((RunnableFuture<INDArray>) executorService.submit(runnable));
-            try {
-                runnables.getSecond().await();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+            for(RunnableFuture<INDArray> future : futures)
+                try {
+                    future.get();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                }
 
         }
 
@@ -130,12 +141,14 @@ public class DefaultParallelExecutioner implements ParallelExecutioner {
             for(ForkJoinTask<INDArray> task2 : tasks.getSecond()) {
                 blockList.add(forkJoinPool.submit(task2));
             }
-
-            try {
-                tasks.getFirst().await();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+            for(ForkJoinTask<INDArray> future : blockList)
+                try {
+                    future.get();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                }
         }
 
         else {
@@ -143,11 +156,14 @@ public class DefaultParallelExecutioner implements ParallelExecutioner {
             List<RunnableFuture<INDArray>> futures = new ArrayList<>();
             for(Runnable runnable : runnables.getFirst())
                 futures.add((RunnableFuture<INDArray>) executorService.submit(runnable));
-            try {
-                runnables.getSecond().await();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+            for(RunnableFuture<INDArray> runnableFuture : futures)
+                try {
+                    runnableFuture.get();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                }
         }
     }
 
@@ -180,11 +196,7 @@ public class DefaultParallelExecutioner implements ParallelExecutioner {
                 forkJoinPool.execute(task2);
             }
 
-            try {
-                tasks.getValue().await();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+
         }
 
         else {
@@ -193,11 +205,14 @@ public class DefaultParallelExecutioner implements ParallelExecutioner {
             for(Runnable runnable : runnables.getFirst())
                 futures.add((RunnableFuture<INDArray>) executorService.submit(runnable));
 
-            try {
-                runnables.getSecond().await();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+            for(RunnableFuture<INDArray> future : futures)
+                try {
+                    future.get();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                }
         }
     }
 
@@ -217,11 +232,14 @@ public class DefaultParallelExecutioner implements ParallelExecutioner {
                 forkJoinPool.submit(task2);
             }
 
-            try {
-                tasks.getSecond().await();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+            for(ForkJoinTask<INDArray> task2 : tasks.getFirst())
+                try {
+                    task2.get();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                }
         }
 
         else {
@@ -261,11 +279,14 @@ public class DefaultParallelExecutioner implements ParallelExecutioner {
             for(ForkJoinTask<INDArray[]> task2 : tasks.getFirst()) {
                 forkJoinPool.execute(task2);
             }
-            try {
-                tasks.getSecond().await();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+            for(ForkJoinTask<INDArray[]> task2 : tasks.getFirst())
+                try {
+                    task2.get();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                }
         }
 
         else {
@@ -301,11 +322,14 @@ public class DefaultParallelExecutioner implements ParallelExecutioner {
                 forkJoinPool.execute(task2);
             }
 
-            try {
-                tasks.getSecond().await();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+            for(ForkJoinTask<INDArray> task2 : tasks.getFirst())
+                try {
+                    task2.get();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                }
         }
 
         else {
@@ -314,11 +338,14 @@ public class DefaultParallelExecutioner implements ParallelExecutioner {
             for(Runnable runnable : runnables.getFirst())
                 futures.add((RunnableFuture<INDArray>) executorService.submit(runnable));
 
-            try {
-                runnables.getSecond().await();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+            for(RunnableFuture<INDArray> future : futures)
+                try {
+                    future.get();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                }
         }
 
     }

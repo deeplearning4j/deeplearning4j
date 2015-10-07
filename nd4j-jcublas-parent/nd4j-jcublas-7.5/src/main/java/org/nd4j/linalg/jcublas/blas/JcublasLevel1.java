@@ -33,7 +33,7 @@ public class JcublasLevel1 extends BaseLevel1 {
     protected float sdot(int N, INDArray X, int incX, INDArray Y, int incY) {
         DataTypeValidation.assertSameDataType(X, Y);
 
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
         CublasPointer xCPointer = new CublasPointer(X);
         CublasPointer yCPointer = new CublasPointer(Y);
 
@@ -47,7 +47,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                 incX
                 , yCPointer.getDevicePointer(),
                 incY, result);
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
         return ret[0];
     }
@@ -61,7 +61,7 @@ public class JcublasLevel1 extends BaseLevel1 {
     protected double ddot(int N, INDArray X, int incX, INDArray Y, int incY) {
         double[] ret = new double[1];
         Pointer result = Pointer.to(ret);
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
         CublasPointer xCPointer = new CublasPointer(X);
         CublasPointer yCPointer = new CublasPointer(Y);
 
@@ -72,7 +72,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                 incX
                 , yCPointer.getDevicePointer(),
                 incY, result);
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
         return ret[0];
     }
@@ -107,7 +107,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected float snrm2(int N, INDArray X, int incX) {
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
         CublasPointer cAPointer = new CublasPointer(X);
 
@@ -204,12 +204,12 @@ public class JcublasLevel1 extends BaseLevel1 {
     @Override
     protected int isamax(int N, INDArray X, int incX) {
         CublasPointer xCPointer = new CublasPointer(X);
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
         int ret2 = JCublas.cublasIsamax(
                 N,
                 xCPointer.getDevicePointer(),
                 incX);
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
         return  ret2 - 1;
     }
 
@@ -221,12 +221,12 @@ public class JcublasLevel1 extends BaseLevel1 {
     @Override
     protected int idamax(int N, INDArray X, int incX) {
         CublasPointer xCPointer = new CublasPointer(X);
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
         int ret2 = JCublas.cublasIdamax(
                 N,
                 xCPointer.getDevicePointer(),
                 incX);
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
         return  ret2 - 1;
     }
 
@@ -256,7 +256,7 @@ public class JcublasLevel1 extends BaseLevel1 {
     protected void sswap(int N, INDArray X, int incX, INDArray Y, int incY) {
         CublasPointer xCPointer = new CublasPointer(X);
         CublasPointer yCPointer = new CublasPointer(Y);
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
 
         JCublas2.cublasSswap(
@@ -272,7 +272,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void scopy(int N, INDArray X, int incX, INDArray Y, int incY) {
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
         CublasPointer xCPointer = new CublasPointer(X);
         CublasPointer yCPointer = new CublasPointer(Y);
@@ -283,7 +283,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                 , incX
                 , yCPointer.getDevicePointer()
                 , incY);
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
         yCPointer.copyToHost();
     }
@@ -299,7 +299,7 @@ public class JcublasLevel1 extends BaseLevel1 {
         CublasPointer xAPointer = new CublasPointer(X);
         CublasPointer xBPointer = new CublasPointer(Y);
 
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
         JCublas2.cublasSaxpy(
                 ContextHolder.getInstance().getHandle(),
                 N,
@@ -309,7 +309,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                 xBPointer.getDevicePointer(),
                 incY);
 
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
         xBPointer.copyToHost();
 
@@ -324,7 +324,7 @@ public class JcublasLevel1 extends BaseLevel1 {
     protected void dswap(int N, INDArray X, int incX, INDArray Y, int incY) {
         CublasPointer xCPointer = new CublasPointer(X);
         CublasPointer yCPointer = new CublasPointer(Y);
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
 
         JCublas2.cublasDswap(
@@ -340,7 +340,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void dcopy(int N, INDArray X, int incX, INDArray Y, int incY) {
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
         CublasPointer xCPointer = new CublasPointer(X);
         CublasPointer yCPointer = new CublasPointer(Y);
@@ -351,7 +351,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                 , incX
                 , yCPointer.getDevicePointer()
                 , incY);
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
         yCPointer.copyToHost();
     }
@@ -366,7 +366,7 @@ public class JcublasLevel1 extends BaseLevel1 {
         CublasPointer xAPointer = new CublasPointer(X);
         CublasPointer xBPointer = new CublasPointer(Y);
 
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
         JCublas2.cublasDaxpy(
                 ContextHolder.getInstance().getHandle(),
                 N,
@@ -376,7 +376,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                 xBPointer.getDevicePointer(),
                 incY);
 
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
         xBPointer.copyToHost();
     }
@@ -406,7 +406,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
         CublasPointer aCPointer = new CublasPointer(X);
         CublasPointer bCPointer = new CublasPointer(Y);
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
         JCublas2.cublasCaxpy(
                 ContextHolder.getInstance().getHandle(),
@@ -418,7 +418,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                 incY
         );
 
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
     }
 
@@ -441,7 +441,7 @@ public class JcublasLevel1 extends BaseLevel1 {
     protected void zaxpy(int N, IComplexDouble alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY) {
         CublasPointer aCPointer = new CublasPointer(X);
         CublasPointer bCPointer = new CublasPointer(Y);
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
         JCublas2.cublasZaxpy(
                 ContextHolder.getInstance().getHandle(),
@@ -453,7 +453,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                 incY
         );
 
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
     }
 
     @Override
@@ -507,7 +507,7 @@ public class JcublasLevel1 extends BaseLevel1 {
     @Override
     protected void sscal(int N, float alpha, INDArray X, int incX) {
 
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
         CublasPointer xCPointer = new CublasPointer(X);
         JCublas2.cublasSscal(
@@ -516,7 +516,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                 Pointer.to(new float[]{alpha}),
                 xCPointer.getDevicePointer(),
                 incX);
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
         xCPointer.copyToHost();
 
@@ -525,7 +525,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void dscal(int N, double alpha, INDArray X, int incX) {
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
         CublasPointer xCPointer = new CublasPointer(X);
         JCublas2.cublasDscal(
@@ -534,7 +534,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                 Pointer.to(new double[]{alpha}),
                 xCPointer.getDevicePointer(),
                 incX);
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
         xCPointer.copyToHost();
     }
@@ -542,7 +542,7 @@ public class JcublasLevel1 extends BaseLevel1 {
     @Override
     protected void cscal(int N, IComplexFloat alpha, IComplexNDArray X, int incX) {
 
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
         CublasPointer xCPointer = new CublasPointer(X);
 
@@ -553,7 +553,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                 xCPointer.getDevicePointer(),
                 incX
         );
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
         xCPointer.copyToHost();
 
@@ -561,7 +561,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void zscal(int N, IComplexDouble alpha, IComplexNDArray X, int incX) {
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
 
         CublasPointer xCPointer = new CublasPointer(X);
@@ -574,7 +574,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                 incX
         );
 
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
         xCPointer.copyToHost();
 

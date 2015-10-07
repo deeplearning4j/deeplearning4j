@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.math3.util.Pair;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -243,14 +244,6 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         assertEquals(testR2, r2);
 
     }
-
-
-
-
-
-
-
-
 
     @Test
     public void testSortWithIndicesDescending() {

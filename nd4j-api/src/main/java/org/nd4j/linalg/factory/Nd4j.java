@@ -36,6 +36,7 @@ import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.factory.DefaultOpFactory;
 import org.nd4j.linalg.api.ops.factory.OpFactory;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.api.rng.distribution.factory.DefaultDistributionFactory;
@@ -554,9 +555,8 @@ public class Nd4j {
      * @param dimension
      * @return
      */
-    public static INDArray  argMax(INDArray arr,int...dimension) {
-        throw new UnsupportedOperationException("TODO");
-//        return Nd4j.getExecutioner().parallelExecutioner().execBasedOnArraysAlongDimension(arr,new IMax(arr),Nd4j.getExecutioner(),dimension);
+    public static INDArray argMax(INDArray arr,int...dimension) {
+        return Nd4j.getExecutioner().exec(new IMax(arr),dimension);
     }
 
     /**

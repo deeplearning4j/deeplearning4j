@@ -15,6 +15,12 @@ import java.util.concurrent.Future;
  */
 public interface ParallelExecutioner {
 
+
+    /**
+     * Sets parallel enabled
+     * @param parallelEnabled
+     */
+    void setParallelEnabled(boolean parallelEnabled);
     /**
      * Whether the parallel execution is enabled
      * @return true if the parallel execution is enabled

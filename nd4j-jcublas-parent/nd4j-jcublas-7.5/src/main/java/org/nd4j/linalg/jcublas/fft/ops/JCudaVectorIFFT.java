@@ -2,13 +2,11 @@ package org.nd4j.linalg.jcublas.fft.ops;
 
 import jcuda.jcufft.JCufft;
 import jcuda.jcufft.cufftHandle;
-import jcuda.jcufft.cufftType;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.VectorIFFT;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.CublasPointer;
-import org.nd4j.linalg.jcublas.SimpleJCublas;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.fft.JcudaFft;
 import org.nd4j.linalg.jcublas.util.FFTUtils;

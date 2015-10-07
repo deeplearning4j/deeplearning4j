@@ -4,20 +4,19 @@ import jcuda.Pointer;
 import jcuda.cuComplex;
 import jcuda.cuDoubleComplex;
 import jcuda.jcublas.JCublas2;
-import jcuda.jcublas.cublasOperation;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.blas.impl.BaseLevel2;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.DataTypeValidation;
 import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.SimpleJCublas;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.util.OpUtil;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
-import org.nd4j.linalg.api.shape.Shape;
 
 /**
  * @author Adam Gibson
@@ -25,7 +24,7 @@ import org.nd4j.linalg.api.shape.Shape;
 public class JcublasLevel2 extends BaseLevel2 {
     @Override
     protected void sgemv(char order, char TransA, int M, int N, float alpha, INDArray A, int lda, INDArray X, int incX, float beta, INDArray Y, int incY) {
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
         CublasPointer cAPointer = new CublasPointer(A);
         CublasPointer cBPointer = new CublasPointer(X);
@@ -33,7 +32,7 @@ public class JcublasLevel2 extends BaseLevel2 {
 
         JCublas2.cublasSgemv(
                 ContextHolder.getInstance().getHandle(),
-                cublasOperation.CUBLAS_OP_N,
+                OpUtil.getOp(TransA),
                 M,
                 N,
                 Pointer.to(new float[]{alpha}),
@@ -44,7 +43,7 @@ public class JcublasLevel2 extends BaseLevel2 {
                 Pointer.to(new float[]{beta}),
                 cCPointer.getDevicePointer(),
                 incY);
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
         cCPointer.copyToHost();
     }
@@ -92,7 +91,7 @@ public class JcublasLevel2 extends BaseLevel2 {
 
     @Override
     protected void dgemv(char order, char TransA, int M, int N, double alpha, INDArray A, int lda, INDArray X, int incX, double beta, INDArray Y, int incY) {
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
 
         CublasPointer cAPointer = new CublasPointer(A);
@@ -101,7 +100,7 @@ public class JcublasLevel2 extends BaseLevel2 {
 
         JCublas2.cublasDgemv(
                 ContextHolder.getInstance().getHandle(),
-                cublasOperation.CUBLAS_OP_N,
+                OpUtil.getOp(TransA),
                 M,
                 N,
                 Pointer.to(new double[]{alpha}),
@@ -114,7 +113,7 @@ public class JcublasLevel2 extends BaseLevel2 {
                 incY);
 
         cCPointer.copyToHost();
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
     }
 
     @Override
@@ -161,7 +160,7 @@ public class JcublasLevel2 extends BaseLevel2 {
 
     @Override
     protected void cgemv(char order, char TransA, int M, int N, IComplexFloat alpha, IComplexNDArray A, int lda, IComplexNDArray X, int incX, IComplexFloat beta, IComplexNDArray Y, int incY) {
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
         CublasPointer cAPointer = new CublasPointer(A);
         CublasPointer cBPointer = new CublasPointer(X);
@@ -185,7 +184,7 @@ public class JcublasLevel2 extends BaseLevel2 {
                 cCPointer.getDevicePointer(), // y
                 incY); // ldc
 
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
         cCPointer.copyToHost();
 
@@ -236,7 +235,7 @@ public class JcublasLevel2 extends BaseLevel2 {
 
     @Override
     protected void zgemv(char order, char TransA, int M, int N, IComplexDouble alpha, IComplexNDArray A, int lda, IComplexNDArray X, int incX, IComplexDouble beta, IComplexNDArray Y, int incY) {
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
         CublasPointer cAPointer = new CublasPointer(A);
         CublasPointer cBPointer = new CublasPointer(X);
@@ -262,7 +261,7 @@ public class JcublasLevel2 extends BaseLevel2 {
                 cCPointer.getDevicePointer(), // ydoin
                 incY); // ldc
 
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
         cCPointer.copyToHost();
 
@@ -434,7 +433,7 @@ public class JcublasLevel2 extends BaseLevel2 {
     @Override
     protected void cgerc(char order, int M, int N, IComplexFloat alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray A, int lda) {
 
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
         A = (IComplexNDArray) Shape.toOffsetZero(A);
         X = (IComplexNDArray) Shape.toOffsetZero(X);
@@ -460,7 +459,7 @@ public class JcublasLevel2 extends BaseLevel2 {
                 lda    // lda
         );
 
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
         aPointer.copyToHost();
     }
 
@@ -508,7 +507,7 @@ public class JcublasLevel2 extends BaseLevel2 {
 
     @Override
     protected void zgeru(char order, int M, int N, IComplexDouble alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray A, int lda) {
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
         DataTypeValidation.assertDouble(A, X, Y);
 
         A = (IComplexNDArray) Shape.toOffsetZero(A);
@@ -534,14 +533,14 @@ public class JcublasLevel2 extends BaseLevel2 {
                 lda    // lda
         );
 
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
         cCPointer.copyToHost();
 
     }
 
     @Override
     protected void zgerc(char order, int M, int N, IComplexDouble alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray A, int lda) {
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
         A = (IComplexNDArray) Shape.toOffsetZero(A);
         X = (IComplexNDArray) Shape.toOffsetZero(X);
 
@@ -567,7 +566,7 @@ public class JcublasLevel2 extends BaseLevel2 {
                 lda    // lda
         );
 
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
         aPointer.copyToHost();
 
