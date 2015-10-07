@@ -217,7 +217,7 @@ public class Shape {
             }
             else {
                 for(int i = 0; i < ret.length(); i++)
-                    ret.putScalarUnsafe(i * ret.elementWiseStride(),arr.getDoubleUnsafe(i * arr.elementStride()));
+                    ret.putScalarUnsafe(i * ret.elementWiseStride(),arr.getDoubleUnsafe(i * arr.elementWiseStride()));
             }
 
             return ret;
