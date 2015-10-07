@@ -97,6 +97,8 @@ public class OpExecutionerUtil {
      * @return The best dimension to split on
      */
     public static int chooseElementWiseTensorDimension(INDArray x){
+        if(x.isVector()) return ArrayUtil.argMax(x.shape());    //Execute along the vector
+
         //doing argMin(max(x.stride(i),y.stride(i))) minimizes the maximum
         //separation between elements (helps CPU cache) BUT might result in a huge number
         //of tiny ops - i.e., addi on NDArrays with shape [5,10^6]
@@ -124,6 +126,8 @@ public class OpExecutionerUtil {
      * @see #chooseElementWiseTensorDimension(INDArray)
      */
     public static int chooseElementWiseTensorDimension(INDArray x, INDArray y){
+        if(x.isVector()) return ArrayUtil.argMax(x.shape());    //Execute along the vector
+
         //doing argMin(max(x.stride(i),y.stride(i))) minimizes the maximum
         //separation between elements (helps CPU cache) BUT might result in a huge number
         //of tiny ops - i.e., addi on NDArrays with shape [5,10^6]
@@ -151,6 +155,8 @@ public class OpExecutionerUtil {
      * @see #chooseElementWiseTensorDimension(INDArray)
      */
     public static int chooseElementWiseTensorDimension(INDArray x, INDArray y, INDArray z){
+        if(x.isVector()) return ArrayUtil.argMax(x.shape());
+
         int opAlongDimensionMinStride = ArrayUtil.argMinOfMax(x.stride(),y.stride(),z.stride());
 
         int opAlongDimensionMaxLength = ArrayUtil.argMax(x.shape());

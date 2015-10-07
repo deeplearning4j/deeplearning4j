@@ -1328,6 +1328,22 @@ public class ArrayUtil {
         return minIdx;
     }
 
+    /** Returns the index of the maximum value in the array.
+     * If two entries have same maximum value, index of the first one is returned. */
+    public static int argMax(long[] in){
+        int maxIdx = 0;
+        for( int i=1; i<in.length; i++ ) if(in[i]>in[maxIdx]) maxIdx = i;
+        return maxIdx;
+    }
+
+    /** Returns the index of the minimum value in the array.
+     * If two entries have same minimum value, index of the first one is returned. */
+    public static int argMin(long[] in){
+        int minIdx = 0;
+        for( int i=1; i<in.length; i++ ) if(in[i]<in[minIdx]) minIdx = i;
+        return minIdx;
+    }
+
     public static int argMinOfMax(int[] first, int[] second){
         int minIdx = 0;
         int maxAtMinIdx = Math.max(first[0],second[0]);
