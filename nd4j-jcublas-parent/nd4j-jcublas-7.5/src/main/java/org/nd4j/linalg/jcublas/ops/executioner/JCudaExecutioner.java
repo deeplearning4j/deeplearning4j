@@ -125,15 +125,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         checkOp(op);
         if(!KernelFunctionLoader.getInstance().exists(op.name()) || executionMode() == ExecutionMode.JAVA || op.isPassThrough())
             super.exec(op);
-        if(op.x().ordering() == 'f') {
-            op.setX(op.x().dup('c'));
-        }
-        if(op.y() != null && op.y().ordering() == 'f') {
-            op.setY(op.y().dup('c'));
-        }
-        if(op.z().ordering() == 'f') {
-            op.setZ(op.z().dup('c'));
-        }
 
         int threads = PointerUtil.getNumThreads(op.n(), KernelFunctions.THREADS);
         INDArray result = Nd4j.create(threads);
