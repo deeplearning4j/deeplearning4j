@@ -36,8 +36,8 @@ Perform a reduction
 @param result where to store the result of the reduction
  */
 __device__ void transform(int n, int xOffset,float *dx,int incx,float *extraParams,float *result) {
-		__shared__ float sPartials[2500];
-    	__shared__ int indexes[2500];
+		extern __shared__ float sPartials[];
+    	extern __shared__ int indexes[];
     	int tid = threadIdx.x;
     	int totalThreads = gridDim.x * blockDim.x;
     	int start = blockDim.x * blockIdx.x + tid;

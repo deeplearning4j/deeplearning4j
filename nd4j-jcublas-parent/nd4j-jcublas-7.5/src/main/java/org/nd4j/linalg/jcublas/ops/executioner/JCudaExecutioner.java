@@ -33,6 +33,7 @@ import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.SimpleJCublas;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
+import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 import org.nd4j.linalg.jcublas.util.KernelParamsWrapper;
@@ -134,7 +135,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             op.setZ(op.z().dup('c'));
         }
 
-        INDArray result = Nd4j.create(2);
+        int threads = PointerUtil.getNumThreads(op.n(), KernelFunctions.THREADS);
+        INDArray result = Nd4j.create(threads);
 
 
         if (op.y() != null) {
@@ -207,10 +209,10 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
          *
          */
         String functionName = op instanceof TransformOp || op instanceof Accumulation ? op.name() + "_strided" : op.name();
-        //int blocks = PointerUtil.getNumBlocks(op.n(), KernelFunctions.BLOCKS, KernelFunctions.THREADS);
-       // int threads = PointerUtil.getNumThreads(op.n(), KernelFunctions.THREADS);
-        int blocks = 1;
-        int threads = 1;
+        int blocks = PointerUtil.getNumBlocks(op.n(), KernelFunctions.BLOCKS, KernelFunctions.THREADS);
+        int threads = ContextHolder.getInstance().getNumThreads(op);
+        //int blocks = 1;
+        //int threads = 1;
 
         KernelFunctions.invoke(
                 blocks
