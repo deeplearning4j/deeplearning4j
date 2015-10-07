@@ -65,7 +65,7 @@ __device__ void transform(int n, int xOffset,float *dx,int incx,float *extraPara
 		__syncthreads();
 	}
 
-	if ( tid == 0 ) {
+	if (tid == 0) {
 		result[blockIdx.x] = postProcess(sPartials[0],n,xOffset,dx,incx,extraParams,result);
 	}
 

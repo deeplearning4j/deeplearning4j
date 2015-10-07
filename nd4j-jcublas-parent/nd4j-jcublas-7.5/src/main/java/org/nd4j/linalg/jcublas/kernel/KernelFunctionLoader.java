@@ -110,6 +110,14 @@ public class KernelFunctionLoader {
     }
 
 
+    /**
+     * Gets a kernel launcher
+     * for a given function name and data type
+     * @param functionName the name of the function
+     * @param dataType the data type to get
+     * @return the kernel launcher for the
+     * given function
+     */
     public KernelLauncher get(String functionName,String dataType) {
         String name = functionName + "_" + dataType;
 

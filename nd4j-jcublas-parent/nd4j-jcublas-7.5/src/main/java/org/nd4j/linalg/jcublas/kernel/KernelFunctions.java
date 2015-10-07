@@ -104,9 +104,8 @@ public class KernelFunctions {
      * @param dataType         the data type to use
      */
     public static  void invoke(int blocks, int threadsPerBlock, String functionName,String dataType,Object...kernelParameters) {
-
+        ContextHolder.getInstance().syncStream();
         // Call the kernel function.
-        //dot<<<blocksPerGrid,threadsPerBlock>>>( dev_a, dev_b,dev_partial_c );
         CUstream stream = ContextHolder.getInstance().getStream();
         int sharedMemSize = threadsPerBlock * (dataType.equals("float") ? Sizeof.FLOAT : Sizeof.DOUBLE) * 2;
         KernelLauncher launcher = KernelFunctionLoader.launcher(functionName, dataType);
@@ -120,6 +119,7 @@ public class KernelFunctions {
                 .call(kernelParameters);
 
         ContextHolder.syncStream();
+
     }
 
 
