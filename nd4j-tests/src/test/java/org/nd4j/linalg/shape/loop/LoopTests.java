@@ -4,6 +4,8 @@ import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
+import org.nd4j.linalg.api.shape.loop.one.RawArrayIterationInformation1;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
 
@@ -11,19 +13,13 @@ import java.util.Arrays;
  * Created by agibsonccc on 9/15/15.
  */
 public class LoopTests extends BaseNd4jTest {
-   @Test
-    public void testLoop2d() {
 
-       Shape.iterate(0, 2, new int[]{2, 2}, new int[2], 0, 2, new int[]{2, 3}, new int[2], new CoordinateFunction() {
-           @Override
-           public void process(int[]... coord) {
-               for(int i = 0; i < coord.length; i++) {
-                   System.out.println(Arrays.toString(coord[i]));
-               }
-           }
-       });
-
+    @Test
+    public void testLoop1d() {
+        RawArrayIterationInformation1 iter = Shape.prepareRawArrayIter(Nd4j.linspace(1,4,4).reshape(2,2));
+        System.out.println(iter);
     }
+
 
     @Override
     public char ordering() {

@@ -19,17 +19,12 @@
 
 package org.nd4j.linalg.jcublas.util;
 
-import static jcuda.driver.JCudaDriver.cuMemGetInfo;
-
-import java.util.*;
-
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import jcuda.Pointer;
 import jcuda.Sizeof;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
-
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
@@ -37,9 +32,13 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.complex.ComplexDouble;
-import org.nd4j.linalg.jcublas.complex.ComplexFloat;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
-import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
+import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static jcuda.driver.JCudaDriver.cuMemGetInfo;
 
 /**
  * Wraps the generation of kernel parameters
@@ -190,16 +189,17 @@ public class KernelParamsWrapper implements AutoCloseable {
 	 * @param devicePointer
 	 */
 	private void setResultForOp(Op acc, CublasPointer devicePointer) {
+		int threads = PointerUtil.getNumThreads(acc.n(), KernelFunctions.THREADS);
 
 		if (devicePointer.getBuffer().dataType() == DataBuffer.Type.DOUBLE) {
-			double[] data = new double[2];
+			double[] data = new double[threads];
 			Pointer get = Pointer.to(data);
             ContextHolder.syncStream();
 
             JCuda.cudaMemcpyAsync(
                     get
                     , devicePointer.getDevicePointer()
-                    , 2 * Sizeof.DOUBLE
+                    , threads * Sizeof.DOUBLE
                     , cudaMemcpyKind.cudaMemcpyDeviceToHost
                     , ContextHolder.getInstance().getCudaStream());
 
@@ -208,20 +208,20 @@ public class KernelParamsWrapper implements AutoCloseable {
 			if(acc instanceof Accumulation) {
 				Accumulation acc2 = (Accumulation) acc;
 				acc2.setCurrentResult(data[0]);
-				acc2.setCurrentResultComplex(new ComplexDouble(data[0],data[1]));
+				//acc2.setCurrentResultComplex(new ComplexDouble(data[0],data[1]));
 			}
 
 
         }
 		else {
-			float[] data = new float[2];
+			float[] data = new float[threads];
 			Pointer get = Pointer.to(data);
             ContextHolder.syncStream();
 
             JCuda.cudaMemcpyAsync(
                     get
                     , devicePointer.getDevicePointer()
-                    , 2 * Sizeof.FLOAT
+                    , threads * Sizeof.FLOAT
                     , cudaMemcpyKind.cudaMemcpyDeviceToHost
                     , ContextHolder.getInstance().getCudaStream());
 

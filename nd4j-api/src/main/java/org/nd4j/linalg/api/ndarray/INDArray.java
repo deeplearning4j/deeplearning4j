@@ -115,6 +115,23 @@ public interface INDArray extends Serializable  {
     int secondaryStride();
 
     /**
+     * Get a scalar
+     * at the given linear offset
+     * @param offset the offset to get at
+     * @return this
+     */
+    double getDoubleUnsafe(int offset);
+
+    /**
+     * Insert a scalar
+     * at the given linear offset
+     * @param offset the offset to insert at
+     * @param value the value to insert
+     * @return this
+     */
+    INDArray putScalarUnsafe(int offset,double value);
+
+    /**
      * Return the major stride for an ndarray
      *
      * @return the major stride for an ndarray

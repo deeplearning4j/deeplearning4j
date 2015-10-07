@@ -26,9 +26,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
-import java.io.IOException;
-import java.util.Properties;
-
 /**
  *
  */

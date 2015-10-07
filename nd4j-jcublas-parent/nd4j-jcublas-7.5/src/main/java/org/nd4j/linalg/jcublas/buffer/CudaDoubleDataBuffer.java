@@ -19,15 +19,14 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
-import java.nio.ByteOrder;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import jcuda.Pointer;
 import jcuda.Sizeof;
-
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.util.ArrayUtil;
+
+import java.nio.ByteOrder;
 
 /**
  * Cuda double  buffer

@@ -19,33 +19,34 @@
 
 package org.nd4j.linalg.jcublas.context;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import com.google.common.collect.*;
-
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Table;
+import jcuda.CudaException;
+import jcuda.driver.*;
 import jcuda.jcublas.JCublas2;
 import jcuda.jcublas.cublasHandle;
-import jcuda.CudaException;
-import jcuda.driver.CUcontext;
-import jcuda.driver.CUdevice;
-import jcuda.driver.CUresult;
-import jcuda.driver.CUstream;
-import jcuda.driver.CUstream_flags;
-import jcuda.driver.JCudaDriver;
-import jcuda.jcufft.JCufft;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaStream_t;
-
 import org.nd4j.linalg.api.buffer.allocation.MemoryStrategy;
+import org.nd4j.linalg.api.ops.Accumulation;
+import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.device.conf.DeviceConfiguration;
-import org.nd4j.linalg.jcublas.fft.JcudaFft;
+import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
+import org.nd4j.linalg.jcublas.util.PointerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static jcuda.driver.JCudaDriver.*;
 
@@ -69,12 +70,14 @@ public class ContextHolder {
     private Table<CUcontext,String,CUstream> contextStreams = HashBasedTable.create();
     private Table<CUcontext,String,cudaStream_t> cudaStreams = HashBasedTable.create();
     private Map<String, cublasHandle> handleMap = new ConcurrentHashMap<>();
+    private Map<String,Integer> threads = new ConcurrentHashMap<>();
     private List<Integer> bannedDevices;
     private int numDevices = 0;
     private Map<Integer,DeviceConfiguration> confs = new ConcurrentHashMap<>();
     private static ContextHolder INSTANCE;
     public final static String DEVICES_TO_BAN = "org.nd4j.linalg.jcuda.jcublas.ban_devices";
     public final static String SYNC_THREADS = "org.nd4j.linalg.jcuda.jcublas.syncthreads";
+
     private static boolean syncThreads = true;
     private boolean confCalled = false;
     private static Logger log = LoggerFactory.getLogger(ContextHolder.class);
@@ -128,6 +131,26 @@ public class ContextHolder {
     }
 
 
+
+    public int getNumThreads(Op op) {
+        String functionName = op instanceof TransformOp || op instanceof Accumulation ? op.name() + "_strided" : op.name();
+        Integer threadsForFunction = ContextHolder.getInstance().getThreads().get(functionName);
+        if(threadsForFunction == null)
+            return PointerUtil.getNumThreads(op.n(), KernelFunctions.THREADS);
+        return threadsForFunction;
+
+    }
+
+    public Map<String, Integer> getThreads() {
+        return threads;
+    }
+
+
+
+    /**
+     * Get the number of devices
+     * @return the number of devices
+     */
     public int deviceNum() {
         return numDevices;
     }
@@ -153,6 +176,8 @@ public class ContextHolder {
     }
 
 
+
+
     /**
      * Configure the given information
      * based on the device
@@ -163,6 +188,19 @@ public class ContextHolder {
 
 
         syncThreads = Boolean.parseBoolean(System.getProperty(SYNC_THREADS,"true"));
+        //force certain ops to have a certain number of threads
+        Properties threadProps = new Properties();
+        try {
+            InputStream is = ContextHolder.class.getResourceAsStream("/function_threads.properties");
+            threadProps.load(is);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        for(String prop : threadProps.stringPropertyNames()) {
+            threads.put(prop,Integer.parseInt(threadProps.getProperty(prop)));
+        }
+
         if(numDevices == 0) {
             getNumDevices();
         }

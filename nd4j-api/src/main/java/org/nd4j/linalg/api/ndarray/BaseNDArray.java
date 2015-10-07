@@ -110,7 +110,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     protected boolean isWrapAround = false;
     protected int linearStride = -1;
     protected int elementWiseStride = -1;
-
+    protected boolean attemptedToFindElementWiseStride = false;
     public BaseNDArray() {
     }
 
@@ -437,7 +437,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param order
      */
     public BaseNDArray(DataBuffer floatBuffer, char order) {
-        this(floatBuffer, new int[]{(int) floatBuffer.length()}, Nd4j.getStrides(new int[]{(int) floatBuffer.length()}, order), 0, order);
+        this(floatBuffer, new int[]{floatBuffer.length()}, Nd4j.getStrides(new int[]{floatBuffer.length()}, order), 0, order);
     }
 
     /**
@@ -680,8 +680,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public int elementWiseStride() {
-        if(elementWiseStride < 0)
-            elementWiseStride = reshape(1,length()).stride(-1);
+        if(elementWiseStride < 0 && !attemptedToFindElementWiseStride) {
+            INDArray reshapeAttempt = Shape.newShapeNoCopy(this,new int[]{1,length()}, ordering() == 'f');
+            if(reshapeAttempt != null)
+                elementWiseStride = reshapeAttempt.stride(-1);
+            attemptedToFindElementWiseStride = true;
+
+        }
+
         return elementWiseStride;
     }
 
@@ -1351,7 +1357,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
-        Nd4j.getExecutioner().exec(new ScalarMultiplication(linearView(), null, result.linearView(), result.length(), n));
+        Nd4j.getExecutioner().exec(new ScalarMultiplication(this, null, result, result.length(), n));
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
@@ -2559,14 +2565,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         INDArray otherArray = other;
         INDArray resultArray = result;
 
-        if (other.shape().length > 2) {
-            for (int i = 0; i < other.slices(); i++) {
-                result.putSlice(i, slice(i).mmul(other.slice(i)));
-            }
-
-            return result;
-        }
-
         LinAlgExceptions.assertMultiplies(this, other);
 
 
@@ -3308,8 +3306,18 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         INDArray ret = Nd4j.create(shape,order);
         ret.assign(this);
-        //Shape.assignArray(ret,this);
         return ret;
+    }
+
+    @Override
+    public double getDoubleUnsafe(int offset) {
+        return data().getDouble(this.offset + offset);
+    }
+
+    @Override
+    public INDArray putScalarUnsafe(int offset, double value) {
+        data().put(this.offset + offset,value);
+        return this;
     }
 
     @Override

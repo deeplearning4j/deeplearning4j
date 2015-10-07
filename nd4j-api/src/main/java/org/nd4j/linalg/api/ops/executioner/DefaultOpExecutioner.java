@@ -85,40 +85,12 @@ public class DefaultOpExecutioner implements OpExecutioner {
             //make assumption x and z are same type
             if (!op.x().getClass().equals(t.z().getClass()) && !(op.x() instanceof LinearViewNDArray) && !(t.z() instanceof LinearViewNDArray))
                 throw new IllegalArgumentException("Illegal operation. Origin and output ndarray must be same types. op.x was " + op.x().getClass().getName() + " while t.z was " + t.z().getClass().getName());
-            if(op.y() != null && Shape.opIsWholeBufferWithMatchingStrides(op)) {
+            if(op.y() != null &&  op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) {
                 for(int i = 0; i < op.n(); i++) {
-                    op.z().data().put(i, op.op(op.x().data().getDouble(i), op.y().data().getDouble(i)));
+                    op.z().putScalarUnsafe(i * op.z().elementWiseStride(), op.op(op.x().getDoubleUnsafe(i * op.x().elementWiseStride()), op.y().getDoubleUnsafe(op.y().elementWiseStride() * i)));
                 }
 
             }
-            else if(op.y() != null && Shape.opIsWholeBufferWithMatchingStrides(op)) {
-                int xStride = op.x().ordering() == 'f' ? op.x().stride(-1) : op.x().stride(0);
-                int yStride = op.y().ordering() == 'f' ? op.y().stride(-1) : op.y().stride(0);
-                int zStride = op.z().ordering() == 'f' ? op.z().stride(-1) : op.z().stride(0);
-                for(int c = 0; c < op.n(); c ++)
-                    op.z().data().put(c * zStride, op.op(op.x().data().getDouble(c * xStride),op.y().data().getDouble(c * yStride)));
-            }
-            else if(Shape.opIsWholeBufferWithMatchingStrides(op)){
-                for(int i = 0; i < op.n(); i++) {
-                    op.z().data().put(i, op.op(op.x().data().getDouble(i)));
-                }
-            }
-              /*
-            else if(op.y() != null && Shape.opIsWithMatchingStrides(op)) {
-                int xStride = op.x().ordering() == 'f' ? op.x().stride(-1) : op.x().stride(0);
-                int yStride = op.x().ordering() == 'f' ? op.y().stride(-1) : op.y().stride(0);
-                int zStride = op.z().ordering() == 'f' ? op.z().stride(-1) : op.z().stride(0);
-                for(int c = 0; c < op.n(); c ++)
-                    op.z().data().put(op.z().offset() + c * zStride, op.op(op.x().data().getDouble(op.x().offset() + c * xStride),op.y().data().getDouble(op.y().offset() + c * yStride)));
-            }
-
-         else if(Shape.opIsWithMatchingStrides(op)) {
-                int xStride = op.x().ordering() == 'f' ? op.x().stride(-1) : op.x().stride(0);
-                int zStride = op.z().ordering() == 'f' ? op.z().stride(-1) : op.z().stride(0);
-                for(int c = 0; c < op.n(); c ++)
-                    op.z().data().put(op.z().offset() + c * zStride, op.op(op.x().data().getDouble(op.x().offset() + c * xStride)));
-            }
-*/
 
             else if(op.y() != null) {
                 if(Arrays.equals(op.x().shape(),op.y().shape())) {
@@ -202,28 +174,19 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 return scalarOp;
             INDArray zLinear = op.z();
             INDArray xLinear = op.x();
-            if(Shape.opIsWholeBufferWithMatchingStrides(op)) {
-                for(int c = 0; c < op.n(); c ++)
-                    zLinear.data().put(c, op.op(xLinear.data().getDouble(c)));
+            if(xLinear.ordering() == zLinear.ordering()) {
+                int length = xLinear.length();
+                for(int i = 0; i < length; i++)  {
+                    zLinear.putScalarUnsafe(i * zLinear.elementWiseStride(),scalarOp.op(xLinear.getDoubleUnsafe(i * xLinear.elementWiseStride())));
+                }
             }
-
-        /*    else if(Shape.opIsWithMatchingStrides(op)) {
-                int xStride = op.x().ordering() == 'f' ? op.x().stride(-1) : op.x().stride(0);
-                int zStride = op.z().ordering() == 'f' ? op.z().stride(-1) : op.z().stride(0);
-                for(int c = 0; c < op.n(); c ++)
-                    zLinear.data().put(zLinear.offset() + c * zStride, op.op(xLinear.data().getDouble(xLinear.offset() + c * xStride)));
-            }*/
 
             else if (op.x() instanceof IComplexNDArray) {
                 IComplexNDArray ndArray = (IComplexNDArray) op.z();
                 for(int c = 0; c < op.n(); c++)
                     ndArray.putScalar(c, op.op(((IComplexNDArray) op.x()).getComplex(c)));
             }
-            else {
-                for(int c = 0; c < op.n(); c++)
-                    zLinear.putScalar(c, op.op(xLinear.getDouble(c)));
 
-            }
         }
 
 

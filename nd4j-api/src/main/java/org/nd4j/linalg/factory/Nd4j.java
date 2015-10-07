@@ -556,8 +556,8 @@ public class Nd4j {
      * @param dimension
      * @return
      */
-    public static INDArray  argMax(INDArray arr,int...dimension) {
-        return Nd4j.getExecutioner().parallelExecutioner().execBasedOnArraysAlongDimension(arr,new IAMax(arr),Nd4j.getExecutioner(),dimension);
+    public static INDArray argMax(INDArray arr,int...dimension) {
+        return Nd4j.getExecutioner().exec(new IAMax(arr),dimension);
     }
 
     /**

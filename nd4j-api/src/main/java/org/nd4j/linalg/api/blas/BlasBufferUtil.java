@@ -31,6 +31,7 @@ public class BlasBufferUtil {
     public static int getBlasStride(INDArray arr) {
         if(arr instanceof IComplexNDArray)
             return arr.elementWiseStride() / 2;
+
         return arr.elementWiseStride();
     }
 

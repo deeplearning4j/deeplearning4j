@@ -49,6 +49,10 @@ public class RSubOp extends BaseTransformOp {
         super(x, z, n);
     }
 
+    public RSubOp(INDArray first, INDArray second, INDArray first1) {
+        this(first,second,first1,first.length());
+    }
+
     @Override
     public String name() {
         return "rsub";
