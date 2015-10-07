@@ -417,7 +417,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
                 Constructor<? extends TransformOp> xyzConstructor = opClass.getConstructor(INDArray.class, INDArray.class, INDArray.class);
 
                 // --- First: serial, heap, x =/= z and x == z ---
-                DefaultOpExecutioner.setParallelThreshold(Integer.MAX_VALUE);
+                Nd4j.getExecutioner().setParallelThreshold(Integer.MAX_VALUE);
                 Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
 
                 INDArray x1 = getCopyOf(origFirst, DataBuffer.AllocationMode.HEAP, dtype);
@@ -460,7 +460,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
 
 
                 // --- Second: parallel, heap ---
-                DefaultOpExecutioner.setParallelThreshold(5);
+                Nd4j.getExecutioner().setParallelThreshold(5);
                 Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
 
                 INDArray x3 = getCopyOf(origFirst, DataBuffer.AllocationMode.HEAP, dtype);
@@ -503,7 +503,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
 
 
                 // --- Third: serial, direct ---
-                DefaultOpExecutioner.setParallelThreshold(Integer.MAX_VALUE);
+                Nd4j.getExecutioner().setParallelThreshold(Integer.MAX_VALUE);
                 Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
 
                 INDArray x5 = getCopyOf(origFirst, DataBuffer.AllocationMode.DIRECT, dtype);
@@ -547,7 +547,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
 
 
                 // --- Fourth: parallel, direct ---
-                DefaultOpExecutioner.setParallelThreshold(5);
+                Nd4j.getExecutioner().setParallelThreshold(5);
                 Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
 
                 INDArray x7 = getCopyOf(origFirst, DataBuffer.AllocationMode.DIRECT, dtype);
@@ -632,7 +632,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
                         INDArray.class, int.class, Number.class);
 
                 // --- First: serial, heap, x =/= z and x == z ---
-                DefaultOpExecutioner.setParallelThreshold(Integer.MAX_VALUE);
+                Nd4j.getExecutioner().setParallelThreshold(Integer.MAX_VALUE);
                 Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
 
                 INDArray x1 = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
@@ -664,7 +664,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
 
 
                 // --- Second: parallel, heap ---
-                DefaultOpExecutioner.setParallelThreshold(5);
+                Nd4j.getExecutioner().setParallelThreshold(5);
                 Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
 
                 INDArray x3 = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
@@ -696,7 +696,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
 
 
                 // --- Third: serial, direct ---
-                DefaultOpExecutioner.setParallelThreshold(Integer.MAX_VALUE);
+                Nd4j.getExecutioner().setParallelThreshold(Integer.MAX_VALUE);
                 Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
 
                 INDArray x5 = getCopyOf(origX, DataBuffer.AllocationMode.DIRECT, dtype);
@@ -729,7 +729,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
 
 
                 // --- Fourth: parallel, direct ---
-                DefaultOpExecutioner.setParallelThreshold(5);
+                Nd4j.getExecutioner().setParallelThreshold(5);
                 Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
 
                 INDArray x7 = getCopyOf(origX, DataBuffer.AllocationMode.DIRECT, dtype);
@@ -802,7 +802,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
                 Constructor<? extends Accumulation> xyConstructor = opClass.getConstructor(INDArray.class, INDArray.class);
 
                 // --- First: serial, heap ---
-                DefaultOpExecutioner.setParallelThreshold(Integer.MAX_VALUE);
+                Nd4j.getExecutioner().setParallelThreshold(Integer.MAX_VALUE);
                 Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
 
                 INDArray x1 = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
@@ -824,7 +824,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
                 assertEquals(msg, result1, op.getFinalResult().doubleValue(), 1e-2);
 
                 // --- Second: parallel, heap ---
-                DefaultOpExecutioner.setParallelThreshold(5);
+                Nd4j.getExecutioner().setParallelThreshold(5);
                 Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
 
                 INDArray x3 = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
@@ -845,7 +845,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
                 assertEquals(msg, result1, op.getFinalResult().doubleValue(), 1e-2);
 
                 // --- Third: serial, direct ---
-                DefaultOpExecutioner.setParallelThreshold(Integer.MAX_VALUE);
+                Nd4j.getExecutioner().setParallelThreshold(Integer.MAX_VALUE);
                 Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
 
                 INDArray x5 = getCopyOf(origX, DataBuffer.AllocationMode.DIRECT, dtype);
@@ -867,7 +867,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
                 assertEquals(msg, result1, op.getFinalResult().doubleValue(), 1e-2);
 
                 // --- Fourth: parallel, direct ---
-                DefaultOpExecutioner.setParallelThreshold(5);
+                Nd4j.getExecutioner().setParallelThreshold(5);
                 Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
 
                 INDArray x7 = getCopyOf(origX, DataBuffer.AllocationMode.DIRECT, dtype);
@@ -921,7 +921,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
                 Constructor<? extends IndexAccumulation> xyConstructor = opClass.getConstructor(INDArray.class, INDArray.class);
 
                 // --- First: serial, heap ---
-                DefaultOpExecutioner.setParallelThreshold(Integer.MAX_VALUE);
+                Nd4j.getExecutioner().setParallelThreshold(Integer.MAX_VALUE);
                 Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
 
                 INDArray x1 = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
@@ -943,7 +943,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
                 assertEquals(msg, result1, op.getFinalResult());
 
                 // --- Second: parallel, heap ---
-                DefaultOpExecutioner.setParallelThreshold(5);
+                Nd4j.getExecutioner().setParallelThreshold(5);
                 Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
 
                 INDArray x3 = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
@@ -964,7 +964,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
                 assertEquals(msg, result1, op.getFinalResult());
 
                 // --- Third: serial, direct ---
-                DefaultOpExecutioner.setParallelThreshold(Integer.MAX_VALUE);
+                Nd4j.getExecutioner().setParallelThreshold(Integer.MAX_VALUE);
                 Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
 
                 INDArray x5 = getCopyOf(origX, DataBuffer.AllocationMode.DIRECT, dtype);
@@ -986,7 +986,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
                 assertEquals(msg, result1, op.getFinalResult());
 
                 // --- Fourth: parallel, direct ---
-                DefaultOpExecutioner.setParallelThreshold(5);
+                Nd4j.getExecutioner().setParallelThreshold(5);
                 Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
 
                 INDArray x7 = getCopyOf(origX, DataBuffer.AllocationMode.DIRECT, dtype);
@@ -1052,7 +1052,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
                 Constructor<? extends Accumulation> xyConstructor = opClass.getConstructor(INDArray.class, INDArray.class);
 
                 // --- First: serial, heap ---
-                DefaultOpExecutioner.setParallelThreshold(Integer.MAX_VALUE);
+                Nd4j.getExecutioner().setParallelThreshold(Integer.MAX_VALUE);
                 Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
 
                 INDArray x1 = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
@@ -1071,7 +1071,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
                 assertEquals(msg, x1, origX);
 
                 // --- Second: parallel, heap ---
-                DefaultOpExecutioner.setParallelThreshold(5);
+                Nd4j.getExecutioner().setParallelThreshold(5);
                 Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
 
                 INDArray x3 = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
@@ -1085,7 +1085,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
                 assertEquals(msg,out1,out);
 
                 // --- Third: serial, direct ---
-                DefaultOpExecutioner.setParallelThreshold(Integer.MAX_VALUE);
+                Nd4j.getExecutioner().setParallelThreshold(Integer.MAX_VALUE);
                 Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
 
                 INDArray x5 = getCopyOf(origX, DataBuffer.AllocationMode.DIRECT, dtype);
@@ -1099,7 +1099,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
                 assertEquals(msg,out1,out);
 
                 // --- Fourth: parallel, direct ---
-                DefaultOpExecutioner.setParallelThreshold(5);
+                Nd4j.getExecutioner().setParallelThreshold(5);
                 Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
 
                 INDArray x7 = getCopyOf(origX, DataBuffer.AllocationMode.DIRECT, dtype);
@@ -1148,7 +1148,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
                 Constructor<? extends IndexAccumulation> xyConstructor = opClass.getConstructor(INDArray.class, INDArray.class);
 
                 // --- First: serial, heap ---
-                DefaultOpExecutioner.setParallelThreshold(Integer.MAX_VALUE);
+                Nd4j.getExecutioner().setParallelThreshold(Integer.MAX_VALUE);
                 Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
 
                 INDArray x1 = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
@@ -1167,7 +1167,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
                 assertEquals(msg, x1, origX);
 
                 // --- Second: parallel, heap ---
-                DefaultOpExecutioner.setParallelThreshold(5);
+                Nd4j.getExecutioner().setParallelThreshold(5);
                 Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
 
                 INDArray x3 = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
@@ -1182,7 +1182,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
 
 
                 // --- Third: serial, direct ---
-                DefaultOpExecutioner.setParallelThreshold(Integer.MAX_VALUE);
+                Nd4j.getExecutioner().setParallelThreshold(Integer.MAX_VALUE);
                 Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
 
                 INDArray x5 = getCopyOf(origX, DataBuffer.AllocationMode.DIRECT, dtype);
@@ -1196,7 +1196,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
                 assertEquals(msg,out1,out);
 
                 // --- Fourth: parallel, direct ---
-                DefaultOpExecutioner.setParallelThreshold(5);
+                Nd4j.getExecutioner().setParallelThreshold(5);
                 Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
 
                 INDArray x7 = getCopyOf(origX, DataBuffer.AllocationMode.DIRECT, dtype);
