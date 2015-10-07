@@ -36,6 +36,7 @@ import org.nd4j.linalg.dataset.SplitTestAndTrain;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.util.FeatureUtil;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
@@ -76,6 +77,23 @@ public class EvalTest {
         assertEquals(8, eval.negative(), 0);
         // 2 rows and only the first is correct
         assertEquals(eval.accuracy(), 0.5, 0);
+    }
+
+    @Test
+    public void testStringLabels() {
+        INDArray trueOutcome = FeatureUtil.toOutcomeVector(0, 2);
+        INDArray predictedOutcome = FeatureUtil.toOutcomeVector(0, 2);
+
+        List<String> labels = new ArrayList<>();
+        labels.add("hobbs");
+        labels.add("cal");
+
+        Evaluation eval = new Evaluation(labels);
+
+        eval.eval(trueOutcome, predictedOutcome);
+        assertEquals(1, eval.classCount(0));
+        assertEquals(labels.get(0), eval.getClassLabel(0));
+
     }
 
     @Test
