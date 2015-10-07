@@ -40,9 +40,9 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
     private Counter<Integer> trueNegatives = new Counter<>();
     private Counter<Integer> falseNegatives = new Counter<>();
     private ConfusionMatrix<Integer> confusion;
-    private ConfusionMatrix<String> confusion2;
-    private int numRowCounter;
-    private List<Integer> classLabels = new ArrayList<>();
+    private int numRowCounter = 0;
+    private List<Integer> numLabels = new ArrayList<>();
+    private List<String> stringLabels = new ArrayList<>();
     private static Logger log = LoggerFactory.getLogger(Evaluation.class);
 
     // Empty constructor
@@ -51,14 +51,12 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
     // Constructor that takes number of output classes
     public Evaluation(int numClasses) {
         for(int i = 0; i < numClasses; i++)
-            classLabels.add(i);
-        confusion = new ConfusionMatrix<>(classLabels);
-        numRowCounter = 0;
+            numLabels.add(i);
+        confusion = new ConfusionMatrix<>(numLabels);
     }
 
-    public Evaluation(List<String> numClasses) {
-        confusion2 = new ConfusionMatrix<>(numClasses);
-        numRowCounter = 0;
+    public Evaluation(List<String> labels) {
+        this.stringLabels = labels;
     }
 
     /**
@@ -79,8 +77,8 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
             log.warn("Creating confusion matrix based on classes passed in . Will assume the label distribution passed in is indicative of the overall dataset");
             Set<Integer> classes = new HashSet<>();
             // Infer all the class label based on mini batch
-            for(int i = 0; i < realOutcomes.rows(); i++) {
-                classes.add(Nd4j.getBlasWrapper().iamax(realOutcomes.slice(i)));
+            for(int i = 0; i < realOutcomes.columns(); i++) {
+                classes.add(i);
             }
             // Create confusion matrix based on potentially incomplete set of labels
             confusion = new ConfusionMatrix<>(new ArrayList<>(classes));
@@ -156,12 +154,22 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
         StringBuilder builder = new StringBuilder().append("\n");
         List<Integer> classes = confusion.getClasses();
 
-        for(Integer clazz : classes) {
-          for(Integer clazz2 : classes) {
-              int count = confusion.getCount(clazz, clazz2);
-              if(count != 0)
-                  builder.append("\nActual Class " + clazz + " was predicted with Predicted " + clazz2 + " with count " + count  + " times\n");
-          }
+        if (stringLabels.isEmpty()){
+            for (Integer clazz : classes) {
+                for (Integer clazz2 : classes) {
+                    int count = confusion.getCount(clazz, clazz2);
+                    if (count != 0)
+                        builder.append("\n Examples labeled as " + clazz + " classified by model as " + clazz2 + ": " + count + " times\n");
+                }
+            }
+        } else {
+            for (Integer clazz : classes) {
+                for (Integer clazz2 : classes) {
+                    int count = confusion.getCount(clazz, clazz2);
+                    if (count != 0)
+                        builder.append("\n Examples labeled as "+ stringLabels.get(clazz) + " classified by model as " + stringLabels.get(clazz2) + ": " + count + " times\n");
+                }
+            }
         }
 
         DecimalFormat df = new DecimalFormat("#.####");
@@ -359,6 +367,8 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
     }
 
     public double getNumRowCounter() {return (double) numRowCounter;}
+
+    public String getClassLabel(Integer clazz) { return stringLabels.get(clazz);}
 
 
 }
