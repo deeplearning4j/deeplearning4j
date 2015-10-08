@@ -41,8 +41,8 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
     private Counter<Integer> falseNegatives = new Counter<>();
     private ConfusionMatrix<Integer> confusion;
     private int numRowCounter = 0;
-    private List<Integer> numLabels = new ArrayList<>();
-    private List<String> stringLabels = new ArrayList<>();
+    private List<Integer> labelsList = new ArrayList<>();
+    private Map<Integer, String> labelsMap = new HashMap<>();
     private static Logger log = LoggerFactory.getLogger(Evaluation.class);
 
     // Empty constructor
@@ -51,12 +51,20 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
     // Constructor that takes number of output classes
     public Evaluation(int numClasses) {
         for(int i = 0; i < numClasses; i++)
-            numLabels.add(i);
-        confusion = new ConfusionMatrix<>(numLabels);
+            labelsList.add(i);
+        confusion = new ConfusionMatrix<>(labelsList);
     }
 
     public Evaluation(List<String> labels) {
-        this.stringLabels = labels;
+        int i = 0;
+        for (String label : labels){
+            this.labelsMap.put(i, label);
+            i++;
+        }
+    }
+
+    public Evaluation(Map<Integer, String> labels) {
+        this.labelsMap = labels;
     }
 
     /**
@@ -154,7 +162,7 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
         StringBuilder builder = new StringBuilder().append("\n");
         List<Integer> classes = confusion.getClasses();
 
-        if (stringLabels.isEmpty()){
+        if (labelsMap.isEmpty()){
             for (Integer clazz : classes) {
                 for (Integer clazz2 : classes) {
                     int count = confusion.getCount(clazz, clazz2);
@@ -167,7 +175,7 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
                 for (Integer clazz2 : classes) {
                     int count = confusion.getCount(clazz, clazz2);
                     if (count != 0)
-                        builder.append("\n Examples labeled as "+ stringLabels.get(clazz) + " classified by model as " + stringLabels.get(clazz2) + ": " + count + " times\n");
+                        builder.append("\n Examples labeled as "+ labelsMap.get(clazz) + " classified by model as " + labelsMap.get(clazz2) + ": " + count + " times\n");
                 }
             }
         }
@@ -368,7 +376,7 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
 
     public double getNumRowCounter() {return (double) numRowCounter;}
 
-    public String getClassLabel(Integer clazz) { return stringLabels.get(clazz);}
+    public String getClassLabel(Integer clazz) { return labelsMap.get(clazz);}
 
 
 }
