@@ -24,6 +24,7 @@ import jcuda.Pointer;
 import org.apache.commons.lang3.tuple.Triple;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.jcublas.context.CudaContext;
 
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
@@ -95,16 +96,37 @@ public interface JCudaBuffer extends DataBuffer {
     void set(Pointer pointer);
 
 
-
+    /**
+     * Frees the pointer
+     * @param offset the offset to free
+     * @param length the length to free
+     * @return true if the pointer was freed,
+     * false other wise
+     */
     boolean freeDevicePointer(int offset, int length);
 
+
+    /**
+     * Copy to the host synchronizing
+     * using the given context
+     * @param context the context to synchronize
+     * @param offset the offset to copy
+     * @param length the length to copy
+     */
+    void copyToHost(CudaContext context,int offset,int length);
+
+    /**
+     * Copies the buffer to the host
+     * @param offset the offset for the buffer (one buffer may have multiple pointers
+     * @param length the length of the pointer (one buffer may have different lengths)
+     */
     void copyToHost(int offset, int length);
 
     /**
      * Pointer to context map.
      * Contains the device pointer information
      * mapping thread name to offset
-     * @return the pointer info containing allocated poitners
+     * @return the pointer info containing allocated pointers
      */
     Table<String, Triple<Integer, Integer, Integer>, DevicePointerInfo> getPointersToContexts();
 

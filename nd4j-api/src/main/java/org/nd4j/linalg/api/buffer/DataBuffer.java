@@ -87,7 +87,13 @@ public interface DataBuffer extends Serializable {
      */
     ByteBuffer asNio();
 
-
+    /**
+     * Whether the buffer is dirty:
+     * aka has been updated
+     * @return true if the buffer has been
+     * updated, false otherwise
+     */
+    boolean dirty();
 
 
     /**

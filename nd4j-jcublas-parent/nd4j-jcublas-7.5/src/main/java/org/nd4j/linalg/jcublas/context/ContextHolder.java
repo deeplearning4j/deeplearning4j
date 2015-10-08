@@ -266,13 +266,18 @@ public class ContextHolder {
     }
 
 
+    public void setContext() {
+        JCudaDriver.cuCtxSetCurrent(getInstance().getContext());
+    }
+
+
     /**
      * Synchronized the stream.
      * This should be run after
      * every operation.
      */
     public static void syncStream() {
-        JCudaDriver.cuCtxSetCurrent(getInstance().getContext());
+        getInstance().setContext();
         //old api
         JCublas2.cublasSetStream(getInstance().getHandle(), getInstance().getCudaStream());
         JCuda.cudaStreamSynchronize(getInstance().getCudaStream());

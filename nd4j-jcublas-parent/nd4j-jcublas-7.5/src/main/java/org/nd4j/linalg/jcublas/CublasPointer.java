@@ -20,8 +20,11 @@
 package org.nd4j.linalg.jcublas;
 
 import jcuda.Pointer;
+import jcuda.driver.CUstream;
 import jcuda.jcublas.JCublas;
 import jcuda.jcublas.JCublas2;
+import jcuda.jcublas.cublasHandle;
+import jcuda.runtime.cudaStream_t;
 import org.apache.commons.lang3.tuple.Triple;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -30,6 +33,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
+import org.nd4j.linalg.jcublas.context.CudaContext;
 
 import java.util.Arrays;
 
@@ -44,10 +48,11 @@ public class CublasPointer  implements AutoCloseable {
     /**
      * The underlying cuda buffer that contains the host and device memory
      */
-    JCudaBuffer buffer;
-    Pointer devicePointer;
+    private JCudaBuffer buffer;
+    private Pointer devicePointer;
     private boolean closed = false;
     private INDArray arr;
+    private CudaContext cudaContext;
 
 
     /**
@@ -65,10 +70,18 @@ public class CublasPointer  implements AutoCloseable {
         }
     }
 
+    /**
+     *
+     * @return
+     */
     public JCudaBuffer getBuffer() {
         return buffer;
     }
 
+    /**
+     *
+     * @return
+     */
     public Pointer getDevicePointer() {
         return devicePointer;
     }
@@ -79,10 +92,10 @@ public class CublasPointer  implements AutoCloseable {
     public void copyToHost() {
         if(arr != null) {
             int compLength = arr instanceof IComplexNDArray ? arr.length() * 2 : arr.length();
-            buffer.copyToHost(arr.offset(),compLength);
+            buffer.copyToHost(cudaContext,arr.offset(),compLength);
         }
         else {
-            buffer.copyToHost(0,buffer.length());
+            buffer.copyToHost(cudaContext,0, buffer.length());
         }
     }
 
@@ -92,22 +105,24 @@ public class CublasPointer  implements AutoCloseable {
      * for a given JCudaBuffer
      * @param buffer
      */
-    public CublasPointer(JCudaBuffer buffer) {
+    public CublasPointer(JCudaBuffer buffer,CudaContext context) {
         this.buffer = buffer;
         this.devicePointer = buffer.getDevicePointer(1, 0, buffer.length());
+
+        context.initOldStream();
         // Copy the data to the device
-        JCublas2.cublasSetVectorAsync(
-                buffer.length()
-                , buffer.getElementSize()
-                , buffer.getHostPointer()
-                , 1
-                , devicePointer
-                , 1
-                , ContextHolder.getInstance().getCudaStream());
-        ContextHolder.syncStream();
+        if(!buffer.copied(Thread.currentThread().getName()) && !buffer.dirty()) {
+            JCublas2.cublasSetVectorAsync(
+                    buffer.length()
+                    , buffer.getElementSize()
+                    , buffer.getHostPointer()
+                    , 1
+                    , devicePointer
+                    , 1
+                    , context.getOldStream());
+            buffer.setCopied(Thread.currentThread().getName());
+        }
     }
-
-
 
     /**
      * Creates a CublasPointer for a given INDArray.
@@ -119,7 +134,7 @@ public class CublasPointer  implements AutoCloseable {
      * the host buffer offset and data length is taken care of automatically
      * @param array
      */
-    public CublasPointer(INDArray array) {
+    public CublasPointer(INDArray array,CudaContext context) {
         //we have to reset the pointer to be zero offset due to the fact that
         //vector based striding won't work with an array that looks like this
         if(array instanceof IComplexNDArray) {
@@ -128,8 +143,7 @@ public class CublasPointer  implements AutoCloseable {
 
             }
         }
-
-
+        this.cudaContext = context;
         buffer = (JCudaBuffer) array.data();
 
         //the name of this thread for knowing whether to copy data or not
@@ -164,31 +178,22 @@ public class CublasPointer  implements AutoCloseable {
          * due to how the striding works out.
          */
         // Copy the data to the device iff the whole buffer hasn't been copied
-        // if(!buffer.copied(name)) {
-        JCublas.cublasSetVectorAsync(
-                buffer.length()
-                , this.arr.data().getElementSize()
-                , buffer.getHostPointer()
-                , 1
-                , buffer.getPointersToContexts().get(name, Triple.of(0, buffer.length(), 1)).getPointer()
-                , 1
-                , ContextHolder.getInstance().getCudaStream());
-        //mark the buffer copied
-        buffer.setCopied(name);
+        if(!buffer.copied(name) && !buffer.dirty()) {
+            JCublas.cublasSetVectorAsync(
+                    buffer.length()
+                    , this.arr.data().getElementSize()
+                    , buffer.getHostPointer()
+                    , 1
+                    , buffer.getPointersToContexts().get(name, Triple.of(0, buffer.length(), 1)).getPointer()
+                    , 1
+                    , cudaContext.getOldStream());
+            //mark the buffer copied
+            buffer.setCopied(name);
 
-        // }
+        }
     }
 
 
-
-
-    public double[] asDoubleBuffer() {
-        return buffer.asDouble();
-    }
-
-    public float[] getFloatBuffer() {
-        return buffer.asFloat();
-    }
 
 
     @Override
@@ -215,7 +220,7 @@ public class CublasPointer  implements AutoCloseable {
                             , 1
                             , Pointer.to(set)
                             , 1
-                            , ContextHolder.getInstance().getCudaStream());
+                            , cudaContext.getOldStream());
                     sb.append(Arrays.toString(set));
                 }
                 else {
@@ -227,7 +232,7 @@ public class CublasPointer  implements AutoCloseable {
                             , 1
                             , Pointer.to(set)
                             , 1
-                            , ContextHolder.getInstance().getCudaStream());
+                            , cudaContext.getOldStream());
                     sb.append(Arrays.toString(set));
                 }
 
@@ -252,8 +257,8 @@ public class CublasPointer  implements AutoCloseable {
                     ,BlasBufferUtil.getBlasStride(arr)
                     ,Pointer.to(set)
                     ,1
-                    , ContextHolder.getInstance().getCudaStream());
-            ContextHolder.syncStream();
+                    , cudaContext.getOldStream());
+            cudaContext.syncOldStream();
             sb.append(Arrays.toString(set));
         }
         else {
@@ -264,7 +269,7 @@ public class CublasPointer  implements AutoCloseable {
                     , devicePointer
                     , BlasBufferUtil.getBlasStride(arr)
                     , Pointer.to(set)
-                    , 1, ContextHolder.getInstance().getCudaStream());
+                    , 1, cudaContext.getOldStream());
             ContextHolder.syncStream();
             sb.append(Arrays.toString(set));
         }
@@ -281,8 +286,8 @@ public class CublasPointer  implements AutoCloseable {
                     ,1
                     ,Pointer.to(set)
                     ,1
-                    , ContextHolder.getInstance().getCudaStream());
-            ContextHolder.syncStream();
+                    , cudaContext.getOldStream());
+            cudaContext.syncOldStream();
             sb.append(Arrays.toString(set));
         }
         else {
@@ -294,9 +299,20 @@ public class CublasPointer  implements AutoCloseable {
                     ,1
                     ,Pointer.to(set)
                     ,1
-                    , ContextHolder.getInstance().getCudaStream());
-            ContextHolder.syncStream();
+                    , cudaContext.getOldStream());
+            cudaContext.syncOldStream();
             sb.append(Arrays.toString(set));
+        }
+    }
+
+
+    public static void free(CublasPointer...pointers) {
+        for(CublasPointer pointer : pointers) {
+            try {
+                pointer.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 

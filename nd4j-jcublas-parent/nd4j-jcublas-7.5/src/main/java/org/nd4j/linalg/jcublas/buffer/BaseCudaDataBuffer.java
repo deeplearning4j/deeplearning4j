@@ -37,6 +37,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.complex.CudaComplexConversion;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
+import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
 import org.nd4j.linalg.util.SynchronizedTable;
 import org.slf4j.Logger;
@@ -563,6 +564,61 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     @Override
+    public void copyToHost(CudaContext context, int offset, int length) {
+        DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName(),Triple.of(offset,length,1));
+        if(devicePointerInfo == null)
+            throw new IllegalStateException("No pointer found for offset " + offset);
+        //prevent inconsistent pointers
+        if (devicePointerInfo.getOffset() != offset)
+            throw new IllegalStateException("Device pointer offset didn't match specified offset in pointer map");
+
+        if (devicePointerInfo != null) {
+            int deviceStride = devicePointerInfo.getStride();
+            int  deviceOffset = devicePointerInfo.getOffset();
+            long deviceLength = devicePointerInfo.getLength();
+            if(deviceOffset == 0 && length < length()) {
+                /**
+                 * The way the data works out the stride for retrieving the data
+                 * should be 1.
+                 *
+                 * The device stride should be used for resetting the data.
+                 *
+                 * This is for the edge case where the offset is zero and
+                 * the length of the pointer is < the actual buffer length itself.
+                 *
+                 */
+                JCublas2.cublasGetVectorAsync(
+                        length
+                        , getElementSize()
+                        , devicePointerInfo.getPointer().withByteOffset(offset * getElementSize())
+                        , deviceStride
+                        , getHostPointer(deviceOffset)
+                        , deviceStride
+                        , context.getOldStream());
+            }
+            else {
+                JCublas2.cublasGetVectorAsync(
+                        (int) deviceLength
+                        , getElementSize()
+                        , devicePointerInfo.getPointer().withByteOffset(offset * getElementSize())
+                        , deviceStride
+                        , getHostPointer(deviceOffset)
+                        , deviceStride
+                        , context.getOldStream());
+            }
+
+
+
+
+        }
+
+        else
+            throw new IllegalStateException("No offset found to copy");
+        //synchronize for the copy to avoid data inconsistencies
+        context.syncOldStream();
+    }
+
+    @Override
     public void copyToHost(int offset,int length) {
         DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName(),Triple.of(offset,length,1));
         if(devicePointerInfo == null)
@@ -572,7 +628,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             throw new IllegalStateException("Device pointer offset didn't match specified offset in pointer map");
 
         if (devicePointerInfo != null) {
-            ContextHolder.syncStream();
             int deviceStride = devicePointerInfo.getStride();
             int  deviceOffset = devicePointerInfo.getOffset();
             long deviceLength = devicePointerInfo.getLength();
@@ -608,7 +663,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             }
 
 
-            ContextHolder.syncStream();
 
 
         }

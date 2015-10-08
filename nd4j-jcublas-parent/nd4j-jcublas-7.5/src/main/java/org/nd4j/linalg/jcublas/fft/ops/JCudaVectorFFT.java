@@ -8,6 +8,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.VectorFFT;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
+import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.fft.JcudaFft;
 import org.nd4j.linalg.jcublas.util.FFTUtils;
 
@@ -59,11 +60,13 @@ public class JCudaVectorFFT extends VectorFFT {
         if(!x.isVector() || executed)
             return;
         JcudaFft fft = (JcudaFft) Nd4j.getFFt();
-        JCufft.cufftSetStream(fft.getHandle(), ContextHolder.getInstance().getCudaStream());
+        CudaContext ctx = new CudaContext();
+        ctx.initOldStream();
+        JCufft.cufftSetStream(fft.getHandle(), ctx.getOldStream());
 
         INDArray workerArea = Nd4j.create(x.length() * 2);
-        try(CublasPointer inputPointer = new CublasPointer(x);
-            CublasPointer workerPointer = new CublasPointer(workerArea)) {
+        try(CublasPointer inputPointer = new CublasPointer(x,ctx);
+            CublasPointer workerPointer = new CublasPointer(workerArea,ctx)) {
             JCufft.cufftSetWorkArea(
                     getHandle()
                     , workerPointer.getDevicePointer());
@@ -97,6 +100,7 @@ public class JCudaVectorFFT extends VectorFFT {
                         , JCufft.CUFFT_FORWARD);
 
             inputPointer.copyToHost();
+            ctx.destroy();
 
         }
         catch(Exception e) {

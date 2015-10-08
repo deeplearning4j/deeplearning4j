@@ -80,7 +80,7 @@ public class DefaultParallelExecutioner implements ParallelExecutioner {
             for (int i = 0; i < task.x().tensorssAlongDimension(dimension); i++) {
                 Op op2 = task.opForDimension(i, dimension);
                 double result = executioner.execAndReturn((Accumulation) op2).currentResult().doubleValue();
-                retArray.putScalar(i, result);
+                retArray.putScalarUnsafe(i * retArray.elementWiseStride(), result);
 
             }
 

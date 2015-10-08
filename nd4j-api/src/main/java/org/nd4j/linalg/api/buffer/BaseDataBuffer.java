@@ -33,6 +33,7 @@ import java.nio.*;
 import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Base class for a data buffer
@@ -52,6 +53,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected double[] doubleData;
     protected int[] intData;
     protected float[] floatData;
+    protected AtomicBoolean dirty = new AtomicBoolean(false);
 
     /**
      *
@@ -348,7 +350,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
         DataBuffer ret = create(length);
         for(int i = 0; i < ret.length(); i++)
-            ret.put(i,getDouble(i));
+            ret.put(i, getDouble(i));
 
         return ret;
     }
@@ -546,20 +548,27 @@ public abstract class BaseDataBuffer implements DataBuffer {
         if(doubleData != null) {
             if(i >= doubleData.length)
                 throw new IllegalStateException("Index out of bounds " + i);
+            dirty.set(false);
             return doubleData[i];
         }
         else if(floatData != null) {
             if(i >= floatData.length)
                 throw new IllegalStateException("Index out of bounds " + i);
+            dirty.set(false);
             return (double) floatData[i];
         }
         else if(intData != null) {
+            dirty.set(false);
             return (double) intData[i];
         }
 
-        if(dataType() == Type.FLOAT)
-            return dataBuffer.getFloat(i * getElementSize());
+        if(dataType() == Type.FLOAT) {
+            dirty.set(false);
 
+            return dataBuffer.getFloat(i * getElementSize());
+        }
+
+        dirty.set(false);
         return dataBuffer.getDouble(i * getElementSize());
     }
 
@@ -568,19 +577,25 @@ public abstract class BaseDataBuffer implements DataBuffer {
         if(doubleData != null) {
             if(i >= doubleData.length)
                 throw new IllegalStateException("Index out of bounds " + i);
+            dirty.set(false);
             return (float) doubleData[i];
         } else if(floatData != null) {
             if(i >= floatData.length)
                 throw new IllegalStateException("Index out of bounds " + i);
+            dirty.set(false);
             return floatData[i];
         }
         else if(intData != null) {
+            dirty.set(false);
             return (float) intData[i];
         }
 
-        if(dataType() == Type.DOUBLE)
+        if(dataType() == Type.DOUBLE) {
+            dirty.set(false);
             return (float) dataBuffer.getDouble(i * getElementSize());
+        }
 
+        dirty.set(false);
         return dataBuffer.getFloat(i * getElementSize());
     }
 
@@ -614,6 +629,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
             }
         }
 
+
+        dirty.set(true);
     }
 
     @Override
@@ -641,8 +658,14 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 put(i,(float) element);
 
         }
+
+        dirty.set(true);
     }
 
+    @Override
+    public boolean dirty() {
+        return dirty.get();
+    }
 
     protected void ensureWritable(int pos, int len) {
         int ni = pos + len;
@@ -813,7 +836,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         try {
             ref = new WeakReference<DataBuffer>(this,Nd4j.bufferRefQueue());
             referencing = Collections.synchronizedSet(new HashSet<String>());
-
+            dirty = new AtomicBoolean(false);
             allocationMode = AllocationMode.valueOf(s.readUTF());
             length = s.readInt();
             Type t = Type.valueOf(s.readUTF());
