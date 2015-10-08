@@ -11,7 +11,7 @@ import org.nd4j.linalg.api.parallel.tasks.TaskFactoryProvider;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CPUScalarOpViaTensorAction extends BaseTask {
+public class CPUScalarOpViaTensorAction extends BaseTask<Void> {
     protected final ScalarOp op;
     protected final int threshold;
 

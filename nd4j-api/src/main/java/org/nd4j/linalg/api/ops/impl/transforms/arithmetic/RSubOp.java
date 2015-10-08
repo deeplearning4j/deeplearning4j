@@ -19,13 +19,10 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.arithmetic;
 
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.parallel.bufferops.TransformDataBufferAction;
-import org.nd4j.linalg.api.parallel.bufferops.impl.transform.RSubOpDataBufferAction;
 
 /**
  * Subtraction operation
@@ -132,12 +129,5 @@ public class RSubOp extends BaseTransformOp {
         super.init(x, y, z, n);
         if (y == null)
             throw new IllegalArgumentException("No components to subtract");
-    }
-
-    @Override
-    public TransformDataBufferAction getTransformOpDataBufferAction( int parallelThreshold, int n, DataBuffer x, DataBuffer y,
-                                                                     DataBuffer z, int offsetX, int offsetY, int offsetZ,
-                                                                     int incrX, int incrY, int incrZ){
-        return new RSubOpDataBufferAction(this,parallelThreshold,n,x,y,z,offsetX,offsetY,offsetZ,incrX,incrY,incrZ);
     }
 }

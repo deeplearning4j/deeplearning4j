@@ -3,11 +3,8 @@ package org.nd4j.linalg.api.parallel.tasks.cpu.indexaccum;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.IndexAccumulation;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
-import org.nd4j.linalg.api.parallel.bufferops.AccumulationDataBufferTask;
-import org.nd4j.linalg.api.parallel.bufferops.impl.indexaccum.IndexAccumulationOpDataBufferTask;
 import org.nd4j.linalg.api.parallel.tasks.BaseTask;
 import org.nd4j.linalg.api.parallel.tasks.Task;
 

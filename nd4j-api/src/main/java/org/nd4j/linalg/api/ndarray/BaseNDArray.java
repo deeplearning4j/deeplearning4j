@@ -44,7 +44,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.SubOp;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.api.parallel.TaskCreator;
-import org.nd4j.linalg.api.parallel.bufferops.VectorOpDataBufferAction;
 import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.api.shape.loop.two.CopyLoopFunction;
 import org.nd4j.linalg.api.shape.loop.two.RawArrayIterationInformation2;

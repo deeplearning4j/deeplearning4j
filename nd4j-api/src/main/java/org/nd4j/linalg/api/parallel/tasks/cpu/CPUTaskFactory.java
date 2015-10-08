@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.parallel.tasks.cpu;
 
+import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.IndexAccumulation;
@@ -8,10 +9,15 @@ import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.api.parallel.tasks.Task;
 import org.nd4j.linalg.api.parallel.tasks.TaskFactory;
+import org.nd4j.linalg.api.parallel.tasks.cpu.accumulation.CPUAccumulationAlongDimensionTask;
 import org.nd4j.linalg.api.parallel.tasks.cpu.accumulation.CPUAccumulationTask;
 import org.nd4j.linalg.api.parallel.tasks.cpu.accumulation.CPUAccumulationViaTensorTask;
+import org.nd4j.linalg.api.parallel.tasks.cpu.indexaccum.CPUIndexAccumulationAlongDimensionTask;
+import org.nd4j.linalg.api.parallel.tasks.cpu.indexaccum.CPUIndexAccumulationTask;
+import org.nd4j.linalg.api.parallel.tasks.cpu.indexaccum.CPUIndexAccumulationViaTensorTask;
 import org.nd4j.linalg.api.parallel.tasks.cpu.scalar.CPUScalarOpAction;
 import org.nd4j.linalg.api.parallel.tasks.cpu.scalar.CPUScalarOpViaTensorAction;
+import org.nd4j.linalg.api.parallel.tasks.cpu.transform.CPUTransformAlongDimensionTask;
 import org.nd4j.linalg.api.parallel.tasks.cpu.transform.CPUTransformOpAction;
 import org.nd4j.linalg.api.parallel.tasks.cpu.transform.CPUTransformOpViaTensorTask;
 import org.slf4j.Logger;
@@ -73,7 +79,7 @@ public class CPUTaskFactory implements TaskFactory {
 
     @Override
     public Task<Void> getTransformAction(TransformOp op, int... dimension ){
-        throw new UnsupportedOperationException("Not yet implemented");
+        return new CPUTransformAlongDimensionTask(op,parallelThreshold,dimension);
     }
 
     @Override
@@ -113,16 +119,27 @@ public class CPUTaskFactory implements TaskFactory {
 
     @Override
     public Task<INDArray> getAccumulationTask(Accumulation op, int... dimension) {
-        return null;
+        return new CPUAccumulationAlongDimensionTask(op,parallelThreshold,dimension);
     }
 
     @Override
-    public Task<Integer> getIndexAccumulationTask(IndexAccumulation op) {
-        return null;
+    public Task<Pair<Double,Integer>> getIndexAccumulationTask(IndexAccumulation op) {
+        INDArray x = op.x();
+        INDArray y = op.y();
+
+        boolean canDoDirectly;
+        if(y==null) canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x);
+        else canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x,y);
+
+        if(canDoDirectly){
+            return new CPUIndexAccumulationTask(op,parallelThreshold,true);
+        } else {
+            return new CPUIndexAccumulationViaTensorTask(op,parallelThreshold,true);
+        }
     }
 
     @Override
     public Task<INDArray> getIndexAccumulationTask(IndexAccumulation op, int... dimension) {
-        return null;
+        return new CPUIndexAccumulationAlongDimensionTask(op,parallelThreshold,dimension);
     }
 }

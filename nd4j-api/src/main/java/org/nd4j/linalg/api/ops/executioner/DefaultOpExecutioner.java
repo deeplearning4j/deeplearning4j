@@ -19,19 +19,17 @@
 
 package org.nd4j.linalg.api.ops.executioner;
 
+import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.parallel.ParallelExecutioner;
-import org.nd4j.linalg.api.parallel.bufferops.*;
 import org.nd4j.linalg.api.parallel.tasks.Task;
 import org.nd4j.linalg.api.parallel.tasks.TaskFactory;
 import org.nd4j.linalg.api.parallel.tasks.TaskFactoryProvider;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Basic op executioner. Knows how to iterate over
@@ -465,7 +463,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         INDArray y = op.y();
 
         if (!(x instanceof IComplexNDArray) && !(y instanceof IComplexNDArray)) {
-            Task<Integer> task = taskFactory.getIndexAccumulationTask(op);
+            Task<Pair<Double,Integer>> task = taskFactory.getIndexAccumulationTask(op);
             task.invokeBlocking();
         } else {
             //Complex

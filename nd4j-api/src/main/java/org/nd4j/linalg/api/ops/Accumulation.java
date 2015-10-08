@@ -19,11 +19,7 @@
 
 package org.nd4j.linalg.api.ops;
 
-
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNumber;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.parallel.bufferops.AccumulationDataBufferTask;
 
 import java.util.List;
 
@@ -171,52 +167,4 @@ public interface Accumulation extends Op {
      *@return the complex initial value
      */
     IComplexNumber zeroComplex();
-
-    /**Get an AccumulationDataBufferTask. Used (internally) for parallelizing Accumulation operations.
-     * Note that most Accumulation implementations can simply inherit BaseAccumulation.getAccumulationOpDataBufferTask,
-     * however this can be overridden in certain cases for performance reasons
-     *
-     * @param threshold The parallelism threshold for breaking an AccumulationDataBufferTask into smaller sub-tasks
-     *                  for parallel execution
-     * @param n The number of operations / length
-     * @param x x DataBuffer
-     * @param y y DataBuffer (may be null for accumulations with a single argument)
-     * @param offsetX Offset of the first element to be processed in the X databuffer
-     * @param offsetY Offset of the first element to be processed in the Y databuffer (not used if y is null)
-     * @param incrX Increment between elements in the X databuffer
-     * @param incrY Increment between elements in the Y databuffer (not used if y is null)
-     * @param outerTask Whether this DataBufferTask should be considered an 'outer' task or an 'inner' task
-     *                  Generally, if the DataBufferTask is created by another DataBufferTask, outerTask==false.
-     *                  An 'outer' task could be called a root/primary task.
-     *                  In practice, generally if outerTask==true, getAndSetFinalResult is called and the accumulation
-     *                  returned is 'final' in the sense of being divided by n, or sqrt(accum) etc if such a final
-     *                  operation is required
-     * @return The AccumulationDataBufferTask
-     */
-    AccumulationDataBufferTask getAccumulationOpDataBufferTask(int threshold, int n, DataBuffer x, DataBuffer y,
-                                                               int offsetX, int offsetY, int incrX, int incrY, boolean outerTask);
-
-    /**Get an AccumulationDataBufferTask. Used (internally) for parallelizing Accumulation operations.
-     * Unlike the other getAccumulationOpDataBufferTask, the resulting AccumulationDataBufferTask should
-     * calculate a 1d tensor first.
-     * Note that most Accumulation implementations can simply inherit BaseAccumulation.getAccumulationOpDataBufferTask,
-     * however this can be overridden in certain cases for performance reasons
-     *
-     * @param tensorNum The number/index of the 1d tensor that should be calculated (i.e., x.tensorAlongDimension(tensorNum,tensorDim))
-     * @param tensorDim The dimension that the 1d tensor should be calculated along
-     * @param parallelThreshold The threshold for parallelism (for breaking an AccumulationDataBufferTask into smaller
-     *                          parallel ops)
-     * @param x x INDArray
-     * @param y y INDArray (may be null)
-     * @param outerTask Whether this DataBufferTask should be considered an 'outer' task or 'inner task.
-     *                  Generally, if the DataBufferTask is created by another DataBufferTask, outerTask==false.
-     *                  An 'outer' task could be called a root/primary task.
-     *                  In practice, generally if outerTask==true, getAndSetFinalResult is called and the accumulation
-     *                  returned is 'final' in the sense of being divided by n, or sqrt(accum) etc if such a final
-     *                  operation is required
-     * @return The AccumulationDataBufferTask
-     * @see #getAccumulationOpDataBufferTask(int, int, DataBuffer, DataBuffer, int, int, int, int, boolean)
-     */
-    AccumulationDataBufferTask getAccumulationOpDataBufferTask(int tensorNum, int tensorDim, int parallelThreshold,
-                                                               INDArray x, INDArray y, boolean outerTask);
 }

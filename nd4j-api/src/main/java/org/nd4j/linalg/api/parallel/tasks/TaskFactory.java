@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.parallel.tasks;
 
+import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.IndexAccumulation;
@@ -18,7 +19,7 @@ public interface TaskFactory {
 
     Task<INDArray> getAccumulationTask( Accumulation op, int... dimension );
 
-    Task<Integer> getIndexAccumulationTask( IndexAccumulation op );
+    Task<Pair<Double,Integer>> getIndexAccumulationTask( IndexAccumulation op );
 
     Task<INDArray> getIndexAccumulationTask( IndexAccumulation op, int... dimension );
 

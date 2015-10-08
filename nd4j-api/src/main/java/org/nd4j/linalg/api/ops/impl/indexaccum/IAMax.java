@@ -20,13 +20,10 @@
 package org.nd4j.linalg.api.ops.impl.indexaccum;
 
 import org.apache.commons.math3.util.FastMath;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseIndexAccumulation;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.parallel.bufferops.IndexAccumulationDataBufferTask;
-import org.nd4j.linalg.api.parallel.bufferops.impl.indexaccum.IAMaxOpDataBufferTask;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
@@ -165,18 +162,5 @@ public class IAMax extends BaseIndexAccumulation {
             return new IAMax(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new IAMax(x.tensorAlongDimension(index, dimension));
-    }
-
-    @Override
-    public IndexAccumulationDataBufferTask getIndexAccumulationOpDataBufferTask(int threshold, int n, DataBuffer x, DataBuffer y,
-                                                                                int offsetX, int offsetY, int incrX, int incrY,
-                                                                                int elementOffset, boolean outerTask){
-        return new IAMaxOpDataBufferTask(this,threshold,n,x,y,offsetX,offsetY,incrX,incrY,elementOffset,outerTask);
-    }
-
-    @Override
-    public IndexAccumulationDataBufferTask getIndexAccumulationOpDataBufferTask(int tensorNum, int tensorDim, int parallelThreshold,
-                                                                                INDArray x, INDArray y, boolean outerTask){
-        return new IAMaxOpDataBufferTask(this,tensorNum,tensorDim,parallelThreshold,x,y,outerTask);
     }
 }

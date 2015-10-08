@@ -44,10 +44,6 @@ import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarLessThan;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarSetValue;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
-import org.nd4j.linalg.api.parallel.bufferops.AccumulationViaTensorDataBufferTask;
-import org.nd4j.linalg.api.parallel.bufferops.IndexAccumulationViaTensorDataBufferTask;
-import org.nd4j.linalg.api.parallel.bufferops.ScalarViaTensorDataBufferAction;
-import org.nd4j.linalg.api.parallel.bufferops.TransformViaTensorDataBufferAction;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -463,6 +459,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
     @Test
     public void testOpExecutionerTransformOps() throws Exception {
         fail("Test needs to be fixed/reimplemented");
+        /*
         //Basic idea: results should be identical, whether executed in serial vs. parallel, heap vs. direct,
         // or direct execution vs. split via tensors, x == z vs. x != z
         final DataBuffer.AllocationMode origAlloc = Nd4j.alloc;
@@ -672,12 +669,13 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
             }
         }
 
-        Nd4j.alloc = origAlloc;
+        Nd4j.alloc = origAlloc;*/
     }
 
     @Test
     public void testOpExecutionerScalarOps() throws Exception {
         fail("Test needs to be fixed/reimplemented");
+        /*
         //Basic idea: results should be identical, whether executed in serial vs. parallel, heap vs. direct,
         // or direct execution vs. split via tensors, x == z vs. x != z
         final DataBuffer.AllocationMode origAlloc = Nd4j.alloc;
@@ -843,12 +841,13 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
             }
         }
 
-        Nd4j.alloc = origAlloc;
+        Nd4j.alloc = origAlloc;*/
     }
 
     @Test
     public void testOpExecutionerAccumulationOps() throws Exception {
         fail("Test needs to be fixed/reimplemented");
+        /*
         //Basic idea: results should be identical, whether executed in serial vs. parallel, heap vs. direct,
         // or direct execution vs. split via tensors
         final DataBuffer.AllocationMode origAlloc = Nd4j.alloc;
@@ -971,13 +970,14 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
             }
         }
 
-        Nd4j.alloc = origAlloc;
+        Nd4j.alloc = origAlloc;*/
     }
 
 
     @Test
     public void testOpExecutionerIndexAccumulationOps() throws Exception {
         fail("Test needs to be fixed/reimplemented");
+        /*
         //Basic idea: results should be identical, whether executed in serial vs. parallel, heap vs. direct,
         // or direct execution vs. split via tensors
         final DataBuffer.AllocationMode origAlloc = Nd4j.alloc;
@@ -1091,13 +1091,14 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
             }
         }
 
-        Nd4j.alloc = origAlloc;
+        Nd4j.alloc = origAlloc;*/
     }
 
 
     @Test
     public void testOpExecutionerAccumulationOpsAlongDimensions() throws Exception {
         fail("Test needs to be fixed/reimplemented");
+        /*
         //Test accumulation ops along dimensions
         //Basic idea: results should be identical, whether executed in serial vs. parallel, heap vs. direct,
         // or direct execution vs. split via tensors
@@ -1198,12 +1199,13 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
             }
         }
 
-        Nd4j.alloc = origAlloc;
+        Nd4j.alloc = origAlloc;*/
     }
 
     @Test
     public void testOpExecutionerIndexAccumulationOpsAlongDimensions() throws Exception {
         fail("Test needs to be fixed/reimplemented");
+        /*
         //Test index accumulation ops along dimensions
         //Basic idea: results should be identical, whether executed in serial vs. parallel, heap vs. direct,
         // or direct execution vs. split via tensors
@@ -1296,7 +1298,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
             }
         }
 
-        Nd4j.alloc = origAlloc;
+        Nd4j.alloc = origAlloc;*/
     }
 
 
