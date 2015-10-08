@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.multilayer;
 
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
@@ -19,6 +20,7 @@ import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer.Type;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.util.FeatureUtil;
 import org.slf4j.Logger;
@@ -55,10 +57,23 @@ public class GravesLSTMOutputTest {
 
     @Test
     public void testSameLabelsOutput() {
-        MultiLayerNetwork network = new MultiLayerNetwork(getNetworkConf(40));
+        MultiLayerNetwork network = new MultiLayerNetwork(getNetworkConf(40, false));
         network.init();
         network.setListeners(new ScoreIterationListener(1));
         network.fit(reshapeInput(data), data);
+        Evaluation ev = eval(network);
+        Assert.assertTrue(ev.f1() > 0.90);
+    }
+
+    @Test
+    public void testSameLabelsOutputWithTBPTT() {
+        MultiLayerNetwork network = new MultiLayerNetwork(getNetworkConf(40, true));
+        network.init();
+        network.setListeners(new ScoreIterationListener(1));
+        for (int i = 0; i < window / 100; i++) {
+            INDArray d = data.get(NDArrayIndex.interval(100 * i, 100 * (i+1)), NDArrayIndex.all());
+            network.fit(reshapeInput(d), reshapeInput(d));
+        }
         Evaluation ev = eval(network);
         Assert.assertTrue(ev.f1() > 0.90);
     }
@@ -71,8 +86,8 @@ public class GravesLSTMOutputTest {
         return ev;
     }
 
-    private MultiLayerConfiguration getNetworkConf(int iterations) {
-        return new NeuralNetConfiguration.Builder()
+    private MultiLayerConfiguration getNetworkConf(int iterations, boolean useTBPTT) {
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .learningRate(0.1)
                 .regularization(true)
@@ -89,8 +104,13 @@ public class GravesLSTMOutputTest {
                         .activation("softmax").build())
                 .inputPreProcessor(1, new RnnToFeedForwardPreProcessor())
                 .backprop(true)
-                .pretrain(false)
-                .build();
+                .pretrain(false);
+        if (useTBPTT) {
+            builder.backpropType(BackpropType.TruncatedBPTT);
+            builder.tBPTTBackwardLength(window / 3);
+            builder.tBPTTForwardLength(window / 3);
+        }
+        return builder.build();
     }
 
     private static INDArray getData() {
