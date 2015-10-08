@@ -37,22 +37,6 @@ public interface OpExecutioner {
 
     ParallelExecutioner parallelExecutioner();
 
-    /**In some OpExecutors, large ops are split and executed in parallel.
-     * This splitting uses a threshold; if the length of an op is
-     * above the threshold, the ops will be split into a set of smaller ops
-     * to be executed in parallel
-     * @return current parallelism threshold
-     */
-    public int getParallelThreshold();
-
-    /**In some OpExecutors, large ops are split and executed in parallel.
-     * This splitting uses a threshold; if the length of an op is
-     * above the threshold, the ops will be split into a set of smaller ops
-     * to be executed in parallel
-     * @param threshold new threshold for splitting ops
-     */
-    public void setParallelThreshold(int threshold);
-
     /**
      * Execute the operation
      *

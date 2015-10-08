@@ -462,6 +462,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
     @Test
     public void testOpExecutionerTransformOps() throws Exception {
+        fail("Test needs to be fixed/reimplemented");
         //Basic idea: results should be identical, whether executed in serial vs. parallel, heap vs. direct,
         // or direct execution vs. split via tensors, x == z vs. x != z
         final DataBuffer.AllocationMode origAlloc = Nd4j.alloc;
@@ -496,7 +497,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
                 Constructor<? extends TransformOp> xyzConstructor = opClass.getConstructor(INDArray.class, INDArray.class, INDArray.class);
 
                 // --- First: serial, heap, x =/= z and x == z ---
-                Nd4j.getExecutioner().setParallelThreshold(Integer.MAX_VALUE);
+//                Nd4j.getExecutioner().setParallelThreshold(Integer.MAX_VALUE);
                 Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
 
                 INDArray x1 = getCopyOf(origFirst, DataBuffer.AllocationMode.HEAP, dtype);
@@ -539,7 +540,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
 
                 // --- Second: parallel, heap ---
-                Nd4j.getExecutioner().setParallelThreshold(5);
+//                Nd4j.getExecutioner().setParallelThreshold(5);
                 Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
 
                 INDArray x3 = getCopyOf(origFirst, DataBuffer.AllocationMode.HEAP, dtype);
@@ -582,7 +583,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
 
                 // --- Third: serial, direct ---
-                Nd4j.getExecutioner().setParallelThreshold(Integer.MAX_VALUE);
+//                Nd4j.getExecutioner().setParallelThreshold(Integer.MAX_VALUE);
                 Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
 
                 INDArray x5 = getCopyOf(origFirst, DataBuffer.AllocationMode.DIRECT, dtype);
@@ -626,7 +627,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
 
                 // --- Fourth: parallel, direct ---
-                Nd4j.getExecutioner().setParallelThreshold(5);
+//                Nd4j.getExecutioner().setParallelThreshold(5);
                 Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
 
                 INDArray x7 = getCopyOf(origFirst, DataBuffer.AllocationMode.DIRECT, dtype);
@@ -676,6 +677,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
     @Test
     public void testOpExecutionerScalarOps() throws Exception {
+        fail("Test needs to be fixed/reimplemented");
         //Basic idea: results should be identical, whether executed in serial vs. parallel, heap vs. direct,
         // or direct execution vs. split via tensors, x == z vs. x != z
         final DataBuffer.AllocationMode origAlloc = Nd4j.alloc;
@@ -711,7 +713,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
                         INDArray.class, int.class, Number.class);
 
                 // --- First: serial, heap, x =/= z and x == z ---
-                Nd4j.getExecutioner().setParallelThreshold(Integer.MAX_VALUE);
+//                Nd4j.getExecutioner().setParallelThreshold(Integer.MAX_VALUE);
                 Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
 
                 INDArray x1 = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
@@ -743,7 +745,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
 
                 // --- Second: parallel, heap ---
-                Nd4j.getExecutioner().setParallelThreshold(5);
+//                Nd4j.getExecutioner().setParallelThreshold(5);
                 Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
 
                 INDArray x3 = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
@@ -775,7 +777,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
 
                 // --- Third: serial, direct ---
-                Nd4j.getExecutioner().setParallelThreshold(Integer.MAX_VALUE);
+//                Nd4j.getExecutioner().setParallelThreshold(Integer.MAX_VALUE);
                 Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
 
                 INDArray x5 = getCopyOf(origX, DataBuffer.AllocationMode.DIRECT, dtype);
@@ -808,7 +810,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
 
                 // --- Fourth: parallel, direct ---
-                Nd4j.getExecutioner().setParallelThreshold(5);
+//                Nd4j.getExecutioner().setParallelThreshold(5);
                 Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
 
                 INDArray x7 = getCopyOf(origX, DataBuffer.AllocationMode.DIRECT, dtype);
@@ -846,6 +848,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
     @Test
     public void testOpExecutionerAccumulationOps() throws Exception {
+        fail("Test needs to be fixed/reimplemented");
         //Basic idea: results should be identical, whether executed in serial vs. parallel, heap vs. direct,
         // or direct execution vs. split via tensors
         final DataBuffer.AllocationMode origAlloc = Nd4j.alloc;
@@ -881,7 +884,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
                 Constructor<? extends Accumulation> xyConstructor = opClass.getConstructor(INDArray.class, INDArray.class);
 
                 // --- First: serial, heap ---
-                Nd4j.getExecutioner().setParallelThreshold(Integer.MAX_VALUE);
+//                Nd4j.getExecutioner().setParallelThreshold(Integer.MAX_VALUE);
                 Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
 
                 INDArray x1 = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
@@ -903,7 +906,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
                 assertEquals(msg, result1, op.getFinalResult().doubleValue(), 1e-2);
 
                 // --- Second: parallel, heap ---
-                Nd4j.getExecutioner().setParallelThreshold(5);
+//                Nd4j.getExecutioner().setParallelThreshold(5);
                 Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
 
                 INDArray x3 = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
@@ -924,7 +927,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
                 assertEquals(msg, result1, op.getFinalResult().doubleValue(), 1e-2);
 
                 // --- Third: serial, direct ---
-                Nd4j.getExecutioner().setParallelThreshold(Integer.MAX_VALUE);
+//                Nd4j.getExecutioner().setParallelThreshold(Integer.MAX_VALUE);
                 Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
 
                 INDArray x5 = getCopyOf(origX, DataBuffer.AllocationMode.DIRECT, dtype);
@@ -946,7 +949,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
                 assertEquals(msg, result1, op.getFinalResult().doubleValue(), 1e-2);
 
                 // --- Fourth: parallel, direct ---
-                Nd4j.getExecutioner().setParallelThreshold(5);
+//                Nd4j.getExecutioner().setParallelThreshold(5);
                 Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
 
                 INDArray x7 = getCopyOf(origX, DataBuffer.AllocationMode.DIRECT, dtype);
@@ -974,6 +977,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
     @Test
     public void testOpExecutionerIndexAccumulationOps() throws Exception {
+        fail("Test needs to be fixed/reimplemented");
         //Basic idea: results should be identical, whether executed in serial vs. parallel, heap vs. direct,
         // or direct execution vs. split via tensors
         final DataBuffer.AllocationMode origAlloc = Nd4j.alloc;
@@ -1000,7 +1004,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
                 Constructor<? extends IndexAccumulation> xyConstructor = opClass.getConstructor(INDArray.class, INDArray.class);
 
                 // --- First: serial, heap ---
-                Nd4j.getExecutioner().setParallelThreshold(Integer.MAX_VALUE);
+//                Nd4j.getExecutioner().setParallelThreshold(Integer.MAX_VALUE);
                 Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
 
                 INDArray x1 = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
@@ -1022,7 +1026,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
                 assertEquals(msg, result1, op.getFinalResult());
 
                 // --- Second: parallel, heap ---
-                Nd4j.getExecutioner().setParallelThreshold(5);
+//                Nd4j.getExecutioner().setParallelThreshold(5);
                 Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
 
                 INDArray x3 = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
@@ -1043,7 +1047,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
                 assertEquals(msg, result1, op.getFinalResult());
 
                 // --- Third: serial, direct ---
-                Nd4j.getExecutioner().setParallelThreshold(Integer.MAX_VALUE);
+//                Nd4j.getExecutioner().setParallelThreshold(Integer.MAX_VALUE);
                 Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
 
                 INDArray x5 = getCopyOf(origX, DataBuffer.AllocationMode.DIRECT, dtype);
@@ -1065,7 +1069,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
                 assertEquals(msg, result1, op.getFinalResult());
 
                 // --- Fourth: parallel, direct ---
-                Nd4j.getExecutioner().setParallelThreshold(5);
+//                Nd4j.getExecutioner().setParallelThreshold(5);
                 Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
 
                 INDArray x7 = getCopyOf(origX, DataBuffer.AllocationMode.DIRECT, dtype);
@@ -1093,6 +1097,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
     @Test
     public void testOpExecutionerAccumulationOpsAlongDimensions() throws Exception {
+        fail("Test needs to be fixed/reimplemented");
         //Test accumulation ops along dimensions
         //Basic idea: results should be identical, whether executed in serial vs. parallel, heap vs. direct,
         // or direct execution vs. split via tensors
@@ -1131,7 +1136,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
                 Constructor<? extends Accumulation> xyConstructor = opClass.getConstructor(INDArray.class, INDArray.class);
 
                 // --- First: serial, heap ---
-                Nd4j.getExecutioner().setParallelThreshold(Integer.MAX_VALUE);
+//                Nd4j.getExecutioner().setParallelThreshold(Integer.MAX_VALUE);
                 Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
 
                 INDArray x1 = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
@@ -1150,7 +1155,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
                 assertEquals(msg, x1, origX);
 
                 // --- Second: parallel, heap ---
-                Nd4j.getExecutioner().setParallelThreshold(5);
+//                Nd4j.getExecutioner().setParallelThreshold(5);
                 Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
 
                 INDArray x3 = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
@@ -1164,7 +1169,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
                 assertEquals(msg,out1,out);
 
                 // --- Third: serial, direct ---
-                Nd4j.getExecutioner().setParallelThreshold(Integer.MAX_VALUE);
+//                Nd4j.getExecutioner().setParallelThreshold(Integer.MAX_VALUE);
                 Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
 
                 INDArray x5 = getCopyOf(origX, DataBuffer.AllocationMode.DIRECT, dtype);
@@ -1178,7 +1183,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
                 assertEquals(msg,out1,out);
 
                 // --- Fourth: parallel, direct ---
-                Nd4j.getExecutioner().setParallelThreshold(5);
+//                Nd4j.getExecutioner().setParallelThreshold(5);
                 Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
 
                 INDArray x7 = getCopyOf(origX, DataBuffer.AllocationMode.DIRECT, dtype);
@@ -1198,6 +1203,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
     @Test
     public void testOpExecutionerIndexAccumulationOpsAlongDimensions() throws Exception {
+        fail("Test needs to be fixed/reimplemented");
         //Test index accumulation ops along dimensions
         //Basic idea: results should be identical, whether executed in serial vs. parallel, heap vs. direct,
         // or direct execution vs. split via tensors
@@ -1227,7 +1233,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
                 Constructor<? extends IndexAccumulation> xyConstructor = opClass.getConstructor(INDArray.class, INDArray.class);
 
                 // --- First: serial, heap ---
-                Nd4j.getExecutioner().setParallelThreshold(Integer.MAX_VALUE);
+//                Nd4j.getExecutioner().setParallelThreshold(Integer.MAX_VALUE);
                 Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
 
                 INDArray x1 = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
@@ -1246,7 +1252,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
                 assertEquals(msg, x1, origX);
 
                 // --- Second: parallel, heap ---
-                Nd4j.getExecutioner().setParallelThreshold(5);
+//                Nd4j.getExecutioner().setParallelThreshold(5);
                 Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
 
                 INDArray x3 = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
@@ -1261,7 +1267,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
 
                 // --- Third: serial, direct ---
-                Nd4j.getExecutioner().setParallelThreshold(Integer.MAX_VALUE);
+//                Nd4j.getExecutioner().setParallelThreshold(Integer.MAX_VALUE);
                 Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
 
                 INDArray x5 = getCopyOf(origX, DataBuffer.AllocationMode.DIRECT, dtype);
@@ -1275,7 +1281,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
                 assertEquals(msg,out1,out);
 
                 // --- Fourth: parallel, direct ---
-                Nd4j.getExecutioner().setParallelThreshold(5);
+//                Nd4j.getExecutioner().setParallelThreshold(5);
                 Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
 
                 INDArray x7 = getCopyOf(origX, DataBuffer.AllocationMode.DIRECT, dtype);

@@ -2088,7 +2088,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             if(vector.data() == data()) op = vector.dup();
             else op = vector;
 
-            new VectorOpDataBufferAction(op,this,operation,dimension, Nd4j.getExecutioner().getParallelThreshold()).invoke();
+//            new VectorOpDataBufferAction(op,this,operation,dimension, Nd4j.getExecutioner().getParallelThreshold()).invoke();
+            throw new UnsupportedOperationException("Not implemented");
         }
     }
 

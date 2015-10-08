@@ -25,6 +25,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.parallel.ParallelExecutioner;
 import org.nd4j.linalg.api.parallel.bufferops.*;
+import org.nd4j.linalg.api.parallel.tasks.Task;
+import org.nd4j.linalg.api.parallel.tasks.TaskFactory;
+import org.nd4j.linalg.api.parallel.tasks.TaskFactoryProvider;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.slf4j.Logger;
@@ -37,41 +40,13 @@ import org.slf4j.LoggerFactory;
  * @author Adam Gibson
  */
 public class DefaultOpExecutioner implements OpExecutioner {
-    public static final String PARALLEL_THRESHOLD = "org.nd4j.parallel.threshold";
-    private static Logger log = LoggerFactory.getLogger(DefaultOpExecutioner.class);
-    protected int parallelThreshold = 8192;
+
 
     protected ExecutionMode executionMode = ExecutionMode.JAVA;
+    protected TaskFactory taskFactory;
 
     public DefaultOpExecutioner() {
-
-        //Check if user has specified a parallel threshold via VM argument:
-        String thresholdString = System.getProperty(PARALLEL_THRESHOLD,null);
-        if(thresholdString != null){
-            int threshold = -1;
-            try{
-                threshold = Integer.parseInt(thresholdString);
-            }catch(NumberFormatException e ){
-                log.warn("Error parsing OpExecutioner parallel threshold: \"" + thresholdString + "\"");
-                log.warn("OpExecutioner parallel threshold set to default: " + parallelThreshold);
-            }
-            if(threshold != -1){
-                if(threshold <= 0){
-                    log.warn("Invalid OpExecutioner parallel threshold; using default: " + parallelThreshold);
-                } else {
-                    setParallelThreshold(threshold);
-                }
-            }
-        }
-    }
-
-    public int getParallelThreshold() {
-        return parallelThreshold;
-    }
-
-    public void setParallelThreshold(int threshold) {
-        if(threshold <= 0) throw new IllegalArgumentException("Threshold must be > 0 (is: " + threshold + ")");
-        parallelThreshold = threshold;
+        taskFactory = TaskFactoryProvider.getTaskFactory();
     }
 
     @Override
@@ -245,7 +220,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
             //Overloaded exec(Accumulation,int...) and exec(IndexAccumulation,int...) should always be called instead of this
             throw new IllegalStateException("exec(Op,int...) should never be invoked for Accumulation/IndexAccumulation");
         } else if (op instanceof TransformOp) {
-            execAndReturn((TransformOp) op);
+            execAndReturn((TransformOp) op,dimension);
             return op;
         } else if (op instanceof ScalarOp) {
             //Scalar op along dimension should be same as on the entire NDArray
@@ -298,7 +273,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
             return ret;
         } else {
-            return new AccumulationAlongDimensionDataBufferTask(op, parallelThreshold, dimension).invoke();
+            Task<INDArray> task = taskFactory.getAccumulationTask(op, dimension);
+            return task.invokeBlocking();
         }
     }
 
@@ -343,17 +319,19 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
             return ret;
         } else {
-            return new IndexAccumulationAlongDimensionDataBufferTask(op, parallelThreshold, dimension).invoke();
+            Task<INDArray> task = taskFactory.getIndexAccumulationTask(op,dimension);
+            return task.invokeBlocking();
         }
     }
 
     @Override
-    public INDArray execAndReturn(final TransformOp op, int... dimension) {
+    public INDArray execAndReturn(TransformOp op, int... dimension) {
         if (dimension.length == op.x().rank()) {
             dimension = new int[]{Integer.MAX_VALUE};
         }
 
-        new TransformAlongDimensionDataBufferTask(op, parallelThreshold, dimension).invoke();
+        Task<Void> task = taskFactory.getTransformAction(op, dimension);
+        task.invokeBlocking();
         return op.z();
     }
 
@@ -377,25 +355,9 @@ public class DefaultOpExecutioner implements OpExecutioner {
         INDArray y = op.y();
         INDArray z = op.z();
 
-        if (y != null) {
-            //Ops with 2 inputs - AddOp, MulOp, GreaterThan, etc
-            if (!(x instanceof IComplexNDArray) && !(z instanceof IComplexNDArray)) {
-                boolean canDoDirectly;
-                if (x == z) {
-                    canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x, y);
-                } else {
-                    canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x, y, z);
-                }
-
-                if (canDoDirectly) {
-                    //Do parallelism via fork-join, directly on buffer
-                    op.getTransformOpDataBufferAction(parallelThreshold, op.n(), x.data(), y.data(), z.data(),
-                            x.offset(), y.offset(), z.offset(), x.elementWiseStride(), y.elementWiseStride(), z.elementWiseStride()).invoke();
-                } else {
-                    //Do parallelism after splitting into tensors first
-                    new TransformViaTensorDataBufferAction(op, parallelThreshold, x, y, z).invoke();
-                }
-            } else {
+        if(x instanceof IComplexNDArray || y instanceof IComplexNDArray || z instanceof IComplexNDArray ){
+            //Complex
+            if(y != null){
                 //Complex: x, y and/or z are complex
                 if (z instanceof IComplexNDArray) {
                     IComplexNDArray cz = (IComplexNDArray) z;
@@ -418,23 +380,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
                     //IComplexNDArray in, but real out
                     throw new UnsupportedOperationException("Invalid op: z is real but x.class=" + x.getClass().getName() + ", y.class=" + y.getClass().getName());
                 }
-            }
-        } else {
-            //Ops with 1 input - Tanh, Sin, etc. X=OP(X) or Z=OP(X)
-            if (!(x instanceof IComplexNDArray) && !(z instanceof IComplexNDArray)) {
-                boolean canDoDirectly;
-                if (x == z) canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x);
-                else canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x, z);
-
-                if (canDoDirectly) {
-                    op.getTransformOpDataBufferAction(parallelThreshold, x.length(), x.data(), null, z.data(), x.offset(),
-                            0, z.offset(), x.elementWiseStride(), 0, z.elementWiseStride()).invoke();
-                } else {
-                    //Do parallelism after splitting into tensors first
-                    new TransformViaTensorDataBufferAction(op, parallelThreshold, x, null, z).invoke();
-                }
             } else {
-                //Complex
+                //x and/or z are complex
                 if (z instanceof IComplexNDArray) {
                     IComplexNDArray cz = (IComplexNDArray) z;
                     if (x instanceof IComplexNDArray) {
@@ -449,6 +396,9 @@ public class DefaultOpExecutioner implements OpExecutioner {
                     }
                 }
             }
+        } else {
+            Task task = taskFactory.getTransformAction(op);
+            task.invokeBlocking();
         }
     }
 
@@ -457,23 +407,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
         INDArray x = op.x();
         INDArray y = op.y();
         if (!(x instanceof IComplexNDArray) && !(y instanceof IComplexNDArray)) {
-            boolean canDoDirectly;
-            if (y == null) canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x);
-            else canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x, y);
-
-            if (canDoDirectly) {
-                if (y == null) {
-                    op.getAccumulationOpDataBufferTask(parallelThreshold, x.length(), x.data(), null,
-                            x.offset(), 0, x.elementWiseStride(), 0, true).invoke();
-                } else {
-                    op.getAccumulationOpDataBufferTask(parallelThreshold, x.length(), x.data(), y.data(),
-                            x.offset(), y.offset(), x.elementWiseStride(), y.elementWiseStride(), true).invoke();
-                }
-            } else {
-                //Need to break the accumulation into tensors first
-                new AccumulationViaTensorDataBufferTask(op, parallelThreshold, x, y).invoke();
-            }
-
+            Task<Double> task = taskFactory.getAccumulationTask(op);
+            task.invokeBlocking();
         } else {
             //Complex
             if (y == null) {
@@ -506,17 +441,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
         INDArray z = op.z();
 
         if (!(x instanceof IComplexNDArray) && !(z instanceof IComplexNDArray)) {
-            boolean canDoDirectly;
-            if (x == z) canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x);     //X=OP(X)
-            else canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x, z);       //Z=OP(X)
-
-            if (canDoDirectly) {
-                op.getScalarOpDataBufferAction(parallelThreshold, op.n(), x.data(), z.data(), x.offset(), z.offset(),
-                        x.elementWiseStride(), z.elementWiseStride()).invoke();
-            } else {
-                //Break into tensors
-                new ScalarViaTensorDataBufferAction(op, parallelThreshold, x, z).invoke();
-            }
+            Task task = taskFactory.getScalarAction(op);
+            task.invokeBlocking();
         } else {
             //Complex
             if (z instanceof IComplexNDArray) {
@@ -539,22 +465,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
         INDArray y = op.y();
 
         if (!(x instanceof IComplexNDArray) && !(y instanceof IComplexNDArray)) {
-            boolean canDoDirectly;
-            if (y == null) canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x);
-            else canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x, y);
-
-            if (canDoDirectly) {
-                if (y == null) {
-                    op.getIndexAccumulationOpDataBufferTask(parallelThreshold, x.length(), x.data(), null, x.offset(), 0,
-                            x.elementWiseStride(), 0, 0, true).invoke();
-                } else {
-                    op.getIndexAccumulationOpDataBufferTask(parallelThreshold, x.length(), x.data(), y.data(), x.offset(), y.offset(),
-                            x.elementWiseStride(), y.elementWiseStride(), 0, true).invoke();
-                }
-            } else {
-                //Need to break the accumulation into tensors first
-                new IndexAccumulationViaTensorDataBufferTask(op, parallelThreshold, x, y).invoke();
-            }
+            Task<Integer> task = taskFactory.getIndexAccumulationTask(op);
+            task.invokeBlocking();
         } else {
             //Complex
             if (y == null) {
