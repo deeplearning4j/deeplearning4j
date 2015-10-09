@@ -286,7 +286,7 @@ public class KernelFunctionLoader {
                     log.info("errorMessage:\n" + errorMessage);
                     log.info("outputMessage:\n" + outputMessage);
                     throw new IOException(
-                            "Could not create .ptx file: " + errorMessage);
+                            "Could not create .ptx file: " + errorMessage + "\noutputMessage: " + outputMessage);
                 }
 
             }

@@ -48,6 +48,14 @@ public class CPUTaskFactory implements TaskFactory {
         }
     }
 
+    public void setParallelThreshold(int threshold){
+        this.parallelThreshold = threshold;
+    }
+
+    public int getParallelThreshold(){
+        return parallelThreshold;
+    }
+
 
     @Override
     public Task<Void> getTransformAction(TransformOp op) {
