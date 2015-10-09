@@ -7,6 +7,7 @@ import org.nd4j.linalg.api.parallel.tasks.BaseTask;
 import org.nd4j.linalg.api.parallel.tasks.Task;
 import org.nd4j.linalg.api.parallel.tasks.TaskFactory;
 import org.nd4j.linalg.api.parallel.tasks.TaskFactoryProvider;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,7 +50,6 @@ public class CPUTransformOpViaTensorTask extends BaseTask<Void> {
 
         int nTensors = x.tensorssAlongDimension(tensorDim);
         subTasks = new ArrayList<>(nTensors);
-        TaskFactory factory = TaskFactoryProvider.getTaskFactory();
         if(nTensors == 1){
             //Generally shouldn't be called if nTensors = 1, as this is a vector
             Task<Void> task = new CPUTransformOpAction(op,threshold);

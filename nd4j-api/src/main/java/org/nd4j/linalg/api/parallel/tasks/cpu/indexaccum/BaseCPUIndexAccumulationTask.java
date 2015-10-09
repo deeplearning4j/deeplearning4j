@@ -8,8 +8,6 @@ import org.nd4j.linalg.api.parallel.tasks.cpu.BaseCPUTask;
 public abstract class BaseCPUIndexAccumulationTask extends BaseCPUTask<Pair<Double,Integer>> {
 
     protected final IndexAccumulation op;
-    protected int offsetY;
-    protected int incrY;
     protected final int elementOffset;
     protected final boolean outerTask;
 
@@ -18,10 +16,8 @@ public abstract class BaseCPUIndexAccumulationTask extends BaseCPUTask<Pair<Doub
      */
     public BaseCPUIndexAccumulationTask(IndexAccumulation op, int threshold, int n, int offsetX, int offsetY,
                                         int incrX, int incrY, int elementOffset, boolean outerTask) {
-        super(threshold,n,offsetX,0,incrX,0);
+        super(threshold,n,offsetX,offsetY,0,incrX,incrY,0);
         this.op = op;
-        this.offsetY = offsetY;
-        this.incrY = incrY;
         this.elementOffset = elementOffset;
         this.outerTask = outerTask;
     }
@@ -39,7 +35,7 @@ public abstract class BaseCPUIndexAccumulationTask extends BaseCPUTask<Pair<Doub
 
     /** Constructor for doing a 1d tensor first */
     public BaseCPUIndexAccumulationTask(IndexAccumulation op, int threshold, int tadIdx, int tadDim, boolean outerTask){
-        super(threshold,tadIdx,tadDim);
+        super(op,threshold,tadIdx,tadDim);
         this.op = op;
         this.outerTask = outerTask;
         this.elementOffset = tadIdx * op.x().size(tadDim);

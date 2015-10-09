@@ -23,8 +23,6 @@ public class DefaultTaskExecutor implements TaskExecutor {
 
     @Override
     public <V> Future<V> executeAsync(Task<V> task) {
-        Future<V> f = new FutureTask<>(task);
-        executorService.submit(task);
-        return f;
+        return executorService.submit(task);
     }
 }

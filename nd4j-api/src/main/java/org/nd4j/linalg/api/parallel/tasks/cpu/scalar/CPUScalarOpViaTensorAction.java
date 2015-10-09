@@ -49,7 +49,6 @@ public class CPUScalarOpViaTensorAction extends BaseTask<Void> {
 
         int nTensors = x.tensorssAlongDimension(tensorDim);
         subTasks = new ArrayList<>(nTensors);
-        TaskFactory factory = TaskFactoryProvider.getTaskFactory();
         if(nTensors == 1){
             //Generally shouldn't be called if nTensors = 1, as this is a vector
             Task<Void> task = new CPUScalarOpAction(op,threshold);

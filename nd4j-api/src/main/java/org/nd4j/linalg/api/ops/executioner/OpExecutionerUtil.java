@@ -36,6 +36,7 @@ public class OpExecutionerUtil {
     /** Can we do the transform op (X = Op(X,Y)) directly on the arrays without breaking them up into 1d tensors first? */
     public static boolean canDoOpDirectly(INDArray x, INDArray y){
         if(x.isVector()) return true;
+        if(x.ordering() != y.ordering()) return false; //other than vectors, elements in f vs. c NDArrays will never line up
 
         //Full buffer + matching strides -> implies all elements are contiguous (and match)
         //Need strides to match, otherwise elements in buffer won't line up (i.e., c vs. f order arrays)
@@ -62,6 +63,7 @@ public class OpExecutionerUtil {
     /** Can we do the transform op (Z = Op(X,Y)) directly on the arrays without breaking them up into 1d tensors first? */
     public static boolean canDoOpDirectly(INDArray x, INDArray y, INDArray z){
         if(x.isVector()) return true;
+        if(x.ordering() != y.ordering() || x.ordering() != z.ordering() ) return false; //other than vectors, elements in f vs. c NDArrays will never line up
 
         //Full buffer + matching strides -> implies all elements are contiguous (and match)
         int l1 = x.length();

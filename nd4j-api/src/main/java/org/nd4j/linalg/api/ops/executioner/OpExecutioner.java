@@ -84,6 +84,9 @@ public interface OpExecutioner {
      */
     INDArray execAndReturn(ScalarOp op);
 
+    /** Execute and return the result from a vector op */
+    INDArray execAndReturn(VectorOp op);
+
 
     /**Execute the operation along 1 or more dimensions
      *

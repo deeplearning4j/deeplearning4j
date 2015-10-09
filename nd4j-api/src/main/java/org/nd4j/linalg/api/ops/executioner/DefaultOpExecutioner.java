@@ -27,7 +27,6 @@ import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.parallel.ParallelExecutioner;
 import org.nd4j.linalg.api.parallel.tasks.Task;
 import org.nd4j.linalg.api.parallel.tasks.TaskFactory;
-import org.nd4j.linalg.api.parallel.tasks.TaskFactoryProvider;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -44,7 +43,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
     protected TaskFactory taskFactory;
 
     public DefaultOpExecutioner() {
-        taskFactory = TaskFactoryProvider.getTaskFactory();
+        taskFactory = Nd4j.getTaskFactory();
     }
 
     @Override
@@ -67,6 +66,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
             doScalarOp((ScalarOp) op);
         } else if (op instanceof IndexAccumulation) {
             doIndexAccumulationOp((IndexAccumulation) op);
+        } else if (op instanceof VectorOp){
+            doVectorOp((VectorOp)op);
         }
         return op;
     }
@@ -204,6 +205,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Override
+    public INDArray execAndReturn(VectorOp op){
+        return exec(op).z();
+    }
+
+    @Override
     public Op exec(Op op, int... dimension) {
         //do op along all dimensions
         if (dimension.length == op.x().rank())
@@ -317,7 +323,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
             return ret;
         } else {
-            Task<INDArray> task = taskFactory.getIndexAccumulationTask(op,dimension);
+            Task<INDArray> task = taskFactory.getIndexAccumulationTask(op, dimension);
             return task.invokeBlocking();
         }
     }
@@ -492,6 +498,53 @@ public class DefaultOpExecutioner implements OpExecutioner {
                     if (accumIdx == i) accum = op.op(cx.getComplex(i), cy.getComplex(i));
                 }
                 op.setFinalResult(accumIdx);
+            }
+        }
+    }
+
+    private void doVectorOp(VectorOp op){
+        INDArray x = op.x();
+        INDArray y = op.y();
+        INDArray z = op.z();
+        if(!(x instanceof IComplexNDArray) && !(y instanceof IComplexNDArray) && !(z instanceof IComplexNDArray)){
+            taskFactory.getVectorOpAction(op).invokeBlocking();
+        } else {
+            //Complex vector op
+            int nTensors = x.tensorssAlongDimension(op.getDimension());
+            if(x instanceof IComplexNDArray){
+                IComplexNDArray cx = (IComplexNDArray)x;
+                IComplexNDArray cz = (IComplexNDArray)z;
+                if(y instanceof IComplexNDArray){
+                    IComplexNDArray cy = (IComplexNDArray)y;
+                    for( int i=0; i<nTensors; i++ ){
+                        IComplexNDArray tx = (IComplexNDArray)cx.tensorAlongDimension(i,op.getDimension());
+                        IComplexNDArray tz = (IComplexNDArray)cz.tensorAlongDimension(i,op.getDimension());
+                        for( int j=0; j<tx.length(); j++ ){
+                            tz.put(j,Nd4j.scalar(op.op(tx.getComplex(j),cy.getComplex(j))));
+                        }
+                    }
+                } else {
+                    if(y==null) {
+                        for (int i = 0; i < nTensors; i++) {
+                            IComplexNDArray tx = (IComplexNDArray)cx.tensorAlongDimension(i,op.getDimension());
+                            IComplexNDArray tz = (IComplexNDArray)cz.tensorAlongDimension(i,op.getDimension());
+                            for( int j=0; j<tz.length(); j++ ){
+                                tz.put(i,Nd4j.scalar(op.op(tx.getComplex(i))));
+                            }
+                        }
+                    } else {
+                        //Y is real
+                        for( int i=0; i<nTensors; i++ ){
+                            IComplexNDArray tx = (IComplexNDArray)cx.tensorAlongDimension(i,op.getDimension());
+                            IComplexNDArray tz = (IComplexNDArray)cz.tensorAlongDimension(i,op.getDimension());
+                            for( int j=0; j<tx.length(); j++ ){
+                                tz.put(j,Nd4j.scalar(op.op(tx.getComplex(j),y.getDouble(j))));
+                            }
+                        }
+                    }
+                }
+            } else {
+                throw new UnsupportedOperationException("Complex vector op with real x not supported/implemented");
             }
         }
     }

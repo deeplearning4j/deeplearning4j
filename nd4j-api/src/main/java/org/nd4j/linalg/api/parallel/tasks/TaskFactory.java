@@ -2,10 +2,7 @@ package org.nd4j.linalg.api.parallel.tasks;
 
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Accumulation;
-import org.nd4j.linalg.api.ops.IndexAccumulation;
-import org.nd4j.linalg.api.ops.ScalarOp;
-import org.nd4j.linalg.api.ops.TransformOp;
+import org.nd4j.linalg.api.ops.*;
 
 public interface TaskFactory {
 
@@ -23,6 +20,6 @@ public interface TaskFactory {
 
     Task<INDArray> getIndexAccumulationTask( IndexAccumulation op, int... dimension );
 
-    //Also: need methods for row-wise and column-wise ops
+    Task<Void> getVectorOpAction(VectorOp op);
 
 }

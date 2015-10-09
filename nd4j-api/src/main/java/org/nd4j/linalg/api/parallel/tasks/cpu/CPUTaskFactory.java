@@ -2,10 +2,7 @@ package org.nd4j.linalg.api.parallel.tasks.cpu;
 
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Accumulation;
-import org.nd4j.linalg.api.ops.IndexAccumulation;
-import org.nd4j.linalg.api.ops.ScalarOp;
-import org.nd4j.linalg.api.ops.TransformOp;
+import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.api.parallel.tasks.Task;
 import org.nd4j.linalg.api.parallel.tasks.TaskFactory;
@@ -20,6 +17,7 @@ import org.nd4j.linalg.api.parallel.tasks.cpu.scalar.CPUScalarOpViaTensorAction;
 import org.nd4j.linalg.api.parallel.tasks.cpu.transform.CPUTransformAlongDimensionTask;
 import org.nd4j.linalg.api.parallel.tasks.cpu.transform.CPUTransformOpAction;
 import org.nd4j.linalg.api.parallel.tasks.cpu.transform.CPUTransformOpViaTensorTask;
+import org.nd4j.linalg.api.parallel.tasks.cpu.vector.CPUVectorOp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,7 +51,6 @@ public class CPUTaskFactory implements TaskFactory {
 
     @Override
     public Task<Void> getTransformAction(TransformOp op) {
-
         INDArray x = op.x();
         INDArray y = op.y();
         INDArray z = op.z();
@@ -141,5 +138,10 @@ public class CPUTaskFactory implements TaskFactory {
     @Override
     public Task<INDArray> getIndexAccumulationTask(IndexAccumulation op, int... dimension) {
         return new CPUIndexAccumulationAlongDimensionTask(op,parallelThreshold,dimension);
+    }
+
+    @Override
+    public Task<Void> getVectorOpAction(VectorOp op) {
+        return new CPUVectorOp(op,parallelThreshold);
     }
 }

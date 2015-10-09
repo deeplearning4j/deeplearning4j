@@ -10,28 +10,32 @@ public abstract class BaseCPUTransformOpAction extends BaseCPUAction {
     protected int offsetY;
     protected int incrY;
 
-    /**Constructor for operating on subset of NDArray
+    /**
+     * Constructor for operating on subset of NDArray
      */
     public BaseCPUTransformOpAction(TransformOp op, int threshold, int n, int offsetX, int offsetY, int offsetZ,
                                     int incrX, int incrY, int incrZ) {
-        super(threshold,n,offsetX,offsetZ,incrX,incrZ);
+        super(threshold, n, offsetX, offsetY, offsetZ, incrX, incrY, incrZ);
         this.op = op;
         this.offsetY = offsetY;
         this.incrY = incrY;
     }
 
-    /**Constructor for doing task on entire NDArray
+    /**
+     * Constructor for doing task on entire NDArray
      */
     public BaseCPUTransformOpAction(TransformOp op, int threshold) {
-        super(op,threshold);
+        super(op, threshold);
         this.op = op;
         this.offsetY = (op.y() != null ? op.y().offset() : 0);
         this.incrY = (op.y() != null ? op.y().elementWiseStride() : 0);
     }
 
-    /** Constructor for doing a 1d tensor first */
-    public BaseCPUTransformOpAction(TransformOp op, int threshold, int tadIdx, int tadDim){
-        super(threshold,tadIdx,tadDim);
+    /**
+     * Constructor for doing a 1d tensor first
+     */
+    public BaseCPUTransformOpAction(TransformOp op, int threshold, int tadIdx, int tadDim) {
+        super(op, threshold, tadIdx, tadDim);
         this.op = op;
     }
 }

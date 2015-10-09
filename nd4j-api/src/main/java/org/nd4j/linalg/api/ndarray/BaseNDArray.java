@@ -43,6 +43,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.DivOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.SubOp;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
+import org.nd4j.linalg.api.ops.impl.vector.*;
 import org.nd4j.linalg.api.parallel.TaskCreator;
 import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.api.shape.loop.two.CopyLoopFunction;
@@ -2048,47 +2049,32 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
     private void applyVectorOp(INDArray vector,final char operation) {
-        if(this instanceof IComplexNDArray) {
-            IComplexNDArray complexThis = (IComplexNDArray) this;
-            IComplexNDArray row = (IComplexNDArray) vector;
-            //a column vector iterates row wise a row vector iterates column wise
-            Iterator<int[]> shapes = Shape.isRowVectorShape(vector.shape()) ? new NdIndexIterator('c',shape()) : new NdIndexIterator('f',shape());
-            int currVectorPosition = 0;
-            while(shapes.hasNext()) {
-                int[] position = shapes.next();
-                switch (operation) {
-                    case 'a':
-                        complexThis.putScalar(position, complexThis.getComplex(position).addi(row.getComplex(currVectorPosition++)));
-                        break;
-                    case 's':
-                        complexThis.putScalar(position, complexThis.getComplex(position).subi(row.getComplex(currVectorPosition++)));
-                        break;
-                    case 'm':
-                        complexThis.putScalar(position, complexThis.getComplex(position).muli(row.getComplex(currVectorPosition++)));
-                        break;
-                    case 'd':
-                        complexThis.putScalar(position, complexThis.getComplex(position).divi(row.getComplex(currVectorPosition++)));
-                        break;
-                    case 'h':
-                        complexThis.putScalar(position, complexThis.getComplex(position).rsubi(row.getComplex(currVectorPosition++)));
-                        break;
-                    case 't':
-                        complexThis.putScalar(position, complexThis.getComplex(position).rdivi(row.getComplex(currVectorPosition++)));
-                        break;
-                }
-
-                if(currVectorPosition >= vector.length())
-                    currVectorPosition = 0;
-            }
-        }
-        else {
-            int dimension = Shape.isRowVectorShape(vector.shape()) ? 0 : 1;
-            final INDArray op;
-            if(vector.data() == data()) op = vector.dup();
-            else op = vector;
-
-//            new VectorOpDataBufferAction(op,this,operation,dimension, Nd4j.getExecutioner().getParallelThreshold()).invoke();
-            throw new UnsupportedOperationException("Not implemented");
+        int alongDimension = Shape.isRowVectorShape(vector.shape()) ? 1 : 0;
+        if(this.data() == vector.data()) vector = vector.dup();
+        switch(operation){
+            case 'a':
+                Nd4j.getExecutioner().exec(new VectorAddOp(this, vector, this, alongDimension ));
+                return;
+            case 's':
+                Nd4j.getExecutioner().exec(new VectorSubOp(this, vector, this, alongDimension ));
+                return;
+            case 'm':
+                Nd4j.getExecutioner().exec(new VectorMulOp(this, vector, this, alongDimension ));
+                return;
+            case 'd':
+                Nd4j.getExecutioner().exec(new VectorDivOp(this, vector, this, alongDimension ));
+                return;
+            case 'h':
+                Nd4j.getExecutioner().exec(new VectorRSubOp(this, vector, this, alongDimension ));
+                return;
+            case 't':
+                Nd4j.getExecutioner().exec(new VectorRDivOp(this, vector, this, alongDimension ));
+                return;
+            case 'p':
+                Nd4j.getExecutioner().exec(new VectorCopyOp(this, vector, this, alongDimension ));
+                return;
+            default:
+                throw new UnsupportedOperationException("Unknown operation: " + operation);
         }
     }
 

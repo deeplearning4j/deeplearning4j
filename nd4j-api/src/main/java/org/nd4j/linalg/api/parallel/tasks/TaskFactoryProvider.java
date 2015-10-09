@@ -2,25 +2,20 @@ package org.nd4j.linalg.api.parallel.tasks;
 
 import org.nd4j.linalg.api.parallel.tasks.cpu.CPUTaskFactory;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 
 public class TaskFactoryProvider {
 
     public static TaskFactory taskFactory;
 
-    public static TaskFactory getTaskFactory(){
-        //TODO switch to static initializer for this?
+    public static String getDefaultTaskFactoryForBackend(Nd4jBackend backend){
 
-        if(taskFactory==null) {
-            //Detect which backend we are on, and return an appropriate TaskFactory
-            //TODO: Got to be a better way than this
-            String factoryClassName = Nd4j.factory().getClass().toString().toLowerCase();
-            if (factoryClassName.contains("jcublas")) {
-                throw new RuntimeException("Not yet implemented");
-            } else {
-                //JBlas, Java, x86 etc: all CPU backends
-                taskFactory = new CPUTaskFactory();
-            }
+        String className = backend.getClass().getName().toLowerCase();
+
+        if(className.contains("jcublas")){
+            throw new UnsupportedOperationException("Task factory for CUDA: not yet implemented");
+        } else {
+            return CPUTaskFactory.class.getName();
         }
-        return taskFactory;
     }
 }

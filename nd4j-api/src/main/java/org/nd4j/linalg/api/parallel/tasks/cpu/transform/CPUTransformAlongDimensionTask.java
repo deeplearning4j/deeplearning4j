@@ -58,9 +58,6 @@ public class CPUTransformAlongDimensionTask extends BaseTask<Void> {
             invokeAsync();
         }
 
-        int[] retShape = ArrayUtil.removeIndex(op.x().shape(), dimensions);
-        INDArray out = Nd4j.create(retShape);
-        int i=0;
         for(Task<Void> task : subTasks ){
             task.blockUntilComplete();
         }

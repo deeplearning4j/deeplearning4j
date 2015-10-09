@@ -256,7 +256,6 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         oneThroughFour.subiRowVector(row1);
         INDArray result = Nd4j.create(new float[]{-2, -2, 0, 0}, new int[]{2, 2});
         assertEquals(getFailureMessage(), result, oneThroughFour);
-
     }
 
 
