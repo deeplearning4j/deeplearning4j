@@ -21,7 +21,7 @@ public class AdamUpdater extends BaseUpdater {
     public GradientUpdater init(String variable, INDArray gradient, Layer layer) {
         Adam adam = (Adam) updaterForVariable.get(variable);
         if(adam == null) {
-            adam = new Adam();
+            adam = new Adam(layer.conf().getLr(), 0.9, 0.999, 1e-8);
             updaterForVariable.put(variable,adam);
 
         }
