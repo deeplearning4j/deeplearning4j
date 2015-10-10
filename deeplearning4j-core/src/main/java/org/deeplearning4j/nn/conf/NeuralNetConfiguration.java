@@ -75,7 +75,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     // Graves LSTM & RNN
     private int timeSeriesLength = 1;
     //batch size: primarily used for conv nets. Will be reinforced if set.
-    protected int batchSize = 10;
+    protected int batchSize = 1;
     //minimize or maximize objective
     protected boolean minimize = false;
     //l1 regularization
@@ -285,7 +285,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private int timeSeriesLength = 1;
         private StepFunction stepFunction = null;
         private Layer layer;
-        private int batchSize = 100;
+        private int batchSize = 1;
         private int maxNumLineSearchIterations = 5;
         private boolean minimize = false;
         private double l1 = 0.0;
