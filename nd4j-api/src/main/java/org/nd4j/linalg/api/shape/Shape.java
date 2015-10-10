@@ -168,7 +168,6 @@ public class Shape {
                 ret.putSlice(i, arr.slice(i));
             return ret;
         } else {
-
             //Use CopyOp:
             char outOrder = (anyOrder ? arr.ordering() : order);
             if(outOrder == 'a') outOrder = Nd4j.order();

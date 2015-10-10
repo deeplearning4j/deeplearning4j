@@ -1003,7 +1003,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray cumsum(int dimension) {
-
         return dup().cumsumi(dimension);
     }
 
