@@ -5,10 +5,7 @@ import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Accumulation;
-import org.nd4j.linalg.api.ops.IndexAccumulation;
-import org.nd4j.linalg.api.ops.ScalarOp;
-import org.nd4j.linalg.api.ops.TransformOp;
+import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
@@ -22,6 +19,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.Sigmoid;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.Tanh;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
+import org.nd4j.linalg.api.ops.impl.vector.*;
 import org.nd4j.linalg.api.parallel.tasks.Task;
 import org.nd4j.linalg.api.parallel.tasks.cpu.CPUTaskFactory;
 import org.nd4j.linalg.factory.Nd4j;
@@ -995,5 +993,132 @@ public class CPUTaskFactoryTest extends BaseNd4jTest {
         return out;
     }
 
+    @Test
+    public void testOpExecutionerVectorOp() throws Exception {
+        //Test accumulation ops along dimensions
+        //Basic idea: results should be identical, whether executed in serial vs. parallel, heap vs. direct,
+        // or direct execution vs. split via tensors
+        final DataBuffer.AllocationMode origAlloc = Nd4j.alloc;
+
+        List<Class<? extends VectorOp>> testClasses = new ArrayList<>();
+        testClasses.add(VectorAddOp.class);
+        testClasses.add(VectorCopyOp.class);
+        testClasses.add(VectorDivOp.class);
+        testClasses.add(VectorMulOp.class);
+        testClasses.add(VectorRDivOp.class);
+        testClasses.add(VectorRSubOp.class);
+        testClasses.add(VectorSubOp.class);
+
+        CPUTaskFactory taskFactory = new CPUTaskFactory();
+
+        int[] shape = {30, 50};
+        int[] rowShape = {1,shape[1]};
+        int[] colShape = {shape[0],1};
+
+        for (DataBuffer.Type dtype : DataBuffer.Type.values()) {
+
+            Nd4j.dtype = dtype;
+            Nd4j.factory().setDType(dtype);
+
+            Nd4j.getRandom().setSeed(12345);
+            INDArray origX = Nd4j.rand(shape);
+            INDArray origY0 = Nd4j.rand(rowShape);
+            INDArray origY1 = Nd4j.rand(colShape);
+
+            for (Class<? extends VectorOp> opClass : testClasses) {
+                String msg = "class: " + opClass.getName() + ", dtype=" + dtype;
+                Constructor<? extends VectorOp> xyConstructor = opClass.getConstructor(INDArray.class, INDArray.class, INDArray.class, int.class);
+
+                // --- First: serial, heap ---
+                taskFactory.setParallelThreshold(Integer.MAX_VALUE);
+                Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
+
+                INDArray x1 = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
+                INDArray y1_0 = getCopyOf(origY0, DataBuffer.AllocationMode.HEAP, dtype);
+                INDArray y1_1 = getCopyOf(origY1, DataBuffer.AllocationMode.HEAP, dtype);
+
+                //Along d0
+                VectorOp op = xyConstructor.newInstance(x1, y1_0, x1, 0);
+                Task<Void> task = taskFactory.getVectorOpAction(op);
+                task.invokeBlocking();
+                INDArray zOut_0 = op.z();
+                assertEquals(msg, y1_0, origY0);
+
+                //Along d1
+                x1 = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
+                op = xyConstructor.newInstance(x1, y1_1, x1, 1);
+                task = taskFactory.getVectorOpAction(op);
+                task.invokeBlocking();
+                INDArray zOut_1 = op.z();
+                assertEquals(msg, y1_1, origY1);
+
+                // --- Second: parallel, heap ---
+                taskFactory.setParallelThreshold(5);
+                Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
+
+                INDArray x3 = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
+                INDArray y3_0 = getCopyOf(origY0, DataBuffer.AllocationMode.HEAP, dtype);
+                INDArray y3_1 = getCopyOf(origY1, DataBuffer.AllocationMode.HEAP, dtype);
+
+                //Along d0 then d1
+                op = xyConstructor.newInstance(x3, y3_0, x3, 0);
+                task = taskFactory.getVectorOpAction(op);
+                task.invokeBlocking();
+                assertEquals(msg, zOut_0, op.z());
+                assertEquals(msg, origY0, y3_0);
+                x3 = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
+                op = xyConstructor.newInstance(x3, y3_1, x3, 1);
+                task = taskFactory.getVectorOpAction(op);
+                task.invokeBlocking();
+                assertEquals(msg, zOut_1, op.z());
+                assertEquals(msg, origY1, y3_1);
+
+                // --- Third: serial, direct ---
+                taskFactory.setParallelThreshold(Integer.MAX_VALUE);
+                Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
+
+                INDArray x5 = getCopyOf(origX, DataBuffer.AllocationMode.DIRECT, dtype);
+                INDArray y5_0 = getCopyOf(origY0, DataBuffer.AllocationMode.DIRECT, dtype);
+                INDArray y5_1 = getCopyOf(origY1, DataBuffer.AllocationMode.DIRECT, dtype);
+
+                //Along d0 then d1
+                op = xyConstructor.newInstance(x5, y5_0, x5, 0);
+                task = taskFactory.getVectorOpAction(op);
+                task.invokeBlocking();
+                assertEquals(msg, zOut_0, op.z());
+                assertEquals(msg, origY0, y5_0);
+                x5 = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
+                op = xyConstructor.newInstance(x5, y5_1, x5, 1);
+                task = taskFactory.getVectorOpAction(op);
+                task.invokeBlocking();
+                assertEquals(msg, zOut_1, op.z());
+                assertEquals(msg, origY1, y5_1);
+
+
+                // --- Fourth: parallel, direct ---
+                taskFactory.setParallelThreshold(5);
+                Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
+
+                INDArray x7 = getCopyOf(origX, DataBuffer.AllocationMode.DIRECT, dtype);
+                INDArray y7_0 = getCopyOf(origY0, DataBuffer.AllocationMode.DIRECT, dtype);
+                INDArray y7_1 = getCopyOf(origY1, DataBuffer.AllocationMode.DIRECT, dtype);
+
+                //Along d0 then d1
+                op = xyConstructor.newInstance(x7, y7_0, x7, 0);
+                task = taskFactory.getVectorOpAction(op);
+                task.invokeBlocking();
+                assertEquals(msg, zOut_0, op.z());
+                assertEquals(msg, origY0, y7_0);
+                x7 = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
+                op = xyConstructor.newInstance(x7, y7_1, x7, 1);
+                task = taskFactory.getVectorOpAction(op);
+                task.invokeBlocking();
+                assertEquals(msg, zOut_1, op.z());
+                assertEquals(msg, origY1, y7_1);
+            }
+        }
+
+        Nd4j.alloc = origAlloc;
+    }
 
 }
