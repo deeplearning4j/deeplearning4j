@@ -1528,7 +1528,11 @@ public class Shape {
             stridesIfContiguous = ArrayUtil.calcStridesFortran(shape);
         } else if(order == 'c') {
             stridesIfContiguous = ArrayUtil.calcStrides(shape);
-        } else throw new RuntimeException("Invalid order");
+        } else if(order == 'a'){
+            stridesIfContiguous = new int[]{1,1};
+        } else{
+            throw new RuntimeException("Invalid order: not c or f (is: " + order +")");
+        }
 
         return Arrays.equals(in.stride(),stridesIfContiguous);
     }
