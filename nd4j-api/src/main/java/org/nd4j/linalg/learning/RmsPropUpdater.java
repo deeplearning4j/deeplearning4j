@@ -20,6 +20,7 @@ public class RmsPropUpdater implements GradientUpdater {
     private INDArray lastGradient;
     private double rmsDecay = 0.5;
     private double lr = 1e-1;
+    private double epsilon = 1e-8;
 
     public RmsPropUpdater(double lr, double rmsDecay){
     	this.lr = lr;
@@ -48,7 +49,7 @@ public class RmsPropUpdater implements GradientUpdater {
             lastGradient = Nd4j.zeros(gradient.shape());
         lastGradient.muli(rmsDecay).addi(gradient.mul(gradient).muli(1 - rmsDecay));
         // lr * gradient / sqrt(cache + 1e-8)
-        INDArray ret = gradient.mul(lr).divi(Transforms.sqrt(lastGradient.add(Nd4j.EPS_THRESHOLD)));
+        INDArray ret = gradient.mul(lr).divi(Transforms.sqrt(lastGradient.add(epsilon)));
         
         return ret;
     }
