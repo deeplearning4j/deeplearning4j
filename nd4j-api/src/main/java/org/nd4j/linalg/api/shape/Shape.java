@@ -1529,7 +1529,7 @@ public class Shape {
         } else if(order == 'c') {
             stridesIfContiguous = ArrayUtil.calcStrides(shape);
         } else if(order == 'a'){
-            return true;
+            stridesIfContiguous = new int[]{1,1};
         } else{
             throw new RuntimeException("Invalid order: not c or f (is: " + order +")");
         }
