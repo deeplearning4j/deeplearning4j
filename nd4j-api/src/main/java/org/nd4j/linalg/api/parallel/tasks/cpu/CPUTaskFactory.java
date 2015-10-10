@@ -132,9 +132,17 @@ public class CPUTaskFactory implements TaskFactory {
         INDArray x = op.x();
         INDArray y = op.y();
 
+
+        //Due to the indexing being done on row-major order: can only do directly on C order
         boolean canDoDirectly;
-        if(y==null) canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x);
-        else canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x,y);
+        if(x.isVector()){
+            canDoDirectly = true;
+        } else if(x.ordering() == 'c' ) {
+            if (y == null) canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x);
+            else canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x, y);
+        } else {
+            canDoDirectly = false;
+        }
 
         if(canDoDirectly){
             return new CPUIndexAccumulationTask(op,parallelThreshold,true);

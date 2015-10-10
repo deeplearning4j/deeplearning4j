@@ -90,27 +90,27 @@ public class IAMax extends BaseIndexAccumulation {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-        return (origin.absoluteValue().doubleValue()>=FastMath.abs(other) ? origin : Nd4j.createComplexNumber(other,0));
+        return Nd4j.createComplexNumber(origin.absoluteValue(), 0);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        return (origin.absoluteValue().doubleValue()>=FastMath.abs(other) ? origin : Nd4j.createComplexNumber(other,0));
+        return Nd4j.createComplexNumber(origin.absoluteValue(),0);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return (origin.absoluteValue().doubleValue()>=other.absoluteValue().doubleValue() ? origin : other);
+        return Nd4j.createComplexNumber(origin.absoluteValue(),0);
     }
 
     @Override
     public float op(float origin, float other) {
-        return (FastMath.abs(origin)>=FastMath.abs(other) ? origin : other);
+        return FastMath.abs(origin);
     }
 
     @Override
     public double op(double origin, double other) {
-        return (FastMath.abs(origin)>=FastMath.abs(other) ? origin : other);
+        return FastMath.abs(origin);
     }
 
     @Override
@@ -120,12 +120,12 @@ public class IAMax extends BaseIndexAccumulation {
 
     @Override
     public float op(float origin) {
-        return origin;
+        return FastMath.abs(origin);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-        return origin;
+        return Nd4j.createComplexNumber(origin.absoluteValue(),0);
     }
 
     @Override

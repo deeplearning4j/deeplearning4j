@@ -29,10 +29,8 @@ public class CPUIndexAccumulationViaTensorTask extends BaseTask<Pair<Double, Int
         INDArray x = op.x();
         INDArray y = op.y();
 
-
-        int tensorDim;
-        if (y == null) tensorDim = OpExecutionerUtil.chooseElementWiseTensorDimension(x);
-        else tensorDim = OpExecutionerUtil.chooseElementWiseTensorDimension(x, y);
+        //Indexing is done in row-major order, hence always have to do along d1 to get right indexes
+        int tensorDim = 1;
 
         int nTensors = x.tensorssAlongDimension(tensorDim);
         subTasks = new ArrayList<>(nTensors);

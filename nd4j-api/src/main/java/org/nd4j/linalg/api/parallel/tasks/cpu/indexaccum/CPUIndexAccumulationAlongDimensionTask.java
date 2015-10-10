@@ -69,6 +69,7 @@ public class CPUIndexAccumulationAlongDimensionTask extends BaseTask<INDArray> {
             Pair<Double,Integer> result = task.blockUntilComplete();
             out.putScalar(i++,result.getSecond());
         }
+        op.setZ(out);
         return out;
     }
 

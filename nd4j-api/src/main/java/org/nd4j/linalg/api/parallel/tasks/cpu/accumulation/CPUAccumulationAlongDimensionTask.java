@@ -65,7 +65,7 @@ public class CPUAccumulationAlongDimensionTask extends BaseTask<INDArray> {
         for(Task<Double> task : subTasks ){
             out.putScalar(i++,task.blockUntilComplete());
         }
-
+        op.setZ(out);
         return out;
     }
 

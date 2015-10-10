@@ -58,7 +58,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         }
         dummyFloatPointer = KernelFunctions.alloc(new float[]{1});
         dummyDoublePointer =KernelFunctions.alloc(new double[]{1});
-        parallelExecutioner().setParallelEnabled(false);
+//        parallelExecutioner().setParallelEnabled(false);
     }
 
     @Override

@@ -57,7 +57,7 @@ public class CPUIndexAccumulationTask extends BaseCPUIndexAccumulationTask {
                 int offsetYNew = offsetY + soFar * incrY;
 
                 Task<Pair<Double,Integer>> t = new CPUIndexAccumulationTask(op, threshold, nInTask, offsetXNew, offsetYNew,
-                        incrX, incrY, soFar, false);
+                        incrX, incrY, elementOffset + soFar, false);
                 t.invokeAsync();
                 subTasks.add(t);
 

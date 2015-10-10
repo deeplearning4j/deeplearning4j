@@ -12,6 +12,7 @@ import org.nd4j.linalg.api.parallel.tasks.cpu.BaseCPUAction;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class CPUVectorOp extends BaseTask<Void> {
@@ -43,6 +44,9 @@ public class CPUVectorOp extends BaseTask<Void> {
         subTasks = new ArrayList<>(nVectorOps);
         //Do TAD and create sub-tasks:
         int dimension = op.getDimension();
+        if(!y.isVector()) throw new UnsupportedOperationException("Cannot do vector op if y is not vector. y.shape="+ Arrays.toString(y.shape()));
+        if(x.size(dimension) != y.length()) throw new UnsupportedOperationException("Vector length " + y.length() + " does not match x.shape("+dimension+")="+x.size(dimension));
+
         if(x.rank() == 2 ){
             OpExecutionerUtil.Tensor1DStats t1dx = OpExecutionerUtil.get1DTensorStats(x,dimension);
             if(y!=null) {
