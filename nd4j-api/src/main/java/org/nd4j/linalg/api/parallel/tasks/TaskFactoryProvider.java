@@ -4,6 +4,7 @@ import org.nd4j.linalg.api.parallel.tasks.cpu.CPUTaskFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
+/** Provides the default TaskFactory class name for a given Nd4jBackend */
 public class TaskFactoryProvider {
 
     public static TaskFactory taskFactory;

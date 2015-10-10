@@ -21,7 +21,7 @@ import org.nd4j.linalg.api.parallel.tasks.cpu.vector.CPUVectorOp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
+/** TaskFactory for CPU backends */
 public class CPUTaskFactory implements TaskFactory {
     public static final String PARALLEL_THRESHOLD = "org.nd4j.parallel.cpu.threshold";
     private static Logger log = LoggerFactory.getLogger(CPUTaskFactory.class);
@@ -48,10 +48,16 @@ public class CPUTaskFactory implements TaskFactory {
         }
     }
 
+    /** Set the threshold for breaking up CPU tasks for parallel execution.
+     * If a given task/op has length greater than the threshold, it will be broken
+     * down into a number of smaller tasks for execution.
+     * @param threshold New threshold to use for parallel execution
+     */
     public void setParallelThreshold(int threshold){
         this.parallelThreshold = threshold;
     }
 
+    /** Get the current threshold for parallel execution of tasks */
     public int getParallelThreshold(){
         return parallelThreshold;
     }

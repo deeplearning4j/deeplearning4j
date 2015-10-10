@@ -3,6 +3,10 @@ package org.nd4j.linalg.api.parallel.tasks;
 
 import java.util.concurrent.*;
 
+/** Default TaskExecutor based on a ThreadPoolExecutor with the
+ * number of threads set to the number of processor (cores), as
+ * per the Runtime.getRuntime().availableProcessors() method
+ */
 public class DefaultTaskExecutor implements TaskExecutor {
 
     private static DefaultTaskExecutor instance;

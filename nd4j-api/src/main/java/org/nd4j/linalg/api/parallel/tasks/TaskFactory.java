@@ -4,6 +4,8 @@ import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 
+/** A TaskFactory provides Task objects for each type of Op
+ */
 public interface TaskFactory {
 
     Task<Void> getTransformAction(TransformOp op);
