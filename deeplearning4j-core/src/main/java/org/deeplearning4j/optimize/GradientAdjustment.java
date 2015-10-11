@@ -56,7 +56,7 @@ public class GradientAdjustment {
     public static void updateGradientAccordingToParams(int iteration, int batchSize, NeuralNetConfiguration conf, INDArray params,
                                                            INDArray gradient, GradientUpdater adaGrad, INDArray lastStep, String paramType) {
         if(adaGrad == null)
-            adaGrad = new AdaGrad(params.shape());
+            adaGrad = new AdaGrad(conf.getLr());
 
 
         if(lastStep == null)
