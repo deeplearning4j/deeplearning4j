@@ -80,7 +80,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected boolean minimize = false;
     //l1 regularization
     protected double l1 = 0.0;
+    // rmsprop decay rate
     protected double rmsDecay = 0.95;
+    // adam decay rates
+    protected double meanDecay = 0.9;
+    protected double varDecay = 0.999;
     protected boolean miniBatch = true;
 
     /**
@@ -292,6 +296,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private boolean useDropConnect = false;
         private double rho;
         private boolean miniBatch = true;
+        private double meanDecay = 0.9;
+        private double varDecay = 0.999;
 
         /**
          +         * Time series length
@@ -443,6 +449,16 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+        public Builder meanDecay(double meanDecay) {
+            this.meanDecay = meanDecay;
+            return this;
+        }
+
+        public Builder varDecay(double varDecay) {
+            this.varDecay = varDecay;
+            return this;
+        }
+
         /**
          * Return a configuration based on this builder
          *
@@ -474,6 +490,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             conf.useDropConnect = useDropConnect;
             conf.miniBatch = miniBatch;
             conf.rho = rho;
+            conf.meanDecay = meanDecay;
+            conf.varDecay = varDecay;
 
             return conf;
         }
