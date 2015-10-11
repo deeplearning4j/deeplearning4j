@@ -23,8 +23,8 @@ import org.nd4j.linalg.api.ops.impl.vector.*;
 import org.nd4j.linalg.api.parallel.tasks.Task;
 import org.nd4j.linalg.api.parallel.tasks.cpu.CPUTaskFactory;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
-import org.nd4j.linalg.cpu.CpuBackend;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
@@ -38,9 +38,10 @@ import static org.junit.Assert.assertTrue;
 public class CPUTaskFactoryTest {
 
     @Before
-    public void before() {
+    public void before() throws Exception {
         Nd4j nd4j = new Nd4j();
-        nd4j.initWithBackend(new CpuBackend());
+        Nd4jBackend backend = (Nd4jBackend)Class.forName("org.nd4j.linalg.cpu.CpuBackend").newInstance();
+        nd4j.initWithBackend(backend);
         Nd4j.factory().setOrder('c');
     }
 
