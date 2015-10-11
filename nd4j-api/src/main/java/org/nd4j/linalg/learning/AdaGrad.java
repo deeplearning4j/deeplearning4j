@@ -20,6 +20,7 @@
 package org.nd4j.linalg.learning;
 
 
+import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
@@ -37,6 +38,7 @@ import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
  *
  * @author Adam Gibson
  */
+@Data
 @NoArgsConstructor
 public class AdaGrad implements Serializable,GradientUpdater {
 
@@ -155,23 +157,6 @@ public class AdaGrad implements Serializable,GradientUpdater {
             return a;
         }
     }
-
-    public INDArray getHistoricalGradient() {
-        return historicalGradient;
-    }
-
-    public void setHistoricalGradient(INDArray historicalGradient) {
-        this.historicalGradient = historicalGradient;
-    }
-
-    public double getMasterStepSize() {
-        return masterStepSize;
-    }
-
-    public void setMasterStepSize(double masterStepSize) {
-        this.masterStepSize = masterStepSize;
-    }
-
 
 
 }

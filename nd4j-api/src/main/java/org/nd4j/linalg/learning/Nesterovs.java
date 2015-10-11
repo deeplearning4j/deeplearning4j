@@ -1,9 +1,13 @@
 package org.nd4j.linalg.learning;
 
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Nesterov's momentum.
@@ -12,38 +16,34 @@ import java.io.Serializable;
  *
  * @author Adam Gibson
  */
+@Data
+@NoArgsConstructor
 public class Nesterovs implements Serializable,GradientUpdater {
     private double momentum = 0.5;
+    protected Map<Integer,Double> momentumAfter = new HashMap<>();
     private INDArray v;
-    private double lr;
+    private double lr = 0.1;
 
-    public Nesterovs(double momentum,double lr) {
+
+    public Nesterovs(double momentum, Map<Integer,Double> momentumAfter, double lr) {
+        this.momentum = momentum;
+        this.momentumAfter = momentumAfter;
+        this.lr = lr;
+    }
+
+    public Nesterovs(double momentum, double lr) {
         this.momentum = momentum;
         this.lr = lr;
     }
 
-    /**
-     * Initialize with a learning rate of 0.1
-     * @param momentum the momentum to initialize with
-     */
+    public Nesterovs(double momentum, Map<Integer,Double> momentumAfter) {
+        this.momentum = momentum;
+        this.momentumAfter = momentumAfter;
+    }
+
     public Nesterovs(double momentum) {
-        this(momentum,0.1);
-
-    }
-    public double getMomentum() {
-        return momentum;
-    }
-
-    public void setMomentum(double momentum) {
         this.momentum = momentum;
-    }
 
-    public double getLr() {
-        return lr;
-    }
-
-    public void setLr(double lr) {
-        this.lr = lr;
     }
 
     /**
@@ -56,6 +56,8 @@ public class Nesterovs implements Serializable,GradientUpdater {
     public INDArray getGradient(INDArray gradient, int iteration) {
         if(v == null)
             v = Nd4j.zeros(gradient.shape());
+        if(!momentumAfter.isEmpty())
+            momentum = momentumAfter.get(iteration);
         INDArray vPrev = v;
         v = vPrev.mul(momentum).subi(gradient.mul(lr));
         //reference https://cs231n.github.io/neural-networks-3/#sgd 2nd equation

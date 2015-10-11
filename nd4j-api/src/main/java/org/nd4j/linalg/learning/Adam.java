@@ -1,5 +1,6 @@
 package org.nd4j.linalg.learning;
 
+import lombok.Data;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -15,6 +16,7 @@ import lombok.NoArgsConstructor;
  *
  * @author Adam Gibson
  */
+@Data
 @NoArgsConstructor
 public class Adam implements Serializable,GradientUpdater {
 
@@ -67,43 +69,5 @@ public class Adam implements Serializable,GradientUpdater {
         return ret;
     }
 
-    public double getAlpha() {
-        return alpha;
-    }
 
-    public void setAlpha(double alpha) {
-        this.alpha = alpha;
-    }
-
-    public double getBeta1() {
-        return beta1;
-    }
-
-    public void setBeta1(double beta1) {
-        this.beta1 = beta1;
-    }
-
-    public double getBeta2() {
-        return beta2;
-    }
-
-    public void setBeta2(double beta2) {
-        this.beta2 = beta2;
-    }
-
-    public INDArray getM() {
-        return m;
-    }
-
-    public void setM(INDArray m) {
-        this.m = m;
-    }
-
-    public INDArray getV() {
-        return v;
-    }
-
-    public void setV(INDArray v) {
-        this.v = v;
-    }
 }

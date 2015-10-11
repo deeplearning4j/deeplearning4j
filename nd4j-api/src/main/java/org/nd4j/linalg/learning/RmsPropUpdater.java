@@ -1,5 +1,6 @@
 package org.nd4j.linalg.learning;
 
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -15,6 +16,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
  *
  * @author Adam Gibson
  */
+@Data
 @NoArgsConstructor
 public class RmsPropUpdater implements GradientUpdater {
     private INDArray lastGradient;
@@ -25,22 +27,6 @@ public class RmsPropUpdater implements GradientUpdater {
     public RmsPropUpdater(double lr, double rmsDecay){
     	this.lr = lr;
     	this.rmsDecay = rmsDecay;
-    }
-
-    public void setRmsDecay(double rmsDecay){
-    	this.rmsDecay = rmsDecay;
-    }
-
-    public double getRmsDecay(){
-    	return rmsDecay;
-    }
-
-    public void setLR( double lr ){
-    	this.lr = lr;
-    }
-
-    public double getLR(){
-    	return lr;
     }
 
     @Override
