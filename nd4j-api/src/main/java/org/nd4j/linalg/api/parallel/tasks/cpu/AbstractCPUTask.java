@@ -49,6 +49,7 @@ public abstract class AbstractCPUTask<V> extends BaseTask<V> {
         INDArray y = op.y();
         INDArray z = op.z();
         INDArray tadx = x.tensorAlongDimension(tadIdx,tadDim);
+        this.n = tadx.length();
         offsetX = tadx.offset();
         incrX = tadx.elementWiseStride();
         if(y==null){

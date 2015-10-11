@@ -61,12 +61,12 @@ public class CopyOp extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-        return Nd4j.createComplexNumber(other, 0);
+        return origin;
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        return Nd4j.createComplexNumber(other, 0);
+        return origin;
     }
 
     @Override
