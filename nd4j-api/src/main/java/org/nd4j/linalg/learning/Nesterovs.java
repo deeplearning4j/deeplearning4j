@@ -2,6 +2,7 @@ package org.nd4j.linalg.learning;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -56,8 +57,8 @@ public class Nesterovs implements Serializable,GradientUpdater {
     public INDArray getGradient(INDArray gradient, int iteration) {
         if(v == null)
             v = Nd4j.zeros(gradient.shape());
-        if(!momentumAfter.isEmpty())
-            momentum = momentumAfter.get(iteration);
+        if(momentumAfter !=null)
+            momentum = (momentumAfter.containsKey(iteration)) ? momentumAfter.get(iteration) : momentum;
         INDArray vPrev = v;
         v = vPrev.mul(momentum).subi(gradient.mul(lr));
         //reference https://cs231n.github.io/neural-networks-3/#sgd 2nd equation
