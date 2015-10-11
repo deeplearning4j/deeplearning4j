@@ -234,6 +234,54 @@ public class TestUpdaters {
 	}
 
 	@Test
+	public void testNestorovsMomentumAfterUpdater(){
+		double lr = 1e-2;
+		double mu = 0.6;
+		Map<Integer,Double> momentumAfter = new HashMap<>();
+		momentumAfter.put(1, 0.2);
+		int iterations = 2;
+
+		NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+				.learningRate(lr).momentum(mu).momentumAfter(momentumAfter).iterations(iterations)
+				.layer(new DenseLayer.Builder()
+						.nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.NESTEROVS).build())
+				.build();
+
+		Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0);
+		Updater updater = UpdaterCreator.getUpdater(layer);
+
+		updater.update(layer, gradient, 0);
+		updater.update(layer, gradient, 1);
+
+		// calculations
+		INDArray vW, vPrevW, weightGradExpected, vB, vPrevB, biasGradExpected;
+		vW = Nd4j.zeros(weightGradient.shape());
+		vPrevW = vW;
+		vW = vPrevW.mul(mu).subi(weightGradient.mul(lr));
+		weightGradient = vPrevW.muli(mu).addi(vW.mul(-mu - 1));
+
+		vPrevW = vW;
+		vW = vPrevW.mul(momentumAfter.get(1)).subi(weightGradient.mul(lr));
+		weightGradExpected = vPrevW.muli(momentumAfter.get(1)).addi(vW.mul(-momentumAfter.get(1) - 1));
+
+		vB = Nd4j.zeros(biasGradient.shape());
+		vPrevB = vB;
+		vB = vPrevB.mul(mu).subi(biasGradient.mul(lr));
+		biasGradient = vPrevB.muli(mu).addi(vB.mul(-mu - 1));
+
+		vPrevB = vB;
+		vB = vPrevB.mul(momentumAfter.get(1)).subi(biasGradient.mul(lr));
+		biasGradExpected = vPrevB.muli(momentumAfter.get(1)).addi(vB.mul(-momentumAfter.get(1) - 1));
+
+		INDArray weightGradActual = gradient.getGradientFor(DefaultParamInitializer.WEIGHT_KEY);
+		INDArray biasGradActual = gradient.getGradientFor(DefaultParamInitializer.BIAS_KEY);
+
+		assertEquals(weightGradExpected, weightGradActual);
+		assertEquals(biasGradExpected, biasGradActual);
+	}
+
+
+	@Test
 	public void testRMSPropUpdater(){
 		double lr = 0.01;
 		double rmsDecay = 0.25;
