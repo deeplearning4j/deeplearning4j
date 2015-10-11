@@ -24,12 +24,14 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
+import com.google.common.base.Optional;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.util.Consumer;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.IOException;
@@ -113,6 +115,20 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     	variables.clear();
     }
 
+    public static class Overrides implements Consumer<Builder> {
+        private Optional<Double> l1;
+
+        public Overrides l1(double l1) {
+            this.l1 = Optional.of(Double.valueOf(l1));
+            return this;
+        }
+
+        @Override
+        public void accept(Builder o) {
+            if(l1.isPresent()) o.l1(l1.get());
+        }
+    }
+
     /**
      * Fluent interface for building a list of configurations
      */
@@ -136,6 +152,10 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         }
 
         public ListBuilder layer(int ind, Layer layer) {
+            return layer(ind, layer, null);
+        }
+
+        public ListBuilder layer(int ind, Layer layer, Consumer<Builder> overrides) {
             if (layerwise.get(0) == null && ind != 0) {
                 throw new IllegalArgumentException("LayerZeroIndexError: Layer index must start from 0");
             }
@@ -143,7 +163,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 throw new IllegalArgumentException("IndexOutOfBoundsError: Layer index exceeds listed size");
             }
 
-            Builder builderWithLayer = layerwise.get(ind).layer(layer);
+            Builder builderWithLayer = layerwise.get(ind).layer(layer).overrides(overrides);
             layerwise.put(ind, builderWithLayer);
             return this;
         }
@@ -292,6 +312,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private boolean useDropConnect = false;
         private double rho;
         private boolean miniBatch = true;
+        private Consumer<Builder> overrides = null;
 
         /**
          +         * Time series length
@@ -443,6 +464,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+        public Builder overrides(Consumer<Builder> overrides) {
+            this.overrides = overrides;
+            return this;
+        }
+
         /**
          * Return a configuration based on this builder
          *
@@ -451,6 +477,10 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         public NeuralNetConfiguration build() {
             if (layer == null)
                 throw new IllegalStateException("No layer defined.");
+
+            if(overrides != null) {
+                overrides.accept(this);
+            }
 
             NeuralNetConfiguration conf = new NeuralNetConfiguration();
 

@@ -200,7 +200,7 @@ public class MultiLayerNeuralNetConfigurationTest {
         System.out.println(Arrays.toString(p1));
         System.out.println(Arrays.toString(p2));
 
-        org.junit.Assert.assertArrayEquals(p1,p2,0.0f);
+        org.junit.Assert.assertArrayEquals(p1, p2, 0.0f);
     }
 
     @Test
@@ -222,6 +222,31 @@ public class MultiLayerNeuralNetConfigurationTest {
             assertTrue(l2[i].getListeners() != null && l2[i].getListeners().size() == 1);
     }
 
+    @Test
+    public void testOverride7() {
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .l1(1)
+                .list(2)
+                .layer(0, new RBM.Builder().build(), new NeuralNetConfiguration.Overrides().l1(2))
+                .layer(1, new OutputLayer.Builder().build())
+                .build();
+
+        assertEquals(conf.getConf(0).getL1(), 2);
+        assertEquals(conf.getConf(1).getL1(), 1);
+    }
+
+//    @Test
+//    public void testOverride8() {
+//        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+//                .l1(1)
+//                .list(2)
+//                .layer(0, new RBM.Builder().build(), (net) -> net.l1(2.0))
+//                .layer(1, new OutputLayer.Builder().build())
+//                .build();
+//
+//        assertEquals(conf.getConf(0).getL1(), 2);
+//        assertEquals(conf.getConf(1).getL1(), 1);
+//    }
 
     private static MultiLayerConfiguration getConf(){
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
