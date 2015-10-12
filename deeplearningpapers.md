@@ -211,3 +211,4 @@ for Statistical Machine Translation](http://arxiv.org/pdf/1406.1078v3.pdf)**; Ch
 * [Generative Learning algorithms](http://cs229.stanford.edu/notes/cs229-notes2.pdf); Notes by Andrew Ng
 * [Calculus on Computational Graphs: Backpropagation](https://colah.github.io/posts/2015-08-Backprop/index.html)
 * [Understanding LSTM Networks](https://colah.github.io/posts/2015-08-Understanding-LSTMs/index.html)
+* [Probability Cheatsheet](https://static1.squarespace.com/static/54bf3241e4b0f0d81bf7ff36/t/55e9494fe4b011aed10e48e5/1441352015658/probability_cheatsheet.pdf)
