@@ -1,5 +1,6 @@
 package org.nd4j.linalg.learning;
 
+import lombok.Data;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -15,20 +16,31 @@ import lombok.NoArgsConstructor;
  *
  * @author Adam Gibson
  */
+@Data
 @NoArgsConstructor
 public class Adam implements Serializable,GradientUpdater {
 
-    private double alpha = 1e-3;
-    private double beta1 = 0.9;
-    private double beta2 = 0.999;
+    private double alpha = 1e-3; // learning rate
+    private double beta1 = 0.9; // gradient moving avg decay rate
+    private double beta2 = 0.999; // gradient sqrd decay rate
     private double epsilon = 1e-8;
-    private INDArray m,v;
+    private INDArray m,v; // moving avg & sqrd gradients
 
     public Adam(double alpha, double beta1, double beta2, double epsilon) {
         this.alpha = alpha;
         this.beta1 = beta1;
         this.beta2 = beta2;
-        this.epsilon = epsilon;
+        this.epsilon = epsilon; // fudge factor to avoid zeros
+    }
+
+    public Adam(double alpha, double beta1, double beta2) {
+        this.alpha = alpha;
+        this.beta1 = beta1;
+        this.beta2 = beta2;
+    }
+
+    public Adam(double alpha) {
+        this.alpha = alpha;
     }
 
     /**Calculate the update based on the given gradient
@@ -57,43 +69,5 @@ public class Adam implements Serializable,GradientUpdater {
         return ret;
     }
 
-    public double getAlpha() {
-        return alpha;
-    }
 
-    public void setAlpha(double alpha) {
-        this.alpha = alpha;
-    }
-
-    public double getBeta1() {
-        return beta1;
-    }
-
-    public void setBeta1(double beta1) {
-        this.beta1 = beta1;
-    }
-
-    public double getBeta2() {
-        return beta2;
-    }
-
-    public void setBeta2(double beta2) {
-        this.beta2 = beta2;
-    }
-
-    public INDArray getM() {
-        return m;
-    }
-
-    public void setM(INDArray m) {
-        this.m = m;
-    }
-
-    public INDArray getV() {
-        return v;
-    }
-
-    public void setV(INDArray v) {
-        this.v = v;
-    }
 }
