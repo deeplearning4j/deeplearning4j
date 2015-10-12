@@ -7,9 +7,9 @@ layout: default
 
 ## Online Courses
 
+* [Andrew Ng's Machine-Learning Class on Coursera](https://www.coursera.org/learn/machine-learning/home/info)
 * [Geoff Hinton's Neural Networks Class on Coursera](http://class.coursera.org/neuralnets-2012-001/lecture) (2012)
 * [U. Toronto: Introduction to Neural Networks](http://www.cs.toronto.edu/~rgrosse/csc321/notes.html) (2015)
-* [Andrew Ng's Machine-Learning Class on Coursera](https://www.coursera.org/learn/machine-learning/home/info)
 * [Ng's Lecture Notes for Stanford's CS229 Machine Learning](http://cs229.stanford.edu/materials.html)
 * [Nando de Freitas's Deep Learning Class at Oxford](https://www.youtube.com/playlist?list=PLE6Wd9FR--EfW8dtjAuPoTuPcqmOV53Fu)  (2015)
 * [Andrej Karpathy's Convolutional Neural Networks Class at Stanford](http://cs231n.github.io)
