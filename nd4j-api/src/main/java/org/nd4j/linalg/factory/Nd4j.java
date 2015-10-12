@@ -4137,7 +4137,7 @@ public class Nd4j {
     /**
      * Concatneate ndarrays along a dimension
      *
-     * @param dimension the dimension to concatneaBaseNDte along
+     * @param dimension the dimension to concatnte along
      * @param toConcat  the ndarrays to concat
      * @return the concatted ndarrays with an output shape of
      * the ndarray shapes save the dimension shape specified
