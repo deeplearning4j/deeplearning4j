@@ -69,7 +69,7 @@ If you're using IntelliJ as your IDE, this should work already.
 
 * Cygwin is not supported. You must install DL4J from **DOS Windows**.  
 
-* Running this file, [WindowsInfo.bat](https://gist.github.com/AlexDBlack/9f70c13726a3904a2100), can help debug your Windows install. Here's one [example of its output](https://gist.github.com/AlexDBlack/4a3995fea6dcd2105c5f) that shows what to expect.
+* Running this file, [WindowsInfo.bat](https://gist.github.com/AlexDBlack/9f70c13726a3904a2100), can help debug your Windows install. Here's one [example of its output](https://gist.github.com/AlexDBlack/4a3995fea6dcd2105c5f) that shows what to expect. First download it, then open a command window / terminal. `cd` to the directory to which it was dowloaded. Enter `WindowsInfo` and hit enter. To copy its output, right click on command window -> select all -> hit enter. Output is then on clipboard.
 
 ### <a name="source">Working With Source</a>
 
