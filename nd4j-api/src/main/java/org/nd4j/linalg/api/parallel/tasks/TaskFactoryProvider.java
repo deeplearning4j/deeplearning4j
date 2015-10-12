@@ -14,7 +14,8 @@ public class TaskFactoryProvider {
         String className = backend.getClass().getName().toLowerCase();
 
         if(className.contains("jcublas")){
-            throw new UnsupportedOperationException("Task factory for CUDA: not yet implemented");
+//            throw new UnsupportedOperationException("Task factory for CUDA: not yet implemented");
+            return CPUTaskFactory.class.getName();
         } else {
             return CPUTaskFactory.class.getName();
         }

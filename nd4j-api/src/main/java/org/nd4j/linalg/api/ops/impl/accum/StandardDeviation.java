@@ -23,6 +23,8 @@ import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.ArrayUtil;
 
 /**
  * Standard deviation (sqrt of variance)
@@ -70,6 +72,23 @@ public class StandardDeviation extends Variance {
             return new StandardDeviation(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new StandardDeviation(xAlongDimension);
+    }
+
+    @Override
+    public void exec(){
+        super.exec();
+        this.finalResult = FastMath.sqrt(finalResult.doubleValue());
+    }
+
+    @Override
+    public void exec(int... dimension){
+        int[] retShape = ArrayUtil.removeIndex(x.shape(), dimension);
+        int nOps = x.tensorssAlongDimension(dimension);
+        z = Nd4j.create(retShape);
+        for( int i=0; i<nOps; i++ ){
+            double d = Nd4j.getExecutioner().execAndReturn((Variance)super.opForDimension(i,dimension)).getFinalResult().doubleValue();
+            z.putScalar(i, FastMath.sqrt(d));
+        }
     }
 
     @Override

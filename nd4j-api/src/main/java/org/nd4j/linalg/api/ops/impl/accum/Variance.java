@@ -25,6 +25,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.ComplexUtil;
 
 /**
@@ -35,14 +36,15 @@ import org.nd4j.linalg.util.ComplexUtil;
  * @author Adam Gibson
  */
 public class Variance extends BaseAccumulation {
-    private double mean, bias;
-    private boolean biasCorrected = true;
+    protected double mean, bias;
+    protected boolean biasCorrected = true;
 
     public Variance() {
     }
 
     public Variance(INDArray x, INDArray y, INDArray z, int n) {
         super(x, y, z, n);
+        passThrough = true;
     }
 
     public Variance(INDArray x, INDArray y, int n) {
@@ -55,30 +57,35 @@ public class Variance extends BaseAccumulation {
 
     public Variance(INDArray x, INDArray y) {
         super(x, y);
+        passThrough = true;
     }
 
     public Variance(INDArray x, INDArray y, INDArray z, int n, boolean biasCorrected) {
         super(x, y, z, n);
         this.biasCorrected = biasCorrected;
         init(x, y, z, n);
+        passThrough = true;
     }
 
     public Variance(INDArray x, INDArray y, int n, boolean biasCorrected) {
         super(x, y, n);
         this.biasCorrected = biasCorrected;
         init(x, y, z, n);
+        passThrough = true;
     }
 
     public Variance(INDArray x, boolean biasCorrected) {
         super(x);
         this.biasCorrected = biasCorrected;
         init(x, y, z, n);
+        passThrough = true;
     }
 
     public Variance(INDArray x, INDArray y, boolean biasCorrected) {
         super(x, y);
         this.biasCorrected = biasCorrected;
         init(x, y, x, x.length());
+        passThrough = true;
     }
 
     @Override
@@ -164,10 +171,29 @@ public class Variance extends BaseAccumulation {
     @Override
     public void init(INDArray x, INDArray y, INDArray z, int n) {
         super.init(x, y, z, n);
+    }
+
+    @Override
+    public void exec(){
         if (biasCorrected)
             this.bias = Nd4j.getExecutioner().execAndReturn(new Bias(x)).getFinalResult().doubleValue();
         this.mean = Nd4j.getExecutioner().execAndReturn(new Mean(x)).getFinalResult().doubleValue();
-        this.extraArgs = new Object[]{zeroDouble(), bias, mean};
+
+        INDArray xSubMean = x.sub(mean);
+        INDArray squared = xSubMean.muli(xSubMean);
+        double accum = Nd4j.getExecutioner().execAndReturn(new Sum(squared)).getFinalResult().doubleValue();
+        getAndSetFinalResult(accum);
+    }
+
+    @Override
+    public void exec(int... dimension){
+        int[] retShape = ArrayUtil.removeIndex(x.shape(), dimension);
+        int nOps = x.tensorssAlongDimension(dimension);
+        z = Nd4j.create(retShape);
+        for( int i=0; i<nOps; i++ ){
+            double d = Nd4j.getExecutioner().execAndReturn((Variance)opForDimension(i,dimension)).getFinalResult().doubleValue();
+            z.putScalar(i, d);
+        }
     }
 
     @Override

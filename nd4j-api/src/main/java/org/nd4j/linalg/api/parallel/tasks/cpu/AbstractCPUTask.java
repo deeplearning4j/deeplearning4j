@@ -20,6 +20,11 @@ public abstract class AbstractCPUTask<V> extends BaseTask<V> {
     protected int incrY;
     protected int incrZ;
 
+    protected boolean doTensorFirst;
+    protected int tensorIdx;
+    protected int tensorDim;
+
+
     protected Future<V> future;
 
     public AbstractCPUTask(int threshold, int n, int offsetX, int offsetY, int offsetZ, int incrX, int incrY, int incrZ){
@@ -31,6 +36,7 @@ public abstract class AbstractCPUTask<V> extends BaseTask<V> {
         this.incrX = incrX;
         this.incrY = incrY;
         this.incrZ = incrZ;
+        doTensorFirst = false;
     }
 
     public AbstractCPUTask(Op op, int threshold){
@@ -42,15 +48,22 @@ public abstract class AbstractCPUTask<V> extends BaseTask<V> {
         this.incrX = op.x().elementWiseStride();
         this.incrY = (op.y() != null ? op.y().elementWiseStride() : 0);
         this.incrZ = (op.z() != null ? op.z().elementWiseStride() : 0);
+        doTensorFirst = false;
     }
 
     /** Constructor for doing a 1d tensor along dimension first */
     public AbstractCPUTask(Op op, int threshold, int tadIdx, int tadDim){
+        doTensorFirst = true;
         this.threshold = threshold;
+        this.tensorIdx = tadIdx;
+        this.tensorDim = tadDim;
+    }
+
+    protected void doTensorFirst(Op op){
         INDArray x = op.x();
         INDArray y = op.y();
         INDArray z = op.z();
-        INDArray tadx = x.tensorAlongDimension(tadIdx,tadDim);
+        INDArray tadx = x.tensorAlongDimension(tensorIdx,tensorDim);
         this.n = tadx.length();
         offsetX = tadx.offset();
         incrX = tadx.elementWiseStride();
@@ -61,7 +74,7 @@ public abstract class AbstractCPUTask<V> extends BaseTask<V> {
             offsetY = offsetX;
             incrY = incrX;
         } else {
-            INDArray tady = y.tensorAlongDimension(tadIdx,tadDim);
+            INDArray tady = y.tensorAlongDimension(tensorIdx,tensorDim);
             offsetY = tady.offset();
             incrY = tady.elementWiseStride();
         }
@@ -76,7 +89,7 @@ public abstract class AbstractCPUTask<V> extends BaseTask<V> {
             offsetZ = offsetY;
             incrZ = incrY;
         } else {
-            INDArray tadz = z.tensorAlongDimension(tadIdx,tadDim);
+            INDArray tadz = z.tensorAlongDimension(tensorIdx,tensorDim);
             offsetZ = tadz.offset();
             incrZ = tadz.elementWiseStride();
         }

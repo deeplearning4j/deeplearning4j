@@ -66,6 +66,8 @@ public class CPUIndexAccumulationTask extends BaseCPUIndexAccumulationTask {
 
     @Override
     public Pair<Double,Integer> call() {
+        if(doTensorFirst) doTensorFirst(op);
+
         if (n > threshold) {
             //Break into subtasks
             int nSubTasks = 1 + n / threshold;  //(round up)

@@ -65,6 +65,8 @@ public class CPUAccumulationTask extends BaseCPUAccumulationTask {
 
     @Override
     public Double call() {
+        if(doTensorFirst) doTensorFirst(op);
+
         if (n > threshold) {
             //Break into subtasks
             int nSubTasks = 1 + n / threshold;  //(round up)
@@ -90,7 +92,7 @@ public class CPUAccumulationTask extends BaseCPUAccumulationTask {
 
                 soFar += nInTask;
             }
-            return op.zeroDouble();
+            return 0.0; //Not used, but to avoid null pointer on Double -> double
         } else {
             //Execute directly
             return execute();

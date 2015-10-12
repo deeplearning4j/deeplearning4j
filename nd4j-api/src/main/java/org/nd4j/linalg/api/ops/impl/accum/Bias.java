@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.ArrayUtil;
 
 /**
  * Calculate a bias
@@ -39,18 +40,22 @@ public class Bias extends BaseAccumulation {
 
     public Bias(INDArray x, INDArray y, INDArray z, int n) {
         super(x, y, z, n);
+        this.passThrough = true;
     }
 
     public Bias(INDArray x, INDArray y, int n) {
         this(x, y, x, n);
+        this.passThrough = true;
     }
 
     public Bias(INDArray x) {
         super(x);
+        this.passThrough = true;
     }
 
     public Bias(INDArray x, INDArray y) {
         super(x, y);
+        this.passThrough = true;
     }
 
     @Override
@@ -129,8 +134,6 @@ public class Bias extends BaseAccumulation {
     @Override
     public void init(INDArray x, INDArray y, INDArray z, int n) {
         super.init(x, y, z, n);
-        this.mean = Nd4j.getExecutioner().execAndReturn(new Mean(x)).getFinalResult().doubleValue();
-        this.extraArgs = new Object[]{zeroDouble(), mean};
     }
 
     @Override
@@ -148,4 +151,22 @@ public class Bias extends BaseAccumulation {
         return first.add(second);
     }
 
+    @Override
+    public void exec(){
+        this.mean = Nd4j.getExecutioner().execAndReturn(new Mean(x)).getFinalResult().doubleValue();
+        INDArray xMinusMean = x.sub(mean);
+        double sum = Nd4j.getExecutioner().execAndReturn(new Sum(xMinusMean)).getFinalResult().doubleValue();
+        this.finalResult = sum;
+    }
+
+    @Override
+    public void exec(int... dimension){
+        int[] retShape = ArrayUtil.removeIndex(x.shape(), dimension);
+        int nOps = x.tensorssAlongDimension(dimension);
+        z = Nd4j.create(retShape);
+        for( int i=0; i<nOps; i++ ){
+            double d = Nd4j.getExecutioner().execAndReturn((Bias)opForDimension(i,dimension)).getFinalResult().doubleValue();
+            z.putScalar(i, d);
+        }
+    }
 }

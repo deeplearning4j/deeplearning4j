@@ -66,6 +66,8 @@ public class CPUScalarOpAction extends BaseCPUScalarOpAction {
     }
 
     private void execute(){
+        if(doTensorFirst) doTensorFirst(op);
+
         DataBuffer x = op.x().data();
         DataBuffer z = op.z().data();
 

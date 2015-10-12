@@ -27,6 +27,8 @@ public class CPUTransformOpAction extends BaseCPUTransformOpAction {
 
     @Override
     public Void call() {
+        if(doTensorFirst) doTensorFirst(op);
+
         if (n > threshold) {
             //Break into subtasks
             int nSubTasks = 1 + n / threshold;  //(round up)
