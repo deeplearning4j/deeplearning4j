@@ -116,16 +116,16 @@ __device__ void transform(int n, int xOffset,float *dx,int incx,float *extraPara
             __syncthreads();
         }
 
-        for ( int activeThreads = floorPow2 >> 1;
+        for (int activeThreads = floorPow2 >> 1;
                   activeThreads;
-                  activeThreads >>= 1 ) {
-            if ( tid < activeThreads ) {
+                  activeThreads >>= 1) {
+            if (tid < activeThreads) {
                 sPartials[tid] = update(sPartials[tid],op(sPartials[tid],sPartials[tid + activeThreads],extraParams),extraParams);
             }
             __syncthreads();
         }
 
-        if ( tid == 0 ) {
+        if (tid == 0) {
             result[blockIdx.x] = postProcess(sPartials[0],n,xOffset,dx,incx,extraParams,result);
         }
 

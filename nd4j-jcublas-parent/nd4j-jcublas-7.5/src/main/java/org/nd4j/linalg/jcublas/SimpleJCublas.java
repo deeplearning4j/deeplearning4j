@@ -20,18 +20,15 @@
 package org.nd4j.linalg.jcublas;
 
 
-
-import jcuda.*;
+import jcuda.Pointer;
+import jcuda.cuComplex;
+import jcuda.cuDoubleComplex;
 import jcuda.driver.JCudaDriver;
 import jcuda.jcublas.JCublas;
 import jcuda.jcublas.JCublas2;
 import jcuda.jcublas.cublasOperation;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaDeviceProp;
-import jcuda.runtime.cudaError;
-import jcuda.runtime.cudaMemcpyKind;
-
-import jcuda.utils.KernelLauncher;
 import lombok.Cleanup;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
@@ -46,8 +43,6 @@ import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
 import org.nd4j.linalg.util.LinearUtil;
-
-import javax.naming.Context;
 
 /**
  * Simple abstraction for jcublas operations
@@ -281,6 +276,7 @@ public class SimpleJCublas {
         @Cleanup CublasPointer cAPointer = new CublasPointer(A.offset() > 0 ? A.ravel() : A);
         @Cleanup CublasPointer cBPointer = new CublasPointer(B.offset() > 0 ? B.ravel() : B);
         @Cleanup CublasPointer cCPointer = new CublasPointer(C);
+
 
 
         cuComplex alpha = cuComplex.cuCmplx(a.realComponent().floatValue(), b.imaginaryComponent().floatValue());

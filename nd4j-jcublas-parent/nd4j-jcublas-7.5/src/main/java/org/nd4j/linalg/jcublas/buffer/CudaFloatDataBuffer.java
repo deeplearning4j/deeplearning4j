@@ -19,19 +19,15 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.FloatBuffer;
-
 import io.netty.buffer.ByteBuf;
 import jcuda.Pointer;
 import jcuda.Sizeof;
-
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.util.ArrayUtil;
+
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 
 /**
  * Cuda float buffer

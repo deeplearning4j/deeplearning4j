@@ -49,6 +49,10 @@ public class RDivOp extends BaseTransformOp {
         super(x, z, n);
     }
 
+    public RDivOp(INDArray first, INDArray second, INDArray first1) {
+        this(first,second,first1,first1.length());
+    }
+
     @Override
     public String name() {
         return "rdiv";

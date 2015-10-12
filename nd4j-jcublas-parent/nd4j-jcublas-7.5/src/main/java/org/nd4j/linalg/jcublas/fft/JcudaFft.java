@@ -2,16 +2,10 @@ package org.nd4j.linalg.jcublas.fft;
 
 import jcuda.jcufft.JCufft;
 import jcuda.jcufft.cufftHandle;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.fft.DefaultFFTInstance;
-import org.nd4j.linalg.jcublas.CublasPointer;
-import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.fft.ops.JCudaVectorFFT;
-import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

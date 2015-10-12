@@ -27,11 +27,13 @@ import org.nd4j.bytebuddy.shape.ShapeMapper;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer.AllocationMode;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
+import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.api.shape.loop.four.LoopFunction4;
 import org.nd4j.linalg.api.shape.loop.four.RawArrayIterationInformation4;
+import org.nd4j.linalg.api.shape.loop.one.RawArrayIterationInformation1;
 import org.nd4j.linalg.api.shape.loop.three.LoopFunction3;
 import org.nd4j.linalg.api.shape.loop.three.RawArrayIterationInformation3;
 import org.nd4j.linalg.api.shape.loop.two.CopyLoopFunction;
@@ -147,20 +149,102 @@ public class Shape {
      * @param arr NDArray to duplicate
      * @return Copy with offset 0, but order might be c, or might be f
      */
-    public static INDArray toOffsetZeroCopyAnyOrder(INDArray arr) {
+    public static INDArray toOffsetZeroCopyAnyOrder(INDArray arr){
         return toOffsetZeroCopyHelper(arr, Nd4j.order(), true);
     }
 
     private static INDArray toOffsetZeroCopyHelper(final INDArray arr, char order, boolean anyOrder) {
-        final INDArray ret = Nd4j.create(arr.shape(),order);
-        for(int i = 0; i < arr.length(); i++) {
-            ret.data().put(ret.offset() + i * ret.elementWiseStride() ,arr.data().getDouble(arr.offset() + i * arr.elementWiseStride()));
+
+        if(arr instanceof IComplexNDArray){
+            if(arr.isRowVector()){
+                IComplexNDArray ret = Nd4j.createComplex(arr.shape(),order);
+                for (int i = 0; i < ret.length(); i++)
+                    ret.putScalar(i, ((IComplexNDArray) arr).getComplex(i));
+                return ret;
+            }
+            IComplexNDArray ret = Nd4j.createComplex(arr.shape(),order);
+            for (int i = 0; i < ret.slices(); i++)
+                ret.putSlice(i, arr.slice(i));
+            return ret;
+        } else {
+
+            if(arr.data().allocationMode() == AllocationMode.HEAP) {
+                if(Shape.isContiguousInBuffer(arr) && Shape.strideDescendingCAscendingF(arr)
+                        && (anyOrder || order == arr.ordering()) ){
+                    //Can do array copy on data
+                    int length = arr.length();
+                    int offset = arr.offset();
+                    char outOrder = arr.ordering(); //Same as input OR same as order argument if anyOrder == false
+
+                    Object array = arr.data().array();
+
+                    if (array instanceof float[]) {
+                        float[] orig = (float[]) array;
+                        float[] out = new float[length];
+                        System.arraycopy(orig,offset,out,0,length);
+                        DataBuffer floatBuffer = Nd4j.createBuffer(out);
+
+                        int[] newShape = arr.shape();
+                        newShape = Arrays.copyOf(newShape, newShape.length);
+                        int[] newStride = arr.stride();
+                        newStride = Arrays.copyOf(newStride, newStride.length);
+
+                        return Nd4j.create(floatBuffer, newShape, newStride, 0, arr.ordering());
+
+                    } else if (array instanceof double[]) {
+                        double[] orig = (double[]) array;
+                        double[] out = new double[length];
+                        System.arraycopy(orig,offset,out,0,length);
+                        DataBuffer doubleBuffer = Nd4j.createBuffer(out);
+
+                        int[] newShape = arr.shape();
+                        newShape = Arrays.copyOf(newShape, newShape.length);
+                        int[] newStride = arr.stride();
+                        newStride = Arrays.copyOf(newStride, newStride.length);
+
+                        return Nd4j.create(doubleBuffer, newShape, newStride, 0, arr.ordering());
+                    }
+                }
+            }
+
+            final INDArray ret = Nd4j.create(arr.shape(),order);
+            if(arr.elementWiseStride() < 0 || arr.ordering() != ret.ordering()) {
+                NdIndexIterator iterator = new NdIndexIterator(ret.shape());
+                while(iterator.hasNext()) {
+                    int[] next = iterator.next();
+                    ret.putScalar(next,arr.getDouble(next));
+                }
+            }
+            else {
+                for(int i = 0; i < ret.length(); i++)
+                    ret.putScalarUnsafe(i * ret.elementWiseStride(),arr.getDoubleUnsafe(i * arr.elementWiseStride()));
+            }
+
+            return ret;
         }
-
-        return ret;
-
     }
 
+    /**
+     *
+     * Idea: make an matrix compatible for mmul without needing to be copied first<br>
+     * A matrix is compatible for mmul if its values are contiguous in memory. Offset is OK.
+     * Returns the input array if input can be used in mmul without additional copy overhead
+     * Otherwise returns a copy of the input ndarray that can be used in mmul without additional copy overhead<br>
+     * This is useful for example if a matrix is going to be used in multiple mmul operations, so that we only
+     * have the overhead of copying at most once (rather than in every mmul operation)
+     * @param input Input ndarray
+     * @return ndarray that can be used in mmul without copy overhead
+     */
+    public static INDArray toMmulCompatible(INDArray input){
+        if(input.rank() != 2) throw new IllegalArgumentException("Input must be rank 2 (matrix)");
+        //Same conditions as GemmParams.copyIfNecessary()
+        boolean doCopy = false;
+        if(input.ordering() == 'c' && (input.stride(0) != input.size(1) || input.stride(1) != 1) ) doCopy = true;
+        else if(input.ordering() == 'f' && (input.stride(0) != 1 || input.stride(1) != input.size(0))) doCopy = true;
+
+        if(doCopy) return Shape.toOffsetZeroCopyAnyOrder(input);
+        else return input;
+    }
 
     /**
      * Get a double based on the array and given indices
@@ -260,7 +344,9 @@ public class Shape {
     }
 
     /**
-     * Iterates over each possible offset of an ndarray
+     * Iterates over
+     * each possible
+     * offset of an ndarray
      * @param arr
      * @param coordinateFunction
      */
@@ -269,7 +355,7 @@ public class Shape {
         int length = arr[0].length();
         for(int i = 0; i < length; i++)  {
             for(int j = 0; j < offset.length; j++) {
-                offset[j] = arr[j].offset() + i * arr[j].elementStride();
+                offset[j] = arr[j].offset() + i * arr[j].elementWiseStride();
             }
             coordinateFunction.process(offset);
         }
@@ -303,7 +389,7 @@ public class Shape {
         }
         for (int i = 0; i < size[dimension]; i++) {
             res[dimension] = i;
-            iterate(dimension + 1, n, size, res,func);
+            iterate(dimension + 1, n, size, res, func);
         }
     }
 
@@ -448,10 +534,14 @@ public class Shape {
      */
     public static int getOffset(int baseOffset,int[] shape,int[] stride,int...indices) {
         //int ret =  mappers[shape.length].getOffset(baseOffset, shape, stride, indices);
+
         int offset = baseOffset;
         for(int i = 0; i < shape.length; i++) {
-            if(shape[i] != 1)
+            if(indices[i] >= shape[i])
+                throw new IllegalArgumentException(String.format("Index [%d] must not be >= shape[d].",i));
+            if(shape[i] != 1) {
                 offset += indices[i] * stride[i];
+            }
         }
 
         return offset;
@@ -809,6 +899,17 @@ public class Shape {
     }
 
 
+    /**
+     * Prepares two arrays for
+     * raw iteration linearly through the data.
+     * It uses the same data for allocation
+     * @param dst the first array
+     */
+    public static RawArrayIterationInformation1 prepareRawArrayIter(INDArray dst) {
+        return RawArrayIterationInformation1.builder().aOffset(dst.offset()).a(dst.data())
+                .aStrides(dst.stride())
+                .nDim(dst.rank()).shape(dst.shape()).build().computeOut();
+    }
 
 
     /**
@@ -1431,7 +1532,11 @@ public class Shape {
             stridesIfContiguous = ArrayUtil.calcStridesFortran(shape);
         } else if(order == 'c') {
             stridesIfContiguous = ArrayUtil.calcStrides(shape);
-        } else throw new RuntimeException("Invalid order");
+        } else if(order == 'a'){
+            stridesIfContiguous = new int[]{1,1};
+        } else{
+            throw new RuntimeException("Invalid order: not c or f (is: " + order +")");
+        }
 
         return Arrays.equals(in.stride(),stridesIfContiguous);
     }

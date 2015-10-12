@@ -22,15 +22,14 @@ package org.nd4j.linalg.jcublas;
 import jcuda.Pointer;
 import jcuda.jcublas.JCublas;
 import jcuda.jcublas.JCublas2;
-
-import org.apache.commons.math3.util.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
-import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.Arrays;
 
@@ -45,8 +44,8 @@ public class CublasPointer  implements AutoCloseable {
     /**
      * The underlying cuda buffer that contains the host and device memory
      */
-    final JCudaBuffer buffer;
-    final Pointer devicePointer;
+    JCudaBuffer buffer;
+    Pointer devicePointer;
     private boolean closed = false;
     private INDArray arr;
 
@@ -130,23 +129,28 @@ public class CublasPointer  implements AutoCloseable {
             }
         }
 
-        else if(array.length() < array.data().length() && !array.isVector())
-            array = Shape.toOffsetZero(array);
 
         buffer = (JCudaBuffer) array.data();
 
         //the name of this thread for knowing whether to copy data or not
         String name = Thread.currentThread().getName();
         this.arr = array;
+        if(array.elementWiseStride() < 0) {
+            this.arr = array.dup();
+            buffer = (JCudaBuffer) this.arr.data();
+            if(this.arr.elementWiseStride() < 0)
+                throw new IllegalStateException("Unable to iterate over buffer");
+        }
+
         int compLength = arr instanceof IComplexNDArray ? arr.length() * 2 : arr.length();
         int stride = arr instanceof IComplexNDArray ? BlasBufferUtil.getBlasStride(arr) / 2 : BlasBufferUtil.getBlasStride(arr);
         //no striding for upload if we are using the whole buffer
 
         this.devicePointer = buffer
                 .getDevicePointer(
-                        array,
+                        this.arr,
                         stride
-                        ,array.offset()
+                        ,this.arr.offset()
                         ,compLength);
 
         /**
@@ -163,10 +167,10 @@ public class CublasPointer  implements AutoCloseable {
         // if(!buffer.copied(name)) {
         JCublas.cublasSetVectorAsync(
                 buffer.length()
-                , array.data().getElementSize()
+                , this.arr.data().getElementSize()
                 , buffer.getHostPointer()
                 , 1
-                , buffer.getPointersToContexts().get(name, new Pair<>(0,buffer.length())).getPointer()
+                , buffer.getPointersToContexts().get(name, Triple.of(0, buffer.length(), 1)).getPointer()
                 , 1
                 , ContextHolder.getInstance().getCudaStream());
         //mark the buffer copied
