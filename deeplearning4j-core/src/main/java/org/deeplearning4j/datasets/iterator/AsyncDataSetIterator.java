@@ -192,4 +192,9 @@ public class AsyncDataSetIterator implements DataSetIterator {
             }
         }
     }
+
+    @Override
+    public void remove() {
+    }
+
 }
