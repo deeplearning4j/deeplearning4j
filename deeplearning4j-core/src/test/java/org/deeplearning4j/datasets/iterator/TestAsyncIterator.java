@@ -200,6 +200,10 @@ public class TestAsyncIterator {
             cursor++;
             return new DataSet(features,labels);
         }
+        
+        @Override
+        public void remove() {
+        }
     }
 
 }
