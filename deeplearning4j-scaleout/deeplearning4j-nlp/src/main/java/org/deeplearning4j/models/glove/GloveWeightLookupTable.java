@@ -72,8 +72,7 @@ public class GloveWeightLookupTable extends InMemoryLookupTable {
             putVector(Word2Vec.UNK, randUnk);
         }
         if(weightAdaGrad == null || weightAdaGrad != null && reset) {
-            weightAdaGrad = new AdaGrad(new int[]{vocab.numWords() + 1, vectorLength});
-            weightAdaGrad.setMasterStepSize(lr.get());
+            weightAdaGrad = new AdaGrad(new int[]{vocab.numWords() + 1, vectorLength}, lr.get());
         }
 
 
@@ -82,8 +81,7 @@ public class GloveWeightLookupTable extends InMemoryLookupTable {
             bias = Nd4j.create(syn0.rows());
 
         if(biasAdaGrad == null || biasAdaGrad != null && reset) {
-            biasAdaGrad = new AdaGrad(bias.shape());
-            biasAdaGrad.setMasterStepSize(lr.get());
+            biasAdaGrad = new AdaGrad(bias.shape(), lr.get());
         }
 
 

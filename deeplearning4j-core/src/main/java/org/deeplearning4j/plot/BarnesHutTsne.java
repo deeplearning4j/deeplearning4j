@@ -482,7 +482,7 @@ public class BarnesHutTsne extends Tsne implements Model {
 
         if(useAdaGrad) {
             if(adaGrad == null)
-                adaGrad = new AdaGrad(gradChange.shape());
+                adaGrad = new AdaGrad();
             gradChange = adaGrad.getGradient(gradChange,0);
 
         }
