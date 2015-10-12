@@ -83,9 +83,9 @@ public class DefaultOpExecutioner implements OpExecutioner {
         if (op instanceof TransformOp) {
             final TransformOp t = (TransformOp) op;
             //make assumption x and z are same type
-            if (!op.x().getClass().equals(t.z().getClass()) && !(op.x() instanceof LinearViewNDArray) && !(t.z() instanceof LinearViewNDArray))
+            if (!op.x().getClass().equals(t.z().getClass()))
                 throw new IllegalArgumentException("Illegal operation. Origin and output ndarray must be same types. op.x was " + op.x().getClass().getName() + " while t.z was " + t.z().getClass().getName());
-            if(op.y() != null &&  op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) {
+            if(op.y() != null &&  op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering() && op.z().elementWiseStride() > 0 && op.y().elementWiseStride() > 0 && op.x().elementWiseStride() > 0) {
                 for(int i = 0; i < op.n(); i++) {
                     op.z().putScalarUnsafe(i * op.z().elementWiseStride(), op.op(op.x().getDoubleUnsafe(i * op.x().elementWiseStride()), op.y().getDoubleUnsafe(op.y().elementWiseStride() * i)));
                 }
@@ -127,13 +127,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 }
 
             }
-       /*     else if(op.y() != null && Shape.opIsWithMatchingStrides(op)) {
-                int xStride = op.x().ordering() == 'f' ? op.x().stride(-1) : op.x().stride(0);
-                int yStride = op.y().ordering() == 'f' ? op.y().stride(-1) : op.y().stride(0);
-                for(int i = 0; i < op.n(); i++) {
-                    accumulation.update(op.op(op.x().getDouble(op.x().offset() + i * xStride), op.y().getDouble(op.y().offset() + i * yStride)));
-                }
-            }*/
+
             else if(Shape.opIsWholeBufferWithMatchingStrides(op)) {
                 for(int i = 0; i < op.n(); i++) {
                     accumulation.update(op.op(op.x().data().getDouble(i)));
@@ -174,7 +168,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 return scalarOp;
             INDArray zLinear = op.z();
             INDArray xLinear = op.x();
-            if(xLinear.ordering() == zLinear.ordering()) {
+            if(xLinear.ordering() == zLinear.ordering() && xLinear.elementWiseStride() > 0 && zLinear.elementWiseStride() > 0) {
                 int length = xLinear.length();
                 for(int i = 0; i < length; i++)  {
                     zLinear.putScalarUnsafe(i * zLinear.elementWiseStride(),scalarOp.op(xLinear.getDoubleUnsafe(i * xLinear.elementWiseStride())));
