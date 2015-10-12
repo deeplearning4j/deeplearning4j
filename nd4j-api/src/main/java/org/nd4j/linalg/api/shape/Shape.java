@@ -534,7 +534,8 @@ public class Shape {
      */
     public static int getOffset(int baseOffset,int[] shape,int[] stride,int...indices) {
         //int ret =  mappers[shape.length].getOffset(baseOffset, shape, stride, indices);
-
+    if(shape.length != stride.length || indices.length != shape.length)
+        throw new IllegalArgumentException("Indexes, shape, and stride must be the same length");
         int offset = baseOffset;
         for(int i = 0; i < shape.length; i++) {
             if(indices[i] >= shape[i])
