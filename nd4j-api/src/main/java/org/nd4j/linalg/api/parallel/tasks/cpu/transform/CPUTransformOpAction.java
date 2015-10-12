@@ -24,9 +24,10 @@ public class CPUTransformOpAction extends BaseCPUTransformOpAction {
         super(op,threshold,tadIdx,tadDim);
     }
 
+
     @Override
-    public void invokeAsync() {
-        if(n > threshold){
+    public Void call() {
+        if (n > threshold) {
             //Break into subtasks
             int nSubTasks = 1 + n / threshold;  //(round up)
             subTasks = new ArrayList<>(nSubTasks);
@@ -34,19 +35,19 @@ public class CPUTransformOpAction extends BaseCPUTransformOpAction {
 
             int taskSize = n / nSubTasks;
             int soFar = 0;
-            for( int i=0; i<nSubTasks; i++ ){
+            for (int i = 0; i < nSubTasks; i++) {
                 int nInTask;
-                if(i==nSubTasks-1){
+                if (i == nSubTasks - 1) {
                     //All remaining tasks (due to integer division)
                     nInTask = n - soFar;
                 } else {
                     nInTask = taskSize;
                 }
-                int offsetXNew = offsetX + soFar*incrX;
-                int offsetYNew = offsetY + soFar*incrY;
-                int offsetZNew = offsetZ + soFar*incrZ;
+                int offsetXNew = offsetX + soFar * incrX;
+                int offsetYNew = offsetY + soFar * incrY;
+                int offsetZNew = offsetZ + soFar * incrZ;
 
-                Task t = new CPUTransformOpAction(op,threshold,nInTask,offsetXNew,offsetYNew,offsetZNew,incrX,incrY,incrZ);
+                Task t = new CPUTransformOpAction(op, threshold, nInTask, offsetXNew, offsetYNew, offsetZNew, incrX, incrY, incrZ);
                 t.invokeAsync();
                 subTasks.add(t);
 
@@ -54,12 +55,12 @@ public class CPUTransformOpAction extends BaseCPUTransformOpAction {
             }
         } else {
             //Execute directly
-            future = TaskExecutorProvider.getTaskExecutor().executeAsync(this);
+            execute();
         }
+        return null;
     }
 
-    @Override
-    public Void call() {
+    private void execute(){
         DataBuffer x = op.x().data();
         DataBuffer y = (op.y() != null ? op.y().data() : null);
         DataBuffer z = op.z().data();
@@ -306,7 +307,5 @@ public class CPUTransformOpAction extends BaseCPUTransformOpAction {
                 }
             }
         }
-
-        return null;
     }
 }

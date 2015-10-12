@@ -3,7 +3,11 @@ package org.nd4j.linalg.api.parallel.tasks.cpu;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.parallel.tasks.Task;
 
+import java.util.List;
+
 public abstract class BaseCPUAction extends AbstractCPUTask<Void> {
+
+    protected List<Task<Void>> subTasks;
 
     public BaseCPUAction(int threshold, int n, int offsetX, int offsetY, int offsetZ, int incrX, int incrY, int incrZ) {
         super(threshold, n, offsetX, offsetY, offsetZ, incrX, incrY, incrZ);
@@ -17,25 +21,23 @@ public abstract class BaseCPUAction extends AbstractCPUTask<Void> {
         super(op, threshold, tadIdx, tadDim);
     }
 
-
     @Override
     public Void blockUntilComplete() {
-        if (future == null && subTasks == null) {
+        if (future == null ) {
             //invokeAsync hasn't been called?
             invokeAsync();
         }
-        if (future != null) {
-            try {
-                future.get();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        } else {
+        try {
+            future.get();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        if (subTasks != null) {
             for (Task<?> t : subTasks) {
                 t.blockUntilComplete();
             }
         }
         return null;
     }
-
 }

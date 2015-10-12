@@ -6,25 +6,47 @@ import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.api.parallel.tasks.BaseTask;
 import org.nd4j.linalg.api.parallel.tasks.Task;
+import org.nd4j.linalg.api.parallel.tasks.cpu.BaseCPUTask;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class CPUAccumulationViaTensorTask extends BaseTask<Double> {
+public class CPUAccumulationViaTensorTask extends BaseCPUTask<Double> {
     protected final Accumulation op;
-    protected final int threshold;
 
     protected final boolean outerTask;
     protected List<Task<Double>> subTasks;
 
     public CPUAccumulationViaTensorTask(Accumulation op, int threshold, boolean outerTask){
+        super(op,threshold);
         this.op = op;
-        this.threshold = threshold;
         this.outerTask = outerTask;
     }
 
     @Override
-    public void invokeAsync() {
+    public Double blockUntilComplete() {
+        if(future==null){
+            //invokeAsync hasn't been called
+            invokeAsync();
+        }
+        try{
+            future.get();
+        }catch( Exception e ){
+            throw new RuntimeException(e);
+        }
+        double accum = op.zeroDouble();
+        for(Task<Double> task : subTasks){
+            double subAccum = task.blockUntilComplete();
+            accum = op.combineSubResults(accum, subAccum);
+        }
+        if(outerTask){
+            return op.getAndSetFinalResult(accum);
+        }
+        return accum;
+    }
+
+    @Override
+    public Double call() {
         INDArray x = op.x();
         INDArray y = op.y();
 
@@ -78,27 +100,6 @@ public class CPUAccumulationViaTensorTask extends BaseTask<Double> {
                 }
             }
         }
-    }
-
-    @Override
-    public Double blockUntilComplete() {
-        if(subTasks==null){
-            //invokeAsync hasn't been called
-            invokeAsync();
-        }
-        double accum = op.zeroDouble();
-        for(Task<Double> task : subTasks){
-            double subAccum = task.blockUntilComplete();
-            accum = op.combineSubResults(accum, subAccum);
-        }
-        if(outerTask){
-            return op.getAndSetFinalResult(accum);
-        }
-        return accum;
-    }
-
-    @Override
-    public Double call() {
-        return null;    //Not applicable
+        return null;
     }
 }

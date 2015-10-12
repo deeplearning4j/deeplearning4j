@@ -10,8 +10,11 @@ import org.nd4j.linalg.api.parallel.tasks.TaskExecutorProvider;
 import org.nd4j.linalg.api.parallel.tasks.cpu.accumulation.BaseCPUAccumulationTask;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class CPUIndexAccumulationTask extends BaseCPUIndexAccumulationTask {
+
+    protected List<Task<Pair<Double,Integer>>> subTasks;
 
     /**
      * Constructor for operating on subset of NDArray
@@ -36,7 +39,33 @@ public class CPUIndexAccumulationTask extends BaseCPUIndexAccumulationTask {
     }
 
     @Override
-    public void invokeAsync() {
+    public Pair<Double,Integer> blockUntilComplete() {
+        if (future == null ) {
+            //invokeAsync hasn't been called?
+            invokeAsync();
+        }
+        Pair<Double,Integer> accum;
+        try {
+            accum = future.get();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        if(subTasks != null) {
+            //Task was broken into subtasks instead of being executed directly
+            accum = op.zeroPair();
+            for(Task<Pair<Double,Integer>> task : subTasks){
+                Pair<Double,Integer> subAccum = task.blockUntilComplete();
+                accum = op.combineSubResults(accum,subAccum);
+            }
+        }
+        if(outerTask){
+            op.setFinalResult(accum.getSecond());
+        }
+        return accum;
+    }
+
+    @Override
+    public Pair<Double,Integer> call() {
         if (n > threshold) {
             //Break into subtasks
             int nSubTasks = 1 + n / threshold;  //(round up)
@@ -56,7 +85,7 @@ public class CPUIndexAccumulationTask extends BaseCPUIndexAccumulationTask {
                 int offsetXNew = offsetX + soFar * incrX;
                 int offsetYNew = offsetY + soFar * incrY;
 
-                Task<Pair<Double,Integer>> t = new CPUIndexAccumulationTask(op, threshold, nInTask, offsetXNew, offsetYNew,
+                Task<Pair<Double, Integer>> t = new CPUIndexAccumulationTask(op, threshold, nInTask, offsetXNew, offsetYNew,
                         incrX, incrY, elementOffset + soFar, false);
                 t.invokeAsync();
                 subTasks.add(t);
@@ -65,38 +94,12 @@ public class CPUIndexAccumulationTask extends BaseCPUIndexAccumulationTask {
             }
         } else {
             //Execute directly
-            future = TaskExecutorProvider.getTaskExecutor().executeAsync(this);
+            return execute();
         }
+        return null;
     }
 
-    @Override
-    public Pair<Double,Integer> blockUntilComplete() {
-        if (future == null && subTasks == null) {
-            //invokeAsync hasn't been called?
-            invokeAsync();
-        }
-        Pair<Double,Integer> accum;
-        if (future != null) {
-            try {
-                accum = future.get();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        } else {
-            accum = op.zeroPair();
-            for(Task<Pair<Double,Integer>> task : subTasks){
-                Pair<Double,Integer> subAccum = task.blockUntilComplete();
-                accum = op.combineSubResults(accum,subAccum);
-            }
-        }
-        if(outerTask){
-            op.setFinalResult(accum.getSecond());
-        }
-        return accum;
-    }
-
-    @Override
-    public Pair<Double,Integer> call() {
+    private Pair<Double,Integer> execute(){
         DataBuffer x = op.x().data();
         DataBuffer y = (op.y() != null ? op.y().data() : null);
 

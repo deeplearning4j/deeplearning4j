@@ -7,25 +7,49 @@ import org.nd4j.linalg.api.ops.IndexAccumulation;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.api.parallel.tasks.BaseTask;
 import org.nd4j.linalg.api.parallel.tasks.Task;
+import org.nd4j.linalg.api.parallel.tasks.cpu.BaseCPUTask;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class CPUIndexAccumulationViaTensorTask extends BaseTask<Pair<Double, Integer>> {
+public class CPUIndexAccumulationViaTensorTask extends BaseCPUTask<Pair<Double, Integer>> {
     protected final IndexAccumulation op;
-    protected final int threshold;
 
     protected final boolean outerTask;
     protected List<Task<Pair<Double, Integer>>> subTasks;
 
     public CPUIndexAccumulationViaTensorTask(IndexAccumulation op, int threshold, boolean outerTask) {
+        super(op,threshold);
         this.op = op;
-        this.threshold = threshold;
         this.outerTask = outerTask;
     }
 
     @Override
-    public void invokeAsync() {
+    public Pair<Double, Integer> blockUntilComplete() {
+        if (future == null) {
+            //invokeAsync hasn't been called
+            invokeAsync();
+        }
+
+        try{
+            future.get();
+        }catch(Exception e ){
+            throw new RuntimeException(e);
+        }
+
+        Pair<Double, Integer> accum = op.zeroPair();
+        for (Task<Pair<Double, Integer>> task : subTasks) {
+            Pair<Double, Integer> subAccum = task.blockUntilComplete();
+            accum = op.combineSubResults(accum, subAccum);
+        }
+        if (outerTask) {
+            op.setFinalResult(accum.getSecond());
+        }
+        return accum;
+    }
+
+    @Override
+    public Pair<Double, Integer> call() {
         INDArray x = op.x();
         INDArray y = op.y();
 
@@ -80,27 +104,6 @@ public class CPUIndexAccumulationViaTensorTask extends BaseTask<Pair<Double, Int
                 }
             }
         }
-    }
-
-    @Override
-    public Pair<Double, Integer> blockUntilComplete() {
-        if (subTasks == null) {
-            //invokeAsync hasn't been called
-            invokeAsync();
-        }
-        Pair<Double, Integer> accum = op.zeroPair();
-        for (Task<Pair<Double, Integer>> task : subTasks) {
-            Pair<Double, Integer> subAccum = task.blockUntilComplete();
-            accum = op.combineSubResults(accum, subAccum);
-        }
-        if (outerTask) {
-            op.setFinalResult(accum.getSecond());
-        }
-        return accum;
-    }
-
-    @Override
-    public Pair<Double, Integer> call() {
-        return null;    //Not applicable
+        return null;
     }
 }

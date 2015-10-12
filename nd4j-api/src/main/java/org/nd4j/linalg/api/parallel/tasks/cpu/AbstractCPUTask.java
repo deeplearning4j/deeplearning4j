@@ -4,6 +4,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.parallel.tasks.BaseTask;
 import org.nd4j.linalg.api.parallel.tasks.Task;
+import org.nd4j.linalg.api.parallel.tasks.TaskExecutorProvider;
+import org.nd4j.linalg.api.parallel.tasks.TaskFactoryProvider;
 
 import java.util.List;
 import java.util.concurrent.Future;
@@ -19,7 +21,6 @@ public abstract class AbstractCPUTask<V> extends BaseTask<V> {
     protected int incrZ;
 
     protected Future<V> future;
-    protected List<Task<V>> subTasks;
 
     public AbstractCPUTask(int threshold, int n, int offsetX, int offsetY, int offsetZ, int incrX, int incrY, int incrZ){
         this.threshold = threshold;
@@ -43,6 +44,7 @@ public abstract class AbstractCPUTask<V> extends BaseTask<V> {
         this.incrZ = (op.z() != null ? op.z().elementWiseStride() : 0);
     }
 
+    /** Constructor for doing a 1d tensor along dimension first */
     public AbstractCPUTask(Op op, int threshold, int tadIdx, int tadDim){
         this.threshold = threshold;
         INDArray x = op.x();
@@ -78,5 +80,10 @@ public abstract class AbstractCPUTask<V> extends BaseTask<V> {
             offsetZ = tadz.offset();
             incrZ = tadz.elementWiseStride();
         }
+    }
+
+    @Override
+    public void invokeAsync(){
+        this.future = TaskExecutorProvider.getTaskExecutor().executeAsync(this);
     }
 }

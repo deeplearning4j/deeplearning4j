@@ -5,28 +5,29 @@ import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.api.parallel.tasks.BaseTask;
 import org.nd4j.linalg.api.parallel.tasks.Task;
+import org.nd4j.linalg.api.parallel.tasks.cpu.BaseCPUAction;
+import org.nd4j.linalg.api.parallel.tasks.cpu.BaseCPUTask;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class CPUTransformAlongDimensionTask extends BaseTask<Void> {
+public class CPUTransformAlongDimensionTask extends BaseCPUAction {
 
     protected final TransformOp op;
-    protected final int threshold;
     protected final int[] dimensions;
 
     protected List<Task<Void>> subTasks;
 
     public CPUTransformAlongDimensionTask(TransformOp op, int threshold, int... dimensions ){
+        super(op,threshold);
         this.op = op;
-        this.threshold = threshold;
         this.dimensions = dimensions;
     }
 
     @Override
-    public void invokeAsync() {
+    public Void call() {
         int nTensors = op.x().tensorssAlongDimension(dimensions);
         subTasks = new ArrayList<>(nTensors);
 
@@ -49,24 +50,6 @@ public class CPUTransformAlongDimensionTask extends BaseTask<Void> {
             task.invokeAsync();
             subTasks.add(task);
         }
-    }
-
-    @Override
-    public Void blockUntilComplete() {
-        if(subTasks==null){
-            //invokeAsync() not called?
-            invokeAsync();
-        }
-
-        for(Task<Void> task : subTasks ){
-            task.blockUntilComplete();
-        }
-
         return null;
-    }
-
-    @Override
-    public Void call() {
-        return null;    //Not applicable
     }
 }

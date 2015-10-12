@@ -4,11 +4,13 @@ import io.netty.buffer.ByteBuf;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.parallel.tasks.Task;
-import org.nd4j.linalg.api.parallel.tasks.TaskExecutorProvider;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class CPUAccumulationTask extends BaseCPUAccumulationTask {
+
+    protected List<Task<Double>> subTasks;
 
     /**
      * Constructor for operating on subset of NDArray
@@ -32,8 +34,37 @@ public class CPUAccumulationTask extends BaseCPUAccumulationTask {
         super(op, threshold, tadIdx, tadDim, outerTask);
     }
 
+
     @Override
-    public void invokeAsync() {
+    public Double blockUntilComplete() {
+        if (future == null) {
+            //invokeAsync hasn't been called?
+            invokeAsync();
+        }
+        double accum;
+        try {
+            accum = future.get();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        if(subTasks != null ) {
+            //task was broken into subtasks, instead of executing directly
+            accum = op.zeroDouble();
+            for (Task<Double> task : subTasks) {
+                double subAccum = task.blockUntilComplete();
+                accum = op.combineSubResults(accum, subAccum);
+            }
+        }
+
+        if (outerTask) {
+            return op.getAndSetFinalResult(accum);
+        }
+        return accum;
+    }
+
+    @Override
+    public Double call() {
         if (n > threshold) {
             //Break into subtasks
             int nSubTasks = 1 + n / threshold;  //(round up)
@@ -59,40 +90,14 @@ public class CPUAccumulationTask extends BaseCPUAccumulationTask {
 
                 soFar += nInTask;
             }
+            return op.zeroDouble();
         } else {
             //Execute directly
-            future = TaskExecutorProvider.getTaskExecutor().executeAsync(this);
+            return execute();
         }
     }
 
-    @Override
-    public Double blockUntilComplete() {
-        if (future == null && subTasks == null) {
-            //invokeAsync hasn't been called?
-            invokeAsync();
-        }
-        double accum;
-        if (future != null) {
-            try {
-                accum = future.get();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        } else {
-            accum = op.zeroDouble();
-            for (Task<Double> task : subTasks) {
-                double subAccum = task.blockUntilComplete();
-                accum = op.combineSubResults(accum, subAccum);
-            }
-        }
-        if (outerTask) {
-            return op.getAndSetFinalResult(accum);
-        }
-        return accum;
-    }
-
-    @Override
-    public Double call() {
+    private double execute(){
         DataBuffer x = op.x().data();
         DataBuffer y = (op.y() != null ? op.y().data() : null);
 

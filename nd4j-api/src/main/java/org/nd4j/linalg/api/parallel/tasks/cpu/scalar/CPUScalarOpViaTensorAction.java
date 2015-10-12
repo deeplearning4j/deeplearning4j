@@ -7,23 +7,21 @@ import org.nd4j.linalg.api.parallel.tasks.BaseTask;
 import org.nd4j.linalg.api.parallel.tasks.Task;
 import org.nd4j.linalg.api.parallel.tasks.TaskFactory;
 import org.nd4j.linalg.api.parallel.tasks.TaskFactoryProvider;
+import org.nd4j.linalg.api.parallel.tasks.cpu.BaseCPUAction;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class CPUScalarOpViaTensorAction extends BaseTask<Void> {
+public class CPUScalarOpViaTensorAction extends BaseCPUAction {
     protected final ScalarOp op;
-    protected final int threshold;
-
-    protected List<Task<Void>> subTasks;
 
     public CPUScalarOpViaTensorAction(ScalarOp op, int threshold){
+        super(op,threshold);
         this.op = op;
-        this.threshold = threshold;
     }
 
     @Override
-    public void invokeAsync() {
+    public Void call() {
         INDArray x = op.x();
         INDArray y = op.y();
         INDArray z = op.z();
@@ -89,22 +87,6 @@ public class CPUScalarOpViaTensorAction extends BaseTask<Void> {
                 }
             }
         }
-    }
-
-    @Override
-    public Void blockUntilComplete() {
-        if(subTasks==null){
-            //invokeAsync hasn't been called
-            invokeAsync();
-        }
-        for(Task task : subTasks){
-            task.blockUntilComplete();
-        }
         return null;
-    }
-
-    @Override
-    public Void call() {
-        return null;    //Not applicable
     }
 }

@@ -32,7 +32,7 @@ public class CPUScalarOpAction extends BaseCPUScalarOpAction {
     }
 
     @Override
-    public void invokeAsync() {
+    public Void call() {
         if(n > threshold){
             //Break into subtasks
             int nSubTasks = 1 + n / threshold;  //(round up)
@@ -60,12 +60,12 @@ public class CPUScalarOpAction extends BaseCPUScalarOpAction {
             }
         } else {
             //Execute directly
-            future = TaskExecutorProvider.getTaskExecutor().executeAsync(this);
+            execute();
         }
+        return null;
     }
 
-    @Override
-    public Void call() {
+    private void execute(){
         DataBuffer x = op.x().data();
         DataBuffer z = op.z().data();
 
@@ -185,6 +185,5 @@ public class CPUScalarOpAction extends BaseCPUScalarOpAction {
                 }
             }
         }
-        return null;
     }
 }

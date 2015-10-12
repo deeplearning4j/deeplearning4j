@@ -27,10 +27,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.lang.reflect.Constructor;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -171,7 +168,8 @@ public class CPUTaskFactoryTest {
 
         CPUTaskFactory taskFactory = new CPUTaskFactory();
 
-        int[] shape = {30, 50};
+//        int[] shape = {30, 50};
+        int[] shape = {3, 5};
 
         for (DataBuffer.Type dtype : new DataBuffer.Type[]{DataBuffer.Type.DOUBLE, DataBuffer.Type.FLOAT}) {
 
@@ -502,7 +500,7 @@ public class CPUTaskFactoryTest {
                 op = xyConstructor.newInstance(origXDup, origYDup);
                 task = taskFactory.getAccumulationTask(op, 1);
                 INDArray expected1 = task.invokeBlocking();
-                assertTrue(expected1==op.z());
+                assertTrue(expected1 == op.z());
 
                 // For each combination of: serial/parallel, heap/direct
                 // And compare output with expected

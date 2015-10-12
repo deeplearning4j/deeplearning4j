@@ -7,8 +7,6 @@ import org.nd4j.linalg.api.parallel.tasks.cpu.BaseCPUAction;
 public abstract class BaseCPUTransformOpAction extends BaseCPUAction {
 
     protected final TransformOp op;
-    protected int offsetY;
-    protected int incrY;
 
     /**
      * Constructor for operating on subset of NDArray
@@ -17,8 +15,6 @@ public abstract class BaseCPUTransformOpAction extends BaseCPUAction {
                                     int incrX, int incrY, int incrZ) {
         super(threshold, n, offsetX, offsetY, offsetZ, incrX, incrY, incrZ);
         this.op = op;
-        this.offsetY = offsetY;
-        this.incrY = incrY;
     }
 
     /**

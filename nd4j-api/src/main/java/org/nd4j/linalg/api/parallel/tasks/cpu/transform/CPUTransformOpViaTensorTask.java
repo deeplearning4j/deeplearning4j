@@ -3,28 +3,24 @@ package org.nd4j.linalg.api.parallel.tasks.cpu.transform;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
-import org.nd4j.linalg.api.parallel.tasks.BaseTask;
-import org.nd4j.linalg.api.parallel.tasks.Task;
-import org.nd4j.linalg.api.parallel.tasks.TaskFactory;
-import org.nd4j.linalg.api.parallel.tasks.TaskFactoryProvider;
+import org.nd4j.linalg.api.parallel.tasks.*;
+import org.nd4j.linalg.api.parallel.tasks.cpu.BaseCPUAction;
+import org.nd4j.linalg.api.parallel.tasks.cpu.BaseCPUTask;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class CPUTransformOpViaTensorTask extends BaseTask<Void> {
+public class CPUTransformOpViaTensorTask extends BaseCPUAction {
     protected final TransformOp op;
-    protected final int threshold;
-
-    protected List<Task<Void>> subTasks;
 
     public CPUTransformOpViaTensorTask(TransformOp op, int threshold){
+        super(op,threshold);
         this.op = op;
-        this.threshold = threshold;
     }
 
     @Override
-    public void invokeAsync() {
+    public Void call() {
         INDArray x = op.x();
         INDArray y = op.y();
         INDArray z = op.z();
@@ -117,22 +113,6 @@ public class CPUTransformOpViaTensorTask extends BaseTask<Void> {
                 }
             }
         }
-    }
-
-    @Override
-    public Void blockUntilComplete() {
-        if(subTasks==null){
-            //invokeAsync hasn't been called
-            invokeAsync();
-        }
-        for(Task task : subTasks){
-            task.blockUntilComplete();
-        }
         return null;
-    }
-
-    @Override
-    public Void call() {
-        return null;    //Not applicable
     }
 }
