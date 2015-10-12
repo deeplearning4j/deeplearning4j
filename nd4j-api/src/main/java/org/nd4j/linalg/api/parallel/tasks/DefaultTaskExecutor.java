@@ -22,7 +22,16 @@ public class DefaultTaskExecutor implements TaskExecutor {
 
     public DefaultTaskExecutor(){
         int nThreads = Runtime.getRuntime().availableProcessors();
-        executorService = new ThreadPoolExecutor(nThreads,nThreads,60, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>() );
+        //Create a fixed thread pool executor, but with daemon threads
+        //Use daemon threads so that the thread pool doesn't stop the JVM from shutting down when done
+        executorService = Executors.newFixedThreadPool(nThreads, new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread t = Executors.defaultThreadFactory().newThread(r);
+                t.setDaemon(true);
+                return t;
+            }
+        });
     }
 
     @Override
