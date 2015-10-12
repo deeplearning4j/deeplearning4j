@@ -147,95 +147,20 @@ public class Shape {
      * @param arr NDArray to duplicate
      * @return Copy with offset 0, but order might be c, or might be f
      */
-    public static INDArray toOffsetZeroCopyAnyOrder(INDArray arr){
+    public static INDArray toOffsetZeroCopyAnyOrder(INDArray arr) {
         return toOffsetZeroCopyHelper(arr, Nd4j.order(), true);
     }
 
-    private static INDArray toOffsetZeroCopyHelper(final INDArray arr, char order, boolean anyOrder ){
-
-        if(arr instanceof IComplexNDArray){
-            if(arr.isRowVector()){
-                IComplexNDArray ret = Nd4j.createComplex(arr.shape(),order);
-                for (int i = 0; i < ret.length(); i++)
-                    ret.putScalar(i, ((IComplexNDArray) arr).getComplex(i));
-                return ret;
-            }
-            IComplexNDArray ret = Nd4j.createComplex(arr.shape(),order);
-            for (int i = 0; i < ret.slices(); i++)
-                ret.putSlice(i, arr.slice(i));
-            return ret;
-        } else {
-
-            if(arr.data().allocationMode() == AllocationMode.HEAP){
-                if(Shape.isContiguousInBuffer(arr) && Shape.strideDescendingCAscendingF(arr)
-                        && (anyOrder || order == arr.ordering()) ){
-                    //Can do array copy on data
-                    int length = arr.length();
-                    int offset = arr.offset();
-                    char outOrder = arr.ordering(); //Same as input OR same as order argument if anyOrder == false
-
-                    Object array = arr.data().array();
-
-                    if (array instanceof float[]) {
-                        float[] orig = (float[]) array;
-                        float[] out = new float[length];
-                        System.arraycopy(orig,offset,out,0,length);
-                        DataBuffer floatBuffer = Nd4j.createBuffer(out);
-
-                        int[] newShape = arr.shape();
-                        newShape = Arrays.copyOf(newShape, newShape.length);
-                        int[] newStride = arr.stride();
-                        newStride = Arrays.copyOf(newStride, newStride.length);
-
-                        return Nd4j.create(floatBuffer, newShape, newStride, 0, arr.ordering());
-
-                    } else if (array instanceof double[]) {
-                        double[] orig = (double[]) array;
-                        double[] out = new double[length];
-                        System.arraycopy(orig,offset,out,0,length);
-                        DataBuffer doubleBuffer = Nd4j.createBuffer(out);
-
-                        int[] newShape = arr.shape();
-                        newShape = Arrays.copyOf(newShape, newShape.length);
-                        int[] newStride = arr.stride();
-                        newStride = Arrays.copyOf(newStride, newStride.length);
-
-                        return Nd4j.create(doubleBuffer, newShape, newStride, 0, arr.ordering());
-                    }
-                }
-            }
-
-            final INDArray ret = Nd4j.create(arr.shape(),order);
-            Shape.iterate(arr, new CoordinateFunction() {
-                @Override
-                public void process(int[]... coord) {
-                    ret.putScalar(coord[0],arr.getDouble(coord[0]));
-                }
-            });
-
-            return ret;
+    private static INDArray toOffsetZeroCopyHelper(final INDArray arr, char order, boolean anyOrder) {
+        final INDArray ret = Nd4j.create(arr.shape(),order);
+        for(int i = 0; i < arr.length(); i++) {
+            ret.data().put(ret.offset() + i * ret.elementWiseStride() ,arr.data().getDouble(arr.offset() + i * arr.elementWiseStride()));
         }
+
+        return ret;
+
     }
 
-    /** Idea: make an matrix compatible for mmul without needing to be copied first<br>
-     * A matrix is compatible for mmul if its values are contiguous in memory. Offset is OK.
-     * Returns the input array if input can be used in mmul without additional copy overhead
-     * Otherwise returns a copy of the input ndarray that can be used in mmul without additional copy overhead<br>
-     * This is useful for example if a matrix is going to be used in multiple mmul operations, so that we only
-     * have the overhead of copying at most once (rather than in every mmul operation)
-     * @param input Input ndarray
-     * @return ndarray that can be used in mmul without copy overhead
-     */
-    public static INDArray toMmulCompatible(INDArray input){
-        if(input.rank() != 2) throw new IllegalArgumentException("Input must be rank 2 (matrix)");
-        //Same conditions as GemmParams.copyIfNecessary()
-        boolean doCopy = false;
-        if(input.ordering() == 'c' && (input.stride(0) != input.size(1) || input.stride(1) != 1) ) doCopy = true;
-        else if(input.ordering() == 'f' && (input.stride(0) != 1 || input.stride(1) != input.size(0))) doCopy = true;
-
-        if(doCopy) return Shape.toOffsetZeroCopyAnyOrder(input);
-        else return input;
-    }
 
     /**
      * Get a double based on the array and given indices

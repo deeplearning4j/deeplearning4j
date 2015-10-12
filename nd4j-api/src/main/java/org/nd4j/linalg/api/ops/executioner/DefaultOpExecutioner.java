@@ -89,13 +89,13 @@ public class DefaultOpExecutioner implements OpExecutioner {
             if(op.y() != null) {
                 int length = op.n();
                 for(int i = 0; i < length; i++)  {
-                    t.z().data().put(op.z().offset() + i * op.z().elementStride(), t.op(t.x().data().getDouble(op.x().offset() + i * op.x().elementStride()),t.y().data().getDouble(t.y().offset() + i * t.y().elementStride())));
+                    t.z().data().put(op.z().offset() + i * op.z().elementWiseStride(), t.op(t.x().data().getDouble(op.x().offset() + i * op.x().elementWiseStride()),t.y().data().getDouble(t.y().offset() + i * t.y().elementWiseStride())));
                 }
             }
             else {
                 int length = op.n();
                 for(int i = 0; i < length; i++)  {
-                    t.z().data().put(op.z().offset() + i * op.z().elementStride(), t.op(t.x().data().getDouble(op.x().offset() + i * op.x().elementStride())));
+                    t.z().data().put(op.z().offset() + i * op.z().elementWiseStride(), t.op(t.x().data().getDouble(op.x().offset() + i * op.x().elementWiseStride())));
                 }
             }
 
@@ -104,13 +104,13 @@ public class DefaultOpExecutioner implements OpExecutioner {
             Accumulation accumulation = (Accumulation) op;
             if(op.y() != null) {
                 for(int i = 0; i < op.n(); i++) {
-                    accumulation.update(op.op(op.x().data().getDouble(op.x().offset() + i * op.x().elementStride()), op.y().data().getDouble(op.y().offset() + i * op.y().elementStride())));
+                    accumulation.update(op.op(op.x().data().getDouble(op.x().offset() + i * op.x().elementWiseStride()), op.y().data().getDouble(op.y().offset() + i * op.y().elementWiseStride())));
                 }
 
             }
             else {
                 for(int i = 0; i < op.n(); i++) {
-                    accumulation.update(op.op(op.x().data().getDouble(op.x().offset() + i * op.x().elementStride())));
+                    accumulation.update(op.op(op.x().data().getDouble(op.x().offset() + i * op.x().elementWiseStride())));
                 }
             }
 
@@ -123,7 +123,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
             INDArray zLinear = op.z();
             INDArray xLinear = op.x();
             for(int c = 0; c < op.n(); c ++)
-                zLinear.data().put(zLinear.offset() + c * zLinear.elementStride(), op.op(xLinear.data().getDouble(xLinear.offset() + c * xLinear.elementStride())));
+                zLinear.data().put(zLinear.offset() + c * zLinear.elementWiseStride(), op.op(xLinear.data().getDouble(xLinear.offset() + c * xLinear.elementWiseStride())));
         }
 
 

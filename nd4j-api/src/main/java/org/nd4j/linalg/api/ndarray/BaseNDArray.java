@@ -110,6 +110,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     protected boolean isWrapAround = false;
     protected int linearStride = -1;
     protected int elementWiseStride = -1;
+    protected int elementWiseStrideF = -1;
 
     public BaseNDArray() {
     }
@@ -680,9 +681,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public int elementWiseStride() {
-        if(elementWiseStride < 0)
-            elementWiseStride = reshape(1,length()).stride(-1);
-        return elementWiseStride;
+        if(elementWiseStride < 0) {
+            elementWiseStrideF = reshape('f',length(),1).stride(-1);
+            elementWiseStride = reshape('c',1, length()).stride(-1);
+        }
+        if(ordering == 'c')
+            return elementWiseStride;
+        return elementWiseStrideF;
     }
 
     @Override
@@ -698,7 +703,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public int secondaryStride() {
-
         if(stride.length == 0)
             return 1;
         if (stride.length >= 2) {
@@ -995,7 +999,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray cumsum(int dimension) {
-
         return dup().cumsumi(dimension);
     }
 
@@ -1010,75 +1013,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray assign(final INDArray arr) {
         if (isVector() && arr.isVector() && length() != arr.length())
             throw new IllegalArgumentException("Illegal assignment, must be of same length");
-        if(isVector()) {
-            if(isColumnVector() && arr.isRowVector()) {
-                for(int i = 0; i < arr.length(); i++) {
-                    putScalar(new int[]{i,0},arr.getDouble(new int[]{0,i}));
-                }
-            }
-            else if(isRowVector() && arr.isColumnVector()) {
-                for(int i = 0; i < arr.length(); i++) {
-                    putScalar(new int[]{0,i},arr.getDouble(new int[]{i,0}));
-                }
-            }
-            else if(arr.isRowVector() && isRowVector()) {
-                for(int i = 0; i < arr.length(); i++) {
-                    putScalar(new int[]{0,i},arr.getDouble(new int[]{0,i}));
-                }
-            }
-            else if(arr.isColumnVector() && arr.isColumnVector()) {
-                for(int i = 0; i < arr.length(); i++) {
-                    putScalar(new int[]{i,0},arr.getDouble(new int[]{i,0}));
-                }
-            }
-
-            else if(isRowVector()){
-                final AtomicInteger a = new AtomicInteger(0);
-                Shape.iterate(arr, new CoordinateFunction() {
-                    @Override
-                    public void process(int[]... coord) {
-                        putScalar(new int[]{0,a.getAndIncrement()},arr.getDouble(coord[0]));
-                    }
-                });
-            }
-
-            else if(isColumnVector()){
-                final AtomicInteger a = new AtomicInteger(0);
-                Shape.iterate(arr, new CoordinateFunction() {
-                    @Override
-                    public void process(int[]... coord) {
-                        putScalar(new int[]{a.getAndIncrement(),0},arr.getDouble(coord[0]));
-                    }
-                });
-            }
-
+        for(int i = 0; i < arr.length(); i++) {
+            data().put(offset() + i * elementStride(),arr.data().getDouble(arr.offset() + i * arr.elementStride()));
         }
-
-        else if(Arrays.equals(this.shape(),arr.shape())) {
-            Shape.iterate(this, new CoordinateFunction() {
-                @Override
-                public void process(int[]... coord) {
-                    putScalar(coord[0],arr.getDouble(coord[0]));
-                }
-            });
-        }
-
-
-        else {
-      /*      Shape.iterate(this, arr, new CoordinateFunction() {
-                @Override
-                public void process(int[]... coord) {
-                    putScalar(coord[0],arr.getDouble(coord[1]));
-                }
-            });*/
-            NdIndexIterator iterator = new NdIndexIterator(this.shape());
-            NdIndexIterator otherIter = new NdIndexIterator(arr.shape());
-            for(int i = 0; i < length(); i++) {
-                putScalar(iterator.next(),arr.getDouble(otherIter.next()));
-            }
-        }
-
-
         return this;
     }
 
@@ -1384,10 +1321,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray addi(Number n, INDArray result) {
-
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
-        Nd4j.getExecutioner().exec(new ScalarAdd(linearView(), null, result.linearView(), result.length(), n));
+        Nd4j.getExecutioner().exec(new ScalarAdd(this, null, result, result.length(), n));
         return this;
     }
 
@@ -3301,6 +3237,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         INDArray reshapeAttempt = Shape.newShapeNoCopy(this, ArrayUtil.copy(shape), order == 'f');
         if(reshapeAttempt != null) {
+            char order2 = Shape.getOrder(reshapeAttempt);
             reshapeAttempt.setOrder(Shape.getOrder(reshapeAttempt));
             return reshapeAttempt;
         }

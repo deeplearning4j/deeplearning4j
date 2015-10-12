@@ -410,13 +410,15 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         int nCols = 10;
         java.util.Random r = new java.util.Random(12345);
 
-        for( int i=0; i<nRows; i++ ){
+        for( int i = 0; i<nRows; i++ ){
             INDArray in = Nd4j.rand(new int[]{nRows,nCols});
 
             List<Integer> order = new ArrayList<>(nRows);
-            for( int j=0; j<nCols; j++ ) order.add(j);
+            for( int j=0; j < nCols; j++ )
+                order.add(j);
             Collections.shuffle(order, r);
-            for( int j=0; j<nCols; j++ ) in.putScalar(new int[]{i,j},order.get(j));
+            for( int j = 0; j < nCols; j++)
+                in.putScalar(new int[]{i,j},order.get(j));
 
             INDArray outAsc = Nd4j.sortColumns(in, i, true);
             INDArray outDesc = Nd4j.sortColumns(in, i, false);
@@ -1902,8 +1904,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     public void testDupAndDupWithOrder(){
         List<Pair<INDArray,String>> testInputs = NDArrayCreationUtil.getAllTestMatricesWithShape(4, 5, 123);
 
-        for(Pair<INDArray,String> pair : testInputs ){
-
+        for(Pair<INDArray,String> pair : testInputs) {
             String msg = pair.getSecond();
             INDArray in = pair.getFirst();
             INDArray dup = in.dup();
@@ -1922,7 +1923,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     public void testToOffsetZeroCopy(){
         List<Pair<INDArray,String>> testInputs = NDArrayCreationUtil.getAllTestMatricesWithShape(4, 5, 123);
 
-        for(Pair<INDArray,String> pair : testInputs ){
+        for(Pair<INDArray,String> pair : testInputs) {
             String msg = pair.getSecond();
             INDArray in = pair.getFirst();
             INDArray dup = Shape.toOffsetZeroCopy(in);
