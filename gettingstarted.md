@@ -69,6 +69,8 @@ If you're using IntelliJ as your IDE, this should work already.
 
 * Cygwin is not supported. You must install DL4J from **DOS Windows**.  
 
+* Running this file, [WindowsInfo.bat](https://gist.github.com/AlexDBlack/9f70c13726a3904a2100), can help debug your Windows install. Here's one [example of its output](https://gist.github.com/AlexDBlack/4a3995fea6dcd2105c5f) that shows what to expect.
+
 ### <a name="source">Working With Source</a>
 
 If you are not planning to contribute to Deeplearning4j as a committer, or don't need the latest alpha version, we recommend downloading the most recent stable release of Deeplearning4j from [Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j), 0.4-rc*. That's as simple as adding dependencies to your POM.xml file in IntelliJ.
