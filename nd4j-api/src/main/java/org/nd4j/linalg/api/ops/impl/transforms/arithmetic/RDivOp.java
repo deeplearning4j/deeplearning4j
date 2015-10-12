@@ -49,8 +49,8 @@ public class RDivOp extends BaseTransformOp {
         super(x, z, n);
     }
 
-    public RDivOp(INDArray first, INDArray second, INDArray first1) {
-        this(first,second,first1,first1.length());
+    public RDivOp(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z, x.length());
     }
 
     @Override

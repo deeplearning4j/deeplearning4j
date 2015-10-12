@@ -37,15 +37,13 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
-import org.nd4j.linalg.checkutil.CheckUtil;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-//import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.util.NDArrayUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -948,16 +946,16 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     @Test
     public void testSumWithRow1(){
         //Works:
-        INDArray array2d = Nd4j.ones(1,10);
+        INDArray array2d = Nd4j.ones(1, 10);
         array2d.sum(0); //OK
         array2d.sum(1); //OK
 
-        INDArray array3d = Nd4j.ones(1,10,10);
+        INDArray array3d = Nd4j.ones(1, 10, 10);
         array3d.sum(0); //OK
         array3d.sum(1); //OK
         array3d.sum(2); //java.lang.IllegalArgumentException: Illegal index 100 derived from 9 with offset of 10 and stride of 10
 
-        INDArray array4d = Nd4j.ones(1,10,10,10);
+        INDArray array4d = Nd4j.ones(1, 10, 10, 10);
         array4d.sum(0); //OK
         array4d.sum(1); //OK
         array4d.sum(2); //java.lang.IllegalArgumentException: Illegal index 1000 derived from 9 with offset of 910 and stride of 10
@@ -1149,8 +1147,8 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
             int nTAD0 = arr.tensorssAlongDimension(0);
             int nTAD1 = arr.tensorssAlongDimension(1);
 
-            NDArrayUtil.Tensor1DStats t0 = NDArrayUtil.get1DTensorStats(arr, 0);
-            NDArrayUtil.Tensor1DStats t1 = NDArrayUtil.get1DTensorStats(arr, 1);
+            OpExecutionerUtil.Tensor1DStats t0 = OpExecutionerUtil.get1DTensorStats(arr, 0);
+            OpExecutionerUtil.Tensor1DStats t1 = OpExecutionerUtil.get1DTensorStats(arr, 1);
 
             assertEquals(nTAD0,t0.getNumTensors());
             assertEquals(nTAD1, t1.getNumTensors());
@@ -1189,57 +1187,6 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
             }
         }
     }
-
-
-    //Used in testInplaceOpsVsNDArrayUtilDoElementWiseOp()
-    private static Pair<List<Pair<INDArray,String>>,String> getTestArraysHelper(int testNum, int seed){
-        switch(testNum){
-            case 0: //2d standard (shape 5,7)
-                return new Pair<>(NDArrayCreationUtil.getAllTestMatricesWithShape(seed, 5, 7),"test 0, 2d with shape [5,7]");
-            case 1: //2d edge case 1 (shape 1,7)
-                return new Pair<>(NDArrayCreationUtil.getAllTestMatricesWithShape(seed, 1, 7),"test 1, 2d with shape [1,7]");
-            case 2: //2d edge case 2 (shape 5,1)
-                return new Pair<>(NDArrayCreationUtil.getAllTestMatricesWithShape(seed, 5, 1),"test 2, 2d with shape [5,7]");
-            case 3: //3d (shape 4,5,6)
-                return new Pair<>(NDArrayCreationUtil.getAll3dTestArraysWithShape(seed, 4, 5, 6),"test 3, 3d with shape [4,5,6]");
-            case 4: //3d edge case 1 (shape 1,5,6)
-                return new Pair<>(NDArrayCreationUtil.getAll3dTestArraysWithShape(seed, 1, 5, 6),"test 4, 3d with shape [1,5,6]");
-            case 5: //3d edge case 2 (shape 4,1,6)
-                return new Pair<>(NDArrayCreationUtil.getAll3dTestArraysWithShape(seed, 4, 1, 6),"test 5, 3d with shape [4,1,6]");
-            case 6: //3d edge case 3 (shape 4,5,1)
-                return new Pair<>(NDArrayCreationUtil.getAll3dTestArraysWithShape(seed, 4, 5, 1),"test 6, 3d with shape [4,5,1]");
-            case 7: //3d edge case 4 (shape 4,1,1)
-                return new Pair<>(NDArrayCreationUtil.getAll3dTestArraysWithShape(seed, 4, 5, 6),"test 7, 3d with shape [4,1,1]");
-            case 8: //4d (shape 3,4,5,6)
-                return new Pair<>(NDArrayCreationUtil.getAll4dTestArraysWithShape(seed, 3, 4, 5, 6),"test 8, 4d with shape [3,4,5,6]");
-            case 9: //4d edge case 1 (1,4,5,6)
-                return new Pair<>(NDArrayCreationUtil.getAll4dTestArraysWithShape(seed, 1, 4, 5, 6),"test 9, 4d with shape [1,4,5,6]");
-            case 10://4d edge case 2 (3,1,5,6)
-                return new Pair<>(NDArrayCreationUtil.getAll4dTestArraysWithShape(seed, 3, 1, 5, 6),"test 10, 4d with shape [3,1,5,6]");
-            case 11://4d edge case 3 (3,4,5,1)
-                return new Pair<>(NDArrayCreationUtil.getAll4dTestArraysWithShape(seed, 3, 4, 5, 1),"test 11, 4d with shape [3,4,5,1]");
-            case 12://5d (shape 3,4,5,6,7)
-                return new Pair<>(NDArrayCreationUtil.getAll5dTestArraysWithShape(seed, 3, 4, 5, 6, 7),"test 12, 5d with shape [3,4,5,6,7]");
-            case 13://5d edge case (shape 1,4,5,6,7)
-                return new Pair<>(NDArrayCreationUtil.getAll5dTestArraysWithShape(seed, 1, 4, 5, 6, 7),"test 13, 5d with shape [1,4,5,6,7]");
-            case 14://5d edge case (shape 3,4,5,6,1)
-                return new Pair<>(NDArrayCreationUtil.getAll5dTestArraysWithShape(seed, 3, 4, 5, 6, 1),"test 14, 5d with shape [3,4,5,6,1]");
-            case 15://5d edge case (shape 3,1,5,6,1)
-                return new Pair<>(NDArrayCreationUtil.getAll5dTestArraysWithShape(seed, 3, 1, 5, 6, 7),"test 15, 5d with shape [3,1,5,6,7]");
-            case 16://5d edge case (shape 3,1,1,6,1)
-                return new Pair<>(NDArrayCreationUtil.getAll5dTestArraysWithShape(seed, 3, 1, 1, 6, 1),"test 16, 5d with shape [3,1,1,6,1]");
-            case 17://6d (shape 3,4,5,6,7,2)
-                return new Pair<>(NDArrayCreationUtil.getAll6dTestArraysWithShape(seed, 3, 4, 5, 6, 7, 2),"test 17, 6d with shape [3,4,5,6,7,2]");
-            case 18://6d (shape 1,4,5,6,7,2)
-                return new Pair<>(NDArrayCreationUtil.getAll6dTestArraysWithShape(seed, 1, 4, 5, 6, 7, 2),"test 18, 6d with shape [1,4,5,6,7,2]");
-            case 19://6d (shape 3,4,5,6,7,1)
-                return new Pair<>(NDArrayCreationUtil.getAll6dTestArraysWithShape(seed, 3, 4, 5, 6, 7, 1),"test 19, 6d with shape [3,4,5,6,7,1]");
-            case 20://6d (shape 3,4,1,6,7,2)
-                return new Pair<>(NDArrayCreationUtil.getAll6dTestArraysWithShape(seed, 3, 4, 1, 6, 7, 2),"test 20, 6d with shape [3,4,1,6,7,2]");
-            default: throw new RuntimeException("Unknown test number: " + testNum);
-        }
-    }
-
 
     @Override
     public char ordering() {

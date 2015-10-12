@@ -47,11 +47,11 @@ public class AddOp extends BaseTransformOp {
     }
 
     public AddOp(INDArray x) {
-        super(x,x);
+        super(x, x);
     }
 
-    public AddOp(INDArray x, INDArray xDup, INDArray z) {
-        super(x, xDup, z, x.length());
+    public AddOp(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z, x.length());
     }
 
     @Override

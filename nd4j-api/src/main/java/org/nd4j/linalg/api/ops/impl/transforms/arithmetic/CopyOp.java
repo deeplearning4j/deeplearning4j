@@ -61,12 +61,12 @@ public class CopyOp extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-        return Nd4j.createComplexNumber(other, 0);
+        return origin;
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        return Nd4j.createComplexNumber(other, 0);
+        return origin;
     }
 
     @Override
@@ -125,7 +125,5 @@ public class CopyOp extends BaseTransformOp {
     @Override
     public void init(INDArray x, INDArray y, INDArray z, int n) {
         super.init(x, y, z, n);
-        if (y == null)
-            throw new IllegalArgumentException("No components to add");
     }
 }

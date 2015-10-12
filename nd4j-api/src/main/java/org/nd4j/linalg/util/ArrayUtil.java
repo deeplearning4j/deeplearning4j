@@ -572,8 +572,8 @@ public class ArrayUtil {
     }
 
     /**
-     * Return a copy of this array with the
-     * given index omitted
+     * Return a copy of this array with only the
+     * given index(es) remaining
      *
      * @param data  the data to copy
      * @param index the index of the item to remove
@@ -586,7 +586,6 @@ public class ArrayUtil {
         for(int i = 0; i < data.length; i++)
             if(Ints.contains(index,i))
                 ret[count++] = data[i];
-
 
         return ret;
     }
@@ -607,7 +606,6 @@ public class ArrayUtil {
         for(int i = 0; i < data.length; i++)
             if(!Ints.contains(index,i))
                 ret[count++] = data[i];
-
 
         return ret;
     }
@@ -1330,11 +1328,45 @@ public class ArrayUtil {
         return minIdx;
     }
 
+    /** Returns the index of the maximum value in the array.
+     * If two entries have same maximum value, index of the first one is returned. */
+    public static int argMax(long[] in){
+        int maxIdx = 0;
+        for( int i=1; i<in.length; i++ ) if(in[i]>in[maxIdx]) maxIdx = i;
+        return maxIdx;
+    }
+
+    /** Returns the index of the minimum value in the array.
+     * If two entries have same minimum value, index of the first one is returned. */
+    public static int argMin(long[] in){
+        int minIdx = 0;
+        for( int i=1; i<in.length; i++ ) if(in[i]<in[minIdx]) minIdx = i;
+        return minIdx;
+    }
+
     public static int argMinOfMax(int[] first, int[] second){
         int minIdx = 0;
         int maxAtMinIdx = Math.max(first[0],second[0]);
         for( int i=1; i<first.length; i++ ){
             int maxAtIndex = Math.max(first[i],second[i]);
+            if(maxAtMinIdx > maxAtIndex){
+                maxAtMinIdx = maxAtIndex;
+                minIdx = i;
+            }
+        }
+        return minIdx;
+    }
+
+    public static int argMinOfMax(int[]... arrays){
+        int minIdx = 0;
+        int maxAtMinIdx = Integer.MAX_VALUE;
+
+        for( int i=0; i<arrays[0].length; i++ ){
+            int maxAtIndex = Integer.MIN_VALUE;
+            for( int j=0; j<arrays.length; j++ ){
+                maxAtIndex = Math.max(maxAtIndex,arrays[j][i]);
+            }
+
             if(maxAtMinIdx > maxAtIndex){
                 maxAtMinIdx = maxAtIndex;
                 minIdx = i;

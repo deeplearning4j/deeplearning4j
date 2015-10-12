@@ -36,7 +36,9 @@ import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.factory.DefaultOpFactory;
 import org.nd4j.linalg.api.ops.factory.OpFactory;
-import org.nd4j.linalg.api.ops.impl.accum.IAMax;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
+import org.nd4j.linalg.api.parallel.tasks.TaskFactory;
+import org.nd4j.linalg.api.parallel.tasks.TaskFactoryProvider;
 import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.api.rng.distribution.factory.DefaultDistributionFactory;
@@ -51,7 +53,6 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.functions.Value;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.api.shape.Shape;
-import org.omg.PortableInterceptor.INACTIVE;
 import org.springframework.core.io.Resource;
 
 import java.io.*;
@@ -77,6 +78,7 @@ public class Nd4j {
     public final static String COPY_OPS = "ndarray.copyops";
     public final static String OP_EXECUTIONER = "opexec";
     public final static String OP_FACTORY = "opfactory";
+    public final static String TASK_FACTORY = "taskfactory.class";
     public final static String RANDOM = "rng";
     public final static String DISTRIBUTION = "dist";
     public final static String INSTRUMENTATION = "instrumentation";
@@ -111,6 +113,7 @@ public class Nd4j {
     protected static Class<? extends DataBufferFactory> dataBufferFactoryClazz;
     protected static Class<? extends OpExecutioner> opExecutionerClazz;
     protected static Class<? extends OpFactory> opFactoryClazz;
+    protected static Class<? extends TaskFactory> taskFactoryClazz;
     protected static Class<? extends org.nd4j.linalg.api.rng.Random> randomClazz;
     protected static Class<? extends DistributionFactory> distributionFactoryClazz;
     protected static Class<? extends Instrumentation> instrumentationClazz;
@@ -123,6 +126,7 @@ public class Nd4j {
     protected static OpExecutioner OP_EXECUTIONER_INSTANCE;
     protected static DistributionFactory DISTRIBUTION_FACTORY;
     protected static OpFactory OP_FACTORY_INSTANCE;
+    protected static TaskFactory TASK_FACTORY_INSTANCE;
     protected static org.nd4j.linalg.api.rng.Random random;
     protected static Instrumentation instrumentation;
 
@@ -494,6 +498,11 @@ public class Nd4j {
         return OP_FACTORY_INSTANCE;
     }
 
+    /** Get the task factory */
+    public static TaskFactory getTaskFactory(){
+        return TASK_FACTORY_INSTANCE;
+    }
+
     /**
      * Returns the fft instance
      *
@@ -557,7 +566,7 @@ public class Nd4j {
      * @return
      */
     public static INDArray argMax(INDArray arr,int...dimension) {
-        return Nd4j.getExecutioner().exec(new IAMax(arr),dimension);
+        return Nd4j.getExecutioner().exec(new IMax(arr),dimension);
     }
 
     /**
@@ -4529,6 +4538,8 @@ public class Nd4j {
 
             opFactoryClazz = (Class<? extends OpFactory>) Class.forName(System.getProperty(OP_FACTORY, DefaultOpFactory.class.getName()));
 
+            taskFactoryClazz = (Class<? extends TaskFactory>) Class.forName(System.getProperty(TASK_FACTORY, TaskFactoryProvider.getDefaultTaskFactoryForBackend(backend)));
+
             blasWrapperClazz = (Class<? extends BlasWrapper>) Class.forName(System.getProperty(BLAS_OPS, props.get(BLAS_OPS).toString()));
             String clazzName = props.getProperty(DISTRIBUTION, DefaultDistributionFactory.class.getName());
             distributionFactoryClazz = (Class<? extends DistributionFactory>) Class.forName(clazzName);
@@ -4536,6 +4547,7 @@ public class Nd4j {
 
 
             instrumentation = instrumentationClazz.newInstance();
+            TASK_FACTORY_INSTANCE = taskFactoryClazz.newInstance();
             OP_EXECUTIONER_INSTANCE = opExecutionerClazz.newInstance();
             FFT_INSTANCE = fftInstanceClazz.newInstance();
             Constructor c2 = ndArrayFactoryClazz.getConstructor(DataBuffer.Type.class, char.class);
@@ -4555,7 +4567,5 @@ public class Nd4j {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
     }
-
 }

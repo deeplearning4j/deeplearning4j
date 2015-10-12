@@ -19,7 +19,6 @@
 
 package org.nd4j.linalg.api.ops.impl.accum;
 
-import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
@@ -52,20 +51,48 @@ public class Norm1 extends BaseAccumulation {
     }
 
     @Override
-    public void update(Number result) {
-        currentResult = currentResult.doubleValue() + FastMath.abs(result.doubleValue());
-        numProcessed++;
+    public double update(double accum, double x){
+        return (x>=0 ? accum+x : accum-x);
     }
 
     @Override
-    public void update(IComplexNumber result) {
-        currentComplexResult.addi(result);
-        numProcessed++;
+    public double update(double accum, double x, double y){
+        return (x>=0 ? accum+x : accum-x);
     }
 
     @Override
-    public Number zero() {
-        return 0.0;
+    public float update(float accum, float x){
+        return (x>=0 ? accum+x : accum-x);
+    }
+
+    @Override
+    public float update(float accum, float x, float y){
+        return (x>=0 ? accum+x : accum-x);
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, double x){
+        return accum.add(x>=0 ? x : -x);
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, double x, double y){
+        return accum.add(x>=0 ? x : -x);
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, IComplexNumber x){
+        return accum.add(x.absoluteValue());
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, IComplexNumber x, IComplexNumber y){
+        return accum.add(x.absoluteValue());
+    }
+
+    @Override
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, double y) {
+        return accum.add(x.absoluteValue());
     }
 
     @Override
@@ -97,5 +124,20 @@ public class Norm1 extends BaseAccumulation {
             return new Norm1(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Norm1(x.tensorAlongDimension(index, dimension));
+    }
+
+    @Override
+    public double combineSubResults(double first, double second){
+        return first + second;
+    }
+
+    @Override
+    public float combineSubResults(float first, float second){
+        return first + second;
+    }
+
+    @Override
+    public IComplexNumber combineSubResults(IComplexNumber first, IComplexNumber second){
+        return first.add(second);
     }
 }

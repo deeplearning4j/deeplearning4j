@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.CopyOp;
 import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.api.shape.loop.four.LoopFunction4;
 import org.nd4j.linalg.api.shape.loop.four.RawArrayIterationInformation4;
@@ -167,60 +168,13 @@ public class Shape {
                 ret.putSlice(i, arr.slice(i));
             return ret;
         } else {
-
-            if(arr.data().allocationMode() == AllocationMode.HEAP) {
-                if(Shape.isContiguousInBuffer(arr) && Shape.strideDescendingCAscendingF(arr)
-                        && (anyOrder || order == arr.ordering()) ){
-                    //Can do array copy on data
-                    int length = arr.length();
-                    int offset = arr.offset();
-                    char outOrder = arr.ordering(); //Same as input OR same as order argument if anyOrder == false
-
-                    Object array = arr.data().array();
-
-                    if (array instanceof float[]) {
-                        float[] orig = (float[]) array;
-                        float[] out = new float[length];
-                        System.arraycopy(orig,offset,out,0,length);
-                        DataBuffer floatBuffer = Nd4j.createBuffer(out);
-
-                        int[] newShape = arr.shape();
-                        newShape = Arrays.copyOf(newShape, newShape.length);
-                        int[] newStride = arr.stride();
-                        newStride = Arrays.copyOf(newStride, newStride.length);
-
-                        return Nd4j.create(floatBuffer, newShape, newStride, 0, arr.ordering());
-
-                    } else if (array instanceof double[]) {
-                        double[] orig = (double[]) array;
-                        double[] out = new double[length];
-                        System.arraycopy(orig,offset,out,0,length);
-                        DataBuffer doubleBuffer = Nd4j.createBuffer(out);
-
-                        int[] newShape = arr.shape();
-                        newShape = Arrays.copyOf(newShape, newShape.length);
-                        int[] newStride = arr.stride();
-                        newStride = Arrays.copyOf(newStride, newStride.length);
-
-                        return Nd4j.create(doubleBuffer, newShape, newStride, 0, arr.ordering());
-                    }
-                }
-            }
-
-            final INDArray ret = Nd4j.create(arr.shape(),order);
-            if(arr.elementWiseStride() < 0 || arr.ordering() != ret.ordering()) {
-                NdIndexIterator iterator = new NdIndexIterator(ret.shape());
-                while(iterator.hasNext()) {
-                    int[] next = iterator.next();
-                    ret.putScalar(next,arr.getDouble(next));
-                }
-            }
-            else {
-                for(int i = 0; i < ret.length(); i++)
-                    ret.putScalarUnsafe(i * ret.elementWiseStride(),arr.getDoubleUnsafe(i * arr.elementWiseStride()));
-            }
-
-            return ret;
+            //Use CopyOp:
+            char outOrder = (anyOrder ? arr.ordering() : order);
+            if(outOrder == 'a') outOrder = Nd4j.order();
+            INDArray z = Nd4j.create(arr.shape(),outOrder);
+            CopyOp op = new CopyOp(arr,z);
+            Nd4j.getExecutioner().exec(op);
+            return z;
         }
     }
 

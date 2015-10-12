@@ -65,7 +65,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public Op exec(Op op) {
-        checkOp(op);
         //linear views and oblong offsets can't be handled by the gpu (due to the way the buffers are interpeted as vectors)
         if(op.x() instanceof LinearViewNDArray
                 || op.x() instanceof IComplexNDArray
@@ -126,7 +125,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private void invoke(Accumulation op)  {
-        checkOp(op);
         if(!KernelFunctionLoader.getInstance().exists(op.name()) || executionMode() == ExecutionMode.JAVA || op.isPassThrough())
             super.exec(op);
 
@@ -207,7 +205,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private void invoke(ScalarOp op) {
-        checkOp(op);
         if(!KernelFunctionLoader.getInstance().exists(op.name())  || executionMode() == ExecutionMode.JAVA)
             super.exec(op);
 

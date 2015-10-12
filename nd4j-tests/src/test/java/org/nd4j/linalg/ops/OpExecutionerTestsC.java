@@ -23,25 +23,38 @@ package org.nd4j.linalg.ops;
 
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.Accumulation;
+import org.nd4j.linalg.api.ops.IndexAccumulation;
+import org.nd4j.linalg.api.ops.ScalarOp;
+import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.ops.exception.IllegalOpException;
+import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarMax;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
+import org.nd4j.linalg.api.ops.impl.scalar.*;
+import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarEquals;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarLessThan;
+import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarSetValue;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.springframework.core.io.ClassPathResource;
 
-import java.io.DataInput;
 import java.io.DataInputStream;
+import java.lang.reflect.Constructor;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Created by agibsonccc on 2/22/15.
@@ -70,7 +83,6 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         INDArray vec2 = Nd4j.create(new float[]{1, 2, 3, 4, 5});
         double sim = Transforms.cosineSim(vec1, vec2);
         assertEquals(getFailureMessage(), 1, sim, 1e-1);
-
     }
 
     @Test
@@ -91,7 +103,6 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         INDArray arr2 = Nd4j.create(new double[]{60, 60});
         double result = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(arr,arr2)).currentResult().doubleValue();
         assertEquals(getFailureMessage(), 7.0710678118654755, result, 1e-1);
-
     }
 
     @Test
@@ -117,17 +128,15 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
             double val = linspace2.getDouble(i);
             assertTrue(getFailureMessage(),val >= 2 && val <= 4);
         }
-
-
     }
 
     @Test
     public void testAlongDimension() {
-        INDArray arr = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray arr = Nd4j.linspace(1,4,4).reshape(2, 2);
         Sigmoid sigmoid = new Sigmoid(arr.dup());
         Nd4j.getExecutioner().exec(sigmoid,1);
         INDArray sigmoidREsult = Transforms.sigmoid(arr);
-        assertEquals(sigmoidREsult,sigmoid.z());
+        assertEquals(sigmoidREsult, sigmoid.z());
     }
 
 
@@ -136,7 +145,6 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         INDArray arr = Nd4j.create(new float[]{1, 2, 3, 4});
         double normMax = Nd4j.getExecutioner().execAndReturn(new NormMax(arr)).currentResult().doubleValue();
         assertEquals(getFailureMessage(), 4, normMax, 1e-1);
-
     }
 
 
@@ -147,7 +155,6 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         INDArray arr = Nd4j.create(new float[]{1, 2, 3, 4});
         double norm2 = Nd4j.getExecutioner().execAndReturn(new Norm2(arr)).currentResult().doubleValue();
         assertEquals(getFailureMessage(),5.4772255750516612, norm2, 1e-1);
-
     }
 
     @Test
@@ -158,7 +165,6 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         INDArray solution = Nd4j.valueArrayOf(5, 2.0);
         opExecutioner.exec(new AddOp(x, xDup, x));
         assertEquals(getFailureMessage(),solution, x);
-
     }
 
     @Test
@@ -169,7 +175,6 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         INDArray solution = Nd4j.valueArrayOf(5, 1.0);
         opExecutioner.exec(new MulOp(x, xDup, x));
         assertEquals(solution, x);
-
     }
 
 
@@ -183,7 +188,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         assertEquals(getFailureMessage(),solution, x);
         Sum acc = new Sum(x.dup());
         opExecutioner.exec(acc);
-        assertEquals(getFailureMessage(),10.0, acc.currentResult().doubleValue(), 1e-1);
+        assertEquals(getFailureMessage(), 10.0, acc.currentResult().doubleValue(), 1e-1);
         Prod prod = new Prod(x.dup());
         opExecutioner.exec(prod);
         assertEquals(getFailureMessage(),32.0, prod.currentResult().doubleValue(), 1e-1);
@@ -198,10 +203,8 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         opExecutioner.exec(max);
         assertEquals(5, max.currentResult().doubleValue(), 1e-1);
         Min min = new Min(x);
+        opExecutioner.exec(min);
         assertEquals(1, min.currentResult().doubleValue(), 1e-1);
-
-
-
     }
 
     @Test
@@ -210,7 +213,6 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         Prod prod = new Prod(linspace);
         double prod2 = Nd4j.getExecutioner().execAndReturn(prod).currentResult().doubleValue();
         assertEquals(720, prod2, 1e-1);
-
     }
 
     @Test
@@ -222,9 +224,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
         INDArray matrixSums = linspace.reshape(2, 3);
         INDArray rowSums = matrixSums.sum(1);
-        assertEquals(Nd4j.create(new double[]{6,15}),rowSums);
-
-
+        assertEquals(Nd4j.create(new double[]{6, 15}),rowSums);
     }
 
 
@@ -240,7 +240,6 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         Variance variance = new Variance(x.dup(), true);
         opExecutioner.exec(variance);
         assertEquals(getFailureMessage(),2.5, variance.currentResult().doubleValue(), 1e-1);
-
     }
 
     @Test
@@ -254,10 +253,8 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
     @Test
     public void testIamax() {
         INDArray linspace = Nd4j.linspace(1, 4, 4);
-        assertEquals(getFailureMessage(),3,Nd4j.getBlasWrapper().iamax(linspace));
-        IAMax iaMax = new IAMax(linspace);
-        int iamax = Nd4j.getExecutioner().execAndReturn(iaMax).currentResult().intValue();
-        int result = iaMax.currentResult().intValue();
+        assertEquals(getFailureMessage(), 3, Nd4j.getBlasWrapper().iamax(linspace));
+        int iamax = Nd4j.getExecutioner().execAndReturn(new IAMax(linspace)).getFinalResult();
         assertEquals(3,iamax);
     }
 
@@ -274,7 +271,6 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         Variance variance = new Variance(x.dup(), true);
         opExecutioner.exec(variance);
         assertEquals(getFailureMessage(),2.5, variance.currentResult().doubleValue(), 1e-1);
-
     }
 
     @Test
@@ -284,8 +280,6 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         SoftMax softMax = new SoftMax(arr);
         opExecutioner.exec(softMax);
         assertEquals(getFailureMessage(),1.0, softMax.z().sumNumber().doubleValue(), 1e-1);
-
-
     }
 
     @Test
@@ -307,7 +301,6 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         assertEquals(zeros, Nd4j.getExecutioner().execAndReturn(new ScalarGreaterThan(linspace, 7)));
         assertEquals(zeros, Nd4j.getExecutioner().execAndReturn(new ScalarLessThan(linspace, 0)));
         assertEquals(ones, Nd4j.getExecutioner().execAndReturn(new ScalarLessThan(linspace, 7)));
-
     }
 
     @Test
@@ -331,7 +324,6 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         INDArray z = softMax.z();
         INDArray zSums = z.sum(1);
         assertEquals(zSums.length(),zSums.sumNumber().doubleValue(),1e-1);
-
     }
 
 
@@ -371,9 +363,11 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         OpExecutioner opExecutioner = Nd4j.getExecutioner();
         INDArray arr = Nd4j.linspace(1, 6, 6).reshape(2, 3);
         INDArray slice = arr.slice(0);
+        float[] expected = new float[slice.length()];
+        for( int i=0; i<slice.length(); i++) expected[i] = (float)Math.exp(slice.getDouble(i));
         Exp exp = new Exp(slice);
         opExecutioner.exec(exp);
-        assertEquals(getFailureMessage(),Nd4j.create(Nd4j.createBuffer(new double[]{2.7182817459106445, 7.389056205749512, 20.08553695678711})), slice);
+        assertEquals(getFailureMessage(),Nd4j.create(Nd4j.createBuffer(expected)), slice);
     }
 
     @Test
@@ -382,18 +376,12 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         INDArray arr = Nd4j.linspace(1, 6, 6);
         SoftMax softMax = new SoftMax(arr);
         opExecutioner.exec(softMax);
-        assertEquals(getFailureMessage(),1.0, softMax.z().sumNumber().doubleValue(), 1e-1);
+        assertEquals(getFailureMessage(), 1.0, softMax.z().sumNumber().doubleValue(), 1e-1);
 
         INDArray linspace = Nd4j.linspace(1, 6, 6).reshape(2, 3);
         SoftMax softmax = new SoftMax(linspace.dup());
         Nd4j.getExecutioner().exec(softmax);
         assertEquals(linspace.rows(), softmax.z().sumNumber().doubleValue(), 1e-1);
-        //copy not modified
-        assertFalse(softmax.z().equals(softmax.x()));
-        //original x not modified
-        assertFalse(softmax.z().equals(linspace));
-
-
     }
 
 
@@ -405,7 +393,6 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         Nd4j.getExecutioner().exec(max, 1);
         linspace.assign(max.z());
         assertEquals(getFailureMessage(), linspace.getRow(0).sumNumber().doubleValue(), 1.0, 1e-1);
-
     }
 
     @Test
@@ -425,7 +412,6 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         INDArray columnStd = twoByThree.var(0);
         INDArray assertion = Nd4j.create(new float[]{30200f, 30200f, 30200f, 30200f});
         assertEquals(assertion, columnStd);
-
     }
 
     @Test
@@ -436,16 +422,38 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         INDArray columnStd = twoByThree.std(0);
         INDArray assertion = Nd4j.create(new float[]{173.78147196982766f, 173.78147196982766f, 173.78147196982766f, 173.78147196982766f});
         assertEquals(assertion, columnStd);
-
     }
 
     @Test
     public void testDim1() {
         INDArray sum = Nd4j.linspace(1,2, 2).reshape(2, 1);
         INDArray same = sum.dup();
-        assertEquals(same.sum(1),sum);
+        assertEquals(same.sum(1), sum);
     }
 
+    @Test
+    public void testIMax(){
+        INDArray arr = Nd4j.linspace(1, 10, 10);
+        IMax imax = new IMax(arr);
+        assertEquals(9, ((IndexAccumulation) Nd4j.getExecutioner().exec(imax)).getFinalResult());
+
+        arr.muli(-1);
+        imax = new IMax(arr);
+        int maxIdx = ((IndexAccumulation) Nd4j.getExecutioner().exec(imax)).getFinalResult();
+        assertEquals(0,maxIdx);
+    }
+
+    @Test
+    public void testIMin(){
+        INDArray arr = Nd4j.linspace(1, 10, 10);
+        IMin imin = new IMin(arr);
+        assertEquals(0, ((IndexAccumulation) Nd4j.getExecutioner().exec(imin)).getFinalResult());
+
+        arr.muli(-1);
+        imin = new IMin(arr);
+        int minIdx = ((IndexAccumulation) Nd4j.getExecutioner().exec(imin)).getFinalResult();
+        assertEquals(9, minIdx);
+    }
 
     @Override
     public char ordering() {

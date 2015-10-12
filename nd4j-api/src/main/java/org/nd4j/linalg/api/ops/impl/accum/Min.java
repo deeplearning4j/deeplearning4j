@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Calculate the min over a vector
@@ -51,20 +52,6 @@ public class Min extends BaseAccumulation {
         super(x, y);
     }
 
-    @Override
-    public void update(Number result) {
-        if (result.doubleValue() < currentResult().doubleValue())
-            this.currentResult = result;
-        numProcessed++;
-    }
-
-    @Override
-    public void update(IComplexNumber result) {
-        if (result.absoluteValue().doubleValue() < currentResultComplex().absoluteValue().doubleValue())
-            this.currentComplexResult = result;
-        numProcessed++;
-    }
-
 
     @Override
     public String name() {
@@ -72,18 +59,58 @@ public class Min extends BaseAccumulation {
     }
 
     @Override
-    public void init(INDArray x, INDArray y, INDArray z, int n) {
-        super.init(x, y, z, n);
-        if (x instanceof IComplexNDArray) {
-            IComplexNDArray complexX = (IComplexNDArray) x;
-            currentComplexResult = complexX.getComplex(0);
-            initialComplex = complexX.getComplex(0);
-        } else {
-            currentResult = x.getDouble(0);
-            initial = x.getDouble(0);
-        }
+    public double update(double accum, double x){
+        return (x<accum ? x : accum);
+    }
 
+    @Override
+    public double update(double accum, double x, double y){
+        return (x<accum ? x : accum);
+    }
 
+    @Override
+    public float update(float accum, float x){
+        return (x<accum ? x : accum);
+    }
+
+    @Override
+    public float update(float accum, float x, float y){
+        return (x<accum ? x : accum);
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, double x){
+        return (accum.absoluteValue().doubleValue() < x ? accum : Nd4j.createComplexNumber(x, 0));
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, double x, double y){
+        return (accum.absoluteValue().doubleValue() < x ? accum : Nd4j.createComplexNumber(x,0));
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, IComplexNumber x){
+        return (accum.absoluteValue().doubleValue() < x.absoluteValue().doubleValue() ? accum : x);
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, IComplexNumber x, IComplexNumber y){
+        return (accum.absoluteValue().doubleValue() < x.absoluteValue().doubleValue() ? accum : x);
+    }
+
+    @Override
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, double y) {
+        return (accum.absoluteValue().doubleValue() < x.absoluteValue().doubleValue() ? accum : x);
+    }
+
+    @Override
+    public double zeroDouble() {
+        return Double.MAX_VALUE;
+    }
+
+    @Override
+    public float zeroFloat(){
+        return Float.MAX_VALUE;
     }
 
     @Override

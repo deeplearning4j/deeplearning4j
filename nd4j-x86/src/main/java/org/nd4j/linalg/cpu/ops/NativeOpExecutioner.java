@@ -5,10 +5,7 @@ import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.LinearViewNDArray;
-import org.nd4j.linalg.api.ops.Accumulation;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.ScalarOp;
-import org.nd4j.linalg.api.ops.TransformOp;
+import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.cpu.javacpp.Loop;
 import org.nd4j.linalg.cpu.util.ArgsConverter;
@@ -41,6 +38,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             Accumulation ac = (Accumulation) op;
             exec(ac);
         }
+        else if(op instanceof IndexAccumulation){
+            IndexAccumulation iac = (IndexAccumulation)op;
+            exec(iac);  //Currently using DefaultOpExecutioner
+        }
 
         return op;
     }
@@ -50,8 +51,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             super.exec(op);
         }
         else {
-            checkOp(op);
-
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 loop.execScalarDouble(
                         op.x().data().asDouble()
@@ -83,11 +82,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     private void exec(TransformOp op) {
         if(op.x() instanceof IComplexNDArray || op.x() instanceof LinearViewNDArray ||   executionMode() == ExecutionMode.JAVA) {
             super.exec(op);
-
         }
         else {
-            checkOp(op);
-
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 if(op.y() != null) {
                     loop.execDoubleTransform(
@@ -157,11 +153,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         }
         else {
-            checkOp(op);
-
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 if(op.y() != null) {
-                    op.setCurrentResult(loop.reduce3(
+                    op.setFinalResult(loop.reduce3(
                             op.x().data().asDouble()
                             ,op.y().data().asDouble()
                             ,op.n()
@@ -173,7 +167,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             , ArgsConverter.convertExtraArgsDouble(op)));
                 }
                 else {
-                    op.setCurrentResult(loop.reduce(
+                    op.setFinalResult(loop.reduce(
                             op.x().data().asDouble()
                             ,op.n()
                             ,op.x().offset()
@@ -184,7 +178,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
             else {
                 if(op.y() != null) {
-                    op.setCurrentResult(loop.reduce3Float(
+                    op.setFinalResult(loop.reduce3Float(
                             op.x().data().asFloat()
                             , op.y().data().asFloat()
                             , op.n()
@@ -196,7 +190,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             , ArgsConverter.convertExtraArgsFloat(op)));
                 }
                 else {
-                    op.setCurrentResult(loop.reduceFloat(
+                    op.setFinalResult(loop.reduceFloat(
                             op.x().data().asFloat()
                             , op.n()
                             , op.x().offset()

@@ -49,8 +49,8 @@ public class DivOp extends BaseTransformOp {
         super(x, z, n);
     }
 
-    public DivOp(INDArray first, INDArray second, INDArray second1) {
-        this(first,second,second1,second1.length());
+    public DivOp(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z, x.length());
     }
 
     @Override

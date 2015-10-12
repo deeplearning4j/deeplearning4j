@@ -19,9 +19,9 @@
 
 package org.nd4j.linalg.api.ops.impl.accum;
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
 
 /**
@@ -29,7 +29,7 @@ import org.nd4j.linalg.api.ops.Op;
  *
  * @author Adam Gibson
  */
-public class Mean extends BaseAccumulation {
+public class Mean extends Sum {
 
     public Mean() {
     }
@@ -51,35 +51,6 @@ public class Mean extends BaseAccumulation {
     }
 
     @Override
-    public void update(Number result) {
-        if (Double.isInfinite(currentResult.doubleValue()))
-            currentResult = result;
-        else
-            currentResult = currentResult.doubleValue() + result.doubleValue();
-        if (numProcessed() == n())
-            currentResult = currentResult.doubleValue() / (double) n();
-
-
-    }
-
-    @Override
-    public void update(IComplexNumber result) {
-        if (currentComplexResult.realComponent().doubleValue() == Double.NEGATIVE_INFINITY)
-            currentComplexResult = result;
-        else
-            currentComplexResult.addi(result);
-        if (numProcessed() == n())
-            currentComplexResult.divi(n);
-
-    }
-
-    @Override
-    public Number zero() {
-        return 0.0;
-    }
-
-
-    @Override
     public String name() {
         return "mean";
     }
@@ -88,12 +59,10 @@ public class Mean extends BaseAccumulation {
     public Op opForDimension(int index, int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
-
         if (y() != null)
             return new Mean(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Mean(x.vectorAlongDimension(index, dimension));
-
     }
 
     @Override
@@ -105,5 +74,25 @@ public class Mean extends BaseAccumulation {
             return new Mean(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Mean(x.tensorAlongDimension(index, dimension));
+    }
+
+    @Override
+    public double getAndSetFinalResult(double accum){
+        double d = accum / n();
+        this.finalResult = d;
+        return d;
+    }
+
+    @Override
+    public float getAndSetFinalResult(float accum){
+        float f = accum / n();
+        this.finalResult = f;
+        return f;
+    }
+
+    @Override
+    public IComplexNumber getAndSetFinalResult(IComplexNumber accum){
+        finalResultComplex = accum.div(n());
+        return finalResultComplex;
     }
 }

@@ -20,9 +20,7 @@
 package org.nd4j.linalg.api.ops.factory;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Accumulation;
-import org.nd4j.linalg.api.ops.LossFunction;
-import org.nd4j.linalg.api.ops.TransformOp;
+import org.nd4j.linalg.api.ops.*;
 
 /**
  * Op factory
@@ -69,6 +67,23 @@ public interface OpFactory {
     Accumulation createAccum(String name, INDArray x, INDArray y);
 
     /**
+     * Index accumulation operation
+     *
+     * @param name the name of the function to create
+     * @param x    the input to the function
+     * @return the operation
+     */
+    IndexAccumulation createIndexAccum(String name, INDArray x);
+
+    /**Index accumulation operation
+     * @param name
+     * @param x
+     * @param y
+     * @return
+     */
+    IndexAccumulation createIndexAccum(String name, INDArray x, INDArray y);
+
+    /**
      * @param name
      * @param x
      * @param y
@@ -94,5 +109,25 @@ public interface OpFactory {
      */
     TransformOp createTransform(String name, INDArray x, INDArray y, INDArray z);
 
+    /** Create a vector operation
+     *
+     * @param name Name of the vector op
+     * @param x NDArray to operate on
+     * @param y Vector
+     * @param z Result NDArray
+     * @param dimension Dimension to do op along. 0 for row, 1 for column, etc
+     * @return VectorOp
+     */
+    VectorOp createVectorOp(String name, INDArray x, INDArray y, INDArray z, int dimension);
+
+    /** Create a vector operation
+     *
+     * @param name Name of the vector op
+     * @param x NDArray to operate on
+     * @param z Result NDArray
+     * @param dimension Dimension to do op along. 0 for row, 1 for column, etc
+     * @return VectorOp
+     */
+    VectorOp createVectorOp(String name, INDArray x, INDArray z, int dimension);
 
 }

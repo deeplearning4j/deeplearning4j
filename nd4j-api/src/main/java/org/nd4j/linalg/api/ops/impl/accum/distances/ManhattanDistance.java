@@ -53,25 +53,77 @@ public class ManhattanDistance extends BaseAccumulation {
         super(x, y);
     }
 
+//    @Override
+//    public void update(Number result) {
+//       currentResult = currentResult.doubleValue() + FastMath.abs(result.doubleValue());
+//    }
+//
+//    @Override
+//    public void update(IComplexNumber result) {
+//        currentComplexResult.addi(ComplexUtil.pow(result, 2));
+//    }
+//
+
     @Override
-    public void update(Number result) {
-       currentResult = currentResult.doubleValue() + FastMath.abs(result.doubleValue());
+    public double update(double accum, double x){
+        return accum;
     }
 
     @Override
-    public void update(IComplexNumber result) {
-        currentComplexResult.addi(ComplexUtil.pow(result, 2));
+    public double update(double accum, double x, double y){
+        return accum + FastMath.abs(x-y);
     }
 
     @Override
-    public Number zero() {
-        return 0.0;
+    public float update(float accum, float x){
+        return accum;
     }
 
     @Override
-    public IComplexNumber zeroComplex() {
-        return Nd4j.createComplexNumber(0.0, 0.0);
+    public float update(float accum, float x, float y){
+        return accum + FastMath.abs(x-y);
     }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, double x){
+        return accum;
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, double x, double y){
+        return accum.add(FastMath.abs(x-y));
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, IComplexNumber x){
+        return accum;
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, IComplexNumber x, IComplexNumber y){
+        return accum.add(x.sub(y).absoluteValue());
+    }
+
+    @Override
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, double y) {
+        return accum.add(x.sub(y).absoluteValue());
+    }
+
+    @Override
+    public double combineSubResults(double first, double second){
+        return first + second;
+    }
+
+    @Override
+    public float combineSubResults(float first, float second){
+        return first + second;
+    }
+
+    @Override
+    public IComplexNumber combineSubResults(IComplexNumber first, IComplexNumber second){
+        return first.add(second);
+    }
+
 
     @Override
     public String name() {
