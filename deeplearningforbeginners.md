@@ -49,8 +49,19 @@ Once you have programming basics down, tackle Java.
 * [Head First Java](http://www.amazon.com/gp/product/0596009208)
 * [Java in a Nutshell](http://www.amazon.com/gp/product/1449370829)
 
+## Deeplearning4j
+
+Once you've got that under you're belt, we recommend you approach Deeplearning4j through the examples. 
+
+* [Quickstart](../quickstart.html)
+* [Iris Deep-Belief Network Tutorial](../iris-flower-dataset-tutorial.html)
+
+Once you get those up and running, and you've understood the API, you're ready for a full install.
+
+* [Getting Started](../gettingstarted.html)
+
 ## Other Resources
 
 Most of what we know about deep learning is contained in academic papers.
 
-We've linked to a number of them [here](http://deeplearning4j.org/deeplearningpapers.html). 
+We've linked to a number of them [here](../deeplearningpapers.html). 
