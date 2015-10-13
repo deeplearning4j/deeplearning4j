@@ -1780,6 +1780,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     }
 
+    public NeuralNetConfiguration getDefaultConfiguration() {
+        return defaultConfiguration;
+    }
 
     public INDArray getLabels() {
         return labels;
