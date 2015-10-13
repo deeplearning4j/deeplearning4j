@@ -20,16 +20,15 @@ Below you'll find a list of resources. The sections are roughly organized in the
 * [Patrick Winston's Introduction to Artificial Intelligence @MIT](http://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-034-artificial-intelligence-fall-2010/) (For those interested in a survey of artificial intelligence.)
 * [Andrej Karpathy's Convolutional Neural Networks Class at Stanford](http://cs231n.github.io) (For those interested in image recognition.)
 
-## Linear Algebra
+## Math
 
 * [Andrew Ng's 6-Part Review of Linear Algebra](https://www.youtube.com/playlist?list=PLnnr1O8OWc6boN4WHeuisJWmeQHH9D_Vg)
 * [Khan Academy's Linear Algebra Course](https://www.khanacademy.org/math/linear-algebra)
 * [Linear Algebra for Machine Learning](https://www.youtube.com/watch?v=ZumgfOei0Ak); Patrick van der Smagt
 * [CMU's Linear Algebra Review](http://www.cs.cmu.edu/~zkolter/course/linalg/outline.html)
-* [The Matrix Cookbook](https://ia801002.us.archive.org/13/items/K_B_Petersen_and_M_S_Peders__The_Matrix_Cookbook/matrixcookbook.pdf)
-* [Old and New Matrix Algebra Useful for Statistics](http://research.microsoft.com/en-us/um/people/minka/papers/matrix/minka-matrix.pdf)
 * [Math for Machine Learning](https://www.umiacs.umd.edu/~hal/courses/2013S_ML/math4ml.pdf)
 * [Immersive Linear Algebra](http://immersivemath.com/ila/learnmore.html)
+* [Probability Cheatsheet](https://static1.squarespace.com/static/54bf3241e4b0f0d81bf7ff36/t/55e9494fe4b011aed10e48e5/1441352015658/probability_cheatsheet.pdf)
 
 ## Programming
 
