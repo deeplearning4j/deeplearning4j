@@ -52,7 +52,7 @@ import java.util.Map;
 public class NeuralNetConfiguration implements Serializable,Cloneable {
 
     private double lr = 1e-1;
-    private double lrScoreDecay;
+    private double lrScoreBasedDecay;
     protected int numIterations = 5;
     /* momentum for learning */
     protected double momentum = 0.5;
@@ -281,7 +281,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     public static class Builder implements Cloneable {
         private double rmsDecay = 0.95;
         private double lr = 1e-1f;
-        private double lrScoreDecay;
+        private double lrScoreBasedDecay;
         private double momentum = 0.5f;
         private double l2 = 0f;
         private boolean useRegularization = false;
@@ -410,8 +410,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        public Builder learningRateScoreDecay(double lrScoreDecay) {
-            this.lrScoreDecay = lrScoreDecay;
+        public Builder learningRateScoreBasedDecayRate(double lrScoreBasedDecay) {
+            this.lrScoreBasedDecay = lrScoreBasedDecay;
             return this;
         }
 
@@ -485,7 +485,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             conf.batchSize = batchSize;
             conf.layer = layer;
             conf.lr = (!Double.isNaN(layer.getLr()) ? layer.getLr() : lr);
-            conf.lrScoreDecay = lrScoreDecay;
+            conf.lrScoreBasedDecay = lrScoreBasedDecay;
             conf.numIterations = numIterations;
             conf.momentum = momentum;
             conf.l2 = (!Double.isNaN(layer.getL2()) ? layer.getL2() : l2);
