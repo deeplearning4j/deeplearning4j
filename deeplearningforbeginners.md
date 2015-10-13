@@ -32,7 +32,7 @@ Below you'll find a list of resources. The sections are roughly organized in the
 
 ## Programming
 
-If you do not know how to program yet, you shouldn't start with Java. Python and Ruby convey the basic ideas much more easily in a faster feedback loop. If you want to jump into deep-learning from here without Java, we recommend [Theano](http://deeplearning.net/) and the various Python frameworks built atop it, including [Keras](https://github.com/fchollet/keras) and [Lasagne](https://github.com/Lasagne/Lasagne).
+If you do not know how to program yet, you shouldn't start with Java. Python and Ruby convey the basic ideas much more easily in a faster feedback loop. 
 
 * [Learn Python the Hard Way](http://learnpythonthehardway.org/)
 * [Learn to Program (Ruby)](https://pine.fm/LearnToProgram/)
@@ -41,9 +41,11 @@ If you do not know how to program yet, you shouldn't start with Java. Python and
 * [A Vim Tutorial and Primer](https://danielmiessler.com/study/vim/) (Vim is an editor accessible from the command line.)
 * [Intro to Computer Science (CS50 @Harvard edX)](https://www.edx.org/course/introduction-computer-science-harvardx-cs50x)
 
+If you want to jump into deep-learning from here without Java, we recommend [Theano](http://deeplearning.net/) and the various Python frameworks built atop it, including [Keras](https://github.com/fchollet/keras) and [Lasagne](https://github.com/Lasagne/Lasagne).
+
 ## Java
 
-Once you have programming basics down, tackle Java. 
+Once you have programming basics down, tackle Java, the world's most widely used programming language, and the language of Hadoop. 
 
 * [Intro to Programming in Java @Princeton](http://introcs.cs.princeton.edu/java/home/)
 * [Head First Java](http://www.amazon.com/gp/product/0596009208)
@@ -59,6 +61,10 @@ Once you've got that under you're belt, we recommend you approach Deeplearning4j
 Once you get those up and running, and you've understood the API, you're ready for a full install.
 
 * [Getting Started](../gettingstarted.html)
+
+After deep learning starts to feel familiar, then you're ready to tackle distributed deep learning on Hadoop and Spark. 
+
+* [Launching GPUs on AWS With Spark](../gpu_aws.html)
 
 ## Other Resources
 
