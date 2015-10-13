@@ -71,3 +71,5 @@ After deep learning starts to feel familiar, then you're ready to tackle distrib
 Most of what we know about deep learning is contained in academic papers.
 
 We've linked to a number of them [here](../deeplearningpapers.html). 
+
+While individual courses have limits to what they can teach, the Internet does not. Most questions you have can be answered by Googling and searching sites like [Stackoverflow](http://stackoverflow.com) and [Math Stackexchange](https://math.stackexchange.com/).
