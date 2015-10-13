@@ -49,11 +49,10 @@ public class TestUpdaters {
         Map<String, INDArray> msg = new HashMap<>();
         Map<String, INDArray> msdx = new HashMap<>();
 
-        double lr = 1e-2;
 		double rho = 0.85;
 
 		NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-				.learningRate(lr).rho(rho)
+				.rho(rho)
 				.layer(new DenseLayer.Builder()
 						.nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.ADADELTA).build())
 				.build();
@@ -61,12 +60,12 @@ public class TestUpdaters {
 		Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0);
 		Updater updater = UpdaterCreator.getUpdater(layer);
 
-        for (int i = 0; i < 2; i++) {
-            updater.update(layer, gradient, i);
+		Gradient gradientDup = new DefaultGradient();
+		gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
+		gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
 
-            Gradient gradientDup = new DefaultGradient();
-            gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
-            gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
+		for (int i = 0; i < 2; i++) {
+            updater.update(layer, gradient, i);
 
             // calculations for one iteration / update
 
@@ -86,7 +85,7 @@ public class TestUpdaters {
 
                 gradExpected = Transforms.sqrt(msdxTmp.add(Nd4j.EPS_THRESHOLD))
 						.divi(Transforms.sqrt(msgTmp.add(Nd4j.EPS_THRESHOLD))).muli(val);
-
+				gradientDup.setGradientFor(key, gradExpected);
                 assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
 
                 msdxTmp.muli(rho);
@@ -235,11 +234,13 @@ public class TestUpdaters {
             updater.update(layer, gradient, i);
 
             for (Map.Entry<String, INDArray> entry : gradientDup.gradientForVariable().entrySet()) {
+				if(momentumAfter !=null)
+					mu = (momentumAfter.containsKey(i)) ? momentumAfter.get(i) : mu;
 				key = entry.getKey();
 				val = entry.getValue();
 				INDArray vTmp = v.get(key);
 
-				if(v == null)
+				if(vTmp == null)
                     vTmp = Nd4j.zeros(val.shape());
                 vPrev = vTmp;
                 vTmp = vPrev.mul(mu).subi(val.mul(lr));
