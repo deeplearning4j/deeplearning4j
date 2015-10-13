@@ -7,6 +7,8 @@ import java.util.Map;
 import java.util.Random;
 
 import org.apache.commons.math3.util.FastMath;
+import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -18,6 +20,10 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.optimize.api.ConvexOptimizer;
+import org.deeplearning4j.optimize.solvers.StochasticGradientDescent;
+import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
+import org.deeplearning4j.optimize.terminations.EpsTermination;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -253,8 +259,6 @@ public class TestUpdaters {
 
             assertEquals(momentumAfter, layer.conf().getMomentumAfter());
         }
-
-
     }
 
 
@@ -314,10 +318,7 @@ public class TestUpdaters {
             gradExpected = val.mul(lr);
             assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
         }
-
         assertEquals(lr, layer.conf().getLr(), 1e-4);
-
-
 	}
 
 
@@ -349,33 +350,32 @@ public class TestUpdaters {
 
     @Test
     public void testLrScoreDecay(){
-        double lr = 0.1;
+        double lr = 0.01;
         double lrScoreDecay = 10;
         int nLayers = 2;
-        int iterations = 1;
-        int[] nIns = {2,3};
-        int[] nOuts = {3,4};
-        INDArray input = Nd4j.ones(nIns[0],nOuts[0]);
+        int[] nIns = {4,2};
+        int[] nOuts = {2,3};
+		int oldScore = 1;
+		int newScore = 1;
+		int iteration = 1;
+        INDArray gradient = Nd4j.ones(nIns[0],nOuts[0]);
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .learningRate(lr).learningRateScoreDecay(lrScoreDecay).iterations(iterations)
+                .learningRate(lr).learningRateScoreBasedDecayRate(lrScoreDecay)
                 .list(nLayers)
                 .layer(0, new DenseLayer.Builder().nIn(nIns[0]).nOut(nOuts[0]).updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
                 .layer(1, new OutputLayer.Builder().nIn(nIns[1]).nOut(nOuts[1]).updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
+				.backprop(true).pretrain(false)
                 .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
-        net.setInput(input);
 
-        // TODO test changing lr - need to isolate baseOptimize
-//        ConvexOptimizer opt = new StochasticGradientDescent(net.getDefaultConfiguration(), new NegativeDefaultStepFunction(), null, net);
-//        boolean v = opt.optimize();
-
-        assertEquals(lrScoreDecay, net.getLayer(0).conf().getLrScoreDecay(), 1e-4);
-//        assertEquals(lr, net.conf().getLr(), 1e-4);
-
-    }
+		ConvexOptimizer opt = new StochasticGradientDescent(net.getDefaultConfiguration(), new NegativeDefaultStepFunction(), null, net);
+        opt.checkTerminalConditions(gradient, oldScore, newScore, iteration);
+		assertEquals(lrScoreDecay, net.getLayer(0).conf().getLrScoreBasedDecay(), 1e-4);
+		assertEquals(lr/(lrScoreDecay + Nd4j.EPS_THRESHOLD), opt.getConf().getLr(), 1e-4);
+	}
 
     @Test
 	public void testMultiLayerUpdater() throws Exception {
