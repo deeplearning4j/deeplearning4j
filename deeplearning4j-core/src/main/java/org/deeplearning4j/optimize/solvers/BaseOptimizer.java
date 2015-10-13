@@ -18,6 +18,9 @@
 
 package org.deeplearning4j.optimize.solvers;
 
+import com.google.common.annotations.VisibleForTesting;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.exception.InvalidStepException;
 import org.deeplearning4j.nn.api.Layer;
@@ -107,11 +110,13 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         return model.score();
     }
 
-
     @Override
     public Updater getUpdater() {
         return updater;
     }
+
+    @Override
+    public NeuralNetConfiguration getConf() { return conf; }
 
     @Override
     public Pair<Gradient,Double> gradientAndScore() {
@@ -190,23 +195,28 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
                 listener.iterationDone(model,i);
 
             //check for termination conditions based on absolute change in score
-            for(TerminationCondition condition : terminationConditions){
-                if(condition.terminate(score,oldScore,new Object[]{pair.getFirst().gradient()})){
-                    log.debug("Hit termination condition on iteration {}: score={}, oldScore={}, condition={}", i, score, oldScore, condition);
-                    if(condition.equals(EpsTermination.class) && !Double.isNaN(conf.getLrScoreDecay()))
-                        conf.setLr(conf.getLr()/(conf.getLrScoreDecay() + Nd4j.EPS_THRESHOLD));
-                    return true;
-                }
-            }
-
+            checkTerminalConditions(pair.getFirst().gradient(), oldScore, score, i);
             this.iteration++;
         }
-
         return true;
     }
 
     protected  void postFirstStep(INDArray gradient) {
         //no-op
+    }
+
+    @Override
+    public boolean checkTerminalConditions(INDArray gradient, double oldScore, double score, int i){
+        for(TerminationCondition condition : terminationConditions){
+            if(condition.terminate(score,oldScore,new Object[]{gradient})){
+                log.debug("Hit termination condition on iteration {}: score={}, oldScore={}, condition={}", i, score, oldScore, condition);
+                if(condition instanceof EpsTermination && !Double.isNaN(conf.getLrScoreBasedDecay())) {
+                    conf.setLr(conf.getLr() / (conf.getLrScoreBasedDecay() + Nd4j.EPS_THRESHOLD));
+                }
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
