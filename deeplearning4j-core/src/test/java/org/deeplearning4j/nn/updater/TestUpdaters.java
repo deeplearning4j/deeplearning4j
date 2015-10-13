@@ -7,16 +7,23 @@ import java.util.Map;
 import java.util.Random;
 
 import org.apache.commons.math3.util.FastMath;
+import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.optimize.api.ConvexOptimizer;
+import org.deeplearning4j.optimize.solvers.StochasticGradientDescent;
+import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
+import org.deeplearning4j.optimize.terminations.EpsTermination;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -29,9 +36,12 @@ public class TestUpdaters {
 
 	int nIn = 3;
 	int nOut = 2;
+    double epsilon = 1e-8;
 	INDArray weightGradient = Nd4j.ones(nIn,nOut);
 	INDArray biasGradient = Nd4j.ones(1,nOut);
 	Gradient gradient = new DefaultGradient();
+    INDArray val, gradExpected;
+    String key;
 
 	@Before
 	public void beforeDo(){
@@ -41,11 +51,14 @@ public class TestUpdaters {
 
 	@Test
 	public void testAdaDeltaUpdate(){
-		double lr = 1e-2;
+        INDArray dxSquared;
+        Map<String, INDArray> msg = new HashMap<>();
+        Map<String, INDArray> msdx = new HashMap<>();
+
 		double rho = 0.85;
 
 		NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-				.learningRate(lr).rho(rho)
+				.rho(rho)
 				.layer(new DenseLayer.Builder()
 						.nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.ADADELTA).build())
 				.build();
@@ -53,69 +66,43 @@ public class TestUpdaters {
 		Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0);
 		Updater updater = UpdaterCreator.getUpdater(layer);
 
-		updater.update(layer, gradient, -1);
+		Gradient gradientDup = new DefaultGradient();
+		gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
+		gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
 
-		// calculations for one iteration / update
-		INDArray msgW, msdxW, dxSquaredW, weightGradExpected, weightGradExpected2,
-				msgB, msdxB, dxSquaredB,biasGradExpected, biasGradExpected2;
+		for (int i = 0; i < 2; i++) {
+            updater.update(layer, gradient, i);
 
-		msgW = Nd4j.zeros(weightGradient.shape());
-		msdxW = Nd4j.zeros(weightGradient.shape());
-		msgW.muli(rho);
-		msgW.addi(1-rho).muli(weightGradient.mul(weightGradient));
+            // calculations for one iteration / update
 
-		weightGradExpected = Transforms.sqrt(msdxW.add(Nd4j.EPS_THRESHOLD))
-				.divi(Transforms.sqrt(msgW.add(Nd4j.EPS_THRESHOLD))).muli(weightGradient);
+            for (Map.Entry<String, INDArray> entry : gradientDup.gradientForVariable().entrySet()) {
+                key = entry.getKey();
+                val = entry.getValue();
+				INDArray msgTmp = msg.get(key);
+				INDArray msdxTmp = msdx.get(key);
 
-		msgB = Nd4j.zeros(biasGradient.shape());
-		msdxB = Nd4j.zeros(biasGradient.shape());
-		msgB.muli(rho);
-		msgB.addi(1-rho).muli(biasGradient.mul(biasGradient));
+                if(msgTmp == null) {
+                    msgTmp = Nd4j.zeros(val.shape());
+                    msdxTmp = Nd4j.zeros(val.shape());
+                }
 
-		biasGradExpected = Transforms.sqrt(msdxB.add(Nd4j.EPS_THRESHOLD))
-				.divi(Transforms.sqrt(msgB.add(Nd4j.EPS_THRESHOLD))).muli(weightGradient);
+                msgTmp.muli(rho);
+                msgTmp.addi(1 - rho).muli(val.mul(val));
 
+                gradExpected = Transforms.sqrt(msdxTmp.add(Nd4j.EPS_THRESHOLD))
+						.divi(Transforms.sqrt(msgTmp.add(Nd4j.EPS_THRESHOLD))).muli(val);
+				gradientDup.setGradientFor(key, gradExpected);
+                assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
 
-		INDArray weightGradActual = gradient.getGradientFor(DefaultParamInitializer.WEIGHT_KEY);
-		INDArray biasGradActual = gradient.getGradientFor(DefaultParamInitializer.BIAS_KEY);
+                msdxTmp.muli(rho);
+                dxSquared = gradExpected.mul(gradExpected);
+                msdxTmp.addi(dxSquared.muli(1 - rho));
 
-		assertEquals(weightGradExpected, weightGradActual);
-		assertEquals(biasGradExpected, biasGradActual);
-		assertEquals(rho, layer.conf().getRho(), 1e-4);
-
-
-		// calculations for two iterations / updates
-		Gradient gradient2 = new DefaultGradient();
-		gradient2.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradExpected);
-		gradient2.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradExpected);
-
-		updater.update(layer, gradient2, -1);
-
-		msdxW.muli(rho);
-		dxSquaredW = weightGradExpected.mul(weightGradExpected);
-		msdxW.addi(dxSquaredW.muli(1 - rho));
-
-		msgW.muli(rho);
-		msgW.addi(1-rho).muli(weightGradExpected.mul(weightGradExpected));
-
-		weightGradExpected2 = Transforms.sqrt(msdxW.add(Nd4j.EPS_THRESHOLD))
-				.divi(Transforms.sqrt(msgW.add(Nd4j.EPS_THRESHOLD))).muli(weightGradExpected);
-
-		msdxB.muli(rho);
-		dxSquaredB = biasGradExpected.mul(biasGradExpected);
-		msdxB.addi(dxSquaredB.muli(1 - rho));
-
-		msgB.muli(rho);
-		msgB.addi(1-rho).muli(biasGradExpected.mul(biasGradExpected));
-		biasGradExpected2 = Transforms.sqrt(msdxB.add(Nd4j.EPS_THRESHOLD))
-				.divi(Transforms.sqrt(msgB.add(Nd4j.EPS_THRESHOLD))).muli(biasGradExpected);
-
-		INDArray weightGradActual2 = gradient2.getGradientFor(DefaultParamInitializer.WEIGHT_KEY);
-		INDArray biasGradActual2 = gradient2.getGradientFor(DefaultParamInitializer.BIAS_KEY);
-
-		assertEquals(weightGradExpected2, weightGradActual2);
-		assertEquals(biasGradExpected2, biasGradActual2);
-		assertEquals(rho, layer.conf().getRho(), 1e-4);
+				msg.put(key, msgTmp);
+				msdx.put(key, msdxTmp);
+            }
+            assertEquals(rho, layer.conf().getRho(), 1e-4);
+        }
 
 	}
 
@@ -134,24 +121,23 @@ public class TestUpdaters {
 
 		updater.update(layer, gradient, -1);
 
-		// calculations
-		INDArray weightGradExpected = Transforms.sqrt(weightGradient.mul(weightGradient)
-				.add(1e-8)).rdiv(lr).mul(weightGradient);
+        Gradient gradientDup = new DefaultGradient();
+        gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
+        gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
 
-		INDArray biasGradExpected = Transforms.sqrt(biasGradient.mul(biasGradient)
-				.add(1e-8)).rdiv(lr).mul(biasGradient);
-
-		INDArray weightGradActual = gradient.getGradientFor(DefaultParamInitializer.WEIGHT_KEY);
-		INDArray biasGradActual = gradient.getGradientFor(DefaultParamInitializer.BIAS_KEY);
-
-		assertEquals(weightGradExpected, weightGradActual);
-		assertEquals(biasGradExpected, biasGradActual);
+        for (Map.Entry<String, INDArray> entry : gradientDup.gradientForVariable().entrySet()) {
+            val = entry.getValue();
+            gradExpected = Transforms.sqrt(val.mul(val).add(epsilon)).rdiv(lr).mul(val);
+            assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
+        }
 		assertEquals(lr, layer.conf().getLr(), 1e-4);
 	}
 
+
 	@Test
 	public void testAdamUpdater(){
-		double lr = 0.01;
+        INDArray m, v;
+        double lr = 0.01;
 		int iteration = 0;
 		double beta1 = 0.9; // TODO allow passing in betas and update test
 		double beta2 = 0.999;
@@ -167,33 +153,28 @@ public class TestUpdaters {
 
 		updater.update(layer, gradient, iteration);
 
-		// calculations
-		INDArray mW, vW, weightGradExpected, mB, vB, biasGradExpected;
-
 		double beta1t = FastMath.pow(beta1, iteration);
 		double beta2t = FastMath.pow(beta2, iteration);
 		double alphat = lr * FastMath.sqrt(((1-beta2t)/(1-beta1t)));
 
-		mW = Nd4j.zeros(weightGradient.shape());
-		vW = Nd4j.zeros(weightGradient.shape());
+        Gradient gradientDup = new DefaultGradient();
+        gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
+        gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
 
-		mW.muli(beta1).addi(weightGradient.mul(1.0-beta1));
-		vW.muli(beta2).addi(weightGradient.mul(weightGradient).mul(1.0 - beta2));
-		weightGradExpected = mW.mul(alphat).divi(Transforms.sqrt(vW).addi(1e-8));
+        for (Map.Entry<String, INDArray> entry : gradientDup.gradientForVariable().entrySet()) {
+            val = entry.getValue();
+            m = Nd4j.zeros(val.shape());
+            v = Nd4j.zeros(val.shape());
 
-		mB = Nd4j.zeros(biasGradient.shape());
-		vB = Nd4j.zeros(biasGradient.shape());
+            m.muli(beta1).addi(val.mul(1.0-beta1));
+            v.muli(beta2).addi(val.mul(val).mul(1.0-beta2));
+            gradExpected = m.mul(alphat).divi(Transforms.sqrt(v).addi(epsilon));
 
-		mB.muli(beta1).addi(biasGradient.mul(1.0-beta1));
-		vB.muli(beta2).addi(biasGradient.mul(biasGradient).mul(1.0-beta2));
-		biasGradExpected = mB.mul(alphat).divi(Transforms.sqrt(vB).addi(1e-8));
+            assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
+        }
 
-		INDArray weightGradActual = gradient.getGradientFor(DefaultParamInitializer.WEIGHT_KEY);
-		INDArray biasGradActual = gradient.getGradientFor(DefaultParamInitializer.BIAS_KEY);
-
-		assertEquals(weightGradExpected, weightGradActual);
-		assertEquals(biasGradExpected, biasGradActual);
-		assertEquals(lr, layer.conf().getLr(), 1e-4);
+        assertEquals(beta1, layer.conf().getMeanDecay(), 1e-4);
+        assertEquals(beta2, layer.conf().getVarDecay(), 1e-4);
 
 	}
 
@@ -201,6 +182,7 @@ public class TestUpdaters {
 	public void testNestorovsUpdater(){
 		double lr = 1e-2;
 		double mu = 0.6;
+        INDArray v, vPrev;
 
 		NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
 				.learningRate(lr).momentum(mu)
@@ -213,23 +195,20 @@ public class TestUpdaters {
 
 		updater.update(layer, gradient, -1);
 
-		// calculations
-		INDArray vW, vPrevW, weightGradExpected, vB, vPrevB, biasGradExpected;
-		vW = Nd4j.zeros(weightGradient.shape());
-		vPrevW = vW;
-		vW = vPrevW.mul(mu).subi(weightGradient.mul(lr));
-		weightGradExpected = vPrevW.muli(mu).addi(vW.mul(-mu - 1));
+        Gradient gradientDup = new DefaultGradient();
+        gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
+        gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
 
-		vB = Nd4j.zeros(biasGradient.shape());
-		vPrevB = vB;
-		vB = vPrevB.mul(mu).subi(biasGradient.mul(lr));
-		biasGradExpected = vPrevB.muli(mu).addi(vB.mul(-mu - 1));
+        for (Map.Entry<String, INDArray> entry : gradientDup.gradientForVariable().entrySet()) {
+            val = entry.getValue();
+            v = Nd4j.zeros(val.shape());
+            vPrev = v;
+            v = vPrev.mul(mu).subi(val.mul(lr));
+            gradExpected = vPrev.muli(mu).addi(v.mul(-mu - 1));
 
-		INDArray weightGradActual = gradient.getGradientFor(DefaultParamInitializer.WEIGHT_KEY);
-		INDArray biasGradActual = gradient.getGradientFor(DefaultParamInitializer.BIAS_KEY);
+            assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
+        }
 
-		assertEquals(weightGradExpected, weightGradActual);
-		assertEquals(biasGradExpected, biasGradActual);
 		assertEquals(mu, layer.conf().getMomentum(), 1e-4);
 	}
 
@@ -240,8 +219,11 @@ public class TestUpdaters {
 		Map<Integer,Double> momentumAfter = new HashMap<>();
 		momentumAfter.put(1, 0.2);
 		int iterations = 2;
+		Map<String, INDArray> v = new HashMap<>();
 
-		NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+		INDArray vPrev;
+
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
 				.learningRate(lr).momentum(mu).momentumAfter(momentumAfter).iterations(iterations)
 				.layer(new DenseLayer.Builder()
 						.nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.NESTEROVS).build())
@@ -250,35 +232,34 @@ public class TestUpdaters {
 		Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0);
 		Updater updater = UpdaterCreator.getUpdater(layer);
 
-		updater.update(layer, gradient, 0);
-		updater.update(layer, gradient, 1);
+        Gradient gradientDup = new DefaultGradient();
+        gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
+        gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
 
-		// calculations
-		INDArray vW, vPrevW, weightGradExpected, vB, vPrevB, biasGradExpected;
-		vW = Nd4j.zeros(weightGradient.shape());
-		vPrevW = vW;
-		vW = vPrevW.mul(mu).subi(weightGradient.mul(lr));
-		weightGradient = vPrevW.muli(mu).addi(vW.mul(-mu - 1));
+        for (int i = 0; i < 2; i++) {
+            updater.update(layer, gradient, i);
 
-		vPrevW = vW;
-		vW = vPrevW.mul(momentumAfter.get(1)).subi(weightGradient.mul(lr));
-		weightGradExpected = vPrevW.muli(momentumAfter.get(1)).addi(vW.mul(-momentumAfter.get(1) - 1));
+            for (Map.Entry<String, INDArray> entry : gradientDup.gradientForVariable().entrySet()) {
+				if(momentumAfter !=null)
+					mu = (momentumAfter.containsKey(i)) ? momentumAfter.get(i) : mu;
+				key = entry.getKey();
+				val = entry.getValue();
+				INDArray vTmp = v.get(key);
 
-		vB = Nd4j.zeros(biasGradient.shape());
-		vPrevB = vB;
-		vB = vPrevB.mul(mu).subi(biasGradient.mul(lr));
-		biasGradient = vPrevB.muli(mu).addi(vB.mul(-mu - 1));
+				if(vTmp == null)
+                    vTmp = Nd4j.zeros(val.shape());
+                vPrev = vTmp;
+                vTmp = vPrev.mul(mu).subi(val.mul(lr));
+                gradExpected = vPrev.muli(mu).addi(vTmp.mul(-mu - 1));
+                gradientDup.setGradientFor(key, gradExpected);
 
-		vPrevB = vB;
-		vB = vPrevB.mul(momentumAfter.get(1)).subi(biasGradient.mul(lr));
-		biasGradExpected = vPrevB.muli(momentumAfter.get(1)).addi(vB.mul(-momentumAfter.get(1) - 1));
+                assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
+				v.put(key, vTmp);
+            }
 
-		INDArray weightGradActual = gradient.getGradientFor(DefaultParamInitializer.WEIGHT_KEY);
-		INDArray biasGradActual = gradient.getGradientFor(DefaultParamInitializer.BIAS_KEY);
-
-		assertEquals(weightGradExpected, weightGradActual);
-		assertEquals(biasGradExpected, biasGradActual);
-	}
+            assertEquals(momentumAfter, layer.conf().getMomentumAfter());
+        }
+    }
 
 
 	@Test
@@ -298,30 +279,24 @@ public class TestUpdaters {
 
 		updater.update(layer, gradient, -1);
 
-		// calculations
-		INDArray lastGW, lastGB;
+        Gradient gradientDup = new DefaultGradient();
+        gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
+        gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
 
-		lastGW = Nd4j.zeros(weightGradient.shape());
-		lastGB = Nd4j.zeros(biasGradient.shape());
+        for (Map.Entry<String, INDArray> entry : gradientDup.gradientForVariable().entrySet()) {
+            val = entry.getValue();
+            INDArray lastG = Nd4j.zeros(val.shape());
+            lastG.muli(rmsDecay).addi(weightGradient.mul(weightGradient).muli(1 - rmsDecay));
+            gradExpected = val.mul(lr).div(Transforms.sqrt(lastG.add(Nd4j.EPS_THRESHOLD)));
 
-		lastGW.muli(rmsDecay).addi(weightGradient.mul(weightGradient).muli(1 - rmsDecay));
-		INDArray weightGradExpected = weightGradient.mul(lr).div(Transforms.sqrt(lastGW.add(Nd4j.EPS_THRESHOLD)));
-
-		lastGB.muli(rmsDecay).addi(biasGradient.mul(biasGradient).muli(1 - rmsDecay));
-		INDArray biasGradExpected = biasGradient.mul(lr).div(Transforms.sqrt(lastGB.add(Nd4j.EPS_THRESHOLD)));
-
-		INDArray weightGradActual = gradient.getGradientFor(DefaultParamInitializer.WEIGHT_KEY);
-		INDArray biasGradActual = gradient.getGradientFor(DefaultParamInitializer.BIAS_KEY);
-
-		assertEquals(weightGradExpected, weightGradActual);
-		assertEquals(biasGradExpected, biasGradActual);
+            assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
+        }
 		assertEquals(rmsDecay, layer.conf().getRmsDecay(), 1e-4);
-
 	}
 
 	@Test
 	public void testSGDUpdater(){
-		double lr = 0.01;
+		double lr = 0.05;
 		
 		NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
 				.learningRate(lr)
@@ -334,19 +309,19 @@ public class TestUpdaters {
 
 		updater.update(layer, gradient, -1);
 
-		// calculations
-		INDArray weightGradExpected = weightGradient.mul(lr);
-		INDArray biasGradExpected = biasGradient.mul(lr);
-		
-		INDArray weightGradActual = gradient.getGradientFor(DefaultParamInitializer.WEIGHT_KEY);
-		INDArray biasGradActual = gradient.getGradientFor(DefaultParamInitializer.BIAS_KEY);
-		
-		assertEquals(weightGradExpected, weightGradActual);
-		assertEquals(biasGradExpected, biasGradActual);
-		assertEquals(lr, layer.conf().getLr(), 1e-4);
+        Gradient gradientDup = new DefaultGradient();
+        gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
+        gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
 
+        for (Map.Entry<String, INDArray> entry : gradientDup.gradientForVariable().entrySet()) {
+            val = entry.getValue();
+            gradExpected = val.mul(lr);
+            assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
+        }
+        assertEquals(lr, layer.conf().getLr(), 1e-4);
 	}
-	
+
+
 	@Test
 	public void testNoOpUpdater(){
 		Random r = new Random(12345L);
@@ -372,8 +347,37 @@ public class TestUpdaters {
 		assertEquals(biasGradient, biasGradActual);
 
 	}
-	
-	@Test
+
+    @Test
+    public void testLrScoreDecay(){
+        double lr = 0.01;
+        double lrScoreDecay = 10;
+        int nLayers = 2;
+        int[] nIns = {4,2};
+        int[] nOuts = {2,3};
+		int oldScore = 1;
+		int newScore = 1;
+		int iteration = 1;
+        INDArray gradient = Nd4j.ones(nIns[0],nOuts[0]);
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .learningRate(lr).learningRateScoreBasedDecayRate(lrScoreDecay)
+                .list(nLayers)
+                .layer(0, new DenseLayer.Builder().nIn(nIns[0]).nOut(nOuts[0]).updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
+                .layer(1, new OutputLayer.Builder().nIn(nIns[1]).nOut(nOuts[1]).updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
+				.backprop(true).pretrain(false)
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+		ConvexOptimizer opt = new StochasticGradientDescent(net.getDefaultConfiguration(), new NegativeDefaultStepFunction(), null, net);
+        opt.checkTerminalConditions(gradient, oldScore, newScore, iteration);
+		assertEquals(lrScoreDecay, net.getLayer(0).conf().getLrScoreBasedDecay(), 1e-4);
+		assertEquals(lr/(lrScoreDecay + Nd4j.EPS_THRESHOLD), opt.getConf().getLr(), 1e-4);
+	}
+
+    @Test
 	public void testMultiLayerUpdater() throws Exception {
 		Nd4j.getRandom().setSeed(12345L);
 		int nLayers = 4;
