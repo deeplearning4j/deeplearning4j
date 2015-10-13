@@ -33,7 +33,7 @@ Below you'll find a list of resources. The sections are roughly organized in the
 
 ## Programming
 
-If you do not know how to program yet, you shouldn't start with Java. Python and Ruby convey the basic ideas much more easily in a faster feedback loop.
+If you do not know how to program yet, you shouldn't start with Java. Python and Ruby convey the basic ideas much more easily in a faster feedback loop. If you want to jump into deep-learning from here without Java, we recommend [Theano](http://deeplearning.net/) and the various Python frameworks built atop it, including [Keras](https://github.com/fchollet/keras) and [Lasagne](https://github.com/Lasagne/Lasagne).
 
 * [Learn Python the Hard Way](http://learnpythonthehardway.org/)
 * [Learn to Program (Ruby)](https://pine.fm/LearnToProgram/)
