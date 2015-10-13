@@ -36,6 +36,7 @@ import org.deeplearning4j.optimize.stepfunctions.NegativeGradientStepFunction;
 import org.deeplearning4j.optimize.terminations.EpsTermination;
 import org.deeplearning4j.optimize.terminations.ZeroDirection;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,7 +59,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     protected BackTrackLineSearch lineMaximizer;
     protected Updater updater;
     protected double step;
-    private int batchSize = 10;
+    private int batchSize;
     protected double score,oldScore;
     protected double stepMax = Double.MAX_VALUE;
     public final static String GRADIENT_KEY = "g";
@@ -191,7 +192,9 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             //check for termination conditions based on absolute change in score
             for(TerminationCondition condition : terminationConditions){
                 if(condition.terminate(score,oldScore,new Object[]{pair.getFirst().gradient()})){
-                    log.debug("Hit termination condition on iteration {}: score={}, oldScore={}, condition={}",i,score,oldScore,condition);
+                    log.debug("Hit termination condition on iteration {}: score={}, oldScore={}, condition={}", i, score, oldScore, condition);
+                    if(condition.equals(EpsTermination.class) && !Double.isNaN(conf.getLrScoreDecay()))
+                        conf.setLr(conf.getLr()/(conf.getLrScoreDecay() + Nd4j.EPS_THRESHOLD));
                     return true;
                 }
             }
