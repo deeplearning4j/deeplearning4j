@@ -14,10 +14,7 @@ import org.nd4j.linalg.api.ops.impl.scalar.*;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarEquals;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarSetValue;
-import org.nd4j.linalg.api.ops.impl.transforms.RectifedLinear;
-import org.nd4j.linalg.api.ops.impl.transforms.Sigmoid;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
-import org.nd4j.linalg.api.ops.impl.transforms.Tanh;
+import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
 import org.nd4j.linalg.api.ops.impl.vector.*;
 import org.nd4j.linalg.api.parallel.tasks.Task;
@@ -62,6 +59,7 @@ public class CPUTaskFactoryTest {
         testClasses.add(Sigmoid.class);
         testClasses.add(RectifedLinear.class);
         testClasses.add(SoftMax.class);
+        testClasses.add(LogSoftMax.class);
 
         int[] shape = {30, 50};
 

@@ -226,6 +226,8 @@ public class DefaultOpFactory implements OpFactory {
                 return new Identity(x, y);
             case "log":
                 return new Log(x, y);
+            case "logsoftmax":
+                return new LogSoftMax(x,y);
             case "leakyrelu":
             	return new LeakyReLU(x,y);
             case "maxout":
@@ -293,6 +295,8 @@ public class DefaultOpFactory implements OpFactory {
             	return new LeakyReLU(x);
             case "log":
                 return new Log(x);
+            case "logsoftmax":
+                return new LogSoftMax(x);
             case "maxout":
                 return new MaxOut(x);
             case "negative":
@@ -358,6 +362,8 @@ public class DefaultOpFactory implements OpFactory {
             	return new LeakyReLU(x,z);
             case "log":
                 return new Log(x, z);
+            case "logsoftmax":
+                return new LogSoftMax(x,z);
             case "maxout":
                 return new MaxOut(x, z);
             case "negative":

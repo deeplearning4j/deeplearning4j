@@ -283,6 +283,40 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testRowLogSoftMax(){
+        //For moderate input values, LogSoftMax op should be identical to log(softmax)
+        // through is numerically more stable for
+        int[][] shapes = new int[][]{{5,3},{5,100},{1,5},{1,100}};
+
+        double eps = 1e-3;
+
+        for( int[] shape : shapes ){
+            INDArray orig = Nd4j.rand(shape);
+
+            INDArray orig1 = orig.dup();
+            INDArray orig2 = orig.dup();
+
+            //First: standard log(softmax)
+            Nd4j.getExecutioner().exec(new SoftMax(orig1), 1);
+            Nd4j.getExecutioner().exec(new Log(orig1));
+
+            //Second: LogSoftMax op
+            Nd4j.getExecutioner().exec(new LogSoftMax(orig2),1);
+
+            for( int i=0; i<shape[0]; i++ ){
+                for( int j=0; j<shape[1]; j++ ){
+                    double o1 = orig1.getDouble(i);
+                    double o2 = orig2.getDouble(i);
+                    if(Math.abs(o1-o2)>eps){
+                        System.out.println();
+                    }
+                    assertEquals(o1,o2,eps);
+                }
+            }
+        }
+    }
+
+    @Test
     public void testPow() {
         INDArray oneThroughSix = Nd4j.linspace(1, 6, 6);
         Pow pow = new Pow(oneThroughSix, 2);
