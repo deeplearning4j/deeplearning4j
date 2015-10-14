@@ -334,6 +334,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
             dimension = new int[]{Integer.MAX_VALUE};
         }
 
+        if(op.isPassThrough()){
+            op.exec(dimension);
+            return op.z();
+        }
+
         Task<Void> task = taskFactory.getTransformAction(op, dimension);
         task.invokeBlocking();
         return op.z();
