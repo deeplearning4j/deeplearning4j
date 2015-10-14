@@ -3,6 +3,8 @@ package org.nd4j.linalg.lossfunctions;
 import lombok.Builder;
 import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.LogSoftMax;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.conditions.Or;
@@ -26,6 +28,8 @@ class LossCalculation {
     private boolean useRegularization;
     private boolean miniBatch = false;
     private int miniBatchSize;
+    private String activationFn;
+    private INDArray preOut;
 
     public double score() {
         double ret = 0.0;
@@ -37,9 +41,18 @@ class LossCalculation {
                 INDArray xEntOneMinusLogOneMinusZ2 = xEntLogZ2.rsubi(1);
                 ret = -labels.mul(xEntLogZ2).add(xEntOneMinusLabelsOut2).muli(xEntOneMinusLogOneMinusZ2).sumNumber().doubleValue();
                 break;
+            case NEGATIVELOGLIKELIHOOD:
             case MCXENT:
-                INDArray sums = labels.mul(logZ(z));
-                ret = -sums.sumNumber().doubleValue();
+                if(preOut != null && "softmax".equals(activationFn)){
+                    //Use LogSoftMax op to avoid numerical issues when calculating score
+                    INDArray logsoftmax = Nd4j.getExecutioner().execAndReturn(new LogSoftMax(preOut.dup()), 1);
+                    INDArray sums = labels.mul(logsoftmax);
+                    ret = -sums.sumNumber().doubleValue();
+                } else {
+                    //Standard calculation
+                    INDArray sums = labels.mul(logZ(z));
+                    ret = -sums.sumNumber().doubleValue();
+                }
                 break;
             case XENT:
                 INDArray xEntLogZ = logZ(z);
@@ -63,11 +76,6 @@ class LossCalculation {
                 break;
             case SQUARED_LOSS:
                 ret = pow(labels.sub(z), 2).sumNumber().doubleValue();
-                break;
-            case NEGATIVELOGLIKELIHOOD:
-                INDArray log = logZ(z);
-                INDArray sums2 = labels.mul(log);
-                ret = -sums2.sumNumber().doubleValue();
                 break;
         }
 
