@@ -21,6 +21,8 @@ import org.nd4j.linalg.api.parallel.tasks.cpu.vector.CPUVectorOp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
+
 /** TaskFactory for CPU backends */
 public class CPUTaskFactory implements TaskFactory {
     public static final String PARALLEL_THRESHOLD = "org.nd4j.parallel.cpu.threshold";
@@ -73,12 +75,29 @@ public class CPUTaskFactory implements TaskFactory {
         boolean canDoDirectly;
         if(y == null){
             if(x==z) canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x);
-            else canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x,z);
+            else{
+                canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x,z);
+                if(!Arrays.equals(x.shape(), z.shape())){
+                    throw new IllegalArgumentException("Shapes do not match: x.shape="+Arrays.toString(x.shape()) +
+                        ", z.shape="+Arrays.toString(z.shape()));
+                }
+            }
         } else {
-            if(x==z) canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x,y);
-            else canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x,y,z);
+            if(x==z){
+                canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x,y);
+                if(!Arrays.equals(x.shape(), y.shape())){
+                    throw new IllegalArgumentException("Shapes do not match: x.shape="+Arrays.toString(x.shape()) +
+                            ", y.shape="+Arrays.toString(y.shape()));
+                }
+            }
+            else{
+                canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x,y,z);
+                if(!Arrays.equals(x.shape(), y.shape()) || !Arrays.equals(x.shape(), z.shape())){
+                    throw new IllegalArgumentException("Shapes do not match: x.shape="+Arrays.toString(x.shape()) +
+                            ", y.shape="+Arrays.toString(y.shape()) + ", z.shape="+Arrays.toString(z.shape()));
+                }
+            }
         }
-
 
         if(canDoDirectly){
             return new CPUTransformOpAction(op, parallelThreshold);
@@ -90,6 +109,29 @@ public class CPUTaskFactory implements TaskFactory {
 
     @Override
     public Task<Void> getTransformAction(TransformOp op, int... dimension ){
+        INDArray x = op.x();
+        INDArray y = op.y();
+        INDArray z = op.z();
+        if(y == null){
+            if (x != z && !Arrays.equals(x.shape(), z.shape())) {
+                throw new IllegalArgumentException("Shapes do not match: x.shape=" + Arrays.toString(x.shape()) +
+                        ", z.shape=" + Arrays.toString(z.shape()));
+            }
+        } else {
+            if(x==z){
+                if(!Arrays.equals(x.shape(), y.shape())){
+                    throw new IllegalArgumentException("Shapes do not match: x.shape="+Arrays.toString(x.shape()) +
+                            ", y.shape="+Arrays.toString(y.shape()));
+                }
+            }
+            else{
+                if(!Arrays.equals(x.shape(), y.shape()) || !Arrays.equals(x.shape(), z.shape())){
+                    throw new IllegalArgumentException("Shapes do not match: x.shape="+Arrays.toString(x.shape()) +
+                            ", y.shape="+Arrays.toString(y.shape()) + ", z.shape="+Arrays.toString(z.shape()));
+                }
+            }
+        }
+
         return new CPUTransformAlongDimensionTask(op,parallelThreshold,dimension);
     }
 
@@ -101,7 +143,13 @@ public class CPUTaskFactory implements TaskFactory {
         //If can do directly...
         boolean canDoDirectly;
         if(x==z) canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x);
-        else canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x,z);
+        else{
+            canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x,z);
+            if(!Arrays.equals(x.shape(), z.shape())){
+                throw new IllegalArgumentException("Shapes do not match: x.shape="+Arrays.toString(x.shape()) +
+                        ", z.shape="+Arrays.toString(z.shape()));
+            }
+        }
 
         if(canDoDirectly){
             return new CPUScalarOpAction(op, parallelThreshold);
@@ -118,7 +166,13 @@ public class CPUTaskFactory implements TaskFactory {
 
         boolean canDoDirectly;
         if (y == null) canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x);
-        else canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x, y);
+        else{
+            canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x, y);
+            if(!Arrays.equals(x.shape(), y.shape())){
+                throw new IllegalArgumentException("Shapes do not match: x.shape="+Arrays.toString(x.shape()) +
+                        ", y.shape="+Arrays.toString(y.shape()));
+            }
+        }
 
         if (canDoDirectly) {
             return new CPUAccumulationTask(op, parallelThreshold,true);
@@ -130,6 +184,29 @@ public class CPUTaskFactory implements TaskFactory {
 
     @Override
     public Task<INDArray> getAccumulationTask(Accumulation op, int... dimension) {
+        INDArray x = op.x();
+        INDArray y = op.y();
+        INDArray z = op.z();
+        if(y == null){
+            if (x != z && !Arrays.equals(x.shape(), z.shape())) {
+                throw new IllegalArgumentException("Shapes do not match: x.shape=" + Arrays.toString(x.shape()) +
+                        ", z.shape=" + Arrays.toString(z.shape()));
+            }
+        } else {
+            if(x==z){
+                if(!Arrays.equals(x.shape(), y.shape())){
+                    throw new IllegalArgumentException("Shapes do not match: x.shape="+Arrays.toString(x.shape()) +
+                            ", y.shape="+Arrays.toString(y.shape()));
+                }
+            }
+            else{
+                if(!Arrays.equals(x.shape(), y.shape()) || !Arrays.equals(x.shape(), z.shape())){
+                    throw new IllegalArgumentException("Shapes do not match: x.shape="+Arrays.toString(x.shape()) +
+                            ", y.shape="+Arrays.toString(y.shape()) + ", z.shape="+Arrays.toString(z.shape()));
+                }
+            }
+        }
+
         return new CPUAccumulationAlongDimensionTask(op,parallelThreshold,dimension);
     }
 
@@ -138,6 +215,10 @@ public class CPUTaskFactory implements TaskFactory {
         INDArray x = op.x();
         INDArray y = op.y();
 
+        if(y != null && !Arrays.equals(x.shape(),y.shape())){
+            throw new IllegalArgumentException("Shapes do not match: x.shape="+Arrays.toString(x.shape()) +
+                    ", y.shape="+Arrays.toString(y.shape()));
+        }
 
         //Due to the indexing being done on row-major order: can only do directly on C order
         boolean canDoDirectly;
@@ -159,11 +240,25 @@ public class CPUTaskFactory implements TaskFactory {
 
     @Override
     public Task<INDArray> getIndexAccumulationTask(IndexAccumulation op, int... dimension) {
+        INDArray x = op.x();
+        INDArray y = op.y();
+
+        if(y != null && !Arrays.equals(x.shape(),y.shape())){
+            throw new IllegalArgumentException("Shapes do not match: x.shape="+Arrays.toString(x.shape()) +
+                    ", y.shape="+Arrays.toString(y.shape()));
+        }
+
         return new CPUIndexAccumulationAlongDimensionTask(op,parallelThreshold,dimension);
     }
 
     @Override
     public Task<Void> getVectorOpAction(VectorOp op) {
+        INDArray x = op.x();
+        INDArray y = op.y();
+        if(x.size(op.getDimension()) != y.length()){
+            throw new IllegalArgumentException("Shapes do not match: x.shape="+Arrays.toString(x.shape()) +
+                    ", y.shape="+Arrays.toString(y.shape()) + ", y should be vector with length=x.size("+op.getDimension()+")");
+        }
         return new CPUVectorOp(op,parallelThreshold);
     }
 }
