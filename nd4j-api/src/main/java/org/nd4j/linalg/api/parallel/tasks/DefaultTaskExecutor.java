@@ -9,6 +9,8 @@ import java.util.concurrent.*;
  */
 public class DefaultTaskExecutor implements TaskExecutor {
 
+    public static final String EXEC_THREADS = "org.nd4j.parallel.cpu.taskexecutorthreads";
+
     private static DefaultTaskExecutor instance;
     private ExecutorService executorService;
 
@@ -21,17 +23,23 @@ public class DefaultTaskExecutor implements TaskExecutor {
     }
 
     public DefaultTaskExecutor(){
-        int nThreads = Runtime.getRuntime().availableProcessors();
+        int defaultThreads = Runtime.getRuntime().availableProcessors();
+
+        int nThreads = Integer.parseInt(System.getProperty(EXEC_THREADS,String.valueOf(defaultThreads)));
+
         //Create a fixed thread pool executor, but with daemon threads
         //Use daemon threads so that the thread pool doesn't stop the JVM from shutting down when done
-        executorService = Executors.newFixedThreadPool(nThreads, new ThreadFactory() {
-            @Override
-            public Thread newThread(Runnable r) {
-                Thread t = Executors.defaultThreadFactory().newThread(r);
-                t.setDaemon(true);
-                return t;
-            }
-        });
+        executorService = new ThreadPoolExecutor(nThreads, nThreads, 60L, TimeUnit.SECONDS,
+                new LinkedTransferQueue<Runnable>(),
+                new ThreadFactory() {
+                    @Override
+                    public Thread newThread(Runnable r) {
+                        Thread t = Executors.defaultThreadFactory().newThread(r);
+                        t.setDaemon(true);
+                        return t;
+                    }
+                }
+        );
     }
 
     @Override
