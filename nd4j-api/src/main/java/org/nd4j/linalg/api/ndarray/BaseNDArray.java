@@ -3900,7 +3900,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 INDArray thisTensor = slice(i);
                 INDArray retTensor = ret.slice(i);
                 int retIdx = 0;
-                for(int k = 0; k < thisTensor.length(); k++) {
+                int tensorLen = thisTensor.length() -1;
+                for(int k = 0; k < tensorLen; k++) {
                     for(int j = 0; j < repeatDelta; j++) {
                         retTensor.putScalar(retIdx++,thisTensor.getDouble(k));
                     }
