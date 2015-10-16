@@ -50,7 +50,7 @@ layout: zh-default
 
 * 接下来，git 复制（git clone）DL4J的例子：
 
-		git clone https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/
+		git clone https://github.com/deeplearning4j/dl4j-0.4-examples
 
 接下来，您可以手动导入[Maven](https://maven.apache.org/download.cgi)项目到[Eclipse](http://books.sonatype.com/m2eclipse-book/reference/creating-sect-importing-projects.html)、 /[IntelliJ](https://www.jetbrains.com/idea/help/importing-project-from-maven-model.html)或[Netbeans](http://wiki.netbeans.org/MavenBestPractices) 平台中。
 
