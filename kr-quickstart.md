@@ -70,7 +70,7 @@ layout: default
 
 여러분의 커맨드가 어떠한 모습인지 대략적으로 보여드리기 위한 구체적인 예가 여기에 있습니다:
 
-      java -cp target/deeplearning4j-examples-0.0.3.3.3-SNAPSHOT.jar org.deeplearning4j.MLPBackpropIrisExample
+      java -cp target/deeplearning4j-examples-0.4-SNAPSHOT.jar org.deeplearning4j.MLPBackpropIrisExample
 
 보시는 바와 같이 저희가 업데이트 하는대로 변경되고 여러분이 예제를 통해 확인하실 두개의 와일드 카드가 있습니다:
 
