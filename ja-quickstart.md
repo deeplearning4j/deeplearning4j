@@ -3,10 +3,6 @@ title:
 layout: ja-default
 ---
 
-#Video: DL4Jで簡単にサンプルを実行するためには
-
-<iframe width="750" height="560" src="//www.youtube.com/embed/2lwsHKUrXMk" frameborder="0" allowfullscreen></iframe>
-
 # <a name="quickstart"> クイックスタート
 
 ## 必要なもの
@@ -22,7 +18,7 @@ layout: ja-default
 上記にあげたものだけで基本的には十分で他のものをインストールする必要はありません。
 
 ## 利用までのステップ
-1. [nd4j](https://github.com/deeplearning4j/nd4j/), [deeplearning4j](https://github.com/deeplearning4j/deeplearning4j/), [Canova](https://github.com/deeplearning4j/Canova), [example](https://github.com/deeplearning4j/dl4j-0.0.3.3-examples)プロジェクトをダウンロードしてくる。(git cloneを用いる)
+1. [nd4j](https://github.com/deeplearning4j/nd4j/), [deeplearning4j](https://github.com/deeplearning4j/deeplearning4j/), [Canova](https://github.com/deeplearning4j/Canova), [example](https://github.com/deeplearning4j/dl4j-0.4-examples)プロジェクトをダウンロードしてくる。(git cloneを用いる)
 2. それぞれのプロジェクトに対して`mvn clean install -DskipTests -Dmaven.javadoc.skip=true`でビルドします。
 3. IntelliJ IDEAのようなIDEでMavenプロジェクトとして上記のexampleをインポートする。
 4. デフォルトのバックエンドは`nd4j-jblas`に設定されています。(Windowsの場合は`nd4j-java`に変更することを推奨しています)
@@ -64,7 +60,7 @@ $ java -cp target/nameofjar.jar fully.qualified.class.name
 
 例えば具体的には下記のようになります。
 ```
-$ java -cp target/deeplearning4j-examples-0.0.3.3.3-SNAPSHOT.jar org.deeplearning4j.MLPBackpropIrisExample
+$ java -cp target/deeplearning4j-examples-0.4-SNAPSHOT.jar org.deeplearning4j.MLPBackpropIrisExample
 ```
 
 つまりversionを更新したり、走らせるクラスが異なる場合は下記のワイルドカードを変更していくことになります。
@@ -74,7 +70,6 @@ $ java -cp target/*.jar org.deeplearning4j.*
 ```
 
 exampleに変更を加える場合(例えばsrc/main/java/org/deeplearning4j/multilayerの中のMLPBackpropIrisExample)は再ビルドが必要です。
-
 
 
 ## ソースからのインストール
