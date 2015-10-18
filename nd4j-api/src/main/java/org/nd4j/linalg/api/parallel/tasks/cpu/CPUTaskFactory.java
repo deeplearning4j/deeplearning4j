@@ -27,7 +27,7 @@ import java.util.Arrays;
 public class CPUTaskFactory implements TaskFactory {
     public static final String PARALLEL_THRESHOLD = "org.nd4j.parallel.cpu.threshold";
     private static Logger log = LoggerFactory.getLogger(CPUTaskFactory.class);
-    protected int parallelThreshold = 8192;
+    protected int parallelThreshold = 1024;
 
     public CPUTaskFactory(){
         //Check if user has specified a parallel threshold via VM argument:

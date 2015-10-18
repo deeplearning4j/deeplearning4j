@@ -3,14 +3,12 @@ package org.nd4j.linalg.api.parallel.tasks.cpu.indexaccum;
 import io.netty.buffer.ByteBuf;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.IndexAccumulation;
 import org.nd4j.linalg.api.parallel.tasks.Task;
-import org.nd4j.linalg.api.parallel.tasks.TaskExecutorProvider;
-import org.nd4j.linalg.api.parallel.tasks.cpu.accumulation.BaseCPUAccumulationTask;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.RecursiveTask;
 
 public class CPUIndexAccumulationTask extends BaseCPUIndexAccumulationTask {
 
@@ -51,7 +49,7 @@ public class CPUIndexAccumulationTask extends BaseCPUIndexAccumulationTask {
             throw new RuntimeException(e);
         }
         if(subTasks != null) {
-            //Task was broken into subtasks instead of being executed directly
+            //Callable/ExecutorServiceTask was broken into subtasks instead of being executed directly
             accum = op.zeroPair();
             for(Task<Pair<Double,Integer>> task : subTasks){
                 Pair<Double,Integer> subAccum = task.blockUntilComplete();
@@ -66,6 +64,7 @@ public class CPUIndexAccumulationTask extends BaseCPUIndexAccumulationTask {
 
     @Override
     public Pair<Double,Integer> call() {
+        //Callable/ExecutorService
         if(doTensorFirst) doTensorFirst(op);
 
         if (n > threshold) {
@@ -99,6 +98,31 @@ public class CPUIndexAccumulationTask extends BaseCPUIndexAccumulationTask {
             return execute();
         }
         return null;
+    }
+
+    @Override
+    protected Pair<Double, Integer> compute() {
+        //Fork join
+        if(doTensorFirst) doTensorFirst(op);
+
+        if(n > threshold){
+            //Break into subtasks:
+            int nFirst = n/2;
+            RecursiveTask<Pair<Double,Integer>> first = new CPUIndexAccumulationTask(op, threshold, nFirst, offsetX,
+                    offsetY, incrX, incrY, elementOffset, false);
+            first.fork();
+
+            int nSecond = n - nFirst;
+            int offsetX2 = offsetX + nFirst * incrX;
+            int offsetY2 = offsetY + nFirst * incrY;
+            RecursiveTask<Pair<Double,Integer>> second = new CPUIndexAccumulationTask(op, threshold, nSecond, offsetX2,
+                    offsetY2, incrX, incrY, elementOffset+nFirst, false);
+            second.fork();
+
+            return op.combineSubResults(first.join(),second.join());
+        } else {
+            return execute();
+        }
     }
 
     private Pair<Double,Integer> execute(){

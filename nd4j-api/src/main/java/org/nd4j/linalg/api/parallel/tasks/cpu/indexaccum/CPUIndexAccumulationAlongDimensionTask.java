@@ -15,6 +15,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.RecursiveTask;
 
 
 public class CPUIndexAccumulationAlongDimensionTask extends BaseCPUTask<INDArray> {
@@ -36,14 +37,16 @@ public class CPUIndexAccumulationAlongDimensionTask extends BaseCPUTask<INDArray
             invokeAsync();
         }
 
+        INDArray out;
         try{
-            future.get();
+            out = future.get();
         }catch(Exception e){
             throw new RuntimeException(e);
         }
+        if(out != null) return out; //FJ
 
         int[] retShape = ArrayUtil.removeIndex(op.x().shape(), dimensions);
-        INDArray out = Nd4j.create(retShape);
+        out = Nd4j.create(retShape);
         int i=0;
         for(Task<Pair<Double,Integer>> task : subTasks ){
             Pair<Double,Integer> result = task.blockUntilComplete();
@@ -78,5 +81,41 @@ public class CPUIndexAccumulationAlongDimensionTask extends BaseCPUTask<INDArray
             subTasks.add(task);
         }
         return null;
+    }
+
+    @Override
+    protected INDArray compute() {
+        //Fork join
+        int nTensors = op.x().tensorssAlongDimension(dimensions);
+        List<RecursiveTask<Pair<Double,Integer>>> subTasks = new ArrayList<>(nTensors);
+
+        for( int i=0; i<nTensors; i++ ){
+            IndexAccumulation opOnDimension = (IndexAccumulation)op.opForDimension(i,dimensions);
+            INDArray x2 = opOnDimension.x();
+            INDArray y2 = opOnDimension.y();
+
+            boolean canDoDirectly;
+            if(y2 == null) canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x2);
+            else canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x2, y2);
+
+            RecursiveTask<Pair<Double,Integer>> task;
+            if(canDoDirectly){
+                task = new CPUIndexAccumulationTask(opOnDimension,threshold,true);
+            } else {
+                task = new CPUIndexAccumulationViaTensorTask(op,threshold,true);
+            }
+            task.fork();
+            subTasks.add(task);
+        }
+
+        int[] retShape = ArrayUtil.removeIndex(op.x().shape(), dimensions);
+        INDArray out = Nd4j.create(retShape);
+        int i=0;
+        for( RecursiveTask<Pair<Double,Integer>> task : subTasks ){
+            Pair<Double,Integer> result = task.join();
+            out.putScalar(i++,result.getSecond());
+        }
+        op.setZ(out);
+        return out;
     }
 }

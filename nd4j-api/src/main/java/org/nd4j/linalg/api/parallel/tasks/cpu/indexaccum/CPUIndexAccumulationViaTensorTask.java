@@ -1,16 +1,15 @@
 package org.nd4j.linalg.api.parallel.tasks.cpu.indexaccum;
 
 import org.apache.commons.math3.util.Pair;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.IndexAccumulation;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
-import org.nd4j.linalg.api.parallel.tasks.BaseTask;
 import org.nd4j.linalg.api.parallel.tasks.Task;
 import org.nd4j.linalg.api.parallel.tasks.cpu.BaseCPUTask;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.RecursiveTask;
 
 public class CPUIndexAccumulationViaTensorTask extends BaseCPUTask<Pair<Double, Integer>> {
     protected final IndexAccumulation op;
@@ -31,16 +30,20 @@ public class CPUIndexAccumulationViaTensorTask extends BaseCPUTask<Pair<Double, 
             invokeAsync();
         }
 
+        Pair<Double,Integer> accum;
         try{
-            future.get();
+            accum = future.get();
         }catch(Exception e ){
             throw new RuntimeException(e);
         }
 
-        Pair<Double, Integer> accum = op.zeroPair();
-        for (Task<Pair<Double, Integer>> task : subTasks) {
-            Pair<Double, Integer> subAccum = task.blockUntilComplete();
-            accum = op.combineSubResults(accum, subAccum);
+        if(accum==null) {
+            //!=null for FJ, == null for ExecutorService
+            accum = op.zeroPair();
+            for (Task<Pair<Double, Integer>> task : subTasks) {
+                Pair<Double, Integer> subAccum = task.blockUntilComplete();
+                accum = op.combineSubResults(accum, subAccum);
+            }
         }
         if (outerTask) {
             op.setFinalResult(accum.getSecond());
@@ -50,6 +53,17 @@ public class CPUIndexAccumulationViaTensorTask extends BaseCPUTask<Pair<Double, 
 
     @Override
     public Pair<Double, Integer> call() {
+        //Callable / ExecutorService
+        return execute(false);
+    }
+
+    @Override
+    protected Pair<Double, Integer> compute() {
+        //Fork join
+        return execute(true);
+    }
+
+    private Pair<Double, Integer> execute(final boolean forkJoin) {
         INDArray x = op.x();
         INDArray y = op.y();
 
@@ -57,31 +71,35 @@ public class CPUIndexAccumulationViaTensorTask extends BaseCPUTask<Pair<Double, 
         int tensorDim = 1;
 
         int nTensors = x.tensorssAlongDimension(tensorDim);
-        subTasks = new ArrayList<>(nTensors);
+        List<RecursiveTask<Pair<Double,Integer>>> fjTasks = null;
+        if(forkJoin) fjTasks = new ArrayList<>(nTensors);
+        else subTasks = new ArrayList<>(nTensors);
         if (nTensors == 1) {
             //Vector: shouldn't happen
-            Task<Pair<Double, Integer>> task = new CPUIndexAccumulationTask(op, threshold, false);
-            task.invokeAsync();
-            subTasks.add(task);
-
+            RecursiveTask<Pair<Double, Integer>> task = new CPUIndexAccumulationTask(op, threshold, false);
+            return task.invoke();
         } else {
             if (x.rank() == 2) {
                 //Use fast tensor calculation for 2d
                 OpExecutionerUtil.Tensor1DStats tsx = OpExecutionerUtil.get1DTensorStats(x, tensorDim);
                 int n = tsx.getTensorLength();
                 int incrX = tsx.getElementWiseStride();
-                DataBuffer dx = x.data();
                 if (y == null) {
                     for (int i = 0; i < nTensors; i++) {
                         int offsetX = tsx.getFirstTensorOffset() + i * tsx.getTensorStartSeparation();
                         int elementOffset = i * tsx.getTensorLength();
-                        Task<Pair<Double, Integer>> task = new CPUIndexAccumulationTask(op, threshold, n, offsetX, 0,
+                        CPUIndexAccumulationTask task = new CPUIndexAccumulationTask(op, threshold, n, offsetX, 0,
                                 incrX, 0, elementOffset, false);
-                        task.invokeAsync();
-                        subTasks.add(task);
+                        if(forkJoin){
+                            task.fork();
+                            fjTasks.add(task);
+                        } else {
+                            task.invokeAsync();
+                            subTasks.add(task);
+                        }
+
                     }
                 } else {
-                    DataBuffer dy = y.data();
                     OpExecutionerUtil.Tensor1DStats tsy = OpExecutionerUtil.get1DTensorStats(y, tensorDim);
                     int incrY = tsy.getElementWiseStride();
                     for (int i = 0; i < nTensors; i++) {
@@ -89,21 +107,39 @@ public class CPUIndexAccumulationViaTensorTask extends BaseCPUTask<Pair<Double, 
                         int offsetY = tsy.getFirstTensorOffset() + i * tsy.getTensorStartSeparation();
                         int elementOffset = i * tsx.getTensorLength();
 
-                        Task<Pair<Double, Integer>> task = new CPUIndexAccumulationTask(op, threshold, n, offsetX, offsetY,
+                        CPUIndexAccumulationTask task = new CPUIndexAccumulationTask(op, threshold, n, offsetX, offsetY,
                                 incrX, incrY, elementOffset, false);
-                        task.invokeAsync();
-                        subTasks.add(task);
+                        if(forkJoin){
+                            task.fork();
+                            fjTasks.add(task);
+                        } else {
+                            task.invokeAsync();
+                            subTasks.add(task);
+                        }
                     }
                 }
             } else {
                 //3+ dimensions
                 for (int i = 0; i < nTensors; i++) {
-                    Task<Pair<Double,Integer>> task = new CPUIndexAccumulationTask(op,threshold,i,tensorDim,false);
-                    task.invokeAsync();
-                    subTasks.add(task);
+                    CPUIndexAccumulationTask task = new CPUIndexAccumulationTask(op,threshold,i,tensorDim,false);
+                    if(forkJoin){
+                        task.fork();
+                        fjTasks.add(task);
+                    } else {
+                        task.invokeAsync();
+                        subTasks.add(task);
+                    }
                 }
             }
         }
-        return null;
+
+        if(forkJoin) {
+            Pair<Double, Integer> accum = op.zeroPair();
+            for (RecursiveTask<Pair<Double, Integer>> task : fjTasks) {
+                Pair<Double, Integer> subAccum = task.join();
+                accum = op.combineSubResults(accum, subAccum);
+            }
+            return accum;
+        } else return null;
     }
 }

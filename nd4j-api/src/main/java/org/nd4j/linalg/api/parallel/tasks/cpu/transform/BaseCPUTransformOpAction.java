@@ -1,7 +1,6 @@
 package org.nd4j.linalg.api.parallel.tasks.cpu.transform;
 
 import org.nd4j.linalg.api.ops.TransformOp;
-import org.nd4j.linalg.api.parallel.tasks.BaseTask;
 import org.nd4j.linalg.api.parallel.tasks.cpu.BaseCPUAction;
 
 public abstract class BaseCPUTransformOpAction extends BaseCPUAction {

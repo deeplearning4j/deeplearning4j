@@ -14,6 +14,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
+import java.util.concurrent.RecursiveTask;
 
 
 public class CPUAccumulationAlongDimensionTask extends BaseCPUTask<INDArray> {
@@ -35,12 +36,15 @@ public class CPUAccumulationAlongDimensionTask extends BaseCPUTask<INDArray> {
             invokeAsync();
         }
 
+        INDArray ret = null;
         try {
-            future.get();
+            ret = future.get();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+        if(ret != null) return ret; //ForkJoin
 
+        //ExecutorService
         int[] retShape = ArrayUtil.removeIndex(op.x().shape(), dimensions);
         INDArray out = Nd4j.create(retShape);
         int i = 0;
@@ -53,6 +57,7 @@ public class CPUAccumulationAlongDimensionTask extends BaseCPUTask<INDArray> {
 
     @Override
     public INDArray call() {
+        //Callable: Iterative decomposition
         int nTensors = op.x().tensorssAlongDimension(dimensions);
         subTasks = new ArrayList<>(nTensors);
 
@@ -64,10 +69,31 @@ public class CPUAccumulationAlongDimensionTask extends BaseCPUTask<INDArray> {
         return null;
     }
 
+    @Override
+    public INDArray compute() {
+        //Fork Join: Recursive decomposition
+        int nTensors = op.x().tensorssAlongDimension(dimensions);
+        List<RecursiveTask<Double>> subTasks = new ArrayList<>(nTensors);
 
-    private class OpForDimTask extends BaseTask<Double> {
+        for (int i = 0; i < nTensors; i++) {
+            RecursiveTask<Double> task = new OpForDimTaskFJ(i);
+            task.fork();
+            subTasks.add(task);
+        }
+
+        int[] retShape = ArrayUtil.removeIndex(op.x().shape(), dimensions);
+        INDArray out = Nd4j.create(retShape);
+        int i = 0;
+        for(RecursiveTask<Double> task : subTasks){
+            out.putScalar(i++, task.join());
+        }
+        op.setZ(out);
+        return out;
+    }
+
+    private class OpForDimTask extends BaseTask<Double>  {
         private int tensorNum;
-        private Task<Double> subTask;
+        private BaseCPUTask<Double> subTask;
         private Future<Double> future;
 
         public OpForDimTask(int tensorNum){
@@ -104,9 +130,59 @@ public class CPUAccumulationAlongDimensionTask extends BaseCPUTask<INDArray> {
             } else {
                 subTask = new CPUAccumulationViaTensorTask(opOnDimension, threshold, true);
             }
-
             subTask.invokeAsync();
             return null;
+        }
+    }
+
+    private class OpForDimTaskFJ extends RecursiveTask<Double> implements Task<Double> {
+        private int tensorNum;
+        private BaseCPUTask<Double> subTask;
+        private Future<Double> future;
+
+        public OpForDimTaskFJ(int tensorNum){
+            this.tensorNum = tensorNum;
+        }
+
+        @Override
+        public Double invokeBlocking() {
+            invokeAsync();
+            return blockUntilComplete();
+        }
+
+        @Override
+        public void invokeAsync() {
+            this.future = TaskExecutorProvider.getTaskExecutor().executeAsync(this);
+        }
+
+        @Override
+        public Double blockUntilComplete() {
+            return null;
+        }
+
+        @Override
+        public Double call() {
+            //Callable (should never be called)
+            throw new RuntimeException("Callable.call() called as part of ForkJoin task");
+        }
+
+        @Override
+        protected Double compute() {
+            //Fork join
+            Accumulation opOnDimension = (Accumulation) op.opForDimension(tensorNum, dimensions);
+            INDArray x2 = opOnDimension.x();
+            INDArray y2 = opOnDimension.y();
+
+            boolean canDoDirectly;
+            if (y2 == null) canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x2);
+            else canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x2, y2);
+
+            if (canDoDirectly) {
+                subTask = new CPUAccumulationTask(opOnDimension, threshold, true);
+            } else {
+                subTask = new CPUAccumulationViaTensorTask(opOnDimension, threshold, true);
+            }
+            return subTask.invoke();
         }
     }
 }

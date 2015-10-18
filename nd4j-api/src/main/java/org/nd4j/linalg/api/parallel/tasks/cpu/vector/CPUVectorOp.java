@@ -14,20 +14,41 @@ import org.nd4j.linalg.util.ArrayUtil;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.RecursiveAction;
 
-public class CPUVectorOp extends BaseTask<Void> {
+public class CPUVectorOp extends BaseCPUAction {
     protected final VectorOp op;
-    protected final int threshold;
-
-    protected List<Task<Void>> subTasks;
 
     public CPUVectorOp(VectorOp op, int threshold){
+        super(op,threshold);
         this.op = op;
-        this.threshold = threshold;
     }
 
     @Override
-    public void invokeAsync(){
+    public Void blockUntilComplete() {
+        if(future==null){
+            //invokeAsync() not called?
+            invokeAsync();
+        }
+
+        try{
+            future.get();
+        }catch(Exception e){
+            throw new RuntimeException(e);
+        }
+
+        if(subTasks!=null) {
+            //i.e., for Callable/ExecutorService execution
+            for (Task<Void> task : subTasks) {
+                task.blockUntilComplete();
+            }
+        }
+
+        return null;
+    }
+
+    @Override
+    public Void call() {
         INDArray x = op.x();
         INDArray y = op.y();
         INDArray z = op.z();
@@ -99,25 +120,87 @@ public class CPUVectorOp extends BaseTask<Void> {
                 subTasks.add(task);
             }
         }
-    }
-
-    @Override
-    public Void blockUntilComplete() {
-        if(subTasks==null){
-            //invokeAsync() not called?
-            invokeAsync();
-        }
-
-        for(Task<Void> task : subTasks ){
-            task.blockUntilComplete();
-        }
-
         return null;
     }
 
     @Override
-    public Void call() {
-        return null;    //Not applicable
+    protected void compute() {
+        //Fork join
+        INDArray x = op.x();
+        INDArray y = op.y();
+        INDArray z = op.z();
+
+        int nVectorOps;
+        if(x.rank() == 2 ){
+            if(op.getDimension()==0) nVectorOps=x.columns();
+            else nVectorOps = x.rows();
+        } else {
+            int[] shape = x.shape();
+            nVectorOps = ArrayUtil.prod(ArrayUtil.removeIndex(shape, op.getDimension()));
+        }
+
+        List<RecursiveAction> subTasks = new ArrayList<>(nVectorOps);
+        //Do TAD and create sub-tasks:
+        int dimension = op.getDimension();
+        if(!y.isVector()) throw new UnsupportedOperationException("Cannot do vector op if y is not vector. y.shape="+ Arrays.toString(y.shape()));
+        if(x.size(dimension) != y.length()) throw new UnsupportedOperationException("Vector length " + y.length() + " does not match x.shape("+dimension+")="+x.size(dimension));
+
+        if(x.rank() == 2 ){
+            OpExecutionerUtil.Tensor1DStats t1dx = OpExecutionerUtil.get1DTensorStats(x,dimension);
+            if(y!=null) {
+                int offsetY = y.offset();
+                int ewsy = y.elementWiseStride();
+                if (x == z) {
+                    for (int i = 0; i < nVectorOps; i++) {
+                        int offsetX = t1dx.getFirstTensorOffset() + i * t1dx.getTensorStartSeparation();
+                        RecursiveAction task = new SingleVectorAction(threshold, t1dx.getTensorLength(), offsetX, offsetY, offsetX,
+                                t1dx.getElementWiseStride(), ewsy, t1dx.getElementWiseStride());
+                        task.fork();
+                        subTasks.add(task);
+                    }
+                } else {
+                    OpExecutionerUtil.Tensor1DStats t1dz = OpExecutionerUtil.get1DTensorStats(z, dimension);
+                    for (int i = 0; i < nVectorOps; i++) {
+                        int offsetX = t1dx.getFirstTensorOffset() + i * t1dx.getTensorStartSeparation();
+                        int offsetZ = t1dz.getFirstTensorOffset() + i * t1dz.getTensorStartSeparation();
+                        RecursiveAction task = new SingleVectorAction(threshold, t1dx.getTensorLength(), offsetX, offsetY, offsetZ,
+                                t1dx.getElementWiseStride(), ewsy, t1dz.getElementWiseStride());
+                        task.fork();
+                        subTasks.add(task);
+                    }
+                }
+            } else {
+                if (x == z) {
+                    for (int i = 0; i < nVectorOps; i++) {
+                        int offsetX = t1dx.getFirstTensorOffset() + i * t1dx.getTensorStartSeparation();
+                        RecursiveAction task = new SingleVectorAction(threshold, t1dx.getTensorLength(), offsetX, 0, offsetX,
+                                t1dx.getElementWiseStride(), 0, t1dx.getElementWiseStride());
+                        task.fork();
+                        subTasks.add(task);
+                    }
+                } else {
+                    OpExecutionerUtil.Tensor1DStats t1dz = OpExecutionerUtil.get1DTensorStats(z, dimension);
+                    for (int i = 0; i < nVectorOps; i++) {
+                        int offsetX = t1dx.getFirstTensorOffset() + i * t1dx.getTensorStartSeparation();
+                        int offsetZ = t1dz.getFirstTensorOffset() + i * t1dz.getTensorStartSeparation();
+                        RecursiveAction task = new SingleVectorAction(threshold, t1dx.getTensorLength(), offsetX, 0, offsetZ,
+                                t1dx.getElementWiseStride(), 0, t1dz.getElementWiseStride());
+                        task.fork();
+                        subTasks.add(task);
+                    }
+                }
+            }
+        } else {
+            for( int i=0; i<nVectorOps; i++ ) {
+                RecursiveAction task = new SingleVectorAction(threshold, i, dimension );
+                task.fork();
+                subTasks.add(task);
+            }
+        }
+
+        for(RecursiveAction a : subTasks ){
+            a.join();
+        }
     }
 
     /** helper class for doing a single vector op */
@@ -133,6 +216,54 @@ public class CPUVectorOp extends BaseTask<Void> {
 
         @Override
         public void invokeAsync() {
+            future = TaskExecutorProvider.getTaskExecutor().executeAsync(this);
+        }
+
+        @Override
+        protected void compute() {
+            if(doTensorFirst) doTensorFirst(op);
+
+            //Fork join
+            if(n>threshold) {
+                int nFirst = n/2;
+                RecursiveAction first = new SingleVectorAction(threshold, nFirst, offsetX, offsetY, offsetZ, incrX,
+                        incrY, incrZ);
+                first.fork();
+
+                int nSecond = n - nFirst;
+                int offsetX2 = offsetX + nFirst * incrX;
+                int offsetY2 = offsetY + nFirst * incrY;
+                int offsetZ2 = offsetZ + nFirst * incrZ;
+                RecursiveAction second = new SingleVectorAction(threshold, nSecond, offsetX2, offsetY2, offsetZ2, incrX,
+                        incrY, incrZ);
+                second.fork();
+
+                first.join();
+                second.join();
+            } else {
+                execute();
+            }
+        }
+
+        @Override
+        public Void blockUntilComplete() {
+            if(future != null){
+                try{
+                    future.get();
+                }catch( Exception e ){
+                    throw new RuntimeException(e);
+                }
+            } else {
+                for( Task<Void> t : subTasks ){
+                    t.blockUntilComplete();
+                }
+            }
+            return null;
+        }
+
+        @Override
+        public Void call() {
+            //Callable
             if(n>threshold) {
                 //Break into subtasks
                 int nSubTasks = 1 + n / threshold;  //(round up)
@@ -161,28 +292,12 @@ public class CPUVectorOp extends BaseTask<Void> {
                     soFar += nInTask;
                 }
             } else {
-                future = TaskExecutorProvider.getTaskExecutor().executeAsync(this);
-            }
-        }
-
-        @Override
-        public Void blockUntilComplete() {
-            if(future != null){
-                try{
-                    future.get();
-                }catch( Exception e ){
-                    throw new RuntimeException(e);
-                }
-            } else {
-                for( Task<Void> t : subTasks ){
-                    t.blockUntilComplete();
-                }
+                execute();
             }
             return null;
         }
 
-        @Override
-        public Void call() {
+        private Void execute(){
             DataBuffer x = op.x().data();
             DataBuffer y = op.y().data();
             DataBuffer z = op.z().data();

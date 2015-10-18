@@ -11,6 +11,8 @@ import org.nd4j.linalg.api.parallel.tasks.cpu.BaseCPUAction;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.RecursiveAction;
+import java.util.concurrent.RecursiveTask;
 
 public class CPUScalarOpViaTensorAction extends BaseCPUAction {
     protected final ScalarOp op;
@@ -22,6 +24,20 @@ public class CPUScalarOpViaTensorAction extends BaseCPUAction {
 
     @Override
     public Void call() {
+        //Callable/ExecutorService
+        execute(false);
+        return null;
+    }
+
+
+    @Override
+    protected void compute() {
+        //Fork join
+        execute(true);
+    }
+
+    private void execute(final boolean forkJoin) {
+        //Fork join
         INDArray x = op.x();
         INDArray y = op.y();
         INDArray z = op.z();
@@ -46,12 +62,19 @@ public class CPUScalarOpViaTensorAction extends BaseCPUAction {
         }
 
         int nTensors = x.tensorssAlongDimension(tensorDim);
-        subTasks = new ArrayList<>(nTensors);
+        List<RecursiveAction> fjTasks = null;
+        if(forkJoin) fjTasks = new ArrayList<>(nTensors);
+        else subTasks = new ArrayList<>(nTensors);
         if(nTensors == 1){
             //Generally shouldn't be called if nTensors = 1, as this is a vector
-            Task<Void> task = new CPUScalarOpAction(op,threshold);
-            task.invokeAsync();
-            subTasks.add(task);
+            CPUScalarOpAction task = new CPUScalarOpAction(op,threshold);
+            if(forkJoin){
+                task.invoke();
+                return;
+            } else {
+                task.invokeAsync();
+                subTasks.add(task);
+            }
         } else {
             if(x.rank() == 2) {
                 //Use fast tensor calculation for 2d
@@ -62,9 +85,14 @@ public class CPUScalarOpViaTensorAction extends BaseCPUAction {
                     //x=Op(x)
                     for( int i=0; i<nTensors; i++){
                         int offsetX = tsx.getFirstTensorOffset() + i*tsx.getTensorStartSeparation();
-                        Task<Void> task = new CPUScalarOpAction(op,threshold,n,offsetX,offsetX,incrX,incrX);
-                        task.invokeAsync();
-                        subTasks.add(task);
+                        CPUScalarOpAction task = new CPUScalarOpAction(op,threshold,n,offsetX,offsetX,incrX,incrX);
+                        if(forkJoin){
+                            task.fork();
+                            fjTasks.add(task);
+                        } else {
+                            task.invokeAsync();
+                            subTasks.add(task);
+                        }
                     }
                 } else {
                     //z=Op(x)
@@ -73,20 +101,34 @@ public class CPUScalarOpViaTensorAction extends BaseCPUAction {
                     for( int i=0; i<nTensors; i++){
                         int offsetX = tsx.getFirstTensorOffset() + i*tsx.getTensorStartSeparation();
                         int offsetZ = tsz.getFirstTensorOffset() + i*tsz.getTensorStartSeparation();
-                        Task<Void> task = new CPUScalarOpAction(op,threshold,n,offsetX,offsetZ,incrX,incrZ);
-                        task.invokeAsync();
-                        subTasks.add(task);
+                        CPUScalarOpAction task = new CPUScalarOpAction(op,threshold,n,offsetX,offsetZ,incrX,incrZ);
+                        if(forkJoin){
+                            task.fork();
+                            fjTasks.add(task);
+                        } else {
+                            task.invokeAsync();
+                            subTasks.add(task);
+                        }
                     }
                 }
             } else {
                 //Use general purpose tensor calculation for everything else
                 for (int i = 0; i < nTensors; i++) {
-                    Task<Void> task = new CPUScalarOpAction(op,threshold,i,tensorDim);
-                    task.invokeAsync();
-                    subTasks.add(task);
+                    CPUScalarOpAction task = new CPUScalarOpAction(op,threshold,i,tensorDim);
+                    if(forkJoin){
+                        task.fork();
+                        fjTasks.add(task);
+                    } else {
+                        task.invokeAsync();
+                        subTasks.add(task);
+                    }
                 }
             }
         }
-        return null;
+        if(forkJoin) {
+            for (RecursiveAction t : fjTasks) {
+                t.join();
+            }
+        }
     }
 }

@@ -3,16 +3,20 @@ package org.nd4j.linalg.api.parallel.tasks;
 
 import java.util.concurrent.*;
 
-/** Default TaskExecutor based on a ThreadPoolExecutor with the
- * number of threads set to the number of processor (cores), as
- * per the Runtime.getRuntime().availableProcessors() method
+/** Default TaskExecutor based on a
+ * (a) ForkJoinPool (for CPU tasks that are ForkJoin RecursiveTask/RecursiveAction, for example)
+ * (b) ThreadPoolExecutor (for all other tasks)
+ * number of threads set to the number of processor (cores) by default, as per the
+ * Runtime.getRuntime().availableProcessors() method
+ * Otherwise, set number of threads using "org.nd4j.parallel.cpu.taskexecutorthreads" system property
  */
 public class DefaultTaskExecutor implements TaskExecutor {
 
     public static final String EXEC_THREADS = "org.nd4j.parallel.cpu.taskexecutorthreads";
 
     private static DefaultTaskExecutor instance;
-    private ExecutorService executorService;
+    private final ExecutorService executorService;
+    private final ForkJoinPool forkJoinPool;
 
     static {
         instance = new DefaultTaskExecutor();
@@ -38,12 +42,18 @@ public class DefaultTaskExecutor implements TaskExecutor {
                         t.setDaemon(true);
                         return t;
                     }
-                }
-        );
+        });
+
+        forkJoinPool = new ForkJoinPool(nThreads);
     }
 
     @Override
     public <V> Future<V> executeAsync(Task<V> task) {
-        return executorService.submit(task);
+        if(task instanceof ForkJoinTask ) {
+            forkJoinPool.execute((ForkJoinTask<?>)task);
+            return (Future<V>)task;
+        } else {
+            return executorService.submit(task);
+        }
     }
 }
