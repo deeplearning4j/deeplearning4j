@@ -4,9 +4,9 @@ import io.netty.buffer.ByteBuf;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.parallel.tasks.Task;
-import org.nd4j.linalg.api.parallel.tasks.TaskExecutorProvider;
 
 import java.util.ArrayList;
+import java.util.concurrent.RecursiveAction;
 
 public class CPUTransformOpAction extends BaseCPUTransformOpAction {
 
@@ -27,6 +27,7 @@ public class CPUTransformOpAction extends BaseCPUTransformOpAction {
 
     @Override
     public Void call() {
+        //Callable / ExecutorService
         if(doTensorFirst) doTensorFirst(op);
 
         if (n > threshold) {
@@ -60,6 +61,33 @@ public class CPUTransformOpAction extends BaseCPUTransformOpAction {
             execute();
         }
         return null;
+    }
+
+
+    @Override
+    protected void compute() {
+        //Fork join
+        if(doTensorFirst) doTensorFirst(op);
+
+        if (n > threshold) {
+            //Break into subtasks
+            int nFirst = n / 2;
+            RecursiveAction first = new CPUTransformOpAction(op, threshold, nFirst, offsetX, offsetY, offsetZ, incrX, incrY, incrZ);
+            first.fork();
+
+            int nSecond = n - nFirst;
+            int offsetX2 = offsetX + nFirst * incrX;
+            int offsetY2 = offsetY + nFirst * incrY;
+            int offsetZ2 = offsetZ + nFirst * incrZ;
+            RecursiveAction second = new CPUTransformOpAction(op, threshold, nSecond, offsetX2, offsetY2, offsetZ2, incrX, incrY, incrZ);
+            second.fork();
+
+            first.join();
+            second.join();
+        } else {
+            //Execute directly
+            execute();
+        }
     }
 
     private void execute(){

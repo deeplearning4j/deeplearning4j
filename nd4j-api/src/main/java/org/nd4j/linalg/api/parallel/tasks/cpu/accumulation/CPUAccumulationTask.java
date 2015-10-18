@@ -41,15 +41,16 @@ public class CPUAccumulationTask extends BaseCPUAccumulationTask {
             //invokeAsync hasn't been called?
             invokeAsync();
         }
-        double accum;
+        Double accum;
         try {
             accum = future.get();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
-        if(subTasks != null ) {
-            //task was broken into subtasks, instead of executing directly
+        if (subTasks != null) {
+            //Callable - task was broken into subtasks, instead of executing directly
+            //subTasks == null for FJ execution
             accum = op.zeroDouble();
             for (Task<Double> task : subTasks) {
                 double subAccum = task.blockUntilComplete();
@@ -64,8 +65,40 @@ public class CPUAccumulationTask extends BaseCPUAccumulationTask {
     }
 
     @Override
+    public Double compute() {
+        //Recursive decomposition (fork join)
+        if (doTensorFirst) doTensorFirst(op);
+
+        double out;
+        if (n > threshold) {
+            //Break into subtasks:
+            int nFirst = n / 2;
+            CPUAccumulationTask first = new CPUAccumulationTask(op, threshold, nFirst, offsetX, offsetY, incrX, incrY, false);
+            first.fork();
+
+            int nSecond = n - nFirst;
+            int offsetX2 = offsetX + nFirst * incrX;
+            int offsetY2 = offsetY + nFirst * incrY;
+            CPUAccumulationTask second = new CPUAccumulationTask(op, threshold, nSecond, offsetX2, offsetY2, incrX, incrY, false);
+            second.fork();
+
+            out = op.combineSubResults(first.join(), second.join());
+        } else {
+            //Execute directly
+            out = execute();
+        }
+        if (outerTask) {
+            return op.getAndSetFinalResult(out);
+        } else {
+            return out;
+        }
+    }
+
+
+    @Override
     public Double call() {
-        if(doTensorFirst) doTensorFirst(op);
+        //Iterative decomposition (thread pool)
+        if (doTensorFirst) doTensorFirst(op);
 
         if (n > threshold) {
             //Break into subtasks
@@ -99,7 +132,7 @@ public class CPUAccumulationTask extends BaseCPUAccumulationTask {
         }
     }
 
-    private double execute(){
+    private double execute() {
         DataBuffer x = op.x().data();
         DataBuffer y = (op.y() != null ? op.y().data() : null);
 

@@ -7,6 +7,8 @@ import org.nd4j.linalg.api.parallel.tasks.Task;
 import org.nd4j.linalg.api.parallel.tasks.TaskExecutorProvider;
 
 import java.util.ArrayList;
+import java.util.concurrent.RecursiveAction;
+import java.util.concurrent.RecursiveTask;
 
 public class CPUScalarOpAction extends BaseCPUScalarOpAction {
 
@@ -33,7 +35,10 @@ public class CPUScalarOpAction extends BaseCPUScalarOpAction {
 
     @Override
     public Void call() {
-        if(n > threshold){
+        //Callable / ExecutorService
+        if (doTensorFirst) doTensorFirst(op);
+
+        if (n > threshold) {
             //Break into subtasks
             int nSubTasks = 1 + n / threshold;  //(round up)
             subTasks = new ArrayList<>(nSubTasks);
@@ -41,18 +46,18 @@ public class CPUScalarOpAction extends BaseCPUScalarOpAction {
 
             int taskSize = n / nSubTasks;
             int soFar = 0;
-            for( int i=0; i<nSubTasks; i++ ){
+            for (int i = 0; i < nSubTasks; i++) {
                 int nInTask;
-                if(i==nSubTasks-1){
+                if (i == nSubTasks - 1) {
                     //All remaining tasks (due to integer division)
                     nInTask = n - soFar;
                 } else {
                     nInTask = taskSize;
                 }
-                int offsetXNew = offsetX + soFar*incrX;
-                int offsetZNew = offsetZ + soFar*incrZ;
+                int offsetXNew = offsetX + soFar * incrX;
+                int offsetZNew = offsetZ + soFar * incrZ;
 
-                Task t = new CPUScalarOpAction(op,threshold,nInTask,offsetXNew,offsetZNew,incrX,incrZ);
+                Task t = new CPUScalarOpAction(op, threshold, nInTask, offsetXNew, offsetZNew, incrX, incrZ);
                 t.invokeAsync();
                 subTasks.add(t);
 
@@ -65,8 +70,34 @@ public class CPUScalarOpAction extends BaseCPUScalarOpAction {
         return null;
     }
 
-    private void execute(){
-        if(doTensorFirst) doTensorFirst(op);
+
+    @Override
+    protected void compute() {
+        //Fork join
+        if (doTensorFirst) doTensorFirst(op);
+
+        if (n > threshold) {
+            //Break into subtasks:
+            int nFirst = n / 2;
+            RecursiveAction first = new CPUScalarOpAction(op, threshold, nFirst, offsetX, offsetZ, incrX, incrZ);
+            first.fork();
+
+            int nSecond = n - nFirst;
+            int offsetX2 = offsetX + nFirst * incrX;
+            int offsetZ2 = offsetZ + nFirst * incrZ;
+            RecursiveAction second = new CPUScalarOpAction(op, threshold, nSecond, offsetX2, offsetZ2, incrX, incrZ);
+            second.fork();
+
+            first.join();
+            second.join();
+        } else {
+            //Execute directly
+            execute();
+        }
+    }
+
+    private void execute() {
+        if (doTensorFirst) doTensorFirst(op);
 
         DataBuffer x = op.x().data();
         DataBuffer z = op.z().data();

@@ -1,10 +1,7 @@
 package org.nd4j.linalg.api.parallel.tasks.cpu.scalar;
 
 import org.nd4j.linalg.api.ops.ScalarOp;
-import org.nd4j.linalg.api.ops.TransformOp;
-import org.nd4j.linalg.api.parallel.tasks.BaseTask;
 import org.nd4j.linalg.api.parallel.tasks.cpu.BaseCPUAction;
-import org.nd4j.linalg.api.parallel.tasks.cpu.BaseCPUTask;
 
 public abstract class BaseCPUScalarOpAction extends BaseCPUAction {
     protected final ScalarOp op;

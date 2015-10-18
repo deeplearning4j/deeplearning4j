@@ -3,13 +3,11 @@ package org.nd4j.linalg.api.parallel.tasks.cpu.transform;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
-import org.nd4j.linalg.api.parallel.tasks.*;
 import org.nd4j.linalg.api.parallel.tasks.cpu.BaseCPUAction;
-import org.nd4j.linalg.api.parallel.tasks.cpu.BaseCPUTask;
-import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.RecursiveAction;
 
 public class CPUTransformOpViaTensorTask extends BaseCPUAction {
     protected final TransformOp op;
@@ -21,6 +19,21 @@ public class CPUTransformOpViaTensorTask extends BaseCPUAction {
 
     @Override
     public Void call() {
+        //Callable / ExecutorService
+        execute(false);
+        return null;
+    }
+
+
+    @Override
+    protected void compute() {
+        //Fork join
+        execute(true);
+    }
+
+
+    private void execute(final boolean forkJoin) {
+        //Fork join
         INDArray x = op.x();
         INDArray y = op.y();
         INDArray z = op.z();
@@ -45,12 +58,20 @@ public class CPUTransformOpViaTensorTask extends BaseCPUAction {
         }
 
         int nTensors = x.tensorssAlongDimension(tensorDim);
-        subTasks = new ArrayList<>(nTensors);
+        List<RecursiveAction> fjTasks = null;
+        if(forkJoin) fjTasks = new ArrayList<>(nTensors);
+        else subTasks = new ArrayList<>(nTensors);
+
         if(nTensors == 1){
             //Generally shouldn't be called if nTensors = 1, as this is a vector
-            Task<Void> task = new CPUTransformOpAction(op,threshold);
-            task.invokeAsync();
-            subTasks.add(task);
+            CPUTransformOpAction task = new CPUTransformOpAction(op,threshold);
+            if(forkJoin){
+                task.invoke();
+            } else {
+                task.invokeAsync();
+                subTasks.add(task);
+            }
+            return;
         } else {
             if(x.rank() == 2) {
                 //Use fast tensor calculation for 2d
@@ -62,9 +83,14 @@ public class CPUTransformOpViaTensorTask extends BaseCPUAction {
                         //x=Op(x)
                         for( int i=0; i<nTensors; i++){
                             int offsetX = tsx.getFirstTensorOffset() + i*tsx.getTensorStartSeparation();
-                            Task<Void> task = new CPUTransformOpAction(op,threshold,n,offsetX,0,offsetX,incrX,0,incrX);
-                            task.invokeAsync();
-                            subTasks.add(task);
+                            CPUTransformOpAction task = new CPUTransformOpAction(op,threshold,n,offsetX,0,offsetX,incrX,0,incrX);
+                            if(forkJoin){
+                                task.fork();
+                                fjTasks.add(task);
+                            } else {
+                                task.invokeAsync();
+                                subTasks.add(task);
+                            }
                         }
                     } else {
                         //z=Op(x)
@@ -73,9 +99,14 @@ public class CPUTransformOpViaTensorTask extends BaseCPUAction {
                         for( int i=0; i<nTensors; i++){
                             int offsetX = tsx.getFirstTensorOffset() + i*tsx.getTensorStartSeparation();
                             int offsetZ = tsz.getFirstTensorOffset() + i*tsz.getTensorStartSeparation();
-                            Task<Void> task = new CPUTransformOpAction(op,threshold,n,offsetX,0,offsetZ,incrX,0,incrZ);
-                            task.invokeAsync();
-                            subTasks.add(task);
+                            CPUTransformOpAction task = new CPUTransformOpAction(op,threshold,n,offsetX,0,offsetZ,incrX,0,incrZ);
+                            if(forkJoin){
+                                task.fork();
+                                fjTasks.add(task);
+                            } else {
+                                task.invokeAsync();
+                                subTasks.add(task);
+                            }
                         }
                     }
                 } else {
@@ -86,9 +117,14 @@ public class CPUTransformOpViaTensorTask extends BaseCPUAction {
                         for( int i=0; i<nTensors; i++){
                             int offsetX = tsx.getFirstTensorOffset() + i*tsx.getTensorStartSeparation();
                             int offsetY = tsy.getFirstTensorOffset() + i*tsy.getTensorStartSeparation();
-                            Task<Void> task = new CPUTransformOpAction(op,threshold,n,offsetX,offsetY,offsetX,incrX,incrY,incrX);
-                            task.invokeAsync();
-                            subTasks.add(task);
+                            CPUTransformOpAction task = new CPUTransformOpAction(op,threshold,n,offsetX,offsetY,offsetX,incrX,incrY,incrX);
+                            if(forkJoin){
+                                task.fork();
+                                fjTasks.add(task);
+                            } else {
+                                task.invokeAsync();
+                                subTasks.add(task);
+                            }
                         }
                     } else {
                         //z=Op(x,y)
@@ -98,21 +134,35 @@ public class CPUTransformOpViaTensorTask extends BaseCPUAction {
                             int offsetX = tsx.getFirstTensorOffset() + i*tsx.getTensorStartSeparation();
                             int offsetY = tsy.getFirstTensorOffset() + i*tsy.getTensorStartSeparation();
                             int offsetZ = tsz.getFirstTensorOffset() + i*tsz.getTensorStartSeparation();
-                            Task<Void> task = new CPUTransformOpAction(op,threshold,n,offsetX,offsetY,offsetZ,incrX,incrY,incrZ);
-                            task.invokeAsync();
-                            subTasks.add(task);
+                            CPUTransformOpAction task = new CPUTransformOpAction(op,threshold,n,offsetX,offsetY,offsetZ,incrX,incrY,incrZ);
+                            if(forkJoin){
+                                task.fork();
+                                fjTasks.add(task);
+                            } else {
+                                task.invokeAsync();
+                                subTasks.add(task);
+                            }
                         }
                     }
                 }
             } else {
                 //Use general purpose tensor calculation for everything else
                 for (int i = 0; i < nTensors; i++) {
-                    Task<Void> task = new CPUTransformOpAction(op,threshold,i,tensorDim);
-                    task.invokeAsync();
-                    subTasks.add(task);
+                    CPUTransformOpAction task = new CPUTransformOpAction(op,threshold,i,tensorDim);
+                    if(forkJoin){
+                        task.fork();
+                        fjTasks.add(task);
+                    } else {
+                        task.invokeAsync();
+                        subTasks.add(task);
+                    }
                 }
             }
         }
-        return null;
+        if(forkJoin) {
+            for (RecursiveAction t : fjTasks) {
+                t.join();
+            }
+        }
     }
 }
