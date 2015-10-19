@@ -68,7 +68,7 @@ sub: org.nd4j.linalg.api.ndarray.INDArray =
 | arr.sumT                                   | np.sum(arr)                                 | 45.0  //returns Double value                                   |
 | val comp = Array(1 + i, 1 + 2 * i).toNDArray | comp = np.array([1 + 1j, 1 + 2j])           | [1.0 + 1.0i ,1.0 + 2.0i]                                       |
 | comp.sumT                                  | np.sum(comp)                                | 2.0 + 3.0i //returns IComplexNumber value                      |
-| for(row <- arr.rowP if row.get(0) > 1) yield row*2 |   | [[1.00,2.00,3.00] [8.00,10.00,12.00] [14.00,16.00,18.00]] |
+| for(row <- arr.rowP if row.get(0) > 1) yield row*2 |   | [[8.00,10.00,12.00] [14.00,16.00,18.00]] |
 | val tensor = (1 to 8).asNDArray(2,2,2) | tensor = np.array([[[1, 2], [3, 4]],[[5,6],[7,8]]]) | [[[1.00,2.00] [3.00,4.00]] [[5.00,6.00] [7.00,8.00]]] |
-| for(slice <- tensor.sliceP if slice.get(0) > 1) yield slice*2 |  |[[[1.00,2.00] [3.00,4.00]] [[10.00,12.00] [14.00,16.00]]] |
-|arr(0 -> 3 by 2, ->) = 0                  |                 | [[0.00,0.00,0.00] [4.00,5.00,6.00] [0.00,0.00,0.00]] |
+| for(slice <- tensor.sliceP if slice.get(0) > 1) yield slice*2 |                           |[[[10.00,12.00][14.00,16.00]]] |
+|arr(0 -> 3 by 2, ->) = 0                  |                                                | [[0.00,0.00,0.00] [4.00,5.00,6.00] [0.00,0.00,0.00]] |
