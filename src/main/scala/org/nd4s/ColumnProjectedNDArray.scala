@@ -1,6 +1,7 @@
 package org.nd4s
 
 import org.nd4j.linalg.api.ndarray.INDArray
+import org.nd4j.linalg.indexing.{NDArrayIndex, SpecifiedIndex}
 
 class ColumnProjectedNDArray(val array:INDArray,filtered:Array[Int]){
   def this(ndarray: INDArray){
@@ -11,7 +12,7 @@ class ColumnProjectedNDArray(val array:INDArray,filtered:Array[Int]){
     for{
       i <- filtered
     } array.putColumn(i,f(array.getColumn(i)))
-    array
+    array.get(NDArrayIndex.all(),new SpecifiedIndex(filtered:_*))
   }
 
   def map(f:INDArray => INDArray):INDArray = new ColumnProjectedNDArray(array.dup(),filtered).flatMapi(f)
@@ -19,6 +20,12 @@ class ColumnProjectedNDArray(val array:INDArray,filtered:Array[Int]){
   def flatMap(f:INDArray => INDArray):INDArray = map(f)
 
   def flatMapi(f:INDArray => INDArray):INDArray = mapi(f)
+
+  def foreach(f:INDArray => Unit):Unit = {
+    for{
+      i <- filtered
+    } f(array.getColumn(i))
+  }
 
   def withFilter(f:INDArray => Boolean):ColumnProjectedNDArray = {
     val targets = for{
