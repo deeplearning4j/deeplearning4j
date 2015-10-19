@@ -17,11 +17,6 @@ public class TestReadWrite extends BaseNd4jTest {
 
     @Test
     public void testLoadingSavingDouble() throws Exception {
-        Nd4j nd4j = new Nd4j();
-        Nd4jBackend backend = (Nd4jBackend)Class.forName("org.nd4j.linalg.cpu.CpuBackend").newInstance();
-        nd4j.initWithBackend(backend);
-        Nd4j.factory().setOrder('c');
-
         Nd4j.factory().setDType(DataBuffer.Type.DOUBLE);
         Nd4j.dtype = DataBuffer.Type.DOUBLE;
         INDArray randF = Nd4j.create(new int[]{5, 3}, 'f');
