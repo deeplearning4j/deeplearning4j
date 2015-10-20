@@ -53,5 +53,3 @@ If you have any questions, please join [us on Gitter](https://gitter.im/deeplear
 ### Deeplearning4j Testimonial
 
       "I feel like Frankenstein. The doctor..." - Steve D. 
-
-![Alt text](../img/logos_8.png)
