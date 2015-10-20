@@ -17,7 +17,7 @@ This Quick Start guide assumes that you have the following already installed:
  
 If you need to install any of the above, please read how in the [ND4J Getting Started guide](http://nd4j.org/getstarted.html).  (ND4J is the linear-algebra engine behind Deeplearning4j, and the instructions there apply to both projects.) Don't install everything listed on the page, just the software listed above. 
 
-We highly recommend you join our [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) if you have questions or feedback. Even if you're feeling anti-social or brashly independent, feel free to lurk and learn.
+We highly recommend you join our [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) if you have questions or feedback. Even if you're feeling anti-social or brashly independent, feel free to lurk and learn. In addition, if you are utterly new to deep learning, we've included [a road map of what to learn when you're starting out](../deeplearningforbeginners.html). 
 
 ## DL4J in a Few Easy Steps
 
