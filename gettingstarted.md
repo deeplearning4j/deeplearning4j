@@ -4,7 +4,7 @@ layout: default
 
 # Getting Started
 
-This is a multistep install. We highly recommend you join our [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) if you have questions or feedback, so we can walk you through it. If you're feeling anti-social or brashly independent, you're still invited to lurk and learn. 
+This is a multistep install. We highly recommend you join our [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) if you have questions or feedback, so we can walk you through it. If you're feeling anti-social or brashly independent, you're still invited to lurk and learn. In addition, if you are utterly new to deep learning, we've got [a road map of what to learn when you're starting out](../deeplearningforbeginners.html). 
 
 The prerequisites installs for Deeplearning4j are documented on the ["Getting Started" page](http://nd4j.org/getstarted.html) of ND4J, the linear algebra engine powering DL4J's neural nets:
 
