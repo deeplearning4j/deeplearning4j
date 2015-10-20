@@ -15,7 +15,7 @@ Reasonable people can disagree about whether using neural networks for regressio
 
 ![Alt text](../img/neural-network-regression.png)
 
-In the diagram above, x stands for input, the features passed forward from the network's previous layer. Many x's will be fed into each node of the last hidden layer, and each x will be multiplied by a corresponding weight, w.
+In the diagram above, `x` stands for input, the features passed forward from the network's previous layer. Many x's will be fed into each node of the last hidden layer, and each x will be multiplied by a corresponding weight, w.
 
 The sum of those products is added to a bias and fed into an activation function. In this case the activation function is a rectified linear unit (ReLU), commonly used and highly useful because it doesn't saturate on shallow gradients as sigmoid activation functions do.
  
@@ -37,6 +37,8 @@ To perform regression with a neural network in Deeplearning4j, you would [set up
 		.lossFunction(LossFunctions.LossFunction.RMSE)
 
 `nOut` is the number of nodes in any layer. `nIn` is the number of features being passed from the previous layer -- in the diagram above it would be 4. `activationFunction` should be set to `'identity'`.
+
+Here's a more complete example of [hooking a neural net up to regression](http://pastebin.com/3uyKyCPU) in order to approximate a in function with Deeplearning4j. 
 
 ### Other Resources
 
