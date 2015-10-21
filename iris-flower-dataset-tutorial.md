@@ -108,7 +108,7 @@ A *NeuralNetConfiguration* object is the fundamental object used to construct La
 
 		.iterations(iterations)
 
-^ This line specifies the number of iterations the algorithm will train. The number of iterations is the number of times you allow a net to classify samples and be corrected with a weight update. (Not to be confused with an epoch, which is neural-netspeak for a complete pass through the dataset.) The number of iterations represent the time you allow a net to learn: too few iterations will truncate the learning it might do; too many and you will see decreasing returns. Again the variable `iterations` was declared above, and assigned the value of 1000.
+^ This line specifies the number of iterations the algorithm will train. The number of iterations is the number of times you allow a net to classify samples and be corrected with a weight update. (Not to be confused with an epoch, which is neural-netspeak for a complete pass through the dataset. An iteration is only to an epoch if you pass through the entire dataset before updating the network's weights.) The number of iterations represent the time you allow a net to learn: too few iterations will truncate the learning it might do; too many and you will see decreasing returns. Again the variable `iterations` was declared above, and assigned the value of 1000.
 
    .learningRate(1e-6f)
 
