@@ -66,6 +66,9 @@ public class RecordReaderDataSetiteratorTest {
         SequenceRecordReaderDataSetIterator iter =
                 new SequenceRecordReaderDataSetIterator(featureReader, labelReader, 1, 4, false);
 
+        assertEquals(3, iter.inputColumns());
+        assertEquals(4, iter.totalOutcomes());
+
         List<DataSet> dsList = new ArrayList<>();
         while (iter.hasNext()) {
             dsList.add(iter.next());
