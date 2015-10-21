@@ -286,6 +286,5 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     @Override
     public void remove() {
         throw new UnsupportedOperationException();
-
     }
 }
