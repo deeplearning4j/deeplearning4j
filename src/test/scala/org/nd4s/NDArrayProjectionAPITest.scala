@@ -18,9 +18,9 @@ class NDArrayProjectionAPITest extends FlatSpec {
     } yield c * c
 
     assert(result == Array(
-      Array(1d, 4d, 3d),
-      Array(4d, 25d, 6d),
-      Array(7d, 64d, 9d)
+      Array(4d),
+      Array(25d),
+      Array(64d)
     ).toNDArray)
   }
 
@@ -37,11 +37,8 @@ class NDArrayProjectionAPITest extends FlatSpec {
       if c.get(0) % 2 == 0
     } yield c * c
 
-    assert(result == Array(
-      Array(1d, 2d, 3d),
-      Array(16d, 25d, 36d),
-      Array(7d, 8d, 9d)
-    ).toNDArray)
+    assert(result ==
+      Array(Array(16d, 25d, 36d)).toNDArray)
   }
 
   "SliceProjectedNDArray" should "map slice correctly" in {
@@ -50,10 +47,9 @@ class NDArrayProjectionAPITest extends FlatSpec {
 
     val result = for {
       slice <- ndArray.sliceP
-      r <- slice.rowP
-      if r.get(0) > 1
-    } yield r * r
+      if slice.get(0) > 1
+    } yield slice * slice
 
-    assert(result == List(1d,2d,9d,16d,25d,36d,49d,64d).asNDArray(2,2,2))
+    assert(result == List(25d,36d,49d,64d).asNDArray(1,2,2))
   }
 }
