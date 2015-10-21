@@ -3,7 +3,7 @@ Deeplearning4J: Neural Net Platform
  
 [![Join the chat at https://gitter.im/deeplearning4j/deeplearning4j](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/deeplearning4j/deeplearning4j?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-<img title="Build Status Images" src="https://travis-ci.org/deeplearning4j/deeplearning4j.svg">
+[![Build Status](https://travis-ci.org/deeplearning4j/deeplearning4j.svg?branch=master)](https://travis-ci.org/deeplearning4j/deeplearning4j)
 
 Deeplearning4J is an Apache 2.0-licensed, open-source, distributed neural net library written in Java and Scala.
 
