@@ -73,8 +73,8 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
      *
      * Note that an IllegalArgumentException is thrown if the two passed in
      * matrices aren't the same length.
-     * @param realOutcomes the real outcomes (usually binary)
-     * @param guesses the guesses (usually a probability vector)
+     * @param realOutcomes the real outcomes (labels - usually binary)
+     * @param guesses the guesses/prediction (usually a probability vector)
      * */
     public void eval(INDArray realOutcomes,INDArray guesses) {
         // Add the number of rows to numRowCounter
@@ -157,7 +157,31 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
         }
     }
 
-    // Method to print the classification report
+    /** Convenience method for evaluation of time series.
+     * Reshapes time series (3d) to 2d, then calls eval
+     * @see #eval(INDArray, INDArray)
+     */
+    public void evalTimeSeries(INDArray labels, INDArray predicted){
+        if(labels.rank() == 2 && predicted.rank() == 2) eval(labels,predicted);
+        if(labels.rank() != 3 ) throw new IllegalArgumentException("Invalid input: labels are not rank 3 (rank="+labels.rank()+")");
+        if(!Arrays.equals(labels.shape(),predicted.shape())){
+            throw new IllegalArgumentException("Labels and predicted have different shapes: labels="
+                + Arrays.toString(labels.shape()) + ", predicted="+Arrays.toString(predicted.shape()));
+        }
+        //Reshape, as per RnnToFeedForwardPreProcessor:
+        int[] shape = labels.shape();
+        labels = labels.permute(0,2,1);	//Permute, so we get correct order after reshaping
+        labels = labels.reshape(shape[0] * shape[2], shape[1]);
+
+        predicted = predicted.permute(0, 2, 1);
+        predicted = predicted.reshape(shape[0] * shape[2], shape[1]);
+
+        eval(labels,predicted);
+    }
+
+    /** Method to obtain the classification report, as a String
+     * @return A (multi-line) String with accuracy, precision, recall, f1 score etc
+     */
     public String stats() {
         StringBuilder builder = new StringBuilder().append("\n");
         List<Integer> classes = confusion.getClasses();
