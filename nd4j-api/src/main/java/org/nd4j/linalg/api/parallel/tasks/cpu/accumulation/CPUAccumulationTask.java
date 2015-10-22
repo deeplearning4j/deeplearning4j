@@ -58,7 +58,8 @@ public class CPUAccumulationTask extends BaseCPUAccumulationTask {
             }
         }
 
-        if (outerTask) {
+        if (outerTask && subTasks != null) {
+            //subTasks == null in FJ, op.getAndSetFinalResult already called for FJ if(outerTask) by this point
             return op.getAndSetFinalResult(accum);
         }
         return accum;
