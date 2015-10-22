@@ -3,6 +3,7 @@ package org.nd4j.linalg.api.parallel.tasks.cpu.vector;
 import io.netty.buffer.ByteBuf;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.VectorOp;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.api.parallel.tasks.BaseTask;
@@ -265,6 +266,8 @@ public class CPUVectorOp extends BaseCPUAction {
         public Void call() {
             //Callable
             if(n>threshold) {
+                if(doTensorFirst) doTensorFirst(op);
+
                 //Break into subtasks
                 int nSubTasks = 1 + n / threshold;  //(round up)
                 subTasks = new ArrayList<>(nSubTasks);
@@ -295,6 +298,39 @@ public class CPUVectorOp extends BaseCPUAction {
                 execute();
             }
             return null;
+        }
+
+        @Override
+        public void doTensorFirst(Op op){
+            //Need to override BaseCPUAction.doTensorFirst(), as that does tensors for all of X, Y, Z
+            //whereas here Y is already a vector -> only want to do tensors for X and Z
+
+            INDArray x = op.x();
+            INDArray y = op.y();
+            INDArray z = op.z();
+            INDArray tadx = x.tensorAlongDimension(tensorIdx, tensorDim);
+            this.n = tadx.length();
+            offsetX = tadx.offset();
+            incrX = tadx.elementWiseStride();
+            if (y == null) {
+                offsetY = 0;
+                incrY = 0;
+            } else {
+                offsetY = y.offset();
+                incrY = y.elementWiseStride();
+            }
+
+            if (z == null) {
+                offsetZ = 0;
+                incrZ = 0;
+            } else if (z == x) {
+                offsetZ = offsetX;
+                incrZ = incrX;
+            } else {
+                INDArray tadz = z.tensorAlongDimension(tensorIdx, tensorDim);
+                offsetZ = tadz.offset();
+                incrZ = tadz.elementWiseStride();
+            }
         }
 
         private Void execute(){

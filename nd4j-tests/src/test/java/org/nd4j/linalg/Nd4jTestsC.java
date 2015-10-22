@@ -27,10 +27,13 @@ import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.iter.INDArrayIterator;
+import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
+import org.nd4j.linalg.api.ops.VectorOp;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
+import org.nd4j.linalg.api.ops.impl.vector.*;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -98,7 +101,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray valueArrayTwo = Nd4j.valueArrayOf(new int[]{3,2},3.0);
         INDArray valueArrayThree = Nd4j.valueArrayOf(new int[]{4,3},1.0);
         assertEquals(valueArray, argMax);
-        assertEquals(valueArrayTwo,argMaxZero);
+        assertEquals(valueArrayTwo, argMaxZero);
         assertEquals(valueArrayThree,argMaxTwo);
     }
 
@@ -262,7 +265,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testAddiRowVectorWithScalar(){
         INDArray colVector = Nd4j.create(5, 1);
-        INDArray scalar = Nd4j.create(1,1);
+        INDArray scalar = Nd4j.create(1, 1);
         scalar.putScalar(0, 1);
 
         assertEquals(scalar.getDouble(0), 1.0, 0.0);
@@ -277,21 +280,21 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
         Nd4j.getRandom().setSeed(12345);
         INDArray rowVec = Nd4j.rand(1, 10);
-        INDArray thirdElem = rowVec.tensorAlongDimension(2,0);
+        INDArray thirdElem = rowVec.tensorAlongDimension(2, 0);
 
         assertEquals(rowVec.getDouble(2),thirdElem.getDouble(0),0.0);
 
         thirdElem.putScalar(0, 5);
         assertEquals(5, thirdElem.getDouble(0), 0.0);
 
-        assertEquals(5,rowVec.getDouble(2),0.0);    //Both should be modified if thirdElem is a view
+        assertEquals(5, rowVec.getDouble(2), 0.0);    //Both should be modified if thirdElem is a view
         assertTrue(thirdElem.data() == rowVec.data());    //equivalently: should be same object if a view
 
         //Same thing for column vector:
         INDArray colVec = Nd4j.rand(10,1);
         thirdElem = colVec.tensorAlongDimension(2,1);
 
-        assertEquals(colVec.getDouble(2),thirdElem.getDouble(0),0.0);
+        assertEquals(colVec.getDouble(2), thirdElem.getDouble(0), 0.0);
 
         thirdElem.putScalar(0, 5);
         assertEquals(5, thirdElem.getDouble(0), 0.0);
@@ -318,7 +321,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
         Accumulation accum = Nd4j.getOpFactory().createAccum("euclidean", values, values2);
         INDArray results = Nd4j.getExecutioner().exec(accum, 1);
-        assertEquals(expected,results);
+        assertEquals(expected, results);
 
     }
 
@@ -923,7 +926,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
         assertTrue(tad.equals(copy));
 
-        INDArray first = Nd4j.rand(new int[]{2,7});
+        INDArray first = Nd4j.rand(new int[]{2, 7});
         INDArray mmul = first.mmul(tad);
         INDArray mmulCopy = first.mmul(copy);
 
@@ -1332,8 +1335,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testMMulMixedOrder(){
-        INDArray first = Nd4j.ones(5,2);
-        INDArray second = Nd4j.ones(2,3);
+        INDArray first = Nd4j.ones(5, 2);
+        INDArray second = Nd4j.ones(2, 3);
         INDArray out = first.mmul(second);
         assertArrayEquals(out.shape(),new int[]{5,3});
         assertTrue(out.equals(Nd4j.ones(5,3).muli(2)));
@@ -1347,7 +1350,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertTrue(second.equals(secondF));
 
         INDArray outCF = firstC.mmul(secondF);
-        assertArrayEquals(outCF.shape(),new int[]{5,3});
+        assertArrayEquals(outCF.shape(), new int[]{5, 3});
         assertEquals(outCF, Nd4j.ones(5, 3).muli(2));
     }
 
@@ -1362,7 +1365,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray mmulC = arrC.mmul(arr2);   //[2,4] with elements 3.0
         INDArray mmulF = arrF.mmul(arr2);   //[2,4] with elements 3.0
         assertArrayEquals(mmulC.shape(),new int[]{2,4});
-        assertArrayEquals(mmulF.shape(),new int[]{2,4});
+        assertArrayEquals(mmulF.shape(), new int[]{2, 4});
         assertTrue(arrC.equals(arrF));
 
         INDArray row = Nd4j.zeros(1,4).addi(0.5);
@@ -1440,7 +1443,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray fTimesC = arrF.mmul(arrC2);
         INDArray cTimesC = arrC.mmul(arrC2);
 
-        assertEquals(fTimesC,cTimesC);
+        assertEquals(fTimesC, cTimesC);
     }
 
     @Test
@@ -1448,7 +1451,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray colVec = Nd4j.ones(5, 1);
         INDArray rowVec = Nd4j.ones(1, 5);
         INDArray out = rowVec.mmul(colVec);
-        assertArrayEquals(out.shape(),new int[]{1,1});
+        assertArrayEquals(out.shape(), new int[]{1, 1});
         assertTrue(out.equals(Nd4j.ones(1, 1).muli(5)));
 
         INDArray colVectorC = Nd4j.create(new int[]{5, 1}, 'c');
@@ -1743,7 +1746,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testNewAxis() {
-        INDArray arr = Nd4j.linspace(1,12,12).reshape(3, 2, 2);
+        INDArray arr = Nd4j.linspace(1, 12, 12).reshape(3, 2, 2);
         INDArray get = arr.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.newAxis(), NDArrayIndex.newAxis());
         int[] shapeAssertion = {3, 2, 1, 1, 2};
         assertArrayEquals(shapeAssertion, get.shape());
@@ -1990,6 +1993,92 @@ public  class Nd4jTestsC extends BaseNd4jTest {
                 int offset = tad1.offset();
                 int calcOffset = t1.getFirstTensorOffset() + i*t1.getTensorStartSeparation();
                 assertEquals(offset,calcOffset);
+            }
+        }
+    }
+
+
+    @Test
+    public void testNdVectorOp(){
+        //Test 2d, 3d, ..., 6d vector ops
+
+        Nd4j.getRandom().setSeed(12345);
+        int[] maxShape = new int[]{5, 7, 9, 11, 13, 15};
+
+        for( int opNum=0; opNum<6; opNum++ ) {
+            for (int rank = 2; rank < maxShape.length; rank++) {
+                int[] shape = Arrays.copyOfRange(maxShape, 0, rank);
+                INDArray orig = Nd4j.rand(shape);
+
+                for (int i = 0; i < rank; i++) {   //Test ops for each dimension
+                    INDArray arr = orig.dup();
+                    INDArray vector = Nd4j.rand(1, shape[i]);
+
+                    VectorOp op;
+                    switch(opNum){
+                        case 0:
+                            op = new VectorAddOp(arr, vector, arr, i);
+                            break;
+                        case 1:
+                            op = new VectorCopyOp(arr, vector, arr, i);
+                            break;
+                        case 2:
+                            op = new VectorDivOp(arr, vector, arr, i);
+                            break;
+                        case 3:
+                            op = new VectorMulOp(arr, vector, arr, i);
+                            break;
+                        case 4:
+                            op = new VectorRDivOp(arr, vector, arr, i);
+                            break;
+                        case 5:
+                            op = new VectorRSubOp(arr, vector, arr, i);
+                            break;
+                        case 6:
+                            op = new VectorSubOp(arr, vector, arr, i);
+                            break;
+                        default:
+                            throw new RuntimeException();
+                    }
+                    Nd4j.getExecutioner().exec(op);
+
+                    //Compare expected vs. actual:
+                    NdIndexIterator iter = new NdIndexIterator(orig.shape());
+                    while (iter.hasNext()) {
+                        int[] next = iter.next();
+                        double origValue = orig.getDouble(next);
+                        double vectorValue = vector.getDouble(next[i]);   //current index in vector
+                        double exp;
+                        switch(opNum){
+                            case 0:
+                                exp = origValue + vectorValue;
+                                break;
+                            case 1:
+                                exp = vectorValue;
+                                break;
+                            case 2:
+                                exp = origValue / vectorValue;
+                                break;
+                            case 3:
+                                exp = origValue * vectorValue;
+                                break;
+                            case 4:
+                                exp = vectorValue / origValue;
+                                break;
+                            case 5:
+                                exp = vectorValue - origValue;
+                                break;
+                            case 6:
+                                exp = origValue - vectorValue;
+                                break;
+                            default:
+                                throw new RuntimeException();
+                        }
+                        double actual = arr.getDouble(next);
+                        double relError = Math.abs(exp-actual)/(Math.abs(exp)+Math.abs(actual));
+                        assertTrue(relError < 1e-6);
+                    }
+                }
             }
         }
     }

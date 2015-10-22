@@ -36,9 +36,12 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.VectorOp;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
+import org.nd4j.linalg.api.ops.impl.vector.*;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -1184,6 +1187,91 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
                 int offset = tad1.offset();
                 int calcOffset = t1.getFirstTensorOffset() + i*t1.getTensorStartSeparation();
                 assertEquals(offset,calcOffset);
+            }
+        }
+    }
+
+    @Test
+    public void testNdVectorOp(){
+        //Test 2d, 3d, ..., 6d vector ops
+
+        Nd4j.getRandom().setSeed(12345);
+        int[] maxShape = new int[]{5, 7, 9, 11, 13, 15};
+
+        for( int opNum=0; opNum<6; opNum++ ) {
+            for (int rank = 2; rank < maxShape.length; rank++) {
+                int[] shape = Arrays.copyOfRange(maxShape, 0, rank);
+                INDArray orig = Nd4j.rand(shape);
+
+                for (int i = 0; i < rank; i++) {   //Test ops for each dimension
+                    INDArray arr = orig.dup();
+                    INDArray vector = Nd4j.rand(1, shape[i]);
+
+                    VectorOp op;
+                    switch(opNum){
+                        case 0:
+                            op = new VectorAddOp(arr, vector, arr, i);
+                            break;
+                        case 1:
+                            op = new VectorCopyOp(arr, vector, arr, i);
+                            break;
+                        case 2:
+                            op = new VectorDivOp(arr, vector, arr, i);
+                            break;
+                        case 3:
+                            op = new VectorMulOp(arr, vector, arr, i);
+                            break;
+                        case 4:
+                            op = new VectorRDivOp(arr, vector, arr, i);
+                            break;
+                        case 5:
+                            op = new VectorRSubOp(arr, vector, arr, i);
+                            break;
+                        case 6:
+                            op = new VectorSubOp(arr, vector, arr, i);
+                            break;
+                        default:
+                            throw new RuntimeException();
+                    }
+                    Nd4j.getExecutioner().exec(op);
+
+                    //Compare expected vs. actual:
+                    NdIndexIterator iter = new NdIndexIterator(orig.shape());
+                    while (iter.hasNext()) {
+                        int[] next = iter.next();
+                        double origValue = orig.getDouble(next);
+                        double vectorValue = vector.getDouble(next[i]);   //current index in vector
+                        double exp;
+                        switch(opNum){
+                            case 0:
+                                exp = origValue + vectorValue;
+                                break;
+                            case 1:
+                                exp = vectorValue;
+                                break;
+                            case 2:
+                                exp = origValue / vectorValue;
+                                break;
+                            case 3:
+                                exp = origValue * vectorValue;
+                                break;
+                            case 4:
+                                exp = vectorValue / origValue;
+                                break;
+                            case 5:
+                                exp = vectorValue - origValue;
+                                break;
+                            case 6:
+                                exp = origValue - vectorValue;
+                                break;
+                            default:
+                                throw new RuntimeException();
+                        }
+                        double actual = arr.getDouble(next);
+                        double relError = Math.abs(exp-actual)/(Math.abs(exp)+Math.abs(actual));
+                        assertTrue(relError < 1e-6);
+                    }
+                }
             }
         }
     }
