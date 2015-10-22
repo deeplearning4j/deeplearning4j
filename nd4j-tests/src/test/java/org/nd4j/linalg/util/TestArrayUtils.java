@@ -9,9 +9,6 @@ import org.nd4j.linalg.BaseNd4jTest;
 
 public class TestArrayUtils extends BaseNd4jTest {
 
-
-
-
     @Test
     public void testFlattenDoubleArray(){
         assertArrayEquals(new double[0],ArrayUtil.flattenDoubleArray(new double[0]),0.0);
