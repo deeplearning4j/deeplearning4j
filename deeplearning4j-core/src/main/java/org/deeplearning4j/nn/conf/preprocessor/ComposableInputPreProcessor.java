@@ -38,21 +38,24 @@ public class ComposableInputPreProcessor extends BaseInputPreProcessor {
 	private InputPreProcessor[] inputPreProcessors;
 
     @JsonCreator
-    public ComposableInputPreProcessor(@JsonProperty("inputPreProcessors") InputPreProcessor[] inputPreProcessors) {
+    public ComposableInputPreProcessor(@JsonProperty("inputPreProcessors") InputPreProcessor... inputPreProcessors) {
         this.inputPreProcessors = inputPreProcessors;
     }
 
     @Override
     public INDArray preProcess(INDArray input, Layer layer) {
         for(InputPreProcessor preProcessor : inputPreProcessors)
-        input = preProcessor.preProcess(input,layer);
+            input = preProcessor.preProcess(input,layer);
         return input;
     }
 
     @Override
     public INDArray backprop(INDArray output, Layer layer) {
-        for(InputPreProcessor inputPreProcessor : inputPreProcessors)
-            output = inputPreProcessor.backprop(output,layer);
+        //Apply input preprocessors in opposite order for backprop (compared to forward pass)
+        //For example, CNNtoFF + FFtoRNN, need to do backprop in order of FFtoRNN + CNNtoFF
+        for(int i=inputPreProcessors.length-1; i>=0; i--){
+            output = inputPreProcessors[i].backprop(output,layer);
+        }
         return output;
     }
 
