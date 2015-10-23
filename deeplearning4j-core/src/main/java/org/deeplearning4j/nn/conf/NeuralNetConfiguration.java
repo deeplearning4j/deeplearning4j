@@ -22,15 +22,17 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.distribution.Distribution;
+import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.IOException;
@@ -51,43 +53,27 @@ import java.util.Map;
 @NoArgsConstructor
 public class NeuralNetConfiguration implements Serializable,Cloneable {
 
-    private double lr = 1e-1;
-    private double lrScoreBasedDecay;
+    protected Layer layer;
+    //batch size: primarily used for conv nets. Will be reinforced if set.
+    protected int batchSize = 1;
+    protected boolean miniBatch = true;
     protected int numIterations = 5;
-    /* momentum for learning */
-    protected double momentum = 0.5;
-    /* L2 Regularization constant */
-    protected double l2 = 0;
-    protected boolean useRegularization = false;
-    //momentum after n iterations
-    protected Map<Integer,Double> momentumAfter = new HashMap<>();
     //number of line search iterations
     protected int maxNumLineSearchIterations = 5;
+    protected long seed = System.currentTimeMillis();
     protected OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
+    //gradient keys used for ensuring order when getting and setting the gradient
+    protected List<String> variables = new ArrayList<>();
     //whether to constrain the gradient to unit norm or not
     protected boolean constrainGradientToUnitNorm = false;
     //adadelta - weight for how much to consider previous history
-    protected double rho;
-    protected long seed;
     protected StepFunction stepFunction;
-    protected Layer layer;
-    //gradient keys used for ensuring order when getting and setting the gradient
-    protected List<String> variables = new ArrayList<>();
+    protected boolean useRegularization = false;
     protected boolean useDropConnect = false;
+    //minimize or maximize objective
+    protected boolean minimize = true;
     // Graves LSTM & RNN
     private int timeSeriesLength = 1;
-    //batch size: primarily used for conv nets. Will be reinforced if set.
-    protected int batchSize = 1;
-    //minimize or maximize objective
-    protected boolean minimize = false;
-    //l1 regularization
-    protected double l1 = 0.0;
-    // rmsprop decay rate
-    protected double rmsDecay = 0.95;
-    // adam decay rates
-    protected double meanDecay = 0.9;
-    protected double varDecay = 0.999;
-    protected boolean miniBatch = true;
 
     /**
      * Creates and returns a deep copy of the configuration.
@@ -96,7 +82,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     public NeuralNetConfiguration clone()  {
         try {
             NeuralNetConfiguration clone = (NeuralNetConfiguration) super.clone();
-            if(clone.momentumAfter != null) clone.momentumAfter = new HashMap<>(clone.momentumAfter);
             if(clone.layer != null) clone.layer = clone.layer.clone();
             if(clone.stepFunction != null) clone.stepFunction = clone.stepFunction.clone();
             if(clone.variables != null ) clone.variables = new ArrayList<>(clone.variables);
@@ -279,29 +264,35 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
     @Data
     public static class Builder implements Cloneable {
-        private double rmsDecay = 0.95;
-        private double lr = 1e-1f;
+        protected String activationFunction = "sigmoid";
+        protected WeightInit weightInit = WeightInit.XAVIER;
+        protected double biasInit = 0.0;
+        protected Distribution dist = new NormalDistribution(1e-3,1);
+        private double learningRate = 1e-1;
         private double lrScoreBasedDecay;
-        private double momentum = 0.5f;
-        private double l2 = 0f;
-        private boolean useRegularization = false;
-        private Map<Integer, Double> momentumAfter;
-        private OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
-        private boolean constrainGradientToUnitNorm = false;
-        private long seed = System.currentTimeMillis();
-        private int numIterations = 5;
-        private int timeSeriesLength = 1;
-        private StepFunction stepFunction = null;
+        private double momentum = 0.5;
+        private Map<Integer, Double> momentumAfter = new HashMap<>();
+        private double l1 = 0.0;
+        private double l2 = 0.0;
+        protected double dropOut = 0;
+        protected Updater updater = Updater.NONE;
+        private double rho;
+        private double rmsDecay = 0.95;
+        private double adamMeanDecay = 0.9;
+        private double adamVarDecay = 0.999;
         private Layer layer;
         private int batchSize = 1;
-        private int maxNumLineSearchIterations = 5;
-        private boolean minimize = false;
-        private double l1 = 0.0;
-        private boolean useDropConnect = false;
-        private double rho;
         private boolean miniBatch = true;
-        private double meanDecay = 0.9;
-        private double varDecay = 0.999;
+        private int numIterations = 5;
+        private int maxNumLineSearchIterations = 5;
+        private long seed = System.currentTimeMillis();
+        private boolean useRegularization = false;
+        private OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
+        private boolean constrainGradientToUnitNorm = false;
+        private StepFunction stepFunction = null;
+        private boolean useDropConnect = false;
+        private boolean minimize = true;
+        private int timeSeriesLength = 1;
 
         /**
          +         * Time series length
@@ -313,23 +304,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             this.timeSeriesLength = timeSeriesLength;
             return this;
         }
-        
-        /**
-         * Ada delta coefficient
-         * @param rho
-         * @return
-         */
-        public Builder rho(double rho) {
-            this.rho = rho;
-            return this;
-        }
-
 
         public Builder miniBatch(boolean miniBatch) {
             this.miniBatch = miniBatch;
             return this;
         }
-
 
         /**
          * Use drop connect: multiply the coefficients
@@ -339,17 +318,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
          */
         public Builder useDropConnect(boolean useDropConnect) {
             this.useDropConnect = useDropConnect;
-            return this;
-        }
-
-        public Builder l1(double l1) {
-            this.l1 = l1;
-            return this;
-        }
-
-
-        public Builder rmsDecay(double rmsDecay) {
-            this.rmsDecay = rmsDecay;
             return this;
         }
 
@@ -385,43 +353,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return new ListBuilder(layerMap);
         }
 
-        @Override
-        public Builder clone() {
-            try {
-                Builder clone = (Builder) super.clone();
-                if(clone.momentumAfter != null) clone.momentumAfter = new HashMap<>(clone.momentumAfter);
-                if(clone.layer != null) clone.layer = clone.layer.clone();
-                if(clone.stepFunction != null) clone.stepFunction = clone.stepFunction.clone();
-
-                return clone;
-
-            } catch (CloneNotSupportedException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
         public Builder iterations(int numIterations) {
             this.numIterations = numIterations;
-            return this;
-        }
-
-        public Builder learningRate(double lr) {
-            this.lr = lr;
-            return this;
-        }
-
-        public Builder learningRateScoreBasedDecayRate(double lrScoreBasedDecay) {
-            this.lrScoreBasedDecay = lrScoreBasedDecay;
-            return this;
-        }
-
-        public Builder momentum(double momentum) {
-            this.momentum = momentum;
-            return this;
-        }
-
-        public Builder momentumAfter(Map<Integer, Double> momentumAfter) {
-            this.momentumAfter = momentumAfter;
             return this;
         }
 
@@ -437,17 +370,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-
-        public Builder l2(double l2) {
-            this.l2 = l2;
-            return this;
-        }
-
-        public Builder regularization(boolean useRegularization) {
-            this.useRegularization = useRegularization;
-            return this;
-        }
-
         public Builder optimizationAlgo(OptimizationAlgorithm optimizationAlgo) {
             this.optimizationAlgo = optimizationAlgo;
             return this;
@@ -458,13 +380,109 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        public Builder meanDecay(double meanDecay) {
-            this.meanDecay = meanDecay;
+        public Builder regularization(boolean useRegularization) {
+            this.useRegularization = useRegularization;
             return this;
         }
 
-        public Builder varDecay(double varDecay) {
-            this.varDecay = varDecay;
+        @Override
+        public Builder clone() {
+            try {
+                Builder clone = (Builder) super.clone();
+                if(clone.layer != null) clone.layer = clone.layer.clone();
+                if(clone.stepFunction != null) clone.stepFunction = clone.stepFunction.clone();
+
+                return clone;
+
+            } catch (CloneNotSupportedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+
+        public Builder activation(String activationFunction) {
+            this.activationFunction = activationFunction;
+            return this;
+        }
+
+        public Builder weightInit(WeightInit weightInit) {
+            this.weightInit = weightInit;
+            return this;
+            }
+
+        public Builder biasInit(double biasInit) {
+            this.biasInit = biasInit;
+            return this;
+        }
+
+        public Builder dist(Distribution dist) {
+            this.dist = dist;
+            return this;
+        }
+
+        public Builder learningRate(double learningRate) {
+            this.learningRate = learningRate;
+            return this;
+        }
+
+        public Builder learningRateScoreBasedDecayRate(double lrScoreBasedDecay) {
+            this.lrScoreBasedDecay = lrScoreBasedDecay;
+            return this;
+        }
+
+        public Builder l1(double l1) {
+            this.l1 = l1;
+            return this;
+        }
+
+        public Builder l2(double l2) {
+            this.l2 = l2;
+            return this;
+        }
+
+        public Builder dropOut(double dropOut) {
+            this.dropOut = dropOut;
+            return this;
+        }
+
+        public Builder momentum(double momentum) {
+            this.momentum = momentum;
+            return this;
+        }
+
+        public Builder momentumAfter(Map<Integer, Double> momentumAfter) {
+            this.momentumAfter = momentumAfter;
+            return this;
+        }
+
+        public Builder updater(Updater updater) {
+            this.updater = updater;
+            return this;
+        }
+
+        /**
+         * Ada delta coefficient
+         * @param rho
+         * @return
+         */
+        public Builder rho(double rho) {
+            this.rho = rho;
+            return this;
+        }
+
+        public Builder rmsDecay(double rmsDecay) {
+            this.rmsDecay = rmsDecay;
+            return this;
+        }
+
+
+        public Builder adamMeanDecay(double adamMeanDecay) {
+            this.adamMeanDecay = adamMeanDecay;
+            return this;
+        }
+
+        public Builder adamVarDecay(double adamVarDecay) {
+            this.adamVarDecay = adamVarDecay;
             return this;
         }
 
@@ -481,27 +499,34 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
             conf.minimize = minimize;
             conf.maxNumLineSearchIterations = maxNumLineSearchIterations;
-            conf.l1 = (!Double.isNaN(layer.getL1()) ? layer.getL1() : l1);
             conf.batchSize = batchSize;
             conf.layer = layer;
-            conf.lr = (!Double.isNaN(layer.getLr()) ? layer.getLr() : lr);
-            conf.lrScoreBasedDecay = lrScoreBasedDecay;
             conf.numIterations = numIterations;
-            conf.momentum = momentum;
-            conf.l2 = (!Double.isNaN(layer.getL2()) ? layer.getL2() : l2);
             conf.useRegularization = useRegularization;
-            conf.momentumAfter = momentumAfter;
             conf.optimizationAlgo = optimizationAlgo;
             conf.constrainGradientToUnitNorm = constrainGradientToUnitNorm;
             conf.seed = seed;
             conf.timeSeriesLength = timeSeriesLength;
-            conf.rmsDecay = rmsDecay;
             conf.stepFunction = stepFunction;
             conf.useDropConnect = useDropConnect;
             conf.miniBatch = miniBatch;
-            conf.rho = rho;
-            conf.meanDecay = meanDecay;
-            conf.varDecay = varDecay;
+
+            if(Double.isNaN(layer.getLearningRate())) layer.setLearningRate(learningRate);
+            if(Double.isNaN(layer.getLrScoreBasedDecay())) layer.setLrScoreBasedDecay(lrScoreBasedDecay);
+            if(Double.isNaN(layer.getL1())) layer.setL1(l1);
+            if(Double.isNaN(layer.getL2())) layer.setL2(l2);
+            if(layer.getActivationFunction() == null) layer.setActivationFunction(activationFunction);
+            if(layer.getWeightInit() == null) layer.setWeightInit(weightInit);
+            if(Double.isNaN(layer.getBiasInit())) layer.setBiasInit(biasInit);
+            if(layer.getDist() == null) layer.setDist(dist);
+            if(Double.isNaN(layer.getDropOut())) layer.setDropOut(dropOut);
+            if(layer.getUpdater() == null) layer.setUpdater(updater);
+            if(Double.isNaN(layer.getMomentum())) layer.setMomentum(momentum);
+            if(layer.getMomentumAfter() == null) layer.setMomentumAfter(momentumAfter);
+            if(Double.isNaN(layer.getRho())) layer.setRho(rho);
+            if(Double.isNaN(layer.getRmsDecay())) layer.setRmsDecay(rmsDecay);
+            if(Double.isNaN(layer.getAdamMeanDecay())) layer.setAdamMeanDecay(adamMeanDecay);
+            if(Double.isNaN(layer.getAdamVarDecay())) layer.setAdamVarDecay(adamVarDecay);
 
             return conf;
         }
