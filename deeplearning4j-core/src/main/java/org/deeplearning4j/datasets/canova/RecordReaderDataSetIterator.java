@@ -25,9 +25,9 @@ import org.canova.api.records.reader.RecordReader;
 import org.canova.api.records.reader.SequenceRecordReader;
 import org.canova.api.writable.Writable;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
-import org.deeplearning4j.datasets.iterator.DataSetPreProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.FeatureUtil;
 
@@ -53,6 +53,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     private DataSet last;
     private boolean useCurrent = false;
     private boolean regression = false;
+    private DataSetPreProcessor preProcessor;
 
     /**
      * Use the record reader and batch size; no labels
@@ -130,6 +131,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     public DataSet next(int num) {
         if(useCurrent) {
             useCurrent = false;
+            if(preProcessor != null) preProcessor.preProcess(last);
             return last;
         }
 
@@ -142,29 +144,22 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                     Collection<Collection<Writable>> sequenceRecord = ((SequenceRecordReader) recordReader).sequenceRecord();
                     sequenceIter = sequenceRecord.iterator();
                 }
-
                 Collection<Writable> record = sequenceIter.next();
                 dataSets.add(getDataSet(record));
-
-
             }
 
             else {
                 Collection<Writable> record = recordReader.next();
                 dataSets.add(getDataSet(record));
             }
-
-
-
         }
-
         List<INDArray> inputs = new ArrayList<>();
         List<INDArray> labels = new ArrayList<>();
+
         for (DataSet data : dataSets) {
             inputs.add(data.getFeatureMatrix());
             labels.add(data.getLabels());
         }
-
 
         if(inputs.isEmpty()) {
             overshot = true;
@@ -173,6 +168,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
         DataSet ret =  new DataSet(Nd4j.vstack(inputs.toArray(new INDArray[0])), Nd4j.vstack(labels.toArray(new INDArray[0])));
         last = ret;
+        if(preProcessor != null) preProcessor.preProcess(ret);
         return ret;
     }
 
@@ -189,43 +185,36 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             labelIndex = record.size() - 1;
         }
 
-
         INDArray label = null;
-        INDArray featureVector = Nd4j.create(labelIndex >= 0 ? currList.size() - 1 : currList.size());
+        INDArray featureVector = Nd4j.create(labelIndex >= 0 ? currList.size()-1 : currList.size());
         for (int j = 0; j < currList.size(); j++) {
+            Writable current = currList.get(j);
+            if (current.toString().isEmpty())
+                continue;
             if (labelIndex >= 0 && j == labelIndex) {
-                if (numPossibleLabels < 1)
-                    throw new IllegalStateException("Number of possible labels invalid, must be >= 1");
-                Writable current = currList.get(j);
-                if (current.toString().isEmpty())
-                    continue;
                 if (converter != null)
                     try {
                         current = converter.convert(current);
                     } catch (WritableConverterException e) {
                         e.printStackTrace();
                     }
-                if(regression) {
+                if (numPossibleLabels < 1)
+                    throw new IllegalStateException("Number of possible labels invalid, must be >= 1");
+                if (regression) {
                     label = Nd4j.scalar(Double.valueOf(current.toString()));
-                }
-                else {
+                } else {
                     int curr = Double.valueOf(current.toString()).intValue();
-                    if(curr >= numPossibleLabels)
+                    if (curr >= numPossibleLabels)
                         curr--;
                     label = FeatureUtil.toOutcomeVector(curr, numPossibleLabels);
                 }
-
             } else {
-                Writable current = currList.get(j);
-                if (current.toString().isEmpty())
-                    continue;
                 featureVector.putScalar(j, Double.valueOf(current.toString()));
             }
         }
 
-        return new DataSet(featureVector,labelIndex >= 0 ? label : featureVector);
+        return new DataSet(featureVector, labelIndex >= 0 ? label : featureVector);
     }
-
 
     @Override
     public int totalExamples() {
@@ -282,7 +271,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
     @Override
     public void setPreProcessor(org.nd4j.linalg.dataset.api.DataSetPreProcessor preProcessor) {
-
+        this.preProcessor = preProcessor;
     }
 
 
@@ -300,6 +289,5 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     @Override
     public void remove() {
         throw new UnsupportedOperationException();
-
     }
 }

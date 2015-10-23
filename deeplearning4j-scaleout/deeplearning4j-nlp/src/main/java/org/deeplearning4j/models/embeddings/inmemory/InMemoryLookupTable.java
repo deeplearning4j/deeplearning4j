@@ -487,6 +487,11 @@ public class InMemoryLookupTable implements WeightLookupTable {
         return new WeightIterator();
     }
 
+    @Override
+    public INDArray getWeights() {
+        return syn0;
+    }
+
 
     protected  class WeightIterator implements Iterator<INDArray> {
         protected int currIndex = 0;

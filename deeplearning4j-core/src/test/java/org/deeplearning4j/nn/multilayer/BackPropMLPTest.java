@@ -187,7 +187,7 @@ public class BackPropMLPTest {
             assertArrayEquals(l2WeightsFloatAfter,expectedL2WeightsAfter,eps);
             assertEquals(l1BiasFloatAfter,expectedL1BiasAfter,eps);
             assertArrayEquals(l2BiasFloatAfter,expectedL2BiasAfter,eps);
-            
+
             System.out.println("\n\n--------------");
         }
     }

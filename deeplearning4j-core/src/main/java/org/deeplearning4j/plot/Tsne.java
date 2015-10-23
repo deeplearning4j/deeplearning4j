@@ -246,8 +246,7 @@ public class Tsne implements Serializable {
         //init adagrad where needed
         if(useAdaGrad) {
             if(adaGrad == null) {
-                adaGrad = new AdaGrad(y.shape());
-                adaGrad.setMasterStepSize(learningRate);
+                adaGrad = new AdaGrad(learningRate);
             }
         }
 
