@@ -266,6 +266,8 @@ public class TestUpdaters {
 	public void testRMSPropUpdater(){
 		double lr = 0.01;
 		double rmsDecay = 0.25;
+		Map<String, INDArray> lastG = new HashMap<>();
+
 
 		NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
 				.learningRate(lr)
@@ -284,12 +286,18 @@ public class TestUpdaters {
         gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
 
         for (Map.Entry<String, INDArray> entry : gradientDup.gradientForVariable().entrySet()) {
-            val = entry.getValue();
-            INDArray lastG = Nd4j.zeros(val.shape());
-            lastG.muli(rmsDecay).addi(weightGradient.mul(weightGradient).muli(1 - rmsDecay));
-            gradExpected = val.mul(lr).div(Transforms.sqrt(lastG.add(Nd4j.EPS_THRESHOLD)));
+			key = entry.getKey();
+			val = entry.getValue();
+            INDArray lastGTmp = lastG.get(key);
+
+			if(lastGTmp==null)
+				lastGTmp = Nd4j.zeros(val.shape());
+
+			lastGTmp.muli(rmsDecay).addi(val.mul(val).muli(1 - rmsDecay));
+            gradExpected = val.mul(lr).div(Transforms.sqrt(lastGTmp.add(Nd4j.EPS_THRESHOLD)));
 
             assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
+			lastG.put(key, lastGTmp);
         }
 		assertEquals(rmsDecay, layer.conf().getLayer().getRmsDecay(), 1e-4);
 	}
