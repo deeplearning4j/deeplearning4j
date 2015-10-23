@@ -28,6 +28,7 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
     private int totalOutcomes = -1;
     private boolean useStored = false;
     private DataSet stored = null;
+    private DataSetPreProcessor preProcessor;
 
     /**
      * Constructor where features and labels come from different RecordReaders (for example, different files)
@@ -58,6 +59,7 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
             useStored = false;
             DataSet temp = stored;
             stored = null;
+            if(preProcessor != null) preProcessor.preProcess(temp);
             return temp;
         }
         if (!hasNext()) throw new NoSuchElementException();
@@ -97,7 +99,9 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
         cursor += featureList.size();
         if (inputColumns == -1) inputColumns = featuresOut.size(1);
         if (totalOutcomes == -1) totalOutcomes = labelsOut.size(1);
-        return new DataSet(featuresOut, labelsOut);
+        DataSet ds = new DataSet(featuresOut, labelsOut);
+        if(preProcessor != null) preProcessor.preProcess(ds);
+        return ds;
     }
 
     @Override
@@ -148,7 +152,7 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
 
     @Override
     public void setPreProcessor(DataSetPreProcessor preProcessor) {
-
+        this.preProcessor = preProcessor;
     }
 
     @Override
