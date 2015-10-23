@@ -101,7 +101,7 @@ public class TestUpdaters {
 				msg.put(key, msgTmp);
 				msdx.put(key, msdxTmp);
             }
-            assertEquals(rho, layer.conf().getRho(), 1e-4);
+            assertEquals(rho, layer.conf().getLayer().getRho(), 1e-4);
         }
 
 	}
@@ -130,7 +130,7 @@ public class TestUpdaters {
             gradExpected = Transforms.sqrt(val.mul(val).add(epsilon)).rdiv(lr).mul(val);
             assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
         }
-		assertEquals(lr, layer.conf().getLr(), 1e-4);
+		assertEquals(lr, layer.conf().getLayer().getLearningRate(), 1e-4);
 	}
 
 
@@ -173,8 +173,8 @@ public class TestUpdaters {
             assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
         }
 
-        assertEquals(beta1, layer.conf().getMeanDecay(), 1e-4);
-        assertEquals(beta2, layer.conf().getVarDecay(), 1e-4);
+        assertEquals(beta1, layer.conf().getLayer().getAdamMeanDecay(), 1e-4);
+        assertEquals(beta2, layer.conf().getLayer().getAdamVarDecay(), 1e-4);
 
 	}
 
@@ -209,7 +209,7 @@ public class TestUpdaters {
             assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
         }
 
-		assertEquals(mu, layer.conf().getMomentum(), 1e-4);
+		assertEquals(mu, layer.conf().getLayer().getMomentum(), 1e-4);
 	}
 
 	@Test
@@ -257,7 +257,7 @@ public class TestUpdaters {
 				v.put(key, vTmp);
             }
 
-            assertEquals(momentumAfter, layer.conf().getMomentumAfter());
+            assertEquals(momentumAfter, layer.conf().getLayer().getMomentumAfter());
         }
     }
 
@@ -266,6 +266,8 @@ public class TestUpdaters {
 	public void testRMSPropUpdater(){
 		double lr = 0.01;
 		double rmsDecay = 0.25;
+		Map<String, INDArray> lastG = new HashMap<>();
+
 
 		NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
 				.learningRate(lr)
@@ -284,14 +286,20 @@ public class TestUpdaters {
         gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
 
         for (Map.Entry<String, INDArray> entry : gradientDup.gradientForVariable().entrySet()) {
-            val = entry.getValue();
-            INDArray lastG = Nd4j.zeros(val.shape());
-            lastG.muli(rmsDecay).addi(weightGradient.mul(weightGradient).muli(1 - rmsDecay));
-            gradExpected = val.mul(lr).div(Transforms.sqrt(lastG.add(Nd4j.EPS_THRESHOLD)));
+			key = entry.getKey();
+			val = entry.getValue();
+            INDArray lastGTmp = lastG.get(key);
+
+			if(lastGTmp==null)
+				lastGTmp = Nd4j.zeros(val.shape());
+
+			lastGTmp.muli(rmsDecay).addi(val.mul(val).muli(1 - rmsDecay));
+            gradExpected = val.mul(lr).div(Transforms.sqrt(lastGTmp.add(Nd4j.EPS_THRESHOLD)));
 
             assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
+			lastG.put(key, lastGTmp);
         }
-		assertEquals(rmsDecay, layer.conf().getRmsDecay(), 1e-4);
+		assertEquals(rmsDecay, layer.conf().getLayer().getRmsDecay(), 1e-4);
 	}
 
 	@Test
@@ -318,7 +326,7 @@ public class TestUpdaters {
             gradExpected = val.mul(lr);
             assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
         }
-        assertEquals(lr, layer.conf().getLr(), 1e-4);
+        assertEquals(lr, layer.conf().getLayer().getLearningRate(), 1e-4);
 	}
 
 
@@ -373,8 +381,8 @@ public class TestUpdaters {
 
 		ConvexOptimizer opt = new StochasticGradientDescent(net.getDefaultConfiguration(), new NegativeDefaultStepFunction(), null, net);
         opt.checkTerminalConditions(gradient, oldScore, newScore, iteration);
-		assertEquals(lrScoreDecay, net.getLayer(0).conf().getLrScoreBasedDecay(), 1e-4);
-		assertEquals(lr/(lrScoreDecay + Nd4j.EPS_THRESHOLD), opt.getConf().getLr(), 1e-4);
+		assertEquals(lrScoreDecay, net.getLayer(0).conf().getLayer().getLrScoreBasedDecay(), 1e-4);
+		assertEquals(lr/(lrScoreDecay + Nd4j.EPS_THRESHOLD), opt.getConf().getLayer().getLearningRate(), 1e-4);
 	}
 
     @Test
