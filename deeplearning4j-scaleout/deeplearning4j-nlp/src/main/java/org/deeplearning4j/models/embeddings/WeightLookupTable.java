@@ -119,4 +119,7 @@ public interface WeightLookupTable extends Serializable {
      */
     Iterator<INDArray> vectors();
 
+    INDArray getWeights();
+
+
 }

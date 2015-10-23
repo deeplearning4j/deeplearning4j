@@ -41,6 +41,8 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URI;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -81,7 +83,7 @@ public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClo
     private transient SearcherManager searcherManager;
     private transient ReaderManager  readerManager;
     private transient TrackingIndexWriter indexWriter;
-    private transient NativeFSLockFactory lockFactory;
+    private transient LockFactory lockFactory;
 
     public LuceneInvertedIndex(VocabCache vocabCache,boolean cache) {
         this(vocabCache,cache,DEFAULT_INDEX_DIR);
@@ -122,13 +124,8 @@ public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClo
 
     @Override
     public void unlock() {
-        try {
-            if(lockFactory == null)
-                lockFactory = new NativeFSLockFactory(new File(indexPath));
-            IndexWriter.unlock(dir);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        if(lockFactory == null)
+            lockFactory = NativeFSLockFactory.getDefault();
     }
 
     @Override
@@ -547,7 +544,7 @@ public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClo
         if(dir == null) {
             log.info("Creating directory " + indexPath);
             FileUtils.deleteDirectory(new File(indexPath));
-            dir = FSDirectory.open(new File(indexPath));
+            dir = FSDirectory.open(Paths.get(URI.create(indexPath)));
             File dir2 = new File(indexPath);
             if (!dir2.exists())
                 dir2.mkdir();
@@ -578,14 +575,14 @@ public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClo
 
 
 
-                iwc = new IndexWriterConfig(Version.LATEST, analyzer);
+                iwc = new IndexWriterConfig(analyzer);
                 iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
                 iwc.setWriteLockTimeout(1000);
 
                 log.info("Creating new index writer");
                 while((writer = tryCreateWriter(iwc)) == null) {
                     log.warn("Failed to create writer...trying again");
-                    iwc = new IndexWriterConfig(Version.LATEST, analyzer);
+                    iwc = new IndexWriterConfig(analyzer);
                     iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
                     iwc.setWriteLockTimeout(1000);
 
@@ -617,8 +614,7 @@ public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClo
 
             ensureDirExists();
             if(lockFactory == null)
-                lockFactory = new NativeFSLockFactory(new File(indexPath));
-            lockFactory.clearLock(IndexWriter.WRITE_LOCK_NAME);
+                lockFactory = NativeFSLockFactory.getDefault();
             return new IndexWriter(dir,iwc);
         }
         catch (Exception e) {
@@ -832,7 +828,7 @@ public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClo
         private   Analyzer analyzer;
         private IndexSearcher searcher;
         private IndexWriter writer;
-        private  IndexWriterConfig iwc = new IndexWriterConfig(Version.LUCENE_CURRENT, analyzer);
+        private  IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
         private VocabCache vocabCache;
         private List<String> stopWords = StopWords.getStopWords();
         private boolean cache = false;

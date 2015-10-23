@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.conf;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -255,6 +256,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         ObjectMapper ret = new ObjectMapper();
         ret.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        ret.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
         ret.enable(SerializationFeature.INDENT_OUTPUT);
         return ret;
     }
@@ -267,6 +269,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         protected double biasInit = 0.0;
         protected Distribution dist = new NormalDistribution(1e-3,1);
         private double learningRate = 1e-1;
+        private double lrScoreBasedDecay;
         private double momentum = 0.5;
         private Map<Integer, Double> momentumAfter = new HashMap<>();
         private double l1 = 0.0;
@@ -275,6 +278,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         protected Updater updater = Updater.NONE;
         private double rho;
         private double rmsDecay = 0.95;
+        private double adamMeanDecay = 0.9;
+        private double adamVarDecay = 0.999;
         private Layer layer;
         private int batchSize = 10;
         private boolean miniBatch = true;
@@ -299,23 +304,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             this.timeSeriesLength = timeSeriesLength;
             return this;
         }
-        
-        /**
-         * Ada delta coefficient
-         * @param rho
-         * @return
-         */
-        public Builder rho(double rho) {
-            this.rho = rho;
-            return this;
-        }
-
 
         public Builder miniBatch(boolean miniBatch) {
             this.miniBatch = miniBatch;
             return this;
         }
-
 
         /**
          * Use drop connect: multiply the coefficients
@@ -325,17 +318,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
          */
         public Builder useDropConnect(boolean useDropConnect) {
             this.useDropConnect = useDropConnect;
-            return this;
-        }
-
-        public Builder l1(double l1) {
-            this.l1 = l1;
-            return this;
-        }
-
-
-        public Builder rmsDecay(double rmsDecay) {
-            this.rmsDecay = rmsDecay;
             return this;
         }
 
@@ -371,37 +353,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return new ListBuilder(layerMap);
         }
 
-        @Override
-        public Builder clone() {
-            try {
-                Builder clone = (Builder) super.clone();
-                if(clone.layer != null) clone.layer = clone.layer.clone();
-                if(clone.stepFunction != null) clone.stepFunction = clone.stepFunction.clone();
-
-                return clone;
-
-            } catch (CloneNotSupportedException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
         public Builder iterations(int numIterations) {
             this.numIterations = numIterations;
-            return this;
-        }
-
-        public Builder learningRate(double learningRate) {
-            this.learningRate = learningRate;
-            return this;
-        }
-
-        public Builder momentum(double momentum) {
-            this.momentum = momentum;
-            return this;
-        }
-
-        public Builder momentumAfter(Map<Integer, Double> momentumAfter) {
-            this.momentumAfter = momentumAfter;
             return this;
         }
 
@@ -417,16 +370,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        public Builder l2(double l2) {
-            this.l2 = l2;
-            return this;
-        }
-
-        public Builder regularization(boolean useRegularization) {
-            this.useRegularization = useRegularization;
-            return this;
-        }
-
         public Builder optimizationAlgo(OptimizationAlgorithm optimizationAlgo) {
             this.optimizationAlgo = optimizationAlgo;
             return this;
@@ -436,6 +379,26 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             this.constrainGradientToUnitNorm = constrainGradientToUnitNorm;
             return this;
         }
+
+        public Builder regularization(boolean useRegularization) {
+            this.useRegularization = useRegularization;
+            return this;
+        }
+
+        @Override
+        public Builder clone() {
+            try {
+                Builder clone = (Builder) super.clone();
+                if(clone.layer != null) clone.layer = clone.layer.clone();
+                if(clone.stepFunction != null) clone.stepFunction = clone.stepFunction.clone();
+
+                return clone;
+
+            } catch (CloneNotSupportedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
 
         public Builder activation(String activationFunction) {
             this.activationFunction = activationFunction;
@@ -457,13 +420,69 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+        public Builder learningRate(double learningRate) {
+            this.learningRate = learningRate;
+            return this;
+        }
+
+        public Builder learningRateScoreBasedDecayRate(double lrScoreBasedDecay) {
+            this.lrScoreBasedDecay = lrScoreBasedDecay;
+            return this;
+        }
+
+        public Builder l1(double l1) {
+            this.l1 = l1;
+            return this;
+        }
+
+        public Builder l2(double l2) {
+            this.l2 = l2;
+            return this;
+        }
+
         public Builder dropOut(double dropOut) {
             this.dropOut = dropOut;
             return this;
         }
 
+        public Builder momentum(double momentum) {
+            this.momentum = momentum;
+            return this;
+        }
+
+        public Builder momentumAfter(Map<Integer, Double> momentumAfter) {
+            this.momentumAfter = momentumAfter;
+            return this;
+        }
+
         public Builder updater(Updater updater) {
             this.updater = updater;
+            return this;
+        }
+
+        /**
+         * Ada delta coefficient
+         * @param rho
+         * @return
+         */
+        public Builder rho(double rho) {
+            this.rho = rho;
+            return this;
+        }
+
+        public Builder rmsDecay(double rmsDecay) {
+            this.rmsDecay = rmsDecay;
+            return this;
+        }
+
+
+        public Builder adamMeanDecay(double adamMeanDecay) {
+            this.adamMeanDecay = adamMeanDecay;
+            return this;
+        }
+
+        public Builder adamVarDecay(double adamVarDecay) {
+            this.adamVarDecay = adamVarDecay;
             return this;
         }
 
@@ -493,6 +512,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             conf.miniBatch = miniBatch;
 
             if(Double.isNaN(layer.getLearningRate())) layer.setLearningRate(learningRate);
+            if(Double.isNaN(layer.getLrScoreBasedDecay())) layer.setLrScoreBasedDecay(lrScoreBasedDecay);
             if(Double.isNaN(layer.getL1())) layer.setL1(l1);
             if(Double.isNaN(layer.getL2())) layer.setL2(l2);
             if(layer.getActivationFunction() == null) layer.setActivationFunction(activationFunction);
@@ -505,6 +525,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             if(layer.getMomentumAfter() == null) layer.setMomentumAfter(momentumAfter);
             if(Double.isNaN(layer.getRho())) layer.setRho(rho);
             if(Double.isNaN(layer.getRmsDecay())) layer.setRmsDecay(rmsDecay);
+            if(Double.isNaN(layer.getAdamMeanDecay())) layer.setAdamMeanDecay(adamMeanDecay);
+            if(Double.isNaN(layer.getAdamVarDecay())) layer.setAdamVarDecay(adamVarDecay);
 
             return conf;
         }

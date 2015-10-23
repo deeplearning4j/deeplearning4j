@@ -20,7 +20,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.deeplearning4j</groupId>
     <artifactId>deeplearning4j-parent</artifactId>
-    <version>0.4-rc3.4-SNAPSHOT</version>
+    <version>0.4-rc4.4-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>DeepLearning4j</name>
 
@@ -51,8 +51,8 @@
 
 
     <properties>
-        <nd4j.version>0.4-rc4.4-SNAPSHOT</nd4j.version>
-        <canova.version>0.0.0.11-SNAPSHOT</canova.version>
+        <nd4j.version>0.4-rc3.6-SNAPSHOT</nd4j.version>
+        <canova.version>0.0.0.12-SNAPSHOT</canova.version>
         <commonsmath.version>3.4.1</commonsmath.version>
         <commonslang.version>3.3.1</commonslang.version>
         <commonsio.version>2.4</commonsio.version>
@@ -67,7 +67,7 @@
         <lombok.version>1.16.4</lombok.version>
         <cleartk.version>2.0.0</cleartk.version>
         <dropwizard.version>0.8.0</dropwizard.version>
-        <lucene.version>4.10.3</lucene.version>
+        <lucene.version>5.3.1</lucene.version>
         <json.version>20131018</json.version>
         <google.protobuf.version>2.6.1</google.protobuf.version>
         <failIfNoTests>false</failIfNoTests>

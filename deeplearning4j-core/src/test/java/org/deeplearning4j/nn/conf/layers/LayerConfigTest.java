@@ -98,6 +98,7 @@ public class LayerConfigTest {
         //Learning rate without layerwise override:
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .learningRate(0.3)
+                .learningRateScoreBasedDecayRate(10)
                 .list(2)
                 .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build() )
                 .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build() )
@@ -107,13 +108,17 @@ public class LayerConfigTest {
 
         assertEquals(conf.getConf(0).getLayer().getLearningRate(), 0.3, 0.0);
         assertEquals(conf.getConf(1).getLayer().getLearningRate(), 0.3, 0.0);
+        assertEquals(conf.getConf(0).getLayer().getLrScoreBasedDecay(), 10, 0.0);
+        assertEquals(conf.getConf(1).getLayer().getLrScoreBasedDecay(), 10, 0.0);
 
         //With:
         conf = new NeuralNetConfiguration.Builder()
                 .learningRate(0.3)
+                .learningRateScoreBasedDecayRate(10)
                 .list(2)
-                .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build() )
-                .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).learningRate(0.2).build() )
+                .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
+                .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).learningRate(0.2)
+                        .learningRateScoreBasedDecayRate(8).build() )
                 .build();
 
         net = new MultiLayerNetwork(conf);
@@ -121,6 +126,8 @@ public class LayerConfigTest {
 
         assertEquals(conf.getConf(0).getLayer().getLearningRate(), 0.3, 0.0);
         assertEquals(conf.getConf(1).getLayer().getLearningRate(), 0.2, 0.0);
+        assertEquals(conf.getConf(0).getLayer().getLrScoreBasedDecay(), 10, 0.0);
+        assertEquals(conf.getConf(1).getLayer().getLrScoreBasedDecay(), 8, 0.0);
 
         //L1 and L2 without layerwise override:
         conf = new NeuralNetConfiguration.Builder()
@@ -257,6 +264,46 @@ public class LayerConfigTest {
         assertEquals(conf.getConf(1).getLayer().getRho(), 0.5, 0.0);
         assertEquals(conf.getConf(0).getLayer().getRmsDecay(), 1.0, 0.0);
         assertEquals(conf.getConf(1).getLayer().getRmsDecay(), 2.0, 0.0);
+    }
+
+
+    @Test
+    public void testUpdaterAdamParamsLayerwiseOverride() {
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(Updater.ADAM)
+                .adamMeanDecay(0.5)
+                .adamVarDecay(0.5)
+                .list(2)
+                .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
+                .layer(1, new DenseLayer.Builder().nIn(2).nOut(2)
+                        .adamMeanDecay(0.6).adamVarDecay(0.7).build())
+                .build();
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        assertEquals(conf.getConf(0).getLayer().getUpdater().toString(), "ADAM");
+        assertEquals(conf.getConf(1).getLayer().getUpdater().toString(), "ADAM");
+        assertEquals(conf.getConf(0).getLayer().getAdamMeanDecay(), 0.5, 0.0);
+        assertEquals(conf.getConf(1).getLayer().getAdamMeanDecay(), 0.6, 0.0);
+        assertEquals(conf.getConf(0).getLayer().getAdamVarDecay(), 0.5, 0.0);
+        assertEquals(conf.getConf(1).getLayer().getAdamVarDecay(), 0.7, 0.0);
+
+        conf = new NeuralNetConfiguration.Builder()
+                .updater(Updater.ADAM)
+                .adamMeanDecay(0.5)
+                .adamVarDecay(0.5)
+                .list(2)
+                .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).adamMeanDecay(1.0).build())
+                .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).updater(Updater.ADADELTA).rho(0.5).build())
+                .build();
+
+        net = new MultiLayerNetwork(conf);
+        net.init();
+
+        assertEquals(conf.getConf(0).getLayer().getUpdater().toString(), "ADAM");
+        assertEquals(conf.getConf(1).getLayer().getUpdater().toString(), "ADADELTA");
+        assertEquals(conf.getConf(0).getLayer().getAdamMeanDecay(), 1.0, 0.0);
+        assertEquals(conf.getConf(0).getLayer().getAdamVarDecay(), 0.5, 0.0);
     }
 
 }

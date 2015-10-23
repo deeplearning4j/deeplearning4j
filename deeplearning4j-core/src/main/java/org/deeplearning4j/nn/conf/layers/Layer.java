@@ -59,6 +59,7 @@ public abstract class Layer implements Serializable, Cloneable {
     protected double biasInit;
     protected Distribution dist;
     protected double learningRate;
+    protected double lrScoreBasedDecay;
     protected double momentum;
     //momentum after n iterations
     protected Map<Integer,Double> momentumAfter;
@@ -69,6 +70,8 @@ public abstract class Layer implements Serializable, Cloneable {
     //adadelta - weight for how much to consider previous history
     protected double rho;
     protected double rmsDecay;
+    protected double adamMeanDecay = 0.9;
+    protected double adamVarDecay = 0.999;
 
     public Layer(Builder builder) {
     	this.activationFunction = builder.activationFunction;
@@ -76,6 +79,7 @@ public abstract class Layer implements Serializable, Cloneable {
         this.biasInit = builder.biasInit;
     	this.dist = builder.dist;
         this.learningRate = builder.learningRate;
+        this.lrScoreBasedDecay = builder.lrScoreBasedDecay;
         this.momentum = builder.momentum;
         this.momentumAfter = builder.momentumAfter;
         this.l1 = builder.l1;
@@ -84,6 +88,8 @@ public abstract class Layer implements Serializable, Cloneable {
         this.updater = builder.updater;
         this.rho = builder.rho;
         this.rmsDecay = builder.rmsDecay;
+        this.adamMeanDecay = builder.adamMeanDecay;
+        this.adamVarDecay = builder.adamVarDecay;
     }
 
     @Override
@@ -105,6 +111,7 @@ public abstract class Layer implements Serializable, Cloneable {
         protected double biasInit = Double.NaN;
         protected Distribution dist = null;
         protected double learningRate = Double.NaN;
+        protected double lrScoreBasedDecay = Double.NaN;
         protected double momentum = Double.NaN;
         protected Map<Integer,Double> momentumAfter = null;
         protected double l1 = Double.NaN;
@@ -113,6 +120,8 @@ public abstract class Layer implements Serializable, Cloneable {
         protected Updater updater = null;
         protected double rho = Double.NaN;
         protected double rmsDecay = Double.NaN;
+        protected double adamMeanDecay = Double.NaN;
+        protected double adamVarDecay = Double.NaN;
 
         public T activation(String activationFunction) {
             this.activationFunction = activationFunction;
@@ -142,6 +151,11 @@ public abstract class Layer implements Serializable, Cloneable {
             return (T)this;
         }
 
+        public T learningRateScoreBasedDecayRate(double lrScoreBasedDecay) {
+            this.lrScoreBasedDecay = lrScoreBasedDecay;
+            return (T) this;
+        }
+
         public T l1(double l1){
             this.l1 = l1;
             return (T)this;
@@ -161,9 +175,9 @@ public abstract class Layer implements Serializable, Cloneable {
             return (T)this;
         }
 
-        public Builder momentumAfter(Map<Integer, Double> momentumAfter) {
+        public T momentumAfter(Map<Integer, Double> momentumAfter) {
             this.momentumAfter = momentumAfter;
-            return this;
+            return (T) this;
         }
 
         public T updater(Updater updater){
@@ -171,14 +185,24 @@ public abstract class Layer implements Serializable, Cloneable {
             return (T) this;
         }
 
-        public Builder rho(double rho) {
+        public T rho(double rho) {
             this.rho = rho;
-            return this;
+            return (T) this;
         }
 
-        public Builder rmsDecay(double rmsDecay) {
+        public T rmsDecay(double rmsDecay) {
             this.rmsDecay = rmsDecay;
-            return this;
+            return (T) this;
+        }
+
+        public T adamMeanDecay(double adamMeanDecay) {
+            this.adamMeanDecay = adamMeanDecay;
+            return (T) this;
+        }
+
+        public T adamVarDecay(double adamVarDecay) {
+            this.adamVarDecay = adamVarDecay;
+            return (T) this;
         }
 
         public abstract <E extends Layer> E build();
