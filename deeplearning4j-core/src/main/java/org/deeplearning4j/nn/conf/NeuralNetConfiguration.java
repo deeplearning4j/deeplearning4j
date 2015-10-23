@@ -55,7 +55,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
     protected Layer layer;
     //batch size: primarily used for conv nets. Will be reinforced if set.
-    protected int batchSize = 10;
+    protected int batchSize = 1;
     protected boolean miniBatch = true;
     protected int numIterations = 5;
     //number of line search iterations
@@ -281,7 +281,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private double adamMeanDecay = 0.9;
         private double adamVarDecay = 0.999;
         private Layer layer;
-        private int batchSize = 10;
+        private int batchSize = 1;
         private boolean miniBatch = true;
         private int numIterations = 5;
         private int maxNumLineSearchIterations = 5;
