@@ -61,15 +61,15 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     @Override
     public double calcL2() {
         //TODO figure out if need to sum over axes otherwise delete
-    	if(!conf.isUseRegularization() || conf.getL2() <= 0.0 ) return 0.0;
-        return 0.5 * conf.getL2() * Transforms.pow(getParam(ConvolutionParamInitializer.WEIGHT_KEY), 2).sum(Integer.MAX_VALUE).getDouble(0);
+    	if(!conf.isUseRegularization() || conf.getLayer().getL2() <= 0.0 ) return 0.0;
+        return 0.5 * conf.getLayer().getL2() * Transforms.pow(getParam(ConvolutionParamInitializer.WEIGHT_KEY), 2).sum(Integer.MAX_VALUE).getDouble(0);
     }
 
     @Override
     public double calcL1() {
         //TODO figure out if need to sum over axes otherwise delete
-    	if(!conf.isUseRegularization() || conf.getL1() <= 0.0 ) return 0.0;
-        return conf.getL1() * Transforms.abs(getParam(ConvolutionParamInitializer.WEIGHT_KEY)).sum(Integer.MAX_VALUE).getDouble(0);
+    	if(!conf.isUseRegularization() || conf.getLayer().getL1() <= 0.0 ) return 0.0;
+        return conf.getLayer().getL1() * Transforms.abs(getParam(ConvolutionParamInitializer.WEIGHT_KEY)).sum(Integer.MAX_VALUE).getDouble(0);
     }
 
     @Override
