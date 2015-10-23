@@ -73,9 +73,8 @@ public class WordVectorSerializer {
      * @return the loaded model
      * @throws IOException
      */
-    public static Word2Vec loadGoogleModel(File modelFile, boolean binary)
-        throws IOException
-    {
+    public static WordVectors loadGoogleModel(File modelFile, boolean binary)
+        throws IOException {
         return loadGoogleModel(modelFile, binary, DEFAULT_LINEBREAKS);
     }
 
@@ -94,10 +93,9 @@ public class WordVectorSerializer {
      * @throws IOException
      * @author Carsten Schnober
      */
-    public static Word2Vec loadGoogleModel(File modelFile, boolean binary, boolean lineBreaks)
-        throws IOException
-    {
-        return binary ? readBinaryModel(modelFile, lineBreaks) : readTextModel(modelFile);
+    public static WordVectors loadGoogleModel(File modelFile, boolean binary, boolean lineBreaks)
+        throws IOException {
+        return binary ? readBinaryModel(modelFile, lineBreaks) : WordVectorSerializer.fromPair(loadTxt(modelFile));
     }
 
     /**
@@ -332,7 +330,7 @@ public class WordVectorSerializer {
      *            the path to write
      * @throws IOException
      */
-    public static void writeWordVectors(Word2Vec vec, String path)
+    public static void writeWordVectors(WordVectors vec, String path)
         throws IOException
     {
         BufferedWriter write = new BufferedWriter(new FileWriter(new File(path), false));

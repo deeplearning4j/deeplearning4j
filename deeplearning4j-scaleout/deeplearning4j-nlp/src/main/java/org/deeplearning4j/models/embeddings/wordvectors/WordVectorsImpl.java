@@ -181,7 +181,6 @@ public class WordVectorsImpl implements WordVectors {
      */
     @Override
     public Collection<String> wordsNearest(INDArray words, int top) {
-
         if(lookupTable() instanceof InMemoryLookupTable) {
             InMemoryLookupTable l = (InMemoryLookupTable) lookupTable();
             INDArray syn0 = l.getSyn0();
