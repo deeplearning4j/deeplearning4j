@@ -23,7 +23,11 @@ Compile the project with Maven using whichever Spark and Hadoop versions you nee
 
 ## <a name="run">Run the Examples</a>
 
-Then make sure you're in the `scene-classification-spark` directory and run a spark-submit command similar to this.
+Make sure you're in the `scene-classification-spark` directory. 
+
+While the [scene classification example](https://github.com/deeplearning4j/scene-classification-spark/blob/master/src/main/java/org/deeplearning4j/SparkMnist.java) currently points to an S3 file, you will need to download [this SVM file with MNIST data](https://raw.githubusercontent.com/deeplearning4j/Canova/master/canova-api/src/test/resources/mnist_svmlight.txt) locally and point to it instead. 
+
+Once you've done that, run a `spark-submit` command similar to this.
 
         bin/spark-submit --master spark://ec2-$ADDRESS_HERE.us-west-1.compute.amazonaws.com:7077 --driver-memory 3g --driver-cores 4 --executor-cores 30 --num-executors 200 --class org.deeplearning4j.SparkMnist scene-classification-spark-1.0-SNAPSHOT.jar
 
