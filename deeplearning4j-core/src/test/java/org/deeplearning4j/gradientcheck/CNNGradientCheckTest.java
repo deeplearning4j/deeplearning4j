@@ -41,66 +41,6 @@ public class CNNGradientCheckTest {
     }
 
     @Test
-    public void testCNNBasicMultiLayer(){
-        Nd4j.getRandom().setSeed(12345L);
-
-        int nRows = 2;
-        int nCols = 2;
-        int nChannels = 1;
-        int depth = 2;
-        int nOut = 2;
-        int miniBatchSize = 1;
-
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
-                .regularization(false)
-                .seed(12345L)
-                .list(2)
-                .layer(0, new ConvolutionLayer.Builder(1, 1)
-                        .nIn(nChannels).nOut(depth)
-                        .activation("sigmoid")
-                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0))
-                        .updater(Updater.NONE).build())
-                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                        .nIn(depth).nOut(nOut)
-                        .activation("softmax")
-                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0))
-                        .updater(Updater.NONE).build())
-                .pretrain(false).backprop(true);
-
-        new ConvolutionLayerSetup(builder,nRows,nCols,nChannels);
-
-        MultiLayerNetwork mln = new MultiLayerNetwork(builder.build());
-        mln.init();
-
-        Random r = new Random(12345L);
-        int flatInputSize =  nChannels * nRows * nCols;
-        INDArray input = Nd4j.zeros(miniBatchSize, flatInputSize);
-        for( int i=0; i < miniBatchSize; i++ ){
-            for( int j=0; j<flatInputSize; j++ ){
-                input.putScalar(new int[]{i,j},r.nextDouble()-0.5);
-            }
-        }
-
-        INDArray labels = Nd4j.zeros(miniBatchSize,nOut);
-        for( int i=0; i < miniBatchSize; i++ ){
-            int idx = r.nextInt(nOut);
-            labels.putScalar(new int[]{i,idx}, 1.0f);
-        }
-
-        String testName = new Object(){}.getClass().getEnclosingMethod().getName();
-
-        if( PRINT_RESULTS ){
-            System.out.println(testName);
-            for( int j=0; j < mln.getnLayers(); j++ ) System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
-        }
-
-        boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, true);
-
-        assertTrue(gradOK);
-    }
-
-    @Test
     public void testGradientCNNMLN(){
         //Parameterized test, testing combinations of:
         // (a) activation function
@@ -130,7 +70,7 @@ public class CNNGradientCheckTest {
                             .seed(12345L)
                             .list(2)
                             .layer(0, new ConvolutionLayer.Builder(new int[]{1, 1})
-                                   .nOut(6)
+                                    .nOut(6)
                                     .weightInit(WeightInit.XAVIER)
                                     .activation(afn)
                                     .updater(Updater.NONE)
@@ -143,7 +83,7 @@ public class CNNGradientCheckTest {
                                     .build())
                             .pretrain(false).backprop(true);
 
-                    ConvolutionLayerSetup setup = new ConvolutionLayerSetup(builder,2,2,1);
+                    new ConvolutionLayerSetup(builder,2,2,1);
                     MultiLayerConfiguration conf = builder.build();
 
                     MultiLayerNetwork mln = new MultiLayerNetwork(conf);
