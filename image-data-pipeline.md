@@ -109,3 +109,5 @@ An alternative approach to apply cross validation in this effort, would be to lo
         DataSet test = testAndTrain.getTest();
 
 To split test and train on large datasets, you'll have to iterate through both the test and training datasets. For the moment, we'll leave that to you. 
+
+To load two types of images, just put each kind in its own folder, following [this example](https://github.com/deeplearning4j/Canova-examples/blob/master/src/main/java/datapipelines/ImageClassifierExample.java).
