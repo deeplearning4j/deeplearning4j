@@ -200,7 +200,7 @@ public class SubsamplingLayerTest {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .constrainGradientToUnitNorm(true)
                 .seed(123)
-                .layer(new SubsamplingLayer.Builder(pooling)
+                .layer(new SubsamplingLayer.Builder(pooling, new int[] {2, 2})
                         .activation("relu")
                         .build())
                 .build();
