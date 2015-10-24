@@ -37,14 +37,16 @@ public class CPUAccumulationViaTensorTask extends BaseCPUTask<Double> {
             throw new RuntimeException(e);
         }
         if (subTasks != null) {
-            //Iterative decomposition
+            //Iterative decomposition / callable: task was broken into subtasks, instead of executing directly
+            //subTasks == null for FJ execution
             accum = op.zeroDouble();
             for (Task<Double> task : subTasks) {
                 double subAccum = task.blockUntilComplete();
                 accum = op.combineSubResults(accum, subAccum);
             }
         }
-        if (outerTask) {
+        if (outerTask && subTasks != null ) {
+            //subTasks == null in FJ, op.getAndSetFinalResult already called for FJ if(outerTask) by this point
             return op.getAndSetFinalResult(accum);
         }
         return accum;
@@ -59,7 +61,12 @@ public class CPUAccumulationViaTensorTask extends BaseCPUTask<Double> {
     @Override
     protected Double compute() {
         //ForkJoin execution
-        return execute(true);
+        double out = execute(true);
+        if(outerTask){
+            return op.getAndSetFinalResult(out);
+        } else {
+            return out;
+        }
     }
 
     private Double execute(final boolean forkJoin) {

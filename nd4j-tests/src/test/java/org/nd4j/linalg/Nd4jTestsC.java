@@ -2083,6 +2083,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         }
     }
 
+
     @Override
     public char ordering() {
         return 'c';
