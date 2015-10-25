@@ -45,3 +45,7 @@ You can use Deeplearning4j with Gradle by adding the following to your build.gra
 Clojure programmers may want to use [Leiningen](https://github.com/technomancy/leiningen/) or [Boot](http://boot-clj.com/) to work with Maven. A [Leiningen tutorial is here](https://github.com/technomancy/leiningen/blob/master/doc/TUTORIAL.md).
 
 NOTE: You'll still need to download ND4J, Canova and Deeplearning4j, or doubleclick on the their respective JAR files file downloaded by Maven / Ivy / Gradle, to install them in your Eclipse installation.
+
+## Backends
+
+[Backends](http://nd4j.org/backend) and other [dependencies](http://nd4j.org/dependencies) are explained on the ND4J website.
