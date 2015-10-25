@@ -17,6 +17,7 @@ Contents
 * <a href="#trouble">Troubleshooting & Tuning Word2Vec</a>
 * <a href="#use">Word2vec Use Cases</a>
 * <a href="#foreign">Foreign Languages</a>
+* <a href="#glove">GloVe: Global Vectors</a>
 
 ##<a name="intro">Introduction to Word2Vec</a>
 
