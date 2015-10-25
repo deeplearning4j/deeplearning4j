@@ -422,6 +422,7 @@ While words in all languages may be converted into vectors with Word2vec, and th
 * [Word2Vec: an introduction](http://www.folgertkarsdorp.nl/word2vec-an-introduction/); Folgert Karsdorp
 * [Mikolov's Original Word2vec Code @Google](https://code.google.com/p/word2vec/)
 * [word2vec Explained: Deriving Mikolov et al.’s Negative-Sampling Word-Embedding Method](http://arxiv.org/pdf/1402.3722v1.pdf); Yoav Goldberg and Omer Levy
+* [Doc2vec, or Paragraph Vectors](../doc2vec.html)
 
 ### <a name="doctorow">Word2Vec in Literature</a>
 
