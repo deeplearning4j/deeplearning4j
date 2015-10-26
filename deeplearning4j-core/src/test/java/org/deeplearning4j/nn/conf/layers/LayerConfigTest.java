@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.conf.layers;
 
+import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
@@ -45,7 +46,7 @@ public class LayerConfigTest {
 
         assertEquals(conf.getConf(0).getLayer().getActivationFunction().toString(), "relu");
         assertEquals(conf.getConf(1).getLayer().getActivationFunction().toString(), "tanh");
-        }
+    }
 
 
     @Test
@@ -304,6 +305,44 @@ public class LayerConfigTest {
         assertEquals(conf.getConf(1).getLayer().getUpdater().toString(), "ADADELTA");
         assertEquals(conf.getConf(0).getLayer().getAdamMeanDecay(), 1.0, 0.0);
         assertEquals(conf.getConf(0).getLayer().getAdamVarDecay(), 0.5, 0.0);
+    }
+
+    @Test
+    public void testGradientNormalizationLayerwiseOverride(){
+
+        //Learning rate without layerwise override:
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
+                .gradientNormalizationThreshold(10)
+                .list(2)
+                .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build() )
+                .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build() )
+                .build();
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        assertEquals(GradientNormalization.ClipElementWiseAbsoluteValue, conf.getConf(0).getLayer().getGradientNormalization());
+        assertEquals(GradientNormalization.ClipElementWiseAbsoluteValue, conf.getConf(1).getLayer().getGradientNormalization());
+        assertEquals(10, conf.getConf(0).getLayer().getGradientNormalizationThreshold(), 0.0);
+        assertEquals(10, conf.getConf(1).getLayer().getGradientNormalizationThreshold(), 0.0);
+
+        //With:
+        conf = new NeuralNetConfiguration.Builder()
+                .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
+                .gradientNormalizationThreshold(10)
+                .list(2)
+                .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
+                .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).gradientNormalization(GradientNormalization.None)
+                        .gradientNormalizationThreshold(2.5).build() )
+                .build();
+
+        net = new MultiLayerNetwork(conf);
+        net.init();
+
+        assertEquals(GradientNormalization.ClipElementWiseAbsoluteValue, conf.getConf(0).getLayer().getGradientNormalization());
+        assertEquals(GradientNormalization.None, conf.getConf(1).getLayer().getGradientNormalization());
+        assertEquals(10, conf.getConf(0).getLayer().getGradientNormalizationThreshold(), 0.0);
+        assertEquals(2.5, conf.getConf(1).getLayer().getGradientNormalizationThreshold(), 0.0);
     }
 
 }

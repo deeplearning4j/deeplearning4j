@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.conf.layers;
 
+import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
@@ -42,11 +43,15 @@ public class LayerBuilderTest {
     Distribution dist = new NormalDistribution(1.0, 0.1);
     double dropOut = 0.1;
     Updater updater = Updater.ADAGRAD;
+    GradientNormalization gradNorm = GradientNormalization.ClipL2PerParamType;
+    double gradNormThreshold = 8;
 
     @Test
     public void testLayer() throws Exception {
         RecursiveAutoEncoder layer = new RecursiveAutoEncoder.Builder()
-            .activation(act).weightInit(weight).dist(dist).dropOut(dropOut).updater(updater).build();
+            .activation(act).weightInit(weight).dist(dist).dropOut(dropOut).updater(updater)
+            .gradientNormalization(gradNorm).gradientNormalizationThreshold(gradNormThreshold)
+            .build();
 
         checkSerialization(layer);
 
@@ -55,6 +60,8 @@ public class LayerBuilderTest {
         assertEquals(dist, layer.getDist());
         assertEquals(dropOut, layer.getDropOut(), DELTA);
         assertEquals(updater, layer.getUpdater());
+        assertEquals(gradNorm, layer.getGradientNormalization());
+        assertEquals(gradNormThreshold, layer.getGradientNormalizationThreshold(), 0.0);
     }
 
     @Test
