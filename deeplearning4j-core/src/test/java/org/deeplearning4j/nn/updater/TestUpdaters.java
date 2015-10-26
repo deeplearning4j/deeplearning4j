@@ -365,8 +365,8 @@ public class TestUpdaters {
         int[] nOuts = {2,3};
 		int oldScore = 1;
 		int newScore = 1;
-		int iteration = 1;
-        INDArray gradient = Nd4j.ones(nIns[0],nOuts[0]);
+		int iteration = 3;
+        INDArray gradientW = Nd4j.ones(nIns[0],nOuts[0]);
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .learningRate(lr).learningRateScoreBasedDecayRate(lrScoreDecay)
@@ -380,9 +380,10 @@ public class TestUpdaters {
         net.init();
 
 		ConvexOptimizer opt = new StochasticGradientDescent(net.getDefaultConfiguration(), new NegativeDefaultStepFunction(), null, net);
-        opt.checkTerminalConditions(gradient, oldScore, newScore, iteration);
+        opt.checkTerminalConditions(gradientW, oldScore, newScore, iteration);
 		assertEquals(lrScoreDecay, net.getLayer(0).conf().getLayer().getLrScoreBasedDecay(), 1e-4);
-		assertEquals(lr/(lrScoreDecay + Nd4j.EPS_THRESHOLD), opt.getConf().getLayer().getLearningRate(), 1e-4);
+		assertEquals(lr/(lrScoreDecay + Nd4j.EPS_THRESHOLD), net.getLayer(0).conf().getLayer().getLearningRate(), 1e-4);
+
 	}
 
     @Test

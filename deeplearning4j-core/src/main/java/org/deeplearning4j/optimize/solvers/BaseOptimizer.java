@@ -213,8 +213,9 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             if(condition.terminate(score,oldScore,new Object[]{gradient})){
                 log.debug("Hit termination condition on iteration {}: score={}, oldScore={}, condition={}", i, score, oldScore, condition);
                 if(condition instanceof EpsTermination && !Double.isNaN(conf.getLayer().getLrScoreBasedDecay())) {
-                    model.conf().getLayer().setLearningRate(model.conf().getLayer().getLearningRate() /
-                            (model.conf().getLayer().getLrScoreBasedDecay() + Nd4j.EPS_THRESHOLD));
+//                    double newLr = model.conf().getLayer().getLearningRate() / (model.conf().getLayer().getLrScoreBasedDecay() + Nd4j.EPS_THRESHOLD);
+//                    model.conf().getLayer().setLearningRate(newLr);
+                    model.applyLearningRateScoreDecay();
                 }
                 return true;
             }

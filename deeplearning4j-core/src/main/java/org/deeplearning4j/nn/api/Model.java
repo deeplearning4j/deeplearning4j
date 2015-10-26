@@ -87,6 +87,12 @@ public interface Model {
      */
     void setParams(INDArray params);
 
+    /**
+     * Update learningRate using for this model.
+     * Use the learningRateScoreBasedDecay to adapt the score
+     * if the Eps termination condition is met
+     */
+    void applyLearningRateScoreDecay();
 
 
     /**

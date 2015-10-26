@@ -593,6 +593,11 @@ public class BarnesHutTsne extends Tsne implements Model {
     }
 
     @Override
+    public void applyLearningRateScoreDecay() {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
     public void fit(INDArray data) {
         this.x  = data;
         fit();
@@ -768,5 +773,8 @@ public class BarnesHutTsne extends Tsne implements Model {
                     maxIter,realMin,initialMomentum,finalMomentum,momentum,switchMomentumIteration,normalize,
                     usePca,stopLyingIteration,tolerance,learningRate,useAdaGrad,perplexity,minGain);
         }
+
+
     }
+
 }
