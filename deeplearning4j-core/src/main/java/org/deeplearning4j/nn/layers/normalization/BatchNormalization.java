@@ -3,8 +3,10 @@ package org.deeplearning4j.nn.layers.normalization;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -20,7 +22,7 @@ import java.util.*;
  *
  * @author Adam Gibson
  */
-public class BatchNormalization implements Layer {
+public class BatchNormalization extends BaseLayer<ConvolutionLayer> {
     private INDArray std;
     private NeuralNetConfiguration conf;
     private int index = 0;
@@ -31,7 +33,7 @@ public class BatchNormalization implements Layer {
     private INDArray xHat;
 
     public BatchNormalization(NeuralNetConfiguration conf) {
-        this.conf = conf;
+        super(conf);
     }
 
     @Override
@@ -365,10 +367,6 @@ public class BatchNormalization implements Layer {
             throw new IllegalArgumentException("Illegal input for batch size");
         return new int[] {leadDim,cDim,rdim};
 
-    }
-    @Override
-    public void applyLearningRateScoreDecay() {
-        conf.getLayer().setLearningRate(conf.getLayer().getLearningRate() / (conf.getLayer().getLrScoreBasedDecay() + Nd4j.EPS_THRESHOLD));
     }
 
 }

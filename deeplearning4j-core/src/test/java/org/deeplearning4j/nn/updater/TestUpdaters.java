@@ -359,7 +359,7 @@ public class TestUpdaters {
     @Test
     public void testLrScoreDecay(){
         double lr = 0.01;
-        double lrScoreDecay = 10;
+        double lrScoreDecay = 0.10;
         int nLayers = 2;
         int[] nIns = {4,2};
         int[] nOuts = {2,3};
@@ -382,7 +382,7 @@ public class TestUpdaters {
 		ConvexOptimizer opt = new StochasticGradientDescent(net.getDefaultConfiguration(), new NegativeDefaultStepFunction(), null, net);
         opt.checkTerminalConditions(gradientW, oldScore, newScore, iteration);
 		assertEquals(lrScoreDecay, net.getLayer(0).conf().getLayer().getLrScoreBasedDecay(), 1e-4);
-		assertEquals(lr/(lrScoreDecay + Nd4j.EPS_THRESHOLD), net.getLayer(0).conf().getLayer().getLearningRate(), 1e-4);
+		assertEquals(lr*(lrScoreDecay + Nd4j.EPS_THRESHOLD), net.getLayer(0).conf().getLayer().getLearningRate(), 1e-4);
 
 	}
 
