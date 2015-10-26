@@ -30,6 +30,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -72,6 +73,8 @@ public abstract class Layer implements Serializable, Cloneable {
     protected double rmsDecay;
     protected double adamMeanDecay = 0.9;
     protected double adamVarDecay = 0.999;
+    protected GradientNormalization gradientNormalization = GradientNormalization.None; //Clipping, rescale based on l2 norm, etc
+    protected double gradientNormalizationThreshold = 1.0;   //Threshold for l2 and element-wise gradient clipping
 
     public Layer(Builder builder) {
     	this.activationFunction = builder.activationFunction;
@@ -90,6 +93,8 @@ public abstract class Layer implements Serializable, Cloneable {
         this.rmsDecay = builder.rmsDecay;
         this.adamMeanDecay = builder.adamMeanDecay;
         this.adamVarDecay = builder.adamVarDecay;
+        this.gradientNormalization = builder.gradientNormalization;
+        this.gradientNormalizationThreshold = builder.gradientNormalizationThreshold;
     }
 
     @Override
@@ -122,12 +127,22 @@ public abstract class Layer implements Serializable, Cloneable {
         protected double rmsDecay = Double.NaN;
         protected double adamMeanDecay = Double.NaN;
         protected double adamVarDecay = Double.NaN;
+        protected GradientNormalization gradientNormalization = null;
+        protected double gradientNormalizationThreshold = Double.NaN;
 
+        /**Layer activation function.
+         * Typical values include:<br>
+         * "relu" (rectified linear), "tanh", "sigmoid", "softmax",
+         * "hardtanh", "leakyrelu", "maxout", "softsign", "softplus"
+         */
         public T activation(String activationFunction) {
             this.activationFunction = activationFunction;
             return (T) this;
         }
 
+        /** Weight initialization scheme.
+         * @see org.deeplearning4j.nn.weights.WeightInit
+         */
         public T weightInit(WeightInit weightInit) {
             this.weightInit = weightInit;
             return (T) this;
@@ -139,7 +154,7 @@ public abstract class Layer implements Serializable, Cloneable {
         }
 
         /** Distribution to sample initial weights from. Used in conjunction with
-         * .weightInit(WeightInit.DISTRIBUTION)
+         * .weightInit(WeightInit.DISTRIBUTION).
          */
         public T dist(Distribution dist){
         	this.dist = dist;
@@ -156,10 +171,13 @@ public abstract class Layer implements Serializable, Cloneable {
             return (T) this;
         }
 
+        /** L1 regularization coefficient.*/
         public T l1(double l1){
             this.l1 = l1;
             return (T)this;
         }
+
+        /** L2 regularization coefficient. */
         public T l2(double l2){
             this.l2 = l2;
             return (T)this;
@@ -175,11 +193,16 @@ public abstract class Layer implements Serializable, Cloneable {
             return (T)this;
         }
 
+        /** Momentum (step) schedule */
         public T momentumAfter(Map<Integer, Double> momentumAfter) {
             this.momentumAfter = momentumAfter;
             return (T) this;
         }
 
+        /** Gradient updater. For example, SGD for standard stochastic gradient descent, NESTEROV for Nesterov momentum,
+         * RSMPROP for RMSProp, etc.
+         * @see org.deeplearning4j.nn.conf.Updater
+         */
         public T updater(Updater updater){
             this.updater = updater;
             return (T) this;
@@ -190,11 +213,14 @@ public abstract class Layer implements Serializable, Cloneable {
             return (T) this;
         }
 
+        /** Decay rate for RMSProp. Only applies if using .updater(Updater.RMSPROP)
+         */
         public T rmsDecay(double rmsDecay) {
             this.rmsDecay = rmsDecay;
             return (T) this;
         }
 
+        /** Mean decay rate for Adam updater. Only applies if using .updater(Updater.ADAM) */
         public T adamMeanDecay(double adamMeanDecay) {
             this.adamMeanDecay = adamMeanDecay;
             return (T) this;
@@ -202,6 +228,25 @@ public abstract class Layer implements Serializable, Cloneable {
 
         public T adamVarDecay(double adamVarDecay) {
             this.adamVarDecay = adamVarDecay;
+            return (T) this;
+        }
+
+        /** Gradient normalization strategy. Used to specify gradient renormalization, gradient clipping etc.
+         * @param gradientNormalization Type of normalization to use. Defaults to None.
+         * @see org.deeplearning4j.nn.conf.GradientNormalization
+         */
+        public T gradientNormalization(GradientNormalization gradientNormalization ){
+            this.gradientNormalization = gradientNormalization;
+            return (T) this;
+        }
+
+        /** Threshold for gradient normalization, only used for GradientNormalization.ClipL2PerLayer,
+         * GradientNormalization.ClipL2PerParamType, and GradientNormalization.ClipElementWiseAbsoluteValue<br>
+         * Not used otherwise.<br>
+         * L2 threshold for first two types of clipping, or absolute value threshold for last type of clipping.
+         */
+        public T gradientNormalizationThreshold(double threshold){
+            this.gradientNormalizationThreshold = threshold;
             return (T) this;
         }
 

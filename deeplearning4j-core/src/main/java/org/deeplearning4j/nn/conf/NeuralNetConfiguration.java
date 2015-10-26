@@ -65,6 +65,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     //gradient keys used for ensuring order when getting and setting the gradient
     protected List<String> variables = new ArrayList<>();
     //whether to constrain the gradient to unit norm or not
+    @Deprecated
     protected boolean constrainGradientToUnitNorm = false;
     //adadelta - weight for how much to consider previous history
     protected StepFunction stepFunction;
@@ -73,6 +74,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     //minimize or maximize objective
     protected boolean minimize = true;
     // Graves LSTM & RNN
+    @Deprecated
     private int timeSeriesLength = 1;
 
     /**
@@ -288,18 +290,23 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private long seed = System.currentTimeMillis();
         private boolean useRegularization = false;
         private OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
+        @Deprecated
         private boolean constrainGradientToUnitNorm = false;
         private StepFunction stepFunction = null;
         private boolean useDropConnect = false;
         private boolean minimize = true;
+        @Deprecated
         private int timeSeriesLength = 1;
+        private GradientNormalization gradientNormalization = GradientNormalization.None;
+        private double gradientNormalizationThreshold = 1.0;
 
-        /**
+
+        /**Deprecated.
          +         * Time series length
          +         * @param timeSeriesLength
          +         * @return
          +         */
-
+        @Deprecated
         public Builder timeSeriesLength(int timeSeriesLength) {
             this.timeSeriesLength = timeSeriesLength;
             return this;
@@ -326,6 +333,12 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+        /** Maximum number of line search iterations.
+         * Only applies for line search optimizers: Line Search SGD, Conjugate Gradient, LBFGS
+         * is NOT applicable for standard SGD
+         * @param maxNumLineSearchIterations > 0
+         * @return
+         */
         public Builder maxNumLineSearchIterations(int maxNumLineSearchIterations) {
             this.maxNumLineSearchIterations = maxNumLineSearchIterations;
             return this;
@@ -358,12 +371,14 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+        /** Random number generator seed. Used for reproducability between runs */
         public Builder seed(int seed) {
             this.seed = (long) seed;
             Nd4j.getRandom().setSeed(seed);
             return this;
         }
 
+        /** Random number generator seed. Used for reproducability between runs */
         public Builder seed(long seed) {
             this.seed = seed;
             Nd4j.getRandom().setSeed(seed);
@@ -375,11 +390,16 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+        /** Deprecated. Use .gradientNormalization(GradientNormalization) instead
+         * @see org.deeplearning4j.nn.conf.GradientNormalization
+         */
+        @Deprecated
         public Builder constrainGradientToUnitNorm(boolean constrainGradientToUnitNorm) {
             this.constrainGradientToUnitNorm = constrainGradientToUnitNorm;
             return this;
         }
 
+        /** Whether to use regularization (l1, l2, dropout, etc */
         public Builder regularization(boolean useRegularization) {
             this.useRegularization = useRegularization;
             return this;
@@ -399,12 +419,19 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             }
         }
 
-
+        /**Activation function / neuron non-linearity
+         * Typical values include:<br>
+         * "relu" (rectified linear), "tanh", "sigmoid", "softmax",
+         * "hardtanh", "leakyrelu", "maxout", "softsign", "softplus"
+         */
         public Builder activation(String activationFunction) {
             this.activationFunction = activationFunction;
             return this;
         }
 
+        /** Weight initialization scheme.
+         * @see org.deeplearning4j.nn.weights.WeightInit
+         */
         public Builder weightInit(WeightInit weightInit) {
             this.weightInit = weightInit;
             return this;
@@ -415,6 +442,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+        /** Distribution to sample initial weights from. Used in conjunction with
+         * .weightInit(WeightInit.DISTRIBUTION).
+         */
         public Builder dist(Distribution dist) {
             this.dist = dist;
             return this;
@@ -430,11 +460,13 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+        /** L1 regularization coefficient.*/
         public Builder l1(double l1) {
             this.l1 = l1;
             return this;
         }
 
+        /** L2 regularization coefficient. */
         public Builder l2(double l2) {
             this.l2 = l2;
             return this;
@@ -455,6 +487,10 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+        /** Gradient updater. For example, Updater.SGD for standard stochastic gradient descent,
+         * Updater.NESTEROV for Nesterov momentum, Updater.RSMPROP for RMSProp, etc.
+         * @see org.deeplearning4j.nn.conf.Updater
+         */
         public Builder updater(Updater updater) {
             this.updater = updater;
             return this;
@@ -470,12 +506,14 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+        /** Decay rate for RMSProp. Only applies if using .updater(Updater.RMSPROP)
+         */
         public Builder rmsDecay(double rmsDecay) {
             this.rmsDecay = rmsDecay;
             return this;
         }
 
-
+        /** Mean decay rate for Adam updater. Only applies if using .updater(Updater.ADAM) */
         public Builder adamMeanDecay(double adamMeanDecay) {
             this.adamMeanDecay = adamMeanDecay;
             return this;
@@ -483,6 +521,25 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
         public Builder adamVarDecay(double adamVarDecay) {
             this.adamVarDecay = adamVarDecay;
+            return this;
+        }
+
+        /** Gradient normalization strategy. Used to specify gradient renormalization, gradient clipping etc.
+         * @param gradientNormalization Type of normalization to use. Defaults to None.
+         * @see org.deeplearning4j.nn.conf.GradientNormalization
+         */
+        public Builder gradientNormalization(GradientNormalization gradientNormalization){
+            this.gradientNormalization = gradientNormalization;
+            return this;
+        }
+
+        /** Threshold for gradient normalization, only used for GradientNormalization.ClipL2PerLayer,
+         * GradientNormalization.ClipL2PerParamType, and GradientNormalization.ClipElementWiseAbsoluteValue<br>
+         * Not used otherwise.<br>
+         * L2 threshold for first two types of clipping, or absolute value threshold for last type of clipping.
+         */
+        public Builder gradientNormalizationThreshold(double threshold){
+            this.gradientNormalizationThreshold = threshold;
             return this;
         }
 
@@ -511,6 +568,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             conf.useDropConnect = useDropConnect;
             conf.miniBatch = miniBatch;
 
+
             if(Double.isNaN(layer.getLearningRate())) layer.setLearningRate(learningRate);
             if(Double.isNaN(layer.getLrScoreBasedDecay())) layer.setLrScoreBasedDecay(lrScoreBasedDecay);
             if(Double.isNaN(layer.getL1())) layer.setL1(l1);
@@ -527,6 +585,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             if(Double.isNaN(layer.getRmsDecay())) layer.setRmsDecay(rmsDecay);
             if(Double.isNaN(layer.getAdamMeanDecay())) layer.setAdamMeanDecay(adamMeanDecay);
             if(Double.isNaN(layer.getAdamVarDecay())) layer.setAdamVarDecay(adamVarDecay);
+            if(layer.getGradientNormalization() == null) layer.setGradientNormalization(gradientNormalization);
+            if(Double.isNaN(layer.getGradientNormalizationThreshold())) layer.setGradientNormalizationThreshold(gradientNormalizationThreshold);
 
             return conf;
         }
