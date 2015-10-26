@@ -1708,6 +1708,16 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
     }
 
+    public void applyLearningRateScoreDecay() {
+        for (Layer layer: layers) {
+            if(!(layer instanceof SubsamplingLayer)) {
+                layer.conf().getLayer().setLearningRate(
+                        layer.conf().getLayer().getLearningRate() / (layer.conf().getLayer().getLrScoreBasedDecay() + Nd4j.EPS_THRESHOLD));
+            }
+        }
+    }
+
+
 
     /**
      * Feed forward with the r operator

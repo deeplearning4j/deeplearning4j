@@ -23,6 +23,7 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.LossFunction;
@@ -100,6 +101,11 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
                     .miniBatch(conf.isMiniBatch()).miniBatchSize(getInputMiniBatchSize())
                     .useRegularization(conf.isUseRegularization()).build().score();
         }
+    }
+
+    @Override
+    public void applyLearningRateScoreDecay() {
+        conf.getLayer().setLearningRate(conf.getLayer().getLearningRate() / (conf.getLayer().getLrScoreBasedDecay() + Nd4j.EPS_THRESHOLD));
     }
 
 }

@@ -366,5 +366,9 @@ public class BatchNormalization implements Layer {
         return new int[] {leadDim,cDim,rdim};
 
     }
+    @Override
+    public void applyLearningRateScoreDecay() {
+        conf.getLayer().setLearningRate(conf.getLayer().getLearningRate() / (conf.getLayer().getLrScoreBasedDecay() + Nd4j.EPS_THRESHOLD));
+    }
 
 }
