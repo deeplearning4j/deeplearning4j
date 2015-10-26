@@ -103,9 +103,5 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
         }
     }
 
-    @Override
-    public void applyLearningRateScoreDecay() {
-        conf.getLayer().setLearningRate(conf.getLayer().getLearningRate() / (conf.getLayer().getLrScoreBasedDecay() + Nd4j.EPS_THRESHOLD));
-    }
 
 }
