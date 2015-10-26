@@ -18,9 +18,7 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  *
@@ -36,13 +34,15 @@ public class HistogramIterationListener implements IterationListener {
     private WebTarget target;
     private int iterations = 1;
     private ArrayList<Double> scoreHistory = new ArrayList<>();
+    private List<Map<String,List<Double>>> meanMagHistoryParams = new ArrayList<>();    //1 map per layer; keyed by new param name
+    private List<Map<String,List<Double>>> meanMagHistoryUpdates = new ArrayList<>();
     private boolean openBrowser;
     private boolean firstIteration = true;
     private String path;
     private String subPath;
 
     public HistogramIterationListener(int iterations) {
-        this(iterations,true,"weights");
+        this(iterations, true, "weights");
     }
     public HistogramIterationListener(int iterations, boolean openBrowser, String subPath){
         int port = -1;
@@ -77,17 +77,57 @@ public class HistogramIterationListener implements IterationListener {
     public void iterationDone(Model model, int iteration) {
         if(iteration % iterations == 0) {
             Map<String,INDArray> grad = model.gradient().gradientForVariable();
-            Map<String,INDArray> newGrad = new LinkedHashMap<>();
-            for(Map.Entry<String,INDArray> entry : grad.entrySet() ){
-                newGrad.put("param_" + entry.getKey(),entry.getValue().dup());
-                //CSS identifier can't start with digit http://www.w3.org/TR/CSS21/syndata.html#value-def-identifier
+
+            if(meanMagHistoryParams.size() == 0){
+                //Initialize:
+                int maxLayerIdx = -1;
+                for(String s : grad.keySet()){
+                    maxLayerIdx = Math.max(maxLayerIdx,indexFromString(s));
+                }
+                if(maxLayerIdx == -1 ) maxLayerIdx = 0;
+                for( int i=0; i<=maxLayerIdx; i++ ){
+                    meanMagHistoryParams.add(new LinkedHashMap<String,List<Double>>());
+                    meanMagHistoryUpdates.add(new LinkedHashMap<String,List<Double>>());
+                }
             }
 
+            //Process gradients: duplicate + calculate and store mean magnitudes
+            Map<String,INDArray> newGrad = new LinkedHashMap<>();
+            for(Map.Entry<String,INDArray> entry : grad.entrySet() ){
+                String param = entry.getKey();
+                String newName = "param_" + param;
+                newGrad.put(newName,entry.getValue().dup());
+                //CSS identifier can't start with digit http://www.w3.org/TR/CSS21/syndata.html#value-def-identifier
+
+                //Work out layer index:
+                Map<String,List<Double>> map = meanMagHistoryUpdates.get(indexFromString(param));
+                List<Double> list = map.get(newName);
+                if(list==null){
+                    list = new ArrayList<>();
+                    map.put(newName,list);
+                }
+                double meanMag = entry.getValue().norm1Number().doubleValue() / entry.getValue().length();
+                list.add(meanMag);
+            }
+
+            //Process parameters: duplicate + calculate and store mean magnitudes
             Map<String,INDArray> params = model.paramTable();
             Map<String,INDArray> newParams = new LinkedHashMap<>();
             for(Map.Entry<String,INDArray> entry : params.entrySet()) {
-                newParams.put("param_" + entry.getKey(), entry.getValue().dup());
+                String param = entry.getKey();
+                String newName = "param_" + param;
+
+                newParams.put(newName, entry.getValue().dup());
                 //dup() because params might be a view
+
+                Map<String,List<Double>> map = meanMagHistoryParams.get(indexFromString(param));
+                List<Double> list = map.get(newName);
+                if(list==null){
+                    list = new ArrayList<>();
+                    map.put(newName,list);
+                }
+                double meanMag = entry.getValue().norm1Number().doubleValue() / entry.getValue().length();
+                list.add(meanMag);
             }
 
             double score = model.score();
@@ -99,6 +139,9 @@ public class HistogramIterationListener implements IterationListener {
             g.setScore(score);
             g.setScores(scoreHistory);
             g.setPath(subPath);
+            g.setUpdateMagnitudes(meanMagHistoryUpdates);
+            g.setParamMagnitudes(meanMagHistoryParams);
+            g.setLastUpdateTime(System.currentTimeMillis());
 
             Response resp = target.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).post(Entity.entity(g,MediaType.APPLICATION_JSON));
             log.debug("{}",resp);
@@ -108,7 +151,18 @@ public class HistogramIterationListener implements IterationListener {
                 firstIteration = false;
             }
         }
+    }
 
-
+    private static int indexFromString(String str){
+        int underscore = str.indexOf("_");
+        if(underscore == -1) return -1;
+        else {
+            String subStr = str.substring(0,underscore);
+            try{
+                return Integer.parseInt(subStr);
+            }catch( NumberFormatException e ){
+                return -1;
+            }
+        }
     }
 }
