@@ -16,10 +16,13 @@ import java.util.Map;
  */
 
 public class ModelAndGradient implements Serializable {
+    private long lastUpdateTime = -1L;
     private Map<String,INDArray> parameters;
     private Map<String,INDArray> gradients;
     private double score;
     private List<Double> scores = new ArrayList<>();
+    private List<Map<String,List<Double>>> updateMagnitudes = new ArrayList<>();
+    private List<Map<String,List<Double>>> paramMagnitudes = new ArrayList<>();
     private String path;
 
 
@@ -35,7 +38,13 @@ public class ModelAndGradient implements Serializable {
     }
 
 
+    public void setLastUpdateTime(long lastUpdateTime){
+        this.lastUpdateTime = lastUpdateTime;
+    }
 
+    public long getLastUpdateTime(){
+        return lastUpdateTime;
+    }
 
     public double getScore() {
         return score;
@@ -79,6 +88,22 @@ public class ModelAndGradient implements Serializable {
         return scores;
     }
 
+    public void setUpdateMagnitudes(List<Map<String,List<Double>>> updateMagnitudes ){
+        this.updateMagnitudes = updateMagnitudes;
+    }
+
+    public List<Map<String,List<Double>>> getUpdateMagnitudes(){
+        return updateMagnitudes;
+    }
+
+    public void setParamMagnitudes(List<Map<String,List<Double>>> paramMagnitudes){
+        this.paramMagnitudes = paramMagnitudes;
+    }
+
+    public List<Map<String,List<Double>>> getParamMagnitudes(){
+        return paramMagnitudes;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -89,7 +114,6 @@ public class ModelAndGradient implements Serializable {
         if (Double.compare(that.score, score) != 0) return false;
         if (parameters != null ? !parameters.equals(that.parameters) : that.parameters != null) return false;
         return !(gradients != null ? !gradients.equals(that.gradients) : that.gradients != null);
-
     }
 
     @Override

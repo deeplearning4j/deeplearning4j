@@ -312,6 +312,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+        /** Process input as minibatch vs full dataset.
+         * Default set to true. */
         public Builder miniBatch(boolean miniBatch) {
             this.miniBatch = miniBatch;
             return this;
@@ -328,6 +330,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+        /** Objective function to minimize or maximize cost function
+         * Default set to minimize true. */
         public Builder minimize(boolean minimize) {
             this.minimize = minimize;
             return this;
@@ -344,21 +348,28 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+        /** Minibatch size. Number of examples in a batch.*/
         public Builder batchSize(int batchSize) {
             this.batchSize = batchSize;
             return this;
         }
 
+        /** Layer class. */
         public Builder layer(Layer layer) {
             this.layer = layer;
             return this;
         }
 
+        /** Step function to apply for back track line search.
+         * Only applies for line search optimizers: Line Search SGD, Conjugate Gradient, LBFGS
+         * Options: DefaultStepFunction (default), NegativeDefaultStepFunction
+         * GradientStepFunction (for SGD), NegativeGradientStepFunction */
         public Builder stepFunction(StepFunction stepFunction) {
             this.stepFunction = stepFunction;
             return this;
         }
 
+        /** Number of layers not including input. */
         public ListBuilder list(int size) {
             Map<Integer, Builder> layerMap = new HashMap<>();
             for(int i = 0; i < size; i++)
@@ -366,6 +377,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return new ListBuilder(layerMap);
         }
 
+        /** Number of optimization iterations. */
         public Builder iterations(int numIterations) {
             this.numIterations = numIterations;
             return this;
@@ -450,11 +462,14 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+        /** Learning rate. Defaults to 1e-1*/
         public Builder learningRate(double learningRate) {
             this.learningRate = learningRate;
             return this;
         }
 
+        /** Rate to decrease learningRate by when the score stops improving.
+         * Learning rate is multiplied by this rate so ideally keep between 0 and 1. */
         public Builder learningRateScoreBasedDecayRate(double lrScoreBasedDecay) {
             this.lrScoreBasedDecay = lrScoreBasedDecay;
             return this;
@@ -477,11 +492,13 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+        /** Momentum rate. */
         public Builder momentum(double momentum) {
             this.momentum = momentum;
             return this;
         }
 
+        /** Momentum schedule. Map of the iteration to the momentum rate to apply at that iteration. */
         public Builder momentumAfter(Map<Integer, Double> momentumAfter) {
             this.momentumAfter = momentumAfter;
             return this;
@@ -519,6 +536,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+        /** Variance decay rate for Adam updater. Only applies if using .updater(Updater.ADAM) */
         public Builder adamVarDecay(double adamVarDecay) {
             this.adamVarDecay = adamVarDecay;
             return this;
