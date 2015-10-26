@@ -181,6 +181,32 @@ for Statistical Machine Translation](http://arxiv.org/pdf/1406.1078v3.pdf)**; Ch
 
 **[Continuous control with deep reinforcement learning](http://arxiv.org/pdf/1509.02971v1.pdf)**; DeepMind
 
+## Thought Vectors
+
+**[Recursive Deep Models for Semantic Compositionality Over a Sentiment Treebank](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.383.1327&rep=rep1&type=pdf)**;  
+Socher et al. 2013. Introduces Recursive Neural Tensor Network. Uses a parse tree.
+
+**[Distributed Representations of Sentences and Documents](http://cs.stanford.edu/~quocle/paragraph_vector.pdf)  
+[Le](https://scholar.google.com/citations?user=vfT6-XIAAAAJ)**; Mikolov. 2014.  Introduces Paragraph Vector. Concatenates and averages pretrained, fixed word vectors to create vectors for sentences, paragraphs and documents. Also known as paragraph2vec. Doesn't use a parse tree.
+
+**[Deep Recursive Neural Networks for Compositionality in Language](https://aclweb.org/anthology/P/P15/P15-1150.pdf)**;   
+Irsoy & Cardie. 2014. Uses Deep Recursive Neural Networks. Uses a parse tree.
+
+**[Improved Semantic Representations From Tree-Structured Long Short-Term Memory Networks](https://aclweb.org/anthology/P/P15/P15-1150.pdf)**; Tai et al. 2015  Introduces Tree LSTM. Uses a parse tree.
+
+##Dialog
+
+**[A Neural Network Approach toContext-Sensitive Generation of Conversational Responses](http://arxiv.org/pdf/1506.06714v1.pdf)**; Sordoni 2015.  Generates responses to tweets. Uses [Recurrent Neural Network Language Model (RLM) architecture of (Mikolov et al., 2010).](http://www.fit.vutbr.cz/research/groups/speech/publi/2010/mikolov_interspeech2010_IS100722.pdf)    
+
+**[Towards AI-Complete Question Answering: A Set of Prerequisite Toy Tasks](http://arxiv.org/pdf/1502.05698v7.pdf)**; Weston 2015. Classifies QA tasks. Expands on Memory Networks.  
+
+**[A Neural Conversation Model](http://arxiv.org/pdf/1506.05869v3.pdf)**; Vinyals, [Le](https://scholar.google.com/citations?user=vfT6-XIAAAAJ) 2015.  Uses LSTM RNNs to generate conversational responses. Uses [seq2seq framework](http://arxiv.org/pdf/1409.3215v3.pdf).  
+
+## Advanced Memory Architectures
+**[Neural Turing Machines](http://arxiv.org/pdf/1410.5401v2.pdf)**; Graves et al. 2014.  
+
+**[Inferring Algorithmic Patterns with Stack-Augmented Recurrent Nets](http://arxiv.org/pdf/1503.01007v4.pdf)**; Joulin, Mikolov 2015. [Stack RNN source code](https://github.com/facebook/Stack-RNN)  
+
 ## Researchers' Personal Websites
 
 -  [Yoshua Bengio](http://www.iro.umontreal.ca/~bengioy/yoshua_en/index.html)
