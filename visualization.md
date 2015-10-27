@@ -25,9 +25,11 @@ In this line of code, the ScoreIterationListener is passed the parameter specify
 
 ## UI in the Browser
 
-You'll need to start a [UI server](https://github.com/deeplearning4j/deeplearning4j/blob/f0688a59bb712dc9d3b9eefa191a5f521bab27d0/deeplearning4j-ui/src/main/java/org/deeplearning4j/ui/UiServer.java) with [Jetty](https://en.wikipedia.org/wiki/Jetty_(web_server)) and go to, say, [http://localhost:8080/weights](http://localhost:8080/weights) to see the visualizations. You can run the server as a main class in Intellij or Eclipse. Alternatively, you can use `java -cp` with the right classpath and specify: `org.deeplearning4j.ui.UiServer`. That starts a Jetty server with UI functionality.
+A [UI server](https://github.com/deeplearning4j/deeplearning4j/blob/f0688a59bb712dc9d3b9eefa191a5f521bab27d0/deeplearning4j-ui/src/main/java/org/deeplearning4j/ui/UiServer.java) should start automatically with [Jetty](https://en.wikipedia.org/wiki/Jetty_(web_server)) and the results will appear here: [http://localhost:8080/weights](http://localhost:8080/weights). 
 
-You can see the [HistogramIterationListener here](https://github.com/deeplearning4j/deeplearning4j/blob/9ca18d8f0b4828a55f381d50e32b6eebcb3444e0/deeplearning4j-ui/src/main/java/org/deeplearning4j/ui/weights/HistogramIterationListener.java#L35-34). You would specify `HistogramIterationListener` rather than `ScoreIterationListener`, as in the line of code below:
+(If you need to change something manually, you can run the server as a main class in Intellij or Eclipse. Alternatively, you can use `java -cp` with the right classpath and specify: `org.deeplearning4j.ui.UiServer`. That starts a Jetty server with UI functionality.)
+
+You can see the code for the [HistogramIterationListener here](https://github.com/deeplearning4j/deeplearning4j/blob/9ca18d8f0b4828a55f381d50e32b6eebcb3444e0/deeplearning4j-ui/src/main/java/org/deeplearning4j/ui/weights/HistogramIterationListener.java#L35-34). You would specify `HistogramIterationListener` rather than `ScoreIterationListener`, as in the line of code below:
 
         model.setListeners(Collections.singletonList((IterationListener) new HistogramIterationListener(listenerFreq)));
 
