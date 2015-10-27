@@ -329,7 +329,6 @@ public class TestUpdaters {
 				assertEquals(gradExpected, g.getGradientFor(entry.getKey()));
 				v.put(key, vTmp);
 			}
-			v =  new HashMap<>();
 			assertEquals(lr, net.getLayer(1).conf().getLayer().getLearningRate(), 1e-4);
 		}
 	}
