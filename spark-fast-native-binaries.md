@@ -43,7 +43,9 @@ If OpenBlas is not working correctly, follow these steps:
 
 ### Windows
 
-For OpenBlas on **Windows**, download this [file](https://www.dropbox.com/s/6p8yn3fcf230rxy/ND4J_Win64_OpenBLAS-v0.2.14.zip?dl=1). Extract to somewhere such as `C:/BLAS`. Add that directory to your system's `PATH` environment variable.
+* For OpenBlas on **Windows**, download this [file](https://www.dropbox.com/s/6p8yn3fcf230rxy/ND4J_Win64_OpenBLAS-v0.2.14.zip?dl=1). 
+* Extract the file to a directory such as `C:/BLAS`. 
+* Add that directory to your system's `PATH` environment variable.
 
 <!--
 ### OSX
