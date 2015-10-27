@@ -18,6 +18,8 @@
 
 package org.deeplearning4j.spark.impl.multilayer;
 
+import org.apache.spark.Accumulable;
+import org.apache.spark.Accumulator;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -33,6 +35,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.spark.canova.RecordReaderFunction;
 import org.deeplearning4j.spark.impl.common.Adder;
+import org.deeplearning4j.spark.impl.common.BestScoreAccumulator;
 import org.deeplearning4j.spark.impl.common.gradient.GradientAdder;
 import org.deeplearning4j.spark.impl.multilayer.gradientaccum.GradientAccumFlatMap;
 import org.deeplearning4j.spark.util.MLLibUtil;
@@ -60,6 +63,8 @@ public class SparkDl4jMultiLayer implements Serializable {
     public final static String ACCUM_GRADIENT = "org.deeplearning4j.spark.iteration.accumgrad";
     public final static String DIVIDE_ACCUM_GRADIENT = "org.deeplearning4j.spark.iteration.dividegrad";
 
+    private Accumulator<Double> best_score_acc = null;
+
     private static final Logger log = LoggerFactory.getLogger(SparkDl4jMultiLayer.class);
 
     /**
@@ -76,6 +81,7 @@ public class SparkDl4jMultiLayer implements Serializable {
         this.conf = this.network.getLayerWiseConfigurations().clone();
         sc = new JavaSparkContext(this.sparkContext);
         this.params = sc.broadcast(network.params());
+        this.best_score_acc = BestScoreAccumulator.create(sparkContext);
     }
 
     /**
@@ -86,8 +92,9 @@ public class SparkDl4jMultiLayer implements Serializable {
     public SparkDl4jMultiLayer(SparkContext sparkContext, MultiLayerConfiguration conf) {
         this.sparkContext = sparkContext;
         this.conf = conf.clone();
-        this.averageEachIteration = sparkContext.conf().getBoolean(AVERAGE_EACH_ITERATION,false);
+        this.averageEachIteration = sparkContext.conf().getBoolean(AVERAGE_EACH_ITERATION, false);
         sc = new JavaSparkContext(this.sparkContext);
+        this.best_score_acc = BestScoreAccumulator.create(sparkContext);
     }
 
     /**
@@ -224,7 +231,8 @@ public class SparkDl4jMultiLayer implements Serializable {
             this.network = network;
         }
         else {
-            JavaRDD<INDArray> results = rdd.mapPartitions(new IterativeReduceFlatMap(conf.toJson(), this.params),true).cache();
+            JavaRDD<INDArray> results = rdd.mapPartitions(new IterativeReduceFlatMap(conf.toJson(),
+                    this.params, this.best_score_acc),true).cache();
             log.info("Ran iterative reduce...averaging results now.");
             Adder a = new Adder(params.length());
             results.foreach(a);
