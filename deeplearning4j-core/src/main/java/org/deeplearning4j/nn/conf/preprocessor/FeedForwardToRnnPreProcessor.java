@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 
 /**A preprocessor to allow RNN and feed-forward network layers to be used together.<br>
  * For example, DenseLayer -> GravesLSTM<br>
@@ -27,7 +28,8 @@ public class FeedForwardToRnnPreProcessor implements InputPreProcessor {
 	public INDArray preProcess(INDArray input, Layer layer) {
 		//Need to reshape FF activations (2d) activations to 3d (for input into RNN layer)
 		if( input.rank() != 2 ) throw new IllegalArgumentException("Invalid input: expect NDArray with rank 2 (i.e., activations for FF layer)");
-		
+		if(input.ordering() == 'f') input = Shape.toOffsetZeroCopy(input,'c');
+
 		int[] shape = input.shape();
 		int miniBatchSize = layer.getInputMiniBatchSize();
 		INDArray reshaped = input.reshape(miniBatchSize,shape[0]/miniBatchSize,shape[1]);
