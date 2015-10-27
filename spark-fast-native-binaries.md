@@ -5,7 +5,7 @@ layout: default
 
 # Speeding Up Spark With Native Binaries
 
-Spark is a distributed form of MapReduce. It ranked as the Apache Foundation's most popular open-source project last year. It's supposed to be fast, but because of some licensing issues, it doesn't run fast out of the box. 
+[Spark](https://spark.apache.org/downloads.html) is a distributed form of MapReduce. It ranked as the Apache Foundation's most popular open-source project last year. It's supposed to be fast, but because of some licensing issues, it doesn't run fast out of the box. 
 
 This step-by-step guide shows you how to enable native binaries for matrix operations in Spark. Spark can't ship with them, because Spark is licensed under Apache 2.0, while the native binaries of OpenBlas are LGPL. 
 
