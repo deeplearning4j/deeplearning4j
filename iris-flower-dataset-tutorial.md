@@ -3,9 +3,9 @@ title:
 layout: default
 ---
 
-# IRIS Classifed With a Deep-Belief Net
+# Tutorial: IRIS Classifed With a DBN
 
-Deep-belief networks can serve as multinomial classifiers. Given many inputs belonging to various categories, a DBN can learn from a small training set and then classify unlabeled data according to those classes. Given an input record, the DBN will choose one label from a set. 
+Deep-belief networks are algorithms that can serve as multinomial classifiers. Given many inputs belonging to various categories, a DBN can learn from a small training set and then classify unlabeled data according to those classes. Given an input record, the DBN will choose one label from a set. 
 
 This goes beyond a Boolean ‘yes’ or ‘no’ to handle a broader, multinomial taxonomy of inputs, where the label chosen is represented as a 1, and all other possible labels are 0s. The network outputs a vector containing one number per output node. The numbers in the vector equals the number of labels to choose from. 
 
