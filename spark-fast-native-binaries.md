@@ -21,7 +21,7 @@ Instructions will vary slightly from operating system to operating system.
 
 We need [Spark](http://deeplearning4j.org/spark) to work with [OpenBlas](http://www.openblas.net/).
 
-To make sure that the native libs on [ND4J's x86 backend](http://nd4j.org/backend.html) work, you need `/opt/OpenBLAS/lib` on the system path. 
+To make sure that the native libs on [ND4J's x86 backend](http://nd4j.org/backend.html) work, you need `/opt/OpenBLAS/lib` on the system path. ([ND4J](http://nd4j.org) is a scientific computing engine for the JVM.)
 
 After that, enter these commands in the prompt:
 
