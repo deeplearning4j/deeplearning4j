@@ -1708,6 +1708,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
     }
 
+
     public void applyLearningRateScoreDecay() {
         for (Layer layer: layers) {
             if(!(layer instanceof SubsamplingLayer)) {

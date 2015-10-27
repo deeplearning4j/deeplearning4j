@@ -52,7 +52,8 @@ public class ScoreIterationListener implements IterationListener {
             printIterations = 1;
         if(iteration % printIterations == 0) {
             invoke();
-            log.info("Score at iteration " + iteration + " is " + model.score());
+            double result = model.score();
+            log.info("Score at iteration " + iteration + " is " + result);
 
         }
 
