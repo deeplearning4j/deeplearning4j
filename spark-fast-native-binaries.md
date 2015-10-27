@@ -15,23 +15,21 @@ Since native binaries cannot be "packaged" with Spark, we either have to turn th
 
 Instructions will vary slightly from operating system to operating system.
 
-###Linux
+### <a id="open"> OpenBlas for Linux</a>
 
-### <a id="open"> OpenBlas </a>
+We need [Spark](http://deeplearning4j.org/spark) to work with OpenBlas.
 
-To make sure the native libs on the x86 backend work, you need `/opt/OpenBLAS/lib` on the system path. After that, enter these commands in the prompt
+To make sure that the native libs on [ND4J's x86 backend](http://nd4j.org/backend.html) work, you need `/opt/OpenBLAS/lib` on the system path. 
+
+After that, enter these commands in the prompt:
 
 			sudo cp libopenblas.so liblapack.so.3
 			sudo cp libopenblas.so libblas.so.3
 
-We added this so that [Spark](http://deeplearning4j.org/spark) would work with OpenBlas.
-
 If OpenBlas is not working correctly, follow these steps:
 
-* Remove Openblas if you installed it.
-* Run `sudo apt-get remove libopenblas-base`
-* Download the development version of OpenBLAS
-* `git clone git://github.com/xianyi/OpenBLAS`
+* Remove Openblas by running `sudo apt-get remove libopenblas-base`
+* Download the development version of OpenBLAS: `git clone git://github.com/xianyi/OpenBLAS`
 * `cd OpenBLAS`
 * `make FC=gfortran`
 * `sudo make PREFIX=/usr/local/ install`
