@@ -10,11 +10,10 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.GRU;
-import org.deeplearning4j.nn.conf.layers.GravesLSTM;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
+import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
+import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
+import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
@@ -238,7 +237,7 @@ public class GradientCheckTests {
     	mln.init();
     	
     	Random r = new Random(12345L);
-    	INDArray input = Nd4j.zeros(miniBatchSize,nIn,timeSeriesLength);
+    	INDArray input = Nd4j.zeros(miniBatchSize, nIn, timeSeriesLength);
     	for( int i=0; i<miniBatchSize; i++ ){
     		for( int j=0; j<nIn; j++ ){
     			for( int k=0; k<timeSeriesLength; k++ ){
@@ -246,7 +245,7 @@ public class GradientCheckTests {
     			}
     		}
     	}
-    	INDArray labels = Nd4j.zeros(miniBatchSize,nOut,timeSeriesLength);
+    	INDArray labels = Nd4j.zeros(miniBatchSize, nOut, timeSeriesLength);
     	for( int i=0; i<miniBatchSize; i++ ){
     		for( int j=0; j<timeSeriesLength; j++ ){
     			int idx = r.nextInt(nOut);
@@ -575,4 +574,83 @@ public class GradientCheckTests {
 	        assertTrue(msg,gradOK);
     	}
     }
+
+	@Test
+	public void testGradientCnnFfRnn(){
+		//Test gradients with CNN -> FF -> LSTM -> RnnOutputLayer
+		//time series input/output (i.e., video classification or similar)
+
+		int nChannelsIn = 3;
+		int inputSize = 10*10*nChannelsIn;	//10px x 10px x 3 channels
+		int miniBatchSize = 4;
+		int timeSeriesLength = 10;
+		int nClasses = 3;
+
+		//Generate
+		Nd4j.getRandom().setSeed(12345);
+		INDArray input = Nd4j.rand(new int[]{miniBatchSize,inputSize,timeSeriesLength});
+		INDArray labels = Nd4j.zeros(miniBatchSize, nClasses, timeSeriesLength);
+		Random r = new Random(12345);
+		for( int i = 0; i < miniBatchSize; i++ ){
+			for(int j = 0; j < timeSeriesLength; j++) {
+				int idx = r.nextInt(nClasses);
+				labels.putScalar(new int[]{i,idx,j}, 1.0);
+			}
+		}
+
+
+		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+				.seed(12345)
+				.list(5)
+				.layer(0, new ConvolutionLayer.Builder(5,5)
+						.nIn(3)
+						.nOut(5)
+						.stride(1,1)
+						.activation("relu")
+						.weightInit(WeightInit.XAVIER)
+						.updater(Updater.NONE)
+						.build())	//Out: (10-5)/1+1 = 6 -> 6x6x5
+				.layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
+						.kernelSize(2, 2)
+						.stride(1, 1)
+						.build())	//Out: (6-2)/1+1 = 5 -> 5x5x5
+				.layer(2, new DenseLayer.Builder()
+						.nIn(5 * 5 * 5)
+						.nOut(4)
+						.updater(Updater.NONE)
+						.weightInit(WeightInit.XAVIER)
+						.activation("relu")
+						.build())
+				.layer(3, new GravesLSTM.Builder()
+						.nIn(4)
+						.nOut(3)
+						.updater(Updater.NONE)
+						.weightInit(WeightInit.XAVIER)
+						.activation("tanh")
+						.build())
+				.layer(4, new RnnOutputLayer.Builder()
+						.lossFunction(LossFunction.MCXENT)
+						.nIn(3)
+						.nOut(nClasses)
+						.activation("softmax")
+						.updater(Updater.NONE)
+						.build())
+				.inputPreProcessor(0, new RnnToCnnPreProcessor(10, 10, 3))	//Time series input processing
+				.inputPreProcessor(2, new CnnToFeedForwardPreProcessor(5, 5, 5))
+				.inputPreProcessor(3, new FeedForwardToRnnPreProcessor())
+				.pretrain(false).backprop(true)
+				.build();
+
+		MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+		mln.init();
+
+		System.out.println("Params per layer:");
+		for( int i=0; i<mln.getnLayers(); i++ ){
+			System.out.println("layer " + i + "\t" + mln.getLayer(i).numParams());
+		}
+
+		boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+				PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, true);
+		assertTrue(gradOK);
+	}
 }
