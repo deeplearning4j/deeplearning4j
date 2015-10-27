@@ -49,6 +49,14 @@ If OpenBlas does not work correctly, follow these steps:
 * Extract the file to a directory such as `C:/BLAS`. 
 * Add that directory to your system's `PATH` environment variable.
 
+### Other Tutorials
+
+* [Regression & Neural Networks](../linear-regression.html)
+* [Word2vec: Extracting Relations From Raw Text](../word2vec.html)
+* [Restricted Boltzmann Machines: The Building Blocks of Deep-Belief Networks](../restrictedboltzmannmachine.html)
+* [Recurrent Networks and Long Short-Term Memory Units](../lstm.html)
+* [Eigenvectors, PCA, Covariance and Entropy](../eigenvector.html)
+
 <!--
 ### OSX
 
