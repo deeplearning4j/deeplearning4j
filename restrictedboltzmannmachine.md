@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# A Beginner's Guide to Restricted Boltzmann Machines
+# A Beginner's Tutorial for Restricted Boltzmann Machines
 
 Contents
 
