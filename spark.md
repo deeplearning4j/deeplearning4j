@@ -34,6 +34,7 @@ Once you've done that, run a `spark-submit` command similar to this.
 ## Scala Resources
 
 * [Deeplearning4j Spark Examples Repo](https://github.com/deeplearning4j/scene-classification-spark)
+* [Accelerate Spark with OpenBlas](../spark-fast-native-binaries.html)
 * ND4S: [N-Dimensional Arrays for Scala](https://github.com/deeplearning4j/nd4s)
 * [ND4J/ND4S Benchmarks](http://nd4j.org/benchmarking)
 * [ND4J, Scala & Scientific Computing](http://nd4j.org/scala.html)
