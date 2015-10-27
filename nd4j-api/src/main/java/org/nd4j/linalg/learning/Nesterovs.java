@@ -21,25 +21,12 @@ import java.util.Map;
 @NoArgsConstructor
 public class Nesterovs implements Serializable,GradientUpdater {
     private double momentum = 0.5;
-    protected Map<Integer,Double> momentumAfter = new HashMap<>();
     private INDArray v;
     private double lr = 0.1;
-
-
-    public Nesterovs(double momentum, Map<Integer,Double> momentumAfter, double lr) {
-        this.momentum = momentum;
-        this.momentumAfter = momentumAfter;
-        this.lr = lr;
-    }
-
+    
     public Nesterovs(double momentum, double lr) {
         this.momentum = momentum;
         this.lr = lr;
-    }
-
-    public Nesterovs(double momentum, Map<Integer,Double> momentumAfter) {
-        this.momentum = momentum;
-        this.momentumAfter = momentumAfter;
     }
 
     public Nesterovs(double momentum) {
@@ -57,8 +44,6 @@ public class Nesterovs implements Serializable,GradientUpdater {
     public INDArray getGradient(INDArray gradient, int iteration) {
         if(v == null)
             v = Nd4j.zeros(gradient.shape());
-        if(momentumAfter !=null)
-            momentum = (momentumAfter.containsKey(iteration)) ? momentumAfter.get(iteration) : momentum;
         INDArray vPrev = v;
         v = vPrev.mul(momentum).subi(gradient.mul(lr));
         //reference https://cs231n.github.io/neural-networks-3/#sgd 2nd equation
