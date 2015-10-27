@@ -32,6 +32,8 @@
         <module>dl4j-spark</module>
         <module>dl4j-spark-nlp</module>
         <module>dl4j-spark-ml</module>
+        <module>dl4j-spark-bleeding</module>
+        <module>dl4j-spark-ml-bleeding</module>
     </modules>
 
     <properties>
