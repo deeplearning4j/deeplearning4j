@@ -5,7 +5,7 @@ layout: default
 
 # How to Speed Up Spark With Native Binaries and OpenBlas
 
-[Spark](https://spark.apache.org/downloads.html) is a distributed form of MapReduce. It ranked as the Apache Foundation's most popular open-source project last year. It's supposed to be fast, but because of some licensing issues, it doesn't run fast out of the box. 
+Spark is a distributed form of MapReduce. It ranked as the Apache Foundation's most popular open-source project last year. It's supposed to be fast, but because of some licensing issues, it doesn't run fast out of the box. 
 
 This step-by-step guide shows you how to enable native binaries for matrix operations in Spark. Spark can't ship with them, because Spark is licensed under Apache 2.0, while the native binaries of OpenBlas are LGPL. 
 
@@ -19,7 +19,7 @@ Instructions will vary slightly from operating system to operating system.
 
 ### <a id="open"> OpenBlas for Linux</a>
 
-We need [Spark](http://deeplearning4j.org/spark) to work with [OpenBlas](http://www.openblas.net/).
+We need [Spark](http://deeplearning4j.org/spark) to work with [OpenBlas](http://www.openblas.net/), an optimized BLAS library based on GotoBLAS2.
 
 To make sure that the native libs on [ND4J's x86 backend](http://nd4j.org/backend.html) work, you need `/opt/OpenBLAS/lib` on the system path. ([ND4J](http://nd4j.org) is a scientific computing engine for the JVM.)
 
