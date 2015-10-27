@@ -17,7 +17,7 @@ Instructions will vary slightly from operating system to operating system.
 
 ### <a id="open"> OpenBlas for Linux</a>
 
-We need [Spark](http://deeplearning4j.org/spark) to work with OpenBlas.
+We need [Spark](http://deeplearning4j.org/spark) to work with [OpenBlas](http://www.openblas.net/).
 
 To make sure that the native libs on [ND4J's x86 backend](http://nd4j.org/backend.html) work, you need `/opt/OpenBLAS/lib` on the system path. 
 
