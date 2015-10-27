@@ -5,11 +5,13 @@ layout: default
 
 # Deeplearning4j's Vizualization and UI
 
+To support visualizations that will help you monitor neural networks as they learn, and therefore debug them, you must set up an iteration listener. This is done when you instantiate and initialize a new MultiLayerNetwork.
+
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
         model.init();
         model.setListeners(Arrays.asList((IterationListener) new ScoreIterationListener(listenerFreq)));
 
-The first line above calls build on the configuration. The second passes the configuration into an instance of a MultiLayerNetwork model. The third initializes the model. The fourth sets iteration listeners, which do all kinds of neat things. 
+The first line above passes a configuration you will have specified previously into an instance of a MultiLayerNetwork model. The second initializes the model. The third sets iteration listeners. Remember, an iteration is simply one update of a network's weights: you may decide to update the weights after a batch of examples is processed, or you may update them after a full pass through the dataset, known as an epoch.
 
 An *iterationListener* is a hook, a plugin, which monitors the iterations and reacts to what's happening. 
 
