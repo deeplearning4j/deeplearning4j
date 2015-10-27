@@ -40,7 +40,7 @@ Here are some of the file names you'll want to get familiar with in the deeplear
 * deeplearning4j-ui/src/main/java/org/deeplearning4j/ui/weights/HistogramIterationListener.java
 * deeplearning4j-ui/src/main/java/org/deeplearning4j/ui/weights/ModelAndGradient.java 
 * deeplearning4j-ui/src/main/resources/org/deeplearning4j/ui/weights/render.ftl 
-* 
+
 ### TSNE and Word2vec
 
 We rely on [TSNE](https://lvdmaaten.github.io/tsne/) to reduce the dimensionality of [word feature vectors](../word2vec.html) and project words into a two or three-dimensional space. 
