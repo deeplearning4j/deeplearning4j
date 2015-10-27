@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# Recurrent Networks: An LSTM Tutorial
+# Tutorial: Recurrent Networks and LSTMs
 
 Recurrent nets are a powerful set of artificial neural network algorithms especially useful for processing sequential data such as sound, time series (sensor) data or written natural language. A version of recurrent networks was used by DeepMind in their work playing video games with autonomous agents.
 
