@@ -23,13 +23,15 @@ A typical pattern for an iterationListener would be asking it to do something ev
 
 In this line of code, the ScoreIterationListener is passed the parameter specifying a number of iterations -- let's say you specify two -- and after every two iterations, it will print out the error or cost. (Caveat: The more often you call iterationListener, the slower your training will run...).
 
-## UI in the Browser
+### UI in the Browser
 
 A [UI server](https://github.com/deeplearning4j/deeplearning4j/blob/f0688a59bb712dc9d3b9eefa191a5f521bab27d0/deeplearning4j-ui/src/main/java/org/deeplearning4j/ui/UiServer.java) should start automatically with [Jetty](https://en.wikipedia.org/wiki/Jetty_(web_server)) and the results will appear here: [http://localhost:8080/weights](http://localhost:8080/weights). 
 
 (If you need to change something manually, you can run the server as a main class in Intellij or Eclipse. Alternatively, you can use `java -cp` with the right classpath and specify: `org.deeplearning4j.ui.UiServer`. That starts a Jetty server with UI functionality.)
 
-You can see the code for the [HistogramIterationListener here](https://github.com/deeplearning4j/deeplearning4j/blob/9ca18d8f0b4828a55f381d50e32b6eebcb3444e0/deeplearning4j-ui/src/main/java/org/deeplearning4j/ui/weights/HistogramIterationListener.java#L35-34). You would specify `HistogramIterationListener` rather than `ScoreIterationListener`, as in the line of code below:
+You can see the code for the [HistogramIterationListener here](https://github.com/deeplearning4j/deeplearning4j/blob/9ca18d8f0b4828a55f381d50e32b6eebcb3444e0/deeplearning4j-ui/src/main/java/org/deeplearning4j/ui/weights/HistogramIterationListener.java#L35-34). Histograms roughly in the shape of a normal curve indicate that the network is learning as it should. Normally, you might say. Histograms skewed to one side or the other, or serrated, indicate the opposite. 
+
+You would specify `HistogramIterationListener` rather than `ScoreIterationListener`, as in the line of code below:
 
         model.setListeners(Collections.singletonList((IterationListener) new HistogramIterationListener(listenerFreq)));
 
