@@ -9,11 +9,11 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 @Data
 @NoArgsConstructor
-public class SgdUpdater implements GradientUpdater {
+public class Sgd implements GradientUpdater {
     private double learningRate = 1e-1;
-    private double momentum = 0.5;
+    private double momentum = 0.5; //not used
 
-    public SgdUpdater(double learningRate) {
+    public Sgd(double learningRate) {
         this.learningRate = learningRate;
     }
 

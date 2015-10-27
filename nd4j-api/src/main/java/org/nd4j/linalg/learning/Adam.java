@@ -25,7 +25,7 @@ public class Adam implements Serializable,GradientUpdater {
     private double beta2 = 0.999; // gradient sqrd decay rate
     private double epsilon = 1e-8;
     private INDArray m,v; // moving avg & sqrd gradients
-    private double momentum = 0.5;
+    private double momentum = 0.5; //not used
 
     public Adam(double alpha, double beta1, double beta2, double epsilon) {
         this.learningRate = alpha;
