@@ -28,7 +28,7 @@ After that, enter these commands in the prompt:
 			sudo cp libopenblas.so liblapack.so.3
 			sudo cp libopenblas.so libblas.so.3
 
-If OpenBlas is not working correctly, follow these steps:
+If OpenBlas does not work correctly, follow these steps:
 
 * Remove Openblas by running `sudo apt-get remove libopenblas-base`
 * Download the development version of OpenBLAS: `git clone git://github.com/xianyi/OpenBLAS`
