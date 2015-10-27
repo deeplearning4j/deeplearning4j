@@ -11,7 +11,9 @@ Deeplearning4j is not the first open-source deep-learning project, but it is dis
 
 Most academic researchers in the field of deep learning rely on [**Pylearn2**](http://deeplearning.net/software/pylearn2/) and [Theano](http://deeplearning.net/software/theano/), which are written in Python. Pylearn2 is a machine-learning library, while Theano is a library that handles multidimensional arrays, like Numpy. Both are powerful tools widely used for research purposes and serving the large Python community. They are well suited to data exploration and explicitly state that they are intended for research. 
 
-Pylearn2 is a normal (non-distributed) framework that includes everything necessary to conduct experiments with multilayer Perceptrons, [restricted Boltzmann machines](../restrictedboltzmannmachine.html), Stacked Denoising Autoencoders and [Convolutional nets](convolutionalnets.html). We recommend it for precisely those use cases. In contrast, Deeplearning4j intends to be the equivalent of Scikit-learn in the deep-learning space. It aims to automate as many knobs as possible in a scalable fashion on parallel GPUs or CPUs, integrating as needed with Hadoop and Spark. 
+Pylearn2 is a normal (non-distributed) framework that includes everything necessary to conduct experiments with multilayer Perceptrons, [restricted Boltzmann machines](../restrictedboltzmannmachine.html), Stacked Denoising Autoencoders and [Convolutional nets](convolutionalnets.html). We recommend it for precisely those use cases. 
+
+In contrast, Deeplearning4j intends to be the equivalent of Scikit-learn in the deep-learning space. It aims to automate as many knobs as possible in a scalable fashion on parallel GPUs or CPUs, integrating as needed with Hadoop and [Spark](../spark.html). 
 
 ### Torch
 
