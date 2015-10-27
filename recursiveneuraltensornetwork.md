@@ -5,6 +5,8 @@ layout: default
 
 # Recursive Neural Tensor Network
 
+*N.B. We'll be updating this page with code snippets from an example soon. For the moment, please explore other neural nets [here](../quickstart.html).*
+
 Recursive neural tensor networks (RNTNs) are neural nets useful for natural-language processing. They have a tree structure with a neural net at each node. You can use recursive neural tensor networks for boundary segmentation, to determine which word groups are positive and which are negative. The same applies to sentences as a whole. 
 
 Word vectors are used as features and serve as the basis of sequential classification. They are then grouped into subphrases, and the subphrases are combined into a sentence that can be classified by sentiment and other metrics. 
@@ -33,15 +35,14 @@ The entire sentence is at the root of the tree (at the top); each individual wor
 
 Finally, word vectors can be taken from Word2vec and substituted for the words in your tree. Next, we'll tackle how to combine those word vectors with neural nets, with code snippets.
 
-### Initiating an RNTN
+<!--### Initiating an RNTN
 
 Instantiating an object of the RNTN class is simple:
 
 <script src="http://gist-it.appspot.com/https://github.com/SkymindIO/deeplearning4j/blob/2f13b4ac4c82fee649c965026f8e5f88c5f1523f/deeplearning4j-scaleout/deeplearning4j-nlp/src/main/java/org/deeplearning4j/models/rntn/RNTN.java?slice=1092:1094"></script>
+).-->
 
-A full example of the code necessary for an [RNTN is here](https://github.com/SkymindIO/deeplearning4j-nlp-examples/tree/master/src/main/java/org/deeplearning4j/rottentomatoes/rntn).
-
-###summary
+### Summary
 
 1. [[Word2vec](http://deeplearning4j.org/word2vec.html) pipeline] Vectorize a corpus of words
 2. [NLP pipeline] Tokenize sentences
@@ -55,5 +56,3 @@ A full example of the code necessary for an [RNTN is here](https://github.com/Sk
 
 [Recursive Deep Models for Semantic Compositionality over a Sentiment Treebank](http://nlp.stanford.edu/~socherr/EMNLP2013_RNTN.pdf); Richard Socher, Alex Perelygin, Jean Y. Wu, Jason Chuang,
 Christopher D. Manning, Andrew Y. Ng and Christopher Potts; 2013; Stanford University.
-
-*N.B. We'll be updating this page with code snippets from an example soon.*
