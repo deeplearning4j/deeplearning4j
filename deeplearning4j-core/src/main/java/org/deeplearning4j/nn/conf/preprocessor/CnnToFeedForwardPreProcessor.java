@@ -26,6 +26,7 @@ import lombok.Data;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Arrays;
@@ -98,6 +99,7 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
         }
         System.arraycopy(input.shape(), 1, otherOutputs, 0, otherOutputs.length);
         int[] shape = new int[] {input.shape()[0], ArrayUtil.prod(otherOutputs)};
+        if(input.ordering() == 'f') input = Shape.toOffsetZeroCopy(input,'c');
         return input.reshape(shape);
     }
 
@@ -106,7 +108,9 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
         if (output.shape().length == 4)
             return output;
         if (output.columns() != inputWidth * inputHeight * numChannels)
-            throw new IllegalArgumentException("Invalid input: expect output columns must be equal to rows " + inputHeight + " x columns " + inputWidth + " x depth " + numChannels +" but was instead " + Arrays.toString(output.shape()));
+            throw new IllegalArgumentException("Invalid input: expect output columns must be equal to rows " + inputHeight
+                    + " x columns " + inputWidth + " x depth " + numChannels +" but was instead " + Arrays.toString(output.shape()));
+        if(output.ordering() == 'f') output = Shape.toOffsetZeroCopy(output,'c');
         return output.reshape(output.size(0), numChannels, inputHeight, inputWidth);
     }
 

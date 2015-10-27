@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Arrays;
@@ -81,7 +82,9 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
         if(input.shape().length == 4)
             return input;
         if(input.columns() != inputWidth * inputHeight * numChannels)
-            throw new IllegalArgumentException("Invalid input: expect output columns must be equal to rows " + inputHeight + " x columns " + inputWidth  + " but was instead " + Arrays.toString(input.shape()));
+            throw new IllegalArgumentException("Invalid input: expect output columns must be equal to rows " + inputHeight
+                    + " x columns " + inputWidth  + " but was instead " + Arrays.toString(input.shape()));
+        if(input.ordering() == 'f') input = Shape.toOffsetZeroCopy(input,'c');
         return input.reshape(input.size(0),numChannels,inputHeight,inputWidth);
     }
 
@@ -101,6 +104,7 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
             System.arraycopy(output.shape(), 1, otherOutputs, 0, otherOutputs.length);
             shape = new int[] {output.shape()[0], ArrayUtil.prod(otherOutputs)};
         }
+        if(output.ordering() == 'f') output = Shape.toOffsetZeroCopy(output,'c');
         return output.reshape(shape);
     }
 
