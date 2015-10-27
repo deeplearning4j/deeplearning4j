@@ -13,7 +13,7 @@ According to the [Apache Foundation](https://www.apache.org/legal/resolved.html)
 
 Since native binaries cannot be "packaged" with Spark, we either have to turn them on ourselves, or run matrix operations on Spark's default Java configuration, which sadly is not performant. 
 
-That matters a lot to us, because deep learning is computationally expensive -- that's the price of its [record-breaking accuracy](../accuracy.html) on numerous [use cases](../use_cases.html). So we train neural networks in parallel on [Spark](../spark.html), using multiple CPUs or GPUs.
+That matters a lot to us, because deep learning is computationally expensive -- that's the price of its [record-breaking accuracy](../accuracy.html) on numerous [use cases](../use_cases.html). So we train neural networks in parallel on [Spark using multiple CPUs or GPUs](../spark.html), for things like scene classification.
 
 Instructions will vary slightly from operating system to operating system.
 
