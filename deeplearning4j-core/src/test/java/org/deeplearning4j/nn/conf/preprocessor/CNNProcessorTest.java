@@ -30,8 +30,7 @@ public class CNNProcessorTest {
 
 
     @Test
-    public void testFeeForwardToCnnPreProcessor() {
-
+    public void testFeedForwardToCnnPreProcessor() {
         FeedForwardToCnnPreProcessor convProcessor = new FeedForwardToCnnPreProcessor(rows, cols, 1);
 
         INDArray check2to4 = convProcessor.preProcess(in2D,null);
@@ -43,12 +42,72 @@ public class CNNProcessorTest {
         int val4to4 = check4to4.shape().length;
         assertTrue(val4to4 == 4);
         assertEquals(Nd4j.create(20, 1, 28, 28), check4to4);
+    }
 
+    @Test
+    public void testFeedForwardToCnnPreProcessor2() {
+        int[] nRows = {1, 5, 20};
+        int[] nCols = {1, 5, 20};
+        int[] nDepth = {1, 3};
+        int[] nMiniBatchSize = {1, 5};
+        for( int rows : nRows ){
+            for( int cols : nCols ){
+                for( int d : nDepth ){
+                    FeedForwardToCnnPreProcessor convProcessor = new FeedForwardToCnnPreProcessor(rows, cols, d);
+
+                    for( int miniBatch : nMiniBatchSize ) {
+                        int[] ffShape = new int[]{miniBatch,rows*cols*d};
+                        INDArray rand = Nd4j.rand(ffShape);
+                        INDArray ffInput_c = Nd4j.create(ffShape, 'c');
+                        INDArray ffInput_f = Nd4j.create(ffShape,'f');
+                        ffInput_c.assign(rand);
+                        ffInput_f.assign(rand);
+                        assertEquals(ffInput_c, ffInput_f);
+
+                        //Test forward pass:
+                        INDArray convAct_c = convProcessor.preProcess(ffInput_c,null);
+                        INDArray convAct_f = convProcessor.preProcess(ffInput_f,null);
+                        int[] convShape = {miniBatch,d,rows,cols};
+                        assertArrayEquals(convShape, convAct_c.shape());
+                        assertArrayEquals(convShape, convAct_f.shape());
+                        assertEquals(convAct_c,convAct_f);
+
+                        //Check values:
+                        //CNN reshaping (for each example) takes a 1d vector and converts it to 3d
+                        // (4d total, for minibatch data)
+                        //1d vector is assumed to be rows from depth 0 concatenated, followed by depth 1, etc
+                        for( int ex=0; ex<miniBatch; ex++ ) {
+                            for (int r = 0; r < rows; r++) {
+                                for (int c = 0; c < cols; c++) {
+                                    for (int depth = 0; depth < d; depth++) {
+                                        int origPosition = depth * (rows * cols) + r * cols + c;  //pos in vector
+                                        double vecValue = ffInput_c.getDouble(ex,origPosition);
+                                        double convValue = convAct_c.getDouble(ex,depth,r,c);
+                                        assertEquals(vecValue,convValue,0.0);
+                                    }
+                                }
+                            }
+                        }
+
+                        //Test backward pass:
+                        //Idea is that backward pass should do opposite to forward pass
+                        INDArray epsilon4_c = Nd4j.create(convShape,'c');
+                        INDArray epsilon4_f = Nd4j.create(convShape,'f');
+                        epsilon4_c.assign(convAct_c);
+                        epsilon4_f.assign(convAct_f);
+                        INDArray epsilon2_c = convProcessor.backprop(epsilon4_c,null);
+                        INDArray epsilon2_f = convProcessor.backprop(epsilon4_f,null);
+                        assertEquals(ffInput_c,epsilon2_c);
+                        assertEquals(ffInput_c,epsilon2_f);
+                    }
+                }
+            }
+        }
     }
 
 
     @Test
-    public void testFeeForwardToCnnPreProcessorBackprop() {
+    public void testFeedForwardToCnnPreProcessorBackprop() {
         FeedForwardToCnnPreProcessor convProcessor = new FeedForwardToCnnPreProcessor(rows, cols, 1);
         convProcessor.preProcess(in2D,null);
 
@@ -71,7 +130,7 @@ public class CNNProcessorTest {
     }
 
     @Test
-    public void testCnnToFeeForwardProcessor() {
+    public void testCnnToFeedForwardProcessor() {
         CnnToFeedForwardPreProcessor convProcessor = new CnnToFeedForwardPreProcessor(rows, cols, 1);
 
         INDArray check2to4 = convProcessor.backprop(in2D,null);
@@ -83,11 +142,10 @@ public class CNNProcessorTest {
         int val4to4 = check4to4.shape().length;
         assertTrue(val4to4 == 4);
         assertEquals(Nd4j.create(20, 1, 28, 28), check4to4);
-
     }
 
     @Test
-    public void testCnnToFeeForwardPreProcessorBackprop() {
+    public void testCnnToFeedForwardPreProcessorBackprop() {
         CnnToFeedForwardPreProcessor convProcessor = new CnnToFeedForwardPreProcessor(rows, cols, 1);
         convProcessor.preProcess(in4D,null);
 
@@ -96,16 +154,76 @@ public class CNNProcessorTest {
         assertTrue(val2to2 == 2);
         assertEquals(Nd4j.create(1, 784), check2to2);
 
-        INDArray check3to2 = convProcessor.preProcess(in3D,null);
+        INDArray check3to2 = convProcessor.preProcess(in3D, null);
         int val3to2 = check3to2.shape().length;
         assertTrue(val3to2 == 2);
         assertEquals(Nd4j.create(20, 5488), check3to2);
 
-        INDArray check4to2 = convProcessor.preProcess(in4D,null);
+        INDArray check4to2 = convProcessor.preProcess(in4D, null);
         int val4to2 = check4to2.shape().length;
         assertTrue(val4to2 == 2);
         assertEquals(Nd4j.create(20, 784), check4to2);
+    }
 
+    @Test
+    public void testCnnToFeedForwardPreProcessor2() {
+        int[] nRows = {1, 5, 20};
+        int[] nCols = {1, 5, 20};
+        int[] nDepth = {1, 3};
+        int[] nMiniBatchSize = {1, 5};
+        for( int rows : nRows ){
+            for( int cols : nCols ){
+                for( int d : nDepth ){
+                    CnnToFeedForwardPreProcessor convProcessor = new CnnToFeedForwardPreProcessor(rows, cols, d);
+
+                    for( int miniBatch : nMiniBatchSize ) {
+                        int[] convActShape = new int[]{miniBatch,d,rows,cols};
+                        INDArray rand = Nd4j.rand(convActShape);
+                        INDArray convInput_c = Nd4j.create(convActShape, 'c');
+                        INDArray convInput_f = Nd4j.create(convActShape, 'f');
+                        convInput_c.assign(rand);
+                        convInput_f.assign(rand);
+                        assertEquals(convInput_c, convInput_f);
+
+                        //Test forward pass:
+                        INDArray ffAct_c = convProcessor.preProcess(convInput_c,null);
+                        INDArray ffAct_f = convProcessor.preProcess(convInput_f,null);
+                        int[] ffActShape = {miniBatch,d*rows*cols};
+                        assertArrayEquals(ffActShape, ffAct_c.shape());
+                        assertArrayEquals(ffActShape, ffAct_f.shape());
+                        assertEquals(ffAct_c,ffAct_f);
+
+                        //Check values:
+                        //CNN reshaping (for each example) takes a 1d vector and converts it to 3d
+                        // (4d total, for minibatch data)
+                        //1d vector is assumed to be rows from depth 0 concatenated, followed by depth 1, etc
+                        for( int ex=0; ex<miniBatch; ex++ ) {
+                            for (int r = 0; r < rows; r++) {
+                                for (int c = 0; c < cols; c++) {
+                                    for (int depth = 0; depth < d; depth++) {
+                                        int vectorPosition = depth * (rows * cols) + r * cols + c;  //pos in vector after reshape
+                                        double vecValue = ffAct_c.getDouble(ex,vectorPosition);
+                                        double convValue = convInput_c.getDouble(ex,depth,r,c);
+                                        assertEquals(convValue,vecValue,0.0);
+                                    }
+                                }
+                            }
+                        }
+
+                        //Test backward pass:
+                        //Idea is that backward pass should do opposite to forward pass
+                        INDArray epsilon2_c = Nd4j.create(ffActShape,'c');
+                        INDArray epsilon2_f = Nd4j.create(ffActShape,'f');
+                        epsilon2_c.assign(ffAct_c);
+                        epsilon2_f.assign(ffAct_c);
+                        INDArray epsilon4_c = convProcessor.backprop(epsilon2_c,null);
+                        INDArray epsilon4_f = convProcessor.backprop(epsilon2_f,null);
+                        assertEquals(convInput_c,epsilon4_c);
+                        assertEquals(convInput_c,epsilon4_f);
+                    }
+                }
+            }
+        }
     }
 
     @Test
@@ -156,6 +274,5 @@ public class CNNProcessorTest {
                 .inputPreProcessor(2, new CnnToFeedForwardPreProcessor(rows, cols, 1))
         .build();
         return new MultiLayerNetwork(conf);
-
     }
 }
