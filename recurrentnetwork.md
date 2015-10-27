@@ -3,9 +3,9 @@ title:
 layout: default
 ---
 
-# Recurrent Networks
+# Recurrent Networks: An LSTM Tutorial
 
-Recurrent nets are a powerful set of artificial neural nets especially useful for processing sequential data such as sound, time series (sensor) data or written natural language. A version of recurrent networks was used by DeepMind in their work playing video games with autonomous agents.
+Recurrent nets are a powerful set of artificial neural network algorithms especially useful for processing sequential data such as sound, time series (sensor) data or written natural language. A version of recurrent networks was used by DeepMind in their work playing video games with autonomous agents.
 
 Recurrent nets differ from feedforward nets because they include a feedback loop, whereby output from step n-1 is fed back to the net to affect the outcome of step n, and so forth for each subsequent step. For example, if a net is exposed to a word letter by letter, and it is asked to guess each following letter, the first letter of a word will help determine what a recurrent net thinks the second letter will be, etc. 
 
