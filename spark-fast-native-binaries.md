@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# Speeding Up Spark With Native Binaries
+# How to Speed Up Spark With Native Binaries and OpenBlas
 
 [Spark](https://spark.apache.org/downloads.html) is a distributed form of MapReduce. It ranked as the Apache Foundation's most popular open-source project last year. It's supposed to be fast, but because of some licensing issues, it doesn't run fast out of the box. 
 
@@ -13,7 +13,7 @@ According to the [Apache Foundation](https://www.apache.org/legal/resolved.html)
 
 Since native binaries cannot be "packaged" with Spark, we either have to turn them on ourselves, or run matrix operations on Spark's default Java configuration, which sadly is not performant. 
 
-That matters a lot to us, because deep learning is computationally expensive -- that's the price of its [record-breaking accuracy](../accuracy.html) on numerous [use cases](../use_cases.html). So we train neural networks in parallel on [Spark using multiple CPUs or GPUs](../spark.html), for things like scene classification.
+That matters a lot to us, because deep learning is computationally expensive -- that's the downside of its [record-breaking accuracy](../accuracy.html) on numerous [use cases](../use_cases.html). So we train neural networks in parallel on Spark using multiple CPUs or GPUs, for things like [scene classification]((../spark.html)).
 
 Instructions will vary slightly from operating system to operating system.
 
@@ -45,7 +45,7 @@ If OpenBlas does not work correctly, follow these steps:
 
 ### Windows
 
-* For OpenBlas on **Windows**, download this [file](https://www.dropbox.com/s/6p8yn3fcf230rxy/ND4J_Win64_OpenBLAS-v0.2.14.zip?dl=1). 
+* For OpenBlas on **Windows**, [download this file](https://www.dropbox.com/s/6p8yn3fcf230rxy/ND4J_Win64_OpenBLAS-v0.2.14.zip?dl=1). 
 * Extract the file to a directory such as `C:/BLAS`. 
 * Add that directory to your system's `PATH` environment variable.
 
