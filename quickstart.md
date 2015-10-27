@@ -34,8 +34,8 @@ After those installs, if you can follow these steps, you'll be up and running (W
 
 * Make sure you have not cloned other repositories locally, the main deeplearning4j repo is undergoing continuous improvements, the latest of which may not be thoroughly tested with examples.
 * Make sure all your dependencies for examples are downloaded from Maven rather found locally `( rm -rf  ls ~/.m2/repository/org/deeplearning4j)`
-* run ` mvn clean install -DskipTests -Dmaven.javadoc.skip=true` in the dl4j-0.4-examples directory to make sure it's installed correctly
-* For TSNE, run `mvn exec:java -Dexec.mainClass="org.deeplearning4j.examples.tsne.TSNEStandardExample" -Dexec.cleanupDaemonThreads=false` to run TSNE example or any other example. You might need the last argument if execution fails because Maven is not able to stop the daemon threads upon quitting.
+* run `mvn clean install -DskipTests -Dmaven.javadoc.skip=true` in the dl4j-0.4-examples directory to make sure it's installed correctly
+* For TSNE, run `mvn exec:java -Dexec.mainClass="org.deeplearning4j.examples.tsne.TSNEStandardExample" -Dexec.cleanupDaemonThreads=false` to run the TSNE example or any other example. You might need the last argument if execution fails and Maven is not able to stop the daemon threads upon quitting.
 * 1000 iterations should result in `tsne-standard-coords.csv` being placed in `dl4j-0.4-examples/target/archive-tmp/`
 
 You should get an F1 score of about 0.66, which is good for a small dataset like Iris. For a line by line walkthrough of the example, please refer to our [Iris DBN tutorial](../iris-flower-dataset-tutorial.html).
