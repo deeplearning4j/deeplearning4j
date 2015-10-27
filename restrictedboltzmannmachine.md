@@ -18,7 +18,7 @@ Contents
 
 ## <a name="define">Definition & Structure</a>
 
-Invented by Geoff Hinton, Restricted Boltzmann machines are useful for dimensionality reduction, classification, [regression](../linear-regression.html), collaborative filtering, feature learning and topic modeling. (For more concrete examples of how [neural networks](../neuralnet-overview.html) like RBMs can be employed, please see our page on [use cases](../use_cases.html)).
+Invented by Geoff Hinton, a Restricted Boltzmann machine is an algorithm useful for dimensionality reduction, classification, [regression](../linear-regression.html), collaborative filtering, feature learning and topic modeling. (For more concrete examples of how [neural networks](../neuralnet-overview.html) like RBMs can be employed, please see our page on [use cases](../use_cases.html)).
 
 Given their relative simplicity, restricted Boltzmann machines are the first neural network we'll tackle. In the paragraphs below, we describe in diagrams and plain language how they work. 
 
