@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 
 /**
  * A preprocessor to allow RNN and CNN layers to be used together<br>
@@ -60,6 +61,7 @@ public class RnnToCnnPreProcessor implements InputPreProcessor {
     public INDArray backprop(INDArray output, Layer layer) {
         //Input: 4d epsilons (CNN)
         //Output: 3d epsilons (RNN)
+        if(output.ordering() == 'f') output = Shape.toOffsetZeroCopy(output,'c');
         int[] shape = output.shape();
         int miniBatchSize = layer.getInputMiniBatchSize();
         INDArray reshaped = output.reshape(miniBatchSize,shape[0]/miniBatchSize,product);
