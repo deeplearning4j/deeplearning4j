@@ -43,6 +43,7 @@ public class TestUpdaters {
     INDArray val, gradExpected;
     String key;
 
+
 	@Before
 	public void beforeDo(){
 		gradient.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
@@ -213,7 +214,7 @@ public class TestUpdaters {
 	}
 
 	@Test
-	public void testNestorovsMomentumAfterUpdater(){
+	public void testmomentumAfterUpdaterSingleLayer(){
 		double lr = 1e-2;
 		double mu = 0.6;
 		Map<Integer,Double> momentumAfter = new HashMap<>();
@@ -224,7 +225,7 @@ public class TestUpdaters {
 		INDArray vPrev;
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-				.learningRate(lr).momentum(mu).momentumAfter(momentumAfter).iterations(iterations)
+				.learningRate(lr).momentum(mu).momentumAfter(momentumAfter).schedules(true).iterations(iterations)
 				.layer(new DenseLayer.Builder()
 						.nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.NESTEROVS).build())
 				.build();
@@ -260,6 +261,78 @@ public class TestUpdaters {
             assertEquals(momentumAfter, layer.conf().getLayer().getMomentumAfter());
         }
     }
+
+
+	@Test
+	public void testMomentumAfterMLN(){
+		double lr = 1e-2;
+		double mu = 0.6;
+		Map<Integer,Double> momentumAfter = new HashMap<>();
+		momentumAfter.put(1, 0.2);
+		int iterations = 2;
+		int nLayers = 2;
+		int[] nIns = {4,2};
+		int[] nOuts = {2,3};
+
+		Map<String, INDArray> v = new HashMap<>();
+		INDArray vPrev;
+
+		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+				.learningRate(lr).momentum(mu).momentumAfter(momentumAfter).schedules(true).iterations(iterations)
+				.list(nLayers)
+				.layer(0, new DenseLayer.Builder().nIn(nIns[0]).nOut(nOuts[0]).updater(org.deeplearning4j.nn.conf.Updater.NESTEROVS).build())
+				.layer(1, new OutputLayer.Builder().nIn(nIns[1]).nOut(nOuts[1]).updater(org.deeplearning4j.nn.conf.Updater.NESTEROVS).build())
+				.backprop(true).pretrain(false)
+				.build();
+
+		MultiLayerNetwork net = new MultiLayerNetwork(conf);
+		net.init();
+
+		Updater updater = UpdaterCreator.getUpdater(net);
+
+		Gradient g = new DefaultGradient();
+		String wKey, bKey;
+		INDArray vTmp;
+
+		for (int j=0; j < nLayers; j++){
+			wKey = String.valueOf(j) + "_" + DefaultParamInitializer.WEIGHT_KEY;
+			g.setGradientFor(wKey, weightGradient);
+			bKey = String.valueOf(j) + "_" + DefaultParamInitializer.BIAS_KEY ;
+			g.setGradientFor(bKey, biasGradient);
+		}
+
+		Gradient gDup = new DefaultGradient();
+		for (int k=0; k < nLayers; k++){
+			wKey = String.valueOf(k) + "_" + DefaultParamInitializer.WEIGHT_KEY;
+			gDup.setGradientFor(wKey, weightGradient);
+			bKey = String.valueOf(k) + "_" + DefaultParamInitializer.BIAS_KEY ;
+			gDup.setGradientFor(bKey, biasGradient);
+		}
+
+		for (int i = 0; i < 2; i++) {
+			updater.update(net, g, i);
+
+			for (Map.Entry<String, INDArray> entry : gDup.gradientForVariable().entrySet()) {
+				if(momentumAfter !=null)
+					mu = (momentumAfter.containsKey(i)) ? momentumAfter.get(i) : mu;
+				key = entry.getKey();
+				val = entry.getValue();
+				vTmp = v.get(key);
+
+				if(vTmp == null)
+					vTmp = Nd4j.zeros(val.shape());
+				vPrev = vTmp;
+				vTmp = vPrev.mul(mu).subi(val.mul(lr));
+				gradExpected = vPrev.muli(mu).addi(vTmp.mul(-mu - 1));
+				gDup.setGradientFor(key, gradExpected);
+
+				assertEquals(gradExpected, g.getGradientFor(entry.getKey()));
+				v.put(key, vTmp);
+			}
+			v =  new HashMap<>();
+			assertEquals(lr, net.getLayer(1).conf().getLayer().getLearningRate(), 1e-4);
+		}
+	}
 
 
 	@Test
@@ -334,7 +407,7 @@ public class TestUpdaters {
 	public void testNoOpUpdater(){
 		Random r = new Random(12345L);
 		double lr = 0.5;
-		
+
 		NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
 				.learningRate(lr)
 				.layer(new DenseLayer.Builder().nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.NONE).build())
@@ -356,8 +429,102 @@ public class TestUpdaters {
 
 	}
 
-    @Test
-    public void testLrScoreDecay(){
+	@Test
+	public void testLearningRateAfterSingleLayer(){
+		double lr = 1e-2;
+		Map<Integer,Double> learningRateAfter = new HashMap<>();
+		learningRateAfter.put(1, 0.2);
+		int iterations = 2;
+
+		NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+				.learningRate(lr).learningRateAfter(learningRateAfter).schedules(true).iterations(iterations)
+				.layer(new DenseLayer.Builder()
+						.nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
+				.build();
+
+		Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0);
+		Updater updater = UpdaterCreator.getUpdater(layer);
+
+		Gradient gradientDup = new DefaultGradient();
+		gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
+		gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
+
+		for (int i = 0; i < 2; i++) {
+			updater.update(layer, gradient, i);
+
+			for (Map.Entry<String, INDArray> entry : gradientDup.gradientForVariable().entrySet()) {
+				if(learningRateAfter !=null)
+					lr = (learningRateAfter.containsKey(i)) ? learningRateAfter.get(i) : lr;
+				key = entry.getKey();
+				val = entry.getValue();
+				gradExpected = val.mul(lr);
+				gradientDup.setGradientFor(key, gradExpected);
+				assertEquals(gradExpected, gradient.getGradientFor(key));
+			}
+			assertEquals(lr, layer.conf().getLayer().getLearningRate(), 1e-4);
+		}
+	}
+
+	@Test
+	public void testLearningRateAfterMLN(){
+		double lr = 1e-2;
+		Map<Integer,Double> learningRateAfter = new HashMap<>();
+		learningRateAfter.put(1, 0.2);
+		int iterations = 2;
+		int nLayers = 2;
+		int[] nIns = {4,2};
+		int[] nOuts = {2,3};
+
+		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+				.learningRate(lr).learningRateAfter(learningRateAfter).schedules(true).iterations(iterations)
+				.list(nLayers)
+				.layer(0, new DenseLayer.Builder().nIn(nIns[0]).nOut(nOuts[0]).updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
+				.layer(1, new OutputLayer.Builder().nIn(nIns[1]).nOut(nOuts[1]).updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
+				.backprop(true).pretrain(false)
+				.build();
+
+		MultiLayerNetwork net = new MultiLayerNetwork(conf);
+		net.init();
+
+		Updater updater = UpdaterCreator.getUpdater(net);
+
+		Gradient g = new DefaultGradient();
+		String wKey, bKey;
+
+		for (int j=0; j < nLayers; j++){
+			wKey = String.valueOf(j) + "_" + DefaultParamInitializer.WEIGHT_KEY;
+			g.setGradientFor(wKey, weightGradient);
+			bKey = String.valueOf(j) + "_" + DefaultParamInitializer.BIAS_KEY ;
+			g.setGradientFor(bKey, biasGradient);
+		}
+
+		Gradient gDup = new DefaultGradient();
+		for (int k=0; k < nLayers; k++){
+			wKey = String.valueOf(k) + "_" + DefaultParamInitializer.WEIGHT_KEY;
+			gDup.setGradientFor(wKey, weightGradient);
+			bKey = String.valueOf(k) + "_" + DefaultParamInitializer.BIAS_KEY ;
+			gDup.setGradientFor(bKey, biasGradient);
+		}
+
+		for (int i = 0; i < 2; i++) {
+			updater.update(net, g, i);
+
+			for (Map.Entry<String, INDArray> entry : gDup.gradientForVariable().entrySet()) {
+				if(learningRateAfter !=null)
+					lr = (learningRateAfter.containsKey(i)) ? learningRateAfter.get(i) : lr;
+				key = entry.getKey();
+				val = entry.getValue();
+				gradExpected = val.mul(lr);
+				gDup.setGradientFor(key, gradExpected);
+				assertEquals(gradExpected, g.getGradientFor(key));
+			}
+			assertEquals(lr, net.getLayer(1).conf().getLayer().getLearningRate(), 1e-4);
+		}
+	}
+
+
+	@Test
+    public void testLearningRateScoreDecay(){
         double lr = 0.01;
         double lrScoreDecay = 0.10;
         int nLayers = 2;
