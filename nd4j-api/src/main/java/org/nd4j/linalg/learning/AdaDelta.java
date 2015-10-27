@@ -22,6 +22,8 @@ public class AdaDelta implements Serializable,GradientUpdater {
     private INDArray msg;
     private INDArray msdx;
     private double rho = 0.95;
+    private double learningRate = 0.1;
+    private double momentum = 0.5;
 
     public AdaDelta(double rho) {
         this.rho = rho;

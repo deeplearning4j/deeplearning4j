@@ -24,4 +24,17 @@ public interface GradientUpdater extends Serializable {
      * @return the modified gradient
      */
     INDArray getGradient(INDArray gradient, int iteration);
+
+    /**
+     * Update learningRate
+     * @param learningRate
+     */
+    void setLearningRate(double learningRate);
+
+    /**
+     * Update momentum
+     * @param momentum
+     */
+    void setMomentum(double momentum);
+
 }

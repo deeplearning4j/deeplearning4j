@@ -10,14 +10,15 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 @Data
 @NoArgsConstructor
 public class SgdUpdater implements GradientUpdater {
-    private double lr = 1e-1;
+    private double learningRate = 1e-1;
+    private double momentum = 0.5;
 
-    public SgdUpdater(double lr) {
-        this.lr = lr;
+    public SgdUpdater(double learningRate) {
+        this.learningRate = learningRate;
     }
 
     @Override
     public INDArray getGradient(INDArray gradient, int iteration) {
-        return gradient.mul(lr);
+        return gradient.mul(learningRate);
     }
 }

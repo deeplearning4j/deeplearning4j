@@ -22,11 +22,11 @@ import java.util.Map;
 public class Nesterovs implements Serializable,GradientUpdater {
     private double momentum = 0.5;
     private INDArray v;
-    private double lr = 0.1;
-    
-    public Nesterovs(double momentum, double lr) {
+    private double learningRate = 0.1;
+
+    public Nesterovs(double momentum, double learningRate) {
         this.momentum = momentum;
-        this.lr = lr;
+        this.learningRate = learningRate;
     }
 
     public Nesterovs(double momentum) {
@@ -45,7 +45,7 @@ public class Nesterovs implements Serializable,GradientUpdater {
         if(v == null)
             v = Nd4j.zeros(gradient.shape());
         INDArray vPrev = v;
-        v = vPrev.mul(momentum).subi(gradient.mul(lr));
+        v = vPrev.mul(momentum).subi(gradient.mul(learningRate));
         //reference https://cs231n.github.io/neural-networks-3/#sgd 2nd equation
         //DL4J default is negative step function thus we flipped the signs:
         // x += mu * v_prev + (-1 - mu) * v
