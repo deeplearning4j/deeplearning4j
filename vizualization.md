@@ -7,7 +7,7 @@ layout: default
 
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
         model.init();
-        model.setListeners(Arrays.asList((IterationListener) new     ScoreIterationListener(listenerFreq)));
+        model.setListeners(Arrays.asList((IterationListener) new ScoreIterationListener(listenerFreq)));
 
 The first line above calls build on the configuration. The second passes the configuration into an instance of a MultiLayerNetwork model. The third initializes the model. The fourth sets iteration listeners, which do all kinds of neat things. 
 
@@ -18,3 +18,11 @@ A typical pattern for an iterationListener would be asking it to do something ev
         model.setListeners(Collections.singletonList((IterationListener) new ScoreIterationListener(listenerFreq)));
 
 In this line of code, the ScoreIterationListener is passed the parameter specifying a number of iterations -- let's say you specify two -- and after every two iterations, it will print out the error or cost. (The higher the frequency, the more you slow things down).
+
+## UI
+
+M deeplearning4j-ui/src/main/java/org/deeplearning4j/ui/weights/HistogramIterationListener.java 
+M deeplearning4j-ui/src/main/java/org/deeplearning4j/ui/weights/ModelAndGradient.java 
+M deeplearning4j-ui/src/main/resources/org/deeplearning4j/ui/weights/render.ftl 
+
+https://github.com/deeplearning4j/deeplearning4j/blob/9ca18d8f0b4828a55f381d50e32b6eebcb3444e0/deeplearning4j-ui/src/main/java/org/deeplearning4j/ui/weights/HistogramIterationListener.java#L35-34
