@@ -71,6 +71,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected StepFunction stepFunction;
     protected boolean useRegularization = false;
     protected boolean useDropConnect = false;
+    protected boolean useSchedules = false;
     //minimize or maximize objective
     protected boolean minimize = true;
     // Graves LSTM & RNN
@@ -271,13 +272,14 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         protected double biasInit = 0.0;
         protected Distribution dist = new NormalDistribution(1e-3,1);
         private double learningRate = 1e-1;
+        private Map<Integer, Double> learningRateAfter = new HashMap<>();
         private double lrScoreBasedDecay;
         private double momentum = 0.5;
         private Map<Integer, Double> momentumAfter = new HashMap<>();
         private double l1 = 0.0;
         private double l2 = 0.0;
         protected double dropOut = 0;
-        protected Updater updater = Updater.NONE;
+        protected Updater updater = Updater.SGD;
         private double rho;
         private double rmsDecay = 0.95;
         private double adamMeanDecay = 0.9;
@@ -289,6 +291,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private int maxNumLineSearchIterations = 5;
         private long seed = System.currentTimeMillis();
         private boolean useRegularization = false;
+        private boolean useSchedules = false;
         private OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
         @Deprecated
         private boolean constrainGradientToUnitNorm = false;
@@ -299,6 +302,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private int timeSeriesLength = 1;
         private GradientNormalization gradientNormalization = GradientNormalization.None;
         private double gradientNormalizationThreshold = 1.0;
+
 
 
         /**Deprecated.
@@ -417,6 +421,12 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+        /** Whether to use schedules, learningRateAfter and momentumAfter*/
+        public Builder schedules(boolean schedules) {
+            this.useSchedules = schedules;
+            return this;
+        }
+
         @Override
         public Builder clone() {
             try {
@@ -465,6 +475,12 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         /** Learning rate. Defaults to 1e-1*/
         public Builder learningRate(double learningRate) {
             this.learningRate = learningRate;
+            return this;
+        }
+
+        /** Learning rate schedule. Map of the iteration to the learning rate to apply at that iteration. */
+        public Builder learningRateAfter(Map<Integer, Double> learningRateAfter) {
+            this.learningRateAfter = learningRateAfter;
             return this;
         }
 
@@ -578,6 +594,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             conf.layer = layer;
             conf.numIterations = numIterations;
             conf.useRegularization = useRegularization;
+            conf.useSchedules = useSchedules;
             conf.optimizationAlgo = optimizationAlgo;
             conf.constrainGradientToUnitNorm = constrainGradientToUnitNorm;
             conf.seed = seed;
@@ -588,6 +605,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
 
             if(Double.isNaN(layer.getLearningRate())) layer.setLearningRate(learningRate);
+            if(layer.getLearningRateAfter() == null) layer.setLearningRateAfter(learningRateAfter);
             if(Double.isNaN(layer.getLrScoreBasedDecay())) layer.setLrScoreBasedDecay(lrScoreBasedDecay);
             if(Double.isNaN(layer.getL1())) layer.setL1(l1);
             if(Double.isNaN(layer.getL2())) layer.setL2(l2);

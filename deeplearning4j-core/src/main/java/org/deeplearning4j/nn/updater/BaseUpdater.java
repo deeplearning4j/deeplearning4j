@@ -31,6 +31,8 @@ public abstract class BaseUpdater implements Updater {
     public void update(Layer layer, Gradient gradient, int iteration) {
         preApply(layer, gradient, iteration);
         for (Map.Entry<String, INDArray> gradientPair : gradient.gradientForVariable().entrySet()) {
+            if(layer.conf().isUseSchedules())
+                checkSchedules(layer, iteration, gradientPair.getKey());
             GradientUpdater updater = init(gradientPair.getKey(), gradientPair.getValue(), layer);
             INDArray gradient2 = updater.getGradient(gradientPair.getValue(), iteration);
             postApply(layer, gradient2, gradientPair.getKey());
@@ -56,15 +58,32 @@ public abstract class BaseUpdater implements Updater {
             gradient.divi(layer.getInputMiniBatchSize());
         if (conf.isConstrainGradientToUnitNorm())
             gradient.divi(gradient.norm2(Integer.MAX_VALUE));
+    }
+
+    /**
+     *  Update learningRate and/or momentum if schedules exist
+     */
+    public void checkSchedules(Layer layer, int iteration, String param){
+        NeuralNetConfiguration conf = layer.conf();
+
+        if (conf.getLayer().getLearningRateAfter().containsKey(iteration)) {
+            conf.getLayer().setLearningRate(conf.getLayer().getLearningRateAfter().get(iteration));
+            updaterForVariable.remove(param);
+        }
+        if (conf.getLayer().getMomentumAfter().containsKey(iteration)) {
+            conf.getLayer().setMomentum(conf.getLayer().getMomentumAfter().get(iteration));
+            updaterForVariable.remove(param);
+        }
 
     }
 
     /**
-     * Apply gradient normalization: scale based on L2, clipping etc.
+     *  Apply gradient normalization: scale based on L2, clipping etc.
      */
     public void preApply(Layer layer, Gradient gradient, int iteration) {
+
         GradientNormalization normalization = layer.conf().getLayer().getGradientNormalization();
-        if (normalization == null || normalization == GradientNormalization.None ) return;  //no op
+        if (normalization == null || normalization == GradientNormalization.None) return;  //no op
 
         final double threshold = layer.conf().getLayer().getGradientNormalizationThreshold();
 
@@ -128,6 +147,7 @@ public abstract class BaseUpdater implements Updater {
                 throw new RuntimeException("Unknown (or not implemented) gradient normalization strategy: " + normalization);
         }
     }
+
 
     public abstract void init();
 
