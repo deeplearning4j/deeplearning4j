@@ -9,9 +9,9 @@ layout: default
 
 This step-by-step guide shows you how to enable native binaries for matrix operations in Spark. Spark can't ship with them, because Spark is licensed under Apache 2.0, while the native binaries of OpenBlas are LGPL. 
 
-According to the Apache Foundation, "LGPL-licensed works must not be included in Apache products" because of "the restrictions it places on larger works, violating the third license criterion." (https://www.apache.org/legal/resolved.html)
+According to the [Apache Foundation](https://www.apache.org/legal/resolved.html), "LGPL-licensed works must not be included in Apache products" because of "the restrictions it places on larger works, violating the third license criterion."
 
-Since native binaries cannot be "packaged" with Spark, we either have to turn them on ourselves, or run matrix operations on Spark's default Java configuration, which is not performant. 
+Since native binaries cannot be "packaged" with Spark, we either have to turn them on ourselves, or run matrix operations on Spark's default Java configuration, which sadly is not performant. 
 
 Instructions will vary slightly from operating system to operating system.
 
