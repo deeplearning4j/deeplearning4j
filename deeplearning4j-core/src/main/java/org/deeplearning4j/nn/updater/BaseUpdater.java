@@ -29,14 +29,22 @@ public abstract class BaseUpdater implements Updater {
 
     @Override
     public void update(Layer layer, Gradient gradient, int iteration) {
+        String paramName;
+        INDArray paramVal, gradient2;
+        GradientUpdater updater;
+
         preApply(layer, gradient, iteration);
         for (Map.Entry<String, INDArray> gradientPair : gradient.gradientForVariable().entrySet()) {
+            paramName = gradientPair.getKey();
+            paramVal = gradientPair.getValue();
+
             if(layer.conf().isUseSchedules())
-                checkSchedules(layer, iteration, gradientPair.getKey());
-            GradientUpdater updater = init(gradientPair.getKey(), gradientPair.getValue(), layer);
-            INDArray gradient2 = updater.getGradient(gradientPair.getValue(), iteration);
-            postApply(layer, gradient2, gradientPair.getKey());
-            gradient.setGradientFor(gradientPair.getKey(), gradient2);
+                checkSchedules(layer, iteration, paramName);
+
+            updater = init(paramName, paramVal, layer);
+            gradient2 = updater.getGradient(paramVal, iteration);
+            postApply(layer, gradient2, paramName);
+            gradient.setGradientFor(paramName, gradient2);
         }
     }
 
