@@ -24,18 +24,13 @@ public class NoOpUpdater extends BaseUpdater {
 
 	private static class NoOpGradientUpdater implements GradientUpdater {
 		@Override
+		public void update(Object... args) {
+
+		}
+
+		@Override
 		public INDArray getGradient(INDArray gradient, int iteration) {
 			return gradient;
-		}
-
-		@Override
-		public void setLearningRate(double learningRate) {
-			//no op
-		}
-
-		@Override
-		public void setMomentum(double momentum) {
-			//no op
 		}
 
 	}
