@@ -51,7 +51,11 @@ Below is an example of the CSV transform language in action from the command lin
 
 ## <a name="tutorial">Setting Up Canova</a>
 
-You'll need to do a *git clone* from [Canova's Github repo](https://github.com/deeplearning4j/Canova), and then build the dependencies with [Maven](http://nd4j.org/getstarted.html#maven). 
+Search for [canova](https://search.maven.org/#search%7Cga%7C1%7CCanova) on Maven Central to get a list of JARs you can use.
+
+Add the dependency information into your pom.xml.
+
+<!-- You'll need to do a *git clone* from [Canova's Github repo](https://github.com/deeplearning4j/Canova), and then build the dependencies with [Maven](http://nd4j.org/getstarted.html#maven). 
 
       mvn -DskipTests=true -Dmaven.javadoc.skip=true install
 
@@ -61,7 +65,7 @@ Then you'll want to build the stand-alone Canova jar to run the CLI from termina
 
       cd canova-cli/
       mvn -DskipTests=true -Dmaven.javadoc.skip=true package
-
+-->
 ## Create the Configuration File
 
 You'll need a file to tell the vectorization engine what to do. Create a text file containing the following lines in the *canova-cli* directory (you might name the file *vec_conf.txt*):
