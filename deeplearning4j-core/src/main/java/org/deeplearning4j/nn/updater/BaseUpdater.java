@@ -77,12 +77,12 @@ public abstract class BaseUpdater implements Updater {
         if (conf.getLayer().getLearningRateAfter().containsKey(iteration)) {
             conf.getLayer().setLearningRate(conf.getLayer().getLearningRateAfter().get(iteration));
             if(updaterForVariable.get(param) != null)
-                updaterForVariable.get(param).setLearningRate(conf.getLayer().getLearningRateAfter().get(iteration));
+                updaterForVariable.get(param).update(conf.getLayer().getLearningRateAfter().get(iteration));
         }
         if (conf.getLayer().getMomentumAfter().containsKey(iteration)) {
             conf.getLayer().setMomentum(conf.getLayer().getMomentumAfter().get(iteration));
             if(updaterForVariable.get(param) != null)
-                updaterForVariable.get(param).setMomentum(conf.getLayer().getMomentumAfter().get(iteration));
+                updaterForVariable.get(param).update(null,conf.getLayer().getMomentumAfter().get(iteration));
         }
 
     }
