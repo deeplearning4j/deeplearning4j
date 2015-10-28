@@ -17,7 +17,7 @@ Contents
 * <a href="#trouble">Troubleshooting & Tuning Word2Vec</a>
 * <a href="#use">Word2vec Use Cases</a>
 * <a href="#foreign">Foreign Languages</a>
-* <a href="#glove">GloVe: Global Vectors</a>
+* <a href="#glove">GloVe (Global Vectors) & Doc2Vec</a>
 
 ##<a name="intro">Introduction to Word2Vec</a>
 
@@ -422,14 +422,14 @@ Loading and saving GloVe models to word2vec can be done like so:
 
         WordVectors wordVectors = WordVectorSerializer.loadTxtVectors(new File("glove.6B.50d.txt"));
 
-### Resources
+### Doc2vec & Other Resources
 
+* [Doc2vec, or Paragraph Vectors, With Deeplearning4j](../doc2vec.html)
 * [Quora: How Does Word2vec Work?](http://www.quora.com/How-does-word2vec-work)
 * [Quora: What Are Some Interesting Word2Vec Results?](http://www.quora.com/Word2vec/What-are-some-interesting-Word2Vec-results/answer/Omer-Levy)
 * [Word2Vec: an introduction](http://www.folgertkarsdorp.nl/word2vec-an-introduction/); Folgert Karsdorp
 * [Mikolov's Original Word2vec Code @Google](https://code.google.com/p/word2vec/)
 * [word2vec Explained: Deriving Mikolov et al.’s Negative-Sampling Word-Embedding Method](http://arxiv.org/pdf/1402.3722v1.pdf); Yoav Goldberg and Omer Levy
-* [Doc2vec, or Paragraph Vectors, With Deeplearning4j](../doc2vec.html)
 
 ### <a name="doctorow">Word2Vec in Literature</a>
 
