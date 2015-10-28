@@ -917,6 +917,11 @@ public class RNTN implements Layer {
         computeGradientAndScore();
     }
 
+    @Override
+    public void applyLearningRateScoreDecay() {
+
+    }
+
     public int getNumParameters() {
         if(numParameters < 0) {
             int totalSize = 0;

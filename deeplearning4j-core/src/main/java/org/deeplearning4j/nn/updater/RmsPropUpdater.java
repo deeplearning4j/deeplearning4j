@@ -17,9 +17,9 @@ public class RmsPropUpdater extends BaseUpdater {
 
     @Override
     public GradientUpdater init(String variable, INDArray gradient, Layer layer) {
-        org.nd4j.linalg.learning.RmsPropUpdater rmsprop = (org.nd4j.linalg.learning.RmsPropUpdater) updaterForVariable.get(variable);
+        org.nd4j.linalg.learning.RmsProp rmsprop = (org.nd4j.linalg.learning.RmsProp) updaterForVariable.get(variable);
         if(rmsprop == null) {
-            rmsprop = new org.nd4j.linalg.learning.RmsPropUpdater(layer.conf().getLayer().getLearningRate(), layer.conf().getLayer().getRmsDecay());
+            rmsprop = new org.nd4j.linalg.learning.RmsProp(layer.conf().getLayer().getLearningRate(), layer.conf().getLayer().getRmsDecay());
             updaterForVariable.put(variable,rmsprop);
         }
 
