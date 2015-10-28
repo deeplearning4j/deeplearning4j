@@ -43,6 +43,7 @@ public class TestUpdaters {
     INDArray val, gradExpected;
     String key;
 
+
 	@Before
 	public void beforeDo(){
 		gradient.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
@@ -139,11 +140,11 @@ public class TestUpdaters {
         INDArray m, v;
         double lr = 0.01;
 		int iteration = 0;
-		double beta1 = 0.9; // TODO allow passing in betas and update test
-		double beta2 = 0.999;
+		double beta1 = 0.8;
+		double beta2 = 0.888;
 
 		NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-				.learningRate(lr).iterations(iteration)
+				.learningRate(lr).iterations(iteration).adamMeanDecay(beta1).adamVarDecay(beta2)
 				.layer(new DenseLayer.Builder().nIn(nIn)
 						.nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.ADAM).build())
 				.build();
@@ -155,7 +156,7 @@ public class TestUpdaters {
 
 		double beta1t = FastMath.pow(beta1, iteration);
 		double beta2t = FastMath.pow(beta2, iteration);
-		double alphat = lr * FastMath.sqrt(((1-beta2t)/(1-beta1t)));
+		double alphat = lr * FastMath.sqrt(1-beta2t)/(1-beta1t);
 
         Gradient gradientDup = new DefaultGradient();
         gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
@@ -211,55 +212,6 @@ public class TestUpdaters {
 
 		assertEquals(mu, layer.conf().getLayer().getMomentum(), 1e-4);
 	}
-
-	@Test
-	public void testNestorovsMomentumAfterUpdater(){
-		double lr = 1e-2;
-		double mu = 0.6;
-		Map<Integer,Double> momentumAfter = new HashMap<>();
-		momentumAfter.put(1, 0.2);
-		int iterations = 2;
-		Map<String, INDArray> v = new HashMap<>();
-
-		INDArray vPrev;
-
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-				.learningRate(lr).momentum(mu).momentumAfter(momentumAfter).iterations(iterations)
-				.layer(new DenseLayer.Builder()
-						.nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.NESTEROVS).build())
-				.build();
-
-		Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0);
-		Updater updater = UpdaterCreator.getUpdater(layer);
-
-        Gradient gradientDup = new DefaultGradient();
-        gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
-        gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
-
-        for (int i = 0; i < 2; i++) {
-            updater.update(layer, gradient, i);
-
-            for (Map.Entry<String, INDArray> entry : gradientDup.gradientForVariable().entrySet()) {
-				if(momentumAfter !=null)
-					mu = (momentumAfter.containsKey(i)) ? momentumAfter.get(i) : mu;
-				key = entry.getKey();
-				val = entry.getValue();
-				INDArray vTmp = v.get(key);
-
-				if(vTmp == null)
-                    vTmp = Nd4j.zeros(val.shape());
-                vPrev = vTmp;
-                vTmp = vPrev.mul(mu).subi(val.mul(lr));
-                gradExpected = vPrev.muli(mu).addi(vTmp.mul(-mu - 1));
-                gradientDup.setGradientFor(key, gradExpected);
-
-                assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
-				v.put(key, vTmp);
-            }
-
-            assertEquals(momentumAfter, layer.conf().getLayer().getMomentumAfter());
-        }
-    }
 
 
 	@Test
@@ -334,7 +286,7 @@ public class TestUpdaters {
 	public void testNoOpUpdater(){
 		Random r = new Random(12345L);
 		double lr = 0.5;
-		
+
 		NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
 				.learningRate(lr)
 				.layer(new DenseLayer.Builder().nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.NONE).build())
@@ -356,17 +308,19 @@ public class TestUpdaters {
 
 	}
 
-    @Test
-    public void testLrScoreDecay(){
+
+
+	@Test
+    public void testLearningRateScoreDecay(){
         double lr = 0.01;
-        double lrScoreDecay = 10;
+        double lrScoreDecay = 0.10;
         int nLayers = 2;
         int[] nIns = {4,2};
         int[] nOuts = {2,3};
 		int oldScore = 1;
 		int newScore = 1;
-		int iteration = 1;
-        INDArray gradient = Nd4j.ones(nIns[0],nOuts[0]);
+		int iteration = 3;
+        INDArray gradientW = Nd4j.ones(nIns[0],nOuts[0]);
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .learningRate(lr).learningRateScoreBasedDecayRate(lrScoreDecay)
@@ -380,9 +334,10 @@ public class TestUpdaters {
         net.init();
 
 		ConvexOptimizer opt = new StochasticGradientDescent(net.getDefaultConfiguration(), new NegativeDefaultStepFunction(), null, net);
-        opt.checkTerminalConditions(gradient, oldScore, newScore, iteration);
+        opt.checkTerminalConditions(gradientW, oldScore, newScore, iteration);
 		assertEquals(lrScoreDecay, net.getLayer(0).conf().getLayer().getLrScoreBasedDecay(), 1e-4);
-		assertEquals(lr/(lrScoreDecay + Nd4j.EPS_THRESHOLD), opt.getConf().getLayer().getLearningRate(), 1e-4);
+		assertEquals(lr*(lrScoreDecay + Nd4j.EPS_THRESHOLD), net.getLayer(0).conf().getLayer().getLearningRate(), 1e-4);
+
 	}
 
     @Test

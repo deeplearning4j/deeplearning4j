@@ -120,8 +120,10 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
     @Override
     public Pair<Gradient,Double> gradientAndScore() {
+        oldScore = score;
         model.computeGradientAndScore();
         Pair<Gradient,Double> pair = model.gradientAndScore();
+        score = pair.getSecond();
         updateGradientAccordingToParams(pair.getFirst(), model, model.batchSize());
         return pair;
     }
@@ -139,7 +141,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         INDArray parameters = null;
         model.validateInput();
         Pair<Gradient,Double> pair = gradientAndScore();
-        score = pair.getSecond();
+//        score = pair.getSecond();
         if(searchState.isEmpty()){
         	searchState.put(GRADIENT_KEY, pair.getFirst().gradient());
         	setupSearchState(pair);		//Only do this once
@@ -182,13 +184,10 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
                 log.debug("Step size returned by line search is 0.0.");
             }
 
-            //record old score for deltas and other termination conditions
-            oldScore = score;
             pair = gradientAndScore();
 
             //updates searchDirection
             postStep(pair.getFirst().gradient());
-            score = pair.getSecond();
 
             //invoke listeners for debugging
             for(IterationListener listener : iterationListeners)
@@ -211,7 +210,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             if(condition.terminate(score,oldScore,new Object[]{gradient})){
                 log.debug("Hit termination condition on iteration {}: score={}, oldScore={}, condition={}", i, score, oldScore, condition);
                 if(condition instanceof EpsTermination && !Double.isNaN(conf.getLayer().getLrScoreBasedDecay())) {
-                    conf.getLayer().setLearningRate(conf.getLayer().getLearningRate() / (conf.getLayer().getLrScoreBasedDecay() + Nd4j.EPS_THRESHOLD));
+                    model.applyLearningRateScoreDecay();
                 }
                 return true;
             }

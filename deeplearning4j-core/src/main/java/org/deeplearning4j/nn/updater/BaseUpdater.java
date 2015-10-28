@@ -29,12 +29,22 @@ public abstract class BaseUpdater implements Updater {
 
     @Override
     public void update(Layer layer, Gradient gradient, int iteration) {
+        String paramName;
+        INDArray paramVal, gradient2;
+        GradientUpdater updater;
+
         preApply(layer, gradient, iteration);
         for (Map.Entry<String, INDArray> gradientPair : gradient.gradientForVariable().entrySet()) {
-            GradientUpdater updater = init(gradientPair.getKey(), gradientPair.getValue(), layer);
-            INDArray gradient2 = updater.getGradient(gradientPair.getValue(), iteration);
-            postApply(layer, gradient2, gradientPair.getKey());
-            gradient.setGradientFor(gradientPair.getKey(), gradient2);
+            paramName = gradientPair.getKey();
+            paramVal = gradientPair.getValue();
+
+            if(layer.conf().isUseSchedules())
+                checkSchedules(layer, iteration, paramName);
+
+            updater = init(paramName, paramVal, layer);
+            gradient2 = updater.getGradient(paramVal, iteration);
+            postApply(layer, gradient2, paramName);
+            gradient.setGradientFor(paramName, gradient2);
         }
     }
 
@@ -56,15 +66,39 @@ public abstract class BaseUpdater implements Updater {
             gradient.divi(layer.getInputMiniBatchSize());
         if (conf.isConstrainGradientToUnitNorm())
             gradient.divi(gradient.norm2(Integer.MAX_VALUE));
+    }
+
+    /**
+     *  Update learningRate and/or momentum if schedules exist
+     */
+    public void checkSchedules(Layer layer, int iteration, String param){
+        NeuralNetConfiguration conf = layer.conf();
+
+        if (conf.getLayer().getLearningRateAfter().containsKey(iteration)) {
+            conf.getLayer().setLearningRate(conf.getLayer().getLearningRateAfter().get(iteration));
+            if(updaterForVariable.get(param) != null)
+                updaterForVariable.get(param).update(conf.getLayer().getLearningRateAfter().get(iteration));
+        }
+        if (conf.getLayer().getMomentumAfter().containsKey(iteration)) {
+            conf.getLayer().setMomentum(conf.getLayer().getMomentumAfter().get(iteration));
+            if(updaterForVariable.get(param) != null)
+                updaterForVariable.get(param).update(conf.getLayer().getLearningRate(), conf.getLayer().getMomentumAfter().get(iteration));
+        }
 
     }
 
     /**
-     * Apply gradient normalization: scale based on L2, clipping etc.
+     *  Apply gradient normalization: scale based on L2, clipping etc.
+     *  RenormalizeL2PerLayer: divide all layer gradients by L2 to rescale
+     *  RenormalizeL2PerParamType: divide each parameter type gradient in a layer by L2 to rescale
+     *  ClipElementWiseAbsoluteValue: clip gradients per-element
+     *  ClipL2PerLayer: same as RenormalizeL2PerLayer but limited by gradient L2 norm for the layer meeting a threshold
+     *  ClipL2PerParamType: same as RenormalizeL2PerParamType but limited by gradient L2 norm for each parameter type in a layer meeting a threshold
      */
     public void preApply(Layer layer, Gradient gradient, int iteration) {
+
         GradientNormalization normalization = layer.conf().getLayer().getGradientNormalization();
-        if (normalization == null || normalization == GradientNormalization.None ) return;  //no op
+        if (normalization == null || normalization == GradientNormalization.None) return;  //no op
 
         final double threshold = layer.conf().getLayer().getGradientNormalizationThreshold();
 
@@ -128,6 +162,7 @@ public abstract class BaseUpdater implements Updater {
                 throw new RuntimeException("Unknown (or not implemented) gradient normalization strategy: " + normalization);
         }
     }
+
 
     public abstract void init();
 
