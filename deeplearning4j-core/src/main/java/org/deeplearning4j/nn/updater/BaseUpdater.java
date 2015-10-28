@@ -89,6 +89,11 @@ public abstract class BaseUpdater implements Updater {
 
     /**
      *  Apply gradient normalization: scale based on L2, clipping etc.
+     *  RenormalizeL2PerLayer: divide all layer gradients by L2 to rescale
+     *  RenormalizeL2PerParamType: divide each parameter type gradient in a layer by L2 to rescale
+     *  ClipElementWiseAbsoluteValue: clip gradients per-element
+     *  ClipL2PerLayer: same as RenormalizeL2PerLayer but limited by gradient L2 norm for the layer meeting a threshold
+     *  ClipL2PerParamType: same as RenormalizeL2PerParamType but limited by gradient L2 norm for each parameter type in a layer meeting a threshold
      */
     public void preApply(Layer layer, Gradient gradient, int iteration) {
 
