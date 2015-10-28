@@ -21,31 +21,28 @@ import java.util.Map;
 @NoArgsConstructor
 public class Nesterovs implements Serializable,GradientUpdater {
     private double momentum = 0.5;
-    protected Map<Integer,Double> momentumAfter = new HashMap<>();
     private INDArray v;
-    private double lr = 0.1;
+    private double learningRate = 0.1;
 
-
-    public Nesterovs(double momentum, Map<Integer,Double> momentumAfter, double lr) {
+    public Nesterovs(double momentum, double learningRate) {
         this.momentum = momentum;
-        this.momentumAfter = momentumAfter;
-        this.lr = lr;
-    }
-
-    public Nesterovs(double momentum, double lr) {
-        this.momentum = momentum;
-        this.lr = lr;
-    }
-
-    public Nesterovs(double momentum, Map<Integer,Double> momentumAfter) {
-        this.momentum = momentum;
-        this.momentumAfter = momentumAfter;
+        this.learningRate = learningRate;
     }
 
     public Nesterovs(double momentum) {
         this.momentum = momentum;
 
     }
+
+    @Override
+    public void update(Object... args) {
+        if(args.length > 0) {
+            learningRate = (Double) args[0];
+            momentum = (Double) args[1];
+        }
+
+    }
+
 
     /**
      * Get the nesterov update
@@ -57,10 +54,8 @@ public class Nesterovs implements Serializable,GradientUpdater {
     public INDArray getGradient(INDArray gradient, int iteration) {
         if(v == null)
             v = Nd4j.zeros(gradient.shape());
-        if(momentumAfter !=null)
-            momentum = (momentumAfter.containsKey(iteration)) ? momentumAfter.get(iteration) : momentum;
         INDArray vPrev = v;
-        v = vPrev.mul(momentum).subi(gradient.mul(lr));
+        v = vPrev.mul(momentum).subi(gradient.mul(learningRate));
         //reference https://cs231n.github.io/neural-networks-3/#sgd 2nd equation
         //DL4J default is negative step function thus we flipped the signs:
         // x += mu * v_prev + (-1 - mu) * v

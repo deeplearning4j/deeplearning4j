@@ -45,7 +45,7 @@ public class AdaGrad implements Serializable,GradientUpdater {
     //protected double squaredGradientSum = 0;
     public INDArray historicalGradient;
     public int[] shape;
-    protected double masterStepSize = 1e-1; // learning rate
+    protected double learningRate = 1e-1; // learning rate
     protected int numIterations = 0;
     private double epsilon = 1e-8;
 
@@ -57,7 +57,7 @@ public class AdaGrad implements Serializable,GradientUpdater {
      */
     public AdaGrad(int rows, int cols, double learningRate) {
         this.shape = new int[]{rows, cols};
-        this.masterStepSize = learningRate;
+        this.learningRate = learningRate;
     }
 
     public AdaGrad(int rows, int cols){
@@ -66,11 +66,18 @@ public class AdaGrad implements Serializable,GradientUpdater {
 
     public AdaGrad(int[] shape, double learningRate) {
         this.shape = shape;
-        this.masterStepSize = learningRate;
+        this.learningRate = learningRate;
     }
 
     public AdaGrad(double learningRate) {
-        this.masterStepSize = learningRate;
+        this.learningRate = learningRate;
+    }
+
+    @Override
+    public void update(Object... args) {
+        if(args.length > 0) {
+            learningRate = (Double) args[0];
+        }
     }
 
     /**
@@ -90,7 +97,7 @@ public class AdaGrad implements Serializable,GradientUpdater {
 
         INDArray sqrtHistory = sqrt(historicalGradient.add(epsilon));
         // lr * gradient / sqrt(sumSquaredGradients + 1e-8)
-        INDArray ret = sqrtHistory.rdivi(masterStepSize).muli(gradient);
+        INDArray ret = sqrtHistory.rdivi(learningRate).muli(gradient);
         numIterations++;
         return ret;
     }
@@ -103,7 +110,7 @@ public class AdaGrad implements Serializable,GradientUpdater {
             }
 
         double sqrtHistory = !historicalInitialized ? Math.sqrt(historicalGradient.getDouble(column)) : historicalGradient.getDouble(column);
-        double learningRates = masterStepSize / (sqrtHistory + epsilon);
+        double learningRates = learningRate / (sqrtHistory + epsilon);
         double adjustedGradient = gradient * (learningRates);
 
         historicalGradient.putScalar(column, historicalGradient.getDouble(column) + gradient * gradient);
@@ -127,7 +134,7 @@ public class AdaGrad implements Serializable,GradientUpdater {
             sqrtHistory = sqrt(historicalGradient);
         else
             sqrtHistory = !historicalInitialized ? sqrt(historicalGradient.slice(slice)) : historicalGradient;
-        INDArray learningRates = sqrtHistory.add(epsilon).rdivi(masterStepSize);
+        INDArray learningRates = sqrtHistory.add(epsilon).rdivi(learningRate);
         gradient.muli(learningRates);
 
         this.historicalGradient.slice(slice).addi(gradient.mul(gradient));
@@ -146,14 +153,14 @@ public class AdaGrad implements Serializable,GradientUpdater {
             //grab only the needed elements
             INDArray slice = historicalGradient.slice(index).dup();
             a.historicalGradient = slice;
-            a.setMasterStepSize(masterStepSize);
+            a.setLearningRate(learningRate);
             return a;
         } else {
             AdaGrad a = new AdaGrad(1, 1);
             //grab only the needed elements
             INDArray slice = Nd4j.scalar(historicalGradient.getDouble(index));
             a.historicalGradient = slice;
-            a.setMasterStepSize(masterStepSize);
+            a.setLearningRate(learningRate);
             return a;
         }
     }

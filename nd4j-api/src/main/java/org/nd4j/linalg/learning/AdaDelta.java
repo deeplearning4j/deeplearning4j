@@ -23,8 +23,14 @@ public class AdaDelta implements Serializable,GradientUpdater {
     private INDArray msdx;
     private double rho = 0.95;
 
+
     public AdaDelta(double rho) {
         this.rho = rho;
+    }
+
+    @Override
+    public void update(Object... args) {
+        //no op
     }
 
     /**

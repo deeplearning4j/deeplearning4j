@@ -18,15 +18,22 @@ import org.nd4j.linalg.ops.transforms.Transforms;
  */
 @Data
 @NoArgsConstructor
-public class RmsPropUpdater implements GradientUpdater {
+public class RmsProp implements GradientUpdater {
     private INDArray lastGradient;
-    private double rmsDecay = 0.5;
-    private double lr = 1e-1;
+    private double rmsDecay = 0.95;
+    private double learningRate = 1e-1;
     private double epsilon = 1e-8;
 
-    public RmsPropUpdater(double lr, double rmsDecay){
-    	this.lr = lr;
+    public RmsProp(double learningRate, double rmsDecay){
+    	this.learningRate = learningRate;
     	this.rmsDecay = rmsDecay;
+    }
+
+    @Override
+    public void update(Object... args) {
+        if(args.length > 0) {
+            learningRate = (Double) args[0];
+        }
     }
 
     @Override
@@ -35,7 +42,7 @@ public class RmsPropUpdater implements GradientUpdater {
             lastGradient = Nd4j.zeros(gradient.shape());
         lastGradient.muli(rmsDecay).addi(gradient.mul(gradient).muli(1 - rmsDecay));
         // lr * gradient / sqrt(cache + 1e-8)
-        INDArray ret = gradient.mul(lr).divi(Transforms.sqrt(lastGradient.add(epsilon)));
+        INDArray ret = gradient.mul(learningRate).divi(Transforms.sqrt(lastGradient.add(epsilon)));
         
         return ret;
     }
