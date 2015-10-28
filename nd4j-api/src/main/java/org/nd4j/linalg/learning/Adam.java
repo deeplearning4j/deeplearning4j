@@ -44,6 +44,13 @@ public class Adam implements Serializable,GradientUpdater {
         this.learningRate = alpha;
     }
 
+    @Override
+    public void update(Object... args) {
+        if(args.length > 0) {
+           learningRate = (Double) args[0];
+        }
+    }
+
     /**Calculate the update based on the given gradient
      * @param gradient the gradient to get the update for
      * @param iteration
@@ -69,6 +76,7 @@ public class Adam implements Serializable,GradientUpdater {
         INDArray ret = m.mul(alphat).divi(sqrtV);
         return ret;
     }
+
 
 
 }

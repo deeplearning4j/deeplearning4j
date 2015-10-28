@@ -34,6 +34,16 @@ public class Nesterovs implements Serializable,GradientUpdater {
 
     }
 
+    @Override
+    public void update(Object... args) {
+        if(args.length > 0) {
+            learningRate = (Double) args[0];
+            momentum = (Double) args[1];
+        }
+
+    }
+
+
     /**
      * Get the nesterov update
      * @param gradient the gradient to get the update for

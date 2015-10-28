@@ -48,7 +48,6 @@ public class AdaGrad implements Serializable,GradientUpdater {
     protected double learningRate = 1e-1; // learning rate
     protected int numIterations = 0;
     private double epsilon = 1e-8;
-    private double momentum = 0.5; //not used
 
     /**
      *
@@ -72,6 +71,13 @@ public class AdaGrad implements Serializable,GradientUpdater {
 
     public AdaGrad(double learningRate) {
         this.learningRate = learningRate;
+    }
+
+    @Override
+    public void update(Object... args) {
+        if(args.length > 0) {
+            learningRate = (Double) args[0];
+        }
     }
 
     /**

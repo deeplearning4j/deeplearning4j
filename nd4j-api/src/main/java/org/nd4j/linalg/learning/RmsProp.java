@@ -23,11 +23,17 @@ public class RmsProp implements GradientUpdater {
     private double rmsDecay = 0.95;
     private double learningRate = 1e-1;
     private double epsilon = 1e-8;
-    private double momentum = 0.5; //not used
 
     public RmsProp(double learningRate, double rmsDecay){
     	this.learningRate = learningRate;
     	this.rmsDecay = rmsDecay;
+    }
+
+    @Override
+    public void update(Object... args) {
+        if(args.length > 0) {
+            learningRate = (Double) args[0];
+        }
     }
 
     @Override

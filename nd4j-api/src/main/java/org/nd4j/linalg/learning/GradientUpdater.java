@@ -17,6 +17,12 @@ public interface GradientUpdater extends Serializable {
 
 
     /**
+     * update(learningRate,momentum)
+     * @param args
+     */
+    void update(Object...args);
+
+    /**
      * Modify the gradient
      * to be an update
      * @param gradient the gradient to modify
@@ -25,16 +31,5 @@ public interface GradientUpdater extends Serializable {
      */
     INDArray getGradient(INDArray gradient, int iteration);
 
-    /**
-     * Update learningRate
-     * @param learningRate
-     */
-    void setLearningRate(double learningRate);
-
-    /**
-     * Update momentum
-     * @param momentum
-     */
-    void setMomentum(double momentum);
 
 }

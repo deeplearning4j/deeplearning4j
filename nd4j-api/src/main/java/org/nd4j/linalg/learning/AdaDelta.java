@@ -22,11 +22,15 @@ public class AdaDelta implements Serializable,GradientUpdater {
     private INDArray msg;
     private INDArray msdx;
     private double rho = 0.95;
-    private double learningRate = 0.1; //not used
-    private double momentum = 0.5; //not used
+
 
     public AdaDelta(double rho) {
         this.rho = rho;
+    }
+
+    @Override
+    public void update(Object... args) {
+        //no op
     }
 
     /**
