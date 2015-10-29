@@ -5,7 +5,7 @@ layout: ja-default
 
 # Word2Vec
 
-コンテンツ
+コンテンツ ("日本語サイトは準備中です。英語サイトをご覧ください"。[English version](../word2vec.html))
 
 * <a href="#intro">Word2Vec入門</a>
 * <a href="#anatomy">Word2vecの構造</a>
