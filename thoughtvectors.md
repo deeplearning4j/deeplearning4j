@@ -9,11 +9,11 @@ layout: default
 
 A thought vector is like a [*word vector*](http://deeplearning4j.org/word2vec.html#embed), which is typically a vector of 300-500 numbers that represent a word. A word vector represents a word’s meaning as it relates to other words (its context) with a single column of numbers. 
 
-That is, the word is embedded in a vector space using a shallow neural network like [word2vec](http://deeplearning4j.org/word2vec.html), which leans to generate the word's context through repeated guesses. 
+That is, the word is embedded in a vector space using a shallow neural network like [word2vec](http://deeplearning4j.org/word2vec.html), which learns to generate the word's context through repeated guesses. 
 
-A thought vector, therefore, is a vectorized thought, and the vector represents one thought’s relations to others. Just as a words are linked by grammar (a sentence is just a path drawn across words), so thoughts are linked by a chain of reasoning, a logical path of sorts. 
+A thought vector, therefore, is a vectorized thought, and the vector represents one thought’s relations to others. A thought vector is trained to generate a thought's context. Just as a words are linked by grammar (a sentence is just a path drawn across words), so thoughts are linked by a chain of reasoning, a logical path of sorts. 
 
-So the ability to represent any thought in its relation to others might be called the artificial construction of common sense. Given one thought, a neural network might predict the thoughts that are likely to follow. Conversation as search. 
+So training an algorithm to represent any thought in its relation to others might be called the artificial construction of common sense. Given one thought, a neural network might predict the thoughts that are likely to follow, much like [recurrent neural networks](http://deeplearning4j.org/recurrentnetwork) do with characters and words. Conversation as search. 
 
 Hinton, in a 2015 [speech to the Royal Society in London](https://www.youtube.com/watch?v=IcOMKXAw5VA), said this: 
 
