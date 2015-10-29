@@ -201,15 +201,15 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                 if (numPossibleLabels < 1)
                     throw new IllegalStateException("Number of possible labels invalid, must be >= 1");
                 if (regression) {
-                    label = Nd4j.scalar(Double.valueOf(current.toString()));
+                    label = Nd4j.scalar(current.toDouble());
                 } else {
-                    int curr = Double.valueOf(current.toString()).intValue();
+                    int curr = current.toInt();
                     if (curr >= numPossibleLabels)
                         curr--;
                     label = FeatureUtil.toOutcomeVector(curr, numPossibleLabels);
                 }
             } else {
-                featureVector.putScalar(j, Double.valueOf(current.toString()));
+                featureVector.putScalar(j, current.toDouble());
             }
         }
 
