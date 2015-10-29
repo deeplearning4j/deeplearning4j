@@ -5,7 +5,7 @@ layout: default
 
 # Thought Vectors, Deep Learning and NLP
 
-“Thought vector” is a term popularized by Geoffrey Hinton, the prominent deep-learning researcher now at Google, which is using [vectors based on natural language](http://www.bloomberg.com/news/articles/2015-10-26/google-turning-its-lucrative-web-search-over-to-ai-machines) already to improve its search results. 
+“Thought vector” is a term popularized by Geoffrey Hinton, the prominent deep-learning researcher now at Google, which is using [vectors based on natural language](http://www.bloomberg.com/news/articles/2015-10-26/google-turning-its-lucrative-web-search-over-to-ai-machines) to improve its search results. 
 
 A thought vector is like a [*word vector*](http://deeplearning4j.org/word2vec.html#embed), which is typically a vector of 300-500 numbers that represent a word. A word vector represents a word’s meaning as it relates to other words (its context) with a single column of numbers. 
 
