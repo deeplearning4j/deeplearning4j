@@ -71,7 +71,6 @@ public class WordVectorsImpl implements WordVectors {
         for(String s : negative)
             words.addi(lookupTable.vector(s).mul(-1));
 
-
         if(lookupTable() instanceof InMemoryLookupTable) {
             InMemoryLookupTable l = (InMemoryLookupTable) lookupTable();
             INDArray syn0 = l.getSyn0();
@@ -194,7 +193,9 @@ public class WordVectorsImpl implements WordVectors {
             //there will be a redundant word
             int end = top;
             for(int i = 0; i < end; i++) {
-                String add = vocab().wordAtIndex(sort.getInt(i));
+                VocabCache vocabCache = vocab();
+                int s = sort.getInt(0, i);
+                String add = vocabCache.wordAtIndex(s);
                 if(add == null || add.equals("UNK") || add.equals("STOP")) {
                     end++;
                     if(end >= sort.length())
@@ -203,7 +204,7 @@ public class WordVectorsImpl implements WordVectors {
                 }
 
 
-                ret.add(vocab().wordAtIndex(sort.getInt(i)));
+                ret.add(vocabCache.wordAtIndex(s));
             }
 
 
@@ -402,6 +403,7 @@ public class WordVectorsImpl implements WordVectors {
         }
 
         INDArray mean = words.isMatrix() ? words.mean(0) : words;
+        // TODO this should probably be replaced with wordsNearest(mean, top)
         if (weightLookupTable instanceof InMemoryLookupTable) {
             InMemoryLookupTable l = (InMemoryLookupTable) weightLookupTable;
 
