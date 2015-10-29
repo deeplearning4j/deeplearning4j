@@ -4,7 +4,7 @@ layout: ja-default
 
 # Deeplearning4jをはじめましょう
 
-コンテンツ
+コンテンツ ("日本語サイトは準備中です。英語サイトをご覧ください"。[English version](../gettingstarted.html))
 
 * <a href="#quickstart">クイックスタート</a>
 * <a href="#all">Deeplearning4jのインストール方法(All OS)</a>
