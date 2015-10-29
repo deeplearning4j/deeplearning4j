@@ -13,7 +13,7 @@ That is, the word is embedded in a vector space using a shallow neural network l
 
 A thought vector, therefore, is a vectorized thought, and the vector represents one thought’s relations to others. Just as a words are linked by grammar (a sentence is just a path drawn across words), so thoughts are linked by a chain of reasoning, a logical path of sorts. 
 
-So the ability to represent any thought in its relation to others might be called the artificial construction of common sense. 
+So the ability to represent any thought in its relation to others might be called the artificial construction of common sense. Given one thought, a neural network might predict the thoughts that are likely to follow. Conversation as search. 
 
 Hinton, in a 2015 [speech to the Royal Society in London](https://www.youtube.com/watch?v=IcOMKXAw5VA), said this: 
 
