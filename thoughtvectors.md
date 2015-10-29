@@ -28,7 +28,7 @@ Let’s pause for a moment and consider what Hinton is saying. The old, rules-ba
 
 Hinton is saying that, rather than hard-code the logical leaps that lead an AI from one thought to another, we can simply feed neural nets enough text – enough trains of thought – that they will eventually be able to mimic the thoughts expressed there, and generate their own thought trains, the context of the thoughts they've been fed. 
 
-This affects how well algorithm will understand natural-language queries at search engines like Google, and it will also go beyond pure search. 
+This affects how well algorithms will understand natural-language queries at search engines like Google, and it will also go beyond pure search. 
 
 With the ability to associate thoughts comes the ability to converse. Thought vectors could serve as the basis for chatbots, personal assistants, and other agents whose purpose is to augment and entertain human beings. That’s the good side. The bad side is that, [on the Internet, you really won’t know who’s a dog](https://upload.wikimedia.org/wikipedia/en/f/f8/Internet_dog.jpg), or in this case, a bot. 
 
