@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# Thought Vectors, Geoff Hinton and the Future of AI
+# Thought Vectors, Geoff Hinton & the Future of AI
 
 “Thought vector” is a term popularized by Geoffrey Hinton, the prominent deep-learning researcher now at Google, which is using [vectors based on natural language](http://www.bloomberg.com/news/articles/2015-10-26/google-turning-its-lucrative-web-search-over-to-ai-machines) to improve its search results. 
 
