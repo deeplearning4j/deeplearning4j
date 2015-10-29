@@ -60,6 +60,8 @@ public abstract class Layer implements Serializable, Cloneable {
     protected double biasInit;
     protected Distribution dist;
     protected double learningRate;
+    //learning rate after n iterations
+    protected Map<Integer,Double> learningRateAfter;
     protected double lrScoreBasedDecay;
     protected double momentum;
     //momentum after n iterations
@@ -82,6 +84,7 @@ public abstract class Layer implements Serializable, Cloneable {
         this.biasInit = builder.biasInit;
     	this.dist = builder.dist;
         this.learningRate = builder.learningRate;
+        this.learningRateAfter = builder.learningRateAfter;
         this.lrScoreBasedDecay = builder.lrScoreBasedDecay;
         this.momentum = builder.momentum;
         this.momentumAfter = builder.momentumAfter;
@@ -116,6 +119,7 @@ public abstract class Layer implements Serializable, Cloneable {
         protected double biasInit = Double.NaN;
         protected Distribution dist = null;
         protected double learningRate = Double.NaN;
+        protected Map<Integer,Double> learningRateAfter = null;
         protected double lrScoreBasedDecay = Double.NaN;
         protected double momentum = Double.NaN;
         protected Map<Integer,Double> momentumAfter = null;
@@ -161,11 +165,20 @@ public abstract class Layer implements Serializable, Cloneable {
         	return (T) this;
         }
 
+        /** Learning rate. Defaults to 1e-1*/
         public T learningRate(double learningRate){
             this.learningRate = learningRate;
             return (T)this;
         }
 
+        /** Learning rate schedule. Map of the iteration to the learning rate to apply at that iteration. */
+        public T learningRateAfter(Map<Integer, Double> learningRateAfter) {
+            this.learningRateAfter = learningRateAfter;
+            return (T) this;
+        }
+
+        /** Rate to decrease learningRate by when the score stops improving.
+         * Learning rate is multiplied by this rate so ideally keep between 0 and 1. */
         public T learningRateScoreBasedDecayRate(double lrScoreBasedDecay) {
             this.lrScoreBasedDecay = lrScoreBasedDecay;
             return (T) this;
@@ -188,12 +201,13 @@ public abstract class Layer implements Serializable, Cloneable {
             return (T) this;
         }
 
+        /** Momentum rate. */
         public T momentum(double momentum) {
             this.momentum = momentum;
             return (T)this;
         }
 
-        /** Momentum (step) schedule */
+        /** Momentum schedule. Map of the iteration to the momentum rate to apply at that iteration. */
         public T momentumAfter(Map<Integer, Double> momentumAfter) {
             this.momentumAfter = momentumAfter;
             return (T) this;
@@ -208,6 +222,10 @@ public abstract class Layer implements Serializable, Cloneable {
             return (T) this;
         }
 
+        /**
+         * Ada delta coefficient
+         * @param rho
+         */
         public T rho(double rho) {
             this.rho = rho;
             return (T) this;
@@ -226,6 +244,7 @@ public abstract class Layer implements Serializable, Cloneable {
             return (T) this;
         }
 
+        /** Variance decay rate for Adam updater. Only applies if using .updater(Updater.ADAM) */
         public T adamVarDecay(double adamVarDecay) {
             this.adamVarDecay = adamVarDecay;
             return (T) this;

@@ -134,4 +134,6 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
         setScoreWithZ(z);
 
     }
+
+
 }
