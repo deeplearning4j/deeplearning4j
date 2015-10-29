@@ -33,7 +33,7 @@ You can see the code for the [HistogramIterationListener here](https://github.co
 
 You would specify `HistogramIterationListener` rather than `ScoreIterationListener`, as in the line of code below:
 
-        model.setListeners(Collections.singletonList((IterationListener) new HistogramIterationListener(listenerFreq)));
+        model.setListeners(Arrays.asList(new ScoreIterationListener(listenerFreq), new HistogramIterationListener(listenerFreq)));
 
 Here are some of the file names you'll want to get familiar with in the deeplearning4j-ui repo: 
 
