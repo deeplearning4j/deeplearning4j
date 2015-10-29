@@ -103,6 +103,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                 }
                 else {
                     Writable current = currList.get(j);
+
                     featureVector.putScalar(count++,Double.valueOf(current.toString()));
                 }
             }
