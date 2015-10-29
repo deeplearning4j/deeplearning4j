@@ -15,12 +15,12 @@ So the ability to represent any thought in its relation might be called the arti
 
 Hinton, in a 2015 [speech to the Royal Society in London](https://www.youtube.com/watch?v=IcOMKXAw5VA), said this: 
 
-		"The implications of this for document processing are very important. If we convert a sentence into a vector that captures the meaning of the sentence, then Google can do much better searches; they can search based on what's being said in a document."
-		"Also, if you can convert each sentence in a document into a vector, then you can take that sequence of vectors and [try to model] natural reasoning. And that was something that old fashioned AI could never do."
-		"If we can read every English document on the web, and turn each sentence into a thought vector, you've got plenty of data for training a system that can reason like people do." 
-		"Now, you might not want it to reason like people do, but at least we can see what they would think.
-		"What I think is going to happen over the next few years is this ability to turn sentences into thought vectors is going to rapidly change the level at which we can understand documents." 
-		"To understand it at a human level, we're probably going to need human level resources and we have trillions of connections [in our brains], but the biggest networks we have built so far only have billions of connections. So we're a few orders of magnitude off, but I'm sure the hardware people will fix that." 
+		"The implications of this for document processing are very important. If we convert a sentence into a vector that captures the meaning of the sentence, then Google can do much better searches; they can search based on what's being said in a document.
+		Also, if you can convert each sentence in a document into a vector, then you can take that sequence of vectors and [try to model] natural reasoning. And that was something that old fashioned AI could never do.
+		If we can read every English document on the web, and turn each sentence into a thought vector, you've got plenty of data for training a system that can reason like people do. 
+		Now, you might not want it to reason like people do, but at least we can see what they would think.
+		What I think is going to happen over the next few years is this ability to turn sentences into thought vectors is going to rapidly change the level at which we can understand documents. 
+		To understand it at a human level, we're probably going to need human level resources and we have trillions of connections [in our brains], but the biggest networks we have built so far only have billions of connections. So we're a few orders of magnitude off, but I'm sure the hardware people will fix that." 
 
 Let’s pause for a moment and consider what Hinton is saying. The old, rules-based AI, which is a pile of if-then statements locking brittle symbols into hard-coded relationships with others, is not flexible enough to represent the world without near infinite amounts of human intervention. Symbolic logic and knowledge graphs may establish strict relations between entities, but those relations are brittle, and unable to change without human intervention. 
 
