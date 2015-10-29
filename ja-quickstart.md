@@ -6,6 +6,9 @@ layout: ja-default
 # <a name="quickstart"> クイックスタート
 
 ## 必要なもの
+
+("日本語サイトは準備中です。英語サイトをご覧ください"。[English version](../quickstart.html))
+
 このガイドは以下のものが予め利用できることを想定しています。
 
 - Java
