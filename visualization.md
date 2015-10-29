@@ -7,9 +7,9 @@ layout: default
 
 The deeplearning4j-ui repository can display T-SNE, histograms, filters, error and activations. 
 
-Here's an example of an error visualiztion with D3.
+Here's an example of an error visualization with D3.
 
-![Alt text](../img/error_d3.jpeg)
+![Alt text](../img/error_d3.png)
 
 To support visualizations that will help you monitor neural networks as they learn, and therefore debug them, you must set up an iteration listener. This is done when you instantiate and initialize any new MultiLayerNetwork.
 
