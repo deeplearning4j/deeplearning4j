@@ -7,7 +7,7 @@ layout: default
 
 “Thought vector” is a term popularized by Geoffrey Hinton, the prominent deep-learning researcher now at Google. 
 
-A thought vector is similar to a *word vector*, which is typically a vector of 300-500 numbers that represent a word. A word vector represents a word’s meaning as it relates to other words (its context) with a single column of numbers. That is, the word is embedded in a vector space using a shallow neural network like [word2vec](http://deeplearning4j.org/word2vec.html), which leans to generate the word's context through repeated guesses. 
+A thought vector is similar to a [*word vector*](http://deeplearning4j.org/word2vec.html#embed), which is typically a vector of 300-500 numbers that represent a word. A word vector represents a word’s meaning as it relates to other words (its context) with a single column of numbers. That is, the word is embedded in a vector space using a shallow neural network like [word2vec](http://deeplearning4j.org/word2vec.html), which leans to generate the word's context through repeated guesses. 
 
 A thought vector, therefore, is a vectorized thought, and the vector represents one thought’s relations to others. Just as a words are linked by grammar (a sentence is just a path drawn across words), so thoughts are linked by a chain of reasoning, a logical path of sorts. 
 
