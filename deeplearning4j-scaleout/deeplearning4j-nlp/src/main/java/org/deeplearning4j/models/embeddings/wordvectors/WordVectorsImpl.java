@@ -389,32 +389,31 @@ public class WordVectorsImpl implements WordVectors {
             }
         }
 
-        INDArray words = Nd4j.create(positive.size() + negative.size(), lookupTable().layerSize());
+        WeightLookupTable weightLookupTable = lookupTable();
+        INDArray words = Nd4j.create(positive.size() + negative.size(), weightLookupTable.layerSize());
         int row = 0;
         Set<String> union = SetUtils.union(new HashSet<>(positive), new HashSet<>(negative));
         for (String s : positive) {
-            words.putRow(row++, lookupTable().vector(s));
+            words.putRow(row++, weightLookupTable.vector(s));
         }
 
         for (String s : negative) {
-            words.putRow(row++, lookupTable().vector(s).mul(-1));
+            words.putRow(row++, weightLookupTable.vector(s).mul(-1));
         }
 
         INDArray mean = words.isMatrix() ? words.mean(0) : words;
-        if (lookupTable() instanceof InMemoryLookupTable) {
-            InMemoryLookupTable l = (InMemoryLookupTable) lookupTable();
+        if (weightLookupTable instanceof InMemoryLookupTable) {
+            InMemoryLookupTable l = (InMemoryLookupTable) weightLookupTable;
 
             INDArray syn0 = l.getSyn0();
-            INDArray syn0Norm = syn0.norm2(0);
-            syn0.diviRowVector(syn0Norm);
-            INDArray weights = Transforms.unitVec(mean);
+            syn0.diviRowVector(syn0.norm2(0));
 
-            INDArray similarity = weights.mmul(syn0.transpose());
+            INDArray similarity = Transforms.unitVec(mean).mmul(syn0.transpose());
             // We assume that syn0 is normalized.
             // Hence, the following division is not needed anymore.
             // distances.diviRowVector(distances.norm2(1));
             //INDArray[] sorted = Nd4j.sortWithIndices(distances,0,false);
-            List<Double> highToLowSimList = getTopN(similarity, top);
+            List<Double> highToLowSimList = getTopN(similarity, top + union.size());
             List<String> ret = new ArrayList<>();
 
             for (int i = 0; i < highToLowSimList.size(); i++) {
