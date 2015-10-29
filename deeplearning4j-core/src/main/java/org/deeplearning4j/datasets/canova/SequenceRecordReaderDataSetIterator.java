@@ -181,8 +181,7 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
             int f = 0;
             while (timeStepIter.hasNext()) {
                 Writable current = timeStepIter.next();
-                double value = Double.valueOf(current.toString());
-                out.put(i, f++, value);
+                out.put(i, f++, current.toDouble());
             }
             i++;
         }
@@ -215,13 +214,12 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
                 //Load all values
                 while (timeStepIter.hasNext()) {
                     Writable current = timeStepIter.next();
-                    double value = Double.valueOf(current.toString());
-                    out.put(f++, i, value);
+                    out.put(f++, i, current.toDouble());
                 }
             } else {
                 //Expect a single value (index) -> convert to one-hot vector
                 Writable value = timeStepIter.next();
-                int idx = Double.valueOf(value.toString()).intValue();
+                int idx = value.toInt();
                 INDArray line = FeatureUtil.toOutcomeVector(idx, numPossibleLabels);
                 out.getRow(i).assign(line);
             }
