@@ -8,7 +8,7 @@ import lombok.*;
 @Data @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public class LocalResponseNormalization extends FeedForwardLayer{
+public class LocalResponseNormalization extends Layer{
     // hyper-parameters defined using a validation set
     protected double n; // # adjacent kernal maps
     protected double k; // constant (e.g. scale)
@@ -30,24 +30,45 @@ public class LocalResponseNormalization extends FeedForwardLayer{
     }
 
     @AllArgsConstructor
-    public static class Builder extends FeedForwardLayer.Builder<Builder> {
+    public static class Builder extends Layer.Builder<Builder> {
         // defaults based on AlexNet model
-        protected double k=2;
-        protected double n=5;
-        protected double alpha=10e-4;
-        protected double beta=0.75;
+        private double k=2;
+        private double n=5;
+        private double alpha=10e-4;
+        private double beta=0.75;
 
+        public Builder(double k, double alpha, double beta) {
+            this.k = k;
+            this.alpha = alpha;
+            this.beta = beta;
+        }
 
-    public Builder(double k, double alpha, double beta) {
-        this.k = k;
-        this.alpha = alpha;
-        this.beta = beta;
-    }
+        public Builder() {}
 
-    @Override
-    public LocalResponseNormalization build() {
-        return new LocalResponseNormalization(this);
-    }
+        public Builder k(double k){
+            this.k = k;
+            return this;
+        }
+
+        public Builder n(double n){
+            this.n = n;
+            return this;
+        }
+
+        public Builder alpha(double alpha){
+            this.alpha = alpha;
+            return this;
+        }
+
+        public Builder beta(double beta){
+            this.beta = beta;
+            return this;
+        }
+
+        @Override
+        public LocalResponseNormalization build() {
+            return new LocalResponseNormalization(this);
+        }
 
     }
 

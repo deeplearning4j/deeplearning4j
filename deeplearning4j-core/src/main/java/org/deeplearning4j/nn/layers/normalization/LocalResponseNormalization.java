@@ -57,27 +57,37 @@ public class LocalResponseNormalization extends BaseLayer<org.deeplearning4j.nn.
 
     @Override
     public INDArray activate(boolean training) {
-        double k, alpha, beta, n, N, startCh, stopCh;
+        double k, alpha, beta, n;
         k = layerConf().getK();
         alpha = layerConf().getAlpha();
         beta = layerConf().getBeta();
         n = layerConf().getN();
-        N = layerConf().getNIn(); // total number kernels
-        INDArray activation = null;
+        int halfN = (int) n/2;
+        int examples = input.shape()[0];
+        int channels = input.shape()[1];
+        int height = input.shape()[2];
+        int width = input.shape()[3];
         INDArray activitySqr = input.mul(input);
-        INDArray activityCopy = activitySqr.dup();
+        INDArray extraChannels = Nd4j.zeros(new int[] {examples, (channels+2*halfN), height, width});
+        INDArray scale = Nd4j.zeros(activitySqr.shape());
 
-        startCh = Math.max(0, (i+n)/2);
-        stopCh = Math.min(N-1, (i-n)/2);
+        extraChannels.put(new INDArrayIndex[]{
+                NDArrayIndex.all(),
+                interval(halfN,(halfN+channels)),
+                NDArrayIndex.all(),
+                NDArrayIndex.all()}
+                , activitySqr);
 
-        INDArray sumSqrs =activityCopy.get(NDArrayIndex.all(), interval((int) startCh, (int) stopCh),
-                NDArrayIndex.all(), NDArrayIndex.all()).sum(1);
-        
-        INDArray unitScale = k + alpha * sumSqrs;
-        INDArray scale = Transforms.pow(unitScale,beta);
-        input.div(scale);
+        for (int i = 1; i < n; i++) {
+            scale.addi(extraChannels.get(
+                    NDArrayIndex.all(),
+                    interval(i, (i + channels)),
+                    NDArrayIndex.all(),
+                    NDArrayIndex.all()));
+        }
+        scale = Transforms.pow(scale.mul(alpha).add(k),beta);
+        return input.div(scale);
 
-        return activation;
     }
 
     @Override
