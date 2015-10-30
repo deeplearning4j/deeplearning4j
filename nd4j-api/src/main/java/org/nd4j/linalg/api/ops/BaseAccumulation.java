@@ -176,6 +176,16 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     }
 
     @Override
+    public double calculateFinalResult(double accum, int n) {
+        return accum;
+    }
+
+    @Override
+    public float calculateFinalResult(float accum, int n) {
+        return accum;
+    }
+
+    @Override
     public Number currentResult(){
         return finalResult;
     }

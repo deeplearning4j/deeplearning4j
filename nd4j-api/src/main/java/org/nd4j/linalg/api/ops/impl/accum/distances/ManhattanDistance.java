@@ -53,17 +53,6 @@ public class ManhattanDistance extends BaseAccumulation {
         super(x, y);
     }
 
-//    @Override
-//    public void update(Number result) {
-//       currentResult = currentResult.doubleValue() + FastMath.abs(result.doubleValue());
-//    }
-//
-//    @Override
-//    public void update(IComplexNumber result) {
-//        currentComplexResult.addi(ComplexUtil.pow(result, 2));
-//    }
-//
-
     @Override
     public double update(double accum, double x){
         return accum;

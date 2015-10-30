@@ -111,4 +111,14 @@ public class StandardDeviation extends Variance {
         finalResultComplex = super.getAndSetFinalResult(accum).sqrt();
         return finalResultComplex;
     }
+
+    @Override
+    public double calculateFinalResult(double accum, int n) {
+        return FastMath.sqrt(super.calculateFinalResult(accum,n));
+    }
+
+    @Override
+    public float calculateFinalResult(float accum, int n) {
+        return (float)FastMath.sqrt(super.calculateFinalResult(accum,n));
+    }
 }
