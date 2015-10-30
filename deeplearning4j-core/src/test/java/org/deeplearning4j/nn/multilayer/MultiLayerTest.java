@@ -31,6 +31,7 @@ import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.layers.BatchNormalization;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -313,6 +314,61 @@ public class MultiLayerTest {
         net2.gradient();        //IllegalArgumentException: Buffers must fill up specified length 29
     }
 
+
+    @Test
+    public void testSelectedActivations() {
+        // Train DeepAutoEncoder on very limited trainset
+        final int numRows = 28;
+        final int numColumns = 28;
+        int seed = 123;
+        int numSamples = 3;
+        int iterations = 1;
+        int listenerFreq = iterations/5;
+
+        log.info("Load data....");
+
+        float[][] trainingData = new float[numSamples][numColumns * numRows];
+        Arrays.fill(trainingData[0],0.95f);
+        Arrays.fill(trainingData[1],0.5f);
+        Arrays.fill(trainingData[2], 0.05f);
+
+
+
+        log.info("Build model....");
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(seed)
+                .iterations(iterations)
+                .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
+                .list(10)
+                .layer(0, new RBM.Builder().nIn(numRows * numColumns).nOut(1000).lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
+                .layer(1, new RBM.Builder().nIn(1000).nOut(500).lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
+                .layer(2, new RBM.Builder().nIn(500).nOut(250).lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
+                .layer(3, new RBM.Builder().nIn(250).nOut(100).lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
+                .layer(4, new RBM.Builder().nIn(100).nOut(30).lossFunction(LossFunctions.LossFunction.RMSE_XENT).build()) //encoding stops
+                .layer(5, new RBM.Builder().nIn(30).nOut(100).lossFunction(LossFunctions.LossFunction.RMSE_XENT).build()) //decoding starts
+                .layer(6, new RBM.Builder().nIn(100).nOut(250).lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
+                .layer(7, new RBM.Builder().nIn(250).nOut(500).lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
+                .layer(8, new RBM.Builder().nIn(500).nOut(1000).lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
+                .layer(9, new OutputLayer.Builder(LossFunctions.LossFunction.RMSE_XENT).nIn(1000).nOut(numRows*numColumns).build())
+                .pretrain(true).backprop(true)
+                .build();
+
+        MultiLayerNetwork model = new MultiLayerNetwork(conf);
+        model.init();
+
+        model.setListeners(Arrays.asList((IterationListener) new ScoreIterationListener(listenerFreq)));
+
+        log.info("Train model....");
+        int cnt = 0;
+        while(cnt < numSamples) {
+            INDArray input = Nd4j.create(trainingData[cnt]);
+            model.fit(new DataSet(input, input));
+            cnt++;
+        }
+        // Make two separate selective calls
+
+        System.out.println("Done");
+    }
 
     @Test
     public void testFeedForwardActivationsAndDerivatives(){
