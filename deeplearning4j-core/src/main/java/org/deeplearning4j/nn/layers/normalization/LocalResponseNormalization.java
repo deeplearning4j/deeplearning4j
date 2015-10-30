@@ -26,11 +26,21 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
  * b^i_{x,y} = a^i_{x,y} /
  * (k + alpha * sum_{j=max(0, i - n/2)}^{max(N-1, i + n/2)} (a^j_{x,y})^2 )**beta
  *
- * Reference: http://www.cs.toronto.edu/~fritz/absps/imagenet.pdf
+ * Reference:
+ * http://www.cs.toronto.edu/~fritz/absps/imagenet.pdf
+ * https://github.com/vlfeat/matconvnet/issues/10
+ * Lasagne & Chainer
+ *
  * Created by nyghtowl on 10/29/15.
  */
 public class LocalResponseNormalization extends BaseLayer<org.deeplearning4j.nn.conf.layers.LocalResponseNormalization>{
 
+    private double k;
+    private double n;
+    private double alpha;
+    private double beta;
+    private int halfN;
+    private INDArray activations, unitScale, scale;
 
     public LocalResponseNormalization(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
@@ -49,27 +59,61 @@ public class LocalResponseNormalization extends BaseLayer<org.deeplearning4j.nn.
     public void fit(INDArray input) {}
 
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-        INDArray nextEpsilon = null;
+        int height = input.shape()[2];
         Gradient retGradient = new DefaultGradient();
+        INDArray reverse = activations.mul(epsilon).div(unitScale);
+        INDArray reverseCopy = reverse.dup();
 
+        for (int i = 0; i < halfN+1; i++){
+            INDArray t = reverseCopy.get(
+                    new INDArrayIndex[]{
+                            NDArrayIndex.all(),
+                            NDArrayIndex.all(),
+                            interval(i, height),
+                            NDArrayIndex.all()});
+            INDArray v = reverse.get(
+                    new INDArrayIndex[]{
+                            NDArrayIndex.all(),
+                            NDArrayIndex.all(),
+                            interval(0, height - 1),
+                            NDArrayIndex.all()});
+            reverseCopy.assign(t.addi(v));
+
+            INDArray t2 = reverseCopy.get(
+                    new INDArrayIndex[]{
+                            NDArrayIndex.all(),
+                            NDArrayIndex.all(),
+                            interval(0, height-1),
+                            NDArrayIndex.all()});
+            INDArray v2 = reverse.get(
+                    new INDArrayIndex[]{
+                            NDArrayIndex.all(),
+                            NDArrayIndex.all(),
+                            interval(i, height),
+                            NDArrayIndex.all()});
+            reverseCopy.assign(t2.addi(v2));
+
+        }
+
+        INDArray nextEpsilon = epsilon.mul(scale).sub(input.mul(2 * alpha * beta).mul(reverseCopy));
         return new Pair<>(retGradient,nextEpsilon);
     }
 
     @Override
     public INDArray activate(boolean training) {
-        double k, alpha, beta, n;
         k = layerConf().getK();
+        n = layerConf().getN();
         alpha = layerConf().getAlpha();
         beta = layerConf().getBeta();
-        n = layerConf().getN();
-        int halfN = (int) n/2;
+        halfN = (int) n/2;
+
         int examples = input.shape()[0];
         int channels = input.shape()[1];
         int height = input.shape()[2];
         int width = input.shape()[3];
         INDArray activitySqr = input.mul(input);
         INDArray extraChannels = Nd4j.zeros(new int[] {examples, (channels+2*halfN), height, width});
-        INDArray scale = Nd4j.zeros(activitySqr.shape());
+        unitScale = Nd4j.zeros(activitySqr.shape());
 
         extraChannels.put(new INDArrayIndex[]{
                 NDArrayIndex.all(),
@@ -79,14 +123,16 @@ public class LocalResponseNormalization extends BaseLayer<org.deeplearning4j.nn.
                 , activitySqr);
 
         for (int i = 1; i < n; i++) {
-            scale.addi(extraChannels.get(
+            unitScale.addi(extraChannels.get(
                     NDArrayIndex.all(),
                     interval(i, (i + channels)),
                     NDArrayIndex.all(),
                     NDArrayIndex.all()));
         }
-        scale = Transforms.pow(scale.mul(alpha).add(k),beta);
-        return input.div(scale);
+        unitScale.muli(alpha).addi(k);
+        scale = Transforms.pow(unitScale, beta);
+        activations = input.div(scale);
+        return activations;
 
     }
 
