@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# Thought Vectors, Geoff Hinton & the Future of AI
+# Thought Vectors, Deep Learning & the Future of AI
 
 “Thought vector” is a term popularized by Geoffrey Hinton, the prominent deep-learning researcher now at Google, which is using [vectors based on natural language](http://www.bloomberg.com/news/articles/2015-10-26/google-turning-its-lucrative-web-search-over-to-ai-machines) to improve its search results. 
 
@@ -24,7 +24,9 @@ Hinton, in a 2015 [speech to the Royal Society in London](https://www.youtube.co
 		What I think is going to happen over the next few years is this ability to turn sentences into thought vectors is going to rapidly change the level at which we can understand documents. 
 		To understand it at a human level, we're probably going to need human level resources and we have trillions of connections [in our brains], but the biggest networks we have built so far only have billions of connections. So we're a few orders of magnitude off, but I'm sure the hardware people will fix that." 
 
-Let’s pause for a moment and consider what Hinton is saying. The old, rules-based AI, which is a pile of if-then statements locking brittle symbols into hard-coded relationships with others, is not flexible enough to represent the world without near infinite amounts of human intervention. Symbolic logic and knowledge graphs may establish strict relations between entities, but those relations are unlikely to adapt quickly to the new.
+Let’s pause for a moment and consider what Hinton is saying. 
+
+Traditional, rules-based AI, a pile of if-then statements locking brittle symbols into hard-coded relationships with others, is not flexible enough to represent the world without near infinite amounts of human intervention. Symbolic logic and knowledge graphs may establish strict relations between entities, but those relations are unlikely to adapt quickly to the new.
 
 Hinton is saying that, rather than hard-code the logical leaps that lead an AI from one thought to another, we can simply feed neural nets enough text – enough trains of thought – that they will eventually be able to mimic the thoughts expressed there, and generate their own thought trains, the context of the thoughts they've been fed. 
 
@@ -43,7 +45,9 @@ Given that neural networks are already taxing current hardware to its limits, th
 
 The future of this branch of AI will depend on advances in hardware, as well as advances in thought vectorization, or capturing thoughts with numbers in novel ways. (How do we discretize sentences? What are the fundamental units of thought?)
 
-That, in turn, will give us other tools to tackle natural language processing and machine conceptualization, the missing link between symbolic logic, which is abstract, and machine percetion via deep learning, which is processing concrete instances of, say, images or sounds. 
+A word should be said about semantic structure. It's possible to embed dependency and constituency based parsing in vectors. In fact, interesting work is being done at [Stanford](http://nlp.stanford.edu/), [Cornell](https://confluence.cornell.edu/display/NLP/Home) and [University of Texas](http://www.katrinerk.com/home/research/publications), among other schools. 
+
+Advances in theory and hardware, in turn, will give us other tools to tackle natural language processing and machine conceptualization, the missing link between symbolic logic, which is abstract, and machine percetion via deep learning, which is processing concrete instances of, say, images or sounds. 
 
 Here are a few of the approaches that are being made to thought vectorization: 
 
