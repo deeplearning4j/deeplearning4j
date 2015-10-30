@@ -160,4 +160,14 @@ public class Norm2 extends BaseAccumulation {
         this.finalResultComplex = accum.sqrt();
         return finalResultComplex;
     }
+
+    @Override
+    public double calculateFinalResult(double accum, int n){
+        return FastMath.sqrt(accum);
+    }
+
+    @Override
+    public float calculateFinalResult(float accum, int n){
+        return (float)FastMath.sqrt(accum);
+    }
 }

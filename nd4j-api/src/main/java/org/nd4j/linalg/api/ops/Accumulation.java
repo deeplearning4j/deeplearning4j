@@ -154,6 +154,17 @@ public interface Accumulation extends Op {
 
     void setFinalResultComplex(IComplexNumber number);
 
+    /** Calculate the final result. unlike {@link #getAndSetFinalResult(double)}, the result is
+     * merely calculated and returned, not stored in the Accumulation op itself.
+     * @param accum The accumulated result
+     * @param n the number of elements accumulated
+     * @return calculated final result
+     */
+    double calculateFinalResult(double accum, int n);
+
+    /** @see #calculateFinalResult(double, int) */
+    float calculateFinalResult(float accum, int n);
+
 
     /**Initial value (used to initialize the accumulation op)
      * @return the initial value

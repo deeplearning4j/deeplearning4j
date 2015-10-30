@@ -242,4 +242,16 @@ public class Variance extends BaseAccumulation {
         else finalResultComplex = accum.divi(n - 1);
         return finalResultComplex;
     }
+
+    @Override
+    public double calculateFinalResult(double accum, int n) {
+        if(biasCorrected) throw new UnsupportedOperationException("Not supported for passthrough op");
+        else return accum / n;
+    }
+
+    @Override
+    public float calculateFinalResult(float accum, int n) {
+        if(biasCorrected) throw new UnsupportedOperationException("Not supported for passthrough op");
+        else return accum / n;
+    }
 }

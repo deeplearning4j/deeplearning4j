@@ -23,8 +23,10 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.impl.accum.Dot;
 import org.nd4j.linalg.api.ops.impl.accum.Norm2;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.ArrayUtil;
 
 /**
  * Cosine similarity
@@ -38,22 +40,27 @@ public class CosineSimilarity extends BaseAccumulation {
     private Number constantNormalizedByNorm2X, constantNormalizedByNorm2Y;
 
     public CosineSimilarity() {
+        passThrough = true;
     }
 
     public CosineSimilarity(INDArray x, INDArray y, INDArray z, int n) {
         super(x, y, z, n);
+        passThrough = true;
     }
 
     public CosineSimilarity(INDArray x, INDArray y, int n) {
         super(x, y, n);
+        passThrough = true;
     }
 
     public CosineSimilarity(INDArray x) {
         super(x);
+        passThrough = true;
     }
 
     public CosineSimilarity(INDArray x, INDArray y) {
         super(x, y);
+        passThrough = true;
     }
 
     @Override
@@ -157,11 +164,23 @@ public class CosineSimilarity extends BaseAccumulation {
     }
 
     @Override
-    public void init(INDArray x, INDArray y, INDArray z, int n) {
-        super.init(x, y, z, n);
+    public void exec(){
         this.constantNormalizedByNorm2X = Nd4j.getExecutioner().execAndReturn(new Norm2(x)).getFinalResult();
         this.constantNormalizedByNorm2Y = Nd4j.getExecutioner().execAndReturn(new Norm2(y)).getFinalResult();
         this.extraArgs = new Object[]{0.0,constantNormalizedByNorm2X, constantNormalizedByNorm2Y};
+        double dot = Nd4j.getExecutioner().execAndReturn(new Dot(x,y)).getFinalResult().doubleValue();
+        this.finalResult = dot / (constantNormalizedByNorm2X.doubleValue() * constantNormalizedByNorm2Y.doubleValue());
+    }
+
+    @Override
+    public void exec(int... dimension){
+        int[] retShape = ArrayUtil.removeIndex(x.shape(), dimension);
+        int nOps = x.tensorssAlongDimension(dimension);
+        z = Nd4j.create(retShape);
+        for( int i=0; i<nOps; i++ ){
+            double d = Nd4j.getExecutioner().execAndReturn((CosineSimilarity)opForDimension(i,dimension)).getFinalResult().doubleValue();
+            z.putScalar(i, d);
+        }
     }
 
     @Override
@@ -180,5 +199,15 @@ public class CosineSimilarity extends BaseAccumulation {
     public IComplexNumber getAndSetFinalResult(IComplexNumber accum){
         finalResultComplex = Nd4j.createComplexNumber(accum.realComponent().doubleValue() / (constantNormalizedByNorm2X.doubleValue() * constantNormalizedByNorm2Y.doubleValue()), 0);
         return finalResultComplex;
+    }
+
+    @Override
+    public double calculateFinalResult(double accum, int n){
+        throw new UnsupportedOperationException("Not supported for passthrough op");
+    }
+
+    @Override
+    public float calculateFinalResult(float accum, int n){
+        throw new UnsupportedOperationException("Not supported for passthrough op");
     }
 }

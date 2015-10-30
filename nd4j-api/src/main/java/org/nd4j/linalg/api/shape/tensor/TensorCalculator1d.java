@@ -15,6 +15,7 @@ public class TensorCalculator1d implements TensorCalculator {
     private int elementWiseStride;
     private int[] tensorShape;
     private int[] tensorStride;
+    private int numTensors;
 
     public TensorCalculator1d(INDArray arr, int tensorDim){
         this(arr.offset(), arr.shape(), arr.stride(), tensorDim);
@@ -30,6 +31,13 @@ public class TensorCalculator1d implements TensorCalculator {
         elementWiseStride = stride[tensorDim];
         tensorShape = new int[]{1,shape[tensorDim]};
         tensorStride = new int[]{1,elementWiseStride};
+
+        numTensors = ArrayUtil.prod(shapeMinusTensorDim);
+    }
+
+    @Override
+    public int getNumTensors() {
+        return numTensors;
     }
 
     public int getOffsetForTensor(int tensorIdx){

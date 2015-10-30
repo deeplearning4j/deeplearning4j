@@ -91,6 +91,16 @@ public class Mean extends Sum {
     }
 
     @Override
+    public double calculateFinalResult(double accum, int n) {
+        return accum / n;
+    }
+
+    @Override
+    public float calculateFinalResult(float accum, int n) {
+        return accum / n;
+    }
+
+    @Override
     public IComplexNumber getAndSetFinalResult(IComplexNumber accum){
         finalResultComplex = accum.div(n());
         return finalResultComplex;

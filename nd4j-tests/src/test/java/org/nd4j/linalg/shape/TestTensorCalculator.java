@@ -58,6 +58,7 @@ public class TestTensorCalculator extends BaseNd4jTest {
                 for (int d = 0; d < arr.rank(); d++) {
                     int nT = arr.tensorssAlongDimension(d);
                     TensorCalculator tCalc = TensorCalculatorFactory.getTensorCalculator(arr,d);
+                    assertEquals(nT, tCalc.getNumTensors());
                     for (int i = 0; i < nT; i++) {
                         String msg = pair.getSecond() + " - " + i + ", d="+ d;
                         INDArray tensor = arr.tensorAlongDimension(i, d);

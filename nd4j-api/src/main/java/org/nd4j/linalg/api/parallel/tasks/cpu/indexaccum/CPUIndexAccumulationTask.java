@@ -249,7 +249,7 @@ public class CPUIndexAccumulationTask extends BaseCPUIndexAccumulationTask {
                     double[] xd = (double[]) x.array();
                     double accum = op.zeroDouble();
                     int idxAccum = -1;
-                    if (incrX == 1 && incrY == 1) {
+                    if (incrX == 1) {
                         for (int i = 0; i < n; i++) {
                             idxAccum = op.update(accum, idxAccum, xd[offsetX + i], i);
                             if (idxAccum == i) accum = op.op(xd[offsetX + i]);
@@ -292,7 +292,7 @@ public class CPUIndexAccumulationTask extends BaseCPUIndexAccumulationTask {
                     double accum = op.zeroDouble();
                     int idxAccum = -1;
                     int idx = 0;
-                    if (incrX == 1 && incrY == 1) {
+                    if (incrX == 1) {
                         for (int i = 0; i < 8 * n; i += 8, idx++) {
                             double dx = nbbx.getDouble(byteOffsetX + i);
                             idxAccum = op.update(accum, idxAccum, dx, idx);

@@ -8,12 +8,15 @@ import org.nd4j.linalg.api.parallel.tasks.BaseTask;
 import org.nd4j.linalg.api.parallel.tasks.Task;
 import org.nd4j.linalg.api.parallel.tasks.TaskExecutorProvider;
 import org.nd4j.linalg.api.parallel.tasks.cpu.BaseCPUTask;
+import org.nd4j.linalg.api.shape.tensor.TensorCalculator;
+import org.nd4j.linalg.api.shape.tensor.TensorCalculatorFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
+import java.util.concurrent.RecursiveAction;
 import java.util.concurrent.RecursiveTask;
 
 
@@ -72,23 +75,42 @@ public class CPUAccumulationAlongDimensionTask extends BaseCPUTask<INDArray> {
     @Override
     public INDArray compute() {
         //Fork Join: Recursive decomposition
-        int nTensors = op.x().tensorssAlongDimension(dimensions);
-        List<RecursiveTask<Double>> subTasks = new ArrayList<>(nTensors);
 
-        for (int i = 0; i < nTensors; i++) {
-            RecursiveTask<Double> task = new OpForDimTaskFJ(i);
-            task.fork();
-            subTasks.add(task);
-        }
+        if(dimensions.length == 1 && !op.isPassThrough()){
+            TensorCalculator tCalcx = TensorCalculatorFactory.getTensorCalculator(op.x(), dimensions[0]);
+            TensorCalculator tCalcy;
+            if(op.y() != null) tCalcy = TensorCalculatorFactory.getTensorCalculator(op.y(), dimensions[0]);
+            else tCalcy = null;
 
-        int[] retShape = ArrayUtil.removeIndex(op.x().shape(), dimensions);
-        INDArray out = Nd4j.create(retShape);
-        int i = 0;
-        for(RecursiveTask<Double> task : subTasks){
-            out.putScalar(i++, task.join());
+            int[] retShape = ArrayUtil.removeIndex(op.x().shape(), dimensions);
+            INDArray out = Nd4j.create(retShape);
+
+            RecursiveAction action = new CPUAccumulations1dAction(op,threshold,tCalcx, tCalcy, 0,
+                    tCalcx.getNumTensors()-1, out);
+            action.invoke();
+            op.setZ(out);
+            return out;
+
+        } else {
+
+            int nTensors = op.x().tensorssAlongDimension(dimensions);
+            List<RecursiveTask<Double>> subTasks = new ArrayList<>(nTensors);
+
+            for (int i = 0; i < nTensors; i++) {
+                RecursiveTask<Double> task = new OpForDimTaskFJ(i);
+                task.fork();
+                subTasks.add(task);
+            }
+
+            int[] retShape = ArrayUtil.removeIndex(op.x().shape(), dimensions);
+            INDArray out = Nd4j.create(retShape);
+            int i = 0;
+            for (RecursiveTask<Double> task : subTasks) {
+                out.putScalar(i++, task.join());
+            }
+            op.setZ(out);
+            return out;
         }
-        op.setZ(out);
-        return out;
     }
 
     private class OpForDimTask extends BaseTask<Double>  {

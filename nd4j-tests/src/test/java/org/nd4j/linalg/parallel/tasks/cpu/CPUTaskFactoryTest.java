@@ -7,6 +7,9 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.impl.accum.*;
+import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
+import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
+import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
@@ -263,6 +266,10 @@ public class CPUTaskFactoryTest {
         testClasses.add(StandardDeviation.class);
         testClasses.add(Sum.class);
         testClasses.add(Variance.class);
+        testClasses.add(CosineSimilarity.class);
+        testClasses.add(EuclideanDistance.class);
+        testClasses.add(ManhattanDistance.class);
+
 
         CPUTaskFactory taskFactory = new CPUTaskFactory();
 
@@ -289,6 +296,7 @@ public class CPUTaskFactoryTest {
                 INDArray origXDup = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
                 INDArray origYDup = getCopyOf(origY, DataBuffer.AllocationMode.HEAP, dtype);
                 Accumulation op = xyConstructor.newInstance(origXDup, origYDup);
+                if (op.isPassThrough()) continue;    //Have to execute passthrough via op executioner, not via task
                 Task<Double> task = taskFactory.getAccumulationTask(op);
                 double expected = task.invokeBlocking();
                 assertEquals(msg, expected, op.getFinalResult().doubleValue(), eps);
@@ -467,6 +475,9 @@ public class CPUTaskFactoryTest {
         testClasses.add(StandardDeviation.class);
         testClasses.add(Sum.class);
         testClasses.add(Variance.class);
+        testClasses.add(CosineSimilarity.class);
+        testClasses.add(EuclideanDistance.class);
+        testClasses.add(ManhattanDistance.class);
 
         CPUTaskFactory taskFactory = new CPUTaskFactory();
 
@@ -490,6 +501,7 @@ public class CPUTaskFactoryTest {
                 INDArray origXDup = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
                 INDArray origYDup = getCopyOf(origY, DataBuffer.AllocationMode.HEAP, dtype);
                 Accumulation op = xyConstructor.newInstance(origXDup, origYDup);
+                if (op.isPassThrough()) continue;    //Have to execute passthrough via op executioner, not via task
                 Task<INDArray> task = taskFactory.getAccumulationTask(op, 0);
                 INDArray expected0 = task.invokeBlocking();
                 assertTrue(expected0==op.z());
