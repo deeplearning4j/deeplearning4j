@@ -33,6 +33,7 @@ import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
+import org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization;
 import org.deeplearning4j.nn.weights.WeightInit;
 
 /**
@@ -51,6 +52,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
         @JsonSubTypes.Type(value = DenseLayer.class, name = "dense"),
         @JsonSubTypes.Type(value = RecursiveAutoEncoder.class, name = "recursiveAutoEncoder"),
         @JsonSubTypes.Type(value = SubsamplingLayer.class, name = "subsampling"),
+        @JsonSubTypes.Type(value = LocalResponseNormalization.class, name = "localResponseNormalization"),
         })
 @Data
 @NoArgsConstructor
