@@ -5,7 +5,7 @@ layout: default
 
 # Running Examples on Windows 7 and Above
 
-Follow these steps:
+<!--Follow these steps:
 
 * Install Java 7 or above (https://www.java.com/de/download/)
 *  Create an environment variable `JAVA_HOME` with the content "C:\Program Files\Java\jdk1.8.0_51"
