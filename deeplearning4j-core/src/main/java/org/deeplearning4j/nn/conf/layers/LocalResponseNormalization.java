@@ -34,7 +34,7 @@ public class LocalResponseNormalization extends Layer{
         // defaults based on AlexNet model
         private double k=2;
         private double n=5;
-        private double alpha=10e-4;
+        private double alpha=1e-4;
         private double beta=0.75;
 
         public Builder(double k, double alpha, double beta) {

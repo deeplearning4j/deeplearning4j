@@ -59,43 +59,52 @@ public class LocalResponseNormalization extends BaseLayer<org.deeplearning4j.nn.
     public void fit(INDArray input) {}
 
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-        int height = input.shape()[2];
+        int channel = input.shape()[1];
+        INDArray tmp, addVal;
         Gradient retGradient = new DefaultGradient();
-        INDArray reverse = activations.mul(epsilon).div(unitScale);
-        INDArray reverseCopy = reverse.dup();
+        INDArray reverse = activations.mul(epsilon);
+        INDArray sumPart = reverse.dup();
 
-        for (int i = 0; i < halfN+1; i++){
-            INDArray t = reverseCopy.get(
+        for (int i = 1; i < halfN+1; i++){
+            tmp = sumPart.get(
                     new INDArrayIndex[]{
                             NDArrayIndex.all(),
+                            interval(i, channel),
                             NDArrayIndex.all(),
-                            interval(i, height),
                             NDArrayIndex.all()});
-            INDArray v = reverse.get(
+            addVal = reverse.get(
                     new INDArrayIndex[]{
                             NDArrayIndex.all(),
+                            interval(0, channel-i),
                             NDArrayIndex.all(),
-                            interval(0, height - 1),
                             NDArrayIndex.all()});
-            reverseCopy.assign(t.addi(v));
+            sumPart.put(new INDArrayIndex[]{
+                    NDArrayIndex.all(),
+                    interval(i, channel),
+                    NDArrayIndex.all(),
+                    NDArrayIndex.all()}, tmp.addi(addVal));
 
-            INDArray t2 = reverseCopy.get(
+            tmp = sumPart.get(
                     new INDArrayIndex[]{
                             NDArrayIndex.all(),
+                            interval(0, channel-i),
                             NDArrayIndex.all(),
-                            interval(0, height-1),
                             NDArrayIndex.all()});
-            INDArray v2 = reverse.get(
+            addVal = reverse.get(
                     new INDArrayIndex[]{
                             NDArrayIndex.all(),
+                            interval(i, channel),
                             NDArrayIndex.all(),
-                            interval(i, height),
                             NDArrayIndex.all()});
-            reverseCopy.assign(t2.addi(v2));
-
+            sumPart.put(new INDArrayIndex[]{
+                    NDArrayIndex.all(),
+                    interval(0, channel-i),
+                    NDArrayIndex.all(),
+                    NDArrayIndex.all()}, tmp.addi(addVal));
         }
 
-        INDArray nextEpsilon = epsilon.mul(scale).sub(input.mul(2 * alpha * beta).mul(reverseCopy));
+        sumPart.divi(unitScale);
+        INDArray nextEpsilon = epsilon.mul(scale).sub(input.mul(2 * alpha * beta).mul(sumPart));
         return new Pair<>(retGradient,nextEpsilon);
     }
 
@@ -106,32 +115,52 @@ public class LocalResponseNormalization extends BaseLayer<org.deeplearning4j.nn.
         alpha = layerConf().getAlpha();
         beta = layerConf().getBeta();
         halfN = (int) n/2;
-
-        int examples = input.shape()[0];
-        int channels = input.shape()[1];
-        int height = input.shape()[2];
-        int width = input.shape()[3];
+        int channel = input.shape()[1];
+        INDArray tmp, addVal;
         INDArray activitySqr = input.mul(input);
-        INDArray extraChannels = Nd4j.zeros(new int[] {examples, (channels+2*halfN), height, width});
-        unitScale = Nd4j.zeros(activitySqr.shape());
-
-        extraChannels.put(new INDArrayIndex[]{
-                NDArrayIndex.all(),
-                interval(halfN,(halfN+channels)),
-                NDArrayIndex.all(),
-                NDArrayIndex.all()}
-                , activitySqr);
-
-        for (int i = 1; i < n; i++) {
-            unitScale.addi(extraChannels.get(
+        INDArray sumPart = activitySqr.dup();
+        
+        for (int i = 1; i < halfN+1; i++){
+            tmp = sumPart.get(
+                    new INDArrayIndex[]{
+                            NDArrayIndex.all(),
+                            interval(i, channel),
+                            NDArrayIndex.all(),
+                            NDArrayIndex.all()});
+            addVal = activitySqr.get(
+                    new INDArrayIndex[]{
+                            NDArrayIndex.all(),
+                            interval(0, channel-i),
+                            NDArrayIndex.all(),
+                            NDArrayIndex.all()});
+            sumPart.put(new INDArrayIndex[]{
                     NDArrayIndex.all(),
-                    interval(i, (i + channels)),
+                    interval(i, channel),
                     NDArrayIndex.all(),
-                    NDArrayIndex.all()));
+                    NDArrayIndex.all()}, tmp.addi(addVal));
+
+            tmp = sumPart.get(
+                    new INDArrayIndex[]{
+                            NDArrayIndex.all(),
+                            interval(0, channel-i),
+                            NDArrayIndex.all(),
+                            NDArrayIndex.all()});
+            addVal = activitySqr.get(
+                    new INDArrayIndex[]{
+                            NDArrayIndex.all(),
+                            interval(i, channel),
+                            NDArrayIndex.all(),
+                            NDArrayIndex.all()});
+            sumPart.put(new INDArrayIndex[]{
+                    NDArrayIndex.all(),
+                    interval(0, channel-i),
+                    NDArrayIndex.all(),
+                    NDArrayIndex.all()}, tmp.addi(addVal));
         }
-        unitScale.muli(alpha).addi(k);
-        scale = Transforms.pow(unitScale, beta);
-        activations = input.div(scale);
+
+        unitScale = sumPart.mul(alpha).add(k);
+        scale = Transforms.pow(unitScale, -beta);
+        activations = input.mul(scale);
         return activations;
 
     }
