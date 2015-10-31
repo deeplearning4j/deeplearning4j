@@ -10,7 +10,7 @@ import java.util.Map;
 /**
  * @author Adam Gibson
  */
-public class SubsampleParamInitializer implements ParamInitializer {
+public class EmptyParamInitializer implements ParamInitializer {
     @Override
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {
 

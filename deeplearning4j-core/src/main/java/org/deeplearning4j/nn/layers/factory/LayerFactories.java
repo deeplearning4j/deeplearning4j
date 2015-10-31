@@ -60,6 +60,8 @@ public class LayerFactories {
             return new SubsampleLayerFactory(clazz);
         else if(BatchNormalization.class.isAssignableFrom(clazz))
             return new BatchNormalizationLayerFactory(clazz);
+        else if(LocalResponseNormalization.class.isAssignableFrom(clazz))
+            return new LocalResponseNormalizationFactory(clazz);
         return new DefaultLayerFactory(clazz);
     }
 
