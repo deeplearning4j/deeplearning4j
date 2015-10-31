@@ -5,12 +5,13 @@ import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 
 /**
- * @author Adam Gibson
+ * Created by nyghtowl on 10/29/15.
  */
-public class SubsampleLayerFactory extends DefaultLayerFactory {
-    public SubsampleLayerFactory(Class<? extends Layer> layerClazz) {
+public class LocalResponseNormalizationFactory extends DefaultLayerFactory {
+    public LocalResponseNormalizationFactory(Class<? extends Layer> layerClazz) {
         super(layerClazz);
     }
+
 
     @Override
     public ParamInitializer initializer() {
