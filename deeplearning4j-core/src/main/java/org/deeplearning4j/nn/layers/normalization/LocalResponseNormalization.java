@@ -18,18 +18,24 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 /**
  * Deep neural net normalization approach normalizes activations between layers
  * "brightness normalization"
+ * Used for nets like AlexNet
  *
  * For a^i_{x,y} the activity of a neuron computed by applying kernel i
  *    at position (x,y) and applying ReLU nonlinearity, the response
  *    normalized activation b^i_{x,y} is given by:
+
+ *  x^2 = (a^j_{x,y})^2
+ *  unitScale = (k + alpha * sum_{j=max(0, i - n/2)}^{max(N-1, i + n/2)} (a^j_{x,y})^2 )
+ *  y = b^i_{x,y} = x * unitScale**-beta
  *
- * b^i_{x,y} = a^i_{x,y} /
- * (k + alpha * sum_{j=max(0, i - n/2)}^{max(N-1, i + n/2)} (a^j_{x,y})^2 )**beta
+ *  gy = epsilon (aka deltas from previous layer)
+ *  sumPart = sum(a^j_{x,y} * gb^j_{x,y})
+ *  gx = gy * unitScale**-beta - 2 * alpha * beta * sumPart/unitScale * a^i_{x,y}
  *
  * Reference:
  * http://www.cs.toronto.edu/~fritz/absps/imagenet.pdf
  * https://github.com/vlfeat/matconvnet/issues/10
- * Lasagne & Chainer
+ * Chainer
  *
  * Created by nyghtowl on 10/29/15.
  */
@@ -65,6 +71,7 @@ public class LocalResponseNormalization extends BaseLayer<org.deeplearning4j.nn.
         INDArray reverse = activations.mul(epsilon);
         INDArray sumPart = reverse.dup();
 
+        // sumPart = sum(a^j_{x,y} * gb^j_{x,y})
         for (int i = 1; i < halfN+1; i++){
             tmp = sumPart.get(
                     new INDArrayIndex[]{
@@ -103,8 +110,8 @@ public class LocalResponseNormalization extends BaseLayer<org.deeplearning4j.nn.
                     NDArrayIndex.all()}, tmp.addi(addVal));
         }
 
-        sumPart.divi(unitScale);
-        INDArray nextEpsilon = epsilon.mul(scale).sub(input.mul(2 * alpha * beta).mul(sumPart));
+        // gx = gy * unitScale**-beta - 2 * alpha * beta * sumPart/unitScale * a^i_{x,y}
+        INDArray nextEpsilon = epsilon.mul(scale).sub(input.mul(2 * alpha * beta).mul(sumPart.div(unitScale)));
         return new Pair<>(retGradient,nextEpsilon);
     }
 
@@ -117,9 +124,11 @@ public class LocalResponseNormalization extends BaseLayer<org.deeplearning4j.nn.
         halfN = (int) n/2;
         int channel = input.shape()[1];
         INDArray tmp, addVal;
+        // x^2 = (a^j_{x,y})^2
         INDArray activitySqr = input.mul(input);
         INDArray sumPart = activitySqr.dup();
-        
+
+        //sum_{j=max(0, i - n/2)}^{max(N-1, i + n/2)} (a^j_{x,y})^2 )
         for (int i = 1; i < halfN+1; i++){
             tmp = sumPart.get(
                     new INDArrayIndex[]{
@@ -158,7 +167,9 @@ public class LocalResponseNormalization extends BaseLayer<org.deeplearning4j.nn.
                     NDArrayIndex.all()}, tmp.addi(addVal));
         }
 
+        // unitScale = (k + alpha * sum_{j=max(0, i - n/2)}^{max(N-1, i + n/2)} (a^j_{x,y})^2 )
         unitScale = sumPart.mul(alpha).add(k);
+        // y = x * unitScale**-beta
         scale = Transforms.pow(unitScale, -beta);
         activations = input.mul(scale);
         return activations;
