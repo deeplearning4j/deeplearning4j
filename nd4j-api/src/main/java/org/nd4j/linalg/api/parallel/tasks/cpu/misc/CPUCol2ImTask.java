@@ -37,7 +37,7 @@ public class CPUCol2ImTask extends RecursiveTask<INDArray> implements Task<INDAr
     protected final int depthTo;
 
     public CPUCol2ImTask(INDArray col, int strideY, int strideX, int padHeight, int padWidth, int imgHeight, int imgWidth, int parallelThreshold) {
-        this(col, getNewOutputArray(col, strideY, strideX, padHeight, padWidth, imgHeight, imgWidth),
+        this(col, getNewOutputArray(col, imgHeight, imgWidth),
                 strideY, strideX, padHeight, padWidth,
                 imgHeight, imgWidth,
                 0, col.size(0), //example ranges
@@ -67,22 +67,12 @@ public class CPUCol2ImTask extends RecursiveTask<INDArray> implements Task<INDAr
     }
 
 
-    private static INDArray getNewOutputArray(INDArray col, int strideY, int strideX, int padHeight, int padWidth,
-                                              int imgHeight, int imgWidth) {
+    private static INDArray getNewOutputArray(INDArray col, int imgHeight, int imgWidth) {
         //number of images
         int n = col.size(0);
         //number of columns
         int c = col.size(1);
-        //kernel height
-        int kh = col.size(2);
-        //kernel width
-        int kw = col.size(3);
-        //out height
-        int outH = col.size(4);
-        //out width
-        int outW = col.size(5);
 
-//        return Nd4j.create(n, c, imgHeight + 2 * padHeight + strideY - 1, imgWidth + 2 * padWidth + strideX - 1);
         return Nd4j.create(n, c, imgHeight, imgWidth);
     }
 
@@ -136,9 +126,6 @@ public class CPUCol2ImTask extends RecursiveTask<INDArray> implements Task<INDAr
                 int countFirst = temp / 2;
                 first = new CPUCol2ImTask(col, imgOut, strideY, strideX, padHeight, padWidth, imgHeight, imgWidth,
                         exampleFrom, exampleTo, depthFrom, depthFrom + countFirst, parallelThreshold);
-//                first = new CPUCol2ImTask(img, out, kernelHeight, kernelWidth, strideY, strideX, padHeight, padWidth,
-//                        exampleFrom, exampleTo, depthFrom, depthFrom + countFirst,
-//                        yOutFrom, yOutTo, xOutFrom, xOutTo, coverAll, parallelThreshold);
                 first.fork();
 
                 second = new CPUCol2ImTask(col, imgOut, strideY, strideX, padHeight, padWidth, imgHeight, imgWidth,
