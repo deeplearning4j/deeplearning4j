@@ -12,6 +12,8 @@ import org.nd4j.linalg.api.parallel.tasks.cpu.accumulation.CPUAccumulationViaTen
 import org.nd4j.linalg.api.parallel.tasks.cpu.indexaccum.CPUIndexAccumulationAlongDimensionTask;
 import org.nd4j.linalg.api.parallel.tasks.cpu.indexaccum.CPUIndexAccumulationTask;
 import org.nd4j.linalg.api.parallel.tasks.cpu.indexaccum.CPUIndexAccumulationViaTensorTask;
+import org.nd4j.linalg.api.parallel.tasks.cpu.misc.CPUCol2ImTask;
+import org.nd4j.linalg.api.parallel.tasks.cpu.misc.CPUIm2ColTask;
 import org.nd4j.linalg.api.parallel.tasks.cpu.scalar.CPUScalarOpAction;
 import org.nd4j.linalg.api.parallel.tasks.cpu.scalar.CPUScalarOpViaTensorAction;
 import org.nd4j.linalg.api.parallel.tasks.cpu.transform.CPUTransformAlongDimensionTask;
@@ -260,5 +262,15 @@ public class CPUTaskFactory implements TaskFactory {
                     ", y.shape="+Arrays.toString(y.shape()) + ", y should be vector with length=x.size("+op.getDimension()+")");
         }
         return new CPUVectorOp(op,parallelThreshold);
+    }
+
+    @Override
+    public Task<INDArray> getIm2ColTask(INDArray img, int kernelHeight, int kernelWidth, int strideY, int strideX, int padHeight, int padWidth, boolean coverAll) {
+        return new CPUIm2ColTask(img, kernelHeight, kernelWidth, strideY, strideX, padHeight, padWidth, coverAll, parallelThreshold);
+    }
+
+    @Override
+    public Task<INDArray> getCol2ImTask(INDArray col, int strideY, int strideX, int padHeight, int padWidth, int imgHeight, int imgWidth) {
+        return new CPUCol2ImTask(col, strideY, strideX, padHeight, padWidth, imgHeight, imgWidth, parallelThreshold);
     }
 }

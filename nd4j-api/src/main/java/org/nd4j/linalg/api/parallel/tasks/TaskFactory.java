@@ -24,4 +24,9 @@ public interface TaskFactory {
 
     Task<Void> getVectorOpAction(VectorOp op);
 
+    Task<INDArray> getIm2ColTask(INDArray img, int kernelHeight, int kernelWidth, int strideY, int strideX, int padHeight,
+                                 int padWidth, boolean coverAll);
+
+    Task<INDArray> getCol2ImTask(INDArray col, int strideY, int strideX, int padHeight, int padWidth, int imgHeight, int imgWidth);
+
 }
