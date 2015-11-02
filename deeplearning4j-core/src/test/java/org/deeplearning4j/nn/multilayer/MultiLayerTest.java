@@ -322,7 +322,7 @@ public class MultiLayerTest {
         final int numColumns = 28;
         int seed = 123;
         int numSamples = 3;
-        int iterations = 1;
+        int iterations = 10;
         int listenerFreq = iterations/5;
 
         log.info("Load data....");
@@ -338,7 +338,9 @@ public class MultiLayerTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(seed)
                 .iterations(iterations)
+                .learningRate(1e-6f)
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
+                .l1(1e-1).regularization(false).l2(2e-4)
                 .list(10)
                 .layer(0, new RBM.Builder().nIn(numRows * numColumns).nOut(1000).lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
                 .layer(1, new RBM.Builder().nIn(1000).nOut(500).lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
