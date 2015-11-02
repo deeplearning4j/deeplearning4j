@@ -496,7 +496,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      *
      * @param from first layer to be activated, inclusive
      * @param to last layer to be activated, inclusive
-     * @return
+     * @return the activation from the last layer
      */
     protected INDArray activateSelectedLayers(int from, int to, INDArray input) {
         if (input == null) throw new IllegalStateException("Unable to perform activation; no input found");
