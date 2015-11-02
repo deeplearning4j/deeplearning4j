@@ -498,7 +498,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @param to last layer to be activated, inclusive
      * @return the activation from the last layer
      */
-    protected INDArray activateSelectedLayers(int from, int to, INDArray input) {
+    public INDArray activateSelectedLayers(int from, int to, INDArray input) {
         if (input == null) throw new IllegalStateException("Unable to perform activation; no input found");
         if (from < 0 || from >= layers.length || from >= to) throw new IllegalStateException("Unable to perform activation; FROM is out of layer space");
         if (to < 1 || to >= layers.length) throw new IllegalStateException("Unable to perform activation; TO is out of layer space");
