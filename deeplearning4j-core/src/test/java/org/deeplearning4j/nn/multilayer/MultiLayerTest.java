@@ -315,6 +315,9 @@ public class MultiLayerTest {
     }
 
 
+    /**
+     *  This test intended only to test activateSelectedLayers method, it does not involves fully-working AutoEncoder.
+     */
     @Test
     public void testSelectedActivations() {
         // Train DeepAutoEncoder on very limited trainset
@@ -322,7 +325,7 @@ public class MultiLayerTest {
         final int numColumns = 28;
         int seed = 123;
         int numSamples = 3;
-        int iterations = 10;
+        int iterations = 3;
         int listenerFreq = iterations/5;
 
         log.info("Load data....");
@@ -338,9 +341,9 @@ public class MultiLayerTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(seed)
                 .iterations(iterations)
-                .learningRate(1e-6f)
+//                .learningRate(1e-6f)
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
-                .l1(1e-1).regularization(false).l2(2e-4)
+//                .l1(1e-1).regularization(true).l2(2e-4)
                 .list(10)
                 .layer(0, new RBM.Builder().nIn(numRows * numColumns).nOut(1000).lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
                 .layer(1, new RBM.Builder().nIn(1000).nOut(500).lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
@@ -369,7 +372,23 @@ public class MultiLayerTest {
         }
         // Make two separate selective calls
 
-        System.out.println("Done");
+        log.info("Testing full cycle...");
+
+        List<INDArray> comparableResult = model.feedForward(Nd4j.create(trainingData[0]));
+
+        INDArray encodeResult = model.activateSelectedLayers(0,4, Nd4j.create(trainingData[0]));
+
+        log.info("Compare feedForward results with selectedActivation");
+
+        assertEquals(comparableResult.get(5), encodeResult);
+
+        INDArray decodeResults = model.activateSelectedLayers(5,9, encodeResult);
+
+
+        log.info("Decode results: " + decodeResults.columns() + " " + decodeResults);
+        log.info("Comparable  results: " + comparableResult.get(10).columns() + " " + comparableResult.get(9));
+
+        assertEquals(comparableResult.get(10), decodeResults);
     }
 
     @Test

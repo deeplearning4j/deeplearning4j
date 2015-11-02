@@ -503,20 +503,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if (from < 0 || from >= layers.length || from >= to) throw new IllegalStateException("Unable to perform activation; FROM is out of layer space");
         if (to < 1 || to >= layers.length) throw new IllegalStateException("Unable to perform activation; TO is out of layer space");
 
-        INDArray res;
-        // if activation starts from 0 layer, its probably raw input, so it should be processed separatedly
-        if (from == 0) {
-            this.input = input;
-             res = this.activate(0);
-            for (int l = 1; l <= to; l++) {
-                res = this.activationFromPrevLayer(l, res, false);
-            }
-        } else {
-            // if activation start from > 0, we should ensure that input width matching layer width
-            res = input;
-            for (int l = from; l <= to; l++) {
-                res = this.activationFromPrevLayer(l, res, false);
-            }
+        INDArray res = input;
+        for (int l = from; l <= to; l++) {
+            res = this.activationFromPrevLayer(l, res, false);
         }
         return res;
     }
