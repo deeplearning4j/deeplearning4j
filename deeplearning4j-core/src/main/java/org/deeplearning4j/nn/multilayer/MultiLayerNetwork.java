@@ -29,6 +29,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
+import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.layers.recurrent.BaseRecurrentLayer;
@@ -813,8 +814,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             return params;
 
         List<INDArray> params = new ArrayList<>();
-        for (Layer layer: getLayers())
-            params.add(layer.params());
+        for (Layer layer: getLayers()){
+            if( layer instanceof BasePretrainNetwork) params.add(((BasePretrainNetwork) layer).paramsBackprop());
+            else params.add(layer.params());
+        }
+
 
 
         return Nd4j.toFlattened('f',params);
@@ -834,7 +838,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         int idx = 0;
         for (int i = 0; i < getLayers().length; i++) {
             Layer layer = getLayer(i);
-            int range = layer.numParams();
+            int range = (layer instanceof BasePretrainNetwork ?
+                    ((BasePretrainNetwork<?>)layer).numParamsBackprop() : layer.numParams());
             INDArray get = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, range + idx));
             layer.setParams(get);
             idx += range;
