@@ -393,7 +393,7 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
             input = Dropout.applyDropout(input,conf.getLayer().getDropOut(),dropoutMask);
         }
         //reconstructed: propUp ----> hidden propDown to transform
-        INDArray propUp = propUp(input,training);
+        INDArray propUp = propUp(input, training);
         return propUp;
     }
 
@@ -421,8 +421,4 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
         applyDropOutIfNecessary(this.input,true);
         contrastiveDivergence();
     }
-
-
-
-
 }
