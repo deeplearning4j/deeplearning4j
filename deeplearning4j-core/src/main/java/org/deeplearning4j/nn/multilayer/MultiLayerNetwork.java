@@ -489,6 +489,26 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         return ret;
     }
 
+    /**
+     * Calculate activation for few layers at once. Suitable for autoencoder partial activation.
+     *
+     * In example: in 10-layer deep autoencoder, layers 0 - 4 inclusive are used for encoding part, and layers 5-9 inclusive are used for decoding part.
+     *
+     * @param from first layer to be activated, inclusive
+     * @param to last layer to be activated, inclusive
+     * @return the activation from the last layer
+     */
+    public INDArray activateSelectedLayers(int from, int to, INDArray input) {
+        if (input == null) throw new IllegalStateException("Unable to perform activation; no input found");
+        if (from < 0 || from >= layers.length || from >= to) throw new IllegalStateException("Unable to perform activation; FROM is out of layer space");
+        if (to < 1 || to >= layers.length) throw new IllegalStateException("Unable to perform activation; TO is out of layer space");
+
+        INDArray res = input;
+        for (int l = from; l <= to; l++) {
+            res = this.activationFromPrevLayer(l, res, false);
+        }
+        return res;
+    }
 
     /**
      * * Compute input linear transformation (z) of the output layer
