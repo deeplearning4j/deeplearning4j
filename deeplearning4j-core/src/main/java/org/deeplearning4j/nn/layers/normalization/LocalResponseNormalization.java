@@ -57,6 +57,16 @@ public class LocalResponseNormalization extends BaseLayer<org.deeplearning4j.nn.
     }
 
     @Override
+    public double calcL2() {
+        return 0;
+    }
+
+    @Override
+    public double calcL1() {
+        return 0;
+    }
+
+    @Override
     public Type type() {
         return Type.NORMALIZATION;
     }
