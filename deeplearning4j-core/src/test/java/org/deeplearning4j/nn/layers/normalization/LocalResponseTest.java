@@ -133,8 +133,25 @@ public class LocalResponseTest {
         assertEquals(newEpsilonExpected.getDouble(20), containedOutput.getSecond().getDouble(20), 1e-4);
         assertEquals(null, containedOutput.getFirst().getGradientFor("W"));
         assertArrayEquals(newEpsilonExpected.shape(), containedOutput.getSecond().shape());
+    }
 
+    @Test
+    public void testRegularization(){
+        // Confirm a structure with regularization true will not throw an error
+
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+                .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
+                .regularization(true)
+                .l1(0.2)
+                .l2(0.1)
+                .seed(123)
+                .layer(new LocalResponseNormalization.Builder()
+                        .k(2).n(5).alpha(1e-4).beta(0.75)
+                        .build())
+                .build();
 
     }
+
+
 
 }
