@@ -27,7 +27,7 @@
     <parent>
         <artifactId>nd4j-jcublas-parent</artifactId>
         <groupId>org.nd4j</groupId>
-        <version> 0.4-rc3.6-SNAPSHOT</version>
+        <version> 0.4-rc3.6</version>
     </parent>
 
     <name>nd4j-jcublas-common</name>
