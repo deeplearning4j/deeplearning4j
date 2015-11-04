@@ -30,6 +30,8 @@ public class JcublasLevel1 extends BaseLevel1 {
         throw new UnsupportedOperationException();
     }
 
+
+
     @Override
     protected float sdot(int N, INDArray X, int incX, INDArray Y, int incY) {
         DataTypeValidation.assertSameDataType(X, Y);
