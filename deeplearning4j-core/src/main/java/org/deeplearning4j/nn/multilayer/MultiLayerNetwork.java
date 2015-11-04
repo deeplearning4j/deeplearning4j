@@ -1064,9 +1064,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         BaseOutputLayer<?> outputLayer = (BaseOutputLayer<?>) getOutputLayer();
         if(labels == null)
             throw new IllegalStateException("No labels found");
-        if(outputLayer.conf().getLayer().getWeightInit() == WeightInit.ZERO) {
-            throw new IllegalStateException("Output layer weights cannot be initialized to zero when using backprop.");
-        }
 
         outputLayer.setLabels(labels);
 

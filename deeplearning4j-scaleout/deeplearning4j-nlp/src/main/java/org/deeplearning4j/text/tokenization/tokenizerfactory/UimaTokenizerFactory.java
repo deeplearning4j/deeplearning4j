@@ -44,7 +44,7 @@ public class UimaTokenizerFactory implements TokenizerFactory {
 	private UimaResource uimaResource;
 	private boolean checkForLabel;
 	private static AnalysisEngine defaultAnalysisEngine;
-  private TokenPreProcess preProcess;
+	private TokenPreProcess preProcess;
 
 	public UimaTokenizerFactory() throws ResourceInitializationException {
 		this(defaultAnalysisEngine(),true);
@@ -82,8 +82,8 @@ public class UimaTokenizerFactory implements TokenizerFactory {
 		if(toTokenize == null)
 			throw new IllegalArgumentException("Unable to proceed; on sentence to tokenize");
 		Tokenizer ret = new UimaTokenizer(toTokenize,uimaResource,checkForLabel);
-        ret.setTokenPreProcessor(preProcess);
-        return ret;
+		ret.setTokenPreProcessor(preProcess);
+		return ret;
 	}
 
 	public UimaResource getUimaResource() {
@@ -115,10 +115,10 @@ public class UimaTokenizerFactory implements TokenizerFactory {
 		throw new UnsupportedOperationException();
 	}
 
-    @Override
-    public void setTokenPreProcessor(TokenPreProcess preProcessor) {
-        this.preProcess = preProcessor;
-    }
+	@Override
+	public void setTokenPreProcessor(TokenPreProcess preProcessor) {
+		this.preProcess = preProcessor;
+	}
 
 
 }
