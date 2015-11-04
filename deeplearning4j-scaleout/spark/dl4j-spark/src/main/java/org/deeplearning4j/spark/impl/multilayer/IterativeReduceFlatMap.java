@@ -18,11 +18,13 @@
 
 package org.deeplearning4j.spark.impl.multilayer;
 
+import org.apache.spark.Accumulator;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.deeplearning4j.spark.impl.common.BestScoreIterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -46,14 +48,18 @@ public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>
     private Broadcast<INDArray> params;
     private static Logger log = LoggerFactory.getLogger(IterativeReduceFlatMap.class);
 
+    private final Accumulator<Double> best_score_acc;
+
     /**
      * Pass in json configuration and baseline parameters
      * @param json json configuration for the network
      * @param params the parameters to use for the network
+     * @param best_score_acc accumulator which tracks best score seen
      */
-    public IterativeReduceFlatMap(String json, Broadcast<INDArray> params) {
+    public IterativeReduceFlatMap(String json, Broadcast<INDArray> params, Accumulator<Double> best_score_acc) {
         this.json = json;
         this.params = params;
+        this.best_score_acc = best_score_acc;
     }
 
 
@@ -73,7 +79,7 @@ public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>
         log.debug("Training on " + data.labelCounts());
         MultiLayerNetwork network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(json));
         network.init();
-        network.setListeners(new ScoreIterationListener(1));
+        network.setListeners(new ScoreIterationListener(1), new BestScoreIterationListener(best_score_acc));
         INDArray val = params.value();
         if(val.length() != network.numParams())
             throw new IllegalStateException("Network did not have same number of parameters as the broadcasted set parameters");

@@ -5,6 +5,7 @@ import lombok.Data;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 
 /**A preprocessor to allow RNN and feed-forward network layers to be used together.<br>
  * For example, GravesLSTM -> OutputLayer or GravesLSTM -> DenseLayer<br>
@@ -38,7 +39,8 @@ public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
 	public INDArray backprop(INDArray output, Layer layer) {
 		//Need to reshape FeedForward layer epsilons (2d) to 3d (for use in RNN layer backprop calculations)
 		if( output.rank() != 2 ) throw new IllegalArgumentException("Invalid input: expect NDArray with rank 2 (i.e., epsilons from feed forward layer)");
-		
+		if( output.ordering() == 'f' ) output = Shape.toOffsetZeroCopy(output,'c');
+
 		int[] shape = output.shape();
 		int miniBatchSize = layer.getInputMiniBatchSize();
 		INDArray reshaped = output.reshape(miniBatchSize,shape[0]/miniBatchSize,shape[1]);

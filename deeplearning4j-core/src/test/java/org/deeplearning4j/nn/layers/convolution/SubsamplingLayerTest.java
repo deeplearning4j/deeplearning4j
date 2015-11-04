@@ -5,6 +5,7 @@ import static org.junit.Assert.*;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -198,9 +199,9 @@ public class SubsamplingLayerTest {
 
     private Layer getSubsamplingLayer(SubsamplingLayer.PoolingType pooling){
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .constrainGradientToUnitNorm(true)
+                .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
                 .seed(123)
-                .layer(new SubsamplingLayer.Builder(pooling)
+                .layer(new SubsamplingLayer.Builder(pooling, new int[] {2, 2})
                         .activation("relu")
                         .build())
                 .build();

@@ -18,6 +18,9 @@
 
 package org.deeplearning4j.optimize.solvers;
 
+import com.google.common.annotations.VisibleForTesting;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.exception.InvalidStepException;
 import org.deeplearning4j.nn.api.Layer;
@@ -36,6 +39,7 @@ import org.deeplearning4j.optimize.stepfunctions.NegativeGradientStepFunction;
 import org.deeplearning4j.optimize.terminations.EpsTermination;
 import org.deeplearning4j.optimize.terminations.ZeroDirection;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,7 +62,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     protected BackTrackLineSearch lineMaximizer;
     protected Updater updater;
     protected double step;
-    private int batchSize = 10;
+    private int batchSize;
     protected double score,oldScore;
     protected double stepMax = Double.MAX_VALUE;
     public final static String GRADIENT_KEY = "g";
@@ -106,16 +110,20 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         return model.score();
     }
 
-
     @Override
     public Updater getUpdater() {
         return updater;
     }
 
     @Override
+    public NeuralNetConfiguration getConf() { return conf; }
+
+    @Override
     public Pair<Gradient,Double> gradientAndScore() {
+        oldScore = score;
         model.computeGradientAndScore();
         Pair<Gradient,Double> pair = model.gradientAndScore();
+        score = pair.getSecond();
         updateGradientAccordingToParams(pair.getFirst(), model, model.batchSize());
         return pair;
     }
@@ -133,7 +141,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         INDArray parameters = null;
         model.validateInput();
         Pair<Gradient,Double> pair = gradientAndScore();
-        score = pair.getSecond();
+//        score = pair.getSecond();
         if(searchState.isEmpty()){
         	searchState.put(GRADIENT_KEY, pair.getFirst().gradient());
         	setupSearchState(pair);		//Only do this once
@@ -176,34 +184,38 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
                 log.debug("Step size returned by line search is 0.0.");
             }
 
-            //record old score for deltas and other termination conditions
-            oldScore = score;
             pair = gradientAndScore();
 
             //updates searchDirection
             postStep(pair.getFirst().gradient());
-            score = pair.getSecond();
 
             //invoke listeners for debugging
             for(IterationListener listener : iterationListeners)
                 listener.iterationDone(model,i);
 
             //check for termination conditions based on absolute change in score
-            for(TerminationCondition condition : terminationConditions){
-                if(condition.terminate(score,oldScore,new Object[]{pair.getFirst().gradient()})){
-                    log.debug("Hit termination condition on iteration {}: score={}, oldScore={}, condition={}",i,score,oldScore,condition);
-                    return true;
-                }
-            }
-
+            checkTerminalConditions(pair.getFirst().gradient(), oldScore, score, i);
             this.iteration++;
         }
-
         return true;
     }
 
     protected  void postFirstStep(INDArray gradient) {
         //no-op
+    }
+
+    @Override
+    public boolean checkTerminalConditions(INDArray gradient, double oldScore, double score, int i){
+        for(TerminationCondition condition : terminationConditions){
+            if(condition.terminate(score,oldScore,new Object[]{gradient})){
+                log.debug("Hit termination condition on iteration {}: score={}, oldScore={}, condition={}", i, score, oldScore, condition);
+                if(condition instanceof EpsTermination && !Double.isNaN(conf.getLayer().getLrScoreBasedDecay())) {
+                    model.applyLearningRateScoreDecay();
+                }
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

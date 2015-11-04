@@ -21,6 +21,7 @@ package org.deeplearning4j.optimize.api;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.AdaGrad;
@@ -41,6 +42,8 @@ public interface ConvexOptimizer extends Serializable {
     double score();
 
     Updater getUpdater();
+
+    NeuralNetConfiguration getConf();
 
     /**
      * The gradient and score for this optimizer
@@ -86,11 +89,6 @@ public interface ConvexOptimizer extends Serializable {
      */
     void setupSearchState(Pair<Gradient, Double> pair);
 
-
-
-
-
-
     /**
      * Update the gradient according to the configuration such as adagrad, momentum, and sparsity
      * @param gradient the gradient to modify
@@ -100,5 +98,11 @@ public interface ConvexOptimizer extends Serializable {
      */
     void updateGradientAccordingToParams(Gradient gradient, Model model, int batchSize);
 
-
+    /**
+     * Check termination conditions
+     * setup a search state
+     * @param gradient layer gradients
+     * @param iteration what iteration the optimizer is on
+     */
+    boolean checkTerminalConditions(INDArray gradient, double oldScore, double score, int iteration);
 }
