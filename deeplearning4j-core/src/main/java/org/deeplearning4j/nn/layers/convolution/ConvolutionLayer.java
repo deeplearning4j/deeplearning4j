@@ -29,6 +29,8 @@ import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.VectorOp;
+import org.nd4j.linalg.api.ops.impl.vector.VectorAddOp;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -59,15 +61,15 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     @Override
     public double calcL2() {
         //TODO figure out if need to sum over axes otherwise delete
-    	if(!conf.isUseRegularization() || conf.getL2() <= 0.0 ) return 0.0;
-        return 0.5 * conf.getL2() * Transforms.pow(getParam(ConvolutionParamInitializer.WEIGHT_KEY), 2).sum(Integer.MAX_VALUE).getDouble(0);
+    	if(!conf.isUseRegularization() || conf.getLayer().getL2() <= 0.0 ) return 0.0;
+        return 0.5 * conf.getLayer().getL2() * Transforms.pow(getParam(ConvolutionParamInitializer.WEIGHT_KEY), 2).sum(Integer.MAX_VALUE).getDouble(0);
     }
 
     @Override
     public double calcL1() {
         //TODO figure out if need to sum over axes otherwise delete
-    	if(!conf.isUseRegularization() || conf.getL1() <= 0.0 ) return 0.0;
-        return conf.getL1() * Transforms.abs(getParam(ConvolutionParamInitializer.WEIGHT_KEY)).sum(Integer.MAX_VALUE).getDouble(0);
+    	if(!conf.isUseRegularization() || conf.getLayer().getL1() <= 0.0 ) return 0.0;
+        return conf.getLayer().getL1() * Transforms.abs(getParam(ConvolutionParamInitializer.WEIGHT_KEY)).sum(Integer.MAX_VALUE).getDouble(0);
     }
 
     @Override
@@ -120,8 +122,9 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         }
 
         INDArray z = Nd4j.tensorMmul(col, Weights, new int[][]{{1, 2, 3}, {1, 2, 3}});
-        bias = bias.dimShuffle(new Object[] {'x', 0, 'x', 'x'},new int[]{0,1},new boolean[]{true,true}).broadcast(z.shape());
-        z.addi(bias);
+        VectorOp op = new VectorAddOp(z,bias,z,3);
+        Nd4j.getExecutioner().exec(op);
+
         return Nd4j.rollAxis(z, 3, 1);
     }
 

@@ -63,6 +63,7 @@ public class DefaultLayerFactory implements LayerFactory {
         Map<String,INDArray> params = getParams(conf);
         ret.setParamTable(params);
         ret.setConf(conf);
+        ret.setInputMiniBatchSize(conf.getBatchSize());
         return (E) ret;
     }
     
@@ -91,6 +92,8 @@ public class DefaultLayerFactory implements LayerFactory {
             return new org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer(conf);
          if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.BatchNormalization)
              return new org.deeplearning4j.nn.layers.normalization.BatchNormalization(conf);
+        if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.LocalResponseNormalization)
+            return new org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization(conf);
         throw new RuntimeException("unknown layer type: " + layerConfig);
     }
 

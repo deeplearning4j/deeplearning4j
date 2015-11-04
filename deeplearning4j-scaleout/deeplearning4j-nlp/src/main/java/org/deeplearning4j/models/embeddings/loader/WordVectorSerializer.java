@@ -18,22 +18,6 @@
 
 package org.deeplearning4j.models.embeddings.loader;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.zip.GZIPInputStream;
-
 import org.apache.commons.compress.compressors.gzip.GzipUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
@@ -53,6 +37,11 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.zip.GZIPInputStream;
+
 /**
  * Loads word 2 vec models
  *
@@ -60,6 +49,7 @@ import org.slf4j.LoggerFactory;
  */
 public class WordVectorSerializer {
     private static final boolean DEFAULT_LINEBREAKS = false;
+    private static final boolean HAS_HEADER = true;
     private static final int MAX_SIZE = 50;
     private static final Logger log = LoggerFactory.getLogger(WordVectorSerializer.class);
 
@@ -80,7 +70,7 @@ public class WordVectorSerializer {
 
     /**
      * Loads the Google model.
-     * 
+     *
      * @param modelFile
      *            the input file
      * @param binary
@@ -155,7 +145,7 @@ public class WordVectorSerializer {
 
     /**
      * Read a binary word2vec file.
-     * 
+     *
      * @param modelFile
      *            the File to read
      * @param linebreaks
@@ -283,7 +273,7 @@ public class WordVectorSerializer {
 
     /**
      * Writes the word vectors to the given path. Note that this assumes an in memory cache
-     * 
+     *
      * @param lookupTable
      * @param cache
      *
@@ -412,20 +402,23 @@ public class WordVectorSerializer {
     /**
      * Loads an in memory cache from the given path (sets syn0 and the vocab)
      *
-     * @param vectorsFile
-     *            the path of the file to load
-     * @return
-     * @throws FileNotFoundException
+     * @param vectorsFile the path of the file to load
+     * @return a Pair holding the lookup table and the vocab cache.
+     * @throws FileNotFoundException if the input file does not exist
      */
     public static Pair<InMemoryLookupTable, VocabCache> loadTxt(File vectorsFile)
-        throws FileNotFoundException
-    {
-        BufferedReader write = new BufferedReader(new FileReader(vectorsFile));
+            throws FileNotFoundException {
+        BufferedReader reader = new BufferedReader(new FileReader(vectorsFile));
         VocabCache cache = new InMemoryLookupCache();
 
-        InMemoryLookupTable lookupTable;
-
-        LineIterator iter = IOUtils.lineIterator(write);
+        LineIterator iter = IOUtils.lineIterator(reader);
+        if (iter.hasNext()) {
+            if (HAS_HEADER) {
+                iter.next();    // skip header line
+            }
+        } else {
+            log.warn("Empty input file '" + vectorsFile + "'.");
+        }
         List<INDArray> arrays = new ArrayList<>();
         while (iter.hasNext()) {
             String line = iter.nextLine();
@@ -443,12 +436,12 @@ public class WordVectorSerializer {
             arrays.add(row);
         }
 
-        INDArray syn = Nd4j.create(new int[] { arrays.size(), arrays.get(0).columns() });
+        INDArray syn = Nd4j.create(new int[]{arrays.size(), arrays.get(0).columns()});
         for (int i = 0; i < syn.rows(); i++) {
             syn.putRow(i, arrays.get(i));
         }
 
-        lookupTable = (InMemoryLookupTable) new InMemoryLookupTable.Builder()
+        InMemoryLookupTable lookupTable = (InMemoryLookupTable) new InMemoryLookupTable.Builder()
                 .vectorLength(arrays.get(0).columns())
                 .useAdaGrad(false).cache(cache)
                 .build();

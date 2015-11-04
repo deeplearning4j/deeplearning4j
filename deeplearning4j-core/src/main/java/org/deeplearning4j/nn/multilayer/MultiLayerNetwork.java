@@ -29,6 +29,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
+import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.layers.recurrent.BaseRecurrentLayer;
@@ -488,6 +489,26 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         return ret;
     }
 
+    /**
+     * Calculate activation for few layers at once. Suitable for autoencoder partial activation.
+     *
+     * In example: in 10-layer deep autoencoder, layers 0 - 4 inclusive are used for encoding part, and layers 5-9 inclusive are used for decoding part.
+     *
+     * @param from first layer to be activated, inclusive
+     * @param to last layer to be activated, inclusive
+     * @return the activation from the last layer
+     */
+    public INDArray activateSelectedLayers(int from, int to, INDArray input) {
+        if (input == null) throw new IllegalStateException("Unable to perform activation; no input found");
+        if (from < 0 || from >= layers.length || from >= to) throw new IllegalStateException("Unable to perform activation; FROM is out of layer space");
+        if (to < 1 || to >= layers.length) throw new IllegalStateException("Unable to perform activation; TO is out of layer space");
+
+        INDArray res = input;
+        for (int l = from; l <= to; l++) {
+            res = this.activationFromPrevLayer(l, res, false);
+        }
+        return res;
+    }
 
     /**
      * * Compute input linear transformation (z) of the output layer
@@ -813,8 +834,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             return params;
 
         List<INDArray> params = new ArrayList<>();
-        for (Layer layer: getLayers())
-            params.add(layer.params());
+        for (Layer layer: getLayers()){
+            if( layer instanceof BasePretrainNetwork) params.add(((BasePretrainNetwork) layer).paramsBackprop());
+            else params.add(layer.params());
+        }
+
 
 
         return Nd4j.toFlattened('f',params);
@@ -834,7 +858,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         int idx = 0;
         for (int i = 0; i < getLayers().length; i++) {
             Layer layer = getLayer(i);
-            int range = layer.numParams();
+            int range = (layer instanceof BasePretrainNetwork ?
+                    ((BasePretrainNetwork<?>)layer).numParamsBackprop() : layer.numParams());
             INDArray get = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, range + idx));
             layer.setParams(get);
             idx += range;
@@ -993,8 +1018,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if(getOutputLayer().conf().isUseDropConnect() || getOutputLayer().conf().getLayer().getDropOut() > 0.0) {
             if (mask == null)
                 initMask();
-            g.addi(theta.mul(defaultConfiguration.getL2()).muli(mask));
-            INDArray conAdd = Transforms.pow(mask.mul(defaultConfiguration.getL2()).add(Nd4j.valueArrayOf(g.slices(), g.columns(), layerWiseConfigurations.getDampingFactor())), 3.0 / 4.0);
+            g.addi(theta.mul(defaultConfiguration.getLayer().getL2()).muli(mask));
+            INDArray conAdd = Transforms.pow(mask.mul(defaultConfiguration.getLayer().getL2()).add(Nd4j.valueArrayOf(g.slices(), g.columns(), layerWiseConfigurations.getDampingFactor())), 3.0 / 4.0);
             con.addi(conAdd);
 
         }
@@ -1608,7 +1633,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         INDArray params = params();
         setParameters(param);
         double ret = score();
-        double regCost = 0.5f * defaultConfiguration.getL2() * (double) Transforms.pow(mask.mul(param), 2).sum(Integer.MAX_VALUE).element();
+        double regCost = 0.5f * defaultConfiguration.getLayer().getL2() * (double) Transforms.pow(mask.mul(param), 2).sum(Integer.MAX_VALUE).element();
         setParameters(params);
         return ret + regCost;
     }
@@ -1706,6 +1731,17 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     }
 
 
+    public void applyLearningRateScoreDecay() {
+        for (Layer layer: layers) {
+            if(!(layer instanceof SubsamplingLayer)) {
+                layer.conf().getLayer().setLearningRate(
+                        layer.conf().getLayer().getLearningRate() * (layer.conf().getLayer().getLrScoreBasedDecay() + Nd4j.EPS_THRESHOLD));
+            }
+        }
+    }
+
+
+
     /**
      * Feed forward with the r operator
      *
@@ -1771,12 +1807,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         }
 
-        INDArray pack = pack(list).addi(mask.mul(defaultConfiguration.getL2())
+        INDArray pack = pack(list).addi(mask.mul(defaultConfiguration.getLayer().getL2())
                 .muli(v)).addi(v.mul(layerWiseConfigurations.getDampingFactor()));
         return unPack(pack);
 
     }
 
+    public NeuralNetConfiguration getDefaultConfiguration() {
+        return defaultConfiguration;
+    }
 
     public INDArray getLabels() {
         return labels;

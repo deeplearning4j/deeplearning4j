@@ -78,7 +78,9 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     		throw new IllegalStateException("Cannot calculate score without input and labels");
     	this.fullNetworkL1 = fullNetworkL1;
     	this.fullNetworkL2 = fullNetworkL2;
-    	setScoreWithZ(output2d(input));
+        INDArray preOut = preOutput2d(input,true);
+        INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), preOut.dup()));
+        setScore(output,preOut);
     	return score;
     }
 
@@ -87,24 +89,29 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         if(input == null || labels == null)
             return;
 
-        INDArray z = preOutput2d(input,true);
-        Triple<Gradient,INDArray,INDArray> triple = getGradientsAndDelta(z);
+        INDArray preOut = preOutput2d(input,true);
+        Triple<Gradient,INDArray,INDArray> triple = getGradientsAndDelta(preOut);
         this.gradient = triple.getFirst();
-        setScoreWithZ(triple.getThird());
+        setScore(triple.getThird(),preOut);
     }
 
     @Override
     protected void setScoreWithZ(INDArray z) {
+        setScore(z,null);
+    }
+
+    private void setScore(INDArray z, INDArray preOut ){
         if (layerConf().getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
             LossFunction create = Nd4j.getOpFactory().createLossFunction(layerConf().getCustomLossFunction(), input, z);
             create.exec();
             score = create.currentResult().doubleValue();
         }
-
         else {
             score = LossCalculation.builder()
                     .l1(fullNetworkL1).l2(fullNetworkL2)
-                    .labels(getLabels2d()).z(z).lossFunction(layerConf().getLossFunction())
+                    .labels(getLabels2d()).z(z)
+                    .preOut(preOut).activationFn(conf().getLayer().getActivationFunction())
+                    .lossFunction(layerConf().getLossFunction())
                     .miniBatch(conf.isMiniBatch()).miniBatchSize(getInputMiniBatchSize())
                     .useRegularization(conf.isUseRegularization()).build().score();
         }
