@@ -34,37 +34,41 @@ public class JavaLevel1 extends BaseLevel1 {
     @Override
     protected float sdot(int N, INDArray X, int incX, INDArray Y, int incY) {
         return BLAS.getInstance().sdot(N, getFloatData(X), getBlasOffset(X), incX, getFloatData(Y), getBlasOffset(Y), incY);
+    }
 
+    @Override
+    protected float sdot( int N, DataBuffer X, int offsetX, int incX, DataBuffer Y,  int offsetY, int incY){
+        return BLAS.getInstance().sdot(N, getFloatData(X), offsetX, incX, getFloatData(Y), offsetY, incY);
     }
 
     @Override
     protected double ddot(int N, INDArray X, int incX, INDArray Y, int incY) {
         return BLAS.getInstance().ddot(N, getDoubleData(X), getBlasOffset(X), incX, getDoubleData(Y), getBlasOffset(Y), incY);
+    }
 
+    @Override
+    protected double ddot( int N, DataBuffer X, int offsetX, int incX, DataBuffer Y,  int offsetY, int incY){
+        return BLAS.getInstance().ddot(N, getDoubleData(X), offsetX, incX, getDoubleData(Y), offsetY, incY);
     }
 
     @Override
     protected void cdotu_sub(int N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray dotu) {
         throw new UnsupportedOperationException();
-
     }
 
     @Override
     protected void cdotc_sub(int N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray dotc) {
         throw new UnsupportedOperationException();
-
     }
 
     @Override
     protected void zdotu_sub(int N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray dotu) {
         throw new UnsupportedOperationException();
-
     }
 
     @Override
     protected void zdotc_sub(int N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray dotc) {
         throw new UnsupportedOperationException();
-
     }
 
     @Override
@@ -78,6 +82,11 @@ public class JavaLevel1 extends BaseLevel1 {
     }
 
     @Override
+    protected float sasum(int N, DataBuffer X, int offsetX, int incX){
+        return BLAS.getInstance().sasum(N, getFloatData(X), offsetX, incX);
+    }
+
+    @Override
     protected double dnrm2(int N, INDArray X, int incX) {
         return BLAS.getInstance().dnrm2(N, getDoubleData(X), getBlasOffset(X), incX);
     }
@@ -85,6 +94,11 @@ public class JavaLevel1 extends BaseLevel1 {
     @Override
     protected double dasum(int N, INDArray X, int incX) {
         return BLAS.getInstance().dasum(N, getDoubleData(X), getBlasOffset(X), incX);
+    }
+
+    @Override
+    protected double dasum(int N, DataBuffer X, int offsetX, int incX){
+        return BLAS.getInstance().dasum(N, getDoubleData(X), offsetX, incX);
     }
 
     @Override
@@ -113,8 +127,18 @@ public class JavaLevel1 extends BaseLevel1 {
     }
 
     @Override
+    protected int isamax(int N, DataBuffer X, int offsetX, int incX){
+        return BLAS.getInstance().isamax(N,getFloatData(X),offsetX,incX) - 1;
+    }
+
+    @Override
     protected int idamax(int N, INDArray X, int incX) {
         return BLAS.getInstance().idamax(N, getDoubleData(X), getBlasOffset(X), incX) - 1;
+    }
+
+    @Override
+    protected int idamax(int N, DataBuffer X, int offsetX, int incX){
+        return BLAS.getInstance().idamax(N, getDoubleData(X), offsetX, incX) - 1;
     }
 
     @Override

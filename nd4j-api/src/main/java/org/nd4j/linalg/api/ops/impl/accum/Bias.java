@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.ArrayUtil;
 
 /**
  * Calculate a bias
@@ -39,18 +40,22 @@ public class Bias extends BaseAccumulation {
 
     public Bias(INDArray x, INDArray y, INDArray z, int n) {
         super(x, y, z, n);
+        this.passThrough = true;
     }
 
     public Bias(INDArray x, INDArray y, int n) {
         this(x, y, x, n);
+        this.passThrough = true;
     }
 
     public Bias(INDArray x) {
         super(x);
+        this.passThrough = true;
     }
 
     public Bias(INDArray x, INDArray y) {
         super(x, y);
+        this.passThrough = true;
     }
 
     @Override
@@ -77,23 +82,48 @@ public class Bias extends BaseAccumulation {
     }
 
     @Override
-    public void update(Number result) {
-        double dev = result.doubleValue() - mean;
-        currentResult = currentResult().doubleValue() + dev;
-        numProcessed++;
-
+    public double update(double accum, double x){
+        return accum + (x-mean);
     }
 
     @Override
-    public void update(IComplexNumber result) {
-        IComplexNumber dev = result.sub(mean);
-        currentComplexResult.addi(dev);
-        numProcessed++;
+    public double update(double accum, double x, double y){
+        return accum + (x-mean);
     }
 
     @Override
-    public Number zero() {
-        return 0.0;
+    public float update(float accum, float x){
+        return accum + (float)(x-mean);
+    }
+
+    @Override
+    public float update(float accum, float x, float y){
+        return accum + (float)(x-mean);
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, double x){
+        return accum.add(x-mean);
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, double x, double y){
+        return accum.add(x-mean);
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, IComplexNumber x){
+        return accum.add(x.sub(mean));
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, IComplexNumber x, IComplexNumber y){
+        return accum.add(x.sub(mean));
+    }
+
+    @Override
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, double y) {
+        return accum.add(x.sub(mean));
     }
 
     @Override
@@ -104,10 +134,39 @@ public class Bias extends BaseAccumulation {
     @Override
     public void init(INDArray x, INDArray y, INDArray z, int n) {
         super.init(x, y, z, n);
-        this.mean = Nd4j.getExecutioner().execAndReturn(new Mean(x)).currentResult().doubleValue();
-        this.extraArgs = new Object[]{zero(), mean};
-
     }
 
+    @Override
+    public double combineSubResults(double first, double second){
+        return first + second;
+    }
 
+    @Override
+    public float combineSubResults(float first, float second){
+        return first + second;
+    }
+
+    @Override
+    public IComplexNumber combineSubResults(IComplexNumber first, IComplexNumber second){
+        return first.add(second);
+    }
+
+    @Override
+    public void exec(){
+        this.mean = Nd4j.getExecutioner().execAndReturn(new Mean(x)).getFinalResult().doubleValue();
+        INDArray xMinusMean = x.sub(mean);
+        double sum = Nd4j.getExecutioner().execAndReturn(new Sum(xMinusMean)).getFinalResult().doubleValue();
+        this.finalResult = sum;
+    }
+
+    @Override
+    public void exec(int... dimension){
+        int[] retShape = ArrayUtil.removeIndex(x.shape(), dimension);
+        int nOps = x.tensorssAlongDimension(dimension);
+        z = Nd4j.create(retShape);
+        for( int i=0; i<nOps; i++ ){
+            double d = Nd4j.getExecutioner().execAndReturn((Bias)opForDimension(i,dimension)).getFinalResult().doubleValue();
+            z.putScalar(i, d);
+        }
+    }
 }

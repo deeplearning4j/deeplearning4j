@@ -49,8 +49,8 @@ public class SubOp extends BaseTransformOp {
         super(x, z, n);
     }
 
-    public SubOp(INDArray first, INDArray second, INDArray second1) {
-        this(first,second,second1,first.length());
+    public SubOp(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z, x.length());
     }
 
     @Override

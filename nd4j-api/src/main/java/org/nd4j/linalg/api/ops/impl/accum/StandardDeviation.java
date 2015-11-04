@@ -23,7 +23,8 @@ import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.util.ComplexUtil;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.ArrayUtil;
 
 /**
  * Standard deviation (sqrt of variance)
@@ -45,22 +46,6 @@ public class StandardDeviation extends Variance {
 
     public StandardDeviation(INDArray x, INDArray y) {
         super(x, y);
-    }
-
-    @Override
-    public void update(Number result) {
-        super.update(result);
-        if (n() == numProcessed()) {
-            currentResult = FastMath.sqrt(currentResult.doubleValue());
-        }
-    }
-
-    @Override
-    public void update(IComplexNumber result) {
-        super.update(result);
-        if (n() == numProcessed())
-            currentComplexResult = ComplexUtil.sqrt(currentComplexResult);
-
     }
 
     @Override
@@ -87,5 +72,53 @@ public class StandardDeviation extends Variance {
             return new StandardDeviation(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new StandardDeviation(xAlongDimension);
+    }
+
+    @Override
+    public void exec(){
+        super.exec();
+        this.finalResult = FastMath.sqrt(finalResult.doubleValue());
+    }
+
+    @Override
+    public void exec(int... dimension){
+        int[] retShape = ArrayUtil.removeIndex(x.shape(), dimension);
+        int nOps = x.tensorssAlongDimension(dimension);
+        z = Nd4j.create(retShape);
+        for( int i=0; i<nOps; i++ ){
+            double d = Nd4j.getExecutioner().execAndReturn((Variance)super.opForDimension(i,dimension)).getFinalResult().doubleValue();
+            z.putScalar(i, FastMath.sqrt(d));
+        }
+    }
+
+    @Override
+    public double getAndSetFinalResult(double accum){
+        //stdev is sqrt of variance:
+        double d = FastMath.sqrt(super.getAndSetFinalResult(accum));
+        this.finalResult = d;
+        return d;
+    }
+
+    @Override
+    public float getAndSetFinalResult(float accum){
+        float f = (float)FastMath.sqrt(super.getAndSetFinalResult(accum));
+        this.finalResult = f;
+        return f;
+    }
+
+    @Override
+    public IComplexNumber getAndSetFinalResult(IComplexNumber accum){
+        finalResultComplex = super.getAndSetFinalResult(accum).sqrt();
+        return finalResultComplex;
+    }
+
+    @Override
+    public double calculateFinalResult(double accum, int n) {
+        return FastMath.sqrt(super.calculateFinalResult(accum,n));
+    }
+
+    @Override
+    public float calculateFinalResult(float accum, int n) {
+        return (float)FastMath.sqrt(super.calculateFinalResult(accum,n));
     }
 }

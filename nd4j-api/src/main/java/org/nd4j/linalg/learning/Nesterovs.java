@@ -1,9 +1,14 @@
 package org.nd4j.linalg.learning;
 
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Nesterov's momentum.
@@ -12,39 +17,32 @@ import java.io.Serializable;
  *
  * @author Adam Gibson
  */
+@Data
+@NoArgsConstructor
 public class Nesterovs implements Serializable,GradientUpdater {
     private double momentum = 0.5;
     private INDArray v;
-    private double lr;
+    private double learningRate = 0.1;
 
-    public Nesterovs(double momentum,double lr) {
+    public Nesterovs(double momentum, double learningRate) {
         this.momentum = momentum;
-        this.lr = lr;
+        this.learningRate = learningRate;
     }
 
-    /**
-     * Initialize with a learning rate of 0.1
-     * @param momentum the momentum to initialize with
-     */
     public Nesterovs(double momentum) {
-        this(momentum,0.1);
-
-    }
-    public double getMomentum() {
-        return momentum;
-    }
-
-    public void setMomentum(double momentum) {
         this.momentum = momentum;
+
     }
 
-    public double getLr() {
-        return lr;
+    @Override
+    public void update(Object... args) {
+        if(args.length > 0) {
+            learningRate = (Double) args[0];
+            momentum = (Double) args[1];
+        }
+
     }
 
-    public void setLr(double lr) {
-        this.lr = lr;
-    }
 
     /**
      * Get the nesterov update
@@ -57,7 +55,7 @@ public class Nesterovs implements Serializable,GradientUpdater {
         if(v == null)
             v = Nd4j.zeros(gradient.shape());
         INDArray vPrev = v;
-        v = vPrev.mul(momentum).subi(gradient.mul(lr));
+        v = vPrev.mul(momentum).subi(gradient.mul(learningRate));
         //reference https://cs231n.github.io/neural-networks-3/#sgd 2nd equation
         //DL4J default is negative step function thus we flipped the signs:
         // x += mu * v_prev + (-1 - mu) * v

@@ -26,18 +26,13 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
  */
 public interface ScalarOp extends Op {
 
-    /**
-     * The normal scalar
-     *
-     * @return the scalar
+    /**The normal scalar
+     *@return the scalar
      */
     Number scalar();
 
-    /**
-     * The complex sscalar
-     *
-     * @return
+    /**The complex scalar
+     *@return
      */
     IComplexNumber complexScalar();
-
 }

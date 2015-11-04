@@ -354,14 +354,14 @@ public class TaskCreator {
             if(slice >= 0 && dimension == null) {
                 Op op2 = op.opForDimension(slice, 0);
                 Accumulation acc = (Accumulation) op2;
-                double val = opExecutioner.execAndReturn(acc).currentResult().doubleValue();
+                double val = opExecutioner.execAndReturn(acc).getFinalResult().doubleValue();
                 retArray.putScalar(slice,val);
 
             }
             else if(dimension != null) {
                 Op op2 = op.opForDimension(slice, dimension);
                 Accumulation acc = (Accumulation) op2;
-                double val = opExecutioner.execAndReturn(acc).currentResult().doubleValue();
+                double val = opExecutioner.execAndReturn(acc).getFinalResult().doubleValue();
                 retArray.putScalar(slice,val);
 
             }

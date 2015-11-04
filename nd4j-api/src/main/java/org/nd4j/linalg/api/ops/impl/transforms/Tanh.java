@@ -49,6 +49,10 @@ public class Tanh extends BaseTransformOp {
         super(x, y, z, n);
     }
 
+    public Tanh(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z, x.length());
+    }
+
     public Tanh(INDArray x) {
         super(x);
     }

@@ -1,5 +1,7 @@
 package org.nd4j.linalg.learning;
 
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -14,41 +16,21 @@ import java.io.Serializable;
  *
  * @author Adam Gibson
  */
+@Data
+@NoArgsConstructor
 public class AdaDelta implements Serializable,GradientUpdater {
     private INDArray msg;
     private INDArray msdx;
     private double rho = 0.95;
 
+
     public AdaDelta(double rho) {
         this.rho = rho;
     }
 
-    public AdaDelta() {
-        this.rho = 0.95;
-    }
-
-    public INDArray getMsg() {
-        return msg;
-    }
-
-    public void setMsg(INDArray msg) {
-        this.msg = msg;
-    }
-
-    public INDArray getMsdx() {
-        return msdx;
-    }
-
-    public void setMsdx(INDArray msdx) {
-        this.msdx = msdx;
-    }
-
-    public double getRho() {
-        return rho;
-    }
-
-    public void setRho(double rho) {
-        this.rho = rho;
+    @Override
+    public void update(Object... args) {
+        //no op
     }
 
     /**

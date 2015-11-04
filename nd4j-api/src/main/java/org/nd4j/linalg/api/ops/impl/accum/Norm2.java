@@ -28,7 +28,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ComplexUtil;
 
 /**
- * Sum of absolute values
+ * Sum of squared values (real)
+ * Sum of squared complex modulus (complex)
  *
  * @author Adam Gibson
  */
@@ -54,28 +55,65 @@ public class Norm2 extends BaseAccumulation {
     }
 
     @Override
-    public void update(Number result) {
-        currentResult = currentResult.doubleValue() + FastMath.pow(result.doubleValue(), 2);
-        if (numProcessed == n)
-            currentResult = FastMath.sqrt(currentResult.doubleValue());
+    public double update(double accum, double x){
+        return accum + x*x;
     }
 
     @Override
-    public void update(IComplexNumber result) {
-        currentComplexResult.addi(ComplexUtil.pow(result, 2));
-        if (numProcessed == n)
-            currentComplexResult.set(ComplexUtil.sqrt(currentComplexResult));
+    public double update(double accum, double x, double y){
+        return accum + x*x;
     }
 
     @Override
-    public Number zero() {
-        return 0.0;
+    public float update(float accum, float x){
+        return accum + x*x;
     }
 
     @Override
-    public IComplexNumber zeroComplex() {
-        return Nd4j.createComplexNumber(0.0, 0.0);
+    public float update(float accum, float x, float y){
+        return accum + x*x;
     }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, double x){
+        return accum.add(x*x);
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, double x, double y){
+        return accum.add(x*x);
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, IComplexNumber x){
+        return accum.add(x.mul(x));
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, IComplexNumber x, IComplexNumber y){
+        return accum.add(x.mul(x));
+    }
+
+    @Override
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, double y) {
+        return accum.add(x.mul(x));
+    }
+
+    @Override
+    public double combineSubResults(double first, double second){
+        return first + second;
+    }
+
+    @Override
+    public float combineSubResults(float first, float second){
+        return first + second;
+    }
+
+    @Override
+    public IComplexNumber combineSubResults(IComplexNumber first, IComplexNumber second){
+        return first.add(second);
+    }
+
 
     @Override
     public String name() {
@@ -103,5 +141,33 @@ public class Norm2 extends BaseAccumulation {
             return new Norm2(x.tensorAlongDimension(index, dimension));
     }
 
+    @Override
+    public double getAndSetFinalResult(double accum){
+        double d = FastMath.sqrt(accum);
+        this.finalResult = d;
+        return d;
+    }
 
+    @Override
+    public float getAndSetFinalResult(float accum){
+        float f = (float)FastMath.sqrt(accum);
+        this.finalResult = f;
+        return f;
+    }
+
+    @Override
+    public IComplexNumber getAndSetFinalResult(IComplexNumber accum){
+        this.finalResultComplex = accum.sqrt();
+        return finalResultComplex;
+    }
+
+    @Override
+    public double calculateFinalResult(double accum, int n){
+        return FastMath.sqrt(accum);
+    }
+
+    @Override
+    public float calculateFinalResult(float accum, int n){
+        return (float)FastMath.sqrt(accum);
+    }
 }

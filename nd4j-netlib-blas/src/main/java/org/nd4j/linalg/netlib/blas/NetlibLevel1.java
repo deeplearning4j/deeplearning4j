@@ -36,8 +36,18 @@ public class NetlibLevel1 extends BaseLevel1 {
     }
 
     @Override
+    protected float sdot( int N, DataBuffer X, int offsetX, int incX, DataBuffer Y,  int offsetY, int incY){
+        return BLAS.getInstance().sdot(N, getFloatData(X),offsetX,incX, getFloatData(Y), offsetY, incY );
+    }
+
+    @Override
     protected double ddot(int N, INDArray X, int incX, INDArray Y, int incY) {
         return BLAS.getInstance().ddot(N, getDoubleData(X), getBlasOffset(X), incX, getDoubleData(Y), getBlasOffset(Y), incY);
+    }
+
+    @Override
+    protected double ddot( int N, DataBuffer X, int offsetX, int incX, DataBuffer Y,  int offsetY, int incY){
+        return BLAS.getInstance().ddot(N, getDoubleData(X), offsetX, incX, getDoubleData(Y), offsetY, incY);
     }
 
     @Override
@@ -72,43 +82,46 @@ public class NetlibLevel1 extends BaseLevel1 {
     @Override
     protected float sasum(int N, INDArray X, int incX) {
         return BLAS.getInstance().sasum(N, getFloatData(X), getBlasOffset(X), incX);
+    }
 
+    @Override
+    protected float sasum(int N, DataBuffer X, int offsetX, int incX){
+        return BLAS.getInstance().sasum(N,getFloatData(X), offsetX, incX);
     }
 
     @Override
     protected double dnrm2(int N, INDArray X, int incX) {
         return BLAS.getInstance().dnrm2(N, getDoubleData(X), getBlasOffset(X), incX);
-
     }
 
     @Override
     protected double dasum(int N, INDArray X, int incX) {
         return BLAS.getInstance().dasum(N, getDoubleData(X), getBlasOffset(X), incX);
+    }
 
+    @Override
+    protected double dasum(int N, DataBuffer X, int offsetX, int incX){
+        return BLAS.getInstance().dasum(N, getDoubleData(X), offsetX, incX);
     }
 
     @Override
     protected float scnrm2(int N, IComplexNDArray X, int incX) {
         throw new UnsupportedOperationException();
-
     }
 
     @Override
     protected float scasum(int N, IComplexNDArray X, int incX) {
         throw new UnsupportedOperationException();
-
     }
 
     @Override
     protected double dznrm2(int N, IComplexNDArray X, int incX) {
         throw new UnsupportedOperationException();
-
     }
 
     @Override
     protected double dzasum(int N, IComplexNDArray X, int incX) {
         throw new UnsupportedOperationException();
-
     }
 
     @Override
@@ -117,21 +130,28 @@ public class NetlibLevel1 extends BaseLevel1 {
     }
 
     @Override
+    protected int isamax(int N, DataBuffer X, int offsetX, int incX){
+        return BLAS.getInstance().isamax(N,getFloatData(X), offsetX, incX);
+    }
+
+    @Override
     protected int idamax(int N, INDArray X, int incX) {
         return BLAS.getInstance().idamax(N, getDoubleData(X), getBlasOffset(X), incX) - 1;
+    }
 
+    @Override
+    protected int idamax(int N, DataBuffer X, int offsetX, int incX){
+        return BLAS.getInstance().idamax(N, getDoubleData(X), offsetX, incX);
     }
 
     @Override
     protected int icamax(int N, IComplexNDArray X, int incX) {
         throw new UnsupportedOperationException();
-
     }
 
     @Override
     protected int izamax(int N, IComplexNDArray X, int incX) {
         throw new UnsupportedOperationException();
-
     }
 
     @Override

@@ -52,26 +52,68 @@ public class EuclideanDistance extends BaseAccumulation {
     }
 
     @Override
-    public void update(Number result) {
-        currentResult = currentResult.doubleValue() + FastMath.pow(result.doubleValue(), 2.0);
-        if(numProcessed() == n) {
-            currentResult = FastMath.sqrt(currentResult.doubleValue());
-        }
+    public double update(double accum, double x){
+        return accum;
     }
 
     @Override
-    public void update(IComplexNumber result) {
-        currentComplexResult.addi(result);
+    public double update(double accum, double x, double y){
+        double d = (x-y);
+        return accum + d*d;
     }
 
     @Override
-    public Number zero() {
-        return 0.0;
+    public float update(float accum, float x){
+        return accum;
     }
 
     @Override
-    public IComplexNumber zeroComplex() {
-        return Nd4j.createComplexNumber(0.0, 0.0);
+    public float update(float accum, float x, float y){
+        float f = (x-y);
+        return accum + f*f;
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, double x){
+        return accum;
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, double x, double y){
+        double d = (x-y);
+        return accum.add(d*d);
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, IComplexNumber x){
+        return accum;
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, IComplexNumber x, IComplexNumber y){
+        IComplexNumber c = x.sub(y);
+        return accum.add(c.mul(c));
+    }
+
+    @Override
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, double y) {
+        IComplexNumber c = x.sub(y);
+        return accum.add(c.mul(c));
+    }
+
+    @Override
+    public double combineSubResults(double first, double second){
+        return first + second;
+    }
+
+    @Override
+    public float combineSubResults(float first, float second){
+        return first + second;
+    }
+
+    @Override
+    public IComplexNumber combineSubResults(IComplexNumber first, IComplexNumber second){
+        return first.add(second);
     }
 
     @Override
@@ -146,5 +188,35 @@ public class EuclideanDistance extends BaseAccumulation {
             return new EuclideanDistance(xForDimension, y.tensorAlongDimension(index, dimension), xForDimension.length());
         else
             return new EuclideanDistance(x.tensorAlongDimension(index, dimension));
+    }
+
+    @Override
+    public double getAndSetFinalResult(double accum){
+        double d = FastMath.sqrt(accum);
+        this.finalResult = d;
+        return d;
+    }
+
+    @Override
+    public float getAndSetFinalResult(float accum){
+        float f = (float)FastMath.sqrt(accum);
+        this.finalResult = f;
+        return f;
+    }
+
+    @Override
+    public IComplexNumber getAndSetFinalResult(IComplexNumber accum){
+        this.finalResultComplex = accum.sqrt();
+        return finalResultComplex;
+    }
+
+    @Override
+    public double calculateFinalResult(double accum, int n){
+        return FastMath.sqrt(accum);
+    }
+
+    @Override
+    public float calculateFinalResult(float accum, int n){
+        return (float)FastMath.sqrt(accum);
     }
 }

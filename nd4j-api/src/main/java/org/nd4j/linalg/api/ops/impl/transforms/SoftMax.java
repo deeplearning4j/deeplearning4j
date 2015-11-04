@@ -60,6 +60,10 @@ public class SoftMax extends BaseTransformOp {
         super(x, y, z, n);
     }
 
+    public SoftMax(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z, x.length());
+    }
+
     public SoftMax(INDArray x) {
         super(x);
     }
@@ -172,30 +176,33 @@ public class SoftMax extends BaseTransformOp {
         if(dimensions[0] != 1)
             throw new IllegalArgumentException("Only supports row wise calculations");
         if(x.isMatrix()) {
-            INDArray maxAlongDimension = x.max(dimensions);
+            INDArray maxAlongDimension = x.max(dimensions).transpose();
             if(!maxAlongDimension.isVector() && !maxAlongDimension.isScalar())
                 throw new IllegalStateException("Max along dimension for input must either be a row vector or scalar");
-            INDArray xMinusMax = Nd4j.create(x.shape());
-            for(int i = 0; i < x.slices(); i++) {
-                xMinusMax.putSlice(i,x.slice(i).sub(maxAlongDimension.getDouble(i)));
+
+            INDArray xMinusMax = x.subColumnVector(maxAlongDimension);
+
+            INDArray exp;
+            if(z != null){
+                exp = Nd4j.getExecutioner().execAndReturn(new Exp(xMinusMax, z));
+            } else {
+                exp = Nd4j.getExecutioner().execAndReturn(new Exp(xMinusMax));
             }
+            INDArray sum = exp.sum(dimensions).transpose();
+            exp.diviColumnVector(sum);
 
-            this.y = Transforms.exp(xMinusMax);
-            INDArray sum = y.sum(dimensions);
-            for(int i = 0; i < y.rows(); i++) {
-                y.slice(i).divi(sum.getDouble(i));
-            }
-
-            this.z = y;
-
-
+            if(z == null) z = exp;
         }
         else if(x.isVector()) {
            double max = x.maxNumber().doubleValue();
-            this.y = Transforms.exp(x.sub(max));
-            this.y.divi(y.sumNumber().doubleValue());
-            this.z = y;
-
+            INDArray exp;
+            if(z != null){
+                exp = Nd4j.getExecutioner().execAndReturn(new Exp(x.sub(max), z));
+            } else {
+                exp = Nd4j.getExecutioner().execAndReturn(new Exp(x.sub(max)));
+            }
+            exp.divi(exp.sumNumber().doubleValue());
+            this.z = exp;
         }
     }
 }

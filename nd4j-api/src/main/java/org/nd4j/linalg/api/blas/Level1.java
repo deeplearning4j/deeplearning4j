@@ -34,6 +34,9 @@ public interface Level1 {
      * @return
      */
     double dot(int n,double alpha,  INDArray X,INDArray Y);
+
+    /** Vector-vector dot product */
+    double dot(int n, DataBuffer dx, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY );
     /**
      * computes a vector-vector dot product.
      * @param n
@@ -63,6 +66,10 @@ public interface Level1 {
      * @return
      */
     double asum(INDArray arr);
+
+    /** sum of magnitudes of all elements */
+    double asum(int n, DataBuffer x, int offsetX, int incrX);
+
     /**
      * computes the sum of magnitudes
      * of all vector elements or, for a complex vector x, the sum
@@ -89,6 +96,9 @@ public interface Level1 {
      * @return
      */
      int iamax(int n,INDArray arr,int stride);
+
+    /** Index of largest absolute value */
+    int iamax(int n,DataBuffer x, int offsetX, int incrX);
     /**
      * finds the element of a vector that has the largest absolute value.
      * @param arr

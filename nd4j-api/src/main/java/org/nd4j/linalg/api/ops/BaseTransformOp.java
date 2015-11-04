@@ -51,6 +51,4 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
     public TransformOp derivative() {
         return new Ones(x, y, z, n);
     }
-
-
 }

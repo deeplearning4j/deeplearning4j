@@ -33,6 +33,25 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
         return sdot(n,X,BlasBufferUtil.getBlasStride(X),Y,BlasBufferUtil.getBlasStride(X));
     }
 
+    @Override
+    public double dot(int n, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY ){
+        if(supportsDataBufferL1Ops()){
+            if(x.dataType() == DataBuffer.Type.FLOAT){
+                return sdot(n,x,offsetX,incrX,y,offsetY,incrY);
+            } else {
+                return ddot(n, x, offsetX, incrX, y, offsetY, incrY);
+            }
+        } else {
+            int[] shapex = {1,n};
+            int[] shapey = {1,n};
+            int[] stridex = {incrX,incrX};
+            int[] stridey = {incrY,incrY};
+            INDArray arrX = Nd4j.create(x,shapex,stridex,offsetX,'c');
+            INDArray arrY = Nd4j.create(x,shapey,stridey,offsetY,'c');
+            return dot(n,0.0,arrX,arrY);
+        }
+    }
+
     /**
      * computes a vector-vector dot product.
      *
@@ -84,6 +103,22 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
         return sasum(arr.length(),arr, BlasBufferUtil.getBlasStride(arr));
     }
 
+    @Override
+    public double asum(int n, DataBuffer x, int offsetX, int incrX){
+        if(supportsDataBufferL1Ops()){
+            if(x.dataType() == DataBuffer.Type.FLOAT){
+                return sasum(n,x,offsetX,incrX);
+            } else {
+                return dasum(n,x,offsetX,incrX);
+            }
+        } else {
+            int[] shapex = {1,n};
+            int[] stridex = {incrX,incrX};
+            INDArray arrX = Nd4j.create(x,shapex,stridex,offsetX,'c');
+            return asum(arrX);
+        }
+    }
+
     /**
      * computes the sum of magnitudes
      * of all vector elements or,
@@ -103,6 +138,22 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
         if(arr.data().dataType() == DataBuffer.Type.DOUBLE)
             return idamax(n,arr,stride);
         return isamax(n,arr,stride);
+    }
+
+    @Override
+    public int iamax(int n,DataBuffer x, int offsetX, int incrX){
+        if(supportsDataBufferL1Ops()){
+            if(x.dataType() == DataBuffer.Type.FLOAT){
+                return isamax(n,x,offsetX,incrX);
+            } else {
+                return isamax(n,x,offsetX,incrX);
+            }
+        } else {
+            int[] shapex = {1,n};
+            int[] stridex = {incrX,incrX};
+            INDArray arrX = Nd4j.create(x,shapex,stridex,offsetX,'c');
+            return iamax(n, arrX, incrX);
+        }
     }
 
     /**
@@ -209,9 +260,9 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
             int[] shapex = {1,n};
             int[] shapey = {1,n};
             int[] stridex = {incrX,incrX};
-            int[] strideY = {incrY,incrY};
+            int[] stridey = {incrY,incrY};
             INDArray arrX = Nd4j.create(x,shapex,stridex,offsetX,'c');
-            INDArray arrY = Nd4j.create(x,shapex,stridex,offsetX,'c');
+            INDArray arrY = Nd4j.create(x,shapey,stridey,offsetY,'c');
             copy(arrX,arrY);
         }
     }
@@ -262,9 +313,9 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
             int[] shapex = {1,n};
             int[] shapey = {1,n};
             int[] stridex = {incrX,incrX};
-            int[] strideY = {incrY,incrY};
+            int[] stridey = {incrY,incrY};
             INDArray arrX = Nd4j.create(x,shapex,stridex,offsetX,'c');
-            INDArray arrY = Nd4j.create(x,shapex,stridex,offsetX,'c');
+            INDArray arrY = Nd4j.create(x,shapey,stridey,offsetY,'c');
             axpy(n,alpha,arrX,arrY);
         }
     }
@@ -382,9 +433,9 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
     @Override
     public void scal(int N, IComplexNumber alpha, IComplexNDArray X) {
         if(X.data().dataType() == DataBuffer.Type.DOUBLE)
-            zscal(N,alpha.asDouble(),X,BlasBufferUtil.getBlasStride(X));
+            zscal(N, alpha.asDouble(), X, BlasBufferUtil.getBlasStride(X));
         else
-            cscal(N,alpha.asFloat(),X,BlasBufferUtil.getBlasStride(X));
+            cscal(N, alpha.asFloat(), X, BlasBufferUtil.getBlasStride(X));
 
     }
 
@@ -401,8 +452,12 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
                                         int incY);
     protected abstract  float  sdot( int N,  INDArray X,  int incX,
                                      INDArray Y,  int incY);
+    protected abstract  float  sdot( int N,  DataBuffer X, int offsetX, int incX,
+                                     DataBuffer Y,  int offsetY, int incY);
     protected abstract    double ddot( int N, INDArray X,  int incX,
                                        INDArray Y,  int incY);
+    protected abstract    double ddot( int N, DataBuffer X, int offsetX, int incX,
+                                       DataBuffer Y, int offsetY, int incY);
 
     /*
      * Functions having prefixes Z and C only
@@ -423,9 +478,11 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
      */
     protected abstract   float  snrm2( int N,  INDArray X,  int incX);
     protected abstract  float  sasum( int N,  INDArray X,  int incX);
+    protected abstract  float  sasum( int N,  DataBuffer X,  int offsetX, int incX);
 
     protected abstract  double dnrm2( int N,  INDArray X,  int incX);
     protected abstract  double dasum( int N,  INDArray X,  int incX);
+    protected abstract  double dasum( int N,  DataBuffer X,  int offsetX, int incX);
 
     protected abstract float  scnrm2( int N,  IComplexNDArray X,  int incX);
     protected abstract   float  scasum( int N,  IComplexNDArray X,  int incX);
@@ -438,7 +495,9 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
      * Functions having standard 4 prefixes (S D C Z)
      */
     protected abstract int isamax( int N,  INDArray X,  int incX);
+    protected abstract int isamax( int N,  DataBuffer X,  int offsetX, int incX);
     protected abstract int idamax( int N,  INDArray X,  int incX);
+    protected abstract int idamax( int N,  DataBuffer X,  int offsetX, int incX);
     protected abstract int icamax( int N,  IComplexNDArray X,  int incX);
     protected abstract int izamax( int N,  IComplexNDArray X,  int incX);
 

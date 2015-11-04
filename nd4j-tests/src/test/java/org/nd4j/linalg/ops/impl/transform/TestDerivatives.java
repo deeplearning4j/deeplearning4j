@@ -7,6 +7,7 @@ import java.util.Random;
 
 import org.apache.commons.math3.util.FastMath;
 import org.junit.Test;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.HardTanhDerivative;
@@ -20,7 +21,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.TanhDerivative;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 
-public class TestDerivatives {
+public class TestDerivatives extends BaseNd4jTest {
 	
 	public static final double REL_ERROR_TOLERANCE = 1e-8;
 	

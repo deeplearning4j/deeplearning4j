@@ -20,15 +20,16 @@
 package org.nd4j.linalg.api.ops.factory;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Accumulation;
-import org.nd4j.linalg.api.ops.LossFunction;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.TransformOp;
+import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
+import org.nd4j.linalg.api.ops.impl.vector.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.reflections.Reflections;
 
@@ -171,6 +172,34 @@ public class DefaultOpFactory implements OpFactory {
     }
 
     @Override
+    public IndexAccumulation createIndexAccum(String name, INDArray x){
+        switch(name){
+            case "iamax":
+                return new IAMax(x);
+            case "imax":
+                return new IMax(x);
+            case "imin":
+                return new IMin(x);
+            default:
+                throw new IllegalArgumentException("Illegal name: " + name);
+        }
+    }
+
+    @Override
+    public IndexAccumulation createIndexAccum(String name, INDArray x, INDArray y){
+        switch(name){
+            case "iamax":
+                return new IAMax(x,y);
+            case "imax":
+                return new IMax(x,y);
+            case "imin":
+                return new IMin(x,y);
+            default:
+                throw new IllegalArgumentException("Illegal name: " + name);
+        }
+    }
+
+    @Override
     public TransformOp createTransform(String name, INDArray x, INDArray y) {
         switch (name) {
             case "relu":
@@ -197,6 +226,8 @@ public class DefaultOpFactory implements OpFactory {
                 return new Identity(x, y);
             case "log":
                 return new Log(x, y);
+            case "logsoftmax":
+                return new LogSoftMax(x,y);
             case "leakyrelu":
             	return new LeakyReLU(x,y);
             case "maxout":
@@ -264,6 +295,8 @@ public class DefaultOpFactory implements OpFactory {
             	return new LeakyReLU(x);
             case "log":
                 return new Log(x);
+            case "logsoftmax":
+                return new LogSoftMax(x);
             case "maxout":
                 return new MaxOut(x);
             case "negative":
@@ -329,6 +362,8 @@ public class DefaultOpFactory implements OpFactory {
             	return new LeakyReLU(x,z);
             case "log":
                 return new Log(x, z);
+            case "logsoftmax":
+                return new LogSoftMax(x,z);
             case "maxout":
                 return new MaxOut(x, z);
             case "negative":
@@ -368,5 +403,47 @@ public class DefaultOpFactory implements OpFactory {
 
     }
 
+    @Override
+    public VectorOp createVectorOp(String name, INDArray x, INDArray y, INDArray z, int dimension){
+        switch(name){
+            case "vectoradd":
+                return new VectorAddOp(x,y,z,dimension);
+            case "vectorsub":
+                return new VectorSubOp(x,y,z,dimension);
+            case "vectormul":
+                return new VectorMulOp(x,y,z,dimension);
+            case "vectordiv":
+                return new VectorDivOp(x,y,z,dimension);
+            case "vectorrsub":
+                return new VectorRSubOp(x,y,z,dimension);
+            case "vectorrdiv":
+                return new VectorRDivOp(x,y,z,dimension);
+            case "vectorcopy":
+                return new VectorCopyOp(x,y,z,dimension);
+            default:
+                throw new IllegalArgumentException("Illegal name " + name);
+        }
+    }
 
+    @Override
+    public VectorOp createVectorOp(String name, INDArray x, INDArray y, int dimension ){
+        switch(name){
+            case "vectoradd":
+                return new VectorAddOp(x,y,x,dimension);
+            case "vectorsub":
+                return new VectorSubOp(x,y,x,dimension);
+            case "vectormul":
+                return new VectorMulOp(x,y,x,dimension);
+            case "vectordiv":
+                return new VectorDivOp(x,y,x,dimension);
+            case "vectorrsub":
+                return new VectorRSubOp(x,y,x,dimension);
+            case "vectorrdiv":
+                return new VectorRDivOp(x,y,x,dimension);
+            case "vectorcopy":
+                return new VectorCopyOp(x,y,x,dimension);
+            default:
+                throw new IllegalArgumentException("Illegal name " + name);
+        }
+    }
 }
