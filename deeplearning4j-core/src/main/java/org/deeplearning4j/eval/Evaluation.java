@@ -184,6 +184,7 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
      */
     public String stats() {
         StringBuilder builder = new StringBuilder().append("\n");
+        String actual, expected;
         List<Integer> classes = confusion.getClasses();
 
         if (labelsMap.isEmpty()){
@@ -198,8 +199,11 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
             for (Integer clazz : classes) {
                 for (Integer clazz2 : classes) {
                     int count = confusion.getCount(clazz, clazz2);
-                    if (count != 0)
-                        builder.append("\n Examples labeled as "+ labelsMap.get(clazz) + " classified by model as " + labelsMap.get(clazz2) + ": " + count + " times\n");
+                    if (count != 0 && !labelsMap.get(clazz2).isEmpty()) {
+                        actual = labelsMap.get(clazz).isEmpty() ? clazz.toString() : labelsMap.get(clazz);
+                        expected = labelsMap.get(clazz2).isEmpty() ? clazz2.toString() : labelsMap.get(clazz2);
+                        builder.append("\n Examples labeled as " + actual + " classified by model as " + expected + ": " + count + " times\n");
+                    }
                 }
             }
         }
