@@ -84,7 +84,7 @@ public class SerializationUtils {
 
 	/**
 	 * Writes the object to the output stream
-	 * THIS DOES NOT FLUSH THE STREAM
+	 * THIS DOES NOT FLUSH THE STREAMMultiLayerNetwork
 	 * @param toSave the object to save
 	 * @param writeTo the output stream to write to
 	 */
