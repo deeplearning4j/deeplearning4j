@@ -18,21 +18,22 @@
 
 package org.deeplearning4j.nn.weights;
 
-/**
- * Weight initialization scheme
+/**Weight initialization scheme
+ *
+ * Distribution: Sample weights from a distribution based on shape of input
+ * Normalized: Normalize sample weights
+ * Size: Sample weights from bound uniform distribution using shape for min and max
+ * Uniform: Sample weights from bound uniform distribution (specify min and max)
+ * VI: Sample weights from variance normalized initialization (Glorot)
+ * Zeros: Generate weights as zeros
+ * Xavier:
+ * RELU: N(0,2/nIn): He et al. (2015), Delving Deep into Rectifiers
  * @author Adam Gibson
  */
 public enum WeightInit {
     /*
-        Distribution: Sample weights from a distribution based on shape of input
-        Normalized: Normalize sample weights
-        Size: Sample weights from bound uniform distribution using shape for min and max
-        Uniform: Sample weights from bound uniform distribution (specify min and max)
-        VI: Sample weights from variance normalized initialization (Glorot)
-        Zeros: Generate weights as zeros
-
         TBD: Sparse initialization (SI) (Martens)
      */
-    DISTRIBUTION,NORMALIZED,SIZE,UNIFORM,VI,ZERO,XAVIER
+    DISTRIBUTION,NORMALIZED,SIZE,UNIFORM,VI,ZERO,XAVIER,RELU
 
 }

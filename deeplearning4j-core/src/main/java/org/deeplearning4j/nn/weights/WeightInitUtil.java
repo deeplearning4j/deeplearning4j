@@ -103,8 +103,8 @@ public class WeightInitUtil {
         return uniformBasedOnInAndOut(shape, shape[0], shape[1]);
       case ZERO:
         return Nd4j.create(shape);
-
-
+      case RELU:
+        return Nd4j.randn(shape).muli(FastMath.sqrt(2.0 / shape[0]));   //N(0, 2/nIn)
     }
 
     throw new IllegalStateException("Illegal weight init value");

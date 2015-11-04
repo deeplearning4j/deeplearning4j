@@ -33,15 +33,16 @@ import org.slf4j.LoggerFactory;
  * @author Adam Gibson
  *
  */
-public class Evaluation implements Serializable {
+public class Evaluation<T extends Comparable<? super T>> implements Serializable {
 
     private Counter<Integer> truePositives = new Counter<>();
     private Counter<Integer> falsePositives = new Counter<>();
     private Counter<Integer> trueNegatives = new Counter<>();
     private Counter<Integer> falseNegatives = new Counter<>();
     private ConfusionMatrix<Integer> confusion;
-    private int numRowCounter;
-    private List<Integer> classLabels = new ArrayList<>();
+    private int numRowCounter = 0;
+    private List<Integer> labelsList = new ArrayList<>();
+    private Map<Integer, String> labelsMap = new HashMap<>();
     private static Logger log = LoggerFactory.getLogger(Evaluation.class);
 
     // Empty constructor
@@ -50,9 +51,20 @@ public class Evaluation implements Serializable {
     // Constructor that takes number of output classes
     public Evaluation(int numClasses) {
         for(int i = 0; i < numClasses; i++)
-            classLabels.add(i);
-        confusion = new ConfusionMatrix<>(classLabels);
-        numRowCounter = 0;
+            labelsList.add(i);
+        confusion = new ConfusionMatrix<>(labelsList);
+    }
+
+    public Evaluation(List<String> labels) {
+        int i = 0;
+        for (String label : labels){
+            this.labelsMap.put(i, label);
+            i++;
+        }
+    }
+
+    public Evaluation(Map<Integer, String> labels) {
+        this.labelsMap = labels;
     }
 
     /**
@@ -61,8 +73,8 @@ public class Evaluation implements Serializable {
      *
      * Note that an IllegalArgumentException is thrown if the two passed in
      * matrices aren't the same length.
-     * @param realOutcomes the real outcomes (usually binary)
-     * @param guesses the guesses (usually a probability vector)
+     * @param realOutcomes the real outcomes (labels - usually binary)
+     * @param guesses the guesses/prediction (usually a probability vector)
      * */
     public void eval(INDArray realOutcomes,INDArray guesses) {
         // Add the number of rows to numRowCounter
@@ -73,8 +85,8 @@ public class Evaluation implements Serializable {
             log.warn("Creating confusion matrix based on classes passed in . Will assume the label distribution passed in is indicative of the overall dataset");
             Set<Integer> classes = new HashSet<>();
             // Infer all the class label based on mini batch
-            for(int i = 0; i < realOutcomes.rows(); i++) {
-                classes.add(Nd4j.getBlasWrapper().iamax(realOutcomes.slice(i)));
+            for(int i = 0; i < realOutcomes.columns(); i++) {
+                classes.add(i);
             }
             // Create confusion matrix based on potentially incomplete set of labels
             confusion = new ConfusionMatrix<>(new ArrayList<>(classes));
@@ -145,17 +157,51 @@ public class Evaluation implements Serializable {
         }
     }
 
-    // Method to print the classification report
+    /** Convenience method for evaluation of time series.
+     * Reshapes time series (3d) to 2d, then calls eval
+     * @see #eval(INDArray, INDArray)
+     */
+    public void evalTimeSeries(INDArray labels, INDArray predicted){
+        if(labels.rank() == 2 && predicted.rank() == 2) eval(labels,predicted);
+        if(labels.rank() != 3 ) throw new IllegalArgumentException("Invalid input: labels are not rank 3 (rank="+labels.rank()+")");
+        if(!Arrays.equals(labels.shape(),predicted.shape())){
+            throw new IllegalArgumentException("Labels and predicted have different shapes: labels="
+                + Arrays.toString(labels.shape()) + ", predicted="+Arrays.toString(predicted.shape()));
+        }
+        //Reshape, as per RnnToFeedForwardPreProcessor:
+        int[] shape = labels.shape();
+        labels = labels.permute(0,2,1);	//Permute, so we get correct order after reshaping
+        labels = labels.reshape(shape[0] * shape[2], shape[1]);
+
+        predicted = predicted.permute(0, 2, 1);
+        predicted = predicted.reshape(shape[0] * shape[2], shape[1]);
+
+        eval(labels,predicted);
+    }
+
+    /** Method to obtain the classification report, as a String
+     * @return A (multi-line) String with accuracy, precision, recall, f1 score etc
+     */
     public String stats() {
         StringBuilder builder = new StringBuilder().append("\n");
         List<Integer> classes = confusion.getClasses();
 
-        for(Integer clazz : classes) {
-          for(Integer clazz2 : classes) {
-              int count = confusion.getCount(clazz, clazz2);
-              if(count != 0)
-                  builder.append("\nActual Class " + clazz + " was predicted with Predicted " + clazz2 + " with count " + count  + " times\n");
-          }
+        if (labelsMap.isEmpty()){
+            for (Integer clazz : classes) {
+                for (Integer clazz2 : classes) {
+                    int count = confusion.getCount(clazz, clazz2);
+                    if (count != 0)
+                        builder.append("\n Examples labeled as " + clazz + " classified by model as " + clazz2 + ": " + count + " times\n");
+                }
+            }
+        } else {
+            for (Integer clazz : classes) {
+                for (Integer clazz2 : classes) {
+                    int count = confusion.getCount(clazz, clazz2);
+                    if (count != 0)
+                        builder.append("\n Examples labeled as "+ labelsMap.get(clazz) + " classified by model as " + labelsMap.get(clazz2) + ": " + count + " times\n");
+                }
+            }
         }
 
         DecimalFormat df = new DecimalFormat("#.####");
@@ -320,7 +366,7 @@ public class Evaluation implements Serializable {
         truePositives.incrementCount(classLabel, 1.0);
     }
     public void incrementTrueNegatives(Integer classLabel) {
-        truePositives.incrementCount(classLabel, 1.0);
+        trueNegatives.incrementCount(classLabel, 1.0);
     }
     public void incrementFalseNegatives(Integer classLabel) {
         falseNegatives.incrementCount(classLabel, 1.0);
@@ -353,6 +399,8 @@ public class Evaluation implements Serializable {
     }
 
     public double getNumRowCounter() {return (double) numRowCounter;}
+
+    public String getClassLabel(Integer clazz) { return labelsMap.get(clazz);}
 
 
 }

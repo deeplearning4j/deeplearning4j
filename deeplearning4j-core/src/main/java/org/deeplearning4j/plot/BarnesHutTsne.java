@@ -482,7 +482,7 @@ public class BarnesHutTsne extends Tsne implements Model {
 
         if(useAdaGrad) {
             if(adaGrad == null)
-                adaGrad = new AdaGrad(gradChange.shape());
+                adaGrad = new AdaGrad();
             gradChange = adaGrad.getGradient(gradChange,0);
 
         }
@@ -590,6 +590,11 @@ public class BarnesHutTsne extends Tsne implements Model {
     @Override
     public void setParams(INDArray params) {
 
+    }
+
+    @Override
+    public void applyLearningRateScoreDecay() {
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     @Override
@@ -768,5 +773,8 @@ public class BarnesHutTsne extends Tsne implements Model {
                     maxIter,realMin,initialMomentum,finalMomentum,momentum,switchMomentumIteration,normalize,
                     usePca,stopLyingIteration,tolerance,learningRate,useAdaGrad,perplexity,minGain);
         }
+
+
     }
+
 }

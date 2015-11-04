@@ -352,6 +352,11 @@ public class TestOptimizers {
         }
 
         @Override
+        public void applyLearningRateScoreDecay() {
+
+        }
+
+        @Override
         public void setListeners(IterationListener... listeners) {
 
         }
@@ -495,6 +500,10 @@ public class TestOptimizers {
             this.score =  costFn;
         }
 
+        @Override
+        public void applyLearningRateScoreDecay() {
+
+        }
 
 
         @Override
@@ -651,7 +660,10 @@ public class TestOptimizers {
 
         }
 
+        @Override
+        public void applyLearningRateScoreDecay() {
 
+        }
 
 
         @Override

@@ -23,12 +23,19 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.LossFunction;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossCalculation;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -100,6 +107,61 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
                     .miniBatch(conf.isMiniBatch()).miniBatchSize(getInputMiniBatchSize())
                     .useRegularization(conf.isUseRegularization()).build().score();
         }
+    }
+
+    public INDArray paramsBackprop(){
+        List<INDArray> list = new ArrayList<>(2);
+        for(Map.Entry<String,INDArray> entry : params.entrySet()){
+            if(!PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(entry.getKey())) list.add(entry.getValue());
+        }
+        return Nd4j.toFlattened('f', list);
+    }
+
+    /**The number of parameters for the model, for backprop (i.e., excluding visible bias)
+     * @return the number of parameters for the model (ex. visible bias)
+     */
+    public int numParamsBackprop() {
+        int ret = 0;
+        for(Map.Entry<String,INDArray> entry : params.entrySet()){
+            if(PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(entry.getKey())) continue;
+            ret += entry.getValue().length();
+        }
+        return ret;
+    }
+
+    @Override
+    public void setParams(INDArray params) {
+        //SetParams has two different uses: during pretrain vs. backprop.
+        //pretrain = 3 sets of params (inc. visible bias); backprop = 2
+
+        List<String> parameterList = conf.variables();
+        int lengthPretrain = 0;
+        int lengthBackprop = 0;
+        for(String s : parameterList) {
+            int len = getParam(s).length();
+            lengthPretrain += len;
+            if(!PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(s)) lengthBackprop += len;
+        }
+
+        boolean pretrain = params.length() == lengthPretrain;
+        if( !pretrain && params.length() != lengthBackprop ) {
+            throw new IllegalArgumentException("Unable to set parameters: must be of length " + lengthPretrain + " for pretrain, "
+                + " or " + lengthBackprop + " for backprop. Is: " + params.length());
+        }
+
+        int idx = 0;
+        Set<String> paramKeySet = this.params.keySet();
+        for(String s : paramKeySet) {
+            if(!pretrain && PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(s)) continue;  //skip visible bias for backprop
+            INDArray param = getParam(s);
+            INDArray get = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, idx + param.length()));
+            if(param.length() != get.length())
+                throw new IllegalStateException("Parameter " + s + " should have been of length " + param.length() + " but was " + get.length());
+            setParam(s,get.reshape('f',param.shape()));
+            idx += param.length();
+
+        }
+
     }
 
 }
