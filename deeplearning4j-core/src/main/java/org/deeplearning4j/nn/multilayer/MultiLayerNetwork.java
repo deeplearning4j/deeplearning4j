@@ -1716,18 +1716,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @param params a parameter vector equal 1,numParameters
      */
     public void setParameters(INDArray params) {
-        int idx = 0;
-        for (int i = 0; i < getLayers().length; i++) {
-            Layer layer = getLayer(i);
-            if(!(layer instanceof SubsamplingLayer)) {
-                int range = layer.numParams();
-                INDArray get = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, range + idx));
-                if (get.length() < 1)
-                    throw new IllegalStateException("Unable to retrieve layer. No params found (length was 0");
-                layer.setParams(get);
-                idx += range;
-            }
-        }
+        setParams(params);
     }
 
 
