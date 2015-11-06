@@ -1,0 +1,18 @@
+language: java
+
+cache:
+  directories:
+  - $HOME/.m2
+
+jdk:
+  - oraclejdk7
+
+# for running tests on Travis CI container infrastructure for faster builds
+sudo: true
+
+before_install:
+	- sudo apt-get install blas
+
+script:
+  - mvn clean install -DskipTests
+  - cd nd4j-x86 && mvn clean test
