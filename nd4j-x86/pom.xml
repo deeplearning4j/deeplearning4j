@@ -24,6 +24,11 @@
     </properties>
     <build>
         <testSourceDirectory>../nd4j-tests/src/test</testSourceDirectory>
+       <testResources>
+           <testResource>
+               <directory>../nd4j-tests/src/test/resources</directory>
+           </testResource>
+       </testResources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -44,8 +49,7 @@
                     </excludes>
                     <systemPropertyVariables>
                         <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.cpu.CpuBackend</org.nd4j.linalg.defaultbackend>
-                        <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.cpu.CpuBackend
-                        </org.nd4j.linalg.tests.backendstorun>
+                        <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.cpu.CpuBackend</org.nd4j.linalg.tests.backendstorun>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -182,31 +186,6 @@
             </build>
         </profile>
 
-        <profile>
-            <id>assembly</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-assembly-plugin</artifactId>
-                        <version>2.3</version>
-                        <configuration>
-                            <descriptors>
-                                <descriptor>src/main/assembly/bin.xml</descriptor>
-                                <descriptor>src/main/assembly/src.xml</descriptor>
-                            </descriptors>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
 
         <profile>
             <id>sign-artifacts</id>

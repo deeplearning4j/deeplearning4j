@@ -34,7 +34,8 @@ public class MiniBatchFileDataSetIteratorTest extends BaseNd4jTest {
         final MiniBatchFileDataSetIterator iter = new MiniBatchFileDataSetIterator(load,10,false);
         while(iter.hasNext())
             assertEquals(10,iter.next().numExamples());
-
+        if(iter.getRootDir() == null)
+            return;
         DataSetIterator existing = new ExistingMiniBatchDataSetIterator(iter.getRootDir());
         while(iter.hasNext())
             assertEquals(10,existing.next().numExamples());

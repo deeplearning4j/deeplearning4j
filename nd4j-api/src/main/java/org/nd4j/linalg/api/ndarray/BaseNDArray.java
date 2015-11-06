@@ -3887,7 +3887,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         }
 
-        INDArray ret = create(retShape);
+        INDArray ret = create(retShape,ordering());
 
         if(isRowVector()) {
             //number of times to repeat each value

@@ -75,13 +75,7 @@ public  class FloatDataBufferTest  extends BaseNd4jTest {
 
     }
 
-    @Test
-    public void testLargeBuffer() {
-        Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
-        DataBuffer buf = Nd4j.createBuffer(Integer.MAX_VALUE + 1);
-        assertEquals(Integer.MAX_VALUE + 1,buf.length());
-        Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
-    }
+
 
     @Test
     public void testSerialization() {

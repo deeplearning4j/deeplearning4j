@@ -20,6 +20,7 @@
 
 package org.nd4j.linalg.complex;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.complex.IComplexDouble;
@@ -34,6 +35,7 @@ import static org.junit.Assert.assertEquals;
  *
  * @author Adam Gibson
  */
+@Ignore
 public  class ComplexNumberTests  extends BaseNd4jTest {
     public ComplexNumberTests(Nd4jBackend backend) {
         super(backend);

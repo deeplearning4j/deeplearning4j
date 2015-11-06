@@ -102,6 +102,7 @@ public abstract class BaseNd4jTest  extends TestCase {
 
     @Before
     public void before() {
+        log.info("Running " + getName());
         Nd4j nd4j = new Nd4j();
         nd4j.initWithBackend(backend);
         Nd4j.factory().setOrder(ordering());
@@ -111,6 +112,7 @@ public abstract class BaseNd4jTest  extends TestCase {
 
     @After
     public void after() {
+        log.info("Ending " + getName());
         Nd4j nd4j = new Nd4j();
         nd4j.initWithBackend(backend);
         Nd4j.factory().setOrder(ordering());
