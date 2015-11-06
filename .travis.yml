@@ -11,7 +11,7 @@ jdk:
 sudo: true
 
 before_install:
-  - sudo apt-get install libatlas3-base
+  - sudo apt-get install atlas
 
 script:
   - mvn clean install -DskipTests
