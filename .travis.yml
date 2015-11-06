@@ -19,7 +19,7 @@ env:
 
 before_install:
   - sudo apt-get install build-essential git
-  - git clone https://github.com/xianyi/OpenBLAS && cd OpenBLAS && make && make install
+  - git clone https://github.com/xianyi/OpenBLAS && cd OpenBLAS && sudo make && sudo make install
   - sudo ln -s /opt/OpenBLAS/lib/libopenblas_haswellp-*.so /usr/lib/libblas.so.3
   - sudo ln -s /opt/OpenBLAS/lib/libopenblas_haswellp-*.so /usr/lib/liblapack.so.3
 
