@@ -26,7 +26,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>nd4j-jcublas-parent</artifactId>
-  <version> 0.4-rc3.7-SNAPSHOT</version>
+    <version> 0.4-rc3.7-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>nd4j-jcublas-parent</name>
@@ -36,6 +36,12 @@
     </properties>
 
     <build>
+        <testSourceDirectory>../nd4j-tests/src/test</testSourceDirectory>
+        <testResources>
+            <testResource>
+                <directory>../nd4j-tests/src/test</directory>
+            </testResource>
+        </testResources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -43,6 +49,7 @@
                 <version>2.12.4</version>
                 <configuration>
                     <argLine>-Xmx3024m</argLine>
+
                     <environmentVariables>
                         <LD_LIBRARY_PATH>${env.LD_LIBRARY_PATH}:${user.dir}</LD_LIBRARY_PATH>
                     </environmentVariables>

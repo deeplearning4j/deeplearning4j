@@ -89,7 +89,7 @@ public class LeakyReLUDerivative extends BaseTransformOp {
 
     @Override
     public float op(float origin, float other) {
-        return (origin >= 0f ? 1.0f : (float)alpha);
+        return (origin >= 0f ? 1.0f : (float) alpha);
     }
 
     @Override

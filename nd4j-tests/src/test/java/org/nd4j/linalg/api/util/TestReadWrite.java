@@ -14,6 +14,20 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 public class TestReadWrite extends BaseNd4jTest {
+    public TestReadWrite() {
+    }
+
+    public TestReadWrite(Nd4jBackend backend) {
+        super(backend);
+    }
+
+    public TestReadWrite(String name) {
+        super(name);
+    }
+
+    public TestReadWrite(String name, Nd4jBackend backend) {
+        super(name, backend);
+    }
 
     @Test
     public void testLoadingSavingDouble() throws Exception {

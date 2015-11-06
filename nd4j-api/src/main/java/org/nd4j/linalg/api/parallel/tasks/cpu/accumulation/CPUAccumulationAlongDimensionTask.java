@@ -1,6 +1,5 @@
 package org.nd4j.linalg.api.parallel.tasks.cpu.accumulation;
 
-import lombok.AllArgsConstructor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
@@ -45,10 +44,16 @@ public class CPUAccumulationAlongDimensionTask extends BaseCPUTask<INDArray> {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        if(ret != null) return ret; //ForkJoin
-
+        
+        if(ret != null) {
+            if(dimensions.length == 1 && dimensions[0] == 1 && op.x().isMatrix())
+                ret = ret.reshape(ret.length(),1);
+            return ret; //ForkJoin
+        }
         //ExecutorService
         int[] retShape = ArrayUtil.removeIndex(op.x().shape(), dimensions);
+        if(dimensions.length == 1 && dimensions[0] == 1 && op.x().isMatrix())
+            retShape = new int[] {op.x().length(),1};
         INDArray out = Nd4j.create(retShape);
         int i = 0;
         for (Task<Double> task : subTasks) {

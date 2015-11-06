@@ -20,6 +20,7 @@
 package org.nd4j.linalg.fft;
 
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -35,6 +36,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
  *
  * @author Adam Gibson
  */
+@Ignore
 public  class FFTTests extends BaseNd4jTest {
 
 
