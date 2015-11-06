@@ -40,7 +40,7 @@ public class BlasWrapper extends BaseBlasWrapper {
 
     public final static String FORCE_NATIVE = "org.nd4j.linalg.cpu.force_native";
     static {
-        String forceNative = System.getProperty(FORCE_NATIVE,"true");
+        String forceNative = System.getProperty(FORCE_NATIVE,"false");
         if(Boolean.parseBoolean(forceNative)) {
             try {
                 Field blasInstance = BLAS.class.getDeclaredField("INSTANCE");
