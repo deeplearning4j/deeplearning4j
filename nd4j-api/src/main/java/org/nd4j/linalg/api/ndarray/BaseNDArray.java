@@ -3869,7 +3869,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 }
                 else {
                     if (i < shape().length)
-                        retShape[i] = Math.max(shape[i], shape()[i]);
+                        retShape[i] = Math.max(shape[i], size(i));
                     else
                         retShape[i] = shape[i];
                 }
@@ -3880,7 +3880,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 else
                     nonBroadCastDimensions.add(i);
                 if (i < shape().length)
-                    retShape[i] = Math.max(shape[i], shape()[i]);
+                    retShape[i] = Math.max(shape[i], size(i));
                 else
                     retShape[i] = shape[i];
             }
@@ -3902,9 +3902,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 INDArray thisTensor = slice(i);
                 INDArray retTensor = ret.slice(i);
                 int retIdx = 0;
-                int tensorLen = thisTensor.shape().length;
-                for(int k = 0; k < tensorLen; k++) {
+                int tensorLen = thisTensor.rank();
+               outer: for(int k = 0; k < tensorLen; k++) {
                     for(int j = 0; j < repeatDelta; j++) {
+                        if(retIdx >= retTensor.length())
+                            break outer;
                         retTensor.putScalar(retIdx++,thisTensor.getDouble(k));
                     }
                 }

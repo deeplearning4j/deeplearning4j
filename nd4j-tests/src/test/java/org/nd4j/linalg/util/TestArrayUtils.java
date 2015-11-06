@@ -6,8 +6,23 @@ import java.util.Random;
 
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.factory.Nd4jBackend;
 
 public class TestArrayUtils extends BaseNd4jTest {
+    public TestArrayUtils() {
+    }
+
+    public TestArrayUtils(Nd4jBackend backend) {
+        super(backend);
+    }
+
+    public TestArrayUtils(String name) {
+        super(name);
+    }
+
+    public TestArrayUtils(String name, Nd4jBackend backend) {
+        super(name, backend);
+    }
 
     @Test
     public void testFlattenDoubleArray(){

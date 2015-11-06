@@ -28,6 +28,8 @@ public class ExistingMiniBatchDataSetIterator implements DataSetIterator {
         this.rootDir = rootDir;
         this.paths = new ArrayList<>();
         Set<String> dataUUIDs = new HashSet<>();
+        if(!rootDir.exists())
+            throw new IllegalArgumentException("Illegal directory  " + rootDir.getAbsolutePath());
         for(File f : rootDir.listFiles()) {
            dataUUIDs.add(f.getName().replace(".labels.bin","").replace(".bin",""));
         }

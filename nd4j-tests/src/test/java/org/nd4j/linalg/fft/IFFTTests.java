@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.fft;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -38,6 +39,7 @@ import static org.junit.Assert.assertTrue;
  *
  * @author Adam Gibson
  */
+@Ignore
 public  class IFFTTests extends BaseNd4jTest {
 
     public IFFTTests(Nd4jBackend backend) {

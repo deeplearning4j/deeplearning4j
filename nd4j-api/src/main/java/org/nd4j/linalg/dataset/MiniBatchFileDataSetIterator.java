@@ -45,8 +45,8 @@ public class MiniBatchFileDataSetIterator implements DataSetIterator {
      */
     public MiniBatchFileDataSetIterator(DataSet baseData,int batchSize,boolean delete,File rootDir) throws IOException {
         this.batchSize = batchSize;
-        rootDir = new File(rootDir,UUID.randomUUID().toString());
-        rootDir.mkdirs();
+        this.rootDir = new File(rootDir,UUID.randomUUID().toString());
+        this.rootDir.mkdirs();
         if(delete)
             Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
                 @Override
