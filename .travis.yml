@@ -24,5 +24,5 @@ before_install:
   - sudo ln -s /opt/OpenBLAS/lib/libopenblas_haswellp-*.so /usr/lib/liblapack.so.3
 
 script:
-  - cd ../ && mvn clean install -DskipTests
+  - cd ../ && mvn clean install -DskipTests -Dmaven.javadoc.skip=true
   - cd nd4j-x86 && mvn clean test
