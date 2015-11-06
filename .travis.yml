@@ -10,8 +10,14 @@ jdk:
 # for running tests on Travis CI container infrastructure for faster builds
 sudo: true
 
+env:
+  #matrix:
+  - OS_TYPE=centos OS_VERSION=7 ANSIBLE_VERSION=1.9.2
+
+
+
 before_install:
-  - sudo apt-get install atlas
+  - sudo yum -y install blas
 
 script:
   - mvn clean install -DskipTests
