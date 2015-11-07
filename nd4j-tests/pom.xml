@@ -43,7 +43,7 @@
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
-       
+
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-jcublas-7.5</artifactId>

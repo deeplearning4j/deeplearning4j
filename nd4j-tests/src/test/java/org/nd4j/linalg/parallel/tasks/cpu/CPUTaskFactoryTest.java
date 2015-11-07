@@ -29,9 +29,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import java.lang.reflect.Constructor;
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 public class CPUTaskFactoryTest {
 
@@ -511,7 +509,7 @@ public class CPUTaskFactoryTest {
                 op = xyConstructor.newInstance(origXDup, origYDup);
                 task = taskFactory.getAccumulationTask(op, 1);
                 INDArray expected1 = task.invokeBlocking();
-                assertTrue(expected1 == op.z());
+                assertEquals(expected1,op.z());
 
                 // For each combination of: serial/parallel, heap/direct
                 // And compare output with expected
@@ -556,7 +554,7 @@ public class CPUTaskFactoryTest {
                         assertEquals(msg2, x1, origX);
                         assertEquals(msg2, y1, origY);
                         assertEquals(msg2, expected1, out1_xz);
-                        assertTrue(out1_xz == op.z());
+                        assertEquals(out1_xz , op.z());
                     }
                 }
             }
