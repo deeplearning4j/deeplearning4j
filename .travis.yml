@@ -28,3 +28,4 @@ before_install:
 script:
   - cd ../ && mvn clean install -DskipTests -Dmaven.javadoc.skip=true
   - cd nd4j-x86 && mvn clean test
+  - exit
