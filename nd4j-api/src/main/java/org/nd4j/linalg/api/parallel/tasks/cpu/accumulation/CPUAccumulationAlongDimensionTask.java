@@ -44,7 +44,7 @@ public class CPUAccumulationAlongDimensionTask extends BaseCPUTask<INDArray> {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        
+
         if(ret != null) {
             if(dimensions.length == 1 && dimensions[0] == 1 && op.x().isMatrix())
                 ret = ret.reshape(ret.length(),1);

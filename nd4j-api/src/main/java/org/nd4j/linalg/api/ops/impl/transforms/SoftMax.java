@@ -176,7 +176,7 @@ public class SoftMax extends BaseTransformOp {
         if(dimensions[0] != 1)
             throw new IllegalArgumentException("Only supports row wise calculations");
         if(x.isMatrix()) {
-            INDArray maxAlongDimension = x.max(dimensions).transpose();
+            INDArray maxAlongDimension = x.max(dimensions);
             if(!maxAlongDimension.isVector() && !maxAlongDimension.isScalar())
                 throw new IllegalStateException("Max along dimension for input must either be a row vector or scalar");
 
@@ -188,7 +188,7 @@ public class SoftMax extends BaseTransformOp {
             } else {
                 exp = Nd4j.getExecutioner().execAndReturn(new Exp(xMinusMax));
             }
-            INDArray sum = exp.sum(dimensions).transpose();
+            INDArray sum = exp.sum(dimensions);
             exp.diviColumnVector(sum);
 
             if(z == null) z = exp;

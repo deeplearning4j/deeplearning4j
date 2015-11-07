@@ -140,10 +140,10 @@ public class LogSoftMax extends BaseTransformOp {
             throw new IllegalArgumentException("Only supports row wise calculations");
         if(x.isMatrix()) {
 
-            INDArray rowMax = x.max(1).transpose();
+            INDArray rowMax = x.max(1);
             INDArray xMinusRowMax = x.subColumnVector(rowMax);
             INDArray expXMinusRowMax = Nd4j.getExecutioner().execAndReturn(new Exp(xMinusRowMax.dup()));
-            INDArray logRowSumExp = expXMinusRowMax.sum(1).transpose();
+            INDArray logRowSumExp = expXMinusRowMax.sum(1);
             Nd4j.getExecutioner().exec(new Log(logRowSumExp));
 
             INDArray logsoftmax = xMinusRowMax.subiColumnVector(logRowSumExp);

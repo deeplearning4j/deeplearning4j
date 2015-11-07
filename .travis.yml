@@ -1,0 +1,30 @@
+language: java
+
+cache:
+  directories:
+  - $HOME/.m2
+
+jdk:
+  - oraclejdk7
+
+# for running tests on Travis CI container infrastructure for faster builds
+sudo: true
+
+env:
+  #matrix:
+  - OS_TYPE=centos OS_VERSION=7 ANSIBLE_VERSION=1.9.2
+
+
+
+
+before_install:
+  - sudo apt-get install build-essential git
+  - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+  - git clone https://github.com/xianyi/OpenBLAS && cd OpenBLAS && sudo make && sudo make install
+  - ls /opt/OpenBLAS/lib
+  - sudo ln -s /opt/OpenBLAS/lib/libopenblas_haswellp-*.so /usr/lib/libblas.so.3
+  - sudo ln -s /opt/OpenBLAS/lib/libopenblas_haswellp-*.so /usr/lib/liblapack.so.3
+
+script:
+  - cd ../ && mvn clean install -DskipTests -Dmaven.javadoc.skip=true
+  - cd nd4j-x86 && mvn clean test
