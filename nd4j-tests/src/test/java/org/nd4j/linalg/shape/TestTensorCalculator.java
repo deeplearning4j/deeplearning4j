@@ -97,7 +97,7 @@ public class TestTensorCalculator extends BaseNd4jTest {
                         for( int x=0; x<tensor.length(); x++ ){
                             double dTensor = tensor.getDouble(x);
                             double dCalc = db.getDouble(tCalc.getOffsetForTensor(i) + x*tCalc.getElementWiseStrideForTensor());
-                            assertEquals(dTensor,dCalc);
+                            assertEquals(dTensor,dCalc,1e-1);
                         }
                     }
                 }
