@@ -43,12 +43,7 @@
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-netlib-blas</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
+       
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-jcublas-7.5</artifactId>
@@ -58,19 +53,6 @@
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-x86</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-jblas</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-java</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
