@@ -75,12 +75,16 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @param network the network to use
      */
     public SparkDl4jMultiLayer(SparkContext sparkContext, MultiLayerNetwork network) {
-        this.sparkContext = sparkContext;
-        this.averageEachIteration = sparkContext.conf().getBoolean(AVERAGE_EACH_ITERATION,false);
-        this.network = network;
+        this(new JavaSparkContext(sparkContext),network);
+    }
+
+    public SparkDl4jMultiLayer(JavaSparkContext javaSparkContext, MultiLayerNetwork network ){
+        this.sparkContext = javaSparkContext.sc();
+        sc = javaSparkContext;
         this.conf = this.network.getLayerWiseConfigurations().clone();
-        sc = new JavaSparkContext(this.sparkContext);
-        this.params = sc.broadcast(network.params());
+        this.network = network;
+        this.network.init();
+        this.averageEachIteration = sparkContext.conf().getBoolean(AVERAGE_EACH_ITERATION,false);
         this.best_score_acc = BestScoreAccumulator.create(sparkContext);
     }
 
@@ -91,9 +95,11 @@ public class SparkDl4jMultiLayer implements Serializable {
      */
     public SparkDl4jMultiLayer(SparkContext sparkContext, MultiLayerConfiguration conf) {
         this.sparkContext = sparkContext;
-        this.conf = conf.clone();
-        this.averageEachIteration = sparkContext.conf().getBoolean(AVERAGE_EACH_ITERATION, false);
         sc = new JavaSparkContext(this.sparkContext);
+        this.conf = conf.clone();
+        this.network = new MultiLayerNetwork(conf);
+        this.network.init();
+        this.averageEachIteration = sparkContext.conf().getBoolean(AVERAGE_EACH_ITERATION, false);
         this.best_score_acc = BestScoreAccumulator.create(sparkContext);
     }
 
@@ -184,41 +190,47 @@ public class SparkDl4jMultiLayer implements Serializable {
      */
     public MultiLayerNetwork fitDataSet(JavaRDD<DataSet> rdd) {
         int iterations = conf.getConf(0).getNumIterations();
-        log.info("Running distributed training averaging each iteration " + averageEachIteration + " and " + rdd.partitions().size() + " partitions");
-        if(!averageEachIteration)
-              runIteration(rdd);
-
-        else {
-            for(NeuralNetConfiguration conf : this.conf.getConfs())
+        log.info("Running distributed training:  (averaging each iteration = " + averageEachIteration + "), (iterations =" +
+                iterations + "), (num partions = " + rdd.partitions().size() + ")");
+        if(!averageEachIteration) {
+            //Do multiple iterations and average once at the end
+            runIteration(rdd);
+        } else {
+            //Temporarily set numIterations = 1. Control numIterations externall here so we can average between iterations
+            for(NeuralNetConfiguration conf : this.conf.getConfs()) {
                 conf.setNumIterations(1);
-            MultiLayerNetwork network = new MultiLayerNetwork(conf);
-            network.init();
-            final INDArray params = network.params();
-            this.params = sc.broadcast(params);
+            }
 
-            for(int i = 0; i < iterations; i++)
+            //Run learning, and average at each iteration
+            for(int i = 0; i < iterations; i++) {
                 runIteration(rdd);
+            }
 
+            //Reset number of iterations in config
+            if(iterations > 1 ){
+                for(NeuralNetConfiguration conf : this.conf.getConfs()) {
+                    conf.setNumIterations(iterations);
+                }
+            }
         }
-
 
         return network;
     }
 
     private void runIteration(JavaRDD<DataSet> rdd) {
-        MultiLayerNetwork network = new MultiLayerNetwork(conf);
-        network.init();
-        final INDArray params = network.params();
-        this.params = sc.broadcast(params);
-        log.info("Broadcasting initial parameters of length " + params.length());
+
+        log.info("Broadcasting initial parameters of length " + network.numParams());
+        this.params = sc.broadcast(network.params());
+
         int paramsLength = network.numParams();
-        if(params.length() != paramsLength)
-            throw new IllegalStateException("Number of params " + paramsLength + " was not equal to " + params.length());
         boolean accumGrad = sc.getConf().getBoolean(ACCUM_GRADIENT,false);
+
+
         if(accumGrad) {
+            //Learning via averaging gradients
             JavaRDD<Gradient> results = rdd.mapPartitions(new GradientAccumFlatMap(conf.toJson(), this.params),true).cache();
             log.info("Ran iterative reduce...averaging results now.");
-            GradientAdder a = new GradientAdder(params.length());
+            GradientAdder a = new GradientAdder(paramsLength);
             results.foreach(a);
             INDArray accumulatedGradient = a.getAccumulator().value();
             boolean divideGrad = sc.getConf().getBoolean(DIVIDE_ACCUM_GRADIENT,false);
@@ -228,13 +240,13 @@ public class SparkDl4jMultiLayer implements Serializable {
             log.info("Summed gradients.");
             network.setParameters(network.params().addi(accumulatedGradient));
             log.info("Set parameters");
-            this.network = network;
         }
         else {
+            //Standard parameter averaging
             JavaRDD<INDArray> results = rdd.mapPartitions(new IterativeReduceFlatMap(conf.toJson(),
                     this.params, this.best_score_acc),true).cache();
-            log.info("Ran iterative reduce...averaging results now.");
-            Adder a = new Adder(params.length());
+            log.info("Ran iterative reduce... averaging parameters now.");
+            Adder a = new Adder(paramsLength);
             results.foreach(a);
             INDArray newParams = a.getAccumulator().value();
             log.info("Accumulated parameters");
@@ -242,9 +254,7 @@ public class SparkDl4jMultiLayer implements Serializable {
             log.info("Divided by partitions");
             network.setParameters(newParams);
             log.info("Set parameters");
-            this.network = network;
         }
-
     }
 
 
@@ -257,6 +267,5 @@ public class SparkDl4jMultiLayer implements Serializable {
     public static MultiLayerNetwork train(JavaRDD<LabeledPoint> data,MultiLayerConfiguration conf) {
         SparkDl4jMultiLayer multiLayer = new SparkDl4jMultiLayer(data.context(),conf);
         return multiLayer.fit(new JavaSparkContext(data.context()),data);
-
     }
 }
