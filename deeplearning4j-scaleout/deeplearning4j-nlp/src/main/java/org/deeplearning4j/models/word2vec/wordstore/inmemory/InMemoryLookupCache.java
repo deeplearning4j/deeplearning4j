@@ -117,7 +117,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
     public synchronized void incrementWordCount(String word, int increment) {
         if(word == null || word.isEmpty())
             throw new IllegalArgumentException("Word can't be empty or null");
-        wordFrequencies.incrementCount(word,1);
+        wordFrequencies.incrementCount(word, increment);
 
         VocabWord token;
         if(hasToken(word))
