@@ -174,7 +174,7 @@ While not entirely accurate, it may help to think of each component as a causal 
 
 ### <a name="change">Change of Basis</a>
 
-Because the eigenvectors of the covariance matrix are orthogonal to each other, they can be used to to reorient the data from the x and y axes to the axes represented by the principal components. You [re-base the coordinate system](https://en.wikipedia.org/wiki/Change_of_basis) for the dataset in a new space defined by its lines of greatest variance.
+Because the eigenvectors of the covariance matrix are orthogonal to each other, they can be used to reorient the data from the x and y axes to the axes represented by the principal components. You [re-base the coordinate system](https://en.wikipedia.org/wiki/Change_of_basis) for the dataset in a new space defined by its lines of greatest variance.
 
 The x and y axes we've shown above are what's called the basis of a matrix; that is, they provide the points of the matrix with x, y coordinates. But it is possible to recast a matrix along other axes; for example, the eigenvectors of a matrix can serve as the foundation of a new set of coordinates for the same matrix. Matrices and vectors are animals in themselves, independent of the numbers linked to a specific coordinate system like x and y. 
 
