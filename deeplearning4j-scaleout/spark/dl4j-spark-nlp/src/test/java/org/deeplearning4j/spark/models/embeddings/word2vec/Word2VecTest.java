@@ -64,6 +64,7 @@ public class Word2VecTest {
         Collection<String> words = word2Vec.wordsNearest("day", 10);
         System.out.println(words);
 
+
         sc.stop();
     }
 
