@@ -23,6 +23,7 @@ import io.netty.buffer.ByteBuf;
 import jcuda.Pointer;
 import jcuda.Sizeof;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.util.ArrayUtil;
 
 /**
  * Cuda int buffer
@@ -39,9 +40,42 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
         super(length, Sizeof.INT);
     }
 
+    public CudaIntDataBuffer(int length, int elementSize) {
+        super(length, elementSize);
+    }
+
     public CudaIntDataBuffer(int[] data) {
         this(data.length);
         setData(data);
+    }
+
+    public CudaIntDataBuffer(int[] data, boolean copy) {
+        super(data, copy);
+    }
+
+
+    public CudaIntDataBuffer(ByteBuf buf, int length) {
+        super(buf, length);
+    }
+
+    public CudaIntDataBuffer(byte[] data, int length) {
+        super(data, length);
+    }
+
+    public CudaIntDataBuffer(double[] data) {
+        super(data);
+    }
+
+    public CudaIntDataBuffer(double[] data, boolean copy) {
+        super(data, copy);
+    }
+
+    public CudaIntDataBuffer(float[] data) {
+        super(data);
+    }
+
+    public CudaIntDataBuffer(float[] data, boolean copy) {
+        super(data, copy);
     }
 
     @Override
@@ -69,114 +103,8 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
     }
 
     @Override
-    public double[] getDoublesAt(int offset, int length) {
-        return new double[0];
-    }
-
-    @Override
-    public float[] getFloatsAt(int offset, int length) {
-        return new float[0];
-    }
-
-    @Override
-    public double[] getDoublesAt(int offset, int inc, int length) {
-        return new double[0];
-    }
-
-    @Override
-    public float[] getFloatsAt(int offset, int inc, int length) {
-        return new float[0];
-    }
-
-    @Override
-    public void assign(Number value, int offset) {
-        int arrLength = length - offset;
-        int[] data = new int[arrLength];
-        for (int i = 0; i < data.length; i++)
-            data[i] = value.intValue();
-        set(offset, arrLength, Pointer.to(data));
-    }
-
-    @Override
-    public void setData(int[] data) {
-
-    }
-
-    @Override
-    public void setData(float[] data) {
-
-    }
-
-    @Override
-    public void setData(double[] data) {
-
-    }
-
-    @Override
-    public byte[] asBytes() {
-        return new byte[0];
-    }
-
-    @Override
-    public DataBuffer.Type dataType() {
-        return DataBuffer.Type.INT;
-    }
-
-    @Override
-    public float[] asFloat() {
-        return new float[0];
-    }
-
-    @Override
-    public double[] asDouble() {
-        return new double[0];
-    }
-
-    @Override
-    public int[] asInt() {
-        return new int[0];
-    }
-
-
-    @Override
-    public double getDouble(int i) {
-        return 0;
-    }
-
-    @Override
-    public float getFloat(int i) {
-        return 0;
-    }
-
-    @Override
-    public Number getNumber(int i) {
-        return null;
-    }
-
-    @Override
-    public void put(int i, float element) {
-
-    }
-
-    @Override
-    public void put(int i, double element) {
-
-    }
-
-    @Override
-    public void put(int i, int element) {
-
-    }
-
-
-    @Override
-    public int getInt(int ix) {
-        return 0;
-    }
-
-    @Override
-    public DataBuffer dup() {
-        return null;
+    public Type dataType() {
+        return Type.INT;
     }
 
     @Override
@@ -186,27 +114,22 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public DataBuffer create(double[] data) {
-        return null;
+        return new CudaIntDataBuffer(ArrayUtil.toInts(data));
     }
 
     @Override
     public DataBuffer create(float[] data) {
-        return null;
+        return new CudaIntDataBuffer(ArrayUtil.toInts(data));
     }
 
     @Override
     public DataBuffer create(int[] data) {
-        return null;
+        return new CudaIntDataBuffer(data);
     }
 
     @Override
     public DataBuffer create(ByteBuf buf, int length) {
-        return null;
-    }
-
-    @Override
-    public void flush() {
-
+        return new CudaIntDataBuffer(buf,length);
     }
 
 
@@ -224,6 +147,11 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
                 stream.writeInt(arr[i]);
             }
         }
+    }
+
+    @Override
+    public int getElementSize() {
+        return Sizeof.INT;
     }
 
     private void readObject(java.io.ObjectInputStream stream)

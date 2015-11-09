@@ -11515,7 +11515,7 @@ public class JCudaDriver
      *
      * \param minGridSize - Returned minimum grid size needed to achieve the maximum occupancy
      * \param blockSize   - Returned maximum block size that can achieve the maximum occupancy
-     * \param func        - Kernel for which launch configuration is calulated
+     * \param func        - Kernel for which launch configuration is calculated
      * \param blockSizeToDynamicSMemSize - A function that calculates how much per-block dynamic shared memory \p func uses based on the block size
      * \param dynamicSMemSize - Dynamic shared memory usage intended, in bytes
      * \param blockSizeLimit  - The maximum block size \p func is designed to handle

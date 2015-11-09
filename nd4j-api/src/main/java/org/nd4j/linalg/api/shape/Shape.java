@@ -1016,7 +1016,10 @@ public class Shape {
             return Nd4j.createComplex(arr.data(),newShape,newStrides,arr.offset());
 
 
-        return Nd4j.create(arr.data(),newShape,newStrides,arr.offset());
+        INDArray ret =  Nd4j.create(arr.data(),newShape,newStrides,arr.offset());
+
+
+        return ret;
     }
 
     /**

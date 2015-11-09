@@ -152,6 +152,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
             if(dataType() == Type.DOUBLE) {
                 put(i,0.0);
             }
+            else if(dataType() == Type.INT) {
+                put(i, 0);
+            }
             else {
                 put(i,(float) 0.0);
             }
@@ -211,6 +214,20 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     }
 
+    @Override
+    public void copyAtStride(DataBuffer buf, int n, int stride, int yStride, int offset, int yOffset) {
+        if(dataType() == Type.FLOAT) {
+            for(int i = 0; i < n; i++) {
+                put(offset + i * stride,buf.getFloat(yOffset + i * yStride));
+            }
+        }
+        else {
+            for(int i = 0; i < n; i++) {
+                put(offset + i * stride,buf.getDouble(yOffset + i * yStride));
+            }
+        }
+
+    }
 
     @Override
     public void removeReferencing(String id) {
@@ -246,7 +263,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             this.intData = data;
         else {
             for (int i = 0; i < data.length; i++) {
-                dataBuffer.setInt(i, data[i]);
+                put(i,data[i]);
             }
         }
 
@@ -564,12 +581,17 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
         if(dataType() == Type.FLOAT) {
             dirty.set(false);
-
             return dataBuffer.getFloat(i * getElementSize());
         }
 
-        dirty.set(false);
-        return dataBuffer.getDouble(i * getElementSize());
+        else if(dataType() == Type.INT) {
+            dirty.set(false);
+            return dataBuffer.getInt(i * getElementSize());
+        }
+        else {
+            dirty.set(false);
+            return dataBuffer.getDouble(i * getElementSize());
+        }
     }
 
     @Override
@@ -595,7 +617,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             return (float) dataBuffer.getDouble(i * getElementSize());
         }
 
-        dirty.set(false);
+        dirty.getAndSet(true);
         return dataBuffer.getFloat(i * getElementSize());
     }
 
@@ -603,6 +625,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public Number getNumber(int i) {
         if(dataType() == Type.DOUBLE)
             return getDouble(i);
+        else if(dataType() == Type.INT)
+            return getInt(i);
         return getFloat(i);
     }
 
@@ -652,6 +676,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 ensureWritable(i,8);
                 dataBuffer.setDouble(i * 8, element);
 
+            }
+            else if(dataType() == Type.INT) {
+                ensureWritable(i, 4);
+                dataBuffer.setInt(i * 4, (int) element);
             }
 
             else
@@ -857,7 +885,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                     }
                 }
                 else {
-                    dataBuffer = Unpooled.buffer((int) length() * getElementSize()).order(ByteOrder.nativeOrder());
+                    dataBuffer = Unpooled.buffer( length() * getElementSize()).order(ByteOrder.nativeOrder());
                     for(int i = 0; i < length(); i++) {
                         put(i,s.readDouble());
                     }
@@ -886,6 +914,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                     }
                 }
             }
+
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

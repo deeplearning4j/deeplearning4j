@@ -31,7 +31,8 @@ public class NDArrayMath {
      * arbitrary dimensions
      */
     public static int lengthPerSlice(INDArray arr,int...dimension) {
-        return ArrayUtil.prod(ArrayUtil.removeIndex(arr.shape(), dimension));
+        int[] remove = ArrayUtil.removeIndex(arr.shape(), dimension);
+        return ArrayUtil.prod(remove);
     }
 
     /**

@@ -34,6 +34,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
+import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 import org.nd4j.linalg.util.ComplexUtil;
 import org.nd4j.linalg.api.shape.Shape;
 
@@ -48,18 +49,41 @@ public class CublasPointerTests {
         CudaContext ctx = new CudaContext();
         ctx.initOldStream();
         CublasPointer p = new CublasPointer(arr1Offset,ctx);
-        String s = p.toString();
         float[] data = new float[6];
         float[] assertion = {4,5,6,7,8,9};
-        JCublas2.cublasGetVector(
+        JCublas2.cublasGetVectorAsync(
                 6
                 , Sizeof.FLOAT
-                ,p.getDevicePointer().withByteOffset(arr1Offset.offset() * arr1Offset.data().getElementSize())
-                ,arr1Offset.majorStride()
-                , Pointer.to(data),1);
-        for(int i = 0; i < assertion.length;i++)
-            assertEquals(data[i],assertion[i],1e-1f);
+                , p.getDevicePointer().withByteOffset(arr1Offset.offset() * arr1Offset.data().getElementSize())
+                , arr1Offset.elementWiseStride()
+                , Pointer.to(data), 1, ctx.getOldStream());
+        ctx.syncOldStream();
+        for(int i = 0; i < assertion.length;i++) {
+            if(assertion[i] != data[i])
+                System.out.println("Failed with pointer " + p);
+            assertEquals(assertion[i], data[i], 1e-1f);
+        }
         ctx.destroy();
+    }
+
+
+    @Test
+    public void testAllocInt() {
+        JCudaBuffer intBuffer = KernelFunctions.alloc(new int[]{1,2,3,4,5,6});
+        assertEquals(6,intBuffer.length());
+        for(int i = 0; i  < intBuffer.length(); i++) {
+            assertEquals(i + 1,intBuffer.getInt(i));
+        }
+
+        CudaContext ctx = new CudaContext();
+        ctx.initOldStream();
+        CublasPointer pointer = new CublasPointer(intBuffer,ctx);
+        pointer.copyToHost();
+        for(int i = 0; i  < intBuffer.length(); i++) {
+            assertEquals(i + 1,intBuffer.getInt(i));
+        }
+
+
     }
 
     @Test

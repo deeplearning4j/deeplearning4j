@@ -9778,11 +9778,7 @@ public class JCuda
      */    
     public static int cudaFuncGetAttributes (cudaFuncAttributes attr, String func)
     {
-        if (true)
-        {
-            throw new UnsupportedOperationException(
-                "This function is no longer supported as of CUDA 5.0");
-        }
+
         return checkResult(cudaFuncGetAttributesNative(attr, func));
     }
     private static native int cudaFuncGetAttributesNative(cudaFuncAttributes attr, String func);

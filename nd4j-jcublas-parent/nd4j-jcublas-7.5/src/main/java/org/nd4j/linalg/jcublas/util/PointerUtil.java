@@ -27,6 +27,7 @@ import jcuda.driver.CUdeviceptr;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.ScalarOp;
 
 import java.nio.ByteBuffer;
@@ -56,12 +57,83 @@ public class PointerUtil {
 
 
     /**
+     * Converts a raw int buffer of the layout:
+     * rank
+     * shape
+     * stride
+     * offset
+     * element wise stride
+     * ordering
+     * where shape and stride are both straight int pointers
+     *
+     * Of note here is that offset will be zero automatically
+     * because the offset is handled by the
+     * pointer object instead
+     *
+     */
+    public static int[] toShapeInfoBuffer(INDArray arr,int...dimension) {
+        if(dimension == null)
+            return toShapeInfoBuffer(arr);
+        int[] ret = new int[arr.rank() * 2 + 4];
+        ret[0]= arr.rank();
+        int count = 1;
+        for(int i = 0; i < arr.rank(); i++) {
+            ret[count++] = arr.size(i);
+        }
+        for(int i = 0; i < arr.rank(); i++) {
+            ret[count++] = arr.stride(i);
+        }
+
+        //note here we do offset of zero due to the offset
+        //already being handled by the cuda device pointer
+        ret[ret.length - 3] = 0;
+        ret[ret.length -2] = arr.tensorAlongDimension(0,dimension).elementWiseStride();
+        ret[ret.length - 1] = arr.ordering();
+        return ret;
+    }
+
+    /**
+     * Converts a raw int buffer of the layout:
+     * rank
+     * shape
+     * stride
+     * offset
+     * element wise stride
+     * ordering
+     * where shape and stride are both straight int pointers
+     *
+     *  Of note here is that offset will be zero automatically
+     * because the offset is handled by the
+     * pointer object instead
+     *
+     */
+    public static int[] toShapeInfoBuffer(INDArray arr) {
+        int[] ret = new int[arr.rank() * 2 + 4];
+        ret[0]= arr.rank();
+        int count = 1;
+        for(int i = 0; i < arr.rank(); i++) {
+            ret[count++] = arr.size(i);
+        }
+        for(int i = 0; i < arr.rank(); i++) {
+            ret[count++] = arr.stride(i);
+        }
+
+        //note here we do offset of zero due to the offset
+        //already being handled by the cuda device pointer
+        ret[ret.length - 3] = 0;
+        ret[ret.length -2] = arr.elementWiseStride();
+        ret[ret.length - 1] = arr.ordering();
+        return ret;
+    }
+
+
+    /**
      * Get the pointer for a single complex float
      * @param x the number ot get the pointer for
      * @return the pointer for the given complex number
      */
     public static Pointer getPointer(IComplexDouble x) {
-       return getPointer(cuDoubleComplex.cuCmplx(x.realComponent().doubleValue(),x.imaginaryComponent().doubleValue()));
+        return getPointer(cuDoubleComplex.cuCmplx(x.realComponent().doubleValue(),x.imaginaryComponent().doubleValue()));
     }
     /**
      * Get the pointer for a single complex float

@@ -9,8 +9,8 @@ __device__ double op(double d1,double *params) {
 }
 
 extern "C"
-__global__ void eq_strided_double(int n, int xOffset,int yOffset,double *dx, double *dy,int incx,int incy,double *params,double *result,int incz) {
-        transform(n,xOffset,yOffset,dx,dy,incx,incy,params,result,incz);
+__global__ void eq_strided_double(int n, int xOffset,int yOffset,double *dx, double *dy,int incx,int incy,double *params,double *result,int incz,int blockSize) {
+        transform(n,xOffset,yOffset,dx,dy,incx,incy,params,result,incz,blockSize);
 
  }
 

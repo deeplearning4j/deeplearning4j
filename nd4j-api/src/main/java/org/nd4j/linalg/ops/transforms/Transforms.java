@@ -363,6 +363,11 @@ public class Transforms {
     }
 
 
+    /**
+     *
+     * @param ndArray
+     * @return
+     */
     public static INDArray identity(INDArray ndArray) {
         return identity(ndArray, Nd4j.copyOnOps);
     }

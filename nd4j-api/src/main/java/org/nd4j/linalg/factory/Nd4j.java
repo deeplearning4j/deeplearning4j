@@ -4567,5 +4567,7 @@ public class Nd4j {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+
     }
+
 }

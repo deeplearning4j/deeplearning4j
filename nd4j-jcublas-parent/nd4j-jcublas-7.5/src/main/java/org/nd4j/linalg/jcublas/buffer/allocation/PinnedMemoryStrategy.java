@@ -44,10 +44,11 @@ public class PinnedMemoryStrategy implements MemoryStrategy {
                 ,stride
                 ,offset);
 
+
         JCuda.cudaHostAlloc(
                 hostPointer
                 , buffer.getElementSize() * length
-                , JCuda.cudaHostAllocDefault);
+                , JCuda.cudaHostAllocMapped);
 
         return devicePointerInfo;
     }

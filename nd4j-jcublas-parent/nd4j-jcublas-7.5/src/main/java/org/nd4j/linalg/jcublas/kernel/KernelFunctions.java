@@ -20,13 +20,14 @@
 package org.nd4j.linalg.jcublas.kernel;
 
 
-import jcuda.Sizeof;
-import jcuda.driver.CUstream;
+
 import jcuda.utils.KernelLauncher;
 import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
+import org.nd4j.linalg.jcublas.buffer.CudaIntDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
-import org.nd4j.linalg.jcublas.context.ContextHolder;
+import org.nd4j.linalg.jcublas.context.CudaContext;
+import org.nd4j.linalg.jcublas.gpumetrics.GpuMetrics;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.IOException;
@@ -94,32 +95,43 @@ public class KernelFunctions {
     }
 
 
-
     /**
-     * Invoke a function with the given number of parameters
-     *
-     * @param blocks           the number of blocks to launch the kernel
-     * @param threadsPerBlock  the number of threads per block
-     * @param kernelParameters the parameters
-     * @param dataType         the data type to use
+     * Invoke a function
+     * @param metrics
+     * @param functionName
+     * @param dataType
+     * @param cudaContext
+     * @param kernelParameters
      */
-    public static  void invoke(int blocks, int threadsPerBlock, String functionName,String dataType,Object...kernelParameters) {
-        ContextHolder.getInstance().syncStream();
+    public static  void invoke(GpuMetrics metrics, boolean sync,String functionName,String dataType,CudaContext cudaContext,Object...kernelParameters) {
         // Call the kernel function.
-        CUstream stream = ContextHolder.getInstance().getStream();
-        int sharedMemSize = threadsPerBlock * (dataType.equals("float") ? Sizeof.FLOAT : Sizeof.DOUBLE) * 2;
+        int sharedMemSize = metrics.getSharedMemory();
         KernelLauncher launcher = KernelFunctionLoader.launcher(functionName, dataType);
         if(launcher == null)
             throw new IllegalArgumentException("Launcher for function " + functionName + " and data type " + dataType + " does not exist!");
 
-        launcher.forFunction(functionName + "_" + dataType)
-                .setBlockSize(threadsPerBlock,1,1)
-                .setGridSize(blocks,1,1).setStream(stream)
+        launcher.forFunction(KernelLauncher.FUNCTION_NAME + "_" + dataType)
+                .setBlockSize(metrics.getBlockSize(),1,1)
+                .setGridSize(metrics.getGridSize(),1,1).setStream(cudaContext.getStream())
                 .setSharedMemSize(sharedMemSize)
                 .call(kernelParameters);
+        if(sync)
+            cudaContext.syncStream();
 
-        ContextHolder.syncStream();
+    }
 
+
+    /**
+     * Allocate a pointer of a given data type
+     *
+     * @param data the data for the pointer
+     * @return the pointer
+     */
+    public static JCudaBuffer alloc(int[] data) {
+        // Allocate the device input data, and copy the
+        // host input data to the device
+        JCudaBuffer doubleBuffer = new CudaIntDataBuffer(data);
+        return doubleBuffer;
     }
 
 

@@ -259,6 +259,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         oneThroughFour.subiRowVector(row1);
         INDArray result = Nd4j.create(new float[]{-2, -2, 0, 0}, new int[]{2, 2});
         assertEquals(getFailureMessage(), result, oneThroughFour);
+
     }
 
 
@@ -307,14 +308,6 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray values = Nd4j.create(2, 2);
         INDArray values2 = Nd4j.create(2, 2);
 
-        values.put(0, 0, 0);
-        values2.put(0, 0, 2);
-        values.put(1, 0, 0);
-        values2.put(1, 0, 2);
-        values.put(0, 1, 0);
-        values2.put(0, 1, 0);
-        values.put(1, 1, 2);
-        values2.put(1, 1, 2);
 
 
         INDArray expected = Nd4j.repeat(Nd4j.scalar(2), 2);
@@ -328,8 +321,6 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testBroadCasting() {
         INDArray first = Nd4j.arange(0, 3).reshape(3, 1);
-        INDArray matrix = Nd4j.create(new double[][]{{1,2},{3,4}});
-        INDArray column = matrix.getColumn(1);
         INDArray ret = first.broadcast(3, 4);
         INDArray testRet = Nd4j.create(new double[][]{
                 {0, 0, 0, 0},
@@ -639,6 +630,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     }
 
+
     @Test
     public void testScal() {
         Nd4j.dtype = DataBuffer.Type.DOUBLE;
@@ -851,7 +843,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     public void testSum() {
         INDArray n = Nd4j.create(Nd4j.linspace(1, 8, 8).data(), new int[]{2, 2, 2});
         INDArray test = Nd4j.create(new float[]{3, 7, 11, 15}, new int[]{2, 2});
-        INDArray sum = n.sum(n.shape().length - 1);
+        INDArray sum = n.sum(-1);
         assertEquals(test, sum);
 
     }
@@ -882,9 +874,9 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertArrayEquals(tad.shape(), new int[]{7, 5});
 
 
-        INDArray copy = Nd4j.zeros(7, 5);
-        for( int i=0; i<7; i++ ){
-            for( int j=0; j<5; j++ ){
+        INDArray copy = Nd4j.zeros(7,5);
+        for( int i = 0; i < 7; i++ ){
+            for( int j = 0; j < 5; j++ ){
                 copy.putScalar(new int[]{i,j},tad.getDouble(i,j));
             }
         }
@@ -1400,10 +1392,10 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
     @Test
     public void testMMulRowColVectorMixedOrder(){
-        INDArray colVec = Nd4j.ones(5, 1);
-        INDArray rowVec = Nd4j.ones(1, 3);
+        INDArray colVec = Nd4j.ones(5,1);
+        INDArray rowVec = Nd4j.ones(1,3);
         INDArray out = colVec.mmul(rowVec);
-        assertArrayEquals(out.shape(), new int[]{5, 3});
+        assertArrayEquals(out.shape(),new int[]{5,3});
         assertTrue(out.equals(Nd4j.ones(5, 3)));
         //Above: OK
 
@@ -1604,7 +1596,9 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         System.out.println("Out:\n" + out);
 
         int countZero = 0;
-        for( int i=0; i<8; i++ ) if(out.getDouble(i) == 0.0 ) countZero++;
+        for( int i = 0; i < 8; i++ )
+            if(out.getDouble(i) == 0.0 )
+                countZero++;
         assertEquals(countZero, 0);
     }
 
@@ -1624,18 +1618,12 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testSums() {
         INDArray a = Nd4j.linspace(1, 4, 4).reshape(2, 2);
-        assertEquals(getFailureMessage(), Nd4j.create(new float[]{4, 6}), a.sum(0));
         assertEquals(getFailureMessage(),Nd4j.create(new float[]{3, 7}), a.sum(1));
+        assertEquals(getFailureMessage(), Nd4j.create(new float[]{4, 6}), a.sum(0));
         assertEquals(getFailureMessage(), 10, a.sumNumber().doubleValue(), 1e-1);
 
 
     }
-
-
-
-
-
-
 
     @Test
     public void testRSubi() {

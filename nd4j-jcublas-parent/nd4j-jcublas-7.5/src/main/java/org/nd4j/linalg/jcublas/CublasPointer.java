@@ -53,6 +53,7 @@ public class CublasPointer  implements AutoCloseable {
     private boolean closed = false;
     private INDArray arr;
     private CudaContext cudaContext;
+    private boolean resultPointer = false;
 
 
     /**
@@ -61,6 +62,16 @@ public class CublasPointer  implements AutoCloseable {
      */
     @Override
     public void close() throws Exception {
+        if( !isResultPointer()) {
+            destroy();
+        }
+    }
+
+
+    /**
+     * The actual destroy method
+     */
+    public void destroy() {
         if(!closed) {
             if(arr != null)
                 buffer.freeDevicePointer(arr.offset(),arr.length());
@@ -69,6 +80,7 @@ public class CublasPointer  implements AutoCloseable {
             closed = true;
         }
     }
+
 
     /**
      *
@@ -108,20 +120,21 @@ public class CublasPointer  implements AutoCloseable {
     public CublasPointer(JCudaBuffer buffer,CudaContext context) {
         this.buffer = buffer;
         this.devicePointer = buffer.getDevicePointer(1, 0, buffer.length());
-
+        this.cudaContext = context;
         context.initOldStream();
         // Copy the data to the device
-        if(!buffer.copied(Thread.currentThread().getName()) && !buffer.dirty()) {
-            JCublas2.cublasSetVectorAsync(
-                    buffer.length()
-                    , buffer.getElementSize()
-                    , buffer.getHostPointer()
-                    , 1
-                    , devicePointer
-                    , 1
-                    , context.getOldStream());
-            buffer.setCopied(Thread.currentThread().getName());
-        }
+        //  if(!buffer.copied(Thread.currentThread().getName()) && !buffer.dirty()) {
+        JCublas2.cublasSetVectorAsync(
+                buffer.length()
+                , buffer.getElementSize()
+                , buffer.getHostPointer()
+                , 1
+                , devicePointer
+                , 1
+                , context.getOldStream());
+        buffer.setCopied(Thread.currentThread().getName());
+
+        //}
     }
 
     /**
@@ -178,7 +191,7 @@ public class CublasPointer  implements AutoCloseable {
          * due to how the striding works out.
          */
         // Copy the data to the device iff the whole buffer hasn't been copied
-        if(!buffer.copied(name) && !buffer.dirty()) {
+        if(!buffer.copied(name)) {
             JCublas.cublasSetVectorAsync(
                     buffer.length()
                     , this.arr.data().getElementSize()
@@ -191,10 +204,35 @@ public class CublasPointer  implements AutoCloseable {
             buffer.setCopied(name);
 
         }
+
     }
 
 
+    /**
+     * Whether this is a result pointer or not
+     * A result pointer means that this
+     * pointer should not automatically be freed
+     * but instead wait for results to accumulate
+     * so they can be returned from
+     * the gpu first
+     * @return
+     */
+    public boolean isResultPointer() {
+        return resultPointer;
+    }
 
+    /**
+     * Sets whether this is a result pointer or not
+     * A result pointer means that this
+     * pointer should not automatically be freed
+     * but instead wait for results to accumulate
+     * so they can be returned from
+     * the gpu first
+     * @return
+     */
+    public void setResultPointer(boolean resultPointer) {
+        this.resultPointer = resultPointer;
+    }
 
     @Override
     public String toString() {
@@ -213,6 +251,18 @@ public class CublasPointer  implements AutoCloseable {
             else {
                 if(buffer.dataType() == DataBuffer.Type.DOUBLE) {
                     double[] set = new double[buffer.length()];
+                    JCublas2.cublasGetVectorAsync(
+                            buffer.length()
+                            , buffer.getElementSize()
+                            , devicePointer
+                            , 1
+                            , Pointer.to(set)
+                            , 1
+                            , cudaContext.getOldStream());
+                    sb.append(Arrays.toString(set));
+                }
+                else if(buffer.dataType() == DataBuffer.Type.INT) {
+                    int[] set = new int[buffer.length()];
                     JCublas2.cublasGetVectorAsync(
                             buffer.length()
                             , buffer.getElementSize()
@@ -261,6 +311,18 @@ public class CublasPointer  implements AutoCloseable {
             cudaContext.syncOldStream();
             sb.append(Arrays.toString(set));
         }
+        else if(arr.data().dataType() == DataBuffer.Type.INT) {
+            int[] set = new int[length];
+            JCublas2.cublasGetVectorAsync(
+                    length
+                    , buffer.getElementSize()
+                    , devicePointer
+                    , BlasBufferUtil.getBlasStride(arr)
+                    , Pointer.to(set)
+                    , 1, cudaContext.getOldStream());
+            ContextHolder.syncStream();
+            sb.append(Arrays.toString(set));
+        }
         else {
             float[] set = new float[length];
             JCublas2.cublasGetVectorAsync(
@@ -279,6 +341,19 @@ public class CublasPointer  implements AutoCloseable {
         int length = arr instanceof  IComplexNDArray ? arr.length() * 2 : arr.length();
         if(arr.data().dataType() == DataBuffer.Type.DOUBLE) {
             double[] set = new double[length];
+            JCublas2.cublasGetVectorAsync(
+                    length
+                    , buffer.getElementSize()
+                    ,devicePointer
+                    ,1
+                    ,Pointer.to(set)
+                    ,1
+                    , cudaContext.getOldStream());
+            cudaContext.syncOldStream();
+            sb.append(Arrays.toString(set));
+        }
+        else if(arr.data().dataType() == DataBuffer.Type.INT) {
+            int[] set = new int[length];
             JCublas2.cublasGetVectorAsync(
                     length
                     , buffer.getElementSize()

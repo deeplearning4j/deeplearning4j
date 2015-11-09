@@ -161,6 +161,11 @@ public abstract class BaseOp implements Op {
     }
 
     @Override
+    public void setN(int n) {
+        this.n = n;
+    }
+
+    @Override
     public int numProcessed() {
         return numProcessed;
     }

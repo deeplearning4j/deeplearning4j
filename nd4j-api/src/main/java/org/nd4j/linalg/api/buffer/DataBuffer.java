@@ -105,6 +105,20 @@ public interface DataBuffer extends Serializable {
     ByteBuf asNetty();
 
     /**
+     * Copies from
+     * the given buffer
+     * at the specified stride
+     * for up to n elements
+     * @param buf the data buffer to copy from
+     * @param n the number of elements to copy
+     * @param stride the stride to copy at
+     * @param yStride
+     * @param offset
+     * @param yOffset
+     */
+    void copyAtStride(DataBuffer buf, int n, int stride, int yStride, int offset, int yOffset);
+
+    /**
      * Allocation mode for buffers
      * @return the allocation mode for the buffer
      */

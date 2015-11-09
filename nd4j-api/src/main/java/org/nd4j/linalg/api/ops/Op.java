@@ -227,4 +227,11 @@ public interface Op {
      * @param dimensions the dimensions to execute on
      */
     void exec(int...dimensions);
+
+    /**
+     * Change n
+     * @param n
+     */
+    void setN(int n);
+
 }
