@@ -1,0 +1,3 @@
+[submodule "nd4j-jcublas-parent/nd4j-jcublas-7.5/src/main/resources/nd4j-kernels"]
+	path = nd4j-jcublas-parent/nd4j-jcublas-7.5/src/main/resources/nd4j-kernels
+	url = git@github.com:deeplearning4j/nd4j-kernels.git
