@@ -43,6 +43,7 @@ import java.util.Collection;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 
@@ -124,8 +125,16 @@ public class Word2VecTests {
         vec.fit();
         WordVectorSerializer.writeWordVectors(vec, pathToWriteto);
         Collection<String> lst = vec.wordsNearest("day", 10);
-        System.out.println(Arrays.toString(lst.toArray()));
-        System.out.println(vec.similarity("day", "night"));
+        log.info(Arrays.toString(lst.toArray()));
+        log.info("Day/night similarity: " + vec.similarity("day", "night"));
+
+
+        assertTrue(lst.contains("week"));
+        assertTrue(lst.contains("night"));
+        assertTrue(lst.contains("year"));
+
+        assertFalse(lst.contains(null));
+
         new File("cache.ser").delete();
     }
 
