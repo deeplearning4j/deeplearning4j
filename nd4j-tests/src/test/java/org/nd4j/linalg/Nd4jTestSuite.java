@@ -20,6 +20,7 @@
 package org.nd4j.linalg;
 
 import junit.framework.TestSuite;
+import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.junit.runners.AllTests;
 import org.nd4j.linalg.factory.Nd4j;
@@ -138,7 +139,7 @@ public class Nd4jTestSuite {
 
         for(Class<? extends BaseNd4jTest> clazz : testClasses) {
             //skip unwanted backends
-            if(!classesToRun.isEmpty() && !classesToRun.contains(clazz.getName()) || Modifier.isAbstract(clazz.getModifiers()))
+            if(!classesToRun.isEmpty() && !classesToRun.contains(clazz.getName()) || Modifier.isAbstract(clazz.getModifiers()) || BaseComplexNDArrayTests.class.isAssignableFrom(clazz) || clazz.getAnnotation(Ignore.class) != null)
                 continue;
 
             for(Nd4jBackend backend : nd4jBackends) {

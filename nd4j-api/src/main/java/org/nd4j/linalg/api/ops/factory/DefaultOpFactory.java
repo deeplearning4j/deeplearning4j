@@ -30,7 +30,6 @@ import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.vector.*;
-import org.nd4j.linalg.factory.Nd4j;
 import org.reflections.Reflections;
 
 import java.lang.reflect.Constructor;
@@ -100,6 +99,7 @@ public class DefaultOpFactory implements OpFactory {
             case "euclidean":
                 return new EuclideanDistance(x);
             case "cosine":
+            case "cosinesimilarity":
                 return new CosineSimilarity(x);
             case "manhattan":
                 return new ManhattanDistance(x);
@@ -131,6 +131,7 @@ public class DefaultOpFactory implements OpFactory {
             case "euclidean":
                 return new EuclideanDistance(x, y, x.length());
             case "cosine":
+            case "cosinesimilarity":
                 return new CosineSimilarity(x, y, x.length());
             case "manhattan":
                 return new ManhattanDistance(x, y, x.length());
@@ -162,6 +163,7 @@ public class DefaultOpFactory implements OpFactory {
             case "euclidean":
                 return new EuclideanDistance(x, y, x.length());
             case "cosine":
+            case "cosinesimilarity":
                 return new CosineSimilarity(x, y, x.length());
             case "manhattan":
                 return new ManhattanDistance(x, y, x.length());

@@ -9,6 +9,7 @@ import org.nd4j.linalg.api.shape.tensor.TensorCalculator;
 import org.nd4j.linalg.api.shape.tensor.TensorCalculator1d;
 import org.nd4j.linalg.api.shape.tensor.TensorCalculatorFactory;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
+import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.util.List;
 
@@ -16,6 +17,20 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 public class TestTensorCalculator extends BaseNd4jTest {
+    public TestTensorCalculator() {
+    }
+
+    public TestTensorCalculator(Nd4jBackend backend) {
+        super(backend);
+    }
+
+    public TestTensorCalculator(String name) {
+        super(name);
+    }
+
+    public TestTensorCalculator(String name, Nd4jBackend backend) {
+        super(name, backend);
+    }
 
     @Test
     public void testTensorCalculator1d() throws Exception {
@@ -82,7 +97,7 @@ public class TestTensorCalculator extends BaseNd4jTest {
                         for( int x=0; x<tensor.length(); x++ ){
                             double dTensor = tensor.getDouble(x);
                             double dCalc = db.getDouble(tCalc.getOffsetForTensor(i) + x*tCalc.getElementWiseStrideForTensor());
-                            assertEquals(dTensor,dCalc);
+                            assertEquals(dTensor,dCalc,1e-1);
                         }
                     }
                 }

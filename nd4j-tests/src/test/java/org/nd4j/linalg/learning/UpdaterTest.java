@@ -37,7 +37,18 @@ public class UpdaterTest extends BaseNd4jTest {
 		super(name, backend);
 	}
 
-	@Test
+    public UpdaterTest() {
+    }
+
+    public UpdaterTest(Nd4jBackend backend) {
+        super(backend);
+    }
+
+    public UpdaterTest(String name) {
+        super(name);
+    }
+
+    @Test
 	public void testAdaGrad1() {
 		int rows = 1;
 		int cols = 1;

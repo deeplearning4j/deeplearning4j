@@ -72,7 +72,7 @@ public abstract class BaseNd4jTest  extends TestCase {
      * given command line arguments
      */
     public static Nd4jBackend getDefaultBackend() {
-        String clazz = System.getProperty(DEFAULT_BACKEND,"org.nd4j.linalg.jcublas.JCublasBackend");
+        String clazz = System.getProperty(DEFAULT_BACKEND,"org.nd4j.linalg.cpu.CpuBackend");
         try {
             return (Nd4jBackend) Class.forName(clazz).newInstance();
         } catch (Exception e) {
@@ -102,6 +102,7 @@ public abstract class BaseNd4jTest  extends TestCase {
 
     @Before
     public void before() {
+        log.info("Running " + getName());
         Nd4j nd4j = new Nd4j();
         nd4j.initWithBackend(backend);
         Nd4j.factory().setOrder(ordering());
@@ -111,6 +112,7 @@ public abstract class BaseNd4jTest  extends TestCase {
 
     @After
     public void after() {
+        log.info("Ending " + getName());
         Nd4j nd4j = new Nd4j();
         nd4j.initWithBackend(backend);
         Nd4j.factory().setOrder(ordering());

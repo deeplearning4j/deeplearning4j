@@ -207,6 +207,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 floatData = new float[length];
         }
         else {
+            if(length * getElementSize() < 0)
+                throw new IllegalArgumentException("Unable to create buffer of length " + length + " due to negative length specified");
             dataBuffer = allocationMode == AllocationMode.DIRECT ?
                     Unpooled.buffer(length * getElementSize()).order(ByteOrder.nativeOrder())
                     : Unpooled.buffer(length * getElementSize()).order(ByteOrder.nativeOrder());

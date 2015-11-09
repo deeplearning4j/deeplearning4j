@@ -4,6 +4,7 @@ pom.xml.releaseBackup
 *.sha1
 target/
 *.ser
+*.so
 application.home_IS_UNDEFINEiD
 README.md~
 *.jpg
