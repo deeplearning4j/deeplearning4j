@@ -1,4 +1,4 @@
-package org.deeplearning4j.graph.util;
+package org.deeplearning4j.graph.data;
 
 import org.deeplearning4j.graph.api.Edge;
 
