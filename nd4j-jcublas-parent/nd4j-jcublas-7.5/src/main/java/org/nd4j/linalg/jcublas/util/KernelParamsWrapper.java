@@ -95,6 +95,7 @@ public class KernelParamsWrapper implements AutoCloseable {
      */
     private Multimap<INDArray, CublasPointer> arrayToPointer;
 
+    private int resultLength = 1;
 
 
     /**
@@ -219,15 +220,14 @@ public class KernelParamsWrapper implements AutoCloseable {
      * @param devicePointer
      */
     private void setResultForOp(Op acc, CublasPointer devicePointer) {
-        int threads = PointerUtil.getNumThreads(acc.n(), KernelFunctions.THREADS);
         if (devicePointer.getBuffer().dataType() == DataBuffer.Type.DOUBLE) {
-            double[] data = new double[threads];
+            double[] data = new double[resultLength];
             Pointer get = Pointer.to(data);
 
             JCuda.cudaMemcpyAsync(
                     get
                     , devicePointer.getDevicePointer()
-                    , threads * Sizeof.DOUBLE
+                    , resultLength * Sizeof.DOUBLE
                     , cudaMemcpyKind.cudaMemcpyDeviceToHost
                     , context.getOldStream());
             context.syncOldStream();
@@ -236,7 +236,26 @@ public class KernelParamsWrapper implements AutoCloseable {
             if(acc instanceof Accumulation) {
                 Accumulation acc2 = (Accumulation) acc;
                 acc2.setFinalResult(data[0]);
-//				acc2.setFinalResultComplex(new ComplexDouble(data[0],data[1]));
+            }
+
+
+        }
+        else if (devicePointer.getBuffer().dataType() == DataBuffer.Type.FLOAT) {
+            float[] data = new float[resultLength];
+            Pointer get = Pointer.to(data);
+
+            JCuda.cudaMemcpyAsync(
+                    get
+                    , devicePointer.getDevicePointer()
+                    , resultLength * Sizeof.FLOAT
+                    , cudaMemcpyKind.cudaMemcpyDeviceToHost
+                    , context.getOldStream());
+            context.syncOldStream();
+
+
+            if(acc instanceof Accumulation) {
+                Accumulation acc2 = (Accumulation) acc;
+                acc2.setFinalResult(data[0]);
             }
 
 

@@ -149,11 +149,6 @@ public class TestMatrixOperations {
     @Test
     public void testSum() {
         INDArray n = Nd4j.create(Nd4j.linspace(1, 8, 8).data(), new int[]{2, 2, 2});
-        int elementWiseStride = n.tensorAlongDimension(0,-1).elementWiseStride();
-        for(int i = 0; i < n.tensorssAlongDimension(-1); i++) {
-            System.out.println(n.tensorAlongDimension(i,-1).offset());
-        }
-
         INDArray test = Nd4j.create(new float[]{3, 7, 11, 15}, new int[]{2, 2});
 
         INDArray sum = n.sum(-1);
