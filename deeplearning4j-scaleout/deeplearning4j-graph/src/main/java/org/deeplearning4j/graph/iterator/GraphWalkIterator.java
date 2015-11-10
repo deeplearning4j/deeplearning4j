@@ -7,12 +7,14 @@ import org.deeplearning4j.graph.api.VertexSequence;
  */
 public interface GraphWalkIterator<T> {
 
+    public int walkLength();
 
     VertexSequence<T> next();
 
     boolean hasNext();
 
     void reset();
+
 
 
 }

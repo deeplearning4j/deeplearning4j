@@ -42,6 +42,7 @@ public class RandomWalkIterator<V> implements GraphWalkIterator<V> {
         reset();
     }
 
+    @Override
     public VertexSequence<V> next() {
         if(!hasNext()) throw new NoSuchElementException();
         //Generate a random walk starting at at vertex order[current]
@@ -75,10 +76,12 @@ public class RandomWalkIterator<V> implements GraphWalkIterator<V> {
         return new SimpleVertexSequence<>(graph,indices);
     }
 
+    @Override
     public boolean hasNext() {
         return position < order.length;
     }
 
+    @Override
     public void reset() {
         position = 0;
         //https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm
@@ -88,5 +91,10 @@ public class RandomWalkIterator<V> implements GraphWalkIterator<V> {
             order[j] = order[i];
             order[i] = temp;
         }
+    }
+
+    @Override
+    public int walkLength(){
+        return walkLength;
     }
 }
