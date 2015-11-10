@@ -40,7 +40,7 @@ public abstract class BaseCPUTask<V> extends RecursiveTask<V> implements Task<V>
         doTensorFirst = false;
     }
 
-    public BaseCPUTask(Op op, int threshold){
+    public BaseCPUTask(Op op, int threshold) {
         this.threshold = threshold;
         this.n = op.x().length();
         this.offsetX = op.x().offset();
@@ -51,21 +51,21 @@ public abstract class BaseCPUTask<V> extends RecursiveTask<V> implements Task<V>
         this.incrZ = (op.z() != null ? op.z().elementWiseStride() : 0);
         doTensorFirst = false;
 
-        if(incrX == -1){
+        if(incrX == -1) {
             //Edge case: sometimes NDArray.elementWiseStride() returns -1, due to weird strides,
             //but every element is still separated by same amount in buffer
             //For example, a TransformOp with x.length() == x.data.length(), but x.stride() is not ascending/descending
             INDArray reshapeX = op.x().reshape(new int[]{1, ArrayUtil.prod(op.x().shape())});
             incrX = reshapeX.stride(1);
         }
-        if(incrY == -1){
+        if(incrY == -1) {
             if(op.y() == op.x()) incrY = incrX;
             else {
                 INDArray reshapeY = op.y().reshape(new int[]{1, ArrayUtil.prod(op.y().shape())});
                 incrY = reshapeY.stride(1);
             }
         }
-        if(incrZ == -1 ){
+        if(incrZ == -1) {
             if(op.z() == op.x()) incrZ = incrX;
             else {
                 INDArray reshapeZ = op.z().reshape(new int[]{1, ArrayUtil.prod(op.z().shape())});
@@ -90,10 +90,17 @@ public abstract class BaseCPUTask<V> extends RecursiveTask<V> implements Task<V>
         this.n = tadx.length();
         offsetX = tadx.offset();
         incrX = tadx.elementWiseStride();
-        if(y==null){
+        if(incrX < 0) {
+            x = op.x().dup();
+            tadx = x.tensorAlongDimension(tensorIdx,tensorDim);
+            incrX = tadx.elementWiseStride();
+            if(incrX < 0)
+                throw new IllegalStateException("Illegal x input unable to use element wise stride for dimension");
+        }
+        if(y == null) {
             offsetY = 0;
             incrY = 0;
-        } else if(y==x){
+        } else if(y == x){
             offsetY = offsetX;
             incrY = incrX;
         } else {
@@ -102,13 +109,13 @@ public abstract class BaseCPUTask<V> extends RecursiveTask<V> implements Task<V>
             incrY = tady.elementWiseStride();
         }
 
-        if(z==null) {
+        if(z == null) {
             offsetZ = 0;
             incrZ = 0;
-        } else if(z==x) {
+        } else if(z == x) {
             offsetZ = offsetX;
             incrZ = incrX;
-        } else if(z==y){
+        } else if(z == y){
             offsetZ = offsetY;
             incrZ = incrY;
         } else {

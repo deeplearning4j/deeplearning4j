@@ -3,12 +3,18 @@ package org.nd4j.linalg.api.parallel.tasks;
 
 import java.util.concurrent.*;
 
-/** Default TaskExecutor based on a
- * (a) ForkJoinPool (for CPU tasks that are ForkJoin RecursiveTask/RecursiveAction, for example)
+/**
+ *
+ * Default TaskExecutor based on a
+ * (a) ForkJoinPool (for CPU tasks that are ForkJoin
+ * RecursiveTask/RecursiveAction, for example)
+ *
  * (b) ThreadPoolExecutor (for all other tasks)
  * number of threads set to the number of processor (cores) by default, as per the
+ *
  * Runtime.getRuntime().availableProcessors() method
- * Otherwise, set number of threads using "org.nd4j.parallel.cpu.taskexecutorthreads" system property
+ * Otherwise, set number of threads using "org.nd4j.parallel.cpu.taskexecutorthreads"
+ * system property
  */
 public class DefaultTaskExecutor implements TaskExecutor {
 

@@ -530,7 +530,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         //force blocks and threads to be even
         KernelFunctions.invoke(
                 metrics,
-                false
+                sync
                 ,functionName
                 ,getType(op),cudaContext
                 ,kernelParams);
