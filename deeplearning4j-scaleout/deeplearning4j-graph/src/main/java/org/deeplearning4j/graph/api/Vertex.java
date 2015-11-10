@@ -8,11 +8,16 @@ public class Vertex<T> {
     private final int idx;
     private final T value;
 
-    public int vertexID(){
+    public int vertexID() {
         return idx;
     }
 
-    public T getValue(){
+    public T getValue() {
         return value;
+    }
+
+    @Override
+    public String toString() {
+        return "vertex(" + idx + "," + (value!=null ? value : "") + ")";
     }
 }

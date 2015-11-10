@@ -2,6 +2,7 @@ package org.deeplearning4j.graph.graph.dl4j;
 
 import org.deeplearning4j.graph.api.*;
 import org.deeplearning4j.graph.exception.NoEdgesException;
+import org.deeplearning4j.graph.vertexfactory.VertexFactory;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -28,12 +29,12 @@ public class SimpleGraph<V, E> extends BaseGraph<V,E> {
         edges = (List<Edge<E>>[]) Array.newInstance(List.class,numVertices);
     }
 
-//    @SuppressWarnings("unchecked")
-//    public SimpleGraph(List<V> vertices, boolean allowMultipleEdges ){
-//        this.vertices = new ArrayList<>(vertices);
-//        this.allowMultipleEdges = allowMultipleEdges;
-//        edges = (List<Edge<T>>[])new Object[vertices.size()];
-//    }
+    @SuppressWarnings("unchecked")
+    public SimpleGraph(List<Vertex<V>> vertices, boolean allowMultipleEdges ){
+        this.vertices = new ArrayList<>(vertices);
+        this.allowMultipleEdges = allowMultipleEdges;
+        edges = (List<Edge<E>>[]) Array.newInstance(List.class,vertices.size());
+    }
 
     @Override
     public int numVertices() {
@@ -161,5 +162,29 @@ public class SimpleGraph<V, E> extends BaseGraph<V,E> {
             //allow multiple/duplicate edges
             list.add(edge);
         }
+    }
+
+
+    @Override
+    public String toString(){
+        StringBuilder sb = new StringBuilder();
+        sb.append("SimpleGraph {");
+        sb.append("\nVertices {");
+        for(Vertex<V> v : vertices){
+            sb.append("\n\t").append(v);
+        }
+        sb.append("\n}");
+        sb.append("\nEdges {");
+        for( int i=0; i<edges.length; i++ ){
+            sb.append("\n\t");
+            if(edges[i] == null) continue;
+            sb.append(i).append(":");
+            for(Edge<E> e : edges[i]){
+                sb.append(" ").append(e);
+            }
+        }
+        sb.append("\n}");
+        sb.append("\n}");
+        return sb.toString();
     }
 }
