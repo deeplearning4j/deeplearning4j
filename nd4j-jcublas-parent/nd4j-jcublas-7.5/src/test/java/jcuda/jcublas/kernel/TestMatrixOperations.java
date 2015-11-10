@@ -292,6 +292,55 @@ public class TestMatrixOperations {
         array5d.sum(4); //java.lang.IllegalArgumentException: Illegal index 10000 derived from 9 with offset of 1000 and stride of 1000
     }
 
+    @Test
+    public void testToOffsetZero() {
+        INDArray matrix  =  Nd4j.rand(3,5);
+        INDArray rowOne = matrix.getRow(1);
+        INDArray row1Copy = Shape.toOffsetZero(rowOne);
+        assertEquals(rowOne,row1Copy);
+        INDArray rows =  matrix.getRows(1, 2);
+        INDArray rowsOffsetZero = Shape.toOffsetZero(rows);
+        assertEquals(rows,rowsOffsetZero);
+
+        INDArray tensor = Nd4j.rand(new int[]{3,3,3});
+        INDArray getTensor = tensor.slice(1).slice(1);
+        INDArray getTensorZero = Shape.toOffsetZero(getTensor);
+        assertEquals(getTensor, getTensorZero);
+
+
+
+    }
+
+    @Test
+    public void testSumLeadingTrailingZeros(){
+        testSumHelper(1,5,5);
+        testSumHelper(5,5,1);
+        testSumHelper(1,5,1);
+
+        testSumHelper(1,5,5,5);
+        testSumHelper(5,5,5,1);
+        testSumHelper(1,5,5,1);
+
+        testSumHelper(1,5,5,5,5);
+        testSumHelper(5,5,5,5,1);
+        testSumHelper(1,5,5,5,1);
+
+        testSumHelper(1,5,5,5,5,5);
+        testSumHelper(5, 5, 5, 5, 5, 1);
+        testSumHelper(1, 5, 5, 5, 5, 1);
+    }
+
+    private  void testSumHelper( int... shape ){
+        INDArray array = Nd4j.ones(shape);
+        for( int i = 0; i < shape.length; i++) {
+            for(int j = 0; j < array.vectorsAlongDimension(i); j++) {
+                INDArray vec = array.vectorAlongDimension(j,i);
+            }
+            array.sum(i);
+        }
+    }
+
+
 
 
     @Test

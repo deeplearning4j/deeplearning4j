@@ -27,6 +27,9 @@ public class CPUAccumulationAlongDimensionTask extends BaseCPUTask<INDArray> {
 
     public CPUAccumulationAlongDimensionTask(Accumulation op, int parallelThreshold, int... dimensions) {
         super(op, parallelThreshold);
+        for(int i = 0; i < dimensions.length; i++)
+            if(dimensions[i] < 0)
+                dimensions[i] += op.x().rank();
         this.op = op;
         this.dimensions = dimensions;
     }
@@ -38,7 +41,7 @@ public class CPUAccumulationAlongDimensionTask extends BaseCPUTask<INDArray> {
             invokeAsync();
         }
 
-        INDArray ret = null;
+        INDArray ret;
         try {
             ret = future.get();
         } catch (Exception e) {
@@ -80,18 +83,19 @@ public class CPUAccumulationAlongDimensionTask extends BaseCPUTask<INDArray> {
     @Override
     public INDArray compute() {
         //Fork Join: Recursive decomposition
-
-        if(dimensions.length == 1 && !op.isPassThrough()){
+        if(dimensions.length == 1 && !op.isPassThrough()) {
             TensorCalculator tCalcx = TensorCalculatorFactory.getTensorCalculator(op.x(), dimensions[0]);
             TensorCalculator tCalcy;
-            if(op.y() != null) tCalcy = TensorCalculatorFactory.getTensorCalculator(op.y(), dimensions[0]);
-            else tCalcy = null;
+            if(op.y() != null)
+                tCalcy = TensorCalculatorFactory.getTensorCalculator(op.y(), dimensions[0]);
+            else
+                tCalcy = null;
 
             int[] retShape = ArrayUtil.removeIndex(op.x().shape(), dimensions);
             INDArray out = Nd4j.create(retShape);
 
             RecursiveAction action = new CPUAccumulations1dAction(op,threshold,tCalcx, tCalcy, 0,
-                    tCalcx.getNumTensors()-1, out);
+                    tCalcx.getNumTensors() - 1, out);
             action.invoke();
             op.setZ(out);
             return out;

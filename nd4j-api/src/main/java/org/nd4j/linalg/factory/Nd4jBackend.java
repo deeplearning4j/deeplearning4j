@@ -141,7 +141,7 @@ public abstract class Nd4jBackend {
                 continue;
             }
 
-            log.trace("Loaded [{}] backend", backend.getClass().getSimpleName());
+            log.info("Loaded [{}] backend", backend.getClass().getSimpleName());
             return backend;
         }
 

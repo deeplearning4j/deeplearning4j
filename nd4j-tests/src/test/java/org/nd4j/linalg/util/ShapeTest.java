@@ -51,8 +51,7 @@ public class ShapeTest extends BaseNd4jTest {
 
 
     @Test
-    public void testDupLeadingTrailingZeros(){
-        testDupHelper(1,1);
+    public void testDupLeadingTrailingZeros() {
         testDupHelper(1,10);
         testDupHelper(10,1);
         testDupHelper(1, 10, 1);
@@ -61,6 +60,8 @@ public class ShapeTest extends BaseNd4jTest {
         testDupHelper(2, 10, 1, 1);
         testDupHelper(1, 1, 1, 10);
         testDupHelper(10, 1, 1, 1);
+        testDupHelper(1,1);
+
     }
 
     private  void testDupHelper(int... shape) {

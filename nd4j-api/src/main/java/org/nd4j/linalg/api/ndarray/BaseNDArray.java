@@ -1017,69 +1017,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray assign(final INDArray arr) {
-        if (isVector() && arr.isVector() && length() != arr.length())
-            throw new IllegalArgumentException("Illegal assignment, must be of same length");
-        if(isVector()) {
-            if(isColumnVector() && arr.isRowVector()) {
-                for(int i = 0; i < arr.length(); i++) {
-                    putScalar(new int[]{i,0},arr.getDouble(new int[]{0,i}));
-                }
-            }
-            else if(isRowVector() && arr.isColumnVector()) {
-                for(int i = 0; i < arr.length(); i++) {
-                    putScalar(new int[]{0,i},arr.getDouble(new int[]{i,0}));
-                }
-            }
-            else if(arr.isRowVector() && isRowVector()) {
-                for(int i = 0; i < arr.length(); i++) {
-                    putScalar(new int[]{0,i},arr.getDouble(new int[]{0,i}));
-                }
-            }
-            else if(arr.isColumnVector() && arr.isColumnVector()) {
-                for(int i = 0; i < arr.length(); i++) {
-                    putScalar(new int[]{i,0},arr.getDouble(new int[]{i,0}));
-                }
-            }
-
-            else if(isRowVector()){
-                final AtomicInteger a = new AtomicInteger(0);
-                Shape.iterate(arr, new CoordinateFunction() {
-                    @Override
-                    public void process(int[]... coord) {
-                        putScalar(new int[]{0,a.getAndIncrement()},arr.getDouble(coord[0]));
-                    }
-                });
-            }
-
-            else if(isColumnVector()){
-                final AtomicInteger a = new AtomicInteger(0);
-                Shape.iterate(arr, new CoordinateFunction() {
-                    @Override
-                    public void process(int[]... coord) {
-                        putScalar(new int[]{a.getAndIncrement(),0},arr.getDouble(coord[0]));
-                    }
-                });
-            }
-
+        if(arr.elementWiseStride() > 0 && elementWiseStride() > 0 && ordering() == arr.ordering()) {
+            data().copyAtStride(arr.data(),arr.length(),elementWiseStride(),arr.elementWiseStride(),offset(),arr.offset());
         }
-
-        else if(Arrays.equals(this.shape(),arr.shape())) {
-            Shape.iterate(this, new CoordinateFunction() {
-                @Override
-                public void process(int[]... coord) {
-                    putScalar(coord[0],arr.getDouble(coord[0]));
-                }
-            });
-        }
-
 
         else {
-      /*      Shape.iterate(this, arr, new CoordinateFunction() {
-                @Override
-                public void process(int[]... coord) {
-                    putScalar(coord[0],arr.getDouble(coord[1]));
-                }
-            });*/
             NdIndexIterator iterator = new NdIndexIterator(this.shape());
             NdIndexIterator otherIter = new NdIndexIterator(arr.shape());
             for(int i = 0; i < length(); i++) {
@@ -3903,7 +3845,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 INDArray retTensor = ret.slice(i);
                 int retIdx = 0;
                 int tensorLen = thisTensor.rank();
-               outer: for(int k = 0; k < tensorLen; k++) {
+                outer: for(int k = 0; k < tensorLen; k++) {
                     for(int j = 0; j < repeatDelta; j++) {
                         if(retIdx >= retTensor.length())
                             break outer;

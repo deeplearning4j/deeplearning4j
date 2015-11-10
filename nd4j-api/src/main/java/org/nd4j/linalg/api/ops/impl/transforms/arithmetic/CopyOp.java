@@ -123,6 +123,21 @@ public class CopyOp extends BaseTransformOp {
     }
 
     @Override
+    public void exec() {
+        z.assign(x);
+    }
+
+    @Override
+    public void exec(int... dimensions) {
+        super.exec(dimensions);
+    }
+
+    @Override
+    public boolean isPassThrough() {
+        return true;
+    }
+
+    @Override
     public void init(INDArray x, INDArray y, INDArray z, int n) {
         super.init(x, y, z, n);
     }

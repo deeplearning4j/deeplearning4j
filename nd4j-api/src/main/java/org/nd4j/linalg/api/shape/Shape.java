@@ -170,7 +170,8 @@ public class Shape {
         } else {
             //Use CopyOp:
             char outOrder = (anyOrder ? arr.ordering() : order);
-            if(outOrder == 'a') outOrder = Nd4j.order();
+            if(outOrder == 'a')
+                outOrder = Nd4j.order();
             INDArray z = Nd4j.create(arr.shape(),outOrder);
             CopyOp op = new CopyOp(arr,z);
             Nd4j.getExecutioner().exec(op);
