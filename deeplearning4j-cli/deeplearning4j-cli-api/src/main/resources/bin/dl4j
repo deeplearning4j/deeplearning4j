@@ -3,7 +3,7 @@
 # Reference all jar files
 # params:
 if [ -z ${ND4J_BACKEND+x} ];
-    then export ND4J_BACKEND="jblas" &&  echo "USING BACKEND $ND4J_BACKEND";
+    then export ND4J_BACKEND="x86" &&  echo "USING BACKEND $ND4J_BACKEND";
 fi
 
 
