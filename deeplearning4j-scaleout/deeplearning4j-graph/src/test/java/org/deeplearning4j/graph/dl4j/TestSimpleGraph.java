@@ -3,6 +3,7 @@ package org.deeplearning4j.graph.dl4j;
 import org.deeplearning4j.graph.api.*;
 import org.deeplearning4j.graph.graph.dl4j.*;
 import org.deeplearning4j.graph.graph.dl4j.SimpleGraph;
+import org.deeplearning4j.graph.vertexfactory.VertexFactory;
 import org.junit.Test;
 
 import java.util.HashSet;

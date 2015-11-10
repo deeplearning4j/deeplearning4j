@@ -16,4 +16,10 @@ public class Edge<T> {
         this.value = value;
         this.directed = directed;
     }
+
+    @Override
+    public String toString() {
+        return "edge(" + (directed ? "directod" : "undirected") + "," + from+  (directed ? "->" : "--") + to + ","
+                + (value!=null ? value : "") + ")";
+    }
 }
