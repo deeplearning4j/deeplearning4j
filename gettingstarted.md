@@ -71,6 +71,35 @@ If you're using IntelliJ as your IDE, this should work already.
 
 * Running this file, [WindowsInfo.bat](https://gist.github.com/AlexDBlack/9f70c13726a3904a2100), can help debug your Windows install. Here's one [example of its output](https://gist.github.com/AlexDBlack/4a3995fea6dcd2105c5f) that shows what to expect. First download it, then open a command window / terminal. `cd` to the directory to which it was dowloaded. Enter `WindowsInfo` and hit enter. To copy its output, right click on command window -> select all -> hit enter. Output is then on clipboard.
 
+For OpenBlas (see below) on **Windows**, download this [file](https://www.dropbox.com/s/6p8yn3fcf230rxy/ND4J_Win64_OpenBLAS-v0.2.14.zip?dl=1). Extract to somewhere such as `C:/BLAS`. Add that directory to your system's `PATH` environment variable.
+
+### <a id="open"> OpenBlas </a>
+
+To make sure the native libs on the x86 backend work, you need `/opt/OpenBLAS/lib` on the system path. After that, enter these commands in the prompt
+
+			sudo cp libopenblas.so liblapack.so.3
+			sudo cp libopenblas.so libblas.so.3
+
+We added this so that [Spark](http://deeplearning4j.org/spark) would work with OpenBlas.
+
+If OpenBlas is not working correctly, follow these steps:
+
+* Remove Openblas if you installed it.
+* Run `sudo apt-get remove libopenblas-base`
+* Download the development version of OpenBLAS
+* `git clone git://github.com/xianyi/OpenBLAS`
+* `cd OpenBLAS`
+* `make FC=gfortran`
+* `sudo make PREFIX=/usr/local/ install`
+* With **Linux**, double check if the symlinks for `libblas.so.3` and `liblapack.so.3` are present anywhere in your `LD_LIBRARY_PATH`. If they aren't, add the links to `/usr/lib`. A symlink is a "symbolic link." You can set it up like this (the -s makes the link symbolic):
+
+		ln -s TARGET LINK_NAME
+		// interpretation: ln -s "to-here" <- "from-here"
+
+* The "from-here" is the symbolic link that does not exist yet, and which you are creating. Here's StackOverflow on [how to create a symlink](https://stackoverflow.com/questions/1951742/how-to-symlink-a-file-in-linux). And here's the [Linux man page](http://linux.die.net/man/1/ln).
+* As a last step, restart your IDE. 
+* For complete instructions on how to get native Blas running with Centos 6, [see this page](https://gist.github.com/jarutis/912e2a4693accee42a94).
+
 ### <a name="source">Working With Source (DL4J Contributors Only)</a>
 
 If you are not planning to contribute to Deeplearning4j as a committer, or don't need the latest alpha version, we recommend downloading the most recent stable release of Deeplearning4j from [Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j), 0.4-rc*. That's as simple as adding dependencies to your POM.xml file in IntelliJ.
