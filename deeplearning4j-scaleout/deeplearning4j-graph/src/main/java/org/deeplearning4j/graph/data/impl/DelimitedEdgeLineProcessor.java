@@ -8,7 +8,6 @@ import org.deeplearning4j.graph.data.EdgeLineProcessor;
  * 0<delim>1\n 3<delim>0\n etc. Order per line is nodeFrom -> nodeTo, in the case of directed edges
  * i.e., one edge per line without any additional edge information
  */
-@AllArgsConstructor
 public class DelimitedEdgeLineProcessor implements EdgeLineProcessor<String> {
     private final String delimiter;
     private final String[] skipLinesStartingWith;

@@ -2,6 +2,10 @@ package org.deeplearning4j.graph.api;
 
 import lombok.AllArgsConstructor;
 
+/** Vertex in a graph
+ *
+ * @param <T> the type of the value/object associated with the vertex
+ */
 @AllArgsConstructor
 public class Vertex<T> {
 

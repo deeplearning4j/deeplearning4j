@@ -1,5 +1,6 @@
 package org.deeplearning4j.graph.graph.dl4j;
 
+import org.deeplearning4j.graph.api.Graph;
 import org.deeplearning4j.graph.api.NoEdgeHandling;
 import org.deeplearning4j.graph.api.Vertex;
 import org.deeplearning4j.graph.api.VertexSequence;
@@ -9,12 +10,14 @@ import org.deeplearning4j.graph.iterator.GraphWalkIterator;
 import java.util.NoSuchElementException;
 import java.util.Random;
 
-/**
- * Created by Alex on 9/11/2015.
+/**Given a graph, iterate through random walks on that graph of a specified length.
+ * Random walks are generated starting at every node in the graph exactly once, though the order
+ * of the starting nodes is randomized.
+ * @author Alex Black
  */
 public class RandomWalkIterator<V> implements GraphWalkIterator<V> {
 
-    private final SimpleGraph<V,?> graph;
+    private final Graph<V,?> graph;
     private final int walkLength;
     private final NoEdgeHandling mode;
 
@@ -23,15 +26,21 @@ public class RandomWalkIterator<V> implements GraphWalkIterator<V> {
     private Random rng;
     private int[] order;
 
-    public RandomWalkIterator(SimpleGraph<V,?> graph, int walkLength ){
+    public RandomWalkIterator(Graph<V,?> graph, int walkLength ){
         this(graph,walkLength,System.currentTimeMillis(), NoEdgeHandling.EXCEPTION_ON_DISCONNECTED);
     }
 
-    public RandomWalkIterator(SimpleGraph<V,?> graph, int walkLength, long rngSeed ){
+    public RandomWalkIterator(Graph<V,?> graph, int walkLength, long rngSeed ){
         this(graph, walkLength, rngSeed, NoEdgeHandling.EXCEPTION_ON_DISCONNECTED);
     }
 
-    public RandomWalkIterator(SimpleGraph<V,?> graph, int walkLength, long rngSeed, NoEdgeHandling mode ){
+    /**
+     * @param graph Graph to conduct walks on
+     * @param walkLength length of each walk. Walk of length 0 includes 1 vertex, walk of 1 includes 2 vertices etc
+     * @param rngSeed seed for randomization
+     * @param mode mode for handling random walks from vertices with either no edges, or no outgoing edges (for directed graphs)
+     */
+    public RandomWalkIterator(Graph<V,?> graph, int walkLength, long rngSeed, NoEdgeHandling mode ){
         this.graph = graph;
         this.walkLength = walkLength;
         this.mode = mode;

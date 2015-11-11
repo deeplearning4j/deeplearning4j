@@ -4,7 +4,10 @@ import org.deeplearning4j.graph.api.Graph;
 import org.deeplearning4j.graph.api.Vertex;
 import org.deeplearning4j.graph.api.VertexSequence;
 import org.deeplearning4j.graph.iterator.GraphWalkIterator;
+import org.deeplearning4j.graph.models.BinaryTree;
 import org.deeplearning4j.graph.models.GraphVectors;
+import org.deeplearning4j.graph.models.embeddings.GraphVectorLookupTable;
+import org.deeplearning4j.graph.models.embeddings.InMemoryGraphLookupTable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
@@ -13,14 +16,15 @@ import java.util.Collection;
  * Created by Alex on 10/11/2015.
  */
 public class DeepWalk<V,E> implements GraphVectors<V,E> {
-
-
-
     private int vectorSize;
     private int windowSize;
     private int batchSize;
     private long seed;
     private double learningRate;
+    private boolean initCalled = false;
+    private BinaryTree tree;
+    private GraphVectorLookupTable lookupTable;
+
 
 
     public DeepWalk(){
@@ -43,10 +47,23 @@ public class DeepWalk<V,E> implements GraphVectors<V,E> {
         return learningRate;
     }
 
+    public void initialize(Graph<V,E> graph){
+        int nVertices = graph.numVertices();
+        int[] degrees = new int[nVertices];
+        for( int i=0; i<nVertices; i++ ) degrees[i] = graph.getVertexDegree(i);
+        initialize(degrees);
+    }
+
+    public void initialize(int[] graphVertexDegrees){
+        GraphHuffman gh = new GraphHuffman(graphVertexDegrees.length);
+        gh.buildTree(graphVertexDegrees);
+        tree = gh;
+        lookupTable = new InMemoryGraphLookupTable(graphVertexDegrees.length,vectorSize,gh,learningRate);
+        initCalled = true;
+    }
+
     public void fit(GraphWalkIterator<V> iterator){
-
-//        BitSet bs = null;
-
+        if(!initCalled) throw new UnsupportedOperationException("DeepWalk not initialized (call initialize before fit)");
         int walkLength = iterator.walkLength();
 
         while(iterator.hasNext()){
@@ -55,11 +72,30 @@ public class DeepWalk<V,E> implements GraphVectors<V,E> {
             //Skipgram model:
             int[] walk = new int[walkLength+1];
             int i=0;
-            while(iterator.hasNext()) walk[i++] = sequence.next().vertexID();
+            while(sequence.hasNext()) walk[i++] = sequence.next().vertexID();
 
+            skipGram(walk);
         }
-
     }
+
+    private void skipGram(int[] walk){
+
+        for(int mid = windowSize; mid < walk.length-windowSize; mid++ ){
+
+            for(int pos=0; pos<2*windowSize; pos++){
+                if(pos == mid) continue;
+
+                //pair of vertices: walk[mid] -> walk[pos]
+//                doIteration(walk[mid],walk[pos]);
+                lookupTable.iterate(walk[mid],walk[pos]);
+            }
+        }
+    }
+
+//    private void doIteration(int vertexIn, int vertexOut){
+//        lookupTable.iterate(vertexIn,vertexOut);
+//    }
+
 
     @Override
     public Graph<V, E> getGraph() {
@@ -78,7 +114,7 @@ public class DeepWalk<V,E> implements GraphVectors<V,E> {
 
     @Override
     public INDArray getVertexVector(int vertexIdx) {
-        return null;
+        return lookupTable.getVector(vertexIdx);
     }
 
     @Override
@@ -98,13 +134,13 @@ public class DeepWalk<V,E> implements GraphVectors<V,E> {
 
     public static class Builder<V,E> {
 
-        private int vectorSize;
+        private int vectorSize = 100;
         private int batchSize;
-        private long seed = Long.MAX_VALUE;
+        private long seed = 12345;
         private double learningRate = 0.01;
-        private int windowSize;
+        private int windowSize = 2;
 
-        public Builder<V,E> vectorSize(int size){
+        public Builder<V,E> vectorSize(int vectorSize){
             this.vectorSize = vectorSize;
             return this;
         }
@@ -130,10 +166,13 @@ public class DeepWalk<V,E> implements GraphVectors<V,E> {
         }
 
 
+
+
         public DeepWalk<V,E> build(){
 
             DeepWalk<V,E> dw = new DeepWalk<>();
             dw.vectorSize = vectorSize;
+            dw.windowSize = windowSize;
             dw.batchSize = batchSize;
             dw.seed = seed;
             dw.learningRate = learningRate;

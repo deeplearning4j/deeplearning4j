@@ -1,6 +1,7 @@
 package org.deeplearning4j.graph.exception;
 
-/**Unchecked exception
+/**Unchecked exception, thrown to signify that an operation (usually on a vertex) cannot be completed
+ * because there are no edges for that vertex.
  */
 public class NoEdgesException extends RuntimeException {
 

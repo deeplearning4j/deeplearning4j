@@ -2,8 +2,11 @@ package org.deeplearning4j.graph.data;
 
 import org.deeplearning4j.graph.api.Edge;
 import org.deeplearning4j.graph.api.Vertex;
+import org.deeplearning4j.graph.data.impl.DelimitedEdgeLineProcessor;
+import org.deeplearning4j.graph.vertexfactory.StringVertexFactory;
 import org.deeplearning4j.graph.vertexfactory.VertexFactory;
 import org.deeplearning4j.graph.graph.dl4j.SimpleGraph;
+import org.deeplearning4j.graph.vertexfactory.VoidVertexFactory;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -11,13 +14,43 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.List;
 
+/** Utility methods for loading graphs
+ *
+ */
 public class GraphLoader {
 
-    /** Load a graph into memory, using a EdgeLineProcessor.
+    /** Simple method for loading an undirected graph, where the graph is represented by a edge list with one edge
+     * per line with a delimiter in between<br>
+     * This method assumes that all lines in the file are of the form "i<delim>j" where i and j are integers
+     * in range 0 to numVertices inclusive, and "<delim>" is the user-provided delimiter
+     * @param path Path to the edge list file
+     * @param numVertices number of vertices in the graph
+     * @return graph
+     * @throws IOException if file cannot be read
+     */
+    public static SimpleGraph<String,String> loadUndirectedGraphEdgeListFile(String path, int numVertices, String delim) throws IOException{
+        SimpleGraph<String,String> graph = new SimpleGraph<>(numVertices,false,new StringVertexFactory());
+        EdgeLineProcessor<String> lineProcessor = new DelimitedEdgeLineProcessor(delim,false);
+
+        try(BufferedReader br = new BufferedReader(new FileReader(new File(path)))){
+            String line;
+            while( (line = br.readLine()) != null ) {
+                Edge<String> edge = lineProcessor.processLine(line);
+                if(edge != null){
+                    graph.addEdge(edge);
+                }
+            }
+        }
+        return graph;
+    }
+
+    /** Load a graph into memory, using a given EdgeLineProcessor.
      * Assume one edge per line
      * @param path Path to the file containing the edges, one per line
      * @param lineProcessor EdgeLineProcessor used to convert lines of text into a graph (or null for comment lines etc)
      * @param vertexFactory Used to create vertices
+     * @param numVertices number of vertices in the graph
+     * @param allowMultipleEdges whether the graph should allow multiple edges between a given pair of vertices or not
      * @return Graph
      */
     public static <V,E> SimpleGraph<V,E> loadGraph(String path, EdgeLineProcessor<E> lineProcessor,
