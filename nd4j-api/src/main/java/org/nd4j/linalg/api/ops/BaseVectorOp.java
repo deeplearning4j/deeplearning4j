@@ -13,6 +13,21 @@ public abstract class BaseVectorOp extends BaseOp implements VectorOp {
         this.dimension = dimension;
     }
 
+
+    @Override
+    public int broadcastLength() {
+        if(y == null)
+            throw new IllegalStateException("Unable to get broad cast length for y, no y specified");
+        return y.length();
+    }
+
+    @Override
+    public int[] broadcastShape() {
+        if(y == null)
+            throw new IllegalStateException("Unable to get broad cast shape for y, no y specified");
+        return y.shape();
+    }
+
     @Override
     public int getDimension(){
         return dimension;

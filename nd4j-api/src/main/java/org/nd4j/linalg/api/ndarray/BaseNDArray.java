@@ -1996,25 +1996,25 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if(this.data() == vector.data()) vector = vector.dup();
         switch(operation){
             case 'a':
-                Nd4j.getExecutioner().exec(new VectorAddOp(this, vector, this, alongDimension ));
+                Nd4j.getExecutioner().exec(new VectorAddOp(this, vector, this, alongDimension));
                 return;
             case 's':
-                Nd4j.getExecutioner().exec(new VectorSubOp(this, vector, this, alongDimension ));
+                Nd4j.getExecutioner().exec(new VectorSubOp(this, vector, this, alongDimension));
                 return;
             case 'm':
-                Nd4j.getExecutioner().exec(new VectorMulOp(this, vector, this, alongDimension ));
+                Nd4j.getExecutioner().exec(new VectorMulOp(this, vector, this, alongDimension));
                 return;
             case 'd':
-                Nd4j.getExecutioner().exec(new VectorDivOp(this, vector, this, alongDimension ));
+                Nd4j.getExecutioner().exec(new VectorDivOp(this, vector, this, alongDimension));
                 return;
             case 'h':
-                Nd4j.getExecutioner().exec(new VectorRSubOp(this, vector, this, alongDimension ));
+                Nd4j.getExecutioner().exec(new VectorRSubOp(this, vector, this, alongDimension));
                 return;
             case 't':
-                Nd4j.getExecutioner().exec(new VectorRDivOp(this, vector, this, alongDimension ));
+                Nd4j.getExecutioner().exec(new VectorRDivOp(this, vector, this, alongDimension));
                 return;
             case 'p':
-                Nd4j.getExecutioner().exec(new VectorCopyOp(this, vector, this, alongDimension ));
+                Nd4j.getExecutioner().exec(new VectorCopyOp(this, vector, this, alongDimension));
                 return;
             default:
                 throw new UnsupportedOperationException("Unknown operation: " + operation);

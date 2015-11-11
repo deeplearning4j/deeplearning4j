@@ -34,6 +34,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
@@ -243,7 +244,44 @@ public class TestMatrixOperations {
     }
 
 
+    @Test
+    public void testLength() {
+        INDArray values = Nd4j.create(2, 2);
+        INDArray values2 = Nd4j.create(2, 2);
 
+        values.put(0, 0, 0);
+        values2.put(0, 0, 2);
+        values.put(1, 0, 0);
+        values2.put(1, 0, 2);
+        values.put(0, 1, 0);
+        values2.put(0, 1, 0);
+        values.put(1, 1, 2);
+        values2.put(1, 1, 2);
+
+        for(int i = 0; i < values.tensorssAlongDimension(1); i++) {
+            System.out.println("X tad " + i  + " is " + values.tensorAlongDimension(i,1));
+            System.out.println("Y tad " + i + " is " + values2.tensorAlongDimension(i,1));
+        }
+
+        INDArray expected = Nd4j.repeat(Nd4j.scalar(2), 2).reshape(2,1);
+
+        Accumulation accum = Nd4j.getOpFactory().createAccum("euclidean", values, values2);
+        INDArray results = Nd4j.getExecutioner().exec(accum, 1);
+        assertEquals(expected, results);
+
+    }
+
+
+    @Test
+    public void testMulRowVector() {
+        INDArray arr = Nd4j.linspace(1,4,4).reshape(2, 2);
+        arr.muliRowVector(Nd4j.linspace(1, 2, 2));
+        INDArray assertion = Nd4j.create(new double[][]{
+                {1, 4}, {3, 8}
+        });
+
+        assertEquals(assertion,arr);
+    }
 
     @Test
     public void testCosineSim() {
