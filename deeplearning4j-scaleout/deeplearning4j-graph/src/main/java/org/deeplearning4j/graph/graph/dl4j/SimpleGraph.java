@@ -94,7 +94,7 @@ public class SimpleGraph<V, E> extends BaseGraph<V,E> {
     }
 
     @Override
-    public int getNumEdgesOut(int vertex){
+    public int getVertexDegree(int vertex){
         if(edges[vertex] == null) return 0;
         return edges[vertex].size();
     }
