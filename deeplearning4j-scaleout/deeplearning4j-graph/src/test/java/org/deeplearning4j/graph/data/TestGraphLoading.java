@@ -1,6 +1,8 @@
 package org.deeplearning4j.graph.data;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.graph.api.Edge;
+import org.deeplearning4j.graph.api.Graph;
 import org.deeplearning4j.graph.data.impl.DelimitedEdgeLineProcessor;
 import org.deeplearning4j.graph.data.impl.DelimitedVertexLoader;
 import org.deeplearning4j.graph.graph.dl4j.SimpleGraph;
@@ -14,8 +16,36 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TestGraphLoading {
+
+    @Test
+    public void testEdgeListGraphLoading() throws IOException {
+        ClassPathResource cpr = new ClassPathResource("testgraph_7vertices.txt");
+
+        Graph<String,String> graph = GraphLoader.loadUndirectedGraphEdgeListFile(cpr.getFile().getAbsolutePath(),7);
+        System.out.println(graph);
+
+        assertEquals(graph.numVertices(),7);
+        int[][] edges = {
+                {1,2},
+                {0,2,4},
+                {0,1,3,4},
+                {2,4,5},
+                {1,2,3,5,6},
+                {3,4,6},
+                {4,5}
+        };
+
+        for( int i=0; i<7; i++ ){
+            assertEquals(edges[i].length,graph.getVertexDegree(i));
+            int[] connectedVertices = graph.getConnectedVertexIndices(i);
+            for( int j=0; j<edges[i].length; j++ ){
+                assertTrue(ArrayUtils.contains(connectedVertices,edges[i][j]));
+            }
+        }
+    }
 
     @Test
     public void testGraphLoading() throws IOException{
