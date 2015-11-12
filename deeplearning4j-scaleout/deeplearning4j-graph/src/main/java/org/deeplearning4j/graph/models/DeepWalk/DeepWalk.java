@@ -1,16 +1,22 @@
 package org.deeplearning4j.graph.models.deepwalk;
 
+import lombok.AllArgsConstructor;
 import org.deeplearning4j.graph.api.IGraph;
+import org.deeplearning4j.graph.api.NoEdgeHandling;
 import org.deeplearning4j.graph.api.Vertex;
 import org.deeplearning4j.graph.api.IVertexSequence;
 import org.deeplearning4j.graph.iterator.GraphWalkIterator;
-import org.deeplearning4j.graph.models.BinaryTree;
+import org.deeplearning4j.graph.iterator.parallel.GraphWalkIteratorProvider;
+import org.deeplearning4j.graph.iterator.parallel.RandomWalkGraphIteratorProvider;
 import org.deeplearning4j.graph.models.GraphVectors;
 import org.deeplearning4j.graph.models.embeddings.GraphVectorLookupTable;
 import org.deeplearning4j.graph.models.embeddings.InMemoryGraphLookupTable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.*;
 
 /**Implementation of the DeepWalk graph vectorization model, based on the paper
  * <i>DeepWalk: Online Learning of Social Representations</i> by Perozzi, Al-Rfou & Skiena (2014),
@@ -29,6 +35,9 @@ public class DeepWalk<V,E> implements GraphVectors<V,E> {
     private double learningRate;
     private boolean initCalled = false;
     private GraphVectorLookupTable lookupTable;
+    private long seed;
+    private ExecutorService executorService;
+    private int nThreads = Runtime.getRuntime().availableProcessors();
 
     public DeepWalk(){
 
@@ -71,8 +80,70 @@ public class DeepWalk<V,E> implements GraphVectors<V,E> {
         initCalled = true;
     }
 
-    /**Fit the DeepWalk model using a GraphWalkIterator. Note that {@link #initialize(IGraph)} or {@link #initialize(int[])}
-     * <em>must</em> be called first.
+    /** Fit the model, in parallel.
+     * This creates a set of GraphWalkIterators, which are then distributed one to each thread
+     * Note that {@link #initialize(IGraph)} or {@link #initialize(int[])} <em>must</em> be called first.
+     * @param graph Graph to fit
+     * @param walkLength Length of rangom walks to generate
+     */
+    public void fit( IGraph<V,E> graph, int walkLength ){
+        if(!initCalled) throw new UnsupportedOperationException("DeepWalk not initialized (call initialize before fit)");
+        //First: create iterators, one for each thread
+
+        GraphWalkIteratorProvider<V> iteratorProvider = new RandomWalkGraphIteratorProvider<V>(graph,walkLength,seed,
+                NoEdgeHandling.SELF_LOOP_ON_DISCONNECTED);
+
+        fit(iteratorProvider);
+    }
+
+    /** Fit the model, in parallel, using a given GraphWalkIteratorProvider.<br>
+     * This object is used to generate multiple GraphWalkIterators, which can then be distributed to each thread
+     * to do in parallel<br>
+     * Note that {@link #fit(IGraph, int)} will be more convenient in many cases<br>
+     * Note that {@link #initialize(IGraph)} or {@link #initialize(int[])} <em>must</em> be called first.
+     * @param iteratorProvider GraphWalkIteratorProvider
+     * @see #fit(IGraph, int)
+     */
+    public void fit(GraphWalkIteratorProvider<V> iteratorProvider){
+        if(!initCalled) throw new UnsupportedOperationException("DeepWalk not initialized (call initialize before fit)");
+        List<GraphWalkIterator<V>> iteratorList = iteratorProvider.getGraphWalkIterators(nThreads);
+
+        executorService = Executors.newFixedThreadPool(nThreads, new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread t = new Thread(r);
+                t.setDaemon(true);
+                return t;
+            }
+        });
+
+        List<Future<Void>> list = new ArrayList<>(iteratorList.size());
+        for( GraphWalkIterator<V> iter : iteratorList ){
+            LearningCallable c = new LearningCallable(iter);
+            list.add(executorService.submit(c));
+        }
+
+        executorService.shutdown();
+        try{
+            executorService.awaitTermination(999, TimeUnit.DAYS);
+        }catch(InterruptedException e){
+            throw new RuntimeException("ExecutorService interrupted",e);
+        }
+
+        //Don't need to block on futures, but we want to re-throw any exceptions encountered
+        for(Future<Void> f : list){
+            try{
+                f.get();
+            }catch(Exception e){
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    /**Fit the DeepWalk model <b>using a single thread</b> using a given GraphWalkIterator. If parallel fitting is required,
+     * {@link #fit(IGraph, int)} or {@link #fit(GraphWalkIteratorProvider)} should be used.<br>
+     * Note that {@link #initialize(IGraph)} or {@link #initialize(int[])} <em>must</em> be called first.
+     *
      * @param iterator iterator for graph walks
      */
     public void fit(GraphWalkIterator<V> iterator){
@@ -149,7 +220,7 @@ public class DeepWalk<V,E> implements GraphVectors<V,E> {
 
         private int vectorSize = 100;
         private int batchSize;
-        private long seed = 12345;
+        private long seed = System.currentTimeMillis();
         private double learningRate = 0.01;
         private int windowSize = 2;
 
@@ -176,14 +247,33 @@ public class DeepWalk<V,E> implements GraphVectors<V,E> {
             return this;
         }
 
+        public Builder<V,E> seed(long seed){
+            this.seed = seed;
+            return this;
+        }
+
         public DeepWalk<V,E> build(){
             DeepWalk<V,E> dw = new DeepWalk<>();
             dw.vectorSize = vectorSize;
             dw.windowSize = windowSize;
             dw.batchSize = batchSize;
             dw.learningRate = learningRate;
+            dw.seed = seed;
 
             return dw;
+        }
+    }
+
+    @AllArgsConstructor
+    private class LearningCallable implements Callable<Void> {
+
+        private final GraphWalkIterator<V> iterator;
+
+        @Override
+        public Void call() throws Exception {
+            fit(iterator);
+
+            return null;
         }
     }
 }

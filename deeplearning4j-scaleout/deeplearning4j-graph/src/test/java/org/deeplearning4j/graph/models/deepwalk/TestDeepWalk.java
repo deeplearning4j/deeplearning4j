@@ -1,9 +1,12 @@
 package org.deeplearning4j.graph.models.deepwalk;
 
+import org.deeplearning4j.graph.api.Edge;
+import org.deeplearning4j.graph.api.IGraph;
 import org.deeplearning4j.graph.data.GraphLoader;
 import org.deeplearning4j.graph.graph.Graph;
-import org.deeplearning4j.graph.graph.RandomWalkIterator;
+import org.deeplearning4j.graph.iterator.RandomWalkIterator;
 import org.deeplearning4j.graph.iterator.GraphWalkIterator;
+import org.deeplearning4j.graph.vertexfactory.StringVertexFactory;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.springframework.core.io.ClassPathResource;
@@ -53,7 +56,39 @@ public class TestDeepWalk {
                 System.out.println(Arrays.toString(vector.dup().data().asFloat()));
             }
         }
+    }
+
+    @Test
+    public void testParallel(){
+
+        IGraph<String,String> graph = generateRandomGraph(1000,10);
+
+        int vectorSize = 20;
+        int windowSize = 2;
+
+        DeepWalk<String,String> deepWalk = new DeepWalk.Builder<String,String>().learningRate(0.01)
+                .vectorSize(vectorSize)
+                .windowSize(windowSize)
+                .learningRate(0.01)
+                .build();
+        deepWalk.initialize(graph);
+
+
+
+        deepWalk.fit(graph,8);
 
     }
 
+
+    private static Graph<String,String> generateRandomGraph(int nVertices, int nEdgesPerVertex){
+
+        Graph<String,String> graph = new Graph<String, String>(nVertices,new StringVertexFactory());
+        for( int i=0; i<nVertices; i++ ){
+            for( int j=0; j<nEdgesPerVertex; j++ ){
+                Edge<String> edge = new Edge<>(i,j,i+"--"+j,false);
+                graph.addEdge(edge);
+            }
+        }
+        return graph;
+    }
 }
