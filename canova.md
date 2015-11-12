@@ -14,6 +14,7 @@ Canova solves one of the most important obstacles to effective machine or deep l
 - Runs from the command line
 - Can be extended for specialized input formats (such as exotic image formats); i.e. You can write your own custom input format and let the rest of the codebase handle the transformation pipeline
 - Makes vectorization a first-class citizen
+- Please see the [Canova Javadoc](http://deeplearning4j.org/canovadoc/) here
 
 We're finishing up the command-line interface (CLI) system and running tests on basic datasets for converting stock CSV data that you'd export from a database or download from UCI. You can transform this data with a small conf file-based transform language (label, normalize, copy, etc). There's a <a href="#tutorial">brief tutorial below</a>.
 
