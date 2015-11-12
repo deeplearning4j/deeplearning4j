@@ -6,7 +6,9 @@ layout: default
 
 Deeplearning4j's examples run on benchmark datasets that don't present any obstacles in the data pipeline, because we abstracted them away. But real-world users start with raw, messy data, which they need to preprocess, vectorize and use to train a neural net for clustering or classification. 
 
-*Canova* is our machine-learning vectorization library, and it is useful for customizing how you prepare data that a neural net can learn. This tutorial will walk through how it loads *Labeled Faces in the Wild*, a supervised set of 13,233 photographs representing 5,749 relatively famous people. (The full code example [lives on Github](https://github.com/deeplearning4j/Canova-examples/blob/master/src/main/java/datapipelines/ImageClassifierExample.java).)
+*Canova* is our machine-learning vectorization library, and it is useful for customizing how you prepare data that a neural net can learn. (The [Canova Javadoc is here](http://deeplearning4j.org/canovadoc/).)
+
+This tutorial will walk through how it loads *Labeled Faces in the Wild*, a supervised set of 13,233 photographs representing 5,749 relatively famous people. (The full code example [lives on Github](https://github.com/deeplearning4j/Canova-examples/blob/master/src/main/java/datapipelines/ImageClassifierExample.java).)
 
 ## Loading Labels
 
