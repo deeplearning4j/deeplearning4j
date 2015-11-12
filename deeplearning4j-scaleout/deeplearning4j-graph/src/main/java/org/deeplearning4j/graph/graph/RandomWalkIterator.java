@@ -1,9 +1,9 @@
-package org.deeplearning4j.graph.graph.dl4j;
+package org.deeplearning4j.graph.graph;
 
-import org.deeplearning4j.graph.api.Graph;
+import org.deeplearning4j.graph.api.IGraph;
 import org.deeplearning4j.graph.api.NoEdgeHandling;
 import org.deeplearning4j.graph.api.Vertex;
-import org.deeplearning4j.graph.api.VertexSequence;
+import org.deeplearning4j.graph.api.IVertexSequence;
 import org.deeplearning4j.graph.exception.NoEdgesException;
 import org.deeplearning4j.graph.iterator.GraphWalkIterator;
 
@@ -17,7 +17,7 @@ import java.util.Random;
  */
 public class RandomWalkIterator<V> implements GraphWalkIterator<V> {
 
-    private final Graph<V,?> graph;
+    private final IGraph<V,?> graph;
     private final int walkLength;
     private final NoEdgeHandling mode;
 
@@ -26,21 +26,26 @@ public class RandomWalkIterator<V> implements GraphWalkIterator<V> {
     private Random rng;
     private int[] order;
 
-    public RandomWalkIterator(Graph<V,?> graph, int walkLength ){
+    public RandomWalkIterator(IGraph<V,?> graph, int walkLength ){
         this(graph,walkLength,System.currentTimeMillis(), NoEdgeHandling.EXCEPTION_ON_DISCONNECTED);
     }
 
-    public RandomWalkIterator(Graph<V,?> graph, int walkLength, long rngSeed ){
+    /**Construct a RandomWalkIterator for a given graph, with a specified walk length and random number generator seed.<br>
+     * Uses {@code NoEdgeHandling.EXCEPTION_ON_DISCONNECTED} - hence exception will be thrown when generating random
+     * walks on graphs with vertices containing having no edges, or no outgoing edges (for directed graphs)
+     * @see #RandomWalkIterator(IGraph, int, long, NoEdgeHandling)
+     */
+    public RandomWalkIterator(IGraph<V,?> graph, int walkLength, long rngSeed ){
         this(graph, walkLength, rngSeed, NoEdgeHandling.EXCEPTION_ON_DISCONNECTED);
     }
 
     /**
-     * @param graph Graph to conduct walks on
+     * @param graph IGraph to conduct walks on
      * @param walkLength length of each walk. Walk of length 0 includes 1 vertex, walk of 1 includes 2 vertices etc
      * @param rngSeed seed for randomization
      * @param mode mode for handling random walks from vertices with either no edges, or no outgoing edges (for directed graphs)
      */
-    public RandomWalkIterator(Graph<V,?> graph, int walkLength, long rngSeed, NoEdgeHandling mode ){
+    public RandomWalkIterator(IGraph<V,?> graph, int walkLength, long rngSeed, NoEdgeHandling mode ){
         this.graph = graph;
         this.walkLength = walkLength;
         this.mode = mode;
@@ -52,13 +57,13 @@ public class RandomWalkIterator<V> implements GraphWalkIterator<V> {
     }
 
     @Override
-    public VertexSequence<V> next() {
+    public IVertexSequence<V> next() {
         if(!hasNext()) throw new NoSuchElementException();
         //Generate a random walk starting at at vertex order[current]
         int currVertexIdx = order[position++];
         int[] indices = new int[walkLength+1];
         indices[0] = currVertexIdx;
-        if(walkLength == 0) return new SimpleVertexSequence<>(graph,indices);
+        if(walkLength == 0) return new VertexSequence<>(graph,indices);
 
         Vertex<V> next;
         try{
@@ -67,7 +72,7 @@ public class RandomWalkIterator<V> implements GraphWalkIterator<V> {
             switch(mode){
                 case SELF_LOOP_ON_DISCONNECTED:
                     for(int i=1; i<walkLength; i++) indices[i] = currVertexIdx;
-                    return new SimpleVertexSequence<>(graph,indices);
+                    return new VertexSequence<>(graph,indices);
                 case EXCEPTION_ON_DISCONNECTED:
                     throw e;
                 default:
@@ -82,7 +87,7 @@ public class RandomWalkIterator<V> implements GraphWalkIterator<V> {
             currVertexIdx = next.vertexID();
             indices[i] = currVertexIdx;
         }
-        return new SimpleVertexSequence<>(graph,indices);
+        return new VertexSequence<>(graph,indices);
     }
 
     @Override

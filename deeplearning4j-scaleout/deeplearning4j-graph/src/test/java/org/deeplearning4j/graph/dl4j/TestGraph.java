@@ -1,8 +1,8 @@
 package org.deeplearning4j.graph.dl4j;
 
 import org.deeplearning4j.graph.api.*;
-import org.deeplearning4j.graph.graph.dl4j.*;
-import org.deeplearning4j.graph.graph.dl4j.SimpleGraph;
+import org.deeplearning4j.graph.graph.RandomWalkIterator;
+import org.deeplearning4j.graph.graph.Graph;
 import org.deeplearning4j.graph.vertexfactory.VertexFactory;
 import org.junit.Test;
 
@@ -16,12 +16,12 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 
 
-public class TestSimpleGraph {
+public class TestGraph {
 
     @Test
     public void testSimpleGraph() {
 
-        SimpleGraph<String, String> graph = new SimpleGraph<>(10, false, new VFactory());
+        Graph<String, String> graph = new Graph<>(10, false, new VFactory());
 
         assertEquals(10, graph.numVertices());
 
@@ -74,7 +74,7 @@ public class TestSimpleGraph {
 
     @Test
     public void testRandomWalkIterator(){
-        SimpleGraph<String, String> graph = new SimpleGraph<>(10, false, new VFactory());
+        Graph<String, String> graph = new Graph<>(10, false, new VFactory());
         assertEquals(10, graph.numVertices());
 
         for (int i = 0; i < 10; i++) {
@@ -92,7 +92,7 @@ public class TestSimpleGraph {
         Set<Integer> startIdxSet = new HashSet<>();
         while(iter.hasNext()){
             count++;
-            VertexSequence<String> sequence = iter.next();
+            IVertexSequence<String> sequence = iter.next();
             int seqCount = 1;
             int first = sequence.next().vertexID();
             int previous = first;

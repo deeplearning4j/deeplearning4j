@@ -1,8 +1,8 @@
 package org.deeplearning4j.graph.models.deepwalk;
 
 import org.deeplearning4j.graph.data.GraphLoader;
-import org.deeplearning4j.graph.graph.dl4j.RandomWalkIterator;
-import org.deeplearning4j.graph.graph.dl4j.SimpleGraph;
+import org.deeplearning4j.graph.graph.Graph;
+import org.deeplearning4j.graph.graph.RandomWalkIterator;
 import org.deeplearning4j.graph.iterator.GraphWalkIterator;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -21,7 +21,7 @@ public class TestDeepWalk {
 
         ClassPathResource cpr = new ClassPathResource("testgraph_7vertices.txt");
 
-        SimpleGraph<String,String> graph = GraphLoader.loadUndirectedGraphEdgeListFile(cpr.getFile().getAbsolutePath(), 7);
+        Graph<String,String> graph = GraphLoader.loadUndirectedGraphEdgeListFile(cpr.getFile().getAbsolutePath(), 7, ",");
 
         int vectorSize = 5;
         int windowSize = 2;
@@ -30,7 +30,6 @@ public class TestDeepWalk {
                 .vectorSize(vectorSize)
                 .windowSize(windowSize)
                 .learningRate(0.01)
-                .seed(12345)
                 .build();
         deepWalk.initialize(graph);
 

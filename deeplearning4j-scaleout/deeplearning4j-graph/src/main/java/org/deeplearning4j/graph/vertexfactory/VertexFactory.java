@@ -2,8 +2,7 @@ package org.deeplearning4j.graph.vertexfactory;
 
 import org.deeplearning4j.graph.api.Vertex;
 
-/**
- * Created by Alex on 9/11/2015.
+/**Vertex factory, used to greate nodes from an integer index (0 to nVertices-1 inclusive)
  */
 public interface VertexFactory<T> {
 

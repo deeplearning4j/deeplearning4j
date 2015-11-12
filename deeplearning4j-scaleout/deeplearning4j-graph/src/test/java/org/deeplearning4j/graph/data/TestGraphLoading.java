@@ -2,10 +2,10 @@ package org.deeplearning4j.graph.data;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.graph.api.Edge;
-import org.deeplearning4j.graph.api.Graph;
+import org.deeplearning4j.graph.api.IGraph;
 import org.deeplearning4j.graph.data.impl.DelimitedEdgeLineProcessor;
 import org.deeplearning4j.graph.data.impl.DelimitedVertexLoader;
-import org.deeplearning4j.graph.graph.dl4j.SimpleGraph;
+import org.deeplearning4j.graph.graph.Graph;
 import org.deeplearning4j.graph.vertexfactory.StringVertexFactory;
 import org.deeplearning4j.graph.vertexfactory.VertexFactory;
 import org.junit.Test;
@@ -24,7 +24,7 @@ public class TestGraphLoading {
     public void testEdgeListGraphLoading() throws IOException {
         ClassPathResource cpr = new ClassPathResource("testgraph_7vertices.txt");
 
-        Graph<String,String> graph = GraphLoader.loadUndirectedGraphEdgeListFile(cpr.getFile().getAbsolutePath(),7);
+        IGraph<String,String> graph = GraphLoader.loadUndirectedGraphEdgeListFile(cpr.getFile().getAbsolutePath(),7,",");
         System.out.println(graph);
 
         assertEquals(graph.numVertices(),7);
@@ -54,7 +54,7 @@ public class TestGraphLoading {
 
         EdgeLineProcessor<String> edgeLineProcessor = new DelimitedEdgeLineProcessor(",",false,"//");
         VertexFactory<String> vertexFactory = new StringVertexFactory("v_%d");
-        SimpleGraph<String,String> graph = GraphLoader.loadGraph(cpr.getFile().getAbsolutePath(),
+        Graph<String,String> graph = GraphLoader.loadGraph(cpr.getFile().getAbsolutePath(),
                 edgeLineProcessor,vertexFactory,10,false);
 
 
@@ -100,7 +100,7 @@ public class TestGraphLoading {
         EdgeLineProcessor<String> edgeLineProcessor = new DelimitedEdgeLineProcessor(",",false,"//");
         VertexLoader<String> vertexLoader = new DelimitedVertexLoader(":","//");
 
-        SimpleGraph<String,String> graph = GraphLoader.loadGraph(verticesCPR.getFile().getAbsolutePath(),
+        Graph<String,String> graph = GraphLoader.loadGraph(verticesCPR.getFile().getAbsolutePath(),
                 edgesCPR.getFile().getAbsolutePath(),vertexLoader,edgeLineProcessor,false);
 
         System.out.println(graph);

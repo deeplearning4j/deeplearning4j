@@ -1,4 +1,4 @@
-package org.deeplearning4j.graph.graph.dl4j;
+package org.deeplearning4j.graph.graph;
 
 import org.deeplearning4j.graph.api.*;
 import org.deeplearning4j.graph.exception.NoEdgesException;
@@ -10,16 +10,30 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-
-public class SimpleGraph<V, E> extends BaseGraph<V,E> {
+/** Graph, where all edges and vertices are stored in-memory.<br>
+ * Internally, this is a directed graph with adjacency list representation; however, if undirected edges
+ * are added, these edges are duplicated internally to allow for fast lookup.<br>
+ * Depending on the value of {@code allowMultipleEdges}, this graph implementation may or may not allow
+ * multiple edges between any two adjacent nodes. If multiple edges are required (such that two or more distinct edges
+ * between vertices X and Y exist simultaneously) then {@code allowMultipleEdges} should be set to {@code true}.<br>
+ * As per {@link IGraph}, this graph representation can have arbitrary objects attached<br>
+ * Vertices are initialized either directly via list, or via a {@link VertexFactory}. Edges are added using one of the
+ * addEdge methods.
+ * @param <V> Type parameter for vertices (type of objects attached to each vertex)
+ * @param <E> Type parameter for edges (type of objects attached to each edge)
+ * @author Alex Black
+ */
+public class Graph<V, E> extends BaseGraph<V,E> {
     private boolean allowMultipleEdges;
-
-    private List<Edge<E>>[] edges;  //edgeList.get(i).get(j).to = k, then edge from i -> k
-
+    private List<Edge<E>>[] edges;  //edge[i].get(j).to = k, then edge from i -> k
     private List<Vertex<V>> vertices;
 
+    public Graph(int numVertices, VertexFactory<V> vertexFactory){
+        this(numVertices,false,vertexFactory);
+    }
+
     @SuppressWarnings("unchecked")
-    public SimpleGraph(int numVertices, boolean allowMultipleEdges, VertexFactory<V> vertexFactory){
+    public Graph(int numVertices, boolean allowMultipleEdges, VertexFactory<V> vertexFactory){
         if(numVertices <= 0 ) throw new IllegalArgumentException();
         this.allowMultipleEdges = allowMultipleEdges;
 
@@ -30,10 +44,14 @@ public class SimpleGraph<V, E> extends BaseGraph<V,E> {
     }
 
     @SuppressWarnings("unchecked")
-    public SimpleGraph(List<Vertex<V>> vertices, boolean allowMultipleEdges ){
+    public Graph(List<Vertex<V>> vertices, boolean allowMultipleEdges){
         this.vertices = new ArrayList<>(vertices);
         this.allowMultipleEdges = allowMultipleEdges;
         edges = (List<Edge<E>>[]) Array.newInstance(List.class,vertices.size());
+    }
+
+    public Graph(List<Vertex<V>> vertices){
+        this(vertices,false);
     }
 
     @Override
@@ -168,7 +186,7 @@ public class SimpleGraph<V, E> extends BaseGraph<V,E> {
     @Override
     public String toString(){
         StringBuilder sb = new StringBuilder();
-        sb.append("SimpleGraph {");
+        sb.append("Graph {");
         sb.append("\nVertices {");
         for(Vertex<V> v : vertices){
             sb.append("\n\t").append(v);

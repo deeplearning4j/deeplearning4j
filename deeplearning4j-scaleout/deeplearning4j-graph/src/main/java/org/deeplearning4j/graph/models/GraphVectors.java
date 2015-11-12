@@ -1,6 +1,6 @@
 package org.deeplearning4j.graph.models;
 
-import org.deeplearning4j.graph.api.Graph;
+import org.deeplearning4j.graph.api.IGraph;
 import org.deeplearning4j.graph.api.Vertex;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -12,7 +12,7 @@ import java.util.Collection;
  */
 public interface GraphVectors<V,E> extends Serializable {
 
-    public Graph<V,E> getGraph();
+    public IGraph<V,E> getGraph();
 
     public int numVertices();
 
