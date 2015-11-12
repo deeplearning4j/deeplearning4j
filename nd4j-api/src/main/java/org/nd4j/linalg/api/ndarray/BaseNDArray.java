@@ -1905,7 +1905,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
         else {
             assertColumnVector(columnVector);
-            applyVectorOp(columnVector, operation);
+            applyBroadcastOp(columnVector, operation);
 
         }
 
@@ -1978,14 +1978,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
         else {
             assertRowVector(rowVector);
-            applyVectorOp(rowVector, operation);
+            applyBroadcastOp(rowVector, operation);
         }
 
         return this;
     }
 
 
-    private void applyVectorOp(INDArray vector,final char operation) {
+    private void applyBroadcastOp(INDArray vector, final char operation) {
         int alongDimension = Shape.isRowVectorShape(vector.shape()) ? 1 : 0;
         if(this.data() == vector.data()) vector = vector.dup();
         switch(operation){
