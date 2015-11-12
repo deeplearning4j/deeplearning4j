@@ -689,7 +689,7 @@ public class CPUTaskFactoryTest {
         // or direct execution vs. split via tensors
         final DataBuffer.AllocationMode origAlloc = Nd4j.alloc;
 
-        List<Class<? extends VectorOp>> testClasses = new ArrayList<>();
+        List<Class<? extends BroadcastOp>> testClasses = new ArrayList<>();
         testClasses.add(BroadcastAddOp.class);
         testClasses.add(BroadcastCopyOp.class);
         testClasses.add(BroadcastDivOp.class);
@@ -715,16 +715,16 @@ public class CPUTaskFactoryTest {
             INDArray origY1 = Nd4j.rand(rowShape).muli(2).subi(1);  //Along d1 = row
             INDArray origZ = Nd4j.rand(shape).muli(2).subi(1);
 
-            for (Class<? extends VectorOp> opClass : testClasses) {
+            for (Class<? extends BroadcastOp> opClass : testClasses) {
                 String msg = "class: " + opClass.getName() + ", dtype=" + dtype;
-                Constructor<? extends VectorOp> xyznConstructor = opClass.getConstructor(INDArray.class, INDArray.class, INDArray.class, int.class);
+                Constructor<? extends BroadcastOp> xyznConstructor = opClass.getConstructor(INDArray.class, INDArray.class, INDArray.class, int.class);
 
                 //Get expected result:
                 taskFactory.setParallelThreshold(Integer.MAX_VALUE);
                 INDArray origXDup = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
                 INDArray origY0Dup = getCopyOf(origY0, DataBuffer.AllocationMode.HEAP, dtype);
                 INDArray expectedZ0 = getCopyOf(origZ, DataBuffer.AllocationMode.HEAP, dtype);
-                VectorOp op = xyznConstructor.newInstance(origXDup, origY0Dup, expectedZ0, 0);
+                BroadcastOp op = xyznConstructor.newInstance(origXDup, origY0Dup, expectedZ0, 0);
                 Task<Void> task = taskFactory.getBroadcastOpAction(op);
                 task.invokeBlocking();
 

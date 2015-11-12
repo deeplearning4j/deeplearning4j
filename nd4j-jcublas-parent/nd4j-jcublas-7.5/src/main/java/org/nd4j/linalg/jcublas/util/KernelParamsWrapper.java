@@ -195,7 +195,7 @@ public class KernelParamsWrapper implements AutoCloseable {
                 //sets the result for the buffer
                 //since this ends up being a scalar
                 if(closeContext) {
-                    if(cublasPointer.getBuffer().length() == 1) {
+                    if(cublasPointer.getBuffer().length() == 1 && resultOp instanceof Accumulation) {
                         setResultForOp(resultOp, cublasPointer);
                     }
                     else

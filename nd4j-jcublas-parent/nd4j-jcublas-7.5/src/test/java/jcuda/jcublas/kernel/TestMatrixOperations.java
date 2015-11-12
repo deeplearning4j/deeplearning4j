@@ -33,8 +33,11 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
+import org.nd4j.linalg.api.ops.BroadcastOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
@@ -283,15 +286,116 @@ public class TestMatrixOperations {
         assertEquals(assertion,arr);
     }
 
+
     @Test
-    public void testFiveByFive() {
-        INDArray arr = Nd4j.linspace(1,25,25).reshape(5,5);
-        for(int i = 0; i < arr.tensorssAlongDimension(0); i++) {
-            System.out.println(arr.tensorAlongDimension(i,0));
-        }
+    public void testMMulColVectorRowVectorMixedOrder(){
+        INDArray colVec = Nd4j.ones(5, 1);
+        INDArray rowVec = Nd4j.ones(1, 5);
+        INDArray out = rowVec.mmul(colVec);
+        assertArrayEquals(out.shape(), new int[]{1, 1});
+        assertTrue(out.equals(Nd4j.ones(1, 1).muli(5)));
 
+        INDArray colVectorC = Nd4j.create(new int[]{5, 1}, 'c');
+        INDArray rowVectorF = Nd4j.create(new int[]{1, 5}, 'f');
+        for(int i=0; i<colVectorC.length(); i++ ) colVectorC.putScalar(i, 1.0);
+        for(int i=0; i<rowVectorF.length(); i++ ) rowVectorF.putScalar(i, 1.0);
+        assertTrue(colVec.equals(colVectorC));
+        assertTrue(rowVec.equals(rowVectorF));
 
+        INDArray outCF = rowVectorF.mmul(colVectorC);
+        assertArrayEquals(outCF.shape(), new int[]{1, 1});
+        assertTrue(outCF.equals(Nd4j.ones(1, 1).muli(5)));
     }
+
+
+    @Test
+    public void testNdVectorOp(){
+        //Test 2d, 3d, ..., 6d vector ops
+
+        Nd4j.getRandom().setSeed(12345);
+        int[] maxShape = new int[]{5, 7, 9, 11, 13, 15};
+
+        for( int opNum = 0; opNum < 6; opNum++ ) {
+            for (int rank = 2; rank < maxShape.length; rank++) {
+                int[] shape = Arrays.copyOfRange(maxShape, 0, rank);
+                INDArray orig = Nd4j.rand(shape);
+
+                for (int i = 0; i < rank; i++) {   //Test ops for each dimension
+                    INDArray arr = orig.dup();
+                    INDArray vector = Nd4j.rand(1, shape[i]);
+
+                    BroadcastOp op;
+                    switch(opNum){
+                        case 0:
+                            op = new BroadcastAddOp(arr, vector, arr, i);
+                            break;
+                        case 1:
+                            op = new BroadcastCopyOp(arr, vector, arr, i);
+                            break;
+                        case 2:
+                            op = new BroadcastDivOp(arr, vector, arr, i);
+                            break;
+                        case 3:
+                            op = new BroadcastMulOp(arr, vector, arr, i);
+                            break;
+                        case 4:
+                            op = new BroadcastRDivOp(arr, vector, arr, i);
+                            break;
+                        case 5:
+                            op = new BroadcastRSubOp(arr, vector, arr, i);
+                            break;
+                        case 6:
+                            op = new BroadcastSubOp(arr, vector, arr, i);
+                            break;
+                        default:
+                            throw new RuntimeException();
+                    }
+
+                    Nd4j.getExecutioner().exec(op);
+
+                    //Compare expected vs. actual:
+                    NdIndexIterator iter = new NdIndexIterator(orig.shape());
+                    while (iter.hasNext()) {
+                        int[] next = iter.next();
+                        double origValue = orig.getDouble(next);
+                        double vectorValue = vector.getDouble(next[i]);   //current index in vector
+                        double exp;
+                        switch(opNum){
+                            case 0:
+                                exp = origValue + vectorValue;
+                                break;
+                            case 1:
+                                exp = vectorValue;
+                                break;
+                            case 2:
+                                exp = origValue / vectorValue;
+                                break;
+                            case 3:
+                                exp = origValue * vectorValue;
+                                break;
+                            case 4:
+                                exp = vectorValue / origValue;
+                                break;
+                            case 5:
+                                exp = vectorValue - origValue;
+                                break;
+                            case 6:
+                                exp = origValue - vectorValue;
+                                break;
+                            default:
+                                throw new RuntimeException();
+                        }
+
+                        double actual = arr.getDouble(next);
+                        double relError = Math.abs(exp - actual) / (Math.abs(exp) + Math.abs(actual));
+                        assertTrue(relError < 1e-6);
+                    }
+                }
+            }
+        }
+    }
+
+
 
     @Test
     public void testCosineSim() {

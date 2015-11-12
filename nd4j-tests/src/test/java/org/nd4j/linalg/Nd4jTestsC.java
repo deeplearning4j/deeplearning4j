@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.iter.INDArrayIterator;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
+import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.api.ops.impl.broadcast.*;
@@ -2009,7 +2010,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
                     INDArray arr = orig.dup();
                     INDArray vector = Nd4j.rand(1, shape[i]);
 
-                    VectorOp op;
+                    BroadcastOp op;
                     switch(opNum){
                         case 0:
                             op = new BroadcastAddOp(arr, vector, arr, i);

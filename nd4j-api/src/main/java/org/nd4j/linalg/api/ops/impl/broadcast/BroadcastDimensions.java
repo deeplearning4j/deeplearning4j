@@ -20,7 +20,7 @@ public class BroadcastDimensions {
     public static int[] getDimensions(int[] shape) {
         List<Integer> getDimensions = new ArrayList<>();
         for(int i = 0; i < shape.length; i++)
-            if(shape[i] == 1)
+            if(shape[i] != 1)
                 getDimensions.add(i);
         return Ints.toArray(getDimensions);
     }

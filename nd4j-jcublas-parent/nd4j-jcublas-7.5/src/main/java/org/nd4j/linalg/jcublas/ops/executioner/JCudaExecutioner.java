@@ -163,7 +163,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public Op exec(Op op) {
-        //linear views and oblong offsets can't be handled by the gpu (due to the way the buffers are interpeted as vectors)
+        //linear views and oblong offsets can't be handled by the gpu (due to the way the buffers are interpreted as vectors)
         if(op.x() instanceof IComplexNDArray
                 || executionMode() == ExecutionMode.JAVA || op.isPassThrough())
             return super.exec(op);
@@ -177,6 +177,10 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         } else if (op instanceof ScalarOp) {
             ScalarOp sc = (ScalarOp) op;
             invoke(sc,true);
+        }
+        else if(op instanceof BroadcastOp) {
+            BroadcastOp broadcastOp = (BroadcastOp) op;
+            invoke(broadcastOp,true);
         }
         return op;
     }
@@ -236,26 +240,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             throw new IllegalArgumentException("Op has no y to broadcast");
 
 
-        int[] shape = op.broadcastShape();
-        int[] smallerShape = op.x().shape();
-        boolean compatible = true;
-        int count = shape.length - 1;
-        int thisCount = smallerShape.length - 1;
-        for (int i = shape.length - 1; i > 0; i--) {
-            if (count < 0 || thisCount < 0)
-                break;
-            if (shape[count] != smallerShape[thisCount] && shape[count] != 1 && smallerShape[thisCount] != 1) {
-                compatible = false;
-                break;
-            }
-
-            count--;
-            thisCount--;
-        }
-
-        if (!compatible)
-            throw new IllegalArgumentException("Incompatible broadcast from " + Arrays.toString(smallerShape) + " to " + Arrays.toString(shape));
-
         //total number of times to repeat each value over an element wise stride on the gpu
         int[] dimensions = BroadcastDimensions.getDimensions(op.y().shape());
         /**
@@ -305,7 +289,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
          * There will likely be times when we need to compute a dup()
          * in order to force alignment of the data.
          */
-        try(KernelParamsWrapper kParams = new KernelParamsWrapper(op,sync,kernelParams)) {
+        try(KernelParamsWrapper kParams = new KernelParamsWrapper(op,sync,kernelParams).setResultArray(op.z())) {
             invokeFunction(op, sync,metrics,kParams.getContext(), kParams.getKernelParameters());
             ctx = kParams.getContext();
             if(sync)
@@ -444,7 +428,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         metrics.setBlockSize(1024);
         metrics.setSharedMemory(metrics.getBlockSize() * op.x().data().getElementSize());
 
-        CudaContext ctx = null;
+        CudaContext ctx;
         if(!KernelFunctionLoader.getInstance().exists(op.name())  || executionMode() == ExecutionMode.JAVA)
             super.exec(op);
 
