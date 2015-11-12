@@ -725,7 +725,7 @@ public class CPUTaskFactoryTest {
                 INDArray origY0Dup = getCopyOf(origY0, DataBuffer.AllocationMode.HEAP, dtype);
                 INDArray expectedZ0 = getCopyOf(origZ, DataBuffer.AllocationMode.HEAP, dtype);
                 VectorOp op = xyznConstructor.newInstance(origXDup, origY0Dup, expectedZ0, 0);
-                Task<Void> task = taskFactory.getVectorOpAction(op);
+                Task<Void> task = taskFactory.getBroadcastOpAction(op);
                 task.invokeBlocking();
 
 
@@ -733,7 +733,7 @@ public class CPUTaskFactoryTest {
                 INDArray origY1Dup = getCopyOf(origY1, DataBuffer.AllocationMode.HEAP, dtype);
                 INDArray expectedZ1 = getCopyOf(origZ, DataBuffer.AllocationMode.HEAP, dtype);
                 op = xyznConstructor.newInstance(origXDup, origY1Dup, expectedZ1, 1);
-                task = taskFactory.getVectorOpAction(op);
+                task = taskFactory.getBroadcastOpAction(op);
                 task.invokeBlocking();
 
                 // For each combination of: serial/parallel, heap/direct
@@ -775,14 +775,14 @@ public class CPUTaskFactoryTest {
                         assertEquals(z1.data().dataType(), dtype);
 
                         op = xyznConstructor.newInstance(x1, y1_0, z1, 0);
-                        task = taskFactory.getVectorOpAction(op);
+                        task = taskFactory.getBroadcastOpAction(op);
                         task.invokeBlocking();
                         assertEquals(msg2, x1, origX);
                         assertEquals(msg2, y1_0, origY0);
                         assertEquals(msg2, expectedZ0, z1);
 
                         op = xyznConstructor.newInstance(x1, y1_0, x1, 0);
-                        task = taskFactory.getVectorOpAction(op);
+                        task = taskFactory.getBroadcastOpAction(op);
                         task.invokeBlocking();
                         assertEquals(msg2, y1_0, origY0);
                         assertEquals(msg2, expectedZ0, x1);
@@ -795,14 +795,14 @@ public class CPUTaskFactoryTest {
                         assertEquals(y1_1.data().dataType(), dtype);
 
                         op = xyznConstructor.newInstance(x1, y1_1, z1, 1);
-                        task = taskFactory.getVectorOpAction(op);
+                        task = taskFactory.getBroadcastOpAction(op);
                         task.invokeBlocking();
                         assertEquals(msg2, x1, origX);
                         assertEquals(msg2, y1_1, origY1);
                         assertEquals(msg2, expectedZ1, z1);
 
                         op = xyznConstructor.newInstance(x1, y1_1, x1, 1);
-                        task = taskFactory.getVectorOpAction(op);
+                        task = taskFactory.getBroadcastOpAction(op);
                         task.invokeBlocking();
                         assertEquals(msg2, y1_1, origY1);
                         assertEquals(msg2, expectedZ1, x1);

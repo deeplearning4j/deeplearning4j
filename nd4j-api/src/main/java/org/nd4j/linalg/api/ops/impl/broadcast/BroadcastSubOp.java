@@ -9,7 +9,7 @@ public class BroadcastSubOp extends BaseBroadcastOp {
     public BroadcastSubOp() {
     }
 
-    public BroadcastSubOp(INDArray x, INDArray y, INDArray z, int dimension) {
+    public BroadcastSubOp(INDArray x, INDArray y, INDArray z, int...dimension) {
         super(x, y, z, dimension);
     }
 

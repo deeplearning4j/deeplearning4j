@@ -89,4 +89,14 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
     public IComplexNumber complexScalar() {
         return complexNumber;
     }
+
+    @Override
+    public int[] getDimension() {
+        return new int[0];
+    }
+
+    @Override
+    public void setDimension(int... dimension) {
+
+    }
 }

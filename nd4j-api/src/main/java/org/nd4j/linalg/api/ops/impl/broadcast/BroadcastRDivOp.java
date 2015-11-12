@@ -9,7 +9,7 @@ public class BroadcastRDivOp extends BaseBroadcastOp {
     public BroadcastRDivOp() {
     }
 
-    public BroadcastRDivOp(INDArray x, INDArray y, INDArray z, int dimension) {
+    public BroadcastRDivOp(INDArray x, INDArray y, INDArray z, int...dimension) {
         super(x, y, z, dimension);
     }
 

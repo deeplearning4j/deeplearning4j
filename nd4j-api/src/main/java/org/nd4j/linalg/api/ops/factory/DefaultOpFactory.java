@@ -406,21 +406,21 @@ public class DefaultOpFactory implements OpFactory {
     }
 
     @Override
-    public VectorOp createVectorOp(String name, INDArray x, INDArray y, INDArray z, int dimension){
+    public BroadcastOp createBroadcastOp(String name, INDArray x, INDArray y, INDArray z, int... dimension){
         switch(name){
-            case "vectoradd":
+            case "broadcastadd":
                 return new BroadcastAddOp(x,y,z,dimension);
-            case "vectorsub":
+            case "broadcastsub":
                 return new BroadcastSubOp(x,y,z,dimension);
-            case "vectormul":
+            case "broadcastmul":
                 return new BroadcastMulOp(x,y,z,dimension);
-            case "vectordiv":
+            case "broadcastdiv":
                 return new BroadcastDivOp(x,y,z,dimension);
-            case "vectorrsub":
+            case "broadcastrsub":
                 return new BroadcastRSubOp(x,y,z,dimension);
-            case "vectorrdiv":
+            case "broadcastrdiv":
                 return new BroadcastRDivOp(x,y,z,dimension);
-            case "vectorcopy":
+            case "broadcastcopy":
                 return new BroadcastCopyOp(x,y,z,dimension);
             default:
                 throw new IllegalArgumentException("Illegal name " + name);
@@ -428,21 +428,21 @@ public class DefaultOpFactory implements OpFactory {
     }
 
     @Override
-    public VectorOp createVectorOp(String name, INDArray x, INDArray y, int dimension ){
+    public BroadcastOp createBroadcastOp(String name, INDArray x, INDArray y, int... dimension){
         switch(name){
-            case "vectoradd":
+            case "broadcastadd":
                 return new BroadcastAddOp(x,y,x,dimension);
-            case "vectorsub":
+            case "broadcastsub":
                 return new BroadcastSubOp(x,y,x,dimension);
-            case "vectormul":
+            case "broadcastmul":
                 return new BroadcastMulOp(x,y,x,dimension);
-            case "vectordiv":
+            case "broadcastdiv":
                 return new BroadcastDivOp(x,y,x,dimension);
-            case "vectorrsub":
+            case "broadcastrsub":
                 return new BroadcastRSubOp(x,y,x,dimension);
-            case "vectorrdiv":
+            case "broadcastrdiv":
                 return new BroadcastRDivOp(x,y,x,dimension);
-            case "vectorcopy":
+            case "broadcastcopy":
                 return new BroadcastCopyOp(x,y,x,dimension);
             default:
                 throw new IllegalArgumentException("Illegal name " + name);

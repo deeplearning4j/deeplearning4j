@@ -118,7 +118,7 @@ public interface OpFactory {
      * @param dimension Dimension to do op along. 0 for row, 1 for column, etc
      * @return VectorOp
      */
-    VectorOp createVectorOp(String name, INDArray x, INDArray y, INDArray z, int dimension);
+    BroadcastOp createBroadcastOp(String name, INDArray x, INDArray y, INDArray z, int... dimension);
 
     /** Create a vector operation
      *
@@ -128,6 +128,6 @@ public interface OpFactory {
      * @param dimension Dimension to do op along. 0 for row, 1 for column, etc
      * @return VectorOp
      */
-    VectorOp createVectorOp(String name, INDArray x, INDArray z, int dimension);
+    BroadcastOp createBroadcastOp(String name, INDArray x, INDArray z, int... dimension);
 
 }

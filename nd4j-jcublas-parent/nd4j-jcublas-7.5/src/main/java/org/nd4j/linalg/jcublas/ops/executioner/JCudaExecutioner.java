@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDimensions;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.SimpleJCublas;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
@@ -256,13 +257,27 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             throw new IllegalArgumentException("Incompatible broadcast from " + Arrays.toString(smallerShape) + " to " + Arrays.toString(shape));
 
         //total number of times to repeat each value over an element wise stride on the gpu
-        int chunks = op.x().length() / op.broadcastLength();
-
+        int[] dimensions = BroadcastDimensions.getDimensions(op.y().shape());
+        /**
+         * 		T *x
+         ,int *xShapeInfo
+         ,T *y
+         ,int *yShapeInfo
+         ,T *result
+         ,int *resultShapeInfo,
+         int *dimension,
+         int dimensionLength,
+         int *gpuInformation
+         */
         Object[] kernelParams = new Object[] {
-                chunks,
                 op.x(),
+                KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.x())),
                 op.y(),
+                KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.y())),
                 op.z(),
+                KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.z())),
+                KernelFunctions.alloc(dimensions),
+                dimensions.length,
                 KernelFunctions.alloc(metrics.getGpuDefinitionInfo()),
         };
 
