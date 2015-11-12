@@ -40,6 +40,7 @@ import org.deeplearning4j.parallel.Parallelization;
 import org.deeplearning4j.text.invertedindex.InvertedIndex;
 import org.deeplearning4j.text.invertedindex.LuceneInvertedIndex;
 import org.deeplearning4j.text.documentiterator.DocumentIterator;
+import org.deeplearning4j.text.sentenceiterator.StreamLineIterator;
 import org.deeplearning4j.text.stopwords.StopWords;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
@@ -603,59 +604,18 @@ public class Word2Vec extends WordVectorsImpl {
 
 
         public Word2Vec build() {
+                if (iter == null && docIter == null) throw new IllegalStateException("At least one iterator is needed for model building");
 
-            if(iter == null) {
-                Word2Vec ret = new Word2Vec();
-                ret.window = window;
-                ret.alpha.set(lr);
-                ret.vectorizer = textVectorizer;
-                ret.stopWords = stopWords;
-                ret.setVocab(vocabCache);
-                ret.numIterations = iterations;
-                ret.minWordFrequency = minWordFrequency;
-                ret.seed = seed;
-                ret.saveVocab = saveVocab;
-                ret.batchSize = batchSize;
-                ret.useAdaGrad = useAdaGrad;
-                ret.minLearningRate = minLearningRate;
-                ret.sample = sampling;
-                ret.workers = workers;
-                ret.invertedIndex = index;
-                ret.lookupTable = lookupTable;
-                try {
-                    if (tokenizerFactory == null)
-                        tokenizerFactory = new UimaTokenizerFactory();
-                }catch(Exception e) {
-                    throw new RuntimeException(e);
+                /*
+                    if there's DocumentIterator instead of SentenceIterator provided, flatten it down to StreamLineIterator and use it as SentenceIterator at fit()
+                    since anyway we're working on single sentence level, without other options.
+                  */
+                if (iter == null && docIter != null) {
+                    this.iter = new StreamLineIterator.Builder(docIter)
+                            .setFetchSize(100)
+                            .build();
                 }
 
-                if(vocabCache == null) {
-                    vocabCache = new InMemoryLookupCache();
-
-                    ret.setVocab(vocabCache);
-                }
-
-                if(lookupTable == null) {
-                    lookupTable = new InMemoryLookupTable.Builder().negative(negative)
-                            .useAdaGrad(useAdaGrad).lr(lr).cache(vocabCache)
-                            .vectorLength(layerSize).build();
-                }
-
-
-                ret.docIter = docIter;
-                ret.lookupTable = lookupTable;
-                ret.tokenizerFactory = tokenizerFactory;
-
-                // VocabularyHolder is used ONLY for fit() purposes, as intermediate data storage
-                if (this.vocabCache!= null)
-                    // if VocabCache is set, build VocabHolder on top of it. Just for compatibility
-                    ret.vocabularyHolder = new VocabularyHolder(this.vocabCache);
-                else ret.vocabularyHolder = new VocabularyHolder();
-
-                return ret;
-            }
-
-            else {
                 Word2Vec ret = new Word2Vec();
                 ret.alpha.set(lr);
                 ret.sentenceIter = iter;
@@ -706,8 +666,6 @@ public class Word2Vec extends WordVectorsImpl {
                 else ret.vocabularyHolder = new VocabularyHolder();
 
                 return ret;
-            }
-
         }
     }
 
