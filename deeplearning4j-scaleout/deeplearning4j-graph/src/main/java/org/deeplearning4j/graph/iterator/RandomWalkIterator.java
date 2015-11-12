@@ -1,10 +1,11 @@
-package org.deeplearning4j.graph.graph;
+package org.deeplearning4j.graph.iterator;
 
 import org.deeplearning4j.graph.api.IGraph;
 import org.deeplearning4j.graph.api.NoEdgeHandling;
 import org.deeplearning4j.graph.api.Vertex;
 import org.deeplearning4j.graph.api.IVertexSequence;
 import org.deeplearning4j.graph.exception.NoEdgesException;
+import org.deeplearning4j.graph.graph.VertexSequence;
 import org.deeplearning4j.graph.iterator.GraphWalkIterator;
 
 import java.util.NoSuchElementException;
@@ -20,6 +21,8 @@ public class RandomWalkIterator<V> implements GraphWalkIterator<V> {
     private final IGraph<V,?> graph;
     private final int walkLength;
     private final NoEdgeHandling mode;
+    private final int firstVertex;
+    private final int lastVertex;
 
 
     private int position;
@@ -46,13 +49,29 @@ public class RandomWalkIterator<V> implements GraphWalkIterator<V> {
      * @param mode mode for handling random walks from vertices with either no edges, or no outgoing edges (for directed graphs)
      */
     public RandomWalkIterator(IGraph<V,?> graph, int walkLength, long rngSeed, NoEdgeHandling mode ){
+        this(graph,walkLength,rngSeed,mode,0,graph.numVertices());
+    }
+
+    /**Constructor used to generate random walks starting at a subset of the vertices in the graph. Order of starting
+     * vertices is randomized within this subset
+     * @param graph IGraph to conduct walks on
+     * @param walkLength length of each walk. Walk of length 0 includes 1 vertex, walk of 1 includes 2 vertices etc
+     * @param rngSeed seed for randomization
+     * @param mode mode for handling random walks from vertices with either no edges, or no outgoing edges (for directed graphs)
+     * @param firstVertex first vertex index (inclusive) to start random walks from
+     * @param lastVertex last vertex index (exclusive) to start random walks from
+     */
+    public RandomWalkIterator(IGraph<V,?> graph, int walkLength, long rngSeed, NoEdgeHandling mode, int firstVertex,
+                              int lastVertex ){
         this.graph = graph;
         this.walkLength = walkLength;
+        this.rng = new Random(rngSeed);
         this.mode = mode;
+        this.firstVertex = firstVertex;
+        this.lastVertex = lastVertex;
 
-        rng = new Random(rngSeed);
-        order = new int[graph.numVertices()];
-        for( int i=0; i<order.length; i++ ) order[i] = i;
+        order = new int[lastVertex-firstVertex];
+        for( int i=0; i<order.length; i++ ) order[i] = firstVertex+i;
         reset();
     }
 

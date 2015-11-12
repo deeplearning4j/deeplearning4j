@@ -1,7 +1,7 @@
 package org.deeplearning4j.graph.dl4j;
 
 import org.deeplearning4j.graph.api.*;
-import org.deeplearning4j.graph.graph.RandomWalkIterator;
+import org.deeplearning4j.graph.iterator.RandomWalkIterator;
 import org.deeplearning4j.graph.graph.Graph;
 import org.deeplearning4j.graph.vertexfactory.VertexFactory;
 import org.junit.Test;
