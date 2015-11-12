@@ -19,7 +19,7 @@ import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarSetValue;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
-import org.nd4j.linalg.api.ops.impl.vector.*;
+import org.nd4j.linalg.api.ops.impl.broadcast.*;
 import org.nd4j.linalg.api.parallel.tasks.Task;
 import org.nd4j.linalg.api.parallel.tasks.cpu.CPUTaskFactory;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
@@ -690,13 +690,13 @@ public class CPUTaskFactoryTest {
         final DataBuffer.AllocationMode origAlloc = Nd4j.alloc;
 
         List<Class<? extends VectorOp>> testClasses = new ArrayList<>();
-        testClasses.add(VectorAddOp.class);
-        testClasses.add(VectorCopyOp.class);
-        testClasses.add(VectorDivOp.class);
-        testClasses.add(VectorMulOp.class);
-        testClasses.add(VectorRDivOp.class);
-        testClasses.add(VectorRSubOp.class);
-        testClasses.add(VectorSubOp.class);
+        testClasses.add(BroadcastAddOp.class);
+        testClasses.add(BroadcastCopyOp.class);
+        testClasses.add(BroadcastDivOp.class);
+        testClasses.add(BroadcastMulOp.class);
+        testClasses.add(BroadcastRDivOp.class);
+        testClasses.add(BroadcastRSubOp.class);
+        testClasses.add(BroadcastSubOp.class);
 
         CPUTaskFactory taskFactory = new CPUTaskFactory();
 

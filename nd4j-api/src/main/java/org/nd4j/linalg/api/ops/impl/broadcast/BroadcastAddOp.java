@@ -1,22 +1,22 @@
-package org.nd4j.linalg.api.ops.impl.vector;
+package org.nd4j.linalg.api.ops.impl.broadcast;
 
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseVectorOp;
+import org.nd4j.linalg.api.ops.BaseBroadcastOp;
 
-public class VectorAddOp extends BaseVectorOp {
+public class BroadcastAddOp extends BaseBroadcastOp {
 
-    public VectorAddOp() {
+    public BroadcastAddOp() {
     }
 
-    public VectorAddOp(INDArray x, INDArray y, INDArray z, int dimension) {
+    public BroadcastAddOp(INDArray x, INDArray y, INDArray z, int dimension) {
         super(x, y, z, dimension);
     }
 
 
     @Override
     public String name() {
-        return "vectoradd";
+        return "broadcastadd";
     }
 
     @Override

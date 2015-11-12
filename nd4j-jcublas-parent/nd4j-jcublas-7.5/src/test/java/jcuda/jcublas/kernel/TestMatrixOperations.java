@@ -284,6 +284,16 @@ public class TestMatrixOperations {
     }
 
     @Test
+    public void testFiveByFive() {
+        INDArray arr = Nd4j.linspace(1,25,25).reshape(5,5);
+        for(int i = 0; i < arr.tensorssAlongDimension(0); i++) {
+            System.out.println(arr.tensorAlongDimension(i,0));
+        }
+
+
+    }
+
+    @Test
     public void testCosineSim() {
         Nd4j.dtype = DataBuffer.Type.FLOAT;
 

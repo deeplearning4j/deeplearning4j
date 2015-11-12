@@ -25,10 +25,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Accumulation;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.ScalarOp;
-import org.nd4j.linalg.api.ops.TransformOp;
+import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.SimpleJCublas;
@@ -42,7 +39,7 @@ import org.nd4j.linalg.jcublas.util.KernelParamsWrapper;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
 import org.nd4j.linalg.util.ArrayUtil;
 
-
+import java.util.Arrays;
 
 
 /**
@@ -220,6 +217,92 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         throw new IllegalArgumentException("Illegal datatype");
     }
 
+
+    private CudaContext invoke(BroadcastOp op,boolean sync) {
+        CudaContext ctx;
+
+        ContextHolder.getInstance().setContext();
+
+        if(!KernelFunctionLoader.getInstance().exists(op.name()) || executionMode() == ExecutionMode.JAVA || op.isPassThrough())
+            super.exec(op);
+
+
+        GpuMetrics metrics = GpuMetrics.blockAndThreads(getType(op),op.n());
+        metrics.setGridSize(op.x().data().length());
+        metrics.setBlockSize(1024);
+        metrics.setSharedMemoryNotOverMax(metrics.getBlockSize() * op.x().data().getElementSize());
+        if(op.y() == null)
+            throw new IllegalArgumentException("Op has no y to broadcast");
+
+
+        int[] shape = op.broadcastShape();
+        int[] smallerShape = op.x().shape();
+        boolean compatible = true;
+        int count = shape.length - 1;
+        int thisCount = smallerShape.length - 1;
+        for (int i = shape.length - 1; i > 0; i--) {
+            if (count < 0 || thisCount < 0)
+                break;
+            if (shape[count] != smallerShape[thisCount] && shape[count] != 1 && smallerShape[thisCount] != 1) {
+                compatible = false;
+                break;
+            }
+
+            count--;
+            thisCount--;
+        }
+
+        if (!compatible)
+            throw new IllegalArgumentException("Incompatible broadcast from " + Arrays.toString(smallerShape) + " to " + Arrays.toString(shape));
+
+        //total number of times to repeat each value over an element wise stride on the gpu
+        int chunks = op.x().length() / op.broadcastLength();
+
+        Object[] kernelParams = new Object[] {
+                chunks,
+                op.x(),
+                op.y(),
+                op.z(),
+                KernelFunctions.alloc(metrics.getGpuDefinitionInfo()),
+        };
+
+
+        /**
+         *
+         * Will need to get an element wise stride
+         * along a broadcast dimension wrt the shape
+         * This will allow us to setup a linear
+         * operator along a subset of the original array
+         * repeating along the desired dimensions.
+         *
+         * Will also need to figure out how to split
+         * the bigger array wrt the original input
+         * computing broadcast slices wrt the
+         * specified y being broadcast.
+         *
+         * Will also need an element wise stride
+         * for the bigger array
+         * and a way to compute the offsets
+         * (likely related to the major stride of the bigger array?)
+         *
+         * This will be very similar to how TAD is designed.
+         *
+         * There will likely be times when we need to compute a dup()
+         * in order to force alignment of the data.
+         */
+        try(KernelParamsWrapper kParams = new KernelParamsWrapper(op,sync,kernelParams)) {
+            invokeFunction(op, sync,metrics,kParams.getContext(), kParams.getKernelParameters());
+            ctx = kParams.getContext();
+            if(sync)
+                kParams.sync();
+        } catch(Exception e) {
+            throw new RuntimeException("Could not execute kernel: Kernel launch was: " + metrics, e);
+        }
+
+
+
+        return ctx;
+    }
 
     private CudaContext invoke(Accumulation op,int[] dimension,INDArray result,boolean sync)  {
         CudaContext ctx;

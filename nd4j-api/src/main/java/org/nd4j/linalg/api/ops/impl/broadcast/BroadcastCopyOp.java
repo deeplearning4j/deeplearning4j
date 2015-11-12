@@ -1,22 +1,22 @@
-package org.nd4j.linalg.api.ops.impl.vector;
+package org.nd4j.linalg.api.ops.impl.broadcast;
 
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseVectorOp;
+import org.nd4j.linalg.api.ops.BaseBroadcastOp;
 import org.nd4j.linalg.factory.Nd4j;
 
-public class VectorCopyOp extends BaseVectorOp {
+public class BroadcastCopyOp extends BaseBroadcastOp {
 
-    public VectorCopyOp() {
+    public BroadcastCopyOp() {
     }
 
-    public VectorCopyOp(INDArray x, INDArray y, INDArray z, int dimension) {
+    public BroadcastCopyOp(INDArray x, INDArray y, INDArray z, int dimension) {
         super(x, y, z, dimension);
     }
 
     @Override
     public String name() {
-        return "vectorcopy";
+        return "broadcastcopy";
     }
 
     @Override
