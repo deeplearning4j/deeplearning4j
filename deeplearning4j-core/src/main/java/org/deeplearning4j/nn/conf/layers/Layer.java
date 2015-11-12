@@ -57,6 +57,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 @Data
 @NoArgsConstructor
 public abstract class Layer implements Serializable, Cloneable {
+    protected String layerName;
     protected String activationFunction;
     protected WeightInit weightInit;
     protected double biasInit;
@@ -81,6 +82,7 @@ public abstract class Layer implements Serializable, Cloneable {
     protected double gradientNormalizationThreshold = 1.0;   //Threshold for l2 and element-wise gradient clipping
 
     public Layer(Builder builder) {
+        this.layerName = builder.layerName;
     	this.activationFunction = builder.activationFunction;
     	this.weightInit = builder.weightInit;
         this.biasInit = builder.biasInit;
@@ -116,6 +118,7 @@ public abstract class Layer implements Serializable, Cloneable {
 
 
     public abstract static class Builder<T extends Builder<T>> {
+        protected String layerName = "genisys";
         protected String activationFunction = null;
         protected WeightInit weightInit = null;
         protected double biasInit = Double.NaN;
@@ -135,6 +138,15 @@ public abstract class Layer implements Serializable, Cloneable {
         protected double adamVarDecay = Double.NaN;
         protected GradientNormalization gradientNormalization = null;
         protected double gradientNormalizationThreshold = Double.NaN;
+
+        /**Layer name assigns layer string name.
+         * Allows easier differentiation between layers.
+         */
+        public T name(String layerName) {
+            this.layerName = layerName;
+            return (T) this;
+        }
+
 
         /**Layer activation function.
          * Typical values include:<br>
