@@ -5,16 +5,16 @@ import org.deeplearning4j.graph.exception.NoEdgesException;
 import java.util.List;
 import java.util.Random;
 
-/** Interface for a Graph, with objects for each vertex and edge.
- * In the simplest case, edges and vertices may be labelled (i.e., Graph<String,String> for example), or may be
+/** Interface for a IGraph, with objects for each vertex and edge.
+ * In the simplest case, edges and vertices may be labelled (i.e., IGraph<String,String> for example), or may be
  * any arbitrary object (or, null).<br>
- * Graph may include directed edges, undirected edges, or a combination of both<br>
+ * IGraph may include directed edges, undirected edges, or a combination of both<br>
  * Note: Every vertex in the graph has an integer index, in range of 0 to numVertices() inclusive<br>
  * @param <V> type for vertex objects
  * @param <E> type for edge objects
  * @author Alex Black
  */
-public interface Graph<V,E> {
+public interface IGraph<V,E> {
 
     /** Number of vertices in the graph */
     public int numVertices();

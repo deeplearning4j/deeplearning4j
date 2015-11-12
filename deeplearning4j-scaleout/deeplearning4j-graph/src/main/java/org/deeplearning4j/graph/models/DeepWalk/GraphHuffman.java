@@ -6,29 +6,30 @@ import org.deeplearning4j.graph.models.BinaryTree;
 import java.util.Arrays;
 import java.util.PriorityQueue;
 
-/**
- * A Huffman tree specifically for graphs.
+/**An implementation of a Huffman tree specifically for graphs.
  * Vertices in graph are indexed by an integer, 0 to nVertices-1
  */
 public class GraphHuffman implements BinaryTree {
-
     private static final int MAX_CODE_LENGTH = 64;
     private final long[] codes;
     private final byte[] codeLength;
     private final int[][] innerNodePathToLeaf;
 
-
+    /**
+     * @param nVertices number of vertices in the graph that this Huffman tree is being built for
+     */
     public GraphHuffman(int nVertices) {
         codes = new long[nVertices];
         codeLength = new byte[nVertices];
         innerNodePathToLeaf = new int[nVertices][0];
     }
 
-    public void buildTree(int[] nodeDegree) {
-
-
+    /** Build the Huffman tree given an array of vertex degrees
+     * @param vertexDegree vertexDegree[i] = degree of ith vertex
+     */
+    public void buildTree(int[] vertexDegree) {
         PriorityQueue<Node> pq = new PriorityQueue<>();
-        for (int i = 0; i < nodeDegree.length; i++) pq.add(new Node(i, nodeDegree[i], null, null));
+        for (int i = 0; i < vertexDegree.length; i++) pq.add(new Node(i, vertexDegree[i], null, null));
 
         while (pq.size() > 1) {
             Node left = pq.remove();
@@ -83,12 +84,12 @@ public class GraphHuffman implements BinaryTree {
         return innerNodeCount;
     }
 
-    private long setBit(long in, int bitNum, boolean value) {
+    private static long setBit(long in, int bitNum, boolean value) {
         if (value) return (in | 1L << bitNum);  //Bit mask |: 00010000
         else return (in & ~(1 << bitNum));     //Bit mask &: 11101111
     }
 
-    private boolean getBit(long in, int bitNum) {
+    private static boolean getBit(long in, int bitNum) {
         long mask = 1L << bitNum;
         return (in & mask) != 0L;
     }

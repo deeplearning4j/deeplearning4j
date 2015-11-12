@@ -3,10 +3,9 @@ package org.deeplearning4j.graph.data;
 import org.deeplearning4j.graph.api.Edge;
 import org.deeplearning4j.graph.api.Vertex;
 import org.deeplearning4j.graph.data.impl.DelimitedEdgeLineProcessor;
+import org.deeplearning4j.graph.graph.Graph;
 import org.deeplearning4j.graph.vertexfactory.StringVertexFactory;
 import org.deeplearning4j.graph.vertexfactory.VertexFactory;
-import org.deeplearning4j.graph.graph.dl4j.SimpleGraph;
-import org.deeplearning4j.graph.vertexfactory.VoidVertexFactory;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -28,8 +27,8 @@ public class GraphLoader {
      * @return graph
      * @throws IOException if file cannot be read
      */
-    public static SimpleGraph<String,String> loadUndirectedGraphEdgeListFile(String path, int numVertices, String delim) throws IOException{
-        SimpleGraph<String,String> graph = new SimpleGraph<>(numVertices,false,new StringVertexFactory());
+    public static Graph<String,String> loadUndirectedGraphEdgeListFile(String path, int numVertices, String delim) throws IOException{
+        Graph<String,String> graph = new Graph<>(numVertices,false,new StringVertexFactory());
         EdgeLineProcessor<String> lineProcessor = new DelimitedEdgeLineProcessor(delim,false);
 
         try(BufferedReader br = new BufferedReader(new FileReader(new File(path)))){
@@ -51,12 +50,12 @@ public class GraphLoader {
      * @param vertexFactory Used to create vertices
      * @param numVertices number of vertices in the graph
      * @param allowMultipleEdges whether the graph should allow multiple edges between a given pair of vertices or not
-     * @return Graph
+     * @return IGraph
      */
-    public static <V,E> SimpleGraph<V,E> loadGraph(String path, EdgeLineProcessor<E> lineProcessor,
+    public static <V,E> Graph<V,E> loadGraph(String path, EdgeLineProcessor<E> lineProcessor,
                                                    VertexFactory<V> vertexFactory, int numVertices,
                                                    boolean allowMultipleEdges) throws IOException {
-        SimpleGraph<V,E> graph = new SimpleGraph<>(numVertices,allowMultipleEdges,vertexFactory);
+        Graph<V,E> graph = new Graph<>(numVertices,allowMultipleEdges,vertexFactory);
 
         try(BufferedReader br = new BufferedReader(new FileReader(new File(path)))){
             String line;
@@ -78,15 +77,15 @@ public class GraphLoader {
      * @param vertexLoader VertexLoader, for loading vertices from the file
      * @param edgeLineProcessor EdgeLineProcessor, converts text lines into edges
      * @param allowMultipleEdges whether the graph should allow (or filter out) multiple edges
-     * @return Graph loaded from files
+     * @return IGraph loaded from files
      */
-    public static <V,E> SimpleGraph<V,E> loadGraph(String vertexFilePath, String edgeFilePath, VertexLoader<V> vertexLoader,
+    public static <V,E> Graph<V,E> loadGraph(String vertexFilePath, String edgeFilePath, VertexLoader<V> vertexLoader,
                                                    EdgeLineProcessor<E> edgeLineProcessor, boolean allowMultipleEdges ) throws IOException {
         //Assume vertices are in one file
         //And edges are in another file
 
         List<Vertex<V>> vertices = vertexLoader.loadVertices(vertexFilePath);
-        SimpleGraph<V,E> graph = new SimpleGraph<>(vertices,allowMultipleEdges);
+        Graph<V,E> graph = new Graph<>(vertices,allowMultipleEdges);
 
         try(BufferedReader br = new BufferedReader(new FileReader(new File(edgeFilePath)))){
             String line;

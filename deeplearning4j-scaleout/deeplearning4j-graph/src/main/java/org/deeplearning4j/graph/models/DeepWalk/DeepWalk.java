@@ -1,8 +1,8 @@
 package org.deeplearning4j.graph.models.deepwalk;
 
-import org.deeplearning4j.graph.api.Graph;
+import org.deeplearning4j.graph.api.IGraph;
 import org.deeplearning4j.graph.api.Vertex;
-import org.deeplearning4j.graph.api.VertexSequence;
+import org.deeplearning4j.graph.api.IVertexSequence;
 import org.deeplearning4j.graph.iterator.GraphWalkIterator;
 import org.deeplearning4j.graph.models.BinaryTree;
 import org.deeplearning4j.graph.models.GraphVectors;
@@ -12,20 +12,23 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
 
-/**
- * Created by Alex on 10/11/2015.
+/**Implementation of the DeepWalk graph vectorization model, based on the paper
+ * <i>DeepWalk: Online Learning of Social Representations</i> by Perozzi, Al-Rfou & Skiena (2014),
+ * <a href="http://arxiv.org/abs/1403.6652">http://arxiv.org/abs/1403.6652</a><br>
+ * Similar to word2vec in nature, DeepWalk is an unsupervised learning algorithm that learns a vector representation
+ * of each vertex in a graph. Vector representations are learned using walks (usually random walks) on the vertices in
+ * the graph.<br>
+ * Once learned, these vector representations can then be used for purposes such as classification, clustering, similarity
+ * search, etc on the graph<br>
+ * @author Alex Black
  */
 public class DeepWalk<V,E> implements GraphVectors<V,E> {
     private int vectorSize;
     private int windowSize;
     private int batchSize;
-    private long seed;
     private double learningRate;
     private boolean initCalled = false;
-    private BinaryTree tree;
     private GraphVectorLookupTable lookupTable;
-
-
 
     public DeepWalk(){
 
@@ -47,27 +50,37 @@ public class DeepWalk<V,E> implements GraphVectors<V,E> {
         return learningRate;
     }
 
-    public void initialize(Graph<V,E> graph){
+    /** Initialize the DeepWalk model with a given graph. */
+    public void initialize(IGraph<V,E> graph){
         int nVertices = graph.numVertices();
         int[] degrees = new int[nVertices];
         for( int i=0; i<nVertices; i++ ) degrees[i] = graph.getVertexDegree(i);
         initialize(degrees);
     }
 
+    /** Initialize the DeepWalk model with a list of vertex degrees for a graph.<br>
+     * Specifically, graphVertexDegrees[i] represents the vertex degree of the ith vertex<br>
+     * vertex degrees are used to construct a binary (Huffman) tree, which is in turn used in
+     * the hierarchical softmax implementation
+     * @param graphVertexDegrees degrees of each vertex
+     */
     public void initialize(int[] graphVertexDegrees){
         GraphHuffman gh = new GraphHuffman(graphVertexDegrees.length);
         gh.buildTree(graphVertexDegrees);
-        tree = gh;
         lookupTable = new InMemoryGraphLookupTable(graphVertexDegrees.length,vectorSize,gh,learningRate);
         initCalled = true;
     }
 
+    /**Fit the DeepWalk model using a GraphWalkIterator. Note that {@link #initialize(IGraph)} or {@link #initialize(int[])}
+     * <em>must</em> be called first.
+     * @param iterator iterator for graph walks
+     */
     public void fit(GraphWalkIterator<V> iterator){
         if(!initCalled) throw new UnsupportedOperationException("DeepWalk not initialized (call initialize before fit)");
         int walkLength = iterator.walkLength();
 
         while(iterator.hasNext()){
-            VertexSequence<V> sequence = iterator.next();
+            IVertexSequence<V> sequence = iterator.next();
 
             //Skipgram model:
             int[] walk = new int[walkLength+1];
@@ -86,19 +99,14 @@ public class DeepWalk<V,E> implements GraphVectors<V,E> {
                 if(pos == mid) continue;
 
                 //pair of vertices: walk[mid] -> walk[pos]
-//                doIteration(walk[mid],walk[pos]);
                 lookupTable.iterate(walk[mid],walk[pos]);
             }
         }
     }
 
-//    private void doIteration(int vertexIn, int vertexOut){
-//        lookupTable.iterate(vertexIn,vertexOut);
-//    }
-
 
     @Override
-    public Graph<V, E> getGraph() {
+    public IGraph<V, E> getGraph() {
         return null;
     }
 
@@ -132,6 +140,11 @@ public class DeepWalk<V,E> implements GraphVectors<V,E> {
         return 0;
     }
 
+    public GraphVectorLookupTable lookupTable(){
+        return lookupTable;
+    }
+
+
     public static class Builder<V,E> {
 
         private int vectorSize = 100;
@@ -140,6 +153,7 @@ public class DeepWalk<V,E> implements GraphVectors<V,E> {
         private double learningRate = 0.01;
         private int windowSize = 2;
 
+        /** Sets the size of the vectors to be learned for each vertex in the graph */
         public Builder<V,E> vectorSize(int vectorSize){
             this.vectorSize = vectorSize;
             return this;
@@ -150,35 +164,26 @@ public class DeepWalk<V,E> implements GraphVectors<V,E> {
             return this;
         }
 
-        public Builder<V,E> seed(long seed){
-            this.seed = seed;
-            return this;
-        }
-
+        /** Set the learning rate */
         public Builder<V,E> learningRate(double learningRate){
             this.learningRate = learningRate;
             return this;
         }
 
+        /** Sets the window size used in skipgram model */
         public Builder<V,E> windowSize(int windowSize){
             this.windowSize = windowSize;
             return this;
         }
 
-
-
-
         public DeepWalk<V,E> build(){
-
             DeepWalk<V,E> dw = new DeepWalk<>();
             dw.vectorSize = vectorSize;
             dw.windowSize = windowSize;
             dw.batchSize = batchSize;
-            dw.seed = seed;
             dw.learningRate = learningRate;
 
             return dw;
         }
     }
-
 }
