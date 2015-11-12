@@ -1,22 +1,20 @@
-package org.deeplearning4j.graph.graph.dl4j;
+package org.deeplearning4j.graph.graph;
 
-import org.deeplearning4j.graph.api.Graph;
+import org.deeplearning4j.graph.api.IGraph;
 import org.deeplearning4j.graph.api.Vertex;
-import org.deeplearning4j.graph.api.VertexSequence;
+import org.deeplearning4j.graph.api.IVertexSequence;
 
 import java.util.NoSuchElementException;
 
-/**
- * Created by Alex on 9/11/2015.
+/**A vertex sequence represents a sequences of vertices in a graph
+ * @author Alex Black
  */
-public class SimpleVertexSequence<V> implements VertexSequence<V> {
-
-    private final Graph<V,?> graph;
+public class VertexSequence<V> implements IVertexSequence<V> {
+    private final IGraph<V,?> graph;
     private int[] indices;
-
     private int currIdx = 0;
 
-    public SimpleVertexSequence( Graph<V,?> graph, int[] indices ){
+    public VertexSequence(IGraph<V, ?> graph, int[] indices){
         this.graph = graph;
         this.indices = indices;
     }
@@ -26,10 +24,12 @@ public class SimpleVertexSequence<V> implements VertexSequence<V> {
         return indices.length;
     }
 
+    @Override
     public boolean hasNext() {
         return currIdx < indices.length;
     }
 
+    @Override
     public Vertex<V> next() {
         if(!hasNext()) throw new NoSuchElementException();
         return graph.getVertex(indices[currIdx++]);

@@ -1,20 +1,23 @@
 package org.deeplearning4j.graph.iterator;
 
-import org.deeplearning4j.graph.api.VertexSequence;
+import org.deeplearning4j.graph.api.IVertexSequence;
 
-/**
- * Created by Alex on 9/11/2015.
+/**Interface/iterator representing a sequence of walks on a graph
+ * For example, a {@code GraphWalkIterator<T>} can represesnt a set of independent random walks on a graph
  */
 public interface GraphWalkIterator<T> {
 
-    public int walkLength();
+    /** Length of the walks returned by next()
+     * Note that a walk of length {@code i} contains {@code i+1} vertices
+     */
+    int walkLength();
 
-    VertexSequence<T> next();
+    /**Get the next vertex sequence.
+     */
+    IVertexSequence<T> next();
 
     boolean hasNext();
 
     void reset();
-
-
 
 }
