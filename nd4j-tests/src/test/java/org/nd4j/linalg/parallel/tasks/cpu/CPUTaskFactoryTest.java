@@ -19,7 +19,7 @@ import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarSetValue;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
-import org.nd4j.linalg.api.ops.impl.vector.*;
+import org.nd4j.linalg.api.ops.impl.broadcast.*;
 import org.nd4j.linalg.api.parallel.tasks.Task;
 import org.nd4j.linalg.api.parallel.tasks.cpu.CPUTaskFactory;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
@@ -689,14 +689,14 @@ public class CPUTaskFactoryTest {
         // or direct execution vs. split via tensors
         final DataBuffer.AllocationMode origAlloc = Nd4j.alloc;
 
-        List<Class<? extends VectorOp>> testClasses = new ArrayList<>();
-        testClasses.add(VectorAddOp.class);
-        testClasses.add(VectorCopyOp.class);
-        testClasses.add(VectorDivOp.class);
-        testClasses.add(VectorMulOp.class);
-        testClasses.add(VectorRDivOp.class);
-        testClasses.add(VectorRSubOp.class);
-        testClasses.add(VectorSubOp.class);
+        List<Class<? extends BroadcastOp>> testClasses = new ArrayList<>();
+        testClasses.add(BroadcastAddOp.class);
+        testClasses.add(BroadcastCopyOp.class);
+        testClasses.add(BroadcastDivOp.class);
+        testClasses.add(BroadcastMulOp.class);
+        testClasses.add(BroadcastRDivOp.class);
+        testClasses.add(BroadcastRSubOp.class);
+        testClasses.add(BroadcastSubOp.class);
 
         CPUTaskFactory taskFactory = new CPUTaskFactory();
 
@@ -715,17 +715,17 @@ public class CPUTaskFactoryTest {
             INDArray origY1 = Nd4j.rand(rowShape).muli(2).subi(1);  //Along d1 = row
             INDArray origZ = Nd4j.rand(shape).muli(2).subi(1);
 
-            for (Class<? extends VectorOp> opClass : testClasses) {
+            for (Class<? extends BroadcastOp> opClass : testClasses) {
                 String msg = "class: " + opClass.getName() + ", dtype=" + dtype;
-                Constructor<? extends VectorOp> xyznConstructor = opClass.getConstructor(INDArray.class, INDArray.class, INDArray.class, int.class);
+                Constructor<? extends BroadcastOp> xyznConstructor = opClass.getConstructor(INDArray.class, INDArray.class, INDArray.class, int.class);
 
                 //Get expected result:
                 taskFactory.setParallelThreshold(Integer.MAX_VALUE);
                 INDArray origXDup = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
                 INDArray origY0Dup = getCopyOf(origY0, DataBuffer.AllocationMode.HEAP, dtype);
                 INDArray expectedZ0 = getCopyOf(origZ, DataBuffer.AllocationMode.HEAP, dtype);
-                VectorOp op = xyznConstructor.newInstance(origXDup, origY0Dup, expectedZ0, 0);
-                Task<Void> task = taskFactory.getVectorOpAction(op);
+                BroadcastOp op = xyznConstructor.newInstance(origXDup, origY0Dup, expectedZ0, 0);
+                Task<Void> task = taskFactory.getBroadcastOpAction(op);
                 task.invokeBlocking();
 
 
@@ -733,7 +733,7 @@ public class CPUTaskFactoryTest {
                 INDArray origY1Dup = getCopyOf(origY1, DataBuffer.AllocationMode.HEAP, dtype);
                 INDArray expectedZ1 = getCopyOf(origZ, DataBuffer.AllocationMode.HEAP, dtype);
                 op = xyznConstructor.newInstance(origXDup, origY1Dup, expectedZ1, 1);
-                task = taskFactory.getVectorOpAction(op);
+                task = taskFactory.getBroadcastOpAction(op);
                 task.invokeBlocking();
 
                 // For each combination of: serial/parallel, heap/direct
@@ -775,14 +775,14 @@ public class CPUTaskFactoryTest {
                         assertEquals(z1.data().dataType(), dtype);
 
                         op = xyznConstructor.newInstance(x1, y1_0, z1, 0);
-                        task = taskFactory.getVectorOpAction(op);
+                        task = taskFactory.getBroadcastOpAction(op);
                         task.invokeBlocking();
                         assertEquals(msg2, x1, origX);
                         assertEquals(msg2, y1_0, origY0);
                         assertEquals(msg2, expectedZ0, z1);
 
                         op = xyznConstructor.newInstance(x1, y1_0, x1, 0);
-                        task = taskFactory.getVectorOpAction(op);
+                        task = taskFactory.getBroadcastOpAction(op);
                         task.invokeBlocking();
                         assertEquals(msg2, y1_0, origY0);
                         assertEquals(msg2, expectedZ0, x1);
@@ -795,14 +795,14 @@ public class CPUTaskFactoryTest {
                         assertEquals(y1_1.data().dataType(), dtype);
 
                         op = xyznConstructor.newInstance(x1, y1_1, z1, 1);
-                        task = taskFactory.getVectorOpAction(op);
+                        task = taskFactory.getBroadcastOpAction(op);
                         task.invokeBlocking();
                         assertEquals(msg2, x1, origX);
                         assertEquals(msg2, y1_1, origY1);
                         assertEquals(msg2, expectedZ1, z1);
 
                         op = xyznConstructor.newInstance(x1, y1_1, x1, 1);
-                        task = taskFactory.getVectorOpAction(op);
+                        task = taskFactory.getBroadcastOpAction(op);
                         task.invokeBlocking();
                         assertEquals(msg2, y1_1, origY1);
                         assertEquals(msg2, expectedZ1, x1);

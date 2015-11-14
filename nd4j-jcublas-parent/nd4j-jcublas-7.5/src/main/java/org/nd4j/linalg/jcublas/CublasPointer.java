@@ -123,7 +123,6 @@ public class CublasPointer  implements AutoCloseable {
         this.cudaContext = context;
         context.initOldStream();
         // Copy the data to the device
-        //  if(!buffer.copied(Thread.currentThread().getName()) && !buffer.dirty()) {
         JCublas2.cublasSetVectorAsync(
                 buffer.length()
                 , buffer.getElementSize()
@@ -134,7 +133,7 @@ public class CublasPointer  implements AutoCloseable {
                 , context.getOldStream());
         buffer.setCopied(Thread.currentThread().getName());
 
-        //}
+
     }
 
     /**

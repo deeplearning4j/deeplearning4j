@@ -22,7 +22,7 @@ public interface TaskFactory {
 
     Task<INDArray> getIndexAccumulationTask( IndexAccumulation op, int... dimension );
 
-    Task<Void> getVectorOpAction(VectorOp op);
+    Task<Void> getBroadcastOpAction(BroadcastOp op);
 
     Task<INDArray> getIm2ColTask(INDArray img, int kernelHeight, int kernelWidth, int strideY, int strideX, int padHeight,
                                  int padWidth, boolean coverAll);

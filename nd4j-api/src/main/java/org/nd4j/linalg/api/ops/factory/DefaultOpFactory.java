@@ -29,7 +29,7 @@ import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
-import org.nd4j.linalg.api.ops.impl.vector.*;
+import org.nd4j.linalg.api.ops.impl.broadcast.*;
 import org.reflections.Reflections;
 
 import java.lang.reflect.Constructor;
@@ -406,44 +406,44 @@ public class DefaultOpFactory implements OpFactory {
     }
 
     @Override
-    public VectorOp createVectorOp(String name, INDArray x, INDArray y, INDArray z, int dimension){
+    public BroadcastOp createBroadcastOp(String name, INDArray x, INDArray y, INDArray z, int... dimension){
         switch(name){
-            case "vectoradd":
-                return new VectorAddOp(x,y,z,dimension);
-            case "vectorsub":
-                return new VectorSubOp(x,y,z,dimension);
-            case "vectormul":
-                return new VectorMulOp(x,y,z,dimension);
-            case "vectordiv":
-                return new VectorDivOp(x,y,z,dimension);
-            case "vectorrsub":
-                return new VectorRSubOp(x,y,z,dimension);
-            case "vectorrdiv":
-                return new VectorRDivOp(x,y,z,dimension);
-            case "vectorcopy":
-                return new VectorCopyOp(x,y,z,dimension);
+            case "broadcastadd":
+                return new BroadcastAddOp(x,y,z,dimension);
+            case "broadcastsub":
+                return new BroadcastSubOp(x,y,z,dimension);
+            case "broadcastmul":
+                return new BroadcastMulOp(x,y,z,dimension);
+            case "broadcastdiv":
+                return new BroadcastDivOp(x,y,z,dimension);
+            case "broadcastrsub":
+                return new BroadcastRSubOp(x,y,z,dimension);
+            case "broadcastrdiv":
+                return new BroadcastRDivOp(x,y,z,dimension);
+            case "broadcastcopy":
+                return new BroadcastCopyOp(x,y,z,dimension);
             default:
                 throw new IllegalArgumentException("Illegal name " + name);
         }
     }
 
     @Override
-    public VectorOp createVectorOp(String name, INDArray x, INDArray y, int dimension ){
+    public BroadcastOp createBroadcastOp(String name, INDArray x, INDArray y, int... dimension){
         switch(name){
-            case "vectoradd":
-                return new VectorAddOp(x,y,x,dimension);
-            case "vectorsub":
-                return new VectorSubOp(x,y,x,dimension);
-            case "vectormul":
-                return new VectorMulOp(x,y,x,dimension);
-            case "vectordiv":
-                return new VectorDivOp(x,y,x,dimension);
-            case "vectorrsub":
-                return new VectorRSubOp(x,y,x,dimension);
-            case "vectorrdiv":
-                return new VectorRDivOp(x,y,x,dimension);
-            case "vectorcopy":
-                return new VectorCopyOp(x,y,x,dimension);
+            case "broadcastadd":
+                return new BroadcastAddOp(x,y,x,dimension);
+            case "broadcastsub":
+                return new BroadcastSubOp(x,y,x,dimension);
+            case "broadcastmul":
+                return new BroadcastMulOp(x,y,x,dimension);
+            case "broadcastdiv":
+                return new BroadcastDivOp(x,y,x,dimension);
+            case "broadcastrsub":
+                return new BroadcastRSubOp(x,y,x,dimension);
+            case "broadcastrdiv":
+                return new BroadcastRDivOp(x,y,x,dimension);
+            case "broadcastcopy":
+                return new BroadcastCopyOp(x,y,x,dimension);
             default:
                 throw new IllegalArgumentException("Illegal name " + name);
         }

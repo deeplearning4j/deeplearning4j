@@ -3,10 +3,9 @@ package org.nd4j.linalg.api.parallel.tasks.cpu.vector;
 import io.netty.buffer.ByteBuf;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.VectorOp;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
-import org.nd4j.linalg.api.parallel.tasks.BaseTask;
 import org.nd4j.linalg.api.parallel.tasks.Task;
 import org.nd4j.linalg.api.parallel.tasks.TaskExecutorProvider;
 import org.nd4j.linalg.api.parallel.tasks.cpu.BaseCPUAction;
@@ -17,10 +16,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.RecursiveAction;
 
-public class CPUVectorOp extends BaseCPUAction {
-    protected final VectorOp op;
+public class CpuBroadcastOp extends BaseCPUAction {
+    protected final BroadcastOp op;
 
-    public CPUVectorOp(VectorOp op, int threshold){
+    public CpuBroadcastOp(BroadcastOp op, int threshold){
         super(op,threshold);
         this.op = op;
     }
@@ -56,7 +55,7 @@ public class CPUVectorOp extends BaseCPUAction {
 
         int nVectorOps;
         if(x.rank() == 2 ){
-            if(op.getDimension()==0) nVectorOps=x.columns();
+            if(op.getDimension()[0] == 0) nVectorOps=x.columns();
             else nVectorOps = x.rows();
         } else {
             int[] shape = x.shape();
@@ -65,9 +64,11 @@ public class CPUVectorOp extends BaseCPUAction {
 
         subTasks = new ArrayList<>(nVectorOps);
         //Do TAD and create sub-tasks:
-        int dimension = op.getDimension();
-        if(!y.isVector()) throw new UnsupportedOperationException("Cannot do vector op if y is not vector. y.shape="+ Arrays.toString(y.shape()));
-        if(x.size(dimension) != y.length()) throw new UnsupportedOperationException("Vector length " + y.length() + " does not match x.shape("+dimension+")="+x.size(dimension));
+        int[] dimension = op.getDimension();
+        if(!y.isVector())
+            throw new UnsupportedOperationException("Cannot do vector op if y is not vector. y.shape="+ Arrays.toString(y.shape()));
+        if(x.size(dimension[0]) != y.length())
+            throw new UnsupportedOperationException("Vector length " + y.length() + " does not match x.shape("+dimension+")="+x.size(dimension[0]));
 
         if(x.rank() == 2 ){
             OpExecutionerUtil.Tensor1DStats t1dx = OpExecutionerUtil.get1DTensorStats(x,dimension);
@@ -115,8 +116,8 @@ public class CPUVectorOp extends BaseCPUAction {
                 }
             }
         } else {
-            for( int i=0; i<nVectorOps; i++ ) {
-                Task<Void> task = new SingleVectorAction(threshold, i, dimension );
+            for( int i = 0; i < nVectorOps; i++ ) {
+                Task<Void> task = new SingleVectorAction(threshold, i, dimension[0]);
                 task.invokeAsync();
                 subTasks.add(task);
             }
@@ -133,7 +134,7 @@ public class CPUVectorOp extends BaseCPUAction {
 
         int nVectorOps;
         if(x.rank() == 2 ){
-            if(op.getDimension()==0) nVectorOps=x.columns();
+            if(op.getDimension()[0] == 0) nVectorOps=x.columns();
             else nVectorOps = x.rows();
         } else {
             int[] shape = x.shape();
@@ -142,11 +143,13 @@ public class CPUVectorOp extends BaseCPUAction {
 
         List<RecursiveAction> subTasks = new ArrayList<>(nVectorOps);
         //Do TAD and create sub-tasks:
-        int dimension = op.getDimension();
-        if(!y.isVector()) throw new UnsupportedOperationException("Cannot do vector op if y is not vector. y.shape="+ Arrays.toString(y.shape()));
-        if(x.size(dimension) != y.length()) throw new UnsupportedOperationException("Vector length " + y.length() + " does not match x.shape("+dimension+")="+x.size(dimension));
+        int[] dimension = op.getDimension();
+        if(!y.isVector())
+            throw new UnsupportedOperationException("Cannot do vector op if y is not vector. y.shape="+ Arrays.toString(y.shape()));
+        if(x.size(dimension[0]) != y.length())
+            throw new UnsupportedOperationException("Vector length " + y.length() + " does not match x.shape(" + dimension[0] + ")= " + x.size(dimension[0]));
 
-        if(x.rank() == 2 ){
+        if(x.rank() == 2) {
             OpExecutionerUtil.Tensor1DStats t1dx = OpExecutionerUtil.get1DTensorStats(x,dimension);
             if(y!=null) {
                 int offsetY = y.offset();
@@ -193,7 +196,7 @@ public class CPUVectorOp extends BaseCPUAction {
             }
         } else {
             for( int i=0; i<nVectorOps; i++ ) {
-                RecursiveAction task = new SingleVectorAction(threshold, i, dimension );
+                RecursiveAction task = new SingleVectorAction(threshold, i, dimension[0]);
                 task.fork();
                 subTasks.add(task);
             }
@@ -211,7 +214,7 @@ public class CPUVectorOp extends BaseCPUAction {
             super(threshold,n,offsetX,offsetY,offsetZ,incrX,incrY,incrZ);
         }
 
-        private SingleVectorAction(int threshold, int tadIdx, int tadDim){
+        private SingleVectorAction(int threshold, int tadIdx, int tadDim) {
             super(op,threshold,tadIdx,tadDim);
         }
 

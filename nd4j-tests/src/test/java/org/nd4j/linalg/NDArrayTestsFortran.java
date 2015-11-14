@@ -33,15 +33,14 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.math3.util.Pair;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.VectorOp;
+import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
-import org.nd4j.linalg.api.ops.impl.vector.*;
+import org.nd4j.linalg.api.ops.impl.broadcast.*;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -1207,28 +1206,28 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
                     INDArray arr = orig.dup();
                     INDArray vector = Nd4j.rand(1, shape[i]);
 
-                    VectorOp op;
+                    BroadcastOp op;
                     switch(opNum){
                         case 0:
-                            op = new VectorAddOp(arr, vector, arr, i);
+                            op = new BroadcastAddOp(arr, vector, arr, i);
                             break;
                         case 1:
-                            op = new VectorCopyOp(arr, vector, arr, i);
+                            op = new BroadcastCopyOp(arr, vector, arr, i);
                             break;
                         case 2:
-                            op = new VectorDivOp(arr, vector, arr, i);
+                            op = new BroadcastDivOp(arr, vector, arr, i);
                             break;
                         case 3:
-                            op = new VectorMulOp(arr, vector, arr, i);
+                            op = new BroadcastMulOp(arr, vector, arr, i);
                             break;
                         case 4:
-                            op = new VectorRDivOp(arr, vector, arr, i);
+                            op = new BroadcastRDivOp(arr, vector, arr, i);
                             break;
                         case 5:
-                            op = new VectorRSubOp(arr, vector, arr, i);
+                            op = new BroadcastRSubOp(arr, vector, arr, i);
                             break;
                         case 6:
-                            op = new VectorSubOp(arr, vector, arr, i);
+                            op = new BroadcastSubOp(arr, vector, arr, i);
                             break;
                         default:
                             throw new RuntimeException();

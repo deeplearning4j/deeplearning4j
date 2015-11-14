@@ -33,6 +33,7 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
     protected Number num;
     protected IComplexNumber complexNumber;
 
+
     public BaseScalarOp() {
     }
 
@@ -69,7 +70,15 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
 
     }
 
+    @Override
+    public int broadcastLength() {
+        return 1;
+    }
 
+    @Override
+    public int[] broadcastShape() {
+        return new int[]{1,1};
+    }
 
     @Override
     public Number scalar() {
@@ -79,5 +88,15 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
     @Override
     public IComplexNumber complexScalar() {
         return complexNumber;
+    }
+
+    @Override
+    public int[] getDimension() {
+        return new int[0];
+    }
+
+    @Override
+    public void setDimension(int... dimension) {
+
     }
 }

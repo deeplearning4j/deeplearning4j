@@ -1,21 +1,21 @@
-package org.nd4j.linalg.api.ops.impl.vector;
+package org.nd4j.linalg.api.ops.impl.broadcast;
 
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseVectorOp;
+import org.nd4j.linalg.api.ops.BaseBroadcastOp;
 
-public class VectorDivOp extends BaseVectorOp {
+public class BroadcastDivOp extends BaseBroadcastOp {
 
-    public VectorDivOp() {
+    public BroadcastDivOp() {
     }
 
-    public VectorDivOp(INDArray x, INDArray y, INDArray z, int dimension) {
+    public BroadcastDivOp(INDArray x, INDArray y, INDArray z, int...dimension) {
         super(x, y, z, dimension);
     }
 
     @Override
     public String name() {
-        return "vectordiv";
+        return "broadcastdiv";
     }
 
     @Override

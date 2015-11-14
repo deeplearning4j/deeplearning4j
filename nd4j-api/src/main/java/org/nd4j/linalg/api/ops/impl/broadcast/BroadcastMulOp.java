@@ -1,47 +1,46 @@
-package org.nd4j.linalg.api.ops.impl.vector;
+package org.nd4j.linalg.api.ops.impl.broadcast;
 
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseVectorOp;
-import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.api.ops.BaseBroadcastOp;
 
-public class VectorCopyOp extends BaseVectorOp {
+public class BroadcastMulOp extends BaseBroadcastOp {
 
-    public VectorCopyOp() {
+    public BroadcastMulOp() {
     }
 
-    public VectorCopyOp(INDArray x, INDArray y, INDArray z, int dimension) {
+    public BroadcastMulOp(INDArray x, INDArray y, INDArray z, int...dimension) {
         super(x, y, z, dimension);
     }
 
     @Override
     public String name() {
-        return "vectorcopy";
+        return "broadcastmul";
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-        return Nd4j.createComplexNumber(other, 0);
+        return origin.mul(other);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        return Nd4j.createComplexNumber(other, 0);
+        return origin.mul(other);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return other;
+        return origin.mul(other);
     }
 
     @Override
     public float op(float origin, float other) {
-        return other;
+        return origin * other;
     }
 
     @Override
     public double op(double origin, double other) {
-        return other;
+        return origin * other;
     }
 
     @Override
