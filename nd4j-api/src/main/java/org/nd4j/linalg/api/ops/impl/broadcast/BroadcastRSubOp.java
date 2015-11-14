@@ -15,7 +15,7 @@ public class BroadcastRSubOp extends BaseBroadcastOp {
 
     @Override
     public String name() {
-        return "broadcastsub";
+        return "broadcastrsub";
     }
 
     @Override

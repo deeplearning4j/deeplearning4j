@@ -40,8 +40,6 @@ import org.nd4j.linalg.jcublas.util.KernelParamsWrapper;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
 import org.nd4j.linalg.util.ArrayUtil;
 
-import java.util.Arrays;
-
 
 /**
  * JCuda executioner.
@@ -231,35 +229,25 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         if(!KernelFunctionLoader.getInstance().exists(op.name()) || executionMode() == ExecutionMode.JAVA || op.isPassThrough())
             super.exec(op);
 
+        //total number of times to repeat each value over an element wise stride on the gpu
+        int[] dimensions = op.getDimension() == null ? BroadcastDimensions.getDimensions(op.y().shape()) : op.getDimension();
 
         GpuMetrics metrics = GpuMetrics.blockAndThreads(getType(op),op.n());
-        metrics.setGridSize(op.x().data().length());
-        metrics.setBlockSize(1024);
+        metrics.setGridSizeNotOverMax(1);
+        metrics.setBlockSizeNotOverMax(op.x().tensorAlongDimension(0,dimensions).length());
         metrics.setSharedMemoryNotOverMax(metrics.getBlockSize() * op.x().data().getElementSize());
         if(op.y() == null)
             throw new IllegalArgumentException("Op has no y to broadcast");
 
 
-        //total number of times to repeat each value over an element wise stride on the gpu
-        int[] dimensions = BroadcastDimensions.getDimensions(op.y().shape());
-        /**
-         * 		T *x
-         ,int *xShapeInfo
-         ,T *y
-         ,int *yShapeInfo
-         ,T *result
-         ,int *resultShapeInfo,
-         int *dimension,
-         int dimensionLength,
-         int *gpuInformation
-         */
+
         Object[] kernelParams = new Object[] {
                 op.x(),
-                KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.x())),
+                KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.x(),dimensions)),
                 op.y(),
                 KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.y())),
                 op.z(),
-                KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.z())),
+                KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.z(),dimensions)),
                 KernelFunctions.alloc(dimensions),
                 dimensions.length,
                 KernelFunctions.alloc(metrics.getGpuDefinitionInfo()),
@@ -519,7 +507,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         metrics.setSharedMemory(metrics.getBlockSize() * op.x().data().getElementSize());
 
 
-        metrics.setGridMemoryNotOverMax(op.x().data().length());
+        metrics.setGridSizeNotOverMax(op.x().data().length());
         metrics.setBlockSize(1024);
         metrics.setSharedMemoryNotOverMax(metrics.getBlockSize() * op.x().data().getElementSize());
 

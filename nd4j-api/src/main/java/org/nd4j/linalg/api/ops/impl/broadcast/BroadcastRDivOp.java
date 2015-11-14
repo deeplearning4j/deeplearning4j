@@ -15,7 +15,7 @@ public class BroadcastRDivOp extends BaseBroadcastOp {
 
     @Override
     public String name() {
-        return "broadcastdiv";
+        return "broadcastrdiv";
     }
 
     @Override

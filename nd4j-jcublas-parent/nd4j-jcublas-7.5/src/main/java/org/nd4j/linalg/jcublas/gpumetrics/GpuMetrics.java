@@ -205,8 +205,19 @@ public class GpuMetrics  {
      * the maximum amount of shared memory per block allowed
      * @param gridSize
      */
-    public void setGridMemoryNotOverMax(int gridSize) {
+    public void setGridSizeNotOverMax(int gridSize) {
         setGridSize(Math.min(gridSize,ContextHolder.getInstance().getCurrentGpuInformation().getMaxThreadsPerBlock()));
+    }
+
+    /**
+     * Special setter
+     * that queries the block size
+     * to ensure not over the max possible
+     * block size is specified.
+     * @param blockSize the block size to attempt to set
+     */
+    public void setBlockSizeNotOverMax(int blockSize) {
+        setBlockSize(Math.min(blockSize,ContextHolder.getInstance().getCurrentGpuInformation().getMaxBlockDimx()));
     }
 
 
