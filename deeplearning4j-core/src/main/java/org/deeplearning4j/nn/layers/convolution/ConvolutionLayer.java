@@ -19,7 +19,6 @@
 package org.deeplearning4j.nn.layers.convolution;
 
 
-import com.google.common.primitives.Ints;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -29,12 +28,11 @@ import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.VectorOp;
-import org.nd4j.linalg.api.ops.impl.vector.VectorAddOp;
+import org.nd4j.linalg.api.ops.BroadcastOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Arrays;
 
@@ -122,7 +120,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         }
 
         INDArray z = Nd4j.tensorMmul(col, Weights, new int[][]{{1, 2, 3}, {1, 2, 3}});
-        VectorOp op = new VectorAddOp(z,bias,z,3);
+        BroadcastOp op = new BroadcastAddOp(z,bias,z,3);
         Nd4j.getExecutioner().exec(op);
 
         return Nd4j.rollAxis(z, 3, 1);
