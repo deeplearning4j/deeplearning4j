@@ -48,12 +48,11 @@ public class MultipleEpochsIterator implements DataSetIterator {
     @Override
     public DataSet next(int num) {
         if(!iter.hasNext()) {
+            log.info("Epoch " + passes + ", number of batches completed " + batch);
             if(passes < numPasses) {
                 passes++;
                 batch = 0;
-                log.info("Epoch " + passes + " batch " + batch);
                 iter.reset();
-
             }
         }
         batch++;
@@ -161,12 +160,11 @@ public class MultipleEpochsIterator implements DataSetIterator {
     @Override
     public DataSet next() {
         if(!iter.hasNext()) {
+            log.info("Epoch " + passes + " batch " + batch);
             if(passes < numPasses) {
                 passes++;
                 batch = 0;
-                log.info("Epoch " + passes + " batch " + batch);
                 iter.reset();
-
             }
         }
         batch++;
