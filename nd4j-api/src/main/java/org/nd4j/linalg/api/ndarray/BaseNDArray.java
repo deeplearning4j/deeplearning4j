@@ -1344,7 +1344,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
-        Nd4j.getExecutioner().exec(new ScalarAdd(linearView(), null, result.linearView(), result.length(), n));
+        Nd4j.getExecutioner().exec(new ScalarAdd(this, null, result, result.length(), n));
         return this;
     }
 
@@ -1394,6 +1394,16 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public double getDouble(int... indices) {
+        if(indices.length == 1) {
+            if(isRowVector())
+                return Shape.getDouble(this,0,indices[0]);
+            else if(isColumnVector())
+                return Shape.getDouble(this,indices[0],0);
+            else if(isScalar() && indices[0] == 0)
+                return data().getDouble(offset());
+            else
+                throw new IllegalStateException("Indexes length must be > 1 for non vectors and scalars");
+        }
         return Shape.getDouble(this, indices);
     }
 
@@ -1999,8 +2009,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     private void applyBroadcastOp(INDArray vector, final char operation) {
         int alongDimension = Shape.isRowVectorShape(vector.shape()) ? 1 : 0;
-        if(this.data() == vector.data()) vector = vector.dup();
-        switch(operation){
+        if(this.data() == vector.data())
+            vector = vector.dup();
+        switch(operation) {
             case 'a':
                 Nd4j.getExecutioner().exec(new BroadcastAddOp(this, vector, this, alongDimension));
                 return;

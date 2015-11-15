@@ -179,11 +179,11 @@ public class OpExecutionerUtil {
      * Note that this can only (generally) be used for 2d NDArrays. For certain 3+d NDArrays, the tensor starts may not
      * be in increasing order
      */
-    public static Tensor1DStats get1DTensorStats(INDArray array, int...dimension){
+    public static Tensor1DStats get1DTensorStats(INDArray array, int...dimension) {
         int tensorLength = array.size(dimension[0]);
 
         //As per tensorssAlongDimension:
-        int numTensors = array.length() / tensorLength;
+        int numTensors = array.tensorssAlongDimension(dimension);
 
         //First tensor always starts with the first element in the NDArray, regardless of dimension
         int firstTensorOffset = array.offset();

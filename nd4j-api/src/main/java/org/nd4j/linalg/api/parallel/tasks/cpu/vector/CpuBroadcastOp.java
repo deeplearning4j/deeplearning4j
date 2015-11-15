@@ -19,7 +19,7 @@ import java.util.concurrent.RecursiveAction;
 public class CpuBroadcastOp extends BaseCPUAction {
     protected final BroadcastOp op;
 
-    public CpuBroadcastOp(BroadcastOp op, int threshold){
+    public CpuBroadcastOp(BroadcastOp op, int threshold) {
         super(op,threshold);
         this.op = op;
     }
@@ -65,12 +65,10 @@ public class CpuBroadcastOp extends BaseCPUAction {
         subTasks = new ArrayList<>(nVectorOps);
         //Do TAD and create sub-tasks:
         int[] dimension = op.getDimension();
-        if(!y.isVector())
-            throw new UnsupportedOperationException("Cannot do vector op if y is not vector. y.shape="+ Arrays.toString(y.shape()));
         if(x.size(dimension[0]) != y.length())
-            throw new UnsupportedOperationException("Vector length " + y.length() + " does not match x.shape("+dimension+")="+x.size(dimension[0]));
+            throw new UnsupportedOperationException("Array length " + y.length() + " does not match x.shape("+dimension+")="+x.size(dimension[0]));
 
-        if(x.rank() == 2 ){
+        if(x.rank() == 2) {
             OpExecutionerUtil.Tensor1DStats t1dx = OpExecutionerUtil.get1DTensorStats(x,dimension);
             if(y!=null) {
                 int offsetY = y.offset();
@@ -144,8 +142,6 @@ public class CpuBroadcastOp extends BaseCPUAction {
         List<RecursiveAction> subTasks = new ArrayList<>(nVectorOps);
         //Do TAD and create sub-tasks:
         int[] dimension = op.getDimension();
-        if(!y.isVector())
-            throw new UnsupportedOperationException("Cannot do vector op if y is not vector. y.shape="+ Arrays.toString(y.shape()));
         if(x.size(dimension[0]) != y.length())
             throw new UnsupportedOperationException("Vector length " + y.length() + " does not match x.shape(" + dimension[0] + ")= " + x.size(dimension[0]));
 
