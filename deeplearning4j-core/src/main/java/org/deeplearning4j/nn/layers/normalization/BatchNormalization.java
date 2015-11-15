@@ -11,6 +11,9 @@ import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
@@ -247,9 +250,12 @@ public class BatchNormalization extends BaseLayer<ConvolutionLayer> {
         }
 
         std = Transforms.sqrt(var);
-        INDArray xMu = x.sub(mean);
-        xHat = xMu.div(std);
-        INDArray out = getParam(BatchNormalizationParamInitializer.GAMMA).add(xHat).addi(getParam(BatchNormalizationParamInitializer.BETA));
+        INDArray xMu = Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(x, mean, x,-1));
+        xHat = Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(xMu,std,xMu.dup(),-1));
+        INDArray gamma = getParam(BatchNormalizationParamInitializer.GAMMA);
+        INDArray beta = getParam(BatchNormalizationParamInitializer.BETA);
+        INDArray out = Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(xHat,gamma,xHat.dup(),-1));
+        out = Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(out,beta,out,-1));
         double decay = 0.0;
         if(training != TrainingMode.TEST && !layerConf.isUseBatchMean()) {
             if(layerConf.isFinetune()) {
@@ -360,13 +366,28 @@ public class BatchNormalization extends BaseLayer<ConvolutionLayer> {
     }
 
     public int[] getShape(INDArray x) {
-        int leadDim = x.size(0);
-        int cDim = getParam(BatchNormalizationParamInitializer.GAMMA).length();
-        int rdim = (int) ((double) x.length() / ((double) leadDim * (double) cDim));
-        if(leadDim * cDim * rdim != x.length())
-            throw new IllegalArgumentException("Illegal input for batch size");
-        return new int[] {leadDim,cDim,rdim};
+        if(x.rank() == 3) {
+            int leadDim = x.size(0);
+            int cDim = getParam(BatchNormalizationParamInitializer.GAMMA).length();
+            int rdim = (int) Math.round(((double) x.length() / ((double) leadDim * (double) cDim)));
+            if(rdim < 1)
+                rdim = 1;
+            if(leadDim * cDim * rdim != x.length())
+                throw new IllegalArgumentException("Illegal input for batch size");
+            return new int[] {leadDim,cDim,rdim};
+        }
+        else if(x.rank() == 4) {
+            int leadDim = x.size(1);
+            int cDim = getParam(BatchNormalizationParamInitializer.GAMMA).length();
+            int rdim = (int) Math.round(((double) x.length() / ((double) leadDim * (double) cDim)));
+            if(rdim < 1)
+                rdim = 1;
+            if(leadDim * cDim * rdim != x.length())
+                throw new IllegalArgumentException("Illegal input for batch size");
+            return new int[] {leadDim,cDim,rdim};
+        }
 
+        else throw new IllegalStateException("Unable to process input of rank " + x.rank());
     }
 
 }

@@ -48,7 +48,7 @@ public class ReshapePreProcessorTest {
         public void testPreProcessorBackprop3to2() {
                 ReshapePreProcessor processor = new ReshapePreProcessor(new int[]{1, 784, 7}, new int[] {1, 5488});
 
-                INDArray check3to2 = processor.backprop(in4D,null);
+                INDArray check3to2 = processor.backprop(in3D,null);
                 int val3to2 = check3to2.shape().length;
                 assertTrue(val3to2 == 3);
 

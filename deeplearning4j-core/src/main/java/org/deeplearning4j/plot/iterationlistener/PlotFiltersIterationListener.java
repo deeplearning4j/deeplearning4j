@@ -72,7 +72,7 @@ public class PlotFiltersIterationListener implements IterationListener {
 
     @Override
     public void iterationDone(Model model, int iteration) {
-        if(iteration % this.iteration == 0) {
+        if(this.iteration > 0 && iteration % this.iteration == 0) {
             INDArray weights = model.getParam(variables.get(0));
             filters.setInput(weights.transpose());
             filters.plot();
