@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -51,8 +52,8 @@ public class CNNProcessorTest {
         int[] nDepth = {1, 3};
         int[] nMiniBatchSize = {1, 5};
         for( int rows : nRows ){
-            for( int cols : nCols ){
-                for( int d : nDepth ){
+            for( int cols : nCols) {
+                for( int d : nDepth) {
                     FeedForwardToCnnPreProcessor convProcessor = new FeedForwardToCnnPreProcessor(rows, cols, d);
 
                     for( int miniBatch : nMiniBatchSize ) {
@@ -249,13 +250,12 @@ public class CNNProcessorTest {
 
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+        MultiLayerConfiguration.Builder conf = new NeuralNetConfiguration.Builder()
                 .seed(123)
                 .iterations(5)
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                 .list(3)
                 .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[]{9, 9},new int[]{1,1})
-                        .nIn(1)
                         .nOut(20)
                         .weightInit(WeightInit.XAVIER)
                         .activation("relu")
@@ -269,10 +269,8 @@ public class CNNProcessorTest {
                         .nOut(10)
                         .weightInit(WeightInit.XAVIER)
                         .activation("softmax")
-                        .build())
-                .inputPreProcessor(0, new FeedForwardToCnnPreProcessor(rows, cols, 1))
-                .inputPreProcessor(2, new CnnToFeedForwardPreProcessor(rows, cols, 1))
-        .build();
-        return new MultiLayerNetwork(conf);
+                        .build());
+        new ConvolutionLayerSetup(conf,28,28,1);
+        return new MultiLayerNetwork(conf.build());
     }
 }

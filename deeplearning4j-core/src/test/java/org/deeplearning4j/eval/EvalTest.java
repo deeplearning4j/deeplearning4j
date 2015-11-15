@@ -143,7 +143,7 @@ public class EvalTest {
         model.setListeners(Arrays.asList((IterationListener) new ScoreIterationListener(1)));
 
         // Train-test split
-        DataSetIterator iter = new IrisDataSetIterator(10, 10);
+        DataSetIterator iter = new IrisDataSetIterator(150, 150);
         DataSet next = iter.next();
         next.shuffle();
         SplitTestAndTrain trainTest = next.splitTestAndTrain(5, new Random(42));

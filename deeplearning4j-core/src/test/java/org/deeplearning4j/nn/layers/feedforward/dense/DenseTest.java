@@ -31,7 +31,7 @@ public class DenseTest {
     private int numSamples = 150;
     private int batchSize = 150;
     private DataSetIterator iter = new IrisDataSetIterator(batchSize, numSamples);
-
+    private DataSet data;
 
     @Test
     public void testDenseBiasInit() {
@@ -58,6 +58,7 @@ public class DenseTest {
 
         MultiLayerNetwork model2 = getDenseMLNConfig(false, true);
         model2.fit(iter);
+        iter.reset();
 
         DataSet test = iter.next();
 
@@ -84,6 +85,7 @@ public class DenseTest {
 
         MultiLayerNetwork model2 = getDenseMLNConfig(true, false);
         model2.fit(iter);
+        iter.reset();
 
         DataSet test = iter.next();
 
@@ -106,7 +108,7 @@ public class DenseTest {
 
     //////////////////////////////////////////////////////////////////////////////////
 
-    private static MultiLayerNetwork getDenseMLNConfig(boolean backprop, boolean pretrain){
+    private static MultiLayerNetwork getDenseMLNConfig(boolean backprop, boolean pretrain) {
         int numInputs = 4;
         int outputNum = 3;
         int iterations = 10;
@@ -118,7 +120,6 @@ public class DenseTest {
                 .learningRate(1e-3)
                 .l1(0.3)
                 .regularization(true).l2(1e-3)
-                .constrainGradientToUnitNorm(true)
                 .list(3)
                 .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
                         .nIn(numInputs)
