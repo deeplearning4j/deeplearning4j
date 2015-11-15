@@ -12,11 +12,16 @@ import org.deeplearning4j.graph.models.GraphVectors;
 import org.deeplearning4j.graph.models.embeddings.GraphVectorLookupTable;
 import org.deeplearning4j.graph.models.embeddings.InMemoryGraphLookupTable;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**Implementation of the DeepWalk graph vectorization model, based on the paper
  * <i>DeepWalk: Online Learning of Social Representations</i> by Perozzi, Al-Rfou & Skiena (2014),
@@ -29,6 +34,9 @@ import java.util.concurrent.*;
  * @author Alex Black
  */
 public class DeepWalk<V,E> implements GraphVectors<V,E> {
+    public static final int STATUS_UPDATE_FREQUENCY = 1000;
+    private Logger log = LoggerFactory.getLogger(DeepWalk.class);
+
     private int vectorSize;
     private int windowSize;
     private int batchSize;
@@ -38,6 +46,7 @@ public class DeepWalk<V,E> implements GraphVectors<V,E> {
     private long seed;
     private ExecutorService executorService;
     private int nThreads = Runtime.getRuntime().availableProcessors();
+    private transient AtomicLong walkCounter = new AtomicLong(0);
 
     public DeepWalk(){
 
@@ -59,6 +68,10 @@ public class DeepWalk<V,E> implements GraphVectors<V,E> {
         return learningRate;
     }
 
+    public void setLearningRate(double learningRate){
+        this.learningRate = learningRate;
+    }
+
     /** Initialize the DeepWalk model with a given graph. */
     public void initialize(IGraph<V,E> graph){
         int nVertices = graph.numVertices();
@@ -74,20 +87,21 @@ public class DeepWalk<V,E> implements GraphVectors<V,E> {
      * @param graphVertexDegrees degrees of each vertex
      */
     public void initialize(int[] graphVertexDegrees){
+        log.info("Initializing: Creating Huffman tree and lookup table...");
         GraphHuffman gh = new GraphHuffman(graphVertexDegrees.length);
         gh.buildTree(graphVertexDegrees);
         lookupTable = new InMemoryGraphLookupTable(graphVertexDegrees.length,vectorSize,gh,learningRate);
         initCalled = true;
+        log.info("Initialization complete");
     }
 
     /** Fit the model, in parallel.
      * This creates a set of GraphWalkIterators, which are then distributed one to each thread
-     * Note that {@link #initialize(IGraph)} or {@link #initialize(int[])} <em>must</em> be called first.
      * @param graph Graph to fit
      * @param walkLength Length of rangom walks to generate
      */
     public void fit( IGraph<V,E> graph, int walkLength ){
-        if(!initCalled) throw new UnsupportedOperationException("DeepWalk not initialized (call initialize before fit)");
+        if(!initCalled) initialize(graph);
         //First: create iterators, one for each thread
 
         GraphWalkIteratorProvider<V> iteratorProvider = new RandomWalkGraphIteratorProvider<V>(graph,walkLength,seed,
@@ -118,6 +132,7 @@ public class DeepWalk<V,E> implements GraphVectors<V,E> {
         });
 
         List<Future<Void>> list = new ArrayList<>(iteratorList.size());
+        log.info("Fitting Graph with {} threads", list.size());
         for( GraphWalkIterator<V> iter : iteratorList ){
             LearningCallable c = new LearningCallable(iter);
             list.add(executorService.submit(c));
@@ -130,7 +145,7 @@ public class DeepWalk<V,E> implements GraphVectors<V,E> {
             throw new RuntimeException("ExecutorService interrupted",e);
         }
 
-        //Don't need to block on futures, but we want to re-throw any exceptions encountered
+        //Don't need to block on futures to get a value out, but we want to re-throw any exceptions encountered
         for(Future<Void> f : list){
             try{
                 f.get();
@@ -159,6 +174,11 @@ public class DeepWalk<V,E> implements GraphVectors<V,E> {
             while(sequence.hasNext()) walk[i++] = sequence.next().vertexID();
 
             skipGram(walk);
+
+            long iter = walkCounter.incrementAndGet();
+            if(iter % STATUS_UPDATE_FREQUENCY == 0 ){
+                log.info("Processed {} random walks on graph",iter);
+            }
         }
     }
 
@@ -183,12 +203,13 @@ public class DeepWalk<V,E> implements GraphVectors<V,E> {
 
     @Override
     public int numVertices() {
-        return 0;
+        if(!initCalled) throw new UnsupportedOperationException("DeepWalk has not been initialized");
+        return lookupTable.getNumVertices();
     }
 
     @Override
     public INDArray getVertexVector(Vertex<V> vertex) {
-        return null;
+        return lookupTable.getVector(vertex.vertexID());
     }
 
     @Override
@@ -201,14 +222,25 @@ public class DeepWalk<V,E> implements GraphVectors<V,E> {
         return null;
     }
 
+    /**Returns the cosine similarity of the vector representations of two vertices in the graph
+     * @return Cosine similarity of two vertices
+     */
     @Override
     public double similarity(Vertex<V> vertex1, Vertex<V> vertex2) {
-        return 0;
+        return similarity(vertex1.vertexID(),vertex2.vertexID());
     }
 
+    /**Returns the cosine similarity of the vector representations of two vertices in the graph,
+     * given the indices of these verticies
+     * @return Cosine similarity of two vertices
+     */
     @Override
     public double similarity(int vertexIdx1, int vertexIdx2) {
-        return 0;
+        if(vertexIdx1 == vertexIdx2) return 1.0;
+
+        INDArray vector = Transforms.unitVec(getVertexVector(vertexIdx1));
+        INDArray vector2 = Transforms.unitVec(getVertexVector(vertexIdx2));
+        return  Nd4j.getBlasWrapper().dot(vector, vector2);
     }
 
     public GraphVectorLookupTable lookupTable(){
