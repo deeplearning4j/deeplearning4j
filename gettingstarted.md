@@ -100,6 +100,8 @@ If OpenBlas is not working correctly, follow these steps:
 * As a last step, restart your IDE. 
 * For complete instructions on how to get native Blas running with Centos 6, [see this page](https://gist.github.com/jarutis/912e2a4693accee42a94).
 
+For OpenBlas on **Ubuntu** (15.10), please see [these instructions](http://pastebin.com/F0Rv2uEk).
+
 ### <a name="source">Working With Source (DL4J Contributors Only)</a>
 
 If you are not planning to contribute to Deeplearning4j as a committer, or don't need the latest alpha version, we recommend downloading the most recent stable release of Deeplearning4j from [Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j), 0.4-rc*. That's as simple as adding dependencies to your POM.xml file in IntelliJ.
