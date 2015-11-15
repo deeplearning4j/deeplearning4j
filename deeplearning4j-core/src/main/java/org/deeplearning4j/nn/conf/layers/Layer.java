@@ -35,6 +35,7 @@ import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
  * A neural network layer.
@@ -80,6 +81,8 @@ public abstract class Layer implements Serializable, Cloneable {
     protected double adamVarDecay = 0.999;
     protected GradientNormalization gradientNormalization = GradientNormalization.None; //Clipping, rescale based on l2 norm, etc
     protected double gradientNormalizationThreshold = 1.0;   //Threshold for l2 and element-wise gradient clipping
+    protected boolean useParams = false;
+    protected Map<String,INDArray> paramTable;
 
     public Layer(Builder builder) {
         this.layerName = builder.layerName;
@@ -102,6 +105,8 @@ public abstract class Layer implements Serializable, Cloneable {
         this.adamVarDecay = builder.adamVarDecay;
         this.gradientNormalization = builder.gradientNormalization;
         this.gradientNormalizationThreshold = builder.gradientNormalizationThreshold;
+        this.useParams = builder.useParams;
+        this.paramTable = builder.paramTable;
     }
 
     @Override
@@ -109,7 +114,9 @@ public abstract class Layer implements Serializable, Cloneable {
         try {
             Layer clone = (Layer) super.clone();
             if(clone.dist != null) clone.dist = clone.dist.clone();
+            if(clone.learningRateAfter != null) clone.learningRateAfter = new HashMap<>(clone.learningRateAfter);
             if(clone.momentumAfter != null) clone.momentumAfter = new HashMap<>(clone.momentumAfter);
+            if(clone.paramTable != null) clone.paramTable = new HashMap<>(clone.paramTable);
             return clone;
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);
@@ -138,6 +145,9 @@ public abstract class Layer implements Serializable, Cloneable {
         protected double adamVarDecay = Double.NaN;
         protected GradientNormalization gradientNormalization = null;
         protected double gradientNormalizationThreshold = Double.NaN;
+        protected boolean useParams = false;
+        protected Map<String,INDArray> paramTable;
+
 
         /**Layer name assigns layer string name.
          * Allows easier differentiation between layers.
@@ -283,6 +293,17 @@ public abstract class Layer implements Serializable, Cloneable {
             return (T) this;
         }
 
+        /** Whether to use existing parameters inputed into layer */
+        public Builder useExistingParams(boolean useParams) {
+            this.useParams = useParams;
+            return this;
+        }
+
+        /** Pass in parameter map of existing parameters to use in layer */
+        public T params(Map<String, INDArray> paramTable){
+            this.paramTable = paramTable;
+            return (T) this;
+        }
         public abstract <E extends Layer> E build();
     }
 }

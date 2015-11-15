@@ -34,14 +34,14 @@ import static org.junit.Assert.*;
 
 public class TestUpdaters {
 
-	int nIn = 3;
-	int nOut = 2;
-    double epsilon = 1e-8;
-	INDArray weightGradient = Nd4j.ones(nIn,nOut);
-	INDArray biasGradient = Nd4j.ones(1,nOut);
-	Gradient gradient = new DefaultGradient();
-    INDArray val, gradExpected;
-    String key;
+	protected int nIn = 3;
+	protected int nOut = 2;
+	protected double epsilon = 1e-8;
+	protected INDArray weightGradient = Nd4j.ones(nIn,nOut);
+	protected INDArray biasGradient = Nd4j.ones(1,nOut);
+	protected Gradient gradient = new DefaultGradient();
+	protected INDArray val, gradExpected;
+	protected String key;
 
 
 	@Before
