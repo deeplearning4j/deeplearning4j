@@ -117,4 +117,14 @@ public class ScalarEquals extends BaseScalarOp {
         else
             return new ScalarEquals(x.tensorAlongDimension(index, dimension), complexNumber);
     }
+
+    @Override
+    public int[] getDimension() {
+        return new int[0];
+    }
+
+    @Override
+    public void setDimension(int... dimension) {
+
+    }
 }

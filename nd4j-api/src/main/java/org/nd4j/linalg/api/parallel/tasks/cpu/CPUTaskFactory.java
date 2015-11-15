@@ -19,7 +19,7 @@ import org.nd4j.linalg.api.parallel.tasks.cpu.scalar.CPUScalarOpViaTensorAction;
 import org.nd4j.linalg.api.parallel.tasks.cpu.transform.CPUTransformAlongDimensionTask;
 import org.nd4j.linalg.api.parallel.tasks.cpu.transform.CPUTransformOpAction;
 import org.nd4j.linalg.api.parallel.tasks.cpu.transform.CPUTransformOpViaTensorTask;
-import org.nd4j.linalg.api.parallel.tasks.cpu.vector.CPUVectorOp;
+import org.nd4j.linalg.api.parallel.tasks.cpu.vector.CpuBroadcastOp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -254,14 +254,14 @@ public class CPUTaskFactory implements TaskFactory {
     }
 
     @Override
-    public Task<Void> getVectorOpAction(VectorOp op) {
+    public Task<Void> getBroadcastOpAction(BroadcastOp op) {
         INDArray x = op.x();
         INDArray y = op.y();
-        if(x.size(op.getDimension()) != y.length()){
+        if(x.size(op.getDimension()[0]) != y.length()){
             throw new IllegalArgumentException("Shapes do not match: x.shape="+Arrays.toString(x.shape()) +
-                    ", y.shape="+Arrays.toString(y.shape()) + ", y should be vector with length=x.size("+op.getDimension()+")");
+                    ", y.shape="+Arrays.toString(y.shape()) + ", y should be vector with length=x.size(" + op.getDimension() + ")");
         }
-        return new CPUVectorOp(op,parallelThreshold);
+        return new CpuBroadcastOp(op,parallelThreshold);
     }
 
     @Override

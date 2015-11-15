@@ -22,9 +22,12 @@ package org.nd4j.linalg.api.ops;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 
 /**
+ * Applies a scalar
+ * along a bigger input array.
+ *
  * @author Adam Gibson
  */
-public interface ScalarOp extends Op {
+public interface ScalarOp extends BroadcastOp {
 
     /**The normal scalar
      *@return the scalar

@@ -66,8 +66,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
             doScalarOp((ScalarOp) op);
         } else if (op instanceof IndexAccumulation) {
             doIndexAccumulationOp((IndexAccumulation) op);
-        } else if (op instanceof VectorOp){
-            doVectorOp((VectorOp)op);
+        } else if (op instanceof BroadcastOp){
+            doBroadcastOp((BroadcastOp) op);
         }
         return op;
     }
@@ -205,7 +205,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Override
-    public INDArray execAndReturn(VectorOp op){
+    public INDArray execAndReturn(BroadcastOp op){
         return exec(op).z();
     }
 
@@ -507,12 +507,12 @@ public class DefaultOpExecutioner implements OpExecutioner {
         }
     }
 
-    private void doVectorOp(VectorOp op){
+    private void doBroadcastOp(BroadcastOp op) {
         INDArray x = op.x();
         INDArray y = op.y();
         INDArray z = op.z();
         if(!(x instanceof IComplexNDArray) && !(y instanceof IComplexNDArray) && !(z instanceof IComplexNDArray)){
-            taskFactory.getVectorOpAction(op).invokeBlocking();
+            taskFactory.getBroadcastOpAction(op).invokeBlocking();
         } else {
             //Complex vector op
             int nTensors = x.tensorssAlongDimension(op.getDimension());
