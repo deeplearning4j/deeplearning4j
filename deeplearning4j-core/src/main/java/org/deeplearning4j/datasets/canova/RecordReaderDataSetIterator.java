@@ -31,10 +31,7 @@ import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.FeatureUtil;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 
 /**
@@ -247,9 +244,13 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
 
     }
+
     @Override
     public void reset() {
-
+        if (recordReader instanceof RecordReader)
+            recordReader.reset();
+        else if (recordReader instanceof SequenceRecordReader)
+            throw new UnsupportedOperationException("Reset not supported for SequenceRecordReader type.");
     }
 
     @Override
