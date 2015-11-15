@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.datasets.iterator;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.nd4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,12 +27,13 @@ import org.slf4j.LoggerFactory;
  * A dataset iterator for doing multiple passes over a dataset
  */
 public class MultipleEpochsIterator implements DataSetIterator {
-    private int numPasses;
-    private int batch = 0;
-    private DataSetIterator iter;
-    private int passes = 0;
-    private static final Logger log = LoggerFactory.getLogger(MultipleEpochsIterator.class);
-    private DataSetPreProcessor preProcessor;
+    @VisibleForTesting
+    protected int numPasses;
+    protected int batch = 0;
+    protected DataSetIterator iter;
+    protected int passes = 0;
+    protected static final Logger log = LoggerFactory.getLogger(MultipleEpochsIterator.class);
+    protected DataSetPreProcessor preProcessor;
 
     public MultipleEpochsIterator(int numPasses,DataSetIterator iter) {
         this.numPasses = numPasses;
@@ -48,12 +50,11 @@ public class MultipleEpochsIterator implements DataSetIterator {
     @Override
     public DataSet next(int num) {
         if(!iter.hasNext()) {
+            log.info("Epoch " + passes + ", number of batches completed " + batch);
             if(passes < numPasses) {
                 passes++;
                 batch = 0;
-                log.info("Epoch " + passes + " batch " + batch);
                 iter.reset();
-
             }
         }
         batch++;
@@ -161,12 +162,11 @@ public class MultipleEpochsIterator implements DataSetIterator {
     @Override
     public DataSet next() {
         if(!iter.hasNext()) {
+            log.info("Epoch " + passes + " batch " + batch);
             if(passes < numPasses) {
                 passes++;
                 batch = 0;
-                log.info("Epoch " + passes + " batch " + batch);
                 iter.reset();
-
             }
         }
         batch++;
