@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 /**
  * A dataset iterator for doing multiple passes over a dataset
  */
+@Deprecated
 public class MultipleEpochsIterator implements DataSetIterator {
     private static final Logger log = LoggerFactory.getLogger(MultipleEpochsIterator.class);
     private int numPasses;
