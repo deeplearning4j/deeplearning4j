@@ -36,6 +36,7 @@ import org.deeplearning4j.text.sentenceiterator.CollectionSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -47,6 +48,7 @@ import java.util.List;
 /**
  * Created by agibsonccc on 7/3/14.
  */
+@Ignore
 public class BasicRNTNTest {
 
     private TreeVectorizer vectorizer;
