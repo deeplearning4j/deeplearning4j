@@ -158,6 +158,16 @@ public class InMemoryGraphLookupTable implements GraphVectorLookupTable {
         return vertexVectors.getRow(idx);
     }
 
+    @Override
+    public void setLearningRate(double learningRate) {
+        this.learningRate = learningRate;
+    }
+
+    @Override
+    public int getNumVertices() {
+        return nVertices;
+    }
+
     private static double sigmoid(double in){
         return 1.0 / (1.0 + FastMath.exp(-in));
     }

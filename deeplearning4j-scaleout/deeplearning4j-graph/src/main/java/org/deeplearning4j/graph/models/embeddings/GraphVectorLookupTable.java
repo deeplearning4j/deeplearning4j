@@ -18,5 +18,8 @@ public interface GraphVectorLookupTable {
     /** Get the vector for the vertex with index idx */
     public INDArray getVector(int idx);
 
+    void setLearningRate(double learningRate);
+
+    int getNumVertices();
 
 }
