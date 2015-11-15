@@ -459,6 +459,11 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     }
 
     @Override
+    public int numParams(boolean backwards) {
+        return numParams();
+    }
+
+    @Override
     public void fit(INDArray input) {
         if(input != null) {
             setInput(input.dup());

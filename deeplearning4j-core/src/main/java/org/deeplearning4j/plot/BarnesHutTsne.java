@@ -168,9 +168,9 @@ public class BarnesHutTsne extends Tsne implements Model {
             throw new IllegalStateException("Illegal k value " + k + "greater than " + u);
 
 
-        rows = zeros(N + 1);
-        cols = zeros(N * k);
-        vals = zeros(N * k);
+        rows = zeros(1,N + 1);
+        cols = zeros(1,N * k);
+        vals = zeros(1,N * k);
 
         for(int n = 0; n < N; n++)
             rows.putScalar(n + 1,rows.getDouble(n) + k);
@@ -228,7 +228,7 @@ public class BarnesHutTsne extends Tsne implements Model {
 
 
             currP.divi(currP.sum(Integer.MAX_VALUE));
-            INDArray indices = Nd4j.create(k + 1);
+            INDArray indices = Nd4j.create(1,k + 1);
             for(int j = 0; j < indices.length(); j++) {
                 if(j >= results.size())
                     break;
@@ -584,6 +584,11 @@ public class BarnesHutTsne extends Tsne implements Model {
 
     @Override
     public int numParams() {
+        return 0;
+    }
+
+    @Override
+    public int numParams(boolean backwards) {
         return 0;
     }
 

@@ -28,6 +28,7 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.nn.api.*;
 import org.deeplearning4j.nn.conf.layers.ImageLSTM;
+import org.junit.Ignore;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
@@ -43,6 +44,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by agibsonccc on 12/30/14.
  */
+@Ignore
 public class ImageLSTMTest {
 
     // TODO finish building out this test for image LSTM ...
@@ -65,6 +67,7 @@ public class ImageLSTMTest {
 
 
     @Test
+    @Ignore
     public void testLSTMActivateResultsContained()  {
         INDArray input = getContainedData();
         Layer layer = getLSTMConfig(input.shape()[0], 10);
