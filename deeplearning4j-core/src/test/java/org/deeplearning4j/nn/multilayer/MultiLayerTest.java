@@ -180,7 +180,7 @@ public class MultiLayerTest {
         INDArray grad = network.gradient().gradient();
         int numParams = network.numParams();
         network.fit(trainTest.getTrain());
-        
+
 
     }
 

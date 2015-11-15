@@ -56,7 +56,7 @@ public class VocabularyHolder  {
             if (word.getCodeLength() != 0 && !word.getCodes().isEmpty()) {
                 // do nothing. see comment above ^^^
             }
-            vocabulary.putIfAbsent(vw.getWord(), vw);
+            vocabulary.put(vw.getWord(), vw);
         }
 
         // there's no sense building huffman tree just for UNK word
@@ -87,8 +87,8 @@ public class VocabularyHolder  {
             vocabWord.setCodes(arrayToList(word.getHuffmanNode().getCode(), word.getHuffmanNode().getLength()));
 
             // put VocabWord into both Tokens and Vocabs maps
-            ((InMemoryLookupCache) cache).getVocabs().putIfAbsent(word.getWord(), vocabWord);
-            ((InMemoryLookupCache) cache).getTokens().putIfAbsent(word.getWord(), vocabWord);
+            ((InMemoryLookupCache) cache).getVocabs().put(word.getWord(), vocabWord);
+            ((InMemoryLookupCache) cache).getTokens().put(word.getWord(), vocabWord);
 
             // put word into index
             cache.addWordToIndex(word.getHuffmanNode().getIdx(), word.getWord());
@@ -156,7 +156,7 @@ public class VocabularyHolder  {
     public void addWord(String word) {
         if (!vocabulary.containsKey(word)) {
             VocabularyWord vw = new VocabularyWord(word);
-            vocabulary.putIfAbsent(word, vw);
+            vocabulary.put(word, vw);
 //            vocab.add(vw);
 //            idxMap.putIfAbsent(vw.getId(), vw);
             return;
@@ -271,7 +271,7 @@ public class VocabularyHolder  {
         idxMap.clear();
         int a = 0;
         for (VocabularyWord word: vocab) {
-            idxMap.putIfAbsent(word.getHuffmanNode().getIdx(), word);
+            idxMap.put(word.getHuffmanNode().getIdx(), word);
         }
 
         return vocab;
