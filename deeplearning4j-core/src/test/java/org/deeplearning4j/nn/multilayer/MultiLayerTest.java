@@ -174,13 +174,13 @@ public class MultiLayerTest {
         SplitTestAndTrain trainTest = next.splitTestAndTrain(110);
         network.setLabels(trainTest.getTrain().getLabels());
         network.init();
+        network.setInput(trainTest.getTrain().getFeatureMatrix());
+        network.setLabels(trainTest.getTrain().getLabels());
+        network.computeGradientAndScore();
+        INDArray grad = network.gradient().gradient();
+        int numParams = network.numParams();
         network.fit(trainTest.getTrain());
-
-        DataSet test = trainTest.getTest();
-        Evaluation eval = new Evaluation();
-        INDArray output = network.output(test.getFeatureMatrix());
-        eval.eval(test.getLabels(), output);
-        log.info("Score " + eval.stats());
+        
 
     }
 
