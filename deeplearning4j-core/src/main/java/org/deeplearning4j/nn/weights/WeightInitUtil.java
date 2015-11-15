@@ -78,12 +78,16 @@ public class WeightInitUtil {
                                      Distribution dist) {
     INDArray ret;
     switch (initScheme) {
+      case DISTRIBUTION:
+        ret = dist.sample(shape);
+        return ret;
       case NORMALIZED:
         ret = Nd4j.rand(shape, Nd4j.getRandom());
         return ret.subi(0.5).divi(shape[0]);
-      case XAVIER:
-        ret = Nd4j.randn(shape).divi(FastMath.sqrt(shape[0] + shape[1]));
-        return ret;
+      case RELU:
+        return Nd4j.randn(shape).muli(FastMath.sqrt(2.0 / shape[0]));   //N(0, 2/nIn)
+      case SIZE:
+        return uniformBasedOnInAndOut(shape, shape[0], shape[1]);
       case UNIFORM:
         double a = 1 / (double) shape[0];
         return Nd4j.rand(shape, -a, a, Nd4j.getRandom());
@@ -96,15 +100,11 @@ public class WeightInitUtil {
         double r = Math.sqrt(6) / Math.sqrt(len + 1);
         ret.muli(2).muli(r).subi(r);
         return ret;
-      case DISTRIBUTION:
-        ret = dist.sample(shape);
+      case XAVIER:
+        ret = Nd4j.randn(shape).divi(FastMath.sqrt(shape[0] + shape[1]));
         return ret;
-      case SIZE:
-        return uniformBasedOnInAndOut(shape, shape[0], shape[1]);
       case ZERO:
         return Nd4j.create(shape);
-      case RELU:
-        return Nd4j.randn(shape).muli(FastMath.sqrt(2.0 / shape[0]));   //N(0, 2/nIn)
     }
 
     throw new IllegalStateException("Illegal weight init value");
