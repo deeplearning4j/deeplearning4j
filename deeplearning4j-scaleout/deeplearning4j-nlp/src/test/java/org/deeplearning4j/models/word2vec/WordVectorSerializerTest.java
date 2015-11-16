@@ -71,7 +71,6 @@ public class WordVectorSerializerTest {
         Collection<String> nearestBinary = vectorsBinary.wordsNearest("database", 10);
         System.out.println(nearestBinary);
         assertEquals(vecModel.similarity("DBMS","DBMS's"),vectorsBinary.similarity("DBMS", "DBMS's"),1e-1);
-        assertEquals(vec, vecModel.getWordVectorMatrix("</s>"));
 
     }
 
