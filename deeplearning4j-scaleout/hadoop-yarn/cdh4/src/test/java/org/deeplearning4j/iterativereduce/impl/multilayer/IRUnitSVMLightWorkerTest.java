@@ -21,12 +21,10 @@ package org.deeplearning4j.iterativereduce.impl.multilayer;
 import static org.junit.Assert.*;
 
 import org.deeplearning4j.iterativereduce.irunit.IRUnitDriver;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.RBM;
+import org.junit.Ignore;
 import org.junit.Test;
 
-
+@Ignore
 public class IRUnitSVMLightWorkerTest {
 	@Test
 	public void testLearnIrisFunctionViaIRNN_MLP() throws Exception {

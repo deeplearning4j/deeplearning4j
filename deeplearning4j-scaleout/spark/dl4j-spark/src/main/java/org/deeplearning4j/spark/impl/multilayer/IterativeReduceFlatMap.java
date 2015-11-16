@@ -81,12 +81,12 @@ public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>
         network.init();
         network.setListeners(new ScoreIterationListener(1), new BestScoreIterationListener(best_score_acc));
         INDArray val = params.value();
-        if(val.length() != network.numParams())
+        if(val.length() != network.numParams(false))
             throw new IllegalStateException("Network did not have same number of parameters as the broadcasted set parameters");
         network.setParameters(val);
         network.fit(data);
 
-        return Collections.singletonList(network.params());
+        return Collections.singletonList(network.params(false));
 
     }
 }
