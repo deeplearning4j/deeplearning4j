@@ -283,8 +283,7 @@ public class WordVectorSerializer {
      */
     public static void writeWordVectors(InMemoryLookupTable lookupTable, InMemoryLookupCache cache,
             String path)
-                throws IOException
-    {
+                throws IOException {
         BufferedWriter write = new BufferedWriter(new FileWriter(new File(path), false));
         for (int i = 0; i < lookupTable.getSyn0().rows(); i++) {
             String word = cache.wordAtIndex(i);
@@ -321,8 +320,7 @@ public class WordVectorSerializer {
      * @throws IOException
      */
     public static void writeWordVectors(WordVectors vec, String path)
-        throws IOException
-    {
+        throws IOException {
         BufferedWriter write = new BufferedWriter(new FileWriter(new File(path), false));
         int words = 0;
         for (String word : vec.vocab().words()) {
@@ -412,13 +410,6 @@ public class WordVectorSerializer {
         VocabCache cache = new InMemoryLookupCache();
 
         LineIterator iter = IOUtils.lineIterator(reader);
-        if (iter.hasNext()) {
-            if (HAS_HEADER) {
-                iter.next();    // skip header line
-            }
-        } else {
-            log.warn("Empty input file '" + vectorsFile + "'.");
-        }
         List<INDArray> arrays = new ArrayList<>();
         while (iter.hasNext()) {
             String line = iter.nextLine();
