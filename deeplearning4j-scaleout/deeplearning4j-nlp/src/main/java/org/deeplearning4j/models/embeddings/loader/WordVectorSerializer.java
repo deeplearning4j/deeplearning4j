@@ -64,7 +64,7 @@ public class WordVectorSerializer {
      * @throws IOException
      */
     public static WordVectors loadGoogleModel(File modelFile, boolean binary)
-        throws IOException {
+            throws IOException {
         return loadGoogleModel(modelFile, binary, DEFAULT_LINEBREAKS);
     }
 
@@ -84,7 +84,7 @@ public class WordVectorSerializer {
      * @author Carsten Schnober
      */
     public static WordVectors loadGoogleModel(File modelFile, boolean binary, boolean lineBreaks)
-        throws IOException {
+            throws IOException {
         return binary ? readBinaryModel(modelFile, lineBreaks) : WordVectorSerializer.fromPair(loadTxt(modelFile));
     }
 
@@ -157,7 +157,7 @@ public class WordVectorSerializer {
      * @throws FileNotFoundException
      */
     private static Word2Vec readBinaryModel(File modelFile, boolean linebreaks)
-        throws NumberFormatException, IOException
+            throws NumberFormatException, IOException
     {
         InMemoryLookupTable lookupTable;
         VocabCache cache;
@@ -167,7 +167,7 @@ public class WordVectorSerializer {
                 GzipUtils.isCompressedFilename(modelFile.getName())
                         ? new GZIPInputStream(new FileInputStream(modelFile))
                         : new FileInputStream(modelFile));
-                DataInputStream dis = new DataInputStream(bis)) {
+             DataInputStream dis = new DataInputStream(bis)) {
             words = Integer.parseInt(readString(dis));
             size = Integer.parseInt(readString(dis));
             syn0 = Nd4j.create(words, size);
@@ -217,7 +217,7 @@ public class WordVectorSerializer {
      * @throws IOException
      */
     public static float readFloat(InputStream is)
-        throws IOException
+            throws IOException
     {
         byte[] bytes = new byte[4];
         is.read(bytes);
@@ -251,7 +251,7 @@ public class WordVectorSerializer {
      * @throws IOException
      */
     public static String readString(DataInputStream dis)
-        throws IOException
+            throws IOException
     {
         byte[] bytes = new byte[MAX_SIZE];
         byte b = dis.readByte();
@@ -282,8 +282,8 @@ public class WordVectorSerializer {
      * @throws IOException
      */
     public static void writeWordVectors(InMemoryLookupTable lookupTable, InMemoryLookupCache cache,
-            String path)
-                throws IOException {
+                                        String path)
+            throws IOException {
         BufferedWriter write = new BufferedWriter(new FileWriter(new File(path), false));
         for (int i = 0; i < lookupTable.getSyn0().rows(); i++) {
             String word = cache.wordAtIndex(i);
@@ -320,7 +320,7 @@ public class WordVectorSerializer {
      * @throws IOException
      */
     public static void writeWordVectors(WordVectors vec, String path)
-        throws IOException {
+            throws IOException {
         BufferedWriter write = new BufferedWriter(new FileWriter(new File(path), false));
         int words = 0;
         for (String word : vec.vocab().words()) {
@@ -391,7 +391,7 @@ public class WordVectorSerializer {
      *             if the file does not exist
      */
     public static WordVectors loadTxtVectors(File vectorsFile)
-        throws FileNotFoundException
+            throws FileNotFoundException
     {
         Pair<InMemoryLookupTable, VocabCache> pair = loadTxt(vectorsFile);
         return fromPair(pair);
@@ -410,9 +410,26 @@ public class WordVectorSerializer {
         VocabCache cache = new InMemoryLookupCache();
 
         LineIterator iter = IOUtils.lineIterator(reader);
+        String line = null;
+        boolean hasHeader = false;
+        if (iter.hasNext()) {
+            line = iter.next();    // skip header line
+            //look for spaces
+            if(!line.contains(" "))
+                hasHeader = true;
+
+        }
+
+        //reposition buffer to be one line ahead
+        if(hasHeader) {
+            iter.close();
+            iter = IOUtils.lineIterator(reader);
+            iter.nextLine();
+        }
+
+
         List<INDArray> arrays = new ArrayList<>();
         while (iter.hasNext()) {
-            String line = iter.nextLine();
             String[] split = line.split(" ");
             String word = split[0];
             VocabWord word1 = new VocabWord(1.0, word);
@@ -456,7 +473,7 @@ public class WordVectorSerializer {
      * @throws Exception
      */
     public static void writeTsneFormat(Glove vec, INDArray tsne, File csv)
-        throws Exception
+            throws Exception
     {
         BufferedWriter write = new BufferedWriter(new FileWriter(csv));
         int words = 0;
@@ -500,7 +517,7 @@ public class WordVectorSerializer {
      * @throws Exception
      */
     public static void writeTsneFormat(Word2Vec vec, INDArray tsne, File csv)
-        throws Exception
+            throws Exception
     {
         BufferedWriter write = new BufferedWriter(new FileWriter(csv));
         int words = 0;
