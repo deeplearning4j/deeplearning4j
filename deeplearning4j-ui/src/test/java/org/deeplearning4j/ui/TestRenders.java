@@ -101,7 +101,8 @@ public class TestRenders extends BaseUiServerTest {
         DataSet d2 = fetcher.next();
 
         INDArray input = d2.getFeatureMatrix();
-        AutoEncoder da = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.asList(new ScoreIterationListener(1),new HistogramIterationListener(5)),0);
+        AutoEncoder da = LayerFactories.getFactory(conf.getLayer()).create(conf);
+        da.setListeners(new ScoreIterationListener(1),new HistogramIterationListener(5));
         da.setParams(da.params());
         da.fit(input);
     }
