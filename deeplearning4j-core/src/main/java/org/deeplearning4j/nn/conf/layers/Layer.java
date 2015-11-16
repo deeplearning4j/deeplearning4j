@@ -140,8 +140,6 @@ public abstract class Layer implements Serializable, Cloneable {
         protected double adamVarDecay = Double.NaN;
         protected GradientNormalization gradientNormalization = null;
         protected double gradientNormalizationThreshold = Double.NaN;
-        protected boolean useParams = false;
-        protected Map<String,INDArray> paramTable;
 
 
         /**Layer name assigns layer string name.
