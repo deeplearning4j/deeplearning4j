@@ -16,11 +16,13 @@ public interface GraphVectors<V,E> extends Serializable {
 
     public int numVertices();
 
+    public int getVectorSize();
+
     public INDArray getVertexVector(Vertex<V> vertex);
 
     public INDArray getVertexVector(int vertexIdx);
 
-    public Collection<Vertex<V>> verticesNearest(Vertex<V> vertex, int top);
+    public int[] verticesNearest(int vertexIdx, int top);
 
     double similarity(Vertex<V> vertex1, Vertex<V> vertex2);
 

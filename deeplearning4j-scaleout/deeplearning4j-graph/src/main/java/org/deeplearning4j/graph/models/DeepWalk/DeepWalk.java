@@ -10,6 +10,7 @@ import org.deeplearning4j.graph.iterator.parallel.GraphWalkIteratorProvider;
 import org.deeplearning4j.graph.iterator.parallel.RandomWalkGraphIteratorProvider;
 import org.deeplearning4j.graph.models.GraphVectors;
 import org.deeplearning4j.graph.models.embeddings.GraphVectorLookupTable;
+import org.deeplearning4j.graph.models.embeddings.GraphVectorsImpl;
 import org.deeplearning4j.graph.models.embeddings.InMemoryGraphLookupTable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -33,7 +34,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * search, etc on the graph<br>
  * @author Alex Black
  */
-public class DeepWalk<V,E> implements GraphVectors<V,E> {
+public class DeepWalk<V,E> extends GraphVectorsImpl<V,E> {
     public static final int STATUS_UPDATE_FREQUENCY = 1000;
     private Logger log = LoggerFactory.getLogger(DeepWalk.class);
 
@@ -42,7 +43,6 @@ public class DeepWalk<V,E> implements GraphVectors<V,E> {
     private int batchSize;
     private double learningRate;
     private boolean initCalled = false;
-    private GraphVectorLookupTable lookupTable;
     private long seed;
     private ExecutorService executorService;
     private int nThreads = Runtime.getRuntime().availableProcessors();
@@ -70,6 +70,7 @@ public class DeepWalk<V,E> implements GraphVectors<V,E> {
 
     public void setLearningRate(double learningRate){
         this.learningRate = learningRate;
+        if(lookupTable != null) lookupTable.setLearningRate(learningRate);
     }
 
     /** Initialize the DeepWalk model with a given graph. */
@@ -132,7 +133,7 @@ public class DeepWalk<V,E> implements GraphVectors<V,E> {
         });
 
         List<Future<Void>> list = new ArrayList<>(iteratorList.size());
-        log.info("Fitting Graph with {} threads", list.size());
+        log.info("Fitting Graph with {} threads", Math.max(nThreads,iteratorList.size()));
         for( GraphWalkIterator<V> iter : iteratorList ){
             LearningCallable c = new LearningCallable(iter);
             list.add(executorService.submit(c));
@@ -193,54 +194,6 @@ public class DeepWalk<V,E> implements GraphVectors<V,E> {
                 lookupTable.iterate(walk[mid],walk[pos]);
             }
         }
-    }
-
-
-    @Override
-    public IGraph<V, E> getGraph() {
-        return null;
-    }
-
-    @Override
-    public int numVertices() {
-        if(!initCalled) throw new UnsupportedOperationException("DeepWalk has not been initialized");
-        return lookupTable.getNumVertices();
-    }
-
-    @Override
-    public INDArray getVertexVector(Vertex<V> vertex) {
-        return lookupTable.getVector(vertex.vertexID());
-    }
-
-    @Override
-    public INDArray getVertexVector(int vertexIdx) {
-        return lookupTable.getVector(vertexIdx);
-    }
-
-    @Override
-    public Collection<Vertex<V>> verticesNearest(Vertex<V> vertex, int top) {
-        return null;
-    }
-
-    /**Returns the cosine similarity of the vector representations of two vertices in the graph
-     * @return Cosine similarity of two vertices
-     */
-    @Override
-    public double similarity(Vertex<V> vertex1, Vertex<V> vertex2) {
-        return similarity(vertex1.vertexID(),vertex2.vertexID());
-    }
-
-    /**Returns the cosine similarity of the vector representations of two vertices in the graph,
-     * given the indices of these verticies
-     * @return Cosine similarity of two vertices
-     */
-    @Override
-    public double similarity(int vertexIdx1, int vertexIdx2) {
-        if(vertexIdx1 == vertexIdx2) return 1.0;
-
-        INDArray vector = Transforms.unitVec(getVertexVector(vertexIdx1));
-        INDArray vector2 = Transforms.unitVec(getVertexVector(vertexIdx2));
-        return  Nd4j.getBlasWrapper().dot(vector, vector2);
     }
 
     public GraphVectorLookupTable lookupTable(){
