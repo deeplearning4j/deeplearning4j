@@ -32,6 +32,7 @@ public class ModelAndGradient implements Serializable {
     }
 
     public ModelAndGradient(Model model) {
+        model.computeGradientAndScore();
         this.gradients = model.gradient().gradientForVariable();
         this.parameters = model.paramTable();
         this.score = model.score();
