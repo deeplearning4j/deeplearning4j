@@ -99,17 +99,21 @@ public interface DataSet extends Iterable<org.nd4j.linalg.dataset.DataSet>, Seri
 
     org.nd4j.linalg.dataset.DataSet get(int[] i);
 
-    List<List<org.nd4j.linalg.dataset.DataSet>> batchBy(int num);
+    List<org.nd4j.linalg.dataset.DataSet> batchBy(int num);
 
     org.nd4j.linalg.dataset.DataSet filterBy(int[] labels);
 
     void filterAndStrip(int[] labels);
 
+    /**
+     * @deprecated prefer {@link #batchBy(int)}
+     */
+    @Deprecated
     List<org.nd4j.linalg.dataset.DataSet> dataSetBatches(int num);
 
-    List<List<org.nd4j.linalg.dataset.DataSet>> sortAndBatchByNumLabels();
+    List<org.nd4j.linalg.dataset.DataSet> sortAndBatchByNumLabels();
 
-    List<List<org.nd4j.linalg.dataset.DataSet>> batchByNumLabels();
+    List<org.nd4j.linalg.dataset.DataSet> batchByNumLabels();
 
     List<org.nd4j.linalg.dataset.DataSet> asList();
 
