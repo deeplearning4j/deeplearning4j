@@ -2,11 +2,13 @@ package org.deeplearning4j.nn.weights;
 
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.deeplearning4j.nn.conf.distribution.GaussianDistribution;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -128,37 +130,5 @@ public class WeightInitUtilTest {
         assertEquals(weightsExpected, weightsActual);
     }
 
-    @Test
-    public void testStuff() {
-
-        INDArray weight =  Nd4j.create(new double[] {0.10,-0.20, -0.15,0.05},
-                new int[] {2,2});
-        INDArray bias = Nd4j.create(new double[] {0.5,0.5},
-                new int[] {1,2});
-        Map<String, INDArray> paramTable = new HashMap<>();
-        paramTable.put("W", weight);
-        paramTable.put("b", bias);
-
-        Layer layer = configureLayer(true, paramTable);
-
-        assertEquals(paramTable, layer.conf().getLayer().getParamTable());
-
-    }
-
-
-    public Layer configureLayer(boolean useParams, Map<String, INDArray> paramTable){
-        int nIn = 2;
-        int nOut = 2;
-
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .layer(new DenseLayer.Builder()
-                        .nIn(nIn).nOut(nOut)
-                        .useExistingParams(true)
-                        .params(paramTable)
-                        .build())
-                .build();
-
-        return LayerFactories.getFactory(conf).create(conf, null, 0);
-    }
 
 }
