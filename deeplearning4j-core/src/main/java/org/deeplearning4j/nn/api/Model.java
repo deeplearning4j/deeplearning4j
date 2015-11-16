@@ -79,6 +79,14 @@ public interface Model {
      */
     int numParams();
 
+
+    /**
+     * the number of parameters for the model
+     * @return the number of parameters for the model
+     *
+     */
+    int numParams(boolean backwards);
+
     /**
      * Set the parameters for this model.
      * This expects a linear ndarray which then be unpacked internally

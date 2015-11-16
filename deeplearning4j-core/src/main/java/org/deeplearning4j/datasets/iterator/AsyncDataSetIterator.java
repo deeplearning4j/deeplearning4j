@@ -10,12 +10,14 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-/**AsyncDataSetIterator takes an existing DataSetIterator and loads one or more DataSet objects
+/**
+ *
+ * AsyncDataSetIterator takes an existing DataSetIterator and loads one or more DataSet objects
  * from it using a separate thread.
  * For data sets where DataSetIterator.next() is long running (limited by disk read or processing time
  * for example) this may improve performance by loading the next DataSet asynchronously (i.e., while
  * training is continuing on the previous DataSet). Obviously this may use additional memory.<br>
- * Note however that due to asyncronous loading of data, next(int) is not supported.
+ * Note however that due to asynchronous loading of data, next(int) is not supported.
  * @author Alex Black
  */
 public class AsyncDataSetIterator implements DataSetIterator {
@@ -24,7 +26,9 @@ public class AsyncDataSetIterator implements DataSetIterator {
     private Thread thread;
     private IteratorRunnable runnable;
 
-    /**Create an AsyncDataSetIterator with a queue size of 1 (i.e., only load a
+    /**
+     *
+     * Create an AsyncDataSetIterator with a queue size of 1 (i.e., only load a
      * single additional DataSet)
      * @param baseIterator The DataSetIterator to load data from asynchronously
      */
@@ -36,8 +40,9 @@ public class AsyncDataSetIterator implements DataSetIterator {
      * @param baseIterator The DataSetIterator to load data from asynchronously
      * @param queueSize size of the queue (max number of elements to load into queue)
      */
-    public AsyncDataSetIterator(DataSetIterator baseIterator, int queueSize ){
-        if(queueSize <= 0) throw new IllegalArgumentException("Queue size must be > 0");
+    public AsyncDataSetIterator(DataSetIterator baseIterator, int queueSize) {
+        if(queueSize <= 0)
+            throw new IllegalArgumentException("Queue size must be > 0");
         this.baseIterator = baseIterator;
         blockingQueue = new LinkedBlockingDeque<>(queueSize);
         runnable = new IteratorRunnable();
@@ -108,10 +113,11 @@ public class AsyncDataSetIterator implements DataSetIterator {
     }
 
     @Override
-    public boolean hasNext() {
-        if(!blockingQueue.isEmpty()) return true;
+    public synchronized  boolean hasNext() {
+        if(!blockingQueue.isEmpty())
+            return true;
 
-        if(runnable.isAlive){
+        if(runnable.isAlive) {
             //Empty blocking queue, but runnable is alive
             //(a) runnable is blocking on baseIterator.next()
             //(b) runnable is blocking on blockingQueue.put()
@@ -157,19 +163,21 @@ public class AsyncDataSetIterator implements DataSetIterator {
         }
     }
 
-    /** Shut down the async data set iterator thread
+    /**
+     *
+     * Shut down the async data set iterator thread
      * This is not typically necessary if using a single AsyncDataSetIterator
      * (thread is a daemon thread and so shouldn't block the JVM from exiting)
      * Behaviour of next(), hasNext() etc methods after shutdown of async iterator is undefined
      */
-    public void shutdown(){
-        if(thread.isAlive()){
+    public void shutdown() {
+        if(thread.isAlive()) {
             runnable.killRunnable = true;
             thread.interrupt();
         }
     }
 
-    private class IteratorRunnable implements Runnable{
+    private class IteratorRunnable implements Runnable {
         private boolean killRunnable = false;
         private boolean isAlive = true;
         private RuntimeException exception;
