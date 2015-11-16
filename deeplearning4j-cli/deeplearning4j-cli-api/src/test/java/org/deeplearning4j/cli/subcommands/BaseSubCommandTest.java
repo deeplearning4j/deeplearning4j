@@ -23,6 +23,7 @@ import org.junit.*;
 /**
  * Created by sonali on 2/11/15.
  */
+@Ignore
 public class BaseSubCommandTest {
 
     @org.junit.Test

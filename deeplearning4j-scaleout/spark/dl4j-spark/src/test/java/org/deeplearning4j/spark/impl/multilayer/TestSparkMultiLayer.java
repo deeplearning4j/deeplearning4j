@@ -122,7 +122,6 @@ public class TestSparkMultiLayer extends BaseSparkTest {
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                 .iterations(100).miniBatch(true)
                 .maxNumLineSearchIterations(10)
-                .constrainGradientToUnitNorm(true)
                 .list(2)
                 .layer(0, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
                         .nIn(4).nOut(100)
@@ -225,7 +224,7 @@ public class TestSparkMultiLayer extends BaseSparkTest {
         JavaRDD<LabeledPoint> mllLibData = MLLibUtil.fromDataSet(sc,data);
 
         MultiLayerNetwork network = SparkDl4jMultiLayer.train(mllLibData,conf);
-        INDArray params = network.params();
+        INDArray params = network.params(true);
         File writeTo = new File(UUID.randomUUID().toString());
         Nd4j.writeTxt(params,writeTo.getAbsolutePath(),",");
         INDArray load = Nd4j.readTxt(writeTo.getAbsolutePath());
@@ -239,7 +238,7 @@ public class TestSparkMultiLayer extends BaseSparkTest {
         MultiLayerNetwork network3 = new MultiLayerNetwork(conf2);
         network3.init();
         network3.setParameters(params);
-        INDArray params4 = network3.params();
+        INDArray params4 = network3.params(true);
         assertEquals(params,params4);
 
 

@@ -29,6 +29,8 @@ import org.nd4j.linalg.factory.Nd4j;
 public class ParamAccumulator implements AccumulatorParam<INDArray> {
     @Override
     public INDArray addAccumulator(INDArray indArray, INDArray t1) {
+        if(indArray.length() != t1.length())
+            throw new IllegalStateException("Wrong accumulation of matrices");
         return indArray.add(t1);
     }
 
