@@ -85,7 +85,7 @@ public class CPUTaskFactory implements TaskFactory {
                 }
             }
         } else {
-            if(x==z){
+            if( x== z) {
                 canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x,y);
                 if(!Arrays.equals(x.shape(), y.shape())){
                     throw new IllegalArgumentException("Shapes do not match: x.shape="+Arrays.toString(x.shape()) +
@@ -147,8 +147,8 @@ public class CPUTaskFactory implements TaskFactory {
         if(x==z) canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x);
         else{
             canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x,z);
-            if(!Arrays.equals(x.shape(), z.shape())){
-                throw new IllegalArgumentException("Shapes do not match: x.shape="+Arrays.toString(x.shape()) +
+            if(!Arrays.equals(x.shape(), z.shape())) {
+                throw new IllegalArgumentException("Shapes do not match: x.shape= " + Arrays.toString(x.shape()) +
                         ", z.shape="+Arrays.toString(z.shape()));
             }
         }
@@ -167,10 +167,11 @@ public class CPUTaskFactory implements TaskFactory {
         INDArray y = op.y();
 
         boolean canDoDirectly;
-        if (y == null) canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x);
-        else{
+        if (y == null)
+            canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x);
+        else {
             canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x, y);
-            if(!Arrays.equals(x.shape(), y.shape())){
+            if(!Arrays.equals(x.shape(), y.shape())) {
                 throw new IllegalArgumentException("Shapes do not match: x.shape="+Arrays.toString(x.shape()) +
                         ", y.shape="+Arrays.toString(y.shape()));
             }

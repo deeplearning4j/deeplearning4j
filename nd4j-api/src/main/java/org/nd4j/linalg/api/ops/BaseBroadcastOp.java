@@ -11,6 +11,9 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
     public BaseBroadcastOp(INDArray x, INDArray y, INDArray z, int...dimension){
         super(x,y,z,x.length());
         this.dimension = dimension;
+        for(int i = 0; i < dimension.length; i++)
+            if(dimension[i] < 0)
+                dimension[i] += x.rank();
     }
 
 

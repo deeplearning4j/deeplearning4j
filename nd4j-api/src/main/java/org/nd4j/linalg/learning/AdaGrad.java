@@ -105,9 +105,9 @@ public class AdaGrad implements Serializable,GradientUpdater {
     public double getGradient(double gradient, int column, int[] shape) {
         boolean historicalInitialized = false;
         if (this.historicalGradient == null) {
-                this.historicalGradient = Nd4j.ones(shape);
-                historicalInitialized = true;
-            }
+            this.historicalGradient = Nd4j.ones(shape);
+            historicalInitialized = true;
+        }
 
         double sqrtHistory = !historicalInitialized ? Math.sqrt(historicalGradient.getDouble(column)) : historicalGradient.getDouble(column);
         double learningRates = learningRate / (sqrtHistory + epsilon);
@@ -135,7 +135,10 @@ public class AdaGrad implements Serializable,GradientUpdater {
         else
             sqrtHistory = !historicalInitialized ? sqrt(historicalGradient.slice(slice)) : historicalGradient;
         INDArray learningRates = sqrtHistory.add(epsilon).rdivi(learningRate);
-        gradient.muli(learningRates);
+        if(gradient.length() != learningRates.length())
+            gradient.muli(learningRates.slice(slice));
+       else
+            gradient.muli(learningRates);
 
         this.historicalGradient.slice(slice).addi(gradient.mul(gradient));
         numIterations++;
