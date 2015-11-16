@@ -260,7 +260,7 @@ public class Train extends BaseSubCommand {
 
         InputStream in = null;
         try {
-            in = new FileInputStream( this.configurationFile );
+            in = new FileInputStream(this.configurationFile);
         } catch (FileNotFoundException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -288,7 +288,7 @@ public class Train extends BaseSubCommand {
 
         else
             // default
-            this.outputDirectory = "/tmp/dl4_model_default.txt";
+            this.outputDirectory = "/tmp/dl4j_model_default.txt";
         //throw new Exception("no output location!");
 
 

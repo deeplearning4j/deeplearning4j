@@ -1,9 +1,8 @@
 package org.deeplearning4j.text.documentiterator;
 
-import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
-import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
-import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
+
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +16,8 @@ import static org.junit.Assert.*;
 /**
  * Created by fartovii on 09.11.15.
  */
+
+@Ignore
 public class FileDocumentIteratorTest {
 
     private static final Logger log  = LoggerFactory.getLogger(FileDocumentIteratorTest.class);

@@ -37,6 +37,11 @@
 
 
     <build>
+        <testResources>
+            <testResource>
+                <directory>../../../dl4j-test-resources/src/main/resources</directory>
+            </testResource>
+        </testResources>
         <pluginManagement>
             <plugins>
                 <plugin>
