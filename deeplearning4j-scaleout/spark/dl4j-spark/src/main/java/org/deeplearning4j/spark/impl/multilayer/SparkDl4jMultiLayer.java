@@ -219,10 +219,11 @@ public class SparkDl4jMultiLayer implements Serializable {
 
     private void runIteration(JavaRDD<DataSet> rdd) {
 
-        log.info("Broadcasting initial parameters of length " + network.numParams());
-        this.params = sc.broadcast(network.params());
+        log.info("Broadcasting initial parameters of length " + network.numParams(false));
+        INDArray valToBroadcast = network.params(false);
+        this.params = sc.broadcast(valToBroadcast);
 
-        int paramsLength = network.numParams();
+        int paramsLength = network.numParams(false);
         boolean accumGrad = sc.getConf().getBoolean(ACCUM_GRADIENT,false);
 
 
@@ -238,7 +239,7 @@ public class SparkDl4jMultiLayer implements Serializable {
                 accumulatedGradient.divi(results.partitions().size());
             log.info("Accumulated parameters");
             log.info("Summed gradients.");
-            network.setParameters(network.params().addi(accumulatedGradient));
+            network.setParameters(network.params(false).addi(accumulatedGradient));
             log.info("Set parameters");
         }
         else {

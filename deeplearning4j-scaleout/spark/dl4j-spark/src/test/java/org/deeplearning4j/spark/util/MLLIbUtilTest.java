@@ -18,23 +18,15 @@
 
 package org.deeplearning4j.spark.util;
 
-import static org.junit.Assert.*;
 
-import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.VoidFunction;
-import org.apache.spark.input.PortableDataStream;
 import org.apache.spark.mllib.regression.LabeledPoint;
-import org.canova.image.recordreader.ImageRecordReader;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.spark.BaseSparkTest;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.io.ClassPathResource;
 
 import java.util.List;
 
@@ -52,17 +44,6 @@ public class MLLIbUtilTest extends BaseSparkTest {
         JavaRDD<LabeledPoint> mllLibData = MLLibUtil.fromDataSet(sc,data);
     }
 
-    @Test
-    public void testMlLibBinaryFiles() throws Exception {
-        JavaPairRDD<String, PortableDataStream> pairRdd = sc.binaryFiles(new ClassPathResource("img.jpg").getFile().toString());
-        JavaRDD<LabeledPoint> rdd = MLLibUtil.fromBinary(pairRdd, new ImageRecordReader(28, 28));
-        rdd.foreach(new VoidFunction<LabeledPoint>() {
-            @Override
-            public void call(LabeledPoint labeledPoint) throws Exception {
 
-            }
-        });
-
-    }
 
 }
