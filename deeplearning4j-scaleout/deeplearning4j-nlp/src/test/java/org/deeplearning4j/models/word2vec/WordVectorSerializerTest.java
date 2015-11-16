@@ -119,12 +119,14 @@ public class WordVectorSerializerTest {
         WordVectorSerializer.writeWordVectors(vec, pathToWriteto);
 
         WordVectors wordVectors = WordVectorSerializer.loadTxtVectors(new File(pathToWriteto));
-        double[] wordVector1 = wordVectors.getWordVector("Morgan_Freeman");
-        double[] wordVector2 = wordVectors.getWordVector("JA_Montalbano");
-        assertTrue(wordVector1.length == 300);
-        assertTrue(wordVector2.length == 300);
-        assertEquals(Doubles.asList(wordVector1).get(0), 0.044423, 1e-3);
-        assertEquals(Doubles.asList(wordVector2).get(0), 0.051964, 1e-3);
+        INDArray wordVector1 = wordVectors.getWordVectorMatrix("Morgan_Freeman");
+        INDArray wordVector2 = wordVectors.getWordVectorMatrix("JA_Montalbano");
+        assertEquals(vec.getWordVectorMatrix("Morgan_Freeman"),wordVector1);
+        assertEquals(vec.getWordVectorMatrix("JA_Montalbano"),wordVector2);
+        assertTrue(wordVector1.length() == 300);
+        assertTrue(wordVector2.length() == 300);
+        assertEquals(wordVector1.getDouble(0), 0.044423, 1e-3);
+        assertEquals(wordVector2.getDouble(0), 0.051964, 1e-3);
     }
 
     @Test
