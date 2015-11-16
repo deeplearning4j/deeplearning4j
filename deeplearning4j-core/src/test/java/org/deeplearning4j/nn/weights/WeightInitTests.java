@@ -16,7 +16,7 @@
  *
  */
 
-package org.deeplearning4j.nn.learning;
+package org.deeplearning4j.nn.weights;
 
 
 import org.deeplearning4j.nn.weights.WeightInit;
