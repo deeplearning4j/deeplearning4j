@@ -16,10 +16,12 @@ import static org.junit.Assert.*;
 public class LocalUnstructuredDataFormatterTest {
 
     @Test
-    public void testRearrange() {
+    public void testRearrange() throws Exception {
         //ensure exists
         new LFWDataSetIterator(10,28,28).next();
         File destinationDir = new File(System.getProperty("user.home"),"rearrangedlfw");
+        if(destinationDir.exists())
+            FileUtils.deleteDirectory(destinationDir);
         LocalUnstructuredDataFormatter formatter = new LocalUnstructuredDataFormatter(destinationDir,new File(System.getProperty("user.home"),"lfw"), LocalUnstructuredDataFormatter.LabelingType.DIRECTORY,0.8);
         formatter.rearrange();
         //train and test in the split directory
