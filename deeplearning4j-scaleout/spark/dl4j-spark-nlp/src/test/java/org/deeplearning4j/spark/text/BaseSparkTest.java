@@ -33,7 +33,7 @@ public abstract class BaseSparkTest implements Serializable {
     protected transient  JavaSparkContext sc;
 
     @Before
-    public void before() {
+    public void before()throws Exception {
         sc = getContext();
     }
     @After
