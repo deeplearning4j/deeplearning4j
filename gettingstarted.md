@@ -27,13 +27,15 @@ After those installs, please read the following:
 
 ### <a name="linux">Linux</a>
 
-* Due to our reliance on Jblas for CPUs, native bindings for Blas are required.
+* Due to our reliance on various forms of Blas for CPUs, native bindings for Blas are required.
 
         Fedora/RHEL
         yum -y install blas
 
         Ubuntu
         apt-get install libblas* (credit to @sujitpal)
+
+Please see [this section](#open) for more information on OpenBlas.
 
 * If GPUs are broken, you'll need to enter an extra command. First, find out where Cuda installs itself. It will look something like this
 
