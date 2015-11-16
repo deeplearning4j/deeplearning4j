@@ -8,6 +8,7 @@ import org.apache.spark.mllib.linalg.{Vector => Vector}
 import org.deeplearning4j.datasets.mnist.MnistManager
 import org.deeplearning4j.spark.sql.sources.mnist.DefaultSource._
 import org.deeplearning4j.spark.util.TestSparkContext
+import org.junit.Ignore
 import org.junit.runner.RunWith
 import org.nd4j.linalg.util.ArrayUtil
 import org.scalatest.{Matchers, FunSuite}
@@ -18,6 +19,7 @@ import org.springframework.core.io.ClassPathResource
  * Test Mnist relation
  */
 @RunWith(classOf[JUnitRunner])
+@Ignore
 class MnistRelationTest
   extends FunSuite with TestSparkContext with Logging with Matchers {
 
