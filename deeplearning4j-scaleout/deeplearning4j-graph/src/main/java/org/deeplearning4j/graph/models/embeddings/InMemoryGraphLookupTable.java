@@ -176,4 +176,8 @@ public class InMemoryGraphLookupTable implements GraphVectorLookupTable {
         long mask = 1L << bitNum;
         return (in & mask) != 0L;
     }
+
+    public void setVertexVectors(INDArray vertexVectors){
+        this.vertexVectors = vertexVectors;
+    }
 }
