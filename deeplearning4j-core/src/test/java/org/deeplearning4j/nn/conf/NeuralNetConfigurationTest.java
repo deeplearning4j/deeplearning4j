@@ -136,6 +136,7 @@ public class NeuralNetConfigurationTest {
 
         Layer model = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.SIZE);
         INDArray modelWeights = model.getParam(DefaultParamInitializer.WEIGHT_KEY);
+        Nd4j.getRandom().setSeed(123);
 
         Layer model2 = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.SIZE);
         INDArray modelWeights2 = model2.getParam(DefaultParamInitializer.WEIGHT_KEY);
@@ -149,6 +150,7 @@ public class NeuralNetConfigurationTest {
 
         Layer model = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.NORMALIZED);
         INDArray modelWeights = model.getParam(DefaultParamInitializer.WEIGHT_KEY);
+        Nd4j.getRandom().setSeed(123);
 
         Layer model2 = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.NORMALIZED);
         INDArray modelWeights2 = model2.getParam(DefaultParamInitializer.WEIGHT_KEY);
@@ -161,6 +163,7 @@ public class NeuralNetConfigurationTest {
 
         Layer model = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.UNIFORM);
         INDArray modelWeights = model.getParam(DefaultParamInitializer.WEIGHT_KEY);
+        Nd4j.getRandom().setSeed(123);
 
         Layer model2 = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.UNIFORM);
         INDArray modelWeights2 = model2.getParam(DefaultParamInitializer.WEIGHT_KEY);
@@ -174,6 +177,7 @@ public class NeuralNetConfigurationTest {
 
         Layer model = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.VI);
         INDArray modelWeights = model.getParam(DefaultParamInitializer.WEIGHT_KEY);
+        Nd4j.getRandom().setSeed(123);
 
         Layer model2 = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.VI);
         INDArray modelWeights2 = model2.getParam(DefaultParamInitializer.WEIGHT_KEY);
@@ -187,6 +191,7 @@ public class NeuralNetConfigurationTest {
 
         Layer model = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.DISTRIBUTION);
         INDArray modelWeights = model.getParam(DefaultParamInitializer.WEIGHT_KEY);
+        Nd4j.getRandom().setSeed(123);
 
         Layer model2 = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.DISTRIBUTION);
         INDArray modelWeights2 = model2.getParam(DefaultParamInitializer.WEIGHT_KEY);
@@ -195,29 +200,7 @@ public class NeuralNetConfigurationTest {
     }
 
 
-    @Test
-    public void testTimeSeriesLength() {
-        RBM layer = new RBM.Builder()
-                .nIn(1)
-                .nOut(1)
-                .weightInit(WeightInit.UNIFORM).dist(new NormalDistribution(1, 1))
-                .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
-                .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
-                .activation("tanh")
-                .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
-                .build();
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .iterations(3)
-                .timeSeriesLength(1)
-                .regularization(false)
-                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                .layer(layer)
-                .build();
-
-        assertEquals(conf.getTimeSeriesLength(), 1);
-
-    }
 
     private static NeuralNetConfiguration getRBMConfig(int nIn, int nOut, WeightInit weightInit){
         RBM layer = new RBM.Builder()
