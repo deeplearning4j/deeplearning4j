@@ -7,6 +7,8 @@ layout: default
 
 ## Prerequisites
 
+이 웹 페이지는 공사 중 입니다. 보다 최신의 자료를 원하시면, 영문 페이지를 [방문](/quickstart.html)해주세요.
+
 이 퀵 스타트 가이드는 이미 여러분이 아래를 설치하신 것으로 간주합니다:
 
 1. [Java 7](http://nd4j.org/kr-getstarted.html#java)
