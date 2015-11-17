@@ -24,4 +24,4 @@ before_install:
   - cd .. && git clone https://github.com/deeplearning4j/Canova && cd Canova && mvn clean install -DskipTests -Dmaven.javadoc.skip=true
 
 script:
-  - cd .. && chmod +x ./runtests.sh && ./runtests.sh
+  - cd .. && pwd && chmod +x ./runtests.sh && ./runtests.sh
