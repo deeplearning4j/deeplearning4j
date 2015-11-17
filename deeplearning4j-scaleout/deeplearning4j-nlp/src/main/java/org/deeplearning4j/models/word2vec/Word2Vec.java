@@ -87,9 +87,13 @@ public class Word2Vec extends WordVectorsImpl {
     protected double minLearningRate = 0.01;
     protected transient TextVectorizer vectorizer;
     protected int learningRateDecayWords = 10000;
-    protected InvertedIndex invertedIndex;
+
+    // set to trainsient, since its not used anymore actually
+    protected transient InvertedIndex invertedIndex;
     protected boolean useAdaGrad = false;
-    protected int workers = Runtime.getRuntime().availableProcessors();
+    protected transient int workers = Runtime.getRuntime().availableProcessors();
+
+    // it's not transient, since it'll be used in saveModel/loadModel serialization routines
     protected VocabularyHolder vocabularyHolder;
 
     public Word2Vec() {}
@@ -133,6 +137,7 @@ public class Word2Vec extends WordVectorsImpl {
      * @param tokens - list of tokens from sentence
      * @return
      */
+    @Deprecated
     protected List<VocabWord> digitizeSentence(List<String> tokens) {
         List<VocabWord> result = new ArrayList<>(tokens.size());
         for (String token: tokens) {
@@ -150,8 +155,19 @@ public class Word2Vec extends WordVectorsImpl {
      *
      * @param sentence
      */
-    private void trainSentence(String sentence) {
-        // TODO: to be implemented later
+    protected void fit(String sentence) {
+        // TODO: implementation is in process
+
+        // since this method can be executed on model restored from scratches, we have to be sure taht TokenizerFactory is set to something reasonable
+        if (tokenizerFactory == null) throw new IllegalStateException("TokenizerFactory should be declared before fit() is called!");
+
+        /*
+            we should check if this model contains huffman tree info or word counters.
+            as measure of this state we could use number of words occurences in vocab.
+            For proper model it should be greater then number of words in vocab
+          */
+
+        Tokenizer tokenizer = tokenizerFactory.create(sentence);
     }
 
 
@@ -484,6 +500,7 @@ public class Word2Vec extends WordVectorsImpl {
         protected int workers = Runtime.getRuntime().availableProcessors();
         protected InvertedIndex index;
         protected WeightLookupTable lookupTable;
+        protected boolean hugeModelExpected = false;
 
         public Builder lookupTable(WeightLookupTable lookupTable) {
             this.lookupTable = lookupTable;
@@ -563,6 +580,13 @@ public class Word2Vec extends WordVectorsImpl {
             return this;
         }
 
+        /**
+         * All words in this VocabCache will be treated as SPECIAL words, and they won't be affected by minWordFrequency argument.
+         * That's good way to inject words from human-marked corpora, so you'll be sure they won't be missed.
+         *
+         * @param cache
+         * @return
+         */
         public Builder vocabCache(VocabCache cache) {
             this.vocabCache = cache;
             return this;
@@ -597,6 +621,18 @@ public class Word2Vec extends WordVectorsImpl {
 
         public Builder iterate(SentenceIterator iter) {
             this.iter = iter;
+            return this;
+        }
+
+        /**
+         * If you're going for huge model built from scratches, you can use this option to avoid excessive memory use during vocab building.
+         * Setting this option to true will force vocab to be trashed perodically, based on each word occurence dynamic
+         *
+         * @param reallyExpected
+         * @return
+         */
+        public Builder hugeModelExpected(boolean reallyExpected) {
+            this.hugeModelExpected = reallyExpected;
             return this;
         }
 
@@ -662,8 +698,20 @@ public class Word2Vec extends WordVectorsImpl {
                 // VocabularyHolder is used ONLY for fit() purposes, as intermediate data storage
                 if (this.vocabCache!= null)
                     // if VocabCache is set, build VocabHolder on top of it. Just for compatibility
-                    ret.vocabularyHolder = new VocabularyHolder(this.vocabCache);
-                else ret.vocabularyHolder = new VocabularyHolder();
+                    // please note: all words in VocabCache will be treated as SPECIAL, so they wont be affected by minWordFrequency
+                    ret.vocabularyHolder = new VocabularyHolder.Builder()
+                            .externalCache(vocabCache)
+                            .hugeModelExpected(hugeModelExpected)
+                            .minWordFrequency(minWordFrequency)
+                            .scavengerActivationThreshold(1000000)
+                            .scavengerRetentionDelay(3)
+                            .build();
+                else ret.vocabularyHolder = new VocabularyHolder.Builder()
+                        .hugeModelExpected(hugeModelExpected)
+                        .minWordFrequency(minWordFrequency)
+                        .scavengerActivationThreshold(1000000)
+                        .scavengerRetentionDelay(3)
+                        .build();
 
                 return ret;
         }
@@ -744,7 +792,7 @@ public class Word2Vec extends WordVectorsImpl {
             this.totalWordsCount = totalWordsCount;
             this.totalLines = linesCounter;
             this.sentences = buffer;
-            this.setName("VectorCalculationsThread " + threadId);
+            this.setName("VectorCalculationsThread " + this.threadId);
         }
 
         @Override
@@ -769,7 +817,7 @@ public class Word2Vec extends WordVectorsImpl {
 
                     // increment processed lines count
                     totalLines.incrementAndGet();
-                    if (totalLines.get() % 10000 == 0) log.info("Iteration: " + this.iterationId+ "; Words vectorized so far: " + wordsCounter.get() + ";  Lines vectorized so far: " + totalLines.get() + "; learningRate: " + alpha);
+                    if (totalLines.get() % 100000 == 0) log.info("Iteration: " + this.iterationId+ "; Words vectorized so far: " + wordsCounter.get() + ";  Lines vectorized so far: " + totalLines.get() + "; learningRate: " + alpha);
                 } catch (Exception  e) {
                     e.printStackTrace();
                     throw new RuntimeException(e);
