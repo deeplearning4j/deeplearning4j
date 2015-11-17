@@ -55,11 +55,6 @@ public class TestRenders extends BaseUiServerTest {
     }
 
     @Test
-    public void testCoordUpdate() {
-
-    }
-
-    @Test
     public void renderActivation() throws Exception {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.9f)

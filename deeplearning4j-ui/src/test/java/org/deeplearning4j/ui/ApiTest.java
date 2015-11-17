@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.plot.BarnesHutTsne;
 import org.deeplearning4j.ui.api.UrlResource;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -24,6 +25,7 @@ import static org.junit.Assert.*;
  */
 public class ApiTest extends BaseUiServerTest {
     @Test
+    @Ignore
     public void testUpdateCoords() throws Exception {
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
         Nd4j.factory().setDType(DataBuffer.Type.DOUBLE);
