@@ -17,8 +17,22 @@ public class VocabularyWord  {
     private int count = 1;
     private HuffmanNode huffmanNode;
 
+    /*
+        since scavenging mechanics are targeting low-freq words, byte values is definitely enough.
+        please note, array is initialized outside of this scope, since it's only holder, no logic involved inside this class
+      */
+    private transient byte[] frequencyShift;
+    private transient byte retentionStep;
+
+    // special mark means that this word should NOT be affected by minWordFrequency setting
+    private boolean special = false;
+
     public void incrementCount() {
         this.count++;
+    }
+
+    public void incrementRetentionStep() {
+        this.retentionStep += 1;
     }
 
     @Override
