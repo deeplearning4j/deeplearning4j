@@ -7,10 +7,12 @@ import org.deeplearning4j.graph.graph.Graph;
 import org.deeplearning4j.graph.iterator.RandomWalkIterator;
 import org.deeplearning4j.graph.iterator.GraphWalkIterator;
 import org.deeplearning4j.graph.models.GraphVectors;
+import org.deeplearning4j.graph.models.embeddings.InMemoryGraphLookupTable;
 import org.deeplearning4j.graph.models.loader.GraphVectorSerializer;
 import org.deeplearning4j.graph.vertexfactory.StringVertexFactory;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
@@ -183,6 +185,64 @@ public class TestDeepWalk {
                 assertTrue(relError < 1e-6);
             }
         }
+    }
+
+    @Test
+    public void testDeepWalk13Vertices() throws IOException{
+
+        ClassPathResource cpr = new ClassPathResource("graph13.txt");
+        Graph<String,String> graph = GraphLoader.loadUndirectedGraphEdgeListFile(cpr.getFile().getAbsolutePath(),13,",");
+
+        System.out.println(graph);
+
+        Nd4j.getRandom().setSeed(12345);
+        DeepWalk<String,String> deepWalk = new DeepWalk.Builder<String,String>()
+                .learningRate(0.001)
+                .vectorSize(15)
+                .windowSize(2)
+                .seed(12345)
+                .build();
+
+        for( int i=0; i<5000; i++ ) {
+            deepWalk.fit(graph, 10);
+        }
+
+        for( int i=0; i<13; i++ ) System.out.println(Arrays.toString(deepWalk.getVertexVector(i).dup().data().asFloat()));
+
+        InMemoryGraphLookupTable table = ((InMemoryGraphLookupTable)deepWalk.lookupTable());
+        for( int i=0; i<13; i++ ){
+//            for( int j=i+1; j<13; j++ ){
+            for( int j=i; j<13; j++ ){
+//                INDArray first = deepWalk.getVertexVector(i);
+//                INDArray second = deepWalk.getVertexVector(j);
+                System.out.println(i + "\t" + j + "\t" + deepWalk.similarity(i, j) + "\t" + table.calculateProb(i,j));
+            }
+        }
+    }
+
+    @Test
+    public void tempTest() throws IOException{
+
+        ClassPathResource cpr = new ClassPathResource("graph13.txt");
+        Graph<String,String> graph = GraphLoader.loadUndirectedGraphEdgeListFile(cpr.getFile().getAbsolutePath(),13,",");
+
+//        System.out.println(graph);
+
+        for( int x=0; x<13; x++ ) {
+            int[] counts = new int[13];
+            Random r = new Random(12345);
+            for (int i = 0; i < 1000; i++) {
+                int v = graph.getRandomConnectedVertex(x, r).vertexID();
+                counts[v]++;
+            }
+            System.out.println(x + "\t" + Arrays.toString(counts));
+        }
+
+//        System.out.println("8: " + counts[8]);
+//        System.out.println("9: " + counts[9]);
+//        System.out.println("10: " + counts[10]);
+//        System.out.println("12 " + counts[12]);
+
 
     }
 }

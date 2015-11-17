@@ -45,7 +45,7 @@ public class DeepWalk<V,E> extends GraphVectorsImpl<V,E> {
     private boolean initCalled = false;
     private long seed;
     private ExecutorService executorService;
-    private int nThreads = Runtime.getRuntime().availableProcessors();
+    private int nThreads = 1;   //Runtime.getRuntime().availableProcessors();
     private transient AtomicLong walkCounter = new AtomicLong(0);
 
     public DeepWalk(){
@@ -133,7 +133,7 @@ public class DeepWalk<V,E> extends GraphVectorsImpl<V,E> {
         });
 
         List<Future<Void>> list = new ArrayList<>(iteratorList.size());
-        log.info("Fitting Graph with {} threads", Math.max(nThreads,iteratorList.size()));
+        //log.info("Fitting Graph with {} threads", Math.max(nThreads,iteratorList.size()));
         for( GraphWalkIterator<V> iter : iteratorList ){
             LearningCallable c = new LearningCallable(iter);
             list.add(executorService.submit(c));
