@@ -4,6 +4,8 @@ layout: default
 
 # 시작 하기
 
+이 웹 페이지는 공사 중 입니다. 보다 최신의 자료를 원하시면, 영문 페이지를 [방문](/gettingstarted.html)해주세요.
+
 이것은 다단계 설치 입니다. 질문이나 피드백이 있으시다면 저희가 상세한 설명을 드릴 수 있드록 저희의 [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j)에 가입하시기를 강력 추천드립니다. 비사교적 또는 완전 독립적인 성격이시라면 자율 학습 하실 수 있습니다.
 
 Deeplearning4j를 위한 prerequisites 설치는 DL4J의 신경망에 동력을 지원하는 선형 대수학 엔진, ND4J의 [“Getting Started” 페이지](http://nd4j.org/kr-getstarted.html)에 문서화 되어 있습니다:
