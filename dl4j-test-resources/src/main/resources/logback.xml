@@ -37,8 +37,8 @@
 
     <logger name="org.apache.catalina.core" level="DEBUG" />
     <logger name="org.springframework" level="DEBUG" />
-    <logger name="org.deeplearning4j" level="DEBUG" />
-    <logger name="org.nd4j" level="DEBUG" />
+    <logger name="org.deeplearning4j" level="INFO" />
+    <logger name="org.nd4j" level="INFO" />
     <logger name="org.eclipse.jetty" level="INFO" />
 
     <logger name="opennlp.uima.util" level="OFF" />
