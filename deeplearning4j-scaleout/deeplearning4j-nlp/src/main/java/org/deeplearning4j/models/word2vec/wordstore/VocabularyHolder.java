@@ -28,7 +28,7 @@ public class VocabularyHolder implements Serializable {
     private int retentionDelay = 3;
 
     // this variable defines how often scavenger will be activated
-    private int scavengerThreshold  = 1000000;
+    private int scavengerThreshold  = 2000000;
 
     private  long totalWordOccurencies = 0;
 
@@ -425,7 +425,7 @@ public class VocabularyHolder implements Serializable {
         private VocabCache cache = null;
         private int minWordFrequency = 0;
         private boolean hugeModelExpected = false;
-        private int scavengerThreshold  = 1000000;
+        private int scavengerThreshold  = 2000000;
         private int retentionDelay = 3;
 
         public Builder() {
