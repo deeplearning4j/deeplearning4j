@@ -18,8 +18,6 @@
 
 package org.deeplearning4j.models.embeddings.loader;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -38,7 +36,9 @@ import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.VocabularyHolder;
+import org.deeplearning4j.models.word2vec.wordstore.VocabularyWord;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
+import org.deeplearning4j.text.sentenceiterator.LineSentenceIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -341,15 +341,101 @@ public class WordVectorSerializer {
                     3. Settings from Word2Vect model: workers, layers, etc.
          */
 
+        PrintWriter printWriter = null;
+        try {
+            printWriter = new PrintWriter(path);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
         WeightLookupTable lookupTable = vec.getLookupTable();
-        VocabCache vocabCache = vec.getVocab();
+        VocabCache vocabCache = vec.getVocab(); // ((InMemoryLookupTable) lookupTable).getVocab(); //vec.getVocab();
+
 
         if (!(lookupTable instanceof InMemoryLookupTable)) throw new IllegalStateException("At this moment only InMemoryLookupTable is supported.");
         if (!(vocabCache instanceof InMemoryLookupCache)) throw new IllegalStateException("At this moment only InMemoryLookupCache is supported.");
 
-        VocabularyHolder holder = new VocabularyHolder.Builder()
-                .externalCache(vocabCache)
-                .build();
+        Word2VecConfiguration conf = vec.getConfiguration();
+        conf.setVocabSize(vocabCache.numWords());
+
+        printWriter.println(conf.toJson());
+        log.debug("Word2Vec conf. JSON: " + conf.toJson());
+        /*
+            We have the following map:
+            Line 0 - Word2VecConfiguration JSON string
+            Line 1 - expTable
+            Line 2 - table
+
+            All following lines are vocab/weight lookup table saved line by line as VocabularyWord JSON representation
+         */
+
+        // actually we don't need expTable, since it produces exact results on subsequent runs untill you dont modify expTable size :)
+        // saving ExpTable just for "special case in future"
+        StringBuilder builder = new StringBuilder();
+        for (int x = 0; x < ((InMemoryLookupTable) lookupTable).getExpTable().length; x++) {
+            builder.append(((InMemoryLookupTable) lookupTable).getExpTable()[x]).append(" ");
+        }
+        printWriter.println(builder.toString().trim());
+
+        // saving table, available only if negative sampling is used
+        if (conf.getNegative() > 0) {
+            builder = new StringBuilder();
+            for (int x = 0; x < ((InMemoryLookupTable) lookupTable).getTable().columns(); x++) {
+                builder.append(((InMemoryLookupTable) lookupTable).getTable().getDouble(x)).append(" ");
+            }
+            printWriter.println(builder.toString().trim());
+        } else printWriter.println("");
+
+        List<VocabWord> words = new ArrayList<>(((InMemoryLookupCache) vocabCache).getVocabs().values());
+        for (VocabWord word: words) {
+            VocabularyWord vw = new VocabularyWord(word.getWord());
+            vw.setCount(vocabCache.wordFrequency(word.getWord()));
+
+
+            // writing down syn0
+            INDArray syn0 = ((InMemoryLookupTable) lookupTable).getSyn0().getRow(vocabCache.indexOf(word.getWord()));
+            double[] dsyn0 = new double[syn0.columns()];
+            for (int x =0; x < conf.getLayersSize(); x++) {
+                dsyn0[x] = syn0.getDouble(x);
+            }
+            vw.setSyn0(dsyn0);
+
+            // writing down syn1
+            INDArray syn1 = ((InMemoryLookupTable) lookupTable).getSyn1().getRow(vocabCache.indexOf(word.getWord()));
+            double[] dsyn1 = new double[syn1.columns()];
+            for (int x =0; x < syn1.columns(); x++) {
+                dsyn1[x] = syn1.getDouble(x);
+            }
+            vw.setSyn1(dsyn1);
+
+            // writing down syn1Neg, if negative sampling is used
+            if (conf.getNegative() > 0) {
+                INDArray syn1Neg = ((InMemoryLookupTable) lookupTable).getSyn1Neg().getRow(vocabCache.indexOf(word.getWord()));
+                double[] dsyn1Neg = new double[syn1Neg.columns()];
+                for (int x = 0; x < syn1Neg.columns(); x++) {
+                    dsyn1Neg[x] = syn1Neg.getDouble(x);
+                }
+                vw.setSyn1Neg(dsyn1Neg);
+            }
+
+
+            // in case of UseAdaGrad == true - we should save gradients for each word in vocab
+            if (conf.isUseAdaGrad() && ((InMemoryLookupTable) lookupTable).isUseAdaGrad()) {
+                INDArray gradient = word.getHistoricalGradient();
+                if (gradient == null) gradient = Nd4j.zeros(word.getCodes().size());
+                double ada[] = new double[gradient.columns()];
+                for (int x = 0; x < gradient.columns(); x++) {
+                    ada[x] = gradient.getDouble(x);
+                }
+                vw.setHistoricalGradient(ada);
+            }
+
+            printWriter.println(vw.toJson());
+        }
+
+        // at this moment we have whole vocab serialized
+        printWriter.flush();
+        printWriter.close();
     }
 
     /**
@@ -357,13 +443,56 @@ public class WordVectorSerializer {
      * @param path - path to previously stored w2v json model
      * @return - Word2Vec instance
      */
-    public static Word2Vec loadFullModel(String path) {
+    protected static Word2Vec loadFullModel(@NonNull String path) {
         /*
+            // TODO: implementation is in process
             We need to restore:
                      1. WeightLookupTable, including syn0 and syn1 matrices
                      2. VocabCache + mark it as SPECIAL, to avoid accidental word removals
          */
-        return null;
+        LineSentenceIterator iterator = new LineSentenceIterator(new File(path));
+
+        // first 3 lines should be processed separately
+        String confJson  = iterator.nextSentence();
+        Word2VecConfiguration configuration = Word2VecConfiguration.fromJson(confJson);
+
+
+        // actually we dont need expTable, since it produces exact results on subsequent runs untill you dont modify expTable size :)
+        String eTable = iterator.nextSentence();
+        double[] expTable;
+
+
+        String nTable = iterator.nextSentence();
+        if (configuration.getNegative() > 0) {
+            // we should parse nTable,
+        }
+
+        /*
+                Since we're restoring vocab from previously serialized model, we can expect minWordFrequency appliance in its vocabulary, so it should NOT be truncated.
+                That's why i'm setting minWordFrequency to configuration value, but applying SPECIAL to each word, to avoid truncation
+         */
+        VocabularyHolder holder = new VocabularyHolder.Builder()
+                .minWordFrequency(configuration.getMinWordFrequency())
+                .hugeModelExpected(configuration.isHugeModelExpected())
+                .scavengerActivationThreshold(configuration.getScavengerActivationThreshold())
+                .scavengerRetentionDelay(configuration.getScavengerRetentionDelay())
+                .build();
+
+        while (iterator.hasNext()) {
+        //    log.info("got line: " + iterator.nextSentence());
+            String wordJson = iterator.nextSentence();
+            VocabularyWord word = VocabularyWord.fromJson(wordJson);
+            word.setSpecial(true);
+
+            holder.addWord(word);
+        }
+
+        // at this moment vocab is restored, and it's time to rebuild Huffman tree
+        holder.updateHuffmanCodes();
+
+
+        return new Word2Vec.Builder(configuration)
+                .build();
     }
 
     /**

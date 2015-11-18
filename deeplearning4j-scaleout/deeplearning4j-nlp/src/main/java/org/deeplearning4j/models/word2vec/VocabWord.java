@@ -18,6 +18,8 @@
 
 package org.deeplearning4j.models.word2vec;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -46,7 +48,7 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 	private List<Integer> codes = new ArrayList<>();
 	//for my sanity
 	private String word;
-	private INDArray historicalGradient;
+	@Getter @Setter private INDArray historicalGradient;
 	private List<Integer> points = new ArrayList<>();
     private int codeLength = 0;
 

@@ -90,7 +90,7 @@ public class VocabularyHolder implements Serializable {
 
         for (VocabularyWord word: words) {
             if (word.getWord().isEmpty()) continue;
-            VocabWord vocabWord = new VocabWord(word.getCount(), word.getWord());
+            VocabWord vocabWord = new VocabWord(1, word.getWord());
 
             // update Huffman tree information
             vocabWord.setIndex(word.getHuffmanNode().getIdx());
@@ -154,6 +154,10 @@ public class VocabularyHolder implements Serializable {
         return result;
     }
 
+    public Collection<VocabularyWord> getVocabulary() {
+        return vocabulary.values();
+    }
+
     public VocabularyWord getVocabularyWordByString(String word) {
         return vocabulary.get(word);
     }
@@ -211,6 +215,10 @@ public class VocabularyHolder implements Serializable {
 
             return;
         }
+    }
+
+    public void addWord(VocabularyWord word) {
+        vocabulary.put(word.getWord(), word);
     }
 
     /**
