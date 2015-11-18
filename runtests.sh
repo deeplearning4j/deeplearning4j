@@ -35,3 +35,6 @@ dump_output
 
 # nicely terminate the ping output loop
 kill $PING_LOOP_PID
+
+git clone https://github.com/deeplearning4j/nd4j && cd nd4j && mvn clean install -DskipTests -Dmaven.javadoc.skip=true && cd ..
+git clone https://github.com/deeplearning4j/Canova && cd nd4j && mvn clean install -DskipTests -Dmaven.javadoc.skip=true && cd ..
