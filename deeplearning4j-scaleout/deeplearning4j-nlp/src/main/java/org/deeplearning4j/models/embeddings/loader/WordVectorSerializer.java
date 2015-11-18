@@ -18,6 +18,13 @@
 
 package org.deeplearning4j.models.embeddings.loader;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import lombok.NonNull;
 import org.apache.commons.compress.compressors.gzip.GzipUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
@@ -30,6 +37,7 @@ import org.deeplearning4j.models.glove.Glove;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.deeplearning4j.models.word2vec.wordstore.VocabularyHolder;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -308,6 +316,54 @@ public class WordVectorSerializer {
         write.flush();
         write.close();
 
+    }
+
+    private static ObjectMapper getModelMapper() {
+        ObjectMapper ret = new ObjectMapper();
+        ret.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        ret.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
+        ret.enable(SerializationFeature.INDENT_OUTPUT);
+        return ret;
+    }
+
+    /**
+     * Saves full Word2Vec model in the way, that allows model updates without being rebuilt from scratches
+     *
+     * @param vec - The Word2Vec instance to be saved
+     * @param path - the path for json to be saved
+     */
+    public static void writeFullModel(@NonNull Word2Vec vec, @NonNull String path) {
+        /*
+            Basically we need to save:
+                    1. WeightLookupTable, especially syn0 and syn1 matrices
+                    2. VocabCache, including only WordCounts
+                    3. Settings from Word2Vect model: workers, layers, etc.
+         */
+
+        WeightLookupTable lookupTable = vec.getLookupTable();
+        VocabCache vocabCache = vec.getVocab();
+
+        if (!(lookupTable instanceof InMemoryLookupTable)) throw new IllegalStateException("At this moment only InMemoryLookupTable is supported.");
+        if (!(vocabCache instanceof InMemoryLookupCache)) throw new IllegalStateException("At this moment only InMemoryLookupCache is supported.");
+
+        VocabularyHolder holder = new VocabularyHolder.Builder()
+                .externalCache(vocabCache)
+                .build();
+    }
+
+    /**
+     *
+     * @param path - path to previously stored w2v json model
+     * @return - Word2Vec instance
+     */
+    public static Word2Vec loadFullModel(String path) {
+        /*
+            We need to restore:
+                     1. WeightLookupTable, including syn0 and syn1 matrices
+                     2. VocabCache + mark it as SPECIAL, to avoid accidental word removals
+         */
+        return null;
     }
 
     /**

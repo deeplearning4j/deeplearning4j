@@ -1,13 +1,16 @@
 package org.deeplearning4j.models.word2vec.wordstore;
 
+import lombok.NonNull;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  *This class is used as simplifed VocabCache for vocabulary building routines.
@@ -15,14 +18,22 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author raver119@gmail.com
  */
-public class VocabularyHolder  {
+public class VocabularyHolder implements Serializable {
     private Map<String, VocabularyWord> vocabulary = new ConcurrentHashMap<>();
-    private Map<Integer, VocabularyWord> idxMap = new ConcurrentHashMap<>();
+
+    // idxMap marked as transient, since there's no real reason to save this data on serialization
+    private transient Map<Integer, VocabularyWord> idxMap = new ConcurrentHashMap<>();
+    private int minWordFrequency = 0;
+    private boolean hugeModelExpected = false;
+    private int retentionDelay = 3;
+
+    // this variable defines how often scavenger will be activated
+    private int scavengerThreshold  = 2000000;
 
     private  long totalWordOccurencies = 0;
 
-    // TODO: this list is probably NOT needed at all, and can be easily replaced by vocabulary.values(), with sort enabled
-//    private List<VocabularyWord> vocab = new ArrayList<>();
+    // for scavenger mechanics we need to know the actual number of words being added
+    private transient AtomicLong hiddenWordsCounter = new AtomicLong(0);
 
     private AtomicInteger totalWordCount = new AtomicInteger(0);
 
@@ -33,7 +44,7 @@ public class VocabularyHolder  {
     /**
      * Default constructor
      */
-    public VocabularyHolder() {
+    protected VocabularyHolder() {
 
     }
 
@@ -47,15 +58,16 @@ public class VocabularyHolder  {
      * This code is required for compatibility between dl4j w2v implementation, and standalone w2v
      * @param cache
      */
-    public VocabularyHolder(VocabCache cache) {
+    protected VocabularyHolder(VocabCache cache, boolean markAsSpecial) {
         for (VocabWord word: cache.tokens()) {
             VocabularyWord vw = new VocabularyWord(word.getWord());
             vw.setCount((int) word.getWordFrequency());
 
-            // TODO: i'm not sure, if it's really worth to transfer Huffman tree data. Maybe it's easier to recalculate everything.
-            if (word.getCodeLength() != 0 && !word.getCodes().isEmpty()) {
-                // do nothing. see comment above ^^^
-            }
+            // since we're importing this word from external VocabCache, we'll assume that this word is SPECIAL, and should NOT be affected by minWordFrequency
+            vw.setSpecial(markAsSpecial);
+
+            // please note: we don't transfer huffman data, since proper way is  to recalculate it after new words being added
+
             vocabulary.put(vw.getWord(), vw);
         }
 
@@ -102,6 +114,23 @@ public class VocabularyHolder  {
         vocabulary.clear();
     }
 
+    /**
+     * This method is needed ONLY for unit tests and should NOT be available in public scope.
+     *
+     * It sets the vocab size ratio, at wich dynamic scavenger will be activated
+     * @param threshold
+     */
+    protected void setScavengerActivationThreshold(int threshold) {
+        this.scavengerThreshold = threshold;
+    }
+
+
+    /**
+     *  This method is used only for VocabCache compatibility purposes
+     * @param array
+     * @param codeLen
+     * @return
+     */
     private List<Integer> arrayToList(byte[] array, int codeLen) {
         List<Integer> result = new ArrayList<>();
         for (int x = 0; x < codeLen; x++) {
@@ -110,6 +139,13 @@ public class VocabularyHolder  {
         return result;
     }
 
+
+    /**
+     *  This method is used only for VocabCache compatibility purposes
+     * @param array
+     * @param codeLen
+     * @return
+     */
     private List<Integer> arrayToList(int[] array, int codeLen) {
         List<Integer> result = new ArrayList<>();
         for (int x = 0; x < codeLen; x++) {
@@ -152,15 +188,75 @@ public class VocabularyHolder  {
      *
      * @param word to be added
      */
-    // TODO: investigate, if it's worth to make this synchronized and virtually thread-safe
+    // TODO: investigate, if it's worth to make this internally synchronized and virtually thread-safe
     public void addWord(String word) {
         if (!vocabulary.containsKey(word)) {
             VocabularyWord vw = new VocabularyWord(word);
+
+            /*
+                TODO: this should be done in different way, since this implementation causes minWordFrequency ultimate ignoral if markAsSpecial set to TRUE
+
+                Probably the best way to solve it, is remove markAsSpecial option here, and let this issue be regulated with minWordFrequency
+              */
+            // vw.setSpecial(markAsSpecial);
+
+            // initialize frequencyShift only if hugeModelExpected. It's useless otherwise :)
+            if (hugeModelExpected) vw.setFrequencyShift(new byte[retentionDelay]);
+
             vocabulary.put(word, vw);
-//            vocab.add(vw);
-//            idxMap.putIfAbsent(vw.getId(), vw);
+
+
+
+            if (hugeModelExpected && minWordFrequency > 1 && hiddenWordsCounter.incrementAndGet() % scavengerThreshold == 0) activateScavenger();
+
             return;
         }
+    }
+
+    /**
+     * This method removes low-frequency words based on their frequency change between activations.
+     * I.e. if word has appeared only once, and it's retained the same frequency over consequence activations, we can assume it can be removed freely
+     */
+    protected synchronized void activateScavenger() {
+        int initialSize =  vocabulary.size();
+        List<VocabularyWord> words = new ArrayList<>(vocabulary.values());
+        for (VocabularyWord word: words) {
+            // scavenging could be applied only to non-special tokens that are below minWordFrequency
+            if (word.isSpecial() || word.getCount() >= minWordFrequency || word.getFrequencyShift() == null) {
+                word.setFrequencyShift(null);
+                continue;
+            }
+
+            // save current word counter to byte array at specified position
+            word.getFrequencyShift()[word.getRetentionStep()] = (byte) word.getCount();
+
+            /*
+                    we suppose that we're hunting only low-freq words that already passed few activations
+                    so, we assume word personal threshold as 20% of minWordFrequency, but not less then 1.
+
+                    so, if after few scavenging cycles wordCount is still <= activation - just remove word.
+                    otherwise nullify word.frequencyShift to avoid further checks
+              */
+            int activation = Math.max(minWordFrequency / 5, 2);
+            logger.debug("Current state> Activation: ["  + activation + "], retention info: " + Arrays.toString(word.getFrequencyShift()));
+            if (word.getCount() <= activation  && word.getFrequencyShift()[this.retentionDelay-1] > 0) {
+
+                // if final word count at latest retention point is the same as at the beginning - just remove word
+                if (word.getFrequencyShift()[this.retentionDelay-1] <= activation && word.getFrequencyShift()[this.retentionDelay-1] == word.getFrequencyShift()[0]) {
+                    vocabulary.remove(word.getWord());
+                }
+            }
+
+            // shift retention history to the left
+            if (word.getRetentionStep() < retentionDelay-1) {
+                word.incrementRetentionStep();
+            } else {
+                for (int x = 1; x < retentionDelay; x++) {
+                    word.getFrequencyShift()[x-1]  = word.getFrequencyShift()[x];
+                }
+            }
+        }
+        logger.info("Scavenger was activated. Vocab size before: [" + initialSize + "],  after: [" +vocabulary.size() +"]");
     }
 
     /**
@@ -172,18 +268,26 @@ public class VocabularyHolder  {
     }
 
     /**
+     * The same as truncateVocabulary(this.minWordFrequency)
+     */
+    public void truncateVocabulary() {
+        truncateVocabulary(minWordFrequency);
+    }
+
+    /**
      * All words with frequency below threshold wii be removed
      *
      * @param threshold exclusive threshold for removal
      */
     public void truncateVocabulary(int threshold) {
+        logger.debug("Truncating vocabulary to minWordFrequency: [" + threshold+ "]");
         Set<String> keyset = vocabulary.keySet();
         for (String word: keyset) {
-            if (vocabulary.get(word).getCount() < threshold) {
-                VocabularyWord vw = vocabulary.get(word);
+            VocabularyWord vw = vocabulary.get(word);
 
+            // please note: we're not applying threshold to SPECIAL words
+            if (!vw.isSpecial()&& vw.getCount() < threshold) {
                 vocabulary.remove(word);
-//                vocab.remove(vw);
                 if (vw.getHuffmanNode() != null) idxMap.remove(vw.getHuffmanNode().getIdx());
             }
         }
@@ -315,5 +419,85 @@ public class VocabularyHolder  {
             }
             return totalWordOccurencies;
         } else return totalWordOccurencies;
+    }
+
+    public static class Builder {
+        private VocabCache cache = null;
+        private int minWordFrequency = 0;
+        private boolean hugeModelExpected = false;
+        private int scavengerThreshold  = 2000000;
+        private int retentionDelay = 3;
+
+        public Builder() {
+
+        }
+
+        public Builder externalCache(@NonNull VocabCache cache) {
+            this.cache = cache;
+            return this;
+        }
+
+        public Builder minWordFrequency(int threshold) {
+            this.minWordFrequency = threshold;
+            return this;
+        }
+
+        /**
+         * With this argument set to true, you'll have your vocab scanned for low-freq words periodically.
+         *
+         * Please note: this is incompatible with SPECIAL mechanics.
+         *
+         * @param reallyExpected
+         * @return
+         */
+        public Builder hugeModelExpected(boolean reallyExpected) {
+            this.hugeModelExpected = reallyExpected;
+            return this;
+        }
+
+        /**
+         *  Activation threshold defines, how ofter scavenger will be executed, to throw away low-frequency keywords.
+         *  Good values to start mostly depends on your workstation. Something like 1000000 looks pretty nice to start with.
+         *  Too low values can lead to undesired removal of words from vocab.
+         *
+         *  Please note: this is incompatible with SPECIAL mechanics.
+         *
+         * @param threshold
+         * @return
+         */
+        public Builder scavengerActivationThreshold(int threshold) {
+            this.scavengerThreshold = threshold;
+            return this;
+        }
+
+        /**
+         * Retention delay defines, how long low-freq word will be kept in vocab, during building.
+         * Good values to start with: 3,4,5. Not too high, and not too low.
+         *
+         * Please note: this is incompatible with SPECIAL mechanics.
+         *
+         * @param delay
+         * @return
+         */
+        public Builder scavengerRetentionDelay(int delay) {
+            if (delay < 2) throw new IllegalStateException("Delay < 2 doesn't really makes sense");
+            this.retentionDelay = delay;
+            return this;
+        }
+
+        public VocabularyHolder build() {
+            VocabularyHolder holder = null;
+            if (cache != null) {
+                holder = new VocabularyHolder(cache, true);
+            } else {
+                holder = new VocabularyHolder();
+            }
+            holder.minWordFrequency = this.minWordFrequency;
+            holder.hugeModelExpected = this.hugeModelExpected;
+            holder.scavengerThreshold = this.scavengerThreshold;
+            holder.retentionDelay = this.retentionDelay;
+
+            return holder;
+        }
     }
 }
