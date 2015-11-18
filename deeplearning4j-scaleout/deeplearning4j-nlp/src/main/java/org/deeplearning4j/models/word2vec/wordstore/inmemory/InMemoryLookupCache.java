@@ -119,13 +119,11 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
             throw new IllegalArgumentException("Word can't be empty or null");
         wordFrequencies.incrementCount(word, increment);
 
-        VocabWord token;
-        if(hasToken(word))
-            token = tokenFor(word);
-        else
-            token = new VocabWord(increment,word);
-        //token and word in vocab will be same reference
-        token.increment(increment);
+
+        if(hasToken(word)) {
+            VocabWord token = tokenFor(word);
+            token.increment(increment);
+        }
         totalWordOccurrences.set(totalWordOccurrences.get() + increment);
     }
 

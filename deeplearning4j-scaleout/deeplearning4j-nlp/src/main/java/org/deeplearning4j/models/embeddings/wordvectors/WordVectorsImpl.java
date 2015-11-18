@@ -19,6 +19,7 @@
 package org.deeplearning4j.models.embeddings.wordvectors;
 
 import com.google.common.collect.Lists;
+import lombok.Getter;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
@@ -40,10 +41,10 @@ import java.util.*;
 public class WordVectorsImpl implements WordVectors {
 
     //number of times the word must occur in the vocab to appear in the calculations, otherwise treat as unknown
-    protected int minWordFrequency = 5;
-    protected WeightLookupTable lookupTable;
-    protected VocabCache vocab;
-    protected int layerSize = 100;
+    @Getter protected int minWordFrequency = 5;
+    @Getter protected transient WeightLookupTable lookupTable;
+    @Getter protected transient VocabCache vocab;
+    @Getter protected int layerSize = 100;
     public final static String UNK = "UNK";
     protected List<String> stopWords = StopWords.getStopWords();
     /**

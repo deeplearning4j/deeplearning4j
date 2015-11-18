@@ -25,20 +25,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 
-import akka.actor.ActorSystem;
-import com.google.common.base.Function;
 import com.google.common.util.concurrent.AtomicDouble;
+import lombok.Getter;
+import lombok.NonNull;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
 import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
+import org.deeplearning4j.models.embeddings.loader.Word2VecConfiguration;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
 import org.deeplearning4j.models.word2vec.wordstore.VocabularyHolder;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
-import org.deeplearning4j.parallel.Parallelization;
 import org.deeplearning4j.text.invertedindex.InvertedIndex;
-import org.deeplearning4j.text.invertedindex.LuceneInvertedIndex;
 import org.deeplearning4j.text.documentiterator.DocumentIterator;
 import org.deeplearning4j.text.sentenceiterator.StreamLineIterator;
 import org.deeplearning4j.text.stopwords.StopWords;
@@ -65,9 +64,20 @@ public class Word2Vec extends WordVectorsImpl {
 
     protected static final long serialVersionUID = -2367495638286018038L;
 
+
+    @Getter protected transient Word2VecConfiguration configuration = new Word2VecConfiguration();
     protected transient TokenizerFactory tokenizerFactory = new DefaultTokenizerFactory();
     protected transient SentenceIterator sentenceIter;
     protected transient DocumentIterator docIter;
+    protected transient TextVectorizer vectorizer;
+    protected transient InvertedIndex invertedIndex;
+
+    protected transient VocabularyHolder vocabularyHolder;
+    protected transient  RandomGenerator g;
+
+    protected transient int workers = Runtime.getRuntime().availableProcessors();
+
+
     protected int batchSize = 1000;
     protected double sample = 0;
     protected long totalWords = 1;
@@ -76,7 +86,7 @@ public class Word2Vec extends WordVectorsImpl {
 
     //context to use for gathering word frequencies
     protected int window = 5;
-    protected transient  RandomGenerator g;
+
     protected static final Logger log = LoggerFactory.getLogger(Word2Vec.class);
     protected boolean shouldReset = true;
     //number of iterations to run
@@ -85,16 +95,16 @@ public class Word2Vec extends WordVectorsImpl {
     protected long seed = 123;
     protected boolean saveVocab = false;
     protected double minLearningRate = 0.01;
-    protected transient TextVectorizer vectorizer;
     protected int learningRateDecayWords = 10000;
 
-    // set to trainsient, since its not used anymore actually
-    protected transient InvertedIndex invertedIndex;
-    protected boolean useAdaGrad = false;
-    protected transient int workers = Runtime.getRuntime().availableProcessors();
+    // used to store number of total words occurencies, so it can be passed from vocab building
+    private transient AtomicLong totalProperWordsCount = new AtomicLong(0);
 
-    // it's not transient, since it'll be used in saveModel/loadModel serialization routines
-    protected VocabularyHolder vocabularyHolder;
+    // lines counter
+    final AtomicLong totalLines = new AtomicLong(0);
+
+    protected boolean useAdaGrad = false;
+
 
     public Word2Vec() {}
 
@@ -137,13 +147,12 @@ public class Word2Vec extends WordVectorsImpl {
      * @param tokens - list of tokens from sentence
      * @return
      */
-    @Deprecated
     protected List<VocabWord> digitizeSentence(List<String> tokens) {
         List<VocabWord> result = new ArrayList<>(tokens.size());
         for (String token: tokens) {
             if (stopWords != null && stopWords.contains(token)) continue;
 
-            VocabWord word = vocab.wordFor(token); //vocabularyHolder.getVocabularyWordByString(token);
+            VocabWord word = vocab.wordFor(token);
             if (word != null) result.add(word);
         }
         return result;
@@ -175,39 +184,17 @@ public class Word2Vec extends WordVectorsImpl {
      * Train the model
      */
     public void fit() throws IOException {
-        // lines counter
-        final AtomicLong totalLines = new AtomicLong(0);
+
+        if (sentenceIter == null && docIter == null) throw new IllegalStateException("At least one iterator is needed for model fit()");
+
 
         // this queue is used for cross-thread communication between VectoCalculationsThreads and AsyncIterator thread
         final LinkedBlockingQueue<List<VocabWord>> sentences = new LinkedBlockingQueue<>();
 
-        /*
-            vocabulary building part of task
-         */
-        log.info("Building vocabulary...");
-        while (sentenceIter.hasNext()) {
-            Tokenizer tokenizer = tokenizerFactory.create(sentenceIter.nextSentence());
-            // insert new words in vocabulary, and update counters for already known words
-            // as result it returns number of words being added or incremented in the vocab
-            int wordsAdded =  this.fillVocabulary(tokenizer.getTokens());
-
-            // at this moment we're pretty sure that each word from this sentence is already in vocabulary and all counters are updated
-            if (wordsAdded > 0) totalLines.incrementAndGet();
-
-            if (totalLines.get() % 100000 == 0) log.info("" + totalLines.get() + " lines parsed. Vocab size: " + vocabularyHolder.numWords());
-        }
-
-        log.info("" + totalLines.get() + " lines parsed. Vocab size: " + vocabularyHolder.numWords());
-        vocabularyHolder.truncateVocabulary(minWordFrequency);
+        buildVocab();
 
         // totalWordsCount is used for learningRate decay at VectorCalculationsThreads
-        final long totalWordsCount = vocabularyHolder.totalWordsBeyondLimit() * numIterations;
-
-        log.info("Total truncated vocab size: " + vocabularyHolder.numWords());
-        // as soon as vocab is built, we can switch back to VocabCache
-        // please note: huffman tree building is hidden inside transfer method
-        // please note: after this line VocabularyHolder is empty, since all data is moved into VocabCache
-        vocabularyHolder.transferBackToVocabCache(vocab);
+        final long totalWordsCount =this.totalProperWordsCount.get();
 
         /*
          vector representation part
@@ -266,31 +253,6 @@ public class Word2Vec extends WordVectorsImpl {
 
 
 
-    private void doIteration(Collection<List<VocabWord>> batch2,final AtomicLong numWordsSoFar,final AtomicLong nextRandom,ActorSystem actorSystem) {
-        final AtomicLong lastReported = new AtomicLong(System.currentTimeMillis());
-        Parallelization.iterateInParallel(batch2, new Parallelization.RunnableWithParams<List<VocabWord>>() {
-            @Override
-            public void run(List<VocabWord> sentence, Object[] args) {
-                double alpha = Math.max(minLearningRate, Word2Vec.this.alpha.get() *
-                        (1 - (1.0 * numWordsSoFar.get() / (double) totalWords)));
-                long now = System.currentTimeMillis();
-                long diff = Math.abs(now - lastReported.get());
-                if (numWordsSoFar.get() > 0 && diff > 1000) {
-                    lastReported.set(now);
-                    log.info("Words so far " + numWordsSoFar.get() + " with alpha at " + alpha);
-                }
-
-
-                trainSentence(sentence, nextRandom, alpha);
-                numWordsSoFar.set(numWordsSoFar.get() + sentence.size());
-
-
-            }
-        },actorSystem);
-    }
-
-
-
     protected void addWords(List<VocabWord> sentence,AtomicLong nextRandom,List<VocabWord> currMiniBatch) {
         for (VocabWord word : sentence) {
             if(word == null)
@@ -332,36 +294,41 @@ public class Word2Vec extends WordVectorsImpl {
      * Builds the vocabulary for training
      */
     public boolean buildVocab() {
-        readStopWords();
+        if (sentenceIter == null && docIter == null) throw new IllegalStateException("At least one iterator is needed for model fit()");
 
-        if(vocab().vocabExists()) {
-            log.info("Loading vocab...");
-            vocab().loadVocab();
-            lookupTable.resetWeights();
-            return true;
+        /*
+            vocabulary building part of task
+         */
+
+        // SentenceIterator should be reset, so we'll be assured that previous iterator usage wont mess us
+        sentenceIter.reset();
+
+        log.info("Building vocabulary...");
+        while (sentenceIter.hasNext()) {
+            Tokenizer tokenizer = tokenizerFactory.create(sentenceIter.nextSentence());
+            // insert new words in vocabulary, and update counters for already known words
+            // as result it returns number of words being added or incremented in the vocab
+            int wordsAdded =  this.fillVocabulary(tokenizer.getTokens());
+
+            // at this moment we're pretty sure that each word from this sentence is already in vocabulary and all counters are updated
+            if (wordsAdded > 0) totalLines.incrementAndGet();
+
+            if (totalLines.get() % 100000 == 0) log.info("" + totalLines.get() + " lines parsed. Vocab size: " + vocabularyHolder.numWords());
         }
 
+        log.info("" + totalLines.get() + " lines parsed. Vocab size: " + vocabularyHolder.numWords());
+        vocabularyHolder.truncateVocabulary(minWordFrequency);
 
-        if(invertedIndex == null)
-            invertedIndex = new LuceneInvertedIndex.Builder()
-                    .cache(vocab()).stopWords(stopWords)
-                    .build();
-        //vectorizer will handle setting up vocab meta data
-        if(vectorizer == null) {
-            vectorizer = new TfidfVectorizer.Builder().index(invertedIndex)
-                    .cache(vocab()).iterate(docIter).iterate(sentenceIter).batchSize(batchSize)
-                    .minWords(minWordFrequency).stopWords(stopWords)
-                    .tokenize(tokenizerFactory).build();
 
-            vectorizer.fit();
+        log.info("Total truncated vocab size: " + vocabularyHolder.numWords());
 
-        }
+        totalProperWordsCount.set(vocabularyHolder.totalWordsBeyondLimit() * numIterations);
 
-        //includes unk
-        else if(vocab().numWords() < 2)
-            vectorizer.fit();
+        // as soon as vocab is built, we can switch back to VocabCache
+        // please note: huffman tree building is hidden inside transfer method
+        // please note: after this line VocabularyHolder is empty, since all data is moved into VocabCache
+        vocabularyHolder.transferBackToVocabCache(vocab);
 
-        setup();
 
         return false;
     }
@@ -379,7 +346,6 @@ public class Word2Vec extends WordVectorsImpl {
             nextRandom.set(nextRandom.get() * 25214903917L + 11);
             skipGram(i, sentence, (int) nextRandom.get() % window,nextRandom,alpha);
         }
-
     }
 
 
@@ -391,8 +357,7 @@ public class Word2Vec extends WordVectorsImpl {
     public void skipGram(int i,List<VocabWord> sentence, int b,AtomicLong nextRandom,double alpha) {
 
         final VocabWord word = sentence.get(i);
-        if(word == null || sentence.isEmpty())
-            return;
+        if(word == null || sentence.isEmpty()) return;
 
         int end =  window * 2 + 1 - b;
         for(int a = b; a < end; a++) {
@@ -413,7 +378,6 @@ public class Word2Vec extends WordVectorsImpl {
      */
     public void  iterate(VocabWord w1, VocabWord w2,AtomicLong nextRandom,double alpha) {
         lookupTable.iterateSample(w1,w2,nextRandom,alpha);
-
     }
 
 
@@ -501,12 +465,46 @@ public class Word2Vec extends WordVectorsImpl {
         protected InvertedIndex index;
         protected WeightLookupTable lookupTable;
         protected boolean hugeModelExpected = false;
+        private Word2VecConfiguration configuration = new Word2VecConfiguration();
 
-        public Builder lookupTable(WeightLookupTable lookupTable) {
+
+        public Builder lookupTable(@NonNull WeightLookupTable lookupTable) {
             this.lookupTable = lookupTable;
             return this;
         }
 
+        public Builder() {
+
+        }
+
+        /**
+         * Whole configuration is transferred via Word2VecConfiguration bean
+         *
+         * @param conf
+         */
+        public Builder(@NonNull Word2VecConfiguration conf) {
+            this.iterations = conf.getIterations();
+            this.hugeModelExpected = conf.isHugeModelExpected();
+            this.useAdaGrad = conf.isUseAdaGrad();
+            this.minWordFrequency = conf.getMinWordFrequency();
+            this.lr = conf.getLearningRate();
+            this.learningRateDecayWords = conf.getLearningRateDecayWords();
+            this.negative = conf.getNegative();
+            this.sampling = conf.getSampling();
+            this.minLearningRate = conf.getMinLearningRate();
+            this.window = conf.getWindow();
+            this.seed = conf.getSeed();
+
+            this.configuration = conf;
+        }
+
+        /**
+         * This method is deprecated, since InvertedIndex isn't used for vocab building anymore. We're rolling over iterator instead.
+         *
+         * @param index
+         * @return
+         */
+        @Deprecated
         public Builder index(InvertedIndex index) {
             this.index = index;
             return this;
@@ -538,6 +536,12 @@ public class Word2Vec extends WordVectorsImpl {
             return this;
         }
 
+        /**
+         * This method is deprecated, since vectorizer isn't used for vocab building anymore
+         * @param textVectorizer
+         * @return
+         */
+        @Deprecated
         public Builder vectorizer(TextVectorizer textVectorizer) {
             this.textVectorizer = textVectorizer;
             return this;
@@ -575,7 +579,7 @@ public class Word2Vec extends WordVectorsImpl {
         }
 
 
-        public Builder iterate(DocumentIterator iter) {
+        public Builder iterate(@NonNull DocumentIterator iter) {
             this.docIter = iter;
             return this;
         }
@@ -587,7 +591,7 @@ public class Word2Vec extends WordVectorsImpl {
          * @param cache
          * @return
          */
-        public Builder vocabCache(VocabCache cache) {
+        public Builder vocabCache(@NonNull VocabCache cache) {
             this.vocabCache = cache;
             return this;
         }
@@ -597,7 +601,7 @@ public class Word2Vec extends WordVectorsImpl {
             return this;
         }
 
-        public Builder tokenizerFactory(TokenizerFactory tokenizerFactory) {
+        public Builder tokenizerFactory(@NonNull TokenizerFactory tokenizerFactory) {
             this.tokenizerFactory = tokenizerFactory;
             return this;
         }
@@ -619,7 +623,7 @@ public class Word2Vec extends WordVectorsImpl {
             return this;
         }
 
-        public Builder iterate(SentenceIterator iter) {
+        public Builder iterate(@NonNull SentenceIterator iter) {
             this.iter = iter;
             return this;
         }
@@ -640,8 +644,6 @@ public class Word2Vec extends WordVectorsImpl {
 
 
         public Word2Vec build() {
-                if (iter == null && docIter == null) throw new IllegalStateException("At least one iterator is needed for model building");
-
                 /*
                     if there's DocumentIterator instead of SentenceIterator provided, flatten it down to StreamLineIterator and use it as SentenceIterator at fit()
                     since anyway we're working on single sentence level, without other options.
@@ -703,17 +705,35 @@ public class Word2Vec extends WordVectorsImpl {
                             .externalCache(vocabCache)
                             .hugeModelExpected(hugeModelExpected)
                             .minWordFrequency(minWordFrequency)
-                            .scavengerActivationThreshold(1000000)
-                            .scavengerRetentionDelay(3)
+                            .scavengerActivationThreshold(this.configuration.getScavengerActivationThreshold())
+                            .scavengerRetentionDelay(this.configuration.getScavengerRetentionDelay())
                             .build();
                 else ret.vocabularyHolder = new VocabularyHolder.Builder()
                         .hugeModelExpected(hugeModelExpected)
                         .minWordFrequency(minWordFrequency)
-                        .scavengerActivationThreshold(1000000)
-                        .scavengerRetentionDelay(3)
+                        .scavengerActivationThreshold(this.configuration.getScavengerActivationThreshold())
+                        .scavengerRetentionDelay(this.configuration.getScavengerRetentionDelay())
                         .build();
 
-                return ret;
+
+
+            this.configuration.setLearningRate(lr);
+            this.configuration.setLayersSize(layerSize);
+            this.configuration.setHugeModelExpected(hugeModelExpected);
+            this.configuration.setWindow(window);
+            this.configuration.setMinWordFrequency(minWordFrequency);
+            this.configuration.setIterations(iterations);
+            this.configuration.setSeed(seed);
+            this.configuration.setBatchSize(batchSize);
+            this.configuration.setLearningRateDecayWords(learningRateDecayWords);
+            this.configuration.setMinLearningRate(minLearningRate);
+            this.configuration.setSampling(this.sampling);
+            this.configuration.setUseAdaGrad(useAdaGrad);
+            this.configuration.setNegative(negative);
+
+            ret.configuration = this.configuration;
+
+            return ret;
         }
     }
 
@@ -801,19 +821,18 @@ public class Word2Vec extends WordVectorsImpl {
             while (totalLines.get() < this.linesLimit  || sentences.size() > 0) {
                 try {
                     // get current sentence as list of VocabularyWords
-                    List<VocabWord> sentence = sentences.poll(1L, TimeUnit.SECONDS);
+                    List<VocabWord> sentence = sentences.poll(2L, TimeUnit.SECONDS);
 
                     // TODO: investigate, if fix needed here to become iteration-dependent, not line-position
                     double alpha = Math.max(minLearningRate, Word2Vec.this.alpha.get() * (1 - (1.0 * wordsCounter.get() / (double) totalWordsCount)));
 
                     if (sentence != null && !sentence.isEmpty()) {
-                        for(int i = 0; i < sentence.size(); i++) {
-                            nextRandom.set(nextRandom.get() * 25214903917L + 11);
-                            Word2Vec.this.skipGram(i, sentence, (int) nextRandom.get() % window ,nextRandom,alpha);
-                        }
+
+                        Word2Vec.this.trainSentence(sentence, nextRandom, alpha);
+
                         // increment processed word count, please note: this affects learningRate decay
                         wordsCounter.addAndGet(sentence.size());
-                    }
+                    } //else log.warn("sentence is null");
 
                     // increment processed lines count
                     totalLines.incrementAndGet();
