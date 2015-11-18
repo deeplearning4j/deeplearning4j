@@ -307,7 +307,7 @@ public class KernelFunctionLoader {
         String[] commands = {"bash","-c","make && /usr/bin/make install"};
         ProcessBuilder probuilder = new ProcessBuilder(commands);
         //You can set up your work directory
-        probuilder.directory(new File("/tmp/nd4j-kernels"));
+        probuilder.directory(new File(System.getProperty("java.io.tmpdir") + File.separator + "nd4j-kernels"));
 
         Process process = probuilder.start();
         //Read out dir output
