@@ -723,13 +723,13 @@ public class Word2Vec extends WordVectorsImpl {
                             .externalCache(vocabCache)
                             .hugeModelExpected(hugeModelExpected)
                             .minWordFrequency(minWordFrequency)
-                            .scavengerActivationThreshold(1000000)
+                            .scavengerActivationThreshold(2000000)
                             .scavengerRetentionDelay(3)
                             .build();
                 else ret.vocabularyHolder = new VocabularyHolder.Builder()
                         .hugeModelExpected(hugeModelExpected)
                         .minWordFrequency(minWordFrequency)
-                        .scavengerActivationThreshold(1000000)
+                        .scavengerActivationThreshold(2000000)
                         .scavengerRetentionDelay(3)
                         .build();
 
