@@ -12,6 +12,7 @@ import java.io.Serializable;
  */
 public class LookupHolder implements Serializable {
 
+
     public LookupHolder(InMemoryLookupTable lookupTable) {
 
     }
