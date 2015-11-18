@@ -25,6 +25,7 @@ trap 'error_handler' ERR
 bash -c "while true; do echo \$(date) - building ...; sleep $PING_SLEEP; done" &
 PING_LOOP_PID=$!
 
+
 # My build is using maven, but you could build anything with this, E.g.
 # your_build_command_1 >> $BUILD_OUTPUT 2>&1
 # your_build_command_2 >> $BUILD_OUTPUT 2>&1
@@ -36,5 +37,3 @@ dump_output
 # nicely terminate the ping output loop
 kill $PING_LOOP_PID
 
-git clone https://github.com/deeplearning4j/nd4j && cd nd4j && mvn clean install -DskipTests -Dmaven.javadoc.skip=true && cd ..
-git clone https://github.com/deeplearning4j/Canova && cd nd4j && mvn clean install -DskipTests -Dmaven.javadoc.skip=true && cd ..
