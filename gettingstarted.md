@@ -104,6 +104,8 @@ If OpenBlas is not working correctly, follow these steps:
 
 For OpenBlas on **Ubuntu** (15.10), please see [these instructions](http://pastebin.com/F0Rv2uEk).
 
+For OpenBlas on Centos, please see [these instructions](https://gist.github.com/sato-cloudian/a42892c4235e82c27d0d).
+
 ### <a name="source">Working With Source (DL4J Contributors Only)</a>
 
 Ninety-nine percent of DL4J users shouldn't download from source. It complicates an already complicated install, and it's only useful if you want to add significant features to the project. The easiest way to get started with DL4J is to download the library in an IDE via Maven. Even if you don't know Maven yet, that will still be easier than working with source. If, however, this warning does not dissuade you, the instructions for [working with source are here](/source.html).
