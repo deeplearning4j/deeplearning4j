@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import akka.actor.ActorSystem;
 import com.google.common.base.Function;
 import com.google.common.util.concurrent.AtomicDouble;
+import lombok.NonNull;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
 import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
@@ -68,6 +69,15 @@ public class Word2Vec extends WordVectorsImpl {
     protected transient TokenizerFactory tokenizerFactory = new DefaultTokenizerFactory();
     protected transient SentenceIterator sentenceIter;
     protected transient DocumentIterator docIter;
+    protected transient TextVectorizer vectorizer;
+    protected transient InvertedIndex invertedIndex;
+
+    protected transient VocabularyHolder vocabularyHolder;
+    protected transient  RandomGenerator g;
+
+    protected transient int workers = Runtime.getRuntime().availableProcessors();
+
+
     protected int batchSize = 1000;
     protected double sample = 0;
     protected long totalWords = 1;
@@ -76,7 +86,7 @@ public class Word2Vec extends WordVectorsImpl {
 
     //context to use for gathering word frequencies
     protected int window = 5;
-    protected transient  RandomGenerator g;
+
     protected static final Logger log = LoggerFactory.getLogger(Word2Vec.class);
     protected boolean shouldReset = true;
     //number of iterations to run
@@ -85,16 +95,10 @@ public class Word2Vec extends WordVectorsImpl {
     protected long seed = 123;
     protected boolean saveVocab = false;
     protected double minLearningRate = 0.01;
-    protected transient TextVectorizer vectorizer;
     protected int learningRateDecayWords = 10000;
 
-    // set to trainsient, since its not used anymore actually
-    protected transient InvertedIndex invertedIndex;
     protected boolean useAdaGrad = false;
-    protected transient int workers = Runtime.getRuntime().availableProcessors();
 
-    // it's not transient, since it'll be used in saveModel/loadModel serialization routines
-    protected VocabularyHolder vocabularyHolder;
 
     public Word2Vec() {}
 
@@ -137,13 +141,12 @@ public class Word2Vec extends WordVectorsImpl {
      * @param tokens - list of tokens from sentence
      * @return
      */
-    @Deprecated
     protected List<VocabWord> digitizeSentence(List<String> tokens) {
         List<VocabWord> result = new ArrayList<>(tokens.size());
         for (String token: tokens) {
             if (stopWords != null && stopWords.contains(token)) continue;
 
-            VocabWord word = vocab.wordFor(token); //vocabularyHolder.getVocabularyWordByString(token);
+            VocabWord word = vocab.wordFor(token);
             if (word != null) result.add(word);
         }
         return result;
@@ -184,6 +187,10 @@ public class Word2Vec extends WordVectorsImpl {
         /*
             vocabulary building part of task
          */
+
+        // SentenceIterator should be reset, so we'll be assured that previous iterator usage wont mess us
+        sentenceIter.reset();
+
         log.info("Building vocabulary...");
         while (sentenceIter.hasNext()) {
             Tokenizer tokenizer = tokenizerFactory.create(sentenceIter.nextSentence());
@@ -502,11 +509,18 @@ public class Word2Vec extends WordVectorsImpl {
         protected WeightLookupTable lookupTable;
         protected boolean hugeModelExpected = false;
 
-        public Builder lookupTable(WeightLookupTable lookupTable) {
+        public Builder lookupTable(@NonNull WeightLookupTable lookupTable) {
             this.lookupTable = lookupTable;
             return this;
         }
 
+        /**
+         * This method is deprecated, since InvertedIndex isn't used for vocab building anymore. We're rolling over iterator instead.
+         *
+         * @param index
+         * @return
+         */
+        @Deprecated
         public Builder index(InvertedIndex index) {
             this.index = index;
             return this;
@@ -538,6 +552,12 @@ public class Word2Vec extends WordVectorsImpl {
             return this;
         }
 
+        /**
+         * This method is deprecated, since vectorizer isn't used for vocab building anymore
+         * @param textVectorizer
+         * @return
+         */
+        @Deprecated
         public Builder vectorizer(TextVectorizer textVectorizer) {
             this.textVectorizer = textVectorizer;
             return this;
@@ -575,7 +595,7 @@ public class Word2Vec extends WordVectorsImpl {
         }
 
 
-        public Builder iterate(DocumentIterator iter) {
+        public Builder iterate(@NonNull DocumentIterator iter) {
             this.docIter = iter;
             return this;
         }
@@ -587,7 +607,7 @@ public class Word2Vec extends WordVectorsImpl {
          * @param cache
          * @return
          */
-        public Builder vocabCache(VocabCache cache) {
+        public Builder vocabCache(@NonNull VocabCache cache) {
             this.vocabCache = cache;
             return this;
         }
@@ -597,7 +617,7 @@ public class Word2Vec extends WordVectorsImpl {
             return this;
         }
 
-        public Builder tokenizerFactory(TokenizerFactory tokenizerFactory) {
+        public Builder tokenizerFactory(@NonNull TokenizerFactory tokenizerFactory) {
             this.tokenizerFactory = tokenizerFactory;
             return this;
         }
@@ -619,7 +639,7 @@ public class Word2Vec extends WordVectorsImpl {
             return this;
         }
 
-        public Builder iterate(SentenceIterator iter) {
+        public Builder iterate(@NonNull SentenceIterator iter) {
             this.iter = iter;
             return this;
         }

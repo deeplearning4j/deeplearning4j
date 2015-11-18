@@ -6,9 +6,11 @@ import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  *This class is used as simplifed VocabCache for vocabulary building routines.
@@ -16,9 +18,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author raver119@gmail.com
  */
-public class VocabularyHolder  {
+public class VocabularyHolder implements Serializable {
     private Map<String, VocabularyWord> vocabulary = new ConcurrentHashMap<>();
-    private Map<Integer, VocabularyWord> idxMap = new ConcurrentHashMap<>();
+
+    // idxMap marked as transient, since there's no real reason to save this data on serialization
+    private transient Map<Integer, VocabularyWord> idxMap = new ConcurrentHashMap<>();
     private int minWordFrequency = 0;
     private boolean hugeModelExpected = false;
     private int retentionDelay = 3;
@@ -28,8 +32,8 @@ public class VocabularyHolder  {
 
     private  long totalWordOccurencies = 0;
 
-    // TODO: this list is probably NOT needed at all, and can be easily replaced by vocabulary.values(), with sort enabled
-//    private List<VocabularyWord> vocab = new ArrayList<>();
+    // for scavenger mechanics we need to know the actual number of words being added
+    private transient AtomicLong hiddenWordsCounter = new AtomicLong(0);
 
     private AtomicInteger totalWordCount = new AtomicInteger(0);
 
@@ -201,7 +205,9 @@ public class VocabularyHolder  {
 
             vocabulary.put(word, vw);
 
-            if (hugeModelExpected && minWordFrequency > 1 && vocabulary.size() % scavengerThreshold == 0) activateScavenger();
+
+
+            if (hugeModelExpected && minWordFrequency > 1 && hiddenWordsCounter.incrementAndGet() % scavengerThreshold == 0) activateScavenger();
 
             return;
         }
@@ -250,7 +256,7 @@ public class VocabularyHolder  {
                 }
             }
         }
-        logger.debug("Scavenger was activated. Vocab size before: [" + initialSize + "],  after: [" +vocabulary.size() +"]");
+        logger.info("Scavenger was activated. Vocab size before: [" + initialSize + "],  after: [" +vocabulary.size() +"]");
     }
 
     /**
