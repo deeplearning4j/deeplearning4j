@@ -469,7 +469,7 @@ public class WordVectorSerializer {
         String line = null;
         boolean hasHeader = false;
         if (iter.hasNext()) {
-            line = iter.next();    // skip header line
+            line = iter.nextLine();    // skip header line
             //look for spaces
             if(!line.contains(" "))
                 hasHeader = true;
