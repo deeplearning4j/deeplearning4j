@@ -8,7 +8,7 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
 
     protected int[] dimension;
 
-    public BaseBroadcastOp(INDArray x, INDArray y, INDArray z, int...dimension){
+    public BaseBroadcastOp(INDArray x, INDArray y, INDArray z, int...dimension) {
         super(x,y,z,x.length());
         this.dimension = dimension;
         for(int i = 0; i < dimension.length; i++)
@@ -16,7 +16,9 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
                 dimension[i] += x.rank();
     }
 
-
+    public BaseBroadcastOp(INDArray x, INDArray y, INDArray z, int n) {
+        this(x,y,z,new int[]{n});
+    }
 
     @Override
     public int broadcastLength() {

@@ -13,6 +13,10 @@ public class BroadcastRSubOp extends BaseBroadcastOp {
         super(x, y, z, dimension);
     }
 
+    public BroadcastRSubOp(INDArray x, INDArray y, INDArray z, int n) {
+        super(x, y, z, n);
+    }
+
     @Override
     public String name() {
         return "broadcastrsub";
