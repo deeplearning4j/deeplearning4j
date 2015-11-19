@@ -483,9 +483,9 @@ public class WordVectorSerializer {
             iter.nextLine();
         }
 
-
         List<INDArray> arrays = new ArrayList<>();
         while (iter.hasNext()) {
+            line = iter.nextLine();
             String[] split = line.split(" ");
             String word = split[0];
             VocabWord word1 = new VocabWord(1.0, word);
