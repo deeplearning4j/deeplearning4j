@@ -68,6 +68,8 @@ public class TrainMultiLayerConfigTest {
 
         MultiLayerConfiguration from = testModelFlag.value("model_multi.json");
         assertEquals(conf, from);
+        File parent = new File(System.getProperty("java.io.tmpdir"),"data");
+        FileUtils.copyFile(new ClassPathResource("data/irisSvmLight.txt").getFile(),new File(parent,"irisSvmLight.txt"));
 
 
         CommandLineInterfaceDriver driver = new CommandLineInterfaceDriver();
@@ -80,7 +82,9 @@ public class TrainMultiLayerConfigTest {
                 , "-output", "model_results.txt"
                ,"-verbose"
         };
+
         driver.doMain(cmd);
+        FileUtils.deleteDirectory(parent);
 
     }
 
