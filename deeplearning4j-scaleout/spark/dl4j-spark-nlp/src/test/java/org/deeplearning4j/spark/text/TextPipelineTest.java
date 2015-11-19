@@ -170,19 +170,15 @@ public class TextPipelineTest extends BaseSparkTest {
 
 
         assertEquals(redVocab.getWord(), "red");
-        assertEquals(redVocab.getIndex(), 1);
         assertEquals(redVocab.getWordFrequency(), 1, 0);
 
         assertEquals(flowerVocab.getWord(), "flowers");
-        assertEquals(flowerVocab.getIndex(), 2);
         assertEquals(flowerVocab.getWordFrequency(), 1, 0);
 
         assertEquals(worldVocab.getWord(), "world");
-        assertEquals(worldVocab.getIndex(), 3);
         assertEquals(worldVocab.getWordFrequency(), 1, 0);
 
         assertEquals(strangeVocab.getWord(), "strange");
-        assertEquals(strangeVocab.getIndex(), 0);
         assertEquals(strangeVocab.getWordFrequency(), 2, 0);
 
         sc.stop();
@@ -205,19 +201,15 @@ public class TextPipelineTest extends BaseSparkTest {
         VocabWord strangeVocab = vocabCache.tokenFor("strange");
 
         assertEquals(redVocab.getWord(), "red");
-        assertEquals(redVocab.getIndex(), 1);
         assertEquals(redVocab.getWordFrequency(), 1, 0);
 
         assertEquals(flowerVocab.getWord(), "flowers");
-        assertEquals(flowerVocab.getIndex(), 2);
         assertEquals(flowerVocab.getWordFrequency(), 1, 0);
 
         assertEquals(worldVocab.getWord(), "world");
-        assertEquals(worldVocab.getIndex(), 3);
         assertEquals(worldVocab.getWordFrequency(), 1, 0);
 
         assertEquals(strangeVocab.getWord(), "strange");
-        assertEquals(strangeVocab.getIndex(), 0);
         assertEquals(strangeVocab.getWordFrequency(), 2, 0);
 
         sc.stop();

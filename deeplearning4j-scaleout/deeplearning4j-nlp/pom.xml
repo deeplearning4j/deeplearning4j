@@ -38,7 +38,6 @@
 						<additionalClasspathElements>
 							<additionalClasspathElement>../../dl4j-test-resources/src/main/resources</additionalClasspathElement>
 						</additionalClasspathElements>
-						<argLine>-Xmx6g</argLine>
 
 					</configuration>
 				</plugin>
