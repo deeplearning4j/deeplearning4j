@@ -16,6 +16,7 @@ import org.deeplearning4j.plot.PlotFilters;
 import org.deeplearning4j.ui.activation.UpdateActivationIterationListener;
 import org.deeplearning4j.ui.renders.UpdateFilterIterationListener;
 import org.deeplearning4j.ui.weights.HistogramIterationListener;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -28,6 +29,7 @@ import java.util.Collections;
 /**
  * @author Adam Gibson
  */
+@Ignore
 public class TestRenders extends BaseUiServerTest {
     @Test
     public void renderSetup() throws Exception {
