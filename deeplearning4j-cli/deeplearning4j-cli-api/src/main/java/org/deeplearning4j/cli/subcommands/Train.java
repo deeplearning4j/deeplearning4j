@@ -151,9 +151,9 @@ public class Train extends BaseSubCommand {
      */
     public void execLocal() {
         log.warn( "[dl4j] - executing local ... " );
-        log.warn( "using training input: " + this.input );
+        log.warn( "using training input: " + this.input);
 
-        File inputFile = new File( this.input );
+        File inputFile = new File(this.input);
         InputSplit split = new FileSplit( inputFile );
         InputFormat inputFormat = this.createInputFormat();
 
