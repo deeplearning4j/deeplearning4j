@@ -16,6 +16,7 @@ import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -138,8 +139,8 @@ public class GradientCheckTests {
         double[] l2vals = {0.4, 0.0, 0.4};
         double[] l1vals = {0.0, 0.5, 0.5};	//i.e., use l2vals[i] with l1vals[i]
     	
-    	for( String afn : activFns ){
-    		for( boolean doLearningFirst : characteristic ){
+    	for( String afn : activFns) {
+    		for( boolean doLearningFirst : characteristic) {
     			for( int i = 0; i<lossFunctions.length; i++) {
     				for( int k = 0; k<l2vals.length; k++) {
 	    				LossFunction lf = lossFunctions[i];
@@ -171,7 +172,7 @@ public class GradientCheckTests {
 				        MultiLayerNetwork mln = new MultiLayerNetwork(conf);
 				        mln.init();
 				        
-				        if(doLearningFirst){
+				        if(doLearningFirst) {
 				        	//Run a number of iterations of learning
 					        mln.setInput(ds.getFeatures());
 					        mln.setLabels(ds.getLabels());
@@ -253,9 +254,10 @@ public class GradientCheckTests {
     		}
     	}
     	
-    	if( PRINT_RESULTS ){
+    	if(PRINT_RESULTS) {
     		System.out.println("testGRURNNBasicMultiLayer()");
-    		for( int j=0; j<mln.getnLayers(); j++ ) System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+    		for( int j=0; j<mln.getnLayers(); j++ )
+                System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
     	}
     	
     	boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
@@ -286,6 +288,7 @@ public class GradientCheckTests {
     			}
     		}
     	}
+
     	INDArray labels = Nd4j.zeros(miniBatchSize,nOut,timeSeriesLength);
     	for( int i=0; i<miniBatchSize; i++ ){
     		for( int j=0; j<timeSeriesLength; j++ ){
@@ -322,7 +325,7 @@ public class GradientCheckTests {
 			        MultiLayerNetwork mln = new MultiLayerNetwork(conf);
 			        mln.init();
 			
-			        if( PRINT_RESULTS ){
+			        if(PRINT_RESULTS) {
 			        	System.out.println("testGradientGRURNNFull() - activationFn="+afn+", lossFn="+lf+", outputActivation="+outputActivation
 			        		+", l2="+l2+", l1="+l1 );
 			        	for( int j=0; j<mln.getnLayers(); j++ ) System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
@@ -510,7 +513,8 @@ public class GradientCheckTests {
 			        if( PRINT_RESULTS ){
 			        	System.out.println("testGradientGravesLSTMFull() - activationFn="+afn+", lossFn="+lf+", outputActivation="+outputActivation
 			        		+", l2="+l2+", l1="+l1 );
-			        	for( int j=0; j<mln.getnLayers(); j++ ) System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+			        	for( int j=0; j < mln.getnLayers(); j++ )
+                            System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
 			        }
 			
 			        boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
@@ -645,7 +649,7 @@ public class GradientCheckTests {
 		mln.init();
 
 		System.out.println("Params per layer:");
-		for( int i=0; i<mln.getnLayers(); i++ ){
+		for( int i = 0; i<mln.getnLayers(); i++ ){
 			System.out.println("layer " + i + "\t" + mln.getLayer(i).numParams());
 		}
 
@@ -653,4 +657,183 @@ public class GradientCheckTests {
 				PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, true);
 		assertTrue(gradOK);
 	}
+
+
+    @Test
+    @Ignore
+    public void testRbm() {
+        //As above (testGradientMLP2LayerIrisSimple()) but with L2, L1, and both L2/L1 applied
+        //Need to run gradient through updater, so that L2 can be applied
+
+        String[] activFns = {"sigmoid","relu"};
+        boolean[] characteristic = {false,true};	//If true: run some backprop steps first
+
+        LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE};
+        String[] outputActivations = {"softmax","tanh"};	//i.e., lossFunctions[i] used with outputActivations[i] here
+
+        DataSet ds = new IrisDataSetIterator(150,150).next();
+        ds.scaleMinAndMax(0,1);
+        INDArray input = ds.getFeatureMatrix();
+        INDArray labels = ds.getLabels();
+
+        double[] l2vals = {0.4, 0.0, 0.4};
+        double[] l1vals = {0.0, 0.5, 0.5};	//i.e., use l2vals[i] with l1vals[i]
+
+        for( String afn : activFns) {
+            for( boolean doLearningFirst : characteristic) {
+                for( int i = 0; i < lossFunctions.length; i++) {
+                    for( int k = 0; k < l2vals.length; k++) {
+                        LossFunction lf = lossFunctions[i];
+                        String outputActivation = outputActivations[i];
+                        double l2 = l2vals[k];
+                        double l1 = l1vals[k];
+
+                        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                .regularization(true)
+                                .l2(l2).l1(l1)
+                                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                                .seed(12345L)
+                                .list(2)
+                                .layer(0, new RBM.Builder(RBM.HiddenUnit.BINARY, RBM.VisibleUnit.BINARY)
+                                        .nIn(4).nOut(3)
+                                        .weightInit(WeightInit.XAVIER)
+                                        .updater(Updater.SGD)
+                                        .activation(afn)
+                                        .build())
+                                .layer(1, new OutputLayer.Builder(lf)
+                                        .nIn(3).nOut(3)
+                                        .weightInit(WeightInit.XAVIER)
+                                        .updater(Updater.SGD)
+                                        .activation(outputActivation)
+                                        .build())
+                                .pretrain(true).backprop(true)
+                                .build();
+
+                        MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+                        mln.init();
+
+                        if(doLearningFirst) {
+                            //Run a number of iterations of learning
+                            mln.setInput(ds.getFeatures());
+                            mln.setLabels(ds.getLabels());
+                            mln.computeGradientAndScore();
+                            double scoreBefore = mln.score();
+                            for( int j = 0; j < 10; j++)
+                                mln.fit(ds);
+                            mln.computeGradientAndScore();
+                            double scoreAfter = mln.score();
+                            //Can't test in 'characteristic mode of operation' if not learning
+                            String msg = "testGradMLP2LayerIrisSimple() - score did not (sufficiently) decrease during learning - activationFn="
+                                    +afn+", lossFn=" + lf + ", outputActivation=" + outputActivation + ", doLearningFirst=" + doLearningFirst
+                                    +", l2="+l2+", l1="+l1+" (before="+scoreBefore +", scoreAfter=" + scoreAfter+")";
+                            assertTrue(msg,scoreAfter < 0.8 *scoreBefore);
+                        }
+
+                        if(PRINT_RESULTS) {
+                            System.out.println("testGradientMLP2LayerIrisSimpleRandom() - activationFn="+afn+", lossFn="+lf+", outputActivation="+outputActivation
+                                    +", doLearningFirst=" + doLearningFirst +", l2=" + l2+", l1=" + l1);
+                            for( int j = 0; j<mln.getnLayers(); j++)
+                                System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+                        }
+
+                        boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, true);
+
+                        String msg = "testGradMLP2LayerIrisSimple() - activationFn="+afn+", lossFn="+lf+", outputActivation="+outputActivation
+                                +", doLearningFirst=" + doLearningFirst +", l2=" + l2 + ", l1=" + l1;
+                        assertTrue(msg,gradOK);
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testAutoEncoder() {
+        //As above (testGradientMLP2LayerIrisSimple()) but with L2, L1, and both L2/L1 applied
+        //Need to run gradient through updater, so that L2 can be applied
+
+        String[] activFns = {"sigmoid","tanh","relu"};
+        boolean[] characteristic = {false,true};	//If true: run some backprop steps first
+
+        LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE};
+        String[] outputActivations = {"softmax","tanh"};	//i.e., lossFunctions[i] used with outputActivations[i] here
+
+        DataSet ds = new IrisDataSetIterator(150,150).next();
+        ds.normalizeZeroMeanZeroUnitVariance();
+        INDArray input = ds.getFeatureMatrix();
+        INDArray labels = ds.getLabels();
+
+        double[] l2vals = {0.4, 0.0, 0.4};
+        double[] l1vals = {0.0, 0.5, 0.5};	//i.e., use l2vals[i] with l1vals[i]
+
+        for( String afn : activFns) {
+            for( boolean doLearningFirst : characteristic) {
+                for( int i = 0; i < lossFunctions.length; i++) {
+                    for( int k = 0; k < l2vals.length; k++) {
+                        LossFunction lf = lossFunctions[i];
+                        String outputActivation = outputActivations[i];
+                        double l2 = l2vals[k];
+                        double l1 = l1vals[k];
+
+                        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                .regularization(true)
+                                .l2(l2).l1(l1)
+                                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                                .seed(12345L)
+                                .list(2)
+                                .layer(0, new AutoEncoder.Builder()
+                                        .nIn(4).nOut(3)
+                                        .weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0, 1))
+                                        .updater(Updater.NONE)
+                                        .activation(afn)
+                                        .build())
+                                .layer(1, new OutputLayer.Builder(lf)
+                                        .nIn(3).nOut(3)
+                                        .weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0, 1))
+                                        .updater(Updater.NONE)
+                                        .activation(outputActivation)
+                                        .build())
+                                .pretrain(true).backprop(true)
+                                .build();
+
+                        MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+                        mln.init();
+
+                        if(doLearningFirst) {
+                            //Run a number of iterations of learning
+                            mln.setInput(ds.getFeatures());
+                            mln.setLabels(ds.getLabels());
+                            mln.computeGradientAndScore();
+                            double scoreBefore = mln.score();
+                            for( int j = 0; j < 10; j++)
+                                mln.fit(ds);
+                            mln.computeGradientAndScore();
+                            double scoreAfter = mln.score();
+                            //Can't test in 'characteristic mode of operation' if not learning
+                            String msg = "testGradMLP2LayerIrisSimple() - score did not (sufficiently) decrease during learning - activationFn="
+                                    +afn+", lossFn=" + lf + ", outputActivation=" + outputActivation + ", doLearningFirst=" + doLearningFirst
+                                    +", l2="+l2+", l1="+l1+" (before="+scoreBefore +", scoreAfter=" + scoreAfter+")";
+                            assertTrue(msg,scoreAfter < 0.8 *scoreBefore);
+                        }
+
+                        if(PRINT_RESULTS) {
+                            System.out.println("testGradientMLP2LayerIrisSimpleRandom() - activationFn="+afn+", lossFn="+lf+", outputActivation="+outputActivation
+                                    +", doLearningFirst=" + doLearningFirst +", l2=" + l2+", l1=" + l1);
+                            for( int j = 0; j<mln.getnLayers(); j++)
+                                System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+                        }
+
+                        boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, true);
+
+                        String msg = "testGradMLP2LayerIrisSimple() - activationFn="+afn+", lossFn="+lf+", outputActivation="+outputActivation
+                                +", doLearningFirst="+doLearningFirst +", l2=" + l2 + ", l1="+l1;
+                        assertTrue(msg,gradOK);
+                    }
+                }
+            }
+        }
+    }
+
 }

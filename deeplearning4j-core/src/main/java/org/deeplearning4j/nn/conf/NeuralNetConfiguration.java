@@ -55,7 +55,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
     protected Layer layer;
     //batch size: primarily used for conv nets. Will be reinforced if set.
-    protected int batchSize = 1;
     protected boolean miniBatch = true;
     protected int numIterations = 5;
     //number of line search iterations
@@ -65,8 +64,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     //gradient keys used for ensuring order when getting and setting the gradient
     protected List<String> variables = new ArrayList<>();
     //whether to constrain the gradient to unit norm or not
-    @Deprecated
-    protected boolean constrainGradientToUnitNorm = false;
     //adadelta - weight for how much to consider previous history
     protected StepFunction stepFunction;
     protected boolean useRegularization = false;
@@ -285,7 +282,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private double adamMeanDecay = 0.9;
         private double adamVarDecay = 0.999;
         private Layer layer;
-        private int batchSize = 1;
         private boolean miniBatch = true;
         private int numIterations = 5;
         private int maxNumLineSearchIterations = 5;
@@ -352,11 +348,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        /** Minibatch size. Number of examples in a batch.*/
-        public Builder batchSize(int batchSize) {
-            this.batchSize = batchSize;
-            return this;
-        }
+
 
         /** Layer class. */
         public Builder layer(Layer layer) {
@@ -590,13 +582,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
             conf.minimize = minimize;
             conf.maxNumLineSearchIterations = maxNumLineSearchIterations;
-            conf.batchSize = batchSize;
             conf.layer = layer;
             conf.numIterations = numIterations;
             conf.useRegularization = useRegularization;
             conf.useSchedules = useSchedules;
             conf.optimizationAlgo = optimizationAlgo;
-            conf.constrainGradientToUnitNorm = constrainGradientToUnitNorm;
             conf.seed = seed;
             conf.timeSeriesLength = timeSeriesLength;
             conf.stepFunction = stepFunction;
