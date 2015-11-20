@@ -340,6 +340,22 @@ public class Transforms {
         return stabilize(ndArray, k, Nd4j.copyOnOps);
     }
 
+    public static INDArray sin(INDArray in){
+        return sin(in, Nd4j.copyOnOps);
+    }
+
+    public static INDArray sin(INDArray in, boolean copy){
+        return Nd4j.getExecutioner().execAndReturn(new Sin((copy ? in.dup() : in)));
+    }
+
+    public static INDArray cos(INDArray in){
+        return cos(in, Nd4j.copyOnOps);
+    }
+
+    public static INDArray cos(INDArray in, boolean copy){
+        return Nd4j.getExecutioner().execAndReturn(new Cos((copy ? in.dup() : in)));
+    }
+
 
     /**
      * Abs funciton
