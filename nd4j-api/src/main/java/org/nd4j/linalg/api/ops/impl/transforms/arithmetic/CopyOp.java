@@ -134,7 +134,7 @@ public class CopyOp extends BaseTransformOp {
 
     @Override
     public boolean isPassThrough() {
-        return true;
+        return false;
     }
 
     @Override
