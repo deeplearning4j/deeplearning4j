@@ -122,11 +122,13 @@ Previously, I used 9 vectors as input, but that didn’t produce good results. W
 I still have some fine-tuning to do, but the results are quite good at the moment.
 
 **Results**:
+
 * It takes 2 hours to train a net for a store.
 * 95-98% accuracy
 * 0.93-0.96 F1 score
 
 **Hardware Specs**:
+
 * MacBook pro 2013
 * CPU: 2,4 GHz Intel Core i7
 * Memory: 8 GB 1600 MHz DDR3
