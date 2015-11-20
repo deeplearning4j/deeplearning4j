@@ -55,7 +55,7 @@ If you're using IntelliJ as your IDE, this should work already.
 
 ### <a name="osx">OSX</a>
 
-* Jblas is already installed on OSX.  
+* Blas is already installed on OSX.  
 
 ### <a name="windows">Windows</a>
 
@@ -104,7 +104,7 @@ If OpenBlas is not working correctly, follow these steps:
 
 For OpenBlas on **Ubuntu** (15.10), please see [these instructions](http://pastebin.com/F0Rv2uEk).
 
-For OpenBlas on Centos, please see [these instructions](https://gist.github.com/sato-cloudian/a42892c4235e82c27d0d).
+For OpenBlas on **Centos**, please see [these instructions](https://gist.github.com/sato-cloudian/a42892c4235e82c27d0d).
 
 ### <a name="source">Working With Source (DL4J Contributors Only)</a>
 
