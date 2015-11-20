@@ -187,6 +187,12 @@ public class Variance extends BaseAccumulation {
 
     @Override
     public void exec(int... dimension){
+        if(dimension.length == 1 && dimension[0] == Integer.MAX_VALUE){
+            exec();
+            this.z = Nd4j.scalar(this.finalResult);
+            return;
+        }
+
         int[] retShape = ArrayUtil.removeIndex(x.shape(), dimension);
         int nOps = x.tensorssAlongDimension(dimension);
         z = Nd4j.create(retShape);
