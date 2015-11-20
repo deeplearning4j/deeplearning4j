@@ -80,7 +80,9 @@ public class ParamAndGradientIterationListener implements IterationListener {
         this.printMeanAbsValue = printMeanAbsValue;
         this.iterations = iterations;
         this.file = file;
-        this.filePath = file.toPath();
+        if(this.file != null) {
+            this.filePath = file.toPath();
+        }
         this.outputToConsole = outputToConsole;
         this.outputToFile = outputToFile;
         this.outputToLogger = outputToLogger;
