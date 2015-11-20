@@ -18,6 +18,13 @@
 
 package org.deeplearning4j.models.embeddings.loader;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import lombok.NonNull;
 import org.apache.commons.compress.compressors.gzip.GzipUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
@@ -30,6 +37,7 @@ import org.deeplearning4j.models.glove.Glove;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.deeplearning4j.models.word2vec.wordstore.VocabularyHolder;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -64,7 +72,7 @@ public class WordVectorSerializer {
      * @throws IOException
      */
     public static WordVectors loadGoogleModel(File modelFile, boolean binary)
-        throws IOException {
+            throws IOException {
         return loadGoogleModel(modelFile, binary, DEFAULT_LINEBREAKS);
     }
 
@@ -84,7 +92,7 @@ public class WordVectorSerializer {
      * @author Carsten Schnober
      */
     public static WordVectors loadGoogleModel(File modelFile, boolean binary, boolean lineBreaks)
-        throws IOException {
+            throws IOException {
         return binary ? readBinaryModel(modelFile, lineBreaks) : WordVectorSerializer.fromPair(loadTxt(modelFile));
     }
 
@@ -157,7 +165,7 @@ public class WordVectorSerializer {
      * @throws FileNotFoundException
      */
     private static Word2Vec readBinaryModel(File modelFile, boolean linebreaks)
-        throws NumberFormatException, IOException
+            throws NumberFormatException, IOException
     {
         InMemoryLookupTable lookupTable;
         VocabCache cache;
@@ -167,7 +175,7 @@ public class WordVectorSerializer {
                 GzipUtils.isCompressedFilename(modelFile.getName())
                         ? new GZIPInputStream(new FileInputStream(modelFile))
                         : new FileInputStream(modelFile));
-                DataInputStream dis = new DataInputStream(bis)) {
+             DataInputStream dis = new DataInputStream(bis)) {
             words = Integer.parseInt(readString(dis));
             size = Integer.parseInt(readString(dis));
             syn0 = Nd4j.create(words, size);
@@ -217,7 +225,7 @@ public class WordVectorSerializer {
      * @throws IOException
      */
     public static float readFloat(InputStream is)
-        throws IOException
+            throws IOException
     {
         byte[] bytes = new byte[4];
         is.read(bytes);
@@ -251,7 +259,7 @@ public class WordVectorSerializer {
      * @throws IOException
      */
     public static String readString(DataInputStream dis)
-        throws IOException
+            throws IOException
     {
         byte[] bytes = new byte[MAX_SIZE];
         byte b = dis.readByte();
@@ -282,9 +290,8 @@ public class WordVectorSerializer {
      * @throws IOException
      */
     public static void writeWordVectors(InMemoryLookupTable lookupTable, InMemoryLookupCache cache,
-            String path)
-                throws IOException
-    {
+                                        String path)
+            throws IOException {
         BufferedWriter write = new BufferedWriter(new FileWriter(new File(path), false));
         for (int i = 0; i < lookupTable.getSyn0().rows(); i++) {
             String word = cache.wordAtIndex(i);
@@ -311,6 +318,54 @@ public class WordVectorSerializer {
 
     }
 
+    private static ObjectMapper getModelMapper() {
+        ObjectMapper ret = new ObjectMapper();
+        ret.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        ret.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
+        ret.enable(SerializationFeature.INDENT_OUTPUT);
+        return ret;
+    }
+
+    /**
+     * Saves full Word2Vec model in the way, that allows model updates without being rebuilt from scratches
+     *
+     * @param vec - The Word2Vec instance to be saved
+     * @param path - the path for json to be saved
+     */
+    public static void writeFullModel(@NonNull Word2Vec vec, @NonNull String path) {
+        /*
+            Basically we need to save:
+                    1. WeightLookupTable, especially syn0 and syn1 matrices
+                    2. VocabCache, including only WordCounts
+                    3. Settings from Word2Vect model: workers, layers, etc.
+         */
+
+        WeightLookupTable lookupTable = vec.getLookupTable();
+        VocabCache vocabCache = vec.getVocab();
+
+        if (!(lookupTable instanceof InMemoryLookupTable)) throw new IllegalStateException("At this moment only InMemoryLookupTable is supported.");
+        if (!(vocabCache instanceof InMemoryLookupCache)) throw new IllegalStateException("At this moment only InMemoryLookupCache is supported.");
+
+        VocabularyHolder holder = new VocabularyHolder.Builder()
+                .externalCache(vocabCache)
+                .build();
+    }
+
+    /**
+     *
+     * @param path - path to previously stored w2v json model
+     * @return - Word2Vec instance
+     */
+    public static Word2Vec loadFullModel(String path) {
+        /*
+            We need to restore:
+                     1. WeightLookupTable, including syn0 and syn1 matrices
+                     2. VocabCache + mark it as SPECIAL, to avoid accidental word removals
+         */
+        return null;
+    }
+
     /**
      * Writes the word vectors to the given path. Note that this assumes an in memory cache
      *
@@ -321,8 +376,7 @@ public class WordVectorSerializer {
      * @throws IOException
      */
     public static void writeWordVectors(WordVectors vec, String path)
-        throws IOException
-    {
+            throws IOException {
         BufferedWriter write = new BufferedWriter(new FileWriter(new File(path), false));
         int words = 0;
         for (String word : vec.vocab().words()) {
@@ -393,7 +447,7 @@ public class WordVectorSerializer {
      *             if the file does not exist
      */
     public static WordVectors loadTxtVectors(File vectorsFile)
-        throws FileNotFoundException
+            throws FileNotFoundException
     {
         Pair<InMemoryLookupTable, VocabCache> pair = loadTxt(vectorsFile);
         return fromPair(pair);
@@ -412,16 +466,26 @@ public class WordVectorSerializer {
         VocabCache cache = new InMemoryLookupCache();
 
         LineIterator iter = IOUtils.lineIterator(reader);
+        String line = null;
+        boolean hasHeader = false;
         if (iter.hasNext()) {
-            if (HAS_HEADER) {
-                iter.next();    // skip header line
-            }
-        } else {
-            log.warn("Empty input file '" + vectorsFile + "'.");
+            line = iter.next();    // skip header line
+            //look for spaces
+            if(!line.contains(" "))
+                hasHeader = true;
+
         }
+
+        //reposition buffer to be one line ahead
+        if(hasHeader) {
+            iter.close();
+            iter = IOUtils.lineIterator(reader);
+            iter.nextLine();
+        }
+
+
         List<INDArray> arrays = new ArrayList<>();
         while (iter.hasNext()) {
-            String line = iter.nextLine();
             String[] split = line.split(" ");
             String word = split[0];
             VocabWord word1 = new VocabWord(1.0, word);
@@ -465,7 +529,7 @@ public class WordVectorSerializer {
      * @throws Exception
      */
     public static void writeTsneFormat(Glove vec, INDArray tsne, File csv)
-        throws Exception
+            throws Exception
     {
         BufferedWriter write = new BufferedWriter(new FileWriter(csv));
         int words = 0;
@@ -509,7 +573,7 @@ public class WordVectorSerializer {
      * @throws Exception
      */
     public static void writeTsneFormat(Word2Vec vec, INDArray tsne, File csv)
-        throws Exception
+            throws Exception
     {
         BufferedWriter write = new BufferedWriter(new FileWriter(csv));
         int words = 0;

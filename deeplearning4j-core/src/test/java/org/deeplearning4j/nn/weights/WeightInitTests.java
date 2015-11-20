@@ -16,22 +16,23 @@
  *
  */
 
-package org.deeplearning4j.datasets.iterator;
+package org.deeplearning4j.nn.weights;
 
-import org.nd4j.linalg.dataset.DataSet;
+
+import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.junit.Test;
-import org.springframework.core.io.ClassPathResource;
+import org.nd4j.linalg.api.rng.DefaultRandom;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
- * CSV Test
- * @author Adam Gibson
+ * Created by agibsonccc on 9/13/14.
  */
-public class CSVDataSetIteratorTest {
-    @Test
-    public void testCSV() throws Exception {
-       DataSetIterator iter = new CSVDataSetIterator(10,10,new ClassPathResource("csv-example.csv").getFile(),1,1);
-        DataSet next = iter.next();
-    }
+public class WeightInitTests {
 
+    @Test
+    public void testSi() {
+        WeightInitUtil.initWeights(1,2, WeightInit.VI, Nd4j.getDistributions().createNormal(0, 1));
+    }
 
 }

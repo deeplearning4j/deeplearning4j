@@ -60,8 +60,7 @@ public class DefaultLayerFactory implements LayerFactory {
         Layer ret = getInstance(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(index);
-        Map<String,INDArray> params = getParams(conf);
-        ret.setParamTable(params);
+        ret.setParamTable(getParams(conf));
         ret.setConf(conf);
         ret.setInputMiniBatchSize(conf.getBatchSize());
         return (E) ret;

@@ -41,7 +41,7 @@ public class BarnesHutTsneTest {
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
         Nd4j.factory().setDType(DataBuffer.Type.DOUBLE);
         Nd4j.getRandom().setSeed(123);
-        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(250)
+        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).setMaxIter(10)
                 .theta(0.5).learningRate(500).useAdaGrad(false)
                 .build();
 
@@ -60,7 +60,7 @@ public class BarnesHutTsneTest {
     public void testBuilderFields() throws Exception {
         final double theta = 0;
         final boolean invert = false;
-        final String similarityFunctions = "eucidean";
+        final String similarityFunctions = "euclidean";
         final int maxIter = 1;
         final double realMin = 1.0;
         final double initialMomentum = 2.0;

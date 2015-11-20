@@ -85,7 +85,7 @@ public class HistogramIterationListener implements IterationListener {
                     maxLayerIdx = Math.max(maxLayerIdx,indexFromString(s));
                 }
                 if(maxLayerIdx == -1 ) maxLayerIdx = 0;
-                for( int i=0; i<=maxLayerIdx; i++ ){
+                for( int i = 0; i <= maxLayerIdx; i++ ){
                     meanMagHistoryParams.add(new LinkedHashMap<String,List<Double>>());
                     meanMagHistoryUpdates.add(new LinkedHashMap<String,List<Double>>());
                 }
@@ -155,7 +155,8 @@ public class HistogramIterationListener implements IterationListener {
 
     private static int indexFromString(String str){
         int underscore = str.indexOf("_");
-        if(underscore == -1) return -1;
+        if(underscore == -1)
+            return 0;
         else {
             String subStr = str.substring(0,underscore);
             try{

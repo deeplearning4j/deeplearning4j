@@ -35,6 +35,7 @@ import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
  * A neural network layer.
@@ -109,6 +110,7 @@ public abstract class Layer implements Serializable, Cloneable {
         try {
             Layer clone = (Layer) super.clone();
             if(clone.dist != null) clone.dist = clone.dist.clone();
+            if(clone.learningRateAfter != null) clone.learningRateAfter = new HashMap<>(clone.learningRateAfter);
             if(clone.momentumAfter != null) clone.momentumAfter = new HashMap<>(clone.momentumAfter);
             return clone;
         } catch (CloneNotSupportedException e) {
@@ -138,6 +140,7 @@ public abstract class Layer implements Serializable, Cloneable {
         protected double adamVarDecay = Double.NaN;
         protected GradientNormalization gradientNormalization = null;
         protected double gradientNormalizationThreshold = Double.NaN;
+
 
         /**Layer name assigns layer string name.
          * Allows easier differentiation between layers.
