@@ -469,7 +469,7 @@ public class WordVectorSerializer {
         String line = null;
         boolean hasHeader = false;
         if (iter.hasNext()) {
-            line = iter.next();    // skip header line
+            line = iter.nextLine();    // skip header line
             //look for spaces
             if(!line.contains(" "))
                 hasHeader = true;
@@ -483,9 +483,9 @@ public class WordVectorSerializer {
             iter.nextLine();
         }
 
-
         List<INDArray> arrays = new ArrayList<>();
         while (iter.hasNext()) {
+            line = iter.nextLine();
             String[] split = line.split(" ");
             String word = split[0];
             VocabWord word1 = new VocabWord(1.0, word);
