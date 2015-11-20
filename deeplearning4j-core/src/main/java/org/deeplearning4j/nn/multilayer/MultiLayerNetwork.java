@@ -1742,8 +1742,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         this.input = input;
         if (this.layers == null)
             this.initializeLayers(getInput());
-        if(input != null)
+        if(input != null) {
+            if(input.length() == 0) throw new IllegalArgumentException("Invalid input: length 0 (shape: " + Arrays.toString(input.shape()) +")");
             setInputMiniBatchSize(input.size(0));
+        }
     }
 
     private void initMask() {
