@@ -10,6 +10,7 @@ public interface GraphVectorLookupTable {
      */
     int vectorSize();
 
+    /** Reset (randomize) the weights. */
     void resetWeights();
 
     /** Conduct learning given a pair of vertices (in and out) */
@@ -18,8 +19,10 @@ public interface GraphVectorLookupTable {
     /** Get the vector for the vertex with index idx */
     public INDArray getVector(int idx);
 
+    /** Set the learning rate */
     void setLearningRate(double learningRate);
 
+    /** Returns the number of vertices in the graph */
     int getNumVertices();
 
 }
