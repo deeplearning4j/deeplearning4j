@@ -13,7 +13,10 @@ public class CPUTransformOpViaTensorTask extends BaseCPUAction {
     protected final TransformOp op;
 
     public CPUTransformOpViaTensorTask(TransformOp op, int threshold){
-        super(op,threshold);
+        super(threshold,0,0,0,0,0,0,0);
+        //Zeros: Don't care about these values, as they aren't used anyway (creating subtasks here)
+        //get required offsets etc from either Tensor1DStats OR via doing tensor in CPUTransformOpAction (with doTensorFirst == true)
+        //Don't use other consructor -> does reshape calcs etc that we don't need here
         this.op = op;
     }
 
