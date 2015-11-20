@@ -836,7 +836,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             ret.update(this);
 
         } catch (Exception e) {
-            throw new IllegalStateException("Unable to cloe network");
+            throw new IllegalStateException("Unable to clone network",e);
         }
         return ret;
     }
@@ -1568,7 +1568,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     public void update(MultiLayerNetwork network) {
         this.defaultConfiguration = network.defaultConfiguration;
-        setInput(network.input);
+        if(network.input != null) setInput(network.input);
         this.labels = network.labels;
         this.layers = ArrayUtils.clone(network.layers);
     }
