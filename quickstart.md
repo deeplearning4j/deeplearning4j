@@ -26,7 +26,7 @@ After those installs, if you can follow these steps, you'll be up and running (W
 * Enter `git clone https://github.com/deeplearning4j/dl4j-0.4-examples.git` in your command line. (We are currently on examples version 0.0.4.x.)
 * In IntelliJ, create a new project using Maven, point to the root directory of the examples above. 
 * Copy and paste the following code to make sure your POM.xml file looks like [this](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml). 
-* For an easier install, Windows users should replace *nd4j-jblas* with *nd4j-java* in the dependencies. Additional [Windows instructions are available here](../windows-install.html). 
+* For an easier install, Windows users should replace *nd4j-x86* with *nd4j-java* in the dependencies. Additional [Windows instructions are available here](../windows-install.html). 
 * Select `DBNIrisExample.java` from the lefthand file tree.
 * Hit run! (It's the green button that appears when you right-click on the source file...)
 
@@ -44,7 +44,7 @@ If you have trouble, the first thing you should check is your POM.xml file, whic
 
 ## Dependencies and Backends
 
-Backends are what power the linear algebra operations behind DL4J's neural nets. Backends vary by chip. CPUs work fastest with both Jblas and Netlib Blas; GPUs with Jcublas. You can find all backends on [Maven Central](https://search.maven.org); click the linked version number under "Latest Version"; copy the dependency code on the left side of the subsequent screen; and paste it into your project root's pom.xml in IntelliJ. 
+Backends are what power the linear algebra operations behind DL4J's neural nets. Backends vary by chip. CPUs work fastest with x86; GPUs with Jcublas. You can find all backends on [Maven Central](https://search.maven.org); click the linked version number under "Latest Version"; copy the dependency code on the left side of the subsequent screen; and paste it into your project root's pom.xml in IntelliJ. 
 
 The *nd4j-java* backend will look something like this:
 
@@ -56,15 +56,15 @@ The *nd4j-java* backend will look something like this:
 
 *nd4j-java* doesn't require Blas, which makes for the easiest setup on Windows. It works on all examples with DBNs, or deep-belief nets, but not on the other examples. 
 
-The nd4j-jblas backend will look something like this:
+The nd4j-x86 backend will look something like this:
 
      <dependency>
        <groupId>org.nd4j</groupId>
-       <artifactId>nd4j-jblas</artifactId>
+       <artifactId>nd4j-x86</artifactId>
        <version>${nd4j.version}</version>
      </dependency>
 
-*nd4j-jblas* works with all examples. To install Jblas, Windows users should refer to the [Deepelearining4j Getting Started page](../gettingstarted.html).
+*nd4j-x86* works with all examples. To install an additional dependency, OpenBlas, Windows and Linux users should refer to the [Deepelearining4j Getting Started page](../gettingstarted.html#open).
 
 ## Advanced: Using the Command Line on AWS
 
