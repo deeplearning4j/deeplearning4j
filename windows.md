@@ -13,8 +13,8 @@ layout: default
 
 * You can install DL4J either from source or from Maven central. Here are the **source** instructions. 
 
-         git clone https://github.com/agibsonccc/java-deeplearning
-         cd java-deeplearning
+         git clone https://github.com/deeplearning4j/deeplearning4j
+         cd deeplearning4j
 
 ### IntelliJ
 
@@ -72,14 +72,6 @@ layout: default
 			<artifactId>deeplearning4j-core</artifactId>
 			<version>0.0.3.2-SNAPSHOT</version>
 		 </dependency>
-
-* For multithreaded/clustering support, add this dependency to your POM file:
-
-         <dependency>
-			<groupId>org.deeplearning4j</groupId>
-			<artifactId>deeplearning4j-scaleout-akka</artifactId>
-			<version>0.0.3.2-SNAPSHOT</version>
-         </dependency>
 
 * For natural-language processing (NLP), add this dependency to your POM file:
          
