@@ -3,6 +3,7 @@ package org.deeplearning4j.graph.models.embeddings;
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.graph.models.BinaryTree;
 import org.nd4j.linalg.api.blas.Level1;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -18,12 +19,21 @@ public class InMemoryGraphLookupTable implements GraphVectorLookupTable {
     protected INDArray outWeights;      //'output' vectors. Specifically vectors for inner nodes in binary tree
     protected double learningRate;
 
+    protected double[] expTable;
+    protected static double MAX_EXP = 6;
+
     public InMemoryGraphLookupTable(int nVertices, int vectorSize, BinaryTree tree, double learningRate ){
         this.nVertices = nVertices;
         this.vectorSize = vectorSize;
         this.tree = tree;
         this.learningRate = learningRate;
         resetWeights();
+
+        expTable = new double[1000];
+        for (int i = 0; i < expTable.length; i++) {
+            double tmp =   FastMath.exp((i / (double) expTable.length * 2 - 1) * MAX_EXP);
+            expTable[i]  = tmp / (tmp + 1.0);
+        }
     }
 
     public INDArray getVertexVectors(){

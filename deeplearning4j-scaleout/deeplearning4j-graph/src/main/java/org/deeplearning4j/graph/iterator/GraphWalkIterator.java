@@ -16,8 +16,9 @@ public interface GraphWalkIterator<T> {
      */
     IVertexSequence<T> next();
 
+    /** Whether the iterator has any more vertex sequences. */
     boolean hasNext();
 
+    /** Reset the graph walk iterator. */
     void reset();
-
 }

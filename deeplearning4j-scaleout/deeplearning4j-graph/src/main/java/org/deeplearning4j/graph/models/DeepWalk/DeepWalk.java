@@ -40,12 +40,11 @@ public class DeepWalk<V,E> extends GraphVectorsImpl<V,E> {
 
     private int vectorSize;
     private int windowSize;
-    private int batchSize;
     private double learningRate;
     private boolean initCalled = false;
     private long seed;
     private ExecutorService executorService;
-    private int nThreads = 1;   //Runtime.getRuntime().availableProcessors();
+    private int nThreads = Runtime.getRuntime().availableProcessors();
     private transient AtomicLong walkCounter = new AtomicLong(0);
 
     public DeepWalk(){
@@ -58,10 +57,6 @@ public class DeepWalk<V,E> extends GraphVectorsImpl<V,E> {
 
     public int getWindowSize(){
         return windowSize;
-    }
-
-    public int getBatchSize(){
-        return batchSize;
     }
 
     public double getLearningRate(){
@@ -184,10 +179,8 @@ public class DeepWalk<V,E> extends GraphVectorsImpl<V,E> {
     }
 
     private void skipGram(int[] walk){
-
         for(int mid = windowSize; mid < walk.length-windowSize; mid++ ){
-
-            for(int pos=0; pos<2*windowSize; pos++){
+            for( int pos=mid-windowSize; pos<=mid+windowSize; pos++ ){
                 if(pos == mid) continue;
 
                 //pair of vertices: walk[mid] -> walk[pos]
@@ -202,9 +195,7 @@ public class DeepWalk<V,E> extends GraphVectorsImpl<V,E> {
 
 
     public static class Builder<V,E> {
-
         private int vectorSize = 100;
-        private int batchSize;
         private long seed = System.currentTimeMillis();
         private double learningRate = 0.01;
         private int windowSize = 2;
@@ -212,11 +203,6 @@ public class DeepWalk<V,E> extends GraphVectorsImpl<V,E> {
         /** Sets the size of the vectors to be learned for each vertex in the graph */
         public Builder<V,E> vectorSize(int vectorSize){
             this.vectorSize = vectorSize;
-            return this;
-        }
-
-        public Builder<V,E> batchSize(int batchSize){
-            this.batchSize = batchSize;
             return this;
         }
 
@@ -232,6 +218,10 @@ public class DeepWalk<V,E> extends GraphVectorsImpl<V,E> {
             return this;
         }
 
+        /** Seed for random number generation (used for repeatability).
+         * Note however that parallel/async gradient descent might result in behaviour that
+         * is not repeatable, in spite of setting seed
+         */
         public Builder<V,E> seed(long seed){
             this.seed = seed;
             return this;
@@ -241,7 +231,6 @@ public class DeepWalk<V,E> extends GraphVectorsImpl<V,E> {
             DeepWalk<V,E> dw = new DeepWalk<>();
             dw.vectorSize = vectorSize;
             dw.windowSize = windowSize;
-            dw.batchSize = batchSize;
             dw.learningRate = learningRate;
             dw.seed = seed;
 
