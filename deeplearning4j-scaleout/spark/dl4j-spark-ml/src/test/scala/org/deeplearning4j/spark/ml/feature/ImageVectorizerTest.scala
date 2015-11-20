@@ -14,6 +14,7 @@ import org.springframework.core.io.ClassPathResource
  * Test ImageVectorizer.
  */
 @RunWith(classOf[JUnitRunner])
+@org.junit.Ignore
 class ImageVectorizerTest
   extends FunSuite with TestSparkContext with Logging with Matchers {
   var imageDF: DataFrame = null

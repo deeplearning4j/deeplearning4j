@@ -537,7 +537,7 @@ public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClo
             File directory = new File(indexPath);
             log.info("Creating directory " + directory.getCanonicalPath());
             FileUtils.deleteDirectory(directory);
-            dir = FSDirectory.open(Paths.get(URI.create("file:" + directory.getAbsolutePath())));
+            dir = FSDirectory.open(Paths.get(directory.toURI()));
             if (!directory.exists()) {
                 directory.mkdir();
             }

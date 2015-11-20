@@ -31,12 +31,14 @@ import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.glove.GloveWeightLookupTable;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.spark.text.BaseSparkTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.core.io.ClassPathResource;
 
 /**
  * Created by agibsonccc on 1/31/15.
  */
+@Ignore
 public class GloveTest extends BaseSparkTest {
 
     @Test

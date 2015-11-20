@@ -1107,6 +1107,10 @@ public class RNTN implements Layer {
         return getNumParameters();
     }
 
+    @Override
+    public int numParams(boolean backwards) {
+        return 0;
+    }
 
 
     @Override

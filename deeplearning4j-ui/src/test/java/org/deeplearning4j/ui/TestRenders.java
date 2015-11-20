@@ -16,6 +16,7 @@ import org.deeplearning4j.plot.PlotFilters;
 import org.deeplearning4j.ui.activation.UpdateActivationIterationListener;
 import org.deeplearning4j.ui.renders.UpdateFilterIterationListener;
 import org.deeplearning4j.ui.weights.HistogramIterationListener;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -28,6 +29,7 @@ import java.util.Collections;
 /**
  * @author Adam Gibson
  */
+@Ignore
 public class TestRenders extends BaseUiServerTest {
     @Test
     public void renderSetup() throws Exception {
@@ -52,11 +54,6 @@ public class TestRenders extends BaseUiServerTest {
                 ,new UpdateFilterIterationListener(filters,Collections.singletonList(PretrainParamInitializer.WEIGHT_KEY),1)),0);
         da.setParams(da.params());
         da.fit(input);
-    }
-
-    @Test
-    public void testCoordUpdate() {
-
     }
 
     @Test
@@ -101,7 +98,8 @@ public class TestRenders extends BaseUiServerTest {
         DataSet d2 = fetcher.next();
 
         INDArray input = d2.getFeatureMatrix();
-        AutoEncoder da = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.asList(new ScoreIterationListener(1),new HistogramIterationListener(5)),0);
+        AutoEncoder da = LayerFactories.getFactory(conf.getLayer()).create(conf);
+        da.setListeners(new ScoreIterationListener(1),new HistogramIterationListener(5));
         da.setParams(da.params());
         da.fit(input);
     }
