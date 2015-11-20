@@ -141,24 +141,23 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         INDArray parameters = null;
         model.validateInput();
         Pair<Gradient,Double> pair = gradientAndScore();
-//        score = pair.getSecond();
         if(searchState.isEmpty()){
-        	searchState.put(GRADIENT_KEY, pair.getFirst().gradient());
-        	setupSearchState(pair);		//Only do this once
+            searchState.put(GRADIENT_KEY, pair.getFirst().gradient());
+            setupSearchState(pair);		//Only do this once
         } else {
-        	searchState.put(GRADIENT_KEY, pair.getFirst().gradient());
+            searchState.put(GRADIENT_KEY, pair.getFirst().gradient());
         }
 
         //pre existing termination conditions
         /*
          * Commented out for now; this has been problematic for testing/debugging
-         * Revisit & re-enable later.
+         * Revisit & re-enable later. */
         for(TerminationCondition condition : terminationConditions){
-            if(condition.terminate(0.0,0.0,new Object[]{gradient})) {
+            if(condition.terminate(0.0,0.0,new Object[]{pair.getFirst().gradient()})) {
                 log.info("Hit termination condition " + condition.getClass().getName());
                 return true;
             }
-        }*/
+        }
 
         //calculate initial search direction
         preProcessLine();
@@ -269,11 +268,11 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
     public static StepFunction getDefaultStepFunctionForOptimizer( Class<? extends ConvexOptimizer> optimizerClass ){
         log.warn("Objective function automatically set to minimize. Set stepFunction in neural net configuration to change default settings.");
-    	if( optimizerClass == StochasticGradientDescent.class ){
-    		return new NegativeGradientStepFunction();
-    	} else {
-    		return new NegativeDefaultStepFunction();
-    	}
+        if( optimizerClass == StochasticGradientDescent.class ){
+            return new NegativeGradientStepFunction();
+        } else {
+            return new NegativeDefaultStepFunction();
+        }
     }
 
 }
