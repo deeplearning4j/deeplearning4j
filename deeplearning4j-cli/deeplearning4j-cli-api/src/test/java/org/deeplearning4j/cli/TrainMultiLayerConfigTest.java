@@ -46,7 +46,6 @@ public class TrainMultiLayerConfigTest {
         Model testModelFlag = new Model();
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .iterations(100)
-                .batchSize(10)
                 .learningRate(1e-1f).momentum(0.9).regularization(true).l2(2e-4)
                 .optimizationAlgo(OptimizationAlgorithm.LBFGS).constrainGradientToUnitNorm(true)
                 .list(2)

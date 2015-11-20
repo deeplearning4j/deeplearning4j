@@ -170,7 +170,7 @@ public class Train extends BaseSubCommand {
                 MultiLayerConfiguration conf = MultiLayerConfiguration.fromJson(FileUtils.readFileToString(new File(modelPath)));
                 FeedForwardLayer outputLayer = (FeedForwardLayer) conf.getConf(conf.getConfs().size() - 1).getLayer();
 
-                DataSetIterator iter = new RecordReaderDataSetIterator( reader , conf.getConf(0).getBatchSize(),-1, outputLayer.getNOut());
+                DataSetIterator iter = new RecordReaderDataSetIterator( reader ,1,-1, outputLayer.getNOut());
 
                 MultiLayerNetwork network = new MultiLayerNetwork(conf);
                 if(verbose) {
@@ -195,7 +195,7 @@ public class Train extends BaseSubCommand {
                 NeuralNetConfiguration conf = NeuralNetConfiguration.fromJson(FileUtils.readFileToString(new File(modelPath)));
                 LayerFactory factory = LayerFactories.getFactory(conf);
                 Layer l = factory.create(conf);
-                DataSetIterator iter = new RecordReaderDataSetIterator( reader , conf.getBatchSize());
+                DataSetIterator iter = new RecordReaderDataSetIterator( reader , 1);
                 while(iter.hasNext()) {
                     l.fit(iter.next().getFeatureMatrix());
                 }

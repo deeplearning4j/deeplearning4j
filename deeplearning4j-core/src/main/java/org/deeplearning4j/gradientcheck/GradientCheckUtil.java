@@ -66,7 +66,7 @@ public class GradientCheckUtil {
         INDArray gradientToCheck = gradAndScore.getFirst().gradient();
         INDArray originalParams = mln.params();
 
-        int nParams = mln.numParams();
+        int nParams = originalParams.length();
 
         int totalNFailures = 0;
         double maxError = 0.0;

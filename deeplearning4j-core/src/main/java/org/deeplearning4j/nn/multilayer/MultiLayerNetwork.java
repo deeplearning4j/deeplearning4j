@@ -427,7 +427,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 INDArray paramsForL = network.paramsBackprop();
                 params.add(paramsForL);
             }
-           else {
+            else {
                 INDArray paramsForL = l.params();
                 params.add(paramsForL);
             }
@@ -705,15 +705,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
         for (int i = 0; i < deltas.length - 1; i++) {
-            if (defaultConfiguration.isConstrainGradientToUnitNorm()) {
-                double sum = deltas[i].sum(Integer.MAX_VALUE).getDouble(0);
-                if (sum > 0)
-                    deltaRet.add(deltas[i].div(deltas[i].norm2(Integer.MAX_VALUE)));
-                else
-                    deltaRet.add(deltas[i]);
-            } else
-                deltaRet.add(deltas[i]);
-            LinAlgExceptions.assertValidNum(deltaRet.get(i));
+            deltaRet.add(deltas[i]);
         }
 
         return deltaRet;
@@ -782,11 +774,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
         for (int i = 0; i < deltas.length; i++) {
-            if (defaultConfiguration.isConstrainGradientToUnitNorm())
-                deltaRet.add(new Pair<>(deltas[i].divi(deltas[i].norm2(Integer.MAX_VALUE)), preCons[i]));
-
-            else
-                deltaRet.add(new Pair<>(deltas[i], preCons[i]));
+            deltaRet.add(new Pair<>(deltas[i], preCons[i]));
 
         }
 

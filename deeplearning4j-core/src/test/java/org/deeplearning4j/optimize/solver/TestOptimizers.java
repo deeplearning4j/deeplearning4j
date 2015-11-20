@@ -203,7 +203,6 @@ public class TestOptimizers {
                         .nOut(1)
                         .updater(Updater.SGD)
                         .build())
-                .batchSize(1)
                 .build();
         conf.addVariable("x");	//Normally done by ParamInitializers, but obviously that isn't done here
 
@@ -297,8 +296,7 @@ public class TestOptimizers {
                     .layer(new DenseLayer.Builder()
                             .nIn(1).nOut(1)
                             .updater(Updater.SGD)
-                            .build())
-                    .batchSize(1).build();
+                            .build()).build();
             conf.addVariable("x");	//Normally done by ParamInitializers, but obviously that isn't done here
 
             Model m = new SphereFunctionModel(100,dist,conf);
@@ -414,7 +412,7 @@ public class TestOptimizers {
                             .nIn(1).nOut(1)
                             .updater(Updater.ADAGRAD)
                             .build())
-                    .batchSize(1).build();
+                   .build();
             conf.addVariable("x");	//Normally done by ParamInitializers, but obviously that isn't done here
 
             Model m = new RastriginFunctionModel(100,conf);
@@ -563,7 +561,7 @@ public class TestOptimizers {
                             .nIn(1).nOut(1)
                             .updater(Updater.SGD)
                             .build())
-                    .batchSize(1).build();
+                    .build();
             conf.addVariable("x");	//Normally done by ParamInitializers, but obviously that isn't done here
 
             Model m = new RosenbrockFunctionModel(100,conf);
