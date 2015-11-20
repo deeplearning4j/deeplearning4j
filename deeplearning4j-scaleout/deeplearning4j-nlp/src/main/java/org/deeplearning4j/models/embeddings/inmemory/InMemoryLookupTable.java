@@ -188,8 +188,10 @@ public class InMemoryLookupTable implements WeightLookupTable {
      */
     @Override
     public  void iterateSample(VocabWord w1, VocabWord w2,AtomicLong nextRandom,double alpha) {
-        if(w2 == null || w2.getIndex() < 0 || w1.getIndex() == w2.getIndex() || w1.getWord().equals("STOP") || w2.getWord().equals("STOP") || w1.getWord().equals("UNK") || w2.getWord().equals("UNK"))
-           return;
+        // there's no way stop word or unk word can get into iteration
+        if(w2 == null || w2.getIndex() < 0 || w1.getIndex() == w2.getIndex()) {
+            return;
+        }
             //current word vector
         INDArray l1 = this.syn0.slice(w2.getIndex());
 
@@ -212,7 +214,6 @@ public class InMemoryLookupTable implements WeightLookupTable {
 
             if(dot < -MAX_EXP || dot >= MAX_EXP)
                 continue;
-
 
             int idx = (int) ((dot + MAX_EXP) * ((double) expTable.length / MAX_EXP / 2.0));
             if(idx >= expTable.length)

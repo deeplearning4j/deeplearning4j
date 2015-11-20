@@ -20,22 +20,34 @@ package org.deeplearning4j.models.word2vec;
 
 import com.google.common.primitives.Doubles;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.ArrayUtils;
+import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
+import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
+import org.deeplearning4j.text.sentenceiterator.UimaSentenceIterator;
+import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.ArrayUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -45,6 +57,8 @@ public class WordVectorSerializerTest {
 
     private File textFile, binaryFile, textFile2;
     String pathToWriteto;
+
+    private Logger logger = LoggerFactory.getLogger(WordVectorSerializerTest.class);
 
     @Before
     public void before() throws Exception {
@@ -151,4 +165,48 @@ public class WordVectorSerializerTest {
     }
 
 
+    @Test
+    public void testFullModelSerialization() throws Exception {
+        File inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
+        SentenceIterator iter = UimaSentenceIterator.createWithPath(inputFile.getAbsolutePath());
+        // Split on white spaces in the line to get words
+        TokenizerFactory t = new DefaultTokenizerFactory();
+        t.setTokenPreProcessor(new CommonPreprocessor());
+
+        InMemoryLookupCache cache = new InMemoryLookupCache();
+        WeightLookupTable table = new InMemoryLookupTable.Builder()
+                .vectorLength(100)
+                .useAdaGrad(true)
+                .cache(cache)
+                .lr(0.025f).build();
+
+        Word2Vec vec = new Word2Vec.Builder()
+                .minWordFrequency(5).iterations(1)
+                .layerSize(100).lookupTable(table)
+                .stopWords(new ArrayList<String>())
+                .useAdaGrad(true)
+                .vocabCache(cache).seed(42).workers(1)
+                .windowSize(5).iterate(iter).tokenizerFactory(t).build();
+
+        assertEquals(new ArrayList<String>(), vec.getStopWords());
+        vec.fit();
+
+        WordVectorSerializer.writeFullModel(vec, "tempModel.txt");
+
+        File modelFile = new File("tempModel.txt");
+
+        assertTrue(modelFile.exists());
+        assertTrue(modelFile.length() > 0);
+
+/*
+        Word2Vec vec2 = WordVectorSerializer.loadFullModel("tempModel.txt");
+
+        assertNotEquals(null, vec2);
+
+        logger.info("Source ExpTable: " + ArrayUtils.toString(((InMemoryLookupTable) table).getExpTable()));
+        logger.info("Dest  ExpTable: " + ArrayUtils.toString(((InMemoryLookupTable)  vec2.getLookupTable()).getExpTable()));
+        assertTrue(ArrayUtils.isEquals(((InMemoryLookupTable) table).getExpTable(), ((InMemoryLookupTable) vec2.getLookupTable()).getExpTable()));
+*/
+       modelFile.delete();
+    }
 }

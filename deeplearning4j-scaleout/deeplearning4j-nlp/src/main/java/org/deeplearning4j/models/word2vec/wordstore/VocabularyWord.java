@@ -1,8 +1,13 @@
 package org.deeplearning4j.models.word2vec.wordstore;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import lombok.Data;
 import lombok.NonNull;
 
+import java.io.IOException;
 import java.io.Serializable;
 
 /**
@@ -17,6 +22,12 @@ public class VocabularyWord implements Serializable {
     @NonNull
     private String word;
     private int count = 1;
+
+    // these fileds are used for vocab serialization/deserialization only. Usual runtime value is null.
+    private double[] syn0;
+    private double[] syn1;
+    private double[] syn1Neg;
+    private double[] historicalGradient;
 
     // There's no reasons to save HuffmanNode data, it will be recalculated after deserialization
     private transient HuffmanNode huffmanNode;
@@ -65,5 +76,39 @@ public class VocabularyWord implements Serializable {
         int result = word.hashCode();
         result = 31 * result + count;
         return result;
+    }
+
+    private static ObjectMapper mapper() {
+        /*
+              DO NOT ENABLE INDENT_OUTPUT FEATURE
+              we need THIS json to be single-line
+          */
+        ObjectMapper ret = new ObjectMapper();
+        ret.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        ret.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
+        return ret;
+    }
+
+    public String toJson() {
+        ObjectMapper mapper = mapper();
+        try {
+            /*
+                we need JSON as single line to save it at first line of the CSV model file
+            */
+            return mapper.writeValueAsString(this);
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static VocabularyWord fromJson(String json) {
+        ObjectMapper mapper = mapper();
+        try {
+            VocabularyWord ret =  mapper.readValue(json, VocabularyWord.class);
+            return ret;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

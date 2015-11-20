@@ -29,6 +29,8 @@ public class VocabularyHolderTest {
         assertEquals(2, cache.wordFrequency("testz"));
         assertEquals(3, cache.wordFrequency("tests"));
 
+        assertEquals(3, (int) cache.wordFor("tests").getWordFrequency());
+
 
         // checking Huffman tree transfer
         assertEquals("tests", cache.wordAtIndex(0));
