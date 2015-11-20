@@ -200,9 +200,9 @@ public class DeepWalkGradientCheck {
         for (int i = 0; i < nVertices; i++) {   //in
 
             //First: check probabilities p(out|in)
-            double[] probs = new double[7];
+            double[] probs = new double[nVertices];
             double sumProb = 0.0;
-            for( int j=0; j<7; j++ ){
+            for( int j=0; j<nVertices; j++ ){
                 probs[j] = table.calculateProb(i,j);
                 assertTrue(probs[j] >= 0.0 && probs[j] <= 1.0);
                 sumProb += probs[j];

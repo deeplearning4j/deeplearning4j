@@ -15,6 +15,9 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/**GraphVectorSerializer: Provide static methods to save and load DeepWalk/Graph vectors
+ *
+ */
 public class GraphVectorSerializer {
     private static final Logger log = LoggerFactory.getLogger(GraphVectorSerializer.class);
     private static final String DELIM = "\t";
@@ -73,8 +76,7 @@ public class GraphVectorSerializer {
         InMemoryGraphLookupTable table = new InMemoryGraphLookupTable(nVertices,vecSize,null,0.01);
         table.setVertexVectors(vectors);
 
-        GraphVectorsImpl<?,?> impl = new GraphVectorsImpl<>(null,table);
-        return impl;
+        return new GraphVectorsImpl<Object,Object>(null,table);
     }
 
 }
