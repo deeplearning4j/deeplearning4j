@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# Deeplearning4j Implementation for WellDressed
+# WellDressed Recommendation Engine
 
 *By Stephan Duquesnoy*
 
@@ -15,7 +15,7 @@ For a few years, I ran an art-outsourcing studio aimed at the entertainment indu
 
 By way of experiment, I translated the algorithm to a program that could suggest color harmonies in sync with the weather. I added clothes to that program, which created Well Dressed. 
 
-Well Dressed is an app that suggests clothes to wear or buy based on how you look, as well as on the weather, occasion and your budget. It’s a one-man operation (for now!). As a side-note, even though I’m good with pattern-based thinking, I do not have an academic background. I lack patience and feel the need to create, rather than to completely understand what I’m doing.
+*Well Dressed* is an app that suggests clothes to wear or buy based on how you look, as well as on the weather, occasion and your budget. It [debuted at Web Summit 2015 in Ireland](http://goos3d.ie/best-startups-at-web-summit-2015/), and it’s a one-man operation (for now!). As a side-note, even though I’m good with pattern-based thinking, I do not have an academic background. I lack patience and feel the need to create, rather than to completely understand what I’m doing.
 
 ## Problem
 
