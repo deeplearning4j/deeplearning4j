@@ -24,6 +24,11 @@
 		<version>0.4-rc3.7-SNAPSHOT</version>
 	</parent>
 	<build>
+        <testResources>
+            <testResource>
+                <directory>../../dl4j-test-resources/src/main/resources</directory>
+            </testResource>
+        </testResources>
 		<pluginManagement>
 			<plugins>
 				<plugin>
@@ -33,7 +38,7 @@
 						<additionalClasspathElements>
 							<additionalClasspathElement>../../dl4j-test-resources/src/main/resources</additionalClasspathElement>
 						</additionalClasspathElements>
-						<argLine>-Xmx6g</argLine>
+
 					</configuration>
 				</plugin>
 			</plugins>
@@ -58,6 +63,12 @@
 
 
 	<dependencies>
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>dl4j-test-resources</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
 		<dependency>
 			<groupId>org.apache.lucene</groupId>
 			<artifactId>lucene-analyzers-common</artifactId>

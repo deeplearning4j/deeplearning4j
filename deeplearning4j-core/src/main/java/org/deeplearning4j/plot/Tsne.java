@@ -20,6 +20,7 @@ package org.deeplearning4j.plot;
 
 
 import com.google.common.primitives.Ints;
+import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -28,6 +29,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.indexing.SpecifiedIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.functions.Value;
 import org.nd4j.linalg.indexing.functions.Zero;
@@ -111,11 +113,13 @@ public class Tsne implements Serializable {
      */
     public Pair<INDArray,INDArray> hBeta(INDArray d,double beta) {
         INDArray P =  exp(d.neg().muli(beta));
-        INDArray sum = P.sum(Integer.MAX_VALUE);
-        INDArray H = log(sum).addi(d.mul(P).sum(0).muli(beta).divi(sum));
+        double sum = P.sumNumber().doubleValue();
+        double logSum = FastMath.log(sum);
+        INDArray H = d.mul(P).sum(0).muli(beta).divi(sum).addi(logSum);
         P.divi(sum);
         return new Pair<>(H,P);
     }
+
 
 
 
@@ -141,7 +145,7 @@ public class Tsne implements Serializable {
             double betaMin = Double.NEGATIVE_INFINITY;
             double betaMax = Double.POSITIVE_INFINITY;
             int[] vals = Ints.concat(ArrayUtil.range(0,i),ArrayUtil.range(i + 1,d.columns()));
-            INDArrayIndex[] range = new INDArrayIndex[]{new NDArrayIndex(vals)};
+            INDArrayIndex[] range = new INDArrayIndex[]{new SpecifiedIndex(vals)};
 
             INDArray row = d.slice(i).get(range);
             Pair<INDArray,INDArray> pair =  hBeta(row,beta.getDouble(i));
@@ -358,7 +362,7 @@ public class Tsne implements Serializable {
         log.info("Cost at iteration " + i + " was " + costGradient.getFirst());
         y.addi(yIncs);
         y.addi(yIncs).subiRowVector(y.mean(0));
-        INDArray tiled = Nd4j.tile(y.mean(0), new int[]{y.rows(), y.columns()});
+        INDArray tiled = Nd4j.tile(y.mean(0), new int[]{y.rows(), 1});
         y.subi(tiled);
 
     }
@@ -372,7 +376,7 @@ public class Tsne implements Serializable {
      * @throws IOException
      */
     public void plot(INDArray matrix,int nDims,List<String> labels) throws IOException {
-        plot(matrix,nDims,labels,"coords.csv");
+        plot(matrix, nDims, labels, "coords.csv");
     }
 
     /**

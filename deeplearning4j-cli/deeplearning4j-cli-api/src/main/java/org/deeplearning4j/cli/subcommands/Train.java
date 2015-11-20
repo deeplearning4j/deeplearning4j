@@ -151,9 +151,9 @@ public class Train extends BaseSubCommand {
      */
     public void execLocal() {
         log.warn( "[dl4j] - executing local ... " );
-        log.warn( "using training input: " + this.input );
+        log.warn( "using training input: " + this.input);
 
-        File inputFile = new File( this.input );
+        File inputFile = new File(this.input);
         InputSplit split = new FileSplit( inputFile );
         InputFormat inputFormat = this.createInputFormat();
 
@@ -260,7 +260,7 @@ public class Train extends BaseSubCommand {
 
         InputStream in = null;
         try {
-            in = new FileInputStream( this.configurationFile );
+            in = new FileInputStream(this.configurationFile);
         } catch (FileNotFoundException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -288,7 +288,7 @@ public class Train extends BaseSubCommand {
 
         else
             // default
-            this.outputDirectory = "/tmp/dl4_model_default.txt";
+            this.outputDirectory = "/tmp/dl4j_model_default.txt";
         //throw new Exception("no output location!");
 
 

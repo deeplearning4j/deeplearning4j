@@ -105,7 +105,7 @@ public class PlotFilters {
         for(int tileRow = 0; tileRow < tileShape[0]; tileRow++) {
             for(int tileCol = 0; tileCol < tileShape[1]; tileCol++) {
                 if(tileRow * tileShape[1] + tileCol < input.size(0)) {
-                    INDArray image = input.get(new NDArrayIndex(tileRow * tileShape[1] + tileCol));
+                    INDArray image = input.get(NDArrayIndex.point(tileRow * tileShape[1] + tileCol));
                     image = image.reshape(imageShape);
 
                     if(scaleRowsToInterval) {

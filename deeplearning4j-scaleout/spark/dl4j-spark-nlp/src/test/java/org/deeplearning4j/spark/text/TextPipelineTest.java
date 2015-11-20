@@ -50,7 +50,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author Jeffrey Tang
  */
-public class TextPipelineTest {
+public class TextPipelineTest extends BaseSparkTest {
 
     private List<String> sentenceList;
     private SparkConf conf;
@@ -61,7 +61,7 @@ public class TextPipelineTest {
     }
 
     @Before
-    public void before() throws IOException {
+    public void before() throws Exception {
         conf = new SparkConf().setMaster("local[4]")
                 .setAppName("sparktest");
 
@@ -81,21 +81,10 @@ public class TextPipelineTest {
         sentenceList = Arrays.asList("This is a strange strange world.", "Flowers are red.");
     }
 
-    @Test
-    public void testTokenizeFunction() throws Exception {
-        String tokenizerString = (String) defaultVals.get(TOKENIZER);
-        String tokenizerPreprocessString = (String) defaultVals.get(TOKEN_PREPROCESSOR);
-
-        TokenizerFunction tokenizerFunction = new TokenizerFunction(tokenizerString, tokenizerPreprocessString, 1);
-
-        List<String> tokenList = tokenizerFunction.call(sentenceList.get(0));
-
-        assertTrue(tokenList.equals(Arrays.asList("this", "is", "a", "strange", "strange", "world")));
-    }
 
     @Test
     public void testTokenizer() throws Exception {
-        JavaSparkContext sc = new JavaSparkContext(conf);
+        JavaSparkContext sc = getContext();
         JavaRDD<String> corpusRDD = getCorpusRDD(sc);
         Broadcast<Map<String, Object>> broadcastTokenizerVarMap = sc.broadcast(word2vec.getTokenizerVarMap());
 
@@ -108,7 +97,7 @@ public class TextPipelineTest {
 
     @Test
     public void testWordFreqAccIdentifyStopWords() throws Exception {
-        JavaSparkContext sc = new JavaSparkContext(conf);
+        JavaSparkContext sc = getContext();
         JavaRDD<String> corpusRDD = getCorpusRDD(sc);
         Broadcast<Map<String, Object>> broadcastTokenizerVarMap = sc.broadcast(word2vec.getTokenizerVarMap());
 
@@ -137,7 +126,7 @@ public class TextPipelineTest {
     @Test
     public void testWordFreqAccNotIdentifyingStopWords() throws Exception {
 
-        JavaSparkContext sc = new JavaSparkContext(conf);
+        JavaSparkContext sc = getContext();
         word2vec.setRemoveStop(false);
         JavaRDD<String> corpusRDD = getCorpusRDD(sc);
         Broadcast<Map<String, Object>> broadcastTokenizerVarMap = sc.broadcast(word2vec.getTokenizerVarMap());
@@ -161,7 +150,7 @@ public class TextPipelineTest {
 
     @Test
     public void testFilterMinWordAddVocab() throws Exception {
-        JavaSparkContext sc = new JavaSparkContext(conf);
+        JavaSparkContext sc = getContext();
         JavaRDD<String> corpusRDD = getCorpusRDD(sc);
         Broadcast<Map<String, Object>> broadcastTokenizerVarMap = sc.broadcast(word2vec.getTokenizerVarMap());
 
@@ -181,19 +170,15 @@ public class TextPipelineTest {
 
 
         assertEquals(redVocab.getWord(), "red");
-        assertEquals(redVocab.getIndex(), 0);
         assertEquals(redVocab.getWordFrequency(), 1, 0);
 
         assertEquals(flowerVocab.getWord(), "flowers");
-        assertEquals(flowerVocab.getIndex(), 1);
         assertEquals(flowerVocab.getWordFrequency(), 1, 0);
 
         assertEquals(worldVocab.getWord(), "world");
-        assertEquals(worldVocab.getIndex(), 2);
         assertEquals(worldVocab.getWordFrequency(), 1, 0);
 
         assertEquals(strangeVocab.getWord(), "strange");
-        assertEquals(strangeVocab.getIndex(), 3);
         assertEquals(strangeVocab.getWordFrequency(), 2, 0);
 
         sc.stop();
@@ -201,7 +186,7 @@ public class TextPipelineTest {
 
     @Test
     public void testBuildVocabCache() throws  Exception{
-        JavaSparkContext sc = new JavaSparkContext(conf);
+        JavaSparkContext sc = getContext();
         JavaRDD<String> corpusRDD = getCorpusRDD(sc);
         Broadcast<Map<String, Object>> broadcastTokenizerVarMap = sc.broadcast(word2vec.getTokenizerVarMap());
 
@@ -216,19 +201,15 @@ public class TextPipelineTest {
         VocabWord strangeVocab = vocabCache.tokenFor("strange");
 
         assertEquals(redVocab.getWord(), "red");
-        assertEquals(redVocab.getIndex(), 0);
         assertEquals(redVocab.getWordFrequency(), 1, 0);
 
         assertEquals(flowerVocab.getWord(), "flowers");
-        assertEquals(flowerVocab.getIndex(), 1);
         assertEquals(flowerVocab.getWordFrequency(), 1, 0);
 
         assertEquals(worldVocab.getWord(), "world");
-        assertEquals(worldVocab.getIndex(), 2);
         assertEquals(worldVocab.getWordFrequency(), 1, 0);
 
         assertEquals(strangeVocab.getWord(), "strange");
-        assertEquals(strangeVocab.getIndex(), 3);
         assertEquals(strangeVocab.getWordFrequency(), 2, 0);
 
         sc.stop();
@@ -236,7 +217,7 @@ public class TextPipelineTest {
 
     @Test
     public void testBuildVocabWordListRDD() throws Exception{
-        JavaSparkContext sc = new JavaSparkContext(conf);
+        JavaSparkContext sc = getContext();
         JavaRDD<String> corpusRDD = getCorpusRDD(sc);
         Broadcast<Map<String, Object>> broadcastTokenizerVarMap = sc.broadcast(word2vec.getTokenizerVarMap());
 
@@ -275,7 +256,7 @@ public class TextPipelineTest {
 
     @Test
     public void testHuffman() throws Exception {
-        JavaSparkContext sc = new JavaSparkContext(conf);
+        JavaSparkContext sc = getContext();
         JavaRDD<String> corpusRDD = getCorpusRDD(sc);
         Broadcast<Map<String, Object>> broadcastTokenizerVarMap = sc.broadcast(word2vec.getTokenizerVarMap());
 
@@ -298,7 +279,7 @@ public class TextPipelineTest {
 
     @Test
     public void testCountCumSum() throws Exception {
-        JavaSparkContext sc = new JavaSparkContext(conf);
+        JavaSparkContext sc = getContext();
         JavaRDD<String> corpusRDD = getCorpusRDD(sc);
         Broadcast<Map<String, Object>> broadcastTokenizerVarMap = sc.broadcast(word2vec.getTokenizerVarMap());
 
@@ -318,7 +299,7 @@ public class TextPipelineTest {
 
     @Test
     public void testZipFunction() throws Exception {
-        JavaSparkContext sc = new JavaSparkContext(conf);
+        JavaSparkContext sc = getContext();
         JavaRDD<String> corpusRDD = getCorpusRDD(sc);
         word2vec.setRemoveStop(false);
         Broadcast<Map<String, Object>> broadcastTokenizerVarMap = sc.broadcast(word2vec.getTokenizerVarMap());
@@ -359,7 +340,7 @@ public class TextPipelineTest {
 
     @Test
     public void testFirstIteration() throws Exception {
-        JavaSparkContext sc = new JavaSparkContext(conf);
+        JavaSparkContext sc = getContext();
         JavaRDD<String> corpusRDD = getCorpusRDD(sc);
         word2vec.setRemoveStop(false);
         Broadcast<Map<String, Object>> broadcastTokenizerVarMap = sc.broadcast(word2vec.getTokenizerVarMap());
@@ -398,7 +379,7 @@ public class TextPipelineTest {
 
     @Test
     public void testSyn0AfterFirstIteration() throws Exception {
-        JavaSparkContext sc = new JavaSparkContext(conf);
+        JavaSparkContext sc = getContext();
         JavaRDD<String> corpusRDD = getCorpusRDD(sc);
         word2vec.setRemoveStop(false);
         Broadcast<Map<String, Object>> broadcastTokenizerVarMap = sc.broadcast(word2vec.getTokenizerVarMap());
