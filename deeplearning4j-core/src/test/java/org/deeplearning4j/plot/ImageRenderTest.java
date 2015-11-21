@@ -55,28 +55,25 @@ public class ImageRenderTest {
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.LBFGS).weightInit(WeightInit.RELU)
-                .updater(Updater.ADAGRAD).activation("relu").iterations(10).regularization(true)
-                .l2(1e-3).gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
+                .updater(Updater.ADAM).activation("sigmoid").iterations(10).regularization(true)
+                .l2(1e-1).gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
                 .learningRate(1e-1).optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                 .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder(RBM.HiddenUnit.BINARY, RBM.VisibleUnit.BINARY)
-                        .nIn(784).nOut(600)
+                        .nIn(784).nOut(400)
                         .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
                 .build();
 
 
         org.deeplearning4j.nn.layers.feedforward.rbm.RBM da = LayerFactories.getFactory(conf.getLayer()).create(conf);
         da.setListeners(new ScoreIterationListener(1));
-        da.fit(image.reshape(1,784));
+        mnist = new MnistDataSetIterator(1000,1000);
+        da.fit(mnist.next().getFeatureMatrix());
         File autoEncoderWeights = new File(System.getProperty("java.io.tmpdir"),"renderautoencoder.png");
         PlotFilters filters = new PlotFilters(da.getParam(PretrainParamInitializer.WEIGHT_KEY).transpose(),new int[]{10,10},new int[]{0,0},new int[]{28,28});
         filters.plot();
         INDArray weightFilter = filters.getPlot();
         ImageRender.render(weightFilter,autoEncoderWeights.getAbsolutePath());
         autoEncoderWeights.deleteOnExit();
-
-        //ensure images are downloaded
-        DataSetIterator lfw = new LFWDataSetIterator(1,28,28);
-        lfw.next();
 
 
         ImageLoader loader = new ImageLoader(56,56,3);
