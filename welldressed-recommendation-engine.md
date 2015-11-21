@@ -5,7 +5,7 @@ layout: default
 
 # WellDressed Recommendation Engine
 
-*By Stephan Duquesnoy*
+[*By Stephan Duquesnoy*](https://twitter.com/stephanduq)
 
 ## Background
 
