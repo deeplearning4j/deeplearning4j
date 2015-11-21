@@ -57,7 +57,7 @@ public class GraphVectorsImpl<V,E> implements GraphVectors<V,E> {
         double norm2 = vec.norm2Number().doubleValue();
 
 
-        PriorityQueue<Pair<Double,Integer>> pq = new PriorityQueue<Pair<Double,Integer>>(new PairComparator());
+        PriorityQueue<Pair<Double,Integer>> pq = new PriorityQueue<Pair<Double,Integer>>(lookupTable.getNumVertices(),new PairComparator());
 
         Level1 l1 = Nd4j.getBlasWrapper().level1();
         for( int i=0; i<numVertices(); i++ ){

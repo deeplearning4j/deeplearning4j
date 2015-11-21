@@ -9,6 +9,7 @@ import org.deeplearning4j.graph.iterator.GraphWalkIterator;
 import org.deeplearning4j.graph.models.GraphVectors;
 import org.deeplearning4j.graph.models.embeddings.InMemoryGraphLookupTable;
 import org.deeplearning4j.graph.models.loader.GraphVectorSerializer;
+import org.deeplearning4j.graph.models.deepwalk.DeepWalk;
 import org.deeplearning4j.graph.vertexfactory.StringVertexFactory;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -127,7 +128,7 @@ public class TestDeepWalk {
         double minSimNearest = 1;
         for( int i=0; i<topN; i++ ){
             cosSim[i] = deepWalk.similarity(nearest[i], nearestTo);
-            minSimNearest = Double.min(minSimNearest,cosSim[i]);
+            minSimNearest = Math.min(minSimNearest,cosSim[i]);
             if( i > 0 ) assertTrue(cosSim[i] <= cosSim[i-1]);
         }
 
