@@ -34,4 +34,9 @@ public class VertexSequence<V> implements IVertexSequence<V> {
         if(!hasNext()) throw new NoSuchElementException();
         return graph.getVertex(indices[currIdx++]);
     }
+
+    @Override
+    public void remove(){
+        throw new UnsupportedOperationException();
+    }
 }
