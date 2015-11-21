@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# WellDressed Recommendation Engine
+# WellDressed's Recommendation Engine
 
 [*By Stephan Duquesnoy*](https://twitter.com/stephanduq)
 
