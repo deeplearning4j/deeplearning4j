@@ -21,6 +21,7 @@ package org.nd4j.linalg.api.instrumentation;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.executors.ExecutorServiceProvider;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,7 +36,7 @@ import java.util.concurrent.Executors;
 public class InMemoryInstrumentation implements Instrumentation {
     private List<LogEntry> entries  = Collections.synchronizedList(new ArrayList<LogEntry>());
     private List<DataBufferLogEntry> dataBufferLogEntries = Collections.synchronizedList(new ArrayList<DataBufferLogEntry>());
-    private ExecutorService executorService = Executors.newFixedThreadPool(8);
+    private ExecutorService executorService = ExecutorServiceProvider.getExecutorService();
     private Map<String, Collection<LogEntry>> logEntries = new ConcurrentHashMap<>();
 
     @Override

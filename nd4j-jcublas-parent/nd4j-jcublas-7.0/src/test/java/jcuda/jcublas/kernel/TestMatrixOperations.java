@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.lang3.time.StopWatch;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.executors.ExecutorServiceProvider;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -63,7 +64,7 @@ public class TestMatrixOperations {
         final AtomicInteger correct = new AtomicInteger();
         final CountDownLatch latch = new CountDownLatch(numThreads);
         System.out.println("Running on " + ContextHolder.getInstance().deviceNum());
-        ExecutorService executors = Executors.newCachedThreadPool();
+        ExecutorService executors = ExecutorServiceProvider.getExecutorService();
 
         for(int x = 0; x< numThreads; x++) {
             executors.execute(new Runnable() {

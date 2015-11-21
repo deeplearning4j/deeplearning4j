@@ -40,6 +40,7 @@ import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.executors.ExecutorServiceProvider;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
@@ -683,7 +684,7 @@ public class TestMatrixOperations {
         final AtomicInteger correct = new AtomicInteger();
         final CountDownLatch latch = new CountDownLatch(numThreads);
         System.out.println("Running on " + ContextHolder.getInstance().deviceNum());
-        ExecutorService executors = Executors.newCachedThreadPool();
+        ExecutorService executors = ExecutorServiceProvider.getExecutorService();
 
         for(int x = 0; x< numThreads; x++) {
             executors.execute(new Runnable() {
