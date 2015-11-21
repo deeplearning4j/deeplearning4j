@@ -849,8 +849,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 params.add(layer.params());
         }
 
-
-
         return Nd4j.toFlattened('f',params);
     }
 
@@ -873,9 +871,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 params.add(((BasePretrainNetwork) layer).paramsBackprop());
             else params.add(layer.params());
         }
-
-
-
         return Nd4j.toFlattened('f',params);
     }
 
