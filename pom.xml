@@ -268,7 +268,7 @@
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>2.18.1</version>
                     <configuration>
-                        <argLine>-Xmx1536M -Ddtype=float</argLine>
+                        <argLine>-Xmx2048M -Ddtype=float</argLine>
                     </configuration>
                 </plugin>
                 <plugin>
