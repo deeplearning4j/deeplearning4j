@@ -21,6 +21,7 @@ public class VocabularyHolderTest {
         holder.incrementWordCounter("testz");
 
         InMemoryLookupCache cache = new InMemoryLookupCache(false);
+        holder.updateHuffmanCodes();
         holder.transferBackToVocabCache(cache);
 
         // checking word frequency transfer

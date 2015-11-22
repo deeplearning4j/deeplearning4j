@@ -20,22 +20,34 @@ package org.deeplearning4j.models.word2vec;
 
 import com.google.common.primitives.Doubles;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.ArrayUtils;
+import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
+import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
+import org.deeplearning4j.text.sentenceiterator.UimaSentenceIterator;
+import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -45,6 +57,8 @@ public class WordVectorSerializerTest {
 
     private File textFile, binaryFile, textFile2;
     String pathToWriteto;
+
+    private Logger logger = LoggerFactory.getLogger(WordVectorSerializerTest.class);
 
     @Before
     public void before() throws Exception {
@@ -150,5 +164,180 @@ public class WordVectorSerializerTest {
         assertEquals(Doubles.asList(wordVector2).get(0), 0.051964, 1e-3);
     }
 
+    @Test
+    public void testFullModelSerialization() throws Exception {
+        File inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
+        SentenceIterator iter = UimaSentenceIterator.createWithPath(inputFile.getAbsolutePath());
+        // Split on white spaces in the line to get words
+        TokenizerFactory t = new DefaultTokenizerFactory();
+        t.setTokenPreProcessor(new CommonPreprocessor());
+
+        InMemoryLookupCache cache = new InMemoryLookupCache(false);
+        WeightLookupTable table = new InMemoryLookupTable.Builder()
+                .vectorLength(100)
+                .useAdaGrad(false)
+                .negative(5.0)
+                .cache(cache)
+                .lr(0.025f).build();
+
+        Word2Vec vec = new Word2Vec.Builder()
+                .minWordFrequency(5)
+                .iterations(1)
+                .epochs(1)
+                .layerSize(100).lookupTable(table)
+                .stopWords(new ArrayList<String>())
+                .useAdaGrad(false)
+                .negativeSample(5)
+                .vocabCache(cache).seed(42)
+//                .workers(6)
+                .windowSize(5).iterate(iter).tokenizerFactory(t).build();
+
+        assertEquals(new ArrayList<String>(), vec.getStopWords());
+        vec.fit();
+
+        logger.info("Original word 0: " + cache.wordFor(cache.wordAtIndex(0)));
+
+        logger.info("Closest Words:");
+        Collection<String> lst = vec.wordsNearest("day", 10);
+        System.out.println(lst);
+
+        WordVectorSerializer.writeFullModel(vec, "tempModel.txt");
+
+        File modelFile = new File("tempModel.txt");
+
+        assertTrue(modelFile.exists());
+        assertTrue(modelFile.length() > 0);
+
+
+        Word2Vec vec2 = WordVectorSerializer.loadFullModel("tempModel.txt");
+
+        assertNotEquals(null, vec2);
+
+        assertEquals(vec.getConfiguration(), vec2.getConfiguration());
+
+        logger.info("Source ExpTable: " + ArrayUtils.toString(((InMemoryLookupTable) table).getExpTable()));
+        logger.info("Dest  ExpTable: " + ArrayUtils.toString(((InMemoryLookupTable)  vec2.getLookupTable()).getExpTable()));
+        assertTrue(ArrayUtils.isEquals(((InMemoryLookupTable) table).getExpTable(), ((InMemoryLookupTable) vec2.getLookupTable()).getExpTable()));
+
+
+        InMemoryLookupTable restoredTable = (InMemoryLookupTable) vec2.lookupTable();
+
+/*
+        logger.info("Restored word 1: " + restoredTable.getVocab().wordFor(restoredTable.getVocab().wordAtIndex(1)));
+        logger.info("Restored word 'it': " + restoredTable.getVocab().wordFor("it"));
+        logger.info("Original word 1: " + cache.wordFor(cache.wordAtIndex(1)));
+        logger.info("Original word 'i': " + cache.wordFor("i"));
+        logger.info("Original word 0: " + cache.wordFor(cache.wordAtIndex(0)));
+        logger.info("Restored word 0: " + restoredTable.getVocab().wordFor(restoredTable.getVocab().wordAtIndex(0)));
+*/
+        assertEquals(cache.wordAtIndex(1), restoredTable.getVocab().wordAtIndex(1));
+        assertEquals(cache.wordAtIndex(7), restoredTable.getVocab().wordAtIndex(7));
+        assertEquals(cache.wordAtIndex(15), restoredTable.getVocab().wordAtIndex(15));
+
+        /*
+            these tests needed only to make sure INDArray equality is working properly
+         */
+        double[] array1 = new double[]{0.323232325, 0.65756575, 0.12315, 0.12312315, 0.1232135, 0.12312315, 0.4343423425, 0.15 };
+        double[] array2 = new double[]{0.423232325, 0.25756575, 0.12375, 0.12311315, 0.1232035, 0.12318315, 0.4343493425, 0.25 };
+        assertNotEquals(Nd4j.create(array1), Nd4j.create(array2));
+        assertEquals(Nd4j.create(array1), Nd4j.create(array1));
+
+
+        INDArray rSyn0_1 = restoredTable.getSyn0().slice(1);
+        INDArray oSyn0_1 = ((InMemoryLookupTable) table).getSyn0().slice(1);
+
+        logger.info("Restored syn0: " + rSyn0_1);
+        logger.info("Original syn0: " + oSyn0_1);
+
+        assertEquals(oSyn0_1, rSyn0_1);
+
+        // just checking $^###! syn0/syn1 order
+        int cnt = 0;
+        for (VocabWord word: cache.vocabWords()) {
+            INDArray rSyn0 = restoredTable.getSyn0().slice(word.getIndex());
+            INDArray oSyn0 = ((InMemoryLookupTable) table).getSyn0().slice(word.getIndex());
+
+            assertEquals(rSyn0, oSyn0);
+            assertEquals(1.0, arraysSimilarity(rSyn0, oSyn0), 0.001);
+
+            INDArray rSyn1 = restoredTable.getSyn1().slice(word.getIndex());
+            INDArray oSyn1 = ((InMemoryLookupTable) table).getSyn1().slice(word.getIndex());
+
+            assertEquals(rSyn1, oSyn1);
+            if (arraysSimilarity(rSyn1, oSyn1) < 0.98) {
+                logger.info("Restored syn1: " + rSyn1);
+                logger.info("Original  syn1: " + oSyn1);
+            }
+            // we exclude word 222 since it has syn1 full of zeroes
+            if (cnt != 222) assertEquals(1.0, arraysSimilarity(rSyn1, oSyn1), 0.001);
+
+
+
+            if (((InMemoryLookupTable) table).getSyn1Neg() != null) {
+                INDArray rSyn1Neg = restoredTable.getSyn1Neg().slice(word.getIndex());
+                INDArray oSyn1Neg = ((InMemoryLookupTable) table).getSyn1Neg().slice(word.getIndex());
+
+                assertEquals(rSyn1Neg, oSyn1Neg);
+//                assertEquals(1.0, arraysSimilarity(rSyn1Neg, oSyn1Neg), 0.001);
+            }
+            assertEquals(word.getHistoricalGradient(), restoredTable.getVocab().wordFor(word.getWord()).getHistoricalGradient());
+
+            cnt++;
+        }
+
+        // at this moment we can assume that whole model is transferred, and we can call fit over new model
+//        iter.reset();
+
+        iter = UimaSentenceIterator.createWithPath(inputFile.getAbsolutePath());
+
+        vec2.setTokenizerFactory(t);
+        vec2.setSentenceIter(iter);
+
+        vec2.fit();
+
+        INDArray day1 = vec.getWordVectorMatrix("day");
+        INDArray day2 = vec2.getWordVectorMatrix("day");
+
+        INDArray night1 = vec.getWordVectorMatrix("night");
+        INDArray night2 = vec2.getWordVectorMatrix("night");
+
+        double simD =  arraysSimilarity(day1, day2);
+        double simN =  arraysSimilarity(night1, night2);
+
+        logger.info("Vec1 day: " + day1);
+        logger.info("Vec2 day: " + day2);
+
+        logger.info("Vec1 night: " + night1);
+        logger.info("Vec2 night: " + night2);
+
+        logger.info("Day/day cross-model similarity: "  + simD);
+        logger.info("Night/night cross-model similarity: "  + simN);
+
+
+
+        logger.info("Vec1 day/night similiraty: " + vec.similarity("day", "night"));
+        logger.info("Vec2 day/night similiraty: " + vec2.similarity("day", "night"));
+
+        // check if cross-model values are not the same
+        assertNotEquals(1.0, simD, 0.001);
+        assertNotEquals(1.0, simN, 0.001);
+
+        // check if cross-model values are still close to each other
+        assertTrue(simD > 0.70);
+        assertTrue(simN > 0.70);
+
+        modelFile.delete();
+    }
+
+    private double arraysSimilarity(INDArray array1, INDArray array2) {
+        if (array1.equals(array2)) return 1.0;
+
+        INDArray vector = Transforms.unitVec(array1);
+        INDArray vector2 = Transforms.unitVec(array2);
+        if(vector == null || vector2 == null)
+            return -1;
+        return  Nd4j.getBlasWrapper().dot(vector, vector2);
+
+    }
 
 }

@@ -1,8 +1,11 @@
 package org.deeplearning4j.models.word2vec.wordstore;
 
 import lombok.NonNull;
+import org.apache.commons.lang.ArrayUtils;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +29,8 @@ public class VocabularyHolder implements Serializable {
     private int minWordFrequency = 0;
     private boolean hugeModelExpected = false;
     private int retentionDelay = 3;
+
+    private VocabCache vocabCache;
 
     // this variable defines how often scavenger will be activated
     private int scavengerThreshold  = 2000000;
@@ -58,7 +63,8 @@ public class VocabularyHolder implements Serializable {
      * This code is required for compatibility between dl4j w2v implementation, and standalone w2v
      * @param cache
      */
-    protected VocabularyHolder(VocabCache cache, boolean markAsSpecial) {
+    protected VocabularyHolder(@NonNull VocabCache cache, boolean markAsSpecial) {
+        this.vocabCache = cache;
         for (VocabWord word: cache.tokens()) {
             VocabularyWord vw = new VocabularyWord(word.getWord());
             vw.setCount((int) word.getWordFrequency());
@@ -67,13 +73,29 @@ public class VocabularyHolder implements Serializable {
             vw.setSpecial(markAsSpecial);
 
             // please note: we don't transfer huffman data, since proper way is  to recalculate it after new words being added
+            if (word.getPoints() != null && !word.getPoints().isEmpty()) {
+                vw.setHuffmanNode(buildNode(word.getCodes(),word.getPoints(), word.getCodeLength(), word.getIndex() ));
+            }
 
             vocabulary.put(vw.getWord(), vw);
         }
 
         // there's no sense building huffman tree just for UNK word
         if (numWords() > 1) updateHuffmanCodes();
-        logger.debug("Init from VocabCache is complete. " + numWords() + " word(s) were transferred.");
+        logger.info("Init from VocabCache is complete. " + numWords() + " word(s) were transferred.");
+    }
+
+    public static HuffmanNode buildNode(List<Integer> codes, List<Integer> points, int codeLen, int index) {
+        return new HuffmanNode(listToArray(codes), listToArray(points, MAX_CODE_LENGTH), index, (byte) codeLen);
+    }
+
+
+    public void transferBackToVocabCache() {
+        transferBackToVocabCache(this.vocabCache, true);
+    }
+
+    public void transferBackToVocabCache(VocabCache cache) {
+        transferBackToVocabCache(cache, true);
     }
 
     /**
@@ -82,36 +104,48 @@ public class VocabularyHolder implements Serializable {
      *
      * @param cache
      */
-    public void transferBackToVocabCache(VocabCache cache) {
+    public void transferBackToVocabCache(VocabCache cache, boolean emptyHolder) {
         if (!(cache instanceof InMemoryLookupCache)) throw new IllegalStateException("Sorry, only InMemoryLookupCache use implemented.");
 
         // make sure that huffman codes are updated before transfer
-        List<VocabularyWord> words = updateHuffmanCodes();
+        List<VocabularyWord> words = words(); //updateHuffmanCodes();
 
         for (VocabularyWord word: words) {
             if (word.getWord().isEmpty()) continue;
-            VocabWord vocabWord = new VocabWord(word.getCount(), word.getWord());
+            VocabWord vocabWord = new VocabWord(1, word.getWord());
 
-            // update Huffman tree information
-            vocabWord.setIndex(word.getHuffmanNode().getIdx());
-            vocabWord.setCodeLength(word.getHuffmanNode().getLength());
-            vocabWord.setPoints(arrayToList(word.getHuffmanNode().getPoint(), word.getHuffmanNode().getLength()));
-            vocabWord.setCodes(arrayToList(word.getHuffmanNode().getCode(), word.getHuffmanNode().getLength()));
+            // if we're transferring full model, it CAN contain HistoricalGradient for AdaptiveGradient feature
+            if (word.getHistoricalGradient() != null) {
+                INDArray gradient = Nd4j.create(word.getHistoricalGradient());
+                vocabWord.setHistoricalGradient(gradient);
+            }
 
             // put VocabWord into both Tokens and Vocabs maps
             ((InMemoryLookupCache) cache).getVocabs().put(word.getWord(), vocabWord);
             ((InMemoryLookupCache) cache).getTokens().put(word.getWord(), vocabWord);
 
-            // put word into index
-            cache.addWordToIndex(word.getHuffmanNode().getIdx(), word.getWord());
+
+            // update Huffman tree information
+            if (word.getHuffmanNode() != null) {
+                vocabWord.setIndex(word.getHuffmanNode().getIdx());
+                vocabWord.setCodeLength(word.getHuffmanNode().getLength());
+                vocabWord.setPoints(arrayToList(word.getHuffmanNode().getPoint(), word.getHuffmanNode().getLength()));
+                vocabWord.setCodes(arrayToList(word.getHuffmanNode().getCode(), word.getHuffmanNode().getLength()));
+
+                // put word into index
+                cache.addWordToIndex(word.getHuffmanNode().getIdx(), word.getWord());
+            }
 
             //update vocabWord counter. substract 1, since its the base value for any token
-            cache.incrementWordCount(word.getWord(), word.getCount() - 1);
+            // >1 hack is required since VocabCache impl imples 1 as base word count, not 0
+            if (word.getCount() > 1) cache.incrementWordCount(word.getWord(), word.getCount() - 1);
         }
 
         // at this moment its pretty safe to nullify all vocabs.
-        idxMap.clear();
-        vocabulary.clear();
+        if (emptyHolder) {
+            idxMap.clear();
+            vocabulary.clear();
+        }
     }
 
     /**
@@ -131,7 +165,7 @@ public class VocabularyHolder implements Serializable {
      * @param codeLen
      * @return
      */
-    private List<Integer> arrayToList(byte[] array, int codeLen) {
+    public static List<Integer> arrayToList(byte[] array, int codeLen) {
         List<Integer> result = new ArrayList<>();
         for (int x = 0; x < codeLen; x++) {
             result.add((int) array[x]);
@@ -139,6 +173,21 @@ public class VocabularyHolder implements Serializable {
         return result;
     }
 
+    public static byte[] listToArray(List<Integer> code) {
+        byte[] array = new byte[MAX_CODE_LENGTH];
+        for (int x = 0; x < code.size(); x++) {
+            array[x]  = code.get(x).byteValue();
+        }
+        return array;
+    }
+
+    public static int[] listToArray(List<Integer> points, int codeLen) {
+        int[] array = new int[points.size()];
+        for (int x = 0; x < points.size(); x++) {
+            array[x]  = points.get(x).intValue();
+        }
+        return array;
+    }
 
     /**
      *  This method is used only for VocabCache compatibility purposes
@@ -146,12 +195,16 @@ public class VocabularyHolder implements Serializable {
      * @param codeLen
      * @return
      */
-    private List<Integer> arrayToList(int[] array, int codeLen) {
+    public static List<Integer> arrayToList(int[] array, int codeLen) {
         List<Integer> result = new ArrayList<>();
         for (int x = 0; x < codeLen; x++) {
             result.add(array[x]);
         }
         return result;
+    }
+
+    public Collection<VocabularyWord> getVocabulary() {
+        return vocabulary.values();
     }
 
     public VocabularyWord getVocabularyWordByString(String word) {
@@ -213,6 +266,18 @@ public class VocabularyHolder implements Serializable {
         }
     }
 
+    public void addWord(VocabularyWord word) {
+        vocabulary.put(word.getWord(), word);
+    }
+
+    public void consumeVocabulary(VocabularyHolder holder) {
+        for (VocabularyWord word: holder.getVocabulary()) {
+            if (!this.containsWord(word.getWord())) {
+                this.addWord(word);
+            }
+        }
+    }
+
     /**
      * This method removes low-frequency words based on their frequency change between activations.
      * I.e. if word has appeared only once, and it's retained the same frequency over consequence activations, we can assume it can be removed freely
@@ -257,6 +322,17 @@ public class VocabularyHolder implements Serializable {
             }
         }
         logger.info("Scavenger was activated. Vocab size before: [" + initialSize + "],  after: [" +vocabulary.size() +"]");
+    }
+
+    /**
+     * This methods reset counters for all words in vocabulary
+     */
+    public void resetWordCounters() {
+        for (VocabularyWord word: getVocabulary()) {
+            word.setHuffmanNode(null);
+            word.setFrequencyShift(null);
+            word.setCount(0);
+        }
     }
 
     /**
@@ -373,7 +449,6 @@ public class VocabularyHolder implements Serializable {
         }
 
         idxMap.clear();
-        int a = 0;
         for (VocabularyWord word: vocab) {
             idxMap.put(word.getHuffmanNode().getIdx(), word);
         }
