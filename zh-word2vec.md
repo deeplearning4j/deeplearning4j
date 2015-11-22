@@ -5,6 +5,8 @@ layout: zh-default
 
 # Word2vec
 
+本网站正在更新中，如想要获得最新的信息，[请参考](../word2vec.html) 
+
 目录
 
 * <a href="#intro">简介</a>
