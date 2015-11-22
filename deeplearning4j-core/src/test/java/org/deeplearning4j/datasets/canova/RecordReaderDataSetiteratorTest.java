@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.datasets.canova;
 
+import org.apache.commons.io.FilenameUtils;
 import org.canova.api.records.reader.RecordReader;
 import org.canova.api.records.reader.SequenceRecordReader;
 import org.canova.api.records.reader.impl.CSVRecordReader;
@@ -31,9 +32,12 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.springframework.core.io.ClassPathResource;
 
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -130,6 +134,73 @@ public class RecordReaderDataSetiteratorTest {
         expL2.tensorAlongDimension(2, 1).assign(Nd4j.create(new double[]{0, 0, 0, 1}));
         expL2.tensorAlongDimension(3, 1).assign(Nd4j.create(new double[]{0, 0, 1, 0}));
         assertEquals(dsList.get(2).getLabels(), expL2);
+    }
 
+
+
+    @Test
+    public void testCSVLoadingRegression() throws Exception {
+        int nLines = 30;
+        int nFeatures = 5;
+        int miniBatchSize = 10;
+        int labelIdx = 0;
+
+        String path = FilenameUtils.concat(System.getProperty("java.io.tmpdir"),"rr_csv_test_rand.csv");
+        double[][] data = makeRandomCSV(path,nLines,nFeatures);
+        RecordReader testReader = new CSVRecordReader();
+        testReader.initialize(new FileSplit(new File(path)));
+
+        DataSetIterator iter = new RecordReaderDataSetIterator(testReader,null,miniBatchSize,labelIdx,1,true);
+        int miniBatch = 0;
+        while(iter.hasNext()){
+            DataSet test = iter.next();
+            INDArray features = test.getFeatureMatrix();
+            INDArray labels = test.getLabels();
+            assertArrayEquals(new int[]{miniBatchSize,nFeatures},features.shape());
+            assertArrayEquals(new int[]{miniBatchSize, 1}, labels.shape());
+
+            int startRow = miniBatch * miniBatchSize;
+            for( int i=0; i<miniBatchSize; i++ ){
+                double labelExp = data[startRow+i][labelIdx];
+                double labelAct = labels.getDouble(i);
+                assertEquals(labelExp,labelAct,1e-5f);
+
+                int featureCount = 0;
+                for( int j=0; j<nFeatures+1; j++ ){
+                    if(j == labelIdx) continue;
+                    double featureExp = data[startRow+i][j];
+                    double featureAct = features.getDouble(i,featureCount++);
+                    assertEquals(featureExp,featureAct,1e-5f);
+                }
+            }
+
+            miniBatch++;
+        }
+        assertEquals(nLines/miniBatchSize,miniBatch);
+    }
+
+
+    public static double[][] makeRandomCSV(String tempFile, int nLines, int nFeatures) {
+        File temp = new File(tempFile);
+        temp.deleteOnExit();
+        Random rand = new Random(12345);
+
+        double[][] dArr = new double[nLines][nFeatures+1];
+
+        try (PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(temp)))) {
+            for (int i = 0; i < nLines; i++) {
+                dArr[i][0] = rand.nextDouble(); //First column: label
+                out.print(dArr[i][0]);
+                for (int j = 0; j < nFeatures; j++) {
+                    dArr[i][j+1] = rand.nextDouble();
+                    out.print("," + dArr[i][j+1]);
+                }
+                out.println();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return dArr;
     }
 }
