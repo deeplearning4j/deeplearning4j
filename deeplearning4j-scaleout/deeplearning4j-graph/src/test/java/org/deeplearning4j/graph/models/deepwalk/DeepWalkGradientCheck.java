@@ -4,6 +4,8 @@ import org.deeplearning4j.graph.data.GraphLoader;
 import org.deeplearning4j.graph.graph.Graph;
 import org.deeplearning4j.graph.iterator.RandomWalkIterator;
 import org.deeplearning4j.graph.iterator.GraphWalkIterator;
+import org.deeplearning4j.graph.models.deepwalk.DeepWalk;
+import org.deeplearning4j.graph.models.deepwalk.GraphHuffman;
 import org.deeplearning4j.graph.models.embeddings.InMemoryGraphLookupTable;
 import org.junit.Before;
 import org.junit.Test;

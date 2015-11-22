@@ -1,5 +1,6 @@
 package org.deeplearning4j.graph.models.deepwalk;
 
+import org.apache.commons.io.FilenameUtils;
 import org.deeplearning4j.graph.api.Edge;
 import org.deeplearning4j.graph.api.IGraph;
 import org.deeplearning4j.graph.data.GraphLoader;
@@ -151,8 +152,7 @@ public class TestDeepWalk {
 
     @Test
     public void testLoadingSaving() throws IOException{
-
-        String out = System.getProperty("java.io.tmpdir") + "dl4jdwtestout.txt";
+        String out = FilenameUtils.concat(System.getProperty("java.io.tmpdir"),"dl4jdwtestout.txt");
 
         int nVertices = 20;
         Graph<String,String> graph = generateRandomGraph(nVertices,8);
