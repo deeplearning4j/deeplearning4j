@@ -39,6 +39,8 @@ jdk:
 sudo: true
 
 before_install:
+  - free -m -t
+  - df
   - sudo apt-get install build-essential git
   - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
   - git clone https://github.com/xianyi/OpenBLAS && cd OpenBLAS && sudo make && sudo make install
