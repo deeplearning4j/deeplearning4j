@@ -5,6 +5,8 @@ layout: zh-default
 
 # 受限玻尔兹曼机(RBM)
 
+本网站正在更新中，如想要获得最新的信息，[请参考](../restrictedboltzmannmachine.html) 
+
 引用Geoff Hinton(一个谷歌研究员,也是一名大学教授),玻尔兹曼机是“一个对称连接,利用类似神经元作单位来随机决定开关的网络”。(随机的意思是“[随机确定的](http://deeplearning4j.org/glossary.html#stochasticgradientdescent)” )
 
 受限玻尔兹曼机“拥有一层可见的单位和一层隐藏单元,它们是无明显可见的或隐藏的隐藏连接的。”这个“受限”来自它的节点连接的强加限制:层内连接是不允许的,但一个层的每一个节点会连接到的下一个节点,这就是“对称”。
