@@ -5,6 +5,8 @@ layout: zh-default
 
 # 快速入门
 
+本网站正在更新中，如想要获得最新的信息，[请参考](../quickstart.html) 
+
 本快速入门指南假设您已经安装以下软件：
 
 1. Java 7
