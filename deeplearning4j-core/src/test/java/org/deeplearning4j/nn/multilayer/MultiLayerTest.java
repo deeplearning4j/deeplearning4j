@@ -255,7 +255,7 @@ public class MultiLayerTest {
 
         DataSet next = iter.next();
 
-        Nd4j.writeTxt(next.getFeatureMatrix(),"iris.txt","\t");
+        Nd4j.writeTxt(next.getFeatureMatrix(), "iris.txt", "\t");
 
         next.normalizeZeroMeanZeroUnitVariance();
 
@@ -287,9 +287,9 @@ public class MultiLayerTest {
         DataSet x2 = all.asList().get(0);
 
         //x1 and x2 contain identical data
-        assertArrayEquals(asFloat(x1.getFeatureMatrix()), asFloat(x2.getFeatureMatrix()), 0.0f);  //OK
-        assertArrayEquals(asFloat(x1.getLabels()), asFloat(x2.getLabels()), 0.0f);                //OK
-        assertEquals(x1,x2);    //Fails, DataSet doesn't override Object.equals()
+        assertArrayEquals(asFloat(x1.getFeatureMatrix()), asFloat(x2.getFeatureMatrix()), 0.0f);
+        assertArrayEquals(asFloat(x1.getLabels()), asFloat(x2.getLabels()), 0.0f);
+        assertEquals(x1, x2);
 
         //Set inputs/outputs so gradient can be calculated:
         net1.feedForward(x1.getFeatureMatrix());
@@ -297,8 +297,8 @@ public class MultiLayerTest {
         ((BaseOutputLayer)net1.getLayer(1)).setLabels(x1.getLabels());
         ((BaseOutputLayer)net2.getLayer(1)).setLabels(x2.getLabels());
 
-        net1.gradient();        //OK
-        net2.gradient();        //IllegalArgumentException: Buffers must fill up specified length 29
+        net1.gradient();
+        net2.gradient();
     }
 
 
@@ -412,5 +412,54 @@ public class MultiLayerTest {
         return f;
     }
 
+    @Test
+    public void testFeedForwardToLayer(){
+
+        int nIn = 30;
+        int nOut = 25;
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                .iterations(5).learningRate(1e-3)
+                .list(4)
+                .layer(0, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
+                        .nIn(nIn).nOut(600)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1e-5))
+                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
+                .layer(1, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
+                        .nIn(600).nOut(250)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1e-5))
+                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
+                .layer(2, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
+                        .nIn(250).nOut(100)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1e-5))
+                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
+                .layer(3, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .nIn(100).nOut(25)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1e-5)).build())
+                .build();
+
+        MultiLayerNetwork network = new MultiLayerNetwork(conf);
+        network.init();
+
+
+        INDArray input = Nd4j.rand(5,nIn);
+
+        List<INDArray> activations = network.feedForward(input);
+        assertEquals(5,activations.size());     //4 layers + input
+
+        List<INDArray> activationsAll = network.feedForwardToLayer(3,input);
+        assertEquals(activations,activationsAll);
+
+        for( int i=3; i>=0; i-- ){
+            List<INDArray> activationsPartial = network.feedForwardToLayer(i,input);
+            assertEquals(i+2,activationsPartial.size());    //i+2: for layer 3: input + activations of {0,1,2,3} -> 5 total = 3+2
+            for( int j=0; j<=i; j++ ){
+                INDArray exp = activationsAll.get(j);
+                INDArray act = activationsPartial.get(j);
+                assertEquals(exp,act);
+            }
+        }
+    }
 
 }
