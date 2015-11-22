@@ -268,7 +268,10 @@
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>2.18.1</version>
                     <configuration>
-                        <argLine>-Xmx2048M -Ddtype=float</argLine>
+                        <parallel>false</parallel>
+                        <forkCount>1</forkCount>
+                        <reuseForks>true</reuseForks>
+                        <argLine>-Xmx2048M -Ddtype=float -Dorg.nd4j.parallel.threads=1</argLine>
                     </configuration>
                 </plugin>
                 <plugin>
