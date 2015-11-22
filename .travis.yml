@@ -15,7 +15,7 @@ sudo: true
 before_install:
   - free -m -t
   - df
-  - java -XshowSettings
+  - java -XshowSettings -version
   - ulimit -a
   - sudo apt-get install build-essential git
   - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
@@ -43,7 +43,7 @@ sudo: true
 before_install:
   - free -m -t
   - df
-  - java -XshowSettings
+  - java -XshowSettings -version
   - ulimit -a
   - sudo /etc/init.d/mysql stop
   - sudo /etc/init.d/postgresql stop
