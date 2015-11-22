@@ -5,6 +5,8 @@ layout: zh-default
 
 # 入门
 
+本网站正在更新中，如想要获得最新的信息，[请参考](../gettingstarted.html) 
+
 内容
 
 * <a href="#quickstart">快速入门</a>
