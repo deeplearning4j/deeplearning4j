@@ -279,7 +279,7 @@ public class KernelFunctionLoader {
 
     private void loadModules(String[] split,String kernelPath) throws Exception {
         for (String module : split) {
-            log.info("Loading " + module);
+            log.debug("Loading " + module);
             String path = kernelPath + "output" + File.separator +  module + ".cubin";
             if(!new File(path).exists())
                 throw new IllegalStateException("Unable to find path " + path + ". Recompiling");

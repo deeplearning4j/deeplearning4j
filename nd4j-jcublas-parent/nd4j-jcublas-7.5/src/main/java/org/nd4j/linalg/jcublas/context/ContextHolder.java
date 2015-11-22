@@ -41,7 +41,6 @@ import org.nd4j.linalg.jcublas.context.pool.factory.CublasHandlePooledItemFactor
 import org.nd4j.linalg.jcublas.context.pool.factory.OldStreamItemFactory;
 import org.nd4j.linalg.jcublas.context.pool.factory.StreamItemFactory;
 import org.nd4j.linalg.jcublas.device.conf.DeviceConfiguration;
-import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -90,7 +89,7 @@ public class ContextHolder {
     private ObjectPool<cudaStream_t> oldStreamPool;
     private static ContextHolder INSTANCE;
     public final static String DEVICES_TO_BAN = "org.nd4j.linalg.jcuda.jcublas.ban_devices";
-
+    private static AtomicBoolean deviceSetup = new AtomicBoolean(false);
     private boolean confCalled = false;
     private static Logger log = LoggerFactory.getLogger(ContextHolder.class);
     private AtomicBoolean shutdown = new AtomicBoolean(false);
@@ -116,6 +115,7 @@ public class ContextHolder {
             GenericObjectPoolConfig oldStreamConf = streamConf.clone();
             oldStreamConf.setJmxNameBase("oldstream");
             oldStreamPool = new OldStreamPool(new OldStreamItemFactory(),oldStreamConf);
+            setContext();
             //seed with multiple streams to encourage parallelism
             for(int i = 0; i < Runtime.getRuntime().availableProcessors(); i++) {
                 streamPool.addObject();
@@ -146,7 +146,6 @@ public class ContextHolder {
             }
 
             INSTANCE = new ContextHolder();
-
             INSTANCE.configure();
 
 
@@ -316,6 +315,8 @@ public class ContextHolder {
     }
 
     private void getNumDevices() {
+        if(deviceSetup.get())
+            return;
         JCudaDriver.setExceptionsEnabled(true);
         JCudaDriver.cuInit(0);
         int count[] = new int[1];
@@ -339,13 +340,13 @@ public class ContextHolder {
 
             }
 
-
+        deviceSetup.set(true);
     }
 
 
     public void setContext() {
-        JCuda.cudaSetDevice(getInstance().getDeviceForThread());
-        JCudaDriver.cuCtxSetCurrent(getInstance().getContext());
+        JCuda.cudaSetDevice(getDeviceForThread());
+        JCudaDriver.cuCtxSetCurrent(getContext());
     }
 
 

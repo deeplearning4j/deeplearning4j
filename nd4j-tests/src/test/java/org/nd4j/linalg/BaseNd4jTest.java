@@ -74,7 +74,7 @@ public abstract class BaseNd4jTest  extends TestCase {
     public static Nd4jBackend getDefaultBackend() {
         String cpuBackend = "org.nd4j.linalg.cpu.CpuBackend";
         String gpuBackend = "org.nd4j.linalg.jcublas.JCublasBackend";
-        String clazz = System.getProperty(DEFAULT_BACKEND,cpuBackend);
+        String clazz = System.getProperty(DEFAULT_BACKEND,gpuBackend);
         try {
             return (Nd4jBackend) Class.forName(clazz).newInstance();
         } catch (Exception e) {

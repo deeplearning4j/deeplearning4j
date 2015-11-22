@@ -286,23 +286,23 @@ public class CPUTransformOpAction extends BaseCPUTransformOpAction {
                     int byteOffsetZ = 4 * offsetZ;
                     if (incrX == 1 && (x == z || incrZ == 1)) {
                         if (x == z) {
-                            for (int i = 0; i < 4*n; i += 4) {
+                            for (int i = 0; i < 4 * n; i += 4) {
                                 int xbOffset = byteOffsetX + i;
                                 nbbx.setFloat(xbOffset, op.op(nbbx.getFloat(xbOffset)));
                             }
                         } else {
-                            for (int i = 0; i < 4*n; i += 4) {
+                            for (int i = 0; i < 4 * n; i += 4) {
                                 nbbz.setFloat(byteOffsetZ + i, op.op(nbbx.getFloat(byteOffsetX + i)));
                             }
                         }
                     } else {
                         if (x == z) {
-                            for (int i = 0; i < 4*n; i += 4) {
+                            for (int i = 0; i < 4 * n; i += 4) {
                                 int xbOffset = byteOffsetX + i * incrX;
                                 nbbx.setFloat(xbOffset, op.op(nbbx.getFloat(xbOffset)));
                             }
                         } else {
-                            for (int i = 0; i < 4*n; i++) {
+                            for (int i = 0; i <  4 * n; i+= 4) {
                                 nbbz.setFloat(byteOffsetZ + i * incrZ, op.op(nbbx.getFloat(byteOffsetX + i * incrX)));
                             }
                         }
