@@ -234,8 +234,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         int[] dimensions = op.getDimension() == null ? BroadcastDimensions.getDimensions(op.y().shape()) : op.getDimension();
 
         GpuMetrics metrics = GpuMetrics.blockAndThreads(getType(op),op.n());
-        metrics.setGridSizeNotOverMax(1024);
-        metrics.setBlockSizeNotOverMax(1024);
+        metrics.setGridSizeNotOverMax(op.x().tensorssAlongDimension(dimensions));
+        metrics.setBlockSizeNotOverMax(op.x().tensorAlongDimension(0,dimensions).length());
         metrics.setSharedMemoryNotOverMax(metrics.getBlockSize() * op.x().data().getElementSize());
         if(op.y() == null)
             throw new IllegalArgumentException("Op has no y to broadcast");
