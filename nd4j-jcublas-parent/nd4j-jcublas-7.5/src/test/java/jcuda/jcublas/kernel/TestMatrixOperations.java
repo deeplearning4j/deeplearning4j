@@ -519,6 +519,28 @@ public class TestMatrixOperations {
 
 
     @Test
+    public void testFiveBySevenRDiv() {
+        INDArray orig = Nd4j.linspace(1, 35, 35).reshape(5, 7);
+        INDArray vector = Nd4j.linspace(1, 5, 5);
+        int dimension = 0;
+        System.out.println(orig.tensorssAlongDimension(dimension));
+        for (int i = 0; i < 5; i++)
+            System.out.println(orig.tensorAlongDimension(i, dimension));
+        System.out.println();
+        BroadcastOp op = new BroadcastRDivOp(orig, vector, orig.dup(), dimension);
+        Nd4j.getExecutioner().exec(op);
+        //Compare expected vs. actual:
+        for (int i = 0; i < orig.tensorssAlongDimension(dimension); i++) {
+            INDArray tad = orig.tensorAlongDimension(i, dimension);
+            INDArray zDim = op.z().tensorAlongDimension(i, dimension);
+            INDArray assertion = tad.rdiv(vector);
+            assertEquals("Failed on tad with original tad " + tad + " at " + i, assertion, zDim);
+        }
+
+    }
+
+
+    @Test
     public void testFiveBySevenDiv() {
         INDArray orig = Nd4j.linspace(1, 35, 35).reshape(5, 7);
         INDArray vector = Nd4j.linspace(1, 5, 5);
@@ -637,7 +659,7 @@ public class TestMatrixOperations {
         Nd4j.getRandom().setSeed(12345);
         int[] maxShape = new int[]{5, 7, 9, 11, 13, 15};
 
-        for(int opNum = 2; opNum < 6; opNum++) {
+        for(int opNum = 0; opNum < 6; opNum++) {
             for (int rank = 2; rank < maxShape.length; rank++) {
                 int[] shape = Arrays.copyOfRange(maxShape, 0, rank);
                 INDArray orig = Nd4j.rand(shape);
@@ -697,7 +719,7 @@ public class TestMatrixOperations {
                                 assertion.tensorAlongDimension(j,i).muli(vector);
                                 break;
                             case 4:
-                                arr.tensorAlongDimension(j,i).rdivi(vector);
+                                assertion.tensorAlongDimension(j,i).rdivi(vector);
                                 break;
                             case 5:
                                 assertion.tensorAlongDimension(j,i).rsubi(vector);
