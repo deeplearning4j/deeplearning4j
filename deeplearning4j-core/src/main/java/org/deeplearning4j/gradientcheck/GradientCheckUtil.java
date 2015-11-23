@@ -60,7 +60,7 @@ public class GradientCheckUtil {
 
         if(useUpdater) {
             Updater updater = UpdaterCreator.getUpdater(mln);
-            updater.update(mln, gradAndScore.getFirst(), 0);
+            updater.update(mln, gradAndScore.getFirst(), 0, mln.batchSize());
         }
 
         INDArray gradientToCheck = gradAndScore.getFirst().gradient();

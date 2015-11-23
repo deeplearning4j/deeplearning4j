@@ -249,7 +249,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         if(updater == null)
             updater = UpdaterCreator.getUpdater(model);
         Layer layer = (Layer) model;
-        updater.update(layer, gradient, iteration);
+        updater.update(layer, gradient, iteration, batchSize);
     }
 
     /**
