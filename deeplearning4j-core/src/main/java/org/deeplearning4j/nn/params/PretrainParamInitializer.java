@@ -39,7 +39,7 @@ public class PretrainParamInitializer extends DefaultParamInitializer {
         org.deeplearning4j.nn.conf.layers.BasePretrainNetwork layerConf =
                 (org.deeplearning4j.nn.conf.layers.BasePretrainNetwork) conf.getLayer();
 
-        params.put(VISIBLE_BIAS_KEY, Nd4j.valueArrayOf(layerConf.getNIn(),0.2));
+        params.put(VISIBLE_BIAS_KEY, Nd4j.valueArrayOf(layerConf.getNIn(),0.0));
         conf.addVariable(VISIBLE_BIAS_KEY);
         params.get(VISIBLE_BIAS_KEY).data().persist();
     }

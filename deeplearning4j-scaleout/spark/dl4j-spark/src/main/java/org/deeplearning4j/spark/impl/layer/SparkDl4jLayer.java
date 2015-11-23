@@ -107,9 +107,7 @@ public class SparkDl4jLayer implements Serializable {
     public Layer fitDataSet(JavaRDD<DataSet> rdd) {
         int iterations = conf.getNumIterations();
         long count = rdd.count();
-        int batchSize = conf.getBatchSize();
-        if(batchSize == 0)
-            batchSize = 10;
+
 
         log.info("Running distributed training averaging each iteration " + averageEachIteration + " and " + rdd.partitions().size() + " partitions");
         if(!averageEachIteration) {
