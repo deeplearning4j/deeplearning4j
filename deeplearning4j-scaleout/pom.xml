@@ -35,5 +35,6 @@
 		<module>deeplearning4j-aws</module>
 		<module>hadoop-yarn</module>
 		<module>spark</module>
+		<module>deeplearning4j-graph</module>
 	</modules>
 </project>
