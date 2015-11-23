@@ -272,6 +272,8 @@ public class ContextHolder {
 
         }
 
+
+        JCudaDriver.cuCtxSetLimit(CUlimit.CU_LIMIT_PRINTF_FIFO_SIZE, Integer.MAX_VALUE);
         confCalled = true;
     }
 

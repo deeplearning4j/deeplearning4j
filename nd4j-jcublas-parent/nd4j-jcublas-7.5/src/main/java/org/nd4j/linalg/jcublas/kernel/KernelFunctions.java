@@ -116,7 +116,6 @@ public class KernelFunctions {
             cudaContext.syncStream();
 
 
-        JCuda.cudaDeviceSynchronize();
     }
 
 

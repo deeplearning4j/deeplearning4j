@@ -15,12 +15,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
     <build>
-        <testSourceDirectory>../../nd4j-tests/src/test</testSourceDirectory>
-        <testResources>
-            <testResource>
-                <directory>../nd4j-tests/src/test/resources</directory>
-            </testResource>
-        </testResources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

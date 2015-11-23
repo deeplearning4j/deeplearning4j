@@ -315,8 +315,15 @@ public class TestMatrixOperations {
         INDArray orig = Nd4j.linspace(1,ArrayUtil.prod(shape),ArrayUtil.prod(shape)).reshape(shape);
         int dimension = 0;
         System.out.println(orig.tensorssAlongDimension(dimension));
-        for(int i = 0; i < 5; i++)
-            System.out.println(orig.tensorAlongDimension(i,dimension));
+        for(int i = 0; i < 5; i++) {
+            StringBuffer sb = new StringBuffer();
+            INDArray tad = orig.tensorAlongDimension(i, dimension);
+            for(int j = 0; j < tad.length(); j++) {
+                sb.append(tad.get(NDArrayIndex.point(j)).offset());
+                sb.append(",");
+            }
+            System.out.println(sb);
+        }
         System.out.println();
         INDArray vector = Nd4j.linspace(1,shape[dimension],shape[dimension]);
         BroadcastOp op = new BroadcastAddOp(orig,vector,orig.dup(),dimension);
@@ -508,7 +515,20 @@ public class TestMatrixOperations {
         assertEquals(assertion,op.z());
 
 
+
     }
+
+    @Test
+    public void testDimensionOneLengthSeven() {
+        INDArray seven = Nd4j.linspace(1,7,7);
+        int[] tensorShape = {5, 7, 9, 11, 13};
+        int len = ArrayUtil.prod(tensorShape);
+        int dimension = 1;
+        INDArray arr = Nd4j.linspace(1,len,len).reshape(tensorShape);
+        BroadcastAddOp op = new BroadcastAddOp(arr,seven,arr,dimension);
+        Nd4j.getExecutioner().exec(op);
+    }
+
 
     @Test
     public void testNdVectorOp() {
@@ -524,8 +544,9 @@ public class TestMatrixOperations {
 
                 for (int i = 0; i < rank; i++) {   //Test ops for each dimension
                     INDArray arr = orig.dup();
+                    int eleStride = arr.tensorAlongDimension(0,i).elementWiseStride();
                     INDArray vector = i == 0 ? Nd4j.rand(1,shape[i]) : Nd4j.rand(shape[i],1);
-
+                    System.out.println("Executed rank " + rank + " and dimension " + i + " with vector " + vector + " and array of shape " + Arrays.toString(arr.shape()));
                     BroadcastOp op;
                     switch(opNum){
                         case 0:
@@ -553,10 +574,16 @@ public class TestMatrixOperations {
                             throw new RuntimeException();
                     }
 
+                    StopWatch watch = new StopWatch();
+                    watch.start();
+                    System.out.println("About to execute op " + op.name());
                     Nd4j.getExecutioner().exec(op);
+                    watch.stop();
+
+                    System.out.println("After execution " + watch.getNanoTime() + " nanoseconds with " + op.x().tensorssAlongDimension(i));
                     INDArray assertion = arr.dup();
                     for(int j = 0; j < arr.tensorssAlongDimension(i); j++) {
-                        switch(opNum){
+                        switch(opNum) {
                             case 0:
                                 assertion.tensorAlongDimension(j,i).addi(vector);
                                 break;
