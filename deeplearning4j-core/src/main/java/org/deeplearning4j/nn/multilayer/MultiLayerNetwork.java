@@ -156,8 +156,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             if (i == 0) {
                 while (iter.hasNext()) {
                     DataSet next = iter.next();
-                    if(getLayerWiseConfigurations().getInputPreProcess(i) != null)
-                        layerInput = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(next.getFeatureMatrix(),layers[i]);
+                    if(getLayerWiseConfigurations().getInputPreProcess(i) != null) {
+                        INDArray features = next.getFeatureMatrix();
+                        layerInput = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(features, features.size(0));
+                    }
                     else
                         layerInput = next.getFeatureMatrix();
                     setInput(layerInput);
@@ -200,13 +202,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             return;
         /* During pretrain, feed forward expected activations of network, use activation cooccurrences during pretrain  */
 
-
+        int miniBatchSize = input.size(0);
         INDArray layerInput = null;
 
         for (int i = 0; i < getnLayers() - 1; i++) {
             if (i == 0)
                 if(getLayerWiseConfigurations().getInputPreProcess(i) != null)
-                    layerInput = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input,layers[i]);
+                    layerInput = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input,miniBatchSize);
                 else
                     layerInput = input;
             else
@@ -427,7 +429,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 INDArray paramsForL = network.paramsBackprop();
                 params.add(paramsForL);
             }
-           else {
+            else {
                 INDArray paramsForL = l.params();
                 params.add(paramsForL);
             }
@@ -490,7 +492,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     public INDArray zFromPrevLayer(int curr, INDArray input,boolean training) {
         if(getLayerWiseConfigurations().getInputPreProcess(curr) != null)
-            input = getLayerWiseConfigurations().getInputPreProcess(curr).preProcess(input,layers[curr]);
+            input = getLayerWiseConfigurations().getInputPreProcess(curr).preProcess(input,input.size(0));
 
         INDArray ret = layers[curr].preOutput(input, training);
         return ret;
@@ -505,7 +507,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     public INDArray activationFromPrevLayer(int curr, INDArray input,boolean training) {
         if(getLayerWiseConfigurations().getInputPreProcess(curr) != null)
-            input = getLayerWiseConfigurations().getInputPreProcess(curr).preProcess(input,layers[curr]);
+            input = getLayerWiseConfigurations().getInputPreProcess(curr).preProcess(input,getInputMiniBatchSize());
         INDArray ret = layers[curr].activate(input, training);
         return ret;
     }
@@ -561,7 +563,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if (input == null)
             throw new IllegalStateException("Unable to perform feed forward; no input found");
         else if (this.getLayerWiseConfigurations().getInputPreProcess(0) != null)
-            setInput(getLayerWiseConfigurations().getInputPreProcess(0).preProcess(input,layers[0]));
+            setInput(getLayerWiseConfigurations().getInputPreProcess(0).preProcess(input,getInputMiniBatchSize()));
         else
             setInput(input);
         return computeZ(training);
@@ -693,7 +695,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if (input == null)
             throw new IllegalStateException("Unable to perform feed forward; no input found");
         else if (this.getLayerWiseConfigurations().getInputPreProcess(0) != null)
-            setInput(getLayerWiseConfigurations().getInputPreProcess(0).preProcess(input,layers[0]));
+            setInput(getLayerWiseConfigurations().getInputPreProcess(0).preProcess(input,getInputMiniBatchSize()));
         else
             setInput(input);
         return feedForward();
@@ -746,15 +748,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
         for (int i = 0; i < deltas.length - 1; i++) {
-            if (defaultConfiguration.isConstrainGradientToUnitNorm()) {
-                double sum = deltas[i].sum(Integer.MAX_VALUE).getDouble(0);
-                if (sum > 0)
-                    deltaRet.add(deltas[i].div(deltas[i].norm2(Integer.MAX_VALUE)));
-                else
-                    deltaRet.add(deltas[i]);
-            } else
-                deltaRet.add(deltas[i]);
-            LinAlgExceptions.assertValidNum(deltaRet.get(i));
+            deltaRet.add(deltas[i]);
         }
 
         return deltaRet;
@@ -823,11 +817,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
         for (int i = 0; i < deltas.length; i++) {
-            if (defaultConfiguration.isConstrainGradientToUnitNorm())
-                deltaRet.add(new Pair<>(deltas[i].divi(deltas[i].norm2(Integer.MAX_VALUE)), preCons[i]));
-
-            else
-                deltaRet.add(new Pair<>(deltas[i], preCons[i]));
+            deltaRet.add(new Pair<>(deltas[i], preCons[i]));
 
         }
 
@@ -902,8 +892,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 params.add(layer.params());
         }
 
-
-
         return Nd4j.toFlattened('f',params);
     }
 
@@ -926,9 +914,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 params.add(((BasePretrainNetwork) layer).paramsBackprop());
             else params.add(layer.params());
         }
-
-
-
         return Nd4j.toFlattened('f',params);
     }
 
@@ -1206,7 +1191,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
         if(getLayerWiseConfigurations().getInputPreProcess(numLayers-1) != null)
-            currPair = new Pair<> (currPair.getFirst(), this.layerWiseConfigurations.getInputPreProcess(numLayers - 1).backprop(currPair.getSecond(),layers[numLayers-1]));
+            currPair = new Pair<> (currPair.getFirst(), this.layerWiseConfigurations.getInputPreProcess(numLayers - 1).backprop(currPair.getSecond(),getInputMiniBatchSize()));
 
         // Calculate gradients for previous layers & drops output layer in count
         for(int j = numLayers - 2; j >= 0; j--) {
@@ -1222,7 +1207,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
             //Pass epsilon through input processor before passing to next layer (if applicable)
             if(getLayerWiseConfigurations().getInputPreProcess(j) != null)
-                currPair = new Pair<> (currPair.getFirst(), getLayerWiseConfigurations().getInputPreProcess(j).backprop(currPair.getSecond(),layers[j]));
+                currPair = new Pair<> (currPair.getFirst(), getLayerWiseConfigurations().getInputPreProcess(j).backprop(currPair.getSecond(),getInputMiniBatchSize()));
         }
 
         //Add gradients to Gradients, in correct order
@@ -1320,7 +1305,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
         if(getLayerWiseConfigurations().getInputPreProcess(numLayers-1) != null)
-            currPair = new Pair<> (currPair.getFirst(), this.layerWiseConfigurations.getInputPreProcess(numLayers - 1).backprop(currPair.getSecond(),layers[numLayers-1]));
+            currPair = new Pair<> (currPair.getFirst(), this.layerWiseConfigurations.getInputPreProcess(numLayers - 1).backprop(currPair.getSecond(),getInputMiniBatchSize()));
 
         // Calculate gradients for previous layers & drops output layer in count
         for(int j = numLayers - 2; j >= 0; j--) {
@@ -1342,7 +1327,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
             //Pass epsilon through input processor before passing to next layer (if applicable)
             if(getLayerWiseConfigurations().getInputPreProcess(j) != null)
-                currPair = new Pair<> (currPair.getFirst(), getLayerWiseConfigurations().getInputPreProcess(j).backprop(currPair.getSecond(),layers[j]));
+                currPair = new Pair<> (currPair.getFirst(), getLayerWiseConfigurations().getInputPreProcess(j).backprop(currPair.getSecond(),getInputMiniBatchSize()));
         }
 
         //Add gradients to Gradients, in correct order
@@ -1980,11 +1965,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         INDArray lastLayerActivation = x;
         for( int i=0; i<layers.length-1; i++ ){
             if(getLayerWiseConfigurations().getInputPreProcess(i) != null)
-                lastLayerActivation = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(lastLayerActivation,layers[i]);
+                lastLayerActivation = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(lastLayerActivation,getInputMiniBatchSize());
             lastLayerActivation = layers[i].activate(lastLayerActivation);
         }
         if(getLayerWiseConfigurations().getInputPreProcess(layers.length-1) != null)
-            lastLayerActivation = getLayerWiseConfigurations().getInputPreProcess(layers.length-1).preProcess(lastLayerActivation,layers[layers.length-1]);
+            lastLayerActivation = getLayerWiseConfigurations().getInputPreProcess(layers.length-1).preProcess(lastLayerActivation,getInputMiniBatchSize());
         return layers[layers.length-1].preOutput(lastLayerActivation);
     }
 
@@ -2071,7 +2056,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public int getInputMiniBatchSize(){
-        return layers[0].getInputMiniBatchSize();
+        return input.size(0);
     }
 
     /**
@@ -2097,7 +2082,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         boolean inputIs2d = input.rank()==2;
         for( int i = 0; i < layers.length; i++) {
             if(getLayerWiseConfigurations().getInputPreProcess(i) != null)
-                input = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input,layers[i]);
+                input = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input,getInputMiniBatchSize());
             if(layers[i] instanceof BaseRecurrentLayer){
                 input = ((BaseRecurrentLayer<?>)layers[i]).rnnTimeStep(input);
             } else if(layers[i] instanceof MultiLayerNetwork){
@@ -2159,14 +2144,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return Activations for each layer (including input, as per feedforward() etc)
      */
     public List<INDArray> rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT) {
-        this.setInputMiniBatchSize(input.size(0));	//Necessary for preprocessors/reshaping
         INDArray currInput = input;
         List<INDArray> activations = new ArrayList<>();
         activations.add(currInput);
 
         for( int i=0; i<layers.length; i++ ){
             if(getLayerWiseConfigurations().getInputPreProcess(i) != null)
-                currInput = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(currInput,layers[i]);
+                currInput = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(currInput,input.size(0));
             if(layers[i] instanceof BaseRecurrentLayer){
                 currInput = ((BaseRecurrentLayer<?>)layers[i]).rnnActivateUsingStoredState(currInput,training,storeLastForTBPTT);
             } else if(layers[i] instanceof MultiLayerNetwork){

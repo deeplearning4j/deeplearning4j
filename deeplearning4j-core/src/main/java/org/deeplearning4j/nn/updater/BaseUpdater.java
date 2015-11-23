@@ -28,7 +28,7 @@ public abstract class BaseUpdater implements Updater {
 
 
     @Override
-    public void update(Layer layer, Gradient gradient, int iteration) {
+    public void update(Layer layer, Gradient gradient, int iteration, int miniBatchSize) {
         String paramName;
         INDArray paramVal, gradient2;
         GradientUpdater updater;
@@ -43,7 +43,7 @@ public abstract class BaseUpdater implements Updater {
 
             updater = init(paramName, paramVal, layer);
             gradient2 = updater.getGradient(paramVal, iteration);
-            postApply(layer, gradient2, paramName);
+            postApply(layer, gradient2, paramName, miniBatchSize);
             gradient.setGradientFor(paramName, gradient2);
         }
     }
@@ -55,7 +55,7 @@ public abstract class BaseUpdater implements Updater {
      * @param gradient
      * @param param
      */
-    public void postApply(Layer layer, INDArray gradient, String param) {
+    public void postApply(Layer layer, INDArray gradient, String param, int miniBatchSize) {
         NeuralNetConfiguration conf = layer.conf();
         INDArray params = layer.getParam(param);
         if (conf.isUseRegularization() && conf.getLayer().getL2() > 0 && !(param.equals(DefaultParamInitializer.BIAS_KEY)))
@@ -63,9 +63,8 @@ public abstract class BaseUpdater implements Updater {
         if (conf.isUseRegularization() && conf.getLayer().getL1() > 0 && !(param.equals(DefaultParamInitializer.BIAS_KEY)))
             gradient.addi(Transforms.sign(params).muli(conf.getLayer().getL1()));
         if (conf.isMiniBatch())
-            gradient.divi(layer.getInputMiniBatchSize());
-        if (conf.isConstrainGradientToUnitNorm())
-            gradient.divi(gradient.norm2(Integer.MAX_VALUE));
+            gradient.divi(miniBatchSize);
+
     }
 
     /**

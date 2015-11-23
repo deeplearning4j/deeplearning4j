@@ -72,7 +72,7 @@ public class TestUpdaters {
 		gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
 
 		for (int i = 0; i < 2; i++) {
-            updater.update(layer, gradient, i);
+            updater.update(layer, gradient, i, 1);
 
             // calculations for one iteration / update
 
@@ -120,7 +120,7 @@ public class TestUpdaters {
 		Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0);
 		Updater updater = UpdaterCreator.getUpdater(layer);
 
-		updater.update(layer, gradient, -1);
+		updater.update(layer, gradient, -1, 1);
 
         Gradient gradientDup = new DefaultGradient();
         gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
@@ -152,7 +152,7 @@ public class TestUpdaters {
 		Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0);
 		Updater updater = UpdaterCreator.getUpdater(layer);
 
-		updater.update(layer, gradient, iteration);
+		updater.update(layer, gradient, iteration, 1);
 
 		double beta1t = FastMath.pow(beta1, iteration);
 		double beta2t = FastMath.pow(beta2, iteration);
@@ -194,7 +194,7 @@ public class TestUpdaters {
 		Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0);
 		Updater updater = UpdaterCreator.getUpdater(layer);
 
-		updater.update(layer, gradient, -1);
+		updater.update(layer, gradient, -1, 1);
 
         Gradient gradientDup = new DefaultGradient();
         gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
@@ -231,7 +231,7 @@ public class TestUpdaters {
 		Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0);
 		Updater updater = UpdaterCreator.getUpdater(layer);
 
-		updater.update(layer, gradient, -1);
+		updater.update(layer, gradient, -1, 1);
 
         Gradient gradientDup = new DefaultGradient();
         gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
@@ -267,7 +267,7 @@ public class TestUpdaters {
 		Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0);
 		Updater updater = UpdaterCreator.getUpdater(layer);
 
-		updater.update(layer, gradient, -1);
+		updater.update(layer, gradient, -1, 1);
 
         Gradient gradientDup = new DefaultGradient();
         gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
@@ -298,7 +298,7 @@ public class TestUpdaters {
 		for( int i=0; i<weightGradient.length(); i++ ) weightGradient.putScalar(i, r.nextDouble());
 		for( int i=0; i<biasGradient.length(); i++ ) biasGradient.putScalar(i, r.nextDouble());
 
-		updater.update(layer, gradient, -1);
+		updater.update(layer, gradient, -1, 1);
 		
 		INDArray weightGradActual = gradient.getGradientFor(DefaultParamInitializer.WEIGHT_KEY);
 		INDArray biasGradActual = gradient.getGradientFor(DefaultParamInitializer.BIAS_KEY);
@@ -401,13 +401,13 @@ public class TestUpdaters {
 				Gradient layerGradient = new DefaultGradient();
 				layerGradient.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wGrad.dup());
 				layerGradient.setGradientFor(DefaultParamInitializer.BIAS_KEY, bGrad.dup());
-				uArr[j].update(net.getLayer(j), layerGradient, i);
+				uArr[j].update(net.getLayer(j), layerGradient, i, 1);
 				for( String s : layerGradient.gradientForVariable().keySet() ){
 					expectedGradient.put(j+"_"+s,layerGradient.getGradientFor(s));
 				}
 			}
 			
-			updater.update(net, gradient, i);
+			updater.update(net, gradient, i, 1);
 			assertTrue(gradient.gradientForVariable().equals(expectedGradient));
 		}
 	}
