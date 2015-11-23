@@ -439,8 +439,12 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      * @return the partitioned datasets
      */
     @Override
-    public List<List<DataSet>> batchBy(int num) {
-        return Lists.partition(asList(), num);
+    public List<DataSet> batchBy(int num) {
+        List<DataSet> batched = Lists.newArrayList();
+        for(List<DataSet> splitBatch : Lists.partition(asList(), num)) {
+            batched.add(DataSet.merge(splitBatch));
+        }
+        return batched;
     }
 
     /**
@@ -539,14 +543,14 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      * @return a list of data sets partitioned by outcomes
      */
     @Override
-    public List<List<DataSet>> sortAndBatchByNumLabels() {
+    public List<DataSet> sortAndBatchByNumLabels() {
         sortByLabel();
-        return Lists.partition(asList(), numOutcomes());
+        return batchByNumLabels();
     }
 
     @Override
-    public List<List<DataSet>> batchByNumLabels() {
-        return Lists.partition(asList(), numOutcomes());
+    public List<DataSet> batchByNumLabels() {
+        return batchBy(numOutcomes());
     }
 
     @Override
