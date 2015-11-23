@@ -274,6 +274,17 @@ public class TestMatrixOperations {
 
     }
 
+    @Test
+    public void testDivRowVector() {
+        INDArray arr = Nd4j.linspace(1,4,4).reshape(2, 2);
+        arr.diviRowVector(Nd4j.linspace(1, 2, 2));
+        INDArray assertion = Nd4j.create(new double[][]{
+                {1, 1}, {3, 2}
+        });
+
+        assertEquals(assertion,arr);
+    }
+
 
     @Test
     public void testMulRowVector() {
@@ -377,6 +388,73 @@ public class TestMatrixOperations {
         }
     }
 
+    @Test
+    public void testNdVectorOpLinSpaceDiv() {
+        int[] shape = {5,7,9,11,13};
+        INDArray orig = Nd4j.linspace(1,ArrayUtil.prod(shape),ArrayUtil.prod(shape)).reshape(shape);
+        int dimension = 0;
+        System.out.println(orig.tensorssAlongDimension(dimension));
+        for(int i = 0; i < 5; i++) {
+            StringBuffer sb = new StringBuffer();
+            INDArray tad = orig.tensorAlongDimension(i, dimension);
+            for(int j = 0; j < tad.length(); j++) {
+                sb.append(tad.get(NDArrayIndex.point(j)).offset());
+                sb.append(",");
+            }
+            System.out.println(sb);
+        }
+        System.out.println();
+        INDArray vector = Nd4j.linspace(1,shape[dimension],shape[dimension]);
+        BroadcastOp op = new BroadcastDivOp(orig,vector,orig.dup(),dimension);
+        Nd4j.getExecutioner().exec(op);
+        for(int i = 0; i < 5; i++)
+            System.out.println(op.z().tensorAlongDimension(i,dimension));
+        int opNum = 2;
+        //Compare expected vs. actual:
+        for(int i = 0; i < orig.tensorssAlongDimension(dimension); i++) {
+            INDArray tad = orig.tensorAlongDimension(i,dimension);
+            INDArray zDim = op.z().tensorAlongDimension(i,dimension);
+            INDArray assertion = tad.div(vector);
+            assertEquals("Failed on tad with original tad " + tad + " at " + i,assertion,zDim);
+        }
+        NdIndexIterator iter = new NdIndexIterator(orig.shape());
+        while (iter.hasNext()) {
+            int[] next = iter.next();
+            double origValue = orig.getDouble(next);
+            double vectorValue = vector.getDouble(next[dimension]);   //current index in vector
+            double exp;
+            switch(opNum){
+                case 0:
+                    exp = origValue + vectorValue;
+                    break;
+                case 1:
+                    exp = vectorValue;
+                    break;
+                case 2:
+                    exp = origValue / vectorValue;
+                    break;
+                case 3:
+                    exp = origValue * vectorValue;
+                    break;
+                case 4:
+                    exp = vectorValue / origValue;
+                    break;
+                case 5:
+                    exp = vectorValue - origValue;
+                    break;
+                case 6:
+                    exp = origValue - vectorValue;
+                    break;
+                default:
+                    throw new RuntimeException();
+            }
+
+            double actual = op.z().getDouble(next);
+            double relError = Math.abs(exp - actual) / (Math.abs(exp) + Math.abs(actual));
+            assertTrue("Failed on rank " + Arrays.toString(shape),relError < 1e-6);
+
+        }
+    }
 
     @Test
     public void testFiveBySevenDimOne() {
@@ -437,6 +515,28 @@ public class TestMatrixOperations {
             assertTrue("Failed on rank " + Arrays.toString(shape), relError < 1e-6);
 
         }
+    }
+
+
+    @Test
+    public void testFiveBySevenDiv() {
+        INDArray orig = Nd4j.linspace(1, 35, 35).reshape(5, 7);
+        INDArray vector = Nd4j.linspace(1, 5, 5);
+        int dimension = 0;
+        System.out.println(orig.tensorssAlongDimension(dimension));
+        for (int i = 0; i < 5; i++)
+            System.out.println(orig.tensorAlongDimension(i, dimension));
+        System.out.println();
+        BroadcastOp op = new BroadcastDivOp(orig, vector, orig.dup(), dimension);
+        Nd4j.getExecutioner().exec(op);
+        //Compare expected vs. actual:
+        for (int i = 0; i < orig.tensorssAlongDimension(dimension); i++) {
+            INDArray tad = orig.tensorAlongDimension(i, dimension);
+            INDArray zDim = op.z().tensorAlongDimension(i, dimension);
+            INDArray assertion = tad.div(vector);
+            assertEquals("Failed on tad with original tad " + tad + " at " + i, assertion, zDim);
+        }
+
     }
 
     @Test
@@ -537,14 +637,14 @@ public class TestMatrixOperations {
         Nd4j.getRandom().setSeed(12345);
         int[] maxShape = new int[]{5, 7, 9, 11, 13, 15};
 
-        for(int opNum = 0; opNum < 6; opNum++) {
+        for(int opNum = 2; opNum < 6; opNum++) {
             for (int rank = 2; rank < maxShape.length; rank++) {
                 int[] shape = Arrays.copyOfRange(maxShape, 0, rank);
                 INDArray orig = Nd4j.rand(shape);
 
                 for (int i = 0; i < rank; i++) {   //Test ops for each dimension
                     INDArray arr = orig.dup();
-                    int eleStride = arr.tensorAlongDimension(0,i).elementWiseStride();
+                    int eleStride = arr.tensorAlongDimension(0, i).elementWiseStride();
                     INDArray vector = i == 0 ? Nd4j.rand(1,shape[i]) : Nd4j.rand(shape[i],1);
                     System.out.println("Executed rank " + rank + " and dimension " + i + " with vector " + vector + " and array of shape " + Arrays.toString(arr.shape()));
                     BroadcastOp op;
@@ -556,16 +656,16 @@ public class TestMatrixOperations {
                             op = new BroadcastCopyOp(arr, vector, arr, i);
                             break;
                         case 2:
-                            op = new BroadcastDivOp(arr, vector, arr, i);
+                            op = new BroadcastDivOp(arr, vector, arr.dup(), i);
                             break;
                         case 3:
-                            op = new BroadcastMulOp(arr, vector, arr, i);
+                            op = new BroadcastMulOp(arr, vector, arr.dup(), i);
                             break;
                         case 4:
-                            op = new BroadcastRDivOp(arr, vector, arr, i);
+                            op = new BroadcastRDivOp(arr, vector, arr.dup(), i);
                             break;
                         case 5:
-                            op = new BroadcastRSubOp(arr, vector, arr, i);
+                            op = new BroadcastRSubOp(arr, vector, arr.dup(), i);
                             break;
                         case 6:
                             op = new BroadcastSubOp(arr, vector, arr.dup(), i);
