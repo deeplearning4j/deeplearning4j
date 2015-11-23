@@ -96,7 +96,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
             throw new IllegalArgumentException("Unable to merge empty dataset");
         DataSet first = data.get(0);
         if(first.getFeatures().rank() == 3 && first.getLabels().rank() == 3 ){
-            return mergeTimeSeries(data,clone);
+            return mergeTimeSeries(data);
         }
 
         int numExamples = totalExamples(data);
@@ -118,7 +118,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         return new DataSet(in, out);
     }
 
-    private static DataSet mergeTimeSeries(List<DataSet> data, boolean clone){
+    private static DataSet mergeTimeSeries(List<DataSet> data){
         DataSet first = data.get(0);
         int numExamples = totalExamples(data);
 
