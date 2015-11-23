@@ -54,16 +54,18 @@ public interface InputPreProcessor extends Serializable, Cloneable {
     /**
      * Pre preProcess input/activations for a multi layer network
      * @param input the input to pre preProcess
+     * @param miniBatchSize
      * @return the processed input
      */
-    INDArray preProcess(INDArray input, Layer layer);
+    INDArray preProcess(INDArray input, int miniBatchSize);
 
     /**Reverse the preProcess during backprop. Process Gradient/epsilons before
      * passing them to the layer below.
-     * @param output which is a pair of the gradient and epsilon 
+     * @param output which is a pair of the gradient and epsilon
+     * @param miniBatchSize
      * @return the reverse of the pre preProcess step (if any)
      */
-    INDArray backprop(INDArray output, Layer layer);
+    INDArray backprop(INDArray output, int miniBatchSize);
 
     InputPreProcessor clone();
 }

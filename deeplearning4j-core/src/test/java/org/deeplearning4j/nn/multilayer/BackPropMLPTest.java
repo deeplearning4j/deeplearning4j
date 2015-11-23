@@ -400,8 +400,6 @@ public class BackPropMLPTest {
     private static MultiLayerConfiguration getIrisMLPSimpleConfig(int[] hiddenLayerSizes, String activationFunction) {
     	NeuralNetConfiguration.ListBuilder lb = new NeuralNetConfiguration.Builder()
                 .iterations(1)
-                .batchSize(1)
-                .constrainGradientToUnitNorm(false)
                 .learningRate(0.1)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .regularization(false)
