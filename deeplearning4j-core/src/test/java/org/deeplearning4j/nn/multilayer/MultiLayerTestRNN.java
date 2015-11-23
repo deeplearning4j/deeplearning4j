@@ -317,7 +317,7 @@ public class MultiLayerTestRNN {
     				expOutSubset = fullOutL3.get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.interval(startTimeRange, endTimeRange));
     			}
 
-    			assertTrue(out.equals(expOutSubset));
+    			assertEquals(expOutSubset,out);
 
     			Map<String,INDArray> currL0State = mln.rnnGetPreviousState(0);
     			Map<String,INDArray> currL1State = mln.rnnGetPreviousState(1);
@@ -328,8 +328,8 @@ public class MultiLayerTestRNN {
     			INDArray expLastActL0 = fullOutL0.tensorAlongDimension(endTimeRange-1, 1,0);
     			INDArray expLastActL1 = fullOutL1.tensorAlongDimension(endTimeRange-1, 1,0);
 
-    			assertTrue(lastActL0.equals(expLastActL0));
-    			assertTrue(lastActL1.equals(expLastActL1));
+    			assertEquals(expLastActL0,lastActL0);
+    			assertEquals(expLastActL1,lastActL1);
     		}
     	}
     }
@@ -366,7 +366,7 @@ public class MultiLayerTestRNN {
     		assertArrayEquals(out2d.shape(),new int[]{3,4});
 
     		INDArray expOut2d = out3d.tensorAlongDimension(i, 1,0);
-    		assertTrue(out2d.equals(expOut2d));
+    		assertEquals(out2d, expOut2d);
     	}
 
     	//Check same but for input of size [3,5,1]. Expect [3,4,1] out
@@ -405,7 +405,7 @@ public class MultiLayerTestRNN {
 				.dist(new NormalDistribution(0,0.5)).build())
 			.backprop(true)
 		.build();
-    	assertTrue(conf.getBackpropType() == BackpropType.Standard);
+    	assertEquals(BackpropType.Standard,conf.getBackpropType());
 
     	MultiLayerConfiguration confTBPTT = new NeuralNetConfiguration.Builder()
     		.seed(12345)
@@ -451,8 +451,8 @@ public class MultiLayerTestRNN {
 		Pair<Gradient,Double> mlnPair = mln.gradientAndScore();
 		Pair<Gradient,Double> tbpttPair = mln.gradientAndScore();
 
-		assertTrue(mlnPair.getFirst().equals(tbpttPair.getFirst()));
-		assertTrue(mlnPair.getSecond().equals(tbpttPair.getSecond()));
+		assertEquals(mlnPair.getFirst(), tbpttPair.getFirst());
+		assertEquals(mlnPair.getSecond(), tbpttPair.getSecond());
 
 		//Check states: expect stateMap to be empty but tBpttStateMap to not be
 		Map<String,INDArray> l0StateMLN = mln.rnnGetPreviousState(0);
@@ -483,8 +483,8 @@ public class MultiLayerTestRNN {
 		INDArray l1Act = activations.get(2);
 		INDArray expL0Act = l0Act.tensorAlongDimension(timeSeriesLength-1, 1,0);
 		INDArray expL1Act = l1Act.tensorAlongDimension(timeSeriesLength-1, 1,0);
-		assertTrue(tbpttActL0.equals(expL0Act));
-		assertTrue(tbpttActL1.equals(expL1Act));
+		assertEquals(tbpttActL0,expL0Act);
+		assertEquals(tbpttActL1,expL1Act);
     }
 
     @Test
@@ -521,11 +521,11 @@ public class MultiLayerTestRNN {
 		List<INDArray> outRnnAct = mln.rnnActivateUsingStoredState(input, true, true);
 
 		//As initially state is zeros: expect these to be the same
-		assertTrue(outStandard.equals(outRnnAct));
+		assertEquals(outStandard,outRnnAct);
 
 		//Furthermore, expect multiple calls to this function to be the same:
 		for( int i=0; i<3; i++ ){
-			assertTrue(outStandard.equals(mln.rnnActivateUsingStoredState(input, true, true)));
+			assertEquals(outStandard, mln.rnnActivateUsingStoredState(input, true, true));
 		}
 
 		List<INDArray> outStandardLong = mln.feedForward(inputLong,true);
@@ -539,12 +539,21 @@ public class MultiLayerTestRNN {
 			for( INDArray temp : outStandardLong ){
 				expOut.add(temp.get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.interval(i*timeSeriesLength,(i+1)*timeSeriesLength)));
 			}
-			assertTrue(expOut.equals(outSlice));
+
+			for(int j=0; j<expOut.size(); j++ ){
+				INDArray exp = expOut.get(j);
+				INDArray act = outSlice.get(j);
+				System.out.println(j);
+				System.out.println(exp.sub(act));
+				assertEquals(exp,act);
+			}
+
+			assertEquals(expOut,outSlice);
 
 			//Again, expect multiple calls to give the same output
 			for( int j=0; j<3; j++ ){
 				outSlice = mln.rnnActivateUsingStoredState(inSlice, true, true);
-				assertTrue(expOut.equals(outSlice));
+				assertEquals(expOut,outSlice);
 			}
 
 			l0.rnnSetPreviousState(l0.rnnGetTBPTTState());

@@ -2,9 +2,7 @@ package org.deeplearning4j.nn.conf.preprocessor;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -41,20 +39,19 @@ public class CnnToRnnPreProcessor implements InputPreProcessor {
     }
 
     @Override
-    public INDArray preProcess(INDArray input, Layer layer) {
+    public INDArray preProcess(INDArray input, int miniBatchSize) {
         if(input.rank() != 4) throw new IllegalArgumentException("Invalid input: expect CNN activations with rank 4 (received input with shape "
             + Arrays.toString(input.shape())+")");
         //Input: 4d activations (CNN)
         //Output: 3d activations (RNN)
 
         int[] shape = input.shape();    //[timeSeriesLength*miniBatchSize, numChannels, inputHeight, inputWidth]
-        int miniBatchSize = layer.getInputMiniBatchSize();
         INDArray reshaped = input.reshape(miniBatchSize,shape[0]/miniBatchSize,product);
         return reshaped.permute(0,2,1);
     }
 
     @Override
-    public INDArray backprop(INDArray output, Layer layer) {
+    public INDArray backprop(INDArray output, int miniBatchSize) {
         int[] shape = output.shape();
         INDArray output2d;
         if(shape[0]==1){
