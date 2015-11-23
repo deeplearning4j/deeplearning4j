@@ -270,7 +270,7 @@
                     <configuration>
                         <forkCount>0</forkCount>
                         <reuseForks>true</reuseForks>
-                        <argLine>-Xms1024m -Xmx1024m -XX:MaxPermSize=256m -Ddtype=float -Dorg.nd4j.parallel.threads=1</argLine>
+                        <argLine>-Xms2048m -Xmx2048m -XX:MaxPermSize=256m -Ddtype=float -Dorg.nd4j.parallel.threads=1</argLine>
                     </configuration>
                 </plugin>
                 <plugin>
