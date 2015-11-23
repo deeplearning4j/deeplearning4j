@@ -383,7 +383,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return the activation for a given layer
      */
     public INDArray activate(int layer) {
-        return getLayers()[layer].activate();
+        return getLayer(layer).activate();
     }
 
     @Override
@@ -399,7 +399,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return the activation of the layer based on the input
      */
     public INDArray activate(int layer, INDArray input) {
-        return getLayers()[layer].activate(input);
+        return getLayer(layer).activate(input);
     }
 
     @Override
@@ -583,11 +583,52 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return the list of activations for each layer
      */
     public List<INDArray> feedForward(boolean train) {
+        return feedForwardToLayer(layers.length - 1, train);
+    }
+
+    /** Compute the activations from the input to the specified layer.<br>
+     * To compute activations for all layers, use feedForward(...) methods<br>
+     * Note: output list includes the original input. So list.get(0) is always the original input, and
+     * list.get(i+1) is the activations of the ith layer.
+     * @param layerNum Index of the last layer to calculate activations for. Layers are zero-indexed.
+     *                 feedForwardToLayer(i,input) will return the activations for layers 0..i (inclusive)
+     * @param input Input to the network
+     * @return list of activations.
+     */
+    public List<INDArray> feedForwardToLayer(int layerNum, INDArray input){
+        return feedForwardToLayer(layerNum,input,false);
+    }
+
+    /** Compute the activations from the input to the specified layer.<br>
+     * To compute activations for all layers, use feedForward(...) methods<br>
+     * Note: output list includes the original input. So list.get(0) is always the original input, and
+     * list.get(i+1) is the activations of the ith layer.
+     * @param layerNum Index of the last layer to calculate activations for. Layers are zero-indexed.
+     *                 feedForwardToLayer(i,input) will return the activations for layers 0..i (inclusive)
+     * @param input Input to the network
+     * @param train true for training, false for test (i.e., false if using network after training)
+     * @return list of activations.
+     */
+    public List<INDArray> feedForwardToLayer(int layerNum, INDArray input, boolean train){
+        setInput(input);
+        return feedForwardToLayer(layerNum,train);
+    }
+
+    /** Compute the activations from the input to the specified layer, using the currently set input for the network.<br>
+     * To compute activations for all layers, use feedForward(...) methods<br>
+     * Note: output list includes the original input. So list.get(0) is always the original input, and
+     * list.get(i+1) is the activations of the ith layer.
+     * @param layerNum Index of the last layer to calculate activations for. Layers are zero-indexed.
+     *                 feedForwardToLayer(i,input) will return the activations for layers 0..i (inclusive)
+     * @param train true for training, false for test (i.e., false if using network after training)
+     * @return list of activations.
+     */
+    public List<INDArray> feedForwardToLayer(int layerNum, boolean train){
         INDArray currInput = input;
         List<INDArray> activations = new ArrayList<>();
         activations.add(currInput);
 
-        for (int i = 0; i < layers.length; i++) {
+        for (int i = 0; i <= layerNum; i++) {
             currInput = activationFromPrevLayer(i, currInput,train);
             //applies drop connect to the activation
             activations.add(currInput);
@@ -836,7 +877,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             ret.update(this);
 
         } catch (Exception e) {
-            throw new IllegalStateException("Unable to cloe network");
+            throw new IllegalStateException("Unable to clone network",e);
         }
         return ret;
     }
@@ -1568,7 +1609,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     public void update(MultiLayerNetwork network) {
         this.defaultConfiguration = network.defaultConfiguration;
-        setInput(network.input);
+        if(network.input != null) setInput(network.input);
         this.labels = network.labels;
         this.layers = ArrayUtils.clone(network.layers);
     }
@@ -1742,8 +1783,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         this.input = input;
         if (this.layers == null)
             this.initializeLayers(getInput());
-        if(input != null)
+        if(input != null) {
+            if(input.length() == 0) throw new IllegalArgumentException("Invalid input: length 0 (shape: " + Arrays.toString(input.shape()) +")");
             setInputMiniBatchSize(input.size(0));
+        }
     }
 
     private void initMask() {
