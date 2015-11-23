@@ -235,8 +235,10 @@ public class KernelFunctionLoader {
                 .append(File.separator)
                 .append("nd4j-kernels")
                 .append(File.separator)
+                .append("output")
+                .append(File.separator)
                 .toString();
-        File tmpDir2 = new File(tmpDir + File.separator + "nd4j-kernels");
+        File tmpDir2 = new File(tmpDir + File.separator + "nd4j-kernels" + File.separatorChar + "output");
 
         boolean shouldCompile = !tmpDir2.exists() || tmpDir2.exists() && tmpDir2.listFiles().length <= 1;
         String[] split = f.split(",");
@@ -279,8 +281,8 @@ public class KernelFunctionLoader {
 
     private void loadModules(String[] split,String kernelPath) throws Exception {
         for (String module : split) {
-            log.info("Loading " + module);
-            String path = kernelPath + "output" + File.separator +  module + ".cubin";
+            log.debug("Loading " + module);
+            String path = kernelPath  +  module + ".cubin";
             if(!new File(path).exists())
                 throw new IllegalStateException("Unable to find path " + path + ". Recompiling");
             String name = module;
