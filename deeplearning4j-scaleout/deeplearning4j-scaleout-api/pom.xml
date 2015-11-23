@@ -22,10 +22,10 @@
   <parent>
     <groupId>org.deeplearning4j</groupId>
     <artifactId>deeplearning4j-scaleout</artifactId>
-    <version>0.4-rc3.7</version>
+    <version>0.4-rc3.8-SNAPSHOT</version>
   </parent>
   <artifactId>deeplearning4j-scaleout-api</artifactId>
-  <version>0.4-rc3.7</version>
+  <version>0.4-rc3.8-SNAPSHOT</version>
   <name>deeplearning4j-scaleout-api</name>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -34,7 +34,7 @@
     <dependency>
     	<groupId>org.deeplearning4j</groupId>
     	<artifactId>deeplearning4j-core</artifactId>
-    	<version>0.4-rc3.7</version>
+    	<version>0.4-rc3.8-SNAPSHOT</version>
     </dependency>
     <dependency>
     	<groupId>org.json</groupId>
