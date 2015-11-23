@@ -51,6 +51,8 @@ before_install:
   - sudo /etc/init.d/couchdb stop
   - sudo /etc/init.d/redis-server stop
   - free -m -t
+  - export MAVEN_OPTS="-Xms1024m -Xmx1024m"
+  - echo $MAVEN_OPTS
   - sudo apt-get install build-essential git
   - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
   - git clone https://github.com/xianyi/OpenBLAS && cd OpenBLAS && sudo make && sudo make install
