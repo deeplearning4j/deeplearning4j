@@ -25,7 +25,6 @@ public class Adam implements Serializable,GradientUpdater {
     private double beta2 = 0.999; // gradient sqrd decay rate
     private double epsilon = 1e-8;
     private INDArray m,v; // moving avg & sqrd gradients
-    private double momentum = 0.5; //not used
 
     public Adam(double alpha, double beta1, double beta2, double epsilon) {
         this.learningRate = alpha;
@@ -77,6 +76,24 @@ public class Adam implements Serializable,GradientUpdater {
         return ret;
     }
 
+    @Override
+    public void combineUpdaters(GradientUpdater... updaters) {
+        if(updaters == null || updaters.length == 0) return;
+        //Average learning rates: this usually won't be necessary, but might be used in some cases
+        //(slightly different schedules, etc). Done mainly for consistency.
+        //Average moving average and squared gradient arrays
+        double lrSum = learningRate;
+        for(GradientUpdater u : updaters){
+            if(!(u instanceof Adam)) throw new UnsupportedOperationException("Cannot combine Adam updater with other updater: " + u);
+            Adam a = (Adam)u;
+            lrSum += a.learningRate;
+            m.addi(a.m);
+            v.addi(a.v);
+        }
+        this.learningRate = lrSum / (updaters.length+1);
+        m.divi(updaters.length+1);
+        v.divi(updaters.length+1);
+    }
 
 
 }

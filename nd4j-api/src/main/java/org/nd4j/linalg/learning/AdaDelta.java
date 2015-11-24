@@ -61,5 +61,21 @@ public class AdaDelta implements Serializable,GradientUpdater {
         return ret;
     }
 
+    @Override
+    public void combineUpdaters(GradientUpdater... updaters) {
+        if(updaters == null || updaters.length == 0) return;
+        //Average rho, msg, msdx
+        double rhoSum = rho;
+        for(GradientUpdater u : updaters){
+            if(!(u instanceof AdaDelta)) throw new UnsupportedOperationException("Cannot combine AdaDelta updater with other updater: " + u);
+            AdaDelta a = (AdaDelta)u;
+            rhoSum += a.rho;
+            msg.addi(a.msg);
+            msdx.addi(a.msdx);
+        }
+        this.rho = rhoSum / (updaters.length + 1);
+        msg.divi(updaters.length + 1);
+        msdx.divi(updaters.length + 1);
+    }
 
 }

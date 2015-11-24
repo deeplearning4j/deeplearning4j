@@ -46,4 +46,24 @@ public class RmsProp implements GradientUpdater {
         
         return ret;
     }
+
+    @Override
+    public void combineUpdaters(GradientUpdater... updaters) {
+        if(updaters == null || updaters.length == 0) return;
+        //Average learning rates & rmsDecay: this usually won't be necessary, but might be used in some cases
+        //(slightly different schedules, etc). Done mainly for consistency.
+        //And: average historical/stored gradients
+        double lrSum = learningRate;
+        double rmsDecaySum = rmsDecay;
+        for(GradientUpdater u : updaters){
+            if(!(u instanceof RmsProp)) throw new UnsupportedOperationException("Cannot combine RmsProp updater with other updater: " + u);
+            RmsProp r = (RmsProp)u;
+            lrSum += r.learningRate;
+            rmsDecaySum += r.rmsDecay;
+            lastGradient.addi(r.lastGradient);
+        }
+        this.learningRate = lrSum / (updaters.length+1);
+        this.rmsDecay = rmsDecaySum / (updaters.length+1);
+        lastGradient.divi(updaters.length+1);
+    }
 }

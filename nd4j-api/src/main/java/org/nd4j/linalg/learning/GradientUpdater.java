@@ -31,5 +31,9 @@ public interface GradientUpdater extends Serializable {
      */
     INDArray getGradient(INDArray gradient, int iteration);
 
-
+    /** Given this updater, combine the current state (if any) with the state of the other updaters.
+     * For example, average the internal state of the updaters. Typically used in distributed learning scenarios
+     * @param updaters Other updaters to combine with this one
+     */
+    void combineUpdaters(GradientUpdater... updaters);
 }

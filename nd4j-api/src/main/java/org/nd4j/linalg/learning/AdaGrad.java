@@ -168,5 +168,25 @@ public class AdaGrad implements Serializable,GradientUpdater {
         }
     }
 
+    @Override
+    public void combineUpdaters(GradientUpdater... updaters) {
+        if(updaters == null || updaters.length == 0) return;
+        //Average learning rates: this usually won't be necessary, but might be used in some cases
+        //(slightly different schedules, etc). Done mainly for consistency.
+        //Average v
+        double lrSum = learningRate;
+        long numIterSum = numIterations;
+        for(GradientUpdater u : updaters){
+            if(!(u instanceof AdaGrad)) throw new UnsupportedOperationException("Cannot combine AdaGrad updater with other updater: " + u);
+            AdaGrad a = (AdaGrad)u;
+
+            lrSum += a.learningRate;
+            numIterSum += a.numIterations;
+            historicalGradient.addi(a.historicalGradient);
+        }
+        this.learningRate = lrSum / (updaters.length+1);
+        this.numIterations = (int)(numIterSum / (updaters.length+1));
+        historicalGradient.divi(updaters.length+1);
+    }
 
 }
