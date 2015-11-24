@@ -76,7 +76,9 @@ public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>
         }
 
         DataSet data = DataSet.merge(collect,false);
-        log.debug("Training on " + data.labelCounts());
+        if(log.isDebugEnabled()) {
+            log.debug("Training on {} examples with data {}",data.numExamples(), data.labelCounts());
+        }
         MultiLayerNetwork network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(json));
         network.init();
         network.setListeners(new ScoreIterationListener(1), new BestScoreIterationListener(best_score_acc));
