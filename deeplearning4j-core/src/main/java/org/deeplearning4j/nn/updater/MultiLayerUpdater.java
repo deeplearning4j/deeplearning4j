@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.learning.GradientUpdater;
 
 /**MultiLayerUpdater: Gradient updater for MultiLayerNetworks.
  * Expects backprop gradients for all layers to be in single Gradient object,
@@ -51,4 +52,18 @@ public class MultiLayerUpdater implements Updater {
 		}
 	}
 
+	@Override
+	public void combineUpdaters(Updater... other) {
+		if(other == null || other.length == 0) return;
+		for( int i=0; i<layerUpdaters.length; i++ ){
+
+			Updater[] otherLayerUpdaters = new Updater[other.length];
+
+			for( int j=0; j<other.length; j++ ){
+				otherLayerUpdaters[j] = ((MultiLayerUpdater)other[j]).layerUpdaters[i];
+			}
+
+			layerUpdaters[i].combineUpdaters(otherLayerUpdaters);
+		}
+	}
 }
