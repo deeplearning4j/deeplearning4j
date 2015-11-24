@@ -23,7 +23,8 @@ By following the [instructions on our Quick Start page](../quickstart.html), you
 
 * A versatile [n-dimensional array](http://nd4j.org/) class.
 * [GPU](http://nd4j.org/gpu_native_backends.html) integration
-* [Scalable](../scaleout.html) on [Hadoop](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/hadoop-yarn), [Spark](../gpu_aws.html) and Akka + AWS et al
+* [Scalable](../spark.html) on [Hadoop](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/hadoop-yarn), [Spark](../gpu_aws.html)
+* [Canova](../canova.html): A General vectorization tool for Machine-Learning libs
 * [ND4J: A linear algebra library 2x as fast as Numpy](http://nd4j.org/benchmarking)
 
 Deeplearning4j includes both a distributed, multi-threaded deep-learning framework and a normal single-threaded deep-learning framework. Training takes place in the cluster, which means it can process massive amounts of data quickly. Nets are trained in parallel via [iterative reduce](../iterativereduce.html), and they are equally compatible with **Java**, **[Scala](http://nd4j.org/scala.html)** and **[Clojure](https://github.com/wildermuthn/d4lj-iris-example-clj/blob/master/src/dl4j_clj_example/core.clj)**. Deeplearning4j's role as a modular component in an open stack makes it the first deep-learning framework adapted for a [micro-service architecture](http://microservices.io/patterns/microservices.html).
