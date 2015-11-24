@@ -37,10 +37,11 @@ Without the engagement of Skymind customers and the generous backing of [Tencent
 
 | Name    | [Gitter Id](gitter.im/deeplearning4j/deeplearning4j) | Org | Time Zone
 | ------------- |:-------------:| :-----:| :-----:|-----:|
-| Alex Black  |  AlexDBlack |  NA | GMT +10 |
+| Alex Black  |  AlexDBlack | [Skymind](http://skymind.io) | GMT +10 |
 | Suneel Marthi  |  smarthi | Red Hat  | GMT -5 |
 | Kai Sasake  |  Lewuathe | Yahoo! Japan | GMT +9 |
 | Taisuke Oe  |  taisukeoe | Japan Scala Association  | GMT +9 |
+| raver119  |  raver119 | NA | GMT +2 |
 | Jeffrey Tang | jyt109 | [Skymind](http://skymind.io) | GMT -8 |
 | Melanie Warrick | nyghtowl  | [Skymind](http://skymind.io) | GMT -8 |
 | Eron Wright  |  EronWright | EMC  | GMT -8 |
