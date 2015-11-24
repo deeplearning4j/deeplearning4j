@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.updater;
 
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.Updater;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.GradientUpdater;
 
@@ -25,7 +26,7 @@ public class NoOpUpdater extends BaseUpdater {
 	private static class NoOpGradientUpdater implements GradientUpdater {
 		@Override
 		public void update(Object... args) {
-
+			//No op
 		}
 
 		@Override
@@ -33,5 +34,11 @@ public class NoOpUpdater extends BaseUpdater {
 			return gradient;
 		}
 
+		@Override
+		public void combineUpdaters(GradientUpdater... updaters) {
+			//No op
+		}
 	}
+
+
 }
