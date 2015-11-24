@@ -41,7 +41,7 @@ Without the engagement of Skymind customers and the generous backing of [Tencent
 | Suneel Marthi  |  smarthi | Red Hat  | GMT -5 |
 | Kai Sasake  |  Lewuathe | Yahoo! Japan | GMT +9 |
 | Taisuke Oe  |  taisukeoe | Japan Scala Association  | GMT +9 |
-| raver119  |  raver119 | NA | GMT +2 |
+| NA  |  raver119 | NA | GMT +2 |
 | Jeffrey Tang | jyt109 | [Skymind](http://skymind.io) | GMT -8 |
 | Melanie Warrick | nyghtowl  | [Skymind](http://skymind.io) | GMT -8 |
 | Eron Wright  |  EronWright | EMC  | GMT -8 |
