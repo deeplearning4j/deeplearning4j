@@ -19,4 +19,10 @@ public interface Updater extends Serializable {
      */
     void update(Layer layer, Gradient gradient, int iteration, int miniBatchSize);
 
+    /** Given this updater, combine the current state (if any) with the state of the other updaters.
+     * For example, average the internal state of the updaters.
+      * @param other Other updaters to combine with this one
+     */
+    void combineUpdaters(Updater... other);
+
 }

@@ -167,4 +167,19 @@ public abstract class BaseUpdater implements Updater {
 
     public abstract GradientUpdater init(String variable, INDArray gradient, Layer layer);
 
+    @Override
+    public void combineUpdaters(Updater... other) {
+        if(other == null || other.length == 0) return;
+        for(Map.Entry<String,GradientUpdater> entry : updaterForVariable.entrySet()){
+            String key = entry.getKey();
+
+            GradientUpdater[] gUpd = new GradientUpdater[other.length];
+
+            for( int i=0; i<other.length; i++ ) {
+                BaseUpdater bu = ((BaseUpdater)other[i]);
+                gUpd[i] = bu.updaterForVariable.get(key);
+            }
+            entry.getValue().combineUpdaters(gUpd);
+        }
+    }
 }
