@@ -165,7 +165,7 @@ public class SparkDl4jMultiLayer implements Serializable {
      */
     public MultiLayerNetwork fit(JavaRDD<LabeledPoint> rdd,int batchSize) {
         FeedForwardLayer outputLayer = (FeedForwardLayer) conf.getConf(conf.getConfs().size() - 1).getLayer();
-        return fitDataSet(MLLibUtil.fromLabeledPoint(rdd, outputLayer.getNOut(),batchSize));
+        return fitDataSet(MLLibUtil.fromLabeledPoint(rdd, outputLayer.getNOut(), batchSize));
     }
 
 
@@ -182,6 +182,47 @@ public class SparkDl4jMultiLayer implements Serializable {
         return fitDataSet(MLLibUtil.fromLabeledPoint(sc, rdd, outputLayer.getNOut()));
     }
 
+    /**Fit the data, splitting into smaller data subsets if necessary. This allows large {@code JavaRDD<DataSet>}s)
+     * to be trained as a set of smaller steps instead of all together.<br>
+     * Using this method, training progresses as follows:<br>
+     * train on {@code examplesPerFit} examples -> average parameters -> train on {@code examplesPerFit} -> average
+     * parameters etc until entire data set has been processed<br>
+     * <em>Note</em>: The actual number of splits for the input data is based on rounding up.<br>
+     * Suppose {@code examplesPerFit}=1000, with {@code rdd.count()}=1200. Then, we round up to 2000 examples, and the
+     * network will then be fit in two steps (as 2000/1000=2), with 1200/2=600 examples at each step. These 600 examples
+     * will then be distributed approximately equally (no guarantees) amongst each executor/core for training.
+     *
+     * @param rdd Data to train on
+     * @param examplesPerFit Number of examples to learn on (between averaging) across all executors. For example, if set to
+     *                       1000 and rdd.count() == 10k, then we do 10 sets of learning, each on 1000 examples.
+     *                       To use all examples, set maxExamplesPerFit to Integer.MAX_VALUE
+     * @return Trained network
+     */
+    public MultiLayerNetwork fitDataSet(JavaRDD<DataSet> rdd, int examplesPerFit ){
+        int nSplits;
+        if(examplesPerFit == Integer.MAX_VALUE) nSplits = 1;
+        else {
+            long nExamples = rdd.count();
+            if(nExamples%examplesPerFit==0){
+                nSplits = (int)(nExamples / examplesPerFit);
+            } else {
+                nSplits = (int)(nExamples / examplesPerFit) + 1;
+            }
+        }
+
+        if(nSplits == 1){
+            fitDataSet(rdd);
+        } else {
+            double[] splitWeights = new double[nSplits];
+            for( int i=0; i<nSplits; i++ ) splitWeights[i] = 1.0 / nSplits;
+            JavaRDD<DataSet>[] subsets = rdd.randomSplit(splitWeights);
+            for( int i=0; i<subsets.length; i++ ){
+                log.info("Initiating distributed training of subset {} of {}",(i+1),subsets.length);
+                fitDataSet(subsets[i]);
+            }
+        }
+        return network;
+    }
 
     /**
      * Fit the dataset rdd
