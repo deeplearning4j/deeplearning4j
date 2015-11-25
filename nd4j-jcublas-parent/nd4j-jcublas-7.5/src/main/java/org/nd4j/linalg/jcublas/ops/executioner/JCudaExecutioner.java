@@ -65,6 +65,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(Accumulation op, int... dimension) {
+        ContextHolder.getInstance().setContext();
         for(int i = 0; i < dimension.length; i++) {
             if(dimension[i] < 0)
                 dimension[i] += op.x().rank();
@@ -144,6 +145,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray execAndReturn(TransformOp op, int... dimension) {
+        ContextHolder.getInstance().setContext();
         return super.execAndReturn(op, dimension);
     }
 
@@ -151,11 +153,13 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray execAndReturn(ScalarOp op, int... dimension) {
+        ContextHolder.getInstance().setContext();
         return super.execAndReturn(op, dimension);
     }
 
     @Override
     public Op exec(Op op, int... dimension) {
+        ContextHolder.getInstance().setContext();
         return super.exec(op, dimension);
     }
 

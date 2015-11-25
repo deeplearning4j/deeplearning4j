@@ -11,7 +11,6 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.DataTypeValidation;
 import org.nd4j.linalg.jcublas.CublasPointer;
-import org.nd4j.linalg.jcublas.SimpleJCublas;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
@@ -51,7 +50,12 @@ public class JcublasLevel1 extends BaseLevel1 {
                 incY, result);
 
         ctx.finishBlasOperation();
-
+        try {
+            xCPointer.close();
+            yCPointer.close();
+        }catch(Exception e) {
+            throw new RuntimeException(e);
+        }
 
         return ret[0];
     }
@@ -71,18 +75,18 @@ public class JcublasLevel1 extends BaseLevel1 {
         CublasPointer yCPointer = new CublasPointer(Y,ctx);
 
         JCublas2.cublasDdot(
-                ContextHolder.getInstance().getHandle(),
+                ctx.getHandle(),
                 N,
                 xCPointer.getDevicePointer(),
                 incX
                 , yCPointer.getDevicePointer(),
                 incY, result);
-        ctx.finishBlasOperation();
         try {
             xCPointer.close();
             yCPointer.close();
+            ctx.finishBlasOperation();
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
         return ret[0];
     }
@@ -125,16 +129,16 @@ public class JcublasLevel1 extends BaseLevel1 {
         float[] ret = new float[1];
         Pointer result = Pointer.to(ret);
         JCublas2.cublasSnrm2(
-                ContextHolder.getInstance().getHandle()
+                ctx.getHandle()
                 ,N
                 ,cAPointer.getDevicePointer(),
                 incX
                 , result);
-        ctx.finishBlasOperation();
         try {
             cAPointer.close();
+            ctx.finishBlasOperation();
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
         return ret[0];
     }
@@ -145,12 +149,12 @@ public class JcublasLevel1 extends BaseLevel1 {
         CublasPointer xCPointer = new CublasPointer(X,ctx);
         float[] ret = new float[1];
         Pointer result = Pointer.to(ret);
-        JCublas2.cublasScasum(ContextHolder.getInstance().getHandle(), N, xCPointer.getDevicePointer(), incX, result);
-        ctx.finishBlasOperation();
+        JCublas2.cublasSasum(ctx.getHandle(), N, xCPointer.getDevicePointer(), incX, result);
         try {
             xCPointer.close();
+            ctx.finishBlasOperation();
         } catch (Exception e) {
-            e.printStackTrace();
+           throw new RuntimeException(e);
         }
         return ret[0];
     }
@@ -169,16 +173,16 @@ public class JcublasLevel1 extends BaseLevel1 {
         CublasPointer cAPointer = new CublasPointer(X,ctx);
 
         JCublas2.cublasDnrm2(
-                ContextHolder.getInstance().getHandle()
+                ctx.getHandle()
                 , N,
                 cAPointer.getDevicePointer()
                 , incX
                 , result);
-        ctx.finishBlasOperation();
         try {
             cAPointer.close();
+            ctx.finishBlasOperation();
         } catch (Exception e) {
-            e.printStackTrace();
+           throw new RuntimeException(e);
         }
         return ret[0];
     }
@@ -189,12 +193,18 @@ public class JcublasLevel1 extends BaseLevel1 {
         CublasPointer xCPointer = new CublasPointer(X,ctx);
         float[] ret = new float[1];
         Pointer result = Pointer.to(ret);
-        JCublas2.cublasDasum(ContextHolder.getInstance().getHandle(), N, xCPointer.getDevicePointer(), incX, result);
-        ctx.finishBlasOperation();
+        JCublas2.cublasDasum(
+                ctx.getHandle()
+                , N,
+                xCPointer.getDevicePointer(),
+                incX,
+                result);
         try {
+
             xCPointer.close();
+            ctx.finishBlasOperation();
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
         return ret[0];
     }
@@ -211,11 +221,11 @@ public class JcublasLevel1 extends BaseLevel1 {
         float[] ret = new float[1];
         Pointer result = Pointer.to(ret);
         JCublas2.cublasScnrm2(ContextHolder.getInstance().getHandle(), N, xCPointer.getDevicePointer(), incX, result);
-        ctx.finishBlasOperation();
         try {
             xCPointer.close();
+            ctx.finishBlasOperation();
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
         return ret[0];
     }
@@ -226,12 +236,17 @@ public class JcublasLevel1 extends BaseLevel1 {
         CublasPointer xCPointer = new CublasPointer(X,ctx);
         float[] ret = new float[1];
         Pointer result = Pointer.to(ret);
-        JCublas2.cublasScasum(ContextHolder.getInstance().getHandle(), N, xCPointer.getDevicePointer(), incX, result);
-        ctx.finishBlasOperation();
+        JCublas2.cublasScasum(
+                ctx.getHandle()
+                , N
+                , xCPointer.getDevicePointer()
+                , incX
+                , result);
         try {
             xCPointer.close();
+            ctx.finishBlasOperation();
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
         return ret[0];
     }
@@ -243,11 +258,11 @@ public class JcublasLevel1 extends BaseLevel1 {
         double[] ret = new double[1];
         Pointer result = Pointer.to(ret);
         JCublas2.cublasDznrm2(ContextHolder.getInstance().getHandle(), N, xCPointer.getDevicePointer(), incX, result);
-        ctx.finishBlasOperation();
         try {
             xCPointer.close();
+            ctx.finishBlasOperation();
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
         return ret[0];
     }
@@ -259,11 +274,11 @@ public class JcublasLevel1 extends BaseLevel1 {
         double[] ret = new double[1];
         Pointer result = Pointer.to(ret);
         JCublas2.cublasDzasum(ContextHolder.getInstance().getHandle(), N, xCPointer.getDevicePointer(), incX, result);
-        ctx.finishBlasOperation();
         try {
             xCPointer.close();
+            ctx.finishBlasOperation();
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
         return ret[0];
     }
@@ -277,9 +292,9 @@ public class JcublasLevel1 extends BaseLevel1 {
                 N,
                 xCPointer.getDevicePointer(),
                 incX);
-        ctx.finishBlasOperation();
         try {
             xCPointer.close();
+            ctx.finishBlasOperation();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -300,11 +315,11 @@ public class JcublasLevel1 extends BaseLevel1 {
                 N,
                 xCPointer.getDevicePointer(),
                 incX);
-        ctx.finishBlasOperation();
         try {
             xCPointer.close();
+            ctx.finishBlasOperation();
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
         return  ret2 - 1;
     }
@@ -358,14 +373,16 @@ public class JcublasLevel1 extends BaseLevel1 {
                 incX,
                 yCPointer.getDevicePointer(),
                 incY);
-        ctx.finishBlasOperation();
+        yCPointer.copyToHost();
+
         try {
             xCPointer.close();
             yCPointer.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
-        yCPointer.copyToHost();
+        ctx.finishBlasOperation();
+
     }
 
     @Override
@@ -452,10 +469,10 @@ public class JcublasLevel1 extends BaseLevel1 {
                 incY);
 
         yCPointer.copyToHost();
-        ctx.finishBlasOperation();
         try {
             xCPointer.close();
             yCPointer.close();
+            ctx.finishBlasOperation();
         }catch (Exception e) {
             e.printStackTrace();
         }
@@ -479,10 +496,10 @@ public class JcublasLevel1 extends BaseLevel1 {
 
 
         yCPointer.copyToHost();
-        ctx.finishBlasOperation();
         try {
             xCPointer.close();
             yCPointer.close();
+            ctx.finishBlasOperation();
         }catch (Exception e) {
             e.printStackTrace();
         }
@@ -557,7 +574,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
 
         JCublas2.cublasCaxpy(
-                ContextHolder.getInstance().getHandle(),
+                ctx.getHandle(),
                 N,
                 PointerUtil.getPointer(jcuda.cuComplex.cuCmplx(alpha.realComponent().floatValue(), alpha.imaginaryComponent().floatValue())),
                 aCPointer.getDevicePointer(),
@@ -707,7 +724,7 @@ public class JcublasLevel1 extends BaseLevel1 {
         CublasPointer xCPointer = new CublasPointer(X,ctx);
 
         JCublas2.cublasCscal(
-                ContextHolder.getInstance().getHandle(),
+                ctx.getHandle(),
                 N,
                 PointerUtil.getPointer(jcuda.cuComplex.cuCmplx(alpha.realComponent(), alpha.imaginaryComponent())),
                 xCPointer.getDevicePointer(),
@@ -726,7 +743,7 @@ public class JcublasLevel1 extends BaseLevel1 {
         CublasPointer xCPointer = new CublasPointer(X,ctx);
 
         JCublas2.cublasZscal(
-                ContextHolder.getInstance().getHandle(),
+                ctx.getHandle(),
                 N,
                 PointerUtil.getPointer(jcuda.cuDoubleComplex.cuCmplx(alpha.realComponent(), alpha.imaginaryComponent())),
                 xCPointer.getDevicePointer(),

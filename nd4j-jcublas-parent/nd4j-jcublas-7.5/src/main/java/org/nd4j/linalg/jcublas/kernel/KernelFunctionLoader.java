@@ -26,6 +26,7 @@ import jcuda.utils.KernelLauncher;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
 import org.slf4j.Logger;
@@ -280,6 +281,8 @@ public class KernelFunctionLoader {
 
 
     private void loadModules(String[] split,String kernelPath) throws Exception {
+        ContextHolder.getInstance().setContext();
+
         for (String module : split) {
             log.debug("Loading " + module);
             String path = kernelPath  +  module + ".cubin";

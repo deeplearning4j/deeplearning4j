@@ -272,7 +272,6 @@ public class KernelParamsWrapper implements AutoCloseable {
      */
     public void sync() {
         context.syncStream();
-        JCuda.cudaDeviceSynchronize();
     }
 
 
