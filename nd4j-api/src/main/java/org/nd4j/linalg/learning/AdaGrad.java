@@ -169,24 +169,52 @@ public class AdaGrad implements Serializable,GradientUpdater {
     }
 
     @Override
-    public void combineUpdaters(GradientUpdater... updaters) {
-        if(updaters == null || updaters.length == 0) return;
-        //Average learning rates: this usually won't be necessary, but might be used in some cases
-        //(slightly different schedules, etc). Done mainly for consistency.
-        //Average v
-        double lrSum = learningRate;
-        long numIterSum = numIterations;
-        for(GradientUpdater u : updaters){
-            if(!(u instanceof AdaGrad)) throw new UnsupportedOperationException("Cannot combine AdaGrad updater with other updater: " + u);
-            AdaGrad a = (AdaGrad)u;
-
-            lrSum += a.learningRate;
-            numIterSum += a.numIterations;
-            historicalGradient.addi(a.historicalGradient);
-        }
-        this.learningRate = lrSum / (updaters.length+1);
-        this.numIterations = (int)(numIterSum / (updaters.length+1));
-        historicalGradient.divi(updaters.length+1);
+    public GradientUpdaterAggregator getAggregator(boolean addThis){
+        AdaGradAggregator ag = new AdaGradAggregator();
+        if(addThis) ag.aggregate(this);
+        return ag;
     }
 
+    public static class AdaGradAggregator implements GradientUpdaterAggregator {
+        private INDArray historicalGradientSum;
+        private double lrSum;
+        private long numIterationsSum = 0;
+        private int count = 0;
+
+        @Override
+        public GradientUpdater getUpdater() {
+            AdaGrad adaGrad = new AdaGrad(lrSum/count);
+            adaGrad.setHistoricalGradient(historicalGradientSum.div(count));
+            adaGrad.setNumIterations((int)(numIterationsSum/count));
+            return adaGrad;
+        }
+
+        @Override
+        public void aggregate(GradientUpdater updater) {
+            if(!(updater instanceof AdaGrad)) throw new UnsupportedOperationException("Cannot aggregate AdaGrad with updater: " + updater);
+            AdaGrad adagrad = (AdaGrad)updater;
+            if(historicalGradientSum ==null){
+                historicalGradientSum = adagrad.historicalGradient.dup();
+                lrSum = adagrad.learningRate;
+                numIterationsSum = adagrad.numIterations;
+            } else {
+                historicalGradientSum.addi(adagrad.historicalGradient);
+                lrSum += adagrad.learningRate;
+                numIterationsSum += adagrad.numIterations;
+            }
+            count++;
+        }
+
+        @Override
+        public GradientUpdaterAggregator combine(GradientUpdaterAggregator other) {
+            if(!(other instanceof AdaGradAggregator))
+                throw new IllegalArgumentException("Cannot combine AdaGradAggregator with aggregator: " + other);
+            AdaGradAggregator aggregator = (AdaGradAggregator)other;
+            historicalGradientSum.addi(aggregator.historicalGradientSum);
+            lrSum += aggregator.lrSum;
+            numIterationsSum += aggregator.numIterationsSum;
+            count += aggregator.count;
+            return this;
+        }
+    }
 }

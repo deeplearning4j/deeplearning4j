@@ -63,23 +63,51 @@ public class Nesterovs implements Serializable,GradientUpdater {
     }
 
     @Override
-    public void combineUpdaters(GradientUpdater... updaters) {
-        if(updaters == null || updaters.length == 0) return;
-        //Average learning rates: this usually won't be necessary, but might be used in some cases
-        //(slightly different schedules, etc). Done mainly for consistency.
-        //Average v
-        double lrSum = learningRate;
-        double momentumSum = momentum;
-        for(GradientUpdater u : updaters){
-            if(!(u instanceof Nesterovs)) throw new UnsupportedOperationException("Cannot combine Nesterovs updater with other updater: " + u);
-            Nesterovs n = (Nesterovs)u;
-            lrSum += n.learningRate;
-            momentumSum += n.momentum;
-            v.addi(n.v);
-        }
-        this.learningRate = lrSum / (updaters.length+1);
-        this.momentum = momentumSum / (updaters.length+1);
-        v.divi(updaters.length+1);
+    public GradientUpdaterAggregator getAggregator(boolean addThis){
+        NesterovsAggregator ag = new NesterovsAggregator();
+        if(addThis) ag.aggregate(this);
+        return ag;
     }
 
+    public static class NesterovsAggregator implements GradientUpdaterAggregator {
+        private INDArray vSum;
+        private double lrSum;
+        private double momentumSum;
+        private int count = 0;
+
+        @Override
+        public GradientUpdater getUpdater() {
+            Nesterovs nesterovs = new Nesterovs(momentumSum/count,lrSum/count);
+            nesterovs.setV(vSum.div(count));
+            return nesterovs;
+        }
+
+        @Override
+        public void aggregate(GradientUpdater updater) {
+            if(!(updater instanceof Nesterovs)) throw new UnsupportedOperationException("Cannot aggregate Nesterovs with updater: " + updater);
+            Nesterovs nesterovs = (Nesterovs)updater;
+            if(vSum == null){
+                vSum = nesterovs.v.dup();
+                lrSum = nesterovs.learningRate;
+                momentumSum = nesterovs.momentum;
+            } else {
+                vSum.addi(nesterovs.v);
+                lrSum += nesterovs.learningRate;
+                momentumSum += nesterovs.momentum;
+            }
+            count++;
+        }
+
+        @Override
+        public GradientUpdaterAggregator combine(GradientUpdaterAggregator other) {
+            if(!(other instanceof NesterovsAggregator))
+                throw new IllegalArgumentException("Cannot combine NesterovsAggregator with aggregator: " + other);
+            NesterovsAggregator aggregator = (NesterovsAggregator)other;
+            vSum.addi(aggregator.vSum);
+            lrSum += aggregator.lrSum;
+            momentumSum += aggregator.momentumSum;
+            count += aggregator.count;
+            return this;
+        }
+    }
 }
