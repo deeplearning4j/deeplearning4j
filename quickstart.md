@@ -15,9 +15,9 @@ This Quick Start guide assumes that you have the following already installed:
 3. Maven (Automated build tool)
 4. Github 
  
-If you need to install any of the above, please read how in the [ND4J Getting Started guide](http://nd4j.org/getstarted.html).  (ND4J is the linear-algebra engine behind Deeplearning4j, and the instructions there apply to both projects.) Don't install everything listed on the page, just the software listed above. 
+If you need to install any of the above, please read the [ND4J Getting Started guide](http://nd4j.org/getstarted.html). (ND4J is the linear-algebra engine behind Deeplearning4j, and instructions there apply to both projects.) For the examples, don't install everything listed on that page, just the software listed above. 
 
-We highly recommend you join our [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) if you have questions or feedback. Even if you're feeling anti-social or brashly independent, feel free to lurk and learn. In addition, if you are utterly new to deep learning, we've included [a road map of what to learn when you're starting out](../deeplearningforbeginners.html). 
+We recommend you join our [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) if you have questions or feedback. Even if you're feeling anti-social, feel free to lurk and learn. In addition, if you are brand-new to deep learning, we've included [a road map of what to learn when you're starting out](../deeplearningforbeginners.html). 
 
 ## DL4J in a Few Easy Steps
 
@@ -90,9 +90,9 @@ A [Scala version of the examples is here](https://github.com/kogecoo/dl4j-0.4-ex
 
 ## Next Steps
 
-Once you've run the examples, please visit our [Getting Started page](../gettingstarted.html) to explore further. 
+Once you've run the examples, please visit our [Full Installation page](../gettingstarted.html) to explore further. 
 
-## <a name="walk">Walkthrough</a>
+## <a name="walk">Step-by-Step Walkthrough</a>
 
 * Type the following into your command line to see if you have Git.
 
