@@ -319,7 +319,6 @@ public class CublasPointer  implements AutoCloseable {
                     , BlasBufferUtil.getBlasStride(arr)
                     , Pointer.to(set)
                     , 1, cudaContext.getOldStream());
-            ContextHolder.syncStream();
             sb.append(Arrays.toString(set));
         }
         else {
@@ -331,7 +330,7 @@ public class CublasPointer  implements AutoCloseable {
                     , BlasBufferUtil.getBlasStride(arr)
                     , Pointer.to(set)
                     , 1, cudaContext.getOldStream());
-            ContextHolder.syncStream();
+            cudaContext.syncOldStream();
             sb.append(Arrays.toString(set));
         }
     }

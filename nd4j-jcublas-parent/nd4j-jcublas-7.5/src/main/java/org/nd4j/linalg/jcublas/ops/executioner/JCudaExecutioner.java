@@ -306,7 +306,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
         GpuMetrics metrics = GpuMetrics.blockAndThreads(getType(op),op.n());
-        if(dimension != null) {
+        if(dimension != null  && dimension.length >= 1 && dimension[0] != Integer.MAX_VALUE) {
             int length = op.x().tensorssAlongDimension(dimension);
             if(length > 1000)
                 length = 1000;
@@ -320,8 +320,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         }
 
         else {
-            metrics.setGridSize(op.x().data().length());
-            metrics.setBlockSize(1024);
+            metrics.setGridSizeNotOverMax(op.x().data().length());
+            metrics.setBlockSizeNotOverMax(1024);
             metrics.setSharedMemoryNotOverMax(metrics.getBlockSize() * op.x().data().getElementSize());
         }
 

@@ -360,10 +360,10 @@ public class ContextHolder {
     public static void syncStream() {
         getInstance().setContext();
         //old api
-        JCublas2.cublasSetStream(getInstance().getHandle(), getInstance().getCudaStream());
-        JCuda.cudaStreamSynchronize(getInstance().getCudaStream());
+      //  JCublas2.cublasSetStream(getInstance().getHandle(), getInstance().getCudaStream());
+     //   JCuda.cudaStreamSynchronize(getInstance().getCudaStream());
         //new api
-        JCudaDriver.cuStreamSynchronize(getInstance().getStream());
+       // JCudaDriver.cuStreamSynchronize(getInstance().getStream());
     }
 
     /**

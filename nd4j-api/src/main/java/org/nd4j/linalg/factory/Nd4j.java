@@ -499,7 +499,7 @@ public class Nd4j {
     }
 
     /** Get the task factory */
-    public static TaskFactory getTaskFactory(){
+    public static TaskFactory getTaskFactory() {
         return TASK_FACTORY_INSTANCE;
     }
 

@@ -112,6 +112,7 @@ public class KernelFunctions {
                 .setGridSize(metrics.getGridSize(),1,1).setStream(cudaContext.getStream())
                 .setSharedMemSize(sharedMemSize)
                 .call(kernelParameters);
+        cudaContext.startNewEvent();
         if(sync)
             cudaContext.syncStream();
 

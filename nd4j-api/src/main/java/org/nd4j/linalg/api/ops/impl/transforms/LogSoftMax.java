@@ -147,8 +147,10 @@ public class LogSoftMax extends BaseTransformOp {
             Nd4j.getExecutioner().exec(new Log(logRowSumExp));
 
             INDArray logsoftmax = xMinusRowMax.subiColumnVector(logRowSumExp);
-            if(this.z != null) z.assign(logsoftmax);
-            else this.z = logsoftmax;
+            if(this.z != null)
+                z.assign(logsoftmax);
+            else
+                this.z = logsoftmax;
         }
         else if(x.isVector()) {
            double max = x.maxNumber().doubleValue();
