@@ -17,4 +17,31 @@ By the same token, deep-belief networks are created as a `MultiLayerNetwork` tha
 
 ## Just Give Me the Code
 
- <script src="https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/autoencoder/StackedAutoEncoderMnistExample.java?slice=44:73"></script>
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+           .seed(seed)
+           .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
+           .gradientNormalizationThreshold(1.0)
+           .iterations(iterations)
+           .momentum(0.5)
+           .momentumAfter(Collections.singletonMap(3, 0.9))
+           .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+           .list(4)
+           .layer(0, new AutoEncoder.Builder().nIn(numRows * numColumns).nOut(500)
+                   .weightInit(WeightInit.XAVIER).lossFunction(LossFunction.RMSE_XENT)
+                   .corruptionLevel(0.3)
+                   .build())
+                .layer(1, new AutoEncoder.Builder().nIn(500).nOut(250)
+                        .weightInit(WeightInit.XAVIER).lossFunction(LossFunction.RMSE_XENT)
+                        .corruptionLevel(0.3)
+
+                        .build())
+                .layer(2, new AutoEncoder.Builder().nIn(250).nOut(200)
+                        .weightInit(WeightInit.XAVIER).lossFunction(LossFunction.RMSE_XENT)
+                        .corruptionLevel(0.3)
+                        .build())
+                .layer(3, new OutputLayer.Builder(LossFunction.NEGATIVELOGLIKELIHOOD).activation("softmax")
+                        .nIn(200).nOut(outputNum).build())
+           .pretrain(true).backprop(false)
+                .build();
+
