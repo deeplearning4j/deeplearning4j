@@ -7,6 +7,19 @@ layout: default
 
 Deeplearning4j is not the first open-source deep-learning project, but it is distinguished from its predecessors in both programming language and intent. DL4J is a JVM-based, industry-focused, commercially supported, **distributed deep-learning framework** intended to solve problems involving massive amounts of data in a reasonable amount of time. It integrates with Hadoop and Spark using an arbitrary number of GPUs or CPUs, and it has [a number you can call](http://www.skymind.io/contact/) if anything breaks. 
 
+Content
+
+* <a href="#tensorflow">TensorFlow</a>
+* <a href="#theano">Theano, Pylearn2 & Ecosystem</a>
+* <a href="#torch">Torch</a>
+* <a href="#caffe">Caffe</a>
+* <a href="#licensing">Licensing</a>
+* <a href="#speed">Speed</a>
+* <a href="#java">DL4J: Why Java?</a>
+* <a href="#ecosystem">DL4J: Ecosystem</a>
+* <a href="#scala">DL4S: Deep Learning in Scala</a>
+* <a href="#ml">Machine-Learning Frameworks</a>
+
 ### TensorFlow
 
 * For the moment, TensorFlow does not support so-called “inline” matrix operations, but forces you to copy a matrix in order to perform an operation on it. Copying very large matrices is costly in every sense. TF takes 4x as long as the state of the art deep learning tools. Google says it’s working on the problem. 
@@ -79,6 +92,7 @@ To really understand the differences between DL4J and other frameworks, you may 
 ### Machine-learning frameworks
 
 The deep-learning frameworks listed above are more specialized than general machine-learning frameworks, of which there are many. We'll list the major ones here:
+
 * [sci-kit learn](http://scikit-learn.org/stable/) - the default open-source machine-learning framework for Python. 
 * [SystemML](https://sparktc.github.io/systemml/quick-start-guide.html) - IBM's machine-learning framework, which performs Descriptive Statistics, Classification, Clustering, Regression, Matrix Factorization, and Survival Analysis, and includes support-vector machines. 
 * [Apache Mahout](https://mahout.apache.org/users/basics/quickstart.html) - The flagship machine-learning framework on Apache. Mahout does classifications, clustering and recommendations.
