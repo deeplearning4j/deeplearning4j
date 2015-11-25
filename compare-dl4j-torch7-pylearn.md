@@ -3,9 +3,19 @@ title:
 layout: default
 ---
 
-# DL4J vs. Torch vs. Theano vs. Caffe
+# DL4J vs. Torch vs. Theano vs. Caffe vs. TensorFlow
 
 Deeplearning4j is not the first open-source deep-learning project, but it is distinguished from its predecessors in both programming language and intent. DL4J is a JVM-based, industry-focused, commercially supported, **distributed deep-learning framework** intended to solve problems involving massive amounts of data in a reasonable amount of time. It integrates with Hadoop and Spark using an arbitrary number of GPUs or CPUs, and it has [a number you can call](http://www.skymind.io/contact/) if anything breaks. 
+
+### TensorFlow
+
+* For the moment, TensorFlow does not support so-called “inline” matrix operations, but forces you to copy a matrix in order to perform an operation on it. Copying very large matrices is costly in every sense. TF takes 4x as long as the state of the art deep learning tools. Google says it’s working on the problem. 
+* Like most deep-learning frameworks, TensorFlow is written with a Python API over a C/C++ engine that makes it run fast. 
+* TensorFlow is about more than deep learning. TensorFlow actually has tools to support reinforcement learning and other algos.
+* Google's goal with TF seems to be recruiting. As you know, they recently announced the Google Brain yearlong residency. A smart move.
+* TensorFlow is not commercially supported, and it’s unlikely that Google will go into the business of supporting open-source enterprise software. It's giving a new tool to researchers. 
+* TensorFlow only runs on a single box, rather than distributed. In a single box, you can have up to 4 GPUs. 
+* Like Theano, TensforFlow generates a computational graph (e.g. a series of matrix operations such as z = simoid(x) where x and z are matrices) and performs automatic differentiation. Automatic differentiation is important because you don't want to have to hand-code a new variation of backpropagation every time you're experimenting with a new arrangement of neural networks. In Google's ecosystem, the computational graph is then used by Google Brain for the heavy lifting, but Google hasn’t open-sourced those tools yet. TensorFlow is one half of Google's in-house DL solution. 
 
 ### Theano/PyLearn2
 
