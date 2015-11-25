@@ -10,6 +10,7 @@ import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -20,6 +21,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.nn.updater.aggregate.UpdaterAggregator;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.solvers.StochasticGradientDescent;
 import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
@@ -27,6 +29,7 @@ import org.deeplearning4j.optimize.terminations.EpsTermination;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
@@ -475,5 +478,63 @@ public class TestUpdaters {
 		assertTrue(newUpdater == net.getUpdater());	//Should be identical object
 	}
 
+	@Test
+	public void testUpdaterAggregationBasic(){
+
+		Updater[] updaters = new Updater[]{
+				new AdaDeltaUpdater(),
+				new AdaGradUpdater(),
+				new AdamUpdater(),
+				new NesterovsUpdater(),
+				new NoOpUpdater(),
+				new RmsPropUpdater(),
+				new SgdUpdater(),
+		};
+
+		org.deeplearning4j.nn.conf.Updater[] arr = new org.deeplearning4j.nn.conf.Updater[]{
+				org.deeplearning4j.nn.conf.Updater.ADADELTA,
+				org.deeplearning4j.nn.conf.Updater.ADAGRAD,
+				org.deeplearning4j.nn.conf.Updater.ADAM,
+				org.deeplearning4j.nn.conf.Updater.NESTEROVS,
+				org.deeplearning4j.nn.conf.Updater.NONE,
+				org.deeplearning4j.nn.conf.Updater.RMSPROP,
+				org.deeplearning4j.nn.conf.Updater.SGD
+		};
+
+		DataSet dsTemp = new DataSet(Nd4j.rand(5,10), Nd4j.rand(5, 10));
+
+		for(int i=0; i<updaters.length; i++ ){
+
+			MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+					.optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+					.iterations(1)
+					.updater(arr[i])
+					.list(2)
+					.layer(0,new DenseLayer.Builder().nIn(10).nOut(10).build())
+					.layer(1,new OutputLayer.Builder().nIn(10).nOut(10).build())
+					.backprop(true).pretrain(false).build();
+
+			MultiLayerNetwork net = new MultiLayerNetwork(conf);
+			net.init();
+
+			net.fit(dsTemp);
+
+			Updater updater = net.getUpdater();
+
+			System.out.println(i);
+			assertNotNull(updater);
+			assertTrue(updater instanceof MultiLayerUpdater);
+
+
+			UpdaterAggregator ag = updater.getAggregator(true);
+			Updater u2 = ag.getUpdater();
+
+			assertEquals(u2,updater);
+
+			UpdaterAggregator ag2 = updater.getAggregator(true);
+			ag2.aggregate(updater);
+			assertEquals(updater,ag2.getUpdater());
+		}
+	}
 
 }
