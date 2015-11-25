@@ -413,5 +413,67 @@ public class TestUpdaters {
 	}
 
 
+	@Test
+	public void testSetGetUpdater(){
+
+		Nd4j.getRandom().setSeed(12345L);
+		int nLayers = 4;
+		double lr = 0.03;
+
+		int nIn = 4;
+		int nOut = 8;
+
+		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+				.learningRate(lr)
+				.momentum(0.6)
+				.list(nLayers)
+				.layer(0, new DenseLayer.Builder().nIn(nIn).nOut(5).updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
+				.layer(1, new DenseLayer.Builder().nIn(5).nOut(6).updater(org.deeplearning4j.nn.conf.Updater.NONE).build())
+				.layer(2, new DenseLayer.Builder().nIn(6).nOut(7).updater(org.deeplearning4j.nn.conf.Updater.ADAGRAD).build())
+				.layer(3, new OutputLayer.Builder().nIn(7).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.NESTEROVS).build())
+				.backprop(true).pretrain(false)
+				.build();
+
+		MultiLayerNetwork net = new MultiLayerNetwork(conf);
+		net.init();
+		net.fit(Nd4j.rand(5,nIn),Nd4j.rand(5,nOut));	//Fit, to initialize optimizer/updater
+
+		Updater updater = net.getUpdater();
+		assertTrue(updater instanceof MultiLayerUpdater);
+
+		Updater newUpdater = UpdaterCreator.getUpdater(net);
+		net.setUpdater(newUpdater);
+		assertTrue(newUpdater == net.getUpdater());	//Should be identical object
+	}
+
+	@Test
+	public void testSetGetUpdater2(){
+		//Same as above test, except that we are doing setUpdater on a new network
+		Nd4j.getRandom().setSeed(12345L);
+		int nLayers = 4;
+		double lr = 0.03;
+
+		int nIn = 4;
+		int nOut = 8;
+
+		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+				.learningRate(lr)
+				.momentum(0.6)
+				.list(nLayers)
+				.layer(0, new DenseLayer.Builder().nIn(nIn).nOut(5).updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
+				.layer(1, new DenseLayer.Builder().nIn(5).nOut(6).updater(org.deeplearning4j.nn.conf.Updater.NONE).build())
+				.layer(2, new DenseLayer.Builder().nIn(6).nOut(7).updater(org.deeplearning4j.nn.conf.Updater.ADAGRAD).build())
+				.layer(3, new OutputLayer.Builder().nIn(7).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.NESTEROVS).build())
+				.backprop(true).pretrain(false)
+				.build();
+
+		MultiLayerNetwork net = new MultiLayerNetwork(conf);
+		net.init();
+
+		Updater newUpdater = UpdaterCreator.getUpdater(net);
+		net.setUpdater(newUpdater);
+		assertTrue(newUpdater == net.getUpdater());	//Should be identical object
+	}
+
 
 }
