@@ -19,36 +19,48 @@
 package org.deeplearning4j.models.paragraphvectors;
 
 import akka.actor.ActorSystem;
-import com.google.common.base.Function;
+import lombok.Getter;
+import lombok.NonNull;
 import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
-import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
+import org.deeplearning4j.models.embeddings.loader.Word2VecConfiguration;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.deeplearning4j.models.word2vec.wordstore.VocabConstructor;
+import org.deeplearning4j.models.word2vec.wordstore.VocabularyHolder;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.parallel.Parallelization;
-import org.deeplearning4j.text.documentiterator.DocumentIterator;
+import org.deeplearning4j.text.documentiterator.*;
+import org.deeplearning4j.text.documentiterator.interoperability.DocumentIteratorConverter;
 import org.deeplearning4j.text.invertedindex.InvertedIndex;
-import org.deeplearning4j.text.invertedindex.LuceneInvertedIndex;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
+import org.deeplearning4j.text.sentenceiterator.interoperability.SentenceIteratorConverter;
+import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator;
+import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
+ * Basic idea behind ParagraphVectors is pretty simple: unsupervised way to learn differences/similarities between sentences/documents. It's main difference from w2v based on word order inference.
+ * There's lots of practical uses for this algorithm: QA training, social activities differentiation, sentiment analysis, etc.
+ * But please note: this algorithm requires serious hardware to be trained on large corpus since it's vocabulary size isn't limited to words, but documents are saved to vocabulary as well.
+ *
+ *
  * Paragraph Vectors:
  * [1] Quoc Le and Tomas Mikolov. Distributed Representations of Sentences and Documents. http://arxiv.org/pdf/1405.4053v2.pdf
  .. [2] Tomas Mikolov, Kai Chen, Greg Corrado, and Jeffrey Dean. Efficient Estimation of Word Representations in Vector Space. In Proceedings of Workshop at ICLR, 2013.
@@ -60,40 +72,107 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class ParagraphVectors extends Word2Vec {
     //labels are also vocab words
-    protected Queue<LinkedList<Pair<List<VocabWord>, Collection<VocabWord>>>> jobQueue = new LinkedBlockingDeque<>(10000);
-    protected List<String> labels = new CopyOnWriteArrayList<>();
+
+    protected Word2Vec existingModel;
+    protected boolean trainWordVectors = false;
+
+    /*
+        labels were replaces with LabelsSource mechanics
+     */
+    //protected List<String> labels = new CopyOnWriteArrayList<>();
+
+    @Getter protected LabelsSource labelsSource;
+
+    /*
+        That's new Iterator, that represents unified interface for Sentence/Document Iterators, with support of few label generation sources via LabelGenerator
+     */
+    protected LabelAwareIterator labelAwareIterator;
+
+    protected static final Logger log = LoggerFactory.getLogger(ParagraphVectors.class);
+
     /**
      * Train the model
      */
     @Override
     public void fit() throws IOException {
+
+    /*
         boolean loaded = buildVocab();
         //save vocab after building
         if (!loaded && saveVocab)
             vocab().saveVocab();
         if (stopWords == null)
             readStopWords();
+*/
 
+        log.info("Building vocab");
+        // resetModel is always true for ParagraphVectors
+        if (existingModel == null) {
+            // initialize vector table
+            // resetWeights is absolutely required after vocab transfer, due to algo internals.
+            log.info("Building matrices & resetting weights...");
 
+            buildVocab();
+            lookupTable.resetWeights(true);
+        } else {
+            // if we have existing Word2Vec model provided, we have to use it, as source of syn0/syn1 changes.
+            // good thing is that it can be used to implement vocab extension, required for w2v uptraining
+            log.info("Importing matrices from existing Word2Vec model");
+        }
 
-
-        log.info("Training word2vec multithreaded");
-
+        log.info("Total number of documents: " + labelsSource.getLabels().size());
+        log.info("Training ParaVec multithreaded");
+/*
         if (sentenceIter != null)
             sentenceIter.reset();
         if (docIter != null)
             docIter.reset();
 
+*/
 
-
-        totalWords = vectorizer.numWordsEncountered();
+        totalWords = vocab.totalWordOccurrences(); //vectorizer.numWordsEncountered();
         totalWords *= numIterations;
 
 
 
         log.info("Processing sentences...");
 
+        int epoch = 1;
+        while (epoch <= epochs) {
+            final AtomicLong nextRandom = new AtomicLong(5);
+            final AtomicLong wordsCount = new AtomicLong(0);
+            LabelledAsyncIteratorDigitizer roller = new LabelledAsyncIteratorDigitizer(labelAwareIterator);
+            roller.start();
 
+            final AtomicLong documentCount = new AtomicLong(0);
+            final VectorCalculationsThread[] threads = new VectorCalculationsThread[workers];
+            // start processing threads
+            for (int x = 0; x < workers; x++) {
+                threads[x] = new VectorCalculationsThread(epoch, roller, nextRandom, documentCount, wordsCount);
+                threads[x].start();
+            }
+
+            try {
+                // block untill all lines are read at AsyncIteratorDigitizer
+                roller.join();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            // wait untill all vector calculation threads are finished
+            for (int x = 0; x < workers; x++) {
+                try {
+                    threads[x].join();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            log.info("Epoch: " + epoch + "; Documents vectorized so far: " + documentCount.get());
+            epoch++;
+        }
+
+/*
         final AtomicLong numWordsSoFar = new AtomicLong(0);
 
 
@@ -113,6 +192,7 @@ public class ParagraphVectors extends Word2Vec {
                 executor.submit(r);
             }
         });
+
 
 
         final Queue<Pair<List<VocabWord>,Collection<VocabWord>>> batch2 = new ConcurrentLinkedDeque<>();
@@ -163,6 +243,7 @@ public class ParagraphVectors extends Word2Vec {
         for(int i = 0; i < numIterations; i++)
             doIteration(batch2,numWordsSoFar,nextRandom);
 
+*/
     }
 
 
@@ -171,6 +252,34 @@ public class ParagraphVectors extends Word2Vec {
      */
     @Override
     public boolean buildVocab() {
+
+
+        VocabConstructor constructor = new VocabConstructor.Builder()
+                .addSource(labelAwareIterator, minWordFrequency)
+                .setTokenizerFactory(this.tokenizerFactory)
+                .setStopWords(this.stopWords)
+                .setTargetVocabCache(vocab)
+                .fetchLabels(true)
+                .build();
+
+        constructor.buildJointVocabulary(false, true);
+
+        /*
+        super.buildVocab();
+
+        for(String label : labels) {
+            VocabWord word = new VocabWord(vocab.numWords(),label);
+
+            // this sounds legit, since if we hav
+            word.setIndex(vocab.numWords());
+            vocab().addToken(word);
+            vocab().putVocabWord(label);
+        }
+        */
+
+        // add labels to vocab
+
+/*
         readStopWords();
 
         if(vocab().vocabExists()) {
@@ -209,7 +318,7 @@ public class ParagraphVectors extends Word2Vec {
 
 
         setup();
-
+*/
         return false;
     }
 
@@ -229,7 +338,7 @@ public class ParagraphVectors extends Word2Vec {
         INDArray docMean = arr.mean(0);
         Counter<String> distances = new Counter<>();
 
-        for(String s : labels) {
+        for(String s : labelsSource.getLabels()) {
             INDArray otherVec = getWordVectorMatrix(s);
             double sim = Transforms.cosineSim(docMean, otherVec);
             distances.incrementCount(s, sim);
@@ -256,7 +365,7 @@ public class ParagraphVectors extends Word2Vec {
         INDArray docMean = arr.mean(0);
         Counter<String> distances = new Counter<>();
 
-        for(String s : labels) {
+        for(String s : labelsSource.getLabels()) {
             INDArray otherVec = getWordVectorMatrix(s);
             double sim = Transforms.cosineSim(docMean, otherVec);
             distances.incrementCount(s, sim);
@@ -276,6 +385,18 @@ public class ParagraphVectors extends Word2Vec {
     public void trainSentence(final Pair<List<VocabWord>, Collection<VocabWord>> sentenceWithLabel,AtomicLong nextRandom,double alpha) {
         if(sentenceWithLabel == null || sentenceWithLabel.getFirst().isEmpty())
             return;
+
+        /*
+                if trainWordVectors == true, we'll train Word2Vec representations at the same time
+                This option should be used with caution, since currently dl4j meta does not distinguish sentences and lines of text.
+                So, this will effectively mean improper w2v models if input is not single-line documents.
+                TODO: to be fixed ^^^ proposed fix: introduce sentence boundaries detector in the w2v tokenization pipeline.
+          */
+        if (trainWordVectors && existingModel == null) for(int i = 0; i < sentenceWithLabel.getFirst().size(); i++) {
+            nextRandom.set(nextRandom.get() * 25214903917L + 11);
+            skipGram(i, sentenceWithLabel.getFirst(), (int) nextRandom.get() % window,nextRandom,alpha);
+        }
+
         for(int i = 0; i < sentenceWithLabel.getFirst().size(); i++) {
             nextRandom.set(nextRandom.get() * 25214903917L + 11);
             dbow(i, sentenceWithLabel, (int) nextRandom.get() % window, nextRandom, alpha);
@@ -297,6 +418,7 @@ public class ParagraphVectors extends Word2Vec {
         final VocabWord word = sentenceWithLabel.getFirst().get(i);
         List<VocabWord> sentence = sentenceWithLabel.getFirst();
         List<VocabWord> labels = (List<VocabWord>) sentenceWithLabel.getSecond();
+    //    final VocabWord word = labels.get(0);
 
         if(word == null || sentence.isEmpty())
             return;
@@ -308,31 +430,38 @@ public class ParagraphVectors extends Word2Vec {
                 int c = i - window + a;
                 if(c >= 0 && c < labels.size()) {
                     VocabWord lastWord = labels.get(c);
-                    iterate(word,lastWord,nextRandom,alpha);
+                    iterate(word, lastWord,nextRandom,alpha);
                 }
             }
         }
     }
 
     public List<String> getLabels() {
-        return labels;
+        return labelsSource.getLabels();
     }
 
+    @Deprecated
     public void setLabels(List<String> labels) {
-        this.labels = labels;
+        //this.labels = labels;
     }
 
+    /*
+            TODO: this method should be flattened down and merged into VectorCalculationsThread
+            since all it does, is subsampling handling.
+            TODO: check rng math here, it could work not as intended
+     */
     protected void addWords(List<VocabWord> sentence,AtomicLong nextRandom,List<VocabWord> currMiniBatch) {
         for (VocabWord word : sentence) {
             if(word == null)
                 continue;
             // The subsampling randomly discards frequent words while keeping the ranking same
             if (sample > 0) {
-                double numDocs =  vectorizer.index().numDocuments();
+                double numDocs = labelsSource.getNumberOfLabelsUsed(); //vectorizer.index().numDocuments();
                 double ran = (Math.sqrt(word.getWordFrequency() / (sample * numDocs)) + 1)
                         * (sample * numDocs) / word.getWordFrequency();
 
                 if (ran < (nextRandom.get() & 0xFFFF) / (double) 65536) {
+                    log.info("Skipping word: [" + ran + "], threshold:  [" +((nextRandom.get() & 0xFFFF) / (double) 65536 ) + "]");
                     continue;
                 }
 
@@ -340,13 +469,13 @@ public class ParagraphVectors extends Word2Vec {
             }
             else
                 currMiniBatch.add(word);
-
-
-
         }
     }
 
-
+    /*
+            This method is marked as @Deprecated, since it's not used anymore: calculations were moved into VectorCalculationsThread
+     */
+    @Deprecated
     private void doIteration(Queue<Pair<List<VocabWord>,Collection<VocabWord>>> batch2,final AtomicLong numWordsSoFar,final AtomicLong nextRandom) {
         ActorSystem actorSystem = ActorSystem.create();
         final AtomicLong lastReport = new AtomicLong(System.currentTimeMillis());
@@ -365,15 +494,89 @@ public class ParagraphVectors extends Word2Vec {
                 increment += sentenceWithLabel.getFirst().size();
 
 
-                log.info("Train sentence avg took " + diff2 / (double) sentenceWithLabel.getFirst().size());
+         //       log.info("Train sentence avg took " + diff2 / (double) sentenceWithLabel.getFirst().size());
                 numWordsSoFar.set(numWordsSoFar.get() + increment);
             }
         },actorSystem);
     }
 
+    /**
+     * This is temporary solution. Mechanics will be unified for w2v and d2v with PrefetchingSentenceInterator
+     */
+    protected class LabelledAsyncIteratorDigitizer extends Thread implements Runnable {
+        private LabelAwareIterator backendIterator;
+        private LinkedBlockingQueue<LabelledDocument> buffer = new LinkedBlockingQueue<>();
+        private AtomicBoolean isRunning = new AtomicBoolean(false);
+
+        public LabelledAsyncIteratorDigitizer(LabelAwareIterator iterator) {
+            this.backendIterator = iterator;
+
+            this.backendIterator.reset();
+        }
+
+        @Override
+        public void run() {
+            isRunning.set(true);
+            while (this.backendIterator.hasNextDocument()) {
+                if (buffer.size() < 1000) {
+                    int cnt = 0;
+                    while (cnt < 1000 && this.backendIterator.hasNextDocument()) {
+                        LabelledDocument document = this.backendIterator.nextDocument();
+
+                        Tokenizer tokenizer = tokenizerFactory.create(document.getContent());
+                        List<String> tokens = tokenizer.getTokens();
+
+                        List<VocabWord> words =  ParagraphVectors.this.digitizeSentence(tokens);
+
+                        document.setReferencedContent(words);
+
+                        // nullify string document representation, since we don't really need it
+                        document.setContent(null);
+
+                        buffer.add(document);
+                        cnt++;
+                    }
+                } else try {
+                    Thread.sleep(10);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            isRunning.set(false);
+            log.info("AsyncIterator finished");
+        }
+
+        public boolean hasMoreDocuments() {
+            return buffer.size() > 0 || isRunning.get();
+        }
+
+        public LabelledDocument nextLabelledDocument() {
+            try {
+                return buffer.poll(3L, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                return null;
+            }
+        }
+    }
 
     public static class Builder extends Word2Vec.Builder {
-        private List<String> labels;
+        protected List<String> labels;
+        protected LabelsSource generator;
+        protected LabelAwareIterator labelAwareIterator;
+        protected Word2Vec existingW2V;
+        protected boolean trainWordVectors;
+        protected double sampling  = 0;
+
+
+        public Builder() {
+            super();
+        }
+
+        public Builder(@NonNull Word2VecConfiguration configuration) {
+            super(configuration);
+        }
+
+        @Deprecated
         @Override
         public Builder index(InvertedIndex index) {
             super.index(index);
@@ -381,8 +584,25 @@ public class ParagraphVectors extends Word2Vec {
         }
 
         @Override
+        @Deprecated
+        public Builder hugeModelExpected(boolean reallyExpected) {
+            throw new IllegalStateException("This method is NOT supported in ParagraphVectors");
+        }
+
+        @Override
         public Builder workers(int workers) {
             super.workers(workers);
+            return this;
+        }
+
+        /**
+         * You can provide existing WordVectors model to be used as vocab/weights source for your new ParagraphVectors model.
+         *
+         * @param word2Vec existing Word2Vec model
+         * @return builder object
+         */
+        protected Builder wordVectorsModel(@NonNull Word2Vec word2Vec) {
+            this.existingW2V = word2Vec;
             return this;
         }
 
@@ -411,24 +631,58 @@ public class ParagraphVectors extends Word2Vec {
         }
 
         @Override
+        @Deprecated
         public Builder vectorizer(TextVectorizer textVectorizer) {
             super.vectorizer(textVectorizer);
             return this;
         }
 
+        /**
+         * This method has no effect in ParagraphVectors, due to the nature of algorithm.
+         *
+         * @param learningRateDecayWords
+         * @return
+         */
         @Override
+        @Deprecated
         public Builder learningRateDecayWords(int learningRateDecayWords) {
             super.learningRateDecayWords(learningRateDecayWords);
             return this;
         }
 
+        /**
+         * This method has no effect in ParagraphVectors, due to the nature of algorithm.
+         *
+         * @param
+         * @return
+         */
         @Override
+        @Deprecated
+        public Builder resetModel(boolean reallyReset) {
+            return this;
+        }
+
+        /**
+         * This method has no effect in ParagraphVectors, due to the nature of algorithm.
+         *
+         * @param batchSize
+         * @return
+         */
+        @Override
+        @Deprecated
         public Builder batchSize(int batchSize) {
             super.batchSize(batchSize);
             return this;
         }
 
+        /**
+         * This method has no effect in ParagraphVectors, due to the nature of algorithm.
+         *
+         * @param saveVocab
+         * @return
+         */
         @Override
+        @Deprecated
         public Builder saveVocab(boolean saveVocab) {
             super.saveVocab(saveVocab);
             return this;
@@ -452,9 +706,15 @@ public class ParagraphVectors extends Word2Vec {
             return this;
         }
 
+
+        public Builder iterate(@NonNull LabelAwareIterator iter) {
+            this.labelAwareIterator = iter;
+            return this;
+        }
+
         @Override
-        public Builder iterate(DocumentIterator iter) {
-            super.iterate(iter);
+        public Builder iterate(@NonNull DocumentIterator iter) {
+            this.docIter = iter;
             return this;
         }
 
@@ -471,7 +731,7 @@ public class ParagraphVectors extends Word2Vec {
         }
 
         @Override
-        public Builder tokenizerFactory(TokenizerFactory tokenizerFactory) {
+        public Builder tokenizerFactory(@NonNull TokenizerFactory tokenizerFactory) {
             super.tokenizerFactory(tokenizerFactory);
             return this;
         }
@@ -483,7 +743,7 @@ public class ParagraphVectors extends Word2Vec {
         }
 
         @Override
-        public Builder stopWords(List<String> stopWords) {
+        public Builder stopWords(@NonNull List<String> stopWords) {
             super.stopWords(stopWords);
             return this;
         }
@@ -495,30 +755,190 @@ public class ParagraphVectors extends Word2Vec {
         }
 
         @Override
-        public Builder iterate(SentenceIterator iter) {
-            super.iterate(iter);
+        public Builder iterate(@NonNull SentenceIterator iter) {
+            this.iter = iter;
+            return this;
+        }
+
+        /**
+         * If set to true, model will build ParagraphVectors together with WordVectors over the same corpus.
+         * Please note, you shouldn't set this to true unless your documents are single-line. Otherwise WordVectors model will be highly inaccurate.
+         * If your documents are NOT single-line, you can build WordVectors using Word2Vec implementation, and pass obtained model into ParagraphVectors as features source.
+         *
+         * @param reallyTrain
+         * @return
+         */
+        public Builder trainWordVectors(boolean reallyTrain) {
+            this.trainWordVectors = reallyTrain;
             return this;
         }
 
         @Override
-        public Builder lookupTable(WeightLookupTable lookupTable) {
+        public Builder lookupTable(@NonNull WeightLookupTable lookupTable) {
             super.lookupTable(lookupTable);
             return this;
         }
 
         /**
-         * Specify labels
+         * Specify labels source to be used
          * @param labels the labels to specify
          * @return builder pattern
          */
-        public Builder labels(List<String> labels) {
+        @Deprecated
+        public Builder labels(@NonNull List<String> labels) {
             this.labels = labels;
+            this.generator = new LabelsSource(labels);
+            return this;
+        }
+
+        /**
+         * Specify template for labels generation.
+         * For more info: LabelsSource javadoc
+         *
+         * @param template the template to be used
+         * @return builder pattern
+         */
+        public Builder labelsTemplate(@NonNull String template) {
+            this.generator = new LabelsSource(template);
+            return this;
+        }
+
+        /**
+         * Specify labels source to be used
+         *
+         * @param generator LabelsSource to be used
+         * @return builder pattern
+         */
+        public Builder labelsGenerator(@NonNull LabelsSource generator) {
+            this.generator = generator;
+            return this;
+        }
+
+        @Override
+        public Builder epochs(int numEpochs) {
+            this.numEpochs = numEpochs;
             return this;
         }
 
         @Override
         public ParagraphVectors build() {
+            ParagraphVectors ret = new ParagraphVectors();
 
+            /*
+                    Before proceeding, we have to convert passed in iterators to LabelAwareIterator, so can be sure any type of iterator works equally: we have both documents, and labels.
+             */
+            if (this.generator == null) this.generator = new LabelsSource();
+            if (docIter != null) {
+                /*
+                        we're going to work with DocumentIterator.
+                        First, we have to assume that user can provide LabelAwareIterator. In this case we'll use them, as provided source, and collec labels provided there
+                        Otherwise we'll go for own labels via LabelsSource
+                */
+
+                if (docIter instanceof LabelAwareDocumentIterator) this.labelAwareIterator = new DocumentIteratorConverter((LabelAwareDocumentIterator) docIter, generator);
+                    else this.labelAwareIterator = new DocumentIteratorConverter(docIter, generator);
+            } else if (iter != null) {
+                // we have SentenceIterator. Mechanics will be the same, as above
+                if (iter instanceof LabelAwareSentenceIterator) this.labelAwareIterator = new SentenceIteratorConverter((LabelAwareSentenceIterator) iter, generator);
+                    else this.labelAwareIterator = new SentenceIteratorConverter(iter, generator);
+            } else if (labelAwareIterator != null) {
+                // if we have LabelAwareIterator defined, we have to be sure that LabelsSource is propagated properly
+                this.generator = labelAwareIterator.getLabelsSource();
+            } else  {
+                // we have nothing, probably that's restored model building. ignore iterator for now.
+                // probably there's few reasons to move iterator initialization code into ParagraphVectors methos. Like protected setLabelAwareIterator method.
+                // TODO: to be investigated ^^^
+            }
+
+            // whole corpus will be read from unified LabelAwareIterator
+            ret.labelAwareIterator = this.labelAwareIterator;
+
+            ret.alpha.set(lr);
+            ret.window = window;
+            ret.useAdaGrad = useAdaGrad;
+            ret.minLearningRate = minLearningRate;
+            ret.vectorizer = textVectorizer;
+            ret.stopWords = stopWords;
+            ret.minWordFrequency = minWordFrequency;
+            ret.setVocab(vocabCache);
+            ret.minWordFrequency = minWordFrequency;
+            ret.numIterations = iterations;
+            ret.seed = seed;
+            ret.numIterations = iterations;
+            ret.saveVocab = saveVocab;
+            ret.batchSize = batchSize;
+            ret.sample = sampling;
+            ret.workers = workers;
+            ret.invertedIndex = index;
+            ret.lookupTable = lookupTable;
+            ret.epochs = this.numEpochs;
+
+            // resetModel should be always true for ParagraphVectors
+            ret.resetModel = true;
+            ret.existingModel = this.existingW2V;
+            ret.trainWordVectors = this.trainWordVectors;
+            ret.labelsSource = this.generator;
+
+            try {
+                if (tokenizerFactory == null)
+                    tokenizerFactory = new UimaTokenizerFactory();
+            }catch(Exception e) {
+                throw new RuntimeException(e);
+            }
+
+            if(vocabCache == null) {
+                vocabCache = new InMemoryLookupCache();
+
+                ret.setVocab(vocabCache);
+            }
+
+            if(lookupTable == null) {
+                lookupTable = new InMemoryLookupTable.Builder().negative(negative)
+                        .useAdaGrad(useAdaGrad).lr(lr).cache(vocabCache)
+                        .vectorLength(layerSize).build();
+            }
+            ret.lookupTable = lookupTable;
+            ret.tokenizerFactory = tokenizerFactory;
+
+            // VocabularyHolder is used ONLY for fit() purposes, as intermediate data storage
+            if (this.vocabCache!= null)
+                // if VocabCache is set, build VocabHolder on top of it. Just for compatibility
+                // please note: all words in VocabCache will be treated as SPECIAL, so they wont be affected by minWordFrequency
+                ret.vocabularyHolder = new VocabularyHolder.Builder()
+                        .externalCache(vocabCache)
+                        .hugeModelExpected(hugeModelExpected)
+                        .minWordFrequency(minWordFrequency)
+                        .scavengerActivationThreshold(this.configuration.getScavengerActivationThreshold())
+                        .scavengerRetentionDelay(this.configuration.getScavengerRetentionDelay())
+                        .build();
+            else ret.vocabularyHolder = new VocabularyHolder.Builder()
+                    .hugeModelExpected(hugeModelExpected)
+                    .minWordFrequency(minWordFrequency)
+                    .scavengerActivationThreshold(this.configuration.getScavengerActivationThreshold())
+                    .scavengerRetentionDelay(this.configuration.getScavengerRetentionDelay())
+                    .build();
+
+            ret.labelsSource = this.generator;
+
+            this.configuration.setLearningRate(lr);
+            this.configuration.setLayersSize(layerSize);
+            this.configuration.setHugeModelExpected(hugeModelExpected);
+            this.configuration.setWindow(window);
+            this.configuration.setMinWordFrequency(minWordFrequency);
+            this.configuration.setIterations(iterations);
+            this.configuration.setSeed(seed);
+            this.configuration.setBatchSize(batchSize);
+            this.configuration.setLearningRateDecayWords(learningRateDecayWords);
+            this.configuration.setMinLearningRate(minLearningRate);
+            this.configuration.setSampling(this.sampling);
+            this.configuration.setUseAdaGrad(useAdaGrad);
+            this.configuration.setNegative(negative);
+            this.configuration.setEpochs(this.numEpochs);
+
+            ret.configuration = this.configuration;
+
+            return ret;
+/*
             if(iter == null) {
                 ParagraphVectors ret = new ParagraphVectors();
                 ret.window = window;
@@ -610,8 +1030,65 @@ public class ParagraphVectors extends Word2Vec {
                 ret.labels = labels;
                 return ret;
             }
+         */
         }
     }
 
+    private class VectorCalculationsThread extends Thread implements Runnable {
+        private int epoch;
+        private LabelledAsyncIteratorDigitizer roller;
+        private AtomicLong nextRandom;
+        private AtomicLong documentCounter;
+        private AtomicLong numWordsSoFar;
 
+        public VectorCalculationsThread(int epochId, @NonNull LabelledAsyncIteratorDigitizer roller, AtomicLong random, AtomicLong documentCounter, AtomicLong wordsCounter) {
+            this.roller = roller;
+            this.epoch = epochId;
+            this.nextRandom = random;
+            this.documentCounter = documentCounter;
+            this.numWordsSoFar = wordsCounter;
+
+            this.setName("ParaVec calculations thread. Epoch id: " + epoch);
+        }
+
+        @Override
+        public void run() {
+            // this queue is used for training each word from sentence against label, derived for each sentence
+            final Queue<Pair<List<VocabWord>,Collection<VocabWord>>> batch2 = new ConcurrentLinkedDeque<>();
+
+            while (roller.hasMoreDocuments()) {
+                LabelledDocument document = roller.nextLabelledDocument();
+
+                if (document != null && document.getReferencedContent() != null && !document.getReferencedContent().isEmpty()) {
+                    List<VocabWord> batch = new ArrayList<>();
+                    ParagraphVectors.this.addWords(document.getReferencedContent(), nextRandom, batch);
+//                    documentCounter.incrementAndGet();
+
+                    if (batch.isEmpty()) {
+                        log.info("Empty batch!");
+                        continue;
+                    }
+
+                    Collection<VocabWord> docLabels = new ArrayList<>();
+                    docLabels.add(vocab.wordFor(document.getLabel()));
+                    //batch2.add();
+
+                    double alpha = 0.025;
+                    for(int i = 0; i < numIterations; i++) {
+                //        doIteration(batch2, numWordsSoFar, nextRandom);
+
+                        alpha = Math.max(minLearningRate, ParagraphVectors.this.alpha.get() * (1 - (1.0 * (double) numWordsSoFar.get() / (double) totalWords)));
+
+                        trainSentence(new Pair<>(batch, docLabels), nextRandom, alpha);
+
+
+                        //       log.info("Train sentence avg took " + diff2 / (double) sentenceWithLabel.getFirst().size());
+                        numWordsSoFar.addAndGet(document.getReferencedContent().size());
+                    }
+
+                    if (documentCounter.incrementAndGet() % 10000 == 0) log.info("Epoch: [" + epoch + "], Documents learned: [" + documentCounter.get() + "], Alpha: ["+alpha+"]");
+                }
+            }
+        }
+    }
 }
