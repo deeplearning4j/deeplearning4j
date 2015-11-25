@@ -280,8 +280,8 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     public void shuffle() {
         //note here we use the same seed with different random objects guaranteeing same order
         long seed = System.currentTimeMillis();
-        Nd4j.shuffle(getFeatureMatrix(),new Random(seed),0);
-        Nd4j.shuffle(getLabels(),new Random(seed),0);
+        Nd4j.shuffle(getFeatureMatrix(),new Random(seed),1);
+        Nd4j.shuffle(getLabels(),new Random(seed),1);
     }
 
 
