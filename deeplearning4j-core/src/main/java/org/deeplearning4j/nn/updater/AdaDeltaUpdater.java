@@ -40,7 +40,7 @@ public class AdaDeltaUpdater extends BaseUpdater {
     protected static class AdaDeltaAggregator extends BaseUpdater.UpdaterAggregatorImpl {
         @Override
         public Updater getUpdater() {
-            return setUpdaterState(new SgdUpdater());
+            return setUpdaterState(new AdaDeltaUpdater());
         }
     }
 }
