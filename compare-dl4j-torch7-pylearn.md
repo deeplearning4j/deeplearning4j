@@ -37,7 +37,7 @@ Most academic researchers in the field of deep learning rely on [Theano](http://
 
 Pylearn2 is a normal (non-distributed) framework that includes everything necessary to conduct experiments with multilayer Perceptrons, [restricted Boltzmann machines](../restrictedboltzmannmachine.html), Stacked Denoising Autoencoders and [Convolutional nets](../convolutionalnets.html). We recommend it for precisely those use cases. 
 
-Numerous open-source deep-libraries have been built on top of Theano, including Keras and Lasagne. These libs attempt to layer an easier to use API on top of Theano's occasionally non-intuitive interface.
+Numerous open-source deep-libraries have been built on top of Theano, including [Keras](https://github.com/fchollet/keras),  [Lasagne](https://lasagne.readthedocs.org/en/latest/) and [Blocks](https://github.com/mila-udem/blocks). These libs attempt to layer an easier to use API on top of Theano's occasionally non-intuitive interface. 
 
 In contrast, Deeplearning4j intends to be the equivalent of Scikit-learn in the deep-learning space. It aims to automate as many knobs as possible in a scalable fashion on parallel GPUs or CPUs, integrating as needed with Hadoop and [Spark](../spark.html). 
 
