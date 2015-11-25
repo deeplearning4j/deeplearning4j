@@ -182,6 +182,8 @@ public abstract class BaseUpdater implements Updater {
 
                 if(ag == null){
                     ag = guToAdd.getAggregator(true);
+                    aggregatorMap.put(s,ag);
+                    continue;
                 }
 
                 ag.aggregate(guToAdd);
@@ -195,7 +197,7 @@ public abstract class BaseUpdater implements Updater {
                 aggregatorMap = ag.aggregatorMap;
             } else {
                 if(ag.aggregatorMap == null) return;
-                for(String s : aggregatorMap.keySet() ) {
+                for(String s : ag.aggregatorMap.keySet() ) {
                     GradientUpdaterAggregator first = aggregatorMap.get(s);
                     GradientUpdaterAggregator second = ag.aggregatorMap.get(s);
                     first.combine(second);
@@ -210,5 +212,11 @@ public abstract class BaseUpdater implements Updater {
             }
             return updater;
         }
+    }
+
+    @Override
+    public boolean equals(Object other){
+        if(!(other instanceof BaseUpdater)) return false;
+        return updaterForVariable.equals(((BaseUpdater)other).updaterForVariable);
     }
 }
