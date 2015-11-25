@@ -83,6 +83,7 @@ public class CudaContext implements AutoCloseable {
      * to the given stream
      */
     public void associateHandle() {
+        ContextHolder.getInstance().setContext();
         JCublas2.cublasSetStream(handle, oldStream);
     }
 
@@ -275,7 +276,9 @@ public class CudaContext implements AutoCloseable {
         return ctx;
     }
 
-
+    /**
+     * Calls cuda device synchronize
+     */
     public void syncDevice() {
         JCuda.cudaDeviceSynchronize();
     }

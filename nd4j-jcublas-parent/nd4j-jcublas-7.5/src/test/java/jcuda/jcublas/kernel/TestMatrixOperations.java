@@ -37,7 +37,11 @@ import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.BroadcastOp;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.broadcast.*;
+import org.nd4j.linalg.api.ops.impl.transforms.Log;
+import org.nd4j.linalg.api.ops.impl.transforms.LogSoftMax;
+import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.executors.ExecutorServiceProvider;
@@ -141,6 +145,13 @@ public class TestMatrixOperations {
     }
 
     @Test
+    public void testBlasSum() {
+        INDArray arr = Nd4j.linspace(1,4,4);
+        double sum = Nd4j.getBlasWrapper().asum(arr);
+        assertEquals(10,sum,1e-1);
+    }
+
+    @Test
     public void testSum2() {
         INDArray test = Nd4j.create(new float[]{1, 2, 3, 4}, new int[]{2, 2});
         INDArray sum = test.sum(1);
@@ -148,6 +159,50 @@ public class TestMatrixOperations {
         assertEquals(assertion, sum);
         INDArray sum0 = Nd4j.create(new double[]{4, 6});
         assertEquals(sum0, test.sum(0));
+    }
+
+
+    @Test
+    public void testRowSoftmax() {
+        OpExecutioner opExecutioner = Nd4j.getExecutioner();
+        INDArray arr = Nd4j.linspace(1, 6, 6);
+        SoftMax softMax = new SoftMax(arr);
+        opExecutioner.exec(softMax);
+        assertEquals(1.0, softMax.z().sumNumber().doubleValue(), 1e-1);
+    }
+
+    @Test
+    public void testRowLogSoftMax(){
+        //For moderate input values, LogSoftMax op should be identical to log(softmax)
+        // through is numerically more stable for
+        int[][] shapes = new int[][]{{5,3},{5,100},{1,5},{1,100}};
+
+        double eps = 1e-3;
+
+        for( int[] shape : shapes ){
+            INDArray orig = Nd4j.rand(shape);
+
+            INDArray orig1 = orig.dup();
+            INDArray orig2 = orig.dup();
+
+            //First: standard log(softmax)
+            Nd4j.getExecutioner().exec(new SoftMax(orig1), 1);
+            Nd4j.getExecutioner().exec(new Log(orig1));
+
+            //Second: LogSoftMax op
+            Nd4j.getExecutioner().exec(new LogSoftMax(orig2),1);
+
+            for( int i=0; i<shape[0]; i++ ){
+                for( int j=0; j<shape[1]; j++ ){
+                    double o1 = orig1.getDouble(i);
+                    double o2 = orig2.getDouble(i);
+                    if(Math.abs(o1-o2)>eps){
+                        System.out.println();
+                    }
+                    assertEquals(o1,o2,eps);
+                }
+            }
+        }
     }
 
 
