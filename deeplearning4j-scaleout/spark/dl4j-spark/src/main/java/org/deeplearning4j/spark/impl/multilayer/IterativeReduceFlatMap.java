@@ -21,6 +21,7 @@ package org.deeplearning4j.spark.impl.multilayer;
 import org.apache.spark.Accumulator;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
+import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
@@ -30,6 +31,7 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.Tuple2;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -42,10 +44,11 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>,INDArray> {
+public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>,Tuple2<INDArray,Updater>> {
 
     private String json;
     private Broadcast<INDArray> params;
+    private Broadcast<Updater> updater;
     private static Logger log = LoggerFactory.getLogger(IterativeReduceFlatMap.class);
 
     private final Accumulator<Double> best_score_acc;
@@ -56,18 +59,20 @@ public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>
      * @param params the parameters to use for the network
      * @param best_score_acc accumulator which tracks best score seen
      */
-    public IterativeReduceFlatMap(String json, Broadcast<INDArray> params, Accumulator<Double> best_score_acc) {
+    public IterativeReduceFlatMap(String json, Broadcast<INDArray> params, Broadcast<Updater> updater,
+                                  Accumulator<Double> best_score_acc) {
         this.json = json;
         this.params = params;
+        this.updater = updater;
         this.best_score_acc = best_score_acc;
     }
 
 
 
     @Override
-    public Iterable<INDArray> call(Iterator<DataSet> dataSetIterator) throws Exception {
+    public Iterable<Tuple2<INDArray,Updater>> call(Iterator<DataSet> dataSetIterator) throws Exception {
         if(!dataSetIterator.hasNext()) {
-            return Collections.singletonList(Nd4j.zeros(params.value().shape()));
+            return Collections.singletonList(new Tuple2<INDArray,Updater>(Nd4j.zeros(params.value().shape()),null));
         }
 
         List<DataSet> collect = new ArrayList<>();
@@ -83,12 +88,14 @@ public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>
         network.init();
         network.setListeners(new ScoreIterationListener(1), new BestScoreIterationListener(best_score_acc));
         INDArray val = params.value();
+        Updater upd = updater.getValue();
         if(val.length() != network.numParams(false))
             throw new IllegalStateException("Network did not have same number of parameters as the broadcasted set parameters");
         network.setParameters(val);
+        network.setUpdater(upd);
         network.fit(data);
 
-        return Collections.singletonList(network.params(false));
+        return Collections.singletonList(new Tuple2<>(network.params(false),network.getUpdater()));
 
     }
 }
