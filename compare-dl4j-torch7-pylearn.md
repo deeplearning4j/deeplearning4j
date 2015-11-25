@@ -10,7 +10,7 @@ Deeplearning4j is not the first open-source deep-learning project, but it is dis
 ### TensorFlow
 
 * For the moment, TensorFlow does not support so-called “inline” matrix operations, but forces you to copy a matrix in order to perform an operation on it. Copying very large matrices is costly in every sense. TF takes 4x as long as the state of the art deep learning tools. Google says it’s working on the problem. 
-* Like most deep-learning frameworks, TensorFlow is written with a Python API over a C/C++ engine that makes it run fast. 
+* Like most deep-learning frameworks, TensorFlow is written with a Python API over a C/C++ engine that makes it run fast. It is not a solution for the Java and Scala communities. 
 * TensorFlow is about more than deep learning. TensorFlow actually has tools to support reinforcement learning and other algos.
 * Google's goal with TF seems to be recruiting. As you know, they recently announced the Google Brain yearlong residency. A smart move.
 * TensorFlow is not commercially supported, and it’s unlikely that Google will go into the business of supporting open-source enterprise software. It's giving a new tool to researchers. 
