@@ -96,6 +96,6 @@ To really understand the differences between DL4J and other frameworks, you may 
 The deep-learning frameworks listed above are more specialized than general machine-learning frameworks, of which there are many. We'll list the major ones here:
 
 * [sci-kit learn](http://scikit-learn.org/stable/) - the default open-source machine-learning framework for Python. 
-* [SystemML](https://sparktc.github.io/systemml/quick-start-guide.html) - IBM's machine-learning framework, which performs Descriptive Statistics, Classification, Clustering, Regression, Matrix Factorization and Survival Analysis, and includes support-vector machines. 
 * [Apache Mahout](https://mahout.apache.org/users/basics/quickstart.html) - The flagship machine-learning framework on Apache. Mahout does classifications, clustering and recommendations.
+* [SystemML](https://sparktc.github.io/systemml/quick-start-guide.html) - IBM's machine-learning framework, which performs Descriptive Statistics, Classification, Clustering, Regression, Matrix Factorization and Survival Analysis, and includes support-vector machines. 
 * [Microsoft DMTK](http://www.dmtk.io/) - Microsoft's distributed machine-learning toolkit. Distributed word embeddings and LDA. 
