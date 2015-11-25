@@ -2173,6 +2173,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     }
 
     public void setUpdater(Updater updater){
-
+        if( solver == null) {
+            solver = new Solver.Builder()
+                    .configure(conf())
+                    .listeners(getListeners())
+                    .model(this).build();
+        }
+        solver.getOptimizer().setUpdater(updater);
     }
 }

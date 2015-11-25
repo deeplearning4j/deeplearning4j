@@ -272,7 +272,8 @@ public class SparkDl4jMultiLayer implements Serializable {
         log.info("Broadcasting initial parameters of length " + network.numParams(false));
         INDArray valToBroadcast = network.params(false);
         this.params = sc.broadcast(valToBroadcast);
-        this.updater = sc.broadcast(network.getUpdater());
+        Updater updater = network.getUpdater();
+        this.updater = sc.broadcast(updater);
 
 
         int paramsLength = network.numParams(false);
