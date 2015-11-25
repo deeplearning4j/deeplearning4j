@@ -317,7 +317,6 @@ public class WordVectorSerializer {
 
         write.flush();
         write.close();
-
     }
 
     private static ObjectMapper getModelMapper() {
@@ -556,6 +555,25 @@ public class WordVectorSerializer {
     public static void writeWordVectors(WordVectors vec, String path)
             throws IOException {
         BufferedWriter write = new BufferedWriter(new FileWriter(new File(path), false));
+
+        writeWordVectors(vec, write);
+
+        write.flush();
+        write.close();
+
+    }
+
+    /**
+     * Writes the word vectors to the given BufferedWriter. Note that this assumes an in memory cache.
+     * BufferedWriter can be writer to local file, or hdfs file, or any compatible to java target.
+     *
+     * @param vec
+     *            the word2vec to write
+     * @param writer - BufferedWriter, where all data should be written to
+     *            the path to write
+     * @throws IOException
+     */
+    public static void writeWordVectors(WordVectors vec, BufferedWriter writer) throws IOException  {
         int words = 0;
         for (String word : vec.vocab().words()) {
             if (word == null) {
@@ -572,15 +590,11 @@ public class WordVectorSerializer {
                 }
             }
             sb.append("\n");
-            write.write(sb.toString());
+            writer.write(sb.toString());
             words++;
-
         }
 
         log.info("Wrote " + words + " with size of " + vec.lookupTable().layerSize());
-        write.flush();
-        write.close();
-
     }
 
     /**
