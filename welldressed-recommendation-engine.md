@@ -132,3 +132,5 @@ I still have some fine-tuning to do, but the results are quite good at the momen
 * MacBook pro 2013
 * CPU: 2,4 GHz Intel Core i7
 * Memory: 8 GB 1600 MHz DDR3
+
+*(Editor's note: Major e-commerce sites that cannot be named report that DL4J-based recommendations have increased their ad coverage by 200%.)*
