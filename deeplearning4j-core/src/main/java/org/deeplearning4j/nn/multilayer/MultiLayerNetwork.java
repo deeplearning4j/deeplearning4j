@@ -2163,4 +2163,16 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
         return activations;
     }
+
+    /** Get the updater for this MultiLayerNetwork
+     * @return Updater, or null if updater has not been created (i.e., fit not called)
+     */
+    public Updater getUpdater(){
+        if(solver==null) return null;
+        return solver.getOptimizer().getUpdater();
+    }
+
+    public void setUpdater(Updater updater){
+
+    }
 }

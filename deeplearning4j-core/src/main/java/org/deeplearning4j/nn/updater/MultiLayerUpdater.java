@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.updater.aggregate.UpdaterAggregator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.GradientUpdater;
 
@@ -24,6 +25,10 @@ public class MultiLayerUpdater implements Updater {
 		for( int i=0; i<layers.length; i++ ){
 			layerUpdaters[i] = UpdaterCreator.getUpdater(layers[i]);
 		}
+	}
+
+	private MultiLayerUpdater(int size){
+		layerUpdaters = new Updater[size];
 	}
 
 	@Override
@@ -53,17 +58,53 @@ public class MultiLayerUpdater implements Updater {
 	}
 
 	@Override
-	public void combineUpdaters(Updater... other) {
-		if(other == null || other.length == 0) return;
-		for( int i=0; i<layerUpdaters.length; i++ ){
+	public UpdaterAggregator getAggregator(boolean addThis) {
+		MultiLayerUpdaterAggregator ag = new MultiLayerUpdaterAggregator();
+		if(addThis) ag.aggregate(this);
+		return ag;
+	}
 
-			Updater[] otherLayerUpdaters = new Updater[other.length];
+	protected static class MultiLayerUpdaterAggregator implements UpdaterAggregator {
 
-			for( int j=0; j<other.length; j++ ){
-				otherLayerUpdaters[j] = ((MultiLayerUpdater)other[j]).layerUpdaters[i];
+		private UpdaterAggregator[] aggregators;
+
+		@Override
+		public void aggregate(Updater updater) {
+			MultiLayerUpdater mlu = (MultiLayerUpdater)updater;
+			if (aggregators == null) {
+				aggregators = new UpdaterAggregator[mlu.layerUpdaters.length];
+				for( int i=0; i<aggregators.length; i++ ){
+					aggregators[i] = mlu.layerUpdaters[i].getAggregator(true);
+				}
+			} else {
+				for( int i=0; i<aggregators.length; i++ ){
+					aggregators[i].aggregate(mlu.layerUpdaters[i]);
+				}
 			}
+		}
 
-			layerUpdaters[i].combineUpdaters(otherLayerUpdaters);
+		@Override
+		public void merge(UpdaterAggregator aggregator) {
+			MultiLayerUpdaterAggregator mlua = (MultiLayerUpdaterAggregator)aggregator;
+			if(aggregators == null){
+				aggregators = mlua.aggregators;
+			} else {
+				if(mlua.aggregators == null) return;
+				else {
+					for(int i=0; i<aggregators.length; i++ ){
+						aggregators[i].merge(mlua.aggregators[i]);
+					}
+				}
+			}
+		}
+
+		@Override
+		public Updater getUpdater() {
+			MultiLayerUpdater multiLayerUpdater = new MultiLayerUpdater(aggregators.length);
+			for( int i=0; i<aggregators.length; i++ ){
+				multiLayerUpdater.layerUpdaters[i] = aggregators[i].getUpdater();
+			}
+			return multiLayerUpdater;
 		}
 	}
 }

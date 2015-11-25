@@ -54,6 +54,7 @@ public class Solver {
     }
 
     public ConvexOptimizer getOptimizer() {
+        if(optimizer != null) return optimizer;
         switch(conf.getOptimizationAlgo()) {
             case LBFGS:
                 return new LBFGS(conf,stepFunction,listeners,model);

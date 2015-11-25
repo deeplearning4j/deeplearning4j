@@ -28,23 +28,31 @@ import org.apache.spark.mllib.linalg.Matrix;
 import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.canova.api.records.reader.RecordReader;
+import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.updater.aggregate.UpdaterAggregator;
 import org.deeplearning4j.spark.canova.RecordReaderFunction;
 import org.deeplearning4j.spark.impl.common.Adder;
 import org.deeplearning4j.spark.impl.common.BestScoreAccumulator;
 import org.deeplearning4j.spark.impl.common.gradient.GradientAdder;
+import org.deeplearning4j.spark.impl.common.misc.INDArrayFromTupleFunction;
+import org.deeplearning4j.spark.impl.common.misc.UpdaterFromTupleFunction;
+import org.deeplearning4j.spark.impl.common.updater.UpdaterAggregatorCombiner;
+import org.deeplearning4j.spark.impl.common.updater.UpdaterElementCombiner;
 import org.deeplearning4j.spark.impl.multilayer.gradientaccum.GradientAccumFlatMap;
 import org.deeplearning4j.spark.util.MLLibUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.Tuple2;
 
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * Master class for spark
@@ -58,6 +66,7 @@ public class SparkDl4jMultiLayer implements Serializable {
     private MultiLayerConfiguration conf;
     private MultiLayerNetwork network;
     private Broadcast<INDArray> params;
+    private Broadcast<Updater> updater;
     private boolean averageEachIteration = false;
     public final static String AVERAGE_EACH_ITERATION = "org.deeplearning4j.spark.iteration.average";
     public final static String ACCUM_GRADIENT = "org.deeplearning4j.spark.iteration.accumgrad";
@@ -263,6 +272,8 @@ public class SparkDl4jMultiLayer implements Serializable {
         log.info("Broadcasting initial parameters of length " + network.numParams(false));
         INDArray valToBroadcast = network.params(false);
         this.params = sc.broadcast(valToBroadcast);
+        this.updater = sc.broadcast(network.getUpdater());
+
 
         int paramsLength = network.numParams(false);
         boolean accumGrad = sc.getConf().getBoolean(ACCUM_GRADIENT,false);
@@ -272,6 +283,7 @@ public class SparkDl4jMultiLayer implements Serializable {
             //Learning via averaging gradients
             JavaRDD<Gradient> results = rdd.mapPartitions(new GradientAccumFlatMap(conf.toJson(), this.params),true).cache();
             log.info("Ran iterative reduce...averaging results now.");
+            //TODO: Updater state
             GradientAdder a = new GradientAdder(paramsLength);
             results.foreach(a);
             INDArray accumulatedGradient = a.getAccumulator().value();
@@ -285,17 +297,31 @@ public class SparkDl4jMultiLayer implements Serializable {
         }
         else {
             //Standard parameter averaging
-            JavaRDD<INDArray> results = rdd.mapPartitions(new IterativeReduceFlatMap(conf.toJson(),
-                    this.params, this.best_score_acc),true).cache();
+            JavaRDD<Tuple2<INDArray,Updater>> results = rdd.mapPartitions(new IterativeReduceFlatMap(conf.toJson(),
+                    this.params, this.updater, this.best_score_acc),true).cache();
+
+            JavaRDD<INDArray> resultsParams = results.map(new INDArrayFromTupleFunction());
             log.info("Ran iterative reduce... averaging parameters now.");
             Adder a = new Adder(paramsLength);
-            results.foreach(a);
+            resultsParams.foreach(a);
             INDArray newParams = a.getAccumulator().value();
             log.info("Accumulated parameters");
             newParams.divi(rdd.partitions().size());
             log.info("Divided by partitions");
             network.setParameters(newParams);
             log.info("Set parameters");
+
+            log.info("Processing updaters");
+            JavaRDD<Updater> resultsUpdater = results.map(new UpdaterFromTupleFunction());
+
+            UpdaterAggregator aggregator = resultsUpdater.aggregate(
+                    resultsUpdater.first().getAggregator(false),
+                    new UpdaterElementCombiner(),
+                    new UpdaterAggregatorCombiner()
+            );
+            Updater combinedUpdater = aggregator.getUpdater();
+            network.setUpdater(combinedUpdater);
+            log.info("Set updater");
         }
     }
 
