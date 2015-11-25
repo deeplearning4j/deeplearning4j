@@ -39,7 +39,9 @@ import org.deeplearning4j.spark.canova.RecordReaderFunction;
 import org.deeplearning4j.spark.impl.common.Adder;
 import org.deeplearning4j.spark.impl.common.BestScoreAccumulator;
 import org.deeplearning4j.spark.impl.common.gradient.GradientAdder;
+import org.deeplearning4j.spark.impl.common.misc.GradientFromTupleFunction;
 import org.deeplearning4j.spark.impl.common.misc.INDArrayFromTupleFunction;
+import org.deeplearning4j.spark.impl.common.misc.UpdaterFromGradientTupleFunction;
 import org.deeplearning4j.spark.impl.common.misc.UpdaterFromTupleFunction;
 import org.deeplearning4j.spark.impl.common.updater.UpdaterAggregatorCombiner;
 import org.deeplearning4j.spark.impl.common.updater.UpdaterElementCombiner;
@@ -282,11 +284,13 @@ public class SparkDl4jMultiLayer implements Serializable {
 
         if(accumGrad) {
             //Learning via averaging gradients
-            JavaRDD<Gradient> results = rdd.mapPartitions(new GradientAccumFlatMap(conf.toJson(), this.params),true).cache();
+            JavaRDD<Tuple2<Gradient,Updater>> results = rdd.mapPartitions(new GradientAccumFlatMap(conf.toJson(), this.params, this.updater),true).cache();
             log.info("Ran iterative reduce...averaging results now.");
-            //TODO: Updater state
+
+            JavaRDD<Gradient> resultsGradient = results.map(new GradientFromTupleFunction());
+
             GradientAdder a = new GradientAdder(paramsLength);
-            results.foreach(a);
+            resultsGradient.foreach(a);
             INDArray accumulatedGradient = a.getAccumulator().value();
             boolean divideGrad = sc.getConf().getBoolean(DIVIDE_ACCUM_GRADIENT,false);
             if(divideGrad)
@@ -295,6 +299,18 @@ public class SparkDl4jMultiLayer implements Serializable {
             log.info("Summed gradients.");
             network.setParameters(network.params(false).addi(accumulatedGradient));
             log.info("Set parameters");
+
+            log.info("Processing updaters");
+            JavaRDD<Updater> resultsUpdater = results.map(new UpdaterFromGradientTupleFunction());
+
+            UpdaterAggregator aggregator = resultsUpdater.aggregate(
+                    resultsUpdater.first().getAggregator(false),
+                    new UpdaterElementCombiner(),
+                    new UpdaterAggregatorCombiner()
+            );
+            Updater combinedUpdater = aggregator.getUpdater();
+            network.setUpdater(combinedUpdater);
+            log.info("Set updater");
         }
         else {
             //Standard parameter averaging
