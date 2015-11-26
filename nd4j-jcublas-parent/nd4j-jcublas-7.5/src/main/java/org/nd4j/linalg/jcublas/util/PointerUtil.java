@@ -230,6 +230,38 @@ public class PointerUtil {
         return ++x;
     }
 
+
+    /**
+     * Returns the host pointer wrt
+     * the underlying storage
+     * type for the buffer
+     * @param buffer the buffer to get the
+     *               host pointer for
+     * @return the host pointer(Pointer.to) for the underlying
+     * data buffer
+     */
+    public static Pointer getHostPointer(DataBuffer buffer) {
+        if(buffer.allocationMode() == DataBuffer.AllocationMode.DIRECT) {
+            return Pointer.to(buffer.asNio());
+        }
+        else if(buffer.allocationMode() == DataBuffer.AllocationMode.HEAP) {
+            if(buffer.dataType() == DataBuffer.Type.DOUBLE) {
+                double[] arr = buffer.asDouble();
+                return Pointer.to(arr);
+            }
+            else if(buffer.dataType() == DataBuffer.Type.FLOAT) {
+                float[] arr = buffer.asFloat();
+                return Pointer.to(arr);
+            }
+            else if(buffer.dataType() == DataBuffer.Type.INT) {
+                int[] arr = buffer.asInt();
+                return Pointer.to(arr);
+            }
+        }
+
+        throw new IllegalStateException("Unable to determine host pointer");
+    }
+
     /**
      * Construct and allocate a device pointer
      *

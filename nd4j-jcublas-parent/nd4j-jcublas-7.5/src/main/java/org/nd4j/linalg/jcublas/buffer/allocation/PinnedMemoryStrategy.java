@@ -3,13 +3,11 @@ package org.nd4j.linalg.jcublas.buffer.allocation;
 import com.google.common.collect.Table;
 import jcuda.Pointer;
 import jcuda.runtime.JCuda;
-import jcuda.runtime.cudaMemcpyKind;
 import org.apache.commons.lang3.tuple.Triple;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.allocation.MemoryStrategy;
 import org.nd4j.linalg.jcublas.buffer.DevicePointerInfo;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
-import org.nd4j.linalg.jcublas.context.ContextHolder;
+import org.nd4j.linalg.jcublas.context.CudaContext;
 
 /**
  * Pinned memory:
@@ -20,17 +18,60 @@ import org.nd4j.linalg.jcublas.context.ContextHolder;
  */
 public class PinnedMemoryStrategy implements MemoryStrategy {
     @Override
-    public Object copyToHost(DataBuffer copy,int offset) {
+    public void getData(DataBuffer buffer, int offset, int stride, int length, DataBuffer get, CudaContext ctx, int getStride) {
+
+    }
+
+    @Override
+    public void getData(DataBuffer buffer, int offset, DataBuffer get, CudaContext ctx) {
+
+    }
+
+    @Override
+    public void setData(DataBuffer buffer, int offset, int stride, int length) {
+        JCudaBuffer buf2 = (JCudaBuffer) buffer;
+        Table<String, Triple<Integer,Integer,Integer>, DevicePointerInfo> pointers = buf2.getPointersToContexts();
+        DevicePointerInfo devicePointerInfo = pointers.get(Thread.currentThread().getName(),Triple.of(offset,length,1));
+        JCuda.cudaHostGetDevicePointer(devicePointerInfo.getPointer(),buf2.getHostPointer(),0);
+    }
+
+    @Override
+    public void setData(DataBuffer buffer, int offset) {
+        JCudaBuffer buf2 = (JCudaBuffer) buffer;
+        Table<String, Triple<Integer,Integer,Integer>, DevicePointerInfo> pointersToContexts = buf2.getPointersToContexts();
+        DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName(),Triple.of(offset,buf2.length(),1));
+        JCuda.cudaHostGetDevicePointer(devicePointerInfo.getPointer(),buf2.getHostPointer(),0);
+
+    }
+
+    @Override
+    public Object copyToHost(DataBuffer copy, int offset, CudaContext context) {
         JCudaBuffer buf2 = (JCudaBuffer) copy;
         Table<String, Triple<Integer,Integer,Integer>, DevicePointerInfo> pointersToContexts = buf2.getPointersToContexts();
         DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName(),Triple.of(offset,buf2.length(),1));
-        JCuda.cudaMemcpyAsync(
+      /* JCuda.cudaMemcpyAsync(
                 buf2.getHostPointer()
                 , devicePointerInfo.getPointer()
                 , devicePointerInfo.getLength()
                 , cudaMemcpyKind.cudaMemcpyDeviceToHost
                 , ContextHolder.getInstance().getCudaStream());
+*/
 
+        return buf2.getHostPointer();
+    }
+
+    @Override
+    public Object copyToHost(DataBuffer copy, int offset, int stride, CudaContext context) {
+        JCudaBuffer buf2 = (JCudaBuffer) copy;
+        Table<String, Triple<Integer,Integer,Integer>, DevicePointerInfo> pointersToContexts = buf2.getPointersToContexts();
+        DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName(),Triple.of(offset,buf2.length(),1));
+      /* JCuda.cudaMemcpyAsync(
+                buf2.getHostPointer()
+                , devicePointerInfo.getPointer()
+                , devicePointerInfo.getLength()
+                , cudaMemcpyKind.cudaMemcpyDeviceToHost
+                , ContextHolder.getInstance().getCudaStream());
+*/
 
         return buf2.getHostPointer();
     }

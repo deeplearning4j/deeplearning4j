@@ -2,15 +2,16 @@ package org.nd4j.linalg.jcublas.buffer.allocation;
 
 import com.google.common.collect.Table;
 import jcuda.Pointer;
+import jcuda.jcublas.JCublas2;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.allocation.MemoryStrategy;
 import org.nd4j.linalg.jcublas.buffer.DevicePointerInfo;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
-import org.nd4j.linalg.jcublas.context.ContextHolder;
+import org.nd4j.linalg.jcublas.context.CudaContext;
+import org.nd4j.linalg.jcublas.util.PointerUtil;
 
 
 /**
@@ -21,7 +22,51 @@ import org.nd4j.linalg.jcublas.context.ContextHolder;
  */
 public class PageableDirectBufferMemoryStrategy implements MemoryStrategy {
     @Override
-    public Object copyToHost(DataBuffer copy,int offset) {
+    public void getData(DataBuffer buffer, int offset, int stride, int length, DataBuffer get, CudaContext ctx, int getStride) {
+        JCudaBuffer buf2 = (JCudaBuffer) buffer;
+        Table<String, Triple<Integer, Integer, Integer>, DevicePointerInfo> pointersToContexts = buf2.getPointersToContexts();
+        DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName(),Triple.of(offset,buf2.length(),1));
+
+        JCublas2.cublasGetVectorAsync(
+                buffer.length()
+                , buffer.getElementSize()
+                , devicePointerInfo.getPointer()
+                , stride
+                , PointerUtil.getHostPointer(get)
+                , getStride
+                , ctx.getOldStream());
+    }
+
+    @Override
+    public void getData(DataBuffer buffer, int offset, DataBuffer get, CudaContext ctx) {
+        JCudaBuffer buf2 = (JCudaBuffer) buffer;
+        Table<String, Triple<Integer, Integer, Integer>, DevicePointerInfo> pointersToContexts = buf2.getPointersToContexts();
+        DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName(),Triple.of(offset,buf2.length(),1));
+
+        JCublas2.cublasGetVectorAsync(
+                buffer.length()
+                , buffer.getElementSize()
+                , devicePointerInfo.getPointer()
+                , 1
+                , PointerUtil.getHostPointer(get)
+                , 1
+                , ctx.getOldStream());
+    }
+
+    @Override
+    public void setData(DataBuffer buffer, int offset, int stride, int length) {
+        JCudaBuffer buf2 = (JCudaBuffer) buffer;
+
+    }
+
+    @Override
+    public void setData(DataBuffer buffer, int offset) {
+        JCudaBuffer buf2 = (JCudaBuffer) buffer;
+
+    }
+
+    @Override
+    public Object copyToHost(DataBuffer copy, int offset, CudaContext context) {
         JCudaBuffer buf2 = (JCudaBuffer) copy;
         Table<String, Triple<Integer, Integer, Integer>, DevicePointerInfo> pointersToContexts = buf2.getPointersToContexts();
 
@@ -32,7 +77,25 @@ public class PageableDirectBufferMemoryStrategy implements MemoryStrategy {
                     , devicePointerInfo.getPointer()
                     , devicePointerInfo.getLength()
                     , cudaMemcpyKind.cudaMemcpyDeviceToHost
-                    , ContextHolder.getInstance().getCudaStream());
+                    , context.getOldStream());
+        }
+
+        return buf2.getHostPointer();
+    }
+
+    @Override
+    public Object copyToHost(DataBuffer copy, int offset, int stride, CudaContext context) {
+        JCudaBuffer buf2 = (JCudaBuffer) copy;
+        Table<String, Triple<Integer, Integer, Integer>, DevicePointerInfo> pointersToContexts = buf2.getPointersToContexts();
+
+        DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName(),Triple.of(offset,buf2.length(),1));
+        if(devicePointerInfo != null) {
+            JCuda.cudaMemcpyAsync(
+                    buf2.getHostPointer()
+                    , devicePointerInfo.getPointer()
+                    , devicePointerInfo.getLength()
+                    , cudaMemcpyKind.cudaMemcpyDeviceToHost
+                    , context.getOldStream());
         }
 
         return buf2.getHostPointer();

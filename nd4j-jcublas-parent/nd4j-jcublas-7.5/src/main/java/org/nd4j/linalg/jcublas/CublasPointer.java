@@ -31,6 +31,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.context.CudaContext;
@@ -122,15 +123,16 @@ public class CublasPointer  implements AutoCloseable {
         this.devicePointer = buffer.getDevicePointer(1, 0, buffer.length());
         this.cudaContext = context;
         context.initOldStream();
+        ContextHolder.getInstance().getMemoryStrategy().setData(buffer,0,1,buffer.length());
         // Copy the data to the device
-        JCublas2.cublasSetVectorAsync(
+      /*  JCublas2.cublasSetVectorAsync(
                 buffer.length()
                 , buffer.getElementSize()
                 , buffer.getHostPointer()
                 , 1
                 , devicePointer
                 , 1
-                , context.getOldStream());
+                , context.getOldStream());*/
         buffer.setCopied(Thread.currentThread().getName());
 
 
@@ -191,14 +193,15 @@ public class CublasPointer  implements AutoCloseable {
          */
         // Copy the data to the device iff the whole buffer hasn't been copied
         if(!buffer.copied(name)) {
-            JCublas.cublasSetVectorAsync(
+            ContextHolder.getInstance().getMemoryStrategy().setData(buffer,0,1,buffer.length());
+            /*JCublas.cublasSetVectorAsync(
                     buffer.length()
                     , this.arr.data().getElementSize()
                     , buffer.getHostPointer()
                     , 1
                     , buffer.getPointersToContexts().get(name, Triple.of(0, buffer.length(), 1)).getPointer()
                     , 1
-                    , cudaContext.getOldStream());
+                    , cudaContext.getOldStream());*/
             //mark the buffer copied
             buffer.setCopied(name);
 
@@ -250,38 +253,43 @@ public class CublasPointer  implements AutoCloseable {
             else {
                 if(buffer.dataType() == DataBuffer.Type.DOUBLE) {
                     double[] set = new double[buffer.length()];
-                    JCublas2.cublasGetVectorAsync(
+                    ContextHolder.getInstance().getMemoryStrategy().getData(buffer, 0, 1, buffer.length(), Nd4j.createBuffer(set), cudaContext, 1);
+
+                   /* JCublas2.cublasGetVectorAsync(
                             buffer.length()
                             , buffer.getElementSize()
                             , devicePointer
                             , 1
                             , Pointer.to(set)
                             , 1
-                            , cudaContext.getOldStream());
+                            , cudaContext.getOldStream());*/
                     sb.append(Arrays.toString(set));
                 }
                 else if(buffer.dataType() == DataBuffer.Type.INT) {
                     int[] set = new int[buffer.length()];
-                    JCublas2.cublasGetVectorAsync(
+                    ContextHolder.getInstance().getMemoryStrategy().getData(buffer, 0, 1, buffer.length(), Nd4j.createBuffer(set), cudaContext, 1);
+
+                    /*JCublas2.cublasGetVectorAsync(
                             buffer.length()
                             , buffer.getElementSize()
                             , devicePointer
                             , 1
                             , Pointer.to(set)
                             , 1
-                            , cudaContext.getOldStream());
+                            , cudaContext.getOldStream());*/
                     sb.append(Arrays.toString(set));
                 }
                 else {
                     float[] set = new float[buffer.length()];
-                    JCublas2.cublasGetVectorAsync(
+                    ContextHolder.getInstance().getMemoryStrategy().getData(buffer,0,1,buffer.length(), Nd4j.createBuffer(set),cudaContext,1);
+                 /*   JCublas2.cublasGetVectorAsync(
                             buffer.length()
                             , buffer.getElementSize()
                             , devicePointer
                             , 1
                             , Pointer.to(set)
                             , 1
-                            , cudaContext.getOldStream());
+                            , cudaContext.getOldStream());*/
                     sb.append(Arrays.toString(set));
                 }
 
@@ -299,38 +307,44 @@ public class CublasPointer  implements AutoCloseable {
 
         if(arr.data().dataType() == DataBuffer.Type.DOUBLE) {
             double[] set = new double[length];
-            JCublas2.cublasGetVectorAsync(
+            ContextHolder.getInstance().getMemoryStrategy().getData(buffer, 0, 1, buffer.length(), Nd4j.createBuffer(set), cudaContext, 1);
+
+          /*  JCublas2.cublasGetVectorAsync(
                     length
                     , buffer.getElementSize()
                     ,devicePointer
                     ,BlasBufferUtil.getBlasStride(arr)
                     ,Pointer.to(set)
                     ,1
-                    , cudaContext.getOldStream());
-            cudaContext.syncOldStream();
+                    , cudaContext.getOldStream());*/
+            //cudaContext.syncOldStream();
             sb.append(Arrays.toString(set));
         }
         else if(arr.data().dataType() == DataBuffer.Type.INT) {
             int[] set = new int[length];
-            JCublas2.cublasGetVectorAsync(
+            ContextHolder.getInstance().getMemoryStrategy().getData(buffer, 0, 1, buffer.length(), Nd4j.createBuffer(set), cudaContext, 1);
+
+        /*    JCublas2.cublasGetVectorAsync(
                     length
                     , buffer.getElementSize()
                     , devicePointer
                     , BlasBufferUtil.getBlasStride(arr)
                     , Pointer.to(set)
-                    , 1, cudaContext.getOldStream());
+                    , 1, cudaContext.getOldStream());*/
             sb.append(Arrays.toString(set));
         }
         else {
             float[] set = new float[length];
-            JCublas2.cublasGetVectorAsync(
+            ContextHolder.getInstance().getMemoryStrategy().getData(buffer, 0, 1, buffer.length(), Nd4j.createBuffer(set), cudaContext, 1);
+
+           /* JCublas2.cublasGetVectorAsync(
                     length
                     , buffer.getElementSize()
                     , devicePointer
                     , BlasBufferUtil.getBlasStride(arr)
                     , Pointer.to(set)
                     , 1, cudaContext.getOldStream());
-            cudaContext.syncOldStream();
+            cudaContext.syncOldStream();*/
             sb.append(Arrays.toString(set));
         }
     }

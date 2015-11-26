@@ -29,11 +29,11 @@ import jcuda.jcublas.cublasHandle;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaStream_t;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
-import org.nd4j.linalg.api.buffer.allocation.MemoryStrategy;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.buffer.allocation.MemoryStrategy;
 import org.nd4j.linalg.jcublas.context.pool.CublasHandlePool;
 import org.nd4j.linalg.jcublas.context.pool.OldStreamPool;
 import org.nd4j.linalg.jcublas.context.pool.StreamPool;
@@ -222,7 +222,7 @@ public class ContextHolder {
      * and device
      * @return
      */
-    public  MemoryStrategy getMemoryStrategy() {
+    public MemoryStrategy getMemoryStrategy() {
         return getConf().getMemoryStrategy();
     }
 
@@ -471,7 +471,6 @@ public class ContextHolder {
      * @return the t
      */
     public  synchronized CUcontext getContext(int deviceToUse) {
-
         CUcontext ctx = deviceIDContexts.get(deviceToUse);
         if(ctx == null) {
             ctx = new CUcontext();
@@ -599,11 +598,7 @@ public class ContextHolder {
     public synchronized  void destroy() {
         if(shutdown.get())
             return;
-
         shutdown.set(true);
-
-
-
     }
 
 }

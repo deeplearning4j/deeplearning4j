@@ -11,8 +11,6 @@ import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 
-import java.util.Map;
-
 
 /**
  *
@@ -22,7 +20,19 @@ import java.util.Map;
  */
 public class PageableDirectBufferMemoryStrategy implements MemoryStrategy {
     @Override
-    public Object copyToHost(DataBuffer copy,int offset) {
+    public void setData(DataBuffer buffer, int offset, int stride, int length) {
+        JCudaBuffer buf2 = (JCudaBuffer) buffer;
+
+    }
+
+    @Override
+    public void setData(DataBuffer buffer, int offset) {
+        JCudaBuffer buf2 = (JCudaBuffer) buffer;
+
+    }
+
+    @Override
+    public Object copyToHost(DataBuffer copy, int offset, CudaContext context) {
         JCudaBuffer buf2 = (JCudaBuffer) copy;
         Table<String, Pair<Integer,Integer>, BaseCudaDataBuffer.DevicePointerInfo> pointersToContexts = buf2.getPointersToContexts();
 

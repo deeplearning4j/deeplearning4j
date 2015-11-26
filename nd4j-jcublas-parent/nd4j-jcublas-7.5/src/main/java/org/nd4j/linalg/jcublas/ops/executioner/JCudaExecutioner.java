@@ -238,9 +238,10 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         int[] dimensions = op.getDimension() == null ? BroadcastDimensions.getDimensions(op.y().shape()) : op.getDimension();
 
         GpuMetrics metrics = GpuMetrics.blockAndThreads(getType(op),op.n());
-        metrics.setGridSizeNotOverMax(op.x().tensorssAlongDimension(dimensions));
-        metrics.setBlockSizeNotOverMax(op.x().tensorAlongDimension(0,dimensions).length());
-        metrics.setSharedMemoryNotOverMax(metrics.getBlockSize() * op.x().data().getElementSize());
+        metrics.setGridSizeNotOverMax(512);
+        int blocksPerGrid =(op.n() + metrics.getGridSize() - 1) / metrics.getGridSize();
+        metrics.setBlockSizeNotOverMax(blocksPerGrid);
+        metrics.setSharedMemoryNotOverMax(1);
         if(op.y() == null)
             throw new IllegalArgumentException("Op has no y to broadcast");
 
@@ -318,11 +319,12 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 sharedMemBasedOnBlockSize = 1024;
             metrics.setSharedMemoryNotOverMax(sharedMemBasedOnBlockSize);
         }
-
         else {
-            metrics.setGridSizeNotOverMax(op.x().data().length());
-            metrics.setBlockSizeNotOverMax(1024);
+            int sharedMemBasedOnBlockSize = op.n() * op.x().data().getElementSize();
+            if(sharedMemBasedOnBlockSize < 1024)
+                sharedMemBasedOnBlockSize = 1024;
             metrics.setSharedMemoryNotOverMax(metrics.getBlockSize() * op.x().data().getElementSize());
+
         }
 
 

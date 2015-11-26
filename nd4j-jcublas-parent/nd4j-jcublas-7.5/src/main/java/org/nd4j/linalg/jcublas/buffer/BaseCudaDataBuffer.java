@@ -623,16 +623,19 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                  * the length of the pointer is < the actual buffer length itself.
                  *
                  */
-                JCublas2.cublasGetVectorAsync(
+                ContextHolder.getInstance().getMemoryStrategy().copyToHost(this,offset,context);
+             /*   JCublas2.cublasGetVectorAsync(
                         length
                         , getElementSize()
                         , devicePointerInfo.getPointer().withByteOffset(offset * getElementSize())
                         , deviceStride
                         , getHostPointer(deviceOffset)
                         , deviceStride
-                        , context.getOldStream());
+                        , context.getOldStream());*/
             }
             else {
+                ContextHolder.getInstance().getMemoryStrategy().copyToHost(this,offset,context);
+/*
                 JCublas2.cublasGetVectorAsync(
                         (int) deviceLength
                         , getElementSize()
@@ -640,7 +643,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                         , deviceStride
                         , getHostPointer(deviceOffset)
                         , deviceStride
-                        , context.getOldStream());
+                        , context.getOldStream());*/
             }
 
 
@@ -678,24 +681,28 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                  * the length of the pointer is < the actual buffer length itself.
                  *
                  */
-                JCublas2.cublasGetVectorAsync(
+                ContextHolder.getInstance().getMemoryStrategy().copyToHost(this,offset,deviceStride,null);
+
+               /* JCublas2.cublasGetVectorAsync(
                         length
                         , getElementSize()
                         , devicePointerInfo.getPointer().withByteOffset(offset * getElementSize())
                         , deviceStride
                         , getHostPointer(deviceOffset)
                         , deviceStride
-                        , ContextHolder.getInstance().getCudaStream());
+                        , ContextHolder.getInstance().getCudaStream());*/
             }
             else {
-                JCublas2.cublasGetVectorAsync(
+                ContextHolder.getInstance().getMemoryStrategy().copyToHost(this,offset,deviceStride,null);
+
+            /*    JCublas2.cublasGetVectorAsync(
                         (int) deviceLength
                         , getElementSize()
                         , devicePointerInfo.getPointer().withByteOffset(offset * getElementSize())
                         , deviceStride
                         , getHostPointer(deviceOffset)
                         , deviceStride
-                        , ContextHolder.getInstance().getCudaStream());
+                        , ContextHolder.getInstance().getCudaStream());*/
             }
 
 
