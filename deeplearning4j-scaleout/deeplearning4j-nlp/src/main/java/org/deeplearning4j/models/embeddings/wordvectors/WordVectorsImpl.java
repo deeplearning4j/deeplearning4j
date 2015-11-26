@@ -42,8 +42,8 @@ public class WordVectorsImpl implements WordVectors {
 
     //number of times the word must occur in the vocab to appear in the calculations, otherwise treat as unknown
     @Getter protected int minWordFrequency = 5;
-    @Getter protected transient WeightLookupTable lookupTable;
-    @Getter protected transient VocabCache vocab;
+    @Getter protected WeightLookupTable lookupTable;
+    @Getter protected VocabCache vocab;
     @Getter protected int layerSize = 100;
     public final static String UNK = "UNK";
     protected List<String> stopWords = StopWords.getStopWords();
