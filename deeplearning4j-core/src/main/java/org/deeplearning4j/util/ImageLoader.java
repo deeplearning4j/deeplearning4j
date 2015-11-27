@@ -37,6 +37,7 @@ import javax.imageio.ImageIO;
  * @author Adam Gibson
  *
  */
+@Deprecated
 public class ImageLoader {
 
     private int width = -1;

@@ -22,9 +22,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-import org.deeplearning4j.nn.api.Layer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -65,14 +63,14 @@ public class ReshapePreProcessor extends BaseInputPreProcessor {
     }
 
     @Override
-    public INDArray preProcess(INDArray input, Layer layer) {
+    public INDArray preProcess(INDArray input, int miniBatchSize) {
         if (dynamic) fromShape[0] = input.shape()[0];
         if (input.shape().length == toShape.length) return input;
         return input.reshape(toShape);
     }
 
     @Override
-    public INDArray backprop(INDArray output, Layer layer) {
+    public INDArray backprop(INDArray output, int miniBatchSize) {
         if( fromShape == null || output.shape().length == fromShape.length)
             return output;	//no-op
         if(output.length() != ArrayUtil.prod(fromShape))

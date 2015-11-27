@@ -3,7 +3,6 @@ package org.deeplearning4j.nn.conf.preprocessor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
@@ -25,19 +24,18 @@ public class FeedForwardToRnnPreProcessor implements InputPreProcessor {
 	private static final long serialVersionUID = 7696179434618200847L;
 
 	@Override
-	public INDArray preProcess(INDArray input, Layer layer) {
+	public INDArray preProcess(INDArray input, int miniBatchSize) {
 		//Need to reshape FF activations (2d) activations to 3d (for input into RNN layer)
 		if( input.rank() != 2 ) throw new IllegalArgumentException("Invalid input: expect NDArray with rank 2 (i.e., activations for FF layer)");
 		if(input.ordering() == 'f') input = Shape.toOffsetZeroCopy(input,'c');
 
 		int[] shape = input.shape();
-		int miniBatchSize = layer.getInputMiniBatchSize();
 		INDArray reshaped = input.reshape(miniBatchSize,shape[0]/miniBatchSize,shape[1]);
 		return reshaped.permute(0,2,1);
 	}
 
 	@Override
-	public INDArray backprop(INDArray output, Layer layer) {
+	public INDArray backprop(INDArray output, int miniBatchSize) {
 		//Need to reshape RNN epsilons (3d) to 2d (for use in FF layer backprop calculations)
 		if( output.rank() != 3 ) throw new IllegalArgumentException("Invalid input: expect NDArray with rank 3 (i.e., epsilons from RNN layer)");
 		int[] shape = output.shape();

@@ -23,10 +23,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.Data;
 
-import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
-import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -43,18 +40,18 @@ public class ComposableInputPreProcessor extends BaseInputPreProcessor {
     }
 
     @Override
-    public INDArray preProcess(INDArray input, Layer layer) {
+    public INDArray preProcess(INDArray input, int miniBatchSize) {
         for(InputPreProcessor preProcessor : inputPreProcessors)
-            input = preProcessor.preProcess(input,layer);
+            input = preProcessor.preProcess(input, miniBatchSize);
         return input;
     }
 
     @Override
-    public INDArray backprop(INDArray output, Layer layer) {
+    public INDArray backprop(INDArray output, int miniBatchSize) {
         //Apply input preprocessors in opposite order for backprop (compared to forward pass)
         //For example, CNNtoFF + FFtoRNN, need to do backprop in order of FFtoRNN + CNNtoFF
         for(int i=inputPreProcessors.length-1; i>=0; i--){
-            output = inputPreProcessors[i].backprop(output,layer);
+            output = inputPreProcessors[i].backprop(output, miniBatchSize);
         }
         return output;
     }

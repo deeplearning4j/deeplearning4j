@@ -26,7 +26,7 @@ public class MultiLayerUpdater implements Updater {
 	}
 
 	@Override
-	public void update(Layer layer, Gradient gradient, int iteration) {
+	public void update(Layer layer, Gradient gradient, int iteration, int batchSize) {
 		MultiLayerNetwork mln = (MultiLayerNetwork)layer;
 		
 		Gradient[] layerGradients = new Gradient[layerUpdaters.length];
@@ -43,8 +43,7 @@ public class MultiLayerUpdater implements Updater {
         }
 		
 		for( int i=0; i<layerUpdaters.length; i++ ){
-			layerUpdaters[i].update(mln.getLayer(i), layerGradients[i], iteration);
-			//TODO: What if updater is null? Can this happen?
+			layerUpdaters[i].update(mln.getLayer(i), layerGradients[i], iteration, batchSize);
 			//Gradients may be replaced by BaseUpdater.update()
 			for( Map.Entry<String, INDArray> entry : layerGradients[i].gradientForVariable().entrySet() ){
 				gradient.setGradientFor(i+"_"+entry.getKey(), entry.getValue());
