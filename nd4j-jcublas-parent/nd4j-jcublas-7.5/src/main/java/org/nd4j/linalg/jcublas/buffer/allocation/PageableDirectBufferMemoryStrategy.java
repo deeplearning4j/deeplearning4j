@@ -30,7 +30,7 @@ public class PageableDirectBufferMemoryStrategy implements MemoryStrategy {
         JCublas2.cublasGetVectorAsync(
                 buffer.length()
                 , buffer.getElementSize()
-                , devicePointerInfo.getPointer()
+                , devicePointerInfo.getPointers().getDevicePointer()
                 , stride
                 , PointerUtil.getHostPointer(get)
                 , getStride
@@ -46,11 +46,16 @@ public class PageableDirectBufferMemoryStrategy implements MemoryStrategy {
         JCublas2.cublasGetVectorAsync(
                 buffer.length()
                 , buffer.getElementSize()
-                , devicePointerInfo.getPointer()
+                , devicePointerInfo.getPointers().getDevicePointer()
                 , 1
                 , PointerUtil.getHostPointer(get)
                 , 1
                 , ctx.getOldStream());
+    }
+
+    @Override
+    public void setData(Pointer buffer, int offset, int stride, int length, Pointer hostPointer) {
+
     }
 
     @Override
@@ -74,7 +79,7 @@ public class PageableDirectBufferMemoryStrategy implements MemoryStrategy {
         if(devicePointerInfo != null) {
             JCuda.cudaMemcpyAsync(
                     buf2.getHostPointer()
-                    , devicePointerInfo.getPointer()
+                    , devicePointerInfo.getPointers().getDevicePointer()
                     , devicePointerInfo.getLength()
                     , cudaMemcpyKind.cudaMemcpyDeviceToHost
                     , context.getOldStream());
@@ -92,7 +97,7 @@ public class PageableDirectBufferMemoryStrategy implements MemoryStrategy {
         if(devicePointerInfo != null) {
             JCuda.cudaMemcpyAsync(
                     buf2.getHostPointer()
-                    , devicePointerInfo.getPointer()
+                    , devicePointerInfo.getPointers().getDevicePointer()
                     , devicePointerInfo.getLength()
                     , cudaMemcpyKind.cudaMemcpyDeviceToHost
                     , context.getOldStream());
@@ -104,15 +109,16 @@ public class PageableDirectBufferMemoryStrategy implements MemoryStrategy {
     @Override
     public Object alloc(DataBuffer buffer,int stride,int offset,int length) {
         Pointer hostData = new Pointer();
+        HostDevicePointer devicePointer = new HostDevicePointer(PointerUtil.getHostPointer(buffer),hostData);
         JCuda.cudaMalloc(hostData,buffer.length() * buffer.getElementSize());
-        return new DevicePointerInfo(hostData,buffer.getElementSize() * buffer.length(),stride,offset);
+        return new DevicePointerInfo(devicePointer,buffer.getElementSize() * buffer.length(),stride,offset,false);
     }
 
     @Override
     public void free(DataBuffer buffer,int offset,int length) {
         JCudaBuffer buf2 = (JCudaBuffer) buffer;
         DevicePointerInfo devicePointerInfo = buf2.getPointersToContexts().get(Thread.currentThread().getName(),new Pair<>(offset,length));
-        JCuda.cudaFree(devicePointerInfo.getPointer());
+        JCuda.cudaFree(devicePointerInfo.getPointers().getDevicePointer());
 
     }
 }

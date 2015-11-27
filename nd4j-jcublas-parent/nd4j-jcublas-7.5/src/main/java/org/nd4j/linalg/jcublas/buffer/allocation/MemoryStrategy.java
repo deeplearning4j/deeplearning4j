@@ -1,6 +1,7 @@
 package org.nd4j.linalg.jcublas.buffer.allocation;
 
 
+import jcuda.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 
@@ -32,6 +33,8 @@ public interface MemoryStrategy {
      * @param ctx
      */
     void getData(DataBuffer buffer, int offset, DataBuffer get, CudaContext ctx);
+
+    void setData(Pointer buffer, int offset, int stride, int length, Pointer hostPointer);
 
     /**
      * Set the data for the buffer

@@ -7,7 +7,9 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.jcublas.buffer.DevicePointerInfo;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
+import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.context.CudaContext;
+import org.nd4j.linalg.jcublas.util.PointerUtil;
 
 /**
  * Pinned memory:
@@ -17,6 +19,12 @@ import org.nd4j.linalg.jcublas.context.CudaContext;
  * @author Adam Gibson
  */
 public class PinnedMemoryStrategy implements MemoryStrategy {
+    public PinnedMemoryStrategy() {
+        int device = ContextHolder.getInstance().getDeviceForThread();
+        JCuda.cudaSetDevice(device);
+        JCuda.cudaSetDeviceFlags(JCuda.cudaDeviceMapHost);
+    }
+
     @Override
     public void getData(DataBuffer buffer, int offset, int stride, int length, DataBuffer get, CudaContext ctx, int getStride) {
 
@@ -28,11 +36,16 @@ public class PinnedMemoryStrategy implements MemoryStrategy {
     }
 
     @Override
+    public void setData(Pointer buffer, int offset, int stride, int length, Pointer hostPointer) {
+
+    }
+
+    @Override
     public void setData(DataBuffer buffer, int offset, int stride, int length) {
         JCudaBuffer buf2 = (JCudaBuffer) buffer;
         Table<String, Triple<Integer,Integer,Integer>, DevicePointerInfo> pointers = buf2.getPointersToContexts();
         DevicePointerInfo devicePointerInfo = pointers.get(Thread.currentThread().getName(),Triple.of(offset,length,1));
-        JCuda.cudaHostGetDevicePointer(devicePointerInfo.getPointer(),buf2.getHostPointer(),0);
+        JCuda.cudaHostGetDevicePointer(devicePointerInfo.getPointers().getDevicePointer(),devicePointerInfo.getPointers().getHostPointer(),0);
     }
 
     @Override
@@ -40,7 +53,7 @@ public class PinnedMemoryStrategy implements MemoryStrategy {
         JCudaBuffer buf2 = (JCudaBuffer) buffer;
         Table<String, Triple<Integer,Integer,Integer>, DevicePointerInfo> pointersToContexts = buf2.getPointersToContexts();
         DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName(),Triple.of(offset,buf2.length(),1));
-        JCuda.cudaHostGetDevicePointer(devicePointerInfo.getPointer(),buf2.getHostPointer(),0);
+        JCuda.cudaHostGetDevicePointer(devicePointerInfo.getPointers().getDevicePointer(),devicePointerInfo.getPointers().getHostPointer(),0);
 
     }
 
@@ -79,17 +92,22 @@ public class PinnedMemoryStrategy implements MemoryStrategy {
     @Override
     public Object alloc(DataBuffer buffer,int stride,int offset,int length) {
         Pointer hostPointer = new Pointer();
+        Pointer hostData = PointerUtil.getHostPointer(buffer);
+        int device = ContextHolder.getInstance().getDeviceForThread();
+        JCuda.cudaSetDevice(device);
+        JCuda.cudaSetDeviceFlags(JCuda.cudaDeviceMapHost);
         DevicePointerInfo devicePointerInfo = new DevicePointerInfo(
-                hostPointer
+                new HostDevicePointer(hostData,hostPointer)
                 , length
                 ,stride
-                ,offset);
+                ,offset,false);
 
 
         JCuda.cudaHostAlloc(
                 hostPointer
                 , buffer.getElementSize() * length
                 , JCuda.cudaHostAllocMapped);
+        JCuda.cudaHostGetDevicePointer(hostPointer,hostData,0);
 
         return devicePointerInfo;
     }
@@ -100,7 +118,7 @@ public class PinnedMemoryStrategy implements MemoryStrategy {
         Table<String, Triple<Integer,Integer,Integer>, DevicePointerInfo> pointers = buf2.getPointersToContexts();
         DevicePointerInfo devicePointerInfo = pointers.get(Thread.currentThread().getName(),Triple.of(offset,length,1));
         if(!devicePointerInfo.isFreed()) {
-            JCuda.cudaFreeHost(devicePointerInfo.getPointer());
+            JCuda.cudaFreeHost(devicePointerInfo.getPointers().getDevicePointer());
             devicePointerInfo.setFreed(true);
         }
     }

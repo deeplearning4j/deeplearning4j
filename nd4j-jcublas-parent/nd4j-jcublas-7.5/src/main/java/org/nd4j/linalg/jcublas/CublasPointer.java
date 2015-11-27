@@ -32,6 +32,7 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.buffer.DevicePointerInfo;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.context.CudaContext;
@@ -123,7 +124,7 @@ public class CublasPointer  implements AutoCloseable {
         this.devicePointer = buffer.getDevicePointer(1, 0, buffer.length());
         this.cudaContext = context;
         context.initOldStream();
-        ContextHolder.getInstance().getMemoryStrategy().setData(buffer,0,1,buffer.length());
+        ContextHolder.getInstance().getMemoryStrategy().setData(devicePointer,0,1,buffer.length(),buffer.getHostPointer());
         // Copy the data to the device
       /*  JCublas2.cublasSetVectorAsync(
                 buffer.length()

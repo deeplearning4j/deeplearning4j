@@ -147,7 +147,14 @@ public abstract class BaseDataBuffer implements DataBuffer {
         allocationMode = Nd4j.alloc;
         this.length = length;
         this.elementSize = elementSize;
-        this.dataBuffer = Unpooled.buffer(elementSize * length, Integer.MAX_VALUE).order(ByteOrder.nativeOrder());
+        if(allocationMode() == AllocationMode.DIRECT)
+            this.dataBuffer = Unpooled.buffer(elementSize * length, Integer.MAX_VALUE).order(ByteOrder.nativeOrder());
+        else if(dataType() == Type.DOUBLE) {
+            doubleData = new double[length];
+        }
+        else if(dataType() == Type.FLOAT) {
+            floatData = new float[length];
+        }
         for(int i = 0; i < length; i++) {
             if(dataType() == Type.DOUBLE) {
                 put(i,0.0);

@@ -1,5 +1,6 @@
 package org.nd4j.linalg.jcublas.buffer.allocation;
 
+import jcuda.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 
@@ -17,6 +18,11 @@ public class PageableArrayMemoryStrategy implements MemoryStrategy {
     public void getData(DataBuffer buffer, int offset, DataBuffer get, CudaContext ctx) {
         throw new UnsupportedOperationException();
 
+    }
+
+    @Override
+    public void setData(Pointer buffer, int offset, int stride, int length, Pointer hostPointer) {
+        throw new UnsupportedOperationException();
     }
 
     @Override

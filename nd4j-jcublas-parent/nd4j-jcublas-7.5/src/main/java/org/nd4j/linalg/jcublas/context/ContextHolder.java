@@ -251,9 +251,8 @@ public class ContextHolder {
             threads.put(prop,Integer.parseInt(threadProps.getProperty(prop)));
         }
 
-        if(numDevices == 0) {
-            getNumDevices();
-        }
+        getNumDevices();
+
 
         for(int i = 0; i < numDevices; i++) {
             ClassPathResource confFile = new ClassPathResource("devices/" + i, ContextHolder.class.getClassLoader());
@@ -272,8 +271,6 @@ public class ContextHolder {
 
         }
 
-
-        JCudaDriver.cuCtxSetLimit(CUlimit.CU_LIMIT_PRINTF_FIFO_SIZE, Integer.MAX_VALUE);
         confCalled = true;
     }
 
@@ -360,10 +357,10 @@ public class ContextHolder {
     public static void syncStream() {
         getInstance().setContext();
         //old api
-      //  JCublas2.cublasSetStream(getInstance().getHandle(), getInstance().getCudaStream());
-     //   JCuda.cudaStreamSynchronize(getInstance().getCudaStream());
+        //  JCublas2.cublasSetStream(getInstance().getHandle(), getInstance().getCudaStream());
+        //   JCuda.cudaStreamSynchronize(getInstance().getCudaStream());
         //new api
-       // JCudaDriver.cuStreamSynchronize(getInstance().getStream());
+        // JCudaDriver.cuStreamSynchronize(getInstance().getStream());
     }
 
     /**
