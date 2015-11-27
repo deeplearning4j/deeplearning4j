@@ -49,7 +49,6 @@ public class ConvolutionLayerTest {
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
                 .seed(123)
                 .iterations(5)
-                .batchSize(100)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .l2(2e-4)
                 .regularization(true)

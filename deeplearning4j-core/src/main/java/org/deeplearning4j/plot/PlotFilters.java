@@ -72,7 +72,6 @@ public class PlotFilters {
         int[] retShape = {(imageShape[0] + tileSpacing[0]) * tileShape[0] - tileSpacing[0],(imageShape[1] + tileSpacing[1]) * tileShape[1] - tileSpacing[1]};
         if(input.rank() == 2) {
             plot = plotSection(input,retShape);
-            return;
         }
         else {
             plot = Nd4j.zeros(retShape[0],retShape[1],4);
@@ -86,13 +85,19 @@ public class PlotFilters {
 
     }
 
+    /**
+     * Returns the plot ndarray
+     * to be rendered
+     * @return the plot ndarray to be rendered
+     */
     public INDArray getPlot() {
+        if(plot == null) {
+            throw new IllegalStateException("Please call plot() first.");
+        }
         return plot;
     }
 
-    public void setPlot(INDArray plot) {
-        this.plot = plot;
-    }
+
 
     private INDArray plotSection(INDArray input,int[] retShape) {
         INDArray ret = Nd4j.zeros(retShape);
