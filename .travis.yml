@@ -10,7 +10,9 @@ jdk:
 # for running tests on Travis CI container infrastructure for faster builds
 sudo: true
 
-
+env:
+  global:
+    JAVA_OPTS=-Xmx2g
 
 before_install:
   - sudo apt-get install build-essential git

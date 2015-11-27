@@ -12,10 +12,11 @@ import java.io.Serializable;
 public interface Updater extends Serializable {
     /**
      * Updater: updates the model
+     *
      * @param layer
      * @param gradient
-     * @param  iteration
+     * @param iteration
      */
-    void update(Layer layer,Gradient gradient,int iteration);
+    void update(Layer layer, Gradient gradient, int iteration, int miniBatchSize);
 
 }

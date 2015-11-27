@@ -23,7 +23,6 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.LossFunction;
@@ -116,14 +115,14 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
         if (layerConf().getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
             LossFunction create = Nd4j.getOpFactory().createLossFunction(layerConf().getCustomLossFunction(), input, z);
             create.exec();
-            score = create.currentResult().doubleValue();
+            score = create.getFinalResult().doubleValue();
         }
 
         else {
             score = LossCalculation.builder()
                     .l1(calcL1()).l2(calcL2())
                     .labels(input).z(z).lossFunction(layerConf().getLossFunction())
-                    .miniBatch(conf.isMiniBatch()).miniBatchSize(getInputMiniBatchSize())
+                    .miniBatch(conf.isMiniBatch()).miniBatchSize(input.size(0))
                     .useRegularization(conf.isUseRegularization()).build().score();
         }
     }
