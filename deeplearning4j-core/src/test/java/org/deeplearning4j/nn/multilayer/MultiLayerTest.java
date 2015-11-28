@@ -56,10 +56,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -533,5 +530,33 @@ public class MultiLayerTest {
         net.setParams(params);    //params() may not be in-place
         System.out.println(Arrays.toString(params.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 10)).dup().data().asFloat()));
         */
+    }
+
+    @Test
+    public void testLayerNames(){
+        int nIn = 10;
+        int nOut = 40;
+
+        List<String> layerNameList = new ArrayList<>();
+        layerNameList.add("dnn1");
+        layerNameList.add("dnn2");
+        layerNameList.add("dnn3");
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(org.deeplearning4j.nn.conf.Updater.SGD)
+                .learningRate(0.1)
+                .list(3)
+                .layer(0, new DenseLayer.Builder().name("dnn1").nIn(nIn).nOut(20).activation("relu").weightInit(WeightInit.XAVIER).build())
+                .layer(1, new DenseLayer.Builder().name("dnn2").nIn(20).nOut(30).activation("relu").weightInit(WeightInit.XAVIER).build())
+                .layer(2, new DenseLayer.Builder().name("dnn3").nIn(30).nOut(nOut).activation("softmax").weightInit(WeightInit.XAVIER).build())
+                .build();
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        assertEquals(layerNameList.get(0), net.getLayer(0).conf().getLayer().getLayerName());
+        assertEquals(layerNameList, net.getLayerNames());
+        assertEquals("softmax", net.getLayer(layerNameList.get(2)).conf().getLayer().getActivationFunction());
+
+
     }
 }
