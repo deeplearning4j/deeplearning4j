@@ -69,7 +69,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     private static final Logger log = LoggerFactory.getLogger(MultiLayerNetwork.class);
     //the hidden neuralNets
     protected Layer[] layers;
-
+    protected LinkedHashMap<String, Layer> layerMap = new LinkedHashMap<>();
 
     //default training examples and associated neuralNets
     protected INDArray input, labels;
@@ -349,6 +349,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             for (int i = 0; i < getnLayers(); i++) {
                 NeuralNetConfiguration conf = layerWiseConfigurations.getConf(i);
                 layers[i] = LayerFactories.getFactory(conf).create(conf, listeners, i);
+                layerMap.put(conf.getLayer().getLayerName(), layers[i]);
             }
             initCalled = true;
             initMask();
@@ -1949,6 +1950,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     public Layer getLayer(int i) {
         return layers[i];
+    }
+
+    public Layer getLayer(String name){
+        return layerMap.get(name);
+    }
+
+    public List<String> getLayerNames(){
+        return new ArrayList<>(layerMap.keySet());
     }
 
     public void setLayers(Layer[] layers) {
