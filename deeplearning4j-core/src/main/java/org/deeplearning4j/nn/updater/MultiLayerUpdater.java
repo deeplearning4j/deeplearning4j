@@ -30,7 +30,8 @@ public class MultiLayerUpdater implements Updater {
 		MultiLayerNetwork mln = (MultiLayerNetwork)layer;
 		
 		Gradient[] layerGradients = new Gradient[layerUpdaters.length];
-		for( int i=0; i<layerGradients.length; i++ ) layerGradients[i] = new DefaultGradient();
+		for( int i=0; i<layerGradients.length; i++)
+			layerGradients[i] = new DefaultGradient();
 		
 		for(Map.Entry<String,INDArray> gradientPair : gradient.gradientForVariable().entrySet()) {
 			String key = gradientPair.getKey();
@@ -38,11 +39,11 @@ public class MultiLayerUpdater implements Updater {
 			if( idx == -1 ) throw new IllegalStateException("Invalid key: MuliLayerNetwork Gradient key does not have layer separator: \""+key+"\"");
 			int layerIdx = Integer.parseInt(key.substring(0, idx));
 			
-			String newKey = key.substring(idx+1);
+			String newKey = key.substring(idx + 1);
 			layerGradients[layerIdx].gradientForVariable().put(newKey, gradientPair.getValue());
         }
 		
-		for( int i=0; i<layerUpdaters.length; i++ ){
+		for( int i = 0; i < layerUpdaters.length; i++ ) {
 			layerUpdaters[i].update(mln.getLayer(i), layerGradients[i], iteration, batchSize);
 			//Gradients may be replaced by BaseUpdater.update()
 			for( Map.Entry<String, INDArray> entry : layerGradients[i].gradientForVariable().entrySet() ){
