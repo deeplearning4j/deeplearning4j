@@ -29,9 +29,13 @@ import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.ScalarOp;
+import org.nd4j.linalg.jcublas.CublasPointer;
+import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
+import org.nd4j.linalg.jcublas.context.CudaContext;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 
 import static jcuda.driver.JCudaDriver.cuMemAlloc;
@@ -91,6 +95,12 @@ public class PointerUtil {
         ret[ret.length - 1] = arr.ordering();
         return ret;
     }
+
+    public static void printDeviceBuffer(JCudaBuffer buffer,CudaContext ctx) {
+        CublasPointer pointer = new CublasPointer(buffer,ctx);
+
+    }
+
 
     /**
      * Converts a raw int buffer of the layout:
@@ -242,7 +252,8 @@ public class PointerUtil {
      */
     public static Pointer getHostPointer(DataBuffer buffer) {
         if(buffer.allocationMode() == DataBuffer.AllocationMode.DIRECT) {
-            return Pointer.to(buffer.asNio());
+            JCudaBuffer buf = (JCudaBuffer) buffer;
+            return Pointer.to(buf.asNio());
         }
         else if(buffer.allocationMode() == DataBuffer.AllocationMode.HEAP) {
             if(buffer.dataType() == DataBuffer.Type.DOUBLE) {
@@ -287,6 +298,8 @@ public class PointerUtil {
                 return new float[]{scalarOp.scalar().floatValue()};
             else if (scalarOp.x().data().dataType() == DataBuffer.Type.DOUBLE)
                 return new double[]{scalarOp.scalar().doubleValue()};
+            else if(scalarOp.x().data().dataType() == DataBuffer.Type.INT)
+                return new int[] {scalarOp.scalar().intValue()};
         }
 
         throw new IllegalStateException("Unable to get pointer for scalar operation " + scalarOp);

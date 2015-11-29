@@ -43,7 +43,7 @@ public class CudaDataBufferFactory implements DataBufferFactory {
 
     @Override
     public DataBuffer createInt(int length) {
-        return new IntBuffer(length);
+        return new CudaIntDataBuffer(length);
     }
 
     @Override

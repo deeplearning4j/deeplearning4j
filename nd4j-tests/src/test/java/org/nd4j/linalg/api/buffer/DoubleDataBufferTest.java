@@ -26,7 +26,7 @@ import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.util.SerializationUtils;
+import org.nd4j.org.nd4j.linalg.util.SerializationUtils;
 
 
 import java.io.File;
@@ -91,14 +91,14 @@ public  class DoubleDataBufferTest extends BaseNd4jTest {
         String fileName = "buf.ser";
         File file = new File(fileName);
         file.deleteOnExit();
-        org.nd4j.linalg.util.SerializationUtils.saveObject(buf, file);
+        SerializationUtils.saveObject(buf, file);
         DataBuffer buf2 = SerializationUtils.readObject(file);
         assertEquals(buf, buf2);
 
         Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
         buf = Nd4j.createBuffer(5);
         file.deleteOnExit();
-        org.nd4j.linalg.util.SerializationUtils.saveObject(buf, file);
+       SerializationUtils.saveObject(buf, file);
         buf2 = SerializationUtils.readObject(file);
         assertEquals(buf, buf2);
     }

@@ -45,7 +45,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     protected int length;
     protected int elementSize;
-    protected transient ByteBuf dataBuffer;
+    protected transient ByteBuffer wrappedBuffer;
     protected Collection<String> referencing = Collections.synchronizedSet(new HashSet<String>());
     protected transient WeakReference<DataBuffer> ref;
     protected boolean isPersist = false;
@@ -62,7 +62,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
      */
     protected BaseDataBuffer(ByteBuf buf,int length) {
         allocationMode = Nd4j.alloc;
-        this.dataBuffer = buf;
+        this.wrappedBuffer = buf.nioBuffer();
         this.length = length;
     }
 
@@ -82,7 +82,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
             }
         }
         else {
-            dataBuffer = Unpooled.copyFloat(data).order(ByteOrder.nativeOrder());
+            wrappedBuffer =  ByteBuffer.allocateDirect(4 * data.length);
+            wrappedBuffer.order(ByteOrder.nativeOrder());
+            FloatBuffer buffer = wrappedBuffer.asFloatBuffer();
+            for(int i = 0; i < data.length; i++) {
+                buffer.put(i,data[i]);
+            }
         }
         length = data.length;
 
@@ -104,7 +109,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
             }
         }
         else {
-            dataBuffer = Unpooled.copyDouble(data).order(ByteOrder.nativeOrder());
+            wrappedBuffer =  ByteBuffer.allocateDirect(4 * data.length);
+            wrappedBuffer.order(ByteOrder.nativeOrder());
+            DoubleBuffer buffer = wrappedBuffer.asDoubleBuffer();
+            for(int i = 0; i < data.length; i++) {
+                buffer.put(i,data[i]);
+            }
         }
         length = data.length;
 
@@ -125,9 +135,14 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 this.intData = data;
 
         }
-        else
-            dataBuffer = Unpooled.copyInt(data).order(ByteOrder.nativeOrder());
-
+        else {
+            wrappedBuffer =  ByteBuffer.allocateDirect(4 * data.length);
+            wrappedBuffer.order(ByteOrder.nativeOrder());
+            FloatBuffer buffer = wrappedBuffer.asFloatBuffer();
+            for(int i = 0; i < data.length; i++) {
+                buffer.put(i,data[i]);
+            }
+        }
         length = data.length;
     }
 
@@ -147,26 +162,25 @@ public abstract class BaseDataBuffer implements DataBuffer {
         allocationMode = Nd4j.alloc;
         this.length = length;
         this.elementSize = elementSize;
-        if(allocationMode() == AllocationMode.DIRECT)
-            this.dataBuffer = Unpooled.buffer(elementSize * length, Integer.MAX_VALUE).order(ByteOrder.nativeOrder());
+        if(allocationMode() == AllocationMode.DIRECT) {
+            //allows for creation of the nio byte buffer to be overridden
+            setNioBuffer();
+        }
         else if(dataType() == Type.DOUBLE) {
             doubleData = new double[length];
         }
         else if(dataType() == Type.FLOAT) {
             floatData = new float[length];
         }
-        for(int i = 0; i < length; i++) {
-            if(dataType() == Type.DOUBLE) {
-                put(i,0.0);
-            }
-            else if(dataType() == Type.INT) {
-                put(i, 0);
-            }
-            else {
-                put(i,(float) 0.0);
-            }
-        }
     }
+
+    //sets the nio wrapped buffer (allows to be overridden for other use cases like cuda)
+    protected void setNioBuffer() {
+        wrappedBuffer = ByteBuffer.allocateDirect(elementSize * length);
+        wrappedBuffer.order(ByteOrder.nativeOrder());
+
+    }
+
 
     public BaseDataBuffer(byte[] data, int length) {
         this(Unpooled.wrappedBuffer(data),length);
@@ -216,9 +230,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         else {
             if(length * getElementSize() < 0)
                 throw new IllegalArgumentException("Unable to create buffer of length " + length + " due to negative length specified");
-            dataBuffer = allocationMode == AllocationMode.DIRECT ?
-                    Unpooled.buffer(length * getElementSize()).order(ByteOrder.nativeOrder())
-                    : Unpooled.buffer(length * getElementSize()).order(ByteOrder.nativeOrder());
+            wrappedBuffer = ByteBuffer.allocateDirect(getElementSize() * length);
         }
 
     }
@@ -566,7 +578,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 return intData;
             }
         }
-        return dataBuffer.nioBuffer().asIntBuffer().array();
+        return wrappedBuffer.asIntBuffer().array();
     }
 
     @Override
@@ -590,16 +602,16 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
         if(dataType() == Type.FLOAT) {
             dirty.set(false);
-            return dataBuffer.getFloat(i * getElementSize());
+            return wrappedBuffer.asFloatBuffer().get(i);
         }
 
         else if(dataType() == Type.INT) {
             dirty.set(false);
-            return dataBuffer.getInt(i * getElementSize());
+            return wrappedBuffer.asIntBuffer().get(i);
         }
         else {
             dirty.set(false);
-            return dataBuffer.getDouble(i * getElementSize());
+            return wrappedBuffer.asDoubleBuffer().get(i);
         }
     }
 
@@ -623,11 +635,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
         if(dataType() == Type.DOUBLE) {
             dirty.set(false);
-            return (float) dataBuffer.getDouble(i * getElementSize());
+            return (float) wrappedBuffer.asDoubleBuffer().get(i);
         }
 
         dirty.getAndSet(true);
-        return dataBuffer.getFloat(i * getElementSize());
+        return wrappedBuffer.asFloatBuffer().get(i);
     }
 
     @Override
@@ -641,29 +653,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void put(int i, float element) {
-
-        if(doubleData != null) {
-            doubleData[i] = element;
-        }
-        else if(floatData != null) {
-            floatData[i] = element;
-        }
-        else if(intData != null) {
-            intData[i] = (int) element;
-        }
-        else {
-            if (dataType() == Type.DOUBLE) {
-                ensureWritable(i, 8);
-                dataBuffer.setDouble(i * 8, (double) element);
-            }
-            else {
-                ensureWritable(i, 4);
-                dataBuffer.setFloat(i * 4, element);
-            }
-        }
-
-
-        dirty.set(true);
+        put(i,(double) element);
     }
 
     @Override
@@ -682,18 +672,15 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
         else {
             if(dataType() == Type.DOUBLE) {
-                ensureWritable(i,8);
-                dataBuffer.setDouble(i * 8, element);
+                wrappedBuffer.asDoubleBuffer().put(i,element);
 
             }
             else if(dataType() == Type.INT) {
-                ensureWritable(i, 4);
-                dataBuffer.setInt(i * 4, (int) element);
+                wrappedBuffer.asIntBuffer().put(i,(int) element);
             }
-
-            else
-                put(i,(float) element);
-
+            else {
+                wrappedBuffer.asFloatBuffer().put(i,(float) element);
+            }
         }
 
         dirty.set(true);
@@ -704,38 +691,26 @@ public abstract class BaseDataBuffer implements DataBuffer {
         return dirty.get();
     }
 
-    protected void ensureWritable(int pos, int len) {
-        int ni = pos + len;
-        int cap = dataBuffer.capacity();
-        int over = ni - cap;
-        if (over > 0) {
-            dataBuffer.writerIndex(cap);
-            dataBuffer.ensureWritable(over);
-        }
-        //We have to make sure that the writerindex is always positioned on the last bit of data set in the buffer
-        if (ni > dataBuffer.writerIndex()) {
-            dataBuffer.writerIndex(ni);
-        }
-    }
+
 
     @Override
     public DoubleBuffer asNioDouble() {
-        return dataBuffer.nioBuffer().asDoubleBuffer();
+        return wrappedBuffer.asDoubleBuffer();
     }
 
     @Override
     public FloatBuffer asNioFloat() {
-        return dataBuffer.nioBuffer().asFloatBuffer();
+        return wrappedBuffer.asFloatBuffer();
     }
 
     @Override
     public ByteBuffer asNio() {
-        return dataBuffer.nioBuffer(0,dataBuffer.capacity()).order(ByteOrder.nativeOrder());
+        return wrappedBuffer;
     }
 
     @Override
     public ByteBuf asNetty() {
-        return dataBuffer;
+        return Unpooled.wrappedBuffer(wrappedBuffer);
     }
 
     @Override
@@ -745,14 +720,14 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void assign(Number value, int offset) {
-        put(offset, value.doubleValue());
+        for(int i = offset; i < length(); i++)
+            put(i, value.doubleValue());
     }
 
     @Override
     public void write(OutputStream dos) {
         if(dos instanceof DataOutputStream) {
             try {
-
                 write((DataOutputStream) dos);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -824,8 +799,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void destroy() {
-        this.dataBuffer.clear();
-        this.dataBuffer = null;
+
     }
 
     @Override
@@ -894,7 +868,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
                     }
                 }
                 else {
-                    dataBuffer = Unpooled.buffer( length() * getElementSize()).order(ByteOrder.nativeOrder());
+                    wrappedBuffer = ByteBuffer.allocateDirect(length() * getElementSize());
+                    wrappedBuffer.order(ByteOrder.nativeOrder());
                     for(int i = 0; i < length(); i++) {
                         put(i,s.readDouble());
                     }
@@ -917,7 +892,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
                     }
                 }
                 else {
-                    dataBuffer = Unpooled.buffer((int) length() * getElementSize()).order(ByteOrder.nativeOrder());
+                    wrappedBuffer = ByteBuffer.allocateDirect(length() * getElementSize());
+                    wrappedBuffer.order(ByteOrder.nativeOrder());
                     for(int i = 0; i < length(); i++) {
                         put(i,s.readFloat());
                     }
@@ -976,7 +952,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
     @Override
     public int hashCode() {
         int result = length;
-        result = 31 * result + (dataBuffer != null ? dataBuffer.hashCode() : 0);
         result = 31 * result + (referencing != null ? referencing.hashCode() : 0);
         result = 31 * result + (ref != null ? ref.hashCode() : 0);
         result = 31 * result + (isPersist ? 1 : 0);

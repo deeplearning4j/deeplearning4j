@@ -111,7 +111,6 @@ public class DoubleBuffer extends BaseDataBuffer {
 
     @Override
     public void flush() {
-        dataBuffer = null;
     }
 
     @Override

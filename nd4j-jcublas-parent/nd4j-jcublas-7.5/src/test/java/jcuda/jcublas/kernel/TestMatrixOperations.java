@@ -876,7 +876,7 @@ public class TestMatrixOperations {
         testSumHelper(1, 5, 5, 5, 5, 1);
     }
 
-    private  void testSumHelper( int... shape ){
+    private  void testSumHelper(int... shape) {
         INDArray array = Nd4j.ones(shape);
         for( int i = 0; i < shape.length; i++) {
             for(int j = 0; j < array.vectorsAlongDimension(i); j++) {

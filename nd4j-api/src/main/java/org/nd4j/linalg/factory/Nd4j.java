@@ -968,12 +968,14 @@ public class Nd4j {
     /**
      * Create a buffer equal of length prod(shape)
      *
-     * @param shape the shape of the buffer to create
+     * @param data the shape of the buffer to create
      * @return the created buffer
      */
-    public static DataBuffer createBuffer(int[] shape) {
-        int length = ArrayUtil.prod(shape);
-        return createBuffer(length);
+    public static DataBuffer createBuffer(int[] data) {
+        DataBuffer ret;
+        ret = DATA_BUFFER_FACTORY_INSTANCE.createInt(data);
+        logCreationIfNecessary(ret);
+        return ret;
     }
 
     /**
@@ -986,6 +988,8 @@ public class Nd4j {
         DataBuffer ret;
         if (dataType() == DataBuffer.Type.FLOAT)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(length);
+        else if(dataType() == DataBuffer.Type.INT)
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createInt(length);
         else
             ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(length);
         logCreationIfNecessary(ret);

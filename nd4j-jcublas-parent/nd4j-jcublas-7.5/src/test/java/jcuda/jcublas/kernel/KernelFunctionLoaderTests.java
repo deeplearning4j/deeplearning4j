@@ -50,9 +50,5 @@ public class KernelFunctionLoaderTests {
 
 
 
-    @Test
-    public void testKernelElementWise() {
-
-    }
 
 }

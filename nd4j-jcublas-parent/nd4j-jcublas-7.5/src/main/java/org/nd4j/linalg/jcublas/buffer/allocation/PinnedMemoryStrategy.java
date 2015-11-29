@@ -10,6 +10,12 @@ import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
+import org.nd4j.org.nd4j.linalg.util.NioUtil;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.IntBuffer;
+
 
 /**
  * Pinned memory:
@@ -20,19 +26,16 @@ import org.nd4j.linalg.jcublas.util.PointerUtil;
  */
 public class PinnedMemoryStrategy implements MemoryStrategy {
     public PinnedMemoryStrategy() {
-        int device = ContextHolder.getInstance().getDeviceForThread();
-        JCuda.cudaSetDevice(device);
-        JCuda.cudaSetDeviceFlags(JCuda.cudaDeviceMapHost);
     }
 
     @Override
-    public void getData(DataBuffer buffer, int offset, int stride, int length, DataBuffer get, CudaContext ctx, int getStride) {
-
+    public void getData(DataBuffer buffer, int offset, int stride, int length, DataBuffer get, CudaContext ctx, int getStride, int getOffset) {
+        buffer.copyAtStride(get,length,stride,getStride,offset,getOffset);
     }
 
     @Override
     public void getData(DataBuffer buffer, int offset, DataBuffer get, CudaContext ctx) {
-
+        getData(buffer,offset,1,buffer.length(),get,ctx,1,0);
     }
 
     @Override
@@ -42,74 +45,76 @@ public class PinnedMemoryStrategy implements MemoryStrategy {
 
     @Override
     public void setData(DataBuffer buffer, int offset, int stride, int length) {
-        JCudaBuffer buf2 = (JCudaBuffer) buffer;
-        Table<String, Triple<Integer,Integer,Integer>, DevicePointerInfo> pointers = buf2.getPointersToContexts();
-        DevicePointerInfo devicePointerInfo = pointers.get(Thread.currentThread().getName(),Triple.of(offset,length,1));
-        JCuda.cudaHostGetDevicePointer(devicePointerInfo.getPointers().getDevicePointer(),devicePointerInfo.getPointers().getHostPointer(),0);
+
     }
 
     @Override
     public void setData(DataBuffer buffer, int offset) {
-        JCudaBuffer buf2 = (JCudaBuffer) buffer;
-        Table<String, Triple<Integer,Integer,Integer>, DevicePointerInfo> pointersToContexts = buf2.getPointersToContexts();
-        DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName(),Triple.of(offset,buf2.length(),1));
-        JCuda.cudaHostGetDevicePointer(devicePointerInfo.getPointers().getDevicePointer(),devicePointerInfo.getPointers().getHostPointer(),0);
 
     }
 
     @Override
     public Object copyToHost(DataBuffer copy, int offset, CudaContext context) {
         JCudaBuffer buf2 = (JCudaBuffer) copy;
-        Table<String, Triple<Integer,Integer,Integer>, DevicePointerInfo> pointersToContexts = buf2.getPointersToContexts();
-        DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName(),Triple.of(offset,buf2.length(),1));
-      /* JCuda.cudaMemcpyAsync(
-                buf2.getHostPointer()
-                , devicePointerInfo.getPointer()
-                , devicePointerInfo.getLength()
-                , cudaMemcpyKind.cudaMemcpyDeviceToHost
-                , ContextHolder.getInstance().getCudaStream());
-*/
-
-        return buf2.getHostPointer();
+        DevicePointerInfo devicePointerInfo = buf2.getPointersToContexts().get(Thread.currentThread().getName(), Triple.of(offset, buf2.length(), 1));
+        HostDevicePointer hostDevicePointer = devicePointerInfo.getPointers();
+        Pointer hostPointer = hostDevicePointer.getHostPointer();
+        ByteBuffer pointer = hostPointer.getByteBuffer(0, copy.getElementSize() * copy.length()).order(ByteOrder.nativeOrder());
+        ByteBuffer bufferNio = copy.asNio();
+        // Flip and read from the original.
+        pointer.flip();
+        bufferNio.put(pointer);
+        return devicePointerInfo;
     }
 
     @Override
-    public Object copyToHost(DataBuffer copy, int offset, int stride, CudaContext context) {
+    public Object copyToHost(DataBuffer copy, int offset, int stride, int length, CudaContext context, int hostOffset, int hostStride) {
+        ByteBuffer nio = copy.asNio();
         JCudaBuffer buf2 = (JCudaBuffer) copy;
-        Table<String, Triple<Integer,Integer,Integer>, DevicePointerInfo> pointersToContexts = buf2.getPointersToContexts();
-        DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName(),Triple.of(offset,buf2.length(),1));
-      /* JCuda.cudaMemcpyAsync(
-                buf2.getHostPointer()
-                , devicePointerInfo.getPointer()
-                , devicePointerInfo.getLength()
-                , cudaMemcpyKind.cudaMemcpyDeviceToHost
-                , ContextHolder.getInstance().getCudaStream());
-*/
-
-        return buf2.getHostPointer();
+        DevicePointerInfo devicePointerInfo = buf2.getPointersToContexts().get(Thread.currentThread().getName(), Triple.of(offset, length, stride));
+        HostDevicePointer hostDevicePointer = devicePointerInfo.getPointers();
+        Pointer hostPointer = hostDevicePointer.getHostPointer();
+        ByteBuffer pointer = hostPointer.getByteBuffer(0, copy.length() * copy.getElementSize());
+        //copy at zero offset because offset is already taken care of in the above line. The view will start at
+        //the given offset
+        NioUtil.copyAtStride(length,getBufferType(copy),pointer,offset,stride,nio,hostOffset,hostStride);
+        return devicePointerInfo;
     }
 
     @Override
-    public Object alloc(DataBuffer buffer,int stride,int offset,int length) {
+    public Object alloc(DataBuffer buffer, int stride, int offset, int length, boolean initData) {
+        ContextHolder.getInstance().setContext();
+        Pointer devicePointer = new Pointer();
         Pointer hostPointer = new Pointer();
-        Pointer hostData = PointerUtil.getHostPointer(buffer);
-        int device = ContextHolder.getInstance().getDeviceForThread();
-        JCuda.cudaSetDevice(device);
-        JCuda.cudaSetDeviceFlags(JCuda.cudaDeviceMapHost);
-        DevicePointerInfo devicePointerInfo = new DevicePointerInfo(
-                new HostDevicePointer(hostData,hostPointer)
-                , length
-                ,stride
-                ,offset,false);
-
-
         JCuda.cudaHostAlloc(
                 hostPointer
                 , buffer.getElementSize() * length
                 , JCuda.cudaHostAllocMapped);
-        JCuda.cudaHostGetDevicePointer(hostPointer,hostData,0);
+        JCuda.cudaHostGetDevicePointer(
+                devicePointer
+                ,hostPointer
+                ,0);
+        DevicePointerInfo devicePointerInfo = new DevicePointerInfo(
+                new HostDevicePointer(hostPointer,devicePointer)
+                , length
+                ,stride
+                ,offset,false);
 
+        if(initData) {
+            ByteBuffer pointer = hostPointer.getByteBuffer(0, buffer.getElementSize() * buffer.length());
+            pointer.order(ByteOrder.nativeOrder());
+            NioUtil.copyAtStride(buffer.length(),getBufferType(buffer),buffer.asNio(),offset,stride,pointer,0,1);
+        }
         return devicePointerInfo;
+    }
+
+    private NioUtil.BufferType getBufferType(DataBuffer buffer) {
+        switch(buffer.dataType()) {
+            case DOUBLE: return NioUtil.BufferType.DOUBLE;
+            case INT: return NioUtil.BufferType.FLOAT;
+            case FLOAT: return NioUtil.BufferType.FLOAT;
+            default: throw new UnsupportedOperationException("Unsupported data buffer type");
+        }
     }
 
     @Override
@@ -121,5 +126,10 @@ public class PinnedMemoryStrategy implements MemoryStrategy {
             JCuda.cudaFreeHost(devicePointerInfo.getPointers().getDevicePointer());
             devicePointerInfo.setFreed(true);
         }
+    }
+
+    @Override
+    public void validate(DataBuffer buffer, CudaContext context) throws Exception {
+
     }
 }

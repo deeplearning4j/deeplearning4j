@@ -72,10 +72,11 @@ public class CudaContext implements AutoCloseable {
      * on the old stream
      */
     public void syncOldStream() {
-        JCuda.cudaStreamWaitEvent(oldStream,oldEvent,0);
-        JCuda.cudaEventDestroy(oldEvent);
-        oldEventDestroyed = true;
-       // JCuda.cudaStreamSynchronize(oldStream);
+        if(!oldEventDestroyed) {
+            JCuda.cudaStreamWaitEvent(oldStream,oldEvent,0);
+            JCuda.cudaEventDestroy(oldEvent);
+            oldEventDestroyed = true;
+        }
     }
 
     /**

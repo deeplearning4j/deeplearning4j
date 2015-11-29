@@ -22,7 +22,7 @@ import org.nd4j.linalg.jcublas.util.PointerUtil;
  */
 public class PageableDirectBufferMemoryStrategy implements MemoryStrategy {
     @Override
-    public void getData(DataBuffer buffer, int offset, int stride, int length, DataBuffer get, CudaContext ctx, int getStride) {
+    public void getData(DataBuffer buffer, int offset, int stride, int length, DataBuffer get, CudaContext ctx, int getStride, int getOffset) {
         JCudaBuffer buf2 = (JCudaBuffer) buffer;
         Table<String, Triple<Integer, Integer, Integer>, DevicePointerInfo> pointersToContexts = buf2.getPointersToContexts();
         DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName(),Triple.of(offset,buf2.length(),1));
@@ -89,7 +89,7 @@ public class PageableDirectBufferMemoryStrategy implements MemoryStrategy {
     }
 
     @Override
-    public Object copyToHost(DataBuffer copy, int offset, int stride, CudaContext context) {
+    public Object copyToHost(DataBuffer copy, int offset, int stride, int length, CudaContext context, int hostOffset, int hostStride) {
         JCudaBuffer buf2 = (JCudaBuffer) copy;
         Table<String, Triple<Integer, Integer, Integer>, DevicePointerInfo> pointersToContexts = buf2.getPointersToContexts();
 
@@ -107,7 +107,7 @@ public class PageableDirectBufferMemoryStrategy implements MemoryStrategy {
     }
 
     @Override
-    public Object alloc(DataBuffer buffer,int stride,int offset,int length) {
+    public Object alloc(DataBuffer buffer, int stride, int offset, int length, boolean initData) {
         Pointer hostData = new Pointer();
         HostDevicePointer devicePointer = new HostDevicePointer(PointerUtil.getHostPointer(buffer),hostData);
         JCuda.cudaMalloc(hostData,buffer.length() * buffer.getElementSize());
@@ -120,5 +120,10 @@ public class PageableDirectBufferMemoryStrategy implements MemoryStrategy {
         DevicePointerInfo devicePointerInfo = buf2.getPointersToContexts().get(Thread.currentThread().getName(),new Pair<>(offset,length));
         JCuda.cudaFree(devicePointerInfo.getPointers().getDevicePointer());
 
+    }
+
+    @Override
+    public void validate(DataBuffer buffer, CudaContext context) throws Exception {
+        throw new UnsupportedOperationException();
     }
 }

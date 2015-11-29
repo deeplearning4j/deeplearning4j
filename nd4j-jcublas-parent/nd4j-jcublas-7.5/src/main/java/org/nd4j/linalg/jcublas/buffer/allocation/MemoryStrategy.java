@@ -23,8 +23,9 @@ public interface MemoryStrategy {
      * @param get
      * @param ctx
      * @param getStride
+     * @param getOffset
      */
-    void getData(DataBuffer buffer, int offset, int stride, int length, DataBuffer get, CudaContext ctx, int getStride);
+    void getData(DataBuffer buffer, int offset, int stride, int length, DataBuffer get, CudaContext ctx, int getStride, int getOffset);
 
     /**
      * @param buffer
@@ -34,7 +35,18 @@ public interface MemoryStrategy {
      */
     void getData(DataBuffer buffer, int offset, DataBuffer get, CudaContext ctx);
 
+    /**
+     *
+     * @param buffer
+     * @param offset
+     * @param stride
+     * @param length
+     * @param hostPointer
+     */
     void setData(Pointer buffer, int offset, int stride, int length, Pointer hostPointer);
+
+
+
 
     /**
      * Set the data for the buffer
@@ -63,20 +75,23 @@ public interface MemoryStrategy {
     /**
      * Copy data to native or gpu
      * @param copy the buffer to copy
-     * @return a pointer representing
+     * @param length
+     * @param hostOffset
+     *@param hostStride @return a pointer representing
      * the copied data
      */
-    Object copyToHost(DataBuffer copy, int offset,int stride, CudaContext context);
+    Object copyToHost(DataBuffer copy, int offset, int stride, int length, CudaContext context, int hostOffset, int hostStride);
 
     /**
      * Allocate memory for the given buffer
      * @param buffer the buffer to allocate for
      * @param stride the stride
      * @param offset the offset used for the buffer
-     *               on allocation
+ *               on allocation
      * @param length length
+     * @param initData
      */
-    Object alloc(DataBuffer buffer, int stride, int offset, int length);
+    Object alloc(DataBuffer buffer, int stride, int offset, int length, boolean initData);
 
     /**
      * Free the buffer wrt the
@@ -86,4 +101,12 @@ public interface MemoryStrategy {
      * @param length the length to free
      */
     void free(DataBuffer buffer, int offset, int length);
+
+    /**
+     * Validates data present in a data buffer
+     * @param buffer the buffer to validate
+     * @param context context used for copying
+     */
+    void validate(DataBuffer buffer,CudaContext context) throws Exception;
+
 }
