@@ -178,6 +178,9 @@ public class MultiLayerTest {
         network.setLabels(trainTest.getTrain().getLabels());
         network.computeGradientAndScore();
         INDArray grad = network.gradient().gradient();
+        
+        assertTrue("Gradient contains invalid numbers", !Nd4j.hasInvalidNumber(grad));
+        
         int numParams = network.numParams();
         network.fit(trainTest.getTrain());
 
