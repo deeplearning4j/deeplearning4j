@@ -9,8 +9,12 @@ import java.util.NoSuchElementException;
 import java.util.Random;
 
 /**Given a graph, iterate through random walks on that graph of a specified length.
- * Random walks are generated starting at every node in the graph exactly once, though the order
- * of the starting nodes is randomized.
+ * Unlike {@link RandomWalkIterator}, the {@code WeightedRandomWalkIterator} uses the values associated with each edge
+ * to determine probabilities. Weights on each edge need not be normalized.<br>
+ * Because the edge values are used to determine the probabilities of selecting an edge, the {@code WeightedRandomWalkIterator}
+ * can only be used on graphs with an edge type that extends the {@link java.lang.Number} class (i.e., Integer, Double, etc)<br>
+ * Random walks are generated starting at every node in the graph exactly once, though the order of the starting nodes
+ * is randomized.
  * @author Alex Black
  */
 public class WeightedRandomWalkIterator<V> implements GraphWalkIterator<V> {
@@ -80,16 +84,6 @@ public class WeightedRandomWalkIterator<V> implements GraphWalkIterator<V> {
         int[] indices = new int[walkLength+1];
         indices[0] = currVertexIdx;
         if(walkLength == 0) return new VertexSequence<>(graph,indices);
-
-//        for( int i=2; i<=walkLength; i++ ){ //<= walk length: i.e., if walk length = 2, it contains 3 vertices etc
-//            next = graph.getRandomConnectedVertex(currVertexIdx,rng);
-//            currVertexIdx = next.vertexID();
-//            indices[i] = currVertexIdx;
-//        }
-//        return new VertexSequence<>(graph,indices);
-
-
-
 
         for( int i=1; i<=walkLength; i++ ) {
             List<? extends Edge<? extends Number>> edgeList = graph.getEdgesOut(currVertexIdx);
