@@ -352,14 +352,14 @@ public class OutputLayerTest {
         			}
         		}
         	}
-        	INDArray labels3d = Nd4j.zeros(miniBatchSize,nOut,timeSeriesLength);
+        	INDArray labels3d = Nd4j.zeros(miniBatchSize, nOut, timeSeriesLength);
         	for( int i = 0; i < miniBatchSize; i++ ){
         		for( int j = 0; j < timeSeriesLength; j++ ){
         			int idx = r.nextInt(nOut);
         			labels3d.putScalar(new int[]{i,idx,j}, 1.0f);
         		}
         	}
-        	INDArray labels2d = proc.backprop(labels3d,null);
+        	INDArray labels2d = proc.backprop(labels3d, miniBatchSize);
 
     		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
     	        .seed(12345L)
@@ -379,7 +379,7 @@ public class OutputLayerTest {
     		mln.init();
 
     		INDArray out2d = mln.feedForward(input).get(2);
-    		INDArray out3d = proc.preProcess(out2d, mln.getLayer(0));
+    		INDArray out3d = proc.preProcess(out2d, miniBatchSize);
 
     		MultiLayerConfiguration confRnn = new NeuralNetConfiguration.Builder()
     	        .seed(12345L)
@@ -406,14 +406,19 @@ public class OutputLayerTest {
     		mln.computeGradientAndScore();
     		mlnRnn.computeGradientAndScore();
 
-    		double score = mln.score();
+            //score is average over all examples.
+            //However: OutputLayer version has miniBatch*timeSeriesLength "examples" (after reshaping)
+            //RnnOutputLayer has miniBatch examples
+            //Hence: expect difference in scores by factor of timeSeriesLength
+    		double score = mln.score() * timeSeriesLength;
     		double scoreRNN = mlnRnn.score();
 
     		assertTrue(!Double.isNaN(score));
     		assertTrue(!Double.isNaN(scoreRNN));
 
     		double relError = Math.abs(score-scoreRNN)/(Math.abs(score)+Math.abs(scoreRNN));
-    		assertTrue(relError<1e-6);
+            System.out.println(relError);
+            assertTrue(relError<1e-6);
 
     		//Check labels and inputs for output layer:
     		OutputLayer ol = (OutputLayer)mln.getOutputLayer();

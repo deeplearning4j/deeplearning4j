@@ -12,11 +12,22 @@ import lombok.NonNull;
 @Data
 public class HuffmanNode {
     @NonNull
-    private final byte[] code;
+    private byte[] code;
     @NonNull
-    private final int[] point;
+    private  int[] point;
     @NonNull
-    private final int idx;
+    private int idx;
     @NonNull
-    private final byte length;
+    private byte length;
+
+    public HuffmanNode() {
+
+    }
+
+    public HuffmanNode(byte[] code, int[] point, int index, byte length) {
+        this.code = code;
+        this.point = point;
+        this.idx = index;
+        this.length = length;
+    }
 }

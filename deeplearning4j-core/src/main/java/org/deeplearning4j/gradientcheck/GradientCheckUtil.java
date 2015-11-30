@@ -60,13 +60,13 @@ public class GradientCheckUtil {
 
         if(useUpdater) {
             Updater updater = UpdaterCreator.getUpdater(mln);
-            updater.update(mln, gradAndScore.getFirst(), 0);
+            updater.update(mln, gradAndScore.getFirst(), 0, mln.batchSize());
         }
 
         INDArray gradientToCheck = gradAndScore.getFirst().gradient();
         INDArray originalParams = mln.params();
 
-        int nParams = mln.numParams();
+        int nParams = originalParams.length();
 
         int totalNFailures = 0;
         double maxError = 0.0;
