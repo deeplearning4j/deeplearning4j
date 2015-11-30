@@ -96,6 +96,4 @@ public class TestGraphLoadingWeighted {
         assertEquals(graph,graph2);
     }
 
-
-
 }
