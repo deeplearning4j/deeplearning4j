@@ -225,7 +225,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public int batchSize() {
-        return input.slices();
+        return input.size(0);
     }
 
     @Override

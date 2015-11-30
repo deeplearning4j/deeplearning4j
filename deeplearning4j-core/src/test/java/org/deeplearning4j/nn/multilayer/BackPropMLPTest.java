@@ -4,6 +4,7 @@ import static org.junit.Assert.*;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
@@ -200,6 +201,7 @@ public class BackPropMLPTest {
 
         testIrisMiniBatchWeightUpdates(1,new int[]{1}, "sigmoid");
         testIrisMiniBatchWeightUpdates(1, new int[]{5}, "sigmoid");
+        testIrisMiniBatchWeightUpdates(6, new int[]{5}, "sigmoid");
         testIrisMiniBatchWeightUpdates(12,new int[]{15,25,10},"sigmoid");
         testIrisMiniBatchWeightUpdates(50,new int[]{10,50,200,50,10},"tanh");
         testIrisMiniBatchWeightUpdates(150,new int[]{30,50,20},"tanh");
@@ -222,10 +224,6 @@ public class BackPropMLPTest {
 
         MultiLayerNetwork network = new MultiLayerNetwork(getIrisMLPSimpleConfig(hiddenLayerSizes,activationFunction));
         network.init();
-        //test pre activationss
-        MultiLayerNetwork networkLinear = new MultiLayerNetwork(getIrisMLPSimpleConfig(hiddenLayerSizes,"identity"));
-        networkLinear.init();
-        networkLinear.setParams(network.params());
 
         Layer[] layers = network.getLayers();
         int nLayers = layers.length;
@@ -255,6 +253,23 @@ public class BackPropMLPTest {
                     layerActivations[i] = (i == nLayers - 1 ? doSoftmax(layerZs[i].dup()) : doTanh(layerZs[i].dup()));
             }
 
+            //Check network forward pass:
+            List<INDArray> act = network.feedForward(x,true);
+            for( int i=0; i<act.size(); i++ ){
+                if(i == 0){
+                    assertEquals(x,act.get(0));
+                    continue;
+                }
+                float[] aExp = asFloat(layerActivations[i-1]);
+                float[] aAct = asFloat(act.get(i));
+
+//                System.out.println(i);
+//                System.out.println(Arrays.toString(aExp));
+//                System.out.println(Arrays.toString(aAct));
+                for( int j=0; j<aExp.length; j++ ){
+                    assertEquals(aExp[j],aAct[j],1e-6);
+                }
+            }
 
 
             //Do backward pass:
@@ -272,17 +287,47 @@ public class BackPropMLPTest {
                 assertArrayEquals(deltas[i].shape(),new int[]{miniBatchSize,hiddenLayerSizes[i]});
             }
 
+            //Calculate gradients:
+            network.setInput(x);
+            network.setLabels(y);
+            network.computeGradientAndScore();
+            Gradient g = network.gradient();
+            Map<String,INDArray> grad = g.gradientForVariable();
+
             INDArray[] dLdw = new INDArray[nLayers];
             INDArray[] dLdb = new INDArray[nLayers];
-            for( int i = 0; i < nLayers; i++) {
-                INDArray prevActivations = (i == 0 ? x : layerActivations[i - 1]);
+            System.out.println("Gradients: expected vs. actual");
+            for( int i = 0; i<nLayers; i++) {
+                INDArray prevActivations = (i == 0 ? x : layerActivations[i-1]);
                 dLdw[i] = deltas[i].transpose().mmul(prevActivations).divi(miniBatchSize).transpose();	//Shape: [nIn, nOut]
-                dLdb[i] = deltas[i].sum(0); //Shape: [1,nOut]
+                dLdb[i] = deltas[i].mean(0); //Shape: [1,nOut]
 
                 int nIn = (i == 0 ? 4 : hiddenLayerSizes[i - 1]);
                 int nOut = (i < nLayers - 1 ? hiddenLayerSizes[i] : 3);
-                assertArrayEquals(dLdw[i].shape(),new int[]{nIn, nOut});
-                assertArrayEquals(dLdb[i].shape(),new int[]{1, nOut});
+                assertArrayEquals(dLdw[i].shape(), new int[]{nIn, nOut});
+                assertArrayEquals(dLdb[i].shape(), new int[]{1, nOut});
+
+                float[] expWeightGrads = asFloat(dLdw[i]);
+                float[] expBiasGrads = asFloat(dLdb[i]);
+                float[] actWeightGrads = asFloat(grad.get(i+"_W"));
+                float[] actBiasGrads = asFloat(grad.get(i+"_b"));
+
+                //Here: dLdw and dLdb arrays are POST division by minibatch size, but network.gradient() is PRE division by minibatch
+                // as it hasn't been run through updater (BaseUpdater.postApply)
+                for( int j=0; j<actWeightGrads.length; j++ ) actWeightGrads[j] /= miniBatchSize;
+                for( int j=0; j<actBiasGrads.length; j++ ) actBiasGrads[j] /= miniBatchSize;
+
+//                System.out.println("Expected: " + i + "_W " + Arrays.toString(expWeightGrads));
+//                System.out.println("  Actual: " + i + "_W " + Arrays.toString(actWeightGrads));
+//                System.out.println("Expected: " + i + "_b " + Arrays.toString(expBiasGrads));
+//                System.out.println("  Actual: " + i + "_b " + Arrays.toString(actBiasGrads));
+
+                for( int j=0; j<expWeightGrads.length; j++ ){
+                    assertEquals(expWeightGrads[j],actWeightGrads[j],1e-6f);
+                }
+                for( int j=0; j<expBiasGrads.length; j++ ){
+                    assertEquals(expBiasGrads[j],actBiasGrads[j],1e-6f);
+                }
             }
 
             INDArray[] expectedWeights = new INDArray[nLayers];
@@ -298,30 +343,7 @@ public class BackPropMLPTest {
             }
 
             //Do backprop, and compare resulting weights with expected weights:
-            network.setInput(data.getFeatureMatrix());
-            network.setLabels(data.getLabels());
-            networkLinear.setInput(network.getInput());
-            networkLinear.setLabels(network.getLabels());
-
-            List<INDArray> feedForward = network.feedForward();
-            List<INDArray> preActivations = networkLinear.feedForward();
-            //input + normal
-            assertEquals(nLayers + 1,feedForward.size());
-            assertEquals(nLayers + 1,preActivations.size());
-
-            for(int i = 0; i < nLayers - 1; i++) {
-                assertEquals(layerZs[i],preActivations.get(i + 1));
-            }
-
-            for(int i = 0; i < nLayers; i++) {
-                assertEquals(layerActivations[i],feedForward.get(i + 1));
-            }
-
-
             network.fit(data);
-
-
-
 
             INDArray[] layerWeightsAfter = new INDArray[nLayers];
             INDArray[] layerBiasesAfter = new INDArray[nLayers];
@@ -447,7 +469,7 @@ public class BackPropMLPTest {
                 .seed(12345L)
                 .list(hiddenLayerSizes.length + 1);
 
-        for( int i = 0; i<hiddenLayerSizes.length; i++) {
+        for(int i = 0; i < hiddenLayerSizes.length; i++) {
             int nIn = (i == 0 ? 4 : hiddenLayerSizes[i - 1]);
             lb.layer(i, new DenseLayer.Builder()
                     .nIn(nIn).nOut(hiddenLayerSizes[i])
@@ -469,11 +491,7 @@ public class BackPropMLPTest {
     }
 
     public static float[] asFloat( INDArray arr) {
-        int len = arr.length();
-        float[] f = new float[len];
-        for( int i = 0; i < len; i++ )
-            f[i] = arr.getFloat(i);
-        return f;
+        return Nd4j.toFlattened('f',arr.dup()).data().asFloat();
     }
 
     public static float dotProduct( float[] x, float[] y) {
