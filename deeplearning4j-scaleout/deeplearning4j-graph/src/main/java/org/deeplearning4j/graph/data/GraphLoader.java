@@ -3,6 +3,7 @@ package org.deeplearning4j.graph.data;
 import org.deeplearning4j.graph.api.Edge;
 import org.deeplearning4j.graph.api.Vertex;
 import org.deeplearning4j.graph.data.impl.DelimitedEdgeLineProcessor;
+import org.deeplearning4j.graph.data.impl.WeightedEdgeLineProcessor;
 import org.deeplearning4j.graph.graph.Graph;
 import org.deeplearning4j.graph.vertexfactory.StringVertexFactory;
 import org.deeplearning4j.graph.vertexfactory.VertexFactory;
@@ -20,7 +21,7 @@ public class GraphLoader {
 
     /** Simple method for loading an undirected graph, where the graph is represented by a edge list with one edge
      * per line with a delimiter in between<br>
-     * This method assumes that all lines in the file are of the form "i<delim>j" where i and j are integers
+     * This method assumes that all lines in the file are of the form {@code i<delim>j} where i and j are integers
      * in range 0 to numVertices inclusive, and "<delim>" is the user-provided delimiter
      * @param path Path to the edge list file
      * @param numVertices number of vertices in the graph
@@ -35,6 +36,35 @@ public class GraphLoader {
             String line;
             while( (line = br.readLine()) != null ) {
                 Edge<String> edge = lineProcessor.processLine(line);
+                if(edge != null){
+                    graph.addEdge(edge);
+                }
+            }
+        }
+        return graph;
+    }
+
+    /**Method for loading a weighted graph from an edge list file, where each edge (inc. weight) is represented by a
+     * single line. Graph may be directed or undirected<br>
+     * This method assumes that edges are of the format: {@code fromIndex<delim>toIndex<delim>edgeWeight} where {@code <delim>}
+     * is the delimiter.
+     * @param path Path to the file
+     * @param numVertices The number of vertices in the graph
+     * @param delim The delimiter used in the file (typically: "," or " " etc)
+     * @param directed whether the edges should be treated as directed (true) or undirected (false)
+     * @param ignoreLinesStartingWith Starting characters for comment lines. May be null. For example: "//" or "#"
+     * @return The graph
+     * @throws IOException
+     */
+    public static Graph<String,Double> loadWeightedEdgeListFile(String path, int numVertices, String delim, boolean directed,
+                                                                String... ignoreLinesStartingWith) throws IOException{
+        Graph<String,Double> graph = new Graph<>(numVertices,false,new StringVertexFactory());
+        EdgeLineProcessor<Double> lineProcessor = new WeightedEdgeLineProcessor(delim,directed,ignoreLinesStartingWith);
+
+        try(BufferedReader br = new BufferedReader(new FileReader(new File(path)))){
+            String line;
+            while( (line = br.readLine()) != null ) {
+                Edge<Double> edge = lineProcessor.processLine(line);
                 if(edge != null){
                     graph.addEdge(edge);
                 }

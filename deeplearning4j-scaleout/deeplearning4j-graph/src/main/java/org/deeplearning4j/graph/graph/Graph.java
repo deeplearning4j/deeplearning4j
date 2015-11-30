@@ -205,4 +205,17 @@ public class Graph<V, E> extends BaseGraph<V,E> {
         sb.append("\n}");
         return sb.toString();
     }
+
+    @Override
+    public boolean equals(Object o){
+        if(!(o instanceof Graph)) return false;
+        Graph g = (Graph)o;
+        if(allowMultipleEdges != g.allowMultipleEdges) return false;
+        if(edges.length != g.edges.length) return false;
+        if(vertices.size() != g.vertices.size()) return false;
+        for( int i=0; i<edges.length; i++ ){
+            if(!edges[i].equals(g.edges[i])) return false;
+        }
+        return vertices.equals(g.vertices);
+    }
 }
