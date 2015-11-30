@@ -179,6 +179,48 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
         eval(labels,predicted);
     }
 
+    /** Evaluate a single prediction (one prediction at a time)
+     * @param predictedIdx Index of class predicted by the network
+     * @param actualIdx Index of actual class
+     */
+    public void eval(int predictedIdx, int actualIdx ) {
+        // Add the number of rows to numRowCounter
+        numRowCounter++;
+
+        // If confusion is null, then Evaluation is instantiated without providing the classes
+        if(confusion == null) {
+            throw new UnsupportedOperationException("Cannot evaluate single example without initializing confusion matrix first");
+        }
+
+        addToConfusion(predictedIdx, actualIdx);
+
+        // If they are equal
+        if(predictedIdx == actualIdx) {
+            // Then add 1 to True Positive
+            // (For a particular label)
+            incrementTruePositives(predictedIdx);
+
+            // And add 1 for each negative class that is accurately predicted (True Negative)
+            //(For a particular label)
+            for(Integer clazz : confusion.getClasses()) {
+                if(clazz != predictedIdx)
+                    trueNegatives.incrementCount(clazz, 1.0);
+            }
+        }
+        else {
+            // Otherwise the real label is predicted as negative (False Negative)
+            incrementFalseNegatives(actualIdx);
+            // Otherwise the prediction is predicted as falsely positive (False Positive)
+            incrementFalsePositives(predictedIdx);
+            // Otherwise true negatives
+            for (Integer clazz : confusion.getClasses()) {
+                if (clazz != predictedIdx && clazz != actualIdx)
+                    trueNegatives.incrementCount(clazz, 1.0);
+
+            }
+        }
+    }
+
     /** Method to obtain the classification report, as a String
      * @return A (multi-line) String with accuracy, precision, recall, f1 score etc
      */
