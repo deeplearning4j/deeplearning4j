@@ -44,7 +44,7 @@ import org.nd4j.linalg.jcublas.device.conf.DeviceConfiguration;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.io.ClassPathResource;
+import org.nd4j.linalg.io.ClassPathResource;
 
 import org.apache.commons.pool2.ObjectPool;
 
