@@ -5,6 +5,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.executors.ExecutorServiceProvider;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.slf4j.Logger;
@@ -49,13 +50,12 @@ public class DefaultParallelExecutioner implements ParallelExecutioner {
     }
 
     public DefaultParallelExecutioner() {
-        this(getEnabled() ? new ForkJoinPool(Runtime.getRuntime().availableProcessors(),ForkJoinPool.defaultForkJoinWorkerThreadFactory,null,false) : null);
+        this(getEnabled() ? ExecutorServiceProvider.getForkJoinPool() : null);
     }
 
     public static boolean getEnabled() {
         String enabled = System.getProperty(ENABLED,"true");
-        boolean enable = Boolean.parseBoolean(enabled);
-        return enable;
+        return Boolean.parseBoolean(enabled);
     }
 
 
@@ -352,23 +352,15 @@ public class DefaultParallelExecutioner implements ParallelExecutioner {
 
     @Override
     public Future exec(Runnable runnable) {
-        if(executorService == null) {
-            log.debug("Initializing parallel executioner executor");
-            executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-        }
-
+        if(executorService == null) executorService = ExecutorServiceProvider.getExecutorService();
 
         return executorService.submit(runnable);
     }
 
     @Override
     public <T> void exec(ForkJoinTask<T> task) {
-        if(forkJoinPool == null) {
-            log.debug("Initializing fork join parallel executor");
-            forkJoinPool = new ForkJoinPool(Runtime.getRuntime().availableProcessors());
-        }
+        if(forkJoinPool == null) forkJoinPool = ExecutorServiceProvider.getForkJoinPool();
 
         forkJoinPool.execute(task);
-
     }
 }

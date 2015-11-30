@@ -21,6 +21,7 @@ package org.nd4j.linalg.jcublas.kernel;
 
 
 
+import jcuda.runtime.JCuda;
 import jcuda.utils.KernelLauncher;
 import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
@@ -84,10 +85,6 @@ public class KernelFunctions {
         props.load(res.getInputStream());
         KernelFunctionLoader.getInstance().load();
 
-        String reduceFunctionsList = props.getProperty(REDUCE);
-        for (String function : reduceFunctionsList.split(","))
-            reduceFunctions.add(function);
-
         SHARED_MEM = Integer.parseInt(props.getProperty(SHARED_MEM_KEY, "512"));
         THREADS = Integer.parseInt(props.getProperty(THREADS_KEY, "128"));
         BLOCKS = Integer.parseInt(props.getProperty(BLOCKS_KEY, "64"));
@@ -117,6 +114,7 @@ public class KernelFunctions {
                 .call(kernelParameters);
         if(sync)
             cudaContext.syncStream();
+
 
     }
 

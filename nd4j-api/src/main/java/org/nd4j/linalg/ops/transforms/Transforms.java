@@ -282,6 +282,8 @@ public class Transforms {
     }
 
 
+
+
     /**
      * Returns the negative of an ndarray
      *
@@ -340,6 +342,101 @@ public class Transforms {
         return stabilize(ndArray, k, Nd4j.copyOnOps);
     }
 
+    public static INDArray sin(INDArray in){
+        return sin(in, Nd4j.copyOnOps);
+    }
+
+    public static INDArray sin(INDArray in, boolean copy){
+        return Nd4j.getExecutioner().execAndReturn(new Sin((copy ? in.dup() : in)));
+    }
+
+    /**
+     *
+     * @param in
+     * @return
+     */
+    public static INDArray cos(INDArray in) {
+        return cos(in, Nd4j.copyOnOps);
+    }
+
+    /**
+     *
+     * @param in
+     * @param copy
+     * @return
+     */
+    public static INDArray cos(INDArray in, boolean copy){
+        return Nd4j.getExecutioner().execAndReturn(new Cos((copy ? in.dup() : in)));
+    }
+
+
+    public static INDArray acos(INDArray arr) {
+        return acos(arr,Nd4j.copyOnOps);
+    }
+
+
+   public static INDArray acos(INDArray in,boolean copy) {
+       return Nd4j.getExecutioner().execAndReturn(new ACos(((copy ? in.dup() : in))));
+   }
+
+
+    public static INDArray asin(INDArray arr) {
+        return asin(arr, Nd4j.copyOnOps);
+    }
+
+
+    public static INDArray asin(INDArray in,boolean copy) {
+        return Nd4j.getExecutioner().execAndReturn(new ASin(((copy ? in.dup() : in))));
+    }
+
+    public static INDArray atan(INDArray arr) {
+        return acos(arr,Nd4j.copyOnOps);
+    }
+
+
+    public static INDArray atan(INDArray in,boolean copy) {
+        return Nd4j.getExecutioner().execAndReturn(new ATan(((copy ? in.dup() : in))));
+    }
+
+    public static INDArray ceil(INDArray arr) {
+        return ceil(arr, Nd4j.copyOnOps);
+    }
+
+
+    public static INDArray ceil(INDArray in,boolean copy) {
+        return Nd4j.getExecutioner().execAndReturn(new Ceil(((copy ? in.dup() : in))));
+    }
+
+
+    public static INDArray relu(INDArray arr) {
+        return relu(arr, Nd4j.copyOnOps);
+    }
+
+
+    public static INDArray relu(INDArray in,boolean copy) {
+        return Nd4j.getExecutioner().execAndReturn(new RectifedLinear(((copy ? in.dup() : in))));
+    }
+
+
+
+    public static INDArray leakyRelu(INDArray arr) {
+        return leakyRelu(arr, Nd4j.copyOnOps);
+    }
+
+
+    public static INDArray leakyRelu(INDArray in,boolean copy) {
+        return Nd4j.getExecutioner().execAndReturn(new LeakyReLU(((copy ? in.dup() : in))));
+    }
+
+
+    public static INDArray softPlus(INDArray arr) {
+        return softPlus(arr,Nd4j.copyOnOps);
+    }
+
+
+    public static INDArray softPlus(INDArray in,boolean copy) {
+        return Nd4j.getExecutioner().execAndReturn(new SoftPlus(((copy ? in.dup() : in))));
+    }
 
     /**
      * Abs funciton

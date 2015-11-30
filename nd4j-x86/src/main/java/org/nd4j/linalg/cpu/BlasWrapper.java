@@ -52,6 +52,16 @@ public class BlasWrapper extends BaseBlasWrapper {
                 log.warn("unable to force native BLAS", e);
             }
         }
+
+        //Check that native system blas is used:
+        if(!(BLAS.getInstance() instanceof com.github.fommil.netlib.NativeSystemBLAS)){
+            System.out.println("****************************************************************");
+            System.out.println("WARNING: COULD NOT LOAD NATIVE SYSTEM BLAS");
+            System.out.println("ND4J performance WILL be reduced");
+            System.out.println("Please install native BLAS library such as OpenBLAS or IntelMKL");
+            System.out.println("See http://nd4j.org/getstarted.html#open for further details");
+            System.out.println("****************************************************************");
+        }
     }
 
     static void setFinalStatic(Field field, Object newValue) throws Exception {

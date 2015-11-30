@@ -26,10 +26,12 @@ import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.FeatureUtil;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -79,7 +81,7 @@ public class DataSetTest extends BaseNd4jTest {
         DataSet load = new DataSet();
         load.load(new File("iris.bin"));
         new File("iris.bin").deleteOnExit();
-        assertEquals(iris,load);
+        assertEquals(iris, load);
     }
 
     @Test
@@ -91,11 +93,11 @@ public class DataSetTest extends BaseNd4jTest {
         assertEquals(train.getTrain().getLabels().length(),6);
 
         SplitTestAndTrain train2 = data.splitTestAndTrain(6, new Random(1));
-        assertEquals(getFailureMessage(),train.getTrain().getFeatureMatrix(), train2.getTrain().getFeatureMatrix());
+        assertEquals(getFailureMessage(), train.getTrain().getFeatureMatrix(), train2.getTrain().getFeatureMatrix());
 
         DataSet x0 = new IrisDataSetIterator(150,150).next();
         SplitTestAndTrain testAndTrain = x0.splitTestAndTrain(10);
-        assertArrayEquals(new int[]{10,4},testAndTrain.getTrain().getFeatureMatrix().shape());
+        assertArrayEquals(new int[]{10, 4}, testAndTrain.getTrain().getFeatureMatrix().shape());
         assertEquals(x0.getFeatureMatrix().getRows(ArrayUtil.range(0, 10)), testAndTrain.getTrain().getFeatureMatrix());
         assertEquals(x0.getLabels().getRows(ArrayUtil.range(0,10)),testAndTrain.getTrain().getLabels());
 
@@ -109,12 +111,48 @@ public class DataSetTest extends BaseNd4jTest {
         assertEquals(getFailureMessage(),0,x0.get(1).outcome());
         assertEquals(getFailureMessage(),2, x0.get(149).outcome());
         Map<Integer,Double> counts = x0.labelCounts();
-        assertEquals(getFailureMessage(),50,counts.get(0),1e-1);
+        assertEquals(getFailureMessage(), 50, counts.get(0), 1e-1);
         assertEquals(getFailureMessage(),50,counts.get(1),1e-1);
         assertEquals(getFailureMessage(),50,counts.get(2),1e-1);
 
     }
 
+    @Test
+    public void testTimeSeriesMerge(){
+
+        int numExamples = 10;
+        int inSize = 13;
+        int labelSize = 5;
+        int tsLength = 15;
+
+        Nd4j.getRandom().setSeed(12345);
+        List<DataSet> list = new ArrayList<>(numExamples);
+        for( int i=0; i<numExamples; i++ ){
+            INDArray in = Nd4j.rand(new int[]{1,inSize,tsLength});
+            INDArray out = Nd4j.rand(new int[]{1,labelSize,tsLength});
+            list.add(new DataSet(in,out));
+        }
+
+        DataSet merged = DataSet.merge(list);
+        assertEquals(numExamples,merged.numExamples());
+
+        INDArray f = merged.getFeatures();
+        INDArray l = merged.getLabels();
+        assertArrayEquals(new int[]{numExamples,inSize,tsLength},f.shape());
+        assertArrayEquals(new int[]{numExamples,labelSize,tsLength},l.shape());
+
+        for( int i=0; i<numExamples; i++ ){
+            DataSet exp = list.get(i);
+            INDArray expIn = exp.getFeatureMatrix();
+            INDArray expL = exp.getLabels();
+
+            INDArray fSubset = f.get(NDArrayIndex.interval(i,i+1), NDArrayIndex.all(), NDArrayIndex.all());
+            INDArray lSubset = l.get(NDArrayIndex.interval(i,i+1), NDArrayIndex.all(),NDArrayIndex.all());
+
+            assertEquals(expIn, fSubset);
+            assertEquals(expL,lSubset);
+        }
+    }
 
     @Override
     public char ordering() {

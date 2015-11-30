@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDimensions;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.CopyOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.SimpleJCublas;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
@@ -64,6 +65,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(Accumulation op, int... dimension) {
+        ContextHolder.getInstance().setContext();
         for(int i = 0; i < dimension.length; i++) {
             if(dimension[i] < 0)
                 dimension[i] += op.x().rank();
@@ -143,6 +145,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray execAndReturn(TransformOp op, int... dimension) {
+        ContextHolder.getInstance().setContext();
         return super.execAndReturn(op, dimension);
     }
 
@@ -150,11 +153,13 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray execAndReturn(ScalarOp op, int... dimension) {
+        ContextHolder.getInstance().setContext();
         return super.execAndReturn(op, dimension);
     }
 
     @Override
     public Op exec(Op op, int... dimension) {
+        ContextHolder.getInstance().setContext();
         return super.exec(op, dimension);
     }
 
@@ -163,7 +168,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     public Op exec(Op op) {
         //linear views and oblong offsets can't be handled by the gpu (due to the way the buffers are interpreted as vectors)
         if(op.x() instanceof IComplexNDArray
-                || executionMode() == ExecutionMode.JAVA || op.isPassThrough())
+                || executionMode() == ExecutionMode.JAVA || op.isPassThrough() || op instanceof CopyOp)
             return super.exec(op);
 
         if (op instanceof TransformOp) {
@@ -226,14 +231,14 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         ContextHolder.getInstance().setContext();
 
-        if(!KernelFunctionLoader.getInstance().exists(op.name()) || executionMode() == ExecutionMode.JAVA || op.isPassThrough())
+        if(!KernelFunctionLoader.getInstance().exists(op.name()) || executionMode() == ExecutionMode.JAVA || op.isPassThrough() || op instanceof CopyOp)
             super.exec(op);
 
         //total number of times to repeat each value over an element wise stride on the gpu
         int[] dimensions = op.getDimension() == null ? BroadcastDimensions.getDimensions(op.y().shape()) : op.getDimension();
 
         GpuMetrics metrics = GpuMetrics.blockAndThreads(getType(op),op.n());
-        metrics.setGridSizeNotOverMax(1);
+        metrics.setGridSizeNotOverMax(op.x().tensorssAlongDimension(dimensions));
         metrics.setBlockSizeNotOverMax(op.x().tensorAlongDimension(0,dimensions).length());
         metrics.setSharedMemoryNotOverMax(metrics.getBlockSize() * op.x().data().getElementSize());
         if(op.y() == null)

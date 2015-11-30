@@ -26,6 +26,7 @@ import jcuda.utils.KernelLauncher;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
 import org.slf4j.Logger;
@@ -235,8 +236,10 @@ public class KernelFunctionLoader {
                 .append(File.separator)
                 .append("nd4j-kernels")
                 .append(File.separator)
+                .append("output")
+                .append(File.separator)
                 .toString();
-        File tmpDir2 = new File(tmpDir + File.separator + "nd4j-kernels");
+        File tmpDir2 = new File(tmpDir + File.separator + "nd4j-kernels" + File.separatorChar + "output");
 
         boolean shouldCompile = !tmpDir2.exists() || tmpDir2.exists() && tmpDir2.listFiles().length <= 1;
         String[] split = f.split(",");
@@ -278,9 +281,11 @@ public class KernelFunctionLoader {
 
 
     private void loadModules(String[] split,String kernelPath) throws Exception {
+        ContextHolder.getInstance().setContext();
+
         for (String module : split) {
-            log.info("Loading " + module);
-            String path = kernelPath + "output" + File.separator +  module + ".cubin";
+            log.debug("Loading " + module);
+            String path = kernelPath  +  module + ".cubin";
             if(!new File(path).exists())
                 throw new IllegalStateException("Unable to find path " + path + ". Recompiling");
             String name = module;
@@ -307,7 +312,7 @@ public class KernelFunctionLoader {
         String[] commands = {"bash","-c","make && /usr/bin/make install"};
         ProcessBuilder probuilder = new ProcessBuilder(commands);
         //You can set up your work directory
-        probuilder.directory(new File("/tmp/nd4j-kernels"));
+        probuilder.directory(new File(System.getProperty("java.io.tmpdir") + File.separator + "nd4j-kernels"));
 
         Process process = probuilder.start();
         //Read out dir output

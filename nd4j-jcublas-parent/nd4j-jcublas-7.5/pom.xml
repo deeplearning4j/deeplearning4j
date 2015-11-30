@@ -2,7 +2,7 @@
     <parent>
         <artifactId>nd4j-jcublas-parent</artifactId>
         <groupId>org.nd4j</groupId>
-        <version> 0.4-rc3.7-SNAPSHOT</version>
+        <version> 0.4-rc3.8-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -15,12 +15,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
     <build>
-        <testSourceDirectory>../../nd4j-tests/src/test</testSourceDirectory>
-        <testResources>
-            <testResource>
-                <directory>../nd4j-tests/src/test/resources</directory>
-            </testResource>
-        </testResources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -81,6 +75,19 @@
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-api</artifactId>
             <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+            <version>${logback.version}</version>
+            <scope>test</scope>
         </dependency>
 
     </dependencies>

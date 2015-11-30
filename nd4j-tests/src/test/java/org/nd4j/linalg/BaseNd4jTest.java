@@ -104,7 +104,7 @@ public abstract class BaseNd4jTest  extends TestCase {
 
     @Before
     public void before() {
-        log.info("Running " + getName());
+        log.info("Running " + getName() + " on backend " + backend.getClass().getName());
         Nd4j nd4j = new Nd4j();
         nd4j.initWithBackend(backend);
         Nd4j.factory().setOrder(ordering());

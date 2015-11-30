@@ -76,18 +76,23 @@ public class StandardDeviation extends Variance {
 
     @Override
     public void exec(){
-        super.exec();
-        this.finalResult = FastMath.sqrt(finalResult.doubleValue());
+        super.exec();   //variance = sqrt(stdev) -> sqrt is done in getAndSetFinalResult(...)
     }
 
     @Override
     public void exec(int... dimension){
+        if(dimension.length == 1 && dimension[0] == Integer.MAX_VALUE){
+            exec();
+            this.z = Nd4j.scalar(this.finalResult);
+            return;
+        }
+
         int[] retShape = ArrayUtil.removeIndex(x.shape(), dimension);
         int nOps = x.tensorssAlongDimension(dimension);
         z = Nd4j.create(retShape);
         for( int i=0; i<nOps; i++ ){
-            double d = Nd4j.getExecutioner().execAndReturn((Variance)super.opForDimension(i,dimension)).getFinalResult().doubleValue();
-            z.putScalar(i, FastMath.sqrt(d));
+            double d = Nd4j.getExecutioner().execAndReturn((StandardDeviation)opForDimension(i,dimension)).getFinalResult().doubleValue();
+            z.putScalar(i,d);
         }
     }
 

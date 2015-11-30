@@ -26,6 +26,8 @@ import org.junit.runners.AllTests;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.reflections.Reflections;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
@@ -48,7 +50,7 @@ public class Nd4jTestSuite {
     public final static String CLASSES_TO_LOAD = "org.nd4j.linalg.tests.classestorun";
     public final static String BACKENDS_TO_LOAD = "org.nd4j.linalg.tests.backendstorun";
     public final static String METHODS_TO_RUN = "org.nd4j.linalg.tests.methods";
-
+    private static Logger log = LoggerFactory.getLogger(Nd4jTestSuite.class);
 
     /**
      * Based on the jvm arguments, an empty list is returned
@@ -160,6 +162,7 @@ public class Nd4jTestSuite {
                         if(!methodsToRun.isEmpty() && !methodsToRun.contains(method.getName()))
                             continue;
                         try {
+                            log.info("Constructing test for backend " + backend.getClass().getName());
                             BaseNd4jTest test = constructor.newInstance(method.getName(),backend);
                             //backout if the test ordering and backend ordering dont line up
                             //unless the ordering is a (the default) which means all

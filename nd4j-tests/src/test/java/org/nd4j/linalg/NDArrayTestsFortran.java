@@ -23,11 +23,13 @@ package org.nd4j.linalg;
 
 import java.io.*;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.math3.util.Pair;
@@ -42,6 +44,7 @@ import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.api.ops.impl.broadcast.*;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
+import org.nd4j.linalg.executors.ExecutorServiceProvider;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -207,19 +210,22 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     @Test
     public void testMultiThreading() throws Exception {
-        ExecutorService ex = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        ExecutorService ex = ExecutorServiceProvider.getExecutorService();
+
+        List<Future<?>> list = new ArrayList<>(100);
         for(int i = 0; i < 100; i++) {
-            ex.execute(new Runnable() {
+            Future<?> future = ex.submit(new Runnable() {
                 @Override
                 public void run() {
                     INDArray dot = Nd4j.linspace(1, 8, 8);
                     System.out.println(Transforms.sigmoid(dot));
                 }
             });
+            list.add(future);
         }
-
-        ex.shutdown();
-        ex.awaitTermination(1, TimeUnit.MINUTES);
+        for(Future<?> future : list ){
+            future.get(1,TimeUnit.MINUTES);
+        }
 
     }
 

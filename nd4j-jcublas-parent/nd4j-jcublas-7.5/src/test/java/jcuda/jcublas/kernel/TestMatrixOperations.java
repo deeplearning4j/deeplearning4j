@@ -37,9 +37,14 @@ import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.BroadcastOp;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.broadcast.*;
+import org.nd4j.linalg.api.ops.impl.transforms.Log;
+import org.nd4j.linalg.api.ops.impl.transforms.LogSoftMax;
+import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.executors.ExecutorServiceProvider;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
@@ -140,6 +145,13 @@ public class TestMatrixOperations {
     }
 
     @Test
+    public void testBlasSum() {
+        INDArray arr = Nd4j.linspace(1,4,4);
+        double sum = Nd4j.getBlasWrapper().asum(arr);
+        assertEquals(10,sum,1e-1);
+    }
+
+    @Test
     public void testSum2() {
         INDArray test = Nd4j.create(new float[]{1, 2, 3, 4}, new int[]{2, 2});
         INDArray sum = test.sum(1);
@@ -147,6 +159,50 @@ public class TestMatrixOperations {
         assertEquals(assertion, sum);
         INDArray sum0 = Nd4j.create(new double[]{4, 6});
         assertEquals(sum0, test.sum(0));
+    }
+
+
+    @Test
+    public void testRowSoftmax() {
+        OpExecutioner opExecutioner = Nd4j.getExecutioner();
+        INDArray arr = Nd4j.linspace(1, 6, 6);
+        SoftMax softMax = new SoftMax(arr);
+        opExecutioner.exec(softMax);
+        assertEquals(1.0, softMax.z().sumNumber().doubleValue(), 1e-1);
+    }
+
+    @Test
+    public void testRowLogSoftMax(){
+        //For moderate input values, LogSoftMax op should be identical to log(softmax)
+        // through is numerically more stable for
+        int[][] shapes = new int[][]{{5,3},{5,100},{1,5},{1,100}};
+
+        double eps = 1e-3;
+
+        for( int[] shape : shapes ){
+            INDArray orig = Nd4j.rand(shape);
+
+            INDArray orig1 = orig.dup();
+            INDArray orig2 = orig.dup();
+
+            //First: standard log(softmax)
+            Nd4j.getExecutioner().exec(new SoftMax(orig1), 1);
+            Nd4j.getExecutioner().exec(new Log(orig1));
+
+            //Second: LogSoftMax op
+            Nd4j.getExecutioner().exec(new LogSoftMax(orig2),1);
+
+            for( int i=0; i<shape[0]; i++ ){
+                for( int j=0; j<shape[1]; j++ ){
+                    double o1 = orig1.getDouble(i);
+                    double o2 = orig2.getDouble(i);
+                    if(Math.abs(o1-o2)>eps){
+                        System.out.println();
+                    }
+                    assertEquals(o1,o2,eps);
+                }
+            }
+        }
     }
 
 
@@ -274,6 +330,17 @@ public class TestMatrixOperations {
 
     }
 
+    @Test
+    public void testDivRowVector() {
+        INDArray arr = Nd4j.linspace(1,4,4).reshape(2, 2);
+        arr.diviRowVector(Nd4j.linspace(1, 2, 2));
+        INDArray assertion = Nd4j.create(new double[][]{
+                {1, 1}, {3, 2}
+        });
+
+        assertEquals(assertion,arr);
+    }
+
 
     @Test
     public void testMulRowVector() {
@@ -315,8 +382,15 @@ public class TestMatrixOperations {
         INDArray orig = Nd4j.linspace(1,ArrayUtil.prod(shape),ArrayUtil.prod(shape)).reshape(shape);
         int dimension = 0;
         System.out.println(orig.tensorssAlongDimension(dimension));
-        for(int i = 0; i < 5; i++)
-            System.out.println(orig.tensorAlongDimension(i,dimension));
+        for(int i = 0; i < 5; i++) {
+            StringBuffer sb = new StringBuffer();
+            INDArray tad = orig.tensorAlongDimension(i, dimension);
+            for(int j = 0; j < tad.length(); j++) {
+                sb.append(tad.get(NDArrayIndex.point(j)).offset());
+                sb.append(",");
+            }
+            System.out.println(sb);
+        }
         System.out.println();
         INDArray vector = Nd4j.linspace(1,shape[dimension],shape[dimension]);
         BroadcastOp op = new BroadcastAddOp(orig,vector,orig.dup(),dimension);
@@ -370,6 +444,73 @@ public class TestMatrixOperations {
         }
     }
 
+    @Test
+    public void testNdVectorOpLinSpaceDiv() {
+        int[] shape = {5,7,9,11,13};
+        INDArray orig = Nd4j.linspace(1,ArrayUtil.prod(shape),ArrayUtil.prod(shape)).reshape(shape);
+        int dimension = 0;
+        System.out.println(orig.tensorssAlongDimension(dimension));
+        for(int i = 0; i < 5; i++) {
+            StringBuffer sb = new StringBuffer();
+            INDArray tad = orig.tensorAlongDimension(i, dimension);
+            for(int j = 0; j < tad.length(); j++) {
+                sb.append(tad.get(NDArrayIndex.point(j)).offset());
+                sb.append(",");
+            }
+            System.out.println(sb);
+        }
+        System.out.println();
+        INDArray vector = Nd4j.linspace(1,shape[dimension],shape[dimension]);
+        BroadcastOp op = new BroadcastDivOp(orig,vector,orig.dup(),dimension);
+        Nd4j.getExecutioner().exec(op);
+        for(int i = 0; i < 5; i++)
+            System.out.println(op.z().tensorAlongDimension(i,dimension));
+        int opNum = 2;
+        //Compare expected vs. actual:
+        for(int i = 0; i < orig.tensorssAlongDimension(dimension); i++) {
+            INDArray tad = orig.tensorAlongDimension(i,dimension);
+            INDArray zDim = op.z().tensorAlongDimension(i,dimension);
+            INDArray assertion = tad.div(vector);
+            assertEquals("Failed on tad with original tad " + tad + " at " + i,assertion,zDim);
+        }
+        NdIndexIterator iter = new NdIndexIterator(orig.shape());
+        while (iter.hasNext()) {
+            int[] next = iter.next();
+            double origValue = orig.getDouble(next);
+            double vectorValue = vector.getDouble(next[dimension]);   //current index in vector
+            double exp;
+            switch(opNum){
+                case 0:
+                    exp = origValue + vectorValue;
+                    break;
+                case 1:
+                    exp = vectorValue;
+                    break;
+                case 2:
+                    exp = origValue / vectorValue;
+                    break;
+                case 3:
+                    exp = origValue * vectorValue;
+                    break;
+                case 4:
+                    exp = vectorValue / origValue;
+                    break;
+                case 5:
+                    exp = vectorValue - origValue;
+                    break;
+                case 6:
+                    exp = origValue - vectorValue;
+                    break;
+                default:
+                    throw new RuntimeException();
+            }
+
+            double actual = op.z().getDouble(next);
+            double relError = Math.abs(exp - actual) / (Math.abs(exp) + Math.abs(actual));
+            assertTrue("Failed on rank " + Arrays.toString(shape),relError < 1e-6);
+
+        }
+    }
 
     @Test
     public void testFiveBySevenDimOne() {
@@ -432,10 +573,54 @@ public class TestMatrixOperations {
         }
     }
 
+
+    @Test
+    public void testFiveBySevenRDiv() {
+        INDArray orig = Nd4j.linspace(1, 35, 35).reshape(5, 7);
+        INDArray vector = Nd4j.linspace(1, 5, 5);
+        int dimension = 0;
+        System.out.println(orig.tensorssAlongDimension(dimension));
+        for (int i = 0; i < 5; i++)
+            System.out.println(orig.tensorAlongDimension(i, dimension));
+        System.out.println();
+        BroadcastOp op = new BroadcastRDivOp(orig, vector, orig.dup(), dimension);
+        Nd4j.getExecutioner().exec(op);
+        //Compare expected vs. actual:
+        for (int i = 0; i < orig.tensorssAlongDimension(dimension); i++) {
+            INDArray tad = orig.tensorAlongDimension(i, dimension);
+            INDArray zDim = op.z().tensorAlongDimension(i, dimension);
+            INDArray assertion = tad.rdiv(vector);
+            assertEquals("Failed on tad with original tad " + tad + " at " + i, assertion, zDim);
+        }
+
+    }
+
+
+    @Test
+    public void testFiveBySevenDiv() {
+        INDArray orig = Nd4j.linspace(1, 35, 35).reshape(5, 7);
+        INDArray vector = Nd4j.linspace(1, 5, 5);
+        int dimension = 0;
+        System.out.println(orig.tensorssAlongDimension(dimension));
+        for (int i = 0; i < 5; i++)
+            System.out.println(orig.tensorAlongDimension(i, dimension));
+        System.out.println();
+        BroadcastOp op = new BroadcastDivOp(orig, vector, orig.dup(), dimension);
+        Nd4j.getExecutioner().exec(op);
+        //Compare expected vs. actual:
+        for (int i = 0; i < orig.tensorssAlongDimension(dimension); i++) {
+            INDArray tad = orig.tensorAlongDimension(i, dimension);
+            INDArray zDim = op.z().tensorAlongDimension(i, dimension);
+            INDArray assertion = tad.div(vector);
+            assertEquals("Failed on tad with original tad " + tad + " at " + i, assertion, zDim);
+        }
+
+    }
+
     @Test
     public void testFiveBySeven() {
         INDArray orig = Nd4j.linspace(1, 35, 35).reshape(5, 7);
-        INDArray vector = Nd4j.linspace(1, 7, 7);
+        INDArray vector = Nd4j.linspace(1, 5, 5);
         int dimension = 0;
         System.out.println(orig.tensorssAlongDimension(dimension));
         for (int i = 0; i < 5; i++)
@@ -494,6 +679,36 @@ public class TestMatrixOperations {
     }
 
     @Test
+    public void testColumnVectorAdd() {
+        INDArray vector = Nd4j.create(new double[]{0.8183500170707703,0.5002227425575256,0.810189425945282,0.09596852213144302,0.2189500331878662,0.2587190568447113,0.4681057631969452});
+        INDArray matrix = Nd4j.create(new double[]{1.7479660511016846,0.8165982961654663,0.9941082000732422,0.30052879452705383,0.7866750359535217,0.8542637825012207,1.4326202869415283,1.471527099609375,1.249129295349121,1.4637593030929565,0.8436833620071411,1.1802568435668945,0.26710736751556396,0.5745501518249512,1.935403823852539,1.6568565368652344,2.4301915168762207,1.0641130208969116,1.4025475978851318,1.2411234378814697,1.5786868333816528,2.354153633117676,1.4680445194244385,1.9459636211395264,0.6315816640853882,1.1675891876220703,1.5114526748657227,1.6130852699279785,3.245872735977173,1.6715824604034424,2.4574174880981445,1.0882757902145386,1.560572624206543,0.8008333444595337,1.8960646390914917},new int[] {5,7});
+        int dimension = 1;
+        BroadcastAddOp op = new BroadcastAddOp(matrix,vector,matrix.dup(),1);
+        INDArray assertion = matrix.dup();
+        for(int i = 0; i < assertion.tensorssAlongDimension(dimension); i++) {
+            assertion.tensorAlongDimension(i,dimension).addi(vector);
+        }
+
+        Nd4j.getExecutioner().exec(op);
+        assertEquals(assertion,op.z());
+
+
+
+    }
+
+    @Test
+    public void testDimensionOneLengthSeven() {
+        INDArray seven = Nd4j.linspace(1,7,7);
+        int[] tensorShape = {5, 7, 9, 11, 13};
+        int len = ArrayUtil.prod(tensorShape);
+        int dimension = 1;
+        INDArray arr = Nd4j.linspace(1,len,len).reshape(tensorShape);
+        BroadcastAddOp op = new BroadcastAddOp(arr,seven,arr,dimension);
+        Nd4j.getExecutioner().exec(op);
+    }
+
+
+    @Test
     public void testNdVectorOp() {
         //Test 2d, 3d, ..., 6d vector ops
 
@@ -507,27 +722,28 @@ public class TestMatrixOperations {
 
                 for (int i = 0; i < rank; i++) {   //Test ops for each dimension
                     INDArray arr = orig.dup();
-                    INDArray vector = Nd4j.rand(1, shape[i]);
-
+                    int eleStride = arr.tensorAlongDimension(0, i).elementWiseStride();
+                    INDArray vector = i == 0 ? Nd4j.rand(1,shape[i]) : Nd4j.rand(shape[i],1);
+                    System.out.println("Executed rank " + rank + " and dimension " + i + " with vector " + vector + " and array of shape " + Arrays.toString(arr.shape()));
                     BroadcastOp op;
                     switch(opNum){
                         case 0:
-                            op = new BroadcastAddOp(arr, vector, arr, i);
+                            op = new BroadcastAddOp(arr, vector, arr.dup(), i);
                             break;
                         case 1:
                             op = new BroadcastCopyOp(arr, vector, arr, i);
                             break;
                         case 2:
-                            op = new BroadcastDivOp(arr, vector, arr, i);
+                            op = new BroadcastDivOp(arr, vector, arr.dup(), i);
                             break;
                         case 3:
-                            op = new BroadcastMulOp(arr, vector, arr, i);
+                            op = new BroadcastMulOp(arr, vector, arr.dup(), i);
                             break;
                         case 4:
-                            op = new BroadcastRDivOp(arr, vector, arr, i);
+                            op = new BroadcastRDivOp(arr, vector, arr.dup(), i);
                             break;
                         case 5:
-                            op = new BroadcastRSubOp(arr, vector, arr, i);
+                            op = new BroadcastRSubOp(arr, vector, arr.dup(), i);
                             break;
                         case 6:
                             op = new BroadcastSubOp(arr, vector, arr.dup(), i);
@@ -536,45 +752,43 @@ public class TestMatrixOperations {
                             throw new RuntimeException();
                     }
 
+                    StopWatch watch = new StopWatch();
+                    watch.start();
+                    System.out.println("About to execute op " + op.name());
                     Nd4j.getExecutioner().exec(op);
+                    watch.stop();
 
-                    //Compare expected vs. actual:
-                    NdIndexIterator iter = new NdIndexIterator(orig.shape());
-                    while (iter.hasNext()) {
-                        int[] next = iter.next();
-                        double origValue = orig.getDouble(next);
-                        double vectorValue = vector.getDouble(next[i]);   //current index in vector
-                        double exp;
-                        switch(opNum){
+                    System.out.println("After execution " + watch.getNanoTime() + " nanoseconds with " + op.x().tensorssAlongDimension(i));
+                    INDArray assertion = arr.dup();
+                    for(int j = 0; j < arr.tensorssAlongDimension(i); j++) {
+                        switch(opNum) {
                             case 0:
-                                exp = origValue + vectorValue;
+                                assertion.tensorAlongDimension(j,i).addi(vector);
                                 break;
                             case 1:
-                                exp = vectorValue;
+                                assertion.tensorAlongDimension(j,i).assign(vector);
                                 break;
                             case 2:
-                                exp = origValue / vectorValue;
+                                assertion.tensorAlongDimension(j,i).divi(vector);
                                 break;
                             case 3:
-                                exp = origValue * vectorValue;
+                                assertion.tensorAlongDimension(j,i).muli(vector);
                                 break;
                             case 4:
-                                exp = vectorValue / origValue;
+                                assertion.tensorAlongDimension(j,i).rdivi(vector);
                                 break;
                             case 5:
-                                exp = vectorValue - origValue;
+                                assertion.tensorAlongDimension(j,i).rsubi(vector);
                                 break;
                             case 6:
-                                exp = origValue - vectorValue;
+                                assertion.tensorAlongDimension(j,i).subi(vector);
                                 break;
                             default:
                                 throw new RuntimeException();
                         }
-
-                        double actual = op.z().getDouble(next);
-                        double relError = Math.abs(exp - actual) / (Math.abs(exp) + Math.abs(actual));
-                        assertTrue("Failed on rank " + Arrays.toString(shape) + " with dimension " + i + " on op " + opNum, relError < 1e-6);
                     }
+
+                    assertEquals(assertion,op.z());
                 }
             }
         }
@@ -647,7 +861,7 @@ public class TestMatrixOperations {
     public void testSumLeadingTrailingZeros(){
         testSumHelper(1,5,5);
         testSumHelper(5,5,1);
-        testSumHelper(1,5,1);
+        testSumHelper(1, 5, 1);
 
         testSumHelper(1,5,5,5);
         testSumHelper(5,5,5,1);
@@ -683,7 +897,7 @@ public class TestMatrixOperations {
         final AtomicInteger correct = new AtomicInteger();
         final CountDownLatch latch = new CountDownLatch(numThreads);
         System.out.println("Running on " + ContextHolder.getInstance().deviceNum());
-        ExecutorService executors = Executors.newCachedThreadPool();
+        ExecutorService executors = ExecutorServiceProvider.getExecutorService();
 
         for(int x = 0; x< numThreads; x++) {
             executors.execute(new Runnable() {
