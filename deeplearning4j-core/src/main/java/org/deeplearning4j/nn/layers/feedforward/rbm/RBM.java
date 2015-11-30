@@ -161,7 +161,7 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
 		 * Update gradient parameters
 		 */
         INDArray wGradient = input().transposei().mmul(probHidden.getSecond()).subi(
-                nvSamples.transposei().mmul(nhMeans)
+                nvSamples.transpose().mmul(nhMeans)
         );
 
 
@@ -177,7 +177,7 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
 
         //update rule: the expected values of the input - the negative samples adjusted by the learning rate
         INDArray  delta = input.sub(nvSamples);
-        INDArray  vBiasGradient =delta.sum(0);
+        INDArray  vBiasGradient = delta.sum(0);
 
         Gradient ret = new DefaultGradient();
         ret.gradientForVariable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY,vBiasGradient);

@@ -321,6 +321,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
     private FwdPassReturn activateHelper(boolean training, INDArray prevOutputActivations, INDArray prevMemCellState, boolean forBackprop) {
         //Mini-batch data format: for mini-batch size m, nIn inputs, and T time series length
         //Data has shape [m,nIn,T]. Layer activations/output has shape [m,nHiddenUnits,T]
+        if(this.input == null || this.input.length() == 0) throw new IllegalArgumentException("Invalid input: not set or 0 length");
 
         INDArray recurrentWeights = getParam(GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY);    //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
         INDArray inputWeights = getParam(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY);            //Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]

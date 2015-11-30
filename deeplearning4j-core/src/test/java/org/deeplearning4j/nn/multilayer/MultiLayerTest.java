@@ -25,6 +25,7 @@ import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -36,24 +37,28 @@ import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.ReshapePreProcessor;
+import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
+import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.deeplearning4j.optimize.stepfunctions.NegativeGradientStepFunction;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 /**
  * Created by agibsonccc on 12/27/14.
@@ -81,7 +86,11 @@ public class MultiLayerTest {
         network3.init();
 
         INDArray params = network3.params();
+        INDArray weights = network3.getLayer(0).getParam(DefaultParamInitializer.WEIGHT_KEY).dup();
+        INDArray bias = network3.getLayer(0).getParam(DefaultParamInitializer.BIAS_KEY).dup();
         network3.setParameters(params);
+        assertEquals(weights, network3.getLayer(0).getParam(DefaultParamInitializer.WEIGHT_KEY));
+        assertEquals(bias,network3.getLayer(0).getParam(DefaultParamInitializer.BIAS_KEY));
         INDArray params4 = network3.params();
         assertEquals(params, params4);
     }
@@ -94,7 +103,7 @@ public class MultiLayerTest {
                         .nIn(4).nOut(3)
                         .activation("tanh")
                         .build())
-                .layer(1,new RBM.Builder(RBM.HiddenUnit.GAUSSIAN, RBM.VisibleUnit.GAUSSIAN).nIn(3).nOut(2)
+                .layer(1, new RBM.Builder(RBM.HiddenUnit.GAUSSIAN, RBM.VisibleUnit.GAUSSIAN).nIn(3).nOut(2)
                         .build())
                 .build();
 
@@ -258,7 +267,7 @@ public class MultiLayerTest {
 
         DataSet next = iter.next();
 
-        Nd4j.writeTxt(next.getFeatureMatrix(),"iris.txt","\t");
+        Nd4j.writeTxt(next.getFeatureMatrix(), "iris.txt", "\t");
 
         next.normalizeZeroMeanZeroUnitVariance();
 
@@ -290,9 +299,9 @@ public class MultiLayerTest {
         DataSet x2 = all.asList().get(0);
 
         //x1 and x2 contain identical data
-        assertArrayEquals(asFloat(x1.getFeatureMatrix()), asFloat(x2.getFeatureMatrix()), 0.0f);  //OK
-        assertArrayEquals(asFloat(x1.getLabels()), asFloat(x2.getLabels()), 0.0f);                //OK
-        assertEquals(x1,x2);    //Fails, DataSet doesn't override Object.equals()
+        assertArrayEquals(asFloat(x1.getFeatureMatrix()), asFloat(x2.getFeatureMatrix()), 0.0f);
+        assertArrayEquals(asFloat(x1.getLabels()), asFloat(x2.getLabels()), 0.0f);
+        assertEquals(x1, x2);
 
         //Set inputs/outputs so gradient can be calculated:
         net1.feedForward(x1.getFeatureMatrix());
@@ -300,8 +309,8 @@ public class MultiLayerTest {
         ((BaseOutputLayer)net1.getLayer(1)).setLabels(x1.getLabels());
         ((BaseOutputLayer)net2.getLayer(1)).setLabels(x2.getLabels());
 
-        net1.gradient();        //OK
-        net2.gradient();        //IllegalArgumentException: Buffers must fill up specified length 29
+        net1.gradient();
+        net2.gradient();
     }
 
 
@@ -415,5 +424,142 @@ public class MultiLayerTest {
         return f;
     }
 
+    @Test
+    public void testFeedForwardToLayer(){
 
+        int nIn = 30;
+        int nOut = 25;
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                .iterations(5).learningRate(1e-3)
+                .list(4)
+                .layer(0, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
+                        .nIn(nIn).nOut(600)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1e-5))
+                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
+                .layer(1, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
+                        .nIn(600).nOut(250)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1e-5))
+                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
+                .layer(2, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
+                        .nIn(250).nOut(100)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1e-5))
+                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
+                .layer(3, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .nIn(100).nOut(25)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1e-5)).build())
+                .build();
+
+        MultiLayerNetwork network = new MultiLayerNetwork(conf);
+        network.init();
+
+
+        INDArray input = Nd4j.rand(5,nIn);
+
+        List<INDArray> activations = network.feedForward(input);
+        assertEquals(5,activations.size());     //4 layers + input
+
+        List<INDArray> activationsAll = network.feedForwardToLayer(3,input);
+        assertEquals(activations,activationsAll);
+
+        for( int i=3; i>=0; i-- ){
+            List<INDArray> activationsPartial = network.feedForwardToLayer(i,input);
+            assertEquals(i+2,activationsPartial.size());    //i+2: for layer 3: input + activations of {0,1,2,3} -> 5 total = 3+2
+            for( int j=0; j<=i; j++ ){
+                INDArray exp = activationsAll.get(j);
+                INDArray act = activationsPartial.get(j);
+                assertEquals(exp,act);
+            }
+        }
+    }
+
+
+    @Test
+    public void testBackpropGradient(){
+        //Testing: MultiLayerNetwork.backpropGradient()
+        //i.e., specifically without an output layer
+
+        int nIn = 10;
+        int nOut = 40;
+        int miniBatch = 5;
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(org.deeplearning4j.nn.conf.Updater.SGD)
+                .learningRate(0.1)
+                .list(3)
+                .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(20).activation("relu").weightInit(WeightInit.XAVIER).build())
+                .layer(1, new DenseLayer.Builder().nIn(20).nOut(30).activation("relu").weightInit(WeightInit.XAVIER).build())
+                .layer(2, new DenseLayer.Builder().nIn(30).nOut(nOut).activation("relu").weightInit(WeightInit.XAVIER).build())
+                .build();
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        Nd4j.getRandom().setSeed(12345);
+        INDArray eps = Nd4j.rand(miniBatch,nOut);
+        INDArray input = Nd4j.rand(miniBatch, nIn);
+
+        net.feedForward(input); //Need to feed forward before backprop
+
+        Pair<Gradient,INDArray> pair = net.backpropGradient(eps);
+        INDArray epsOut = pair.getSecond();
+        assertNotNull(epsOut);
+        assertArrayEquals(new int[]{miniBatch,nIn},epsOut.shape());
+
+        Gradient g = pair.getFirst();
+        Map<String,INDArray> gradMap = g.gradientForVariable();
+        assertEquals(6, gradMap.size());    //3 layers, weight + bias gradients for each
+
+        String[] expKeys = {"0_"+DefaultParamInitializer.WEIGHT_KEY,"0_"+DefaultParamInitializer.BIAS_KEY,
+                "1_"+DefaultParamInitializer.WEIGHT_KEY,"2_"+DefaultParamInitializer.BIAS_KEY,
+                "2_"+DefaultParamInitializer.WEIGHT_KEY,"2_"+DefaultParamInitializer.BIAS_KEY};
+        Set<String> keys = gradMap.keySet();
+        for( String s : expKeys ){
+            assertTrue(keys.contains(s));
+        }
+
+        /*
+        System.out.println(pair);
+
+        //Use updater to go from raw gradients -> updates
+        //Apply learning rate, gradient clipping, adagrad/momentum/rmsprop etc
+        Updater updater = UpdaterCreator.getUpdater(net);
+        updater.update(net, g, 0, miniBatch);
+
+        StepFunction stepFunction = new NegativeGradientStepFunction();
+        INDArray params = net.params();
+        System.out.println(Arrays.toString(params.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 10)).dup().data().asFloat()));
+        stepFunction.step(params, g.gradient());
+        net.setParams(params);    //params() may not be in-place
+        System.out.println(Arrays.toString(params.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 10)).dup().data().asFloat()));
+        */
+    }
+
+    @Test
+    public void testLayerNames(){
+        int nIn = 10;
+        int nOut = 40;
+
+        List<String> layerNameList = new ArrayList<>();
+        layerNameList.add("dnn1");
+        layerNameList.add("dnn2");
+        layerNameList.add("dnn3");
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(org.deeplearning4j.nn.conf.Updater.SGD)
+                .learningRate(0.1)
+                .list(3)
+                .layer(0, new DenseLayer.Builder().name("dnn1").nIn(nIn).nOut(20).activation("relu").weightInit(WeightInit.XAVIER).build())
+                .layer(1, new DenseLayer.Builder().name("dnn2").nIn(20).nOut(30).activation("relu").weightInit(WeightInit.XAVIER).build())
+                .layer(2, new DenseLayer.Builder().name("dnn3").nIn(30).nOut(nOut).activation("softmax").weightInit(WeightInit.XAVIER).build())
+                .build();
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        assertEquals(layerNameList.get(0), net.getLayer(0).conf().getLayer().getLayerName());
+        assertEquals(layerNameList, net.getLayerNames());
+        assertEquals("softmax", net.getLayer(layerNameList.get(2)).conf().getLayer().getActivationFunction());
+
+
+    }
 }

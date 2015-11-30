@@ -95,7 +95,7 @@ public class TestSchedules {
             gradientExpected.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
 
             for (int i = 0; i < 2; i++) {
-                updater.update(layer, gradientActual, i);
+                updater.update(layer, gradientActual, i, 1);
 
                 if(updaterFunc.equals(org.deeplearning4j.nn.conf.Updater.SGD))
                     lr = testSGDComputation(gradientActual, gradientExpected, lr, learningRateAfter, i);
@@ -156,7 +156,7 @@ public class TestSchedules {
 
 
             for (int i = 0; i < 2; i++) {
-                updater.update(net, gradientActual, i);
+                updater.update(net, gradientActual, i, 1);
                 if(updaterFunc.equals(org.deeplearning4j.nn.conf.Updater.SGD))
                     lr = testSGDComputation(gradientActual, gradientExpected, lr, learningRateAfter, i);
                 else if(updaterFunc.equals(org.deeplearning4j.nn.conf.Updater.ADAGRAD))
@@ -194,7 +194,7 @@ public class TestSchedules {
         gradientExpected.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
 
         for (int i = 0; i < 2; i++) {
-            updater.update(layer, gradientSingle, i);
+            updater.update(layer, gradientSingle, i, 1);
             mu = testNesterovsComputation(gradientSingle, gradientExpected, lr, mu, momentumAfter, i);
             assertEquals(mu, layer.conf().getLayer().getMomentum(), 1e-4);
         }
@@ -235,7 +235,7 @@ public class TestSchedules {
         }
 
         for (int i = 0; i < 2; i++) {
-            updater.update(net, gradientMLN, i);
+            updater.update(net, gradientMLN, i, 1);
             mu = testNesterovsComputation(gradientMLN, gradientExpected, lr, mu, momentumAfter, i);
             assertEquals(mu, net.getLayer(1).conf().getLayer().getMomentum(), 1e-4);
         }

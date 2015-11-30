@@ -274,14 +274,14 @@ public class InMemoryLookupTable implements WeightLookupTable {
                 else
                     g = useAdaGrad ? w1.getGradient(target, label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) : (label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) *   alpha;
                 if(syn0.data().dataType() == DataBuffer.Type.DOUBLE)
-                    Nd4j.getBlasWrapper().axpy(g,neu1e,l1);
+                    Nd4j.getBlasWrapper().axpy(g,syn1Neg.slice(target),neu1e);
                 else
-                    Nd4j.getBlasWrapper().axpy((float) g,neu1e,l1);
+                    Nd4j.getBlasWrapper().axpy((float) g,syn1Neg.slice(target),neu1e);
 
                 if(syn0.data().dataType() == DataBuffer.Type.DOUBLE)
-                    Nd4j.getBlasWrapper().axpy(g,syn1Neg.slice(target),l1);
+                    Nd4j.getBlasWrapper().axpy(g,l1,syn1Neg.slice(target));
                 else
-                    Nd4j.getBlasWrapper().axpy((float) g,syn1Neg.slice(target),l1);
+                    Nd4j.getBlasWrapper().axpy((float) g,l1,syn1Neg.slice(target));
             }
 
         if(syn0.data().dataType() == DataBuffer.Type.DOUBLE)
