@@ -208,7 +208,7 @@ public class GRU extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.GR
 
 	@Override
 	public INDArray activate(INDArray input, boolean training){
-		setInput(input, training);
+		setInput(input);
 		return activateHelper(training,null)[0];
 	}
 
