@@ -405,31 +405,23 @@ public class InMemoryLookupTable implements WeightLookupTable {
             trainWordsPow += Math.pow(vocab.wordFrequency(word), power);
         }
 
-
-        for(String word : vocab.words()) {
-            double d1 = Math.pow(vocab.wordFrequency(word),power) / trainWordsPow;
-            for(int i = 0; i < tableSize; i++) {
-                int wordIdx = vocab.indexOf(word);
-                if(wordIdx < 0)
-                    continue;
-
-                table.putScalar(i,wordIdx);
-                double mul = i * 1.0 / (double) tableSize;
-                if(mul > d1) {
+        int wordIdx = 0;
+        String word = vocab.wordAtIndex(wordIdx);
+        double d1 = Math.pow(vocab.wordFrequency(word),power) / trainWordsPow;
+        for(int i = 0; i < tableSize; i++) {
+            table.putScalar(i,wordIdx);
+            double mul = i * 1.0 / (double) tableSize;
+            if(mul > d1) {
+                if( wordIdx < vocabSize-1 )
                     wordIdx++;
-                    String wordAtIndex = vocab.wordAtIndex(wordIdx);
-                    if(wordAtIndex == null)
-                        continue;
-                    d1 += Math.pow(vocab.wordFrequency(wordAtIndex),power) / trainWordsPow;
-
-                }
-
+                word = vocab.wordAtIndex(wordIdx);
+                String wordAtIndex = vocab.wordAtIndex(wordIdx);
+                if(word == null)
+                    continue;
+                d1 += Math.pow(vocab.wordFrequency(wordAtIndex),power) / trainWordsPow;
             }
-
         }
-
     }
-
     /**
      * Inserts a word vector
      *
