@@ -31,7 +31,7 @@ Given enough data, usage and contexts, Word2vec can make highly accurate guesses
 
 The output of the Word2vec neural net is a vocabulary in which each item has a vector attached to it, which can be fed into a deep-learning net or simply queried to detect relationships between words. 
 
-Measuring [cosine similarity](../glossary.html#cosine), a perfect 90-degree angle represents identity; i.e. Sweden equals Sweden, while Norway has a cosine distance of 0.760124 from Sweden, the highest of any other country. 
+Measuring [cosine similarity](../glossary.html#cosine), no similarity is expressed as a 90 degree angle, while total similarity of 1 is a 0 degree angle, complete overlap; i.e. Sweden equals Sweden, while Norway has a cosine distance of 0.760124 from Sweden, the highest of any other country. 
 
 Here's a list of words associated with "Sweden" using Word2vec, in order of proximity:
 
