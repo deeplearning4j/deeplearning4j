@@ -10,7 +10,7 @@ Quick Start Guide
 
 This Quick Start guide assumes that you have the following already installed:
 
-1. Java 7
+1. Java 7 or later
 2. IntelliJ (or another IDE)
 3. Maven (Automated build tool)
 4. Github 
@@ -45,16 +45,6 @@ If you have trouble, the first thing you should check is your POM.xml file, whic
 ## Dependencies and Backends
 
 Backends are what power the linear algebra operations behind DL4J's neural nets. Backends vary by chip. CPUs work fastest with x86; GPUs with Jcublas. You can find all backends on [Maven Central](https://search.maven.org); click the linked version number under "Latest Version"; copy the dependency code on the left side of the subsequent screen; and paste it into your project root's pom.xml in IntelliJ. 
-
-The *nd4j-java* backend will look something like this:
-
-     <dependency>
-       <groupId>org.nd4j</groupId>
-       <artifactId>nd4j-java</artifactId>
-       <version>${nd4j.version}</version>
-     </dependency>
-
-*nd4j-java* doesn't require Blas, which makes for the easiest setup on Windows. It works on all examples with DBNs, or deep-belief nets, but not on the other examples. 
 
 The nd4j-x86 backend will look something like this:
 
