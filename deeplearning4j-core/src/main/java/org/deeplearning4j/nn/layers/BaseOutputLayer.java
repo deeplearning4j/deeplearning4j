@@ -72,13 +72,18 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     }
 
     /** Compute score after labels and input have been set.
+     * @param fullNetworkL1 L1 regularization term for the entire network
+     * @param fullNetworkL2 L2 regularization term for the entire network
+     * @param training whether score should be calculated at train or test time (this affects things like application of
+     *                 dropout, etc)
+     * @return score (loss function)
      */
-    public double computeScore( double fullNetworkL1, double fullNetworkL2) {
+    public double computeScore( double fullNetworkL1, double fullNetworkL2, boolean training) {
         if( input == null || labels == null )
             throw new IllegalStateException("Cannot calculate score without input and labels");
         this.fullNetworkL1 = fullNetworkL1;
         this.fullNetworkL2 = fullNetworkL2;
-        INDArray preOut = preOutput2d(input,true);
+        INDArray preOut = preOutput2d(input,training);
         INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), preOut.dup()));
         setScore(output,preOut);
         return score;

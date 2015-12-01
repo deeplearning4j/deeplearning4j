@@ -599,7 +599,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return list of activations.
      */
     public List<INDArray> feedForwardToLayer(int layerNum, INDArray input){
-        return feedForwardToLayer(layerNum,input,false);
+        return feedForwardToLayer(layerNum, input, false);
     }
 
     /** Compute the activations from the input to the specified layer.<br>
@@ -614,7 +614,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     public List<INDArray> feedForwardToLayer(int layerNum, INDArray input, boolean train){
         setInput(input);
-        return feedForwardToLayer(layerNum,train);
+        return feedForwardToLayer(layerNum, train);
     }
 
     /** Compute the activations from the input to the specified layer, using the currently set input for the network.<br>
@@ -893,7 +893,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 params.add(layer.params());
         }
 
-        return Nd4j.toFlattened('f',params);
+        return Nd4j.toFlattened('f', params);
     }
 
 
@@ -1248,7 +1248,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             return;
         }
         if( input.size(2) != labels.size(2) ){
-            log.warn("Input and label time series have different lengths: {} input length, {} label length",input.size(2),labels.size(2));
+            log.warn("Input and label time series have different lengths: {} input length, {} label length", input.size(2), labels.size(2));
             return;
         }
 
@@ -1654,20 +1654,29 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         return labels.columns();
     }
 
-    /**
-     * Sets the input and labels and returns a score for the prediction
-     * wrt true labels
-     *
+    /**Sets the input and labels and returns a score for the prediction with respect to the true labels<br>
+     * This is equivalent to {@link #score(DataSet, boolean)} with training==true.
      * @param data the data to score
      * @return the score for the given input,label pairs
+     * @see #score(DataSet, boolean)
      */
     public double score(DataSet data) {
+        return score(data,false);
+    }
+
+    /**Calculate the score (loss function) of the prediction with respect to the true labels<br>
+     * @param data data to calculate score for
+     * @param training If true: score during training. If false: score at test time. This can affect the application of
+     *                 certain features, such as dropout and dropconnect (which are applied at training time only)
+     * @return the score (value of the loss function)
+     */
+    public double score(DataSet data, boolean training){
         feedForward(data.getFeatureMatrix());
         setLabels(data.getLabels());
         if( getOutputLayer() instanceof BaseOutputLayer ){
             BaseOutputLayer<?> ol = (BaseOutputLayer<?>)getOutputLayer();
             ol.setLabels(data.getLabels());
-            ol.computeScore(calcL1(),calcL2());
+            ol.computeScore(calcL1(),calcL2(), training);
             this.score = ol.score();
         } else {
             log.warn("Cannot calculate score wrt labels without an OutputLayer");
@@ -1708,7 +1717,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             feedForward();
             backprop();
         }
-        score = ((BaseOutputLayer<?>)getOutputLayer()).computeScore(calcL1(),calcL2());
+        score = ((BaseOutputLayer<?>)getOutputLayer()).computeScore(calcL1(),calcL2(), true);
     }
 
     @Override
@@ -1728,13 +1737,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         solver = null;
     }
 
-    /**
+    /**(Deprecated)
      * Score of the model (relative to the objective function)
      *
      * @param param the current parameters
      * @return the score of the model (relative to the objective function)
      */
-
+    @Deprecated
     public double score(INDArray param) {
         INDArray params = params();
         setParameters(param);
