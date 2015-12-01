@@ -32,7 +32,7 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
         BatchNormalization normalization = (BatchNormalization) conf.getLayer();
         int size = ArrayUtil.prod(normalization.getShape());
 
-        params.put(AVG_MEAN, Nd4j.zeros(1,size,1));
+        params.put(AVG_MEAN, Nd4j.zeros(1,size));
         params.put(AVG_VAR,Nd4j.zerosLike(params.get(AVG_MEAN)));
 
 

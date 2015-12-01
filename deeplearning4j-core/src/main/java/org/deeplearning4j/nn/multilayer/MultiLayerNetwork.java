@@ -1714,7 +1714,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             truncatedBPTTGradient();
         }
         else {
-            feedForward();
+            feedForward(true);
             backprop();
         }
         score = ((BaseOutputLayer<?>)getOutputLayer()).computeScore(calcL1(),calcL2(), true);
