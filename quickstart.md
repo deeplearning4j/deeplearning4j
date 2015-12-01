@@ -40,7 +40,7 @@ After those installs, if you can follow these steps, you'll be up and running (W
 
 You should get an F1 score of about 0.66, which is good for a small dataset like Iris. For a line by line walkthrough of the example, please refer to our [Iris DBN tutorial](../iris-flower-dataset-tutorial.html).
 
-If you have trouble, the first thing you should check is your POM.xml file, which should [look like this](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml). Please do not use the SNAPSHOT examples. 
+If you have trouble, the first thing you should check is your POM.xml file, which should [look like this](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml). 
 
 ## Dependencies and Backends
 
