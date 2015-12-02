@@ -28,23 +28,33 @@ import org.apache.spark.mllib.linalg.Matrix;
 import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.canova.api.records.reader.RecordReader;
+import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.updater.aggregate.UpdaterAggregator;
 import org.deeplearning4j.spark.canova.RecordReaderFunction;
 import org.deeplearning4j.spark.impl.common.Adder;
 import org.deeplearning4j.spark.impl.common.BestScoreAccumulator;
 import org.deeplearning4j.spark.impl.common.gradient.GradientAdder;
+import org.deeplearning4j.spark.impl.common.misc.GradientFromTupleFunction;
+import org.deeplearning4j.spark.impl.common.misc.INDArrayFromTupleFunction;
+import org.deeplearning4j.spark.impl.common.misc.UpdaterFromGradientTupleFunction;
+import org.deeplearning4j.spark.impl.common.misc.UpdaterFromTupleFunction;
+import org.deeplearning4j.spark.impl.common.updater.UpdaterAggregatorCombiner;
+import org.deeplearning4j.spark.impl.common.updater.UpdaterElementCombiner;
 import org.deeplearning4j.spark.impl.multilayer.gradientaccum.GradientAccumFlatMap;
 import org.deeplearning4j.spark.util.MLLibUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.Tuple2;
 
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * Master class for spark
@@ -58,6 +68,7 @@ public class SparkDl4jMultiLayer implements Serializable {
     private MultiLayerConfiguration conf;
     private MultiLayerNetwork network;
     private Broadcast<INDArray> params;
+    private Broadcast<Updater> updater;
     private boolean averageEachIteration = false;
     public final static String AVERAGE_EACH_ITERATION = "org.deeplearning4j.spark.iteration.average";
     public final static String ACCUM_GRADIENT = "org.deeplearning4j.spark.iteration.accumgrad";
@@ -165,7 +176,7 @@ public class SparkDl4jMultiLayer implements Serializable {
      */
     public MultiLayerNetwork fit(JavaRDD<LabeledPoint> rdd,int batchSize) {
         FeedForwardLayer outputLayer = (FeedForwardLayer) conf.getConf(conf.getConfs().size() - 1).getLayer();
-        return fitDataSet(MLLibUtil.fromLabeledPoint(rdd, outputLayer.getNOut(),batchSize));
+        return fitDataSet(MLLibUtil.fromLabeledPoint(rdd, outputLayer.getNOut(), batchSize));
     }
 
 
@@ -182,6 +193,47 @@ public class SparkDl4jMultiLayer implements Serializable {
         return fitDataSet(MLLibUtil.fromLabeledPoint(sc, rdd, outputLayer.getNOut()));
     }
 
+    /**Fit the data, splitting into smaller data subsets if necessary. This allows large {@code JavaRDD<DataSet>}s)
+     * to be trained as a set of smaller steps instead of all together.<br>
+     * Using this method, training progresses as follows:<br>
+     * train on {@code examplesPerFit} examples -> average parameters -> train on {@code examplesPerFit} -> average
+     * parameters etc until entire data set has been processed<br>
+     * <em>Note</em>: The actual number of splits for the input data is based on rounding up.<br>
+     * Suppose {@code examplesPerFit}=1000, with {@code rdd.count()}=1200. Then, we round up to 2000 examples, and the
+     * network will then be fit in two steps (as 2000/1000=2), with 1200/2=600 examples at each step. These 600 examples
+     * will then be distributed approximately equally (no guarantees) amongst each executor/core for training.
+     *
+     * @param rdd Data to train on
+     * @param examplesPerFit Number of examples to learn on (between averaging) across all executors. For example, if set to
+     *                       1000 and rdd.count() == 10k, then we do 10 sets of learning, each on 1000 examples.
+     *                       To use all examples, set maxExamplesPerFit to Integer.MAX_VALUE
+     * @return Trained network
+     */
+    public MultiLayerNetwork fitDataSet(JavaRDD<DataSet> rdd, int examplesPerFit ){
+        int nSplits;
+        if(examplesPerFit == Integer.MAX_VALUE) nSplits = 1;
+        else {
+            long nExamples = rdd.count();
+            if(nExamples%examplesPerFit==0){
+                nSplits = (int)(nExamples / examplesPerFit);
+            } else {
+                nSplits = (int)(nExamples / examplesPerFit) + 1;
+            }
+        }
+
+        if(nSplits == 1){
+            fitDataSet(rdd);
+        } else {
+            double[] splitWeights = new double[nSplits];
+            for( int i=0; i<nSplits; i++ ) splitWeights[i] = 1.0 / nSplits;
+            JavaRDD<DataSet>[] subsets = rdd.randomSplit(splitWeights);
+            for( int i=0; i<subsets.length; i++ ){
+                log.info("Initiating distributed training of subset {} of {}",(i+1),subsets.length);
+                fitDataSet(subsets[i]);
+            }
+        }
+        return network;
+    }
 
     /**
      * Fit the dataset rdd
@@ -222,6 +274,9 @@ public class SparkDl4jMultiLayer implements Serializable {
         log.info("Broadcasting initial parameters of length " + network.numParams(false));
         INDArray valToBroadcast = network.params(false);
         this.params = sc.broadcast(valToBroadcast);
+        Updater updater = network.getUpdater();
+        this.updater = sc.broadcast(updater);
+
 
         int paramsLength = network.numParams(false);
         boolean accumGrad = sc.getConf().getBoolean(ACCUM_GRADIENT,false);
@@ -229,10 +284,13 @@ public class SparkDl4jMultiLayer implements Serializable {
 
         if(accumGrad) {
             //Learning via averaging gradients
-            JavaRDD<Gradient> results = rdd.mapPartitions(new GradientAccumFlatMap(conf.toJson(), this.params),true).cache();
+            JavaRDD<Tuple2<Gradient,Updater>> results = rdd.mapPartitions(new GradientAccumFlatMap(conf.toJson(), this.params, this.updater),true).cache();
             log.info("Ran iterative reduce...averaging results now.");
+
+            JavaRDD<Gradient> resultsGradient = results.map(new GradientFromTupleFunction());
+
             GradientAdder a = new GradientAdder(paramsLength);
-            results.foreach(a);
+            resultsGradient.foreach(a);
             INDArray accumulatedGradient = a.getAccumulator().value();
             boolean divideGrad = sc.getConf().getBoolean(DIVIDE_ACCUM_GRADIENT,false);
             if(divideGrad)
@@ -241,20 +299,46 @@ public class SparkDl4jMultiLayer implements Serializable {
             log.info("Summed gradients.");
             network.setParameters(network.params(false).addi(accumulatedGradient));
             log.info("Set parameters");
+
+            log.info("Processing updaters");
+            JavaRDD<Updater> resultsUpdater = results.map(new UpdaterFromGradientTupleFunction());
+
+            UpdaterAggregator aggregator = resultsUpdater.aggregate(
+                    resultsUpdater.first().getAggregator(false),
+                    new UpdaterElementCombiner(),
+                    new UpdaterAggregatorCombiner()
+            );
+            Updater combinedUpdater = aggregator.getUpdater();
+            network.setUpdater(combinedUpdater);
+            log.info("Set updater");
         }
         else {
             //Standard parameter averaging
-            JavaRDD<INDArray> results = rdd.mapPartitions(new IterativeReduceFlatMap(conf.toJson(),
-                    this.params, this.best_score_acc),true).cache();
+            JavaRDD<Tuple2<INDArray,Updater>> results = rdd.mapPartitions(new IterativeReduceFlatMap(conf.toJson(),
+                    this.params, this.updater, this.best_score_acc),true).cache();
+
+            JavaRDD<INDArray> resultsParams = results.map(new INDArrayFromTupleFunction());
             log.info("Ran iterative reduce... averaging parameters now.");
             Adder a = new Adder(paramsLength);
-            results.foreach(a);
+            resultsParams.foreach(a);
             INDArray newParams = a.getAccumulator().value();
             log.info("Accumulated parameters");
             newParams.divi(rdd.partitions().size());
             log.info("Divided by partitions");
             network.setParameters(newParams);
             log.info("Set parameters");
+
+            log.info("Processing updaters");
+            JavaRDD<Updater> resultsUpdater = results.map(new UpdaterFromTupleFunction());
+
+            UpdaterAggregator aggregator = resultsUpdater.aggregate(
+                    resultsUpdater.first().getAggregator(false),
+                    new UpdaterElementCombiner(),
+                    new UpdaterAggregatorCombiner()
+            );
+            Updater combinedUpdater = aggregator.getUpdater();
+            network.setUpdater(combinedUpdater);
+            log.info("Set updater");
         }
     }
 

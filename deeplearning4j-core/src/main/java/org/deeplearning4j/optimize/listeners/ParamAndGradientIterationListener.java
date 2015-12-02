@@ -104,12 +104,10 @@ public class ParamAndGradientIterationListener implements IterationListener {
     public void iterationDone(Model model, int iteration) {
         totalIterationCount++;
 
-        if (iteration % iterations != 0) return;    //No op this iteration
-
-        Map<String, INDArray> params = model.paramTable();
-        Map<String, INDArray> grads = model.gradient().gradientForVariable();
-
         if (totalIterationCount == 1 && printHeader) {
+            Map<String, INDArray> params = model.paramTable();
+            model.conf().getVariables();
+
             StringBuilder sb = new StringBuilder();
 
             sb.append("n");
@@ -158,6 +156,11 @@ public class ParamAndGradientIterationListener implements IterationListener {
             if (outputToLogger) logger.info(sb.toString());
             if (outputToConsole) System.out.println(sb.toString());
         }
+
+        if (totalIterationCount % iterations != 0) return;    //No op this iteration
+
+        Map<String, INDArray> params = model.paramTable();
+        Map<String, INDArray> grads = model.gradient().gradientForVariable();
 
         StringBuilder sb = new StringBuilder();
         sb.append(totalIterationCount);
