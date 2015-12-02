@@ -10,14 +10,7 @@ import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.HardTanhDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.LeakyReLUDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.Sigmoid;
-import org.nd4j.linalg.api.ops.impl.transforms.SigmoidDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftSignDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.Step;
-import org.nd4j.linalg.api.ops.impl.transforms.TanhDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -147,7 +140,7 @@ public class TestDerivatives extends BaseNd4jTest {
 			}
 		}
 		
-		INDArray sm = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", z.dup()),1);
+		INDArray sm = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", z.dup()), 1);
 		INDArray zPrime = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", z).derivative());
 		System.out.println(Arrays.toString(sm.data().asDouble()));
 		System.out.println(Arrays.toString(zPrime.data().asDouble()));
@@ -247,6 +240,42 @@ public class TestDerivatives extends BaseNd4jTest {
 		for( int i = 0; i < 100; i++ ){
 			double relError = Math.abs(expOut[i] - zPrime.getDouble(i)) / (Math.abs(expOut[i]) + Math.abs(zPrime.getDouble(i)));
 			assertTrue(relError < REL_ERROR_TOLERANCE);
+		}
+	}
+
+	@Test
+	public void testELUDerivative(){
+		assertTrue( Nd4j.getOpFactory().createTransform("elu",Nd4j.ones(1)).derivative() instanceof ELUDerivative);
+
+		//f(x) = x if x>=0
+		//f(x) = 1.0*(exp(x)-1)
+		INDArray z = Nd4j.zeros(100);
+		double[] out = new double[100];
+		double[] outDeriv = new double[100];
+		for( int i = 0; i < 100; i++) {
+			double x = 0.1 * (i - 50);
+			z.putScalar(i, x);
+			if(x>=0){
+				out[i] = x;
+				outDeriv[i] = 1.0;
+			} else {
+				out[i] = FastMath.exp(x)-1.0;
+				outDeriv[i] = FastMath.exp(x);
+			}
+		}
+
+		INDArray act = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("elu", z.dup()));
+		INDArray actDeriv = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("elu", z.dup()).derivative());
+
+		System.out.println(act);
+
+		for( int i = 0; i < 100; i++ ){
+			double relError1 = Math.abs(out[i] - act.getDouble(i)) / (Math.abs(out[i]) + Math.abs(act.getDouble(i)));
+			if(out[i] == 0.0 && act.getDouble(i) == 0.0) relError1 = 0.0;
+			double relError2 = Math.abs(outDeriv[i] - actDeriv.getDouble(i)) / (Math.abs(outDeriv[i]) + Math.abs(actDeriv.getDouble(i)));
+			if(outDeriv[i] == 0.0 && actDeriv.getDouble(i) == 0.0) relError2 = 0.0;
+			assertTrue(relError1 < REL_ERROR_TOLERANCE);
+			assertTrue(relError2 < REL_ERROR_TOLERANCE);
 		}
 	}
 
