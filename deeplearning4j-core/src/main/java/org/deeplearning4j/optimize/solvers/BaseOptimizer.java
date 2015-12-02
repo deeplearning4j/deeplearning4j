@@ -116,6 +116,11 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     }
 
     @Override
+    public void setUpdater(Updater updater){
+        this.updater = updater;
+    }
+
+    @Override
     public NeuralNetConfiguration getConf() { return conf; }
 
     @Override

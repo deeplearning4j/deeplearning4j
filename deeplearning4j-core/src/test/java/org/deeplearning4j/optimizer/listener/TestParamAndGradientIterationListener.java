@@ -40,7 +40,7 @@ public class TestParamAndGradientIterationListener {
                 .outputToFile(true)
                 .file(new File(System.getProperty("java.io.tmpdir") + "/paramAndGradTest.txt"))
                 .outputToConsole(true).outputToLogger(false)
-                .iterations(1)
+                .iterations(2)
                 .printHeader(true).printMean(false).printMinMax(false).printMeanAbsValue(true)
                 .delimiter("\t")
                 .build();
