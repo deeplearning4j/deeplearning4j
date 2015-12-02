@@ -132,7 +132,8 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
 
     @Override
     public void reset() {
-        throw new UnsupportedOperationException("Reset not supported for this iterator");
+        recordReader.reset();
+        labelsReader.reset();
     }
 
     @Override
