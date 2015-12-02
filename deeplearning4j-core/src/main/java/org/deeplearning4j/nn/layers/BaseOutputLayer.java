@@ -83,7 +83,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
             throw new IllegalStateException("Cannot calculate score without input and labels");
         this.fullNetworkL1 = fullNetworkL1;
         this.fullNetworkL2 = fullNetworkL2;
-        INDArray preOut = preOutput2d(input,training);
+        INDArray preOut = preOutput2d(training);
         INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), preOut.dup()));
         setScore(output,preOut);
         return score;
@@ -94,7 +94,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         if(input == null || labels == null)
             return;
 
-        INDArray preOut = preOutput2d(input,true);
+        INDArray preOut = preOutput2d(true);
         Triple<Gradient,INDArray,INDArray> triple = getGradientsAndDelta(preOut);
         this.gradient = triple.getFirst();
         setScore(triple.getThird(),preOut);
@@ -129,7 +129,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
     @Override
     public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon) {
-        Triple<Gradient,INDArray,INDArray> triple = getGradientsAndDelta(preOutput2d(input,true));	//Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
+        Triple<Gradient,INDArray,INDArray> triple = getGradientsAndDelta(preOutput2d(true));	//Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
         INDArray delta = triple.getSecond();
 
         INDArray epsilonNext = params.get(DefaultParamInitializer.WEIGHT_KEY).mmul(delta.transpose()).transpose();
@@ -198,7 +198,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
     @Override
     public INDArray activate(INDArray input, boolean training) {
-        setInput(input, training);
+        setInput(input);
         return output(training);
     }
 
@@ -214,12 +214,12 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     }
 
     public  INDArray output(INDArray input, boolean training) {
-        setInput(input, training);
+        setInput(input);
         return output(training);
     }
 
     public  INDArray output(INDArray input) {
-        setInput(input, false);
+        setInput(input);
         return output(false);
     }
 
@@ -236,7 +236,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         if(input == null)
             throw new IllegalArgumentException("No null input allowed");
 
-        INDArray preOutput = preOutput2d(input, training);
+        INDArray preOutput = preOutput2d(training);
         if(conf.getLayer().getActivationFunction().equals("softmax")) {
             SoftMax softMax = new SoftMax(preOutput);
             softMax.exec(1);
@@ -244,7 +244,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         }
 
         if(training)
-            applyDropOutIfNecessary(input(),training);
+            applyDropOutIfNecessary(training);
 
         return super.activate(true);
     }
@@ -330,7 +330,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     public void fit(INDArray input, INDArray labels) {
         setInput(input);
         setLabels(labels);
-        applyDropOutIfNecessary(this.input, true);
+        applyDropOutIfNecessary(true);
         if( solver == null ){
             solver = new Solver.Builder()
                     .configure(conf())
@@ -398,8 +398,8 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         this.labels = labels;
     }
 
-    protected INDArray preOutput2d(INDArray input, boolean training){
-        return preOutput(input,training);
+    protected INDArray preOutput2d(boolean training){
+        return preOutput(training);
     }
 
     protected INDArray output2d(INDArray input){
@@ -412,7 +412,5 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         }
         return labels;
     }
-
-
 
 }
