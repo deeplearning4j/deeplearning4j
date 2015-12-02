@@ -18,6 +18,8 @@
 
 package org.deeplearning4j.models.word2vec;
 
+import org.deeplearning4j.models.word2vec.wordstore.VocabularyWord;
+
 import java.util.*;
 
 
@@ -30,6 +32,13 @@ public class Huffman {
 
     public Huffman(Collection<VocabWord> words) {
         this.words = new ArrayList<>(words);
+        Collections.sort(this.words, new Comparator<VocabWord>() {
+            @Override
+            public int compare(VocabWord o1, VocabWord o2) {
+                return Double.compare(o2.getWordFrequency(), o1.getWordFrequency());
+            }
+
+        });
     }
 
     private List<VocabWord> words;
