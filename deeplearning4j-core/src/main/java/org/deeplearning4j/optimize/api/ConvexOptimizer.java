@@ -43,6 +43,8 @@ public interface ConvexOptimizer extends Serializable {
 
     Updater getUpdater();
 
+    void setUpdater(Updater updater);
+
     NeuralNetConfiguration getConf();
 
     /**

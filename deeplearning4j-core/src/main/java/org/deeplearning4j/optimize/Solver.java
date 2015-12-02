@@ -54,21 +54,27 @@ public class Solver {
     }
 
     public ConvexOptimizer getOptimizer() {
+        if(optimizer != null) return optimizer;
         switch(conf.getOptimizationAlgo()) {
             case LBFGS:
-                return new LBFGS(conf,stepFunction,listeners,model);
+                optimizer = new LBFGS(conf,stepFunction,listeners,model);
+                break;
             case LINE_GRADIENT_DESCENT:
-                return new LineGradientDescent(conf,stepFunction,listeners,model);
+                optimizer = new LineGradientDescent(conf,stepFunction,listeners,model);
+                break;
             case HESSIAN_FREE:
-                return new StochasticHessianFree(conf,stepFunction,listeners,model);
+                optimizer = new StochasticHessianFree(conf,stepFunction,listeners,model);
+                break;
             case CONJUGATE_GRADIENT:
-                return new ConjugateGradient(conf,stepFunction,listeners,model);
+                optimizer = new ConjugateGradient(conf,stepFunction,listeners,model);
+                break;
             case STOCHASTIC_GRADIENT_DESCENT:
-                return new StochasticGradientDescent(conf,stepFunction,listeners,model);
+                optimizer = new StochasticGradientDescent(conf,stepFunction,listeners,model);
+                break;
             default:
                 throw new IllegalStateException("No optimizer found");
         }
-
+        return optimizer;
     }
 
     public static class Builder {
