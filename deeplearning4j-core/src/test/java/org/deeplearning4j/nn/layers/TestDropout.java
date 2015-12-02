@@ -13,7 +13,6 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.lang.reflect.Field;
@@ -21,7 +20,6 @@ import java.lang.reflect.Field;
 import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.fail;
 
 public class TestDropout {
@@ -98,6 +96,23 @@ public class TestDropout {
                 }
             }
 
+            //Do forward pass
+            //(1) ensure dropout ISN'T being applied for forward pass at test time
+            //(2) ensure dropout ISN'T being applied for test time scoring
+            //If dropout is applied at test time: outputs + score will differ between passes
+            INDArray in2 = Nd4j.rand(1,nIn);
+            INDArray out2 = Nd4j.rand(1,nOut);
+            INDArray outTest1 = net.output(in2, false);
+            INDArray outTest2 = net.output(in2, false);
+            INDArray outTest3 = net.output(in2, false);
+            assertEquals(outTest1,outTest2);
+            assertEquals(outTest1, outTest3);
+
+            double score1 = net.score(new DataSet(in2,out2), false);
+            double score2 = net.score(new DataSet(in2,out2), false);
+            double score3 = net.score(new DataSet(in2,out2), false);
+            assertEquals(score1,score2,0.0);
+            assertEquals(score1,score3,0.0);
         }
 
         if(noDropoutCount >= nTests / 3){
@@ -188,8 +203,8 @@ public class TestDropout {
                 }
             }
 
-            //Chec other layers. Don't know pre-dropout values in general, but using saturated sigmoids -> inputs should
-            //all be ~1.0
+            //Check other layers. Don't know pre-dropout values in general, but using saturated sigmoids -> inputs should
+            //all be ~1.0 before dropout -> either 0 or ~2.0 after dropout
             for( int j=1; j<4; j++ ){
                 dropoutMask = (INDArray)dropoutMaskField.get(net.getLayer(j));
                 assertNotNull(dropoutMask);
@@ -208,6 +223,24 @@ public class TestDropout {
                     }
                 }
             }
+
+            //Do forward pass
+            //(1) ensure dropout ISN'T being applied for forward pass at test time
+            //(2) ensure dropout ISN'T being applied for test time scoring
+            //If dropout is applied at test time: outputs + score will differ between passes
+            INDArray in2 = Nd4j.rand(1,nIn);
+            INDArray out2 = Nd4j.rand(1,nOut);
+            INDArray outTest1 = net.output(in2, false);
+            INDArray outTest2 = net.output(in2, false);
+            INDArray outTest3 = net.output(in2, false);
+            assertEquals(outTest1,outTest2);
+            assertEquals(outTest1, outTest3);
+
+            double score1 = net.score(new DataSet(in2,out2), false);
+            double score2 = net.score(new DataSet(in2,out2), false);
+            double score3 = net.score(new DataSet(in2,out2), false);
+            assertEquals(score1,score2,0.0);
+            assertEquals(score1,score3,0.0);
         }
 
         if(noDropoutCount >= nTests / 3){
