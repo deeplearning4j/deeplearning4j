@@ -592,7 +592,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     @Override
-    public void copyToHost(CudaContext context, int offset, int length, int stride) {
+    public synchronized void copyToHost(CudaContext context, int offset, int length, int stride) {
         DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName(),Triple.of(offset,length,stride));
         if(devicePointerInfo == null)
             throw new IllegalStateException("No pointer found for offset " + offset);

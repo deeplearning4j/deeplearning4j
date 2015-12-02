@@ -124,7 +124,7 @@ public class KernelParamsWrapper implements AutoCloseable {
     public KernelParamsWrapper setResultOp(Accumulation op, INDArray result,int...dimension) {
         resultOp = op;
         resultLength = result.length();
-        scalarResult = (dimension == null || dimension[0] == Integer.MAX_VALUE);
+        scalarResult = (dimension == null || dimension.length < 1 || dimension[0] == Integer.MAX_VALUE);
         setResultArray(result);
         return this;
     }

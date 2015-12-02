@@ -231,9 +231,13 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
      * @param resultAcrossBlocks
      */
     public void calculateBlockResult(Accumulation op,INDArray resultAcrossBlocks) {
+        int oldN = op.n();
         op.setX(resultAcrossBlocks);
-        op.setN(resultAcrossBlocks.length());
+        op.setApplyFinalTransform(false);
         doAccumulationOp(op);
+        op.setApplyFinalTransform(true);
+        op.setN(oldN);
+        op.getAndSetFinalResult(op.getFinalResult().doubleValue());
     }
 
 
@@ -308,6 +312,11 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         return ctx;
     }
 
+    private int toInt(boolean val) {
+        return val ? 1 : 0;
+    }
+
+
     private CudaContext invoke(Accumulation op,int[] dimension,INDArray result,boolean sync)  {
         CudaContext ctx;
 
@@ -323,8 +332,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             if(length > 1000)
                 length = 1000;
             //of note here: THIS IS REVERSE OF WHAT IT SHOULD BE, THIS IS INTENDED.
-            metrics.setBlockSizeNotOverMax(length);
-            metrics.setGridSizeNotOverMax(op.x().tensorAlongDimension(0, dimension).length());
+            metrics.setGridSizeNotOverMax(length);
+            metrics.setBlockSizeNotOverMax(op.x().tensorAlongDimension(0, dimension).length());
             int sharedMemBasedOnBlockSize = op.x().tensorAlongDimension(0,dimension).length() * 10 *  op.x().data().getElementSize();
             if(sharedMemBasedOnBlockSize < 1024)
                 sharedMemBasedOnBlockSize = 1024;
@@ -370,7 +379,11 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(result)),
                     KernelFunctions.alloc(metrics.getGpuDefinitionInfo()),
                     KernelFunctions.alloc(dimension == null ? new int[] {Integer.MAX_VALUE} : dimension),
-                    dimension == null ? 1 : dimension.length
+                    dimension == null ? 1 : dimension.length,
+                    //if the whole buffer is to be used don't do final aggregation this happens
+                    //by aggregating blocks on cpu first
+                    toInt(!(dimension == null || dimension[0] == Integer.MAX_VALUE))
+
             };
 
             try(KernelParamsWrapper kParams = new KernelParamsWrapper(op,sync,kernelParams).setResultOp(op, result)) {
@@ -411,7 +424,10 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(result)),
                     KernelFunctions.alloc(metrics.getGpuDefinitionInfo()),
                     KernelFunctions.alloc(dimension == null ? new int[] {Integer.MAX_VALUE} : dimension),
-                    dimension == null ? 1 : dimension.length
+                    dimension == null ? 1 : dimension.length,
+                    //if the whole buffer is to be used don't do final aggregation this happens
+                    //by aggregating blocks on cpu first
+                    toInt(!(dimension == null || dimension[0] == Integer.MAX_VALUE))
             };
 
 

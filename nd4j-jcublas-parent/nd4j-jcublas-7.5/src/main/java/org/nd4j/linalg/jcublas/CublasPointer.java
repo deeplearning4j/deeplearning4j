@@ -110,10 +110,10 @@ public class CublasPointer  implements AutoCloseable {
     public void copyToHost() {
         if(arr != null) {
             int compLength = arr instanceof IComplexNDArray ? arr.length() * 2 : arr.length();
-            buffer.copyToHost(cudaContext,arr.offset(),compLength,arr.elementWiseStride());
+            ContextHolder.getInstance().getMemoryStrategy().copyToHost(buffer,arr.offset(),arr.elementWiseStride(),compLength,cudaContext,arr.offset(),arr.elementWiseStride());
         }
         else {
-            buffer.copyToHost(cudaContext,0, buffer.length(),1);
+            ContextHolder.getInstance().getMemoryStrategy().copyToHost(buffer,0,cudaContext);
         }
     }
 
