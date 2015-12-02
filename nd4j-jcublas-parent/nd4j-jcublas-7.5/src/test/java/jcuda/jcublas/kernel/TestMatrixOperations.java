@@ -179,7 +179,7 @@ public class TestMatrixOperations {
 
         double eps = 1e-3;
 
-        for( int[] shape : shapes ){
+        for( int[] shape : shapes) {
             INDArray orig = Nd4j.rand(shape);
 
             INDArray orig1 = orig.dup();

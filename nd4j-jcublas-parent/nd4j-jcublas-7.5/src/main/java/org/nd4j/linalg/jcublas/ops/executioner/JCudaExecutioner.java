@@ -225,6 +225,17 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         throw new IllegalArgumentException("Illegal datatype");
     }
 
+    /**
+     * Calculates a reduction across blocks
+     * @param op
+     * @param resultAcrossBlocks
+     */
+    public void calculateBlockResult(Accumulation op,INDArray resultAcrossBlocks) {
+        op.setX(resultAcrossBlocks);
+        op.setN(resultAcrossBlocks.length());
+        super.exec(op,Integer.MAX_VALUE);
+    }
+
 
     private CudaContext invoke(BroadcastOp op,boolean sync) {
         CudaContext ctx;
@@ -312,8 +323,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             if(length > 1000)
                 length = 1000;
             //of note here: THIS IS REVERSE OF WHAT IT SHOULD BE, THIS IS INTENDED.
-            metrics.setGridSize(length);
-            metrics.setBlockSize(op.x().tensorAlongDimension(0,dimension).length());
+            metrics.setBlockSizeNotOverMax(length);
+            metrics.setGridSizeNotOverMax(op.x().tensorAlongDimension(0, dimension).length());
             int sharedMemBasedOnBlockSize = op.x().tensorAlongDimension(0,dimension).length() * 10 *  op.x().data().getElementSize();
             if(sharedMemBasedOnBlockSize < 1024)
                 sharedMemBasedOnBlockSize = 1024;
@@ -323,8 +334,9 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             int sharedMemBasedOnBlockSize = op.n() * op.x().data().getElementSize();
             if(sharedMemBasedOnBlockSize < 1024)
                 sharedMemBasedOnBlockSize = 1024;
-            metrics.setSharedMemoryNotOverMax(metrics.getBlockSize() * op.x().data().getElementSize());
-
+            metrics.setSharedMemoryNotOverMax(sharedMemBasedOnBlockSize);
+            //setup a number of threads = the number of blocks being launched
+            result = Nd4j.create(metrics.getGridSize());
         }
 
 
@@ -380,6 +392,12 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 op.setX(op.x().dup());
             }
 
+            int sharedMemBasedOnBlockSize = op.n() * op.x().data().getElementSize();
+            if(sharedMemBasedOnBlockSize < 1024)
+                sharedMemBasedOnBlockSize = 1024;
+            metrics.setSharedMemoryNotOverMax(sharedMemBasedOnBlockSize);
+
+
             int length = op.x().data().length();
             if(dimension == null && xStride == 1 && op.x().offset() == 0)
                 length = op.n();
@@ -417,7 +435,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private CudaContext invoke(ScalarOp op,boolean sync) {
-
         GpuMetrics metrics = GpuMetrics.blockAndThreads(getType(op),op.n());
         metrics.setGridSize(op.n());
         metrics.setBlockSize(1024);

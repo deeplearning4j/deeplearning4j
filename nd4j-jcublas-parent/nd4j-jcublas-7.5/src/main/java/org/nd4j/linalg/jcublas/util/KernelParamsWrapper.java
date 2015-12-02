@@ -23,28 +23,25 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import jcuda.Pointer;
 import jcuda.Sizeof;
-import jcuda.driver.CUstream;
-import jcuda.driver.CUstream_flags;
-import jcuda.driver.JCudaDriver;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
-import jcuda.runtime.cudaStream_t;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
-import org.nd4j.linalg.jcublas.complex.ComplexDouble;
+import org.nd4j.linalg.jcublas.buffer.allocation.PinnedMemoryStrategy;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.context.CudaContext;
-import org.nd4j.linalg.jcublas.gpumetrics.GpuMetrics;
-import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 
-import static jcuda.driver.JCudaDriver.cuMemGetInfo;
 
 /**
  * Wraps the generation of kernel parameters
@@ -223,14 +220,21 @@ public class KernelParamsWrapper implements AutoCloseable {
         if (devicePointer.getBuffer().dataType() == DataBuffer.Type.DOUBLE) {
             double[] data = new double[resultLength];
             Pointer get = Pointer.to(data);
+            if(ContextHolder.getInstance().getMemoryStrategy() instanceof PinnedMemoryStrategy) {
+                ByteBuffer buff = devicePointer.getHostPointer().getByteBuffer(0,acc.x().data().getElementSize());
+                buff.order(ByteOrder.nativeOrder());
+                data[0] = buff.asDoubleBuffer().get(0);
+            }
+            else {
+                JCuda.cudaMemcpyAsync(
+                        get
+                        , devicePointer.getDevicePointer()
+                        , resultLength * Sizeof.DOUBLE
+                        , cudaMemcpyKind.cudaMemcpyDeviceToHost
+                        , context.getOldStream());
+                context.syncOldStream();
 
-            JCuda.cudaMemcpyAsync(
-                    get
-                    , devicePointer.getDevicePointer()
-                    , resultLength * Sizeof.DOUBLE
-                    , cudaMemcpyKind.cudaMemcpyDeviceToHost
-                    , context.getOldStream());
-            context.syncOldStream();
+            }
 
 
             if(acc instanceof Accumulation) {
@@ -243,14 +247,21 @@ public class KernelParamsWrapper implements AutoCloseable {
         else if (devicePointer.getBuffer().dataType() == DataBuffer.Type.FLOAT) {
             float[] data = new float[resultLength];
             Pointer get = Pointer.to(data);
+            if(ContextHolder.getInstance().getMemoryStrategy() instanceof PinnedMemoryStrategy) {
+                ByteBuffer buff = devicePointer.getHostPointer().getByteBuffer(0,acc.x().data().getElementSize());
+                buff.order(ByteOrder.nativeOrder());
+                data[0] = buff.asFloatBuffer().get(0);
+            }
+            else {
+                JCuda.cudaMemcpyAsync(
+                        get
+                        , devicePointer.getDevicePointer()
+                        , resultLength * Sizeof.FLOAT
+                        , cudaMemcpyKind.cudaMemcpyDeviceToHost
+                        , context.getOldStream());
+                context.syncOldStream();
 
-            JCuda.cudaMemcpyAsync(
-                    get
-                    , devicePointer.getDevicePointer()
-                    , resultLength * Sizeof.FLOAT
-                    , cudaMemcpyKind.cudaMemcpyDeviceToHost
-                    , context.getOldStream());
-            context.syncOldStream();
+            }
 
 
             if(acc instanceof Accumulation) {

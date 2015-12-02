@@ -144,6 +144,10 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         super(data,length);
     }
 
+    public BaseCudaDataBuffer(ByteBuffer buffer, int length) {
+        super(buffer,length);
+    }
+
     @Override
     protected void setNioBuffer() {
         wrappedBuffer = ByteBuffer.allocateDirect(elementSize * length);

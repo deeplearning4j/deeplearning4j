@@ -32,6 +32,7 @@ import java.lang.ref.WeakReference;
 import java.nio.*;
 import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -171,6 +172,48 @@ public abstract class BaseDataBuffer implements DataBuffer {
         }
         else if(dataType() == Type.FLOAT) {
             floatData = new float[length];
+        }
+    }
+
+    /**
+     * Create a data buffer from
+     * the given length
+     *
+     * @param buffer
+     * @param length
+     */
+    public BaseDataBuffer(ByteBuffer buffer,int length) {
+        allocationMode = Nd4j.alloc;
+        this.length = length;
+        buffer.order(ByteOrder.nativeOrder());
+        if(allocationMode() == AllocationMode.DIRECT) {
+            this.wrappedBuffer = buffer;
+            if(buffer.capacity() / getElementSize() != length) {
+                throw new IllegalArgumentException("Illegal buffer");
+            }
+        }
+        else if(dataType() == Type.INT) {
+            intData = new int[length];
+            IntBuffer intBuffer = buffer.asIntBuffer();
+            for(int i = 0; i < length; i++) {
+                intData[i] = intBuffer.get(i);
+            }
+        }
+        else if(dataType() == Type.DOUBLE) {
+            doubleData = new double[length];
+            DoubleBuffer doubleBuffer = buffer.asDoubleBuffer();
+            for(int i = 0; i < length; i++) {
+                doubleData[i] = doubleBuffer.get(i);
+            }
+
+
+        }
+        else if(dataType() == Type.FLOAT) {
+            floatData = new float[length];
+            FloatBuffer floatBuffer = buffer.asFloatBuffer();
+            for(int i = 0; i < length; i++) {
+                floatData[i] = floatBuffer.get(i);
+            }
         }
     }
 

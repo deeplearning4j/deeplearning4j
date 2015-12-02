@@ -1518,7 +1518,7 @@ public class Nd4j {
 
 
 
-    /**
+    /**Y
      * Write an ndarray to a writer
      * @param writer the writer to write to
      * @param write the ndarray to write

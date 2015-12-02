@@ -71,6 +71,10 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         super(data, length);
     }
 
+    public CudaDoubleDataBuffer(ByteBuffer buffer, int length) {
+        super(buffer, length);
+    }
+
 
     @Override
     public void assign(int[] indices, float[] data, boolean contiguous, int inc) {
