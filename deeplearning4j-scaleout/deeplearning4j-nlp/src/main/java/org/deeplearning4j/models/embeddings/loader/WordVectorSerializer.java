@@ -552,7 +552,7 @@ public class WordVectorSerializer {
      *            the path to write
      * @throws IOException
      */
-    public static void writeWordVectors(WordVectors vec, String path)
+    public static void writeWordVectors(@NonNull WordVectors vec, @NonNull String path)
             throws IOException {
         BufferedWriter write = new BufferedWriter(new FileWriter(new File(path), false));
 
@@ -561,6 +561,24 @@ public class WordVectorSerializer {
         write.flush();
         write.close();
 
+    }
+
+    /**
+     * Writes the word vectors to the given OutputStream. Note that this assumes an in memory cache.
+     *
+     * @param vec
+     *            the word2vec to write
+     * @param outputStream - OutputStream, where all data should be sent to
+     *            the path to write
+     * @throws IOException
+     */
+    public static void writeWordVectors(@NonNull WordVectors vec, @NonNull OutputStream outputStream) throws IOException {
+        BufferedWriter writer =  new BufferedWriter(new OutputStreamWriter(outputStream));
+
+        writeWordVectors(vec, writer);
+
+        writer.flush();
+        writer.close();
     }
 
     /**
@@ -573,7 +591,7 @@ public class WordVectorSerializer {
      *            the path to write
      * @throws IOException
      */
-    public static void writeWordVectors(WordVectors vec, BufferedWriter writer) throws IOException  {
+    public static void writeWordVectors(@NonNull WordVectors vec, @NonNull BufferedWriter writer) throws IOException  {
         int words = 0;
         for (String word : vec.vocab().words()) {
             if (word == null) {
