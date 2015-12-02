@@ -220,6 +220,8 @@ public class DefaultOpFactory implements OpFactory {
                 return new Cos(x, y);
             case "exp":
                 return new Exp(x, y);
+            case "elu":
+                return new ELU(x, y);
             case "floor":
                 return new Floor(x, y);
             case "hardtanh":
@@ -285,6 +287,8 @@ public class DefaultOpFactory implements OpFactory {
                 return new Ceil(x);
             case "cos":
                 return new Cos(x);
+            case "elu":
+                return new ELU(x);
             case "exp":
                 return new Exp(x);
             case "floor":
@@ -354,6 +358,8 @@ public class DefaultOpFactory implements OpFactory {
                 return new Cos(x, z);
             case "exp":
                 return new Exp(x, z);
+            case "elu":
+                return new ELU(x, z);
             case "floor":
                 return new Floor(x, z);
             case "hardtanh":
