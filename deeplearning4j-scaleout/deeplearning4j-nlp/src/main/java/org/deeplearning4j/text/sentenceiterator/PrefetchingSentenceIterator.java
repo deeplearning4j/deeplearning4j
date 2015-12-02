@@ -1,26 +1,29 @@
 package org.deeplearning4j.text.sentenceiterator;
 
 import lombok.NonNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * Wrapper over SentenceIterator, that allows background prefetch.
- *
- * NOT READY FOR USE, PLEASE DON" USE
+ * Wrapper over SentenceIterator, that allows background prefetch from original SentenceIterator
+ * It could be useful, if your SentencePreProcessor implementation is CPU intensive as well as whole pipeline behind iterator is cpu intensive too.
+ * This iterator will allow you to split workload in two different threads
  *
  * @author raver119@gmail.com
  */
-@Deprecated
 public class PrefetchingSentenceIterator implements SentenceIterator {
 
     private SentenceIterator sourceIterator;
     private int fetchSize;
-    private LinkedBlockingQueue<String> buffer = new LinkedBlockingQueue<>();
     private AsyncIteratorReader reader;
     private SentencePreProcessor preProcessor;
+
+    protected static final Logger log = LoggerFactory.getLogger(PrefetchingSentenceIterator.class);
 
     private PrefetchingSentenceIterator() {
 
@@ -30,22 +33,13 @@ public class PrefetchingSentenceIterator implements SentenceIterator {
      * Here we start async readers
      */
     private void init() {
-        reader = new AsyncIteratorReader(sourceIterator, fetchSize, buffer, this.preProcessor);
+        reader = new AsyncIteratorReader(sourceIterator, fetchSize, this.preProcessor);
         reader.start();
     }
 
     @Override
     public String nextSentence() {
-        if (buffer.size() > 0) {
-            return buffer.poll();
-        } else if (reader.hasMoreLines()) {
-            try {
-                return buffer.take();
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
-            }
-        } else return null;
+        return reader.nextLine();
     }
 
     @Override
@@ -81,7 +75,7 @@ public class PrefetchingSentenceIterator implements SentenceIterator {
 
     public static class Builder {
         private SentenceIterator iterator;
-        private int fetchSize = 100;
+        private int fetchSize = 1000;
         private SentencePreProcessor preProcessor;
 
         public Builder(@NonNull SentenceIterator iterator) {
@@ -112,16 +106,15 @@ public class PrefetchingSentenceIterator implements SentenceIterator {
     private class AsyncIteratorReader extends Thread implements Runnable {
         private SentenceIterator iterator;
         private int fetchSize;
-        private LinkedBlockingQueue<String> buffer;
-        private AtomicBoolean shouldWork = new AtomicBoolean(true);
         private AtomicBoolean shouldTerminate = new AtomicBoolean(false);
         private ReentrantReadWriteLock lock =  new ReentrantReadWriteLock();
         private SentencePreProcessor preProcessor;
+        private AtomicBoolean isRunning = new AtomicBoolean(true);
+        private LinkedBlockingQueue<String> buffer = new LinkedBlockingQueue<>();
 
-        public AsyncIteratorReader(@NonNull SentenceIterator iterator, @NonNull int fetchSize, @NonNull LinkedBlockingQueue<String> buffer, SentencePreProcessor preProcessor) {
+        public AsyncIteratorReader(@NonNull SentenceIterator iterator, @NonNull int fetchSize, SentencePreProcessor preProcessor) {
             this.iterator = iterator;
             this.fetchSize = fetchSize;
-            this.buffer = buffer;
             this.preProcessor = preProcessor;
 
             this.setName("AsyncIteratorReader thread");
@@ -130,37 +123,56 @@ public class PrefetchingSentenceIterator implements SentenceIterator {
         @Override
         public void run() {
             while (!shouldTerminate.get()) {
+                if (iterator.hasNext())isRunning.set(true);
+                    else try {
+                        Thread.sleep(50);
+                    } catch (Exception e) {
+                    //
+                    }
                 while (!shouldTerminate.get() && iterator.hasNext()) {
 
                         int cnt = 0;
-                        if (buffer.size() < fetchSize)
-                            try {
-                         //       lock.writeLock().lock();
-                                while (!shouldTerminate.get() && cnt < fetchSize && iterator.hasNext()) {
+                        if (buffer.size() < fetchSize) {
+                            while (!shouldTerminate.get() && cnt < fetchSize && iterator.hasNext()) {
+                                try {
                                     lock.writeLock().lock();
-                                    buffer.add((this.preProcessor == null) ? iterator.nextSentence() : this.preProcessor.preProcess(iterator.nextSentence()));
+                                    String line = iterator.nextSentence();
+                                    if (line != null)
+                                        buffer.add((this.preProcessor == null) ? line : this.preProcessor.preProcess(line));
+                                } finally {
                                     lock.writeLock().unlock();
-                                    cnt++;
                                 }
-                            } finally {
-                      //         lock.writeLock().unlock();
+                                cnt++;
                             }
-                        else try {
+//                            log.info("Lines added: [" + cnt + "], buffer size: [" + buffer.size() + "]");
+                        } else try {
                                 Thread.sleep(10);
                             } catch (Exception e) {}
                 }
+                isRunning.set(false);
+            }
+        }
+
+        public String nextLine() {
+            if (buffer.size() > 0)
+                return buffer.poll();
+
+            try {
+                return buffer.poll(2L, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                return null;
             }
         }
 
         public boolean hasMoreLines() {
-            try {
-                lock.readLock().lock();
-                if (buffer.size() > 0) return true;
-                else return iterator.hasNext();
-            } finally {
-                lock.readLock().unlock();
-            }
+            if (buffer.size() > 0) return true;
 
+            try {
+                this.lock.readLock().lock();
+                return iterator.hasNext() || buffer.size() > 0;
+            } finally {
+                this.lock.readLock().unlock();
+            }
         }
 
         public void reset() {
