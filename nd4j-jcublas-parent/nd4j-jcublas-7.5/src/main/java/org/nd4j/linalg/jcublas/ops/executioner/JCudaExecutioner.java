@@ -233,7 +233,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     public void calculateBlockResult(Accumulation op,INDArray resultAcrossBlocks) {
         op.setX(resultAcrossBlocks);
         op.setN(resultAcrossBlocks.length());
-        super.exec(op,Integer.MAX_VALUE);
+        doAccumulationOp(op);
     }
 
 
@@ -369,7 +369,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     result,
                     KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(result)),
                     KernelFunctions.alloc(metrics.getGpuDefinitionInfo()),
-                    KernelFunctions.alloc(dimension == null ? new int[] {1} : dimension),
+                    KernelFunctions.alloc(dimension == null ? new int[] {Integer.MAX_VALUE} : dimension),
                     dimension == null ? 1 : dimension.length
             };
 
@@ -410,13 +410,13 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     result,
                     KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(result)),
                     KernelFunctions.alloc(metrics.getGpuDefinitionInfo()),
-                    KernelFunctions.alloc(dimension == null ? new int[] {1} : dimension),
+                    KernelFunctions.alloc(dimension == null ? new int[] {Integer.MAX_VALUE} : dimension),
                     dimension == null ? 1 : dimension.length
             };
 
 
 
-            try(KernelParamsWrapper kParams = new KernelParamsWrapper(op,sync,kernelParams).setResultOp(op, result)) {
+            try(KernelParamsWrapper kParams = new KernelParamsWrapper(op,sync,kernelParams).setResultOp(op, result,dimension)) {
                 invokeFunction(op, sync,metrics,kParams.getContext(), kParams.getKernelParameters());
                 ctx = kParams.getContext();
                 if(sync)

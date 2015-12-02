@@ -188,9 +188,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
         buffer.order(ByteOrder.nativeOrder());
         if(allocationMode() == AllocationMode.DIRECT) {
             this.wrappedBuffer = buffer;
-            if(buffer.capacity() / getElementSize() != length) {
-                throw new IllegalArgumentException("Illegal buffer");
-            }
         }
         else if(dataType() == Type.INT) {
             intData = new int[length];

@@ -58,6 +58,7 @@ import org.springframework.core.io.Resource;
 import java.io.*;
 import java.lang.ref.ReferenceQueue;
 import java.lang.reflect.Constructor;
+import java.nio.ByteBuffer;
 import java.util.*;
 
 /**
@@ -139,7 +140,6 @@ public class Nd4j {
         Nd4j nd4j = new Nd4j();
         nd4j.initContext();
     }
-
 
 
 
@@ -946,6 +946,26 @@ public class Nd4j {
     public static DataBuffer createBuffer(int[] shape, DataBuffer.Type type) {
         int length = ArrayUtil.prod(shape);
         return type == DataBuffer.Type.DOUBLE ? createBuffer(new double[length]) : createBuffer(new float[length]);
+    }
+
+    /**
+     * Creates a buffer of the specified type
+     * and length with the given byte buffer.
+     *
+     * This will wrap the buffer as a reference (no copy)
+     * if the allocation type is the same.
+     * @param buffer the buffer to create from
+     * @param type the type of buffer to create
+     * @param length the length of the buffer
+     * @return
+     */
+    public static DataBuffer createBuffer(ByteBuffer buffer,DataBuffer.Type type,int length) {
+        switch(type) {
+            case INT: return DATA_BUFFER_FACTORY_INSTANCE.createInt(buffer,length);
+            case DOUBLE: return DATA_BUFFER_FACTORY_INSTANCE.createDouble(buffer,length);
+            case FLOAT: return DATA_BUFFER_FACTORY_INSTANCE.createFloat(buffer,length);
+            default: throw new IllegalArgumentException("Illegal type " + type);
+        }
     }
 
 

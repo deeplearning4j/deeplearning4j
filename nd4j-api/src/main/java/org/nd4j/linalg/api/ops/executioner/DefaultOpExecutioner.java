@@ -359,7 +359,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         this.executionMode = executionMode;
     }
 
-    private void doTransformOp(TransformOp op) {
+    protected void doTransformOp(TransformOp op) {
         INDArray x = op.x();
         INDArray y = op.y();
         INDArray z = op.z();
@@ -412,7 +412,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
 
-    private void doAccumulationOp(Accumulation op) {
+    protected void doAccumulationOp(Accumulation op) {
         INDArray x = op.x();
         INDArray y = op.y();
         if (!(x instanceof IComplexNDArray) && !(y instanceof IComplexNDArray)) {
@@ -445,7 +445,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         }
     }
 
-    private void doScalarOp(ScalarOp op) {
+    protected void doScalarOp(ScalarOp op) {
         INDArray x = op.x();
         INDArray z = op.z();
 
@@ -469,7 +469,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         }
     }
 
-    private void doIndexAccumulationOp(IndexAccumulation op) {
+    protected void doIndexAccumulationOp(IndexAccumulation op) {
         INDArray x = op.x();
         INDArray y = op.y();
 
@@ -507,7 +507,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         }
     }
 
-    private void doBroadcastOp(BroadcastOp op) {
+    protected void doBroadcastOp(BroadcastOp op) {
         INDArray x = op.x();
         INDArray y = op.y();
         INDArray z = op.z();
