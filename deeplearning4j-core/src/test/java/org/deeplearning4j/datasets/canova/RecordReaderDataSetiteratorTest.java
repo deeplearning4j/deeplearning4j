@@ -136,6 +136,36 @@ public class RecordReaderDataSetiteratorTest {
         assertEquals(dsList.get(2).getLabels(), expL2);
     }
 
+    @Test
+    public void testSequenceRecordReaderReset() throws Exception {
+        ClassPathResource resource = new ClassPathResource("csvsequence_0.txt");
+        String featuresPath = resource.getFile().getAbsolutePath().replaceAll("0", "%d");
+        resource = new ClassPathResource("csvsequencelabels_0.txt");
+        String labelsPath = resource.getFile().getAbsolutePath().replaceAll("0", "%d");
+
+        SequenceRecordReader featureReader = new CSVSequenceRecordReader(1, ",");
+        SequenceRecordReader labelReader = new CSVSequenceRecordReader(1, ",");
+        featureReader.initialize(new NumberedFileInputSplit(featuresPath, 0, 2));
+        labelReader.initialize(new NumberedFileInputSplit(labelsPath, 0, 2));
+
+        SequenceRecordReaderDataSetIterator iter =
+                new SequenceRecordReaderDataSetIterator(featureReader, labelReader, 1, 4, false);
+
+        assertEquals(3, iter.inputColumns());
+        assertEquals(4, iter.totalOutcomes());
+
+        int nResets = 5;
+        for( int i=0; i<nResets; i++ ) {
+            iter.reset();
+            int count = 0;
+            while (iter.hasNext()) {
+                iter.next();
+                count++;
+            }
+            assertEquals(3,count);
+        }
+    }
+
 
 
     @Test
