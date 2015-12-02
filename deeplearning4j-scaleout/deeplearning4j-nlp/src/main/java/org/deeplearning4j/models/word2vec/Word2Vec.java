@@ -103,15 +103,15 @@ public class Word2Vec extends WordVectorsImpl {
     protected boolean saveVocab = false;
     protected double minLearningRate = 0.01;
     protected int learningRateDecayWords = 10000;
-    private double negative;
-    private int epochs;
+    protected double negative;
+    protected int epochs;
 
     protected boolean useAdaGrad = false;
 
     protected boolean resetModel = true;
 
     // lines counter
-    final AtomicLong totalLines = new AtomicLong(0);
+    final protected AtomicLong totalLines = new AtomicLong(0);
 
     public Word2Vec() {}
 
@@ -200,7 +200,7 @@ public class Word2Vec extends WordVectorsImpl {
 
             buildVocab();
             lookupTable.resetWeights(true);
-            resetModel = true;
+            resetModel = false;
         }
 
         // totalWordsCount is used for learningRate decay at VectorCalculationsThreads
@@ -401,7 +401,13 @@ public class Word2Vec extends WordVectorsImpl {
 
 
 
-    /* Builds the binary tree for the word relationships */
+    /*
+            Builds the binary tree for the word relationships.
+
+            Temporary deprecated. Proper HuffmanTree building is implemented at VocabularyHolder.
+            TODO: fix original method
+     */
+    @Deprecated
     protected void buildBinaryTree() {
         log.info("Constructing priority queue");
         Huffman huffman = new Huffman(vocab().vocabWords());
@@ -483,9 +489,9 @@ public class Word2Vec extends WordVectorsImpl {
         protected InvertedIndex index;
         protected WeightLookupTable lookupTable;
         protected boolean hugeModelExpected = false;
-        private Word2VecConfiguration configuration = new Word2VecConfiguration();
-        private boolean resetModel = true;
-        private int numEpochs = 1;
+        protected Word2VecConfiguration configuration = new Word2VecConfiguration();
+        protected boolean resetModel = true;
+        protected int numEpochs = 1;
 
         public Builder lookupTable(@NonNull WeightLookupTable lookupTable) {
             this.lookupTable = lookupTable;
@@ -674,7 +680,7 @@ public class Word2Vec extends WordVectorsImpl {
          * @param reallyExpected
          * @return
          */
-        public Builder hugeModelExpected(boolean reallyExpected) {
+         public Builder hugeModelExpected(boolean reallyExpected) {
             this.hugeModelExpected = reallyExpected;
             return this;
         }
@@ -776,8 +782,10 @@ public class Word2Vec extends WordVectorsImpl {
      *
      * It becomes very usefull if text processing pipeline behind iterator is complex, and we're not loading data from simple text file with whitespaces as separator.
      * Since this method allows you to hide preprocessing latency in background.
+     *
+     * This mechanics will be change to PrefetchingSentenceIterator wrapper.
      */
-    private class AsyncIteratorDigitizer extends Thread implements Runnable {
+    protected class AsyncIteratorDigitizer extends Thread implements Runnable {
         private final SentenceIterator iterator;
         private final LinkedBlockingQueue<List<VocabWord>> buffer;
         private final AtomicLong linesCounter;
@@ -802,7 +810,7 @@ public class Word2Vec extends WordVectorsImpl {
                 // if buffered level is below limitLower, we're going to fetch limitUpper number of strings from fetcher
                 if (buffer.size() < limitLower) {
                     AtomicInteger linesLoaded = new AtomicInteger(0);
-                    while (linesLoaded.getAndIncrement() < limitUpper && this.iterator.hasNext()) {
+                    while (linesLoaded.getAndIncrement() < limitUpper && this.iterator.hasNext() ) {
                         String sentence = this.iterator.nextSentence();
                         Tokenizer tokenizer = Word2Vec.this.tokenizerFactory.create(sentence);
 
@@ -829,6 +837,14 @@ public class Word2Vec extends WordVectorsImpl {
         public boolean hasMoreLines() {
             // statement order does matter here, since there's possible race condition
             return buffer.size() > 0 || isRunning.get();
+        }
+
+        public List<VocabWord> nextSentence() {
+            try {
+                return buffer.poll(3L, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                return null;
+            }
         }
     }
 
@@ -894,7 +910,7 @@ public class Word2Vec extends WordVectorsImpl {
 
                     // increment processed lines count
                     totalLines.incrementAndGet();
-                    if (totalLines.get() % 10000 == 0) log.info("Epoch: " + this.epochNumber+ "; Words vectorized so far: " + this.wordsCounter.get() + ";  Lines vectorized so far: " + this.totalLines.get() + "; learningRate: " + alpha);
+                    if (totalLines.get() % 100000 == 0) log.info("Epoch: " + this.epochNumber+ "; Words vectorized so far: " + this.wordsCounter.get() + ";  Lines vectorized so far: " + this.totalLines.get() + "; learningRate: " + alpha);
                 } catch (Exception  e) {
                     e.printStackTrace();
                     throw new RuntimeException(e);

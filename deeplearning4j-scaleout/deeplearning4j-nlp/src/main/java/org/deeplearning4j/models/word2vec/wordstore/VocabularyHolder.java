@@ -233,7 +233,9 @@ public class VocabularyHolder implements Serializable {
     public void incrementWordCounter(String word) {
         if (vocabulary.containsKey(word)) {
             vocabulary.get(word).incrementCount();
-        } else throw new IllegalStateException("No such word found");
+        }
+        // there's no need to throw such exception here. just do nothing if word is not found
+        //else throw new IllegalStateException("No such word found");
     }
 
     /**
@@ -274,6 +276,8 @@ public class VocabularyHolder implements Serializable {
         for (VocabularyWord word: holder.getVocabulary()) {
             if (!this.containsWord(word.getWord())) {
                 this.addWord(word);
+            } else {
+                holder.incrementWordCounter(word.getWord());
             }
         }
     }
