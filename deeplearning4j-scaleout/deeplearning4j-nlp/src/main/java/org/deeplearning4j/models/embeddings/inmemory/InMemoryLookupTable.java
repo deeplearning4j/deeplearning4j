@@ -274,14 +274,14 @@ public class InMemoryLookupTable implements WeightLookupTable {
                 else
                     g = useAdaGrad ? w1.getGradient(target, label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) : (label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) *   alpha;
                 if(syn0.data().dataType() == DataBuffer.Type.DOUBLE)
-                    Nd4j.getBlasWrapper().axpy(g,neu1e,l1);
+                    Nd4j.getBlasWrapper().axpy(g,syn1Neg.slice(target),neu1e);
                 else
-                    Nd4j.getBlasWrapper().axpy((float) g,neu1e,l1);
+                    Nd4j.getBlasWrapper().axpy((float) g,syn1Neg.slice(target),neu1e);
 
                 if(syn0.data().dataType() == DataBuffer.Type.DOUBLE)
-                    Nd4j.getBlasWrapper().axpy(g,syn1Neg.slice(target),l1);
+                    Nd4j.getBlasWrapper().axpy(g,l1,syn1Neg.slice(target));
                 else
-                    Nd4j.getBlasWrapper().axpy((float) g,syn1Neg.slice(target),l1);
+                    Nd4j.getBlasWrapper().axpy((float) g,l1,syn1Neg.slice(target));
             }
 
         if(syn0.data().dataType() == DataBuffer.Type.DOUBLE)
@@ -405,31 +405,23 @@ public class InMemoryLookupTable implements WeightLookupTable {
             trainWordsPow += Math.pow(vocab.wordFrequency(word), power);
         }
 
-
-        for(String word : vocab.words()) {
-            double d1 = Math.pow(vocab.wordFrequency(word),power) / trainWordsPow;
-            for(int i = 0; i < tableSize; i++) {
-                int wordIdx = vocab.indexOf(word);
-                if(wordIdx < 0)
-                    continue;
-
-                table.putScalar(i,wordIdx);
-                double mul = i * 1.0 / (double) tableSize;
-                if(mul > d1) {
+        int wordIdx = 0;
+        String word = vocab.wordAtIndex(wordIdx);
+        double d1 = Math.pow(vocab.wordFrequency(word),power) / trainWordsPow;
+        for(int i = 0; i < tableSize; i++) {
+            table.putScalar(i,wordIdx);
+            double mul = i * 1.0 / (double) tableSize;
+            if(mul > d1) {
+                if( wordIdx < vocabSize-1 )
                     wordIdx++;
-                    String wordAtIndex = vocab.wordAtIndex(wordIdx);
-                    if(wordAtIndex == null)
-                        continue;
-                    d1 += Math.pow(vocab.wordFrequency(wordAtIndex),power) / trainWordsPow;
-
-                }
-
+                word = vocab.wordAtIndex(wordIdx);
+                String wordAtIndex = vocab.wordAtIndex(wordIdx);
+                if(word == null)
+                    continue;
+                d1 += Math.pow(vocab.wordFrequency(wordAtIndex),power) / trainWordsPow;
             }
-
         }
-
     }
-
     /**
      * Inserts a word vector
      *

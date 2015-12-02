@@ -97,11 +97,12 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
     
     @Override
     public INDArray preOutput(INDArray x, boolean training){
-    	return reshape2dTo3d(preOutput2d(x,training),input.size(0));
+        setInput(x);
+        return reshape2dTo3d(preOutput2d(training),input.size(0));
     }
-    
+
     @Override
-    protected INDArray preOutput2d(INDArray input, boolean training){
+    protected INDArray preOutput2d(boolean training){
         if(input.rank() == 3 ) {
             //Case when called from RnnOutputLayer
             INDArray inputTemp = input;
@@ -131,7 +132,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
     public INDArray output(INDArray input) {
         if(input.rank() != 3) throw new IllegalArgumentException("Input must be rank 3 (is: " + input.rank());
         //Returns 3d activations from 3d input
-        setInput(input,false);
+        setInput(input);
         return output(false);
     }
 
@@ -139,7 +140,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
     public INDArray output(boolean training){
         //Assume that input is 3d
         if(input.rank() != 3 ) throw new IllegalArgumentException("input must be rank 3");
-        INDArray preOutput2d = preOutput2d(input,training);
+        INDArray preOutput2d = preOutput2d(training);
 
         if(conf.getLayer().getActivationFunction().equals("softmax")) {
             SoftMax softMax = new SoftMax(preOutput2d);
@@ -149,7 +150,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         }
 
         if(training)
-            applyDropOutIfNecessary(input(),training);
+            applyDropOutIfNecessary(training);
         INDArray origInput = input;
         this.input = reshape3dTo2d(input);
         INDArray out = super.activate(true);

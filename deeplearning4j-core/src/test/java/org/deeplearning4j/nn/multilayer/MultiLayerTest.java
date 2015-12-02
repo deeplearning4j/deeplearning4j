@@ -25,6 +25,7 @@ import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -36,25 +37,28 @@ import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.ReshapePreProcessor;
+import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.deeplearning4j.optimize.stepfunctions.NegativeGradientStepFunction;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 /**
  * Created by agibsonccc on 12/27/14.
@@ -99,7 +103,7 @@ public class MultiLayerTest {
                         .nIn(4).nOut(3)
                         .activation("tanh")
                         .build())
-                .layer(1,new RBM.Builder(RBM.HiddenUnit.GAUSSIAN, RBM.VisibleUnit.GAUSSIAN).nIn(3).nOut(2)
+                .layer(1, new RBM.Builder(RBM.HiddenUnit.GAUSSIAN, RBM.VisibleUnit.GAUSSIAN).nIn(3).nOut(2)
                         .build())
                 .build();
 
@@ -183,6 +187,9 @@ public class MultiLayerTest {
         network.setLabels(trainTest.getTrain().getLabels());
         network.computeGradientAndScore();
         INDArray grad = network.gradient().gradient();
+        
+        assertTrue("Gradient contains invalid numbers", !Nd4j.hasInvalidNumber(grad));
+        
         int numParams = network.numParams();
         network.fit(trainTest.getTrain());
 
@@ -467,4 +474,92 @@ public class MultiLayerTest {
         }
     }
 
+
+    @Test
+    public void testBackpropGradient(){
+        //Testing: MultiLayerNetwork.backpropGradient()
+        //i.e., specifically without an output layer
+
+        int nIn = 10;
+        int nOut = 40;
+        int miniBatch = 5;
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(org.deeplearning4j.nn.conf.Updater.SGD)
+                .learningRate(0.1)
+                .list(3)
+                .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(20).activation("relu").weightInit(WeightInit.XAVIER).build())
+                .layer(1, new DenseLayer.Builder().nIn(20).nOut(30).activation("relu").weightInit(WeightInit.XAVIER).build())
+                .layer(2, new DenseLayer.Builder().nIn(30).nOut(nOut).activation("relu").weightInit(WeightInit.XAVIER).build())
+                .build();
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        Nd4j.getRandom().setSeed(12345);
+        INDArray eps = Nd4j.rand(miniBatch,nOut);
+        INDArray input = Nd4j.rand(miniBatch, nIn);
+
+        net.feedForward(input); //Need to feed forward before backprop
+
+        Pair<Gradient,INDArray> pair = net.backpropGradient(eps);
+        INDArray epsOut = pair.getSecond();
+        assertNotNull(epsOut);
+        assertArrayEquals(new int[]{miniBatch,nIn},epsOut.shape());
+
+        Gradient g = pair.getFirst();
+        Map<String,INDArray> gradMap = g.gradientForVariable();
+        assertEquals(6, gradMap.size());    //3 layers, weight + bias gradients for each
+
+        String[] expKeys = {"0_"+DefaultParamInitializer.WEIGHT_KEY,"0_"+DefaultParamInitializer.BIAS_KEY,
+                "1_"+DefaultParamInitializer.WEIGHT_KEY,"2_"+DefaultParamInitializer.BIAS_KEY,
+                "2_"+DefaultParamInitializer.WEIGHT_KEY,"2_"+DefaultParamInitializer.BIAS_KEY};
+        Set<String> keys = gradMap.keySet();
+        for( String s : expKeys ){
+            assertTrue(keys.contains(s));
+        }
+
+        /*
+        System.out.println(pair);
+
+        //Use updater to go from raw gradients -> updates
+        //Apply learning rate, gradient clipping, adagrad/momentum/rmsprop etc
+        Updater updater = UpdaterCreator.getUpdater(net);
+        updater.update(net, g, 0, miniBatch);
+
+        StepFunction stepFunction = new NegativeGradientStepFunction();
+        INDArray params = net.params();
+        System.out.println(Arrays.toString(params.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 10)).dup().data().asFloat()));
+        stepFunction.step(params, g.gradient());
+        net.setParams(params);    //params() may not be in-place
+        System.out.println(Arrays.toString(params.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 10)).dup().data().asFloat()));
+        */
+    }
+
+    @Test
+    public void testLayerNames(){
+        int nIn = 10;
+        int nOut = 40;
+
+        List<String> layerNameList = new ArrayList<>();
+        layerNameList.add("dnn1");
+        layerNameList.add("dnn2");
+        layerNameList.add("dnn3");
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(org.deeplearning4j.nn.conf.Updater.SGD)
+                .learningRate(0.1)
+                .list(3)
+                .layer(0, new DenseLayer.Builder().name("dnn1").nIn(nIn).nOut(20).activation("relu").weightInit(WeightInit.XAVIER).build())
+                .layer(1, new DenseLayer.Builder().name("dnn2").nIn(20).nOut(30).activation("relu").weightInit(WeightInit.XAVIER).build())
+                .layer(2, new DenseLayer.Builder().name("dnn3").nIn(30).nOut(nOut).activation("softmax").weightInit(WeightInit.XAVIER).build())
+                .build();
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        assertEquals(layerNameList.get(0), net.getLayer(0).conf().getLayer().getLayerName());
+        assertEquals(layerNameList, net.getLayerNames());
+        assertEquals("softmax", net.getLayer(layerNameList.get(2)).conf().getLayer().getActivationFunction());
+
+
+    }
 }

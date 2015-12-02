@@ -22,7 +22,27 @@ public class Edge<T> {
 
     @Override
     public String toString() {
-        return "edge(" + (directed ? "directod" : "undirected") + "," + from+  (directed ? "->" : "--") + to + ","
+        return "edge(" + (directed ? "directed" : "undirected") + "," + from+  (directed ? "->" : "--") + to + ","
                 + (value!=null ? value : "") + ")";
+    }
+
+    @Override
+    public boolean equals(Object o){
+        if(!(o instanceof Edge)) return false;
+        Edge<?> e = (Edge<?>)o;
+        if(directed != e.directed) return false;
+        if(directed){
+            if(from != e.from) return false;
+            if(to != e.to) return false;
+        } else {
+            if(from == e.from){
+                if(to != e.to) return false;
+            } else {
+                if(from != e.to) return false;
+                if(to != e.from) return false;
+            }
+        }
+        if((value != null && e.value == null) || (value == null && e.value != null)) return false;
+        return value == null || value.equals(e.value);
     }
 }
