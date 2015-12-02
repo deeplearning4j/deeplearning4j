@@ -20,6 +20,7 @@ package org.deeplearning4j.spark.impl.multilayer.gradientaccum;
 
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
+import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -29,6 +30,7 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.Tuple2;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -41,10 +43,11 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class GradientAccumFlatMap implements FlatMapFunction<Iterator<DataSet>,Gradient> {
+public class GradientAccumFlatMap implements FlatMapFunction<Iterator<DataSet>, Tuple2<Gradient,Updater>> {
 
     private String json;
     private Broadcast<INDArray> params;
+    private Broadcast<Updater> updater;
     private static Logger log = LoggerFactory.getLogger(GradientAccumFlatMap.class);
 
     /**
@@ -52,17 +55,18 @@ public class GradientAccumFlatMap implements FlatMapFunction<Iterator<DataSet>,G
      * @param json json configuration for the network
      * @param params the parameters to use for the network
      */
-    public GradientAccumFlatMap(String json, Broadcast<INDArray> params) {
+    public GradientAccumFlatMap(String json, Broadcast<INDArray> params, Broadcast<Updater> updater) {
         this.json = json;
         this.params = params;
+        this.updater = updater;
     }
 
 
 
     @Override
-    public Iterable<Gradient> call(Iterator<DataSet> dataSetIterator) throws Exception {
+    public Iterable<Tuple2<Gradient,Updater>> call(Iterator<DataSet> dataSetIterator) throws Exception {
         if(!dataSetIterator.hasNext()) {
-            return Collections.singletonList((Gradient) new DefaultGradient());
+            return Collections.singletonList(new Tuple2<Gradient,Updater>(new DefaultGradient(),null));
         }
 
         List<DataSet> collect = new ArrayList<>();
@@ -71,16 +75,19 @@ public class GradientAccumFlatMap implements FlatMapFunction<Iterator<DataSet>,G
         }
 
         DataSet data = DataSet.merge(collect,false);
-        log.debug("Training on " + data.labelCounts());
+        if(log.isDebugEnabled()) {
+            log.debug("Training on {} examples with data {}",data.numExamples(), data.labelCounts());
+        }
         MultiLayerNetwork network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(json));
         network.init();
         INDArray val = params.value();
         if(val.length() != network.numParams())
             throw new IllegalStateException("Network did not have same number of parameters as the broadcasted set parameters");
         network.setParameters(val);
+        network.setUpdater(updater.getValue());
         network.fit(data);
 
-        return Collections.singletonList(network.gradient());
+        return Collections.singletonList(new Tuple2<>(network.gradient(),network.getUpdater()));
 
     }
 }
