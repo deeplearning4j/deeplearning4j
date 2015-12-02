@@ -418,7 +418,7 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
             this.sigma = input.var(0).divi(input.rows());
 
         this.input = input.dup();
-        applyDropOutIfNecessary(this.input,true);
+        applyDropOutIfNecessary(true);
         contrastiveDivergence();
     }
 }

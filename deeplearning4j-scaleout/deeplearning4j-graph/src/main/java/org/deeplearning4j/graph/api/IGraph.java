@@ -61,10 +61,10 @@ public interface IGraph<V,E> {
      */
     public int getVertexDegree(int vertex);
 
-    /** Randomly sample a vertex connected to a given vertex.
+    /** Randomly sample a vertex connected to a given vertex. Sampling is done uniformly at random.
      * Specifically, returns a random X such that either a directed edge (vertex -> X) exists,
      * or an undirected edge (vertex -- X) exists<br>
-     * Can be used for example to implement a random walk on the graph
+     * Can be used for example to implement a random walk on the graph (specifically: a unweighted random walk)
      * @param vertex vertex to randomly sample from
      * @param rng Random number generator to use
      * @return A vertex connected to the specified vertex,

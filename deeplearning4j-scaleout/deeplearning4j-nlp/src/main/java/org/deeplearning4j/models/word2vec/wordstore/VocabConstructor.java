@@ -2,9 +2,12 @@ package org.deeplearning4j.models.word2vec.wordstore;
 
 import lombok.Data;
 import lombok.NonNull;
-import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
+import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
+import org.deeplearning4j.text.documentiterator.LabelAwareIterator;
+import org.deeplearning4j.text.documentiterator.LabelledDocument;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
+import org.deeplearning4j.text.sentenceiterator.interoperability.SentenceIteratorConverter;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.slf4j.Logger;
@@ -27,11 +30,28 @@ public class VocabConstructor {
     private VocabCache cache;
     private List<String> stopWords;
     private boolean useAdaGrad = false;
+    private boolean fetchLabels = false;
 
     protected static final Logger log = LoggerFactory.getLogger(VocabConstructor.class);
 
     private VocabConstructor() {
 
+    }
+
+    /**
+     * Placeholder for future implementation
+     * @return
+     */
+    protected WeightLookupTable buildExtendedLookupTable() {
+        return null;
+    }
+
+    /**
+     * Placeholder for future implementation
+     * @return
+     */
+    protected VocabCache buildExtendedVocabulary() {
+        return null;
     }
 
     /**
@@ -52,16 +72,28 @@ public class VocabConstructor {
                 .build();
 
         for(VocabSource source: sources) {
-            SentenceIterator iterator = source.getIterator();
+            LabelAwareIterator iterator = source.getIterator();
             iterator.reset();
 
             VocabularyHolder tempHolder = new VocabularyHolder.Builder()
                     .minWordFrequency(source.getMinWordFrequency())
                     .build();
 
-            while (iterator.hasNext()) {
-                String line = iterator.nextSentence();
-                Tokenizer tokenizer = tokenizerFactory.create(line);
+            while (iterator.hasNextDocument()) {
+                LabelledDocument document = iterator.nextDocument();
+
+                Tokenizer tokenizer = tokenizerFactory.create(document.getContent());
+
+
+                if (fetchLabels) {
+                    VocabularyWord word = new VocabularyWord(document.getLabel());
+                    word.setSpecial(true);
+                    word.setCount(1);
+
+                    tempHolder.addWord(word);
+
+//                    log.info("LabelledDocument: " + document);
+                }
 
                 List<String> tokens = tokenizer.getTokens();
                 for (String token: tokens) {
@@ -111,6 +143,7 @@ public class VocabConstructor {
         private VocabCache cache;
         private List<String> stopWords = new ArrayList<>();
         private boolean useAdaGrad = false;
+        private boolean fetchLabels = false;
 
         public Builder() {
 
@@ -126,8 +159,13 @@ public class VocabConstructor {
             return this;
         }
 
-        public Builder addSource(SentenceIterator iterator, int minWordFrequency) {
+        public Builder addSource(LabelAwareIterator iterator, int minWordFrequency) {
             sources.add(new VocabSource(iterator, minWordFrequency));
+            return this;
+        }
+
+        public Builder addSource(SentenceIterator iterator, int minWordFrequency) {
+            sources.add(new VocabSource(new SentenceIteratorConverter(iterator), minWordFrequency));
             return this;
         }
 
@@ -141,6 +179,17 @@ public class VocabConstructor {
             return this;
         }
 
+        /**
+         * Sets, if labels should be fetched, during vocab building
+         *
+         * @param reallyFetch
+         * @return
+         */
+        public Builder fetchLabels(boolean reallyFetch) {
+            this.fetchLabels = reallyFetch;
+            return this;
+        }
+
         public VocabConstructor build() {
             VocabConstructor constructor = new VocabConstructor();
             constructor.sources = this.sources;
@@ -148,6 +197,7 @@ public class VocabConstructor {
             constructor.cache = this.cache;
             constructor.stopWords = this.stopWords;
             constructor.useAdaGrad = this.useAdaGrad;
+            constructor.fetchLabels = this.fetchLabels;
 
             return constructor;
         }
@@ -155,7 +205,7 @@ public class VocabConstructor {
 
     @Data
     private static class VocabSource {
-        @NonNull private SentenceIterator iterator;
+        @NonNull private LabelAwareIterator iterator;
         @NonNull private int minWordFrequency;
     }
 }

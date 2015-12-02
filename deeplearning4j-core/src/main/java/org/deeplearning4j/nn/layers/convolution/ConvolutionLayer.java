@@ -130,7 +130,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     public INDArray activate(boolean training) {
         if(input == null)
             throw new IllegalArgumentException("No null input allowed");
-        applyDropOutIfNecessary(input, training);
+        applyDropOutIfNecessary(training);
 
         col = Convolution.im2col(input, layerConf().getKernelSize(), layerConf().getStride(), layerConf().getPadding());
         INDArray z = preOutput(training);

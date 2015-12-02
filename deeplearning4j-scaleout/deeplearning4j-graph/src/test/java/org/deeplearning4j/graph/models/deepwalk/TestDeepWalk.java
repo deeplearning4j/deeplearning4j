@@ -7,6 +7,8 @@ import org.deeplearning4j.graph.data.GraphLoader;
 import org.deeplearning4j.graph.graph.Graph;
 import org.deeplearning4j.graph.iterator.RandomWalkIterator;
 import org.deeplearning4j.graph.iterator.GraphWalkIterator;
+import org.deeplearning4j.graph.iterator.parallel.GraphWalkIteratorProvider;
+import org.deeplearning4j.graph.iterator.parallel.WeightedRandomWalkGraphIteratorProvider;
 import org.deeplearning4j.graph.models.GraphVectors;
 import org.deeplearning4j.graph.models.embeddings.InMemoryGraphLookupTable;
 import org.deeplearning4j.graph.models.loader.GraphVectorSerializer;
@@ -194,7 +196,7 @@ public class TestDeepWalk {
         int nVertices = 13;
 
         ClassPathResource cpr = new ClassPathResource("graph13.txt");
-        Graph<String,String> graph = GraphLoader.loadUndirectedGraphEdgeListFile(cpr.getFile().getAbsolutePath(),13,",");
+        Graph<String,String> graph = GraphLoader.loadUndirectedGraphEdgeListFile(cpr.getFile().getAbsolutePath(), 13, ",");
 
         System.out.println(graph);
 
@@ -222,5 +224,38 @@ public class TestDeepWalk {
         }
 
         for( int i=0; i<nVertices; i++ ) System.out.println(deepWalk.getVertexVector(i));
+    }
+
+    @Test
+    public void testDeepWalkWeightedParallel() throws IOException {
+
+        //Load graph
+        String path = new ClassPathResource("WeightedGraph.txt").getFile().getAbsolutePath();
+        int numVertices = 9;
+        String delim = ",";
+        String[] ignoreLinesStartingWith = new String[]{"//"};  //Comment lines start with "//"
+        IGraph<String,Double> graph = GraphLoader.loadWeightedEdgeListFile(path,numVertices,delim,true,ignoreLinesStartingWith);
+
+        //Set up DeepWalk
+        int vectorSize = 5;
+        int windowSize = 2;
+        DeepWalk<String,Double> deepWalk = new DeepWalk.Builder<String,Double>().learningRate(0.01)
+                .vectorSize(vectorSize)
+                .windowSize(windowSize)
+                .learningRate(0.01)
+                .build();
+        deepWalk.initialize(graph);
+
+        //Can't use the following method here: defaults to unweighted random walk
+        //deepWalk.fit(graph, 10);  //Unweighted random walk
+
+        //Create GraphWalkIteratorProvider. The GraphWalkIteratorProvider is used to create multiple GraphWalkIterator objects.
+        //Here, it is used to create a GraphWalkIterator, one for each thread
+        int walkLength = 5;
+        GraphWalkIteratorProvider<String> iteratorProvider = new WeightedRandomWalkGraphIteratorProvider<String>(graph,walkLength);
+
+        //Fit in parallel
+        deepWalk.fit(iteratorProvider);
+
     }
 }
