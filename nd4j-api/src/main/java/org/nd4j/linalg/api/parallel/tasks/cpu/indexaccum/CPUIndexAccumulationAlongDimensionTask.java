@@ -47,7 +47,7 @@ public class CPUIndexAccumulationAlongDimensionTask extends BaseCPUTask<INDArray
         int[] retShape = ArrayUtil.removeIndex(op.x().shape(), dimensions);
         out = Nd4j.create(retShape);
         int i=0;
-        for(Task<Pair<Double,Integer>> task : subTasks ){
+        for(Task<Pair<Double,Integer>> task : subTasks) {
             Pair<Double,Integer> result = task.blockUntilComplete();
             out.putScalar(i++,result.getSecond());
         }
@@ -60,14 +60,16 @@ public class CPUIndexAccumulationAlongDimensionTask extends BaseCPUTask<INDArray
         int nTensors = op.x().tensorssAlongDimension(dimensions);
         subTasks = new ArrayList<>(nTensors);
 
-        for( int i=0; i<nTensors; i++ ){
+        for( int i = 0; i < nTensors; i++ ){
             IndexAccumulation opOnDimension = (IndexAccumulation)op.opForDimension(i,dimensions);
             INDArray x2 = opOnDimension.x();
             INDArray y2 = opOnDimension.y();
 
             boolean canDoDirectly;
-            if(y2 == null) canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x2);
-            else canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x2, y2);
+            if(y2 == null)
+                canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x2);
+            else
+                canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x2, y2);
 
             Task<Pair<Double,Integer>> task;
             if(canDoDirectly){

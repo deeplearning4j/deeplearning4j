@@ -60,32 +60,32 @@ public class Min extends BaseAccumulation {
 
     @Override
     public float op(float origin, float other) {
-        return FastMath.max(origin, other);
+        return origin;
     }
 
     @Override
     public double op(double origin, double other) {
-        return FastMath.max(origin, other);
+        return origin;
     }
 
     @Override
-    public double update(double accum, double x){
-        return (x < accum ? x : accum);
+    public double update(double accum, double x) {
+        return FastMath.min(accum,x);
     }
 
     @Override
     public double update(double accum, double x, double y){
-        return (x < accum ? x : accum);
+        return FastMath.min(accum,x);
     }
 
     @Override
     public float update(float accum, float x){
-        return (x<accum ? x : accum);
+        return FastMath.min(accum,x);
     }
 
     @Override
     public float update(float accum, float x, float y){
-        return (x < accum ? x : accum);
+        return FastMath.min(accum,x);
     }
 
     @Override

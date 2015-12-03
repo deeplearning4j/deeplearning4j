@@ -1,10 +1,8 @@
 package org.nd4j.linalg.api.parallel.tasks.cpu.accumulation;
 
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
-import org.nd4j.linalg.api.parallel.tasks.BaseTask;
 import org.nd4j.linalg.api.parallel.tasks.Task;
 import org.nd4j.linalg.api.parallel.tasks.cpu.BaseCPUTask;
 

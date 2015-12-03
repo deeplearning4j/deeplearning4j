@@ -49,36 +49,36 @@ public class Max extends BaseAccumulation {
 
     @Override
     public double op(double origin, double other) {
-        return FastMath.max(origin, other);
+        return origin;
     }
 
     @Override
     public float op(float origin, float other) {
-        return FastMath.max(origin, other);
+        return origin;
     }
 
     @Override
     public double update(double accum, double x){
-        return (x > accum ? x : accum);
+        return FastMath.max(accum, x);
     }
 
     @Override
     public double update(double accum, double x, double y){
-        return (x>accum ? x : accum);
+        return FastMath.max(accum, x);
     }
 
     @Override
     public float update(float accum, float x){
-        return (x>accum ? x : accum);
+        return FastMath.max(accum, x);
     }
 
     @Override
     public float update(float accum, float x, float y){
-        return (x > accum ? x : accum);
+        return FastMath.max(accum, x);
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, double x){
+    public IComplexNumber update( IComplexNumber accum, double x) {
         return (accum.absoluteValue().doubleValue() > x ? accum : Nd4j.createComplexNumber(x,0));
     }
 

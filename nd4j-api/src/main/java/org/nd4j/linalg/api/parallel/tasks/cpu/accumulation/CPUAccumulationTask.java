@@ -180,7 +180,7 @@ public class CPUAccumulationTask extends BaseCPUAccumulationTask {
                     float accum = op.zeroFloat();
                     if (incrX == 1 && incrY == 1) {
                         for (int i = 0; i < 4 * n; i += 4) {
-                            accum = op.update(accum, nbbx.getFloat(byteOffsetX + i), nbby.getFloat(byteOffsetY + i));
+                            accum = op.update(accum, op.op(nbbx.getFloat(byteOffsetX + i), nbby.getFloat(byteOffsetY + i)));
                         }
                     } else {
                         for (int i = 0; i < 4 * n; i += 4) {

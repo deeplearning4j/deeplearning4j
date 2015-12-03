@@ -105,7 +105,7 @@ public class Norm2 extends BaseAccumulation {
     }
 
     @Override
-    public float update(float accum, float x){
+    public float update(float accum, float x) {
         return accum + x;
     }
 

@@ -189,11 +189,11 @@ public class CPUAccumulations1dAction extends RecursiveAction implements Task<Vo
                         float accum = op.zeroFloat();
                         if (incrX == 1) {
                             for (int i = 0; i < n; i++) {
-                                accum = op.update(accum, xf[offsetX + i]);
+                                accum = op.update(accum, op.op(xf[offsetX + i]));
                             }
                         } else {
                             for (int i = 0; i < n; i++) {
-                                accum = op.update(accum, xf[offsetX + i * incrX]);
+                                accum = op.update(accum, op.op(xf[offsetX + i * incrX]));
                             }
                         }
                         //Because this is for index accum along dimension: assign directly
@@ -203,11 +203,11 @@ public class CPUAccumulations1dAction extends RecursiveAction implements Task<Vo
                         double accum = op.zeroDouble();
                         if (incrX == 1) {
                             for (int i = 0; i < n; i++) {
-                                accum = op.update(accum, xd[offsetX + i]);
+                                accum = op.update(accum, op.op(xd[offsetX + i]));
                             }
                         } else {
                             for (int i = 0; i < n; i++) {
-                                accum = op.update(accum, xd[offsetX + i * incrX]);
+                                accum = op.update(accum, op.op(xd[offsetX + i * incrX]));
                             }
                         }
                         output.putScalar(tensorNum, op.calculateFinalResult(accum, n));
@@ -220,12 +220,12 @@ public class CPUAccumulations1dAction extends RecursiveAction implements Task<Vo
                         int idx = 0;
                         if (incrX == 1) {
                             for (int i = 0; i < 4 * n; i += 4, idx++) {
-                                float fx = nbbx.getFloat(byteOffsetX + i);
+                                float fx = op.op(nbbx.getFloat(byteOffsetX + i));
                                 accum = op.update(accum, fx);
                             }
                         } else {
                             for (int i = 0; i < 4 * n; i += 4, idx++) {
-                                float fx = nbbx.getFloat(byteOffsetX + i * incrX);
+                                float fx = op.op(nbbx.getFloat(byteOffsetX + i * incrX));
                                 accum = op.update(accum, fx);
                             }
                         }
@@ -236,12 +236,12 @@ public class CPUAccumulations1dAction extends RecursiveAction implements Task<Vo
                         int idx = 0;
                         if (incrX == 1) {
                             for (int i = 0; i < 8 * n; i += 8, idx++) {
-                                double dx = nbbx.getDouble(byteOffsetX + i);
+                                double dx = op.op(nbbx.getDouble(byteOffsetX + i));
                                 accum = op.update(accum, dx);
                             }
                         } else {
                             for (int i = 0; i < 8 * n; i += 8, idx++) {
-                                double dx = nbbx.getDouble(byteOffsetX + i * incrX);
+                                double dx = op.op(nbbx.getDouble(byteOffsetX + i * incrX));
                                 accum = op.update(accum, dx);
                             }
                         }
