@@ -2,13 +2,10 @@ package org.nd4j.linalg.learning;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Nesterov's momentum.
@@ -65,5 +62,52 @@ public class Nesterovs implements Serializable,GradientUpdater {
         return ret;
     }
 
+    @Override
+    public GradientUpdaterAggregator getAggregator(boolean addThis){
+        NesterovsAggregator ag = new NesterovsAggregator();
+        if(addThis) ag.aggregate(this);
+        return ag;
+    }
 
+    public static class NesterovsAggregator implements GradientUpdaterAggregator {
+        private INDArray vSum;
+        private double lrSum;
+        private double momentumSum;
+        private int count = 0;
+
+        @Override
+        public GradientUpdater getUpdater() {
+            Nesterovs nesterovs = new Nesterovs(momentumSum/count,lrSum/count);
+            nesterovs.setV(vSum.div(count));
+            return nesterovs;
+        }
+
+        @Override
+        public void aggregate(GradientUpdater updater) {
+            if(!(updater instanceof Nesterovs)) throw new UnsupportedOperationException("Cannot aggregate Nesterovs with updater: " + updater);
+            Nesterovs nesterovs = (Nesterovs)updater;
+            if(vSum == null){
+                vSum = nesterovs.v.dup();
+                lrSum = nesterovs.learningRate;
+                momentumSum = nesterovs.momentum;
+            } else {
+                vSum.addi(nesterovs.v);
+                lrSum += nesterovs.learningRate;
+                momentumSum += nesterovs.momentum;
+            }
+            count++;
+        }
+
+        @Override
+        public GradientUpdaterAggregator combine(GradientUpdaterAggregator other) {
+            if(!(other instanceof NesterovsAggregator))
+                throw new IllegalArgumentException("Cannot combine NesterovsAggregator with aggregator: " + other);
+            NesterovsAggregator aggregator = (NesterovsAggregator)other;
+            vSum.addi(aggregator.vSum);
+            lrSum += aggregator.lrSum;
+            momentumSum += aggregator.momentumSum;
+            count += aggregator.count;
+            return this;
+        }
+    }
 }
