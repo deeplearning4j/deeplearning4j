@@ -234,6 +234,9 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         int oldN = op.n();
         op.setX(resultAcrossBlocks);
         op.setApplyFinalTransform(false);
+        if(op.y() != null) {
+            op.setY(Nd4j.valueArrayOf(op.x().shape(),op.zeroDouble()));
+        }
         doAccumulationOp(op);
         op.setApplyFinalTransform(true);
         op.setN(oldN);

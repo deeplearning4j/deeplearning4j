@@ -198,6 +198,7 @@ public class EuclideanDistance extends BaseAccumulation {
            return d;
        }
         else {
+           this.finalResult = accum;
            return accum;
        }
 
@@ -211,6 +212,7 @@ public class EuclideanDistance extends BaseAccumulation {
             return f;
         }
         else {
+            this.finalResult = accum;
             return accum;
         }
 
