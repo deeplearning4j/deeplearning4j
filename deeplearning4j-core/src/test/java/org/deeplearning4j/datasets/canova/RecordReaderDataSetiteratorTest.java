@@ -137,6 +137,41 @@ public class RecordReaderDataSetiteratorTest {
     }
 
     @Test
+    public void testSequenceRecordReaderRegression() throws Exception{
+        ClassPathResource resource = new ClassPathResource("csvsequence_0.txt");
+        String featuresPath = resource.getFile().getAbsolutePath().replaceAll("0", "%d");
+        resource = new ClassPathResource("csvsequence_0.txt");
+        String labelsPath = resource.getFile().getAbsolutePath().replaceAll("0", "%d");
+
+        SequenceRecordReader featureReader = new CSVSequenceRecordReader(1, ",");
+        SequenceRecordReader labelReader = new CSVSequenceRecordReader(1, ",");
+        featureReader.initialize(new NumberedFileInputSplit(featuresPath, 0, 2));
+        labelReader.initialize(new NumberedFileInputSplit(labelsPath, 0, 2));
+
+        SequenceRecordReaderDataSetIterator iter =
+                new SequenceRecordReaderDataSetIterator(featureReader, labelReader, 1, 0, true);
+
+        assertEquals(3, iter.inputColumns());
+        assertEquals(3, iter.totalOutcomes());
+
+        List<DataSet> dsList = new ArrayList<>();
+        while (iter.hasNext()) {
+            dsList.add(iter.next());
+        }
+
+        assertEquals(3, dsList.size());  //3 files
+        for (int i = 0; i < 3; i++) {
+            DataSet ds = dsList.get(i);
+            INDArray features = ds.getFeatureMatrix();
+            INDArray labels = ds.getLabels();
+            assertArrayEquals(new int[]{1,3,4},features.shape());   //1 examples, 3 values, 4 time steps
+            assertArrayEquals(new int[]{1,3,4},labels.shape());
+
+            assertEquals(features,labels);
+        }
+    }
+
+    @Test
     public void testSequenceRecordReaderReset() throws Exception {
         ClassPathResource resource = new ClassPathResource("csvsequence_0.txt");
         String featuresPath = resource.getFile().getAbsolutePath().replaceAll("0", "%d");
@@ -159,7 +194,11 @@ public class RecordReaderDataSetiteratorTest {
             iter.reset();
             int count = 0;
             while (iter.hasNext()) {
-                iter.next();
+                DataSet ds = iter.next();
+                INDArray features = ds.getFeatureMatrix();
+                INDArray labels = ds.getLabels();
+                assertArrayEquals(new int[]{1,3,4},features.shape());
+                assertArrayEquals(new int[]{1,4,4},labels.shape());
                 count++;
             }
             assertEquals(3,count);
