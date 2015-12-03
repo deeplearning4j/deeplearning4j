@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.api.ops.impl.accum;
 
+import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
@@ -50,34 +51,45 @@ public class Norm1 extends BaseAccumulation {
         super(x, y);
     }
 
+
+    @Override
+    public double op(double origin) {
+        return FastMath.abs(origin);
+    }
+
+    @Override
+    public float op(float origin) {
+        return FastMath.abs(origin);
+    }
+
     @Override
     public double update(double accum, double x){
-        return (x>=0 ? accum+x : accum-x);
+        return accum + x;
     }
 
     @Override
     public double update(double accum, double x, double y){
-        return (x>=0 ? accum+x : accum-x);
+        return accum + x;
     }
 
     @Override
     public float update(float accum, float x){
-        return (x>=0 ? accum+x : accum-x);
+        return accum + x;
     }
 
     @Override
     public float update(float accum, float x, float y){
-        return (x>=0 ? accum+x : accum-x);
+        return accum + x;
     }
 
     @Override
     public IComplexNumber update( IComplexNumber accum, double x){
-        return accum.add(x>=0 ? x : -x);
+        return accum.add(x >= 0 ? x : -x);
     }
 
     @Override
     public IComplexNumber update( IComplexNumber accum, double x, double y){
-        return accum.add(x>=0 ? x : -x);
+        return accum.add(x >= 0 ? x : -x);
     }
 
     @Override
@@ -86,7 +98,7 @@ public class Norm1 extends BaseAccumulation {
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, IComplexNumber x, IComplexNumber y){
+    public IComplexNumber update( IComplexNumber accum, IComplexNumber x, IComplexNumber y) {
         return accum.add(x.absoluteValue());
     }
 

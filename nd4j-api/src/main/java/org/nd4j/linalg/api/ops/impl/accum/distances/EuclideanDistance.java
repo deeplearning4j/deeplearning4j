@@ -53,22 +53,22 @@ public class EuclideanDistance extends BaseAccumulation {
 
     @Override
     public double update(double accum, double x){
-        return accum;
+        return accum + (x * x);
     }
 
     @Override
-    public double update(double accum, double x, double y){
+    public double update(double accum, double x, double y) {
         double d = (x-y);
         return accum + d*d;
     }
 
     @Override
     public float update(float accum, float x){
-        return accum;
+        return accum + (x * x);
     }
 
     @Override
-    public float update(float accum, float x, float y){
+    public float update(float accum, float x, float y) {
         float f = (x-y);
         return accum + f*f;
     }

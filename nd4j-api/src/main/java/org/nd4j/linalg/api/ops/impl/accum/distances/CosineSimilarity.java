@@ -63,6 +63,9 @@ public class CosineSimilarity extends BaseAccumulation {
         passThrough = true;
     }
 
+
+
+
     @Override
     public double update(double accum, double x){
         return accum + x;
@@ -99,7 +102,7 @@ public class CosineSimilarity extends BaseAccumulation {
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, IComplexNumber x, IComplexNumber y){
+    public IComplexNumber update( IComplexNumber accum, IComplexNumber x, IComplexNumber y) {
         return accum.add(x.mul(y));
     }
 

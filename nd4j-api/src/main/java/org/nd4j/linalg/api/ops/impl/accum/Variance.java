@@ -89,43 +89,49 @@ public class Variance extends BaseAccumulation {
     }
 
     @Override
+    public double op(double origin) {
+        return origin - mean;
+    }
+
+    @Override
+    public float op(float origin) {
+        return (float) (origin - mean);
+    }
+
+    @Override
     public double update(double accum, double x){
-        double dev = x-mean;
-        return accum + dev*dev; //variance = 1/(n-1) * sum (x-mean)^2
+        return accum + x * x; //variance = 1/(n-1) * sum (x-mean)^2
     }
 
     @Override
     public double update(double accum, double x, double y){
-        double dev = x-mean;
-        return accum + dev*dev;
+        return accum + x * x;
     }
 
     @Override
-    public float update(float accum, float x){
-        float dev = x-(float)mean;
-        return accum + dev*dev;
+    public float update(float accum, float x) {
+        return accum + x * x;
     }
 
     @Override
-    public float update(float accum, float x, float y){
-        float dev = x-(float)mean;
-        return accum + dev*dev;
+    public float update(float accum, float x, float y) {
+        return accum +  x * x;
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, double x){
+    public IComplexNumber update( IComplexNumber accum, double x) {
         double dev = x - mean;
         return accum.add(dev*dev);
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, double x, double y){
+    public IComplexNumber update( IComplexNumber accum, double x, double y) {
         double dev = x - mean;
         return accum.add(dev*dev);
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, IComplexNumber x){
+    public IComplexNumber update( IComplexNumber accum, IComplexNumber x) {
         IComplexNumber dev = x.sub(mean);
         return accum.add(dev.mul(dev));
     }

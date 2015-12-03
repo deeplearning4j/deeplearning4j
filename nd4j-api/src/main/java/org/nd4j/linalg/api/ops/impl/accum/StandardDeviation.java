@@ -80,8 +80,8 @@ public class StandardDeviation extends Variance {
     }
 
     @Override
-    public void exec(int... dimension){
-        if(dimension.length == 1 && dimension[0] == Integer.MAX_VALUE){
+    public void exec(int... dimension) {
+        if(dimension.length == 1 && dimension[0] == Integer.MAX_VALUE) {
             exec();
             this.z = Nd4j.scalar(this.finalResult);
             return;
@@ -124,6 +124,6 @@ public class StandardDeviation extends Variance {
 
     @Override
     public float calculateFinalResult(float accum, int n) {
-        return (float)FastMath.sqrt(super.calculateFinalResult(accum,n));
+        return (float) FastMath.sqrt(super.calculateFinalResult(accum,n));
     }
 }

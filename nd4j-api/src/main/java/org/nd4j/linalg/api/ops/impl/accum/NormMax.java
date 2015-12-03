@@ -53,23 +53,25 @@ public class NormMax extends BaseAccumulation {
     }
 
     @Override
-    public double update(double accum, double x){
-        return (x>=0 ? (x>accum?x:accum) : (-x>accum?-x:accum));
+    public double update(double accum, double x) {
+        numProcessed++;
+        return FastMath.max(FastMath.abs(x),accum);
     }
 
     @Override
-    public double update(double accum, double x, double y){
-        return (x>=0 ? (x>accum?x:accum) : (-x>accum?-x:accum));
+    public double update(double accum, double x, double y) {
+        return update(accum,x);
     }
+
 
     @Override
     public float update(float accum, float x){
-        return (x>=0 ? (x>accum?x:accum) : (-x>accum?-x:accum));
+        return (x >= 0 ? (x > accum ? x : accum) : (-x > accum ? -x : accum));
     }
 
     @Override
-    public float update(float accum, float x, float y){
-        return (x>=0 ? (x>accum?x:accum) : (-x>accum?-x:accum));
+    public float update(float accum, float x, float y) {
+        return (x>=0 ? (x>accum?x:accum) : (-x > accum ? -x : accum));
     }
 
     @Override

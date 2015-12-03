@@ -19,7 +19,7 @@
 
 package org.nd4j.linalg.api.ops.impl.accum;
 
-import org.nd4j.linalg.api.complex.IComplexNDArray;
+import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
@@ -59,13 +59,23 @@ public class Min extends BaseAccumulation {
     }
 
     @Override
+    public float op(float origin, float other) {
+        return FastMath.max(origin, other);
+    }
+
+    @Override
+    public double op(double origin, double other) {
+        return FastMath.max(origin, other);
+    }
+
+    @Override
     public double update(double accum, double x){
-        return (x<accum ? x : accum);
+        return (x < accum ? x : accum);
     }
 
     @Override
     public double update(double accum, double x, double y){
-        return (x<accum ? x : accum);
+        return (x < accum ? x : accum);
     }
 
     @Override
@@ -75,7 +85,7 @@ public class Min extends BaseAccumulation {
 
     @Override
     public float update(float accum, float x, float y){
-        return (x<accum ? x : accum);
+        return (x < accum ? x : accum);
     }
 
     @Override

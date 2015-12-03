@@ -55,13 +55,53 @@ public class Norm2 extends BaseAccumulation {
     }
 
     @Override
+    public double op(double origin) {
+        return origin * origin;
+    }
+
+    @Override
+    public double op(double origin, double other) {
+        return origin * origin;
+    }
+
+    @Override
+    public float op(float origin) {
+        return origin * origin;
+    }
+
+    @Override
+    public float op(float origin, float other) {
+        return origin * origin;
+    }
+
+    @Override
+    public IComplexNumber op(IComplexNumber origin) {
+        return origin.mul(origin);
+    }
+
+    @Override
+    public IComplexNumber op(IComplexNumber origin, double other) {
+        return origin.mul(origin);
+    }
+
+    @Override
+    public IComplexNumber op(IComplexNumber origin, float other) {
+        return origin.mul(origin);
+    }
+
+    @Override
+    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
+        return origin.mul(origin);
+    }
+
+    @Override
     public double update(double accum, double x){
-        return accum + x*x;
+        return accum + x;
     }
 
     @Override
     public double update(double accum, double x, double y){
-        return accum + x*x;
+        return accum + x;
     }
 
     @Override
@@ -71,32 +111,32 @@ public class Norm2 extends BaseAccumulation {
 
     @Override
     public float update(float accum, float x, float y){
-        return accum + x*x;
+        return accum + x;
     }
 
     @Override
     public IComplexNumber update( IComplexNumber accum, double x){
-        return accum.add(x*x);
+        return accum.add(x);
     }
 
     @Override
     public IComplexNumber update( IComplexNumber accum, double x, double y){
-        return accum.add(x*x);
+        return accum.add(x);
     }
 
     @Override
     public IComplexNumber update( IComplexNumber accum, IComplexNumber x){
-        return accum.add(x.mul(x));
+        return accum.add(x);
     }
 
     @Override
     public IComplexNumber update( IComplexNumber accum, IComplexNumber x, IComplexNumber y){
-        return accum.add(x.mul(x));
+        return accum.add(x);
     }
 
     @Override
     public IComplexNumber update(IComplexNumber accum, IComplexNumber x, double y) {
-        return accum.add(x.mul(x));
+        return accum.add(x);
     }
 
     @Override
@@ -142,21 +182,21 @@ public class Norm2 extends BaseAccumulation {
     }
 
     @Override
-    public double getAndSetFinalResult(double accum){
+    public double getAndSetFinalResult(double accum) {
         double d = FastMath.sqrt(accum);
         this.finalResult = d;
         return d;
     }
 
     @Override
-    public float getAndSetFinalResult(float accum){
+    public float getAndSetFinalResult(float accum) {
         float f = (float)FastMath.sqrt(accum);
         this.finalResult = f;
         return f;
     }
 
     @Override
-    public IComplexNumber getAndSetFinalResult(IComplexNumber accum){
+    public IComplexNumber getAndSetFinalResult(IComplexNumber accum) {
         this.finalResultComplex = accum.sqrt();
         return finalResultComplex;
     }

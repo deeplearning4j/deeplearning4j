@@ -147,11 +147,11 @@ public class CPUAccumulationTask extends BaseCPUAccumulationTask {
                     float accum = op.zeroFloat();
                     if (incrX == 1 && incrY == 1) {
                         for (int i = 0; i < n; i++) {
-                            accum = op.update(accum, xf[offsetX + i], yf[offsetY + i]);
+                            accum = op.update(accum, op.op(xf[offsetX + i], yf[offsetY + i]));
                         }
                     } else {
                         for (int i = 0; i < n; i++) {
-                            accum = op.update(accum, xf[offsetX + i * incrX], yf[offsetY + i * incrY]);
+                            accum = op.update(accum, op.op(xf[offsetX + i * incrX], yf[offsetY + i * incrY]));
                         }
                     }
                     return (double) accum;
@@ -161,11 +161,11 @@ public class CPUAccumulationTask extends BaseCPUAccumulationTask {
                     double accum = op.zeroDouble();
                     if (incrX == 1 && incrY == 1) {
                         for (int i = 0; i < n; i++) {
-                            accum = op.update(accum, xd[offsetX + i], yd[offsetY + i]);
+                            accum = op.update(accum, op.op(xd[offsetX + i], yd[offsetY + i]));
                         }
                     } else {
                         for (int i = 0; i < n; i++) {
-                            accum = op.update(accum, xd[offsetX + i * incrX], yd[offsetY + i * incrY]);
+                            accum = op.update(accum, op.op(xd[offsetX + i * incrX], yd[offsetY + i * incrY]));
                         }
                     }
                     return accum;
@@ -184,7 +184,7 @@ public class CPUAccumulationTask extends BaseCPUAccumulationTask {
                         }
                     } else {
                         for (int i = 0; i < 4 * n; i += 4) {
-                            accum = op.update(accum, nbbx.getFloat(byteOffsetX + i * incrX), nbby.getFloat(byteOffsetY + i * incrY));
+                            accum = op.update(accum, op.op(nbbx.getFloat(byteOffsetX + i * incrX), nbby.getFloat(byteOffsetY + i * incrY)));
                         }
                     }
                     return (double) accum;
@@ -194,11 +194,11 @@ public class CPUAccumulationTask extends BaseCPUAccumulationTask {
                     double accum = op.zeroDouble();
                     if (incrX == 1 && incrY == 1) {
                         for (int i = 0; i < 8 * n; i += 8) {
-                            accum = op.update(accum, nbbx.getDouble(byteOffsetX + i), nbby.getDouble(byteOffsetY + i));
+                            accum = op.update(accum, op.op(nbbx.getDouble(byteOffsetX + i), nbby.getDouble(byteOffsetY + i)));
                         }
                     } else {
                         for (int i = 0; i < 8 * n; i += 8) {
-                            accum = op.update(accum, nbbx.getDouble(byteOffsetX + i * incrX), nbby.getDouble(byteOffsetY + i * incrY));
+                            accum = op.update(accum, op.op(nbbx.getDouble(byteOffsetX + i * incrX), nbby.getDouble(byteOffsetY + i * incrY)));
                         }
                     }
                     return accum;
@@ -212,11 +212,11 @@ public class CPUAccumulationTask extends BaseCPUAccumulationTask {
                     float accum = op.zeroFloat();
                     if (incrX == 1) {
                         for (int i = 0; i < n; i++) {
-                            accum = op.update(accum, xf[offsetX + i]);
+                            accum = op.update(accum, op.op(xf[offsetX + i]));
                         }
                     } else {
                         for (int i = 0; i < n; i++) {
-                            accum = op.update(accum, xf[offsetX + i * incrX]);
+                            accum = op.update(accum, op.op(xf[offsetX + i * incrX]));
                         }
                     }
                     return (double) accum;
@@ -225,11 +225,11 @@ public class CPUAccumulationTask extends BaseCPUAccumulationTask {
                     double accum = op.zeroDouble();
                     if (incrX == 1) {
                         for (int i = 0; i < n; i++) {
-                            accum = op.update(accum, xd[offsetX + i]);
+                            accum = op.update(accum, op.op(xd[offsetX + i]));
                         }
                     } else {
                         for (int i = 0; i < n; i++) {
-                            accum = op.update(accum, xd[offsetX + i * incrX]);
+                            accum = op.update(accum, op.op(xd[offsetX + i * incrX]));
                         }
                     }
                     return accum;
@@ -242,11 +242,11 @@ public class CPUAccumulationTask extends BaseCPUAccumulationTask {
                     float accum = op.zeroFloat();
                     if (incrX == 1) {
                         for (int i = 0; i < 4 * n; i += 4) {
-                            accum = op.update(accum, nbbx.getFloat(byteOffsetX + i));
+                            accum = op.update(accum, op.op(nbbx.getFloat(byteOffsetX + i)));
                         }
                     } else {
                         for (int i = 0; i < 4 * n; i += 4) {
-                            accum = op.update(accum, nbbx.getFloat(byteOffsetX + i * incrX));
+                            accum = op.update(accum, op.op(nbbx.getFloat(byteOffsetX + i * incrX)));
                         }
                     }
                     return (double) accum;
@@ -255,11 +255,11 @@ public class CPUAccumulationTask extends BaseCPUAccumulationTask {
                     double accum = op.zeroDouble();
                     if (incrX == 1) {
                         for (int i = 0; i < 8 * n; i += 8) {
-                            accum = op.update(accum, nbbx.getDouble(byteOffsetX + i));
+                            accum = op.update(accum, op.op(nbbx.getDouble(byteOffsetX + i)));
                         }
                     } else {
                         for (int i = 0; i < 8 * n; i += 8) {
-                            accum = op.update(accum, nbbx.getDouble(byteOffsetX + i * incrX));
+                            accum = op.update(accum, op.op(nbbx.getDouble(byteOffsetX + i * incrX)));
                         }
                     }
                     return accum;
