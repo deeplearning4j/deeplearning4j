@@ -134,6 +134,9 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
     public void reset() {
         recordReader.reset();
         labelsReader.reset();
+        cursor = 0;
+        stored = null;
+        useStored = false;
     }
 
     @Override
@@ -215,7 +218,7 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
                 //Load all values
                 while (timeStepIter.hasNext()) {
                     Writable current = timeStepIter.next();
-                    out.put(f++, i, current.toDouble());
+                    out.put(i, f++, current.toDouble());
                 }
             } else {
                 //Expect a single value (index) -> convert to one-hot vector
