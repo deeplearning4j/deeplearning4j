@@ -722,7 +722,6 @@ public class TestMatrixOperations {
 
                 for (int i = 0; i < rank; i++) {   //Test ops for each dimension
                     INDArray arr = orig.dup();
-                    int eleStride = arr.tensorAlongDimension(0, i).elementWiseStride();
                     INDArray vector = i == 0 ? Nd4j.rand(1,shape[i]) : Nd4j.rand(shape[i],1);
                     System.out.println("Executed rank " + rank + " and dimension " + i + " with vector " + vector + " and array of shape " + Arrays.toString(arr.shape()));
                     BroadcastOp op;

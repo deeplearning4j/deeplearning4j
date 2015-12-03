@@ -280,7 +280,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                     pointersToContexts.put(name, Triple.of(0,this.length,1), devicePointerInfo);
                 }
 
-                if(offset > 0) {
+                if(offset > 0 || length < length()) {
                     /**
                      * Store the length for the offset of the pointer.
                      * Return the original pointer with an offset
@@ -304,7 +304,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                     HostDevicePointer ret = new HostDevicePointer(zero.getHostPointer().withByteOffset(offset * getElementSize()),zero.getDevicePointer()
                             .withByteOffset(offset * getElementSize()));
                     devicePointerInfo = new DevicePointerInfo(ret,length,stride,offset,false);
-                    pointersToContexts.put(name, Triple.of(offset,length,1), devicePointerInfo);
+                    pointersToContexts.put(name, Triple.of(offset,length,stride), devicePointerInfo);
                     return ret.getDevicePointer();
 
                 }
@@ -407,7 +407,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                     throw new IllegalStateException("No pointer found for name " + name + " and offset/length " + offset + " / " + length);
                 }
 
-                DevicePointerInfo info3 = new DevicePointerInfo(info2.getPointers(),this.length, BlasBufferUtil.getBlasStride(arr),arr.offset(),false);
+                DevicePointerInfo info3 = new DevicePointerInfo(info2.getPointers(),this.length, stride,arr.offset(),false);
                 int compareLength2 = arr instanceof IComplexNDArray ? arr.length() * 2 : arr.length();
 
                 /**
@@ -416,7 +416,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                  * This is for data like the first row of a matrix
                  * that has zero offset but does not extend all the way to the end of the buffer.
                  */
-                pointersToContexts.put(name, Triple.of(offset,compareLength2,1), info3);
+                pointersToContexts.put(name, Triple.of(offset,compareLength2,stride), info3);
                 return info3.getPointers().getDevicePointer();
             }
 
