@@ -23,6 +23,8 @@ package org.nd4j.linalg.api.buffer;
 import io.netty.buffer.ByteBuf;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.nio.ByteBuffer;
+
 /**
  * Double buffer implementation of data buffer
  *
@@ -59,6 +61,10 @@ public class DoubleBuffer extends BaseDataBuffer {
 
     public DoubleBuffer(float[] data, boolean copyOnOps) {
         super(data, copyOnOps);
+    }
+
+    public DoubleBuffer(ByteBuffer buffer,int length) {
+        super(buffer,length);
     }
 
     @Override
@@ -111,7 +117,6 @@ public class DoubleBuffer extends BaseDataBuffer {
 
     @Override
     public void flush() {
-        dataBuffer = null;
     }
 
     @Override

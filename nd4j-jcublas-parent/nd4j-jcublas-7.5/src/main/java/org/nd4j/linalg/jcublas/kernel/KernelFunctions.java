@@ -56,19 +56,10 @@ public class KernelFunctions {
     public static int SHARED_MEM = 512;
     public static int THREADS = 128;
     public static int BLOCKS = 512;
-    private static Set<String> reduceFunctions = new ConcurrentSkipListSet<>();
 
 
     private KernelFunctions() {}
 
-
-    static {
-        try {
-            register();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     /**
      * Called at initialization in the static context.
@@ -83,8 +74,6 @@ public class KernelFunctions {
             throw new IllegalStateException("Please put a cudafunctions.properties in your class path");
         Properties props = new Properties();
         props.load(res.getInputStream());
-        KernelFunctionLoader.getInstance().load();
-
         SHARED_MEM = Integer.parseInt(props.getProperty(SHARED_MEM_KEY, "512"));
         THREADS = Integer.parseInt(props.getProperty(THREADS_KEY, "128"));
         BLOCKS = Integer.parseInt(props.getProperty(BLOCKS_KEY, "64"));
@@ -112,6 +101,7 @@ public class KernelFunctions {
                 .setGridSize(metrics.getGridSize(),1,1).setStream(cudaContext.getStream())
                 .setSharedMemSize(sharedMemSize)
                 .call(kernelParameters);
+        cudaContext.startNewEvent();
         if(sync)
             cudaContext.syncStream();
 

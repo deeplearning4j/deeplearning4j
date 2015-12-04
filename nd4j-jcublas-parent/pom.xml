@@ -40,10 +40,10 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.12.4</version>
+                <version>2.19</version>
                 <configuration>
                     <argLine>-Xmx3024m</argLine>
-
+                    <forkCount>0</forkCount>
                     <environmentVariables>
                         <LD_LIBRARY_PATH>${env.LD_LIBRARY_PATH}:${user.dir}</LD_LIBRARY_PATH>
                     </environmentVariables>
@@ -65,7 +65,6 @@
     </build>
 
     <modules>
-        <module>nd4j-jcublas-common</module>
         <module>nd4j-jcublas-6.5</module>
         <module>nd4j-jcublas-5.5</module>
         <module>nd4j-jcublas-6.0</module>

@@ -27,13 +27,15 @@ import jcuda.driver.*;
 import jcuda.jcublas.JCublas2;
 import jcuda.jcublas.cublasHandle;
 import jcuda.runtime.JCuda;
+import jcuda.runtime.cudaDeviceProp;
 import jcuda.runtime.cudaStream_t;
+import lombok.Data;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
-import org.nd4j.linalg.api.buffer.allocation.MemoryStrategy;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.buffer.allocation.MemoryStrategy;
 import org.nd4j.linalg.jcublas.context.pool.CublasHandlePool;
 import org.nd4j.linalg.jcublas.context.pool.OldStreamPool;
 import org.nd4j.linalg.jcublas.context.pool.StreamPool;
@@ -41,7 +43,9 @@ import org.nd4j.linalg.jcublas.context.pool.factory.CublasHandlePooledItemFactor
 import org.nd4j.linalg.jcublas.context.pool.factory.OldStreamItemFactory;
 import org.nd4j.linalg.jcublas.context.pool.factory.StreamItemFactory;
 import org.nd4j.linalg.jcublas.device.conf.DeviceConfiguration;
+import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
+import org.nd4j.org.nd4j.linalg.util.SynchronizedTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.nd4j.linalg.io.ClassPathResource;
@@ -51,10 +55,7 @@ import org.apache.commons.pool2.ObjectPool;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -71,11 +72,12 @@ import static jcuda.driver.JCudaDriver.*;
  *
  * @author Adam Gibson
  */
+@Data
 public class ContextHolder {
 
     private Map<Integer,CUdevice> devices = new ConcurrentHashMap<>();
     private Map<Integer,GpuInformation> info = new ConcurrentHashMap<>();
-    private Map<Integer, CUcontext> deviceIDContexts = new ConcurrentHashMap<>();
+    private Table<Integer, String,CUcontext> deviceIDContexts = HashBasedTable.create();
     private Map<String,Integer> threadNameToDeviceNumber = new ConcurrentHashMap<>();
     private Table<CUcontext,String,CUstream> contextStreams = HashBasedTable.create();
     private Table<CUcontext,String,cudaStream_t> cudaStreams = HashBasedTable.create();
@@ -94,42 +96,7 @@ public class ContextHolder {
     private static Logger log = LoggerFactory.getLogger(ContextHolder.class);
     private AtomicBoolean shutdown = new AtomicBoolean(false);
 
-    private ContextHolder() {
-        try {
-            getNumDevices();
-            GenericObjectPoolConfig config = new GenericObjectPoolConfig();
-            config.setJmxEnabled(true);
-            config.setBlockWhenExhausted(false);
-            config.setMaxIdle(Runtime.getRuntime().availableProcessors());
-            config.setMaxTotal(Runtime.getRuntime().availableProcessors());
-            config.setMinIdle(Runtime.getRuntime().availableProcessors());
-            config.setJmxNameBase("handles");
-            handlePool = new CublasHandlePool(new CublasHandlePooledItemFactory(),config);
-            GenericObjectPoolConfig confClone = config.clone();
-            confClone.setMaxTotal(Runtime.getRuntime().availableProcessors() * 10);
-            confClone.setMaxIdle(Runtime.getRuntime().availableProcessors() * 10);
-            confClone.setMinIdle(Runtime.getRuntime().availableProcessors() * 10);
-            GenericObjectPoolConfig streamConf = confClone.clone();
-            streamConf.setJmxNameBase("streams");
-            streamPool = new StreamPool(new StreamItemFactory(),streamConf);
-            GenericObjectPoolConfig oldStreamConf = streamConf.clone();
-            oldStreamConf.setJmxNameBase("oldstream");
-            oldStreamPool = new OldStreamPool(new OldStreamItemFactory(),oldStreamConf);
-            setContext();
-            //seed with multiple streams to encourage parallelism
-            for(int i = 0; i < Runtime.getRuntime().availableProcessors(); i++) {
-                streamPool.addObject();
-                oldStreamPool.addObject();
-            }
 
-
-            //force context initialization to occur
-            JCuda.cudaFree(Pointer.to(new int[]{0}));
-
-        }catch(Exception e) {
-            log.warn("Unable to initialize cuda",e);
-        }
-    }
 
     /**
      * Singleton pattern
@@ -222,7 +189,7 @@ public class ContextHolder {
      * and device
      * @return
      */
-    public  MemoryStrategy getMemoryStrategy() {
+    public MemoryStrategy getMemoryStrategy() {
         return getConf().getMemoryStrategy();
     }
 
@@ -237,6 +204,60 @@ public class ContextHolder {
         if(confCalled)
             return;
 
+        JCublas2.setExceptionsEnabled(true);
+        JCudaDriver.setExceptionsEnabled(true);
+        JCuda.setExceptionsEnabled(true);
+
+        if(deviceSetup.get())
+            return;
+
+        JCudaDriver.cuInit(0);
+        int count[] = new int[1];
+        cuDeviceGetCount(count);
+        numDevices = count[0];
+        log.debug("Found " + numDevices + " gpus");
+
+        if(numDevices < 1)
+            numDevices = 1;
+        bannedDevices = new ArrayList<>();
+
+
+        String props = System.getProperty(DEVICES_TO_BAN, "-1");
+        String[] split = props.split(",");
+        //Should only be used in multi device scenarios; otherwise always use one device
+        if(split.length >= 1)
+            for(String s : split) {
+                Integer i = Integer.parseInt(s);
+                if(i >= 0)
+                    bannedDevices.add(Integer.parseInt(s));
+
+            }
+
+        deviceSetup.set(true);
+        Set<Thread> threadSet = Thread.getAllStackTraces().keySet();
+
+        for(int i = 0; i < numDevices; i++) {
+            for(Thread thread : threadSet)
+                getContext(i,thread.getName());
+        }
+
+
+        setContext();
+
+        try {
+            KernelFunctionLoader.getInstance().load();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        // Check if the device supports mapped host memory
+        cudaDeviceProp deviceProperties = new cudaDeviceProp();
+        JCuda.cudaGetDeviceProperties(deviceProperties, 0);
+        if (deviceProperties.canMapHostMemory == 0) {
+            System.err.println("This device can not map host memory");
+            System.err.println(deviceProperties.toFormattedString());
+            return;
+        }
 
         //force certain ops to have a certain number of threads
         Properties threadProps = new Properties();
@@ -251,17 +272,48 @@ public class ContextHolder {
             threads.put(prop,Integer.parseInt(threadProps.getProperty(prop)));
         }
 
-        if(numDevices == 0) {
-            getNumDevices();
+        try {
+            GenericObjectPoolConfig config = new GenericObjectPoolConfig();
+            config.setJmxEnabled(true);
+            config.setBlockWhenExhausted(false);
+            config.setMaxIdle(Runtime.getRuntime().availableProcessors());
+            config.setMaxTotal(Runtime.getRuntime().availableProcessors());
+            config.setMinIdle(Runtime.getRuntime().availableProcessors());
+            config.setJmxNameBase("handles");
+            handlePool = new CublasHandlePool(new CublasHandlePooledItemFactory(),config);
+            GenericObjectPoolConfig confClone = config.clone();
+            confClone.setMaxTotal(Runtime.getRuntime().availableProcessors() * 10);
+            confClone.setMaxIdle(Runtime.getRuntime().availableProcessors() * 10);
+            confClone.setMinIdle(Runtime.getRuntime().availableProcessors() * 10);
+            GenericObjectPoolConfig streamConf = confClone.clone();
+            streamConf.setJmxNameBase("streams");
+            streamPool = new StreamPool(new StreamItemFactory(),streamConf);
+            GenericObjectPoolConfig oldStreamConf = streamConf.clone();
+            oldStreamConf.setJmxNameBase("oldstream");
+            oldStreamPool = new OldStreamPool(new OldStreamItemFactory(),oldStreamConf);
+            setContext();
+            //seed with multiple streams to encourage parallelism
+            for(int i = 0; i < Runtime.getRuntime().availableProcessors(); i++) {
+                streamPool.addObject();
+                oldStreamPool.addObject();
+            }
+
+
+            //force context initialization to occur
+            JCuda.cudaFree(Pointer.to(new int[]{0}));
+
+        }catch(Exception e) {
+            log.warn("Unable to initialize cuda",e);
         }
+
 
         for(int i = 0; i < numDevices; i++) {
             ClassPathResource confFile = new ClassPathResource("devices/" + i, ContextHolder.class.getClassLoader());
             if(confFile.exists()) {
-                Properties props = new Properties();
+                Properties props2 = new Properties();
                 try {
-                    props.load(confFile.getInputStream());
-                    confs.put(i,new DeviceConfiguration(i,props));
+                    props2.load(confFile.getInputStream());
+                    confs.put(i,new DeviceConfiguration(i,props2));
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -272,8 +324,6 @@ public class ContextHolder {
 
         }
 
-
-        JCudaDriver.cuCtxSetLimit(CUlimit.CU_LIMIT_PRINTF_FIFO_SIZE, Integer.MAX_VALUE);
         confCalled = true;
     }
 
@@ -316,54 +366,13 @@ public class ContextHolder {
         return confs.get(device);
     }
 
-    private void getNumDevices() {
-        if(deviceSetup.get())
-            return;
-        JCudaDriver.setExceptionsEnabled(true);
-        JCudaDriver.cuInit(0);
-        int count[] = new int[1];
-        cuDeviceGetCount(count);
-        numDevices = count[0];
-        log.debug("Found " + numDevices + " gpus");
-
-        if(numDevices < 1)
-            numDevices = 1;
-        bannedDevices = new ArrayList<>();
-
-
-        String props = System.getProperty(DEVICES_TO_BAN, "-1");
-        String[] split = props.split(",");
-        //Should only be used in multi device scenarios; otherwise always use one device
-        if(split.length >= 1)
-            for(String s : split) {
-                Integer i = Integer.parseInt(s);
-                if(i >= 0)
-                    bannedDevices.add(Integer.parseInt(s));
-
-            }
-
-        deviceSetup.set(true);
-    }
-
-
-    public void setContext() {
-        JCuda.cudaSetDevice(getDeviceForThread());
-        JCudaDriver.cuCtxSetCurrent(getContext());
-    }
-
 
     /**
-     * Synchronized the stream.
-     * This should be run after
-     * every operation.
+     * Sets the current context, device
+     * and proper device flags
      */
-    public static void syncStream() {
-        getInstance().setContext();
-        //old api
-        JCublas2.cublasSetStream(getInstance().getHandle(), getInstance().getCudaStream());
-        JCuda.cudaStreamSynchronize(getInstance().getCudaStream());
-        //new api
-        JCudaDriver.cuStreamSynchronize(getInstance().getStream());
+    public synchronized void setContext() {
+        JCudaDriver.cuCtxSetCurrent(getContext());
     }
 
     /**
@@ -411,7 +420,7 @@ public class ContextHolder {
      * @return the context for the given device and thread
      */
     public  CUcontext getContext() {
-        return getContext(getDeviceForThread());
+        return getContext(getDeviceForThread(),Thread.currentThread().getName());
     }
 
     /**
@@ -422,7 +431,7 @@ public class ContextHolder {
      */
     public synchronized cudaStream_t getCudaStream() {
         Thread currentThread = Thread.currentThread();
-        CUcontext ctx = getContext(getDeviceForThread());
+        CUcontext ctx = getContext(getDeviceForThread(),currentThread.getName());
         cudaStream_t stream = cudaStreams.get(ctx, currentThread.getName());
 
         if(stream == null) {
@@ -437,26 +446,6 @@ public class ContextHolder {
     }
 
 
-    /**
-     * Get the stream for the current thread
-     * based on the device for the thread
-     * @return the stream for the device and
-     * thread
-     */
-    public  CUstream getStream() {
-        Thread currentThread = Thread.currentThread();
-        CUcontext ctx = getContext(getDeviceForThread());
-        CUstream stream = contextStreams.get(ctx, currentThread.getName());
-
-        if(stream == null) {
-            stream = new CUstream();
-            checkResult(JCudaDriver.cuCtxSetCurrent(ctx));
-            checkResult(JCudaDriver.cuStreamCreate(stream, CUstream_flags.CU_STREAM_NON_BLOCKING));
-            contextStreams.put(ctx, currentThread.getName(), stream);
-        }
-
-        return stream;
-    }
 
     private void checkResult(int result) {
         if (result != CUresult.CUDA_SUCCESS) {
@@ -470,9 +459,8 @@ public class ContextHolder {
      * @param deviceToUse the device to use
      * @return the t
      */
-    public  synchronized CUcontext getContext(int deviceToUse) {
-
-        CUcontext ctx = deviceIDContexts.get(deviceToUse);
+    public  synchronized CUcontext getContext(int deviceToUse,String threadName) {
+        CUcontext ctx = deviceIDContexts.get(deviceToUse,threadName);
         if(ctx == null) {
             ctx = new CUcontext();
             for(int device = 0; device < numDevices; device++) {
@@ -480,7 +468,7 @@ public class ContextHolder {
                 CUdevice currDevice = createDevice(ctx, device);
                 devices.put(device,currDevice);
                 info.put(device, new GpuInformation(currDevice));
-                deviceIDContexts.put(device,ctx);
+                deviceIDContexts.put(device,threadName,ctx);
             }
 
         }
@@ -502,8 +490,6 @@ public class ContextHolder {
      * context.
      */
     private void initialize(CUcontext context,int deviceNumber) {
-        cuInit(0);
-
         // Try to obtain the current context
         cuCtxGetCurrent(context);
 
@@ -571,26 +557,8 @@ public class ContextHolder {
      * @return the information for a particular device
      */
     public  GpuInformation getInfoFor(int cUdevice) {
-        getContext(cUdevice);
+        getContext(cUdevice,Thread.currentThread().getName());
         return info.get(cUdevice);
-    }
-
-    /**
-     * Returns the available devices
-     * delimited by device,thread
-     * @return the available devices
-     */
-    public Map<Integer, CUdevice> getDevices() {
-        return devices;
-    }
-
-    /**
-     * Returns the available contexts
-     * based on device and thread name
-     * @return the context
-     */
-    public Map<Integer, CUcontext> getDeviceIDContexts() {
-        return deviceIDContexts;
     }
 
     /**
@@ -599,11 +567,7 @@ public class ContextHolder {
     public synchronized  void destroy() {
         if(shutdown.get())
             return;
-
         shutdown.set(true);
-
-
-
     }
 
 }

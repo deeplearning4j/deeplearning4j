@@ -22,11 +22,21 @@ package org.nd4j.linalg.jcublas.kernel;
 
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
+import jcuda.Pointer;
+import jcuda.driver.CUfunction;
+import jcuda.driver.CUmodule;
+import jcuda.driver.JCudaDriver;
+import jcuda.jcublas.JCublas;
+import jcuda.runtime.JCuda;
 import jcuda.utils.KernelLauncher;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.jcublas.CublasPointer;
+import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
+import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
 import org.slf4j.Logger;
@@ -34,6 +44,10 @@ import org.slf4j.LoggerFactory;
 import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -52,11 +66,14 @@ public class KernelFunctionLoader {
     public final static String FUNCTION_KEY = "org.nd4j.linalg.jcuda.jcublas.functions";
     private Map<String,String> paths = new HashMap<>();
     private static KernelFunctionLoader INSTANCE;
+    private boolean alreadyCompiled = false;
     private static Table<String,String,KernelLauncher> launchers = HashBasedTable.create();
     private boolean init = false;
     private static Logger log = LoggerFactory.getLogger(KernelFunctionLoader.class);
     private String kernelPath;
     private String[] modules;
+    public final static String PRINT_KERNEL_NAME = "printShapeBuffer";
+    private static KernelLauncher printFunction;
     private KernelFunctionLoader() {}
 
     /**
@@ -158,6 +175,7 @@ public class KernelFunctionLoader {
     public void load() throws Exception {
         if (init)
             return;
+
         ClassPathResource res = new ClassPathResource("/cudafunctions.properties", KernelFunctionLoader.class.getClassLoader());
         if (!res.exists())
             throw new IllegalStateException("Please put a cudafunctions.properties in your class path");
@@ -241,7 +259,7 @@ public class KernelFunctionLoader {
                 .toString();
         File tmpDir2 = new File(tmpDir + File.separator + "nd4j-kernels" + File.separatorChar + "output");
 
-        boolean shouldCompile = !tmpDir2.exists() || tmpDir2.exists() && tmpDir2.listFiles().length <= 1;
+        boolean shouldCompile = !tmpDir2.exists() || tmpDir2.exists() && tmpDir2.listFiles().length <= 1 || alreadyCompiled;
         String[] split = f.split(",");
         this.modules = split;
         if(shouldCompile) {
@@ -262,9 +280,10 @@ public class KernelFunctionLoader {
 
         try {
             loadModules(split,kernelPath);
+            alreadyCompiled = true;
         }
 
-        catch (Exception e) {
+        catch (IOException e1) {
             if(!shouldCompile && compiledAttempts < 3) {
                 log.warn("Error loading modules...attempting recompile");
                 FileUtils.deleteDirectory(new File(kernelPath));
@@ -272,17 +291,39 @@ public class KernelFunctionLoader {
                 compileAndLoad(props,compiledAttempts + 1);
             }
             else
-                throw new RuntimeException(e);
+                throw new RuntimeException(e1);
         }
-
-
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
 
     }
 
 
-    private void loadModules(String[] split,String kernelPath) throws Exception {
-        ContextHolder.getInstance().setContext();
 
+
+    /**
+     * Print the given buffer
+     * @param buffer
+     * @param ctx
+     * @throws Exception
+     */
+    public static void printBuffer(JCudaBuffer buffer,CudaContext ctx) throws Exception {
+        CublasPointer pointer = new CublasPointer(buffer,ctx);
+        pointer.copyToHost();
+        JCublas.printVector(buffer.length(),pointer.getDevicePointer());
+        buffer.asNio().rewind();
+        //JCublas.printVector(buffer.length(),pointer.getHostPointer());
+        ByteBuffer pointer2 = pointer.getHostPointer().getByteBuffer(0, buffer.getElementSize() * buffer.length());
+        FloatBuffer intBuffer = pointer2.asFloatBuffer();
+        for(int i = 0; i < buffer.length(); i++) {
+            System.out.println("Item " + i + " is " + intBuffer.get(i));
+        }
+        JCuda.cudaDeviceSynchronize();
+    }
+
+
+    private void loadModules(String[] split,String kernelPath) throws Exception {
         for (String module : split) {
             log.debug("Loading " + module);
             String path = kernelPath  +  module + ".cubin";
@@ -295,6 +336,9 @@ public class KernelFunctionLoader {
             KernelLauncher doubleLauncher = KernelLauncher.load(name,"double",launch.getModule());
             launchers.put(Thread.currentThread().getName(),name + "_double", doubleLauncher);
             launchers.put(Thread.currentThread().getName(),name + "_float",launch);
+            if(printFunction == null) {
+                printFunction =  KernelLauncher.load(PRINT_KERNEL_NAME,launch.getModule());
+            }
         }
 
     }

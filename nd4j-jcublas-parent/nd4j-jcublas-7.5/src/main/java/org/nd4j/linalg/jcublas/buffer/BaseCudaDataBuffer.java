@@ -35,6 +35,8 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.buffer.allocation.HostDevicePointer;
+import org.nd4j.linalg.jcublas.buffer.allocation.MemoryStrategy;
 import org.nd4j.linalg.jcublas.complex.CudaComplexConversion;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.context.CudaContext;
@@ -45,6 +47,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -73,13 +76,16 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
      * for each extra allocations (say for row wise operations)
      *
      * This also prevents duplicate uploads to the gpu.
+     * Typical usage here:
+     *         DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName(),Triple.of(offset,length,stride));
+
+
      */
     protected transient Table<String,Triple<Integer,Integer,Integer>,DevicePointerInfo> pointersToContexts = HashBasedTable.create();
     protected AtomicBoolean modified = new AtomicBoolean(false);
     protected Collection<String> referencing = Collections.synchronizedSet(new HashSet<String>());
     protected transient WeakReference<DataBuffer> ref;
     protected AtomicBoolean freed = new AtomicBoolean(false);
-    private transient Pointer hostPointer;
     private Map<String,Boolean> copied = new ConcurrentHashMap<>();
 
     public BaseCudaDataBuffer(ByteBuf buf, int length) {
@@ -100,7 +106,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     public BaseCudaDataBuffer(int[] data, boolean copy) {
         super(data, copy);
-        //  pointersToContexts = new SynchronizedTable<>(pointersToContexts);
 
     }
 
@@ -112,51 +117,48 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
      */
     public BaseCudaDataBuffer(int length, int elementSize) {
         super(length,elementSize);
-        //  pointersToContexts = new SynchronizedTable<>(pointersToContexts);
 
     }
 
     public BaseCudaDataBuffer(int length) {
         super(length);
-        //  pointersToContexts = new SynchronizedTable<>(pointersToContexts);
 
     }
 
     public BaseCudaDataBuffer(float[] data) {
         super(data);
-        //  pointersToContexts = new SynchronizedTable<>(pointersToContexts);
 
     }
 
     public BaseCudaDataBuffer(int[] data) {
         super(data);
-        //  pointersToContexts = new SynchronizedTable<>(pointersToContexts);
 
     }
 
     public BaseCudaDataBuffer(double[] data) {
         super(data);
-        //  pointersToContexts = new SynchronizedTable<>(pointersToContexts);
 
     }
 
     public BaseCudaDataBuffer(byte[] data, int length) {
         super(data,length);
-        //  pointersToContexts = new SynchronizedTable<>(pointersToContexts);
+    }
+
+    public BaseCudaDataBuffer(ByteBuffer buffer, int length) {
+        super(buffer,length);
+    }
+
+    @Override
+    protected void setNioBuffer() {
+        wrappedBuffer = ByteBuffer.allocateDirect(elementSize * length);
+        wrappedBuffer.order(ByteOrder.nativeOrder());
     }
 
     @Override
     public void copyAtStride(DataBuffer buf, int n, int stride, int yStride, int offset, int yOffset) {
         super.copyAtStride(buf, n, stride, yStride, offset, yOffset);
-        if(buf instanceof JCudaBuffer) {
-            JCudaBuffer buf2 = (JCudaBuffer) buf;
-            ByteBuffer nio = buf2.asNio();
-            for(DevicePointerInfo info : pointersToContexts.values()) {
-                //only update offset zero per thread: nothing else matters
-                if(info.getOffset() == 0)
-                    JCublas2.cublasSetVector(n, getElementSize(), Pointer.to(nio), stride, info.getPointer(), yStride);
-            }
-        }
+        MemoryStrategy strategy = ContextHolder.getInstance().getMemoryStrategy();
+        strategy.setData(buf,offset,stride,length());
     }
 
     @Override
@@ -179,28 +181,22 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public ByteBuffer getHostBuffer() {
-        return dataBuffer.nioBuffer();
+        return wrappedBuffer;
     }
 
     @Override
     public void setHostBuffer(ByteBuffer hostBuffer) {
-        this.dataBuffer = Unpooled.wrappedBuffer(hostBuffer);
+        this.wrappedBuffer = hostBuffer;
     }
 
     @Override
     public Pointer getHostPointer() {
-        if(hostPointer == null) {
-            hostPointer = Pointer.to(asNio());
-        }
-        return hostPointer;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Pointer getHostPointer(int offset) {
-        if(hostPointer == null) {
-            hostPointer = Pointer.to(asNio());
-        }
-        return hostPointer.withByteOffset(offset * getElementSize());
+        throw new UnsupportedOperationException();
     }
 
 
@@ -277,17 +273,14 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                  */
 
                 if(!pointersToContexts.contains(name,Triple.of(0,this.length,1))) {
-
-                    devicePointerInfo = (DevicePointerInfo)
-                            ContextHolder.getInstance()
-                                    .getConf()
-                                    .getMemoryStrategy()
-                                    .alloc(this, 1, 0, this.length);
-
+                    MemoryStrategy strat = ContextHolder.getInstance()
+                            .getConf()
+                            .getMemoryStrategy();
+                    devicePointerInfo = (DevicePointerInfo) strat.alloc(this, 1, 0, this.length,true);
                     pointersToContexts.put(name, Triple.of(0,this.length,1), devicePointerInfo);
                 }
 
-                if(offset > 0) {
+                if(offset > 0 || length < length()) {
                     /**
                      * Store the length for the offset of the pointer.
                      * Return the original pointer with an offset
@@ -307,18 +300,15 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                      * for this particular offset and buffer.
                      *
                      */
-                    Pointer zero = pointersToContexts.get(name,Triple.of(0,length,1)).getPointer();
-                    Pointer ret =  zero.withByteOffset(offset * getElementSize());
-                    devicePointerInfo = new DevicePointerInfo(zero,length,stride,offset);
-                    pointersToContexts.put(name, Triple.of(offset,length,1), devicePointerInfo);
-                    return ret;
+                    HostDevicePointer zero = pointersToContexts.get(name,Triple.of(0,length,1)).getPointers();
+                    HostDevicePointer ret = new HostDevicePointer(zero.getHostPointer().withByteOffset(offset * getElementSize()),zero.getDevicePointer()
+                            .withByteOffset(offset * getElementSize()));
+                    devicePointerInfo = new DevicePointerInfo(ret,length,stride,offset,false);
+                    pointersToContexts.put(name, Triple.of(offset,length,stride), devicePointerInfo);
+                    return ret.getDevicePointer();
 
                 }
-
-
-
             }
-
 
             freed.set(false);
         }
@@ -329,7 +319,10 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
          * we need to return with it respect to the specified array
          * not the array's underlying buffer.
          */
-        return devicePointerInfo.getPointer().withByteOffset(offset * getElementSize());
+        if(offset > 0)
+            return devicePointerInfo.getPointers().getDevicePointer();
+        else
+            return devicePointerInfo.getPointers().getDevicePointer();
     }
 
 
@@ -367,7 +360,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                         ContextHolder.getInstance()
                                 .getConf()
                                 .getMemoryStrategy()
-                                .alloc(this, 1, 0, this.length);
+                                .alloc(this, 1, 0, this.length,true);
 
                 pointersToContexts.put(name, Triple.of(0,this.length,1), devicePointerInfo);
             }
@@ -396,10 +389,14 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 DevicePointerInfo info2 = pointersToContexts.get(name, Triple.of(0, this.length,1));
                 if(info2 == null)
                     throw new IllegalStateException("No pointer found for name " + name + " and offset/length " + offset + " / " + length);
-                Pointer zero = info2.getPointer();
-                Pointer ret =  info2.getPointer().withByteOffset(offset * getElementSize());
-                devicePointerInfo = new DevicePointerInfo(zero,length,stride,offset);
-                pointersToContexts.put(name,Triple.of(offset,compareLength,1), devicePointerInfo);
+                HostDevicePointer zero = info2.getPointers();
+                HostDevicePointer retOffset = new HostDevicePointer(
+                        zero.getHostPointer().withByteOffset(offset * getElementSize()),
+                        zero.getDevicePointer().withByteOffset(offset * getElementSize())
+                );
+                Pointer ret =  retOffset.getDevicePointer();
+                devicePointerInfo = new DevicePointerInfo(retOffset,length,stride,offset,false);
+                pointersToContexts.put(name,Triple.of(offset,compareLength,stride), devicePointerInfo);
                 return ret;
 
             }
@@ -409,7 +406,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 if(info2 == null) {
                     throw new IllegalStateException("No pointer found for name " + name + " and offset/length " + offset + " / " + length);
                 }
-                DevicePointerInfo info3 = new DevicePointerInfo(info2.getPointer(),this.length, BlasBufferUtil.getBlasStride(arr),arr.offset());
+
+                DevicePointerInfo info3 = new DevicePointerInfo(info2.getPointers(),this.length, stride,arr.offset(),false);
                 int compareLength2 = arr instanceof IComplexNDArray ? arr.length() * 2 : arr.length();
 
                 /**
@@ -418,15 +416,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                  * This is for data like the first row of a matrix
                  * that has zero offset but does not extend all the way to the end of the buffer.
                  */
-
-                pointersToContexts.put(name, Triple.of(offset,compareLength2,1), info3);
-                return info3.getPointer();
+                pointersToContexts.put(name, Triple.of(offset,compareLength2,stride), info3);
+                return info3.getPointers().getDevicePointer();
             }
-
-
-
-
-
 
             freed.set(false);
         }
@@ -439,12 +431,12 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
          */
         if(devicePointerInfo == null && offset == 0 && length < length()) {
             DevicePointerInfo origin = pointersToContexts.get(Thread.currentThread().getName(),Triple.of(0,length(),1));
-            DevicePointerInfo newInfo = new DevicePointerInfo(origin.getPointer(),length,stride,0);
-            return newInfo.getPointer();
+            DevicePointerInfo newInfo = new DevicePointerInfo(origin.getPointers(),length,stride,0,false);
+            return newInfo.getPointers().getDevicePointer();
         }
 
 
-        return devicePointerInfo.getPointer().withByteOffset(offset * getElementSize());
+        return devicePointerInfo.getPointers().getDevicePointer().withByteOffset(offset * getElementSize());
     }
 
     @Override
@@ -480,9 +472,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         if(pointersToContexts != null)
             for(DevicePointerInfo info : pointersToContexts.values()) {
                 if(dataType() == Type.FLOAT)
-                    JCublas2.cublasSetVector(1,getElementSize(),Pointer.to(new float[]{(float) val}),1,info.getPointer().withByteOffset(getElementSize() * i),1);
+                    JCublas2.cublasSetVector(1,getElementSize(),Pointer.to(new float[]{(float) val}),1,info.getPointers().getDevicePointer().withByteOffset(getElementSize() * i),1);
                 else
-                    JCublas2.cublasSetVector(1,getElementSize(),Pointer.to(new double[]{val}),1,info.getPointer().withByteOffset(getElementSize() * i),1);
+                    JCublas2.cublasSetVector(1,getElementSize(), Pointer.to(new double[]{val}),1,info.getPointers().getDevicePointer().withByteOffset(getElementSize() * i),1);
 
             }
 
@@ -539,7 +531,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 , getHostPointer().withByteOffset(offset)
                 , 1, ContextHolder.getInstance().getCudaStream());
 
-        ContextHolder.syncStream();
+        ContextHolder.getInstance().setContext();
 
     }
 
@@ -600,8 +592,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     @Override
-    public void copyToHost(CudaContext context, int offset, int length) {
-        DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName(),Triple.of(offset,length,1));
+    public synchronized void copyToHost(CudaContext context, int offset, int length, int stride) {
+        DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName(),Triple.of(offset,length,stride));
         if(devicePointerInfo == null)
             throw new IllegalStateException("No pointer found for offset " + offset);
         //prevent inconsistent pointers
@@ -609,43 +601,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             throw new IllegalStateException("Device pointer offset didn't match specified offset in pointer map");
 
         if (devicePointerInfo != null) {
-            int deviceStride = devicePointerInfo.getStride();
-            int  deviceOffset = devicePointerInfo.getOffset();
-            long deviceLength = devicePointerInfo.getLength();
-            if(deviceOffset == 0 && length < length()) {
-                /**
-                 * The way the data works out the stride for retrieving the data
-                 * should be 1.
-                 *
-                 * The device stride should be used for resetting the data.
-                 *
-                 * This is for the edge case where the offset is zero and
-                 * the length of the pointer is < the actual buffer length itself.
-                 *
-                 */
-                JCublas2.cublasGetVectorAsync(
-                        length
-                        , getElementSize()
-                        , devicePointerInfo.getPointer().withByteOffset(offset * getElementSize())
-                        , deviceStride
-                        , getHostPointer(deviceOffset)
-                        , deviceStride
-                        , context.getOldStream());
-            }
-            else {
-                JCublas2.cublasGetVectorAsync(
-                        (int) deviceLength
-                        , getElementSize()
-                        , devicePointerInfo.getPointer().withByteOffset(offset * getElementSize())
-                        , deviceStride
-                        , getHostPointer(deviceOffset)
-                        , deviceStride
-                        , context.getOldStream());
-            }
-
-
-
-
+            ContextHolder.getInstance().getMemoryStrategy().copyToHost(this,offset,stride,length,null,offset,stride);
         }
 
         else
@@ -666,7 +622,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         if (devicePointerInfo != null) {
             int deviceStride = devicePointerInfo.getStride();
             int  deviceOffset = devicePointerInfo.getOffset();
-            long deviceLength = devicePointerInfo.getLength();
+            int deviceLength = (int) devicePointerInfo.getLength();
             if(deviceOffset == 0 && length < length()) {
                 /**
                  * The way the data works out the stride for retrieving the data
@@ -676,30 +632,14 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                  *
                  * This is for the edge case where the offset is zero and
                  * the length of the pointer is < the actual buffer length itself.
-                 *
+                 *         DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName(),Triple.of(offset,length,1));
+
                  */
-                JCublas2.cublasGetVectorAsync(
-                        length
-                        , getElementSize()
-                        , devicePointerInfo.getPointer().withByteOffset(offset * getElementSize())
-                        , deviceStride
-                        , getHostPointer(deviceOffset)
-                        , deviceStride
-                        , ContextHolder.getInstance().getCudaStream());
+                ContextHolder.getInstance().getMemoryStrategy().copyToHost(this,offset,deviceStride, deviceLength,null, deviceOffset,deviceStride);
             }
             else {
-                JCublas2.cublasGetVectorAsync(
-                        (int) deviceLength
-                        , getElementSize()
-                        , devicePointerInfo.getPointer().withByteOffset(offset * getElementSize())
-                        , deviceStride
-                        , getHostPointer(deviceOffset)
-                        , deviceStride
-                        , ContextHolder.getInstance().getCudaStream());
+                ContextHolder.getInstance().getMemoryStrategy().copyToHost(this,offset,deviceStride,deviceLength,null, deviceOffset,deviceStride);
             }
-
-
-
 
         }
 
@@ -724,7 +664,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public void destroy() {
-        dataBuffer.clear();
     }
 
     private void writeObject(java.io.ObjectOutputStream stream)

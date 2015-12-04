@@ -25,12 +25,9 @@ import static org.junit.Assert.assertEquals;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import jcuda.runtime.JCuda;
 import org.apache.commons.lang3.time.StopWatch;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
@@ -179,7 +176,7 @@ public class TestMatrixOperations {
 
         double eps = 1e-3;
 
-        for( int[] shape : shapes ){
+        for( int[] shape : shapes) {
             INDArray orig = Nd4j.rand(shape);
 
             INDArray orig1 = orig.dup();
@@ -704,7 +701,15 @@ public class TestMatrixOperations {
         int dimension = 1;
         INDArray arr = Nd4j.linspace(1,len,len).reshape(tensorShape);
         BroadcastAddOp op = new BroadcastAddOp(arr,seven,arr,dimension);
+        INDArray dup = arr.dup();
         Nd4j.getExecutioner().exec(op);
+
+        for(int i = 0; i < 5; i++) {
+            System.out.println("Adding vector " + seven + " to tad " + dup.tensorAlongDimension(i,dimension));
+            System.out.println("Comparing against  vector " + seven + " to tad " + arr.tensorAlongDimension(i,dimension));
+
+        }
+        System.out.println(op.z());
     }
 
 
@@ -722,7 +727,6 @@ public class TestMatrixOperations {
 
                 for (int i = 0; i < rank; i++) {   //Test ops for each dimension
                     INDArray arr = orig.dup();
-                    int eleStride = arr.tensorAlongDimension(0, i).elementWiseStride();
                     INDArray vector = i == 0 ? Nd4j.rand(1,shape[i]) : Nd4j.rand(shape[i],1);
                     System.out.println("Executed rank " + rank + " and dimension " + i + " with vector " + vector + " and array of shape " + Arrays.toString(arr.shape()));
                     BroadcastOp op;
@@ -876,7 +880,7 @@ public class TestMatrixOperations {
         testSumHelper(1, 5, 5, 5, 5, 1);
     }
 
-    private  void testSumHelper( int... shape ){
+    private  void testSumHelper(int... shape) {
         INDArray array = Nd4j.ones(shape);
         for( int i = 0; i < shape.length; i++) {
             for(int j = 0; j < array.vectorsAlongDimension(i); j++) {

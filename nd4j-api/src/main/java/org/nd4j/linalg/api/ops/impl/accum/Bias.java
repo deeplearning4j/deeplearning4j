@@ -164,7 +164,7 @@ public class Bias extends BaseAccumulation {
         int[] retShape = ArrayUtil.removeIndex(x.shape(), dimension);
         int nOps = x.tensorssAlongDimension(dimension);
         z = Nd4j.create(retShape);
-        for( int i=0; i<nOps; i++ ){
+        for( int i = 0; i < nOps; i++ ){
             double d = Nd4j.getExecutioner().execAndReturn((Bias)opForDimension(i,dimension)).getFinalResult().doubleValue();
             z.putScalar(i, d);
         }

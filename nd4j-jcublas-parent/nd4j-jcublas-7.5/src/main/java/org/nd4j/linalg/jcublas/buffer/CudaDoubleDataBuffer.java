@@ -26,6 +26,7 @@ import jcuda.Sizeof;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 /**
@@ -68,6 +69,10 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     public CudaDoubleDataBuffer(byte[] data, int length) {
         super(data, length);
+    }
+
+    public CudaDoubleDataBuffer(ByteBuffer buffer, int length) {
+        super(buffer, length);
     }
 
 
@@ -180,8 +185,8 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
         this.length = n;
         this.elementSize = Sizeof.DOUBLE;
-        dataBuffer = Unpooled.directBuffer((int) length());
-        dataBuffer.order(ByteOrder.nativeOrder());
+        wrappedBuffer = ByteBuffer.allocateDirect(length() * getElementSize());
+        wrappedBuffer.order(ByteOrder.nativeOrder());
         setData(arr);
     }
 

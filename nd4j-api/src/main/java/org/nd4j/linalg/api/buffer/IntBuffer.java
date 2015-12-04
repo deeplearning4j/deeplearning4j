@@ -22,6 +22,8 @@ package org.nd4j.linalg.api.buffer;
 
 import io.netty.buffer.ByteBuf;
 
+import java.nio.ByteBuffer;
+
 /**
  * Int buffer
  *
@@ -32,6 +34,10 @@ public class IntBuffer extends BaseDataBuffer {
 
     public IntBuffer(int length) {
         super(length);
+    }
+
+    public IntBuffer(ByteBuffer buffer,int length) {
+        super(buffer,length);
     }
 
     @Override

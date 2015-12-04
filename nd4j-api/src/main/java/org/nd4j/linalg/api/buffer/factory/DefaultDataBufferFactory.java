@@ -25,7 +25,8 @@ import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.buffer.IntBuffer;
 import org.nd4j.linalg.util.ArrayUtil;
-import sun.misc.Unsafe;
+
+import java.nio.ByteBuffer;
 
 /**
  * Normal data buffer creation
@@ -33,6 +34,21 @@ import sun.misc.Unsafe;
  * @author Adam Gibson
  */
 public class DefaultDataBufferFactory implements DataBufferFactory {
+    @Override
+    public DataBuffer createInt(ByteBuffer buffer, int length) {
+        return new IntBuffer(buffer,length);
+    }
+
+    @Override
+    public DataBuffer createFloat(ByteBuffer buffer, int length) {
+        return new FloatBuffer(buffer,length);
+    }
+
+    @Override
+    public DataBuffer createDouble(ByteBuffer buffer, int length) {
+        return new DoubleBuffer(buffer,length);
+    }
+
     @Override
     public DataBuffer createDouble(int length) {
         return new DoubleBuffer(length);

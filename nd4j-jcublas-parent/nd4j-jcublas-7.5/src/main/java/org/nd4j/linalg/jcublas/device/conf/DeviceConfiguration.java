@@ -1,7 +1,7 @@
 package org.nd4j.linalg.jcublas.device.conf;
 
-import org.nd4j.linalg.api.buffer.allocation.MemoryStrategy;
 import org.nd4j.linalg.jcublas.buffer.allocation.MemoryStrategies;
+import org.nd4j.linalg.jcublas.buffer.allocation.MemoryStrategy;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.context.GpuInformation;
 

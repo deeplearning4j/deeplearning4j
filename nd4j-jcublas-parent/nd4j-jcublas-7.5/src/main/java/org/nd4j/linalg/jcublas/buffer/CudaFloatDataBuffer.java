@@ -28,6 +28,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /**
  * Cuda float buffer
@@ -65,10 +66,13 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         super(data, length);
     }
 
+    public CudaFloatDataBuffer(ByteBuffer buffer, int length) {
+        super(buffer, length);
+    }
+
 
     @Override
     public void assign(int[] indices, float[] data, boolean contiguous, int inc) {
-
         if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
         if (indices.length > length())

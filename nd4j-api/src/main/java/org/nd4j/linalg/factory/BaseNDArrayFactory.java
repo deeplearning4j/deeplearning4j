@@ -1233,6 +1233,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         if(shape.length == 1 && shape[0] == 0) {
             shape = new int[]{1,1};
         }
+
         INDArray ret = create(shape);
         ret.assign(1);
         return ret;
@@ -1544,7 +1545,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         if(shape.length == 1 && shape[0] == 0) {
             shape = new int[]{1,1};
         }
-        return create(Nd4j.createBuffer(shape), shape, stride, offset);
+        DataBuffer buffer = Nd4j.createBuffer(ArrayUtil.prod(shape));
+        return create(buffer, shape, stride, offset);
 
     }
 

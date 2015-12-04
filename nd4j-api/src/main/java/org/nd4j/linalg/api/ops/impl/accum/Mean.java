@@ -19,7 +19,6 @@
 
 package org.nd4j.linalg.api.ops.impl.accum;
 
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
@@ -77,17 +76,31 @@ public class Mean extends Sum {
     }
 
     @Override
-    public double getAndSetFinalResult(double accum){
-        double d = accum / n();
-        this.finalResult = d;
-        return d;
+    public double getAndSetFinalResult(double accum) {
+        if(applyFinalTransform) {
+            double d = accum / n();
+            this.finalResult = d;
+            return d;
+
+        }
+        else {
+            this.finalResult = accum;
+            return accum;
+        }
     }
 
     @Override
-    public float getAndSetFinalResult(float accum){
-        float f = accum / n();
-        this.finalResult = f;
-        return f;
+    public float getAndSetFinalResult(float accum) {
+        if(applyFinalTransform) {
+            float d = accum / n();
+            this.finalResult = d;
+            return d;
+
+        }
+        else {
+            this.finalResult = accum;
+            return accum;
+        }
     }
 
     @Override

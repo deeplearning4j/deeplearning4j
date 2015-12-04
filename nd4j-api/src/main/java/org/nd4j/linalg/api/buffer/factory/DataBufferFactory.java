@@ -21,6 +21,8 @@ package org.nd4j.linalg.api.buffer.factory;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
 
+import java.nio.ByteBuffer;
+
 /**
  * DataBufferFactory: Creates the data buffer wrt
  * a specified data type
@@ -28,6 +30,30 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
  * @author Adam Gibson
  */
 public interface DataBufferFactory {
+
+    /**
+     * Create int buffer
+     * @param buffer
+     * @param length
+     * @return
+     */
+    DataBuffer createInt(ByteBuffer buffer, int length);
+
+    /**
+     * Create a float data buffer
+     * @param buffer
+     * @param length
+     * @return
+     */
+    DataBuffer createFloat(ByteBuffer buffer, int length);
+
+    /**
+     * Creates a double data buffer
+     * @param buffer
+     * @param length
+     * @return
+     */
+    DataBuffer createDouble(ByteBuffer buffer, int length);
 
     /**
      * Create a double data buffer
