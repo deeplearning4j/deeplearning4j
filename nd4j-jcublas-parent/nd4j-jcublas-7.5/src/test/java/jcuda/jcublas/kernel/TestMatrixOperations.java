@@ -701,7 +701,15 @@ public class TestMatrixOperations {
         int dimension = 1;
         INDArray arr = Nd4j.linspace(1,len,len).reshape(tensorShape);
         BroadcastAddOp op = new BroadcastAddOp(arr,seven,arr,dimension);
+        INDArray dup = arr.dup();
         Nd4j.getExecutioner().exec(op);
+
+        for(int i = 0; i < 5; i++) {
+            System.out.println("Adding vector " + seven + " to tad " + dup.tensorAlongDimension(i,dimension));
+            System.out.println("Comparing against  vector " + seven + " to tad " + arr.tensorAlongDimension(i,dimension));
+
+        }
+        System.out.println(op.z());
     }
 
 

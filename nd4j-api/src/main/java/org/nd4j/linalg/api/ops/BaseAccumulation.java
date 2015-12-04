@@ -163,12 +163,12 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     }
 
     @Override
-    public IComplexNumber combineSubResults(IComplexNumber first, IComplexNumber second){
+    public IComplexNumber combineSubResults(IComplexNumber first, IComplexNumber second) {
         return update(first,second);
     }
 
     @Override
-    public double getAndSetFinalResult(double accum){
+    public double getAndSetFinalResult(double accum) {
         this.finalResult = accum;
         return accum;
     }

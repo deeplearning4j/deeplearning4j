@@ -521,28 +521,28 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 IComplexNDArray cz = (IComplexNDArray)z;
                 if(y instanceof IComplexNDArray){
                     IComplexNDArray cy = (IComplexNDArray)y;
-                    for( int i=0; i<nTensors; i++ ){
+                    for( int i = 0; i<nTensors; i++ ){
                         IComplexNDArray tx = (IComplexNDArray)cx.tensorAlongDimension(i,op.getDimension());
                         IComplexNDArray tz = (IComplexNDArray)cz.tensorAlongDimension(i,op.getDimension());
-                        for( int j=0; j<tx.length(); j++ ){
+                        for( int j = 0; j < tx.length(); j++ ){
                             tz.put(j,Nd4j.scalar(op.op(tx.getComplex(j),cy.getComplex(j))));
                         }
                     }
                 } else {
                     if(y==null) {
                         for (int i = 0; i < nTensors; i++) {
-                            IComplexNDArray tx = (IComplexNDArray)cx.tensorAlongDimension(i,op.getDimension());
-                            IComplexNDArray tz = (IComplexNDArray)cz.tensorAlongDimension(i,op.getDimension());
-                            for( int j=0; j<tz.length(); j++ ){
+                            IComplexNDArray tx = (IComplexNDArray) cx.tensorAlongDimension(i,op.getDimension());
+                            IComplexNDArray tz = (IComplexNDArray) cz.tensorAlongDimension(i,op.getDimension());
+                            for( int j = 0; j < tz.length(); j++) {
                                 tz.put(i,Nd4j.scalar(op.op(tx.getComplex(i))));
                             }
                         }
                     } else {
                         //Y is real
-                        for( int i=0; i<nTensors; i++ ){
+                        for( int i = 0; i < nTensors; i++) {
                             IComplexNDArray tx = (IComplexNDArray)cx.tensorAlongDimension(i,op.getDimension());
                             IComplexNDArray tz = (IComplexNDArray)cz.tensorAlongDimension(i,op.getDimension());
-                            for( int j=0; j<tx.length(); j++ ){
+                            for( int j = 0; j<tx.length(); j++ ){
                                 tz.put(j,Nd4j.scalar(op.op(tx.getComplex(j),y.getDouble(j))));
                             }
                         }
