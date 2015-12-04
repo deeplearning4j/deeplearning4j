@@ -1,7 +1,6 @@
 package org.nd4j.linalg.api.parallel.tasks.cpu.accumulation;
 
 
-import io.netty.buffer.ByteBuf;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
@@ -9,6 +8,9 @@ import org.nd4j.linalg.api.parallel.tasks.Task;
 import org.nd4j.linalg.api.parallel.tasks.TaskExecutorProvider;
 import org.nd4j.linalg.api.shape.tensor.TensorCalculator;
 
+import java.nio.ByteBuffer;
+import java.nio.DoubleBuffer;
+import java.nio.FloatBuffer;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.RecursiveAction;
@@ -111,11 +113,11 @@ public class CPUAccumulations1dAction extends RecursiveAction implements Task<Vo
                         float accum = op.zeroFloat();
                         if (incrX == 1 && incrY == 1) {
                             for (int i = 0; i < n; i++) {
-                                accum = op.update(accum, xf[offsetX + i], yf[offsetY + i]);
+                                accum = op.update(accum, op.op(xf[offsetX + i], yf[offsetY + i]));
                             }
                         } else {
                             for (int i = 0; i < n; i++) {
-                                accum = op.update(accum, xf[offsetX + i * incrX], yf[offsetY + i * incrY]);
+                                accum = op.update(accum, op.op(xf[offsetX + i * incrX], yf[offsetY + i * incrY]));
                             }
                         }
                         output.putScalar(tensorNum, op.calculateFinalResult(accum, n));
@@ -125,53 +127,57 @@ public class CPUAccumulations1dAction extends RecursiveAction implements Task<Vo
                         double accum = op.zeroDouble();
                         if (incrX == 1 && incrY == 1) {
                             for (int i = 0; i < n; i++) {
-                                accum = op.update(accum, xd[offsetX + i], yd[offsetY + i]);
+                                accum = op.update(accum, op.op(xd[offsetX + i], yd[offsetY + i]));
                             }
                         } else {
                             for (int i = 0; i < n; i++) {
-                                accum = op.update(accum, xd[offsetX + i * incrX], yd[offsetY + i * incrY]);
+                                accum = op.update(accum, op.op(xd[offsetX + i * incrX], yd[offsetY + i * incrY]));
                             }
                         }
                         output.putScalar(tensorNum, op.calculateFinalResult(accum, n));
                     }
                 } else {
-                    ByteBuf nbbx = x.asNetty();
-                    ByteBuf nbby = y.asNetty();
+                    ByteBuffer nbbx = x.asNio();
+                    ByteBuffer nbby = y.asNio();
                     if (x.dataType() == DataBuffer.Type.FLOAT) {
-                        int byteOffsetX = 4 * offsetX;
-                        int byteOffsetY = 4 * offsetY;
+                        int byteOffsetX = offsetX;
+                        int byteOffsetY = offsetY;
+                        FloatBuffer floatBufferX = nbbx.asFloatBuffer();
+                        FloatBuffer floatBuffery = nbby.asFloatBuffer();
                         float accum = op.zeroFloat();
                         int idx = 0;
                         if (incrX == 1 && incrY == 1) {
-                            for (int i = 0; i < 4 * n; i += 4, idx++) {
-                                float fx = nbbx.getFloat(byteOffsetX + i);
-                                float fy = nbby.getFloat(byteOffsetY + i);
-                                accum = op.update(accum, fx, fy);
+                            for (int i = 0; i <  n; i ++, idx++) {
+                                float fx = floatBufferX.get(byteOffsetX + i);
+                                float fy = floatBuffery.get(byteOffsetY + i);
+                                accum = op.update(accum, op.op(fx, fy));
                             }
                         } else {
-                            for (int i = 0; i < 4 * n; i += 4, idx++) {
-                                float fx = nbbx.getFloat(byteOffsetX + i * incrX);
-                                float fy = nbby.getFloat(byteOffsetY + i * incrY);
-                                accum = op.update(accum, fx, fy);
+                            for (int i = 0; i <  n; i ++, idx++) {
+                                float fx = floatBufferX.get(byteOffsetX + i * incrX);
+                                float fy = floatBuffery.get(byteOffsetY + i * incrY);
+                                accum = op.update(accum, op.op(fx, fy));
                             }
                         }
                         output.putScalar(tensorNum, op.calculateFinalResult(accum, n));
                     } else {
-                        int byteOffsetX = 8 * offsetX;
-                        int byteOffsetY = 8 * offsetY;
+                        int byteOffsetX = offsetX;
+                        int byteOffsetY = offsetY;
+                        DoubleBuffer doubleBufferX = nbbx.asDoubleBuffer();
+                        DoubleBuffer doubleBufferY = nbby.asDoubleBuffer();
                         double accum = op.zeroDouble();
                         int idx = 0;
                         if (incrX == 1 && incrY == 1) {
-                            for (int i = 0; i < 8 * n; i += 8, idx++) {
-                                double dx = nbbx.getDouble(byteOffsetX + i);
-                                double dy = nbby.getDouble(byteOffsetY + i);
-                                accum = op.update(accum, dx, dy);
+                            for (int i = 0; i < n; i ++, idx++) {
+                                double dx = doubleBufferX.get(byteOffsetX + i);
+                                double dy = doubleBufferY.get(byteOffsetY + i);
+                                accum = op.update(accum, op.op(dx, dy));
                             }
                         } else {
-                            for (int i = 0; i < 8 * n; i += 8, idx++) {
-                                double dx = nbbx.getDouble(byteOffsetX + i * incrX);
-                                double dy = nbby.getDouble(byteOffsetY + i * incrY);
-                                accum = op.update(accum, dx, dy);
+                            for (int i = 0; i < n; i ++, idx++) {
+                                double dx = doubleBufferX.get(byteOffsetX + i * incrX);
+                                double dy = doubleBufferY.get(byteOffsetY + i * incrY);
+                                accum = op.update(accum, op.op(dx, dy));
                             }
                         }
                         output.putScalar(tensorNum, op.calculateFinalResult(accum, n));
@@ -213,35 +219,37 @@ public class CPUAccumulations1dAction extends RecursiveAction implements Task<Vo
                         output.putScalar(tensorNum, op.calculateFinalResult(accum, n));
                     }
                 } else {
-                    ByteBuf nbbx = x.asNetty();
+                    ByteBuffer nbbx = x.asNio();
+                    FloatBuffer floatBuffer = nbbx.asFloatBuffer();
                     if (x.dataType() == DataBuffer.Type.FLOAT) {
-                        int byteOffsetX = 4 * offsetX;
+                        int byteOffsetX = offsetX;
                         float accum = op.zeroFloat();
                         int idx = 0;
                         if (incrX == 1) {
-                            for (int i = 0; i < 4 * n; i += 4, idx++) {
-                                float fx = op.op(nbbx.getFloat(byteOffsetX + i));
+                            for (int i = 0; i < n; i++, idx++) {
+                                float fx = op.op(floatBuffer.get(byteOffsetX + i));
                                 accum = op.update(accum, fx);
                             }
                         } else {
-                            for (int i = 0; i < 4 * n; i += 4, idx++) {
-                                float fx = op.op(nbbx.getFloat(byteOffsetX + i * incrX));
+                            for (int i = 0; i < n; i++, idx++) {
+                                float fx = op.op(floatBuffer.get(byteOffsetX + i * incrX));
                                 accum = op.update(accum, fx);
                             }
                         }
                         output.putScalar(tensorNum, op.calculateFinalResult(accum, n));
                     } else {
-                        int byteOffsetX = 8 * offsetX;
+                        int byteOffsetX =  offsetX;
+                        DoubleBuffer doubleBuffer = nbbx.asDoubleBuffer();
                         double accum = op.zeroDouble();
                         int idx = 0;
                         if (incrX == 1) {
-                            for (int i = 0; i < 8 * n; i += 8, idx++) {
-                                double dx = op.op(nbbx.getDouble(byteOffsetX + i));
+                            for (int i = 0; i < n; i ++, idx++) {
+                                double dx = op.op(doubleBuffer.get(byteOffsetX + i));
                                 accum = op.update(accum, dx);
                             }
                         } else {
-                            for (int i = 0; i < 8 * n; i += 8, idx++) {
-                                double dx = op.op(nbbx.getDouble(byteOffsetX + i * incrX));
+                            for (int i = 0; i < n; i ++, idx++) {
+                                double dx = op.op(doubleBuffer.get(byteOffsetX + i * incrX));
                                 accum = op.update(accum, dx);
                             }
                         }

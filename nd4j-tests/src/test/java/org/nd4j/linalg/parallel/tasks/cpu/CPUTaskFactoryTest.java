@@ -452,6 +452,15 @@ public class CPUTaskFactoryTest {
         Nd4j.alloc = origAlloc;
     }
 
+    @Test
+    public void testDimensionZero() {
+        INDArray arr = Nd4j.linspace(1,8,8).reshape(2,4);
+        INDArray norm1 = arr.norm2(0);
+        INDArray assertion = Nd4j.create(new double[]{5.09901951,  6.32455532,  7.61577311,  8.94427191});
+        assertEquals(assertion,norm1);
+
+    }
+
 
     @Test
     public void testOpExecutionerAccumulationOpsAlongDimensions() throws Exception {
