@@ -20,10 +20,10 @@
 package org.nd4j.linalg.cpu;
 
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.io.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.Resource;
+import org.nd4j.linalg.io.ClassPathResource;
 
 /**
  * Jblas backend

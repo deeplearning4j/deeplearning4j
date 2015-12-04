@@ -27,7 +27,7 @@ import org.apache.commons.io.IOUtils;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.io.ClassPathResource;
+import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.BufferedOutputStream;
 import java.io.File;

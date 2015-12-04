@@ -22,7 +22,7 @@ package org.nd4j.instrumentation.server;
 import io.dropwizard.Application;
 import io.dropwizard.setup.Environment;
 import org.apache.commons.io.IOUtils;
-import org.springframework.core.io.ClassPathResource;
+import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
