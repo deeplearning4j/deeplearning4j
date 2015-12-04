@@ -151,10 +151,5 @@
             <artifactId>lombok</artifactId>
             <version>${lombok.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-bytebuddy</artifactId>
-            <version>0.4-rc3.8-SNAPSHOT</version>
-        </dependency>
     </dependencies>
 </project>

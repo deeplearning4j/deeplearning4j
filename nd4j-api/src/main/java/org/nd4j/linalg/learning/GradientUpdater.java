@@ -31,5 +31,10 @@ public interface GradientUpdater extends Serializable {
      */
     INDArray getGradient(INDArray gradient, int iteration);
 
-
+    /** Get a GradientUpdaterAggregator. The aggregator is used (typically in distributed learning scenarios) to combine
+     * separate GradientUpdater instances for different networks (usually by averaging).
+     * @param addThis If true: return a GradientUpdaterAggregator with the GradientUpdater already added.
+     *                If false: return an empty (uninitialized) GradientUpdaterAggregator
+     */
+    GradientUpdaterAggregator getAggregator(boolean addThis);
 }

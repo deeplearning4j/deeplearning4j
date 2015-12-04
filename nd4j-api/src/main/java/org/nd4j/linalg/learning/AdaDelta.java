@@ -61,5 +61,54 @@ public class AdaDelta implements Serializable,GradientUpdater {
         return ret;
     }
 
+    @Override
+    public GradientUpdaterAggregator getAggregator(boolean addThis){
+        AdaDeltaAggregator ag = new AdaDeltaAggregator();
+        if(addThis) ag.aggregate(this);
+        return ag;
+    }
 
+    public static class AdaDeltaAggregator implements GradientUpdaterAggregator {
+        private INDArray msgSum;
+        private INDArray msdxSum;
+        private double rhoSum;
+        private int count = 0;
+
+        @Override
+        public GradientUpdater getUpdater() {
+            AdaDelta adaDelta = new AdaDelta(rhoSum /count);
+            adaDelta.setMsg(msgSum.div(count));
+            adaDelta.setMsdx(msdxSum.div(count));
+            adaDelta.setRho(rhoSum/count);
+            return adaDelta;
+        }
+
+        @Override
+        public void aggregate(GradientUpdater updater) {
+            if(!(updater instanceof AdaDelta)) throw new UnsupportedOperationException("Cannot aggregate AdaDelta with updater: " + updater);
+            AdaDelta adaDelta = (AdaDelta)updater;
+            if(msgSum ==null){
+                msgSum = adaDelta.msg.dup();
+                msdxSum = adaDelta.msdx.dup();
+                rhoSum = adaDelta.rho;
+            } else {
+                msgSum.addi(adaDelta.msg);
+                msdxSum.addi(adaDelta.msdx);
+                rhoSum += adaDelta.rho;
+            }
+            count++;
+        }
+
+        @Override
+        public GradientUpdaterAggregator combine(GradientUpdaterAggregator other) {
+            if(!(other instanceof AdaDeltaAggregator))
+                throw new IllegalArgumentException("Cannot combine AdaDeltaAggregator with aggregator: " + other);
+            AdaDeltaAggregator aggregator = (AdaDeltaAggregator)other;
+            msgSum.addi(aggregator.msgSum);
+            msdxSum.addi(aggregator.msdxSum);
+            rhoSum += aggregator.rhoSum;
+            count += aggregator.count;
+            return this;
+        }
+    }
 }
