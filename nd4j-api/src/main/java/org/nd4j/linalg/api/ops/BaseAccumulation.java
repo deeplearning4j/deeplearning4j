@@ -33,7 +33,7 @@ import org.nd4j.linalg.factory.Nd4j;
 public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     protected Number finalResult;
     protected IComplexNumber finalResultComplex;
-    protected boolean applyFinalTransform;
+    protected boolean applyFinalTransform = true;
     public BaseAccumulation() {
     }
 
