@@ -25,6 +25,8 @@ import jcuda.Sizeof;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.nio.ByteBuffer;
+
 /**
  * Cuda int buffer
  *
@@ -76,6 +78,10 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
 
     public CudaIntDataBuffer(float[] data, boolean copy) {
         super(data, copy);
+    }
+
+    public CudaIntDataBuffer(ByteBuffer buffer, int length) {
+        super(buffer, length);
     }
 
     @Override

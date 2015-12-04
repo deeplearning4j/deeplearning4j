@@ -18,7 +18,7 @@ public class ExecutorServiceProvider {
         else nThreads = Integer.parseInt(System.getProperty(EXEC_THREADS,String.valueOf(defaultThreads)));
     }
 
-    public static synchronized ExecutorService getExecutorService(){
+    public static synchronized ExecutorService getExecutorService() {
         if(executorService != null) return executorService;
 
         executorService = new ThreadPoolExecutor(nThreads, nThreads, 60L, TimeUnit.SECONDS,
@@ -34,9 +34,10 @@ public class ExecutorServiceProvider {
         return executorService;
     }
 
-    public static synchronized ForkJoinPool getForkJoinPool(){
-        if(forkJoinPool != null ) return forkJoinPool;
-        forkJoinPool = new ForkJoinPool(nThreads);
+    public static synchronized ForkJoinPool getForkJoinPool() {
+        if(forkJoinPool != null )
+            return forkJoinPool;
+        forkJoinPool = new ForkJoinPool(nThreads,ForkJoinPool.defaultForkJoinWorkerThreadFactory,null,true);
         return forkJoinPool;
     }
 

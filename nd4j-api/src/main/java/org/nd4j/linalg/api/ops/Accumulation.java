@@ -53,6 +53,19 @@ import java.util.List;
  */
 public interface Accumulation extends Op {
 
+    /**
+     * Setter for final transform
+     * @param applyFinalTransform
+     */
+    void setApplyFinalTransform(boolean applyFinalTransform);
+
+    /**
+     * Whether to apply the final
+     * transform or not
+     * @return
+     */
+    boolean applyFinalTransform();
+
     /** Do one accumulation update for a single-argument accumulation, given the
      * current accumulation value and another value to be processed/accumulated
      * @param accum The current accumulation value

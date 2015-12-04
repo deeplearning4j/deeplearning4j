@@ -153,6 +153,7 @@
         <module>nd4j-x86</module>
         <module>nd4j-serde</module>
         <module>nd4j-bytebuddy</module>
+        <module>nd4j-common</module>
     </modules>
 
     <properties>

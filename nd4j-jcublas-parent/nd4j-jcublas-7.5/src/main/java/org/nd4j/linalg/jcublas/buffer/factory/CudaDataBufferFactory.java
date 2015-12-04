@@ -27,10 +27,27 @@ import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.CudaIntDataBuffer;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.nio.ByteBuffer;
+
 /**
  * Created by agibsonccc on 2/14/15.
  */
 public class CudaDataBufferFactory implements DataBufferFactory {
+    @Override
+    public DataBuffer createInt(ByteBuffer buffer, int length) {
+        return new CudaIntDataBuffer(buffer,length);
+    }
+
+    @Override
+    public DataBuffer createFloat(ByteBuffer buffer, int length) {
+        return new CudaFloatDataBuffer(buffer,length);
+    }
+
+    @Override
+    public DataBuffer createDouble(ByteBuffer buffer, int length) {
+        return new CudaDoubleDataBuffer(buffer,length);
+    }
+
     @Override
     public DataBuffer createDouble(int length) {
         return new CudaDoubleDataBuffer(length);
@@ -43,7 +60,7 @@ public class CudaDataBufferFactory implements DataBufferFactory {
 
     @Override
     public DataBuffer createInt(int length) {
-        return new IntBuffer(length);
+        return new CudaIntDataBuffer(length);
     }
 
     @Override

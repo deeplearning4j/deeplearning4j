@@ -45,7 +45,7 @@ import org.nd4j.linalg.jcublas.device.conf.DeviceConfiguration;
 import org.nd4j.linalg.jcublas.fft.JcudaFft;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.io.ClassPathResource;
+import org.nd4j.linalg.io.ClassPathResource;
 
 import static jcuda.driver.JCudaDriver.*;
 

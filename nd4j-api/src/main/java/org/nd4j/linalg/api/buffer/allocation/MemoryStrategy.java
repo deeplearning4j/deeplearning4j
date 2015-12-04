@@ -14,7 +14,21 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 public interface MemoryStrategy {
 
 
+    /**
+     * Set the data for the buffer
+     * @param buffer the buffer to set
+     * @param offset the offset to start at
+     * @param stride the stride to sue
+     * @param length the length to go till
+     */
+    void setData(DataBuffer buffer,int offset,int stride,int length);
 
+    /**
+     *
+     * @param buffer
+     * @param offset
+     */
+    void setData(DataBuffer buffer,int offset);
 
     /**
      * Copy data to native or gpu
@@ -22,7 +36,7 @@ public interface MemoryStrategy {
      * @return a pointer representing
      * the copied data
      */
-    Object copyToHost(DataBuffer copy,int offset);
+    Object copyToHost(DataBuffer copy, int offset);
 
     /**
      * Allocate memory for the given buffer

@@ -2810,9 +2810,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray assign(Number value) {
-        for(int i = 0; i < linearView().length(); i++) {
-            linearView().putScalar(i,value.doubleValue());
-        }
+        data().assign(value,offset());
         return this;
     }
 

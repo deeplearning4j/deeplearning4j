@@ -172,8 +172,8 @@ public class CPUTaskFactory implements TaskFactory {
         else {
             canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x, y);
             if(!Arrays.equals(x.shape(), y.shape())) {
-                throw new IllegalArgumentException("Shapes do not match: x.shape="+Arrays.toString(x.shape()) +
-                        ", y.shape="+Arrays.toString(y.shape()));
+                throw new IllegalArgumentException("Shapes do not match: x.shape= " + Arrays.toString(x.shape()) +
+                        ", y.shape= " + Arrays.toString(y.shape()));
             }
         }
 

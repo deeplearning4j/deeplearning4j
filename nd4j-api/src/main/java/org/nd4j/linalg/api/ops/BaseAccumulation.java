@@ -33,7 +33,7 @@ import org.nd4j.linalg.factory.Nd4j;
 public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     protected Number finalResult;
     protected IComplexNumber finalResultComplex;
-
+    protected boolean applyFinalTransform;
     public BaseAccumulation() {
     }
 
@@ -66,6 +66,16 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
 
     private void init() {
         init(x, y, x, x.length());
+    }
+
+    @Override
+    public boolean applyFinalTransform() {
+        return applyFinalTransform;
+    }
+
+    @Override
+    public void setApplyFinalTransform(boolean applyFinalTransform) {
+       this.applyFinalTransform = applyFinalTransform;
     }
 
     @Override
@@ -153,12 +163,12 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     }
 
     @Override
-    public IComplexNumber combineSubResults(IComplexNumber first, IComplexNumber second){
+    public IComplexNumber combineSubResults(IComplexNumber first, IComplexNumber second) {
         return update(first,second);
     }
 
     @Override
-    public double getAndSetFinalResult(double accum){
+    public double getAndSetFinalResult(double accum) {
         this.finalResult = accum;
         return accum;
     }

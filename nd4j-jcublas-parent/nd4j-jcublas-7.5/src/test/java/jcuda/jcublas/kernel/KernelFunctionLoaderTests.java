@@ -23,7 +23,7 @@ import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
-import org.springframework.core.io.ClassPathResource;
+import org.nd4j.linalg.io.ClassPathResource;
 
 import java.util.Properties;
 
@@ -50,9 +50,5 @@ public class KernelFunctionLoaderTests {
 
 
 
-    @Test
-    public void testKernelElementWise() {
-
-    }
 
 }

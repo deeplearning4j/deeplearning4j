@@ -23,6 +23,8 @@ package org.nd4j.linalg.api.buffer;
 import io.netty.buffer.ByteBuf;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.nio.ByteBuffer;
+
 /**
  * Data buffer for floats
  *
@@ -65,6 +67,9 @@ public class FloatBuffer extends BaseDataBuffer {
         super(data,copyOnOps);
     }
 
+    public FloatBuffer(ByteBuffer buffer,int length) {
+        super(buffer,length);
+    }
 
 
     @Override

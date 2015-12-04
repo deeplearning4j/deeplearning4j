@@ -84,24 +84,8 @@ public class SimpleJCublas {
         if (init)
             return;
 
-        JCublas2.setExceptionsEnabled(true);
-        JCudaDriver.setExceptionsEnabled(true);
-        JCuda.setExceptionsEnabled(true);
 
-        try {
-            KernelFunctionLoader.getInstance().load();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
 
-        // Check if the device supports mapped host memory
-        cudaDeviceProp deviceProperties = new cudaDeviceProp();
-        JCuda.cudaGetDeviceProperties(deviceProperties, 0);
-        if (deviceProperties.canMapHostMemory == 0) {
-            System.err.println("This device can not map host memory");
-            System.err.println(deviceProperties.toFormattedString());
-            return;
-        }
 
 
         init = true;

@@ -19,12 +19,16 @@
 
 package jcuda.jcublas;
 
+import static jcuda.runtime.JCuda.*;
+import static jcuda.runtime.JCuda.cudaHostGetDevicePointer;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertArrayEquals;
 
 import jcuda.Pointer;
 import jcuda.Sizeof;
+import jcuda.runtime.JCuda;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -33,12 +37,21 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
+import org.nd4j.linalg.jcublas.buffer.allocation.PinnedMemoryStrategy;
+import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.context.CudaContext;
+import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
+import org.nd4j.linalg.jcublas.util.PointerUtil;
 import org.nd4j.linalg.util.ComplexUtil;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.util.NioUtil;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
 
+@net.jcip.annotations.NotThreadSafe
 public class CublasPointerTests {
     @Test
     public void testAllocateArrays() {
@@ -49,20 +62,23 @@ public class CublasPointerTests {
         CudaContext ctx = new CudaContext();
         ctx.initOldStream();
         CublasPointer p = new CublasPointer(arr1Offset,ctx);
-        float[] data = new float[6];
-        float[] assertion = {4,5,6,7,8,9};
-        JCublas2.cublasGetVectorAsync(
-                6
-                , Sizeof.FLOAT
-                , p.getDevicePointer().withByteOffset(arr1Offset.offset() * arr1Offset.data().getElementSize())
-                , arr1Offset.elementWiseStride()
-                , Pointer.to(data), 1, ctx.getOldStream());
-        ctx.syncOldStream();
-        for(int i = 0; i < assertion.length;i++) {
-            if(assertion[i] != data[i])
-                System.out.println("Failed with pointer " + p);
-            assertEquals(assertion[i], data[i], 1e-1f);
+        if(!(ContextHolder.getInstance().getMemoryStrategy() instanceof PinnedMemoryStrategy)) {
+            float[] data = new float[6];
+            float[] assertion = {4,5,6,7,8,9};
+            JCublas2.cublasGetVectorAsync(
+                    6
+                    , Sizeof.FLOAT
+                    , p.getDevicePointer().withByteOffset(arr1Offset.offset() * arr1Offset.data().getElementSize())
+                    , arr1Offset.elementWiseStride()
+                    , Pointer.to(data), 1, ctx.getOldStream());
+            ctx.syncOldStream();
+            for(int i = 0; i < assertion.length;i++) {
+                if(assertion[i] != data[i])
+                    System.out.println("Failed with pointer " + p);
+                assertEquals(assertion[i], data[i], 1e-1f);
+            }
         }
+
         ctx.destroy();
     }
 
@@ -82,8 +98,6 @@ public class CublasPointerTests {
         for(int i = 0; i  < intBuffer.length(); i++) {
             assertEquals(i + 1,intBuffer.getInt(i));
         }
-
-
     }
 
     @Test
@@ -101,6 +115,7 @@ public class CublasPointerTests {
     }
 
     @Test
+    @Ignore
     public void testTwoByTwoBuffer() throws Exception {
         IComplexNDArray arr = Nd4j.createComplex(ComplexUtil.complexNumbersFor(new double[]{2, 6}), new int[]{2, 1});
         IComplexNDArray dup = arr.dup();
@@ -113,6 +128,66 @@ public class CublasPointerTests {
         ctx.destroy();
     }
 
+    @Test
+    public void testHostMemory() {
+        Pointer hostPointer = Pointer.to(new double[]{1});
+        JCuda.cudaHostAlloc(hostPointer,Sizeof.DOUBLE ,0);
+        Pointer devicePointer = new Pointer();
+        JCuda.cudaHostGetDevicePointer(devicePointer,hostPointer, JCuda.cudaHostAllocMapped);
+        JCuda.cudaFreeHost(hostPointer);
+    }
+
+    @Test
+    @Ignore
+    public void testHostPrinting() {
+        // Set the flag indicating that mapped memory will be used
+        cudaSetDeviceFlags(cudaDeviceMapHost);
+
+        // Allocate mappable host memory
+        int n = 5;
+        Pointer host = new Pointer();
+        cudaHostAlloc(host, n * Sizeof.INT, cudaHostAllocMapped);
+
+        // Create a device pointer mapping the host memory
+        Pointer device = new Pointer();
+        cudaHostGetDevicePointer(device, host, 0);
+
+        // Obtain a ByteBuffer for accessing the data in the host
+        // pointer. Modifications in this ByteBuffer will be
+        // visible in the device memory.
+        ByteBuffer byteBuffer = host.getByteBuffer(0, n * Sizeof.INT);
+
+        // Set the byte order of the ByteBuffer
+        byteBuffer.order(ByteOrder.nativeOrder());
+        FloatBuffer buf = byteBuffer.asFloatBuffer();
+        for(int i = 0; i < n; i++) {
+            buf.put(i,(float) i + 1);
+        }
+
+
+        DataBuffer buffer = Nd4j.createBuffer(new float[]{1, 2, 3, 4, 5});
+        ByteBuffer nio = buffer.asNio();
+        nio.order(ByteOrder.nativeOrder());
+        FloatBuffer buf2 = nio.asFloatBuffer();
+        for(int i = 0; i < n; i++) {
+            System.out.println("Buffer input " + buf2.get(i));
+        }
+        NioUtil.copyAtStride(5, NioUtil.BufferType.FLOAT,nio,0,1,byteBuffer,0,1);
+        JCublas.printVector(n,device);
+        System.out.println();
+
+    }
+
+    @Test
+    public void testPrinting() throws Exception {
+        INDArray arr = Nd4j.linspace(1,4,4).reshape(2,2);
+        int[] buff = PointerUtil.toShapeInfoBuffer(arr);
+        DataBuffer shapeBuffer = Nd4j.createBuffer(buff);
+        CudaContext ctx = new CudaContext();
+        ctx.initOldStream();
+        ContextHolder.getInstance().setContext();
+        KernelFunctionLoader.printBuffer((JCudaBuffer) shapeBuffer,ctx);
+    }
 
     @Test
     public void testBufferPointer() throws Exception {
@@ -130,10 +205,11 @@ public class CublasPointerTests {
         INDArray brr = Nd4j.create(new float[]{5,6},new int[]{1,2});
         System.err.println("brr = " + brr);
         INDArray row = arr.getRow(0);
+        INDArray assertionRow = row.dup();
         CublasPointer pointer2 = new CublasPointer(row,ctx);
         pointer2.copyToHost();
         ctx.destroy();
-
+        assertEquals(assertionRow,row);
     }
 
     @Test

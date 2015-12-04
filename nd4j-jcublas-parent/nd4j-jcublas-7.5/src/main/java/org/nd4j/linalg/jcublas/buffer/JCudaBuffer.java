@@ -112,8 +112,9 @@ public interface JCudaBuffer extends DataBuffer {
      * @param context the context to synchronize
      * @param offset the offset to copy
      * @param length the length to copy
+     * @param stride
      */
-    void copyToHost(CudaContext context,int offset,int length);
+    void copyToHost(CudaContext context, int offset, int length, int stride);
 
     /**
      * Copies the buffer to the host

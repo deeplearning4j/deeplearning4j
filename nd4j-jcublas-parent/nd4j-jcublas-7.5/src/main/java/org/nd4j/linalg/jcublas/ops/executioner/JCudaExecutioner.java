@@ -225,6 +225,24 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         throw new IllegalArgumentException("Illegal datatype");
     }
 
+    /**
+     * Calculates a reduction across blocks
+     * @param op
+     * @param resultAcrossBlocks
+     */
+    public void calculateBlockResult(Accumulation op,INDArray resultAcrossBlocks) {
+        int oldN = op.n();
+        op.setX(resultAcrossBlocks);
+        op.setApplyFinalTransform(false);
+        if(op.y() != null) {
+            op.setY(Nd4j.valueArrayOf(op.x().shape(),op.zeroDouble()));
+        }
+        doAccumulationOp(op);
+        op.setApplyFinalTransform(true);
+        op.setN(oldN);
+        op.getAndSetFinalResult(op.getFinalResult().doubleValue());
+    }
+
 
     private CudaContext invoke(BroadcastOp op,boolean sync) {
         CudaContext ctx;
@@ -238,9 +256,10 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         int[] dimensions = op.getDimension() == null ? BroadcastDimensions.getDimensions(op.y().shape()) : op.getDimension();
 
         GpuMetrics metrics = GpuMetrics.blockAndThreads(getType(op),op.n());
-        metrics.setGridSizeNotOverMax(op.x().tensorssAlongDimension(dimensions));
-        metrics.setBlockSizeNotOverMax(op.x().tensorAlongDimension(0,dimensions).length());
-        metrics.setSharedMemoryNotOverMax(metrics.getBlockSize() * op.x().data().getElementSize());
+        metrics.setGridSizeNotOverMax(512);
+        int blocksPerGrid =(op.n() + metrics.getGridSize() - 1) / metrics.getGridSize();
+        metrics.setBlockSizeNotOverMax(blocksPerGrid);
+        metrics.setSharedMemoryNotOverMax(1);
         if(op.y() == null)
             throw new IllegalArgumentException("Op has no y to broadcast");
 
@@ -296,6 +315,11 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         return ctx;
     }
 
+    private int toInt(boolean val) {
+        return val ? 1 : 0;
+    }
+
+
     private CudaContext invoke(Accumulation op,int[] dimension,INDArray result,boolean sync)  {
         CudaContext ctx;
 
@@ -306,23 +330,25 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
         GpuMetrics metrics = GpuMetrics.blockAndThreads(getType(op),op.n());
-        if(dimension != null) {
+        if(dimension != null  && dimension.length >= 1 && dimension[0] != Integer.MAX_VALUE) {
             int length = op.x().tensorssAlongDimension(dimension);
             if(length > 1000)
                 length = 1000;
             //of note here: THIS IS REVERSE OF WHAT IT SHOULD BE, THIS IS INTENDED.
-            metrics.setGridSize(length);
-            metrics.setBlockSize(op.x().tensorAlongDimension(0,dimension).length());
+            metrics.setGridSizeNotOverMax(length);
+            metrics.setBlockSizeNotOverMax(op.x().tensorAlongDimension(0, dimension).length());
             int sharedMemBasedOnBlockSize = op.x().tensorAlongDimension(0,dimension).length() * 10 *  op.x().data().getElementSize();
             if(sharedMemBasedOnBlockSize < 1024)
                 sharedMemBasedOnBlockSize = 1024;
             metrics.setSharedMemoryNotOverMax(sharedMemBasedOnBlockSize);
         }
-
         else {
-            metrics.setGridSize(op.x().data().length());
-            metrics.setBlockSize(1024);
-            metrics.setSharedMemoryNotOverMax(metrics.getBlockSize() * op.x().data().getElementSize());
+            int sharedMemBasedOnBlockSize = op.n() * op.x().data().getElementSize();
+            if(sharedMemBasedOnBlockSize < 1024)
+                sharedMemBasedOnBlockSize = 1024;
+            metrics.setSharedMemoryNotOverMax(sharedMemBasedOnBlockSize);
+            //setup a number of threads = the number of blocks being launched
+            result = Nd4j.create(metrics.getGridSize());
         }
 
 
@@ -355,8 +381,12 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     result,
                     KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(result)),
                     KernelFunctions.alloc(metrics.getGpuDefinitionInfo()),
-                    KernelFunctions.alloc(dimension == null ? new int[] {1} : dimension),
-                    dimension == null ? 1 : dimension.length
+                    KernelFunctions.alloc(dimension == null ? new int[] {Integer.MAX_VALUE} : dimension),
+                    dimension == null ? 1 : dimension.length,
+                    //if the whole buffer is to be used don't do final aggregation this happens
+                    //by aggregating blocks on cpu first
+                    toInt(!(dimension == null || dimension[0] == Integer.MAX_VALUE))
+
             };
 
             try(KernelParamsWrapper kParams = new KernelParamsWrapper(op,sync,kernelParams).setResultOp(op, result)) {
@@ -378,6 +408,12 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 op.setX(op.x().dup());
             }
 
+            int sharedMemBasedOnBlockSize = op.n() * op.x().data().getElementSize();
+            if(sharedMemBasedOnBlockSize < 1024)
+                sharedMemBasedOnBlockSize = 1024;
+            metrics.setSharedMemoryNotOverMax(sharedMemBasedOnBlockSize);
+
+
             int length = op.x().data().length();
             if(dimension == null && xStride == 1 && op.x().offset() == 0)
                 length = op.n();
@@ -390,13 +426,16 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     result,
                     KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(result)),
                     KernelFunctions.alloc(metrics.getGpuDefinitionInfo()),
-                    KernelFunctions.alloc(dimension == null ? new int[] {1} : dimension),
-                    dimension == null ? 1 : dimension.length
+                    KernelFunctions.alloc(dimension == null ? new int[] {Integer.MAX_VALUE} : dimension),
+                    dimension == null ? 1 : dimension.length,
+                    //if the whole buffer is to be used don't do final aggregation this happens
+                    //by aggregating blocks on cpu first
+                    toInt(!(dimension == null || dimension[0] == Integer.MAX_VALUE))
             };
 
 
 
-            try(KernelParamsWrapper kParams = new KernelParamsWrapper(op,sync,kernelParams).setResultOp(op, result)) {
+            try(KernelParamsWrapper kParams = new KernelParamsWrapper(op,sync,kernelParams).setResultOp(op, result,dimension)) {
                 invokeFunction(op, sync,metrics,kParams.getContext(), kParams.getKernelParameters());
                 ctx = kParams.getContext();
                 if(sync)
@@ -415,7 +454,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private CudaContext invoke(ScalarOp op,boolean sync) {
-
         GpuMetrics metrics = GpuMetrics.blockAndThreads(getType(op),op.n());
         metrics.setGridSize(op.n());
         metrics.setBlockSize(1024);
