@@ -21,7 +21,7 @@ package org.nd4j.linalg.jcublas;
 
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.io.Resource;
-import org.nd4j.linalg.util.Paths;
+import org.nd4j.org.nd4j.linalg.util.Paths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.nd4j.linalg.io.ClassPathResource;
