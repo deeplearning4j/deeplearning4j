@@ -153,10 +153,11 @@ public class Word2Vec extends WordVectorsImpl {
      * I.e. words from one source should have minWordFrequency set to 1, while the rest of corpus should have minWordFrequency set to 5.
      * So, here's the way to deal with it.
      *
+     *  WORK IS IN PROGRESS, PLEASE DO NOT USE
      * @param iterator
      * @return
      */
-    public VocabCache fillSpecialVocabulary(SentenceIterator iterator, int minWord) {
+    protected VocabCache fillSpecialVocabulary(SentenceIterator iterator, int minWord) {
         iterator.reset();
         while (iterator.hasNext()) {
 
@@ -165,12 +166,12 @@ public class Word2Vec extends WordVectorsImpl {
     }
 
     /**
-     * Returns sentence as list of word from vocabulary.
+     * Returns sentence as list of word from vocabulary, applying subsampling, if sample is defined > 0
      *
      * @param tokens - list of tokens from sentence
      * @return
      */
-    protected List<VocabWord> digitizeSentence(List<String> tokens) {
+    protected List<VocabWord> digitizeSentence(List<String> tokens, AtomicLong nextRandom) {
         List<VocabWord> result = new ArrayList<>(tokens.size());
         for (String token: tokens) {
             if (stopWords != null && stopWords.contains(token)) continue;
@@ -179,7 +180,14 @@ public class Word2Vec extends WordVectorsImpl {
             VocabWord word = vocab.wordFor(token);
             if (word != null) result.add(word);
         }
-        return result;
+        /*
+            if subsampling is defined, we'll pass this sentence via subsampling filter, that randomly discards high-frequency words
+         */
+        if (this.sample > 0) {
+            List<VocabWord> realResult = new ArrayList<>();
+            addWords(result, nextRandom, realResult);
+            return realResult;
+        } else return result;
     }
 
     /**
@@ -222,6 +230,7 @@ public class Word2Vec extends WordVectorsImpl {
         final long maxLines = totalLines.get();
         // TODO: this should be done in cycle, corresponding to the number of iterations. Slow for large data, but that's proper way to do this.
         while (epoch <= epochs) {
+            final AtomicLong nextRandom = new AtomicLong(5);
             log.info("Starting async iterator...");
             // resetting line counter, since we're going to roll over iterator once again
             totalLines.set(0);
@@ -294,9 +303,11 @@ public class Word2Vec extends WordVectorsImpl {
                 continue;
             // The subsampling randomly discards frequent words while keeping the ranking same
             if (sample > 0) {
-                double numDocs =  vectorizer.index().numDocuments();
-                double ran = (Math.sqrt(word.getWordFrequency() / (sample * numDocs)) + 1)
-                        * (sample * numDocs) / word.getWordFrequency();
+                double numWords =  vocab.totalWordOccurrences();
+                double ran = (Math.sqrt(word.getWordFrequency() / (sample * numWords)) + 1)
+                        * (sample * numWords) / word.getWordFrequency();
+
+                nextRandom.set(nextRandom.get() * 25214903917L + 11 );
 
                 if (ran < (nextRandom.get() & 0xFFFF) / (double) 65536) {
                     continue;
@@ -484,7 +495,7 @@ public class Word2Vec extends WordVectorsImpl {
         protected TextVectorizer textVectorizer;
         protected double minLearningRate = 1e-2;
         protected double negative = 0;
-        protected double sampling = 1e-5;
+        protected double sampling = 0;
         protected int workers = Runtime.getRuntime().availableProcessors();
         protected InvertedIndex index;
         protected WeightLookupTable lookupTable;
@@ -792,13 +803,14 @@ public class Word2Vec extends WordVectorsImpl {
         private final int limitUpper = 10000;
         private final int limitLower = 5000;
         private AtomicBoolean isRunning = new AtomicBoolean(false);
+        private AtomicLong nextRandom;
 
         public AsyncIteratorDigitizer(SentenceIterator iterator, LinkedBlockingQueue<List<VocabWord>> buffer, AtomicLong linesCounter) {
             this.iterator = iterator;
             this.buffer = buffer;
             this.linesCounter = linesCounter;
             this.setName("AsyncIteratorReader thread");
-
+            this.nextRandom = new AtomicLong(workers + 1);
             this.iterator.reset();
         }
 
@@ -817,7 +829,7 @@ public class Word2Vec extends WordVectorsImpl {
                         List<String> tokens = tokenizer.getTokens();
 
                         // convert text sentence to list of word IDs from vocab
-                        List<VocabWord> list = Word2Vec.this.digitizeSentence(tokens);
+                        List<VocabWord> list = Word2Vec.this.digitizeSentence(tokens, nextRandom);
                         if (list != null && !list.isEmpty()) {
                             buffer.add(list);
                         }
@@ -865,6 +877,7 @@ public class Word2Vec extends WordVectorsImpl {
         private final AtomicLong totalLines;
         private final LinkedBlockingQueue<List<VocabWord>> sentences;
         private final AsyncIteratorDigitizer digitizer;
+        private final AtomicLong nextRandom;
 
         /*
                 Long constructors suck, so this should be reduced to something reasonable later
@@ -878,12 +891,12 @@ public class Word2Vec extends WordVectorsImpl {
             this.totalLines = linesCounter;
             this.sentences = buffer;
             this.digitizer = digitizer;
+            this.nextRandom = new AtomicLong(this.threadId);
             this.setName("VectorCalculationsThread " + this.threadId);
         }
 
         @Override
         public void run() {
-            final AtomicLong nextRandom = new AtomicLong(5);
             while ( digitizer.hasMoreLines() || sentences.size() > 0) {
                 try {
                     // get current sentence as list of VocabularyWords
@@ -894,7 +907,6 @@ public class Word2Vec extends WordVectorsImpl {
                     double alpha = 0.025;
 
                     if (sentence == null || sentence.isEmpty()) {
-                        log.warn("sentence is null");
                         continue;
                     }
 
