@@ -447,6 +447,13 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
     public double getNumRowCounter() {return (double) numRowCounter;}
 
     public String getClassLabel(Integer clazz) { return labelsMap.get(clazz);}
-
+    
+    /**
+     * Returns the confusion matrix variable
+     * @return confusion matrix variable for this evaluation
+     */
+    public ConfusionMatrix<Integer> getConfusionMatrix(){
+        return confusion;
+    }
 
 }
