@@ -52,6 +52,10 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 	private List<Integer> points = new ArrayList<>();
     private int codeLength = 0;
 
+    /*
+        Used for Joint/Distributed vocabs mechanics
+     */
+	@Getter @Setter protected Long vocabId;
 
 	public static VocabWord none() {
 		return new VocabWord(0,"none");

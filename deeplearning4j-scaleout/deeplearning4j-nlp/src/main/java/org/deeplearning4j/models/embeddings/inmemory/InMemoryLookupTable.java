@@ -19,6 +19,8 @@
 package org.deeplearning4j.models.embeddings.inmemory;
 
 import com.google.common.util.concurrent.AtomicDouble;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -59,6 +61,7 @@ public class InMemoryLookupTable implements WeightLookupTable {
     protected VocabCache vocab;
     protected Map<Integer,INDArray> codes = new ConcurrentHashMap<>();
 
+    @Getter @Setter protected Long tableId;
 
     public InMemoryLookupTable() {}
 
