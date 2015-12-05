@@ -511,11 +511,9 @@ public class WordVectorsImpl implements WordVectors {
         if(word.equals(word2))
             return 1.0;
 
-        INDArray vector = Transforms.unitVec(getWordVectorMatrix(word));
-        INDArray vector2 = Transforms.unitVec(getWordVectorMatrix(word2));
-        if(vector == null || vector2 == null)
+        if(getWordVectorMatrix(word) == null || getWordVectorMatrix(word2) == null)
             return -1;
-        return  Nd4j.getBlasWrapper().dot(vector, vector2);
+        return  Transforms.cosineSim(getWordVectorMatrix(word), getWordVectorMatrix(word2));
     }
 
     @Override

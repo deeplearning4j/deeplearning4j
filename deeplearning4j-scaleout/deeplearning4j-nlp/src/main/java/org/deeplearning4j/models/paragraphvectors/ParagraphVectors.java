@@ -139,7 +139,6 @@ public class ParagraphVectors extends Word2Vec {
 
         int epoch = 1;
         while (epoch <= epochs) {
-            final AtomicLong nextRandom = new AtomicLong(5);
             final AtomicLong wordsCount = new AtomicLong(0);
             LabelledAsyncIteratorDigitizer roller = new LabelledAsyncIteratorDigitizer(labelAwareIterator);
             roller.start();
@@ -148,7 +147,7 @@ public class ParagraphVectors extends Word2Vec {
             final VectorCalculationsThread[] threads = new VectorCalculationsThread[workers];
             // start processing threads
             for (int x = 0; x < workers; x++) {
-                threads[x] = new VectorCalculationsThread(epoch, roller, nextRandom, documentCount, wordsCount);
+                threads[x] = new VectorCalculationsThread(x, epoch, roller, documentCount, wordsCount);
                 threads[x].start();
             }
 
@@ -446,33 +445,6 @@ public class ParagraphVectors extends Word2Vec {
     }
 
     /*
-            TODO: this method should be flattened down and merged into VectorCalculationsThread
-            since all it does, is subsampling handling.
-            TODO: check rng math here, it could work not as intended
-     */
-    protected void addWords(List<VocabWord> sentence,AtomicLong nextRandom,List<VocabWord> currMiniBatch) {
-        for (VocabWord word : sentence) {
-            if(word == null)
-                continue;
-            // The subsampling randomly discards frequent words while keeping the ranking same
-            if (sample > 0) {
-                double numDocs = labelsSource.getNumberOfLabelsUsed(); //vectorizer.index().numDocuments();
-                double ran = (Math.sqrt(word.getWordFrequency() / (sample * numDocs)) + 1)
-                        * (sample * numDocs) / word.getWordFrequency();
-
-                if (ran < (nextRandom.get() & 0xFFFF) / (double) 65536) {
-                    log.info("Skipping word: [" + ran + "], threshold:  [" +((nextRandom.get() & 0xFFFF) / (double) 65536 ) + "]");
-                    continue;
-                }
-
-                currMiniBatch.add(word);
-            }
-            else
-                currMiniBatch.add(word);
-        }
-    }
-
-    /*
             This method is marked as @Deprecated, since it's not used anymore: calculations were moved into VectorCalculationsThread
      */
     @Deprecated
@@ -507,9 +479,11 @@ public class ParagraphVectors extends Word2Vec {
         private LabelAwareIterator backendIterator;
         private LinkedBlockingQueue<LabelledDocument> buffer = new LinkedBlockingQueue<>();
         private AtomicBoolean isRunning = new AtomicBoolean(false);
+        private AtomicLong nextRandom;
 
         public LabelledAsyncIteratorDigitizer(LabelAwareIterator iterator) {
             this.backendIterator = iterator;
+            this.nextRandom = new AtomicLong(workers + 1);
 
             this.backendIterator.reset();
         }
@@ -526,7 +500,7 @@ public class ParagraphVectors extends Word2Vec {
                         Tokenizer tokenizer = tokenizerFactory.create(document.getContent());
                         List<String> tokens = tokenizer.getTokens();
 
-                        List<VocabWord> words =  ParagraphVectors.this.digitizeSentence(tokens);
+                        List<VocabWord> words =  ParagraphVectors.this.digitizeSentence(tokens, nextRandom);
 
                         document.setReferencedContent(words);
 
@@ -543,7 +517,7 @@ public class ParagraphVectors extends Word2Vec {
                 }
             }
             isRunning.set(false);
-            log.info("AsyncIterator finished");
+            log.debug("AsyncIterator finished");
         }
 
         public boolean hasMoreDocuments() {
@@ -1041,14 +1015,14 @@ public class ParagraphVectors extends Word2Vec {
         private AtomicLong documentCounter;
         private AtomicLong numWordsSoFar;
 
-        public VectorCalculationsThread(int epochId, @NonNull LabelledAsyncIteratorDigitizer roller, AtomicLong random, AtomicLong documentCounter, AtomicLong wordsCounter) {
+        public VectorCalculationsThread(int threadId, int epochId, @NonNull LabelledAsyncIteratorDigitizer roller, AtomicLong documentCounter, AtomicLong wordsCounter) {
             this.roller = roller;
             this.epoch = epochId;
-            this.nextRandom = random;
+            this.nextRandom = new AtomicLong(threadId);
             this.documentCounter = documentCounter;
             this.numWordsSoFar = wordsCounter;
 
-            this.setName("ParaVec calculations thread. Epoch id: " + epoch);
+            this.setName("ParaVec calculations thread. Thread id: " + threadId);
         }
 
         @Override
