@@ -12,7 +12,9 @@ import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.RecursiveTask;
 
-/** Parallel Col2Im implementation
+/**
+ *
+ * Parallel Col2Im implementation
  * @author Alex Black
  */
 public class CPUCol2ImTask extends RecursiveTask<INDArray> implements Task<INDArray> {

@@ -110,7 +110,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             }
         }
         else {
-            wrappedBuffer =  ByteBuffer.allocateDirect(4 * data.length);
+            wrappedBuffer =  ByteBuffer.allocateDirect(8 * data.length);
             wrappedBuffer.order(ByteOrder.nativeOrder());
             DoubleBuffer buffer = wrappedBuffer.asDoubleBuffer();
             for(int i = 0; i < data.length; i++) {
@@ -750,7 +750,13 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public ByteBuf asNetty() {
+        if(wrappedBuffer != null)
         return Unpooled.wrappedBuffer(wrappedBuffer);
+        else if(floatData != null)
+            return Unpooled.copyFloat(floatData);
+        else if(doubleData != null)
+            return Unpooled.copyDouble(doubleData);
+        throw new IllegalStateException("No data source defined");
     }
 
     @Override
