@@ -42,6 +42,14 @@ public interface WeightLookupTable extends Serializable {
     Long getTableId();
 
     /**
+     * Set's table Id.
+     * Please note, it should be unique withing Joint/Distributed LookupTable
+     *
+     * @param tableId
+     */
+    void setTableId(Long tableId);
+
+    /**
      * The layer size for the lookup table
      * @return the layer size for the lookup table
      */

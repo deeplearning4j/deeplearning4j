@@ -3,6 +3,7 @@ package org.deeplearning4j.models.embeddings.inmemory;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import org.apache.commons.lang.math.RandomUtils;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
@@ -30,6 +31,7 @@ public class JointLookupTable implements WeightLookupTable {
     public static class Builder {
         private Map<Long, WeightLookupTable> mapTables = new ConcurrentHashMap<>();
         private Map<Long, VocabCache> mapVocabs = new ConcurrentHashMap<>();
+        private int layerSize;
 
         public Builder() {
 
@@ -46,11 +48,21 @@ public class JointLookupTable implements WeightLookupTable {
             /*
                 we should assume, that each word in VocabCache is tagged with pair Vocab/Table ID
             */
+            if (lookupTable.getTableId() == null || lookupTable.getTableId().longValue() == 0)
+                lookupTable.setTableId(RandomUtils.nextLong());
 
             for (VocabWord word: cache.vocabWords()) {
                 // each word should be tagged here
+                word.setVocabId(lookupTable.getTableId());
             }
 
+            mapTables.put(lookupTable.getTableId(), lookupTable);
+            mapVocabs.put(lookupTable.getTableId(), cache);
+            return this;
+        }
+
+        public Builder layerSize(int layerSize) {
+            this.layerSize = layerSize;
             return this;
         }
 
