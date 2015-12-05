@@ -62,8 +62,8 @@ public class Word2VecTests {
 
     @Before
     public void before() throws Exception {
-       // File googleModelTextFile = new ClassPathResource("word2vecserialization/google_news_30.txt").getFile();
-       // googleModel = WordVectorSerializer.loadGoogleModel(googleModelTextFile, false);
+        File googleModelTextFile = new ClassPathResource("word2vecserialization/google_news_30.txt").getFile();
+        googleModel = WordVectorSerializer.loadGoogleModel(googleModelTextFile, false);
         inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
         pathToWriteto = "testing_word2vec_serialization.txt";
         FileUtils.deleteDirectory(new File("word2vec-index"));
@@ -146,16 +146,24 @@ public class Word2VecTests {
         new File("cache.ser").delete();
     }
 
+    /**
+     * Adding test for cosine similarity, to track changes in Transforms.cosineSim()
+     */
     @Test
     public void testCosineSim() {
         double[] array1 = new double[]{1.01, 0.91, 0.81, 0.71};
         double[] array2 = new double[]{1.01, 0.91, 0.81, 0.71};
         double[] array3 = new double[]{1.0, 0.9, 0.8, 0.7};
 
-        log.info("Arrays 1/2 cosineSim: " + Transforms.cosineSim(Nd4j.create(array1), Nd4j.create(array2)));
-        log.info("Arrays 2/3 cosineSim: " + Transforms.cosineSim(Nd4j.create(array2), Nd4j.create(array3)));
+        double sim12 = Transforms.cosineSim(Nd4j.create(array1), Nd4j.create(array2));
+        double sim23 = Transforms.cosineSim(Nd4j.create(array2), Nd4j.create(array3));
+        log.info("Arrays 1/2 cosineSim: " + sim12);
+        log.info("Arrays 2/3 cosineSim: " + sim23);
         log.info("Arrays 1/2 dot: " + Nd4j.getBlasWrapper().dot(Nd4j.create(array1), Nd4j.create(array2)));
         log.info("Arrays 2/3 dot: " + Nd4j.getBlasWrapper().dot(Nd4j.create(array2), Nd4j.create(array3)));
+
+        assertEquals(1.0d, sim12, 0.01d);
+        assertEquals(0.99d, sim23, 0.01d);
     }
 
     @Test
