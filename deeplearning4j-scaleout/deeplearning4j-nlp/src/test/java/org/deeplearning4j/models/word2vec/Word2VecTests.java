@@ -32,6 +32,8 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFac
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -60,8 +62,8 @@ public class Word2VecTests {
 
     @Before
     public void before() throws Exception {
-        File googleModelTextFile = new ClassPathResource("word2vecserialization/google_news_30.txt").getFile();
-        googleModel = WordVectorSerializer.loadGoogleModel(googleModelTextFile, false);
+       // File googleModelTextFile = new ClassPathResource("word2vecserialization/google_news_30.txt").getFile();
+       // googleModel = WordVectorSerializer.loadGoogleModel(googleModelTextFile, false);
         inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
         pathToWriteto = "testing_word2vec_serialization.txt";
         FileUtils.deleteDirectory(new File("word2vec-index"));
@@ -119,6 +121,7 @@ public class Word2VecTests {
                 .layerSize(100).lookupTable(table)
                 .stopWords(new ArrayList<String>())
                 .vocabCache(cache).seed(42)
+                .sampling(0)
                 .windowSize(5).iterate(iter).tokenizerFactory(t).build();
 
         assertEquals(new ArrayList<String>(), vec.getStopWords());
@@ -126,7 +129,12 @@ public class Word2VecTests {
         WordVectorSerializer.writeWordVectors(vec, pathToWriteto);
         Collection<String> lst = vec.wordsNearest("day", 10);
         log.info(Arrays.toString(lst.toArray()));
-        log.info("Day/night similarity: " + vec.similarity("day", "night"));
+
+        double sim = vec.similarity("day", "night");
+        log.info("Day/night similarity: " + sim);
+
+        assertTrue(sim < 1.0);
+        assertTrue(sim > 0.6);
 
 
         assertTrue(lst.contains("week"));
@@ -136,6 +144,18 @@ public class Word2VecTests {
         assertFalse(lst.contains(null));
 
         new File("cache.ser").delete();
+    }
+
+    @Test
+    public void testCosineSim() {
+        double[] array1 = new double[]{1.01, 0.91, 0.81, 0.71};
+        double[] array2 = new double[]{1.01, 0.91, 0.81, 0.71};
+        double[] array3 = new double[]{1.0, 0.9, 0.8, 0.7};
+
+        log.info("Arrays 1/2 cosineSim: " + Transforms.cosineSim(Nd4j.create(array1), Nd4j.create(array2)));
+        log.info("Arrays 2/3 cosineSim: " + Transforms.cosineSim(Nd4j.create(array2), Nd4j.create(array3)));
+        log.info("Arrays 1/2 dot: " + Nd4j.getBlasWrapper().dot(Nd4j.create(array1), Nd4j.create(array2)));
+        log.info("Arrays 2/3 dot: " + Nd4j.getBlasWrapper().dot(Nd4j.create(array2), Nd4j.create(array3)));
     }
 
     @Test
@@ -151,3 +171,4 @@ public class Word2VecTests {
 
 //
 }
+

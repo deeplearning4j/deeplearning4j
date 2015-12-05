@@ -31,7 +31,7 @@ public class Word2VecConfiguration implements Serializable {
     private int window = 5;
     private long seed;
     private double negative = 0.0d;
-    private double sampling;
+    private double sampling = 0.0d;
     private int learningRateDecayWords;
 
     private boolean hugeModelExpected;
