@@ -17,6 +17,7 @@ layout: default
 * [Machine Learning and Probabilistic Graphical Models](http://www.cedar.buffalo.edu/~srihari/CSE574/index.html)
 * [Bhiksha Raj's "Deep Learning" @CMU](https://www.cs.cmu.edu/~bhiksha/courses/deeplearning/Fall.2015/)
 * [Sebastian Thrun's "Artificial Intelligence and Robotics"](https://www.udacity.com/course/artificial-intelligence-for-robotics--cs373)
+* [Caltech's Learning From Data ML Course](https://work.caltech.edu/telecourse.html)
 
 ## Deep- and Machine-Learning Fora
 
