@@ -110,7 +110,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             }
         }
         else {
-            wrappedBuffer =  ByteBuffer.allocateDirect(4 * data.length);
+            wrappedBuffer =  ByteBuffer.allocateDirect(8 * data.length);
             wrappedBuffer.order(ByteOrder.nativeOrder());
             DoubleBuffer buffer = wrappedBuffer.asDoubleBuffer();
             for(int i = 0; i < data.length; i++) {
