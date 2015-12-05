@@ -5,6 +5,9 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.parallel.tasks.Task;
 
+import java.nio.ByteBuffer;
+import java.nio.DoubleBuffer;
+import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -172,33 +175,37 @@ public class CPUAccumulationTask extends BaseCPUAccumulationTask {
                 }
             } else {
                 //Direct allocation (FloatBuffer / DoubleBuffer backed by a Netty ByteBuf)
-                ByteBuf nbbx = x.asNetty();
-                ByteBuf nbby = y.asNetty();
+                ByteBuffer nbbx = x.asNio();
+                ByteBuffer nbby = y.asNio();
                 if (x.dataType() == DataBuffer.Type.FLOAT) {
-                    int byteOffsetX = 4 * offsetX;
-                    int byteOffsetY = 4 * offsetY;
+                    int byteOffsetX = offsetX;
+                    int byteOffsetY =  offsetY;
+                    FloatBuffer floatBufferX = nbbx.asFloatBuffer();
+                    FloatBuffer floatBufferY = nbby.asFloatBuffer();
                     float accum = op.zeroFloat();
                     if (incrX == 1 && incrY == 1) {
-                        for (int i = 0; i < 4 * n; i += 4) {
-                            accum = op.update(accum, op.op(nbbx.getFloat(byteOffsetX + i), nbby.getFloat(byteOffsetY + i)));
+                        for (int i = 0; i < 4 * n; i++) {
+                            accum = op.update(accum, op.op(floatBufferX.get(byteOffsetX + i), floatBufferY.get(byteOffsetY + i)));
                         }
                     } else {
-                        for (int i = 0; i < 4 * n; i += 4) {
-                            accum = op.update(accum, op.op(nbbx.getFloat(byteOffsetX + i * incrX), nbby.getFloat(byteOffsetY + i * incrY)));
+                        for (int i = 0; i < 4 * n; i ++) {
+                            accum = op.update(accum, op.op(floatBufferX.get(byteOffsetX + i * incrX), floatBufferY.get(byteOffsetY + i * incrY)));
                         }
                     }
                     return (double) accum;
                 } else {
-                    int byteOffsetX = 8 * offsetX;
-                    int byteOffsetY = 8 * offsetY;
+                    int byteOffsetX = offsetX;
+                    int byteOffsetY = offsetY;
+                    DoubleBuffer doubleBufferX = nbbx.asDoubleBuffer();
+                    DoubleBuffer doubleBufferY = nbby.asDoubleBuffer();
                     double accum = op.zeroDouble();
                     if (incrX == 1 && incrY == 1) {
-                        for (int i = 0; i < 8 * n; i += 8) {
-                            accum = op.update(accum, op.op(nbbx.getDouble(byteOffsetX + i), nbby.getDouble(byteOffsetY + i)));
+                        for (int i = 0; i < 8 * n; i ++) {
+                            accum = op.update(accum, op.op(doubleBufferX.get(byteOffsetX + i), doubleBufferY.get(byteOffsetY + i)));
                         }
                     } else {
-                        for (int i = 0; i < 8 * n; i += 8) {
-                            accum = op.update(accum, op.op(nbbx.getDouble(byteOffsetX + i * incrX), nbby.getDouble(byteOffsetY + i * incrY)));
+                        for (int i = 0; i < 8 * n; i ++) {
+                            accum = op.update(accum, op.op(doubleBufferX.get(byteOffsetX + i * incrX), doubleBufferY.get(byteOffsetY + i * incrY)));
                         }
                     }
                     return accum;
@@ -236,30 +243,32 @@ public class CPUAccumulationTask extends BaseCPUAccumulationTask {
                 }
             } else {
                 //Direct allocation (FloatBuffer / DoubleBuffer backed by a Netty ByteBuf)
-                ByteBuf nbbx = x.asNetty();
+                ByteBuffer nbbx = x.asNio();
                 if (x.dataType() == DataBuffer.Type.FLOAT) {
-                    int byteOffsetX = 4 * offsetX;
+                    int byteOffsetX = offsetX;
                     float accum = op.zeroFloat();
+                    FloatBuffer floatBuffer = nbbx.asFloatBuffer();
                     if (incrX == 1) {
-                        for (int i = 0; i < 4 * n; i += 4) {
-                            accum = op.update(accum, op.op(nbbx.getFloat(byteOffsetX + i)));
+                        for (int i = 0; i < n; i ++) {
+                            accum = op.update(accum, op.op(floatBuffer.get(byteOffsetX + i)));
                         }
                     } else {
-                        for (int i = 0; i < 4 * n; i += 4) {
-                            accum = op.update(accum, op.op(nbbx.getFloat(byteOffsetX + i * incrX)));
+                        for (int i = 0; i < n; i ++) {
+                            accum = op.update(accum, op.op(floatBuffer.get(byteOffsetX + i * incrX)));
                         }
                     }
                     return (double) accum;
                 } else {
-                    int byteOffsetX = 8 * offsetX;
+                    int byteOffsetX = offsetX;
+                    DoubleBuffer doubleBufferX = nbbx.asDoubleBuffer();
                     double accum = op.zeroDouble();
                     if (incrX == 1) {
-                        for (int i = 0; i < 8 * n; i += 8) {
-                            accum = op.update(accum, op.op(nbbx.getDouble(byteOffsetX + i)));
+                        for (int i = 0; i < n; i++) {
+                            accum = op.update(accum, op.op(doubleBufferX.get(byteOffsetX + i)));
                         }
                     } else {
-                        for (int i = 0; i < 8 * n; i += 8) {
-                            accum = op.update(accum, op.op(nbbx.getDouble(byteOffsetX + i * incrX)));
+                        for (int i = 0; i < n; i ++) {
+                            accum = op.update(accum, op.op(doubleBufferX.get(byteOffsetX + i * incrX)));
                         }
                     }
                     return accum;
