@@ -75,32 +75,20 @@ public class Mean extends Sum {
             return new Mean(x.tensorAlongDimension(index, dimension));
     }
 
+
+
     @Override
     public double getAndSetFinalResult(double accum) {
-        if(applyFinalTransform) {
-            double d = accum / n();
-            this.finalResult = d;
-            return d;
-
-        }
-        else {
-            this.finalResult = accum;
-            return accum;
-        }
+        double d = accum / n();
+        this.finalResult = d;
+        return d;
     }
 
     @Override
-    public float getAndSetFinalResult(float accum) {
-        if(applyFinalTransform) {
-            float d = accum / n();
-            this.finalResult = d;
-            return d;
-
-        }
-        else {
-            this.finalResult = accum;
-            return accum;
-        }
+    public float getAndSetFinalResult(float accum){
+        float f = accum / n();
+        this.finalResult = f;
+        return f;
     }
 
     @Override

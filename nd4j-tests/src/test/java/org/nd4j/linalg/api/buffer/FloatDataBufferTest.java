@@ -27,7 +27,7 @@ import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.org.nd4j.linalg.util.SerializationUtils;
+import org.nd4j.linalg.util.SerializationUtils;
 
 import java.io.*;
 import java.nio.ByteBuffer;

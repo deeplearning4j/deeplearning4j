@@ -9,12 +9,10 @@ import org.nd4j.linalg.jcublas.buffer.DevicePointerInfo;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.context.CudaContext;
-import org.nd4j.linalg.jcublas.util.PointerUtil;
-import org.nd4j.org.nd4j.linalg.util.NioUtil;
+import org.nd4j.linalg.util.NioUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.IntBuffer;
 
 
 /**

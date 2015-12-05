@@ -196,7 +196,7 @@ public class CPUTaskFactory implements TaskFactory {
                         ", z.shape=" + Arrays.toString(z.shape()));
             }
         } else {
-            if(x==z){
+            if(x == z) {
                 if(!Arrays.equals(x.shape(), y.shape())){
                     throw new IllegalArgumentException("Shapes do not match: x.shape="+Arrays.toString(x.shape()) +
                             ", y.shape="+Arrays.toString(y.shape()));

@@ -87,7 +87,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
     public void testEuclideanDistance() {
         INDArray arr = Nd4j.create(new double[]{55,55});
         INDArray arr2 = Nd4j.create(new double[]{60, 60});
-        double result = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(arr,arr2)).currentResult().doubleValue();
+        double result = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(arr,arr2)).getFinalResult().doubleValue();
         assertEquals(getFailureMessage(), 7.0710678118654755, result, 1e-1);
     }
 

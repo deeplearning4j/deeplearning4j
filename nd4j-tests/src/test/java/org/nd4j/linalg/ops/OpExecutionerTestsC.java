@@ -95,6 +95,14 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         assertEquals(assertion, transformed);
     }
 
+    @Test
+    public void testNorm1AlongDimension() {
+        INDArray arr = Nd4j.linspace(1,8,8).reshape(2,4);
+        INDArray arrNorm1 = arr.norm2(1);
+        INDArray assertion = Nd4j.create(new double[]{5.47722558,  13.19090596});
+        assertEquals(assertion,arrNorm1);
+    }
+
 
 
 

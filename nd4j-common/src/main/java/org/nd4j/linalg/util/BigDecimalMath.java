@@ -17,7 +17,7 @@
  *
  */
 
-package org.nd4j.org.nd4j.linalg.util;
+package org.nd4j.linalg.util;
 // Code 
 
 import org.apache.commons.math3.util.FastMath;

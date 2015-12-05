@@ -1,7 +1,7 @@
 package org.nd4j.linalg.util;
 
 import org.junit.Test;
-import org.nd4j.org.nd4j.linalg.util.NioUtil;
+import org.nd4j.linalg.util.NioUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.DoubleBuffer;

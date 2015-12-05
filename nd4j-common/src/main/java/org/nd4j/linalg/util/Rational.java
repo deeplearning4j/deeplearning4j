@@ -17,7 +17,7 @@
  *
  */
 
-package org.nd4j.org.nd4j.linalg.util;
+package org.nd4j.linalg.util;
 /*
  * To change this template, choose Tools | Templates
  * and open the template in the editor.

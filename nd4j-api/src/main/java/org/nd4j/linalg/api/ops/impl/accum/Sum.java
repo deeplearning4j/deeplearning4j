@@ -51,23 +51,23 @@ public class Sum extends BaseAccumulation {
     }
 
     @Override
-    public double update(double accum, double x){
-        return accum+x;
+    public double update(double accum, double x) {
+        return accum + x;
     }
 
     @Override
     public double update(double accum, double x, double y){
-        return accum+x;
+        return accum + x;
     }
 
     @Override
     public float update(float accum, float x){
-        return accum+x;
+        return accum + x;
     }
 
     @Override
     public float update(float accum, float x, float y){
-        return accum+x;
+        return accum + x;
     }
 
     @Override

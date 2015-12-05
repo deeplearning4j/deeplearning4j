@@ -54,18 +54,18 @@ public class ManhattanDistance extends BaseAccumulation {
     }
 
     @Override
-    public double update(double accum, double x){
+    public double update(double accum, double x) {
         return accum;
     }
 
     @Override
     public double update(double accum, double x, double y){
-        return accum + FastMath.abs(x-y);
+        return accum + FastMath.abs(x - y);
     }
 
     @Override
     public float update(float accum, float x){
-        return accum;
+        return accum + x;
     }
 
     @Override
@@ -74,13 +74,13 @@ public class ManhattanDistance extends BaseAccumulation {
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, double x){
-        return accum;
+    public IComplexNumber update( IComplexNumber accum, double x) {
+        return accum.add(x);
     }
 
     @Override
     public IComplexNumber update( IComplexNumber accum, double x, double y){
-        return accum.add(FastMath.abs(x-y));
+        return accum.add(FastMath.abs(x - y));
     }
 
     @Override
@@ -129,24 +129,24 @@ public class ManhattanDistance extends BaseAccumulation {
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
         numProcessed++;
-        return origin.sub(other);
+        return ComplexUtil.abs(origin.sub(other));
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
         numProcessed++;
-        return origin.sub(other);
+        return ComplexUtil.abs(origin.sub(other));
     }
 
     @Override
     public float op(float origin, float other) {
-        return origin - other;
+        return FastMath.abs(origin - other);
     }
 
     @Override
     public double op(double origin, double other) {
         numProcessed++;
-        return origin - other;
+        return FastMath.abs(origin - other);
     }
 
     @Override

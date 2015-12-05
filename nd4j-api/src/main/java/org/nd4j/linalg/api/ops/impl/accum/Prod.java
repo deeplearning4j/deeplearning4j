@@ -50,24 +50,35 @@ public class Prod extends BaseAccumulation {
         super(x, y);
     }
 
+
     @Override
-    public double update(double accum, double x){
-        return accum*x;
+    public double op(double origin, double other) {
+        return origin * other;
     }
 
     @Override
-    public double update(double accum, double x, double y){
-        return accum*x;
+    public float op(float origin, float other) {
+        return origin * other;
+    }
+
+    @Override
+    public double update(double accum, double x){
+        return accum * x;
+    }
+
+    @Override
+    public double update(double accum, double x, double y) {
+        return accum * x;
     }
 
     @Override
     public float update(float accum, float x){
-        return accum*x;
+        return accum * x;
     }
 
     @Override
     public float update(float accum, float x, float y){
-        return accum*x;
+        return accum * x;
     }
 
     @Override

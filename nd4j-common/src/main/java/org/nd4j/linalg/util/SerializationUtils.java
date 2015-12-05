@@ -16,7 +16,7 @@
  *
  */
 
-package org.nd4j.org.nd4j.linalg.util;
+package org.nd4j.linalg.util;
 
 import org.apache.commons.io.FileUtils;
 

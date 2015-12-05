@@ -334,7 +334,7 @@ public class CPUTaskFactoryTest {
                         double out1 = task.invokeBlocking();
                         assertEquals(msg2, x1, origX);
                         assertEquals(msg2, y1, origY);
-                        assertEquals(expected, out1, eps);
+                        assertEquals(msg2,expected, out1, eps);
 
                         INDArray x2 = list1.get(i).getFirst().assign(origX);
                         INDArray y2 = list2.get(i).getFirst().assign(origY);
@@ -452,6 +452,15 @@ public class CPUTaskFactoryTest {
         Nd4j.alloc = origAlloc;
     }
 
+    @Test
+    public void testDimensionZero() {
+        INDArray arr = Nd4j.linspace(1,8,8).reshape(2,4);
+        INDArray norm1 = arr.norm2(0);
+        INDArray assertion = Nd4j.create(new double[]{5.09901951,  6.32455532,  7.61577311,  8.94427191});
+        assertEquals(assertion,norm1);
+
+    }
+
 
     @Test
     public void testOpExecutionerAccumulationOpsAlongDimensions() throws Exception {
@@ -481,7 +490,7 @@ public class CPUTaskFactoryTest {
 
         int[] shape = {30, 50};
 
-        for (DataBuffer.Type dtype : new DataBuffer.Type[]{DataBuffer.Type.DOUBLE, DataBuffer.Type.FLOAT} ) {
+        for (DataBuffer.Type dtype : new DataBuffer.Type[]{DataBuffer.Type.DOUBLE, DataBuffer.Type.FLOAT}) {
 
             Nd4j.dtype = dtype;
             Nd4j.factory().setDType(dtype);
@@ -518,7 +527,7 @@ public class CPUTaskFactoryTest {
                 DataBuffer.AllocationMode[] allocModes = new DataBuffer.AllocationMode[]{DataBuffer.AllocationMode.HEAP, DataBuffer.AllocationMode.HEAP,
                         DataBuffer.AllocationMode.DIRECT, DataBuffer.AllocationMode.DIRECT};
 
-                for (int t = 0; t < 4; t++) {
+                for (int t = 0; t < thresholds.length; t++) {
                     int threshold = thresholds[t];
                     DataBuffer.AllocationMode mode = allocModes[t];
                     taskFactory.setParallelThreshold(threshold);

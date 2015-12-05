@@ -82,48 +82,63 @@ public class Bias extends BaseAccumulation {
     }
 
     @Override
+    public IComplexNumber op(IComplexNumber origin) {
+        return origin.sub(mean);
+    }
+
+    @Override
+    public double op(double origin) {
+        return origin - mean;
+    }
+
+    @Override
+    public float op(float origin) {
+        return (float) (origin - mean);
+    }
+
+    @Override
     public double update(double accum, double x){
-        return accum + (x-mean);
+        return accum + x;
     }
 
     @Override
     public double update(double accum, double x, double y){
-        return accum + (x-mean);
+        return accum + x;
     }
 
     @Override
     public float update(float accum, float x){
-        return accum + (float)(x-mean);
+        return accum + x;
     }
 
     @Override
-    public float update(float accum, float x, float y){
-        return accum + (float)(x-mean);
+    public float update(float accum, float x, float y) {
+        return accum + x;
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, double x){
-        return accum.add(x-mean);
+    public IComplexNumber update( IComplexNumber accum, double x) {
+        return accum.add(x);
     }
 
     @Override
     public IComplexNumber update( IComplexNumber accum, double x, double y){
-        return accum.add(x-mean);
+        return accum.add(x);
     }
 
     @Override
     public IComplexNumber update( IComplexNumber accum, IComplexNumber x){
-        return accum.add(x.sub(mean));
+        return accum.add(x);
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, IComplexNumber x, IComplexNumber y){
-        return accum.add(x.sub(mean));
+    public IComplexNumber update( IComplexNumber accum, IComplexNumber x, IComplexNumber y) {
+        return accum.add(x);
     }
 
     @Override
     public IComplexNumber update(IComplexNumber accum, IComplexNumber x, double y) {
-        return accum.add(x.sub(mean));
+        return accum.add(x);
     }
 
     @Override

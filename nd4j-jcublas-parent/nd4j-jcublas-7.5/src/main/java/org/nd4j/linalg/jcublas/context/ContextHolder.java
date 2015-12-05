@@ -45,7 +45,7 @@ import org.nd4j.linalg.jcublas.context.pool.factory.StreamItemFactory;
 import org.nd4j.linalg.jcublas.device.conf.DeviceConfiguration;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
-import org.nd4j.org.nd4j.linalg.util.SynchronizedTable;
+import org.nd4j.linalg.util.SynchronizedTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.nd4j.linalg.io.ClassPathResource;

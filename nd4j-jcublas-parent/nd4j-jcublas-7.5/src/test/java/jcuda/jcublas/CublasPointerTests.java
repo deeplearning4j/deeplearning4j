@@ -28,7 +28,6 @@ import static org.junit.Assert.assertArrayEquals;
 import jcuda.Pointer;
 import jcuda.Sizeof;
 import jcuda.runtime.JCuda;
-import jcuda.utils.KernelLauncher;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -46,7 +45,7 @@ import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
 import org.nd4j.linalg.util.ComplexUtil;
 import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.org.nd4j.linalg.util.NioUtil;
+import org.nd4j.linalg.util.NioUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
