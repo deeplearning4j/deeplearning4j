@@ -33,6 +33,13 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public interface WeightLookupTable extends Serializable {
 
+    /**
+     * Returns unique ID of this table.
+     * Used for JointLookupTable/DistributedLookupTable mechanics
+     *
+     * @return ID of this table
+     */
+    Long getTableId();
 
     /**
      * The layer size for the lookup table
