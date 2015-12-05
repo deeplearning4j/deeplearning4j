@@ -2,6 +2,7 @@ package org.deeplearning4j.models.embeddings.inmemory;
 
 import lombok.NonNull;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
+import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 
 /**
  * This is going to be primitive implementation of joint WeightLookupTable, used for ParagraphVectors and Word2Vec joint training.
@@ -22,7 +23,7 @@ public class JointLookupTable {
 
         }
 
-        public Builder addWeightLookupTable(@NonNull WeightLookupTable lookupTable) {
+        public Builder addWeightLookupTable(@NonNull WeightLookupTable lookupTable, @NonNull VocabCache cache) {
 
             return this;
         }
