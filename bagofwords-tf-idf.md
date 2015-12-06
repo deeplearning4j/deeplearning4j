@@ -22,22 +22,22 @@ First, tf-idf measures the number of times that words appear in a given document
 Those marker words are then fed to the neural net as features in order to determine the topic covered by the document that contains them. 
 Setting up a BoW looks something like this: 
 
-   public class BagOfWordsVectorizer extends BaseTextVectorizer {
-    public BagOfWordsVectorizer(){}
-    protected BagOfWordsVectorizer(VocabCache cache,
-                                   TokenizerFactory tokenizerFactory,
-                                   List<String> stopWords,
-                                   int minWordFrequency,
-                                   DocumentIterator docIter,
-                                   SentenceIterator sentenceIterator,
-                                   List<String> labels,
-                                   InvertedIndex index,
-                                   int batchSize,
-                                   double sample,
-                                   boolean stem,
-                                   boolean cleanup) {
-        super(cache, tokenizerFactory, stopWords, minWordFrequency, docIter, sentenceIterator,
-            labels,index,batchSize,sample,stem,cleanup);
+    public class BagOfWordsVectorizer extends BaseTextVectorizer {
+      public BagOfWordsVectorizer(){}
+      protected BagOfWordsVectorizer(VocabCache cache,
+             TokenizerFactory tokenizerFactory,
+             List<String> stopWords,
+             int minWordFrequency,
+             DocumentIterator docIter,
+             SentenceIterator sentenceIterator,
+             List<String> labels,
+             InvertedIndex index,
+             int batchSize,
+             double sample,
+             boolean stem,
+             boolean cleanup) {
+          super(cache, tokenizerFactory, stopWords, minWordFrequency, docIter, sentenceIterator,
+              labels,index,batchSize,sample,stem,cleanup);
     }
 
 Click here to see [other BoW-based text-vectorization methods](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-scaleout/deeplearning4j-nlp/src/main/java/org/deeplearning4j/bagofwords/vectorizer/BagOfWordsVectorizer.java).
