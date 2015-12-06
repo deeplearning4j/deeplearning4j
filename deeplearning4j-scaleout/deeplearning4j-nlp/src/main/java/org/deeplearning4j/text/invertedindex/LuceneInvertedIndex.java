@@ -510,8 +510,8 @@ public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClo
         for (VocabWord word : words) {
             // The subsampling randomly discards frequent words while keeping the ranking same
             if (sample > 0) {
-                double ran = (Math.sqrt(word.getWordFrequency() / (sample * numDocuments())) + 1)
-                        * (sample * numDocuments()) / word.getWordFrequency();
+                double ran = (Math.sqrt(word.getElementFrequency() / (sample * numDocuments())) + 1)
+                        * (sample * numDocuments()) / word.getElementFrequency();
 
                 if (ran < (nextRandom.get() & 0xFFFF) / (double) 65536) {
                     continue;
