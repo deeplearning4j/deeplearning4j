@@ -294,12 +294,18 @@ public class WordVectorsImpl implements WordVectors {
     public Map<String,Double> accuracy(List<String> questions) {
         Map<String,Double> accuracy = new HashMap<>();
         Counter<String> right = new Counter<>();
+        String analogyType = "";
         for(String s : questions) {
             if(s.startsWith(":")) {
                 double correct = right.getCount("correct");
                 double wrong = right.getCount("wrong");
-                double accuracyRet = 100.0 * correct / (correct / wrong);
-                accuracy.put(s,accuracyRet);
+                if(analogyType.isEmpty()){
+                    analogyType=s;
+                    continue;
+                }
+                double accuracyRet = 100.0 * correct / (correct + wrong);
+                accuracy.put(analogyType,accuracyRet);
+                analogyType = s;
                 right.clear();
             }
             else {
@@ -316,7 +322,12 @@ public class WordVectorsImpl implements WordVectors {
 
             }
         }
-
+        if(!analogyType.isEmpty()){
+            double correct = right.getCount("correct");
+            double wrong = right.getCount("wrong");
+            double accuracyRet = 100.0 * correct / (correct + wrong);
+            accuracy.put(analogyType,accuracyRet);
+        }
         return accuracy;
     }
 
