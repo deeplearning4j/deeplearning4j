@@ -29,6 +29,7 @@ import org.apache.commons.compress.compressors.gzip.GzipUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
@@ -391,16 +392,16 @@ public class WordVectorSerializer {
             printWriter.println(builder.toString().trim());
         } else printWriter.println("");
 
-        List<VocabWord> words = new ArrayList<>(((InMemoryLookupCache) vocabCache).getVocabs().values());
-        for (VocabWord word: words) {
-            VocabularyWord vw = new VocabularyWord(word.getWord());
-            vw.setCount(vocabCache.wordFrequency(word.getWord()));
+        List<SequenceElement> words = new ArrayList<>(((InMemoryLookupCache) vocabCache).getVocabs().values());
+        for (SequenceElement word: words) {
+            VocabularyWord vw = new VocabularyWord(word.getLabel());
+            vw.setCount(vocabCache.wordFrequency(word.getLabel()));
 
             vw.setHuffmanNode(VocabularyHolder.buildNode(word.getCodes(), word.getPoints(), word.getCodeLength(), word.getIndex()));
 
 
             // writing down syn0
-            INDArray syn0 = ((InMemoryLookupTable) lookupTable).getSyn0().getRow(vocabCache.indexOf(word.getWord()));
+            INDArray syn0 = ((InMemoryLookupTable) lookupTable).getSyn0().getRow(vocabCache.indexOf(word.getLabel()));
             double[] dsyn0 = new double[syn0.columns()];
             for (int x =0; x < conf.getLayersSize(); x++) {
                 dsyn0[x] = syn0.getDouble(x);
@@ -408,7 +409,7 @@ public class WordVectorSerializer {
             vw.setSyn0(dsyn0);
 
             // writing down syn1
-            INDArray syn1 = ((InMemoryLookupTable) lookupTable).getSyn1().getRow(vocabCache.indexOf(word.getWord()));
+            INDArray syn1 = ((InMemoryLookupTable) lookupTable).getSyn1().getRow(vocabCache.indexOf(word.getLabel()));
             double[] dsyn1 = new double[syn1.columns()];
             for (int x =0; x < syn1.columns(); x++) {
                 dsyn1[x] = syn1.getDouble(x);
@@ -417,7 +418,7 @@ public class WordVectorSerializer {
 
             // writing down syn1Neg, if negative sampling is used
             if (conf.getNegative() > 0) {
-                INDArray syn1Neg = ((InMemoryLookupTable) lookupTable).getSyn1Neg().getRow(vocabCache.indexOf(word.getWord()));
+                INDArray syn1Neg = ((InMemoryLookupTable) lookupTable).getSyn1Neg().getRow(vocabCache.indexOf(word.getLabel()));
                 double[] dsyn1Neg = new double[syn1Neg.columns()];
                 for (int x = 0; x < syn1Neg.columns(); x++) {
                     dsyn1Neg[x] = syn1Neg.getDouble(x);

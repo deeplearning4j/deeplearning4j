@@ -177,7 +177,7 @@ public class Word2Vec extends WordVectorsImpl {
             if (stopWords != null && stopWords.contains(token)) continue;
             if (token == null || token.isEmpty()) continue;
 
-            VocabWord word = vocab.wordFor(token);
+            VocabWord word = (VocabWord) vocab.wordFor(token);
             if (word != null) result.add(word);
         }
         /*
