@@ -20,9 +20,26 @@ Before they're fed to the neural net, each vector of wordcounts is normalized su
 First, tf-idf measures the number of times that words appear in a given document (that's term frequency), but because words such as "and" or "the" appear frequently in all documents, those are systematically discounted. That's the inverse-document frequency part, which is intended to leave only the frequent AND distinctive words as markers. Tf-idf relevance is a normalized data format that also adds up to one. 
 
 Those marker words are then fed to the neural net as features in order to determine the topic covered by the document that contains them. 
-
 Setting up a BoW looks something like this: 
 
-<script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/text/EvalTweetOpinonMining.java?slice=31:47"></script>
+   public class BagOfWordsVectorizer extends BaseTextVectorizer {
+    public BagOfWordsVectorizer(){}
+    protected BagOfWordsVectorizer(VocabCache cache,
+                                   TokenizerFactory tokenizerFactory,
+                                   List<String> stopWords,
+                                   int minWordFrequency,
+                                   DocumentIterator docIter,
+                                   SentenceIterator sentenceIterator,
+                                   List<String> labels,
+                                   InvertedIndex index,
+                                   int batchSize,
+                                   double sample,
+                                   boolean stem,
+                                   boolean cleanup) {
+        super(cache, tokenizerFactory, stopWords, minWordFrequency, docIter, sentenceIterator,
+            labels,index,batchSize,sample,stem,cleanup);
+    }
+
+Click here to see [other BoW-based text-vectorization methods](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-scaleout/deeplearning4j-nlp/src/main/java/org/deeplearning4j/bagofwords/vectorizer/BagOfWordsVectorizer.java).
 
 BoW is different from [Word2vec](../word2vec.html), which we'll cover next. The main difference is that Word2vec produces one vector per word, whereas BoW produces one number (a wordcount). Word2vec is great for digging into documents and identifying content and subsets of content. Its vectors represent each word's context, the ngrams of which it is a part. BoW is good for classifying documents as a whole. 
