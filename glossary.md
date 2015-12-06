@@ -158,3 +158,7 @@ Two vectors can relate to one another mathematically, and similarities between t
 ![Alt text](../img/two_vectors2.png)
 
 As you can see, these vectors differ from one another in both their length, or magnitude, and in their angle, or direction. The angle is what concerns us here. 
+
+### <a name="xavier">Xavier Initialization</a>
+
+The Xavier initialization is based on the work of Xavier Glorot and Yoshua Bengio in their paper "[Understanding the difficulty of training deep feedforward neural networks](http://jmlr.org/proceedings/papers/v9/glorot10a/glorot10a.pdf)." 
