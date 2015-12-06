@@ -20,6 +20,7 @@ Before they're fed to the neural net, each vector of wordcounts is normalized su
 First, tf-idf measures the number of times that words appear in a given document (that's term frequency), but because words such as "and" or "the" appear frequently in all documents, those are systematically discounted. That's the inverse-document frequency part, which is intended to leave only the frequent AND distinctive words as markers. Tf-idf relevance is a normalized data format that also adds up to one. 
 
 Those marker words are then fed to the neural net as features in order to determine the topic covered by the document that contains them. 
+
 Setting up a BoW looks something like this: 
 
     public class BagOfWordsVectorizer extends BaseTextVectorizer {
