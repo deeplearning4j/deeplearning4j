@@ -20,6 +20,7 @@ package org.deeplearning4j.text.invertedindex;
 
 import com.google.common.base.Function;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.VocabWord;
 
 import java.io.Serializable;
@@ -39,13 +40,13 @@ public interface InvertedIndex extends Serializable {
      * Iterate over batches
      * @return the batch size
      */
-    Iterator<List<List<VocabWord>>> batchIter(int batchSize);
+    Iterator<List<List<SequenceElement>>> batchIter(int batchSize);
 
     /**
      * Iterate over documents
      * @return
      */
-    Iterator<List<VocabWord>> docs();
+    Iterator<List<SequenceElement>> docs();
 
     /**
      * Unlock the index
@@ -67,14 +68,14 @@ public interface InvertedIndex extends Serializable {
      * Iterates over mini batches
      * @return the mini batches created by this vectorizer
      */
-    Iterator<List<VocabWord>> miniBatches();
+    Iterator<List<SequenceElement>> miniBatches();
 
     /**
      * Returns a list of words for a document
      * @param index
      * @return
      */
-    List<VocabWord> document(int index);
+    List<SequenceElement> document(int index);
 
     /**
      * Returns a list of words for a document
@@ -82,7 +83,7 @@ public interface InvertedIndex extends Serializable {
      * @param index
      * @return
      */
-    Pair<List<VocabWord>,String> documentWithLabel(int index);
+    Pair<List<SequenceElement>,String> documentWithLabel(int index);
 
     /**
      * Returns a list of words associated with the document
@@ -90,14 +91,14 @@ public interface InvertedIndex extends Serializable {
      * @param index
      * @return
      */
-    Pair<List<VocabWord>, Collection<String>> documentWithLabels(int index);
+    Pair<List<SequenceElement>, Collection<String>> documentWithLabels(int index);
 
     /**
      * Returns the list of documents a vocab word is in
      * @param vocabWord the vocab word to get documents for
      * @return the documents for a vocab word
      */
-    int[] documents(VocabWord vocabWord);
+    int[] documents(SequenceElement vocabWord);
 
     /**
      * Returns the number of documents
@@ -118,7 +119,7 @@ public interface InvertedIndex extends Serializable {
      * @param doc the document to add to
      * @param word the word to add
      */
-    void addWordToDoc(int doc,VocabWord word);
+    void addWordToDoc(int doc,SequenceElement word);
 
 
     /**
@@ -126,7 +127,7 @@ public interface InvertedIndex extends Serializable {
      * @param doc the document to add to
      * @param words the words to add
      */
-    void addWordsToDoc(int doc,List<VocabWord> words);
+    void addWordsToDoc(int doc,List<SequenceElement> words);
 
 
 
@@ -135,7 +136,7 @@ public interface InvertedIndex extends Serializable {
      * @param doc the document to add to
      * @param word the word to add
      */
-    void addLabelForDoc(int doc,VocabWord word);
+    void addLabelForDoc(int doc,SequenceElement word);
 
 
     /**
@@ -154,7 +155,7 @@ public interface InvertedIndex extends Serializable {
      * @param words the words to add
      * @param label the label for the document
      */
-    void addWordsToDoc(int doc,List<VocabWord> words,String label);
+    void addWordsToDoc(int doc,List<SequenceElement> words,String label);
 
 
     /**
@@ -163,7 +164,7 @@ public interface InvertedIndex extends Serializable {
      * @param words the words to add
      * @param label the label for the document
      */
-    void addWordsToDoc(int doc,List<VocabWord> words,VocabWord label);
+    void addWordsToDoc(int doc,List<SequenceElement> words,SequenceElement label);
 
 
 
@@ -174,7 +175,7 @@ public interface InvertedIndex extends Serializable {
      * @param doc the document to add to
      * @param word the word to add
      */
-    void addLabelsForDoc(int doc,List<VocabWord> word);
+    void addLabelsForDoc(int doc,List<SequenceElement> word);
 
 
     /**
@@ -194,7 +195,7 @@ public interface InvertedIndex extends Serializable {
      * @param words the words to add
      * @param label the label for the document
      */
-    void addWordsToDoc(int doc,List<VocabWord> words,Collection<String> label);
+    void addWordsToDoc(int doc,List<SequenceElement> words,Collection<String> label);
 
 
     /**
@@ -203,7 +204,7 @@ public interface InvertedIndex extends Serializable {
      * @param words the words to add
      * @param label the label for the document
      */
-    void addWordsToDocVocabWord(int doc,List<VocabWord> words,Collection<VocabWord> label);
+    void addWordsToDocVocabWord(int doc,List<SequenceElement> words,Collection<SequenceElement> label);
 
 
 
@@ -232,7 +233,7 @@ public interface InvertedIndex extends Serializable {
      * @param func the function to apply
      * @param exec executor service for execution
      */
-    void eachDocWithLabels(Function<Pair<List<VocabWord>,Collection<String>>, Void> func, ExecutorService exec);
+    void eachDocWithLabels(Function<Pair<List<SequenceElement>,Collection<String>>, Void> func, ExecutorService exec);
 
 
     /**
@@ -240,12 +241,12 @@ public interface InvertedIndex extends Serializable {
      * @param func the function to apply
      * @param exec executor service for execution
      */
-    void eachDocWithLabel(Function<Pair<List<VocabWord>,String>, Void> func, ExecutorService exec);
+    void eachDocWithLabel(Function<Pair<List<SequenceElement>,String>, Void> func, ExecutorService exec);
 
     /**
      * Iterate over each document
      * @param func the function to apply
      * @param exec executor service for execution
      */
-    void eachDoc(Function<List<VocabWord>, Void> func, ExecutorService exec);
+    void eachDoc(Function<List<SequenceElement>, Void> func, ExecutorService exec);
 }
