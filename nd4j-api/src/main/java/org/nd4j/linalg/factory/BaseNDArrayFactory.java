@@ -22,6 +22,7 @@ package org.nd4j.linalg.factory;
 
 import java.util.*;
 
+import org.nd4j.linalg.api.blas.Lapack;
 import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.blas.Level2;
 import org.nd4j.linalg.api.blas.Level3;
@@ -53,8 +54,15 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     protected Level1 level1;
     protected Level2 level2;
     protected Level3 level3;
-
+    protected Lapack lapack;
     public BaseNDArrayFactory() {
+    }
+
+    @Override
+    public Lapack lapack() {
+        if(lapack == null)
+            createLapack();
+        return lapack;
     }
 
     @Override

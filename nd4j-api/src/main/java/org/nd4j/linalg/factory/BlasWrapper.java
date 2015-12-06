@@ -22,6 +22,7 @@
 
 package org.nd4j.linalg.factory;
 
+import org.nd4j.linalg.api.blas.Lapack;
 import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.blas.Level2;
 import org.nd4j.linalg.api.blas.Level3;
@@ -69,6 +70,13 @@ public interface BlasWrapper {
      * @return
      */
     Level3 level3();
+
+    /**
+     * LAPack interface
+     * @return
+     */
+    Lapack lapack();
+
 
     @Deprecated
     INDArray scal(double alpha, INDArray x);

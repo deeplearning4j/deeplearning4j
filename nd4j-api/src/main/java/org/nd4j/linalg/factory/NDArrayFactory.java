@@ -20,6 +20,7 @@
 package org.nd4j.linalg.factory;
 
 
+import org.nd4j.linalg.api.blas.Lapack;
 import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.blas.Level2;
 import org.nd4j.linalg.api.blas.Level3;
@@ -45,6 +46,8 @@ public interface NDArrayFactory {
 
     char FORTRAN = 'f';
     char C = 'c';
+
+    Lapack lapack();
 
     /**
      * Return the level 1 blas operations
@@ -76,6 +79,11 @@ public interface NDArrayFactory {
      * Create level 3
      */
     void createLevel3();
+
+    /**
+     * Create lapack
+     */
+    void createLapack();
 
     /**
      * Creates an 1 x num ndarray with the specified value

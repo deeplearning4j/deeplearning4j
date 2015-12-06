@@ -20,6 +20,7 @@
 package org.nd4j.linalg.cpu;
 
 import com.github.fommil.netlib.BLAS;
+import com.github.fommil.netlib.LAPACK;
 import org.nd4j.linalg.factory.BaseBlasWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
