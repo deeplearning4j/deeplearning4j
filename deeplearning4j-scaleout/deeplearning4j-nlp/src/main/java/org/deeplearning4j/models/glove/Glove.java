@@ -26,6 +26,7 @@ import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
 import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
@@ -179,8 +180,8 @@ public class Glove  extends WordVectorsImpl {
                 for (Pair<String, String> next : currentItem) {
                     String w1 = next.getFirst();
                     String w2 = next.getSecond();
-                    VocabWord vocabWord = vocab().wordFor(w1);
-                    VocabWord vocabWord1 = vocab().wordFor(w2);
+                    SequenceElement vocabWord = vocab().wordFor(w1);
+                    SequenceElement vocabWord1 = vocab().wordFor(w2);
                     send.add(new Pair<>(vocabWord, vocabWord1));
 
                 }

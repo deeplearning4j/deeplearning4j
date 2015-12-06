@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.models.word2vec;
 
+import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabularyWord;
 
 import java.util.*;
@@ -30,18 +31,18 @@ import java.util.*;
  */
 public class Huffman {
 
-    public Huffman(Collection<VocabWord> words) {
+    public Huffman(Collection<SequenceElement> words) {
         this.words = new ArrayList<>(words);
-        Collections.sort(this.words, new Comparator<VocabWord>() {
+        Collections.sort(this.words, new Comparator<SequenceElement>() {
             @Override
-            public int compare(VocabWord o1, VocabWord o2) {
-                return Double.compare(o2.getWordFrequency(), o1.getWordFrequency());
+            public int compare(SequenceElement o1, SequenceElement o2) {
+                return Double.compare(o2.getElementFrequency(), o1.getElementFrequency());
             }
 
         });
     }
 
-    private List<VocabWord> words;
+    private List<SequenceElement> words;
     public final static int MAX_CODE_LENGTH = 40;
     public void build() {
         long[] count = new long[words.size() * 2 + 1];
@@ -52,7 +53,7 @@ public class Huffman {
         int a = 0;
 
         while (a < words.size()) {
-            count[a] = (long) words.get(a).getWordFrequency();
+            count[a] = (long) words.get(a).getElementFrequency();
             a++;
         }
 

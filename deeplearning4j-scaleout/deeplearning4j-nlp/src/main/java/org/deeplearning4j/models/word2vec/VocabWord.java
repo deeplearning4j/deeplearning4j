@@ -21,6 +21,7 @@ package org.deeplearning4j.models.word2vec;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.math3.util.FastMath;
+import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -39,23 +40,11 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public  class VocabWord implements Comparable<VocabWord>,Serializable {
+public  class VocabWord extends SequenceElement implements Serializable {
 
 	private static final long serialVersionUID = 2223750736522624256L;
-	//used in comparison when building the huffman tree
-	private AtomicDouble wordFrequency = new AtomicDouble(0);
-	private int index = -1;
-	private List<Integer> codes = new ArrayList<>();
-	//for my sanity
-	private String word;
-	@Getter @Setter private INDArray historicalGradient;
-	private List<Integer> points = new ArrayList<>();
-    private int codeLength = 0;
-
-    /*
-        Used for Joint/Distributed vocabs mechanics
-     */
-	@Getter @Setter protected Long vocabId;
+    //for my sanity
+    private String word;
 
 	public static VocabWord none() {
 		return new VocabWord(0,"none");
@@ -67,7 +56,7 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 
 	 */
 	public VocabWord(double wordFrequency,String word) {
-		this.wordFrequency.set(wordFrequency);
+		this.elementFrequency.set(wordFrequency);
 		if(word == null || word.isEmpty())
 			throw new IllegalArgumentException("Word must not be null or empty");
 		this.word = word;
@@ -77,14 +66,18 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 
 	public VocabWord() {}
 
+	@Override
+    public String getLabel() {
+        return this.word;
+    }
 
 	public void write(DataOutputStream dos) throws IOException {
-		dos.writeDouble(wordFrequency.get());
+		dos.writeDouble(elementFrequency.get());
 
 	}
 
 	public VocabWord read(DataInputStream dos) throws IOException {
-		this.wordFrequency.set(dos.readDouble());
+		this.elementFrequency.set(dos.readDouble());
 		return this;
 	}
 
@@ -97,81 +90,7 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 	public void setWord(String word) {
 		this.word = word;
 	}
-	public void increment() {
-		increment(1);
-	}
 
-	public void increment(int by) {
-		wordFrequency.getAndAdd(by);
-	}
-
-
-	public int getIndex() {
-		return index;
-	}
-
-	public void setIndex(int index) {
-		this.index = index;
-	}
-
-	public double getWordFrequency() {
-		if(wordFrequency == null)
-            return 0.0;
-
-        return wordFrequency.get();
-	}
-
-    public List<Integer> getCodes() {
-        return codes;
-    }
-
-    public void setCodes(List<Integer> codes) {
-        this.codes = codes;
-    }
-
-    @Override
-	public int compareTo(VocabWord o) {
-		return Double.compare(wordFrequency.get(), o.wordFrequency.get());
-	}
-
-	public double getGradient(int index, double g) {
-		if(historicalGradient == null) {
-			historicalGradient = Nd4j.zeros(getCodes().size());
-		}
-
-		double pow =  Math.pow(g,2);
-		historicalGradient.putScalar(index, historicalGradient.getDouble(index) + pow);
-		double sqrt =  FastMath.sqrt(historicalGradient.getDouble(index));
-		double abs = FastMath.abs(g) / (sqrt + 1e-6f);
-		double ret = abs * 1e-1f;
-		return ret;
-
-	}
-
-    public List<Integer> getPoints() {
-        return points;
-    }
-
-    public void setPoints(List<Integer> points) {
-        this.points = points;
-    }
-
-    public int getCodeLength() {
-        return codeLength;
-    }
-
-    public void setCodeLength(int codeLength) {
-        this.codeLength = codeLength;
-        if(codes.size() < codeLength) {
-            for(int i = 0; i < codeLength; i++)
-                codes.add(0);
-        }
-
-        if(points.size() < codeLength) {
-            for(int i = 0; i < codeLength; i++)
-                points.add(0);
-        }
-    }
 
     @Override
     public boolean equals(Object o) {
@@ -186,13 +105,13 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
             return false;
         if (!points.equals(vocabWord.points)) return false;
         if (!word.equals(vocabWord.word)) return false;
-        return wordFrequency.get() == vocabWord.wordFrequency.get();
+        return elementFrequency.get() == vocabWord.elementFrequency.get();
 
     }
 
     @Override
     public int hashCode() {
-        int result = wordFrequency.hashCode();
+        int result = elementFrequency.hashCode();
         result = 31 * result + index;
         result = 31 * result + codes.hashCode();
         result = 31 * result + word.hashCode();
@@ -205,7 +124,7 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
     @Override
     public String toString() {
         return "VocabWord{" +
-                "wordFrequency=" + wordFrequency +
+                "wordFrequency=" + elementFrequency +
                 ", index=" + index +
                 ", codes=" + codes +
                 ", word='" + word + '\'' +

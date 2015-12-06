@@ -21,6 +21,7 @@ package org.deeplearning4j.models.embeddings.wordvectors;
 import com.google.common.collect.Lists;
 import lombok.Getter;
 import org.deeplearning4j.berkeley.Counter;
+import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -245,7 +246,7 @@ public class WordVectorsImpl implements WordVectors {
             INDArray[] sorted = Nd4j.sortWithIndices(distances,0,false);
             INDArray sort = sorted[0];
             List<String> ret = new ArrayList<>();
-            VocabWord word2 = vocab().wordFor(word);
+            SequenceElement word2 = vocab().wordFor(word);
             if(n > sort.length())
                 n = sort.length();
             //there will be a redundant word
