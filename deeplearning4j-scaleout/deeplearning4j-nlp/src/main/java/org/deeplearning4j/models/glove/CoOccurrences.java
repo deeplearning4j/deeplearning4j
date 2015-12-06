@@ -27,6 +27,7 @@ import org.apache.commons.io.LineIterator;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.CounterMap;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
 import org.deeplearning4j.models.glove.actor.CoOccurrenceActor;
 import org.deeplearning4j.models.glove.actor.SentenceWork;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -186,7 +187,7 @@ public class CoOccurrences implements Serializable {
         @Override
         public Pair<VocabWord, VocabWord> next() {
             Pair<String,String> next = iter.next();
-            Pair<VocabWord,VocabWord> ret = new Pair<>(cache.wordFor(next.getFirst()),cache.wordFor(next.getSecond()));
+            Pair<SequenceElement,SequenceElement> ret = new Pair<>(cache.wordFor(next.getFirst()),cache.wordFor(next.getSecond()));
             return ret;
         }
 

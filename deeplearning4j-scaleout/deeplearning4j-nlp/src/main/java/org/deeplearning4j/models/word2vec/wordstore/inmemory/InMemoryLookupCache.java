@@ -22,6 +22,7 @@ import lombok.Data;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.deeplearning4j.berkeley.Counter;
+import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
@@ -45,29 +46,29 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
     private Index wordIndex = new Index();
     public Counter<String> wordFrequencies = Util.parallelCounter();
     public Counter<String> docFrequencies = Util.parallelCounter();
-    public Map<String, VocabWord> vocabs = new ConcurrentHashMap<>();
-    public Map<String, VocabWord> tokens = new ConcurrentHashMap<>();
+    public Map<String, SequenceElement> vocabs = new ConcurrentHashMap<>();
+    public Map<String, SequenceElement> tokens = new ConcurrentHashMap<>();
     private AtomicLong totalWordOccurrences = new AtomicLong(0);
     private int numDocs = 0;
 
     public synchronized void setWordFrequencies(Counter <String> cnt) {
         this.wordFrequencies = cnt;
     }
-    public synchronized Map<String, VocabWord> getVocabs() {
+    public synchronized Map<String, SequenceElement> getVocabs() {
         return this.vocabs;
     }
 
-    public synchronized void setVocabs(Map<String, VocabWord> vocabs) {
+    public synchronized void setVocabs(Map<String, SequenceElement> vocabs) {
         this.vocabs = vocabs;
     }
     public synchronized Counter<String> getWordFrequencies() {
         return this.wordFrequencies;
     }
 
-    public synchronized void setTokens(Map<String, VocabWord> tokens) {
+    public synchronized void setTokens(Map<String, SequenceElement> tokens) {
         this.tokens = tokens;
     }
-    public synchronized Map<String, VocabWord> getTokens() {
+    public synchronized Map<String, SequenceElement> getTokens() {
         return this.tokens;
     }
 
@@ -120,8 +121,8 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
         wordFrequencies.incrementCount(word, increment);
 
         if(hasToken(word)) {
-            VocabWord token = tokenFor(word);
-            token.increment(increment);
+            SequenceElement token = tokenFor(word);
+            token.increaseElementFrequency(increment);
         }
         totalWordOccurrences.set(totalWordOccurrences.get() + increment);
     }
@@ -179,7 +180,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
      * @return
      */
     @Override
-    public synchronized Collection<VocabWord> vocabWords() {
+    public synchronized Collection<SequenceElement> vocabWords() {
         return vocabs.values();
     }
 
@@ -200,10 +201,10 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
      * @return
      */
     @Override
-    public  synchronized  VocabWord wordFor(String word) {
+    public  synchronized  SequenceElement wordFor(String word) {
         if(word == null)
             return null;
-        VocabWord ret =  vocabs.get(word);
+        SequenceElement ret =  vocabs.get(word);
         return ret;
     }
 
@@ -231,7 +232,7 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
         // STOP and UNK are not added as tokens
         if(word.equals("STOP") || word.equals("UNK"))
             return;
-        VocabWord token = tokenFor(word);
+        SequenceElement token = tokenFor(word);
         if(token == null)
             throw new IllegalStateException("Word " + word + " not found as token in vocab");
         int ind = token.getIndex();
@@ -283,17 +284,17 @@ public class InMemoryLookupCache implements VocabCache,Serializable {
     }
 
     @Override
-    public synchronized Collection<VocabWord> tokens() {
+    public synchronized Collection<SequenceElement> tokens() {
         return tokens.values();
     }
 
     @Override
-    public synchronized void addToken(VocabWord word) {
-        tokens.put(word.getWord(),word);
+    public synchronized void addToken(SequenceElement word) {
+        tokens.put(word.getLabel(),word);
     }
 
     @Override
-    public synchronized VocabWord tokenFor(String word) {
+    public synchronized SequenceElement tokenFor(String word) {
         return tokens.get(word);
     }
 
