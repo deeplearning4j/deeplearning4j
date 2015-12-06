@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.BaseNDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.blas.JcublasLapack;
 import org.nd4j.linalg.jcublas.blas.JcublasLevel1;
 import org.nd4j.linalg.jcublas.blas.JcublasLevel2;
 import org.nd4j.linalg.jcublas.blas.JcublasLevel3;
@@ -70,6 +71,11 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
     @Override
     public void createLevel3() {
         level3 = new JcublasLevel3();
+    }
+
+    @Override
+    public void createLapack() {
+        lapack = new JcublasLapack();
     }
 
     @Override
