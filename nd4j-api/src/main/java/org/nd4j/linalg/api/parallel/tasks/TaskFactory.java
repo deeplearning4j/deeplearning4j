@@ -14,6 +14,8 @@ public interface TaskFactory {
 
     Task<Void> getScalarAction( ScalarOp op);
 
+    Task<Double> getAccumulationTask(Accumulation op, boolean outerTask);
+
     Task<Double> getAccumulationTask( Accumulation op );
 
     Task<INDArray> getAccumulationTask( Accumulation op, int... dimension );

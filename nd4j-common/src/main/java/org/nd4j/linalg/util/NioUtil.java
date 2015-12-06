@@ -27,13 +27,10 @@ public class NioUtil {
      * @param toStride the to stride
      */
     public static void copyAtStride(int n, BufferType bufferType, ByteBuffer from, int fromOffset, int fromStride, ByteBuffer to, int toOffset, int toStride) {
-        ByteBuffer fromView = from.slice();
-        ByteBuffer toView = to.slice();
+        ByteBuffer fromView = from;
+        ByteBuffer toView = to;
         fromView.order(ByteOrder.nativeOrder());
         toView.order(ByteOrder.nativeOrder());
-        //start from the beginning on the view
-        fromView.rewind();
-        toView.rewind();
         switch(bufferType) {
             case INT:
                 IntBuffer fromInt = fromView.asIntBuffer();

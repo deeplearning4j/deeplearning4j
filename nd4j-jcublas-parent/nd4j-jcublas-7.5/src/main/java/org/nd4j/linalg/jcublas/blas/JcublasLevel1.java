@@ -149,7 +149,12 @@ public class JcublasLevel1 extends BaseLevel1 {
         CublasPointer xCPointer = new CublasPointer(X,ctx);
         float[] ret = new float[1];
         Pointer result = Pointer.to(ret);
-        JCublas2.cublasSasum(ctx.getHandle(), N, xCPointer.getDevicePointer(), incX, result);
+        JCublas2.cublasSasum(
+                ctx.getHandle()
+                , N
+                , xCPointer.getDevicePointer()
+                , incX
+                , result);
         try {
             xCPointer.close();
             ctx.finishBlasOperation();

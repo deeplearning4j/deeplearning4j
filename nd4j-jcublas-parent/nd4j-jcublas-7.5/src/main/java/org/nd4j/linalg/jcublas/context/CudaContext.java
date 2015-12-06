@@ -60,11 +60,10 @@ public class CudaContext implements AutoCloseable {
         if(eventDestroyed) {
             return;
         }
+
         JCudaDriver.cuEventSynchronize(cUevent);
         JCudaDriver.cuEventDestroy(cUevent);
         eventDestroyed = true;
-
-        //JCudaDriver.cuStreamSynchronize(stream);
     }
 
     /**
@@ -80,7 +79,7 @@ public class CudaContext implements AutoCloseable {
     }
 
     /**
-     * Synchrnonizes on
+     * Synchronizes on
      * the old stream
      * since the given handle
      * will be associated with the
@@ -317,6 +316,7 @@ public class CudaContext implements AutoCloseable {
      * and destroys this context
      */
     public void finishBlasOperation() {
+
         destroy();
     }
 
@@ -330,6 +330,7 @@ public class CudaContext implements AutoCloseable {
         CudaContext ctx = new CudaContext();
         ctx.initOldStream();
         ctx.initHandle();
+        ctx.startOldEvent();
         return ctx;
     }
 

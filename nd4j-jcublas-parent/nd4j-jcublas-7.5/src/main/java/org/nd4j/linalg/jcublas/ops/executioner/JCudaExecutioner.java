@@ -234,10 +234,16 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         int oldN = op.n();
         op.setX(resultAcrossBlocks);
         op.setApplyFinalTransform(false);
-        if(op.y() != null) {
-            op.setY(Nd4j.valueArrayOf(op.x().shape(),op.zeroDouble()));
+        double result = op.zeroDouble();
+        for(int i = 0; i < resultAcrossBlocks.length(); i++) {
+            double firstVal = resultAcrossBlocks.data().getDouble(resultAcrossBlocks.offset() + i * resultAcrossBlocks.elementWiseStride());
+            result = op.combineSubResults(firstVal,result);
         }
-        doAccumulationOp(op);
+
+        if(resultAcrossBlocks.length() == 1)
+            result = resultAcrossBlocks.getDouble(0);
+
+        op.setFinalResult(result);
         op.setApplyFinalTransform(true);
         op.setN(oldN);
         op.getAndSetFinalResult(op.getFinalResult().doubleValue());
@@ -389,7 +395,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
             };
 
-            try(KernelParamsWrapper kParams = new KernelParamsWrapper(op,sync,kernelParams).setResultOp(op, result)) {
+            try(KernelParamsWrapper kParams = new KernelParamsWrapper(op,sync,kernelParams).setResultOp(op, result,dimension)) {
                 invokeFunction(op, sync,metrics,kParams.getContext(), kParams.getKernelParameters());
                 ctx = kParams.getContext();
                 if(sync)
@@ -545,13 +551,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         }
 
         GpuMetrics metrics = GpuMetrics.blockAndThreads(getType(op),op.n());
-        metrics.setGridSize(op.n());
-        metrics.setBlockSize(1024);
-        metrics.setSharedMemory(metrics.getBlockSize() * op.x().data().getElementSize());
-
-
-        metrics.setGridSizeNotOverMax(op.x().data().length());
-        metrics.setBlockSize(1024);
         metrics.setSharedMemoryNotOverMax(metrics.getBlockSize() * op.x().data().getElementSize());
 
         CudaContext ctx;
@@ -585,6 +584,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     op.n(),
                     op.x().offset(),
                     op.y().offset(),
+                    op.z().offset(),
                     op.x(),
                     op.y(),
                     BlasBufferUtil.getBlasStride(op.x()),

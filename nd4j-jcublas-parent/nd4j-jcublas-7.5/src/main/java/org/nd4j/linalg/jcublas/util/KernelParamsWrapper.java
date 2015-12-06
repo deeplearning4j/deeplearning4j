@@ -40,8 +40,7 @@ import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 
 /**
@@ -158,23 +157,39 @@ public class KernelParamsWrapper implements AutoCloseable {
         context.initOldStream();
         context.initStream();
         this.closeContext = closeContext;
-
+        Map<Object,Object> idMap = new IdentityHashMap<>();
         for(int i = 0; i < kernelParams.length; i++) {
             Object arg = kernelParams[i];
 
             // If the instance is a JCudaBuffer we should assign it to the device
             if(arg instanceof JCudaBuffer) {
                 JCudaBuffer buffer = (JCudaBuffer) arg;
-                CublasPointer pointerToFree = new CublasPointer(buffer,context);
-                kernelParameters[i] = pointerToFree.getDevicePointer();
-                pointersToFree.add(pointerToFree);
+               if(!idMap.containsKey(buffer)) {
+                   CublasPointer pointerToFree = new CublasPointer(buffer,context);
+                   kernelParameters[i] = pointerToFree.getDevicePointer();
+                   pointersToFree.add(pointerToFree);
+                   idMap.put(buffer,pointerToFree.getDevicePointer());
+               }
+                else {
+                   Pointer pointer = (Pointer) idMap.get(buffer);
+                   kernelParameters[i] = pointer;
+               }
+
             }
             else if(arg instanceof INDArray) {
                 INDArray array = (INDArray) arg;
-                CublasPointer pointerToFree = new CublasPointer(array,context);
-                kernelParameters[i] = pointerToFree.getDevicePointer();
-                pointersToFree.add(pointerToFree);
-                arrayToPointer.put(array, pointerToFree);
+               if(!idMap.containsKey(array)) {
+                   CublasPointer pointerToFree = new CublasPointer(array,context);
+                   kernelParameters[i] = pointerToFree.getDevicePointer();
+                   pointersToFree.add(pointerToFree);
+                   arrayToPointer.put(array, pointerToFree);
+                   idMap.put(array,pointerToFree.getDevicePointer());
+               }
+                else {
+                   Pointer pointer = (Pointer) idMap.get(array);
+                   kernelParameters[i] = pointer;
+               }
+
             }
             else
                 kernelParameters[i] = arg;
