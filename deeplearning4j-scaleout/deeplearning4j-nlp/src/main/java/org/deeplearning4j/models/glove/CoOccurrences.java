@@ -138,8 +138,8 @@ public class CoOccurrences implements Serializable {
 
 
 
-    public class CoOccurrenceBatchIterator implements Iterator<List<Pair<SequenceElement,SequenceElement>>> {
-        private Iterator<Pair<SequenceElement,SequenceElement>> iter = coOccurrenceIteratorVocab();
+    public class CoOccurrenceBatchIterator implements Iterator<List<Pair<VocabWord,VocabWord>>> {
+        private Iterator<Pair<VocabWord,VocabWord>> iter = coOccurrenceIteratorVocab();
         private int batchSize = 100;
 
         public CoOccurrenceBatchIterator(int batchSize) {
@@ -157,12 +157,12 @@ public class CoOccurrences implements Serializable {
         }
 
         @Override
-        public List<Pair<SequenceElement, SequenceElement>> next() {
-            List<Pair<SequenceElement,SequenceElement>> list = new ArrayList<>(batchSize);
+        public List<Pair<VocabWord, VocabWord>> next() {
+            List<Pair<VocabWord,VocabWord>> list = new ArrayList<>(batchSize);
             for(int i = 0; i < batchSize; i++) {
                 if(!iter.hasNext())
                     break;
-                Pair<SequenceElement,SequenceElement> next = iter.next();
+                Pair<VocabWord,VocabWord> next = iter.next();
                 list.add(next);
             }
 
@@ -176,7 +176,7 @@ public class CoOccurrences implements Serializable {
     }
 
 
-    public class CoOccurrenceIterator implements Iterator<Pair<SequenceElement,SequenceElement>> {
+    public class CoOccurrenceIterator implements Iterator<Pair<VocabWord,VocabWord>> {
         private Iterator<Pair<String,String>> iter = coOccurrenceIterator();
 
         @Override
@@ -185,9 +185,10 @@ public class CoOccurrences implements Serializable {
         }
 
         @Override
-        public Pair<SequenceElement, SequenceElement> next() {
+        public Pair<VocabWord, VocabWord> next() {
             Pair<String,String> next = iter.next();
-            Pair<SequenceElement,SequenceElement> ret = new Pair<>(cache.wordFor(next.getFirst()),cache.wordFor(next.getSecond()));
+            // TODO: fix this
+            Pair<VocabWord,VocabWord> ret = new Pair<>((VocabWord)cache.wordFor(next.getFirst()),(VocabWord) cache.wordFor(next.getSecond()));
             return ret;
         }
 
@@ -197,10 +198,10 @@ public class CoOccurrences implements Serializable {
         }
     }
 
-    public Iterator<List<Pair<SequenceElement,SequenceElement>>> coOccurrenceIteratorVocabBatch(int batchSize) {
+    public Iterator<List<Pair<VocabWord,VocabWord>>> coOccurrenceIteratorVocabBatch(int batchSize) {
         return new CoOccurrenceBatchIterator(batchSize);
     }
-    public Iterator<Pair<SequenceElement,SequenceElement>> coOccurrenceIteratorVocab() {
+    public Iterator<Pair<VocabWord,VocabWord>> coOccurrenceIteratorVocab() {
         return new CoOccurrenceIterator();
     }
 

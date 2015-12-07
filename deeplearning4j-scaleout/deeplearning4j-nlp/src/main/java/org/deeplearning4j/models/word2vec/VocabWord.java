@@ -21,7 +21,7 @@ package org.deeplearning4j.models.word2vec;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.math3.util.FastMath;
-import org.deeplearning4j.models.abstractvectors.SequenceElement;
+import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 

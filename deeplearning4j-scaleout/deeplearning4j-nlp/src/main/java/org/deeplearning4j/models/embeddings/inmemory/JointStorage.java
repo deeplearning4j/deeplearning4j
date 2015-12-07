@@ -26,9 +26,9 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author raver119@gmail.com
  */
-public class JointStorage implements WeightLookupTable, VocabCache {
-    private Map<Long, WeightLookupTable> mapTables = new ConcurrentHashMap<>();
-    private Map<Long, VocabCache> mapVocabs = new ConcurrentHashMap<>();
+public class JointStorage<T extends SequenceElement> implements WeightLookupTable<T>, VocabCache<T> {
+    private Map<Long, WeightLookupTable<T>> mapTables = new ConcurrentHashMap<>();
+    private Map<Long, VocabCache<T>> mapVocabs = new ConcurrentHashMap<>();
     private int layerSize;
 
     @Getter @Setter protected Long tableId;
@@ -90,8 +90,8 @@ public class JointStorage implements WeightLookupTable, VocabCache {
      * @return Collection of all VocabWords in this JointStorage
      */
     @Override
-    public Collection<SequenceElement> vocabWords() {
-        ArrayList<SequenceElement> words = new ArrayList<>();
+    public Collection<T> vocabWords() {
+        ArrayList<T> words = new ArrayList<>();
         for (VocabCache cache: mapVocabs.values()) {
             words.addAll(cache.vocabWords());
         }
@@ -165,7 +165,7 @@ public class JointStorage implements WeightLookupTable, VocabCache {
     }
 
     @Override
-    public Collection<SequenceElement> tokens() {
+    public Collection<T> tokens() {
         return null;
     }
 
@@ -175,7 +175,7 @@ public class JointStorage implements WeightLookupTable, VocabCache {
     }
 
     @Override
-    public VocabWord tokenFor(String word) {
+    public T tokenFor(String word) {
         return null;
     }
 
@@ -215,12 +215,12 @@ public class JointStorage implements WeightLookupTable, VocabCache {
     }
 
     @Override
-    public void iterate(VocabWord w1, VocabWord w2) {
+    public void iterate(T w1, T w2) {
 
     }
 
     @Override
-    public void iterateSample(VocabWord w1, VocabWord w2, AtomicLong nextRandom, double alpha) {
+    public void iterateSample(T w1, T w2, AtomicLong nextRandom, double alpha) {
 
     }
 
@@ -254,9 +254,9 @@ public class JointStorage implements WeightLookupTable, VocabCache {
         return null;
     }
 
-    public static class Builder {
-        private Map<Long, WeightLookupTable> mapTables = new ConcurrentHashMap<>();
-        private Map<Long, VocabCache> mapVocabs = new ConcurrentHashMap<>();
+    public static class Builder<T extends SequenceElement> {
+        private Map<Long, WeightLookupTable<T>> mapTables = new ConcurrentHashMap<>();
+        private Map<Long, VocabCache<T>> mapVocabs = new ConcurrentHashMap<>();
         private int layerSize;
 
         public Builder() {
@@ -269,7 +269,7 @@ public class JointStorage implements WeightLookupTable, VocabCache {
          * @param lookupTable InMemoryLookupTable that's going to be part of Joint Lookup Table
          * @return
          */
-        public Builder addLookupPair(@NonNull InMemoryLookupTable lookupTable) {
+        public Builder addLookupPair(@NonNull InMemoryLookupTable<T> lookupTable) {
             return addLookupPair(lookupTable, lookupTable.getVocab());
         }
 
@@ -280,14 +280,14 @@ public class JointStorage implements WeightLookupTable, VocabCache {
          * @param cache VocabCache that contains vocabulary for lookupTable
          * @return
          */
-        public Builder addLookupPair(@NonNull WeightLookupTable lookupTable, @NonNull VocabCache cache) {
+        public Builder addLookupPair(@NonNull WeightLookupTable<T> lookupTable, @NonNull VocabCache<T> cache) {
             /*
                 we should assume, that each word in VocabCache is tagged with pair Vocab/Table ID
             */
             if (lookupTable.getTableId() == null || lookupTable.getTableId().longValue() == 0)
                 lookupTable.setTableId(RandomUtils.nextLong());
 
-            for (SequenceElement word: cache.vocabWords()) {
+            for (T word: cache.vocabWords()) {
                 // each word should be tagged here
                 word.setStorageId(lookupTable.getTableId());
             }
@@ -303,7 +303,7 @@ public class JointStorage implements WeightLookupTable, VocabCache {
         }
 
         public JointStorage build() {
-            JointStorage lookupTable = new JointStorage();
+            JointStorage<T> lookupTable = new JointStorage();
             lookupTable.mapTables = this.mapTables;
             lookupTable.mapVocabs = this.mapVocabs;
             lookupTable.layerSize = this.layerSize;

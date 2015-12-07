@@ -39,12 +39,12 @@ import java.util.*;
  * Common word vector operations
  * @author Adam Gibson
  */
-public class WordVectorsImpl implements WordVectors {
+public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
 
     //number of times the word must occur in the vocab to appear in the calculations, otherwise treat as unknown
     @Getter protected int minWordFrequency = 5;
-    @Getter protected WeightLookupTable lookupTable;
-    @Getter protected VocabCache vocab;
+    @Getter protected WeightLookupTable<T> lookupTable;
+    @Getter protected VocabCache<T> vocab;
     @Getter protected int layerSize = 100;
     public final static String UNK = "UNK";
     protected List<String> stopWords = StopWords.getStopWords();
@@ -518,7 +518,7 @@ public class WordVectorsImpl implements WordVectors {
     }
 
     @Override
-    public VocabCache vocab() {
+    public VocabCache<T> vocab() {
         return vocab;
     }
 

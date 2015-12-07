@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.models.embeddings;
 
+import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.plot.Tsne;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -31,7 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author Adam Gibson
  */
-public interface WeightLookupTable extends Serializable {
+public interface WeightLookupTable<T extends SequenceElement> extends Serializable {
 
     /**
      * Returns unique ID of this table.
@@ -91,7 +92,7 @@ public interface WeightLookupTable extends Serializable {
      * @param w1 the first word to iterate on
      * @param w2 the second word to iterate on
      */
-    void iterate(VocabWord w1,VocabWord w2);
+    void iterate(T w1,T w2);
     /**
      * Iterate on the given 2 vocab words
      * @param w1 the first word to iterate on
@@ -99,7 +100,7 @@ public interface WeightLookupTable extends Serializable {
      * @param nextRandom nextRandom for sampling
      * @param alpha the alpha to use for learning
      */
-    void iterateSample(VocabWord w1,VocabWord w2,AtomicLong nextRandom,double alpha);
+    void iterateSample(T w1,T w2,AtomicLong nextRandom,double alpha);
 
 
     /**
