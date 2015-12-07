@@ -420,7 +420,7 @@ Loading and saving GloVe models to word2vec can be done like so:
 
 ### <a name="features">Word2Vec Features on Deeplearning4j</a>
 
-* Weights update after model serialization/deserialization was added. That is, you can update model state with, say, 200GB of new text by calling `loadFullModel`, adding `TokenizerFactory` and `SentenceIterator` to it, and calling fit() on your restored model.
+* Weights update after model serialization/deserialization was added. That is, you can update model state with, say, 200GB of new text by calling `loadFullModel`, adding `TokenizerFactory` and `SentenceIterator` to it, and calling `fit()` on the restored model.
 * Option for multiple datasources for vocab construction was added.
 * Epochs and Iterations can be specified separately, although they are both typically "1".
 * Word2Vec.Builder has this option: `hugeModelExpected`. If set to `true`, the vocab will be periodically truncated during the build.
