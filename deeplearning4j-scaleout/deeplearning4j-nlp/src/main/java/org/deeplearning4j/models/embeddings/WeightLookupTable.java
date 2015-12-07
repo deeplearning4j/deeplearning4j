@@ -35,7 +35,7 @@ public interface WeightLookupTable extends Serializable {
 
     /**
      * Returns unique ID of this table.
-     * Used for JointLookupTable/DistributedLookupTable mechanics
+     * Used for JointStorage/DistributedLookupTable mechanics
      *
      * @return ID of this table
      */

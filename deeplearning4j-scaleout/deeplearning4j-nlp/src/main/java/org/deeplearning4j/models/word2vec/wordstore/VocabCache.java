@@ -19,6 +19,7 @@
 package org.deeplearning4j.models.word2vec.wordstore;
 
 
+import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.VocabWord;
 
 import java.io.Serializable;
@@ -110,7 +111,7 @@ public interface VocabCache extends Serializable {
      * Returns all of the vocab word nodes
      * @return
      */
-    Collection<VocabWord> vocabWords();
+    Collection<SequenceElement> vocabWords();
 
 
     /**
@@ -125,7 +126,7 @@ public interface VocabCache extends Serializable {
      * @param word
      * @return
      */
-    VocabWord wordFor(String word);
+    SequenceElement wordFor(String word);
 
 
     /**
@@ -195,7 +196,7 @@ public interface VocabCache extends Serializable {
      * All of the tokens in the cache, (not necessarily apart of the vocab)
      * @return the tokens for this cache
      */
-    Collection<VocabWord> tokens();
+    Collection<SequenceElement> tokens();
 
 
     /**
@@ -203,7 +204,7 @@ public interface VocabCache extends Serializable {
      * to the cache
      * @param word the word to add
      */
-    void addToken(VocabWord word);
+    void addToken(SequenceElement word);
 
     /**
      * Returns the token (again not necessarily in the vocab)
@@ -211,7 +212,7 @@ public interface VocabCache extends Serializable {
      * @param word the word to get the token for
      * @return the vocab word for this token
      */
-    VocabWord tokenFor(String word);
+    SequenceElement tokenFor(String word);
 
     /**
      * Returns whether the cache
