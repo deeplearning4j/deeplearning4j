@@ -64,7 +64,7 @@ public class VocabularyHolder implements Serializable {
      * This code is required for compatibility between dl4j w2v implementation, and standalone w2v
      * @param cache
      */
-    protected VocabularyHolder(@NonNull VocabCache cache, boolean markAsSpecial) {
+    protected VocabularyHolder(@NonNull VocabCache<? extends SequenceElement> cache, boolean markAsSpecial) {
         this.vocabCache = cache;
         for (SequenceElement word: cache.tokens()) {
             VocabularyWord vw = new VocabularyWord(word.getLabel());

@@ -31,7 +31,7 @@ import java.util.*;
  */
 public class Huffman {
 
-    public Huffman(Collection<SequenceElement> words) {
+    public Huffman(Collection<? extends SequenceElement> words) {
         this.words = new ArrayList<>(words);
         Collections.sort(this.words, new Comparator<SequenceElement>() {
             @Override

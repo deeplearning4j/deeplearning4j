@@ -58,7 +58,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author Adam Gibson
  */
-public class Glove  extends WordVectorsImpl {
+public class Glove  extends WordVectorsImpl<VocabWord> {
 
     private transient SentenceIterator sentenceIterator;
     private transient TextVectorizer textVectorizer;
@@ -180,8 +180,8 @@ public class Glove  extends WordVectorsImpl {
                 for (Pair<String, String> next : currentItem) {
                     String w1 = next.getFirst();
                     String w2 = next.getSecond();
-                    SequenceElement vocabWord = vocab().wordFor(w1);
-                    SequenceElement vocabWord1 = vocab().wordFor(w2);
+                    VocabWord vocabWord = vocab().wordFor(w1);
+                    VocabWord vocabWord1 = vocab().wordFor(w2);
                     send.add(new Pair<>(vocabWord, vocabWord1));
 
                 }

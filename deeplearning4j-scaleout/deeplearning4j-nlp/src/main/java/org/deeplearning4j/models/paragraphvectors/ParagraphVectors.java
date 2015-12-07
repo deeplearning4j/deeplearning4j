@@ -382,7 +382,7 @@ public class ParagraphVectors extends Word2Vec {
      * Train on a list of vocab words
      * @param sentenceWithLabel the list of vocab words to train on
      */
-    public void trainSentence(final Pair<List<SequenceElement>, Collection<SequenceElement>> sentenceWithLabel,AtomicLong nextRandom,double alpha) {
+    public void trainSentence(final Pair<List<VocabWord>, Collection<VocabWord>> sentenceWithLabel,AtomicLong nextRandom,double alpha) {
         if(sentenceWithLabel == null || sentenceWithLabel.getFirst().isEmpty())
             return;
 
@@ -1029,7 +1029,7 @@ public class ParagraphVectors extends Word2Vec {
         @Override
         public void run() {
             // this queue is used for training each word from sentence against label, derived for each sentence
-            final Queue<Pair<List<SequenceElement>,Collection<SequenceElement>>> batch2 = new ConcurrentLinkedDeque<>();
+            final Queue<Pair<List<VocabWord>,Collection<VocabWord>>> batch2 = new ConcurrentLinkedDeque<>();
 
             while (roller.hasMoreDocuments()) {
                 LabelledDocument document = roller.nextLabelledDocument();
@@ -1044,8 +1044,10 @@ public class ParagraphVectors extends Word2Vec {
                         continue;
                     }
 
-                    Collection<SequenceElement> docLabels = new ArrayList<>();
-                    docLabels.add(vocab.wordFor(document.getLabel()));
+                    Collection<VocabWord> docLabels = new ArrayList<>();
+
+                    // TODO: fix this
+                    docLabels.add((VocabWord) vocab.wordFor(document.getLabel()));
                     //batch2.add();
 
                     double alpha = 0.025;
