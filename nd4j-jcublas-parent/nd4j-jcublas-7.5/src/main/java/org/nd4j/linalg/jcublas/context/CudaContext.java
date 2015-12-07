@@ -28,7 +28,7 @@ public class CudaContext implements AutoCloseable {
     private CUstream stream;
     private CUevent cUevent;
     private cudaStream_t oldStream;
-    private cudaEvent_t oldEvent;
+    //private cudaEvent_t oldEvent;
     private cublasHandle handle;
     private CublasPointer resultPointer;
     private AtomicBoolean oldStreamReturned = new AtomicBoolean(false);
@@ -71,11 +71,15 @@ public class CudaContext implements AutoCloseable {
      * on the old stream
      */
     public void syncOldStream() {
+        JCuda.cudaStreamSynchronize(oldStream);
+/*
         if(!oldEventDestroyed) {
+           JCuda.cudaStreamSynchronize(oldStream);
             JCuda.cudaStreamWaitEvent(oldStream,oldEvent,0);
             JCuda.cudaEventDestroy(oldEvent);
             oldEventDestroyed = true;
-        }
+
+        }*/
     }
 
     /**
@@ -102,8 +106,7 @@ public class CudaContext implements AutoCloseable {
      * the handle on this context
      * to the given stream
      */
-    public void associateHandle() {
-        ContextHolder.getInstance().setContext();
+    public synchronized  void associateHandle() {
         JCublas2.cublasSetStream(handle, oldStream);
     }
 
@@ -113,7 +116,7 @@ public class CudaContext implements AutoCloseable {
      * starts.
      */
     public void startOldEvent() {
-        JCuda.cudaEventRecord(oldEvent, oldStream);
+     //   JCuda.cudaEventRecord(oldEvent, oldStream);
     }
 
     /**
@@ -159,9 +162,9 @@ public class CudaContext implements AutoCloseable {
 
             }
 
-            oldEvent = new cudaEvent_t();
-            JCuda.cudaEventCreate(oldEvent);
-            oldEventDestroyed = false;
+      //      oldEvent = new cudaEvent_t();
+       //     JCuda.cudaEventCreate(oldEvent);
+     //       oldEventDestroyed = false;
         }
 
     }
@@ -177,13 +180,16 @@ public class CudaContext implements AutoCloseable {
      */
     public void initHandle() {
         if(handle == null) {
-            try {
+           /* try {
                 handle = ContextHolder.getInstance().getHandlePool().borrowObject();
             } catch (Exception e) {
                 handle = new cublasHandle();
                 JCublas2.cublasCreate(handle);
                 handleFromPool = false;
-            }
+            }*/
+            handle = new cublasHandle();
+            JCublas2.cublasCreate(handle);
+            handleFromPool = false;
             associateHandle();
         }
 
@@ -244,7 +250,7 @@ public class CudaContext implements AutoCloseable {
         }
 
         if(!oldEventDestroyed) {
-            JCuda.cudaEventDestroy(oldEvent);
+          //  JCuda.cudaEventDestroy(oldEvent);
             oldEventDestroyed = true;
         }
 
@@ -316,7 +322,7 @@ public class CudaContext implements AutoCloseable {
      * and destroys this context
      */
     public void finishBlasOperation() {
-
+        syncOldStream();
         destroy();
     }
 

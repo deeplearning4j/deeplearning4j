@@ -436,7 +436,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         }
 
 
-        return devicePointerInfo.getPointers().getDevicePointer().withByteOffset(offset * getElementSize());
+        return devicePointerInfo.getPointers().getDevicePointer();
     }
 
     @Override

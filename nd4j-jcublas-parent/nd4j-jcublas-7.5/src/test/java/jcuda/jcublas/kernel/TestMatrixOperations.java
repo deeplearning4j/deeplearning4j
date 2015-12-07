@@ -141,12 +141,7 @@ public class TestMatrixOperations {
         assertEquals(3,mean2.meanNumber().doubleValue(),1e-1);
     }
 
-    @Test
-    public void testBlasSum() {
-        INDArray arr = Nd4j.linspace(1,4,4);
-        double sum = Nd4j.getBlasWrapper().asum(arr);
-        assertEquals(10,sum,1e-1);
-    }
+
 
     @Test
     public void testSum2() {
@@ -889,6 +884,109 @@ public class TestMatrixOperations {
     }
 
     @Test
+    public void testDot2() {
+        INDArray vec1 = Nd4j.create(new float[]{1, 2, 3, 4});
+        INDArray vec2 = Nd4j.create(new float[]{1, 2, 3, 4});
+        assertEquals(30, Nd4j.getBlasWrapper().dot(vec1, vec2), 1e-1);
+
+        INDArray matrix = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray row = matrix.getRow(1);
+        assertEquals(25, Nd4j.getBlasWrapper().dot(row, row), 1e-1);
+
+    }
+
+
+    @Test
+    public void testMMul() {
+        INDArray arr = Nd4j.create(new double[][]{
+                {1, 2, 3}, {4, 5, 6}
+        });
+
+        INDArray assertion = Nd4j.create(new double[][]{
+                {14, 32}, {32, 77}
+        });
+
+        INDArray test = arr.mmul(arr.transpose());
+        assertEquals( assertion, test);
+
+    }
+
+
+    @Test
+    public void testTADMMulLeadingOne(){
+        Nd4j.getRandom().setSeed(12345);
+        int[] shape = new int[]{1,5,7};
+        INDArray arr = Nd4j.rand(shape);
+
+        INDArray tad = arr.tensorAlongDimension(0, 1, 2);
+        boolean order = Shape.cOrFortranOrder(tad.shape(), tad.stride(), tad.elementStride());
+        assertArrayEquals(tad.shape(),new int[]{7,5});
+
+
+        INDArray copy = Nd4j.zeros(7,5);
+        for( int i = 0; i < 7; i++ ){
+            for( int j = 0; j < 5; j++ ){
+                copy.putScalar(new int[]{i,j},tad.getDouble(i,j));
+            }
+        }
+
+        assertTrue(tad.equals(copy));
+
+        INDArray first = Nd4j.rand(new int[]{2, 7});
+        INDArray mmul = first.mmul(tad);
+        INDArray mmulCopy = first.mmul(copy);
+
+        assertTrue(mmul.equals(mmulCopy));
+
+        INDArray mmul2 = tad.mmul(first);
+        INDArray mmul2copy = copy.mmul(first);
+        assertTrue(mmul2.equals(mmul2copy));
+    }
+
+
+    @Test
+    public void testAddVectorWithOffset() throws Exception {
+        INDArray oneThroughFour = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray row1 = oneThroughFour.getRow(1);
+        row1.addi(1);
+        INDArray result = Nd4j.create(new float[]{1, 2, 4, 5}, new int[]{2, 2});
+        assertEquals(result, oneThroughFour);
+    }
+
+
+    @Test
+    public void testColumnMmul() {
+        DataBuffer data = Nd4j.linspace(1, 10, 18).data();
+        INDArray x2 = Nd4j.create(data, new int[]{2,3,3});
+        data = Nd4j.linspace(1, 12, 9).data();
+        INDArray y2 = Nd4j.create(data, new int[]{3,3});
+        INDArray z2 = Nd4j.create(3,2);
+        z2.putColumn(0, y2.getColumn(0));
+        z2.putColumn(1, y2.getColumn(1));
+        INDArray nofOffset = Nd4j.create(3,3);
+        nofOffset.assign(x2.slice(0));
+        assertEquals(nofOffset,x2.slice(0));
+
+        INDArray slice = x2.slice(0);
+        INDArray zeroOffsetResult = slice.mmul(z2);
+        INDArray offsetResult = nofOffset.mmul(z2);
+        assertEquals(zeroOffsetResult,offsetResult);
+
+
+        INDArray slice1 = x2.slice(1);
+        INDArray noOffset2 = Nd4j.create(slice1.shape());
+        noOffset2.assign(slice1);
+        assertEquals(slice1,noOffset2);
+
+        INDArray noOffsetResult = noOffset2.mmul(z2);
+        INDArray slice1OffsetResult = slice1.mmul(z2);
+
+        assertEquals(noOffsetResult,slice1OffsetResult);
+    }
+
+
+
+    @Test
     public void testSumLeadingTrailingZeros(){
         testSumHelper(1,5,5);
         testSumHelper(5,5,1);
@@ -920,45 +1018,5 @@ public class TestMatrixOperations {
 
 
 
-    @Test
-    public void testMultipleThreads() throws InterruptedException {
-        int numThreads = 10;
-        final INDArray array = Nd4j.rand(300, 300);
-        final INDArray expected = array.dup().mmul(array).mmul(array).div(array).div(array);
-        final AtomicInteger correct = new AtomicInteger();
-        final CountDownLatch latch = new CountDownLatch(numThreads);
-        System.out.println("Running on " + ContextHolder.getInstance().deviceNum());
-        ExecutorService executors = ExecutorServiceProvider.getExecutorService();
-
-        for(int x = 0; x< numThreads; x++) {
-            executors.execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        int total = 10;
-                        int right = 0;
-                        for(int x = 0; x< total; x++) {
-                            StopWatch watch = new StopWatch();
-                            watch.start();
-                            INDArray actual = array.dup().mmul(array).mmul(array).div(array).div(array);
-                            watch.stop();
-                            if(expected.equals(actual)) right++;
-                        }
-
-                        if(total == right)
-                            correct.incrementAndGet();
-                    } finally {
-                        latch.countDown();
-                    }
-
-                }
-            });
-        }
-
-        latch.await();
-
-        assertEquals(numThreads, correct.get());
-
-    }
 
 }
