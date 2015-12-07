@@ -27,6 +27,7 @@ import org.apache.commons.io.LineIterator;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.CounterMap;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
 import org.deeplearning4j.models.glove.actor.CoOccurrenceActor;
 import org.deeplearning4j.models.glove.actor.SentenceWork;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -137,8 +138,8 @@ public class CoOccurrences implements Serializable {
 
 
 
-    public class CoOccurrenceBatchIterator implements Iterator<List<Pair<VocabWord,VocabWord>>> {
-        private Iterator<Pair<VocabWord,VocabWord>> iter = coOccurrenceIteratorVocab();
+    public class CoOccurrenceBatchIterator implements Iterator<List<Pair<SequenceElement,SequenceElement>>> {
+        private Iterator<Pair<SequenceElement,SequenceElement>> iter = coOccurrenceIteratorVocab();
         private int batchSize = 100;
 
         public CoOccurrenceBatchIterator(int batchSize) {
@@ -156,12 +157,12 @@ public class CoOccurrences implements Serializable {
         }
 
         @Override
-        public List<Pair<VocabWord, VocabWord>> next() {
-            List<Pair<VocabWord,VocabWord>> list = new ArrayList<>(batchSize);
+        public List<Pair<SequenceElement, SequenceElement>> next() {
+            List<Pair<SequenceElement,SequenceElement>> list = new ArrayList<>(batchSize);
             for(int i = 0; i < batchSize; i++) {
                 if(!iter.hasNext())
                     break;
-                Pair<VocabWord,VocabWord> next = iter.next();
+                Pair<SequenceElement,SequenceElement> next = iter.next();
                 list.add(next);
             }
 
@@ -175,7 +176,7 @@ public class CoOccurrences implements Serializable {
     }
 
 
-    public class CoOccurrenceIterator implements Iterator<Pair<VocabWord,VocabWord>> {
+    public class CoOccurrenceIterator implements Iterator<Pair<SequenceElement,SequenceElement>> {
         private Iterator<Pair<String,String>> iter = coOccurrenceIterator();
 
         @Override
@@ -184,9 +185,9 @@ public class CoOccurrences implements Serializable {
         }
 
         @Override
-        public Pair<VocabWord, VocabWord> next() {
+        public Pair<SequenceElement, SequenceElement> next() {
             Pair<String,String> next = iter.next();
-            Pair<VocabWord,VocabWord> ret = new Pair<>(cache.wordFor(next.getFirst()),cache.wordFor(next.getSecond()));
+            Pair<SequenceElement,SequenceElement> ret = new Pair<>(cache.wordFor(next.getFirst()),cache.wordFor(next.getSecond()));
             return ret;
         }
 
@@ -196,10 +197,10 @@ public class CoOccurrences implements Serializable {
         }
     }
 
-    public Iterator<List<Pair<VocabWord,VocabWord>>> coOccurrenceIteratorVocabBatch(int batchSize) {
+    public Iterator<List<Pair<SequenceElement,SequenceElement>>> coOccurrenceIteratorVocabBatch(int batchSize) {
         return new CoOccurrenceBatchIterator(batchSize);
     }
-    public Iterator<Pair<VocabWord,VocabWord>> coOccurrenceIteratorVocab() {
+    public Iterator<Pair<SequenceElement,SequenceElement>> coOccurrenceIteratorVocab() {
         return new CoOccurrenceIterator();
     }
 

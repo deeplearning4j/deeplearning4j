@@ -177,7 +177,7 @@ public class Word2Vec extends WordVectorsImpl {
             if (stopWords != null && stopWords.contains(token)) continue;
             if (token == null || token.isEmpty()) continue;
 
-            VocabWord word = vocab.wordFor(token);
+            VocabWord word = (VocabWord) vocab.wordFor(token);
             if (word != null) result.add(word);
         }
         /*
@@ -304,8 +304,8 @@ public class Word2Vec extends WordVectorsImpl {
             // The subsampling randomly discards frequent words while keeping the ranking same
             if (sample > 0) {
                 double numWords =  vocab.totalWordOccurrences();
-                double ran = (Math.sqrt(word.getWordFrequency() / (sample * numWords)) + 1)
-                        * (sample * numWords) / word.getWordFrequency();
+                double ran = (Math.sqrt(word.getElementFrequency() / (sample * numWords)) + 1)
+                        * (sample * numWords) / word.getElementFrequency();
 
                 nextRandom.set(nextRandom.get() * 25214903917L + 11 );
 
