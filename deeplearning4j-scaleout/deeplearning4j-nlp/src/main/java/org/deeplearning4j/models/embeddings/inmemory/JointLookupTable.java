@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author raver119@gmail.com
  */
-public class JointLookupTable implements WeightLookupTable {
+public class JointLookupTable  {
     private Map<Long, WeightLookupTable> mapTables = new ConcurrentHashMap<>();
     private Map<Long, VocabCache> mapVocabs = new ConcurrentHashMap<>();
 
