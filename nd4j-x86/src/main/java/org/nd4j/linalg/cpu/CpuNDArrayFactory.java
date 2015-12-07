@@ -26,6 +26,7 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.cpu.blas.CpuLapack;
 import org.nd4j.linalg.factory.BaseNDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.cpu.blas.CpuLevel1;
@@ -73,6 +74,11 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
     @Override
     public void createLevel3() {
         level3 = new CpuLevel3();
+    }
+
+    @Override
+    public void createLapack() {
+        lapack = new CpuLapack();
     }
 
     @Override
