@@ -73,9 +73,10 @@ public class InMemoryLookupCache implements VocabCache<VocabWord>,Serializable {
     }
 
     public InMemoryLookupCache() {
-        this(false);
+      //  this(false);
     }
 
+    @Deprecated
     public InMemoryLookupCache(boolean addUnk) {
         /*if(addUnk) {
             T word = (T) new SequenceElement(); //VocabWord(1.0, Word2Vec.UNK);
@@ -217,9 +218,21 @@ public class InMemoryLookupCache implements VocabCache<VocabWord>,Serializable {
     public synchronized void addWordToIndex(int index, String word) {
         if(word == null || word.isEmpty())
             throw new IllegalArgumentException("Word can't be empty or null");
-        if(!wordFrequencies.containsKey(word))
-            wordFrequencies.incrementCount(word,1);
-        wordIndex.add(word,index);
+
+        /*
+            If we're speaking about adding any word to index directly, it means it's going to be vocab word, not token
+         */
+        if (!vocabs.containsKey(word)) {
+            VocabWord vw = new VocabWord(1.0, word);
+            vw.setIndex(index);
+            vocabs.put(word, vw);
+            tokens.put(word, vw);
+        }
+
+        if (!wordFrequencies.containsKey(word))
+                wordFrequencies.incrementCount(word, 1);
+
+            wordIndex.add(word, index);
 
     }
 
