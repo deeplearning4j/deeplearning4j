@@ -392,7 +392,7 @@ public class WordVectorSerializer {
             printWriter.println(builder.toString().trim());
         } else printWriter.println("");
 
-        List<SequenceElement> words = new ArrayList<>(((InMemoryLookupCache) vocabCache).getVocabs().values());
+        List<VocabWord> words = new ArrayList<>(((InMemoryLookupCache) vocabCache).getVocabs().values());
         for (SequenceElement word: words) {
             VocabularyWord vw = new VocabularyWord(word.getLabel());
             vw.setCount(vocabCache.wordFrequency(word.getLabel()));

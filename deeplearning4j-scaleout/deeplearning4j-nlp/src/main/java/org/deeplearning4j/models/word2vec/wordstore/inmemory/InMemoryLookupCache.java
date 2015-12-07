@@ -41,34 +41,34 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author Adam Gibson
  */
-public class InMemoryLookupCache<T extends SequenceElement> implements VocabCache<T>,Serializable {
+public class InMemoryLookupCache implements VocabCache<VocabWord>,Serializable {
 
     private Index wordIndex = new Index();
     public Counter<String> wordFrequencies = Util.parallelCounter();
     public Counter<String> docFrequencies = Util.parallelCounter();
-    public Map<String, T> vocabs = new ConcurrentHashMap<>();
-    public Map<String, T> tokens = new ConcurrentHashMap<>();
+    public Map<String, VocabWord> vocabs = new ConcurrentHashMap<>();
+    public Map<String, VocabWord> tokens = new ConcurrentHashMap<>();
     private AtomicLong totalWordOccurrences = new AtomicLong(0);
     private int numDocs = 0;
 
     public synchronized void setWordFrequencies(Counter <String> cnt) {
         this.wordFrequencies = cnt;
     }
-    public synchronized Map<String, T> getVocabs() {
+    public synchronized Map<String, VocabWord> getVocabs() {
         return this.vocabs;
     }
 
-    public synchronized void setVocabs(Map<String, T> vocabs) {
+    public synchronized void setVocabs(Map<String, VocabWord> vocabs) {
         this.vocabs = vocabs;
     }
     public synchronized Counter<String> getWordFrequencies() {
         return this.wordFrequencies;
     }
 
-    public synchronized void setTokens(Map<String, T> tokens) {
+    public synchronized void setTokens(Map<String, VocabWord> tokens) {
         this.tokens = tokens;
     }
-    public synchronized Map<String, T> getTokens() {
+    public synchronized Map<String, VocabWord> getTokens() {
         return this.tokens;
     }
 
@@ -122,7 +122,7 @@ public class InMemoryLookupCache<T extends SequenceElement> implements VocabCach
         wordFrequencies.incrementCount(word, increment);
 
         if(hasToken(word)) {
-            SequenceElement token = tokenFor(word);
+            VocabWord token = tokenFor(word);
             token.increaseElementFrequency(increment);
         }
         totalWordOccurrences.set(totalWordOccurrences.get() + increment);
@@ -181,7 +181,7 @@ public class InMemoryLookupCache<T extends SequenceElement> implements VocabCach
      * @return
      */
     @Override
-    public synchronized Collection<T> vocabWords() {
+    public synchronized Collection<VocabWord> vocabWords() {
         return vocabs.values();
     }
 
@@ -202,10 +202,10 @@ public class InMemoryLookupCache<T extends SequenceElement> implements VocabCach
      * @return
      */
     @Override
-    public  synchronized  T wordFor(String word) {
+    public  synchronized  VocabWord wordFor(String word) {
         if(word == null)
             return null;
-        T ret =  vocabs.get(word);
+        VocabWord ret =  vocabs.get(word);
         return ret;
     }
 
@@ -233,7 +233,7 @@ public class InMemoryLookupCache<T extends SequenceElement> implements VocabCach
         // STOP and UNK are not added as tokens
         if(word.equals("STOP") || word.equals("UNK"))
             return;
-        T token = tokenFor(word);
+        VocabWord token = tokenFor(word);
         if(token == null)
             throw new IllegalStateException("Word " + word + " not found as token in vocab");
         int ind = token.getIndex();
@@ -285,17 +285,17 @@ public class InMemoryLookupCache<T extends SequenceElement> implements VocabCach
     }
 
     @Override
-    public synchronized Collection<T> tokens() {
+    public synchronized Collection<VocabWord> tokens() {
         return tokens.values();
     }
 
     @Override
-    public synchronized void addToken(T word) {
+    public synchronized void addToken(VocabWord word) {
         tokens.put(word.getLabel(),word);
     }
 
     @Override
-    public synchronized T tokenFor(String word) {
+    public synchronized VocabWord tokenFor(String word) {
         return tokens.get(word);
     }
 

@@ -49,7 +49,7 @@ public class Word2VecWork implements Serializable {
     private Map<String,INDArray> originalNegative = new ConcurrentHashMap<>();
     private Map<String,INDArray> syn1Vectors = new ConcurrentHashMap<>();
 
-    public Word2VecWork(InMemoryLookupTable<VocabWord> table,InMemoryLookupCache<VocabWord> cache,List<List<VocabWord>> sentences) {
+    public Word2VecWork(InMemoryLookupTable<VocabWord> table,InMemoryLookupCache cache,List<List<VocabWord>> sentences) {
         this.sentences = sentences;
         for(List<VocabWord> sentence : sentences)
             for(VocabWord word : sentence) {
