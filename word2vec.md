@@ -130,7 +130,7 @@ Here are Deeplearning4j's natural-language processing components:
 
 * **SentenceIterator/DocumentIterator**: Used to iterate over a dataset. A SentenceIterator returns strings and a DocumentIterator works with inputstreams. Use the SentenceIterator wherever possible.
 * **Tokenizer/TokenizerFactory**: Used in tokenizing the text. In NLP terms, a sentence is represented as a series of tokens. A TokenizerFactory creates an instance of a tokenizer for a "sentence." 
-* **VocabCache**: Used for tracking metadata including word counts, document occurrences, the set of tokens (not vocab in this case, but rather tokens that have occurred), vocab (the features included in both bag of words as well as the word vector lookup table)
+* **VocabCache**: Used for tracking metadata including word counts, document occurrences, the set of tokens (not vocab in this case, but rather tokens that have occurred), vocab (the features included in both [bag of words](../bagofwords-tf-idf.html) as well as the word vector lookup table)
 * **Inverted Index**: Stores metadata about where words occurred. Can be used for understanding the dataset. A Lucene index with the Lucene implementation[1] is automatically created. 
 
 While Word2vec refers to a family of related algorithms, this implementation uses <a href="../glossary.html#skipgram">Skip-Gram</a> Negative Sampling.
@@ -437,6 +437,7 @@ Loading and saving GloVe models to word2vec can be done like so:
 * [Word2Vec: an introduction](http://www.folgertkarsdorp.nl/word2vec-an-introduction/); Folgert Karsdorp
 * [Mikolov's Original Word2vec Code @Google](https://code.google.com/p/word2vec/)
 * [word2vec Explained: Deriving Mikolov et al.’s Negative-Sampling Word-Embedding Method](http://arxiv.org/pdf/1402.3722v1.pdf); Yoav Goldberg and Omer Levy
+* [Bag of Words & Term Frequency-Inverse Document Frequency (TF-IDF)](../bagofwords-tf-idf.html)
 
 ### <a name="doctorow">Word2Vec in Literature</a>
 
