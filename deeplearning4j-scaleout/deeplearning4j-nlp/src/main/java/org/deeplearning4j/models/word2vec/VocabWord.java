@@ -21,6 +21,7 @@ package org.deeplearning4j.models.word2vec;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.math3.util.FastMath;
+import org.deeplearning4j.models.abstractvectors.SequenceElement;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -39,7 +40,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public  class VocabWord implements Comparable<VocabWord>,Serializable {
+public  class VocabWord extends SequenceElement implements Serializable {
 
 	private static final long serialVersionUID = 2223750736522624256L;
 	//used in comparison when building the huffman tree
@@ -77,6 +78,10 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
 
 	public VocabWord() {}
 
+
+    public String getLabel() {
+        return this.word;
+    }
 
 	public void write(DataOutputStream dos) throws IOException {
 		dos.writeDouble(wordFrequency.get());
@@ -129,10 +134,7 @@ public  class VocabWord implements Comparable<VocabWord>,Serializable {
         this.codes = codes;
     }
 
-    @Override
-	public int compareTo(VocabWord o) {
-		return Double.compare(wordFrequency.get(), o.wordFrequency.get());
-	}
+
 
 	public double getGradient(int index, double g) {
 		if(historicalGradient == null) {
