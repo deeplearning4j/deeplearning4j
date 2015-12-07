@@ -31,7 +31,7 @@ import java.util.Collection;
  *
  * @author Adam Gibson
  */
-public interface VocabCache extends Serializable {
+public interface VocabCache<T extends SequenceElement> extends Serializable {
 
 
 
@@ -111,7 +111,7 @@ public interface VocabCache extends Serializable {
      * Returns all of the vocab word nodes
      * @return
      */
-    Collection<SequenceElement> vocabWords();
+    Collection<T> vocabWords();
 
 
     /**
@@ -126,7 +126,7 @@ public interface VocabCache extends Serializable {
      * @param word
      * @return
      */
-    SequenceElement wordFor(String word);
+    <T extends SequenceElement> T wordFor(String word);
 
 
     /**
@@ -196,7 +196,7 @@ public interface VocabCache extends Serializable {
      * All of the tokens in the cache, (not necessarily apart of the vocab)
      * @return the tokens for this cache
      */
-    Collection<SequenceElement> tokens();
+    Collection<T> tokens();
 
 
     /**
@@ -204,7 +204,7 @@ public interface VocabCache extends Serializable {
      * to the cache
      * @param word the word to add
      */
-    void addToken(SequenceElement word);
+     void addToken(T word);
 
     /**
      * Returns the token (again not necessarily in the vocab)
@@ -212,7 +212,7 @@ public interface VocabCache extends Serializable {
      * @param word the word to get the token for
      * @return the vocab word for this token
      */
-    SequenceElement tokenFor(String word);
+     T tokenFor(String word);
 
     /**
      * Returns whether the cache

@@ -39,35 +39,35 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class Word2VecWork implements Serializable {
 
-    private Map<String,Pair<SequenceElement,INDArray>> vectors = new ConcurrentHashMap<>();
-    private Map<String,Pair<SequenceElement,INDArray>> negativeVectors = new ConcurrentHashMap<>();
+    private Map<String,Pair<VocabWord,INDArray>> vectors = new ConcurrentHashMap<>();
+    private Map<String,Pair<VocabWord,INDArray>> negativeVectors = new ConcurrentHashMap<>();
 
-    private List<List<SequenceElement>> sentences;
-    private Map<Integer,SequenceElement> indexes = new ConcurrentHashMap<>();
+    private List<List<VocabWord>> sentences;
+    private Map<Integer,VocabWord> indexes = new ConcurrentHashMap<>();
     private Map<String,INDArray> originalVectors = new ConcurrentHashMap<>();
     private Map<String,INDArray> originalSyn1Vectors = new ConcurrentHashMap<>();
     private Map<String,INDArray> originalNegative = new ConcurrentHashMap<>();
     private Map<String,INDArray> syn1Vectors = new ConcurrentHashMap<>();
 
-    public Word2VecWork(InMemoryLookupTable table,InMemoryLookupCache cache,List<List<SequenceElement>> sentences) {
+    public Word2VecWork(InMemoryLookupTable<VocabWord> table,InMemoryLookupCache<VocabWord> cache,List<List<VocabWord>> sentences) {
         this.sentences = sentences;
-        for(List<SequenceElement> sentence : sentences)
-            for(SequenceElement word : sentence) {
+        for(List<VocabWord> sentence : sentences)
+            for(VocabWord word : sentence) {
                 addWord(word,table);
                 if(word.getPoints() != null) {
                     for(int i = 0; i < word.getCodeLength(); i++) {
-                        SequenceElement pointWord = cache.wordFor(cache.wordAtIndex(word.getPoints().get(i)));
+                        VocabWord pointWord = cache.wordFor(cache.wordAtIndex(word.getPoints().get(i)));
                         addWord(pointWord,table);
                     }
                 }
             }
     }
 
-    private void addWord(SequenceElement word,InMemoryLookupTable table) {
+    private void addWord(VocabWord word,InMemoryLookupTable<VocabWord> table) {
         if(word == null)
             throw new IllegalArgumentException("Word must not be null!");
 
-        indexes.put(word.getIndex(),word);
+        indexes.put(word.getIndex(),  word);
         vectors.put(word.getLabel(),new Pair<>(word,table.getSyn0().getRow(word.getIndex()).dup()));
         originalVectors.put(word.getLabel(),table.getSyn0().getRow(word.getIndex()).dup());
         syn1Vectors.put(word.getLabel(), table.getSyn1().slice(word.getIndex()).dup());
@@ -84,8 +84,8 @@ public class Word2VecWork implements Serializable {
         Map<String,INDArray> syn0Change = new HashMap<>();
         Map<String,INDArray> syn1Change = new HashMap<>();
         Map<String,INDArray> negativeChange = new HashMap<>();
-        for(List<SequenceElement> sentence : sentences)
-            for(SequenceElement word : sentence) {
+        for(List<VocabWord> sentence : sentences)
+            for(VocabWord word : sentence) {
                 syn0Change.put(word.getLabel(),vectors.get(word.getLabel()).getSecond().sub(originalVectors.get(word.getLabel())));
                 syn1Change.put(word.getLabel(),syn1Vectors.get(word.getLabel()).sub(originalSyn1Vectors.get(word.getLabel())));
                 if(!negativeVectors.isEmpty())
@@ -95,35 +95,35 @@ public class Word2VecWork implements Serializable {
         return new Word2VecResult(syn0Change,syn1Change,negativeChange);
     }
 
-    public List<List<SequenceElement>> getSentences() {
+    public List<List<VocabWord>> getSentences() {
         return sentences;
     }
 
-    public void setSentences(List<List<SequenceElement>> sentences) {
+    public void setSentences(List<List<VocabWord>> sentences) {
         this.sentences = sentences;
     }
 
-    public Map<String, Pair<SequenceElement, INDArray>> getNegativeVectors() {
+    public Map<String, Pair<VocabWord, INDArray>> getNegativeVectors() {
         return negativeVectors;
     }
 
-    public void setNegativeVectors(Map<String, Pair<SequenceElement, INDArray>> negativeVectors) {
+    public void setNegativeVectors(Map<String, Pair<VocabWord, INDArray>> negativeVectors) {
         this.negativeVectors = negativeVectors;
     }
 
-    public Map<String, Pair<SequenceElement, INDArray>> getVectors() {
+    public Map<String, Pair<VocabWord, INDArray>> getVectors() {
         return vectors;
     }
 
-    public void setVectors(Map<String, Pair<SequenceElement, INDArray>> vectors) {
+    public void setVectors(Map<String, Pair<VocabWord, INDArray>> vectors) {
         this.vectors = vectors;
     }
 
-    public Map<Integer, SequenceElement> getIndexes() {
+    public Map<Integer, VocabWord> getIndexes() {
         return indexes;
     }
 
-    public void setIndexes(Map<Integer, SequenceElement> indexes) {
+    public void setIndexes(Map<Integer, VocabWord> indexes) {
         this.indexes = indexes;
     }
 

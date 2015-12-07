@@ -65,7 +65,7 @@ import org.slf4j.LoggerFactory;
  * @author Adam Gibson
  *
  */
-public class Word2Vec extends WordVectorsImpl {
+public class Word2Vec extends WordVectorsImpl<VocabWord> {
 
 
     protected static final long serialVersionUID = -2367495638286018038L;
@@ -80,7 +80,7 @@ public class Word2Vec extends WordVectorsImpl {
     protected transient InvertedIndex invertedIndex;
 
     protected transient VocabularyHolder vocabularyHolder;
-    protected transient  RandomGenerator g;
+    protected transient RandomGenerator g;
 
     protected transient int workers = Runtime.getRuntime().availableProcessors();
 

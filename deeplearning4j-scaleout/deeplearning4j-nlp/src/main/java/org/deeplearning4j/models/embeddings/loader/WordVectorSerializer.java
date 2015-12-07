@@ -553,7 +553,7 @@ public class WordVectorSerializer {
      *            the path to write
      * @throws IOException
      */
-    public static void writeWordVectors(@NonNull WordVectors vec, @NonNull String path)
+    public static void writeWordVectors(@NonNull Word2Vec vec, @NonNull String path)
             throws IOException {
         BufferedWriter write = new BufferedWriter(new FileWriter(new File(path), false));
 
@@ -573,7 +573,7 @@ public class WordVectorSerializer {
      *            the path to write
      * @throws IOException
      */
-    public static void writeWordVectors(@NonNull WordVectors vec, @NonNull OutputStream outputStream) throws IOException {
+    public static void writeWordVectors(@NonNull Word2Vec vec, @NonNull OutputStream outputStream) throws IOException {
         BufferedWriter writer =  new BufferedWriter(new OutputStreamWriter(outputStream));
 
         writeWordVectors(vec, writer);
@@ -592,7 +592,7 @@ public class WordVectorSerializer {
      *            the path to write
      * @throws IOException
      */
-    public static void writeWordVectors(@NonNull WordVectors vec, @NonNull BufferedWriter writer) throws IOException  {
+    public static void writeWordVectors(@NonNull Word2Vec vec, @NonNull BufferedWriter writer) throws IOException  {
         int words = 0;
         for (String word : vec.vocab().words()) {
             if (word == null) {

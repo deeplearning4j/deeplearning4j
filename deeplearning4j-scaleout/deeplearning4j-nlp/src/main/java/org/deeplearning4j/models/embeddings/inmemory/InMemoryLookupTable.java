@@ -20,8 +20,10 @@ package org.deeplearning4j.models.embeddings.inmemory;
 
 import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import org.apache.commons.math3.util.FastMath;
+import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
@@ -44,7 +46,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author Adam Gibson
  */
-public class InMemoryLookupTable implements WeightLookupTable {
+public class InMemoryLookupTable<T extends SequenceElement> implements WeightLookupTable<T> {
 
 
     protected INDArray syn0,syn1;
@@ -58,7 +60,7 @@ public class InMemoryLookupTable implements WeightLookupTable {
     protected INDArray table,syn1Neg;
     protected boolean useAdaGrad;
     protected double negative = 0;
-    protected VocabCache vocab;
+    protected VocabCache<T> vocab;
     protected Map<Integer,INDArray> codes = new ConcurrentHashMap<>();
 
     @Getter @Setter protected Long tableId;
@@ -190,8 +192,8 @@ public class InMemoryLookupTable implements WeightLookupTable {
      * @param nextRandom next random for sampling
      */
     @Override
-    public  void iterateSample(VocabWord w1, VocabWord w2,AtomicLong nextRandom,double alpha) {
-        if(w2 == null || w2.getIndex() < 0 || w1.getIndex() == w2.getIndex() || w1.getWord().equals("STOP") || w2.getWord().equals("STOP") || w1.getWord().equals("UNK") || w2.getWord().equals("UNK"))
+    public  void iterateSample(T w1, T w2,AtomicLong nextRandom,double alpha) {
+        if(w2 == null || w2.getIndex() < 0 || w1.getIndex() == w2.getIndex() || w1.getLabel().equals("STOP") || w2.getLabel().equals("STOP") || w1.getLabel().equals("UNK") || w2.getLabel().equals("UNK"))
            return;
             //current word vector
         INDArray l1 = this.syn0.slice(w2.getIndex());
@@ -317,7 +319,7 @@ public class InMemoryLookupTable implements WeightLookupTable {
      * @param w2 the second word to iterate on
      */
     @Override
-    public  void iterate(VocabWord w1, VocabWord w2) {
+    public  void iterate(T w1, T w2) {
         if(w2.getIndex() < 0)
             return;
         //current word vector
@@ -557,20 +559,20 @@ public class InMemoryLookupTable implements WeightLookupTable {
         this.codes = codes;
     }
 
-    public static class Builder {
+    public static class Builder<T extends SequenceElement> {
         protected int vectorLength = 100;
         protected boolean useAdaGrad = false;
         protected double lr = 0.025;
         protected Random gen = Nd4j.getRandom();
         protected long seed = 123;
         protected double negative = 0;
-        protected VocabCache vocabCache;
+        protected VocabCache<T> vocabCache;
 
 
 
 
 
-        public Builder cache(VocabCache vocab) {
+        public Builder cache(@NonNull VocabCache<T> vocab) {
             this.vocabCache = vocab;
             return this;
         }
