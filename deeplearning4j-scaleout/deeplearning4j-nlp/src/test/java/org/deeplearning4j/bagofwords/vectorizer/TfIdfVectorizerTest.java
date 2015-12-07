@@ -50,8 +50,8 @@ public class TfIdfVectorizerTest {
 
     private static final Logger log = LoggerFactory.getLogger(TfIdfVectorizerTest.class);
 
-    private InvertedIndex index;
-    private  VocabCache cache;
+    private InvertedIndex<VocabWord> index;
+    private  VocabCache<VocabWord> cache;
 
     @Before
     public void before() throws Exception {
@@ -100,7 +100,7 @@ public class TfIdfVectorizerTest {
             ;
         }
 
-        VocabWord word = vectorizer.vocab().wordFor("file");
+        VocabWord word = (VocabWord) vectorizer.vocab().wordFor("file");
         assumeNotNull(word);
         assertEquals(word,vectorizer.vocab().tokenFor("file"));
 

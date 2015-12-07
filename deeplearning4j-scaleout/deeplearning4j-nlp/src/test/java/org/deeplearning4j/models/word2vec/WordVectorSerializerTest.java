@@ -136,7 +136,7 @@ public class WordVectorSerializerTest {
     @Ignore
     public void testWriteWordVectorsFromWord2Vec() throws IOException {
         WordVectors vec = WordVectorSerializer.loadGoogleModel(binaryFile, true);
-        WordVectorSerializer.writeWordVectors(vec, pathToWriteto);
+        WordVectorSerializer.writeWordVectors((Word2Vec) vec, pathToWriteto);
 
         WordVectors wordVectors = WordVectorSerializer.loadTxtVectors(new File(pathToWriteto));
         INDArray wordVector1 = wordVectors.getWordVectorMatrix("Morgan_Freeman");

@@ -80,7 +80,7 @@ public class BagOfWordsVectorizerTest {
                 .minWords(1).stopWords(new ArrayList<String>()).cleanup(true)
                 .tokenize(tokenizerFactory).iterate(iter).labels(labels).build();
         vectorizer.fit();
-        VocabWord word = vectorizer.vocab().wordFor("file.");
+        VocabWord word = (VocabWord) vectorizer.vocab().wordFor("file.");
         assumeNotNull(word);
         assertEquals(word,vectorizer.vocab().tokenFor("file."));
         assertEquals(2,vectorizer.index().numDocuments());

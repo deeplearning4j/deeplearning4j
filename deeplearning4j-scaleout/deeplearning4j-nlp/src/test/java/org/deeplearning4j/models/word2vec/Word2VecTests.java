@@ -62,8 +62,8 @@ public class Word2VecTests {
 
     @Before
     public void before() throws Exception {
-        File googleModelTextFile = new ClassPathResource("word2vecserialization/google_news_30.txt").getFile();
-        googleModel = WordVectorSerializer.loadGoogleModel(googleModelTextFile, false);
+        //File googleModelTextFile = new ClassPathResource("word2vecserialization/google_news_30.txt").getFile();
+        //googleModel = WordVectorSerializer.loadGoogleModel(googleModelTextFile, false);
         inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
         pathToWriteto = "testing_word2vec_serialization.txt";
         FileUtils.deleteDirectory(new File("word2vec-index"));

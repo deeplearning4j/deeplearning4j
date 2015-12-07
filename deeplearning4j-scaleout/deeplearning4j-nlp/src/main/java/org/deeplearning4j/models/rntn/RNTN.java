@@ -136,7 +136,7 @@ public class RNTN implements Layer {
      */
     private Map<String, INDArray> unaryClassification;
 
-    private WeightLookupTable featureVectors;
+    private WeightLookupTable<VocabWord> featureVectors;
     private VocabCache<VocabWord> vocabCache;
 
     /**
