@@ -10,7 +10,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class Sequence {
-    @Getter @Setter protected List<SequenceElement> elements;
-    @Getter protected String label;
+public class Sequence<T extends SequenceElement> {
+    @Getter @Setter protected List<T> elements;
+    @Getter protected T label;
 }
