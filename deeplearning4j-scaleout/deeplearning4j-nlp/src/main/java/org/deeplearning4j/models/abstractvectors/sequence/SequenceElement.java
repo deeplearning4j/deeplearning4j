@@ -198,4 +198,10 @@ public abstract class SequenceElement implements Comparable<SequenceElement> {
                                                                   " freq: '"+ elementFrequency.get()+"'," +
                                                                     "index: '"+this.index+"'}";
     }
+
+    /**
+     *
+     * @return
+     */
+    public abstract String toJSON();
 }
