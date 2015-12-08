@@ -19,6 +19,7 @@
 package org.deeplearning4j.models.embeddings.wordvectors;
 
 import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Getter;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
@@ -46,6 +47,17 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
     @Getter protected WeightLookupTable<T> lookupTable;
     @Getter protected VocabCache<T> vocab;
     @Getter protected int layerSize = 100;
+
+    protected int numIterations = 1;
+    protected int numEpochs = 1;
+    protected double negative = 0;
+    protected double sampling = 0;
+    protected AtomicDouble learningRate = new AtomicDouble(0.025);
+    protected double minLearningRate = 0.01;
+    protected int window = 5;
+    protected int batchSize;
+    protected int learningRateDecayWords;
+
     public final static String UNK = "UNK";
     protected List<String> stopWords = StopWords.getStopWords();
     /**

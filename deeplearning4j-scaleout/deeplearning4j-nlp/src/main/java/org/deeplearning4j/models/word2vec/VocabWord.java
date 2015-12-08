@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.models.word2vec;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.math3.util.FastMath;
@@ -43,15 +44,10 @@ import java.util.List;
 public  class VocabWord extends SequenceElement implements Serializable {
 
 	private static final long serialVersionUID = 2223750736522624256L;
-	//used in comparison when building the huffman tree
-	private AtomicDouble wordFrequency = new AtomicDouble(0);
-	private int index = -1;
-	private List<Integer> codes = new ArrayList<>();
+
 	//for my sanity
 	private String word;
-	@Getter @Setter private INDArray historicalGradient;
-	private List<Integer> points = new ArrayList<>();
-    private int codeLength = 0;
+
 
     /*
         Used for Joint/Distributed vocabs mechanics
@@ -68,7 +64,7 @@ public  class VocabWord extends SequenceElement implements Serializable {
 
 	 */
 	public VocabWord(double wordFrequency,String word) {
-		this.wordFrequency.set(wordFrequency);
+		this.elementFrequency.set(wordFrequency);
 		if(word == null || word.isEmpty())
 			throw new IllegalArgumentException("Word must not be null or empty");
 		this.word = word;
@@ -84,12 +80,12 @@ public  class VocabWord extends SequenceElement implements Serializable {
     }
 
 	public void write(DataOutputStream dos) throws IOException {
-		dos.writeDouble(wordFrequency.get());
+		dos.writeDouble(this.elementFrequency.get());
 
 	}
 
 	public VocabWord read(DataInputStream dos) throws IOException {
-		this.wordFrequency.set(dos.readDouble());
+		this.elementFrequency.set(dos.readDouble());
 		return this;
 	}
 
@@ -107,7 +103,7 @@ public  class VocabWord extends SequenceElement implements Serializable {
 	}
 
 	public void increment(int by) {
-		wordFrequency.getAndAdd(by);
+		this.elementFrequency.getAndAdd(by);
 	}
 
 
@@ -120,10 +116,10 @@ public  class VocabWord extends SequenceElement implements Serializable {
 	}
 
 	public double getWordFrequency() {
-		if(wordFrequency == null)
+		if(this.elementFrequency == null)
             return 0.0;
 
-        return wordFrequency.get();
+        return elementFrequency.get();
 	}
 
     public List<Integer> getCodes() {
@@ -188,13 +184,13 @@ public  class VocabWord extends SequenceElement implements Serializable {
             return false;
         if (!points.equals(vocabWord.points)) return false;
         if (!word.equals(vocabWord.word)) return false;
-        return wordFrequency.get() == vocabWord.wordFrequency.get();
+        return this.elementFrequency.get() == vocabWord.elementFrequency.get();
 
     }
 
     @Override
     public int hashCode() {
-        int result = wordFrequency.hashCode();
+        int result = this.elementFrequency.hashCode();
         result = 31 * result + index;
         result = 31 * result + codes.hashCode();
         result = 31 * result + word.hashCode();
@@ -207,7 +203,7 @@ public  class VocabWord extends SequenceElement implements Serializable {
     @Override
     public String toString() {
         return "VocabWord{" +
-                "wordFrequency=" + wordFrequency +
+                "wordFrequency=" + this.elementFrequency +
                 ", index=" + index +
                 ", codes=" + codes +
                 ", word='" + word + '\'' +
@@ -216,6 +212,11 @@ public  class VocabWord extends SequenceElement implements Serializable {
                 ", codeLength=" + codeLength +
                 '}';
     }
+
+	@Override
+	public String toJSON() {
+		return null;
+	}
 
 
 }
