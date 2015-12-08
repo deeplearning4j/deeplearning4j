@@ -42,6 +42,7 @@ public class JcublasLevel2 extends BaseLevel2 {
                     Pointer.to(new float[]{beta}),
                     cCPointer.getDevicePointer().withByteOffset(Y.offset() * Y.data().getElementSize()),
                     incY);
+            ctx.syncOldStream();
             cCPointer.copyToHost();
         }
         catch (Exception e) {
@@ -115,6 +116,7 @@ public class JcublasLevel2 extends BaseLevel2 {
                     Pointer.to(new double[]{beta}),
                     cCPointer.getDevicePointer().withByteOffset(Y.offset() * Y.data().getElementSize()),
                     incY);
+            ctx.syncOldStream();
             cCPointer.copyToHost();
         }catch (Exception e) {
             throw new RuntimeException(e);

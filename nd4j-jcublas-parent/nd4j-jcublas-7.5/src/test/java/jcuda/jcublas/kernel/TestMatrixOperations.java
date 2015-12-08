@@ -294,6 +294,52 @@ public class TestMatrixOperations {
         assertEquals(assertion2, norm2, 1e-1);
     }
 
+    @Test
+    public void testTADMMul(){
+        Nd4j.getRandom().setSeed(12345);
+        int[] shape = new int[]{4,5,7};
+        INDArray arr = Nd4j.rand(shape);
+
+        INDArray tad = arr.tensorAlongDimension(0, 1, 2);
+        assertArrayEquals(tad.shape(), new int[]{7, 5});
+
+
+        INDArray copy = Nd4j.zeros(7,5);
+        for( int i = 0; i < 7; i++ ){
+            for( int j = 0; j < 5; j++ ){
+                copy.putScalar(new int[]{i,j},tad.getDouble(i,j));
+            }
+        }
+
+//        System.out.println(tad);
+//        System.out.println("\n");
+//        System.out.println(copy);
+
+        assertTrue(tad.equals(copy));
+
+        INDArray first = Nd4j.rand(new int[]{2, 7});
+        INDArray mmul = first.mmul(tad);
+        INDArray mmulCopy = first.mmul(copy);
+
+        assertTrue(mmul.equals(mmulCopy));
+
+        INDArray mmul2 = tad.mmul(first);
+        INDArray mmul2copy = copy.mmul(first);
+        assertTrue(mmul2.equals(mmul2copy));
+    }
+
+    @Test
+    public void testMeans3() {
+        INDArray a = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray mean1 = a.mean(1);
+        assertEquals(Nd4j.create(new double[]{1.5, 3.5}), mean1);
+        assertEquals(Nd4j.create(new double[]{2, 3}), a.mean(0));
+        assertEquals(2.5, Nd4j.linspace(1, 4, 4).meanNumber().doubleValue(), 1e-1);
+        assertEquals( 2.5, a.meanNumber().doubleValue(), 1e-1);
+
+    }
+
+
 
     @Test
     public void testLength() {

@@ -255,7 +255,6 @@ public class KernelParamsWrapper implements AutoCloseable {
             if(ContextHolder.getInstance().getMemoryStrategy() instanceof PinnedMemoryStrategy) {
                 ByteBuffer buff = devicePointer.getHostPointer().getByteBuffer(0,acc.x().data().getElementSize() * resultLength);
                 buff.order(ByteOrder.nativeOrder());
-                buff.rewind();
                 INDArray setResult = Nd4j.create(Nd4j.createBuffer(buff, DataBuffer.Type.DOUBLE,resultLength));
                 acc.setX(setResult);
                 JCudaExecutioner exec = (JCudaExecutioner) Nd4j.getExecutioner();
@@ -280,7 +279,6 @@ public class KernelParamsWrapper implements AutoCloseable {
             if(ContextHolder.getInstance().getMemoryStrategy() instanceof PinnedMemoryStrategy) {
                 ByteBuffer buff = devicePointer.getHostPointer().getByteBuffer(0,acc.x().data().getElementSize() * resultLength);
                 buff.order(ByteOrder.nativeOrder());
-                buff.rewind();
                 INDArray setResult = Nd4j.create(Nd4j.createBuffer(buff, DataBuffer.Type.FLOAT,resultLength));
                 JCudaExecutioner exec = (JCudaExecutioner) Nd4j.getExecutioner();
                 exec.calculateBlockResult((Accumulation) acc,setResult);

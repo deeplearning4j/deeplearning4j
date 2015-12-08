@@ -49,6 +49,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                     Pointer.to(new float[]{beta}),
                     cCPointer.getDevicePointer().withByteOffset(C.offset() * C.data().getElementSize()),
                     ldc);
+            ctx.syncOldStream();
             cCPointer.copyToHost();
         }catch (Exception e) {
             throw new RuntimeException(e);
@@ -81,6 +82,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                     PointerUtil.getPointer(beta)
                     , cPointer.getDevicePointer().withByteOffset(C.offset() * C.data().getElementSize())
                     , ldc);
+            ctx.syncOldStream();
             cPointer.copyToHost();
         }catch (Exception e) {
             throw new RuntimeException(e);
@@ -97,6 +99,7 @@ public class JcublasLevel3 extends BaseLevel3 {
         try(CublasPointer aPointer = new CublasPointer(A,ctx);
             CublasPointer cPointer = new CublasPointer(C,ctx)) {
             JCublas2.cublasSsyrk(ctx.getHandle(),OpUtil.getOp(Order),OpUtil.getOp(Trans),N,K,PointerUtil.getPointer(alpha),aPointer.getDevicePointer(),lda,PointerUtil.getPointer(beta),cPointer.getDevicePointer(),ldc);
+            ctx.syncOldStream();
             cPointer.copyToHost();
         }catch (Exception e) {
             throw new RuntimeException(e);
@@ -131,6 +134,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                     ,lda
                     ,bPointer.getDevicePointer().withByteOffset(B.offset() * B.data().getElementSize())
                     ,ldb);
+            ctx.syncOldStream();
             bPointer.copyToHost();
         }catch (Exception e) {
             throw new RuntimeException(e);
@@ -170,6 +174,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                     Pointer.to(new double[]{beta}),
                     cCPointer.getDevicePointer().withByteOffset(C.offset() * C.data().getElementSize()), // y
                     ldc); // incy
+            ctx.syncOldStream();
             cCPointer.copyToHost();
         }catch (Exception e) {
             throw new RuntimeException(e);
@@ -199,6 +204,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                     , PointerUtil.getPointer(beta)
                     , cPointer.getDevicePointer().withByteOffset(C.offset() * C.data().getElementSize())
                     , ldc);
+            ctx.syncOldStream();
             cPointer.copyToHost();
         }
 
@@ -228,6 +234,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                     , PointerUtil.getPointer(beta)
                     , cPointer.getDevicePointer().withByteOffset(C.offset() * C.data().getElementSize())
                     , ldc);
+            ctx.syncOldStream();
             cPointer.copyToHost();
 
         }catch(Exception e) {
@@ -253,6 +260,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                     , aPointer.getDevicePointer().withByteOffset(A.offset() * A.data().getElementSize())
                     , lda, bPointer.getDevicePointer().withByteOffset(B.offset() * B.data().getElementSize())
                     , ldb, PointerUtil.getPointer(beta), cPointer.getDevicePointer().withByteOffset(C.offset() * C.data().getElementSize()), ldc);
+            ctx.syncOldStream();
             cPointer.copyToHost();
         }
         catch (Exception e) {
@@ -286,6 +294,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                     , aPointer.getDevicePointer().withByteOffset(A.offset() * A.data().getElementSize())
                     , lda
                     , bPointer.getDevicePointer().withByteOffset(B.offset() * B.data().getElementSize()), ldb);
+            ctx.syncOldStream();
             bPointer.copyToHost();
         }catch (Exception e) {
             throw new RuntimeException(e);

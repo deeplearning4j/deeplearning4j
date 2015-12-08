@@ -65,7 +65,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(Accumulation op, int... dimension) {
-        ContextHolder.getInstance().setContext();
         for(int i = 0; i < dimension.length; i++) {
             if(dimension[i] < 0)
                 dimension[i] += op.x().rank();
@@ -543,7 +542,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     private CudaContext invoke(Accumulation op,int[] dimension,INDArray result,boolean sync)  {
         CudaContext ctx;
 
-        ContextHolder.getInstance().setContext();
 
         if(!KernelFunctionLoader.getInstance().exists(op.name()) || executionMode() == ExecutionMode.JAVA || op.isPassThrough())
             super.exec(op);
@@ -658,8 +656,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             try(KernelParamsWrapper kParams = new KernelParamsWrapper(op,sync,kernelParams).setResultOp(op, result,dimension)) {
                 invokeFunction(op, sync,metrics,kParams.getContext(), kParams.getKernelParameters());
                 ctx = kParams.getContext();
-                if(sync)
-                    kParams.sync();
             } catch(Exception e) {
                 throw new RuntimeException("Could not execute kernel: Kernel launch was: " + metrics, e);
             }
