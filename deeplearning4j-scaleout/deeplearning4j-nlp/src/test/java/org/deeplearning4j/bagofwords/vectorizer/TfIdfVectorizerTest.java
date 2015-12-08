@@ -58,10 +58,11 @@ public class TfIdfVectorizerTest {
         FileUtils.deleteDirectory(new File("tfidf"));
 
         cache = new InMemoryLookupCache();
-        index = new LuceneInvertedIndex.Builder().cache(cache)
+        index = new LuceneInvertedIndex.Builder<VocabWord>().cache(cache)
                 .indexDir(new File("tfidf"))
                 .batchSize(5)
-                .cacheInRam(false).build();
+                .cacheInRam(false)
+                .build();
 
     }
 

@@ -18,8 +18,6 @@
 
 package org.deeplearning4j.models.embeddings.loader;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -357,7 +355,7 @@ public class WordVectorSerializer {
         if (!(lookupTable instanceof InMemoryLookupTable)) throw new IllegalStateException("At this moment only InMemoryLookupTable is supported.");
         if (!(vocabCache instanceof InMemoryLookupCache)) throw new IllegalStateException("At this moment only InMemoryLookupCache is supported.");
 
-        Word2VecConfiguration conf = vec.getConfiguration();
+        VectorsConfiguration conf = vec.getConfiguration();
         conf.setVocabSize(vocabCache.numWords());
 
         VocabularyHolder holder = new VocabularyHolder.Builder()
@@ -368,7 +366,7 @@ public class WordVectorSerializer {
         log.info("Word2Vec conf. JSON: " + conf.toJson());
         /*
             We have the following map:
-            Line 0 - Word2VecConfiguration JSON string
+            Line 0 - VectorsConfiguration JSON string
             Line 1 - expTable
             Line 2 - table
 
@@ -463,7 +461,7 @@ public class WordVectorSerializer {
         // first 3 lines should be processed separately
         String confJson  = iterator.nextSentence();
         log.info("Word2Vec conf. JSON: " + confJson);
-        Word2VecConfiguration configuration = Word2VecConfiguration.fromJson(confJson);
+        VectorsConfiguration configuration = VectorsConfiguration.fromJson(confJson);
 
 
         // actually we dont need expTable, since it produces exact results on subsequent runs untill you dont modify expTable size :)
