@@ -27,23 +27,20 @@ import java.util.concurrent.atomic.AtomicLong;
 
 
 import akka.actor.ActorSystem;
-import com.google.common.base.Function;
 import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Getter;
 import lombok.NonNull;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
-import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
-import org.deeplearning4j.models.embeddings.loader.Word2VecConfiguration;
+import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
 import org.deeplearning4j.models.word2vec.wordstore.VocabConstructor;
 import org.deeplearning4j.models.word2vec.wordstore.VocabularyHolder;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.parallel.Parallelization;
 import org.deeplearning4j.text.invertedindex.InvertedIndex;
-import org.deeplearning4j.text.invertedindex.LuceneInvertedIndex;
 import org.deeplearning4j.text.documentiterator.DocumentIterator;
 import org.deeplearning4j.text.sentenceiterator.StreamLineIterator;
 import org.deeplearning4j.text.stopwords.StopWords;
@@ -71,7 +68,7 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> {
     protected static final long serialVersionUID = -2367495638286018038L;
 
     // that's simple configuration bean. Used for model persistence
-    @Getter protected transient Word2VecConfiguration configuration = new Word2VecConfiguration();
+    @Getter protected transient VectorsConfiguration configuration = new VectorsConfiguration();
 
     protected transient TokenizerFactory tokenizerFactory = new DefaultTokenizerFactory();
     protected transient SentenceIterator sentenceIter;
@@ -500,7 +497,7 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> {
         protected InvertedIndex index;
         protected WeightLookupTable lookupTable;
         protected boolean hugeModelExpected = false;
-        protected Word2VecConfiguration configuration = new Word2VecConfiguration();
+        protected VectorsConfiguration configuration = new VectorsConfiguration();
         protected boolean resetModel = true;
         protected int numEpochs = 1;
 
@@ -514,11 +511,11 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> {
         }
 
         /**
-         * Whole configuration is transferred via Word2VecConfiguration bean
+         * Whole configuration is transferred via VectorsConfiguration bean
          *
          * @param conf
          */
-        public Builder(@NonNull Word2VecConfiguration conf) {
+        public Builder(@NonNull VectorsConfiguration conf) {
             this.iterations = conf.getIterations();
             this.hugeModelExpected = conf.isHugeModelExpected();
             this.useAdaGrad = conf.isUseAdaGrad();
