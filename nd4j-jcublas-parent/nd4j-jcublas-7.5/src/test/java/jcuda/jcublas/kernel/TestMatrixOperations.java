@@ -913,7 +913,7 @@ public class TestMatrixOperations {
 
 
     @Test
-    public void testTADMMulLeadingOne(){
+    public void testTADMMulLeadiusngOne(){
         Nd4j.getRandom().setSeed(12345);
         int[] shape = new int[]{1,5,7};
         INDArray arr = Nd4j.rand(shape);
@@ -943,6 +943,35 @@ public class TestMatrixOperations {
         assertTrue(mmul2.equals(mmul2copy));
     }
 
+
+    @Test
+    public void testArgMax2() {
+        INDArray toArgMax = Nd4j.linspace(1,24,24).reshape(4, 3, 2);
+        for(int i = 0; i < toArgMax.tensorssAlongDimension(1); i++) {
+            System.out.println(toArgMax.tensorAlongDimension(i,1));
+        }
+        INDArray  argMax = Nd4j.argMax(toArgMax, 1);
+        INDArray argMaxZero = Nd4j.argMax(toArgMax,0);
+        INDArray argMaxTwo = Nd4j.argMax(toArgMax,2);
+        INDArray valueArray = Nd4j.valueArrayOf(new int[]{4, 2}, 2.0);
+        INDArray valueArrayTwo = Nd4j.valueArrayOf(new int[]{3,2},3.0);
+        INDArray valueArrayThree = Nd4j.valueArrayOf(new int[]{4,3},1.0);
+        assertEquals(valueArray, argMax);
+        assertEquals(valueArrayTwo, argMaxZero);
+        assertEquals(valueArrayThree,argMaxTwo);
+    }
+
+
+    @Test
+    public void testMeans2() {
+        INDArray a = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray mean1 = a.mean(1);
+        assertEquals( Nd4j.create(new double[]{1.5, 3.5}), mean1);
+        assertEquals( Nd4j.create(new double[]{2, 3}), a.mean(0));
+        assertEquals(2.5, Nd4j.linspace(1, 4, 4).meanNumber().doubleValue(), 1e-1);
+        assertEquals(2.5, a.meanNumber().doubleValue(), 1e-1);
+
+    }
 
     @Test
     public void testAddVectorWithOffset() throws Exception {

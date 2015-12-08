@@ -48,7 +48,7 @@ public class IAMax extends BaseIndexAccumulation {
     }
 
 
-    public int update(double accum, int accumIdx, double x, int xIdx){
+    public int update(double accum, int accumIdx, double x, int xIdx) {
         return (FastMath.abs(accum)>=FastMath.abs(x) ? accumIdx : xIdx);
     }
 

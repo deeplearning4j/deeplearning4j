@@ -28,6 +28,7 @@ import jcuda.runtime.cudaMemcpyKind;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
+import org.nd4j.linalg.api.ops.IndexAccumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.CublasPointer;
@@ -111,6 +112,19 @@ public class KernelParamsWrapper implements AutoCloseable {
 
         resultPointers.add(resultPointer);
 
+        return this;
+    }
+    /**
+     * set the Op that this result is for
+     * @param op
+     * @param result
+     * @return
+     */
+    public KernelParamsWrapper setResultOp(IndexAccumulation op, INDArray result,int...dimension) {
+        resultOp = op;
+        resultLength = result.length();
+        scalarResult = (dimension == null || dimension.length < 1 || dimension[0] == Integer.MAX_VALUE);
+        setResultArray(result);
         return this;
     }
 

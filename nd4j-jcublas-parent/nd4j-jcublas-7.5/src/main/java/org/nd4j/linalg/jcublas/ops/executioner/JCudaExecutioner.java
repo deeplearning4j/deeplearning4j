@@ -144,6 +144,87 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     }
 
     @Override
+    public INDArray exec(IndexAccumulation op, int... dimension) {
+        ContextHolder.getInstance().setContext();
+        for(int i = 0; i < dimension.length; i++) {
+            if(dimension[i] < 0)
+                dimension[i] += op.x().rank();
+        }
+        //do op along all dimensions
+        if(dimension.length == op.x().rank())
+            dimension = new int[] {Integer.MAX_VALUE};
+
+
+        if(op.isPassThrough()) {
+            op.exec(dimension);
+            return op.z();
+        }
+
+
+        if(dimension[0] == Integer.MAX_VALUE) {
+            if(op.x() instanceof IComplexNDArray)
+                return Nd4j.scalar(execAndReturn(op).getFinalResult());
+            return Nd4j.scalar(execAndReturn(op).getFinalResult());
+        }
+
+        if(op instanceof IComplexNDArray) {
+            int[] retShape = ArrayUtil.removeIndex(op.x().shape(), dimension);
+            //ensure vector is proper shape
+            if(retShape.length == 1) {
+                if(dimension[0] == 0)
+                    retShape = new int[] {1,retShape[0]};
+                else
+                    retShape = new int[] {retShape[0],1};
+
+            }
+            else if(retShape.length == 0) {
+                retShape = new int[] {1,1};
+            }
+
+            IComplexNDArray ret = Nd4j.createComplex(retShape);
+            IComplexNDArray linear = ret;
+            for (int i = 0; i < op.x().tensorssAlongDimension(dimension); i++) {
+                Op op2 = op.opForDimension(i, dimension);
+                IComplexNumber result = execAndReturn((Accumulation) op2).getFinalResultComplex();
+                linear.putScalar(i, result);
+
+            }
+
+            if(ret.ordering() == 'c')
+                ret.setStride(ArrayUtil.reverseCopy(ret.stride()));
+
+
+            return ret;
+        }
+
+        else {
+            int[] retShape = ArrayUtil.removeIndex(op.x().shape(), dimension);
+            //ensure vector is proper shape
+            if(retShape.length == 1) {
+                if(dimension[0] == 0)
+                    retShape = new int[] {1,retShape[0]};
+                else
+                    retShape = new int[] {retShape[0],1};
+
+            }
+            else if(retShape.length == 0) {
+                retShape = new int[] {1,1};
+            }
+
+            //nothing to reduce
+            if(ArrayUtil.prod(retShape) == op.x().length())
+                return op.x();
+
+            INDArray retArray = Nd4j.create(retShape);
+            invoke(op,dimension,retArray,true);
+            return retArray;
+        }
+
+
+    }
+
+
+    @Override
     public INDArray execAndReturn(TransformOp op, int... dimension) {
         ContextHolder.getInstance().setContext();
         return super.execAndReturn(op, dimension);
@@ -323,6 +404,139 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     private int toInt(boolean val) {
         return val ? 1 : 0;
+    }
+
+
+    private CudaContext invoke(IndexAccumulation op,int[] dimension,INDArray result,boolean sync)  {
+        CudaContext ctx;
+
+        ContextHolder.getInstance().setContext();
+
+        if(!KernelFunctionLoader.getInstance().exists(op.name()) || executionMode() == ExecutionMode.JAVA || op.isPassThrough())
+            super.exec(op);
+
+
+        GpuMetrics metrics = GpuMetrics.blockAndThreads(getType(op),op.n());
+        if(dimension != null  && dimension.length >= 1 && dimension[0] != Integer.MAX_VALUE) {
+            int length = op.x().tensorssAlongDimension(dimension);
+            if(length > 1000)
+                length = 1000;
+            //of note here: THIS IS REVERSE OF WHAT IT SHOULD BE, THIS IS INTENDED.
+            metrics.setGridSizeNotOverMax(length);
+            metrics.setBlockSizeNotOverMax(op.x().tensorAlongDimension(0, dimension).length());
+            int sharedMemBasedOnBlockSize = op.x().tensorAlongDimension(0,dimension).length() * 10 *  op.x().data().getElementSize();
+            if(sharedMemBasedOnBlockSize < 1024)
+                sharedMemBasedOnBlockSize = 1024;
+            metrics.setSharedMemoryNotOverMax(sharedMemBasedOnBlockSize);
+        }
+        else {
+            int sharedMemBasedOnBlockSize = op.n() * op.x().data().getElementSize();
+            if(sharedMemBasedOnBlockSize < 1024)
+                sharedMemBasedOnBlockSize = 1024;
+            metrics.setSharedMemoryNotOverMax(sharedMemBasedOnBlockSize);
+            //setup a number of threads = the number of blocks being launched
+            result = Nd4j.create(metrics.getGridSize());
+        }
+
+
+
+        if (op.y() != null) {
+            metrics.setSharedMemoryNotOverMax(metrics.getSharedMemory() * 2);
+            int xStride = BlasBufferUtil.getBlasStride(dimension == null ? op.x() : op.x().tensorAlongDimension(0,dimension));
+            if(xStride < 0) {
+                op.setX(op.x().dup());
+            }
+
+            int yStride = BlasBufferUtil.getBlasStride(dimension == null ? op.y() : op.y().tensorAlongDimension(0,dimension));
+            if(yStride < 0) {
+                op.setY(op.y().dup());
+            }
+            else if(op.y().ordering() != op.x().ordering()) {
+                op.setY(op.y().dup(op.x().ordering()));
+            }
+
+
+
+            Object[] kernelParams = new Object[] {
+                    op.n(),
+                    op.x(),
+                    KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.x(),dimension)),
+                    op.y(),
+                    KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.y(),dimension)),
+                    toArgs(op.extraArgs(),
+                            getType(op)),
+                    result,
+                    KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(result)),
+                    KernelFunctions.alloc(metrics.getGpuDefinitionInfo()),
+                    KernelFunctions.alloc(dimension == null ? new int[] {Integer.MAX_VALUE} : dimension),
+                    dimension == null ? 1 : dimension.length,
+                    //if the whole buffer is to be used don't do final aggregation this happens
+                    //by aggregating blocks on cpu first
+                    toInt(!(dimension == null || dimension[0] == Integer.MAX_VALUE))
+
+            };
+
+            try(KernelParamsWrapper kParams = new KernelParamsWrapper(op,sync,kernelParams).setResultOp(op, result,dimension)) {
+                invokeFunction(op, sync,metrics,kParams.getContext(), kParams.getKernelParameters());
+                ctx = kParams.getContext();
+                if(sync)
+                    kParams.sync();
+
+            } catch(Exception e) {
+                throw new RuntimeException("Could not execute kernel", e);
+            }
+
+            return ctx;
+
+
+        } else {
+            int xStride = BlasBufferUtil.getBlasStride(dimension == null ? op.x() : op.x().tensorAlongDimension(0,dimension));
+            if(xStride < 0) {
+                op.setX(op.x().dup());
+            }
+
+            int sharedMemBasedOnBlockSize = op.n() * 4 * op.x().data().getElementSize();
+            if(sharedMemBasedOnBlockSize < 1024)
+                sharedMemBasedOnBlockSize = 1024;
+            metrics.setSharedMemoryNotOverMax(sharedMemBasedOnBlockSize);
+
+
+            int length = op.x().data().length();
+            if(dimension == null && xStride == 1 && op.x().offset() == 0)
+                length = op.n();
+
+            Object[] kernelParams = new Object[] {
+                    length,
+                    op.x(),
+                    KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.x(),dimension)),
+                    toArgs(op.extraArgs(), getType(op)),
+                    result,
+                    KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(result)),
+                    KernelFunctions.alloc(metrics.getGpuDefinitionInfo()),
+                    KernelFunctions.alloc(dimension == null ? new int[] {Integer.MAX_VALUE} : dimension),
+                    dimension == null ? 1 : dimension.length,
+                    //if the whole buffer is to be used don't do final aggregation this happens
+                    //by aggregating blocks on cpu first
+                    toInt(!(dimension == null || dimension[0] == Integer.MAX_VALUE))
+            };
+
+
+
+            try(KernelParamsWrapper kParams = new KernelParamsWrapper(op,sync,kernelParams).setResultOp(op, result,dimension)) {
+                invokeFunction(op, sync,metrics,kParams.getContext(), kParams.getKernelParameters());
+                ctx = kParams.getContext();
+                if(sync)
+                    kParams.sync();
+            } catch(Exception e) {
+                throw new RuntimeException("Could not execute kernel: Kernel launch was: " + metrics, e);
+            }
+
+
+
+        }
+
+
+        return ctx;
     }
 
 
@@ -639,7 +853,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
          */
 
         metrics.validate();
-        String functionName = op instanceof TransformOp || op instanceof Accumulation ? op.name() + "_strided" : op.name();
+        String functionName = op instanceof TransformOp || op instanceof Accumulation  || op instanceof  IndexAccumulation ? op.name() + "_strided" : op.name();
         //force blocks and threads to be even
         KernelFunctions.invoke(
                 metrics,

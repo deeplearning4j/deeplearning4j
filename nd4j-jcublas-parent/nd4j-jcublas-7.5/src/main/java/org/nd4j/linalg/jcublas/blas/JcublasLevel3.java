@@ -53,6 +53,7 @@ public class JcublasLevel3 extends BaseLevel3 {
         }catch (Exception e) {
             throw new RuntimeException(e);
         }
+
         finally {
             ctx.finishBlasOperation();
 
