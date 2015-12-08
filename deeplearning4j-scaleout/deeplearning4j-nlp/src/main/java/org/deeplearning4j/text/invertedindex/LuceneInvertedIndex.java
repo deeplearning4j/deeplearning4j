@@ -19,6 +19,7 @@
 package org.deeplearning4j.text.invertedindex;
 
 import com.google.common.base.Function;
+import lombok.NonNull;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -816,7 +817,7 @@ public class LuceneInvertedIndex<T extends SequenceElement> implements InvertedI
     }
 
 
-    public static class Builder {
+    public static class Builder<T extends SequenceElement> {
         private File indexDir;
         private  Directory dir;
         private IndexReader reader;
@@ -824,7 +825,7 @@ public class LuceneInvertedIndex<T extends SequenceElement> implements InvertedI
         private IndexSearcher searcher;
         private IndexWriter writer;
         private  IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
-        private VocabCache vocabCache;
+        private VocabCache<T> vocabCache;
         private List<String> stopWords = StopWords.getStopWords();
         private boolean cache = false;
         private int batchSize = 1000;
@@ -833,69 +834,69 @@ public class LuceneInvertedIndex<T extends SequenceElement> implements InvertedI
 
 
 
-        public Builder miniBatch(boolean miniBatch) {
+        public Builder<T> miniBatch(boolean miniBatch) {
             this.miniBatch = miniBatch;
             return this;
         }
-        public Builder cacheInRam(boolean cache) {
+        public Builder<T> cacheInRam(boolean cache) {
             this.cache = cache;
             return this;
         }
 
-        public Builder sample(double sample) {
+        public Builder<T> sample(double sample) {
             this.sample = sample;
             return this;
         }
 
-        public Builder batchSize(int batchSize) {
+        public Builder<T> batchSize(int batchSize) {
             this.batchSize = batchSize;
             return this;
         }
 
 
 
-        public Builder indexDir(File indexDir) {
+        public Builder<T> indexDir(File indexDir) {
             this.indexDir = indexDir;
             return this;
         }
 
-        public Builder cache(VocabCache cache) {
+        public Builder<T> cache(@NonNull VocabCache<T> cache) {
             this.vocabCache = cache;
             return this;
         }
 
-        public Builder stopWords(List<String> stopWords) {
+        public Builder<T> stopWords(@NonNull List<String> stopWords) {
             this.stopWords = stopWords;
             return this;
         }
 
-        public Builder dir(Directory dir) {
+        public Builder<T> dir(Directory dir) {
             this.dir = dir;
             return this;
         }
 
-        public Builder reader(IndexReader reader) {
+        public Builder<T> reader(IndexReader reader) {
             this.reader = reader;
             return this;
         }
 
-        public Builder writer(IndexWriter writer) {
+        public Builder<T> writer(IndexWriter writer) {
             this.writer = writer;
             return this;
         }
 
-        public Builder analyzer(Analyzer analyzer) {
+        public Builder<T> analyzer(Analyzer analyzer) {
             this.analyzer = analyzer;
             return this;
         }
 
-        public InvertedIndex build() {
-            LuceneInvertedIndex ret;
+        public InvertedIndex<T> build() {
+            LuceneInvertedIndex<T> ret;
             if(indexDir != null) {
-                ret = new LuceneInvertedIndex(vocabCache,cache,indexDir.getAbsolutePath());
+                ret = new LuceneInvertedIndex<T>(vocabCache,cache,indexDir.getAbsolutePath());
             }
             else
-                ret = new LuceneInvertedIndex(vocabCache);
+                ret = new LuceneInvertedIndex<T>(vocabCache);
             try {
                 ret.batchSize = batchSize;
 

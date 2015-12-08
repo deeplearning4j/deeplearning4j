@@ -24,10 +24,9 @@ import lombok.NonNull;
 import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
-import org.deeplearning4j.models.embeddings.loader.Word2VecConfiguration;
+import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
@@ -547,7 +546,7 @@ public class ParagraphVectors extends Word2Vec {
             super();
         }
 
-        public Builder(@NonNull Word2VecConfiguration configuration) {
+        public Builder(@NonNull VectorsConfiguration configuration) {
             super(configuration);
         }
 
