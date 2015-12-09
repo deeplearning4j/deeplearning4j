@@ -19,6 +19,7 @@ High priority:
 
 Medium priority:
 
+* OpenCL for ND4J
 * RNN variable length + one-to-many/many-to-one etc
 * CTC RNN (for speech etc.)
 * Early stopping (needed for hyperparameter optimization)
@@ -26,7 +27,6 @@ Medium priority:
 
 Nice to have:
 
-* OpenCL for ND4J
 * Automatic differentiation
 * Proper complex number support for ND4J (+optimizations)
 * Reinforcement learning
