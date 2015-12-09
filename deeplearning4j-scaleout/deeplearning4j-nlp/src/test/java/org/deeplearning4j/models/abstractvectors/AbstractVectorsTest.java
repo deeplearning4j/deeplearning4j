@@ -51,8 +51,18 @@ public class AbstractVectorsTest {
         AbstractSequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<VocabWord>(transformer)
                 .build();
 
+        /*
+            Now we can build AbstractVectors model, that suits our needs
+         */
         AbstractVectors<VocabWord> vectors = new AbstractVectors.Builder<VocabWord>(new VectorsConfiguration())
+                .minWordFrequency(3)
+
+                // abstract iterator that covers training corpus
                 .iterate(sequenceIterator)
+
+                // if set to true, vocabulary will be built from scratches internally
+                // otherwise externally provided vocab will be used
+                .resetModel(true)
                 .build();
 
         /*
@@ -60,6 +70,11 @@ public class AbstractVectorsTest {
          */
         vectors.fit();
 
+        /*
+            As soon as fit() exits, model considered built, and we can test it.
+            Please note: all similarity context is handled via SequenceElement's labels, so if you're using AbstractVectors to build models for complex
+            objects/relations please take care of Labels uniqueness and meaning for yourself.
+         */
         double sim = vectors.similarity("day", "night");
         assertTrue(sim > 0.6d);
 
