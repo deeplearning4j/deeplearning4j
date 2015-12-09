@@ -61,7 +61,7 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
     protected boolean useAdeGrad;
 
     public final static String UNK = "UNK";
-    protected List<String> stopWords = StopWords.getStopWords();
+    protected List<String> stopWords = new ArrayList<>(); //StopWords.getStopWords();
     /**
      * Returns true if the model has this word in the vocab
      * @param word the word to test for

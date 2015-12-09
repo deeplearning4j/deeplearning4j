@@ -12,6 +12,10 @@ import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
 /**
  * AbstractVectors implements abstract features extraction for Sequences and SequenceElements, using SkipGram, CBOW or DBOW (for Sequence features extraction).
  *
@@ -48,6 +52,8 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
         protected long seed;
         protected boolean useAdaGrad;
         protected boolean resetModel;
+
+        protected List<String> stopWords = new ArrayList<>();
 
         protected VectorsConfiguration configuration;
 
@@ -99,13 +105,45 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
             return this;
         }
 
-        public Builder<T> setMinWordFrequency(int minWordFrequency) {
+        public Builder<T> minWordFrequency(int minWordFrequency) {
             this.minWordFrequency = minWordFrequency;
             return this;
         }
 
         public Builder<T> resetModel(boolean reallyReset) {
             this.resetModel = reallyReset;
+            return this;
+        }
+
+        public Builder<T> setVocabCache(@NonNull VocabCache<T> vocabCache) {
+            this.vocabCache = vocabCache;
+            return this;
+        }
+
+
+        /**
+         *  You can provide collection of objects to be ignored, and excluded out of model
+         *  Please note: Object labels and hashCode will be used for filtering
+         *
+         * @param stopList
+         * @return
+         */
+        public Builder<T> stopList(@NonNull List<String> stopList) {
+            this.stopWords.addAll(stopList);
+            return this;
+        }
+
+        /**
+         * You can provide collection of objects to be ignored, and excluded out of model
+         * Please note: Object labels and hashCode will be used for filtering
+         *
+         * @param stopList
+         * @return
+         */
+        public Builder<T> stopList(@NonNull Collection<T> stopList) {
+            for (T word: stopList) {
+                this.stopWords.add(word.getLabel());
+            }
             return this;
         }
 
@@ -125,6 +163,7 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
             vectors.window = this.window;
             vectors.resetModel = this.resetModel;
             vectors.useAdeGrad = this.useAdaGrad;
+            vectors.stopWords = this.stopWords;
 
 
             this.configuration.setLearningRate(this.learningRate);
