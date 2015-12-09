@@ -178,31 +178,31 @@ public class KernelParamsWrapper implements AutoCloseable {
             // If the instance is a JCudaBuffer we should assign it to the device
             if(arg instanceof JCudaBuffer) {
                 JCudaBuffer buffer = (JCudaBuffer) arg;
-               if(!idMap.containsKey(buffer)) {
-                   CublasPointer pointerToFree = new CublasPointer(buffer,context);
-                   kernelParameters[i] = pointerToFree.getDevicePointer();
-                   pointersToFree.add(pointerToFree);
-                   idMap.put(buffer,pointerToFree.getDevicePointer());
-               }
+                if(!idMap.containsKey(buffer)) {
+                    CublasPointer pointerToFree = new CublasPointer(buffer,context);
+                    kernelParameters[i] = pointerToFree.getDevicePointer();
+                    pointersToFree.add(pointerToFree);
+                    idMap.put(buffer,pointerToFree.getDevicePointer());
+                }
                 else {
-                   Pointer pointer = (Pointer) idMap.get(buffer);
-                   kernelParameters[i] = pointer;
-               }
+                    Pointer pointer = (Pointer) idMap.get(buffer);
+                    kernelParameters[i] = pointer;
+                }
 
             }
             else if(arg instanceof INDArray) {
                 INDArray array = (INDArray) arg;
-               if(!idMap.containsKey(array)) {
-                   CublasPointer pointerToFree = new CublasPointer(array,context);
-                   kernelParameters[i] = pointerToFree.getDevicePointer();
-                   pointersToFree.add(pointerToFree);
-                   arrayToPointer.put(array, pointerToFree);
-                   idMap.put(array,pointerToFree.getDevicePointer());
-               }
+                if(!idMap.containsKey(array)) {
+                    CublasPointer pointerToFree = new CublasPointer(array,context);
+                    kernelParameters[i] = pointerToFree.getDevicePointer();
+                    pointersToFree.add(pointerToFree);
+                    arrayToPointer.put(array, pointerToFree);
+                    idMap.put(array,pointerToFree.getDevicePointer());
+                }
                 else {
-                   Pointer pointer = (Pointer) idMap.get(array);
-                   kernelParameters[i] = pointer;
-               }
+                    Pointer pointer = (Pointer) idMap.get(array);
+                    kernelParameters[i] = pointer;
+                }
 
             }
             else
@@ -218,8 +218,11 @@ public class KernelParamsWrapper implements AutoCloseable {
      */
     @Override
     public void close() throws Exception {
-        if(closeInvoked)
-            return;
+
+        if(context.getOldStream() != null)
+            context.syncOldStream();
+        if(context.getStream() != null)
+            context.syncStream();
 
         for(CublasPointer cublasPointer : pointersToFree) {
             if(resultPointers.contains(cublasPointer)) {
@@ -256,7 +259,9 @@ public class KernelParamsWrapper implements AutoCloseable {
                 ByteBuffer buff = devicePointer.getHostPointer().getByteBuffer(0,acc.x().data().getElementSize() * resultLength);
                 buff.order(ByteOrder.nativeOrder());
                 INDArray setResult = Nd4j.create(Nd4j.createBuffer(buff, DataBuffer.Type.DOUBLE,resultLength));
+                int oldN = acc.n();
                 acc.setX(setResult);
+                acc.setN(oldN);
                 JCudaExecutioner exec = (JCudaExecutioner) Nd4j.getExecutioner();
                 exec.calculateBlockResult((Accumulation) acc,setResult);
             }
