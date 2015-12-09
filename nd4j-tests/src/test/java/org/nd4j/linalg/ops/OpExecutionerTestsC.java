@@ -259,13 +259,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         assertEquals(0.0,biaOp.currentResult().doubleValue(),1e-1);
     }
 
-    @Test
-    public void testIamax() {
-        INDArray linspace = Nd4j.linspace(1, 4, 4);
-        assertEquals(getFailureMessage(), 3, Nd4j.getBlasWrapper().iamax(linspace));
-        int iamax = Nd4j.getExecutioner().execAndReturn(new IAMax(linspace)).getFinalResult();
-        assertEquals(3,iamax);
-    }
+
 
 
     @Test

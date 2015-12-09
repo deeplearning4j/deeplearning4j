@@ -229,7 +229,7 @@ public class KernelParamsWrapper implements AutoCloseable {
                 //sets the result for the buffer
                 //since this ends up being a scalar
                 if(closeContext) {
-                    if(scalarResult && resultOp instanceof Accumulation) {
+                    if(scalarResult && resultOp instanceof Accumulation || resultOp instanceof IndexAccumulation) {
                         setResultForOp(resultOp, cublasPointer);
                     }
                     else
@@ -263,7 +263,11 @@ public class KernelParamsWrapper implements AutoCloseable {
                 acc.setX(setResult);
                 acc.setN(oldN);
                 JCudaExecutioner exec = (JCudaExecutioner) Nd4j.getExecutioner();
-                exec.calculateBlockResult((Accumulation) acc,setResult);
+                if(acc instanceof IndexAccumulation)
+                    exec.calculateBlockResult((IndexAccumulation) acc,setResult);
+
+                else
+                    exec.calculateBlockResult((Accumulation) acc,setResult);
             }
             else {
                 double[] data = new double[resultLength];
@@ -286,7 +290,10 @@ public class KernelParamsWrapper implements AutoCloseable {
                 buff.order(ByteOrder.nativeOrder());
                 INDArray setResult = Nd4j.create(Nd4j.createBuffer(buff, DataBuffer.Type.FLOAT,resultLength));
                 JCudaExecutioner exec = (JCudaExecutioner) Nd4j.getExecutioner();
-                exec.calculateBlockResult((Accumulation) acc,setResult);
+                if(acc instanceof IndexAccumulation)
+                    exec.calculateBlockResult((IndexAccumulation) acc,setResult);
+                else
+                    exec.calculateBlockResult((Accumulation) acc,setResult);
             }
             else {
                 float[] data = new float[resultLength];

@@ -20,6 +20,7 @@
 package org.nd4j.linalg.jcublas.ops.executioner;
 
 
+import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -261,6 +262,10 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             BroadcastOp broadcastOp = (BroadcastOp) op;
             invoke(broadcastOp,true);
         }
+        else if(op instanceof IndexAccumulation) {
+            IndexAccumulation indexAccumulation = (IndexAccumulation) op;
+            invoke(indexAccumulation,null,Nd4j.scalar(0),true);
+        }
         return op;
     }
 
@@ -299,6 +304,28 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             return KernelFunctions.alloc(PointerUtil.toFloats(extraArgs));
         }
         throw new IllegalArgumentException("Illegal datatype");
+    }
+
+
+    /**
+     * Calculates a reduction across blocks
+     * @param op
+     * @param resultAcrossBlocks
+     */
+    public void calculateBlockResult(IndexAccumulation op,INDArray resultAcrossBlocks) {
+        int oldN = op.n();
+        Pair<Double,Integer> pair = op.zeroPair();
+        for(int i = 0; i < resultAcrossBlocks.length(); i++) {
+            int firstVal = (int) resultAcrossBlocks.data().getDouble(resultAcrossBlocks.offset() + i * resultAcrossBlocks.elementWiseStride());
+            pair = op.combineSubResults(Pair.create(op.x().getDouble(firstVal),firstVal),pair);
+        }
+
+        if(resultAcrossBlocks.length() == 1)
+            op.setFinalResult(resultAcrossBlocks.getInt(0));
+
+        op.setFinalResult(pair.getSecond());
+        op.setN(oldN);
+
     }
 
     /**

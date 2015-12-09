@@ -38,8 +38,10 @@ import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.BroadcastOp;
+import org.nd4j.linalg.api.ops.IndexAccumulation;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.broadcast.*;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.transforms.Log;
 import org.nd4j.linalg.api.ops.impl.transforms.LogSoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
@@ -362,6 +364,18 @@ public class TestMatrixOperations {
             future.get(1, TimeUnit.MINUTES);
         }
 
+    }
+
+    @Test
+    public void testIMin(){
+        INDArray arr = Nd4j.linspace(1, 10, 10);
+        IMin imin = new IMin(arr);
+        assertEquals(0, ((IndexAccumulation) Nd4j.getExecutioner().exec(imin)).getFinalResult());
+
+        arr.muli(-1);
+        imin = new IMin(arr);
+        int minIdx = ((IndexAccumulation) Nd4j.getExecutioner().exec(imin)).getFinalResult();
+        assertEquals(9, minIdx);
     }
 
 
