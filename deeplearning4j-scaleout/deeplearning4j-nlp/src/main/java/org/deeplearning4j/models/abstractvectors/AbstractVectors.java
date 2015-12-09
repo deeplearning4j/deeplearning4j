@@ -1,9 +1,11 @@
 package org.deeplearning4j.models.abstractvectors;
 
 import lombok.NonNull;
+import lombok.Setter;
 import org.deeplearning4j.graph.iterator.GraphWalkIterator;
 import org.deeplearning4j.models.abstractvectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
+import org.deeplearning4j.models.abstractvectors.transformers.SequenceTransformer;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
@@ -45,6 +47,7 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
         protected int learningRateDecayWords;
         protected long seed;
         protected boolean useAdaGrad;
+        protected boolean resetModel;
 
         protected VectorsConfiguration configuration;
 
@@ -70,13 +73,39 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
             this.window = configuration.getWindow();
         }
 
+        /**
+         * Set sequence transformer for abstract transformations data
+         *
+         * @param transformer
+         * @return
+         */
+        public Builder<T> setSequenceTransformer(@NonNull SequenceTransformer<T, ?> transformer) {
+
+            return this;
+        }
+
         public Builder<T> iterate(@NonNull SequenceIterator<T> iterator) {
 
             return this;
         }
 
-        public Builder<T> iterate(@NonNull GraphWalkIterator<T> iterator) {
+        public Builder<T> setLayerSize(int layerSize) {
+            this.layerSize = layerSize;
+            return this;
+        }
 
+        public Builder<T> setLearningRate(double learningRate) {
+            this.learningRate = learningRate;
+            return this;
+        }
+
+        public Builder<T> setMinWordFrequency(int minWordFrequency) {
+            this.minWordFrequency = minWordFrequency;
+            return this;
+        }
+
+        public Builder<T> resetModel(boolean reallyReset) {
+            this.resetModel = reallyReset;
             return this;
         }
 
@@ -94,6 +123,8 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
             vectors.batchSize = this.batchSize;
             vectors.learningRateDecayWords = this.learningRateDecayWords;
             vectors.window = this.window;
+            vectors.resetModel = this.resetModel;
+            vectors.useAdeGrad = this.useAdaGrad;
 
 
             this.configuration.setLearningRate(this.learningRate);

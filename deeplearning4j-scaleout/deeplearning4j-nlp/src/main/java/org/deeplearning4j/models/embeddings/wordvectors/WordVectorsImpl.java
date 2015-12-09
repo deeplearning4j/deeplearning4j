@@ -57,6 +57,8 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
     protected int window = 5;
     protected int batchSize;
     protected int learningRateDecayWords;
+    protected boolean resetModel;
+    protected boolean useAdeGrad;
 
     public final static String UNK = "UNK";
     protected List<String> stopWords = StopWords.getStopWords();
