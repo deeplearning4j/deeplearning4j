@@ -11,7 +11,22 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
  */
 public interface SequenceTransformer<T extends SequenceElement, V extends Object> {
 
+    /**
+     * Returns Vocabulary derived from underlying data source.
+     * In default implementations this method heavily relies on transformToSequence() method.
+     *
+     * @return
+     */
     VocabCache<T> derivedVocabulary();
 
-    Sequence<T> transformToSequence(V object);
+    /**
+     * This is generic method for transformation data from any format to Sequence of SequenceElement.
+     * It will be used both in Vocab building, and in training process
+     *
+     * @param object - Object to be transformed into Sequence
+     * @param addUnkownElements - defines, if unkown elements should be added to vocab or not. True, if should be added, false otherwise.
+     *                          Please note: Vocab building will call this method with TRUE value, training will be called with FALSE value
+     * @return
+     */
+    Sequence<T> transformToSequence(V object, boolean addUnkownElements);
 }

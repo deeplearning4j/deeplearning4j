@@ -11,12 +11,14 @@ import org.deeplearning4j.text.documentiterator.LabelAwareIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 
+import java.util.Iterator;
+
 /**
  * This class is responsible for conversion lines of text to Sequences of SequenceElements
  *
  * @author raver119@gmail.com
  */
-public class SentenceTransformer implements SequenceTransformer<VocabWord, String> {
+public class SentenceTransformer implements SequenceTransformer<VocabWord, String>, Iterable<Sequence<VocabWord>>{
     /*
             So, we must accept any SentenceIterator implementations, and build vocab out of it, and use it for further transforms between text and Sequences
      */
@@ -33,7 +35,12 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
     }
 
     @Override
-    public Sequence<VocabWord> transformToSequence(String object) {
+    public Sequence<VocabWord> transformToSequence(String object, boolean addUnkownElements) {
+        return null;
+    }
+
+    @Override
+    public Iterator<Sequence<VocabWord>> iterator() {
         return null;
     }
 

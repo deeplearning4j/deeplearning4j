@@ -43,10 +43,11 @@ public class AbstractSequenceIterator<T extends SequenceElement> implements Sequ
 
         }
 
+        /*
         public Builder(@NonNull SequenceTransformer<T, ?> transformer) {
 
         }
-
+*/
 
         public AbstractSequenceIterator<T> build() {
             AbstractSequenceIterator<T> iterator = new AbstractSequenceIterator<T>();
