@@ -8,6 +8,7 @@ layout: default
 These priorities have been set by what the Skymind has seen demand for among clients and open-source community members. Contributors are free to add features themselves if they deem their priority to be higher. 
 
 High priority:
+
 •	Parameter server
 •	Computation graph
 •	Sparse support for ND4J
