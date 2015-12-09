@@ -7,6 +7,9 @@ import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
+import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -41,9 +44,14 @@ public class AbstractVectorsTest {
             Now we need the way to convert lines into Sequences of VocabWords.
             In this example that's SentenceTransformer
          */
+        TokenizerFactory t = new DefaultTokenizerFactory();
+        t.setTokenPreProcessor(new CommonPreprocessor());
+
         SentenceTransformer transformer = new SentenceTransformer.Builder()
                 .iterator(underlyingIterator)
+                .tokenizerFactory(t)
                 .build();
+
 
         /*
             And we pack that transformer into AbstractSequenceIterator
