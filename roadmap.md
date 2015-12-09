@@ -12,7 +12,7 @@ High priority:
 * Parameter server
 * Computation graph
 * Sparse support for ND4J
-* CUDArewrite for ND4J (under way)
+* CUDA rewrite for ND4J (under way)
 * Hyperparameter optimization (For now: random search. Bayesian methods would come next.)
 * Performance tests for network training vs. other platforms (and where necessary: optimizations)
 * Performance tests for Spark vs. local (ditto)
