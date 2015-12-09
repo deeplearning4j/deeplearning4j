@@ -15,9 +15,9 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class WordsListToVocabWordsFunction implements Function<Pair<List<String>, AtomicLong>, List<VocabWord>> {
 
-    Broadcast<VocabCache> vocabCacheBroadcast;
+    Broadcast<VocabCache<VocabWord>> vocabCacheBroadcast;
 
-    public WordsListToVocabWordsFunction(Broadcast<VocabCache> vocabCacheBroadcast) {
+    public WordsListToVocabWordsFunction(Broadcast<VocabCache<VocabWord>> vocabCacheBroadcast) {
         this. vocabCacheBroadcast = vocabCacheBroadcast;
     }
 
@@ -27,7 +27,7 @@ public class WordsListToVocabWordsFunction implements Function<Pair<List<String>
         List<String> wordsList = pair.getFirst();
         List<VocabWord> vocabWordsList = new ArrayList<>();
         for (String s : wordsList)
-            vocabWordsList.add(vocabCacheBroadcast.getValue().wordFor(s));
+            vocabWordsList.add((VocabWord) vocabCacheBroadcast.getValue().wordFor(s));
         return vocabWordsList;
     }
 }

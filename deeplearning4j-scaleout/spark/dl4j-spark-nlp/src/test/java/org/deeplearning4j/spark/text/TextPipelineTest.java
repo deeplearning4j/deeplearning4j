@@ -160,7 +160,7 @@ public class TextPipelineTest extends BaseSparkTest {
         Counter<String> wordFreqCounter = pipeline.getWordFreqAcc().value();
 
         pipeline.filterMinWordAddVocab(wordFreqCounter);
-        VocabCache vocabCache = pipeline.getVocabCache();
+        VocabCache<VocabWord> vocabCache = pipeline.getVocabCache();
 
         assertTrue(vocabCache != null);
         VocabWord redVocab = vocabCache.tokenFor("red");
@@ -192,7 +192,7 @@ public class TextPipelineTest extends BaseSparkTest {
 
         TextPipeline pipeline = new TextPipeline(corpusRDD, broadcastTokenizerVarMap);
         pipeline.buildVocabCache();
-        VocabCache vocabCache = pipeline.getVocabCache();
+        VocabCache<VocabWord> vocabCache = pipeline.getVocabCache();
 
         assertTrue(vocabCache != null);
         VocabWord redVocab = vocabCache.tokenFor("red");

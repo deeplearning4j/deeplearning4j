@@ -12,5 +12,5 @@ import java.util.List;
  */
 public class Sequence<T extends SequenceElement> {
     @Getter @Setter protected List<T> elements;
-    @Getter protected T label;
+    @Getter @Setter protected T label;
 }

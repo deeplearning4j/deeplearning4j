@@ -61,9 +61,17 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
             this.sampling = configuration.getSampling();
             this.negative = configuration.getNegative();
             this.minWordFrequency = configuration.getMinWordFrequency();
+            this.seed = configuration.getSeed();
+            this.hugeModelExpected = configuration.isHugeModelExpected();
+            this.batchSize = configuration.getBatchSize();
+            this.layerSize = configuration.getLayersSize();
+            this.learningRateDecayWords = configuration.getLearningRateDecayWords();
+            this.useAdaGrad = configuration.isUseAdaGrad();
+            this.window = configuration.getWindow();
         }
 
         public Builder<T> iterate(@NonNull SequenceIterator<T> iterator) {
+
             return this;
         }
 
@@ -85,7 +93,7 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
             vectors.layerSize = this.layerSize;
             vectors.batchSize = this.batchSize;
             vectors.learningRateDecayWords = this.learningRateDecayWords;
-            
+            vectors.window = this.window;
 
 
             this.configuration.setLearningRate(this.learningRate);

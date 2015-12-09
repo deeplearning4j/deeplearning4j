@@ -24,6 +24,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
@@ -56,8 +57,8 @@ public class TextPipeline {
     private Broadcast<List<String>> stopWordBroadCast;
     // Return values
     private JavaRDD<Pair<List<String>, AtomicLong>> sentenceWordsCountRDD;
-    private VocabCache vocabCache = new InMemoryLookupCache();
-    private Broadcast<VocabCache> vocabCacheBroadcast;
+    private VocabCache<VocabWord> vocabCache = new InMemoryLookupCache();
+    private Broadcast<VocabCache<VocabWord>> vocabCacheBroadcast;
     private JavaRDD<List<VocabWord>> vocabWordListRDD;
     private JavaRDD<AtomicLong> sentenceCountRDD;
     private long totalWordCount;
@@ -201,7 +202,7 @@ public class TextPipeline {
         }
     }
 
-    public Broadcast<VocabCache> getBroadCastVocabCache() throws IllegalStateException {
+    public Broadcast<VocabCache<VocabWord>> getBroadCastVocabCache() throws IllegalStateException {
         if (vocabCache.numWords() > 0) {
             return vocabCacheBroadcast;
         } else {

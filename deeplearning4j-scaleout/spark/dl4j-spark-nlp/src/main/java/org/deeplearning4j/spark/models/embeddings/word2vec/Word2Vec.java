@@ -148,7 +148,7 @@ public class Word2Vec extends WordVectorsImpl implements Serializable  {
         vocabWordListRDD = pipeline.getVocabWordListRDD();
 
         // Get vocabCache and broad-casted vocabCache
-        Broadcast<VocabCache> vocabCacheBroadcast = pipeline.getBroadCastVocabCache();
+        Broadcast<VocabCache<VocabWord>> vocabCacheBroadcast = pipeline.getBroadCastVocabCache();
         vocabCache = vocabCacheBroadcast.getValue();
 
         //////////////////////////////////////
