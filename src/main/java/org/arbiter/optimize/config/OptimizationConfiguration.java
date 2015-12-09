@@ -1,11 +1,14 @@
 package org.arbiter.optimize.config;
 
-import lombok.Builder;
 import lombok.Data;
 import org.arbiter.optimize.api.CandidateGenerator;
 import org.arbiter.optimize.api.data.DataProvider;
-import org.arbiter.optimize.api.saving.ModelSaver;
+import org.arbiter.optimize.api.saving.ResultSaver;
 import org.arbiter.optimize.api.score.ScoreFunction;
+import org.arbiter.optimize.api.termination.TerminationCondition;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  *
@@ -18,22 +21,28 @@ public class OptimizationConfiguration<T,M,D> {
 
     private DataProvider<D> dataProvider;
     private CandidateGenerator<T> candidateGenerator;
-    private ModelSaver<M> modelSaver;
-    private ScoreFunction<M> scoreFunction;
+    private ResultSaver<T,M> resultSaver;
+    private ScoreFunction<M,D> scoreFunction;
+    private List<TerminationCondition> terminationConditions;
+    private int maxConcurrentJobs;
 
     private OptimizationConfiguration(Builder<T,M,D> builder ){
         this.dataProvider = builder.dataProvider;
         this.candidateGenerator = builder.candidateGenerator;
-        this.modelSaver = builder.modelSaver;
+        this.resultSaver = builder.resultSaver;
         this.scoreFunction = builder.scoreFunction;
+        this.terminationConditions = builder.terminationConditions;
+        this.maxConcurrentJobs = builder.maxConcurrentJobs;
     }
 
     public static class Builder<T,M,D> {
 
         private DataProvider<D> dataProvider;
         private CandidateGenerator<T> candidateGenerator;
-        private ModelSaver<M> modelSaver;
-        private ScoreFunction<M> scoreFunction;
+        private ResultSaver<T,M> resultSaver;
+        private ScoreFunction<M,D> scoreFunction;
+        private List<TerminationCondition> terminationConditions;
+        private int maxConcurrentJobs = -1;
 
         public Builder dataProvider(DataProvider<D> dataProvider){
             this.dataProvider = dataProvider;
@@ -45,18 +54,33 @@ public class OptimizationConfiguration<T,M,D> {
             return this;
         }
 
-        public Builder modelSaver(ModelSaver<M> modelSaver){
-            this.modelSaver = modelSaver;
+        public Builder modelSaver(ResultSaver<T,M> resultSaver){
+            this.resultSaver = resultSaver;
             return this;
         }
 
-        public Builder scoreFunction(ScoreFunction<M> scoreFunction){
+        public Builder scoreFunction(ScoreFunction<M,D> scoreFunction){
             this.scoreFunction = scoreFunction;
             return this;
         }
 
+        public Builder terminationConditions(TerminationCondition... conditions){
+            terminationConditions = Arrays.asList(conditions);
+            return this;
+        }
+
+        public Builder terminationConditions(List<TerminationCondition> terminationConditions ){
+            this.terminationConditions = terminationConditions;
+            return this;
+        }
+
+        public Builder maxConcurrentJobs(int maxConcurrentJobs){
+            this.maxConcurrentJobs = maxConcurrentJobs;
+            return this;
+        }
+
         public OptimizationConfiguration<T,M,D> build(){
-            return new OptimizationConfiguration<>(this);
+            return new OptimizationConfiguration<T,M,D>(this);
         }
 
 

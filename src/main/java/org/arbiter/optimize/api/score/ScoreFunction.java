@@ -1,6 +1,8 @@
 package org.arbiter.optimize.api.score;
 
-public interface ScoreFunction<M> {
+import org.arbiter.optimize.api.data.DataProvider;
 
-    double score(M model);
+public interface ScoreFunction<M,D> {
+
+    double score(M model, DataProvider<D> dataProvider);
 }

@@ -8,6 +8,7 @@ import org.arbiter.optimize.api.Candidate;
 import org.arbiter.optimize.api.OptimizationResult;
 import org.arbiter.optimize.api.TaskCreator;
 import org.arbiter.optimize.api.data.DataProvider;
+import org.arbiter.optimize.api.score.ScoreFunction;
 import org.arbiter.optimize.executor.CandidateExecutor;
 import org.arbiter.optimize.executor.spark.functions.ExecuteFunction;
 
@@ -21,16 +22,16 @@ import java.util.concurrent.Future;
 public class SparkCandidateExecutor<T,M,D> implements CandidateExecutor<T,M,D> {
 
     private JavaSparkContext sparkContext;
-    private TaskCreator<T,M> taskCreator;
+    private TaskCreator<T,M,D> taskCreator;
 
 
     @Override
-    public Future<OptimizationResult<T, M>> execute(Candidate<T> candidate, DataProvider<D> dataProvider) {
-        return execute(Collections.singletonList(candidate),dataProvider).get(0);
+    public Future<OptimizationResult<T, M>> execute(Candidate<T> candidate, DataProvider<D> dataProvider, ScoreFunction<M,D> scoreFunction) {
+        return execute(Collections.singletonList(candidate),dataProvider,scoreFunction).get(0);
     }
 
     @Override
-    public List<Future<OptimizationResult<T, M>>> execute(List<Candidate<T>> candidates, DataProvider<D> dataProvider) {
+    public List<Future<OptimizationResult<T, M>>> execute(List<Candidate<T>> candidates, DataProvider<D> dataProvider, ScoreFunction<M,D> scoreFunction) {
         List<CandidateDataPair<T,D>> list = new ArrayList<>(candidates.size());
         for(Candidate<T> candidate : candidates ){
             list.add(new CandidateDataPair<>(candidate, dataProvider));

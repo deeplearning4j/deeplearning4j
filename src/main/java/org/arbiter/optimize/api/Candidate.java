@@ -10,9 +10,11 @@ import java.io.Serializable;
 public class Candidate<T> implements Serializable {
 
     private T value;
+    private int index;
 
-    public Candidate( T value ){
+    public Candidate( T value, int index ){
         this.value = value;
+        this.index = index;
     }
 
 

@@ -1,9 +1,14 @@
 package org.arbiter.deeplearning4j;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.math3.distribution.UniformIntegerDistribution;
+import org.arbiter.deeplearning4j.saver.local.LocalMultiLayerNetworkSaver;
+import org.arbiter.deeplearning4j.scoring.TestSetLossScoreFunction;
 import org.arbiter.deeplearning4j.task.DL4JTaskCreator;
 import org.arbiter.optimize.api.CandidateGenerator;
 import org.arbiter.optimize.api.data.DataProvider;
+import org.arbiter.optimize.api.termination.MaxCandidatesCondition;
+import org.arbiter.optimize.api.termination.MaxTimeCondition;
 import org.arbiter.optimize.config.OptimizationConfiguration;
 import org.arbiter.optimize.executor.CandidateExecutor;
 import org.arbiter.optimize.executor.local.LocalCandidateExecutor;
@@ -22,7 +27,10 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
 
-public class TestLocalExecution {
+import java.io.File;
+import java.util.concurrent.TimeUnit;
+
+public class TestDL4JLocalExecution {
 
     @Test
     public void testLocalExecution(){
@@ -32,8 +40,8 @@ public class TestLocalExecution {
                 .layer(DenseLayer.class)
                 .numLayersDistribution(new UniformIntegerDistribution(1, 2))     //1 or 2 layers
                 .add("nIn", new FixedValue<Integer>(4))
-                .add("nOut", new IntegerParameterSpace(2,10))
-                .add("activation", new DiscreteParameterSpace<String>("relu","tanh"))
+                .add("nOut", new IntegerParameterSpace(2, 10))
+                .add("activation", new DiscreteParameterSpace<String>("relu", "tanh"))
                 .build();
 
         LayerSpace ls2 = new LayerSpace.Builder()
@@ -60,13 +68,22 @@ public class TestLocalExecution {
         DataProvider<DataSetIterator> dataProvider = new IrisDSP();
 
 
+//        String modelSavePath = FilenameUtils.concat(System.getProperty("java.io.tmpdir"),"ArbiterDL4JTest/");
+        String modelSavePath = new File(System.getProperty("java.io.tmpdir"),"ArbiterDL4JTest\\").getAbsolutePath();
+
+        File f = new File(modelSavePath);
+        if(f.exists()) f.delete();
+        f.mkdir();
 
         OptimizationConfiguration<MultiLayerConfiguration,MultiLayerNetwork,DataSetIterator> configuration
                 = new OptimizationConfiguration.Builder<MultiLayerConfiguration,MultiLayerNetwork,DataSetIterator>()
                 .candidateGenerator(candidateGenerator)
                 .dataProvider(dataProvider)
-                .modelSaver(null)
-                .scoreFunction(null)
+                .modelSaver(new LocalMultiLayerNetworkSaver(modelSavePath))
+                .scoreFunction(new TestSetLossScoreFunction())
+                .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
+                        new MaxCandidatesCondition(10))
+                .maxConcurrentJobs(5)
                 .build();
 
         CandidateExecutor<MultiLayerConfiguration,MultiLayerNetwork,DataSetIterator> executor =
@@ -79,6 +96,7 @@ public class TestLocalExecution {
 
 
         System.out.println("----- COMPLETE -----");
+
 
     }
 

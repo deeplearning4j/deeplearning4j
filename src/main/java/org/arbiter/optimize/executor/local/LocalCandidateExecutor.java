@@ -5,6 +5,7 @@ import org.arbiter.optimize.api.Candidate;
 import org.arbiter.optimize.api.OptimizationResult;
 import org.arbiter.optimize.api.TaskCreator;
 import org.arbiter.optimize.api.data.DataProvider;
+import org.arbiter.optimize.api.score.ScoreFunction;
 import org.arbiter.optimize.executor.CandidateExecutor;
 
 import java.util.ArrayList;
@@ -15,15 +16,15 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class LocalCandidateExecutor<T,M,D> implements CandidateExecutor<T,M,D> {
 
-    private TaskCreator<T,M> taskCreator;
+    private TaskCreator<T,M,D> taskCreator;
     private int nThreads;
     private ExecutorService executor;
 
-    public LocalCandidateExecutor(TaskCreator<T,M> taskCreator){
+    public LocalCandidateExecutor(TaskCreator<T,M,D> taskCreator){
         this(taskCreator,1);
     }
 
-    public LocalCandidateExecutor(TaskCreator<T,M> taskCreator, int nThreads){
+    public LocalCandidateExecutor(TaskCreator<T,M,D> taskCreator, int nThreads){
         this.nThreads = nThreads;
         this.taskCreator = taskCreator;
 
@@ -41,17 +42,16 @@ public class LocalCandidateExecutor<T,M,D> implements CandidateExecutor<T,M,D> {
 
 
     @Override
-    public Future<OptimizationResult<T, M>> execute(Candidate<T> candidate, DataProvider<D> dataProvider) {
-        Callable<OptimizationResult<T,M>> task = taskCreator.create(candidate,dataProvider);
+    public Future<OptimizationResult<T, M>> execute(Candidate<T> candidate, DataProvider<D> dataProvider, ScoreFunction<M,D> scoreFunction ) {
+        Callable<OptimizationResult<T,M>> task = taskCreator.create(candidate,dataProvider,scoreFunction);
         return executor.submit(task);
-
     }
 
     @Override
-    public List<Future<OptimizationResult<T, M>>> execute(List<Candidate<T>> candidates, DataProvider<D> dataProvider) {
+    public List<Future<OptimizationResult<T, M>>> execute(List<Candidate<T>> candidates, DataProvider<D> dataProvider, ScoreFunction<M,D> scoreFunction ) {
         List<Future<OptimizationResult<T,M>>> list = new ArrayList<>(candidates.size());
         for(Candidate<T> candidate : candidates){
-            Callable<OptimizationResult<T,M>> task = taskCreator.create(candidate,dataProvider);
+            Callable<OptimizationResult<T,M>> task = taskCreator.create(candidate,dataProvider, scoreFunction);
             list.add(executor.submit(task));
         }
         return list;
