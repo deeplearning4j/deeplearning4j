@@ -5,7 +5,7 @@ layout: default
 
 # Deeplearning4j Roadmap
 
-These priorities have been set by what the Skymind has seen demand for among clients and open-source community members. Contributors are free to add features themselves if they deem their priority to be higher. 
+These priorities have been set by what the Skymind has seen demand for among clients and open-source community members. Contributors are welcome to add features whose priority they deem to be higher. 
 
 High priority:
 
@@ -13,7 +13,7 @@ High priority:
 * Computation graph
 * Sparse support for ND4J
 * CUDA rewrite for ND4J (under way)
-* Hyperparameter optimization (For now: random search. Bayesian methods would come next.)
+* Hyperparameter optimization (For now: random search. Bayesian methods next.)
 * Performance tests for network training vs. other platforms (and where necessary: optimizations)
 * Performance tests for Spark vs. local (ditto)
 
