@@ -36,7 +36,7 @@ Nice to have:
 Low priority:
 
 * Hessian free
-* Other RNN types; bidirectional, multi-dimensional; attention, neural neuring machine, etc
+* Other RNN types; bidirectional, multi-dimensional; attention models, Neural Turing Machine, etc.
 * 3D CNNs
 
 This is a work in progress. Last updated Dec. 9 2015.
