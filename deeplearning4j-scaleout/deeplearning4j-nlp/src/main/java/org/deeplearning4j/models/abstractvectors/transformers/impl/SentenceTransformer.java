@@ -12,7 +12,7 @@ import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 
 /**
- * This class is responsible for conversion between text to Sequence
+ * This class is responsible for conversion lines of text to Sequences of SequenceElements
  *
  * @author raver119@gmail.com
  */
