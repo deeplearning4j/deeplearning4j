@@ -25,6 +25,7 @@ public class LocalCandidateExecutor<T,M,D> implements CandidateExecutor<T,M,D> {
 
     public LocalCandidateExecutor(TaskCreator<T,M> taskCreator, int nThreads){
         this.nThreads = nThreads;
+        this.taskCreator = taskCreator;
 
         executor = Executors.newFixedThreadPool(nThreads, new ThreadFactory() {
             private AtomicLong counter = new AtomicLong(0);

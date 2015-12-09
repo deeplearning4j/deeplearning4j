@@ -1,8 +1,8 @@
 package org.arbiter.deeplearning4j;
 
 import org.apache.commons.lang.ArrayUtils;
-import org.arbiter.optimize.parameter.ContinuousParameterSpace;
-import org.arbiter.optimize.parameter.DiscreteParameterSpace;
+import org.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
+import org.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
 import org.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
@@ -25,7 +25,6 @@ public class TestLayerSpace {
                 .layer(DenseLayer.class)
                 .add("nIn", new FixedValue<Integer>(10))
                 .add("nOut", new FixedValue<Integer>(20))
-                .minLayers(1).maxLayers(1)
                 .build();
 
         List<Layer> layerList = ls.randomLayers();
@@ -52,7 +51,6 @@ public class TestLayerSpace {
                     .add("learningRate", new ContinuousParameterSpace(0.3, 0.4))
                     .add("l2", new ContinuousParameterSpace(0.01,0.1))
                     .add("activation", new DiscreteParameterSpace<String>(actFns))
-                    .minLayers(1).maxLayers(1)
                     .build();
 
             List<Layer> layerList = ls.randomLayers();

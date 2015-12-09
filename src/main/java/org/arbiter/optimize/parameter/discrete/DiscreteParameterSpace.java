@@ -1,4 +1,6 @@
-package org.arbiter.optimize.parameter;
+package org.arbiter.optimize.parameter.discrete;
+
+import org.arbiter.optimize.parameter.ParameterSpace;
 
 import java.util.*;
 

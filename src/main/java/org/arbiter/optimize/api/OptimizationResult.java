@@ -5,12 +5,18 @@ import lombok.Data;
 
 import java.io.Serializable;
 
-@AllArgsConstructor @Data
+@Data
 public class OptimizationResult<T,M> implements Serializable {
 
     private T config;
     private M result;
     private double score;
+
+    public OptimizationResult(T config, M result, double score){
+        this.config = config;
+        this.result = result;
+        this.score = score;
+    }
 
 
 }

@@ -1,7 +1,8 @@
-package org.arbiter.optimize.parameter;
+package org.arbiter.optimize.parameter.continuous;
 
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.distribution.UniformRealDistribution;
+import org.arbiter.optimize.parameter.ParameterSpace;
 
 public class ContinuousParameterSpace implements ParameterSpace<Double> {
 

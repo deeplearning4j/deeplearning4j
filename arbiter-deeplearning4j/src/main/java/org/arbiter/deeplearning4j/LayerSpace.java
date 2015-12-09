@@ -2,6 +2,9 @@ package org.arbiter.deeplearning4j;
 
 import lombok.Builder;
 import lombok.Data;
+import org.apache.commons.math3.distribution.IntegerDistribution;
+import org.apache.commons.math3.distribution.UniformIntegerDistribution;
+import org.arbiter.optimize.distribution.DegenerateIntegerDistribution;
 import org.arbiter.optimize.parameter.ParameterSpace;
 import org.deeplearning4j.nn.conf.layers.Layer;
 
@@ -16,21 +19,18 @@ public class LayerSpace {
 
     private Class<? extends Layer> configClass;
     private Map<String,ParameterSpace<?>> configOptions = new HashMap<>();
-    //Min and max number of layers with this configuration
-    private int minLayers;
-    private int maxLayers;
+    private IntegerDistribution numLayersDistribution;
     private Random r = new Random();    //TODO global rng seed etc
 
     public LayerSpace(Builder builder){
         this.configClass = builder.configClass;
         this.configOptions = builder.configOptions;
-        this.minLayers = builder.minLayers;
-        this.maxLayers = builder.maxLayers;
+        this.numLayersDistribution = builder.numLayersDistribution;
     }
 
     public List<Layer> randomLayers(){
 
-        int nLayers = minLayers + r.nextInt(maxLayers-minLayers+1);
+        int nLayers = numLayersDistribution.sample();
 
         //Get the Builder class:
         Class<?>[] classes = configClass.getDeclaredClasses();
@@ -58,8 +58,7 @@ public class LayerSpace {
             for (Map.Entry<String, ParameterSpace<?>> entry : configOptions.entrySet()) {
                 Method m;
                 try{
-                    m = getMethodByName(builderClass,entry.getKey());
-//                    m = builderClass.getDeclaredMethod(entry.getKey());
+                    m = ReflectUtils.getMethodByName(builderClass, entry.getKey());
                 } catch(Exception e ){
                     throw new RuntimeException("Invalid or unknown configuration option: \"" + entry.getKey() + "\"",e);
                 }
@@ -70,7 +69,7 @@ public class LayerSpace {
                     m.invoke(builder,randomValue);
                 } catch(Exception e ){
                     throw new RuntimeException("Could not set configuration option: \"" + entry.getKey() + "\" with value "
-                            + randomValue + " with class " + randomValue.getClass());
+                            + randomValue + " with class " + randomValue.getClass(), e);
                 }
             }
 
@@ -90,8 +89,8 @@ public class LayerSpace {
     public static class Builder {
         private Class<? extends Layer> configClass;
         private Map<String,ParameterSpace<?>> configOptions = new HashMap<>();
-        private int minLayers = 1;
-        private int maxLayers = 1;
+        //Default to degenerate distribution: i.e., always exactly 1 layer
+        private IntegerDistribution numLayersDistribution = new DegenerateIntegerDistribution(1);
 
         public Builder layer( Class<? extends Layer> layer ){
             this.configClass = layer;
@@ -103,28 +102,13 @@ public class LayerSpace {
             return this;
         }
 
-        public Builder minLayers( int minLayers ){
-            this.minLayers = minLayers;
-            return this;
-        }
-
-        public Builder maxLayers( int maxLayers ){
-            this.maxLayers = maxLayers;
+        public Builder numLayersDistribution( IntegerDistribution distribution ){
+            this.numLayersDistribution = distribution;
             return this;
         }
 
         public LayerSpace build(){
             return new LayerSpace(this);
         }
-    }
-
-
-    //TODO improve this
-    private Method getMethodByName( Class<?> c, String name ){
-        Method[] methods = c.getMethods();
-        for( Method m : methods ){
-            if(m.getName().equals(name)) return m;
-        }
-        throw new RuntimeException("Could not find method: " + name);
     }
 }

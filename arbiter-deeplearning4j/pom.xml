@@ -23,7 +23,11 @@
             <version>${dl4j.version}</version>
         </dependency>
 
-
+        <dependency>
+            <groupId>org.arbiter</groupId>
+            <artifactId>arbiter</artifactId>
+            <version>0.0.0.5-SNAPSHOT</version>
+        </dependency>
 
     </dependencies>
 
