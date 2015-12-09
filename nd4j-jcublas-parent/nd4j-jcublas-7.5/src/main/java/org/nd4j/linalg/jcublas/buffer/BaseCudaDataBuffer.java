@@ -531,7 +531,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 , getHostPointer().withByteOffset(offset)
                 , 1, ContextHolder.getInstance().getCudaStream());
 
-        ContextHolder.getInstance().setContext();
 
     }
 

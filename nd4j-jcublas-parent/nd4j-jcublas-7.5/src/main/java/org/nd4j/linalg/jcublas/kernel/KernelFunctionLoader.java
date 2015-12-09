@@ -324,6 +324,7 @@ public class KernelFunctionLoader {
 
 
     private void loadModules(String[] split,String kernelPath) throws Exception {
+        ContextHolder.getInstance().setContext();
         for (String module : split) {
             log.debug("Loading " + module);
             String path = kernelPath  +  module + ".cubin";

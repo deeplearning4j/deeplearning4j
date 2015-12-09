@@ -129,14 +129,17 @@ public class CudaContext implements AutoCloseable {
      */
     public void initStream() {
         if(stream == null) {
-            try {
+      /*      try {
                 stream = ContextHolder.getInstance().getStreamPool().borrowObject();
             } catch (Exception e) {
                 stream = new CUstream();
                 JCudaDriver.cuStreamCreate(stream, CUstream_flags.CU_STREAM_NON_BLOCKING);
                 streamFromPool = false;
             }
-
+*/
+            stream = new CUstream();
+            JCudaDriver.cuStreamCreate(stream, CUstream_flags.CU_STREAM_NON_BLOCKING);
+            streamFromPool = false;
             //cUevent = new CUevent();
             //JCudaDriver.cuEventCreate(cUevent,0);
             eventDestroyed = false;
@@ -148,14 +151,18 @@ public class CudaContext implements AutoCloseable {
      */
     public void initOldStream() {
         if(oldStream == null)  {
-            try {
+          /*  try {
                 oldStream = ContextHolder.getInstance().getOldStreamPool().borrowObject();
             } catch (Exception e) {
                 oldStreamFromPool = false;
                 oldStream = new cudaStream_t();
                 JCuda.cudaStreamCreate(oldStream);
 
-            }
+            }*/
+
+            oldStreamFromPool = false;
+            oldStream = new cudaStream_t();
+            JCuda.cudaStreamCreate(oldStream);
 
             //      oldEvent = new cudaEvent_t();
             //     JCuda.cudaEventCreate(oldEvent);

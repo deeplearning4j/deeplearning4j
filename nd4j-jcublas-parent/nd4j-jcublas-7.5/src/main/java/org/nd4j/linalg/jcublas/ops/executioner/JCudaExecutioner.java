@@ -144,7 +144,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(IndexAccumulation op, int... dimension) {
-        ContextHolder.getInstance().setContext();
         for(int i = 0; i < dimension.length; i++) {
             if(dimension[i] < 0)
                 dimension[i] += op.x().rank();
@@ -225,7 +224,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray execAndReturn(TransformOp op, int... dimension) {
-        ContextHolder.getInstance().setContext();
         return super.execAndReturn(op, dimension);
     }
 
@@ -233,13 +231,11 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray execAndReturn(ScalarOp op, int... dimension) {
-        ContextHolder.getInstance().setContext();
         return super.execAndReturn(op, dimension);
     }
 
     @Override
     public Op exec(Op op, int... dimension) {
-        ContextHolder.getInstance().setContext();
         return super.exec(op, dimension);
     }
 
@@ -333,8 +329,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     private CudaContext invoke(BroadcastOp op,boolean sync) {
         CudaContext ctx;
 
-        ContextHolder.getInstance().setContext();
-
         if(!KernelFunctionLoader.getInstance().exists(op.name()) || executionMode() == ExecutionMode.JAVA || op.isPassThrough() || op instanceof CopyOp)
             super.exec(op);
 
@@ -408,8 +402,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     private CudaContext invoke(IndexAccumulation op,int[] dimension,INDArray result,boolean sync)  {
         CudaContext ctx;
-
-        ContextHolder.getInstance().setContext();
 
         if(!KernelFunctionLoader.getInstance().exists(op.name()) || executionMode() == ExecutionMode.JAVA || op.isPassThrough())
             super.exec(op);
@@ -696,8 +688,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             try(KernelParamsWrapper kParams = new KernelParamsWrapper(op,sync,kernelParams).setResultArray(op.z())) {
                 invokeFunction(op,sync,metrics,kParams.getContext(), kParams.getKernelParameters());
                 ctx = kParams.getContext();
-                if(sync)
-                    kParams.sync();
             } catch(Exception e) {
                 throw new RuntimeException("Could not execute kernel", e);
             }
@@ -724,9 +714,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             try(KernelParamsWrapper kParams = new KernelParamsWrapper(op,sync,kernelParams).setResultArray(op.z())) {
                 invokeFunction(op,sync, metrics,kParams.getContext(), kParams.getKernelParameters());
                 ctx = kParams.getContext();
-                if(sync)
-                    kParams.sync();
-
             }
 
             catch(Exception e) {
@@ -796,9 +783,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             try(KernelParamsWrapper kParams = new KernelParamsWrapper(op,sync,kernelParams).setResultArray(op.z())) {
                 invokeFunction(op,sync, metrics,kParams.getContext(), kParams.getKernelParameters());
                 ctx = kParams.getContext();
-                if(sync)
-                    kParams.sync();
-
             } catch(Exception e) {
                 throw new RuntimeException("Could not execute kernel", e);
             }
@@ -817,8 +801,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             try(KernelParamsWrapper kParams = new KernelParamsWrapper(op,sync,kernelParams).setResultArray(op.z())) {
                 invokeFunction(op,sync, metrics,kParams.getContext(), kParams.getKernelParameters());
                 ctx = kParams.getContext();
-                if(sync)
-                    kParams.sync();
             } catch(Exception e) {
                 throw new RuntimeException("Could not execute kernel", e);
             }

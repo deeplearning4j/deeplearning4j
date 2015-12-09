@@ -22,9 +22,13 @@ package jcuda.jcublas.kernel;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.lang3.time.StopWatch;
@@ -339,6 +343,26 @@ public class TestMatrixOperations {
 
     }
 
+    @Test
+    public void testMultiThreading() throws Exception {
+        ExecutorService ex = ExecutorServiceProvider.getExecutorService();
+
+        List<Future<?>> list = new ArrayList<>(100);
+        for(int i = 0; i < 100; i++) {
+            Future<?> future = ex.submit(new Runnable() {
+                @Override
+                public void run() {
+                    INDArray dot = Nd4j.linspace(1, 8, 8);
+                    System.out.println(Transforms.sigmoid(dot));
+                }
+            });
+            list.add(future);
+        }
+        for(Future<?> future : list ){
+            future.get(1, TimeUnit.MINUTES);
+        }
+
+    }
 
 
     @Test

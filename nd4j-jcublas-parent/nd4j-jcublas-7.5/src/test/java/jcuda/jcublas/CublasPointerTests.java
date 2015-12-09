@@ -185,7 +185,6 @@ public class CublasPointerTests {
         DataBuffer shapeBuffer = Nd4j.createBuffer(buff);
         CudaContext ctx = new CudaContext();
         ctx.initOldStream();
-        ContextHolder.getInstance().setContext();
         KernelFunctionLoader.printBuffer((JCudaBuffer) shapeBuffer,ctx);
     }
 
