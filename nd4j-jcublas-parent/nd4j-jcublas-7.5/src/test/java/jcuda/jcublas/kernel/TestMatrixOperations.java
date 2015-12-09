@@ -22,6 +22,7 @@ package jcuda.jcublas.kernel;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
+import java.io.DataInputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -32,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.lang3.time.StopWatch;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
@@ -50,6 +52,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.executors.ExecutorServiceProvider;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -367,6 +370,37 @@ public class TestMatrixOperations {
     }
 
     @Test
+    public void testMeanSumSimple(){
+        System.out.println("3d");
+        INDArray arr = Nd4j.ones(1,4,4);
+        assertEquals(Nd4j.ones(1),arr.mean(1, 2));
+        assertEquals(Nd4j.ones(1).muli(16), arr.sum(1,2));
+
+        System.out.println("4d");
+        INDArray arr4 = Nd4j.ones(1, 1, 4, 4);
+        INDArray arr4m = arr4.mean(2, 3);
+        INDArray arr4s = arr4.sum(2, 3);
+        for( int i=0; i<arr4m.length(); i++ ) assertEquals(arr4m.getDouble(i),1,0.0);
+        for( int i=0; i<arr4s.length(); i++ ) assertEquals(arr4s.getDouble(i),16,0.0);
+
+        System.out.println("5d");
+        INDArray arr5 = Nd4j.ones(1,1,4,4,4);
+        INDArray arr5m = arr5.mean(2, 3);
+        INDArray arr5s = arr5.sum(2,3);
+        for( int i=0; i<arr5m.length(); i++ ) assertEquals(arr5m.getDouble(i),1,0.0);
+        for( int i=0; i<arr5s.length(); i++ ) assertEquals(arr5s.getDouble(i),16,0.0);
+
+        System.out.println("6d");
+        INDArray arr6 = Nd4j.ones(1,1,4,4,4,4);
+        INDArray arr6m = arr6.mean(2, 3);
+        INDArray arr6s = arr6.sum(2,3);
+        for( int i=0; i<arr6m.length(); i++ ) assertEquals(arr6m.getDouble(i),1,0.0);
+        for( int i=0; i<arr6s.length(); i++ ) assertEquals(arr6s.getDouble(i),16,0.0);
+    }
+
+
+
+    @Test
     public void testIMin(){
         INDArray arr = Nd4j.linspace(1, 10, 10);
         IMin imin = new IMin(arr);
@@ -377,6 +411,23 @@ public class TestMatrixOperations {
         int minIdx = ((IndexAccumulation) Nd4j.getExecutioner().exec(imin)).getFinalResult();
         assertEquals(9, minIdx);
     }
+
+    @Test
+    @Ignore
+    public void testNegativeNumbersSoftmax() throws Exception {
+        Nd4j.MAX_ELEMENTS_PER_SLICE = Integer.MAX_VALUE;
+        Nd4j.MAX_SLICES_TO_PRINT = Integer.MAX_VALUE;
+        DataInputStream dis = new DataInputStream(new ClassPathResource("softmaxtest.nd").getInputStream());
+        INDArray read = Nd4j.read(dis);
+        dis.close();
+        INDArray max1 = read.max(1);
+        SoftMax softMax = new SoftMax(read);
+        softMax.exec(1);
+        INDArray z = softMax.z();
+        INDArray zSums = z.sum(1);
+        assertEquals(zSums.length(),zSums.sumNumber().doubleValue(),1e-1);
+    }
+
 
 
     @Test

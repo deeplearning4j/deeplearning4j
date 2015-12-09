@@ -21,6 +21,7 @@
 package org.nd4j.linalg.ops;
 
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -349,6 +350,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
     }
 
     @Test
+    @Ignore
     public void testNegativeNumbersSoftmax() throws Exception {
         Nd4j.MAX_ELEMENTS_PER_SLICE = Integer.MAX_VALUE;
         Nd4j.MAX_SLICES_TO_PRINT = Integer.MAX_VALUE;
