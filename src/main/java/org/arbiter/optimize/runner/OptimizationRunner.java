@@ -12,11 +12,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.*;
 
-
-public class OptimizationRunner<T, M, D> implements IOptimizationRunner {
+/** Optimization runner: responsible for scheduling tasks on executor, saving results, etc.
+ *
+ * @param <T> Type of configuration
+ * @param <M> Type of model learned
+ * @param <D> Type of data used to train model
+ */
+public class OptimizationRunner<T, M, D> implements IOptimizationRunner<T,M> {
 
     private static Logger log = LoggerFactory.getLogger(OptimizationRunner.class);
 
@@ -28,6 +35,10 @@ public class OptimizationRunner<T, M, D> implements IOptimizationRunner {
     private int numCandidatesFailed = 0;
     private double bestScore = Double.MAX_VALUE;
     private long bestScoreTime = 0;
+    //TODO: Work out a proper way to handle results. This is basically a memory leak right here -> can't be used in general
+    //Better approach: store a _reference_ to the results, which might be on disk, in database, or (rarely) in memory, etc
+    // with a method to get the result from whetever it is stored
+    private List<OptimizationResult<T,M>> allResults = new ArrayList<>();
 
 
     public OptimizationRunner(OptimizationConfiguration<T, M, D> config, CandidateExecutor<T, M, D> executor) {
@@ -131,7 +142,11 @@ public class OptimizationRunner<T, M, D> implements IOptimizationRunner {
 
         //TODO handle minimization vs. maximization
         if(score < bestScore){
-            log.info("New best score: {} (prev={})",score,bestScore);
+            if(bestScore == Double.MAX_VALUE){
+                log.info("New best score: {} (first completed model)", score);
+            } else {
+                log.info("New best score: {} (prev={})", score, bestScore);
+            }
             bestScore = score;
         }
         numCandidatesCompleted++;
@@ -146,6 +161,8 @@ public class OptimizationRunner<T, M, D> implements IOptimizationRunner {
                 log.warn("Error saving model (id={}): IOException thrown. ",result.getIndex(),e);
             }
         }
+
+        allResults.add(result);
     }
 
     @Override
@@ -171,6 +188,11 @@ public class OptimizationRunner<T, M, D> implements IOptimizationRunner {
     @Override
     public long bestScoreTime() {
         return bestScoreTime;
+    }
+
+    @Override
+    public List<OptimizationResult<T, M>> getResults() {
+        return new ArrayList<>(allResults);
     }
 
     private boolean terminate(){

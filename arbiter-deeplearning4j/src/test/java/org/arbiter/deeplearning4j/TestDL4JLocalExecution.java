@@ -26,6 +26,8 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
+import org.nd4j.linalg.api.ops.LossFunction;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
 import java.util.concurrent.TimeUnit;
@@ -47,17 +49,19 @@ public class TestDL4JLocalExecution {
         LayerSpace ls2 = new LayerSpace.Builder()
                 .layer(OutputLayer.class)
                 .add("nOut", new FixedValue<Integer>(3))
-                .add("activation", new FixedValue<Object>("softmax"))
+                .add("activation", new FixedValue<>("softmax"))
+                .add("lossFunction", new FixedValue<>(LossFunctions.LossFunction.MCXENT))
                 .build();
 
         MultiLayerSpace mls = new MultiLayerSpace.Builder()
+                .add("optimizationAlgo", new FixedValue<>(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT))
                 .add("pretrain", new FixedValue<>(false))
                 .add("backprop", new FixedValue<>(true))
                 .add("learningRate", new ContinuousParameterSpace(0.0001, 0.1))  //TODO: logarithmic
                 .add("regularization", new FixedValue<>(true))
-                .add("l2", new ContinuousParameterSpace(0.0001, 0.1))
+                .add("l2", new ContinuousParameterSpace(0.0001, 0.01))
                 .add("optimizationAlgo", new FixedValue<>(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT))
-                .add("iterations",new FixedValue<>(1))
+                .add("iterations",new FixedValue<>(100))
                 .addLayer(ls1)
                 .addLayer(ls2)
                 .build();
