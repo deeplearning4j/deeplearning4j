@@ -126,7 +126,7 @@ public interface VocabCache<T extends SequenceElement> extends Serializable {
      * @param word
      * @return
      */
-    <T extends SequenceElement> T wordFor(String word);
+     T wordFor(String word);
 
 
     /**
@@ -143,6 +143,7 @@ public interface VocabCache<T extends SequenceElement> extends Serializable {
      * Note that the index must be set on the token.
      * @param word the word to add to the vocab
      */
+    @Deprecated
     void putVocabWord(String word);
 
     /**
