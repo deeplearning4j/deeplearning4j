@@ -166,7 +166,7 @@ for Statistical Machine Translation](http://arxiv.org/pdf/1406.1078v3.pdf)**; Ch
 
 **[Explorations in Parallel Distributed Processing: A Handbook of Models, Programs, and Exercises](https://web.stanford.edu/group/pdplab/pdphandbook/handbookli1.html)**; James L. McClelland
 
-**[Memory Networks & QA Systems](http://arxiv.org/pdf/1410.3916v10.pdf)**; Jason Weston, Sumit Chopra & Antoine Bordes (2014)
+**[Memory Networks & QA Systems](http://arxiv.org/abs/1410.3916)**; Jason Weston, Sumit Chopra & Antoine Bordes (2014)
 
 **[Understanding Machine Learning: From Theory to Algorithms](http://www.cs.huji.ac.il/~shais/UnderstandingMachineLearning/understanding-machine-learning-theory-algorithms.pdf)**
 
