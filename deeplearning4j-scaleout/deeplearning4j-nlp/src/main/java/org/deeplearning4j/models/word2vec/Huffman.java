@@ -19,6 +19,7 @@
 package org.deeplearning4j.models.word2vec;
 
 import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
+import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.VocabularyWord;
 
 import java.util.*;
@@ -31,7 +32,22 @@ import java.util.*;
  */
 public class Huffman {
 
+    public final int MAX_CODE_LENGTH;
+    private volatile boolean buildTrigger = false;
+
     public Huffman(Collection<? extends SequenceElement> words) {
+        this(words, 40);
+    }
+
+    /**
+     * Builds Huffman tree for collection of SequenceElements, with defined CODE_LENGTH
+     * Default CODE_LENGTH is 40
+     *
+     * @param words
+     * @param CODE_LENGTH CODE_LENGTH defines maximum length of code path, and effectively limits vocabulary size.
+     */
+    public Huffman(Collection<? extends SequenceElement> words, int CODE_LENGTH) {
+        this.MAX_CODE_LENGTH = CODE_LENGTH;
         this.words = new ArrayList<>(words);
         Collections.sort(this.words, new Comparator<SequenceElement>() {
             @Override
@@ -42,9 +58,10 @@ public class Huffman {
         });
     }
 
-    private List<SequenceElement> words;
-    public final static int MAX_CODE_LENGTH = 40;
+    private List<? extends SequenceElement> words;
+
     public void build() {
+        buildTrigger = true;
         long[] count = new long[words.size() * 2 + 1];
         int[] binary = new int[words.size() * 2 + 1];
         int[] code = new int[MAX_CODE_LENGTH];
@@ -132,4 +149,18 @@ public class Huffman {
 
     }
 
+    /**
+     * This method updates VocabCache and all it's elements with Huffman indexes
+     * Please note: it should be the same VocabCache as was used for Huffman tree initialization
+     *
+     * @param cache VocabCache to be updated.
+     */
+    public void applyIndexes(VocabCache<? extends SequenceElement> cache) {
+        if (!buildTrigger) build();
+
+        for (int a = 0; a < words.size(); a++) {
+            cache.addWordToIndex(a, words.get(a).getLabel());
+            words.get(a).setIndex(a);
+        }
+    }
 }

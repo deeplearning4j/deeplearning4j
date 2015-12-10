@@ -163,6 +163,11 @@ public class InMemoryLookupCache implements VocabCache<VocabWord>,Serializable {
         return (String) wordIndex.get(index);
     }
 
+    @Override
+    public VocabWord elementAtIndex(int index) {
+        return wordFor(wordAtIndex(index));
+    }
+
     /**
      * Returns the index of a given word
      *
@@ -240,6 +245,7 @@ public class InMemoryLookupCache implements VocabCache<VocabWord>,Serializable {
      * @param word
      */
     @Override
+    @Deprecated
     public synchronized void putVocabWord(String word) {
         if(word == null || word.isEmpty())
             throw new IllegalArgumentException("Word can't be empty or null");
@@ -256,6 +262,7 @@ public class InMemoryLookupCache implements VocabCache<VocabWord>,Serializable {
         vocabs.put(word,token);
         wordIndex.add(word,token.getIndex());
     }
+
 
     /**
      * Returns the number of words in the cache

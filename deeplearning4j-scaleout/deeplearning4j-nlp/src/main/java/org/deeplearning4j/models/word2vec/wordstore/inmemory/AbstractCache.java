@@ -1,5 +1,6 @@
 package org.deeplearning4j.models.word2vec.wordstore.inmemory;
 
+import lombok.NonNull;
 import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 
@@ -26,6 +27,8 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
     private Map<String, T> vocabulary = new ConcurrentHashMap<>();
 
     private Map<Integer, T> idxMap = new ConcurrentHashMap<>();
+
+    private AtomicLong documentsCounter = new AtomicLong(0);
 
     private int minWordFrequency = 0;
     private boolean hugeModelExpected = false;
@@ -92,8 +95,9 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      */
     @Override
     public void incrementWordCount(String word) {
-
+        incrementWordCount(word, 1);
     }
+
 
     /**
      * Increment frequency for specified label by specified value
@@ -103,6 +107,10 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      */
     @Override
     public void incrementWordCount(String word, int increment) {
+        if (vocabulary.containsKey(word)) {
+            vocabulary.get(word).increaseElementFrequency(increment);
+            totalWordCount.addAndGet(increment);
+        }
 
     }
 
@@ -114,6 +122,9 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      */
     @Override
     public int wordFrequency(String word) {
+        // TODO: proper wordFrequency impl should return long, instead of int
+        if (vocabulary.containsKey(word))
+            return (int) vocabulary.get(word).getElementFrequency();
         return 0;
     }
 
@@ -125,7 +136,7 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      */
     @Override
     public boolean containsWord(String word) {
-        return false;
+        return vocabulary.containsKey(word);
     }
 
     /**
@@ -135,7 +146,7 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      * @return
      */
     public boolean containsElement(T element) {
-        return false;
+        return vocabulary.values().contains(element);
     }
 
     /**
@@ -146,18 +157,33 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      */
     @Override
     public String wordAtIndex(int index) {
+        if (idxMap.containsKey(index))
+            return idxMap.get(index).getLabel();
         return null;
+    }
+
+    /**
+     * Returns SequenceElement at specified index
+     *
+     * @param index
+     * @return
+     */
+    @Override
+    public T elementAtIndex(int index) {
+        return idxMap.get(index);
     }
 
     /**
      * Returns Huffman index for specified label
      *
-     * @param word the index of a given word
-     * @return
+     * @param label the label to get index for
+     * @return >=0 if label exists, -1 if Huffman tree wasn't built yet, -2 if specified label wasn't found
      */
     @Override
-    public int indexOf(String word) {
-        return 0;
+    public int indexOf(String label) {
+        if (containsWord(label)) {
+            return tokenFor(label).getIndex();
+        } else return -2;
     }
 
     /**
@@ -167,7 +193,7 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      */
     @Override
     public Collection<T> vocabWords() {
-        return null;
+        return vocabulary.values();
     }
 
     /**
@@ -177,18 +203,18 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      */
     @Override
     public long totalWordOccurrences() {
-        return 0;
+        return totalWordCount.get();
     }
 
     /**
      * Returns SequenceElement for specified label
      *
-     * @param word
+     * @param label to fetch element for
      * @return
      */
     @Override
-    public T wordFor(String word) {
-        return null;
+    public T wordFor(@NonNull String label) {
+        return vocabulary.get(label);
     }
 
     /**
@@ -196,21 +222,19 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      * CAUTION: Never use this, unless you 100% sure what are you doing.
      *
      * @param index
-     * @param word
+     * @param label
      */
     @Override
-    public void addWordToIndex(int index, String word) {
-
+    public void addWordToIndex(int index, String label) {
+        if (index >= 0 && hasToken(label))
+            idxMap.put(index, tokenFor(label));
     }
 
-    /**
-     *
-     * @param word the word to add to the vocab
-     */
     @Override
     @Deprecated
     public void putVocabWord(String word) {
-        // TODO: to be deprecated and removed
+        if (!containsWord(word))
+            throw new IllegalStateException("Specified label is not present in vocabulary");
     }
 
     /**
@@ -220,7 +244,7 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      */
     @Override
     public int numWords() {
-        return 0;
+        return vocabulary.size();
     }
 
     /**
@@ -231,6 +255,7 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      */
     @Override
     public int docAppearedIn(String word) {
+        // TODO: to be implemented
         return 0;
     }
 
@@ -242,7 +267,7 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      */
     @Override
     public void incrementDocCount(String word, int howMuch) {
-
+        // TODO: to be implemented
     }
 
     /**
@@ -253,7 +278,7 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      */
     @Override
     public void setCountForDoc(String word, int count) {
-
+        // TODO: to be implemented
     }
 
     /**
@@ -263,7 +288,7 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      */
     @Override
     public int totalNumberOfDocs() {
-        return 0;
+        return documentsCounter.intValue();
     }
 
     /**
@@ -271,7 +296,7 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      */
     @Override
     public void incrementTotalDocCount() {
-
+        documentsCounter.incrementAndGet();
     }
 
     /**
@@ -279,7 +304,7 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      */
     @Override
     public void incrementTotalDocCount(int by) {
-
+        documentsCounter.addAndGet(by);
     }
 
     /**
@@ -295,11 +320,12 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
     /**
      * This method adds specified SequenceElement to vocabulary
      *
-     * @param word the word to add
+     * @param element the word to add
      */
     @Override
-    public void addToken(T word) {
-
+    public void addToken(T element) {
+        vocabulary.put(element.getLabel(), element);
+        totalWordCount.addAndGet((long) element.getElementFrequency());
     }
 
     /**
@@ -330,20 +356,21 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
         protected int scavengerThreshold  = 3000000;
         protected int retentionDelay = 3;
         protected int minElementFrequency;
+        protected boolean hugeModelExpected = false;
 
 
         public Builder<T> hugeModelExpected(boolean reallyExpected) {
-
+            this.hugeModelExpected = reallyExpected;
             return this;
         }
 
         public Builder<T> scavengerThreshold(int threshold) {
-
+            this.scavengerThreshold = threshold;
             return this;
         }
 
         public Builder<T> scavengerRetentionDelay(int delay) {
-
+            this.retentionDelay = delay;
             return this;
         }
 
