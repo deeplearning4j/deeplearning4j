@@ -12,19 +12,51 @@ import java.util.*;
  * @author raver119@gmail.com
  */
 public class Sequence<T extends SequenceElement> {
-    protected Map<String, T> elements = new HashMap<String, T>();
+    protected Map<String, T> elements = new LinkedHashMap<String, T>();
     protected T label;
 
+    /**
+     * Creates new empty sequence
+     *
+     */
     public Sequence() {
 
     }
 
+    /**
+     * Creates new sequence from collection of elements
+     *
+     * @param set
+     */
     public Sequence(Collection<T> set) {
+        this();
+        addElements(set);
+    }
+
+    /**
+     * Adds single element to sequence
+     *
+     * @param element
+     */
+    public void addElement(T element) {
+        this.elements.put(element.getLabel(), element);
+    }
+
+    /**
+     * Adds collection of elements to the sequence
+     *
+     * @param set
+     */
+    public void addElements(Collection<T> set) {
         for (T element : set) {
-            this.elements.put(element.getLabel(), element);
+            addElement(element);
         }
     }
 
+    /**
+     * Returns this sequence as list of labels
+     * @return
+     */
     public List<String> asLabels() {
         List<String> labels = new ArrayList<>();
         for(T element: getElements()) {
@@ -33,11 +65,40 @@ public class Sequence<T extends SequenceElement> {
         return labels;
     }
 
+    /**
+     * Returns single element out of this sequence by its label
+     *
+     * @param label
+     * @return
+     */
     public T getElementByLabel(String label) {
         return elements.get(label);
     }
 
-    public Collection<T> getElements() {
-        return Collections.unmodifiableCollection(elements.values());
+    /**
+     * Returns ordered list of elements from this sequence
+     *
+     * @return
+     */
+    public List<T> getElements() {
+        return Collections.unmodifiableList(new ArrayList<T>(elements.values()));
+    }
+
+    /**
+     * Returns label for this sequence
+     *
+     * @return label for this sequence, null if label was not defined
+     */
+    public T getSequenceLabel() {
+        return label;
+    }
+
+    /**
+     * Set sequence label
+     *
+     * @param label
+     */
+    public void setSequenceLabel(T label) {
+       this.label = label;
     }
 }
