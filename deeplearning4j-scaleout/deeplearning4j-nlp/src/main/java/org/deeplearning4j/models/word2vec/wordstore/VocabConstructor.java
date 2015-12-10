@@ -80,9 +80,12 @@ public class VocabConstructor<T extends SequenceElement> {
             SequenceIterator<T> iterator = source.getIterator();
             iterator.reset();
 
+            /*
             VocabularyHolder tempHolder = new VocabularyHolder.Builder()
                     .minWordFrequency(source.getMinWordFrequency())
                     .build();
+                    */
+            AbstractCache<T> tempHolder = new AbstractCache.Builder<T>().build();
 
             while (iterator.hasMoreSequences()) {
                 Sequence<T> document = iterator.nextSequence();
@@ -91,12 +94,12 @@ public class VocabConstructor<T extends SequenceElement> {
 
 
                 if (fetchLabels) {
-                    VocabularyWord word = new VocabularyWord(document.getLabel());
+                    VocabularyWord word = new VocabularyWord(document.getSequenceLabel().getLabel());
                     word.setSpecial(true);
                     word.setCount(1);
 
-                    tempHolder.addWord(word);
-
+                    // tempHolder.addWord(word);
+                    tempHolder.addToken();
 //                    log.info("LabelledDocument: " + document);
                 }
 
@@ -106,7 +109,7 @@ public class VocabConstructor<T extends SequenceElement> {
                     if (token == null || token.isEmpty()) continue;
 
                     if (!tempHolder.containsWord(token)) {
-                        tempHolder.addWord(token);
+                        tempHolder.addToken(document.getElementByLabel(token));
 
                         // TODO: this line should be uncommented only after AdaGrad is fixed, so the size of AdaGrad array is known
                         /*
@@ -117,7 +120,7 @@ public class VocabConstructor<T extends SequenceElement> {
                         }
                         */
                     } else {
-                        tempHolder.incrementWordCounter(token);
+                        tempHolder.incrementWordCount(token);
                     }
                 }
             }
