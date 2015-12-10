@@ -1,6 +1,7 @@
 package org.arbiter.optimize.runner;
 
 import org.arbiter.optimize.api.OptimizationResult;
+import org.arbiter.optimize.api.saving.ResultReference;
 
 import java.util.List;
 
@@ -21,6 +22,6 @@ public interface IOptimizationRunner<T,M> {
     /** Time that the best score was found at, or 0 if no jobs have completed successfully */
     long bestScoreTime();
 
-    List<OptimizationResult<T,M>> getResults();
+    List<ResultReference<T,M>> getResults();
 
 }

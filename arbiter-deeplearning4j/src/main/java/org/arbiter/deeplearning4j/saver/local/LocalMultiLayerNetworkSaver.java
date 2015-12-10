@@ -3,6 +3,7 @@ package org.arbiter.deeplearning4j.saver.local;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.arbiter.optimize.api.OptimizationResult;
+import org.arbiter.optimize.api.saving.ResultReference;
 import org.arbiter.optimize.api.saving.ResultSaver;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -37,26 +38,28 @@ public class LocalMultiLayerNetworkSaver implements ResultSaver<MultiLayerConfig
     }
 
     @Override
-    public void saveModel(OptimizationResult<MultiLayerConfiguration, MultiLayerNetwork> result) throws IOException {
+    public ResultReference<MultiLayerConfiguration,MultiLayerNetwork> saveModel(OptimizationResult<MultiLayerConfiguration, MultiLayerNetwork> result) throws IOException {
         String dir = new File(path,result.getIndex() + "/").getAbsolutePath();
 
         File f = new File(dir);
         f.mkdir();
 
-        String paramsPath = FilenameUtils.concat(dir,"params.bin");
-        String jsonPath = FilenameUtils.concat(dir,"config.json");
-        String scorePath = FilenameUtils.concat(dir,"score.txt");
+        File paramsFile = new File(FilenameUtils.concat(dir,"params.bin"));
+        File jsonFile = new File(FilenameUtils.concat(dir,"config.json"));
+        File scoreFile = new File(FilenameUtils.concat(dir,"score.txt"));
 
         INDArray params = result.getResult().params();
         String jsonConfig = result.getConfig().toJson();
 
-        FileUtils.writeStringToFile(new File(scorePath), String.valueOf(result.getScore()));
-        FileUtils.writeStringToFile(new File(jsonPath), jsonConfig);
-        try(DataOutputStream dos = new DataOutputStream(Files.newOutputStream(Paths.get(paramsPath)))){
+        FileUtils.writeStringToFile(scoreFile, String.valueOf(result.getScore()));
+        FileUtils.writeStringToFile(jsonFile, jsonConfig);
+        try(DataOutputStream dos = new DataOutputStream(Files.newOutputStream(paramsFile.toPath()))){
             Nd4j.write(params, dos);
         }
 
 
         log.debug("Deeplearning4j model result (id={}, score={}) saved to directory: {}",result.getIndex(), result.getScore(), dir);
+
+        return new LocalFileMultiLayerNetworkResultReference(jsonFile,paramsFile,scoreFile);
     }
 }

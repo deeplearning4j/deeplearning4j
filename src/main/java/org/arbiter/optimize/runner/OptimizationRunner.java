@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.arbiter.optimize.api.Candidate;
 import org.arbiter.optimize.api.OptimizationResult;
+import org.arbiter.optimize.api.saving.ResultReference;
 import org.arbiter.optimize.api.saving.ResultSaver;
 import org.arbiter.optimize.api.termination.TerminationCondition;
 import org.arbiter.optimize.config.OptimizationConfiguration;
@@ -35,10 +36,7 @@ public class OptimizationRunner<T, M, D> implements IOptimizationRunner<T,M> {
     private int numCandidatesFailed = 0;
     private double bestScore = Double.MAX_VALUE;
     private long bestScoreTime = 0;
-    //TODO: Work out a proper way to handle results. This is basically a memory leak right here -> can't be used in general
-    //Better approach: store a _reference_ to the results, which might be on disk, in database, or (rarely) in memory, etc
-    // with a method to get the result from whetever it is stored
-    private List<OptimizationResult<T,M>> allResults = new ArrayList<>();
+    private List<ResultReference<T,M>> allResults = new ArrayList<>();
 
 
     public OptimizationRunner(OptimizationConfiguration<T, M, D> config, CandidateExecutor<T, M, D> executor) {
@@ -153,16 +151,17 @@ public class OptimizationRunner<T, M, D> implements IOptimizationRunner<T,M> {
 
         //TODO: In general, we don't want to save EVERY model, only the best ones. How to implement this?
         ResultSaver<T,M> saver = config.getResultSaver();
+        ResultReference<T,M> resultReference = null;
         if(saver != null){
             try{
-                saver.saveModel(result);
+                resultReference = saver.saveModel(result);
             }catch(IOException e){
                 //TODO: Do we want ta warn or fail on IOException?
                 log.warn("Error saving model (id={}): IOException thrown. ",result.getIndex(),e);
             }
         }
 
-        allResults.add(result);
+        if(resultReference != null) allResults.add(resultReference);
     }
 
     @Override
@@ -191,7 +190,7 @@ public class OptimizationRunner<T, M, D> implements IOptimizationRunner<T,M> {
     }
 
     @Override
-    public List<OptimizationResult<T, M>> getResults() {
+    public List<ResultReference<T, M>> getResults() {
         return new ArrayList<>(allResults);
     }
 
