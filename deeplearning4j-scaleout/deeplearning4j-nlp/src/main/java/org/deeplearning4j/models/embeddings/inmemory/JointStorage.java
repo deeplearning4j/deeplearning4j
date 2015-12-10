@@ -79,6 +79,11 @@ public class JointStorage<T extends SequenceElement> implements WeightLookupTabl
     }
 
     @Override
+    public T elementAtIndex(int index) {
+        return null;
+    }
+
+    @Override
     public int indexOf(String word) {
         return 0;
     }
@@ -112,6 +117,7 @@ public class JointStorage<T extends SequenceElement> implements WeightLookupTabl
     public void addWordToIndex(int index, String word) {
 
     }
+
 
     @Override
     public void putVocabWord(String word) {
