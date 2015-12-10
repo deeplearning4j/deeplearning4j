@@ -37,6 +37,8 @@ import org.nd4j.linalg.jcublas.buffer.allocation.PinnedMemoryStrategy;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
+import org.nd4j.linalg.jcublas.ops.executioner.kernels.impl.AccumulationKernelCall;
+import org.nd4j.linalg.jcublas.ops.executioner.kernels.impl.IndexAccumulationKernelCall;
 
 
 import java.nio.ByteBuffer;
@@ -262,12 +264,11 @@ public class KernelParamsWrapper implements AutoCloseable {
                 int oldN = acc.n();
                 acc.setX(setResult);
                 acc.setN(oldN);
-                JCudaExecutioner exec = (JCudaExecutioner) Nd4j.getExecutioner();
                 if(acc instanceof IndexAccumulation && resultLength > 1)
-                    exec.calculateBlockResult((IndexAccumulation) acc,setResult);
+                    IndexAccumulationKernelCall.calculateBlockResult((IndexAccumulation) acc, setResult);
 
                 else if(acc instanceof Accumulation && resultLength > 1)
-                    exec.calculateBlockResult((Accumulation) acc,setResult);
+                    AccumulationKernelCall.calculateBlockResult((Accumulation) acc, setResult);
                 else if(acc instanceof Accumulation) {
                     Accumulation acc2 = (Accumulation) acc;
                     acc2.setFinalResult(setResult.getDouble(0));
@@ -299,9 +300,9 @@ public class KernelParamsWrapper implements AutoCloseable {
                 INDArray setResult = Nd4j.create(Nd4j.createBuffer(buff, DataBuffer.Type.FLOAT,resultLength));
                 JCudaExecutioner exec = (JCudaExecutioner) Nd4j.getExecutioner();
                 if(acc instanceof IndexAccumulation && resultLength > 1)
-                    exec.calculateBlockResult((IndexAccumulation) acc,setResult);
+                    IndexAccumulationKernelCall.calculateBlockResult((IndexAccumulation) acc,setResult);
                 else if(acc instanceof Accumulation && resultLength > 1)
-                    exec.calculateBlockResult((Accumulation) acc,setResult);
+                    AccumulationKernelCall.calculateBlockResult((Accumulation) acc,setResult);
                 else if(acc instanceof Accumulation) {
                     Accumulation acc2 = (Accumulation) acc;
                     acc2.setFinalResult(setResult.getDouble(0));

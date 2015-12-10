@@ -89,17 +89,23 @@ public class OpExecutionerUtil {
         return false;
     }
 
-    /**Choose tensor dimension for operations with one argument: x=Op(x) or similar<br>
-     * When doing some operations in parallel, it is necessary to break up operations along a dimension to
+    /**
+     *
+     * Choose tensor dimension for operations with one argument: x=Op(x) or similar<br>
+     * When doing some operations in parallel, it is necessary to break up
+     * operations along a dimension to
      * give a set of 1d tensors. The dimension that this is done on is important for performance reasons;
-     * in summary we want to both minimize the number of tensors, but also minimize the separation between
+     * in summary we want to both minimize the number of tensors
+     * , but also minimize the separation between
      * elements in the buffer (so the resulting operation is efficient - i.e., avoids cache thrashing).
-     * However, achieving both minimal number of tensors and are not always possible.
+     * However, achieving both minimal number
+     * of tensors and are not always possible.
      * @param x NDArray that we want to split
      * @return The best dimension to split on
      */
-    public static int chooseElementWiseTensorDimension(INDArray x){
-        if(x.isVector()) return ArrayUtil.argMax(x.shape());    //Execute along the vector
+    public static int chooseElementWiseTensorDimension(INDArray x) {
+        if(x.isVector())
+            return ArrayUtil.argMax(x.shape());    //Execute along the vector
 
         //doing argMin(max(x.stride(i),y.stride(i))) minimizes the maximum
         //separation between elements (helps CPU cache) BUT might result in a huge number
@@ -111,7 +117,8 @@ public class OpExecutionerUtil {
         int opAlongDimensionMaxLength = ArrayUtil.argMax(x.shape());
 
         //Edge cases: shapes with 1s in them can have stride of 1 on the dimensions of length 1
-        if(x.isVector() || x.size(opAlongDimensionMinStride)==1) return opAlongDimensionMaxLength;
+        if(x.isVector() || x.size(opAlongDimensionMinStride) == 1)
+            return opAlongDimensionMaxLength;
 
         //Using a heuristic approach here: basically if we get >= 10x as many tensors using the minimum stride
         //dimension vs. the maximum size dimension, use the maximum size dimension instead
@@ -119,16 +126,20 @@ public class OpExecutionerUtil {
         //Might be able to do better than this with some additional thought
         int nOpsAlongMinStride = ArrayUtil.prod(ArrayUtil.removeIndex(x.shape(), opAlongDimensionMinStride));
         int nOpsAlongMaxLength = ArrayUtil.prod(ArrayUtil.removeIndex(x.shape(), opAlongDimensionMaxLength));
-        if(nOpsAlongMinStride <= 10*nOpsAlongMaxLength) return opAlongDimensionMinStride;
-        else return opAlongDimensionMaxLength;
+        if(nOpsAlongMinStride <= 10 * nOpsAlongMaxLength)
+            return opAlongDimensionMinStride;
+        else
+            return opAlongDimensionMaxLength;
     }
 
 
-    /**Choose tensor dimension for operations with 2 arguments: x=Op(x,y) or similar<br>
+    /**
+     * Choose tensor dimension for operations with 2 arguments: x=Op(x,y) or similar<br>
      * @see #chooseElementWiseTensorDimension(INDArray)
      */
-    public static int chooseElementWiseTensorDimension(INDArray x, INDArray y){
-        if(x.isVector()) return ArrayUtil.argMax(x.shape());    //Execute along the vector
+    public static int chooseElementWiseTensorDimension(INDArray x, INDArray y) {
+        if(x.isVector())
+            return ArrayUtil.argMax(x.shape());    //Execute along the vector
 
         //doing argMin(max(x.stride(i),y.stride(i))) minimizes the maximum
         //separation between elements (helps CPU cache) BUT might result in a huge number
@@ -149,7 +160,8 @@ public class OpExecutionerUtil {
         //Might be able to do better than this with some additional thought
         int nOpsAlongMinStride = ArrayUtil.prod(ArrayUtil.removeIndex(x.shape(), opAlongDimensionMinStride));
         int nOpsAlongMaxLength = ArrayUtil.prod(ArrayUtil.removeIndex(x.shape(), opAlongDimensionMaxLength));
-        if(nOpsAlongMinStride <= 10*nOpsAlongMaxLength) return opAlongDimensionMinStride;
+        if(nOpsAlongMinStride <= 10 * nOpsAlongMaxLength)
+            return opAlongDimensionMinStride;
         else return opAlongDimensionMaxLength;
     }
 

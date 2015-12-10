@@ -337,6 +337,20 @@ public class Shape {
 
 
     /**
+     * Counts the number of items
+     * equal to 1 in an int array
+     * @param shape the shape to count
+     * @return the number of ones in the shape
+     */
+    public static int numOnes(int...shape) {
+        int ret = 0;
+        for(int i : shape)
+            if(i == 1)
+                ret++;
+        return ret;
+    }
+
+    /**
      * Raw 2 dimensional loop
      * over a data buffer given some strides.
      * Credit to:

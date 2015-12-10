@@ -214,7 +214,7 @@ public class ArrayUtil {
      *            to calculate the sum for
      * @return the product of this array
      */
-    public static int prod(int[] mult) {
+    public static int prod(int...mult) {
         if (mult.length < 1)
             return 0;
         int ret = 1;

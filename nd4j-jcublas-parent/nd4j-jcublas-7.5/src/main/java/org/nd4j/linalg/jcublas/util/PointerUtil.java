@@ -91,7 +91,9 @@ public class PointerUtil {
         //note here we do offset of zero due to the offset
         //already being handled by the cuda device pointer
         ret[ret.length - 3] = arr.offset();
-        ret[ret.length -2] = arr.tensorAlongDimension(0,dimension).elementWiseStride();
+        ret[ret.length - 2] = arr.tensorAlongDimension(0,dimension).elementWiseStride();
+        if( ret[ret.length - 2]  < 0)
+            throw new IllegalStateException("Found illegal element wise stride of -1");
         ret[ret.length - 1] = arr.ordering();
         return ret;
     }
