@@ -104,7 +104,7 @@ public class JointStorage<T extends SequenceElement> implements WeightLookupTabl
     }
 
     @Override
-    public VocabWord wordFor(String word) {
+    public T wordFor(String word) {
         return null;
     }
 
