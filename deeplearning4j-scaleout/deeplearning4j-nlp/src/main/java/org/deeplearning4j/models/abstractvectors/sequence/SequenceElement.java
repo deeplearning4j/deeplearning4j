@@ -27,6 +27,7 @@ public abstract class SequenceElement implements Comparable<SequenceElement> {
     @Getter @Setter protected INDArray historicalGradient;
     protected List<Integer> points = new ArrayList<>();
     protected int codeLength = 0;
+    @Getter @Setter protected int special;
 
     /*
             Used for Joint/Distributed vocabs mechanics

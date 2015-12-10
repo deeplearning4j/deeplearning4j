@@ -2,7 +2,11 @@ package org.deeplearning4j.models.word2vec.wordstore;
 
 import lombok.Data;
 import lombok.NonNull;
+import org.deeplearning4j.models.abstractvectors.interfaces.SequenceIterator;
+import org.deeplearning4j.models.abstractvectors.sequence.Sequence;
+import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
+import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.text.documentiterator.LabelAwareIterator;
 import org.deeplearning4j.text.documentiterator.LabelledDocument;
@@ -22,12 +26,13 @@ import java.util.List;
  * I.e. words from one source should have minWordFrequency set to 1, while the rest of corpus should have minWordFrequency set to 5.
  * So, here's the way to deal with it.
  *
+ * It also can be used to simply build vocabulary out of arbitrary number of Sequences derived from arbitrary number of SequenceIterators
+ *
  * @author raver119@gmail.com
  */
-public class VocabConstructor {
-    private List<VocabSource> sources = new ArrayList<>();
-    private TokenizerFactory tokenizerFactory;
-    private VocabCache cache;
+public class VocabConstructor<T extends SequenceElement> {
+    private List<VocabSource<T>> sources = new ArrayList<>();
+    private VocabCache<T> cache;
     private List<String> stopWords;
     private boolean useAdaGrad = false;
     private boolean fetchLabels = false;
@@ -64,7 +69,7 @@ public class VocabConstructor {
     public VocabCache buildJointVocabulary(boolean resetCounters, boolean buildHuffmanTree) {
         if (resetCounters && buildHuffmanTree) throw new IllegalStateException("You can't reset counters and build Huffman tree at the same time!");
 
-        if (cache == null) cache = new InMemoryLookupCache(false);
+        if (cache == null) cache = new AbstractCache.Builder<T>().build();
         
         VocabularyHolder topHolder = new VocabularyHolder.Builder()
                 .externalCache(cache)
@@ -72,17 +77,17 @@ public class VocabConstructor {
                 .build();
 
         for(VocabSource source: sources) {
-            LabelAwareIterator iterator = source.getIterator();
+            SequenceIterator<T> iterator = source.getIterator();
             iterator.reset();
 
             VocabularyHolder tempHolder = new VocabularyHolder.Builder()
                     .minWordFrequency(source.getMinWordFrequency())
                     .build();
 
-            while (iterator.hasNextDocument()) {
-                LabelledDocument document = iterator.nextDocument();
+            while (iterator.hasMoreSequences()) {
+                Sequence<T> document = iterator.nextSequence();
 
-                Tokenizer tokenizer = tokenizerFactory.create(document.getContent());
+             //   Tokenizer tokenizer = tokenizerFactory.create(document.getContent());
 
 
                 if (fetchLabels) {
@@ -95,7 +100,7 @@ public class VocabConstructor {
 //                    log.info("LabelledDocument: " + document);
                 }
 
-                List<String> tokens = tokenizer.getTokens();
+                List<String> tokens = document.asLabels();
                 for (String token: tokens) {
                     if (stopWords !=null && stopWords.contains(token)) continue;
                     if (token == null || token.isEmpty()) continue;
@@ -137,10 +142,9 @@ public class VocabConstructor {
         return cache;
     }
 
-    public static class Builder {
-        private List<VocabSource> sources = new ArrayList<>();
-        private TokenizerFactory tokenizerFactory;
-        private VocabCache cache;
+    public static class Builder<T extends SequenceElement> {
+        private List<VocabSource<T>> sources = new ArrayList<>();
+        private VocabCache<T> cache;
         private List<String> stopWords = new ArrayList<>();
         private boolean useAdaGrad = false;
         private boolean fetchLabels = false;
@@ -149,32 +153,38 @@ public class VocabConstructor {
 
         }
 
-        public Builder useAdaGrad(boolean useAdaGrad) {
+        public Builder<T> useAdaGrad(boolean useAdaGrad) {
             this.useAdaGrad = useAdaGrad;
             return this;
         }
 
-        public Builder setTargetVocabCache(@NonNull VocabCache cache) {
+        public Builder<T> setTargetVocabCache(@NonNull VocabCache cache) {
             this.cache = cache;
             return this;
         }
 
-        public Builder addSource(LabelAwareIterator iterator, int minWordFrequency) {
+        public Builder<T> addSource(@NonNull SequenceIterator<T> iterator, int minElementFrequency) {
+            sources.add(new VocabSource<T>(iterator, minElementFrequency));
+            return this;
+        }
+/*
+        public Builder<T> addSource(LabelAwareIterator iterator, int minWordFrequency) {
             sources.add(new VocabSource(iterator, minWordFrequency));
             return this;
         }
 
-        public Builder addSource(SentenceIterator iterator, int minWordFrequency) {
+        public Builder<T> addSource(SentenceIterator iterator, int minWordFrequency) {
             sources.add(new VocabSource(new SentenceIteratorConverter(iterator), minWordFrequency));
             return this;
         }
-
+        */
+/*
         public Builder setTokenizerFactory(@NonNull TokenizerFactory factory) {
             this.tokenizerFactory = factory;
             return this;
         }
-
-        public Builder setStopWords(@NonNull List<String> stopWords) {
+*/
+        public Builder<T> setStopWords(@NonNull List<String> stopWords) {
             this.stopWords = stopWords;
             return this;
         }
@@ -185,15 +195,14 @@ public class VocabConstructor {
          * @param reallyFetch
          * @return
          */
-        public Builder fetchLabels(boolean reallyFetch) {
+        public Builder<T> fetchLabels(boolean reallyFetch) {
             this.fetchLabels = reallyFetch;
             return this;
         }
 
-        public VocabConstructor build() {
-            VocabConstructor constructor = new VocabConstructor();
+        public VocabConstructor<T> build() {
+            VocabConstructor<T> constructor = new VocabConstructor<T>();
             constructor.sources = this.sources;
-            constructor.tokenizerFactory = this.tokenizerFactory;
             constructor.cache = this.cache;
             constructor.stopWords = this.stopWords;
             constructor.useAdaGrad = this.useAdaGrad;
@@ -204,8 +213,8 @@ public class VocabConstructor {
     }
 
     @Data
-    private static class VocabSource {
-        @NonNull private LabelAwareIterator iterator;
+    private static class VocabSource<T extends SequenceElement> {
+        @NonNull private SequenceIterator<T> iterator;
         @NonNull private int minWordFrequency;
     }
 }
