@@ -99,6 +99,14 @@ public interface VocabCache<T extends SequenceElement> extends Serializable {
     String wordAtIndex(int index);
 
     /**
+     * Returns SequenceElement at the given index or null
+     *
+     * @param index
+     * @return
+     */
+    T elementAtIndex(int index);
+
+    /**
      * Returns the index of a given word
      * @param word the index of a given word
      * @return the index of a given word or -1
@@ -203,9 +211,9 @@ public interface VocabCache<T extends SequenceElement> extends Serializable {
     /**
      * Adds a token
      * to the cache
-     * @param word the word to add
+     * @param element the word to add
      */
-     void addToken(T word);
+     void addToken(T element);
 
     /**
      * Returns the token (again not necessarily in the vocab)
