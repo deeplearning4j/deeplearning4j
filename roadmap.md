@@ -9,13 +9,14 @@ These priorities have been set by what the Skymind has seen demand for among cli
 
 High priority:
 
+* CUDA rewrite for ND4J (under way)
+* Hyperparameter optimization (For now: random search. Bayesian methods next.)
 * Parameter server
 * Computation graph
 * Sparse support for ND4J
-* CUDA rewrite for ND4J (under way)
-* Hyperparameter optimization (For now: random search. Bayesian methods next.)
 * Performance tests for network training vs. other platforms (and where necessary: optimizations)
 * Performance tests for Spark vs. local (ditto)
+* Building examples at scale
 
 Medium priority:
 
