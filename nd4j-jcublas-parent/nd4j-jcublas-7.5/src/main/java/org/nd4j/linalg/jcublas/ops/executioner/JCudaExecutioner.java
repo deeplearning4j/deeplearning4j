@@ -585,14 +585,19 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             int xStride = BlasBufferUtil.getBlasStride(dimension == null ? op.x() : op.x().tensorAlongDimension(0,dimension));
             if(xStride < 0) {
                 op.setX(op.x().dup());
+                xStride = BlasBufferUtil.getBlasStride(dimension == null ? op.x() : op.x().tensorAlongDimension(0,dimension));
+                if(xStride < 0)
+                    throw new IllegalStateException("Unable to compute element wise stride");
+
             }
 
             int yStride = BlasBufferUtil.getBlasStride(dimension == null ? op.y() : op.y().tensorAlongDimension(0,dimension));
-            if(yStride < 0) {
-                op.setY(op.y().dup());
-            }
-            else if(op.y().ordering() != op.x().ordering()) {
+            if(op.y().ordering() != op.x().ordering()) {
                 op.setY(op.y().dup(op.x().ordering()));
+                yStride = BlasBufferUtil.getBlasStride(dimension == null ? op.y() : op.y().tensorAlongDimension(0,dimension));
+                if(yStride < 0)
+                    throw new IllegalStateException("Unable to compute element wise stride");
+
             }
 
 
@@ -671,6 +676,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         }
 
+        if(result.isScalar())
+            result.putScalar(0,op.getFinalResult().doubleValue());
 
         return ctx;
     }

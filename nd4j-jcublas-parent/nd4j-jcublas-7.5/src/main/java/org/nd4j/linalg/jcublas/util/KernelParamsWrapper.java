@@ -123,7 +123,7 @@ public class KernelParamsWrapper implements AutoCloseable {
     public KernelParamsWrapper setResultOp(IndexAccumulation op, INDArray result,int...dimension) {
         resultOp = op;
         resultLength = result.length();
-        scalarResult = (dimension == null || dimension.length < 1 || dimension[0] == Integer.MAX_VALUE);
+        scalarResult = (dimension == null || dimension.length < 1 || dimension[0] == Integer.MAX_VALUE || result.length() == 1);
         setResultArray(result);
         return this;
     }
@@ -137,7 +137,7 @@ public class KernelParamsWrapper implements AutoCloseable {
     public KernelParamsWrapper setResultOp(Accumulation op, INDArray result,int...dimension) {
         resultOp = op;
         resultLength = result.length();
-        scalarResult = (dimension == null || dimension.length < 1 || dimension[0] == Integer.MAX_VALUE);
+        scalarResult = (dimension == null || dimension.length < 1 || dimension[0] == Integer.MAX_VALUE || result.length() == 1);
         setResultArray(result);
         return this;
     }
@@ -263,11 +263,19 @@ public class KernelParamsWrapper implements AutoCloseable {
                 acc.setX(setResult);
                 acc.setN(oldN);
                 JCudaExecutioner exec = (JCudaExecutioner) Nd4j.getExecutioner();
-                if(acc instanceof IndexAccumulation)
+                if(acc instanceof IndexAccumulation && resultLength > 1)
                     exec.calculateBlockResult((IndexAccumulation) acc,setResult);
 
-                else
+                else if(acc instanceof Accumulation && resultLength > 1)
                     exec.calculateBlockResult((Accumulation) acc,setResult);
+                else if(acc instanceof Accumulation) {
+                    Accumulation acc2 = (Accumulation) acc;
+                    acc2.setFinalResult(setResult.getDouble(0));
+                }
+                else if(acc instanceof IndexAccumulation) {
+                    IndexAccumulation acc2 = (IndexAccumulation) acc;
+                    acc2.setFinalResult(setResult.getInt(0));
+                }
             }
             else {
                 double[] data = new double[resultLength];
@@ -290,10 +298,18 @@ public class KernelParamsWrapper implements AutoCloseable {
                 buff.order(ByteOrder.nativeOrder());
                 INDArray setResult = Nd4j.create(Nd4j.createBuffer(buff, DataBuffer.Type.FLOAT,resultLength));
                 JCudaExecutioner exec = (JCudaExecutioner) Nd4j.getExecutioner();
-                if(acc instanceof IndexAccumulation)
+                if(acc instanceof IndexAccumulation && resultLength > 1)
                     exec.calculateBlockResult((IndexAccumulation) acc,setResult);
-                else
+                else if(acc instanceof Accumulation && resultLength > 1)
                     exec.calculateBlockResult((Accumulation) acc,setResult);
+                else if(acc instanceof Accumulation) {
+                    Accumulation acc2 = (Accumulation) acc;
+                    acc2.setFinalResult(setResult.getDouble(0));
+                }
+                else if(acc instanceof IndexAccumulation) {
+                    IndexAccumulation acc2 = (IndexAccumulation) acc;
+                    acc2.setFinalResult(setResult.getInt(0));
+                }
             }
             else {
                 float[] data = new float[resultLength];

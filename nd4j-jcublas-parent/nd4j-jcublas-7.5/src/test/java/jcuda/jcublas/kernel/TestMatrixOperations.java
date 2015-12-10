@@ -276,8 +276,8 @@ public class TestMatrixOperations {
         Nd4j.dtype = DataBuffer.Type.DOUBLE;
         INDArray n = Nd4j.create(new double[]{1, 2, 3, 4});
         double assertion = 5.47722557505;
-       // double norm3 = n.norm2Number().doubleValue();
-       // assertEquals(assertion, norm3, 1e-1);
+        // double norm3 = n.norm2Number().doubleValue();
+        // assertEquals(assertion, norm3, 1e-1);
 
         INDArray row = Nd4j.create(new double[]{1, 2, 3, 4}, new int[]{2, 2});
         INDArray row1 = row.getRow(1);
@@ -380,22 +380,28 @@ public class TestMatrixOperations {
         INDArray arr4 = Nd4j.ones(1, 1, 4, 4);
         INDArray arr4m = arr4.mean(2, 3);
         INDArray arr4s = arr4.sum(2, 3);
-        for( int i=0; i<arr4m.length(); i++ ) assertEquals(arr4m.getDouble(i),1,0.0);
-        for( int i=0; i<arr4s.length(); i++ ) assertEquals(arr4s.getDouble(i),16,0.0);
+        for( int i = 0; i < arr4m.length(); i++)
+            assertEquals(arr4m.getDouble(i),1,0.0);
+        for(int i = 0; i < arr4s.length(); i++)
+            assertEquals(arr4s.getDouble(i),16,0.0);
 
         System.out.println("5d");
         INDArray arr5 = Nd4j.ones(1,1,4,4,4);
         INDArray arr5m = arr5.mean(2, 3);
         INDArray arr5s = arr5.sum(2,3);
-        for( int i=0; i<arr5m.length(); i++ ) assertEquals(arr5m.getDouble(i),1,0.0);
-        for( int i=0; i<arr5s.length(); i++ ) assertEquals(arr5s.getDouble(i),16,0.0);
+        for( int i = 0; i < arr5m.length(); i++)
+            assertEquals(arr5m.getDouble(i),1,0.0);
+        for(int i=0; i < arr5s.length(); i++)
+            assertEquals(arr5s.getDouble(i),16,0.0);
 
         System.out.println("6d");
         INDArray arr6 = Nd4j.ones(1,1,4,4,4,4);
         INDArray arr6m = arr6.mean(2, 3);
         INDArray arr6s = arr6.sum(2,3);
-        for( int i=0; i<arr6m.length(); i++ ) assertEquals(arr6m.getDouble(i),1,0.0);
-        for( int i=0; i<arr6s.length(); i++ ) assertEquals(arr6s.getDouble(i),16,0.0);
+        for( int i = 0; i < arr6m.length(); i++)
+            assertEquals(arr6m.getDouble(i),1,0.0);
+        for(int i = 0; i < arr6s.length(); i++)
+            assertEquals(arr6s.getDouble(i),16,0.0);
     }
 
 
