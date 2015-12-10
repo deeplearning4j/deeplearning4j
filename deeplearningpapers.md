@@ -182,6 +182,8 @@ for Statistical Machine Translation](http://arxiv.org/pdf/1406.1078v3.pdf)**; Ch
 
 **[Continuous control with deep reinforcement learning](http://arxiv.org/pdf/1509.02971v1.pdf)**; DeepMind
 
+**[Connectionist Temporal Classification: Labelling Unsegmented Sequence Data with Recurrent Neural Networks](http://machinelearning.wustl.edu/mlpapers/paper_files/icml2006_GravesFGS06.pdf)**
+
 ## Thought Vectors
 
 **[Recursive Deep Models for Semantic Compositionality Over a Sentiment Treebank](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.383.1327&rep=rep1&type=pdf)**;  
@@ -197,7 +199,7 @@ Irsoy & Cardie. 2014. Uses Deep Recursive Neural Networks. Uses a parse tree.
 
 ##Dialog
 
-**[A Neural Network Approach toContext-Sensitive Generation of Conversational Responses](http://arxiv.org/pdf/1506.06714v1.pdf)**; Sordoni 2015.  Generates responses to tweets. Uses [Recurrent Neural Network Language Model (RLM) architecture of (Mikolov et al., 2010).](http://www.fit.vutbr.cz/research/groups/speech/publi/2010/mikolov_interspeech2010_IS100722.pdf)    
+**[A Neural Network Approach to Context-Sensitive Generation of Conversational Responses](http://arxiv.org/pdf/1506.06714v1.pdf)**; Sordoni 2015.  Generates responses to tweets. Uses [Recurrent Neural Network Language Model (RLM) architecture of (Mikolov et al., 2010).](http://www.fit.vutbr.cz/research/groups/speech/publi/2010/mikolov_interspeech2010_IS100722.pdf)    
 
 **[Towards AI-Complete Question Answering: A Set of Prerequisite Toy Tasks](http://arxiv.org/pdf/1502.05698v7.pdf)**; Weston 2015. Classifies QA tasks. Expands on Memory Networks.  
 
