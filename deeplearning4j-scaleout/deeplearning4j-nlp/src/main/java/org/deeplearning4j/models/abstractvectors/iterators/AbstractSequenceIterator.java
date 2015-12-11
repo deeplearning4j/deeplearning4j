@@ -5,6 +5,7 @@ import org.deeplearning4j.models.abstractvectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.abstractvectors.sequence.Sequence;
 import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
 import org.deeplearning4j.models.abstractvectors.transformers.SequenceTransformer;
+import org.deeplearning4j.models.abstractvectors.transformers.TransformerFactory;
 
 import java.util.Iterator;
 
@@ -47,10 +48,6 @@ public class AbstractSequenceIterator<T extends SequenceElement> implements Sequ
          */
         public Builder(@NonNull Iterable<Sequence<T>> iterable) {
             this.underlyingIterable = iterable;
-        }
-
-        public Builder(@NonNull SequenceTransformer<T, String> transformer) {
-
         }
 
         /*
