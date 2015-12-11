@@ -201,6 +201,16 @@ public class JointStorage<T extends SequenceElement> implements WeightLookupTabl
     }
 
     @Override
+    public void removeElement(String label) {
+
+    }
+
+    @Override
+    public void removeElement(T element) {
+
+    }
+
+    @Override
     public int layerSize() {
         return this.layerSize;
     }

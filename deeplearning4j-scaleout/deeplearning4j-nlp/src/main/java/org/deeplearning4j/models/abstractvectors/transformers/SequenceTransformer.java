@@ -5,6 +5,8 @@ import org.deeplearning4j.models.abstractvectors.sequence.Sequence;
 import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 
+import java.util.Iterator;
+
 /**
  *
  * @author raver119@gmail.com
@@ -28,5 +30,14 @@ public interface SequenceTransformer<T extends SequenceElement, V extends Object
      *                          Please note: Vocab building will call this method with TRUE value, training will be called with FALSE value
      * @return
      */
-    Sequence<T> transformToSequence(V object, boolean addUnkownElements);
+    Sequence<T> transformToSequence(VocabCache<T> vocabCache, V object, boolean addUnkownElements);
+
+
+    /**
+     * Creates Iterator iterface for sequence transformation, with specified vocabulary
+     *
+     * @param vocabCache
+     * @return
+     */
+    Iterator<Sequence<T>> getIterator(VocabCache<T> vocabCache);
 }

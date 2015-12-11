@@ -24,9 +24,9 @@ import java.util.concurrent.atomic.AtomicLong;
 public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
 
     // map for label->object dictionary
-    private Map<String, T> vocabulary = new ConcurrentHashMap<>();
+    private volatile Map<String, T> vocabulary = new ConcurrentHashMap<>();
 
-    private Map<Integer, T> idxMap = new ConcurrentHashMap<>();
+    private volatile Map<Integer, T> idxMap = new ConcurrentHashMap<>();
 
     private AtomicLong documentsCounter = new AtomicLong(0);
 
@@ -363,7 +363,8 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      */
     public void importVocabulary(@NonNull VocabCache<T> vocabCache) {
         for (T element: vocabCache.vocabWords()) {
-            addToken(element);
+            if (element.getLabel().equals("percent")) logger.info("!!!!!!!!!!!!!!!!!!!!Importing 'percent'!!!!!!!!!!!!!");
+            this.addToken(element);
         }
     }
 
@@ -371,8 +372,26 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
     public void updateWordsOccurencies() {
         totalWordCount.set(0);
         for (T element: vocabulary.values()) {
-            totalWordCount.addAndGet((long) element.getElementFrequency());
+            long value = (long) element.getElementFrequency();
+            logger.info("Element: " + element + " Applied value: " + value);
+
+            if (value > 0) totalWordCount.addAndGet(value);
         }
+        logger.info("Updated counter: ["+ totalWordCount.get()+"]");
+    }
+
+    @Override
+    public void removeElement(String label) {
+        if (vocabulary.containsKey(label)) {
+            totalWordCount.getAndAdd((long) vocabulary.get(label).getElementFrequency() * -1);
+            idxMap.remove(label);
+            vocabulary.remove(label);
+        } else throw new IllegalStateException("Can't get label: '" + label + "'");
+    }
+
+    @Override
+    public void removeElement(T element) {
+        removeElement(element.getLabel());
     }
 
     public static class Builder<T extends SequenceElement> {
