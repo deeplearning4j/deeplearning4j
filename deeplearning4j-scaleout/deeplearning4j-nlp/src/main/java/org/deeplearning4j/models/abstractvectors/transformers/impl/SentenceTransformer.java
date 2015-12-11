@@ -22,13 +22,12 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class SentenceTransformer implements SequenceTransformer<VocabWord, String>, Iterable<Sequence<VocabWord>>{
+public class SentenceTransformer implements SequenceTransformer<VocabWord, String>{
     /*
             So, we must accept any SentenceIterator implementations, and build vocab out of it, and use it for further transforms between text and Sequences
      */
     protected TokenizerFactory tokenizerFactory;
     protected LabelAwareIterator iterator;
-    protected VocabCache<VocabWord> vocabCache;
 
     protected static final Logger log = LoggerFactory.getLogger(SentenceTransformer.class);
 
@@ -42,7 +41,7 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
     }
 
     @Override
-    public Sequence<VocabWord> transformToSequence(String object, boolean addUnkownElements) {
+    public Sequence<VocabWord> transformToSequence(VocabCache<VocabWord> vocabCache, String object, boolean addUnkownElements) {
         Sequence<VocabWord> sequence = new Sequence<>();
 
         //log.info("Tokenizing string: '" + object + "'");
@@ -56,8 +55,11 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
             if (vocabCache.containsWord(token)) {
                 sequence.addElement(vocabCache.wordFor(token));
             } else {
-                if (addUnkownElements)
-                    vocabCache.addToken(new VocabWord(1.0, token));
+                if (addUnkownElements) {
+                    VocabWord word = new VocabWord(1.0, token);
+                    vocabCache.addToken(word);
+                    sequence.addElement(word);
+                }
             }
         }
 
@@ -65,7 +67,7 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
     }
 
     @Override
-    public Iterator<Sequence<VocabWord>> iterator() {
+    public Iterator<Sequence<VocabWord>> getIterator(final VocabCache<VocabWord> vocabCache) {
         log.info("Producing iterator.");
         iterator.reset();
 
@@ -77,7 +79,7 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
 
             @Override
             public Sequence<VocabWord> next() {
-                return SentenceTransformer.this.transformToSequence(iterator.nextDocument().getContent(), true);
+                return SentenceTransformer.this.transformToSequence(vocabCache, iterator.nextDocument().getContent(), true);
             }
         };
     }
@@ -87,8 +89,8 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
         protected LabelAwareIterator iterator;
         protected VocabCache<VocabWord> vocabCache;
 
-        public Builder(@NonNull VocabCache<VocabWord> vocabCache) {
-            this.vocabCache = vocabCache;
+        public Builder() {
+
         }
 
         public Builder tokenizerFactory(@NonNull TokenizerFactory tokenizerFactory) {
@@ -109,7 +111,7 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
         public SentenceTransformer build() {
             SentenceTransformer transformer = new SentenceTransformer(this.iterator);
             transformer.tokenizerFactory = this.tokenizerFactory;
-            transformer.vocabCache = this.vocabCache;
+
 
             return transformer;
         }

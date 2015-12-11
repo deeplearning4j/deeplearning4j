@@ -1,5 +1,6 @@
 package org.deeplearning4j.models.word2vec.wordstore;
 
+import org.canova.api.util.ClassPathResource;
 import org.deeplearning4j.models.abstractvectors.iterators.AbstractSequenceIterator;
 import org.deeplearning4j.models.abstractvectors.transformers.impl.SentenceTransformer;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -16,7 +17,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
 
@@ -36,14 +36,14 @@ public class VocabConstructorTest {
 
     @Test
     public void testBuildJointVocabulary1() throws Exception {
-        File inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
+        File inputFile = new ClassPathResource("big/raw_sentences.txt").getFile();
         SentenceIterator iter = UimaSentenceIterator.createWithPath(inputFile.getAbsolutePath());
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
 
         VocabCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
 
-        SentenceTransformer transformer = new SentenceTransformer.Builder(cache)
+        SentenceTransformer transformer = new SentenceTransformer.Builder()
                 .iterator(iter)
                 .tokenizerFactory(t)
                 .build();
@@ -58,36 +58,57 @@ public class VocabConstructorTest {
         VocabConstructor<VocabWord> constructor = new VocabConstructor.Builder<VocabWord>()
                 .addSource(sequenceIterator, 0)
                 .useAdaGrad(false)
+                .setTargetVocabCache(cache)
                 .build();
 
         constructor.buildJointVocabulary(true, false);
 
-        assertEquals(0, cache.totalWordOccurrences());
+
         assertEquals(244, cache.numWords());
+
+        assertEquals(0, cache.totalWordOccurrences());
     }
 
-    /*
+
     @Test
     public void testBuildJointVocabulary2() throws Exception {
-        File inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
+        File inputFile = new ClassPathResource("big/raw_sentences.txt").getFile();
         SentenceIterator iter = UimaSentenceIterator.createWithPath(inputFile.getAbsolutePath());
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
 
-        VocabConstructor<VocabWord> constructor = new VocabConstructor.Builder<VocabWord>()
-                .addSource(iter, 5)
-                .useAdaGrad(false)
+        VocabCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
+
+        SentenceTransformer transformer = new SentenceTransformer.Builder()
+                .iterator(iter)
+                .tokenizerFactory(t)
                 .build();
 
-        VocabCache cache = constructor.buildJointVocabulary(false, true);
 
-        assertEquals(634061, cache.totalWordOccurrences());
+        /*
+            And we pack that transformer into AbstractSequenceIterator
+         */
+        AbstractSequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<VocabWord>(transformer)
+                .build();
+
+        VocabConstructor<VocabWord> constructor = new VocabConstructor.Builder<VocabWord>()
+                .addSource(sequenceIterator, 5)
+                .useAdaGrad(false)
+                .setTargetVocabCache(cache)
+                .build();
+
+        constructor.buildJointVocabulary(false, true);
+
+        assertFalse(cache.hasToken("percent"));
+
         assertEquals(242, cache.numWords());
 
         assertEquals("it", cache.wordAtIndex(0));
         assertEquals("i", cache.wordAtIndex(1));
-    }
 
+        assertEquals(634061, cache.totalWordOccurrences());
+    }
+/*
     @Test
     public void testVocabTransfer1() throws Exception {
 

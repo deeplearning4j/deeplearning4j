@@ -49,6 +49,10 @@ public class AbstractSequenceIterator<T extends SequenceElement> implements Sequ
             this.underlyingIterable = iterable;
         }
 
+        public Builder(@NonNull SequenceTransformer<T, String> transformer) {
+
+        }
+
         /*
         public Builder(@NonNull SequenceTransformer<T, ?> transformer) {
 
