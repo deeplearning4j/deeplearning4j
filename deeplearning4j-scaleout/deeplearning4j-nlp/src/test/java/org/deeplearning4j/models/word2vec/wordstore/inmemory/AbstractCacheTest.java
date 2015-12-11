@@ -63,4 +63,21 @@ public class AbstractCacheTest {
         assertEquals(3, cache.numWords());
         assertEquals(6, cache.totalWordOccurrences());
     }
+
+    @Test
+    public void testRemoval() throws Exception {
+        AbstractCache<VocabWord>  cache = new AbstractCache.Builder<VocabWord>()
+                .build();
+
+        cache.addToken(new VocabWord(1.0, "word"));
+        cache.addToken(new VocabWord(2.0, "test"));
+        cache.addToken(new VocabWord(3.0, "tester"));
+
+        assertEquals(3, cache.numWords());
+        assertEquals(6, cache.totalWordOccurrences());
+
+        cache.removeElement("tester");
+        assertEquals(2, cache.numWords());
+        assertEquals(3, cache.totalWordOccurrences());
+    }
 }

@@ -23,6 +23,7 @@ import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  *
@@ -73,8 +74,9 @@ public class VocabConstructor<T extends SequenceElement> {
     public VocabCache buildJointVocabulary(boolean resetCounters, boolean buildHuffmanTree) {
         if (resetCounters && buildHuffmanTree) throw new IllegalStateException("You can't reset counters and build Huffman tree at the same time!");
 
+        if (cache == null) throw new IllegalStateException("Cache is null, building fresh one");
         if (cache == null) cache = new AbstractCache.Builder<T>().build();
-
+        log.info("Target vocab size before building: [" + cache.numWords() + "]");
         /*
         VocabularyHolder topHolder = new VocabularyHolder.Builder()
                 .externalCache(cache)
@@ -92,6 +94,7 @@ public class VocabConstructor<T extends SequenceElement> {
             iterator.reset();
 
             log.info("Trying source iterator: ["+ cnt+"]");
+            log.info("Target vocab size before building: [" + cache.numWords() + "]");
             cnt++;
 
             /*
@@ -147,21 +150,29 @@ public class VocabConstructor<T extends SequenceElement> {
             }
             // apply minWordFrequency set for this source
             log.info("Vocab size before truncation: " + tempHolder.numWords());
-            //tempHolder.truncateVocabulary();
+            if (source.getMinWordFrequency() > 0) {
+                LinkedBlockingQueue<String> labelsToRemove = new LinkedBlockingQueue<>();
+                for (T element : tempHolder.vocabWords()) {
+                    if (element.getElementFrequency() < source.getMinWordFrequency())
+                        labelsToRemove.add(element.getLabel());
+                }
+
+                for (String label: labelsToRemove) {
+                    log.info("Removing label: '" + label + "'");
+                    tempHolder.removeElement(label);
+                }
+            }
 
             log.info("Vocab size after truncation: " + tempHolder.numWords());
 
             // at this moment we're ready to transfer
             topHolder.importVocabulary(tempHolder);
+            log.info("Top holder size: ["+ topHolder.numWords()+"]");
+            log.info("Target vocab size before building: [" + cache.numWords() + "]");
         }
 
         // at this moment, we have vocabulary full of words, and we have to reset counters before transfer everything back to VocabCache
-        if (resetCounters) {
-            for (T element: topHolder.vocabWords()) {
-                element.setElementFrequency(0);
-            }
-            topHolder.updateWordsOccurencies();;
-        }
+
             //topHolder.resetWordCounters();
 
         if (buildHuffmanTree) {
@@ -172,7 +183,20 @@ public class VocabConstructor<T extends SequenceElement> {
         }
 
         //topHolder.transferBackToVocabCache(cache);
+        log.info("Joint vocabulary size BEFORE: ["+ cache.numWords()+"]");
+        log.info("Top holder size: ["+ topHolder.numWords()+"]");
         cache.importVocabulary(topHolder);
+        log.info("Joint vocabulary size: ["+ cache.numWords()+"]");
+        for (T element: cache.vocabWords()) {
+      //      log.info("Now has: " + element);
+        }
+        if (resetCounters) {
+            for (T element: cache.vocabWords()) {
+                element.setElementFrequency(0);
+            }
+            cache.updateWordsOccurencies();
+        }
+
         return cache;
     }
 
@@ -200,7 +224,7 @@ public class VocabConstructor<T extends SequenceElement> {
             return this;
         }
 
-        public Builder<T> setTargetVocabCache(@NonNull VocabCache cache) {
+        public Builder<T> setTargetVocabCache(@NonNull VocabCache<T> cache) {
             this.cache = cache;
             return this;
         }

@@ -346,6 +346,19 @@ public class InMemoryLookupCache implements VocabCache<VocabWord>,Serializable {
         }
     }
 
+    @Override
+    public void removeElement(String label) {
+        if (vocabs.containsKey(label)) {
+            vocabs.remove(label);
+            tokens.remove(label);
+        }
+    }
+
+    @Override
+    public void removeElement(VocabWord element) {
+        removeElement(element.getLabel());
+    }
+
 
     @Override
     public synchronized void saveVocab() {

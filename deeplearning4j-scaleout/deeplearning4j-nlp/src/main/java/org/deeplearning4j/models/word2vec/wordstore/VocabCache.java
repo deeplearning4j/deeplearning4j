@@ -245,4 +245,21 @@ public interface VocabCache<T extends SequenceElement> extends Serializable {
      * Updates counters
      */
     void updateWordsOccurencies();
+
+    /**
+     * Removes element with specified label from vocabulary
+     * Please note: Huffman index should be updated after element removal
+     *
+     * @param label label of the element to be removed
+     */
+    void removeElement(String label);
+
+
+    /**
+     * Removes specified element from vocabulary
+     * Please note: Huffman index should be updated after element removal
+     *
+     * @param element SequenceElement to be removed
+     */
+    void removeElement(T element);
 }
