@@ -39,6 +39,7 @@ import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.MultiLayerUtil;
+import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -1137,6 +1138,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 DataSet next = iter.next();
                 if (next.getFeatureMatrix() == null || next.getLabels() == null)
                     break;
+
+                boolean hasMaskArrays = next.hasMaskArrays();
+                if(hasMaskArrays) setLayerMaskArrays(next.getFeaturesMaskArray(), next.getLabelsMaskArray());
+
                 if(layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
                     doTruncatedBPTT(next.getFeatureMatrix(),next.getLabels());
                 }
@@ -1151,6 +1156,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                     }
                     solver.optimize();
                 }
+
+                if(hasMaskArrays) clearLayerMaskArrays();
             }
         }
     }
@@ -2106,6 +2113,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         return input.size(0);
     }
 
+    @Override
+    public void setMaskArray(INDArray maskArray) {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      *
      * If this MultiLayerNetwork contains one or more RNN layers: conduct forward pass (prediction)
@@ -2227,5 +2239,33 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                     .model(this).build();
         }
         solver.getOptimizer().setUpdater(updater);
+    }
+
+    public void setLayerMaskArrays(INDArray featuresMaskArray, INDArray labelsMaskArray){
+        if(featuresMaskArray != null){
+            //feedforward layers below a RNN layer: need the input (features) mask array
+
+            //Now, if mask array is 2d -> need to reshape to 1d (column vector) in the exact same order
+            // as is done for 3d -> 2d time series reshaping
+            INDArray reshapedFeaturesMask = TimeSeriesUtils.reshapeTimeSeriesMaskToVector(featuresMaskArray);
+
+            for( int i=0; i<layers.length-1; i++ ){
+                Type t = layers[i].type();
+                if( t == Type.CONVOLUTIONAL || t == Type.FEED_FORWARD ){
+                    layers[i].setMaskArray(reshapedFeaturesMask);
+                } else if( t == Type.RECURRENT ) break;
+
+            }
+        }
+        if(labelsMaskArray != null ){
+            if(!(layers[layers.length-1] instanceof BaseOutputLayer) ) return;
+            layers[layers.length-1].setMaskArray(labelsMaskArray);
+        }
+    }
+
+    public void clearLayerMaskArrays(){
+        for (Layer layer : layers) {
+            layer.setMaskArray(null);
+        }
     }
 }
