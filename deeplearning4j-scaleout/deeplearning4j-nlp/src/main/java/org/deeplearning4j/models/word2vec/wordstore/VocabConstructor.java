@@ -17,6 +17,7 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -70,10 +71,16 @@ public class VocabConstructor<T extends SequenceElement> {
         if (resetCounters && buildHuffmanTree) throw new IllegalStateException("You can't reset counters and build Huffman tree at the same time!");
 
         if (cache == null) cache = new AbstractCache.Builder<T>().build();
-        
+
+        /*
         VocabularyHolder topHolder = new VocabularyHolder.Builder()
                 .externalCache(cache)
                 .minWordFrequency(0)
+                .build();
+        */
+
+        AbstractCache<T> topHolder = new AbstractCache.Builder<T>()
+                .minElementFrequency(0)
                 .build();
 
         for(VocabSource source: sources) {
@@ -93,13 +100,20 @@ public class VocabConstructor<T extends SequenceElement> {
              //   Tokenizer tokenizer = tokenizerFactory.create(document.getContent());
 
 
+
+
                 if (fetchLabels) {
-                    VocabularyWord word = new VocabularyWord(document.getSequenceLabel().getLabel());
+/*                    VocabularyWord word = new VocabularyWord(document.getSequenceLabel().getLabel());
                     word.setSpecial(true);
                     word.setCount(1);
+                    */
+
+                    T labelWord = createInstance();
+                    labelWord.setSpecial(true);
+                    labelWord.setElementFrequency(1);
 
                     // tempHolder.addWord(word);
-                    tempHolder.addToken();
+                    tempHolder.addToken(labelWord);
 //                    log.info("LabelledDocument: " + document);
                 }
 
@@ -126,7 +140,7 @@ public class VocabConstructor<T extends SequenceElement> {
             }
             // apply minWordFrequency set for this source
             log.info("Vocab size before truncation: " + tempHolder.numWords());
-            tempHolder.truncateVocabulary();
+            //tempHolder.truncateVocabulary();
 
             log.info("Vocab size after truncation: " + tempHolder.numWords());
 
@@ -143,6 +157,14 @@ public class VocabConstructor<T extends SequenceElement> {
 
         topHolder.transferBackToVocabCache(cache);
         return cache;
+    }
+
+    protected T createInstance() {
+        try {
+            return (T) ((Class) ((ParameterizedType) this.getClass().getGenericSuperclass()).getActualTypeArguments()[0]).newInstance();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static class Builder<T extends SequenceElement> {
