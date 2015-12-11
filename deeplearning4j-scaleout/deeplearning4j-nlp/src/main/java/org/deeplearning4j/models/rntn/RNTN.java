@@ -1480,4 +1480,9 @@ public class RNTN implements Layer {
     public int getInputMiniBatchSize(){
     	return inputMiniBatchSize;
     }
+
+    @Override
+    public void setMaskArray(INDArray maskArray) {
+        throw new UnsupportedOperationException();
+    }
 }
