@@ -9,9 +9,13 @@ import org.deeplearning4j.text.documentiterator.BasicLabelAwareIterator;
 import org.deeplearning4j.text.documentiterator.DocumentIterator;
 import org.deeplearning4j.text.documentiterator.LabelAwareIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
+import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * This class is responsible for conversion lines of text to Sequences of SequenceElements
@@ -24,9 +28,12 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
      */
     protected TokenizerFactory tokenizerFactory;
     protected LabelAwareIterator iterator;
+    protected VocabCache<VocabWord> vocabCache;
+
+    protected static final Logger log = LoggerFactory.getLogger(SentenceTransformer.class);
 
     private SentenceTransformer(@NonNull LabelAwareIterator iterator) {
-
+        this.iterator = iterator;
     }
 
     @Override
@@ -36,20 +43,52 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
 
     @Override
     public Sequence<VocabWord> transformToSequence(String object, boolean addUnkownElements) {
-        return null;
+        Sequence<VocabWord> sequence = new Sequence<>();
+
+        //log.info("Tokenizing string: '" + object + "'");
+
+        Tokenizer tokenizer = tokenizerFactory.create(object);
+        List<String> list = tokenizer.getTokens();
+
+        for (String token: list) {
+            if (token == null || token.isEmpty()) continue;
+
+            if (vocabCache.containsWord(token)) {
+                sequence.addElement(vocabCache.wordFor(token));
+            } else {
+                if (addUnkownElements)
+                    vocabCache.addToken(new VocabWord(1.0, token));
+            }
+        }
+
+        return sequence;
     }
 
     @Override
     public Iterator<Sequence<VocabWord>> iterator() {
-        return null;
+        log.info("Producing iterator.");
+        iterator.reset();
+
+        return new Iterator<Sequence<VocabWord>>() {
+            @Override
+            public boolean hasNext() {
+                return SentenceTransformer.this.iterator.hasNextDocument();
+            }
+
+            @Override
+            public Sequence<VocabWord> next() {
+                return SentenceTransformer.this.transformToSequence(iterator.nextDocument().getContent(), true);
+            }
+        };
     }
 
     public static class Builder {
         protected TokenizerFactory tokenizerFactory;
         protected LabelAwareIterator iterator;
+        protected VocabCache<VocabWord> vocabCache;
 
-        public Builder() {
-
+        public Builder(@NonNull VocabCache<VocabWord> vocabCache) {
+            this.vocabCache = vocabCache;
         }
 
         public Builder tokenizerFactory(@NonNull TokenizerFactory tokenizerFactory) {
@@ -69,7 +108,8 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
 
         public SentenceTransformer build() {
             SentenceTransformer transformer = new SentenceTransformer(this.iterator);
-            transformer.iterator = this.iterator;
+            transformer.tokenizerFactory = this.tokenizerFactory;
+            transformer.vocabCache = this.vocabCache;
 
             return transformer;
         }

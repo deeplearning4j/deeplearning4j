@@ -324,6 +324,27 @@ public class InMemoryLookupCache implements VocabCache<VocabWord>,Serializable {
         return tokenFor(token) != null;
     }
 
+    @Override
+    public void importVocabulary(VocabCache<VocabWord> vocabCache) {
+        for (VocabWord word: vocabCache.vocabWords()) {
+            if (vocabs.containsKey(word.getLabel())) {
+                wordFrequencies.incrementCount(word.getLabel(), word.getElementFrequency());
+            } else {
+                tokens.put(word.getLabel(), word);
+                vocabs.put(word.getLabel(), word);
+                wordFrequencies.incrementCount(word.getLabel(), word.getElementFrequency());
+            }
+            totalWordOccurrences.addAndGet((long) word.getElementFrequency());
+        }
+    }
+
+    @Override
+    public void updateWordsOccurencies() {
+        totalWordOccurrences.set(0);
+        for (VocabWord word: vocabWords()) {
+            totalWordOccurrences.addAndGet((long) word.getElementFrequency());
+        }
+    }
 
 
     @Override
