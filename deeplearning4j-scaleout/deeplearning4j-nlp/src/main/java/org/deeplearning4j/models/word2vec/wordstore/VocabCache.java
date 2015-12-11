@@ -234,6 +234,15 @@ public interface VocabCache<T extends SequenceElement> extends Serializable {
     boolean hasToken(String token);
 
 
+    /**
+     * imports vocabulary
+     *
+     * @param vocabCache
+     */
+    void importVocabulary(VocabCache<T> vocabCache);
 
-
+    /**
+     * Updates counters
+     */
+    void updateWordsOccurencies();
 }

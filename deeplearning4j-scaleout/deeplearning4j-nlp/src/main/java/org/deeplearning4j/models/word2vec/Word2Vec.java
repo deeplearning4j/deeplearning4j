@@ -342,7 +342,7 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> {
         /*
             vocabulary building part of task
          */
-
+/*
         VocabConstructor constructor = new VocabConstructor.Builder()
                 .addSource(sentenceIter, minWordFrequency)
                 .setTokenizerFactory(this.tokenizerFactory)
@@ -351,7 +351,7 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> {
                 .build();
 
         constructor.buildJointVocabulary(false, true);
-
+*/
         return false;
 
     }

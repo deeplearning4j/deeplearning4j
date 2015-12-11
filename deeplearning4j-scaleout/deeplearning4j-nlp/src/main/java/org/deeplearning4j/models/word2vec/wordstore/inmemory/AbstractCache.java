@@ -324,7 +324,11 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      */
     @Override
     public void addToken(T element) {
-        vocabulary.put(element.getLabel(), element);
+        if (!vocabulary.containsKey(element.getLabel())) {
+            vocabulary.put(element.getLabel(), element);
+
+            // TODO: remove this stupid int limitation
+        } else vocabulary.get(element.getLabel()).increaseElementFrequency((int) element.getElementFrequency());
         totalWordCount.addAndGet((long) element.getElementFrequency());
     }
 
@@ -351,6 +355,25 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
     }
 
 
+    /**
+     * This method imports all elements from VocabCache passed as argument
+     * If element already exists,
+     *
+     * @param vocabCache
+     */
+    public void importVocabulary(@NonNull VocabCache<T> vocabCache) {
+        for (T element: vocabCache.vocabWords()) {
+            addToken(element);
+        }
+    }
+
+    @Override
+    public void updateWordsOccurencies() {
+        totalWordCount.set(0);
+        for (T element: vocabulary.values()) {
+            totalWordCount.addAndGet((long) element.getElementFrequency());
+        }
+    }
 
     public static class Builder<T extends SequenceElement> {
         protected int scavengerThreshold  = 3000000;

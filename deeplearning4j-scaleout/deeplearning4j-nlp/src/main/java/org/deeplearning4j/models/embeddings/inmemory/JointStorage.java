@@ -191,6 +191,16 @@ public class JointStorage<T extends SequenceElement> implements WeightLookupTabl
     }
 
     @Override
+    public void importVocabulary(VocabCache<T> vocabCache) {
+
+    }
+
+    @Override
+    public void updateWordsOccurencies() {
+
+    }
+
+    @Override
     public int layerSize() {
         return this.layerSize;
     }

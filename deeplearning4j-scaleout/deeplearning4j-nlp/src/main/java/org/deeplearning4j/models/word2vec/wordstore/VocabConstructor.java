@@ -6,6 +6,8 @@ import org.deeplearning4j.models.abstractvectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.abstractvectors.sequence.Sequence;
 import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
+import org.deeplearning4j.models.word2vec.Huffman;
+import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.text.documentiterator.LabelAwareIterator;
@@ -19,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -83,9 +86,13 @@ public class VocabConstructor<T extends SequenceElement> {
                 .minElementFrequency(0)
                 .build();
 
-        for(VocabSource source: sources) {
+        int cnt = 0;
+        for(VocabSource<T> source: sources) {
             SequenceIterator<T> iterator = source.getIterator();
             iterator.reset();
+
+            log.info("Trying source iterator: ["+ cnt+"]");
+            cnt++;
 
             /*
             VocabularyHolder tempHolder = new VocabularyHolder.Builder()
@@ -96,7 +103,7 @@ public class VocabConstructor<T extends SequenceElement> {
 
             while (iterator.hasMoreSequences()) {
                 Sequence<T> document = iterator.nextSequence();
-
+              //  log.info("Sequence length: ["+ document.getElements().size()+"]");
              //   Tokenizer tokenizer = tokenizerFactory.create(document.getContent());
 
 
@@ -145,17 +152,27 @@ public class VocabConstructor<T extends SequenceElement> {
             log.info("Vocab size after truncation: " + tempHolder.numWords());
 
             // at this moment we're ready to transfer
-            topHolder.consumeVocabulary(tempHolder);
+            topHolder.importVocabulary(tempHolder);
         }
 
         // at this moment, we have vocabulary full of words, and we have to reset counters before transfer everything back to VocabCache
-        if (resetCounters)
-            topHolder.resetWordCounters();
+        if (resetCounters) {
+            for (T element: topHolder.vocabWords()) {
+                element.setElementFrequency(0);
+            }
+            topHolder.updateWordsOccurencies();;
+        }
+            //topHolder.resetWordCounters();
 
-        if (buildHuffmanTree)
-            topHolder.updateHuffmanCodes();
+        if (buildHuffmanTree) {
+            Huffman huffman = new Huffman(topHolder.vocabWords());
+            huffman.build();
+            huffman.applyIndexes(topHolder);
+            //topHolder.updateHuffmanCodes();
+        }
 
-        topHolder.transferBackToVocabCache(cache);
+        //topHolder.transferBackToVocabCache(cache);
+        cache.importVocabulary(topHolder);
         return cache;
     }
 

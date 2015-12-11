@@ -252,7 +252,7 @@ public class ParagraphVectors extends Word2Vec {
     @Override
     public boolean buildVocab() {
 
-
+/*
         VocabConstructor constructor = new VocabConstructor.Builder()
                 .addSource(labelAwareIterator, minWordFrequency)
                 .setTokenizerFactory(this.tokenizerFactory)
@@ -262,7 +262,7 @@ public class ParagraphVectors extends Word2Vec {
                 .build();
 
         constructor.buildJointVocabulary(false, true);
-
+*/
         /*
         super.buildVocab();
 

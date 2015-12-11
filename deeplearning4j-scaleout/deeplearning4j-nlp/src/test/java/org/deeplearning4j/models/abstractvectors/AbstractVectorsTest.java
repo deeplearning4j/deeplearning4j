@@ -5,6 +5,7 @@ import org.deeplearning4j.models.abstractvectors.iterators.AbstractSequenceItera
 import org.deeplearning4j.models.abstractvectors.transformers.impl.SentenceTransformer;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.word2vec.VocabWord;
+import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
@@ -33,6 +34,7 @@ public class AbstractVectorsTest {
         ClassPathResource resource = new ClassPathResource("big/raw_sentences.txt");
         File file = resource.getFile();
 
+        AbstractCache<VocabWord> vocabCache = new AbstractCache.Builder<VocabWord>().build();
 
         /*
             First we build line iterator
@@ -47,7 +49,7 @@ public class AbstractVectorsTest {
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
 
-        SentenceTransformer transformer = new SentenceTransformer.Builder()
+        SentenceTransformer transformer = new SentenceTransformer.Builder(vocabCache)
                 .iterator(underlyingIterator)
                 .tokenizerFactory(t)
                 .build();
