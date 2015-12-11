@@ -1,5 +1,6 @@
 package org.deeplearning4j.models.word2vec.wordstore;
 
+import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.text.documentiterator.LabelsSource;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
@@ -56,8 +57,7 @@ public class VocabConstructorTest {
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
 
-        VocabConstructor constructor = new VocabConstructor.Builder()
-                .setTokenizerFactory(t)
+        VocabConstructor<VocabWord> constructor = new VocabConstructor.Builder<VocabWord>()
                 .addSource(iter, 5)
                 .useAdaGrad(false)
                 .build();
@@ -89,8 +89,7 @@ public class VocabConstructorTest {
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
 
-        VocabConstructor constructor = new VocabConstructor.Builder()
-                .setTokenizerFactory(t)
+        VocabConstructor<VocabWord> constructor = new VocabConstructor.Builder<VocabWord>()
                 .addSource(iter, 5)
                 .useAdaGrad(false)
                 .setTargetVocabCache(cache)
@@ -117,8 +116,7 @@ public class VocabConstructorTest {
 
         LabelsSource generator = new LabelsSource("SNTX_");
 
-        VocabConstructor constructor = new VocabConstructor.Builder()
-                .setTokenizerFactory(t)
+        VocabConstructor<VocabWord> constructor = new VocabConstructor.Builder<VocabWord>()
                 .addSource(new SentenceIteratorConverter(iter, generator), 5)
                 .useAdaGrad(false)
                 .fetchLabels(true)
@@ -149,8 +147,7 @@ public class VocabConstructorTest {
 
         LabelsSource generator = new LabelsSource("SNTX_");
 
-        VocabConstructor constructor = new VocabConstructor.Builder()
-                .setTokenizerFactory(t)
+        VocabConstructor<VocabWord> constructor = new VocabConstructor.Builder<VocabWord>()
                 .addSource(new SentenceIteratorConverter(iter, generator), 5)
                 .setTargetVocabCache(cache)
                 .useAdaGrad(false)

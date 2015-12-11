@@ -27,7 +27,7 @@ public abstract class SequenceElement implements Comparable<SequenceElement> {
     @Getter @Setter protected INDArray historicalGradient;
     protected List<Integer> points = new ArrayList<>();
     protected int codeLength = 0;
-    @Getter @Setter protected int special;
+    @Getter @Setter protected boolean special;
 
     /*
             Used for Joint/Distributed vocabs mechanics
@@ -49,6 +49,15 @@ public abstract class SequenceElement implements Comparable<SequenceElement> {
      */
     public double getElementFrequency() {
         return elementFrequency.get();
+    }
+
+    /**
+     * This method sets frequency value for this element
+     *
+     * @param value
+     */
+    public void setElementFrequency(long value) {
+        elementFrequency.set(value);
     }
 
     /**
