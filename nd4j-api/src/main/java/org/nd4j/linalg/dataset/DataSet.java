@@ -51,6 +51,8 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     private List<String> labelNames = new ArrayList<>();
     private INDArray features, labels;
     private String id = UUID.randomUUID().toString();
+    private INDArray featuresMask;
+    private INDArray labelsMask;
 
     public DataSet() {
         this(Nd4j.zeros(new int[]{1,1}), Nd4j.zeros(new int[]{1,1}));
@@ -882,6 +884,31 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     @Override
     public Iterator<DataSet> iterator() {
         return asList().iterator();
+    }
+
+    @Override
+    public INDArray getFeaturesMaskArray() {
+        return featuresMask;
+    }
+
+    @Override
+    public void setFeaturesMaskArray(INDArray featuresMask) {
+        this.featuresMask = featuresMask;
+    }
+
+    @Override
+    public INDArray getLabelsMaskArray() {
+        return labelsMask;
+    }
+
+    @Override
+    public void setLabelsMaskArray(INDArray labelsMask) {
+        this.labelsMask = labelsMask;
+    }
+
+    @Override
+    public boolean hasMaskArrays() {
+        return labelsMask != null || featuresMask != null;
     }
 
     @Override
