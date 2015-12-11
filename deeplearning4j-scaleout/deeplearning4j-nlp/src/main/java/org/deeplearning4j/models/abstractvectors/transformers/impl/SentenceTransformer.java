@@ -28,6 +28,7 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
      */
     protected TokenizerFactory tokenizerFactory;
     protected LabelAwareIterator iterator;
+    protected boolean readOnly = false;
 
     protected static final Logger log = LoggerFactory.getLogger(SentenceTransformer.class);
 
@@ -79,7 +80,7 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
 
             @Override
             public Sequence<VocabWord> next() {
-                return SentenceTransformer.this.transformToSequence(vocabCache, iterator.nextDocument().getContent(), true);
+                return SentenceTransformer.this.transformToSequence(vocabCache, iterator.nextDocument().getContent(), !SentenceTransformer.this.readOnly);
             }
         };
     }
@@ -88,6 +89,7 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
         protected TokenizerFactory tokenizerFactory;
         protected LabelAwareIterator iterator;
         protected VocabCache<VocabWord> vocabCache;
+        protected boolean readOnly = false;
 
         public Builder() {
 
@@ -108,10 +110,15 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
             return this;
         }
 
+        public Builder readOnly(boolean readOnly) {
+            this.readOnly = true;
+            return this;
+        }
+
         public SentenceTransformer build() {
             SentenceTransformer transformer = new SentenceTransformer(this.iterator);
             transformer.tokenizerFactory = this.tokenizerFactory;
-
+            transformer.readOnly = this.readOnly;
 
             return transformer;
         }

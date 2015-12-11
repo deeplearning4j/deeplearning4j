@@ -69,7 +69,7 @@ public class VocabConstructorTest {
         assertEquals(0, cache.totalWordOccurrences());
     }
 
-
+/*
     @Test
     public void testBuildJointVocabulary2() throws Exception {
         File inputFile = new ClassPathResource("big/raw_sentences.txt").getFile();
@@ -85,9 +85,10 @@ public class VocabConstructorTest {
                 .build();
 
 
-        /*
-            And we pack that transformer into AbstractSequenceIterator
-         */
+
+
+
+
         AbstractSequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<VocabWord>(transformer)
                 .build();
 
@@ -108,7 +109,7 @@ public class VocabConstructorTest {
 
         assertEquals(634061, cache.totalWordOccurrences());
     }
-/*
+
     @Test
     public void testVocabTransfer1() throws Exception {
 
