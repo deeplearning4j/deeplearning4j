@@ -32,6 +32,7 @@ import org.nd4j.linalg.util.MathUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.io.*;
 import java.util.*;
 
@@ -69,10 +70,23 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      *               has a value of 1 in the desired column with the label)
      */
     public DataSet(INDArray first, INDArray second) {
-        if (first.size(0) != second.size(0))
-            throw new IllegalStateException("Invalid data transform; first and second do not have equal rows. First was " + first.size(0) + " second was " + second.size(0));
-        this.features = first;
-        this.labels = second;
+        this(first,second,null,null);
+    }
+
+    /**Create a dataset with the specified input INDArray and labels (output) INDArray, plus (optionally) mask arrays
+     * for the features and labels
+     * @param features Features (input)
+     * @param labels Labels (output)
+     * @param featuresMask Mask array for features, may be null
+     * @param labelsMask Mask array for labels, may be null
+     */
+    public DataSet(INDArray features, INDArray labels, INDArray featuresMask, INDArray labelsMask) {
+        if (features.size(0) != labels.size(0))
+            throw new IllegalStateException("Invalid data transform; features and labels do not have equal rows. First was " + features.size(0) + " labels was " + labels.size(0));
+        this.features = features;
+        this.labels = labels;
+        this.featuresMask = featuresMask;
+        this.labelsMask = labelsMask;
     }
 
     /**
