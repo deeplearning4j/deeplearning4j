@@ -28,7 +28,7 @@ import java.util.Set;
 import static org.junit.Assert.*;
 
 /**
- * Created by fartovii on 22.11.15.
+ * @author raver119@gmail.com
  */
 public class VocabConstructorTest {
 

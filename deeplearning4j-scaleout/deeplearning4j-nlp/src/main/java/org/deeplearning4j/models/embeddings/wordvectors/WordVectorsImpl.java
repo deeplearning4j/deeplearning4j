@@ -61,7 +61,7 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
     protected boolean useAdeGrad;
     protected int workers = Runtime.getRuntime().availableProcessors();
     protected boolean trainSequenceVectors = false;
-    protected boolean trainWordVectors = true;
+    protected boolean trainElementsVectors = true;
 
     public final static String UNK = "UNK";
     protected List<String> stopWords = new ArrayList<>(); //StopWords.getStopWords();

@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.Collection;
 
 import static org.junit.Assert.*;
 
@@ -70,7 +71,8 @@ public class AbstractVectorsTest {
 
 
         /*
-            Now we should build vocabulary out of sequence iterator
+            Now we should build vocabulary out of sequence iterator.
+            We can skip this phase, and just set AbstractVectors.resetModel(TRUE), and vocabulary will be mastered internally
         */
         VocabConstructor<VocabWord> constructor = new VocabConstructor.Builder<VocabWord>()
                 .addSource(sequenceIterator, 5)
@@ -96,27 +98,49 @@ public class AbstractVectorsTest {
                 .cache(vocabCache)
                 .build();
 
+         /*
+             reset model is viable only if you're setting AbstractVectors.resetModel() to false
+             if set to True - it will be called internally
+        */
         lookupTable.resetWeights(true);
 
         /*
             Now we can build AbstractVectors model, that suits our needs
          */
         AbstractVectors<VocabWord> vectors = new AbstractVectors.Builder<VocabWord>(new VectorsConfiguration())
-                .minWordFrequency(3)
+                // minimum number of occurencies for each element in training corpus. All elements below this value will be ignored
+                // Please note: this value has effect only if resetModel() set to TRUE, for internal model building. Otherwise it'll be ignored, and actual vocabulary content will be used
+                .minWordFrequency(5)
 
                 // WeightLookupTable
-                .setLookupTable(lookupTable)
+                .lookupTable(lookupTable)
 
                 // abstract iterator that covers training corpus
                 .iterate(sequenceIterator)
 
                 // vocabulary built prior to modelling
-                .setVocabCache(vocabCache)
+                .vocabCache(vocabCache)
+
+                // batchSize is the number of sequences being processed by 1 thread at once
+                // this value actually matters if you have iterations > 1
+                .batchSize(250)
+
+                // number of iterations over batch
+                .iterations(1)
+
+                // number of iterations over whole training corpus
+                .epochs(1)
 
                 // if set to true, vocabulary will be built from scratches internally
                 // otherwise externally provided vocab will be used
                 .resetModel(false)
 
+
+                /*
+                    These two methods define our training goals. At least one goal should be set to TRUE.
+                 */
+                .trainElementsRepresentation(true)
+                .trainSequencesRepresentation(false)
 
                 .build();
 
@@ -134,5 +158,7 @@ public class AbstractVectorsTest {
         logger.info("Day/night similarity: " + sim);
         assertTrue(sim > 0.6d);
 
+        Collection<String> labels = vectors.wordsNearest("day", 10);
+        logger.info("Nearest labels to 'day': " + labels);
     }
 }

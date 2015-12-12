@@ -45,6 +45,7 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
      * Starts training over
      */
     public void fit() {
+        if (!trainElementsVectors && !trainSequenceVectors) throw new IllegalStateException("You should define at least one training goal 'trainElementsRepresentation' or 'trainSequenceRepresentation'");
         if (iterator == null) throw new IllegalStateException("You can't fit() data without SequenceIterator defined");
 
         if (resetModel) {
@@ -52,9 +53,9 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
         }
 
         log.info("Starting learning process...");
-        for (int currentEpoch = 0; currentEpoch < numEpochs; currentEpoch++) {
-            AtomicLong linesCounter = new AtomicLong(0);
-            AtomicLong wordsCounter = new AtomicLong(0);
+        for (int currentEpoch = 1; currentEpoch <= numEpochs; currentEpoch++) {
+            final AtomicLong linesCounter = new AtomicLong(0);
+            final AtomicLong wordsCounter = new AtomicLong(0);
 
             AsyncSequencer sequencer = new AsyncSequencer(this.iterator);
             sequencer.start();
@@ -80,6 +81,8 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
                     throw new RuntimeException(e);
                 }
             }
+
+            log.info("Epoch: [" + currentEpoch+ "]; Words vectorized so far: [" + wordsCounter.get() + "];  Lines vectorized so far: [" + linesCounter.get() + "]; learningRate: [" + minLearningRate + "]");
         }
     }
 
@@ -154,7 +157,7 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
 
     protected void trainSequence(Sequence<T> sequence, AtomicLong nextRandom, double alpha) {
 
-        if (trainWordVectors) for(int i = 0; i < sequence.getElements().size(); i++) {
+        if (trainElementsVectors) for(int i = 0; i < sequence.getElements().size(); i++) {
             nextRandom.set(nextRandom.get() * 25214903917L + 11);
             skipGram(i, sequence.getElements(), (int) nextRandom.get() % window,nextRandom,alpha);
         }
@@ -170,21 +173,24 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
         protected WeightLookupTable<T> lookupTable;
         protected SequenceIterator<T> iterator;
 
-        protected double sampling;
-        protected double negative;
-        protected double learningRate;
-        protected double minLearningRate;
-        protected int minWordFrequency;
-        protected int iterations;
-        protected int numEpochs;
-        protected int layerSize;
-        protected int window;
-        protected boolean hugeModelExpected;
-        protected int batchSize;
+        protected double sampling = 0;
+        protected double negative = 0;
+        protected double learningRate = 0.025;
+        protected double minLearningRate = 0.01;
+        protected int minWordFrequency = 0;
+        protected int iterations = 1;
+        protected int numEpochs = 1;
+        protected int layerSize = 100;
+        protected int window = 5;
+        protected boolean hugeModelExpected = false;
+        protected int batchSize = 100;
         protected int learningRateDecayWords;
         protected long seed;
-        protected boolean useAdaGrad;
-        protected boolean resetModel;
+        protected boolean useAdaGrad = false;
+        protected boolean resetModel = true;
+
+        protected boolean trainSequenceVectors = false;
+        protected boolean trainElementsVectors = true;
 
         protected List<String> stopWords = new ArrayList<>();
 
@@ -217,12 +223,41 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
             return this;
         }
 
-        public Builder<T> setLayerSize(int layerSize) {
+        public Builder<T> batchSize(int batchSize) {
+            this.batchSize = batchSize;
+            return this;
+        }
+
+        public Builder<T> iterations(int iterations) {
+            this.iterations = iterations;
+            return this;
+        }
+
+        public Builder<T> epochs(int numEpochs) {
+            this.numEpochs = numEpochs;
+            return this;
+        }
+
+        /**
+         * This method defines number of dimensions for outcome vectors.
+         * Please note: This option has effect only if lookupTable wasn't defined during building process.
+         *
+         * @param layerSize
+         * @return
+         */
+        public Builder<T> layerSize(int layerSize) {
             this.layerSize = layerSize;
             return this;
         }
 
-        public Builder<T> setLearningRate(double learningRate) {
+        /**
+         * This method defines initial learning rate.
+         * Default value is 0.025
+         *
+         * @param learningRate
+         * @return
+         */
+        public Builder<T> learningRate(double learningRate) {
             this.learningRate = learningRate;
             return this;
         }
@@ -232,17 +267,29 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
             return this;
         }
 
+        /**
+         * This method defines minimum learning rate after decay being applied.
+         * Default value is 0.01
+         *
+         * @param minLearningRate
+         * @return
+         */
+        public Builder<T> minLearningRate(double minLearningRate) {
+            this.minLearningRate = minLearningRate;
+            return this;
+        }
+
         public Builder<T> resetModel(boolean reallyReset) {
             this.resetModel = reallyReset;
             return this;
         }
 
-        public Builder<T> setVocabCache(@NonNull VocabCache<T> vocabCache) {
+        public Builder<T> vocabCache(@NonNull VocabCache<T> vocabCache) {
             this.vocabCache = vocabCache;
             return this;
         }
 
-        public Builder<T> setLookupTable(@NonNull WeightLookupTable<T> lookupTable) {
+        public Builder<T> lookupTable(@NonNull WeightLookupTable<T> lookupTable) {
             this.lookupTable = lookupTable;
             return this;
         }
@@ -260,6 +307,16 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
             return this;
         }
 
+        public Builder<T> trainElementsRepresentation(boolean trainElements) {
+            this.trainElementsVectors = trainElements;
+            return this;
+        }
+
+        public Builder<T> trainSequencesRepresentation(boolean trainSequences) {
+            this.trainSequenceVectors = trainSequences;
+            return this;
+        }
+
         /**
          * You can provide collection of objects to be ignored, and excluded out of model
          * Please note: Object labels and hashCode will be used for filtering
@@ -271,6 +328,17 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
             for (T word: stopList) {
                 this.stopWords.add(word.getLabel());
             }
+            return this;
+        }
+
+        /**
+         * Sets window size for skip-Gram training
+         *
+         * @param windowSize
+         * @return
+         */
+        public Builder<T> windowSize(int windowSize) {
+            this.window = windowSize;
             return this;
         }
 
@@ -428,29 +496,40 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
             while ( digitizer.hasMoreLines()) {
                 try {
                     // get current sentence as list of VocabularyWords
-                    Sequence<T> sequence = digitizer.nextSentence();
+                    List<Sequence<T>> sequences = new ArrayList<>();
+                    for (int x = 0; x < AbstractVectors.this.batchSize; x++) {
+                        if (digitizer.hasMoreLines()) {
+                            Sequence<T> sequence = digitizer.nextSentence();
+                            sequences.add(sequence);
+                        }
+                    }
                     /*
                             TODO: investigate, if fix needed here to become iteration-dependent, not line-position
                       */
                     double alpha = 0.025;
 
-                    if (sequence == null || sequence.getElements().size() == 0) {
+                    if (sequences.size() == 0) {
                         continue;
                     }
 
                     // getting back number of iterations
                     for (int i = 0; i < AbstractVectors.this.numIterations; i++) {
-                        alpha = Math.max(AbstractVectors.this.minLearningRate, AbstractVectors.this.learningRate.get() * (1 - (1.0 * this.wordsCounter.get() / (double) this.totalWordsCount)));
+                        for (int x = 0; x< sequences.size(); x++) {
+                            Sequence<T> sequence = sequences.get(x);
 
-                        AbstractVectors.this.trainSequence(sequence, nextRandom, alpha);
+                            alpha = Math.max(AbstractVectors.this.minLearningRate, AbstractVectors.this.learningRate.get() * (1 - (1.0 * this.wordsCounter.get() / (double) this.totalWordsCount)));
 
-                        // increment processed word count, please note: this affects learningRate decay
-                        this.wordsCounter.addAndGet(sequence.getElements().size());
+                            AbstractVectors.this.trainSequence(sequence, nextRandom, alpha);
+
+                            // increment processed word count, please note: this affects learningRate decay
+                            totalLines.incrementAndGet();
+                            this.wordsCounter.addAndGet(sequence.getElements().size());
+
+                            if (totalLines.get() % 100000 == 0) log.info("Epoch: [" + this.epochNumber+ "]; Words vectorized so far: [" + this.wordsCounter.get() + "];  Lines vectorized so far: [" + this.totalLines.get() + "]; learningRate: [" + alpha + "]");
+                        }
                     }
 
                     // increment processed lines count
-                    totalLines.incrementAndGet();
-                    if (totalLines.get() % 100000 == 0) log.info("Epoch: " + this.epochNumber+ "; Words vectorized so far: " + this.wordsCounter.get() + ";  Lines vectorized so far: " + this.totalLines.get() + "; learningRate: " + alpha);
                 } catch (Exception  e) {
                     e.printStackTrace();
                     throw new RuntimeException(e);

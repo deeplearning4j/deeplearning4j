@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  *
@@ -76,7 +77,9 @@ public class VocabConstructor<T extends SequenceElement> {
 
         if (cache == null) throw new IllegalStateException("Cache is null, building fresh one");
         if (cache == null) cache = new AbstractCache.Builder<T>().build();
-        log.info("Target vocab size before building: [" + cache.numWords() + "]");
+        log.debug("Target vocab size before building: [" + cache.numWords() + "]");
+        final AtomicLong sequenceCounter = new AtomicLong(0);
+        final AtomicLong elementsCounter = new AtomicLong(0);
         /*
         VocabularyHolder topHolder = new VocabularyHolder.Builder()
                 .externalCache(cache)
@@ -93,8 +96,8 @@ public class VocabConstructor<T extends SequenceElement> {
             SequenceIterator<T> iterator = source.getIterator();
             iterator.reset();
 
-            log.info("Trying source iterator: ["+ cnt+"]");
-            log.info("Target vocab size before building: [" + cache.numWords() + "]");
+            log.debug("Trying source iterator: ["+ cnt+"]");
+            log.debug("Target vocab size before building: [" + cache.numWords() + "]");
             cnt++;
 
             /*
@@ -108,6 +111,7 @@ public class VocabConstructor<T extends SequenceElement> {
             long counter = 0;
             while (iterator.hasMoreSequences()) {
                 Sequence<T> document = iterator.nextSequence();
+                sequenceCounter.incrementAndGet();
               //  log.info("Sequence length: ["+ document.getElements().size()+"]");
              //   Tokenizer tokenizer = tokenizerFactory.create(document.getContent());
 
@@ -136,6 +140,7 @@ public class VocabConstructor<T extends SequenceElement> {
 
                     if (!tempHolder.containsWord(token)) {
                         tempHolder.addToken(document.getElementByLabel(token));
+                        elementsCounter.incrementAndGet();
                         counter++;
                         // TODO: this line should be uncommented only after AdaGrad is fixed, so the size of AdaGrad array is known
                         /*
@@ -152,6 +157,7 @@ public class VocabConstructor<T extends SequenceElement> {
                 }
 
                 sequences++;
+                if (sequenceCounter.get() % 100000 == 0) log.info("Sequences checked: [" + sequenceCounter.get() +"], Current vocabulary size: [" + elementsCounter.get() +"]");
             }
             // apply minWordFrequency set for this source
             log.debug("Vocab size before truncation: [" + tempHolder.numWords() + "],  NumWords: [" + tempHolder.totalWordOccurrences()+ "], sequences parsed: [" + sequences+ "], counter: ["+counter+"]");
@@ -182,11 +188,7 @@ public class VocabConstructor<T extends SequenceElement> {
 
 
 
-        //topHolder.transferBackToVocabCache(cache);
-        log.info("Joint vocabulary size BEFORE: ["+ cache.numWords()+"]");
-        log.info("Top holder size: ["+ topHolder.numWords()+"]");
         cache.importVocabulary(topHolder);
-        log.info("Joint vocabulary size: ["+ cache.numWords()+"]");
         for (T element: cache.vocabWords()) {
       //      log.info("Now has: " + element);
         }
@@ -204,6 +206,7 @@ public class VocabConstructor<T extends SequenceElement> {
             //topHolder.updateHuffmanCodes();
         }
 
+        log.info("Sequences checked: [" + sequenceCounter.get() +"], Current vocabulary size: [" + cache.numWords() +"]");
         return cache;
     }
 
