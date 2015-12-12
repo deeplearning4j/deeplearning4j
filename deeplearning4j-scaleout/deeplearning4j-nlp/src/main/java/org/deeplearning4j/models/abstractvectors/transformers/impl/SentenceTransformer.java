@@ -22,7 +22,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class SentenceTransformer implements SequenceTransformer<VocabWord, String>{
+public class SentenceTransformer implements SequenceTransformer<VocabWord, String>, Iterable<Sequence<VocabWord>>{
     /*
             So, we must accept any SentenceIterator implementations, and build vocab out of it, and use it for further transforms between text and Sequences
      */
@@ -37,12 +37,7 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
     }
 
     @Override
-    public VocabCache<VocabWord> derivedVocabulary() {
-        return null;
-    }
-
-    @Override
-    public Sequence<VocabWord> transformToSequence(VocabCache<VocabWord> vocabCache, String object, boolean addUnkownElements) {
+    public Sequence<VocabWord> transformToSequence(String object) {
         Sequence<VocabWord> sequence = new Sequence<>();
 
         //log.info("Tokenizing string: '" + object + "'");
@@ -51,24 +46,17 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
         List<String> list = tokenizer.getTokens();
 
         for (String token: list) {
-            if (token == null || token.isEmpty()) continue;
+            if (token == null || token.isEmpty() || token.trim().isEmpty()) continue;
 
-            if (vocabCache.containsWord(token)) {
-                sequence.addElement(vocabCache.wordFor(token));
-            } else {
-                if (addUnkownElements) {
-                    VocabWord word = new VocabWord(1.0, token);
-                    vocabCache.addToken(word);
-                    sequence.addElement(word);
-                }
-            }
+           VocabWord word = new VocabWord(1.0, token);
+            sequence.addElement(word);
         }
 
         return sequence;
     }
 
     @Override
-    public Iterator<Sequence<VocabWord>> getIterator(final VocabCache<VocabWord> vocabCache) {
+    public Iterator<Sequence<VocabWord>> iterator() {
         log.info("Producing iterator.");
         iterator.reset();
 
@@ -80,7 +68,7 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
 
             @Override
             public Sequence<VocabWord> next() {
-                return SentenceTransformer.this.transformToSequence(vocabCache, iterator.nextDocument().getContent(), !SentenceTransformer.this.readOnly);
+                return SentenceTransformer.this.transformToSequence(iterator.nextDocument().getContent());
             }
         };
     }

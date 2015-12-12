@@ -49,7 +49,7 @@ public class AbstractVectorsTest {
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
 
-        SentenceTransformer transformer = new SentenceTransformer.Builder(vocabCache)
+        SentenceTransformer transformer = new SentenceTransformer.Builder()
                 .iterator(underlyingIterator)
                 .tokenizerFactory(t)
                 .build();
