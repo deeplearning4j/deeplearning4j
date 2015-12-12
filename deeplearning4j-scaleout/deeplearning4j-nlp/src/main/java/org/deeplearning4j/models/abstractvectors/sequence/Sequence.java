@@ -12,7 +12,7 @@ import java.util.*;
  * @author raver119@gmail.com
  */
 public class Sequence<T extends SequenceElement> {
-    protected Map<String, T> elements = new LinkedHashMap<String, T>();
+    protected List<T> elements = new ArrayList<>();
     protected T label;
 
     /**
@@ -39,7 +39,7 @@ public class Sequence<T extends SequenceElement> {
      * @param element
      */
     public void addElement(T element) {
-        this.elements.put(element.getLabel(), element);
+        this.elements.add( element);
     }
 
     /**
@@ -72,7 +72,10 @@ public class Sequence<T extends SequenceElement> {
      * @return
      */
     public T getElementByLabel(String label) {
-        return elements.get(label);
+        for (T element: elements) {
+            if (element.getLabel().equals(label)) return element;
+        }
+        return null;
     }
 
     /**
@@ -81,7 +84,7 @@ public class Sequence<T extends SequenceElement> {
      * @return
      */
     public List<T> getElements() {
-        return Collections.unmodifiableList(new ArrayList<T>(elements.values()));
+        return Collections.unmodifiableList(elements);
     }
 
     /**

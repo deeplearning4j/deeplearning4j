@@ -7,18 +7,23 @@ import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.text.documentiterator.LabelsSource;
+import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.UimaSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.interoperability.SentenceIteratorConverter;
+import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.junit.Assert.*;
 
@@ -35,9 +40,37 @@ public class VocabConstructorTest {
     }
 
     @Test
+    public void testVocab() throws Exception {
+        File inputFile = new ClassPathResource("big/raw_sentences.txt").getFile();
+        SentenceIterator iter = new BasicLineIterator(inputFile);
+        TokenizerFactory t = new DefaultTokenizerFactory();
+        t.setTokenPreProcessor(new CommonPreprocessor());
+
+        Set<String> set = new HashSet<>();
+        int lines = 0;
+        int cnt = 0;
+        while (iter.hasNext()) {
+            Tokenizer tok = t.create(iter.nextSentence());
+            for (String token: tok.getTokens()) {
+                if (token == null || token.isEmpty() || token.trim().isEmpty()) continue;
+                    cnt++;
+
+                if (!set.contains(token))
+                    set.add(token);
+            }
+
+            lines++;
+        }
+
+        log.info("Total number of tokens: [" + cnt + "], lines: [" + lines+"], set size: ["+ set.size() +"]");
+        log.info("Set:\n" + set);
+    }
+
+
+    @Test
     public void testBuildJointVocabulary1() throws Exception {
         File inputFile = new ClassPathResource("big/raw_sentences.txt").getFile();
-        SentenceIterator iter = UimaSentenceIterator.createWithPath(inputFile.getAbsolutePath());
+        SentenceIterator iter = new BasicLineIterator(inputFile);
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
 
@@ -73,7 +106,7 @@ public class VocabConstructorTest {
     @Test
     public void testBuildJointVocabulary2() throws Exception {
         File inputFile = new ClassPathResource("big/raw_sentences.txt").getFile();
-        SentenceIterator iter = UimaSentenceIterator.createWithPath(inputFile.getAbsolutePath());
+        SentenceIterator iter = new BasicLineIterator(inputFile);
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
 
@@ -98,13 +131,13 @@ public class VocabConstructorTest {
 
 //        assertFalse(cache.hasToken("including"));
 
-        assertEquals(241, cache.numWords());
+        assertEquals(242, cache.numWords());
 
 
         assertEquals("i", cache.wordAtIndex(1));
         assertEquals("it", cache.wordAtIndex(0));
 
-        assertEquals(634061, cache.totalWordOccurrences());
+        assertEquals(634303, cache.totalWordOccurrences());
     }
 /*
     @Test
