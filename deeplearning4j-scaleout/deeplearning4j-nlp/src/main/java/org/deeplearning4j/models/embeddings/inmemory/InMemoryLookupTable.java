@@ -572,45 +572,45 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
 
 
 
-        public Builder cache(@NonNull VocabCache<T> vocab) {
+        public Builder<T> cache(@NonNull VocabCache<T> vocab) {
             this.vocabCache = vocab;
             return this;
         }
 
-        public Builder negative(double negative) {
+        public Builder<T> negative(double negative) {
             this.negative = negative;
             return this;
         }
 
-        public Builder vectorLength(int vectorLength) {
+        public Builder<T> vectorLength(int vectorLength) {
             this.vectorLength = vectorLength;
             return this;
         }
 
-        public Builder useAdaGrad(boolean useAdaGrad) {
+        public Builder<T> useAdaGrad(boolean useAdaGrad) {
             this.useAdaGrad = useAdaGrad;
             return this;
         }
 
 
-        public Builder lr(double lr) {
+        public Builder<T> lr(double lr) {
             this.lr = lr;
             return this;
         }
 
-        public Builder gen(Random gen) {
+        public Builder<T> gen(Random gen) {
             this.gen = gen;
             return this;
         }
 
-        public Builder seed(long seed) {
+        public Builder<T> seed(long seed) {
             this.seed = seed;
             return this;
         }
 
 
 
-        public WeightLookupTable build() {
+        public WeightLookupTable<T> build() {
             if(vocabCache == null)
                 throw new IllegalStateException("Vocab cache must be specified");
 
