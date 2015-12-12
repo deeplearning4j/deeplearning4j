@@ -592,6 +592,7 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> {
             return this;
         }
 
+        @Deprecated
         public Builder saveVocab(boolean saveVocab){
             this.saveVocab = saveVocab;
             return this;
