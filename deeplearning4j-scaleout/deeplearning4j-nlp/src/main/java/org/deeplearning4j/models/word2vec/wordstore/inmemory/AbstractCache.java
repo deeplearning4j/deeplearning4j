@@ -363,7 +363,6 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      */
     public void importVocabulary(@NonNull VocabCache<T> vocabCache) {
         for (T element: vocabCache.vocabWords()) {
-            if (element.getLabel().equals("percent")) logger.info("!!!!!!!!!!!!!!!!!!!!Importing 'percent'!!!!!!!!!!!!!");
             this.addToken(element);
         }
     }

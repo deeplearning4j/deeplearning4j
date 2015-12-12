@@ -104,6 +104,8 @@ public class VocabConstructor<T extends SequenceElement> {
                     */
             AbstractCache<T> tempHolder = new AbstractCache.Builder<T>().build();
 
+            int sequences = 0;
+            long counter = 0;
             while (iterator.hasMoreSequences()) {
                 Sequence<T> document = iterator.nextSequence();
               //  log.info("Sequence length: ["+ document.getElements().size()+"]");
@@ -134,7 +136,7 @@ public class VocabConstructor<T extends SequenceElement> {
 
                     if (!tempHolder.containsWord(token)) {
                         tempHolder.addToken(document.getElementByLabel(token));
-
+                        counter++;
                         // TODO: this line should be uncommented only after AdaGrad is fixed, so the size of AdaGrad array is known
                         /*
                         if (useAdaGrad) {
@@ -144,12 +146,15 @@ public class VocabConstructor<T extends SequenceElement> {
                         }
                         */
                     } else {
+                        counter++;
                         tempHolder.incrementWordCount(token);
                     }
                 }
+
+                sequences++;
             }
             // apply minWordFrequency set for this source
-            log.info("Vocab size before truncation: " + tempHolder.numWords());
+            log.debug("Vocab size before truncation: [" + tempHolder.numWords() + "],  NumWords: [" + tempHolder.totalWordOccurrences()+ "], sequences parsed: [" + sequences+ "], counter: ["+counter+"]");
             if (source.getMinWordFrequency() > 0) {
                 LinkedBlockingQueue<String> labelsToRemove = new LinkedBlockingQueue<>();
                 for (T element : tempHolder.vocabWords()) {
@@ -158,29 +163,24 @@ public class VocabConstructor<T extends SequenceElement> {
                 }
 
                 for (String label: labelsToRemove) {
-                    log.info("Removing label: '" + label + "'");
+                    log.debug("Removing label: '" + label + "'");
                     tempHolder.removeElement(label);
                 }
             }
 
-            log.info("Vocab size after truncation: " + tempHolder.numWords());
+            log.debug("Vocab size after truncation: [" + tempHolder.numWords() + "],  NumWords: [" + tempHolder.totalWordOccurrences()+ "], sequences parsed: [" + sequences+ "], counter: ["+counter+"]");
 
             // at this moment we're ready to transfer
             topHolder.importVocabulary(tempHolder);
-            log.info("Top holder size: ["+ topHolder.numWords()+"]");
-            log.info("Target vocab size before building: [" + cache.numWords() + "]");
+            log.debug("Top holder size: ["+ topHolder.numWords()+"]");
+            log.debug("Target vocab size before building: [" + cache.numWords() + "]");
         }
 
         // at this moment, we have vocabulary full of words, and we have to reset counters before transfer everything back to VocabCache
 
             //topHolder.resetWordCounters();
 
-        if (buildHuffmanTree) {
-            Huffman huffman = new Huffman(topHolder.vocabWords());
-            huffman.build();
-            huffman.applyIndexes(topHolder);
-            //topHolder.updateHuffmanCodes();
-        }
+
 
         //topHolder.transferBackToVocabCache(cache);
         log.info("Joint vocabulary size BEFORE: ["+ cache.numWords()+"]");
@@ -195,6 +195,13 @@ public class VocabConstructor<T extends SequenceElement> {
                 element.setElementFrequency(0);
             }
             cache.updateWordsOccurencies();
+        }
+
+        if (buildHuffmanTree) {
+            Huffman huffman = new Huffman(cache.vocabWords());
+            huffman.build();
+            huffman.applyIndexes(cache);
+            //topHolder.updateHuffmanCodes();
         }
 
         return cache;

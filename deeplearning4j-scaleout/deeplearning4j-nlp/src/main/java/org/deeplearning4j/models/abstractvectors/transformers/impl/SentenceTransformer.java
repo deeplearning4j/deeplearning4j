@@ -57,7 +57,6 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
 
     @Override
     public Iterator<Sequence<VocabWord>> iterator() {
-        log.info("Producing iterator.");
         iterator.reset();
 
         return new Iterator<Sequence<VocabWord>>() {
