@@ -703,6 +703,17 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         return feedForward();
     }
 
+    /** Compute the activations from the input to the output layer, given mask arrays (that may be null)
+     * The masking arrays are used in situations such an one-to-many and many-to-one rucerrent neural network (RNN)
+     * designs, as well as for supporting time series of varying lengths within the same minibatch for RNNs.
+     */
+    public List<INDArray> feedForward(INDArray input, INDArray featuresMask, INDArray labelsMask){
+        setLayerMaskArrays(featuresMask,labelsMask);
+        List<INDArray> list = feedForward(input);
+        clearLayerMaskArrays();
+        return list;
+    }
+
 
     @Override
     public Gradient gradient() {
@@ -1573,6 +1584,17 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         return activations.get(activations.size() - 1);
     }
 
+    /** Calculate the output of the network, with masking arrays. The masking arrays are used in situations such
+     * as one-to-many and many-to-one recurrent neural network (RNN) designs, as well as for supporting time series
+     * of varying lengths within the same minibatch.
+     */
+    public INDArray output(INDArray input, boolean train, INDArray featuresMask, INDArray labelsMask){
+        setLayerMaskArrays(featuresMask,labelsMask);
+        INDArray out = output(input, train);
+        clearLayerMaskArrays();
+        return out;
+    }
+
     /**
      * Label the probabilities of the input
      *
@@ -2234,6 +2256,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         return solver.getOptimizer().getUpdater();
     }
 
+    /** Set the updater for the MultiLayerNetwork */
     public void setUpdater(Updater updater){
         if( solver == null) {
             solver = new Solver.Builder()
@@ -2244,6 +2267,19 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         solver.getOptimizer().setUpdater(updater);
     }
 
+    /**Set the mask arrays for features and labels. Mask arrays are typically used in situations such as one-to-many
+     * and many-to-one learning with recurrent neural networks, as well as for supporting time series of varying lengths
+     * within the same minibatch.<br>
+     * For example, with RNN data sets with input of shape [miniBatchSize,nIn,timeSeriesLength] and outputs of shape
+     * [miniBatchSize,nOut,timeSeriesLength], the features and mask arrays will have shape [miniBatchSize,timeSeriesLength]
+     * and contain values 0 or 1 at each element (to specify whether a given input/example is present - or merely padding -
+     * at a given time step).<br>
+     * <b>NOTE</b>: This method is not usually used directly. Instead, methods such as {@link #feedForward(INDArray, INDArray, INDArray)}
+     * and {@link #output(INDArray, boolean, INDArray, INDArray)} handle setting of masking internally.
+     * @param featuresMaskArray Mask array for features (input)
+     * @param labelsMaskArray Mask array for labels (output)
+     * @see #clearLayerMaskArrays()
+     */
     public void setLayerMaskArrays(INDArray featuresMaskArray, INDArray labelsMaskArray){
         if(featuresMaskArray != null){
             //feedforward layers below a RNN layer: need the input (features) mask array
@@ -2266,6 +2302,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
     }
 
+    /** Remove the mask arrays from all layers.<br>
+     * See {@link #setLayerMaskArrays(INDArray, INDArray)} for details on mask arrays.
+     */
     public void clearLayerMaskArrays(){
         for (Layer layer : layers) {
             layer.setMaskArray(null);
