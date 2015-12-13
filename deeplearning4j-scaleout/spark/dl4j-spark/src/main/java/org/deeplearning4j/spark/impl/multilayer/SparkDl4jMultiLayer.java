@@ -123,21 +123,38 @@ public class SparkDl4jMultiLayer implements Serializable {
         this(sc.sc(),conf);
     }
 
-    /**
-     * Train a multi layer network based on the path
+    /**Train a multi layer network based on data loaded from a text file + {@link RecordReader}.
+     * This method splits the entire data set at once
      * @param path the path to the text file
      * @param labelIndex the label index
      * @param recordReader the record reader to parse results
      * @return {@link MultiLayerNetwork}
+     * @see #fit(String, int, RecordReader, int)
      */
     public MultiLayerNetwork fit(String path,int labelIndex,RecordReader recordReader) {
+        JavaRDD<DataSet> points = loadFromTextFile(path, labelIndex, recordReader);
+        return fitDataSet(points);
+    }
+
+    /**Train a multi layer network based on data loaded from a text file + {@link RecordReader}.
+     * This method splits the data into approximately {@code examplesPerFit} sized splits, and trains on each split.
+     * one after the other. See {@link #fitDataSet(JavaRDD, int)} for further details.
+     * @param path the path to the text file
+     * @param labelIndex the label index
+     * @param recordReader the record reader to parse results
+     * @param examplesPerFit Number of examples to fit on at each iteration
+     * @return {@link MultiLayerNetwork}
+     */
+    public MultiLayerNetwork fit(String path,int labelIndex,RecordReader recordReader, int examplesPerFit ) {
+        JavaRDD<DataSet> points = loadFromTextFile(path, labelIndex, recordReader);
+        return fitDataSet(points, examplesPerFit);
+    }
+
+    private JavaRDD<DataSet> loadFromTextFile(String path, int labelIndex, RecordReader recordReader ){
         JavaRDD<String> lines = sc.textFile(path);
         // gotta map this to a Matrix/INDArray
         FeedForwardLayer outputLayer = (FeedForwardLayer) conf.getConf(conf.getConfs().size() - 1).getLayer();
-        JavaRDD<DataSet> points = lines.map(new RecordReaderFunction(recordReader
-                , labelIndex, outputLayer.getNOut()));
-        return fitDataSet(points);
-
+        return lines.map(new RecordReaderFunction(recordReader, labelIndex, outputLayer.getNOut()));
     }
 
     public MultiLayerNetwork getNetwork() {
