@@ -63,7 +63,7 @@ public class ParagraphVectorsTest {
     }
 
 
-
+/*
     @Test
     public void testWord2VecRunThroughVectors() throws Exception {
         ClassPathResource resource = new ClassPathResource("/big/raw_sentences.txt");
@@ -89,6 +89,7 @@ public class ParagraphVectorsTest {
         new File("cache.ser").delete();
 
     }
+*/
 
     /**
      * This test checks, how vocab is built using SentenceIterator provided, without labels.
@@ -181,6 +182,11 @@ public class ParagraphVectorsTest {
         assertNotEquals(1, cnt2);
         assertNotEquals(cnt1, cnt2);
 
+        assertEquals(97406, cache.numWords());
+
+        assertTrue(vec.hasWord("DOC_16392"));
+        assertTrue(vec.hasWord("DOC_3720"));
+
         /*
             We have few lines that contain pretty close words invloved.
             These sentences should be pretty close to each other in vector space
@@ -272,6 +278,8 @@ public class ParagraphVectorsTest {
         // line 16393: This is my work .
 
         // line 9853: We now have one .
+
+        assertTrue(vec.hasWord("DOC_3720"));
 
         double similarityD = vec.similarity("day", "night");
         log.info("day/night similarity: " + similarityD);
