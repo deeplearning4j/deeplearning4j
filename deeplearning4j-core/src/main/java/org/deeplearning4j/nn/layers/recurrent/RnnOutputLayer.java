@@ -147,6 +147,9 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
             SoftMax softMax = new SoftMax(preOutput2d);
             softMax.exec(1);
             INDArray out2d = softMax.z();
+            if(maskArray != null){
+                out2d.muliColumnVector(maskArray);
+            }
             return reshape2dTo3d(out2d,input.size(0));
         }
 
