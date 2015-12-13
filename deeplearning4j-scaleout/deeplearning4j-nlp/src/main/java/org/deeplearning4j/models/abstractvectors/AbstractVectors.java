@@ -208,7 +208,7 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
         protected double sampling = 0;
         protected double negative = 0;
         protected double learningRate = 0.025;
-        protected double minLearningRate = 0.01;
+        protected double minLearningRate = 0.0001;
         protected int minWordFrequency = 0;
         protected int iterations = 1;
         protected int numEpochs = 1;

@@ -22,7 +22,7 @@ public class VectorsConfiguration implements Serializable {
     // word2vec params
     private int minWordFrequency = 5;
     private double learningRate = 0.025;
-    private double minLearningRate = 0.01;
+    private double minLearningRate = 0.0001;
     private int layersSize = 200;
     private boolean useAdaGrad = false;
     private int batchSize = 1000;
