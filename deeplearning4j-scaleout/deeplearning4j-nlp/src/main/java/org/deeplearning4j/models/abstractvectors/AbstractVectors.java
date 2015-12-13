@@ -1,5 +1,6 @@
 package org.deeplearning4j.models.abstractvectors;
 
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import org.deeplearning4j.berkeley.Pair;
@@ -9,11 +10,14 @@ import org.deeplearning4j.models.abstractvectors.sequence.Sequence;
 import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
 import org.deeplearning4j.models.abstractvectors.transformers.SequenceTransformer;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
+import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.deeplearning4j.models.word2vec.wordstore.VocabConstructor;
+import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import org.slf4j.Logger;
@@ -37,9 +41,24 @@ import java.util.concurrent.atomic.AtomicLong;
 public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<T> implements WordVectors {
     protected SequenceIterator<T> iterator;
 
-    protected VectorsConfiguration configuration;
+    @Getter protected VectorsConfiguration configuration;
 
     protected static final Logger log = LoggerFactory.getLogger(AbstractVectors.class);
+
+
+    /**
+     * Builds vocabulary from provided SequenceIterator instance
+     */
+    public void buildVocab() {
+        VocabConstructor<T> constructor = new VocabConstructor.Builder<T>()
+                .addSource(iterator, minWordFrequency)
+                .useAdaGrad(false)
+                .setTargetVocabCache(vocab)
+                .build();
+
+        constructor.buildJointVocabulary(false, true);
+    }
+
 
     /**
      * Starts training over
@@ -48,9 +67,14 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
         if (!trainElementsVectors && !trainSequenceVectors) throw new IllegalStateException("You should define at least one training goal 'trainElementsRepresentation' or 'trainSequenceRepresentation'");
         if (iterator == null) throw new IllegalStateException("You can't fit() data without SequenceIterator defined");
 
-        if (resetModel) {
+        if (resetModel || (lookupTable != null && vocab != null && vocab.numWords() == 0)) {
             // build vocabulary from scratches
+            buildVocab();
+
+            lookupTable.resetWeights(true);
         }
+
+        if (vocab == null || lookupTable == null || vocab.numWords() == 0) throw new IllegalStateException("You can't fit() model with empty Vocabulary or WeightLookupTable");
 
         log.info("Starting learning process...");
         for (int currentEpoch = 1; currentEpoch <= numEpochs; currentEpoch++) {
@@ -194,7 +218,7 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
 
         protected List<String> stopWords = new ArrayList<>();
 
-        protected VectorsConfiguration configuration;
+        protected VectorsConfiguration configuration = new VectorsConfiguration();
 
         public Builder() {
 
@@ -235,6 +259,11 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
 
         public Builder<T> epochs(int numEpochs) {
             this.numEpochs = numEpochs;
+            return this;
+        }
+
+        public Builder<T> useAdaGrad(boolean reallyUse) {
+            this.useAdaGrad = reallyUse;
             return this;
         }
 
@@ -294,6 +323,15 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
             return this;
         }
 
+        public Builder<T> sampling(double sampling) {
+            this.sampling = sampling;
+            return this;
+        }
+
+        public Builder<T> negativeSample(double negative) {
+            this.negative = negative;
+            return this;
+        }
 
         /**
          *  You can provide collection of objects to be ignored, and excluded out of model
@@ -302,7 +340,7 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
          * @param stopList
          * @return
          */
-        public Builder<T> stopList(@NonNull List<String> stopList) {
+        public Builder<T> stopWords(@NonNull List<String> stopList) {
             this.stopWords.addAll(stopList);
             return this;
         }
@@ -324,7 +362,7 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
          * @param stopList
          * @return
          */
-        public Builder<T> stopList(@NonNull Collection<T> stopList) {
+        public Builder<T> stopWords(@NonNull Collection<T> stopList) {
             for (T word: stopList) {
                 this.stopWords.add(word.getLabel());
             }
@@ -342,7 +380,40 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
             return this;
         }
 
+        public Builder<T> seed(long randomSeed) {
+            // has no effect in original w2v actually
+            return this;
+        }
+
+        /**
+         * This method creates new WeightLookupTable<T> and VocabCache<T> if there were none set
+         */
+        protected void presetTables() {
+            if (lookupTable == null) {
+
+                if (vocabCache == null) {
+                    vocabCache = new AbstractCache.Builder<T>()
+                            .hugeModelExpected(hugeModelExpected)
+                            .scavengerRetentionDelay(this.configuration.getScavengerRetentionDelay())
+                            .scavengerThreshold(this.configuration.getScavengerActivationThreshold())
+                            .minElementFrequency(minWordFrequency)
+                            .build();
+                }
+
+                lookupTable = new InMemoryLookupTable.Builder<T>()
+                        .useAdaGrad(this.useAdaGrad)
+                        .cache(vocabCache)
+                        .negative(negative)
+                        .vectorLength(layerSize)
+                        .lr(learningRate)
+                        .seed(seed)
+                        .build();
+            }
+        }
+
         public AbstractVectors<T> build() {
+            presetTables();
+
             AbstractVectors<T> vectors = new AbstractVectors<>();
             vectors.numEpochs = this.numEpochs;
             vectors.numIterations = this.iterations;
@@ -428,7 +499,10 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
                         Sequence<T> newSequence = new Sequence<>();
 
                         for (T element: document.getElements()) {
-                            newSequence.addElement(vocab.wordFor(element.getLabel()));
+                            T realElement = vocab.wordFor(element.getLabel());
+
+                            // please note: this serquence element CAN be absent in vocab, due to minFreq or stopWord or whatever else
+                            if (realElement != null) newSequence.addElement(realElement);
                         }
                         buffer.add(newSequence);
 

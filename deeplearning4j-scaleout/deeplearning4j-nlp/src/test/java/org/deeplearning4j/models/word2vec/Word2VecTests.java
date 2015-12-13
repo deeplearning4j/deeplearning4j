@@ -25,6 +25,7 @@ import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
+import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.UimaSentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
@@ -104,7 +105,7 @@ public class Word2VecTests {
     @Test
     public void testRunWord2Vec() throws Exception {
         // Strip white space before and after for each line
-        SentenceIterator iter = UimaSentenceIterator.createWithPath(inputFile.getAbsolutePath());
+        SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
         // Split on white spaces in the line to get words
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());

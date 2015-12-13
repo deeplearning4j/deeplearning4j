@@ -54,7 +54,7 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
     protected double sampling = 0;
     protected AtomicDouble learningRate = new AtomicDouble(0.025);
     protected double minLearningRate = 0.01;
-    protected int window = 5;
+    @Getter protected int window = 5;
     protected int batchSize;
     protected int learningRateDecayWords;
     protected boolean resetModel;
@@ -64,7 +64,7 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
     protected boolean trainElementsVectors = true;
 
     public final static String UNK = "UNK";
-    protected List<String> stopWords = new ArrayList<>(); //StopWords.getStopWords();
+    @Getter protected List<String> stopWords = new ArrayList<>(); //StopWords.getStopWords();
     /**
      * Returns true if the model has this word in the vocab
      * @param word the word to test for

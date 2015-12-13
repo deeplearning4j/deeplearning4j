@@ -27,6 +27,7 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
+import org.deeplearning4j.models.word2vec.LegacyWord2Vec;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
@@ -70,7 +71,7 @@ import java.util.concurrent.atomic.AtomicLong;
  @author Adam Gibson
 
  */
-public class ParagraphVectors extends Word2Vec {
+public class ParagraphVectors extends LegacyWord2Vec {
     //labels are also vocab words
 
     protected Word2Vec existingModel;
@@ -533,7 +534,7 @@ public class ParagraphVectors extends Word2Vec {
         }
     }
 
-    public static class Builder extends Word2Vec.Builder {
+    public static class Builder extends LegacyWord2Vec.Builder {
         protected List<String> labels;
         protected LabelsSource generator;
         protected LabelAwareIterator labelAwareIterator;
