@@ -508,7 +508,7 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
 
                         if (document.getSequenceLabel() != null) {
                             T newLabel = vocab.wordFor(document.getSequenceLabel().getLabel());
-                            newSequence.setSequenceLabel(newLabel);
+                            if (newLabel != null) newSequence.setSequenceLabel(newLabel);
                         }
 
                         for (T element: document.getElements()) {
