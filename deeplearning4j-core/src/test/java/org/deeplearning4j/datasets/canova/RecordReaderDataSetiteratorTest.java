@@ -37,9 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 /**
  * Created by agibsonccc on 3/6/15.
@@ -425,5 +423,113 @@ public class RecordReaderDataSetiteratorTest {
             assertEquals(labelsMaskExpectedStart[i], labelsMaskStart);
             assertEquals(labelsMaskExpectedEnd[i], labelsMaskEnd);
         }
+    }
+
+    @Test
+    public void testSequenceRecordReaderSingleReader() throws Exception{
+        ClassPathResource resource = new ClassPathResource("csvsequenceSingle_0.txt");
+        String path = resource.getFile().getAbsolutePath().replaceAll("0", "%d");
+
+        SequenceRecordReader reader = new CSVSequenceRecordReader(1, ",");
+        reader.initialize(new NumberedFileInputSplit(path, 0, 2));
+        SequenceRecordReaderDataSetIterator iteratorClassification = new SequenceRecordReaderDataSetIterator(reader, 1, 3, 0, false);
+
+        SequenceRecordReader reader2 = new CSVSequenceRecordReader(1, ",");
+        reader2.initialize(new NumberedFileInputSplit(path, 0, 2));
+        SequenceRecordReaderDataSetIterator iteratorRegression = new SequenceRecordReaderDataSetIterator(reader2, 1, 3, 0, true);
+
+        INDArray expF0 = Nd4j.create(1, 2, 4);
+        expF0.tensorAlongDimension(0, 1).assign(Nd4j.create(new double[]{1, 2}));
+        expF0.tensorAlongDimension(1, 1).assign(Nd4j.create(new double[]{11, 12}));
+        expF0.tensorAlongDimension(2, 1).assign(Nd4j.create(new double[]{21, 22}));
+        expF0.tensorAlongDimension(3, 1).assign(Nd4j.create(new double[]{31, 32}));
+
+        INDArray expF1 = Nd4j.create(1, 2, 4);
+        expF1.tensorAlongDimension(0, 1).assign(Nd4j.create(new double[]{101, 102}));
+        expF1.tensorAlongDimension(1, 1).assign(Nd4j.create(new double[]{111, 112}));
+        expF1.tensorAlongDimension(2, 1).assign(Nd4j.create(new double[]{121, 122}));
+        expF1.tensorAlongDimension(3, 1).assign(Nd4j.create(new double[]{131, 132}));
+
+        INDArray expF2 = Nd4j.create(1, 2, 4);
+        expF2.tensorAlongDimension(0, 1).assign(Nd4j.create(new double[]{201, 202}));
+        expF2.tensorAlongDimension(1, 1).assign(Nd4j.create(new double[]{211, 212}));
+        expF2.tensorAlongDimension(2, 1).assign(Nd4j.create(new double[]{221, 222}));
+        expF2.tensorAlongDimension(3, 1).assign(Nd4j.create(new double[]{231, 232}));
+
+        INDArray[] expF = new INDArray[]{expF0,expF1,expF2};
+
+        //Expected out for classification:
+        INDArray expOut0 = Nd4j.create(1, 3, 4);
+        expOut0.tensorAlongDimension(0, 1).assign(Nd4j.create(new double[]{1, 0, 0}));
+        expOut0.tensorAlongDimension(1, 1).assign(Nd4j.create(new double[]{0, 1, 0}));
+        expOut0.tensorAlongDimension(2, 1).assign(Nd4j.create(new double[]{0, 0, 1}));
+        expOut0.tensorAlongDimension(3, 1).assign(Nd4j.create(new double[]{1, 0, 0}));
+
+        INDArray expOut1 = Nd4j.create(1, 3, 4);
+        expOut1.tensorAlongDimension(0, 1).assign(Nd4j.create(new double[]{0, 1, 0}));
+        expOut1.tensorAlongDimension(1, 1).assign(Nd4j.create(new double[]{0, 0, 1}));
+        expOut1.tensorAlongDimension(2, 1).assign(Nd4j.create(new double[]{1, 0, 0}));
+        expOut1.tensorAlongDimension(3, 1).assign(Nd4j.create(new double[]{0, 0, 1}));
+
+        INDArray expOut2 = Nd4j.create(1, 3, 4);
+        expOut2.tensorAlongDimension(0, 1).assign(Nd4j.create(new double[]{0, 1, 0}));
+        expOut2.tensorAlongDimension(1, 1).assign(Nd4j.create(new double[]{1, 0, 0}));
+        expOut2.tensorAlongDimension(2, 1).assign(Nd4j.create(new double[]{0, 1, 0}));
+        expOut2.tensorAlongDimension(3, 1).assign(Nd4j.create(new double[]{0, 0, 1}));
+        INDArray[] expOutClassification = new INDArray[]{expOut0,expOut1,expOut2};
+
+        //Expected out for regression:
+        INDArray expOutR0 = Nd4j.create(1, 1, 4);
+        expOutR0.tensorAlongDimension(0, 1).assign(Nd4j.create(new double[]{0}));
+        expOutR0.tensorAlongDimension(1, 1).assign(Nd4j.create(new double[]{1}));
+        expOutR0.tensorAlongDimension(2, 1).assign(Nd4j.create(new double[]{2}));
+        expOutR0.tensorAlongDimension(3, 1).assign(Nd4j.create(new double[]{0}));
+
+        INDArray expOutR1 = Nd4j.create(1, 1, 4);
+        expOutR1.tensorAlongDimension(0, 1).assign(Nd4j.create(new double[]{1}));
+        expOutR1.tensorAlongDimension(1, 1).assign(Nd4j.create(new double[]{2}));
+        expOutR1.tensorAlongDimension(2, 1).assign(Nd4j.create(new double[]{0}));
+        expOutR1.tensorAlongDimension(3, 1).assign(Nd4j.create(new double[]{2}));
+
+        INDArray expOutR2 = Nd4j.create(1, 1, 4);
+        expOutR2.tensorAlongDimension(0, 1).assign(Nd4j.create(new double[]{1}));
+        expOutR2.tensorAlongDimension(1, 1).assign(Nd4j.create(new double[]{0}));
+        expOutR2.tensorAlongDimension(2, 1).assign(Nd4j.create(new double[]{1}));
+        expOutR2.tensorAlongDimension(3, 1).assign(Nd4j.create(new double[]{2}));
+        INDArray[] expOutRegression = new INDArray[]{expOutR0,expOutR1,expOutR2};
+
+        int countC = 0;
+        while(iteratorClassification.hasNext()){
+            DataSet ds = iteratorClassification.next();
+            INDArray f = ds.getFeatures();
+            INDArray l = ds.getLabels();
+            assertNull(ds.getFeaturesMaskArray());
+            assertNull(ds.getLabelsMaskArray());
+
+            assertArrayEquals(new int[]{1, 2, 4}, f.shape());
+            assertArrayEquals(new int[]{1, 3, 4}, l.shape()); //One-hot representation
+
+            assertEquals(expF[countC], f);
+            assertEquals(expOutClassification[countC++],l);
+        }
+        assertEquals(3,countC);
+        assertEquals(3,iteratorClassification.totalOutcomes());
+
+        int countF = 0;
+        while(iteratorRegression.hasNext()){
+            DataSet ds = iteratorRegression.next();
+            INDArray f = ds.getFeatures();
+            INDArray l = ds.getLabels();
+            assertNull(ds.getFeaturesMaskArray());
+            assertNull(ds.getLabelsMaskArray());
+
+            assertArrayEquals(new int[]{1, 2, 4}, f.shape());
+            assertArrayEquals(new int[]{1, 1, 4}, l.shape());   //Regression (single output)
+
+            assertEquals(expF[countF], f);
+            assertEquals(expOutRegression[countF++], l);
+        }
+        assertEquals(3,countF);
+        assertEquals(1,iteratorRegression.totalOutcomes());
     }
 }
