@@ -4,8 +4,8 @@ import lombok.NonNull;
 import org.deeplearning4j.models.abstractvectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.abstractvectors.sequence.Sequence;
 import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
-import org.deeplearning4j.models.abstractvectors.transformers.SequenceTransformer;
-import org.deeplearning4j.models.abstractvectors.transformers.TransformerFactory;
+
+
 
 import java.util.Iterator;
 
