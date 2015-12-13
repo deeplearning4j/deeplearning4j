@@ -286,15 +286,92 @@ public class TestVariableLengthTS {
                         mln.computeGradientAndScore();
                         double score = mln.score();
 
-
                         assertEquals(msg,expScore,score,0.1);
                     }
                 }
             }
         }
+    }
+
+    @Test
+    public void testOutputMasking(){
+        //If labels are masked: want zero outputs for that time step.
+
+        int nIn = 3;
+        int[] timeSeriesLengths = {3,10};
+        int[] outputSizes = {1,2,5};
+        int[] miniBatchSizes = {1,4};
+
+        Random r = new Random(12345);
+
+        for(int tsLength : timeSeriesLengths ){
+            for( int nOut : outputSizes ){
+                for( int miniBatch : miniBatchSizes ) {
+                    for (int nToMask = 0; nToMask < tsLength-1; nToMask++ ) {
+                        INDArray labelMaskArray = Nd4j.ones(miniBatch, tsLength);
+                        for( int i=0; i<miniBatch; i++ ){
+                            //For each example: select which outputs to mask...
+                            int nMasked = 0;
+                            while(nMasked < nToMask){
+                                int tryIdx = r.nextInt(tsLength);
+                                if(labelMaskArray.getDouble(i,tryIdx)==0.0) continue;
+                                labelMaskArray.putScalar(new int[]{i,tryIdx},0.0);
+                                nMasked++;
+                            }
+                        }
+
+                        INDArray input = Nd4j.rand(new int[]{miniBatch, nIn, tsLength});
+
+                        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                .regularization(false)
+                                .seed(12345L)
+                                .list(2)
+                                .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(5).weightInit(WeightInit.DISTRIBUTION)
+                                        .dist(new NormalDistribution(0, 1)).updater(Updater.NONE).build())
+                                .layer(1, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE).activation("identity").nIn(5).nOut(nOut)
+                                        .weightInit(WeightInit.XAVIER).updater(Updater.NONE).build())
+                                .pretrain(false).backprop(true)
+                                .build();
+                        MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+                        mln.init();
+
+                        MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                                .regularization(false)
+                                .seed(12345L)
+                                .list(2)
+                                .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(5).weightInit(WeightInit.DISTRIBUTION)
+                                        .dist(new NormalDistribution(0, 1)).updater(Updater.NONE).build())
+                                .layer(1, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax").nIn(5).nOut(nOut)
+                                        .weightInit(WeightInit.XAVIER).updater(Updater.NONE).build())
+                                .pretrain(false).backprop(true)
+                                .build();
+                        MultiLayerNetwork mln2 = new MultiLayerNetwork(conf2);
+                        mln2.init();
+
+                        mln.setLayerMaskArrays(null, labelMaskArray);
+                        mln2.setLayerMaskArrays(null, labelMaskArray);
 
 
-
+                        INDArray out = mln.output(input);
+                        INDArray out2 = mln2.output(input);
+                        for( int i=0; i<miniBatch; i++ ){
+                            for( int j=0; j<tsLength; j++ ){
+                                double m = labelMaskArray.getDouble(i,j);
+                                if(m == 0.0){
+                                    //Expect outputs to be exactly 0.0
+                                    INDArray outRow = out.get(NDArrayIndex.point(i),NDArrayIndex.all(),NDArrayIndex.point(j));
+                                    INDArray outRow2 = out2.get(NDArrayIndex.point(i),NDArrayIndex.all(),NDArrayIndex.point(j));
+                                    for( int k=0; k<nOut; k++ ){
+                                        assertEquals(outRow.getDouble(k),0.0,0.0);
+                                        assertEquals(outRow2.getDouble(k),0.0,0.0);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
 }

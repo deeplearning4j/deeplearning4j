@@ -259,7 +259,11 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         if(conf.getLayer().getActivationFunction().equals("softmax")) {
             SoftMax softMax = new SoftMax(preOutput);
             softMax.exec(1);
-            return softMax.z();
+            INDArray z = softMax.z();
+            if(maskArray != null){
+                z.muliColumnVector(maskArray);
+            }
+            return z;
         }
 
         if(training)
