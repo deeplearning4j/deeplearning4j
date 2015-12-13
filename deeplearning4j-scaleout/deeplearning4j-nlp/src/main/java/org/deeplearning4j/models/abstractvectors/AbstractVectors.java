@@ -50,10 +50,13 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
      * Builds vocabulary from provided SequenceIterator instance
      */
     public void buildVocab() {
+        log.info("Starting vocabulary building...");
+
         VocabConstructor<T> constructor = new VocabConstructor.Builder<T>()
                 .addSource(iterator, minWordFrequency)
                 .useAdaGrad(false)
                 .setTargetVocabCache(vocab)
+                .fetchLabels(trainSequenceVectors)
                 .build();
 
         constructor.buildJointVocabulary(false, true);
@@ -130,9 +133,12 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
         labels.add(sequence.getSequenceLabel());
         //    final VocabWord word = labels.get(0);
 
+        if (sequence.getSequenceLabel() == null) throw new IllegalStateException("Label is NULL");
+
         if(word == null || sentence.isEmpty())
             return;
 
+     //   log.info("Training word: " + word.getLabel() +  " against label: " + labels.get(0).getLabel());
 
         int end =  window * 2 + 1 - b;
         for(int a = b; a < end; a++) {
@@ -179,7 +185,9 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
 
     }
 
-    protected void trainSequence(Sequence<T> sequence, AtomicLong nextRandom, double alpha) {
+    protected void trainSequence(@NonNull Sequence<T> sequence, AtomicLong nextRandom, double alpha) {
+
+        if (sequence.getElements().size() == 0) return;
 
         if (trainElementsVectors) for(int i = 0; i < sequence.getElements().size(); i++) {
             nextRandom.set(nextRandom.get() * 25214903917L + 11);
@@ -498,6 +506,11 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
                           */
                         Sequence<T> newSequence = new Sequence<>();
 
+                        if (document.getSequenceLabel() != null) {
+                            T newLabel = vocab.wordFor(document.getSequenceLabel().getLabel());
+                            newSequence.setSequenceLabel(newLabel);
+                        }
+
                         for (T element: document.getElements()) {
                             T realElement = vocab.wordFor(element.getLabel());
 
@@ -571,10 +584,12 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
                 try {
                     // get current sentence as list of VocabularyWords
                     List<Sequence<T>> sequences = new ArrayList<>();
-                    for (int x = 0; x < AbstractVectors.this.batchSize; x++) {
+                    for (int x = 0; x < batchSize; x++) {
                         if (digitizer.hasMoreLines()) {
                             Sequence<T> sequence = digitizer.nextSentence();
-                            sequences.add(sequence);
+                            if (sequence != null) {
+                                sequences.add(sequence);
+                            }
                         }
                     }
                     /*
@@ -587,13 +602,13 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
                     }
 
                     // getting back number of iterations
-                    for (int i = 0; i < AbstractVectors.this.numIterations; i++) {
+                    for (int i = 0; i < numIterations; i++) {
                         for (int x = 0; x< sequences.size(); x++) {
                             Sequence<T> sequence = sequences.get(x);
 
-                            alpha = Math.max(AbstractVectors.this.minLearningRate, AbstractVectors.this.learningRate.get() * (1 - (1.0 * this.wordsCounter.get() / (double) this.totalWordsCount)));
+                            alpha = Math.max(minLearningRate, learningRate.get() * (1 - (1.0 * this.wordsCounter.get() / (double) this.totalWordsCount)));
 
-                            AbstractVectors.this.trainSequence(sequence, nextRandom, alpha);
+                            trainSequence(sequence, nextRandom, alpha);
 
                             // increment processed word count, please note: this affects learningRate decay
                             totalLines.incrementAndGet();

@@ -8,6 +8,7 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.documentiterator.BasicLabelAwareIterator;
 import org.deeplearning4j.text.documentiterator.DocumentIterator;
 import org.deeplearning4j.text.documentiterator.LabelAwareIterator;
+import org.deeplearning4j.text.documentiterator.LabelledDocument;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
@@ -67,7 +68,14 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
 
             @Override
             public Sequence<VocabWord> next() {
-                return SentenceTransformer.this.transformToSequence(iterator.nextDocument().getContent());
+                LabelledDocument document = iterator.nextDocument();
+                Sequence<VocabWord> sequence = SentenceTransformer.this.transformToSequence(document.getContent());
+
+                if (document.getLabel() != null && !document.getLabel().isEmpty()) {
+                    sequence.setSequenceLabel(new VocabWord(1.0, document.getLabel()));
+                }
+
+                return sequence;
             }
         };
     }
@@ -84,6 +92,11 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
 
         public Builder tokenizerFactory(@NonNull TokenizerFactory tokenizerFactory) {
             this.tokenizerFactory = tokenizerFactory;
+            return this;
+        }
+
+        public Builder iterator(@NonNull LabelAwareIterator iterator) {
+            this.iterator = iterator;
             return this;
         }
 
