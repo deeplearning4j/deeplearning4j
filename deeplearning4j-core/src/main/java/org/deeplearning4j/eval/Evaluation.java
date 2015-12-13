@@ -25,6 +25,7 @@ import java.util.*;
 import org.deeplearning4j.berkeley.Counter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -177,6 +178,32 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
         predicted = predicted.reshape(shape[0] * shape[2], shape[1]);
 
         eval(labels,predicted);
+    }
+
+    /** Evaluate a time series, whether the output is masked usind a masking array. That is,
+     * the mask array specified whether the output at a given time step is actually present, or whether it
+     * is just padding.
+     */
+    public void evalTimeSeries(INDArray labels, INDArray predicted, INDArray outputMask){
+
+        int totalOutputExamples = outputMask.sumNumber().intValue();
+        int outSize = labels.size(1);
+
+        INDArray labels2d = Nd4j.create(totalOutputExamples, outSize);
+        INDArray predicted2d = Nd4j.create(totalOutputExamples,outSize);
+
+        int rowCount = 0;
+        for( int ex=0; ex<outputMask.size(0); ex++ ){
+            for( int t=0; t<outputMask.size(1); t++ ){
+                if(outputMask.getDouble(ex,t) == 0.0) continue;
+
+                labels2d.putRow(rowCount, labels.get(NDArrayIndex.point(ex), NDArrayIndex.all(), NDArrayIndex.point(t)));
+                predicted2d.putRow(rowCount, predicted.get(NDArrayIndex.point(ex), NDArrayIndex.all(), NDArrayIndex.point(t)));
+
+                rowCount++;
+            }
+        }
+        eval(labels2d,predicted2d);
     }
 
     /** Evaluate a single prediction (one prediction at a time)
