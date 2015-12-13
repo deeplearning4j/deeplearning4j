@@ -37,6 +37,9 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.util.FeatureUtil;
 
@@ -177,5 +180,57 @@ public class EvalTest {
 
         //Assert the two implementations give same f1 and accuracy (since one batch)
         assertTrue(eval1F1 == eval2F1 && eval1Acc == eval2Acc);
+    }
+
+    @Test
+    public void testEvalMasking(){
+        int miniBatch = 5;
+        int nOut = 3;
+        int tsLength = 6;
+
+        INDArray labels = Nd4j.zeros(miniBatch,nOut,tsLength);
+        INDArray predicted = Nd4j.zeros(miniBatch,nOut,tsLength);
+
+        Nd4j.getRandom().setSeed(12345);
+        Random r = new Random(12345);
+        for( int i=0; i<miniBatch; i++ ){
+            for( int j=0; j<tsLength; j++ ){
+                INDArray rand = Nd4j.rand(1,nOut);
+                rand.divi(rand.sumNumber());
+                predicted.put(new INDArrayIndex[]{NDArrayIndex.point(i),NDArrayIndex.all(),NDArrayIndex.point(j)},rand);
+                int idx = r.nextInt(nOut);
+                labels.putScalar(new int[]{i,idx,j},1.0);
+            }
+        }
+
+        //Create a longer labels/predicted with mask for first and last time step
+        //Expect masked evaluation to be identical to original evaluation
+        INDArray labels2 = Nd4j.zeros(miniBatch,nOut,tsLength+2);
+        labels2.put(new INDArrayIndex[]{NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.interval(1,tsLength+1)},labels);
+        INDArray predicted2 = Nd4j.zeros(miniBatch,nOut,tsLength+2);
+        predicted2.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(1, tsLength + 1)}, predicted);
+
+        INDArray labelsMask = Nd4j.ones(miniBatch,tsLength+2);
+        for( int i=0; i<miniBatch; i++ ){
+            labelsMask.putScalar(new int[]{i,0},0.0);
+            labelsMask.putScalar(new int[]{i,tsLength+1},0.0);
+        }
+
+        Evaluation evaluation = new Evaluation();
+        evaluation.evalTimeSeries(labels,predicted);
+
+        Evaluation evaluation2 = new Evaluation();
+        evaluation2.evalTimeSeries(labels2,predicted2,labelsMask);
+
+        System.out.println(evaluation.stats());
+        System.out.println(evaluation2.stats());
+
+        assertEquals(evaluation.accuracy(), evaluation2.accuracy(), 1e-12);
+        assertEquals(evaluation.f1(), evaluation2.f1(), 1e-12);
+        assertEquals(evaluation.falsePositives(),evaluation2.falsePositives(),1e-12);
+        assertEquals(evaluation.falseNegatives(),evaluation2.falseNegatives(),1e-12);
+        assertEquals(evaluation.truePositives(),evaluation2.truePositives(),1e-12);
+        assertEquals(evaluation.trueNegatives(),evaluation2.trueNegatives(),1e-12);
+        for( int i=0; i<nOut; i++) assertEquals(evaluation.classCount(i),evaluation2.classCount(i));
     }
 }
