@@ -1,6 +1,7 @@
 package org.deeplearning4j.models.abstractvectors.sequence;
 
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import org.apache.commons.collections.map.HashedMap;
 
@@ -28,7 +29,7 @@ public class Sequence<T extends SequenceElement> {
      *
      * @param set
      */
-    public Sequence(Collection<T> set) {
+    public Sequence(@NonNull Collection<T> set) {
         this();
         addElements(set);
     }
@@ -38,7 +39,7 @@ public class Sequence<T extends SequenceElement> {
      *
      * @param element
      */
-    public void addElement(T element) {
+    public void addElement(@NonNull T element) {
         this.elements.add( element);
     }
 
@@ -71,7 +72,7 @@ public class Sequence<T extends SequenceElement> {
      * @param label
      * @return
      */
-    public T getElementByLabel(String label) {
+    public T getElementByLabel(@NonNull String label) {
         for (T element: elements) {
             if (element.getLabel().equals(label)) return element;
         }
@@ -101,7 +102,7 @@ public class Sequence<T extends SequenceElement> {
      *
      * @param label
      */
-    public void setSequenceLabel(T label) {
+    public void setSequenceLabel(@NonNull T label) {
        this.label = label;
     }
 }
