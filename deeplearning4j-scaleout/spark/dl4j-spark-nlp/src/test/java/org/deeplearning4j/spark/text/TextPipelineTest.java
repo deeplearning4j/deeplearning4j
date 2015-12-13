@@ -210,7 +210,7 @@ public class TextPipelineTest extends BaseSparkTest {
         assertEquals(worldVocab.getWordFrequency(), 1, 0);
 
         assertEquals(strangeVocab.getWord(), "strange");
-        assertEquals(strangeVocab.getWordFrequency(), 2, 0);
+        assertEquals(strangeVocab.getElementFrequency(), 2, 0);
 
         sc.stop();
     }
@@ -348,7 +348,7 @@ public class TextPipelineTest extends BaseSparkTest {
         TextPipeline pipeline = new TextPipeline(corpusRDD, broadcastTokenizerVarMap);
         pipeline.buildVocabCache();
         pipeline.buildVocabWordListRDD();
-        VocabCache vocabCache = pipeline.getVocabCache();
+        VocabCache<VocabWord> vocabCache = pipeline.getVocabCache();
         Huffman huffman = new Huffman(vocabCache.vocabWords());
         huffman.build();
 
