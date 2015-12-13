@@ -124,7 +124,8 @@ public class VocabConstructor<T extends SequenceElement> {
                     word.setCount(1);
                     */
 
-                    T labelWord = createInstance();
+                    T labelWord = document.getSequenceLabel();
+//                    T labelWord = createInstance();
                     labelWord.setSpecial(true);
                     labelWord.setElementFrequency(1);
 
@@ -164,7 +165,7 @@ public class VocabConstructor<T extends SequenceElement> {
             if (source.getMinWordFrequency() > 0) {
                 LinkedBlockingQueue<String> labelsToRemove = new LinkedBlockingQueue<>();
                 for (T element : tempHolder.vocabWords()) {
-                    if (element.getElementFrequency() < source.getMinWordFrequency())
+                    if (element.getElementFrequency() < source.getMinWordFrequency() && !element.isSpecial())
                         labelsToRemove.add(element.getLabel());
                 }
 
