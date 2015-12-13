@@ -161,4 +161,42 @@ public class AbstractVectorsTest {
         Collection<String> labels = vectors.wordsNearest("day", 10);
         logger.info("Nearest labels to 'day': " + labels);
     }
+
+    @Test
+    public void testInternalVocabConstruction() throws Exception {
+        ClassPathResource resource = new ClassPathResource("big/raw_sentences.txt");
+        File file = resource.getFile();
+
+        BasicLineIterator underlyingIterator = new BasicLineIterator(file);
+
+        TokenizerFactory t = new DefaultTokenizerFactory();
+        t.setTokenPreProcessor(new CommonPreprocessor());
+
+        SentenceTransformer transformer = new SentenceTransformer.Builder()
+                .iterator(underlyingIterator)
+                .tokenizerFactory(t)
+                .build();
+
+        AbstractSequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<VocabWord>(transformer)
+                .build();
+
+        AbstractVectors<VocabWord> vectors = new AbstractVectors.Builder<VocabWord>(new VectorsConfiguration())
+                .minWordFrequency(5)
+                .iterate(sequenceIterator)
+                .batchSize(250)
+                .iterations(1)
+                .epochs(1)
+                .resetModel(false)
+                .trainElementsRepresentation(true)
+                .build();
+
+        vectors.fit();
+
+        double sim = vectors.similarity("day", "night");
+        logger.info("Day/night similarity: " + sim);
+        assertTrue(sim > 0.6d);
+
+        Collection<String> labels = vectors.wordsNearest("day", 10);
+        logger.info("Nearest labels to 'day': " + labels);
+    }
 }
