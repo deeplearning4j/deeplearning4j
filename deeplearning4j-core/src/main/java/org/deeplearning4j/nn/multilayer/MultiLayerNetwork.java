@@ -1513,7 +1513,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     @Override
     public void fit(org.nd4j.linalg.dataset.api.DataSet data) {
+        boolean hasMaskArrays = data.hasMaskArrays();
+        if(hasMaskArrays) setLayerMaskArrays(data.getFeaturesMaskArray(), data.getLabelsMaskArray());
         fit(data.getFeatureMatrix(), data.getLabels());
+        if(hasMaskArrays) clearLayerMaskArrays();
     }
 
     /**
