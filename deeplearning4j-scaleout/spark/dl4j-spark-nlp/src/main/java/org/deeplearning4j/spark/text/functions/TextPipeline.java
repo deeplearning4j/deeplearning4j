@@ -210,7 +210,7 @@ public class TextPipeline {
         }
     }
 
-    public VocabCache getVocabCache() throws IllegalStateException {
+    public VocabCache<VocabWord> getVocabCache() throws IllegalStateException {
         if (vocabCache.numWords() > 0) {
             return vocabCache;
         } else {
