@@ -56,6 +56,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     protected Gradient gradient;
     protected Collection<IterationListener> iterationListeners = new ArrayList<>();
     protected int index = 0;
+    protected INDArray maskArray;
 
     public BaseLayer(NeuralNetConfiguration conf) {
         this.conf = conf;
@@ -141,6 +142,10 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         INDArray z = preOutput(input);
         INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), z).derivative());
         INDArray delta = epsilon.muli(activationDerivative);
+
+        if(maskArray != null){
+            delta.muliColumnVector(maskArray);
+        }
 
         Gradient ret = new DefaultGradient();
         ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, delta.transpose().mmul(input).transpose());
@@ -329,7 +334,13 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             W = Dropout.applyDropConnect(this,DefaultParamInitializer.WEIGHT_KEY);
         }
 
-        INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), input().mmul(W).addiRowVector(b)));
+        INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(),
+                        input().mmul(W).addiRowVector(b)));
+
+        if(maskArray != null){
+            ret.muliColumnVector(maskArray);
+        }
+
         return ret;
     }
 
@@ -361,7 +372,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
      */
     @Override
     public  INDArray preOutput(INDArray x) {
-        return preOutput(x,true);
+        return preOutput(x, true);
     }
 
     @Override
@@ -570,4 +581,8 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         conf.getLayer().setLearningRate(conf.getLayer().getLearningRate() * (conf.getLayer().getLrScoreBasedDecay() + Nd4j.EPS_THRESHOLD));
     }
 
+    @Override
+    public void setMaskArray(INDArray maskArray) {
+        this.maskArray = maskArray;
+    }
 }
