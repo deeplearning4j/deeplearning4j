@@ -107,16 +107,17 @@ public class TfIdfVectorizerTest {
 
 
         int[] docs = vectorizer.index().allDocs();
+        InvertedIndex<VocabWord> localIndex  =  vectorizer.index();
         for(int i : docs) {
             StringBuilder sb = new StringBuilder();
-            List<VocabWord> doc = vectorizer.index().document(i);
+            List<VocabWord> doc = localIndex.document(i);
             for(VocabWord w : doc)
                 sb.append(" " + w.getWord());
             log.info("Doc " + sb.toString());
         }
 
         assertEquals(docStrings.size(),docs.length);
-        assertEquals(docStrings.size(), vectorizer.index().documents(word).length);
+        assertEquals(docStrings.size(), localIndex.documents(word).length);
 
     }
 }
