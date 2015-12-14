@@ -5,6 +5,7 @@ import lombok.NonNull;
 import lombok.Setter;
 import org.apache.commons.collections.map.HashedMap;
 
+import java.io.Serializable;
 import java.util.*;
 
 /**
@@ -12,7 +13,10 @@ import java.util.*;
  *
  * @author raver119@gmail.com
  */
-public class Sequence<T extends SequenceElement> {
+public class Sequence<T extends SequenceElement> implements Serializable {
+
+    private static final long serialVersionUID = 2223750736522624731L;
+
     protected List<T> elements = new ArrayList<>();
     protected T label;
 

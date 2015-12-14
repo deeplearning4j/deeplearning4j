@@ -7,6 +7,7 @@ import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -17,7 +18,10 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author raver119@gmail.com
  */
-public abstract class SequenceElement implements Comparable<SequenceElement> {
+public abstract class SequenceElement implements Comparable<SequenceElement>, Serializable {
+
+    private static final long serialVersionUID = 2223750736522624731L;
+
     protected AtomicDouble elementFrequency = new AtomicDouble(0);
 
     //used in comparison when building the huffman tree
