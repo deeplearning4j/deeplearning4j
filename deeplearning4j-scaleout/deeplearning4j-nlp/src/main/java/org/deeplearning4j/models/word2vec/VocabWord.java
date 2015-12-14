@@ -41,13 +41,12 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public  class VocabWord extends SequenceElement implements Serializable {
+public  class VocabWord extends SequenceElement {
 
-	private static final long serialVersionUID = 2223750736522624256L;
+//	private static final long serialVersionUID = 2223750736522624256L;
 
 	//for my sanity
 	private String word;
-
 
     /*
         Used for Joint/Distributed vocabs mechanics

@@ -27,7 +27,9 @@ public class WordsListToVocabWordsFunction implements Function<Pair<List<String>
         List<String> wordsList = pair.getFirst();
         List<VocabWord> vocabWordsList = new ArrayList<>();
         for (String s : wordsList) {
-            vocabWordsList.add(vocabCacheBroadcast.getValue().wordFor(s));
+            VocabWord word = vocabCacheBroadcast.getValue().wordFor(s);
+            System.out.println("Word at WordsListToVocabWordsFunction: " + word);
+            vocabWordsList.add(word);
         }
         return vocabWordsList;
     }
