@@ -49,6 +49,6 @@ public class MaxTimeIterationTerminationCondition implements IterationTerminatio
 
     @Override
     public String toString(){
-        return "MaxTimeIterationTerminationCondition(" + maxTimeAmount+",unit="+maxTimeUnit+",initTime="+initializationTime+")";
+        return "MaxTimeIterationTerminationCondition(" + maxTimeAmount+",unit="+maxTimeUnit+")";
     }
 }
