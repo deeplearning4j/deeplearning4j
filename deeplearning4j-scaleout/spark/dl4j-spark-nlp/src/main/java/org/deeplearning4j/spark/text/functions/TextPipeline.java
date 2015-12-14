@@ -123,7 +123,7 @@ public class TextPipeline {
         VocabWord actualToken;
         if (vocabCache.hasToken(stringToken)) {
             actualToken = vocabCache.tokenFor(stringToken);
-            actualToken.increment(tokenCount.intValue());
+            actualToken.increaseElementFrequency(tokenCount.intValue());
         } else {
             actualToken = new VocabWord(tokenCount, stringToken);
         }
@@ -133,6 +133,7 @@ public class TextPipeline {
         boolean vocabContainsWord = vocabCache.containsWord(stringToken);
         if (!vocabContainsWord) {
             vocabCache.addToken(actualToken);
+
             int idx = vocabCache.numWords();
             actualToken.setIndex(idx);
             vocabCache.putVocabWord(stringToken);
@@ -211,7 +212,7 @@ public class TextPipeline {
     }
 
     public VocabCache<VocabWord> getVocabCache() throws IllegalStateException {
-        if (vocabCache.numWords() > 0) {
+        if (vocabCache != null && vocabCache.numWords() > 0) {
             return vocabCache;
         } else {
             throw new IllegalStateException("IllegalStateException: VocabCache not set at TextPipline.");
