@@ -43,6 +43,7 @@ public class EarlyStoppingConfiguration {
         this.iterationTerminationConditions = builder.iterationTerminationConditions;
         this.saveLastModel = builder.saveLastModel;
         this.evaluateEveryNEpochs = builder.evaluateEveryNEpochs;
+        this.scoreCalculator = builder.scoreCalculator;
     }
 
 
