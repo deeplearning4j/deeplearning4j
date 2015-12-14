@@ -22,6 +22,7 @@ import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.nn.earlystopping.EarlyStoppingResult;
+import org.deeplearning4j.nn.earlystopping.termination.EpochTerminationCondition;
 import org.deeplearning4j.nn.earlystopping.termination.IterationTerminationCondition;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.dataset.DataSet;
@@ -41,6 +42,7 @@ public class EarlyStoppingTrainer implements IEarlyStoppingTrainer {
 
     private final EarlyStoppingConfiguration esConfig;
     private final MultiLayerConfiguration configuration;
+    private MultiLayerNetwork net;
     private final DataSetIterator train;
     private final DataSetIterator test;
 
@@ -56,17 +58,37 @@ public class EarlyStoppingTrainer implements IEarlyStoppingTrainer {
         this.test = test;
     }
 
+    public EarlyStoppingTrainer(EarlyStoppingConfiguration earlyStoppingConfiguration, MultiLayerNetwork net,
+                                DataSetIterator train, DataSetIterator test) {
+        this.esConfig = earlyStoppingConfiguration;
+        this.net = net;
+        this.configuration = net.getLayerWiseConfigurations();
+        this.train = train;
+        this.test = test;
+    }
+
     @Override
     public EarlyStoppingResult fit() {
         log.info("Starting early stopping training");
 
-        MultiLayerNetwork net = new MultiLayerNetwork(configuration);
+        //Initialize termination conditions:
+        if(esConfig.getIterationTerminationConditions() != null){
+            for( IterationTerminationCondition c : esConfig.getIterationTerminationConditions()){
+                c.initialize();
+            }
+        }
+        if(esConfig.getEpochTerminationConditions() != null){
+            for( EpochTerminationCondition c : esConfig.getEpochTerminationConditions()){
+                c.initialize();
+            }
+        }
+
+        if( net == null) net = new MultiLayerNetwork(configuration);
         net.init();
         Map<Integer,Double> scoreVsEpoch = new LinkedHashMap<>();
 
         int epochCount = 0;
         while (true) {
-
             train.reset();
             double lastScore;
             boolean terminate = false;
@@ -125,6 +147,7 @@ public class EarlyStoppingTrainer implements IEarlyStoppingTrainer {
                 //First: calculate various values required for termination condition
                 double testSetScore = 0.0;  //TODO
                 scoreVsEpoch.put(epochCount-1,testSetScore);
+
 
                 if (testSetScore < bestModelScore) {
                     //Save best model:

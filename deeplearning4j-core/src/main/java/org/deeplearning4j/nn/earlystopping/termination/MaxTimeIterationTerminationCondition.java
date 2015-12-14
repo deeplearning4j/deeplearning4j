@@ -32,7 +32,8 @@ public class MaxTimeIterationTerminationCondition implements IterationTerminatio
     public MaxTimeIterationTerminationCondition(long maxTimeAmount, TimeUnit maxTimeUnit){
         if(maxTimeAmount <= 0 || maxTimeUnit == null) throw new IllegalArgumentException("Invalid maximum training time: "
             + "amount = " + maxTimeAmount + " unit = " + maxTimeUnit);
-
+        this.maxTimeAmount = maxTimeAmount;
+        this.maxTimeUnit = maxTimeUnit;
     }
 
     @Override
