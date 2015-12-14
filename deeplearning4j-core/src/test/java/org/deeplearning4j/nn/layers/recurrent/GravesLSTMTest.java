@@ -4,18 +4,28 @@ import static org.junit.Assert.*;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.List;
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.layers.recurrent.GravesLSTM;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
+import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 
 public class GravesLSTMTest {
@@ -133,7 +143,7 @@ public class GravesLSTMTest {
 		.build();
 
 		GravesLSTM lstm = LayerFactories.getFactory(conf.getLayer()).create(conf);
-		INDArray input = Nd4j.rand(new int[]{miniBatchSize,nIn,timeSeriesLength});
+		INDArray input = Nd4j.rand(new int[]{miniBatchSize, nIn, timeSeriesLength});
 		lstm.setInput(input);
 
 		Method actHelper = GravesLSTM.class.getDeclaredMethod("activateHelper",boolean.class,INDArray.class,INDArray.class,boolean.class);
@@ -158,6 +168,62 @@ public class GravesLSTMTest {
 			INDArray sliceFalse = fwdPassFalse.tensorAlongDimension(i, 1,0);
 			INDArray sliceTrue = fwdPassTrue[i];
 			assertTrue(sliceFalse.equals(sliceTrue));
+		}
+	}
+
+	@Test
+	public void testSingleExample(){
+		Nd4j.getRandom().setSeed(12345);
+
+		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+				.optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+				.updater(Updater.SGD)
+				.learningRate(0.1)
+				.seed(12345)
+				.list(2)
+				.layer(0, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().activation("tanh").nIn(2).nOut(2).build())
+				.layer(1, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(2).nOut(1).activation("tanh").build())
+				.build();
+
+		MultiLayerNetwork net = new MultiLayerNetwork(conf);
+		net.init();
+
+		INDArray in1 = Nd4j.rand(new int[]{1,2,4});
+		INDArray in2 = Nd4j.rand(new int[]{1, 2, 5});
+		in2.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, 4)}, in1);
+
+		assertEquals(in1, in2.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, 4)));
+
+		INDArray labels1 = Nd4j.rand(new int[]{1, 1, 4});
+		INDArray labels2 = Nd4j.create(1, 1, 5);
+		labels2.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, 4)}, labels1);
+		assertEquals(labels1, labels2.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, 4)));
+
+		INDArray out1 = net.output(in1);
+		INDArray out2 = net.output(in2);
+
+		System.out.println(Arrays.toString(net.output(in1).data().asFloat()));
+		System.out.println(Arrays.toString(net.output(in2).data().asFloat()));
+
+		List<INDArray> activations1 = net.feedForward(in1);
+		List<INDArray> activations2 = net.feedForward(in2);
+
+		for( int i=0; i<3; i++ ){
+			System.out.println("-----\n"+i);
+			System.out.println(Arrays.toString(activations1.get(i).dup().data().asDouble()));
+			System.out.println(Arrays.toString(activations2.get(i).dup().data().asDouble()));
+
+			System.out.println(activations1.get(i));
+			System.out.println(activations2.get(i));
+		}
+
+
+
+		//Expect first 4 time steps to be indentical...
+		for( int i=0; i<4; i++ ){
+			double d1 = out1.getDouble(i);
+			double d2 = out2.getDouble(i);
+			assertEquals(d1,d2,0.0);
 		}
 	}
 }
