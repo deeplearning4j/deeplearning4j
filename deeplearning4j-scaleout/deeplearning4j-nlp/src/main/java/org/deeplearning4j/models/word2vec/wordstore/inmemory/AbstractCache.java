@@ -372,7 +372,6 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
         totalWordCount.set(0);
         for (T element: vocabulary.values()) {
             long value = (long) element.getElementFrequency();
-            logger.info("Element: " + element + " Applied value: " + value);
 
             if (value > 0) totalWordCount.addAndGet(value);
         }

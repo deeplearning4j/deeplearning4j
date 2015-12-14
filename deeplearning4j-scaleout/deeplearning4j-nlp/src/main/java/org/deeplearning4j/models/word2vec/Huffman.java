@@ -21,6 +21,8 @@ package org.deeplearning4j.models.word2vec;
 import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.VocabularyWord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -34,6 +36,8 @@ public class Huffman {
 
     public final int MAX_CODE_LENGTH;
     private volatile boolean buildTrigger = false;
+
+    private Logger logger = LoggerFactory.getLogger(Huffman.class);
 
     public Huffman(Collection<? extends SequenceElement> words) {
         this(words, 40);
@@ -141,9 +145,15 @@ public class Huffman {
             words.get(a).getPoints().add(words.size() - 2);
 
             for (b = 0; b < i; b++) {
-                words.get(a).getCodes().set(i - b - 1,code[b]);
-                words.get(a).getPoints().set(i - b,point[b] - words.size());
+                try {
+                    words.get(a).getCodes().set(i - b - 1, code[b]);
+                    words.get(a).getPoints().set(i - b, point[b] - words.size());
+                } catch (Exception e) {
+                    logger.info("Words size: ["+ words.size()+"], a: ["+ a+"], b: ["+ b +"], i: ["+ i +"], points size: [" + words.get(a).getPoints().size()+"]");
+                    throw new RuntimeException(e);
+                }
             }
+
         }
 
 

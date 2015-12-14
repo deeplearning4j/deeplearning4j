@@ -227,11 +227,13 @@ public class InMemoryLookupCache implements VocabCache<VocabWord>,Serializable {
         /*
             If we're speaking about adding any word to index directly, it means it's going to be vocab word, not token
          */
+
+        if(!tokens.containsKey(word)) throw new IllegalStateException("You can't add word to index, if it's not in tokens");
+
         if (!vocabs.containsKey(word)) {
-            VocabWord vw = new VocabWord(1.0, word);
+            VocabWord vw = tokenFor(word);
             vw.setIndex(index);
             vocabs.put(word, vw);
-            tokens.put(word, vw);
         }
 
         if (!wordFrequencies.containsKey(word))
@@ -350,6 +352,9 @@ public class InMemoryLookupCache implements VocabCache<VocabWord>,Serializable {
     public void removeElement(String label) {
         if (vocabs.containsKey(label)) {
             vocabs.remove(label);
+        }
+
+        if (tokens.containsKey(label)) {
             tokens.remove(label);
         }
     }
