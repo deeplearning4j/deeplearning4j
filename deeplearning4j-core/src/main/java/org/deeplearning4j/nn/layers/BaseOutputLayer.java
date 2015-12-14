@@ -97,12 +97,12 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         INDArray preOut = preOutput2d(true);
         Triple<Gradient,INDArray,INDArray> triple = getGradientsAndDelta(preOut);
         this.gradient = triple.getFirst();
-        setScore(triple.getThird(),preOut);
+        setScore(triple.getThird(), preOut);
     }
 
     @Override
     protected void setScoreWithZ(INDArray z) {
-        setScore(z,null);
+        setScore(z, null);
     }
 
     private void setScore(INDArray z, INDArray preOut ){
@@ -118,7 +118,8 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
                     .preOut(preOut).activationFn(conf().getLayer().getActivationFunction())
                     .lossFunction(layerConf().getLossFunction())
                     .miniBatch(conf.isMiniBatch()).miniBatchSize(getInputMiniBatchSize())
-                    .useRegularization(conf.isUseRegularization()).build().score();
+                    .useRegularization(conf.isUseRegularization())
+                    .mask(maskArray).build().score();
         }
     }
 
@@ -153,46 +154,64 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         INDArray outSubLabels = output.sub(getLabels2d());
         Gradient gradient = new DefaultGradient();
 
+        if(maskArray != null){
+            //Masking on gradients. Mask values are 0 or 1. If 0: no output -> no error for this example
+            outSubLabels.muliColumnVector(maskArray);
+        }
+
+        Triple<Gradient,INDArray,INDArray> triple;
         switch (layerConf().getLossFunction()) {
             case MCXENT:	//cross-entropy (multi-class, with one-hot encoding)
                 gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(outSubLabels));
                 gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
-                return new Triple<>(gradient,outSubLabels,output);
+                triple = new Triple<>(gradient,outSubLabels,output);
+                break;
+
             case XENT: // cross-entropy (single binary output variable)
                 gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(outSubLabels.div(output.mul(output.rsub(1)))));
                 gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
-                return new Triple<>(gradient,outSubLabels,output);
+                triple = new Triple<>(gradient,outSubLabels,output);
+                break;
 
             case MSE: // mean squared error
                 INDArray delta = outSubLabels.mul(derivativeActivation(preOut));
                 gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(delta));
                 gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, delta.sum(0));
-                return new Triple<>(gradient,delta,output);
+                triple = new Triple<>(gradient,delta,output);
+                break;
 
             case EXPLL: // exponential logarithmic
                 gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(labels.rsub(1).divi(output)));
                 gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
-                return new Triple<>(gradient,outSubLabels,output);
+                triple = new Triple<>(gradient,outSubLabels,output);
+                break;
 
             case RMSE_XENT: // root mean squared error cross entropy
                 INDArray squaredrmseXentDiff = pow(outSubLabels, 2.0);
                 INDArray sqrt = sqrt(squaredrmseXentDiff);
                 gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(sqrt));
                 gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
-                return new Triple<>(gradient,outSubLabels,output);
+                triple = new Triple<>(gradient,outSubLabels,output);
+                break;
 
             case SQUARED_LOSS:
                 gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(pow(outSubLabels,2)));
                 gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
-                return new Triple<>(gradient,outSubLabels,output);
+                triple = new Triple<>(gradient,outSubLabels,output);
+                break;
 
             case NEGATIVELOGLIKELIHOOD: // multi-class cross-entropy
                 gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(outSubLabels));
                 gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
-                return new Triple<>(gradient,outSubLabels,output);
+                triple = new Triple<>(gradient,outSubLabels,output);
+                break;
+
             default:
                 throw new IllegalStateException("Invalid loss function: " + layerConf().getLossFunction());
         }
+
+
+        return triple;
     }
 
 
@@ -240,7 +259,11 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         if(conf.getLayer().getActivationFunction().equals("softmax")) {
             SoftMax softMax = new SoftMax(preOutput);
             softMax.exec(1);
-            return softMax.z();
+            INDArray z = softMax.z();
+            if(maskArray != null){
+                z.muliColumnVector(maskArray);
+            }
+            return z;
         }
 
         if(training)

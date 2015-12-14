@@ -835,5 +835,4 @@ public class GradientCheckTests {
             }
         }
     }
-
 }
