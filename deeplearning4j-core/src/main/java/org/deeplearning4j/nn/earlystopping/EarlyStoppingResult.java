@@ -33,16 +33,25 @@ public class EarlyStoppingResult implements Serializable {
     private Map<Integer,Double> scoreVsEpoch;
     private int bestModelEpoch;
     private double bestModelScore;
+    private int totalEpochs;
     private MultiLayerNetwork bestModel;
 
     public EarlyStoppingResult(TerminationReason terminationReason, String terminationDetails, Map<Integer,Double> scoreVsEpoch,
-                               int bestModelEpoch, double bestModelScore, MultiLayerNetwork bestModel ){
+                               int bestModelEpoch, double bestModelScore, int totalEpochs, MultiLayerNetwork bestModel ){
         this.terminationReason = terminationReason;
         this.terminationDetails = terminationDetails;
         this.scoreVsEpoch = scoreVsEpoch;
         this.bestModelEpoch = bestModelEpoch;
         this.bestModelScore = bestModelScore;
+        this.totalEpochs = totalEpochs;
         this.bestModel = bestModel;
+    }
+
+    @Override
+    public String toString(){
+        return "EarlyStoppingResult(terminationReason=" + terminationReason + ",details="+terminationDetails +
+                ",bestModelEpoch="+bestModelEpoch + ",bestModelScore="+bestModelScore + ",totalEpochs="+totalEpochs + ")";
+
     }
 
 }

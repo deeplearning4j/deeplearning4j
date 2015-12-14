@@ -16,7 +16,7 @@
  *
  */
 
-package org.deeplearning4j.nn.earlystopping.runner;
+package org.deeplearning4j.nn.earlystopping.trainer;
 
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -41,30 +41,31 @@ public class EarlyStoppingTrainer implements IEarlyStoppingTrainer {
     private static Logger log = LoggerFactory.getLogger(EarlyStoppingTrainer.class);
 
     private final EarlyStoppingConfiguration esConfig;
-    private final MultiLayerConfiguration configuration;
     private MultiLayerNetwork net;
     private final DataSetIterator train;
-    private final DataSetIterator test;
 
     private double bestModelScore = Double.MAX_VALUE;
     private int bestModelEpoch = -1;
 
 
     public EarlyStoppingTrainer(EarlyStoppingConfiguration earlyStoppingConfiguration, MultiLayerConfiguration configuration,
-                                DataSetIterator train, DataSetIterator test) {
-        this.esConfig = earlyStoppingConfiguration;
-        this.configuration = configuration;
-        this.train = train;
-        this.test = test;
+                                DataSetIterator train) {
+        this(earlyStoppingConfiguration,new MultiLayerNetwork(configuration),train);
+        net.init();
     }
 
-    public EarlyStoppingTrainer(EarlyStoppingConfiguration earlyStoppingConfiguration, MultiLayerNetwork net,
-                                DataSetIterator train, DataSetIterator test) {
-        this.esConfig = earlyStoppingConfiguration;
+    public EarlyStoppingTrainer(EarlyStoppingConfiguration esConfig, MultiLayerNetwork net,
+                                DataSetIterator train) {
+        if(esConfig.getScoreCalculator() == null) throw new IllegalArgumentException("EarlyStoppingConfiguration"
+            + ".getScoreCalculator() == null: cannot train without a score calculator");
+        if((esConfig.getEpochTerminationConditions() == null || esConfig.getEpochTerminationConditions().size() == 0)
+            && (esConfig.getIterationTerminationConditions() == null || esConfig.getIterationTerminationConditions().size() == 0)){
+            throw new IllegalArgumentException("Cannot conduct early stopping without a termination condition (both Iteration "
+                + "and Epoch termination conditions are null/empty)");
+        }
+        this.esConfig = esConfig;
         this.net = net;
-        this.configuration = net.getLayerWiseConfigurations();
         this.train = train;
-        this.test = test;
     }
 
     @Override
@@ -83,8 +84,6 @@ public class EarlyStoppingTrainer implements IEarlyStoppingTrainer {
             }
         }
 
-        if( net == null) net = new MultiLayerNetwork(configuration);
-        net.init();
         Map<Integer,Double> scoreVsEpoch = new LinkedHashMap<>();
 
         int epochCount = 0;
@@ -108,6 +107,7 @@ public class EarlyStoppingTrainer implements IEarlyStoppingTrainer {
                             scoreVsEpoch,
                             bestModelEpoch,
                             bestModelScore,
+                            epochCount,
                             net);
                 }
 
@@ -135,6 +135,7 @@ public class EarlyStoppingTrainer implements IEarlyStoppingTrainer {
                         scoreVsEpoch,
                         bestModelEpoch,
                         bestModelScore,
+                        epochCount,
                         net);
             }
 
@@ -142,26 +143,25 @@ public class EarlyStoppingTrainer implements IEarlyStoppingTrainer {
             epochCount++;
 
 
-            if( epochCount % esConfig.getEvaluateEveryNEpochs() == 0 ){
-                //Check per epoch termination conditions:
-                //First: calculate various values required for termination condition
-                double testSetScore = 0.0;  //TODO
-                scoreVsEpoch.put(epochCount-1,testSetScore);
+            if( (epochCount==0 && esConfig.getEvaluateEveryNEpochs()==1) || epochCount % esConfig.getEvaluateEveryNEpochs() == 0 ){
+                //Calculate score at this epoch:
+                double score = esConfig.getScoreCalculator().calculateScore(net);
+                scoreVsEpoch.put(epochCount-1,score);
 
-
-                if (testSetScore < bestModelScore) {
+                if (score < bestModelScore) {
                     //Save best model:
                     if (bestModelEpoch == -1) {
-                        log.info("Score at epoch 0: {}", testSetScore);
+                        //First calculated/reported score
+                        log.info("Score at epoch {}: {}", epochCount, score);
                     } else {
-                        log.info("New best model: score = {}, epoch = {} (previous: score = {}, epoch = {}",
-                                testSetScore, epochCount, bestModelScore, bestModelEpoch);
+                        log.info("New best model: score = {}, epoch = {} (previous: score = {}, epoch = {})",
+                                score, epochCount, bestModelScore, bestModelEpoch);
                     }
-                    bestModelScore = testSetScore;
+                    bestModelScore = score;
                     bestModelEpoch = epochCount;
 
                     try{
-                        esConfig.getModelSaver().saveBestModel(net,testSetScore);
+                        esConfig.getModelSaver().saveBestModel(net,score);
                     }catch(IOException e){
                         throw new RuntimeException("Error saving best model",e);
                     }
@@ -170,11 +170,34 @@ public class EarlyStoppingTrainer implements IEarlyStoppingTrainer {
                 if(esConfig.isSaveLastModel()) {
                     //Save last model:
                     try {
-                        esConfig.getModelSaver().saveLatestModel(net, testSetScore);
+                        esConfig.getModelSaver().saveLatestModel(net, score);
                     } catch (IOException e) {
                         throw new RuntimeException("Error saving most frequent model", e);
                     }
                 }
+
+                //Check per-epoch termination conditions:
+                boolean epochTerminate = false;
+                EpochTerminationCondition termReason = null;
+                for(EpochTerminationCondition c : esConfig.getEpochTerminationConditions()){
+                    if(c.terminate(epochCount)){
+                        epochTerminate = true;
+                        termReason = c;
+                        break;
+                    }
+                }
+                if(epochTerminate){
+                    return new EarlyStoppingResult(
+                            EarlyStoppingResult.TerminationReason.EpochTerminationCondition,
+                            termReason.toString(),
+                            scoreVsEpoch,
+                            bestModelEpoch,
+                            bestModelScore,
+                            epochCount,
+                            net);
+                }
+
+                epochCount++;
             }
         }
 
