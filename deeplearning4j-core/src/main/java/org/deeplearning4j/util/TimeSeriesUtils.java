@@ -45,4 +45,12 @@ public class TimeSeriesUtils {
         return ret.get(nMinusOne).divi(n);
     }
 
+    public static INDArray reshapeTimeSeriesMaskToVector(INDArray timeSeriesMask){
+        if(timeSeriesMask.rank() != 2) throw new IllegalArgumentException("Cannot reshape mask: rank is not 2");
+
+        if(timeSeriesMask.ordering() != 'c') timeSeriesMask = timeSeriesMask.dup('c');
+
+        return timeSeriesMask.reshape('c',new int[]{timeSeriesMask.length(),1});
+    }
+
 }
