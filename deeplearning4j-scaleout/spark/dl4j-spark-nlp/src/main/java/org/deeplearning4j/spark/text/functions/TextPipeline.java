@@ -25,6 +25,7 @@ import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
+import org.deeplearning4j.models.word2vec.Huffman;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
@@ -172,6 +173,11 @@ public class TextPipeline {
         // Filter out low count words and add to vocab cache object and feed into LookupCache
         filterMinWordAddVocab(wordFreqCounter);
 
+        // huffman tree should be built BEFORE vocab broadcast
+        Huffman huffman = new Huffman(vocabCache.vocabWords());
+        huffman.build();
+        huffman.applyIndexes(vocabCache);
+
         // At this point the vocab cache is built. Broadcast vocab cache
         vocabCacheBroadcast = sc.broadcast(vocabCache);
 
@@ -190,6 +196,7 @@ public class TextPipeline {
         vocabWordListRDD.count();
         totalWordCount = sentenceCountRDD.reduce(new ReduceSentenceCount()).get();
 
+        System.out.println("RDD: " + vocabWordListRDD.first());
         // Release sentenceWordsCountRDD from cache
         sentenceWordsCountRDD.unpersist();
     }

@@ -283,9 +283,12 @@ public class TextPipelineTest extends BaseSparkTest {
 
         Huffman huffman = new Huffman(vocabCache.vocabWords());
         huffman.build();
+        huffman.applyIndexes(vocabCache);
+
         Collection<VocabWord> vocabWords = vocabCache.vocabWords();
         System.out.println("Huffman Test:");
         for (VocabWord vocabWord : vocabWords) {
+            System.out.println("Word: " + vocabWord);
             System.out.println(vocabWord.getCodes());
             System.out.println(vocabWord.getPoints());
         }
@@ -365,9 +368,14 @@ public class TextPipelineTest extends BaseSparkTest {
         pipeline.buildVocabCache();
         pipeline.buildVocabWordListRDD();
         VocabCache<VocabWord> vocabCache = pipeline.getVocabCache();
-        Huffman huffman = new Huffman(vocabCache.vocabWords());
+/*        Huffman huffman = new Huffman(vocabCache.vocabWords());
         huffman.build();
         huffman.applyIndexes(vocabCache);
+*/
+        VocabWord token = vocabCache.tokenFor("strange");
+        VocabWord word = vocabCache.wordFor("strange");
+        log.info("Strange token: " + token);
+        log.info("Strange word: " + word);
 
         // Get total word count and put into word2vec variable map
         Map<String, Object> word2vecVarMap = word2vec.getWord2vecVarMap();
