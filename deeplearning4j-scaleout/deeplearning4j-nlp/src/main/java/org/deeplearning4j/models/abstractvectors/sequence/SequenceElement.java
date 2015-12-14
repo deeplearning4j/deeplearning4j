@@ -161,12 +161,12 @@ public abstract class SequenceElement implements Comparable<SequenceElement> {
     public void setCodeLength(int codeLength) {
         this.codeLength = codeLength;
         if(codes.size() < codeLength) {
-            for(int i = codes.size(); i < codeLength; i++)
+            for(int i = 0; i < codeLength; i++)
                 codes.add(0);
         }
 
         if(points.size() < codeLength) {
-            for(int i = codes.size(); i < codeLength; i++)
+            for(int i = 0; i < codeLength; i++)
                 points.add(0);
         }
     }

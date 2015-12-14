@@ -26,8 +26,9 @@ public class WordsListToVocabWordsFunction implements Function<Pair<List<String>
             throws Exception {
         List<String> wordsList = pair.getFirst();
         List<VocabWord> vocabWordsList = new ArrayList<>();
-        for (String s : wordsList)
-            vocabWordsList.add((VocabWord) vocabCacheBroadcast.getValue().wordFor(s));
+        for (String s : wordsList) {
+            vocabWordsList.add(vocabCacheBroadcast.getValue().wordFor(s));
+        }
         return vocabWordsList;
     }
 }
