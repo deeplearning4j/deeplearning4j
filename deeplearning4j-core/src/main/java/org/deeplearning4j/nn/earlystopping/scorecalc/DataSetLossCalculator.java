@@ -5,7 +5,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.dataset.DataSet;
 
 
-public class TestSetLossCalculator implements ScoreCalculator{
+public class DataSetLossCalculator implements ScoreCalculator{
 
     private DataSetIterator dataSetIterator;
     private boolean average;
@@ -15,23 +15,25 @@ public class TestSetLossCalculator implements ScoreCalculator{
      * @param dataSetIterator Data set to calculate the score for
      * @param average Whether to return the average (sum of loss / N) or just (sum of loss)
      */
-    public TestSetLossCalculator(DataSetIterator dataSetIterator, boolean average) {
+    public DataSetLossCalculator(DataSetIterator dataSetIterator, boolean average) {
         this.dataSetIterator = dataSetIterator;
         this.average = average;
     }
 
     @Override
     public double calculateScore(MultiLayerNetwork network) {
-
         dataSetIterator.reset();
 
         double lossSum = 0.0;
+        int exCount = 0;
         while(dataSetIterator.hasNext()){
             DataSet dataSet = dataSetIterator.next();
-            network.score(dataSet);
+            int nEx = dataSet.getFeatureMatrix().size(0);
+            lossSum += network.score(dataSet) * nEx;
+            exCount += nEx;
         }
 
-
-        return 0.0;
+        if(average) return lossSum / exCount;
+        else return lossSum;
     }
 }

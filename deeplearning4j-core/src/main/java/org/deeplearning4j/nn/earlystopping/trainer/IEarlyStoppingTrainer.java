@@ -16,7 +16,7 @@
  *
  */
 
-package org.deeplearning4j.nn.earlystopping.runner;
+package org.deeplearning4j.nn.earlystopping.trainer;
 
 import org.deeplearning4j.nn.earlystopping.EarlyStoppingResult;
 

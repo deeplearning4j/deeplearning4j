@@ -29,4 +29,9 @@ public class InvalidScoreIterationTerminationCondition implements IterationTermi
     public boolean terminate(double lastMiniBatchScore) {
         return Double.isNaN(lastMiniBatchScore) || Double.isInfinite(lastMiniBatchScore);
     }
+
+    @Override
+    public String toString(){
+        return "InvalidScoreIterationTerminationCondition()";
+    }
 }
