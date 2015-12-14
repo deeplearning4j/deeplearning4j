@@ -224,12 +224,17 @@ public class InMemoryLookupCache implements VocabCache<VocabWord>,Serializable {
         if(word == null || word.isEmpty())
             throw new IllegalArgumentException("Word can't be empty or null");
 
+
+
+        if(!tokens.containsKey(word)) {
+            VocabWord token = new VocabWord(1.0, word);
+            tokens.put(word, token);
+            wordFrequencies.incrementCount(word, 1.0);
+        }
+
         /*
             If we're speaking about adding any word to index directly, it means it's going to be vocab word, not token
          */
-
-        if(!tokens.containsKey(word)) throw new IllegalStateException("You can't add word to index, if it's not in tokens");
-
         if (!vocabs.containsKey(word)) {
             VocabWord vw = tokenFor(word);
             vw.setIndex(index);

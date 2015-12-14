@@ -15,6 +15,7 @@ import org.deeplearning4j.text.documentiterator.DocumentIterator;
 import org.deeplearning4j.text.invertedindex.InvertedIndex;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.StreamLineIterator;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 
 import java.util.Collection;
@@ -212,6 +213,8 @@ public class Word2Vec extends AbstractVectors<VocabWord> {
         public Word2Vec build() {
             Word2Vec ret = new Word2Vec();
 
+            if (tokenizerFactory == null) tokenizerFactory = new DefaultTokenizerFactory();
+
             if (sentenceIterator != null) {
                 SentenceTransformer transformer = new SentenceTransformer.Builder()
                         .iterator(sentenceIterator)
@@ -238,6 +241,7 @@ public class Word2Vec extends AbstractVectors<VocabWord> {
 
             ret.iterator = this.iterator;
             ret.lookupTable = this.lookupTable;
+            ret.tokenizerFactory = this.tokenizerFactory;
 
             this.configuration.setLearningRate(this.learningRate);
             this.configuration.setLayersSize(layerSize);
