@@ -19,7 +19,7 @@
 package org.deeplearning4j.nn.earlystopping.termination;
 
 /** Terminate training if score is NaN or Infinite for the last minibatch */
-public class NaNIterationTerminationCondition implements IterationTerminationCondition {
+public class InvalidScoreIterationTerminationCondition implements IterationTerminationCondition {
     @Override
     public void initialize() {
         //No op

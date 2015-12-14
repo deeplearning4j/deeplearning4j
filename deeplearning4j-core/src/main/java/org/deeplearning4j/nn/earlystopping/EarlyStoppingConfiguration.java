@@ -19,10 +19,12 @@
 package org.deeplearning4j.nn.earlystopping;
 
 import lombok.Data;
+import org.deeplearning4j.nn.earlystopping.scorecalc.ScoreCalculator;
 import org.deeplearning4j.nn.earlystopping.termination.EpochTerminationCondition;
 import org.deeplearning4j.nn.earlystopping.termination.IterationTerminationCondition;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Data
@@ -33,6 +35,7 @@ public class EarlyStoppingConfiguration {
     private List<IterationTerminationCondition> iterationTerminationConditions;
     private boolean saveLastModel;
     private int evaluateEveryNEpochs;
+    private ScoreCalculator scoreCalculator;
 
     private EarlyStoppingConfiguration( Builder builder ){
         this.modelSaver = builder.modelSaver;
@@ -50,6 +53,7 @@ public class EarlyStoppingConfiguration {
         private List<IterationTerminationCondition> iterationTerminationConditions = new ArrayList<>();
         private boolean saveLastModel = false;
         private int evaluateEveryNEpochs = 1;
+        private ScoreCalculator scoreCalculator;
 
         public Builder modelSaver( EarlyStoppingModelSaver modelSaver ){
             this.modelSaver = modelSaver;
@@ -58,12 +62,18 @@ public class EarlyStoppingConfiguration {
 
         public Builder epochTerminationConditions(EpochTerminationCondition... terminationConditions){
             epochTerminationConditions.clear();
-            for(EpochTerminationCondition c : terminationConditions) epochTerminationConditions.add(c);
+            Collections.addAll(epochTerminationConditions, terminationConditions);
             return this;
         }
 
         public Builder epochTerminationConditions(List<EpochTerminationCondition> terminationConditions){
             this.epochTerminationConditions = terminationConditions;
+            return this;
+        }
+
+        public Builder iterationTerminationConditions(IterationTerminationCondition... terminationConditions){
+            iterationTerminationConditions.clear();
+            Collections.addAll(iterationTerminationConditions,terminationConditions);
             return this;
         }
 
@@ -78,6 +88,11 @@ public class EarlyStoppingConfiguration {
         /** How frequently should evaluations be conducted (in terms of epochs)? Defaults to every (1) epochs. */
         public Builder evaluateEveryNEpochs(int everyNEpochs){
             this.evaluateEveryNEpochs = everyNEpochs;
+            return this;
+        }
+
+        public Builder scoreCalculator(ScoreCalculator scoreCalculator){
+            this.scoreCalculator = scoreCalculator;
             return this;
         }
 

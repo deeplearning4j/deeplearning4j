@@ -22,6 +22,6 @@ public interface EpochTerminationCondition {
 
     void initialize();
 
-    boolean terminate(int epochNum, Object o);    //TODO
+    boolean terminate(int epochNum);
 
 }
