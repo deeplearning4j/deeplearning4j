@@ -199,6 +199,7 @@ public class ParagraphVectorsTest {
         // line 12493: This is my world .
         // line 16393: This is my work .
 
+        // this is special sentence, that has nothing common with previous sentences
         // line 9853: We now have one .
 
         double similarityD = vec.similarity("day", "night");
@@ -284,6 +285,7 @@ public class ParagraphVectorsTest {
         // line 12493: This is my world .
         // line 16393: This is my work .
 
+        // this is special sentence, that has nothing common with previous sentences
         // line 9853: We now have one .
 
         assertTrue(vec.hasWord("DOC_3720"));
