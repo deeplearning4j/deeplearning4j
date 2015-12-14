@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.earlystopping.scorecalc.DataSetLossCalculator;
+import org.deeplearning4j.nn.earlystopping.termination.MaxScoreIterationTerminationCondition;
 import org.deeplearning4j.nn.earlystopping.trainer.EarlyStoppingTrainer;
 import org.deeplearning4j.nn.earlystopping.trainer.IEarlyStoppingTrainer;
 import org.deeplearning4j.nn.earlystopping.saver.InMemoryModelSaver;
@@ -17,6 +18,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Map;
@@ -24,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class TestEarlyStopping {
 
@@ -65,5 +68,92 @@ public class TestEarlyStopping {
 
         MultiLayerNetwork out = result.getBestModel();
         assertNotNull(out);
+
+        //Check that best score actually matches (returned model vs. manually calculated score)
+        MultiLayerNetwork bestNetwork = result.getBestModel();
+        irisIter.reset();
+        double score = bestNetwork.score(irisIter.next());
+        assertEquals(result.getBestModelScore(), score, 1e-8);
+    }
+
+    @Test
+    public void testBadTuning(){
+        //Test poor tuning (high LR): should terminate on MaxScoreIterationTerminationCondition
+
+        Nd4j.getRandom().setSeed(12345);
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                .updater(Updater.SGD).learningRate(1.0)    //Intentionally huge LR
+                .weightInit(WeightInit.XAVIER)
+                .list(1)
+                .layer(0, new OutputLayer.Builder().nIn(4).nOut(3).lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .pretrain(false).backprop(true)
+                .build();
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.setListeners(new ScoreIterationListener(1));
+
+        DataSetIterator irisIter = new IrisDataSetIterator(150,150);
+        EarlyStoppingModelSaver saver = new InMemoryModelSaver();
+        EarlyStoppingConfiguration esConf = new EarlyStoppingConfiguration.Builder()
+                .epochTerminationConditions(new MaxEpochsTerminationCondition(5000))
+                .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES),
+                        new MaxScoreIterationTerminationCondition(7.5))  //Initial score is ~2.5
+                .scoreCalculator(new DataSetLossCalculator(irisIter, true))
+                .modelSaver(saver)
+                .build();
+
+        IEarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConf,net,irisIter);
+        EarlyStoppingResult result = trainer.fit();
+
+        assertTrue(result.getTotalEpochs() < 5);
+        assertEquals(EarlyStoppingResult.TerminationReason.IterationTerminationCondition, result.getTerminationReason());
+        String expDetails = new MaxScoreIterationTerminationCondition(7.5).toString();
+        assertEquals(expDetails, result.getTerminationDetails());
+
+        assertEquals(0, result.getBestModelEpoch());
+        assertNotNull(result.getBestModel());
+    }
+
+    @Test
+    public void testTimeTermination(){
+        //test termination after max time
+
+        Nd4j.getRandom().setSeed(12345);
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                .updater(Updater.SGD).learningRate(1e-6)
+                .weightInit(WeightInit.XAVIER)
+                .list(1)
+                .layer(0,new OutputLayer.Builder().nIn(4).nOut(3).lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .pretrain(false).backprop(true)
+                .build();
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.setListeners(new ScoreIterationListener(1));
+
+        DataSetIterator irisIter = new IrisDataSetIterator(150,150);
+
+        EarlyStoppingModelSaver saver = new InMemoryModelSaver();
+        EarlyStoppingConfiguration esConf = new EarlyStoppingConfiguration.Builder()
+                .epochTerminationConditions(new MaxEpochsTerminationCondition(10000))
+                .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(3, TimeUnit.SECONDS),
+                        new MaxScoreIterationTerminationCondition(7.5))  //Initial score is ~2.5
+                .scoreCalculator(new DataSetLossCalculator(irisIter, true))
+                .modelSaver(saver)
+                .build();
+
+        IEarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConf,net,irisIter);
+        long startTime = System.currentTimeMillis();
+        EarlyStoppingResult result = trainer.fit();
+        long endTime = System.currentTimeMillis();
+        int durationSeconds = (int)(endTime-startTime)/1000;
+
+        assertTrue(durationSeconds >= 3);
+        assertTrue(durationSeconds <= 9);
+
+        assertEquals(EarlyStoppingResult.TerminationReason.IterationTerminationCondition, result.getTerminationReason());
+        String expDetails = new MaxTimeIterationTerminationCondition(3,TimeUnit.SECONDS).toString();
+        assertEquals(expDetails, result.getTerminationDetails());
     }
 }
