@@ -101,6 +101,13 @@ public class EarlyStoppingTrainer implements IEarlyStoppingTrainer {
                 } catch(Exception e){
                     log.warn("Early stopping training terminated due to exception at epoch {}, iteration {}",
                             epochCount,iterCount,e);
+                    //Load best model to return
+                    MultiLayerNetwork bestModel;
+                    try{
+                        bestModel = esConfig.getModelSaver().getBestModel();
+                    }catch(IOException e2){
+                        throw new RuntimeException(e2);
+                    }
                     return new EarlyStoppingResult(
                             EarlyStoppingResult.TerminationReason.Error,
                             e.toString(),
@@ -108,7 +115,7 @@ public class EarlyStoppingTrainer implements IEarlyStoppingTrainer {
                             bestModelEpoch,
                             bestModelScore,
                             epochCount,
-                            net);
+                            bestModel);
                 }
 
                 //Check per-iteration termination conditions
@@ -126,9 +133,15 @@ public class EarlyStoppingTrainer implements IEarlyStoppingTrainer {
             }
             if(terminate){
                 //Handle termination condition:
-                log.info("Hit per iteration epoch condition at epoch {}, iteration {}. Reason: {}",
+                log.info("Hit per iteration epoch termination condition at epoch {}, iteration {}. Reason: {}",
                         epochCount, iterCount, terminationReason);
 
+                MultiLayerNetwork bestModel;
+                try{
+                    bestModel = esConfig.getModelSaver().getBestModel();
+                }catch(IOException e2){
+                    throw new RuntimeException(e2);
+                }
                 return new EarlyStoppingResult(
                         EarlyStoppingResult.TerminationReason.IterationTerminationCondition,
                         terminationReason.toString(),
@@ -136,11 +149,10 @@ public class EarlyStoppingTrainer implements IEarlyStoppingTrainer {
                         bestModelEpoch,
                         bestModelScore,
                         epochCount,
-                        net);
+                        bestModel);
             }
 
             log.info("Completed training epoch {}",epochCount);
-            epochCount++;
 
 
             if( (epochCount==0 && esConfig.getEvaluateEveryNEpochs()==1) || epochCount % esConfig.getEvaluateEveryNEpochs() == 0 ){
@@ -187,14 +199,20 @@ public class EarlyStoppingTrainer implements IEarlyStoppingTrainer {
                     }
                 }
                 if(epochTerminate){
+                    MultiLayerNetwork bestModel;
+                    try{
+                        bestModel = esConfig.getModelSaver().getBestModel();
+                    }catch(IOException e2){
+                        throw new RuntimeException(e2);
+                    }
                     return new EarlyStoppingResult(
                             EarlyStoppingResult.TerminationReason.EpochTerminationCondition,
                             termReason.toString(),
                             scoreVsEpoch,
                             bestModelEpoch,
                             bestModelScore,
-                            epochCount,
-                            net);
+                            epochCount+1,
+                            bestModel);
                 }
 
                 epochCount++;
