@@ -210,6 +210,12 @@ public class Word2Vec extends AbstractVectors<VocabWord> {
             return this;
         }
 
+        @Override
+        public Builder workers(int numWorkers) {
+            super.workers(numWorkers);
+            return this;
+        }
+
         public Word2Vec build() {
             Word2Vec ret = new Word2Vec();
 
@@ -238,6 +244,7 @@ public class Word2Vec extends AbstractVectors<VocabWord> {
             ret.resetModel = this.resetModel;
             ret.useAdeGrad = this.useAdaGrad;
             ret.stopWords = this.stopWords;
+            ret.workers = this.workers;
 
             ret.iterator = this.iterator;
             ret.lookupTable = this.lookupTable;
