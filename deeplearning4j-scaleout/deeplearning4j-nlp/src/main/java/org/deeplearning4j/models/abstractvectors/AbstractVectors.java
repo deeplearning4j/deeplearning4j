@@ -224,6 +224,7 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
         protected long seed;
         protected boolean useAdaGrad = false;
         protected boolean resetModel = true;
+        protected int workers = Runtime.getRuntime().availableProcessors();
 
         protected boolean trainSequenceVectors = false;
         protected boolean trainElementsVectors = true;
@@ -293,6 +294,17 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
          */
         public Builder<T> epochs(int numEpochs) {
             this.numEpochs = numEpochs;
+            return this;
+        }
+
+        /**
+         * Sets number of worker threads to be used in calculations
+         *
+         * @param numWorkers
+         * @return
+         */
+        public Builder<T> workers(int numWorkers) {
+            this.workers = numWorkers;
             return this;
         }
 
@@ -523,6 +535,7 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
             vectors.resetModel = this.resetModel;
             vectors.useAdeGrad = this.useAdaGrad;
             vectors.stopWords = this.stopWords;
+            vectors.workers = this.workers;
 
             vectors.iterator = this.iterator;
             vectors.lookupTable = this.lookupTable;
