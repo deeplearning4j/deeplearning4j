@@ -27,7 +27,9 @@ layout: default
 * [r/MachineLearning](https://www.reddit.com/r/MachineLearning/)
 * [Deeplearning.net: A Portal for Theano/PyLearn](http://deeplearning.net/)
 
-## Academic Papers
+## Academic Papers and Other Writings
+
+**[Understanding LSTMs](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)**; Christopher Olah
 
 **[Semantic Compositionality through Recursive Matrix-Vector Spaces](http://ttic.uchicago.edu/~haotang/speech/SocherHuvalManningNg_EMNLP2012.pdf)**; Richard Socher, Brody Huval, Christopher D. Manning and Andrew Y. Ng; Computer Science Department, Stanford University
 
