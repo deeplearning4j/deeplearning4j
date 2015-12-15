@@ -1,10 +1,10 @@
-package org.deeplearning4j.nn.earlystopping.saver;
+package org.deeplearning4j.earlystopping.saver;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.earlystopping.EarlyStoppingModelSaver;
+import org.deeplearning4j.earlystopping.EarlyStoppingModelSaver;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -14,6 +14,20 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
+/** Save the best (and latest/most recent) models learned during early stopping training to the local file system.<br>
+ * Instances of this class will save 3 files for best (and optionally, latest) models:<br>
+ * (a) The network configuration: bestModelConf.json<br>
+ * (b) The network parameters: bestModelParams.bin<br>
+ * (c) The network updater: bestModelUpdater.bin<br>
+ * <br>
+ * NOTE: The model updater is an object that contains the internal state for training features such as AdaGrad, Momentum
+ * and RMSProp.<br>
+ * The updater is <i>not</i> required to use the network at test time; it is saved in case further training is required.
+ * Without saving the updater, any further training would result in the updater being recreated, without the benefit
+ * of the history/internal state. This could negatively impact training performance after loading the network.
+ *
+ * @author Alex Black
+ */
 public class LocalFileModelSaver implements EarlyStoppingModelSaver {
 
     private static final String bestFileNameConf = "bestModelConf.json";

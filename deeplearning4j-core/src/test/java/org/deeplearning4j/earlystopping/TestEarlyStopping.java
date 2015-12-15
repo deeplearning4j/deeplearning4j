@@ -1,19 +1,20 @@
-package org.deeplearning4j.nn.earlystopping;
+package org.deeplearning4j.earlystopping;
 
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
+import org.deeplearning4j.earlystopping.termination.ScoreImprovementEpochTerminationCondition;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.earlystopping.scorecalc.DataSetLossCalculator;
-import org.deeplearning4j.nn.earlystopping.termination.MaxScoreIterationTerminationCondition;
-import org.deeplearning4j.nn.earlystopping.trainer.EarlyStoppingTrainer;
-import org.deeplearning4j.nn.earlystopping.trainer.IEarlyStoppingTrainer;
-import org.deeplearning4j.nn.earlystopping.saver.InMemoryModelSaver;
-import org.deeplearning4j.nn.earlystopping.termination.MaxEpochsTerminationCondition;
-import org.deeplearning4j.nn.earlystopping.termination.MaxTimeIterationTerminationCondition;
+import org.deeplearning4j.earlystopping.scorecalc.DataSetLossCalculator;
+import org.deeplearning4j.earlystopping.termination.MaxScoreIterationTerminationCondition;
+import org.deeplearning4j.earlystopping.trainer.EarlyStoppingTrainer;
+import org.deeplearning4j.earlystopping.trainer.IEarlyStoppingTrainer;
+import org.deeplearning4j.earlystopping.saver.InMemoryModelSaver;
+import org.deeplearning4j.earlystopping.termination.MaxEpochsTerminationCondition;
+import org.deeplearning4j.earlystopping.termination.MaxTimeIterationTerminationCondition;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
@@ -154,6 +155,47 @@ public class TestEarlyStopping {
 
         assertEquals(EarlyStoppingResult.TerminationReason.IterationTerminationCondition, result.getTerminationReason());
         String expDetails = new MaxTimeIterationTerminationCondition(3,TimeUnit.SECONDS).toString();
+        assertEquals(expDetails, result.getTerminationDetails());
+    }
+
+    @Test
+    public void testNoImprovementNEpochsTermination(){
+        //Idea: terminate training if score (test set loss) does not improve for 5 consecutive epochs
+        //Simulate this by setting LR = 0.0
+
+        Nd4j.getRandom().setSeed(12345);
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                .updater(Updater.SGD).learningRate(0.0)
+                .weightInit(WeightInit.XAVIER)
+                .list(1)
+                .layer(0,new OutputLayer.Builder().nIn(4).nOut(3).lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .pretrain(false).backprop(true)
+                .build();
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.setListeners(new ScoreIterationListener(1));
+
+        DataSetIterator irisIter = new IrisDataSetIterator(150,150);
+
+        EarlyStoppingModelSaver saver = new InMemoryModelSaver();
+        EarlyStoppingConfiguration esConf = new EarlyStoppingConfiguration.Builder()
+                .epochTerminationConditions(new MaxEpochsTerminationCondition(100),
+                        new ScoreImprovementEpochTerminationCondition(5))
+                .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(3, TimeUnit.SECONDS),
+                        new MaxScoreIterationTerminationCondition(7.5))  //Initial score is ~2.5
+                .scoreCalculator(new DataSetLossCalculator(irisIter, true))
+                .modelSaver(saver)
+                .build();
+
+        IEarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConf,net,irisIter);
+        EarlyStoppingResult result = trainer.fit();
+
+        //Expect no score change due to 0 LR -> terminate at end of epoch 5
+        assertEquals(5, result.getTotalEpochs());
+        assertEquals(0, result.getBestModelEpoch());
+        assertEquals(EarlyStoppingResult.TerminationReason.EpochTerminationCondition,result.getTerminationReason());
+        String expDetails = new ScoreImprovementEpochTerminationCondition(5).toString();
         assertEquals(expDetails, result.getTerminationDetails());
     }
 }
