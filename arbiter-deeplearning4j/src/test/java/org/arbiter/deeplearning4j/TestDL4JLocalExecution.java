@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.ops.LossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class TestDL4JLocalExecution {
@@ -106,14 +107,20 @@ public class TestDL4JLocalExecution {
 
 
     private static class IrisDSP implements DataProvider<DataSetIterator>{
+
         @Override
-        public DataSetIterator trainData() {
+        public DataSetIterator trainData(Map<String, Object> dataParameters) {
+            if(dataParameters == null || dataParameters.isEmpty()) return new IrisDataSetIterator(150,150);
+            if(dataParameters.containsKey("batchsize")){
+                int b = (Integer)dataParameters.get("batchsize");
+                return new IrisDataSetIterator(b,150);
+            }
             return new IrisDataSetIterator(150,150);
         }
 
         @Override
-        public DataSetIterator testData() {
-            return new IrisDataSetIterator(150,150);
+        public DataSetIterator testData(Map<String, Object> dataParameters) {
+            return trainData(dataParameters);
         }
     }
 }

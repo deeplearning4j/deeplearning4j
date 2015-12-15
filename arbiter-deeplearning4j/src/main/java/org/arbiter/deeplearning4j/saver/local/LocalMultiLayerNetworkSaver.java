@@ -49,7 +49,7 @@ public class LocalMultiLayerNetworkSaver implements ResultSaver<MultiLayerConfig
         File scoreFile = new File(FilenameUtils.concat(dir,"score.txt"));
 
         INDArray params = result.getResult().params();
-        String jsonConfig = result.getConfig().toJson();
+        String jsonConfig = result.getCandidate().getValue().toJson();
 
         FileUtils.writeStringToFile(scoreFile, String.valueOf(result.getScore()));
         FileUtils.writeStringToFile(jsonFile, jsonConfig);
@@ -60,6 +60,6 @@ public class LocalMultiLayerNetworkSaver implements ResultSaver<MultiLayerConfig
 
         log.debug("Deeplearning4j model result (id={}, score={}) saved to directory: {}",result.getIndex(), result.getScore(), dir);
 
-        return new LocalFileMultiLayerNetworkResultReference(jsonFile,paramsFile,scoreFile);
+        return new LocalFileMultiLayerNetworkResultReference(jsonFile,paramsFile,scoreFile,result.getCandidate());
     }
 }

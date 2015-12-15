@@ -20,7 +20,7 @@ public class DL4JTaskCreator implements TaskCreator<MultiLayerConfiguration,Mult
             create(Candidate<MultiLayerConfiguration> candidate, DataProvider<DataSetIterator> dataProvider,
                    ScoreFunction<MultiLayerNetwork,DataSetIterator> scoreFunction) {
 
-        return new DL4JLearningTask(candidate.getIndex(),candidate.getValue(),dataProvider,scoreFunction);
+        return new DL4JLearningTask(candidate,dataProvider,scoreFunction);
 
     }
 
@@ -28,25 +28,25 @@ public class DL4JTaskCreator implements TaskCreator<MultiLayerConfiguration,Mult
     @AllArgsConstructor
     private static class DL4JLearningTask implements Callable<OptimizationResult<MultiLayerConfiguration,MultiLayerNetwork>> {
 
-        private int idx;
-        private MultiLayerConfiguration conf;
+        private Candidate<MultiLayerConfiguration> candidate;
         private DataProvider<DataSetIterator> dataProvider;
         private ScoreFunction<MultiLayerNetwork,DataSetIterator> scoreFunction;
 
 
         @Override
         public OptimizationResult<MultiLayerConfiguration, MultiLayerNetwork> call() throws Exception {
-            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            MultiLayerNetwork net = new MultiLayerNetwork(candidate.getValue());
             net.init();
 
-            DataSetIterator dataSetIterator = dataProvider.testData();
+            DataSetIterator dataSetIterator = dataProvider.testData(candidate.getDataParameters());
             net.fit(dataSetIterator);
 
             //TODO: This only fits for a single epoch. Need additional functionality here:
             // (a) Early stopping (better)
             // (b) Specify number of epochs (less good, but perhaps worth supporting)
 
-            return new OptimizationResult<>(conf,net,scoreFunction.score(net,dataProvider),idx);
+            return new OptimizationResult<>(candidate,net,scoreFunction.score(net,dataProvider,candidate.getDataParameters()),
+                    candidate.getIndex());
         }
     }
 }

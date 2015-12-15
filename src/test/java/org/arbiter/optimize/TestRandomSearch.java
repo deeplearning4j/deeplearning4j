@@ -13,6 +13,7 @@ import org.arbiter.optimize.randomsearch.RandomSearchGenerator;
 import org.arbiter.optimize.runner.OptimizationRunner;
 import org.junit.Test;
 
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Callable;
 
@@ -74,7 +75,7 @@ public class TestRandomSearch {
         private static final double t = 1.0 / (8.0 * Math.PI);
 
         @Override
-        public double score(BraninConfig model, DataProvider<Void> data) {
+        public double score(BraninConfig model, DataProvider<Void> data, Map<String,Object> dataParameters) {
             double x1 = model.getX1();
             double x2 = model.getX2();
 
@@ -90,10 +91,9 @@ public class TestRandomSearch {
                 @Override
                 public OptimizationResult<BraninConfig, BraninConfig> call() throws Exception {
 
-                    double score = scoreFunction.score(candidate.getValue(),null);
+                    double score = scoreFunction.score(candidate.getValue(),null,null);
                     System.out.println(candidate.getValue().getX1() + "\t" + candidate.getValue().getX2() + "\t" + score);
-                    return new OptimizationResult<>(candidate.getValue(),
-                            candidate.getValue(), score, 0);
+                    return new OptimizationResult<>(candidate,candidate.getValue(), score, 0);
                 }
             };
         }

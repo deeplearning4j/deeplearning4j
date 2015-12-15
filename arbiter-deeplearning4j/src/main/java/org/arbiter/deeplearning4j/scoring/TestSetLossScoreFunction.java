@@ -6,13 +6,15 @@ import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.dataset.DataSet;
 
+import java.util.Map;
+
 public class TestSetLossScoreFunction implements ScoreFunction<MultiLayerNetwork,DataSetIterator> {
 
 
     @Override
-    public double score(MultiLayerNetwork model, DataProvider<DataSetIterator> dataProvider) {
+    public double score(MultiLayerNetwork model, DataProvider<DataSetIterator> dataProvider, Map<String,Object> dataParameters) {
 
-        DataSetIterator testData = dataProvider.testData();
+        DataSetIterator testData = dataProvider.testData(dataParameters);
 
         //TODO: do this properly taking into account division by N, L1/L2 etc
         double sumScore = 0.0;

@@ -2,6 +2,7 @@ package org.arbiter.deeplearning4j.saver.local;
 
 import lombok.AllArgsConstructor;
 import org.apache.commons.io.FileUtils;
+import org.arbiter.optimize.api.Candidate;
 import org.arbiter.optimize.api.OptimizationResult;
 import org.arbiter.optimize.api.saving.ResultReference;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -20,6 +21,7 @@ public class LocalFileMultiLayerNetworkResultReference implements ResultReferenc
     private File configFile;
     private File networkParamsFile;
     private File scoreFile;
+    private Candidate<MultiLayerConfiguration> candidate;
 
     @Override
     public OptimizationResult<MultiLayerConfiguration, MultiLayerNetwork> getResult() throws IOException {
@@ -37,6 +39,6 @@ public class LocalFileMultiLayerNetworkResultReference implements ResultReferenc
         net.init();
         net.setParams(params);
 
-        return new OptimizationResult<>(conf,net,d,-1);     //TODO index
+        return new OptimizationResult<>(candidate,net,d,-1);     //TODO index
     }
 }
