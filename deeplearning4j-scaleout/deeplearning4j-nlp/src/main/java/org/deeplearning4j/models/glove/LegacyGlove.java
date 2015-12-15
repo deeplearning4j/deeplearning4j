@@ -59,7 +59,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author Adam Gibson
  */
-public class Glove  extends AbstractVectors<VocabWord> {
+public class LegacyGlove  extends AbstractVectors<VocabWord> {
 
     private transient SentenceIterator sentenceIterator;
     private transient TextVectorizer textVectorizer;
