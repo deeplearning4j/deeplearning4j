@@ -136,6 +136,7 @@ public class ParagraphVectors extends Word2Vec {
             ret.resetModel = this.resetModel;
             ret.useAdeGrad = this.useAdaGrad;
             ret.stopWords = this.stopWords;
+            ret.workers = this.workers;
 
             ret.lookupTable = this.lookupTable;
 
@@ -300,6 +301,12 @@ public class ParagraphVectors extends Word2Vec {
         @Override
         public Builder windowSize(int windowSize) {
             super.windowSize(windowSize);
+            return this;
+        }
+
+        @Override
+        public Builder workers(int numWorkers) {
+            super.workers(numWorkers);
             return this;
         }
 
