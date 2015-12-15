@@ -53,7 +53,7 @@ public class VocabConstructor<T extends SequenceElement> {
      * Placeholder for future implementation
      * @return
      */
-    protected WeightLookupTable buildExtendedLookupTable() {
+    protected WeightLookupTable<T> buildExtendedLookupTable() {
         return null;
     }
 
@@ -61,7 +61,7 @@ public class VocabConstructor<T extends SequenceElement> {
      * Placeholder for future implementation
      * @return
      */
-    protected VocabCache buildExtendedVocabulary() {
+    protected VocabCache<T> buildExtendedVocabulary() {
         return null;
     }
 
@@ -72,7 +72,7 @@ public class VocabConstructor<T extends SequenceElement> {
      *
      * @return
      */
-    public VocabCache buildJointVocabulary(boolean resetCounters, boolean buildHuffmanTree) {
+    public VocabCache<T> buildJointVocabulary(boolean resetCounters, boolean buildHuffmanTree) {
         if (resetCounters && buildHuffmanTree) throw new IllegalStateException("You can't reset counters and build Huffman tree at the same time!");
 
         if (cache == null) throw new IllegalStateException("Cache is null, building fresh one");
@@ -80,12 +80,6 @@ public class VocabConstructor<T extends SequenceElement> {
         log.debug("Target vocab size before building: [" + cache.numWords() + "]");
         final AtomicLong sequenceCounter = new AtomicLong(0);
         final AtomicLong elementsCounter = new AtomicLong(0);
-        /*
-        VocabularyHolder topHolder = new VocabularyHolder.Builder()
-                .externalCache(cache)
-                .minWordFrequency(0)
-                .build();
-        */
 
         AbstractCache<T> topHolder = new AbstractCache.Builder<T>()
                 .minElementFrequency(0)
@@ -100,11 +94,6 @@ public class VocabConstructor<T extends SequenceElement> {
             log.debug("Target vocab size before building: [" + cache.numWords() + "]");
             cnt++;
 
-            /*
-            VocabularyHolder tempHolder = new VocabularyHolder.Builder()
-                    .minWordFrequency(source.getMinWordFrequency())
-                    .build();
-                    */
             AbstractCache<T> tempHolder = new AbstractCache.Builder<T>().build();
 
             int sequences = 0;
@@ -119,19 +108,11 @@ public class VocabConstructor<T extends SequenceElement> {
 
 
                 if (fetchLabels) {
-/*                    VocabularyWord word = new VocabularyWord(document.getSequenceLabel().getLabel());
-                    word.setSpecial(true);
-                    word.setCount(1);
-                    */
-
                     T labelWord = document.getSequenceLabel();
-//                    T labelWord = createInstance();
                     labelWord.setSpecial(true);
                     labelWord.setElementFrequency(1);
 
-                    // tempHolder.addWord(word);
                     tempHolder.addToken(labelWord);
-//                    log.info("LabelledDocument: " + document);
                 }
 
                 List<String> tokens = document.asLabels();
@@ -190,9 +171,7 @@ public class VocabConstructor<T extends SequenceElement> {
 
 
         cache.importVocabulary(topHolder);
-        for (T element: cache.vocabWords()) {
-      //      log.info("Now has: " + element);
-        }
+
         if (resetCounters) {
             for (T element: cache.vocabWords()) {
                 element.setElementFrequency(0);
@@ -209,14 +188,6 @@ public class VocabConstructor<T extends SequenceElement> {
 
         log.info("Sequences checked: [" + sequenceCounter.get() +"], Current vocabulary size: [" + cache.numWords() +"]");
         return cache;
-    }
-
-    protected T createInstance() {
-        try {
-            return (T) ((Class) ((ParameterizedType) this.getClass().getGenericSuperclass()).getActualTypeArguments()[0]).newInstance();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     public static class Builder<T extends SequenceElement> {
