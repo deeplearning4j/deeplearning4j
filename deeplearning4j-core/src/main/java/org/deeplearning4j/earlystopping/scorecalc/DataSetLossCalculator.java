@@ -1,10 +1,12 @@
-package org.deeplearning4j.nn.earlystopping.scorecalc;
+package org.deeplearning4j.earlystopping.scorecalc;
 
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.dataset.DataSet;
 
-
+/** Given a DataSetIterator: calculate the total loss for the model on that data set.
+ * Typically used to calculate the loss on a test set.
+ */
 public class DataSetLossCalculator implements ScoreCalculator{
 
     private DataSetIterator dataSetIterator;

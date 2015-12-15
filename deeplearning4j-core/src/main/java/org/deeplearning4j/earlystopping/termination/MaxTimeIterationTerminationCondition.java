@@ -16,7 +16,7 @@
  *
  */
 
-package org.deeplearning4j.nn.earlystopping.termination;
+package org.deeplearning4j.earlystopping.termination;
 
 import java.util.concurrent.TimeUnit;
 

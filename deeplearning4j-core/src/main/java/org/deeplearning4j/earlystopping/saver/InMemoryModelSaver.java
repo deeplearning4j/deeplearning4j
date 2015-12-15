@@ -1,10 +1,11 @@
-package org.deeplearning4j.nn.earlystopping.saver;
+package org.deeplearning4j.earlystopping.saver;
 
-import org.deeplearning4j.nn.earlystopping.EarlyStoppingModelSaver;
+import org.deeplearning4j.earlystopping.EarlyStoppingModelSaver;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 
 import java.io.IOException;
 
+/** Save the best (and latest) models for early stopping training to memory for later retrieval */
 public class InMemoryModelSaver implements EarlyStoppingModelSaver {
 
     private MultiLayerNetwork bestModel;

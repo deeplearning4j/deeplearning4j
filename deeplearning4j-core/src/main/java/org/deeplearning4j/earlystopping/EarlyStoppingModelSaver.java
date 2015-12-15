@@ -16,12 +16,21 @@
  *
  */
 
-package org.deeplearning4j.nn.earlystopping.trainer;
+package org.deeplearning4j.earlystopping;
 
-import org.deeplearning4j.nn.earlystopping.EarlyStoppingResult;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 
-public interface IEarlyStoppingTrainer {
+import java.io.IOException;
 
-    EarlyStoppingResult fit();
+/** Interface for saving MultiLayerNetworks learned during early stopping, and retrieving them again later */
+public interface EarlyStoppingModelSaver {
+
+    void saveBestModel( MultiLayerNetwork net, double score ) throws IOException;
+
+    void saveLatestModel( MultiLayerNetwork net, double score ) throws IOException;
+
+    MultiLayerNetwork getBestModel() throws IOException;
+
+    MultiLayerNetwork getLatestModel() throws IOException;
 
 }
