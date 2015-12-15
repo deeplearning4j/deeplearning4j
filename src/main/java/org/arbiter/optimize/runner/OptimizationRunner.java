@@ -1,5 +1,6 @@
 package org.arbiter.optimize.runner;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.arbiter.optimize.api.Candidate;
@@ -17,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 /** Optimization runner: responsible for scheduling tasks on executor, saving results, etc.
  *
@@ -26,17 +28,22 @@ import java.util.concurrent.*;
  */
 public class OptimizationRunner<T, M, D> implements IOptimizationRunner<T,M> {
 
+    private static final int POLLING_FREQUENCY = 10;
+    private static final TimeUnit POLLING_FREQUENCY_UNIT = TimeUnit.SECONDS;
     private static Logger log = LoggerFactory.getLogger(OptimizationRunner.class);
 
     private OptimizationConfiguration<T, M, D> config;
     private CandidateExecutor<T, M, D> executor;
-    private Queue<FutureDetails> futures = new ConcurrentLinkedQueue<>();
+    private Queue<Future<OptimizationResult<T,M>>> queuedFutures = new ConcurrentLinkedQueue<>();
+    private BlockingQueue<Future<OptimizationResult<T,M>>> completedFutures = new LinkedBlockingQueue<>();
     private int totalCandidateCount = 0;
     private int numCandidatesCompleted = 0;
     private int numCandidatesFailed = 0;
     private double bestScore = Double.MAX_VALUE;
     private long bestScoreTime = 0;
     private List<ResultReference<T,M>> allResults = new ArrayList<>();
+
+    private ExecutorService listenerExecutor;
 
 
     public OptimizationRunner(OptimizationConfiguration<T, M, D> config, CandidateExecutor<T, M, D> executor) {
@@ -51,6 +58,18 @@ public class OptimizationRunner<T, M, D> implements IOptimizationRunner<T,M> {
         if(config.getMaxConcurrentJobs() <= 0){
             throw new IllegalArgumentException("Invalid setting for maxConcurrentJobs (" + config.getMaxConcurrentJobs() + " <= 0)");
         }
+
+        listenerExecutor = Executors.newFixedThreadPool(executor.maxConcurrentTasks(),
+                new ThreadFactory() {
+                    private AtomicLong counter = new AtomicLong(0);
+                    @Override
+                    public Thread newThread(Runnable r) {
+                        Thread t = Executors.defaultThreadFactory().newThread(r);
+                        t.setDaemon(true);
+                        t.setName("ArbiterOptimizationRunner-"+counter.getAndIncrement());
+                        return t;
+                    }
+                });
     }
 
     public void execute() {
@@ -62,81 +81,76 @@ public class OptimizationRunner<T, M, D> implements IOptimizationRunner<T,M> {
             c.initialize(this);
         }
 
-        while(!terminate()){
+        //Queue initial tasks:
 
-            if(futures.size() >= config.getMaxConcurrentJobs() ){
 
-                //Wait on ANY of the current futures to complete...
-                //Design problem: How to best implement this?
-                //Option 1: Queue + ListenableFuture (Guava)
-                //      1a) Possibly utilizing JDKFutureAdaptor. But: that requires 1 thread per future :(
-                //      1b) Change interface to return ListenableFuture
-                //Option 2: polling approach (i.e., check + sleep, etc; very inelegant)
+        List<Future<OptimizationResult<T,M>>> tempList = new ArrayList<>(100);
+        while(true){
 
-                //Bad solution that is good enough for now: just wait on first
 
-                FutureDetails futureDetails = futures.remove();
-
-                try{
-                    futureDetails.getFuture().get();
-                    processReturnedTask(futureDetails); //Process on success
-                }catch(InterruptedException | ExecutionException e){
-                    processReturnedTask(futureDetails); //Process on failure
-                }
-            }
-
-            //Schedule new tasks
-            if(futures.size() < config.getMaxConcurrentJobs() ){
-
-                //TODO how to determine number of concurrent jobs to pass to executor?
-                //      -> Might be better to run N, wait for results, then generate new N based on those (i.e., for
-                //          Bayesian optimization procedures) rather than 100 right up front...
-                //TODO how to handle cancelling of jobs after time (etc) limit is exceeded?
-                Candidate<T> candidate = config.getCandidateGenerator().getCandidate();
-                Future<OptimizationResult<T, M>> future = executor.execute(candidate, config.getDataProvider(), config.getScoreFunction());
-
-                FutureDetails fd = new FutureDetails(future,System.currentTimeMillis(),candidate.getIndex());
-                futures.add(fd);
-
-                log.info("Scheduled new candidate (id={}) for execution", fd.getIndex());
-                totalCandidateCount++;
-            }
-        }
-
-        //Wait on final tasks to complete (TODO: specify how long to wait + cancel if exceeds this?)
-        while(futures.size() > 0){
-            FutureDetails futureDetails = futures.remove();
-
+            //Otherwise: add tasks if required
+            Future<OptimizationResult<T,M>> future = null;
             try{
-                futureDetails.getFuture().get();
-                processReturnedTask(futureDetails); //Process on success
-            }catch(InterruptedException | ExecutionException e){
-                processReturnedTask(futureDetails); //Process on failure
+                future = completedFutures.poll(POLLING_FREQUENCY, POLLING_FREQUENCY_UNIT);
+            }catch(InterruptedException e){
+                //No op?
+            }
+            if(future != null) tempList.add(future);
+            completedFutures.drainTo(tempList);
+
+            //Process results (if any)
+            for(Future<OptimizationResult<T,M>> f : tempList){
+                queuedFutures.remove(f);
+                processReturnedTask(f);
+            }
+            tempList.clear();
+
+
+            //Check termination conditions:
+            if(terminate()){
+                executor.shutdown();
+                break;
+            }
+
+            //Add additional tasks
+            while(queuedFutures.size() < executor.maxConcurrentTasks()){
+                Candidate<T> candidate = config.getCandidateGenerator().getCandidate();
+                ListenableFuture<OptimizationResult<T, M>> f = executor.execute(candidate, config.getDataProvider(), config.getScoreFunction());
+                f.addListener(new OnCompletionListener(f),listenerExecutor);
             }
         }
+
+        //Process any final (completed) tasks:
+        completedFutures.drainTo(tempList);
+        for(Future<OptimizationResult<T,M>> f : tempList){
+            queuedFutures.remove(f);
+            processReturnedTask(f);
+        }
+        tempList.clear();
 
         log.info("Optimization runner: execution complete");
     }
 
     /** Process returned task (either completed or failed */
-    private void processReturnedTask(FutureDetails completed){
+    private void processReturnedTask(Future<OptimizationResult<T,M>> future){
 
-        long execDuration = (System.currentTimeMillis() - completed.getStartTime())/1000;
+        //TODO: track and log execution time
         OptimizationResult<T,M> result;
         try{
-            result = completed.getFuture().get();
+            result = future.get(100,TimeUnit.MILLISECONDS);
         }catch(InterruptedException e ){
-            throw new RuntimeException("Unexpected InterruptedException thrown for task " + completed.getIndex() + " initialized at time "
-                    + completed.getStartTime(),e);
+            throw new RuntimeException("Unexpected InterruptedException thrown for task",e);
         } catch( ExecutionException e ){
-            log.warn("Task {} failed after {} seconds with ExecutionException: ",completed.getIndex(),execDuration,e);
+            log.warn("Task failed",e);
 
             numCandidatesFailed++;
             return;
+        } catch (TimeoutException e) {
+            throw new RuntimeException(e);  //TODO
         }
 
         double score = result.getScore();
-        log.info("Completed task {}, score = {}, executionTime = {} seconds",completed.getIndex(),result.getScore(), execDuration);
+        log.info("Completed task {}, score = {}",result.getIndex(),result.getScore());
 
         //TODO handle minimization vs. maximization
         if(score < bestScore){
@@ -149,7 +163,7 @@ public class OptimizationRunner<T, M, D> implements IOptimizationRunner<T,M> {
         }
         numCandidatesCompleted++;
 
-        //TODO: In general, we don't want to save EVERY model, only the best ones. How to implement this?
+        //TODO: In general, we don't want to save EVERY model, only the best ones
         ResultSaver<T,M> saver = config.getResultSaver();
         ResultReference<T,M> resultReference = null;
         if(saver != null){
@@ -197,7 +211,7 @@ public class OptimizationRunner<T, M, D> implements IOptimizationRunner<T,M> {
     private boolean terminate(){
         for(TerminationCondition c : config.getTerminationConditions() ){
             if(c.terminate(this)){
-                log.info("Termination condition hit: {}", c);
+                log.info("OptimizationRunner global termination condition hit: {}", c);
                 return true;
             }
         }
@@ -209,6 +223,16 @@ public class OptimizationRunner<T, M, D> implements IOptimizationRunner<T,M> {
         private final Future<OptimizationResult<T,M>> future;
         private final long startTime;
         private final int index;
+    }
+
+    @AllArgsConstructor
+    private class OnCompletionListener implements Runnable {
+        private Future<OptimizationResult<T,M>> future;
+
+        @Override
+        public void run() {
+            completedFutures.add(future);
+        }
     }
 
 }

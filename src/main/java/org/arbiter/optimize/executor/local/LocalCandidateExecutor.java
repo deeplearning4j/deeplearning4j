@@ -1,5 +1,8 @@
 package org.arbiter.optimize.executor.local;
 
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import lombok.AllArgsConstructor;
 import org.arbiter.optimize.api.Candidate;
 import org.arbiter.optimize.api.OptimizationResult;
@@ -17,18 +20,18 @@ import java.util.concurrent.atomic.AtomicLong;
 public class LocalCandidateExecutor<T,M,D> implements CandidateExecutor<T,M,D> {
 
     private TaskCreator<T,M,D> taskCreator;
-    private int nThreads;
-    private ExecutorService executor;
+    private ListeningExecutorService executor;
+    private final int nThreads;
 
     public LocalCandidateExecutor(TaskCreator<T,M,D> taskCreator){
         this(taskCreator,1);
     }
 
     public LocalCandidateExecutor(TaskCreator<T,M,D> taskCreator, int nThreads){
-        this.nThreads = nThreads;
         this.taskCreator = taskCreator;
+        this.nThreads = nThreads;
 
-        executor = Executors.newFixedThreadPool(nThreads, new ThreadFactory() {
+        ExecutorService exec = Executors.newFixedThreadPool(nThreads, new ThreadFactory() {
             private AtomicLong counter = new AtomicLong(0);
             @Override
             public Thread newThread(Runnable r) {
@@ -38,23 +41,34 @@ public class LocalCandidateExecutor<T,M,D> implements CandidateExecutor<T,M,D> {
                 return t;
             }
         });
+        executor = MoreExecutors.listeningDecorator(exec);
     }
 
 
     @Override
-    public Future<OptimizationResult<T, M>> execute(Candidate<T> candidate, DataProvider<D> dataProvider, ScoreFunction<M,D> scoreFunction ) {
+    public ListenableFuture<OptimizationResult<T, M>> execute(Candidate<T> candidate, DataProvider<D> dataProvider, ScoreFunction<M,D> scoreFunction ) {
         Callable<OptimizationResult<T,M>> task = taskCreator.create(candidate,dataProvider,scoreFunction);
         return executor.submit(task);
     }
 
     @Override
-    public List<Future<OptimizationResult<T, M>>> execute(List<Candidate<T>> candidates, DataProvider<D> dataProvider, ScoreFunction<M,D> scoreFunction ) {
-        List<Future<OptimizationResult<T,M>>> list = new ArrayList<>(candidates.size());
+    public List<ListenableFuture<OptimizationResult<T, M>>> execute(List<Candidate<T>> candidates, DataProvider<D> dataProvider, ScoreFunction<M,D> scoreFunction ) {
+        List<ListenableFuture<OptimizationResult<T,M>>> list = new ArrayList<>(candidates.size());
         for(Candidate<T> candidate : candidates){
-            Callable<OptimizationResult<T,M>> task = taskCreator.create(candidate,dataProvider, scoreFunction);
+            Callable<OptimizationResult<T,M>> task = taskCreator.create(candidate, dataProvider, scoreFunction);
             list.add(executor.submit(task));
         }
         return list;
+    }
+
+    @Override
+    public int maxConcurrentTasks() {
+        return nThreads;
+    }
+
+    @Override
+    public void shutdown() {
+        executor.shutdownNow();
     }
 
     @AllArgsConstructor
