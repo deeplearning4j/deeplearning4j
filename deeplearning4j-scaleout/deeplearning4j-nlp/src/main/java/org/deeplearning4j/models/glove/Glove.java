@@ -26,6 +26,7 @@ import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
 import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.models.abstractvectors.AbstractVectors;
 import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -58,7 +59,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author Adam Gibson
  */
-public class Glove  extends WordVectorsImpl<VocabWord> {
+public class Glove  extends AbstractVectors<VocabWord> {
 
     private transient SentenceIterator sentenceIterator;
     private transient TextVectorizer textVectorizer;
@@ -342,7 +343,7 @@ public class Glove  extends WordVectorsImpl<VocabWord> {
         this.lookupTable = lookupTable;
     }
 
-    public static class Builder {
+    public static class Builder<T> {
         private VocabCache vocabCache;
         private SentenceIterator sentenceIterator;
         private TextVectorizer textVectorizer;
