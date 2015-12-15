@@ -67,6 +67,7 @@ public class GloveTest {
 
         glove.fit();
         Collection<String> words = glove.wordsNearest("day", 20);
+        log.info("Nearest words to 'day': " + words);
         assertTrue(words.contains("week"));
 
 
