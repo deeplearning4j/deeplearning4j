@@ -37,6 +37,8 @@ import org.deeplearning4j.spark.text.functions.TokenizerFunction;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import scala.Tuple2;
 
 import java.io.IOException;
@@ -55,6 +57,8 @@ public class TextPipelineTest extends BaseSparkTest {
     private List<String> sentenceList;
     private SparkConf conf;
     private Word2Vec word2vec;
+
+    private static final Logger log = LoggerFactory.getLogger(TextPipeline.class);
 
     public JavaRDD<String> getCorpusRDD(JavaSparkContext sc) {
         return sc.parallelize(sentenceList, 2);
@@ -90,7 +94,10 @@ public class TextPipelineTest extends BaseSparkTest {
 
         TextPipeline pipeline = new TextPipeline(corpusRDD, broadcastTokenizerVarMap);
         JavaRDD<List<String>> tokenizedRDD = pipeline.tokenize();
-        assertEquals(tokenizedRDD.first(), Arrays.asList("this", "is", "a", "strange", "strange", "world"));
+
+        assertEquals(2, tokenizedRDD.count());
+
+        assertEquals(Arrays.asList("this", "is", "a", "strange", "strange", "world"), tokenizedRDD.first());
 
         sc.stop();
     }
@@ -160,9 +167,10 @@ public class TextPipelineTest extends BaseSparkTest {
         Counter<String> wordFreqCounter = pipeline.getWordFreqAcc().value();
 
         pipeline.filterMinWordAddVocab(wordFreqCounter);
-        VocabCache vocabCache = pipeline.getVocabCache();
+        VocabCache<VocabWord> vocabCache = pipeline.getVocabCache();
 
         assertTrue(vocabCache != null);
+
         VocabWord redVocab = vocabCache.tokenFor("red");
         VocabWord flowerVocab = vocabCache.tokenFor("flowers");
         VocabWord worldVocab = vocabCache.tokenFor("world");
@@ -170,16 +178,16 @@ public class TextPipelineTest extends BaseSparkTest {
 
 
         assertEquals(redVocab.getWord(), "red");
-        assertEquals(redVocab.getWordFrequency(), 1, 0);
+        assertEquals(redVocab.getElementFrequency(), 1, 0);
 
         assertEquals(flowerVocab.getWord(), "flowers");
-        assertEquals(flowerVocab.getWordFrequency(), 1, 0);
+        assertEquals(flowerVocab.getElementFrequency(), 1, 0);
 
         assertEquals(worldVocab.getWord(), "world");
-        assertEquals(worldVocab.getWordFrequency(), 1, 0);
+        assertEquals(worldVocab.getElementFrequency(), 1, 0);
 
         assertEquals(strangeVocab.getWord(), "strange");
-        assertEquals(strangeVocab.getWordFrequency(), 2, 0);
+        assertEquals(strangeVocab.getElementFrequency(), 2, 0);
 
         sc.stop();
     }
@@ -192,25 +200,33 @@ public class TextPipelineTest extends BaseSparkTest {
 
         TextPipeline pipeline = new TextPipeline(corpusRDD, broadcastTokenizerVarMap);
         pipeline.buildVocabCache();
-        VocabCache vocabCache = pipeline.getVocabCache();
+        VocabCache<VocabWord> vocabCache = pipeline.getVocabCache();
 
         assertTrue(vocabCache != null);
+
+        assertEquals(4, vocabCache.numWords());
+
         VocabWord redVocab = vocabCache.tokenFor("red");
         VocabWord flowerVocab = vocabCache.tokenFor("flowers");
         VocabWord worldVocab = vocabCache.tokenFor("world");
         VocabWord strangeVocab = vocabCache.tokenFor("strange");
 
+        log.info("Red word: " + redVocab);
+        log.info("Flower word: " + flowerVocab);
+        log.info("World word: " + worldVocab);
+        log.info("Strange word: " + strangeVocab);
+
         assertEquals(redVocab.getWord(), "red");
-        assertEquals(redVocab.getWordFrequency(), 1, 0);
+        assertEquals(redVocab.getElementFrequency(), 1, 0);
 
         assertEquals(flowerVocab.getWord(), "flowers");
-        assertEquals(flowerVocab.getWordFrequency(), 1, 0);
+        assertEquals(flowerVocab.getElementFrequency(), 1, 0);
 
         assertEquals(worldVocab.getWord(), "world");
-        assertEquals(worldVocab.getWordFrequency(), 1, 0);
+        assertEquals(worldVocab.getElementFrequency(), 1, 0);
 
         assertEquals(strangeVocab.getWord(), "strange");
-        assertEquals(strangeVocab.getWordFrequency(), 2, 0);
+        assertEquals(strangeVocab.getElementFrequency(), 2, 0);
 
         sc.stop();
     }
@@ -263,13 +279,16 @@ public class TextPipelineTest extends BaseSparkTest {
         TextPipeline pipeline = new TextPipeline(corpusRDD, broadcastTokenizerVarMap);
         pipeline.buildVocabCache();
 
-        VocabCache vocabCache = pipeline.getVocabCache();
+        VocabCache<VocabWord> vocabCache = pipeline.getVocabCache();
 
         Huffman huffman = new Huffman(vocabCache.vocabWords());
         huffman.build();
+        huffman.applyIndexes(vocabCache);
+
         Collection<VocabWord> vocabWords = vocabCache.vocabWords();
         System.out.println("Huffman Test:");
         for (VocabWord vocabWord : vocabWords) {
+            System.out.println("Word: " + vocabWord);
             System.out.println(vocabWord.getCodes());
             System.out.println(vocabWord.getPoints());
         }
@@ -348,9 +367,15 @@ public class TextPipelineTest extends BaseSparkTest {
         TextPipeline pipeline = new TextPipeline(corpusRDD, broadcastTokenizerVarMap);
         pipeline.buildVocabCache();
         pipeline.buildVocabWordListRDD();
-        VocabCache vocabCache = pipeline.getVocabCache();
-        Huffman huffman = new Huffman(vocabCache.vocabWords());
+        VocabCache<VocabWord> vocabCache = pipeline.getVocabCache();
+/*        Huffman huffman = new Huffman(vocabCache.vocabWords());
         huffman.build();
+        huffman.applyIndexes(vocabCache);
+*/
+        VocabWord token = vocabCache.tokenFor("strange");
+        VocabWord word = vocabCache.wordFor("strange");
+        log.info("Strange token: " + token);
+        log.info("Strange word: " + word);
 
         // Get total word count and put into word2vec variable map
         Map<String, Object> word2vecVarMap = word2vec.getWord2vecVarMap();
@@ -387,7 +412,7 @@ public class TextPipelineTest extends BaseSparkTest {
         TextPipeline pipeline = new TextPipeline(corpusRDD, broadcastTokenizerVarMap);
         pipeline.buildVocabCache();
         pipeline.buildVocabWordListRDD();
-        VocabCache vocabCache = pipeline.getVocabCache();
+        VocabCache<VocabWord> vocabCache = pipeline.getVocabCache();
         Huffman huffman = new Huffman(vocabCache.vocabWords());
         huffman.build();
 

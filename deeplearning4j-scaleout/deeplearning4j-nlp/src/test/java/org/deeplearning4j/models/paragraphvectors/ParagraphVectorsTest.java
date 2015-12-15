@@ -34,7 +34,9 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFac
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -63,7 +65,7 @@ public class ParagraphVectorsTest {
     }
 
 
-
+/*
     @Test
     public void testWord2VecRunThroughVectors() throws Exception {
         ClassPathResource resource = new ClassPathResource("/big/raw_sentences.txt");
@@ -89,6 +91,7 @@ public class ParagraphVectorsTest {
         new File("cache.ser").delete();
 
     }
+*/
 
     /**
      * This test checks, how vocab is built using SentenceIterator provided, without labels.
@@ -162,7 +165,7 @@ public class ParagraphVectorsTest {
                 .epochs(1)
                 .layerSize(100)
                 .learningRate(0.025)
-                .labelsGenerator(source)
+                .labelsSource(source)
                 .windowSize(5)
                 .iterate(iter)
                 .trainWordVectors(false)
@@ -181,6 +184,11 @@ public class ParagraphVectorsTest {
         assertNotEquals(1, cnt2);
         assertNotEquals(cnt1, cnt2);
 
+        assertEquals(97406, cache.numWords());
+
+        assertTrue(vec.hasWord("DOC_16392"));
+        assertTrue(vec.hasWord("DOC_3720"));
+
         /*
             We have few lines that contain pretty close words invloved.
             These sentences should be pretty close to each other in vector space
@@ -191,10 +199,16 @@ public class ParagraphVectorsTest {
         // line 12493: This is my world .
         // line 16393: This is my work .
 
+        // this is special sentence, that has nothing common with previous sentences
         // line 9853: We now have one .
 
         double similarityD = vec.similarity("day", "night");
         log.info("day/night similarity: " + similarityD);
+
+        if (similarityD < 0.0) {
+            log.info("Day: " + Arrays.toString(vec.getWordVectorMatrix("day").dup().data().asDouble()));
+            log.info("Night: " + Arrays.toString(vec.getWordVectorMatrix("night").dup().data().asDouble()));
+        }
 
         double similarityW = vec.similarity("way", "work");
         log.info("way/work similarity: " + similarityW);
@@ -242,7 +256,7 @@ public class ParagraphVectorsTest {
                 .epochs(1)
                 .layerSize(100)
                 .learningRate(0.025)
-                .labelsGenerator(source)
+                .labelsSource(source)
                 .windowSize(5)
                 .iterate(iter)
                 .trainWordVectors(true)
@@ -271,7 +285,10 @@ public class ParagraphVectorsTest {
         // line 12493: This is my world .
         // line 16393: This is my work .
 
+        // this is special sentence, that has nothing common with previous sentences
         // line 9853: We now have one .
+
+        assertTrue(vec.hasWord("DOC_3720"));
 
         double similarityD = vec.similarity("day", "night");
         log.info("day/night similarity: " + similarityD);
@@ -359,6 +376,10 @@ public class ParagraphVectorsTest {
         */
     }
 
+    /*
+        Left as reference implementation, before stuff was changed in w2v
+     */
+    @Deprecated
     private double arraysSimilarity(INDArray array1, INDArray array2) {
         if (array1.equals(array2)) return 1.0;
 

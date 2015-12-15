@@ -30,14 +30,14 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
  * @author Adam Gibson
  */
 public class VocabWordPairs implements Function<Triple<String,String,Double>,Triple<VocabWord,VocabWord,Double>> {
-    private Broadcast<VocabCache> vocab;
+    private Broadcast<VocabCache<VocabWord>> vocab;
 
-    public VocabWordPairs(Broadcast<VocabCache> vocab) {
+    public VocabWordPairs(Broadcast<VocabCache<VocabWord>> vocab) {
         this.vocab = vocab;
     }
 
     @Override
     public Triple<VocabWord, VocabWord, Double> call(Triple<String, String, Double> v1) throws Exception {
-        return new Triple<>(vocab.getValue().wordFor(v1.getFirst()),vocab.getValue().wordFor(v1.getSecond()),v1.getThird());
+        return new Triple<>((VocabWord) vocab.getValue().wordFor(v1.getFirst()),(VocabWord) vocab.getValue().wordFor(v1.getSecond()),v1.getThird());
     }
 }

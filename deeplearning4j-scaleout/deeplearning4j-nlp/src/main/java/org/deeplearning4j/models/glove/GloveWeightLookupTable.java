@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author Adam Gibson
  */
-public class GloveWeightLookupTable extends InMemoryLookupTable {
+public class GloveWeightLookupTable extends InMemoryLookupTable<VocabWord> {
 
 
     private AdaGrad weightAdaGrad;
