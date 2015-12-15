@@ -59,7 +59,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author Adam Gibson
  */
-public class LegacyGlove  extends AbstractVectors<VocabWord> {
+public class LegacyGlove  extends WordVectorsImpl<VocabWord> {
 
     private transient SentenceIterator sentenceIterator;
     private transient TextVectorizer textVectorizer;
@@ -82,9 +82,9 @@ public class LegacyGlove  extends AbstractVectors<VocabWord> {
     private transient Random shuffleRandom;
     private int numWorkers = Runtime.getRuntime().availableProcessors();
 
-    private Glove(){}
+    private LegacyGlove(){}
 
-    public Glove(VocabCache cache, SentenceIterator sentenceIterator, TextVectorizer textVectorizer, TokenizerFactory tokenizerFactory, GloveWeightLookupTable lookupTable, int layerSize, double learningRate, double xMax, int windowSize, CoOccurrences coOccurrences, List<String> stopWords, boolean stem,int batchSize,int minWordFrequency,double maxCount,int iterations,boolean symmetric,Random gen,boolean shuffle,long seed,int numWorkers) {
+    public LegacyGlove(VocabCache cache, SentenceIterator sentenceIterator, TextVectorizer textVectorizer, TokenizerFactory tokenizerFactory, GloveWeightLookupTable lookupTable, int layerSize, double learningRate, double xMax, int windowSize, CoOccurrences coOccurrences, List<String> stopWords, boolean stem,int batchSize,int minWordFrequency,double maxCount,int iterations,boolean symmetric,Random gen,boolean shuffle,long seed,int numWorkers) {
         this.numWorkers = numWorkers;
         this.gen = gen;
         this.vocab = cache;
@@ -239,9 +239,9 @@ public class LegacyGlove  extends AbstractVectors<VocabWord> {
      * @return the loaded model
      * @throws IOException if one occurs
      */
-    public static Glove load(InputStream is,InputStream biases) throws IOException {
+    public static LegacyGlove load(InputStream is,InputStream biases) throws IOException {
         LineIterator iter = IOUtils.lineIterator(is,"UTF-8");
-        Glove glove = new Glove();
+        LegacyGlove glove = new LegacyGlove();
         Map<String,float[]> wordVectors = new HashMap<>();
         int count = 0;
         while(iter.hasNext()) {
@@ -293,7 +293,7 @@ public class LegacyGlove  extends AbstractVectors<VocabWord> {
 
 
 
-    private static INDArray weights(Glove glove,Map<String,float[]> data) {
+    private static INDArray weights(LegacyGlove glove,Map<String,float[]> data) {
         INDArray ret = Nd4j.create(data.size(),glove.lookupTable().getVectorLength());
         for(String key : data.keySet()) {
             INDArray row = Nd4j.create(Nd4j.createBuffer(data.get(key)));
@@ -471,8 +471,8 @@ public class LegacyGlove  extends AbstractVectors<VocabWord> {
             return this;
         }
 
-        public Glove build() {
-            return new Glove(vocabCache, sentenceIterator, textVectorizer, tokenizerFactory, weightLookupTable, layerSize, learningRate, xMax, windowSize, coOccurrences, stopWords, stem, batchSize,minWordFrequency,maxCount,iterations,symmetric,gen,shuffle,seed,numWorkers);
+        public LegacyGlove build() {
+            return new LegacyGlove(vocabCache, sentenceIterator, textVectorizer, tokenizerFactory, weightLookupTable, layerSize, learningRate, xMax, windowSize, coOccurrences, stopWords, stem, batchSize,minWordFrequency,maxCount,iterations,symmetric,gen,shuffle,seed,numWorkers);
         }
     }
 
