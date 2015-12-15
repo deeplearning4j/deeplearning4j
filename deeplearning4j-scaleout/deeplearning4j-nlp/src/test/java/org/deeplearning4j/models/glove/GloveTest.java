@@ -36,7 +36,6 @@ import java.util.Collection;
 /**
  * Created by agibsonccc on 12/3/14.
  */
-@Ignore
 public class GloveTest {
     private static final Logger log = LoggerFactory.getLogger(GloveTest.class);
     private Glove glove;
