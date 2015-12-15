@@ -88,7 +88,6 @@ public class TestDL4JLocalExecution {
                 .scoreFunction(new TestSetLossScoreFunction())
                 .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
                         new MaxCandidatesCondition(10))
-                .maxConcurrentJobs(5)
                 .build();
 
         CandidateExecutor<MultiLayerConfiguration,MultiLayerNetwork,DataSetIterator> executor =

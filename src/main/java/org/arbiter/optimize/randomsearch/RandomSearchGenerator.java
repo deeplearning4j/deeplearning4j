@@ -19,4 +19,9 @@ public class RandomSearchGenerator<T> implements CandidateGenerator<T> {
     public Candidate<T> getCandidate() {
         return new Candidate<T>(parameterSpace.randomCandidate(),candidateCounter.getAndIncrement());
     }
+
+    @Override
+    public void reportResults(Object result) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
 }

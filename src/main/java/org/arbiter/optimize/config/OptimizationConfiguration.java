@@ -24,7 +24,6 @@ public class OptimizationConfiguration<T,M,D> {
     private ResultSaver<T,M> resultSaver;
     private ScoreFunction<M,D> scoreFunction;
     private List<TerminationCondition> terminationConditions;
-    private int maxConcurrentJobs;
 
     private OptimizationConfiguration(Builder<T,M,D> builder ){
         this.dataProvider = builder.dataProvider;
@@ -32,7 +31,6 @@ public class OptimizationConfiguration<T,M,D> {
         this.resultSaver = builder.resultSaver;
         this.scoreFunction = builder.scoreFunction;
         this.terminationConditions = builder.terminationConditions;
-        this.maxConcurrentJobs = builder.maxConcurrentJobs;
     }
 
     public static class Builder<T,M,D> {
@@ -42,7 +40,6 @@ public class OptimizationConfiguration<T,M,D> {
         private ResultSaver<T,M> resultSaver;
         private ScoreFunction<M,D> scoreFunction;
         private List<TerminationCondition> terminationConditions;
-        private int maxConcurrentJobs = -1;
 
         public Builder dataProvider(DataProvider<D> dataProvider){
             this.dataProvider = dataProvider;
@@ -71,11 +68,6 @@ public class OptimizationConfiguration<T,M,D> {
 
         public Builder terminationConditions(List<TerminationCondition> terminationConditions ){
             this.terminationConditions = terminationConditions;
-            return this;
-        }
-
-        public Builder maxConcurrentJobs(int maxConcurrentJobs){
-            this.maxConcurrentJobs = maxConcurrentJobs;
             return this;
         }
 

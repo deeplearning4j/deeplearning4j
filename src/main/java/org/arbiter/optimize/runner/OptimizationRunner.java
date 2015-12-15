@@ -55,10 +55,6 @@ public class OptimizationRunner<T, M, D> implements IOptimizationRunner<T,M> {
                 "termination conditions are null or empty)");
         }
 
-        if(config.getMaxConcurrentJobs() <= 0){
-            throw new IllegalArgumentException("Invalid setting for maxConcurrentJobs (" + config.getMaxConcurrentJobs() + " <= 0)");
-        }
-
         listenerExecutor = Executors.newFixedThreadPool(executor.maxConcurrentTasks(),
                 new ThreadFactory() {
                     private AtomicLong counter = new AtomicLong(0);
@@ -117,6 +113,8 @@ public class OptimizationRunner<T, M, D> implements IOptimizationRunner<T,M> {
                 Candidate<T> candidate = config.getCandidateGenerator().getCandidate();
                 ListenableFuture<OptimizationResult<T, M>> f = executor.execute(candidate, config.getDataProvider(), config.getScoreFunction());
                 f.addListener(new OnCompletionListener(f),listenerExecutor);
+                queuedFutures.add(f);
+                totalCandidateCount++;
             }
         }
 

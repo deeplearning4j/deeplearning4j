@@ -36,7 +36,6 @@ public class TestRandomSearch {
                 .candidateGenerator(candidateGenerator)
                 .scoreFunction(new BraninScoreFunction())
                 .terminationConditions(new MaxCandidatesCondition(50))
-                .maxConcurrentJobs(4)
                 .build();
 
         CandidateExecutor<BraninConfig, BraninConfig, Void> executor =
