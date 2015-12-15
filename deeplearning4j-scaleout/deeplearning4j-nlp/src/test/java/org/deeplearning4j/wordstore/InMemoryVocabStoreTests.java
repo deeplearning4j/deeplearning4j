@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.wordstore;
 
+import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.junit.Test;
@@ -34,7 +35,7 @@ public class InMemoryVocabStoreTests {
 
     @Test
     public void testStorePut() {
-        VocabCache cache = new InMemoryLookupCache();
+        VocabCache<VocabWord> cache = new InMemoryLookupCache();
         assertFalse(cache.containsWord("hello"));
         cache.addWordToIndex(0,"hello");
         assertTrue(cache.containsWord("hello"));

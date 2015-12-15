@@ -48,7 +48,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author Adam Gibson
  */
-public class Word2Vec extends WordVectorsImpl implements Serializable  {
+public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable  {
 
     private INDArray trainedSyn1;
     private static Logger log = LoggerFactory.getLogger(Word2Vec.class);
@@ -128,7 +128,7 @@ public class Word2Vec extends WordVectorsImpl implements Serializable  {
         final JavaRDD<AtomicLong> sentenceWordsCountRDD;
         final JavaRDD<List<VocabWord>> vocabWordListRDD;
         final JavaPairRDD<List<VocabWord>, Long> vocabWordListSentenceCumSumRDD;
-        final VocabCache vocabCache;
+        final VocabCache<VocabWord> vocabCache;
         final JavaRDD<Long> sentenceCumSumCountRDD;
 
         // Start Training //
@@ -148,7 +148,7 @@ public class Word2Vec extends WordVectorsImpl implements Serializable  {
         vocabWordListRDD = pipeline.getVocabWordListRDD();
 
         // Get vocabCache and broad-casted vocabCache
-        Broadcast<VocabCache> vocabCacheBroadcast = pipeline.getBroadCastVocabCache();
+        Broadcast<VocabCache<VocabWord>> vocabCacheBroadcast = pipeline.getBroadCastVocabCache();
         vocabCache = vocabCacheBroadcast.getValue();
 
         //////////////////////////////////////
@@ -193,7 +193,7 @@ public class Word2Vec extends WordVectorsImpl implements Serializable  {
         }
 
         vocab = vocabCache;
-        InMemoryLookupTable inMemoryLookupTable = new InMemoryLookupTable();
+        InMemoryLookupTable<VocabWord> inMemoryLookupTable = new InMemoryLookupTable<VocabWord>();
         inMemoryLookupTable.setVocab(vocabCache);
         inMemoryLookupTable.setVectorLength(vectorLength);
         inMemoryLookupTable.setSyn0(syn0);

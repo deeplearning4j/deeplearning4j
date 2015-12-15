@@ -16,9 +16,9 @@ import static org.junit.Assert.*;
 /**
  * Created by fartovii on 21.11.15.
  */
-public class Word2VecConfigurationTest {
+public class VectorsConfigurationTest {
 
-    protected static final Logger log = LoggerFactory.getLogger(Word2VecConfigurationTest.class);
+    protected static final Logger log = LoggerFactory.getLogger(VectorsConfigurationTest.class);
 
     @Before
     public void setUp() throws Exception {
@@ -27,7 +27,7 @@ public class Word2VecConfigurationTest {
 
     @Test
     public void testFromJson() throws Exception {
-        Word2VecConfiguration configuration = new Word2VecConfiguration();
+        VectorsConfiguration configuration = new VectorsConfiguration();
         configuration.setHugeModelExpected(true);
         configuration.setWindow(5);
         configuration.setIterations(3);
@@ -39,14 +39,14 @@ public class Word2VecConfigurationTest {
 
         String json = configuration.toJson();
         log.info("Conf. JSON: " + json);
-        Word2VecConfiguration configuration2 = Word2VecConfiguration.fromJson(json);
+        VectorsConfiguration configuration2 = VectorsConfiguration.fromJson(json);
 
         assertEquals(configuration, configuration2);
     }
 
     @Test
     public void testFromW2V() throws Exception {
-        Word2VecConfiguration configuration = new Word2VecConfiguration();
+        VectorsConfiguration configuration = new VectorsConfiguration();
         configuration.setHugeModelExpected(true);
         configuration.setWindow(5);
         configuration.setIterations(3);
@@ -63,7 +63,7 @@ public class Word2VecConfigurationTest {
                 .iterate(iter)
                 .build();
 
-        Word2VecConfiguration configuration2 = vec.getConfiguration();
+        VectorsConfiguration configuration2 = vec.getConfiguration();
 
         assertEquals(configuration, configuration2);
     }
