@@ -68,7 +68,8 @@ public class NearestNeighborsResource extends FileResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response getVocab() {
         List<String> words = new ArrayList<>();
-        for(VocabWord word : vectors.vocab().vocabWords())
+        VocabCache<VocabWord> vocabCache = vectors.vocab();
+        for(VocabWord word : vocabCache.vocabWords())
             words.add(word.getWord());
         return Response.ok((new ArrayList<>(words))).build();
     }

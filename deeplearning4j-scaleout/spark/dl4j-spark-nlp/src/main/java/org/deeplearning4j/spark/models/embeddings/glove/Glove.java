@@ -56,7 +56,7 @@ import static org.deeplearning4j.spark.models.embeddings.word2vec.Word2VecVariab
  */
 public class Glove implements Serializable {
 
-    private Broadcast<VocabCache> vocabCacheBroadcast;
+    private Broadcast<VocabCache<VocabWord>> vocabCacheBroadcast;
     private String tokenizerFactoryClazz = DefaultTokenizerFactory.class.getName();
     private boolean symmetric = true;
     private int windowSize = 15;
@@ -115,7 +115,7 @@ public class Glove implements Serializable {
      * @param rdd the rdd to train
      * @return the vocab and weights
      */
-    public Pair<VocabCache,GloveWeightLookupTable> train(JavaRDD<String> rdd) throws Exception{
+    public Pair<VocabCache<VocabWord>,GloveWeightLookupTable> train(JavaRDD<String> rdd) throws Exception{
         // Each `train()` can use different parameters
         final JavaSparkContext sc = new JavaSparkContext(rdd.context());
         final SparkConf conf = sc.getConf();
@@ -149,9 +149,9 @@ public class Glove implements Serializable {
 
         // Get total word count
         Long totalWordCount = pipeline.getTotalWordCount();
-        VocabCache vocabCache = pipeline.getVocabCache();
+        VocabCache<VocabWord> vocabCache = pipeline.getVocabCache();
         JavaRDD<Pair<List<String>, AtomicLong>> sentenceWordsCountRDD = pipeline.getSentenceWordsCountRDD();
-        final Pair<VocabCache,Long> vocabAndNumWords = new Pair<>(vocabCache, totalWordCount);
+        final Pair<VocabCache<VocabWord>,Long> vocabAndNumWords = new Pair<>(vocabCache, totalWordCount);
 
         vocabCacheBroadcast = sc.broadcast(vocabAndNumWords.getFirst());
 

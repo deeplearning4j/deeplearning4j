@@ -50,18 +50,19 @@ public class TfIdfVectorizerTest {
 
     private static final Logger log = LoggerFactory.getLogger(TfIdfVectorizerTest.class);
 
-    private InvertedIndex index;
-    private  VocabCache cache;
+    private InvertedIndex<VocabWord> index;
+    private  VocabCache<VocabWord> cache;
 
     @Before
     public void before() throws Exception {
         FileUtils.deleteDirectory(new File("tfidf"));
 
         cache = new InMemoryLookupCache();
-        index = new LuceneInvertedIndex.Builder().cache(cache)
+        index = new LuceneInvertedIndex.Builder<VocabWord>().cache(cache)
                 .indexDir(new File("tfidf"))
                 .batchSize(5)
-                .cacheInRam(false).build();
+                .cacheInRam(false)
+                .build();
 
     }
 
@@ -100,22 +101,23 @@ public class TfIdfVectorizerTest {
             ;
         }
 
-        VocabWord word = vectorizer.vocab().wordFor("file");
+        VocabWord word = (VocabWord) vectorizer.vocab().wordFor("file");
         assumeNotNull(word);
         assertEquals(word,vectorizer.vocab().tokenFor("file"));
 
 
         int[] docs = vectorizer.index().allDocs();
+        InvertedIndex<VocabWord> localIndex  =  vectorizer.index();
         for(int i : docs) {
             StringBuilder sb = new StringBuilder();
-            List<VocabWord> doc = vectorizer.index().document(i);
+            List<VocabWord> doc = localIndex.document(i);
             for(VocabWord w : doc)
                 sb.append(" " + w.getWord());
             log.info("Doc " + sb.toString());
         }
 
         assertEquals(docStrings.size(),docs.length);
-        assertEquals(docStrings.size(), vectorizer.index().documents(word).length);
+        assertEquals(docStrings.size(), localIndex.documents(word).length);
 
     }
 }
