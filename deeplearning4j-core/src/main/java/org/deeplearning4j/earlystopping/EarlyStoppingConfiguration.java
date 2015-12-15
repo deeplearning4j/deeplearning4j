@@ -16,17 +16,27 @@
  *
  */
 
-package org.deeplearning4j.nn.earlystopping;
+package org.deeplearning4j.earlystopping;
 
 import lombok.Data;
-import org.deeplearning4j.nn.earlystopping.scorecalc.ScoreCalculator;
-import org.deeplearning4j.nn.earlystopping.termination.EpochTerminationCondition;
-import org.deeplearning4j.nn.earlystopping.termination.IterationTerminationCondition;
+import org.deeplearning4j.earlystopping.saver.InMemoryModelSaver;
+import org.deeplearning4j.earlystopping.scorecalc.ScoreCalculator;
+import org.deeplearning4j.earlystopping.termination.EpochTerminationCondition;
+import org.deeplearning4j.earlystopping.termination.IterationTerminationCondition;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/** Early stopping configuration: Specifies the various configuration options for running training with early stopping.<br>
+ * Users need to specify the following:<br>
+ * (a) EarlyStoppingModelSaver: How models will be saved (to disk, to memory, etc) (Default: in memory)<br>
+ * (b) Termination conditions: at least one termination condition<br>
+ *     (i) Iteration termination conditions: calculated once for each minibatch. For example, maxTime or invalid (NaN/infinite) scores<br>
+ *     (ii) Epoch termination conditions: calculated once per epoch. For example, maxEpochs or no improvement for N epochs<br>
+ * (c) Score calculator: what score should be calculated at every epoch? (For example: test set loss or test set accuracy)<br>
+ * (d) How frequently (ever N epochs) should scores be calculated? (Default: every epoch)<br>
+ */
 @Data
 public class EarlyStoppingConfiguration {
 
@@ -49,29 +59,33 @@ public class EarlyStoppingConfiguration {
 
     public static class Builder {
 
-        private EarlyStoppingModelSaver modelSaver;
+        private EarlyStoppingModelSaver modelSaver = new InMemoryModelSaver();
         private List<EpochTerminationCondition> epochTerminationConditions = new ArrayList<>();
         private List<IterationTerminationCondition> iterationTerminationConditions = new ArrayList<>();
         private boolean saveLastModel = false;
         private int evaluateEveryNEpochs = 1;
         private ScoreCalculator scoreCalculator;
 
+        /** How should models be saved? (Default: in memory)*/
         public Builder modelSaver( EarlyStoppingModelSaver modelSaver ){
             this.modelSaver = modelSaver;
             return this;
         }
 
+        /** Termination conditions to be evaluated every N epochs, with N set by evaluateEveryNEpochs option */
         public Builder epochTerminationConditions(EpochTerminationCondition... terminationConditions){
             epochTerminationConditions.clear();
             Collections.addAll(epochTerminationConditions, terminationConditions);
             return this;
         }
 
+        /** Termination conditions to be evaluated every N epochs, with N set by evaluateEveryNEpochs option */
         public Builder epochTerminationConditions(List<EpochTerminationCondition> terminationConditions){
             this.epochTerminationConditions = terminationConditions;
             return this;
         }
 
+        /** Termination conditions to be evaluated every iteration (minibatch)*/
         public Builder iterationTerminationConditions(IterationTerminationCondition... terminationConditions){
             iterationTerminationConditions.clear();
             Collections.addAll(iterationTerminationConditions,terminationConditions);
@@ -79,7 +93,8 @@ public class EarlyStoppingConfiguration {
         }
 
         /** Save the last model? If true: save the most recent model at each epoch, in addition to the best
-         * model (whenever the best model improves). If false: only save the best model.
+         * model (whenever the best model improves). If false: only save the best model. Default: false
+         * Useful for example if you might want to
          */
         public Builder saveLastModel(boolean saveLastModel){
             this.saveLastModel = saveLastModel;

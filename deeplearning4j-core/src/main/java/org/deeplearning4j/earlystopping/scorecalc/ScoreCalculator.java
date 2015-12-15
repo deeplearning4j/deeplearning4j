@@ -1,4 +1,4 @@
-package org.deeplearning4j.nn.earlystopping.scorecalc;
+package org.deeplearning4j.earlystopping.scorecalc;
 
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 
@@ -7,5 +7,6 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
  */
 public interface ScoreCalculator {
 
+    /** Calculate the score for the given MultiLayerNetwork */
     double calculateScore(MultiLayerNetwork network);
 }

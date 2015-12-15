@@ -16,12 +16,22 @@
  *
  */
 
-package org.deeplearning4j.nn.earlystopping.termination;
+package org.deeplearning4j.earlystopping.termination;
 
-public interface EpochTerminationCondition {
+/** Terminate training at this iteration if score is NaN or Infinite for the last minibatch */
+public class InvalidScoreIterationTerminationCondition implements IterationTerminationCondition {
+    @Override
+    public void initialize() {
+        //No op
+    }
 
-    void initialize();
+    @Override
+    public boolean terminate(double lastMiniBatchScore) {
+        return Double.isNaN(lastMiniBatchScore) || Double.isInfinite(lastMiniBatchScore);
+    }
 
-    boolean terminate(int epochNum);
-
+    @Override
+    public String toString(){
+        return "InvalidScoreIterationTerminationCondition()";
+    }
 }

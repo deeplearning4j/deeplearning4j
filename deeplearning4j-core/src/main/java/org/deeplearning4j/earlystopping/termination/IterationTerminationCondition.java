@@ -16,12 +16,22 @@
  *
  */
 
-package org.deeplearning4j.nn.earlystopping.termination;
+package org.deeplearning4j.earlystopping.termination;
 
+/**Interface for termination conditions to be evaluated once per iteration (i.e., once per minibatch).
+ * Used for example to more quickly terminate training, instead of waiting for an epoch to complete before
+ * checking termination conditions.
+ * */
 public interface IterationTerminationCondition {
 
+    /** Initialize the iteration termination condition (sometimes a no-op)*/
     void initialize();
 
+    /** Should early stopping training terminate at this iteration, based on the score for the last iteration?
+     * return true if training should be terminated immediately, or false otherwise
+     * @param lastMiniBatchScore Score of the last minibatch
+     * @return whether to terminate or not
+     */
     boolean terminate(double lastMiniBatchScore);
 
 }

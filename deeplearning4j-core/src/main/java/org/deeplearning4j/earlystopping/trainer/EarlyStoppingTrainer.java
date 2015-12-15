@@ -16,14 +16,14 @@
  *
  */
 
-package org.deeplearning4j.nn.earlystopping.trainer;
+package org.deeplearning4j.earlystopping.trainer;
 
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
+import org.deeplearning4j.earlystopping.EarlyStoppingResult;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.earlystopping.EarlyStoppingConfiguration;
-import org.deeplearning4j.nn.earlystopping.EarlyStoppingResult;
-import org.deeplearning4j.nn.earlystopping.termination.EpochTerminationCondition;
-import org.deeplearning4j.nn.earlystopping.termination.IterationTerminationCondition;
+import org.deeplearning4j.earlystopping.termination.EpochTerminationCondition;
+import org.deeplearning4j.earlystopping.termination.IterationTerminationCondition;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
@@ -33,8 +33,7 @@ import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * Class for conducting early stopping training locally (single machine)
+/**Class for conducting early stopping training locally (single machine)
  */
 public class EarlyStoppingTrainer implements IEarlyStoppingTrainer {
 
@@ -136,6 +135,15 @@ public class EarlyStoppingTrainer implements IEarlyStoppingTrainer {
                 log.info("Hit per iteration epoch termination condition at epoch {}, iteration {}. Reason: {}",
                         epochCount, iterCount, terminationReason);
 
+                if(esConfig.isSaveLastModel()) {
+                    //Save last model:
+                    try {
+                        esConfig.getModelSaver().saveLatestModel(net, 0.0);
+                    } catch (IOException e) {
+                        throw new RuntimeException("Error saving most recent model", e);
+                    }
+                }
+
                 MultiLayerNetwork bestModel;
                 try{
                     bestModel = esConfig.getModelSaver().getBestModel();
@@ -184,7 +192,7 @@ public class EarlyStoppingTrainer implements IEarlyStoppingTrainer {
                     try {
                         esConfig.getModelSaver().saveLatestModel(net, score);
                     } catch (IOException e) {
-                        throw new RuntimeException("Error saving most frequent model", e);
+                        throw new RuntimeException("Error saving most recent model", e);
                     }
                 }
 
@@ -192,13 +200,14 @@ public class EarlyStoppingTrainer implements IEarlyStoppingTrainer {
                 boolean epochTerminate = false;
                 EpochTerminationCondition termReason = null;
                 for(EpochTerminationCondition c : esConfig.getEpochTerminationConditions()){
-                    if(c.terminate(epochCount)){
+                    if(c.terminate(epochCount,score)){
                         epochTerminate = true;
                         termReason = c;
                         break;
                     }
                 }
                 if(epochTerminate){
+                    log.info("Hit epoch termination condition at epoch {}. Details: {}", epochCount, termReason.toString());
                     MultiLayerNetwork bestModel;
                     try{
                         bestModel = esConfig.getModelSaver().getBestModel();
@@ -211,14 +220,12 @@ public class EarlyStoppingTrainer implements IEarlyStoppingTrainer {
                             scoreVsEpoch,
                             bestModelEpoch,
                             bestModelScore,
-                            epochCount+1,
+                            epochCount,
                             bestModel);
                 }
 
                 epochCount++;
             }
         }
-
-
     }
 }

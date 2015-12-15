@@ -16,7 +16,7 @@
  *
  */
 
-package org.deeplearning4j.nn.earlystopping;
+package org.deeplearning4j.earlystopping;
 
 import lombok.Data;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;

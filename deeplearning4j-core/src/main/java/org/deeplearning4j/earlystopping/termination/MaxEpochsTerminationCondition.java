@@ -16,10 +16,10 @@
  *
  */
 
-package org.deeplearning4j.nn.earlystopping.termination;
+package org.deeplearning4j.earlystopping.termination;
 
+/** Terminate training if the number of epochs exceeds the maximum number of epochs */
 public class MaxEpochsTerminationCondition implements EpochTerminationCondition {
-
     private int maxEpochs;
 
     public MaxEpochsTerminationCondition(int maxEpochs) {
@@ -33,7 +33,7 @@ public class MaxEpochsTerminationCondition implements EpochTerminationCondition 
     }
 
     @Override
-    public boolean terminate(int epochNum) {
+    public boolean terminate(int epochNum, double score) {
         return epochNum+1 >= maxEpochs; //epochNum starts at 0
     }
 
