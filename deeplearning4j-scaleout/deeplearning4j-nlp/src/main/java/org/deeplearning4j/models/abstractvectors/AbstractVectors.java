@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * AbstractVectors implements abstract features extraction for Sequences and SequenceElements, using SkipGram, CBOW or DBOW (for Sequence features extraction).
  *
- * DO NOT USE, IT'S JUST A DRAFT FOR FUTURE WordVectorsImpl changes
+ *
  * @author raver119@gmail.com
  */
 public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<T> implements WordVectors {
@@ -74,10 +74,14 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
             // build vocabulary from scratches
             buildVocab();
 
-            lookupTable.resetWeights(true);
+
         }
 
         if (vocab == null || lookupTable == null || vocab.numWords() == 0) throw new IllegalStateException("You can't fit() model with empty Vocabulary or WeightLookupTable");
+
+        // if model vocab and lookupTable is built externally we basically should check that lookupTable was properly initialized
+        if (!resetModel)
+            lookupTable.resetWeights(false);
 
         log.info("Starting learning process...");
         for (int currentEpoch = 1; currentEpoch <= numEpochs; currentEpoch++) {
@@ -250,26 +254,54 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
             this.window = configuration.getWindow();
         }
 
+        /**
+         * This method defines SequenceIterator to be used for model building
+         * @param iterator
+         * @return
+         */
         public Builder<T> iterate(@NonNull SequenceIterator<T> iterator) {
             this.iterator = iterator;
             return this;
         }
 
+        /**
+         * This method defines batchSize option, viable only if iterations > 1
+         *
+         * @param batchSize
+         * @return
+         */
         public Builder<T> batchSize(int batchSize) {
             this.batchSize = batchSize;
             return this;
         }
 
+        /**
+         * This method defines how much iterations should be done over batched sequences.
+         *
+         * @param iterations
+         * @return
+         */
         public Builder<T> iterations(int iterations) {
             this.iterations = iterations;
             return this;
         }
 
+        /**
+         * This method defines how much iterations should be done over whole training corpus during modelling
+         * @param numEpochs
+         * @return
+         */
         public Builder<T> epochs(int numEpochs) {
             this.numEpochs = numEpochs;
             return this;
         }
 
+        /**
+         * This method defines if Adaptive Gradients should be used in calculations
+         *
+         * @param reallyUse
+         * @return
+         */
         public Builder<T> useAdaGrad(boolean reallyUse) {
             this.useAdaGrad = reallyUse;
             return this;
@@ -299,6 +331,13 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
             return this;
         }
 
+        /**
+         * This method defines minimal element frequency for elements found in the training corpus. All elements with frequency below this threshold will be removed before training.
+         * Please note: this method has effect only if vocabulary is built internally.
+         *
+         * @param minWordFrequency
+         * @return
+         */
         public Builder<T> minWordFrequency(int minWordFrequency) {
             this.minWordFrequency = minWordFrequency;
             return this;
@@ -316,26 +355,56 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
             return this;
         }
 
+        /**
+         * This method defines, should all model be reset before training. If set to true, vocabulary and WeightLookupTable will be reset before training, and will be built from scratches
+         *
+         * @param reallyReset
+         * @return
+         */
         public Builder<T> resetModel(boolean reallyReset) {
             this.resetModel = reallyReset;
             return this;
         }
 
+        /**
+         * You can pass externally built vocabCache object, containing vocabulary
+         *
+         * @param vocabCache
+         * @return
+         */
         public Builder<T> vocabCache(@NonNull VocabCache<T> vocabCache) {
             this.vocabCache = vocabCache;
             return this;
         }
 
+        /**
+         * You can pass externally built WeightLookupTable, containing model weights and vocabulary.
+         *
+         * @param lookupTable
+         * @return
+         */
         public Builder<T> lookupTable(@NonNull WeightLookupTable<T> lookupTable) {
             this.lookupTable = lookupTable;
             return this;
         }
 
+        /**
+         * This method defines sub-sampling threshold.
+         *
+         * @param sampling
+         * @return
+         */
         public Builder<T> sampling(double sampling) {
             this.sampling = sampling;
             return this;
         }
 
+        /**
+         * This method defines negative sampling value for skip-gram algorithm.
+         *
+         * @param negative
+         * @return
+         */
         public Builder<T> negativeSample(double negative) {
             this.negative = negative;
             return this;
@@ -353,6 +422,11 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
             return this;
         }
 
+        /**
+         *
+         * @param trainElements
+         * @return
+         */
         public Builder<T> trainElementsRepresentation(boolean trainElements) {
             this.trainElementsVectors = trainElements;
             return this;
@@ -388,6 +462,13 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
             return this;
         }
 
+        /**
+         * Sets seed for random numbers generator.
+         * Please note: this has effect only if vocabulary and WeightLookupTable is built internally
+         *
+         * @param randomSeed
+         * @return
+         */
         public Builder<T> seed(long randomSeed) {
             // has no effect in original w2v actually
             return this;
@@ -419,6 +500,10 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
             }
         }
 
+        /**
+         * Build AbstractVectors instance with defined settings/options
+         * @return
+         */
         public AbstractVectors<T> build() {
             presetTables();
 
