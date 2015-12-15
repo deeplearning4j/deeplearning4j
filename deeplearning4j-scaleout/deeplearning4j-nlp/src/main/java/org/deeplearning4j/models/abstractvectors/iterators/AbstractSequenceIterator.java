@@ -24,16 +24,27 @@ public class AbstractSequenceIterator<T extends SequenceElement> implements Sequ
         this.currentIterator = iterable.iterator();
     }
 
+    /**
+     * Checks, if there's more sequences available
+     * @return
+     */
     @Override
     public boolean hasMoreSequences() {
         return currentIterator.hasNext();
     }
 
+    /**
+     * Returns next sequence out of iterator
+     * @return
+     */
     @Override
     public Sequence<T> nextSequence() {
         return currentIterator.next();
     }
 
+    /**
+     * Resets iterator to first position
+     */
     @Override
     public void reset() {
         this.currentIterator = underlyingIterable.iterator();
@@ -50,12 +61,10 @@ public class AbstractSequenceIterator<T extends SequenceElement> implements Sequ
             this.underlyingIterable = iterable;
         }
 
-        /*
-        public Builder(@NonNull SequenceTransformer<T, ?> transformer) {
-
-        }
-*/
-
+        /**
+         * Builds SequenceIterator
+         * @return
+         */
         public AbstractSequenceIterator<T> build() {
             AbstractSequenceIterator<T> iterator = new AbstractSequenceIterator<T>(underlyingIterable);
 
