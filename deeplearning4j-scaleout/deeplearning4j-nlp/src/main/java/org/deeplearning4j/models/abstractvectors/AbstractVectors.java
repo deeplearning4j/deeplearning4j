@@ -14,6 +14,7 @@ import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
+import org.deeplearning4j.models.glove.GloveWeightLookupTable;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.VocabConstructor;
@@ -39,6 +40,12 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author raver119@gmail.com
  */
 public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<T> implements WordVectors {
+    public enum TrainingAlgorithm {
+        SKIPGRAM,
+        GLOVE,
+    }
+    protected TrainingAlgorithm trainingAlgorithm;
+
     protected SequenceIterator<T> iterator;
 
     @Getter protected VectorsConfiguration configuration;
@@ -209,6 +216,8 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
         protected WeightLookupTable<T> lookupTable;
         protected SequenceIterator<T> iterator;
 
+        protected TrainingAlgorithm algorithm = TrainingAlgorithm.SKIPGRAM;
+
         protected double sampling = 0;
         protected double negative = 0;
         protected double learningRate = 0.025;
@@ -252,6 +261,7 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
             this.learningRateDecayWords = configuration.getLearningRateDecayWords();
             this.useAdaGrad = configuration.isUseAdaGrad();
             this.window = configuration.getWindow();
+            this.algorithm = configuration.getTrainingAlgorithm();
         }
 
         /**
@@ -283,6 +293,18 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
          */
         public Builder<T> iterations(int iterations) {
             this.iterations = iterations;
+            return this;
+        }
+
+        /**
+         * Algo used for learning elements representation.
+         * Currently available: SKIPGRAM, GLOVE
+         *
+         * @param algo
+         * @return
+         */
+        public Builder<T> trainingAlgorithm(@NonNull TrainingAlgorithm algo) {
+
             return this;
         }
 
@@ -489,7 +511,23 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
                             .build();
                 }
 
-                lookupTable = new InMemoryLookupTable.Builder<T>()
+
+
+                /*
+                    only GLOVE requires special lookup table.
+                    So, it would be nice if two these classes gets merged somehow
+               */
+                if (algorithm == TrainingAlgorithm.GLOVE) {
+                    lookupTable = new GloveWeightLookupTable.Builder<T>()
+                            .useAdaGrad(this.useAdaGrad)
+                            .cache(vocabCache)
+                            .negative(negative)
+                            .vectorLength(layerSize)
+                            .lr(learningRate)
+                            .seed(seed)
+                            .build();
+                } else {
+                    lookupTable = new InMemoryLookupTable.Builder<T>()
                         .useAdaGrad(this.useAdaGrad)
                         .cache(vocabCache)
                         .negative(negative)
@@ -497,6 +535,7 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
                         .lr(learningRate)
                         .seed(seed)
                         .build();
+                }
             }
         }
 
@@ -526,6 +565,7 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
 
             vectors.iterator = this.iterator;
             vectors.lookupTable = this.lookupTable;
+            vectors.trainingAlgorithm = this.algorithm;
 
             this.configuration.setLearningRate(this.learningRate);
             this.configuration.setLayersSize(layerSize);
@@ -541,6 +581,7 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
             this.configuration.setUseAdaGrad(useAdaGrad);
             this.configuration.setNegative(negative);
             this.configuration.setEpochs(this.numEpochs);
+            this.configuration.setTrainingAlgorithm(this.algorithm);
 
             vectors.configuration = this.configuration;
 
