@@ -23,7 +23,7 @@ Contents
 
 Word2vec is a two-layer neural net that processes text. Its input is a text corpus and its output is a set of vectors: feature vectors for words in that corpus. While Word2vec is not a [deep neural network](../neuralnet-overview.html), it turns text into a numerical form that deep nets can understand. 
 
-Word2vec's applications extend beyond parsing sentences in the wild. It can be applied just as well to genes, code, playlists, social media graphs and other verbal or symbolic series in which patterns may be discerned. [Deeplearning4j](http://deeplearning4j.org/quickstart.html) implements a distributed form of Word2vec for Java and [Scala](../scala.html), which works on Spark with GPUs. 
+Word2vec's applications extend beyond parsing sentences in the wild. It can be applied just as well to <a href="#abstract">genes, code, playlists, social media graphs and other verbal or symbolic series</a> in which patterns may be discerned. [Deeplearning4j](http://deeplearning4j.org/quickstart.html) implements a distributed form of Word2vec for Java and [Scala](../scala.html), which works on Spark with GPUs. 
 
 The purpose and usefulness of Word2vec is to group the vectors of similar words together in vectorspace. That is, it detects similarities mathematically. Word2vec creates vectors that are distributed numerical representations of word features, features such as the context of individual words. It does so without human intervention. 
 
@@ -417,6 +417,10 @@ While words in all languages may be converted into vectors with Word2vec, and th
 Loading and saving GloVe models to word2vec can be done like so:
 
         WordVectors wordVectors = WordVectorSerializer.loadTxtVectors(new File("glove.6B.50d.txt"));
+
+### <a name="abstract">Abstract Vectors</a>
+
+Deeplearning4j has a class called [AbstractVectors](https://github.com/deeplearning4j/deeplearning4j/blob/DistributedLookupTable_implementation/deeplearning4j-scaleout/deeplearning4j-nlp/src/test/java/org/deeplearning4j/models/abstractvectors/AbstractVectorsTest.java), which is one level of abstraction above word vectors, and which allows you to extract features from any sequence, including social media profiles, transactions, proteins, etc. If data can be described as sequence, it can be learned via skip-gram and hierarchic softmax with the AbstractVectors class. This is compatible with the [DeepWalk algorithm](https://github.com/deeplearning4j/deeplearning4j/blob/1ee1666d3a02953fc41ef41542668dd14e020396/deeplearning4j-scaleout/deeplearning4j-graph/src/main/java/org/deeplearning4j/graph/models/DeepWalk/DeepWalk.java), also implemented in Deeplearning4j. 
 
 ### <a name="features">Word2Vec Features on Deeplearning4j</a>
 
