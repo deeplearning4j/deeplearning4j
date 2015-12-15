@@ -54,7 +54,6 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
 
         VocabConstructor<T> constructor = new VocabConstructor.Builder<T>()
                 .addSource(iterator, minWordFrequency)
-                .useAdaGrad(false)
                 .setTargetVocabCache(vocab)
                 .fetchLabels(trainSequenceVectors)
                 .build();
@@ -73,15 +72,17 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
         if (resetModel || (lookupTable != null && vocab != null && vocab.numWords() == 0)) {
             // build vocabulary from scratches
             buildVocab();
-
-
         }
 
         if (vocab == null || lookupTable == null || vocab.numWords() == 0) throw new IllegalStateException("You can't fit() model with empty Vocabulary or WeightLookupTable");
 
         // if model vocab and lookupTable is built externally we basically should check that lookupTable was properly initialized
-        if (!resetModel)
+        if (!resetModel) {
             lookupTable.resetWeights(false);
+        } else {
+            // otherwise we reset weights, independent of actual current state of lookup table
+            lookupTable.resetWeights(true);
+        }
 
         log.info("Starting learning process...");
         for (int currentEpoch = 1; currentEpoch <= numEpochs; currentEpoch++) {
@@ -186,7 +187,6 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
      */
     protected void  iterate(T w1, T w2,AtomicLong nextRandom,double alpha) {
         lookupTable.iterateSample(w1,w2,nextRandom,alpha);
-
     }
 
     protected void trainSequence(@NonNull Sequence<T> sequence, AtomicLong nextRandom, double alpha) {
@@ -600,9 +600,27 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
                             T realElement = vocab.wordFor(element.getLabel());
 
                             // please note: this serquence element CAN be absent in vocab, due to minFreq or stopWord or whatever else
-                            if (realElement != null) newSequence.addElement(realElement);
+                            if (realElement != null) {
+/*
+                                // subsampling implementation, if subsampling threshold met, just continue to next element
+                                if (sampling > 0) {
+                                    double numWords =  vocab.totalWordOccurrences();
+                                    double ran = (Math.sqrt(element.getElementFrequency() / (sampling * numWords)) + 1)
+                                            * (sampling * numWords) / element.getElementFrequency();
+
+                                    nextRandom.set(nextRandom.get() * 25214903917L + 11 );
+
+                                    if (ran < (nextRandom.get() & 0xFFFF) / (double) 65536) {
+                                        continue;
+                                    }
+                                }
+*/
+                                newSequence.addElement(realElement);
+                            }
                         }
-                        buffer.add(newSequence);
+
+                        // due to subsampling and null words, new sequence size CAN be 0, so there's no need to insert empty sequence into processing chain
+                        if (newSequence.getElements().size() > 0) buffer.add(newSequence);
 
                         linesLoaded.incrementAndGet();
                     }
@@ -703,9 +721,8 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
                         }
                     }
 
-                    // increment processed lines count
+
                 } catch (Exception  e) {
-                    e.printStackTrace();
                     throw new RuntimeException(e);
                 }
             }

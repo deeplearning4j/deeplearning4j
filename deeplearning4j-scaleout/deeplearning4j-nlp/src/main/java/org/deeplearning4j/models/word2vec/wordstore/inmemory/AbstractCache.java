@@ -7,10 +7,7 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -85,7 +82,7 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      */
     @Override
     public Collection<String> words() {
-        return null;
+        return Collections.unmodifiableCollection(vocabulary.keySet());
     }
 
     /**

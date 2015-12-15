@@ -201,16 +201,36 @@ public class VocabConstructor<T extends SequenceElement> {
 
         }
 
-        public Builder<T> useAdaGrad(boolean useAdaGrad) {
+        /**
+         * Defines, if adaptive gradients should be created during vocabulary mastering
+         *
+         * @param useAdaGrad
+         * @return
+         */
+        protected Builder<T> useAdaGrad(boolean useAdaGrad) {
             this.useAdaGrad = useAdaGrad;
             return this;
         }
 
+        /**
+         * After temporary internal vocabulary is built, it will be transferred to target VocabCache you pass here
+         *
+         * @param cache target VocabCache
+         * @return
+         */
         public Builder<T> setTargetVocabCache(@NonNull VocabCache<T> cache) {
             this.cache = cache;
             return this;
         }
 
+        /**
+         * Adds SequenceIterator for vocabulary construction.
+         * Please note, you can add as many sources, as you wish.
+         *
+         * @param iterator SequenceIterator to build vocabulary from
+         * @param minElementFrequency elements with frequency below this value will be removed from vocabulary
+         * @return
+         */
         public Builder<T> addSource(@NonNull SequenceIterator<T> iterator, int minElementFrequency) {
             sources.add(new VocabSource<T>(iterator, minElementFrequency));
             return this;
