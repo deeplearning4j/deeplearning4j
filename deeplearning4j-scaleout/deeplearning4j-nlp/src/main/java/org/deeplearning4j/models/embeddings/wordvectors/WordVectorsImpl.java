@@ -520,7 +520,9 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
 
 
     /**
-     * Returns the similarity of 2 words
+     * Returns the similarity of 2 words. Result value will be in range [-1,1], where -1.0 is exact opposite similarity, i.e. NO similarity, and 1.0 is total match of two word vectors.
+     * However, most of time you'll see values in range [0,1], but that's something depends of training corpus.
+     *
      * @param word the first word
      * @param word2 the second word
      * @return a normalized similarity (cosine similarity)
