@@ -109,4 +109,12 @@ public class Sequence<T extends SequenceElement> implements Serializable {
     public void setSequenceLabel(@NonNull T label) {
        this.label = label;
     }
+
+    @Override
+    public String toString() {
+        return "Sequence{" +
+                " label=" + label +
+                ", elements=" + elements +
+                '}';
+    }
 }

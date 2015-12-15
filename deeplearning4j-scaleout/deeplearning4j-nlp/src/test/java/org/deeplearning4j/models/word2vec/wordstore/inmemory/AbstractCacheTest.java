@@ -5,6 +5,8 @@ import org.deeplearning4j.models.word2vec.VocabWord;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Collection;
+
 import static org.junit.Assert.*;
 
 /**
@@ -79,5 +81,22 @@ public class AbstractCacheTest {
         cache.removeElement("tester");
         assertEquals(2, cache.numWords());
         assertEquals(3, cache.totalWordOccurrences());
+    }
+
+    @Test
+    public void testLabels() throws Exception {
+        AbstractCache<VocabWord>  cache = new AbstractCache.Builder<VocabWord>()
+                .build();
+
+        cache.addToken(new VocabWord(1.0, "word"));
+        cache.addToken(new VocabWord(2.0, "test"));
+        cache.addToken(new VocabWord(3.0, "tester"));
+
+        Collection<String> collection = cache.words();
+        assertEquals(3, collection.size());
+
+        assertTrue(collection.contains("word"));
+        assertTrue(collection.contains("test"));
+        assertTrue(collection.contains("tester"));
     }
 }

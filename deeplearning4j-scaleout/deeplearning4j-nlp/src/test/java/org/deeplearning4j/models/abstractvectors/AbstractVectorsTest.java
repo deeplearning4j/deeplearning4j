@@ -76,7 +76,6 @@ public class AbstractVectorsTest {
         */
         VocabConstructor<VocabWord> constructor = new VocabConstructor.Builder<VocabWord>()
                 .addSource(sequenceIterator, 5)
-                .useAdaGrad(false)
                 .setTargetVocabCache(vocabCache)
                 .build();
 
