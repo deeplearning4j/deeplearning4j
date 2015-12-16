@@ -117,6 +117,11 @@ public class BasicLineIterator implements SentenceIterator, Iterable<String> {
             public String next() {
                 return BasicLineIterator.this.nextSentence();
             }
+
+            @Override
+            public void remove() {
+                throw new UnsupportedOperationException();
+            }
         };
 
         return ret;

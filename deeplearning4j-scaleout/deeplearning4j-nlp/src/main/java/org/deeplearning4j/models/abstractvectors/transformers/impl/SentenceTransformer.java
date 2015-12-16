@@ -77,6 +77,11 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
 
                 return sequence;
             }
+
+            @Override
+            public void remove() {
+                throw new UnsupportedOperationException();
+            }
         };
     }
 
