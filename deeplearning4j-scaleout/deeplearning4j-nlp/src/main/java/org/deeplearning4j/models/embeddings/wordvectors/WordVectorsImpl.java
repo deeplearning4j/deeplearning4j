@@ -22,6 +22,8 @@ import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Getter;
 import org.deeplearning4j.berkeley.Counter;
+import org.deeplearning4j.clustering.sptree.DataPoint;
+import org.deeplearning4j.clustering.vptree.VPTree;
 import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
@@ -62,6 +64,8 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
     protected int workers = Runtime.getRuntime().availableProcessors();
     protected boolean trainSequenceVectors = false;
     protected boolean trainElementsVectors = true;
+
+    protected transient VPTree vpTree;
 
     public final static String UNK = "UNK";
     @Getter protected List<String> stopWords = new ArrayList<>(); //StopWords.getStopWords();
@@ -508,11 +512,49 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
 
 
     /**
+     * This method returns nearest words for target word, based on tree structure.
+     * This method is recommended to use if you're going to call for nearest words multiple times.
+     *
+     * @param word
+     * @param n
+     * @param resetTree
+     * @return
+     */
+    public Collection<String> wordsNearest(String word, int n, boolean resetTree) {
+        if (!vocab.hasToken(word)) return new ArrayList<>();
+
+        // build new tree if it wasnt created before, or resetTree == TRUE
+        if (vpTree == null || resetTree) {
+            List<DataPoint> points = new ArrayList<>();
+            for (String label: vocab.words()) {
+                points.add(new DataPoint(vocab.indexOf(label), getWordVectorMatrix(label)));
+            }
+            vpTree = new VPTree(points);
+
+        }
+        List<DataPoint> add = new ArrayList<>();
+        List<Double> distances = new ArrayList<>();
+
+        // we need n+1 to address original datapoint removal
+        vpTree.search(new DataPoint(0, getWordVectorMatrix(word)), n+1, add, distances );
+
+        Collection<String> ret = new ArrayList<>();
+        for (DataPoint e: add) {
+            String label  = vocab.wordAtIndex(e.getIndex());
+            if (!label.equals(word)) ret.add(label);
+        }
+
+        return ret;
+    }
+
+
+    /**
      * Get the top n words most similar to the given word
      * @param word the word to compare
      * @param n the n to get
      * @return the top n words
      */
+    @Deprecated
     public Collection<String> wordsNearest(String word,int n) {
         return wordsNearest(Arrays.asList(word),new ArrayList<String>(),n);
 
