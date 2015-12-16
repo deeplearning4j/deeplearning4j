@@ -22,13 +22,15 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.base.MnistFetcher;
 import org.deeplearning4j.datasets.mnist.MnistManager;
+import org.deeplearning4j.util.MathUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.factory.Nd4j;
 
 
 /**
@@ -37,16 +39,16 @@ import org.nd4j.linalg.util.ArrayUtil;
  *
  */
 public class MnistDataFetcher extends BaseDataFetcher {
-
-    /**
-     *
-     */
     private static final long serialVersionUID = -3218754671561789818L;
     private transient MnistManager man;
-    public final static int NUM_EXAMPLES = 60000;
+    public static final int NUM_EXAMPLES = 60000;
+    public static final int NUM_EXAMPLES_TEST = 10000;
     private static final String TEMP_ROOT = System.getProperty("user.home");
     private static final String MNIST_ROOT = TEMP_ROOT + File.separator + "MNIST" + File.separator;
     private boolean binarize = true;
+    private boolean train;
+    private int[] order;
+    private Random rng;
 
 
     /**
@@ -55,23 +57,59 @@ public class MnistDataFetcher extends BaseDataFetcher {
      * @throws IOException
      */
     public MnistDataFetcher(boolean binarize) throws IOException {
-        if(!new File(MNIST_ROOT).exists()) {
+        this(binarize,true,true,System.currentTimeMillis());
+    }
+
+    public MnistDataFetcher(boolean binarize, boolean train, boolean shuffle, long rngSeed) throws IOException {
+        if(!mnistExists()) {
             new MnistFetcher().downloadAndUntar();
         }
+        String images;
+        String labels;
+        if(train){
+            images = MNIST_ROOT + MnistFetcher.trainingFilesFilename_unzipped;
+            labels = MNIST_ROOT + MnistFetcher.trainingFileLabelsFilename_unzipped;
+            totalExamples = NUM_EXAMPLES;
+        } else {
+            images = MNIST_ROOT + MnistFetcher.testFilesFilename_unzipped;
+            labels = MNIST_ROOT + MnistFetcher.testFileLabelsFilename_unzipped;
+            totalExamples = NUM_EXAMPLES_TEST;
+        }
         try {
-            man = new MnistManager(MNIST_ROOT + MnistFetcher.trainingFilesFilename_unzipped, MNIST_ROOT + MnistFetcher.trainingFileLabelsFilename_unzipped);
+            man = new MnistManager(images, labels, train);
         }catch(Exception e) {
             FileUtils.deleteDirectory(new File(MNIST_ROOT));
             new MnistFetcher().downloadAndUntar();
-            man = new MnistManager(MNIST_ROOT + MnistFetcher.trainingFilesFilename_unzipped, MNIST_ROOT + MnistFetcher.trainingFileLabelsFilename_unzipped);
+            man = new MnistManager(images, labels, train);
 
         }
         numOutcomes = 10;
         this.binarize = binarize;
-        totalExamples = NUM_EXAMPLES;
         cursor = 0;
         inputColumns = man.getImages().getEntryLength();
+        this.train = train;
 
+        if(train){
+            order = new int[NUM_EXAMPLES];
+        } else {
+            order = new int[NUM_EXAMPLES_TEST];
+        }
+        for( int i=0; i<order.length; i++ ) order[i] = i;
+        rng = new Random(rngSeed);
+        reset();    //Shuffle order
+    }
+
+    private boolean mnistExists(){
+        //Check 4 files:
+        File f = new File(MNIST_ROOT,MnistFetcher.trainingFilesFilename_unzipped);
+        if(!f.exists()) return false;
+        f = new File(MNIST_ROOT,MnistFetcher.trainingFileLabelsFilename_unzipped);
+        if(!f.exists()) return false;
+        f = new File(MNIST_ROOT,MnistFetcher.testFilesFilename_unzipped);
+        if(!f.exists()) return false;
+        f = new File(MNIST_ROOT,MnistFetcher.testFileLabelsFilename_unzipped);
+        if(!f.exists()) return false;
+        return true;
     }
 
     public MnistDataFetcher() throws IOException {
@@ -85,23 +123,44 @@ public class MnistDataFetcher extends BaseDataFetcher {
         }
 
         //we need to ensure that we don't overshoot the number of examples total
-        List<DataSet> toConvert = new ArrayList<>();
+        List<DataSet> toConvert = new ArrayList<>(numExamples);
+        for( int i=0; i<numExamples; i++, cursor++ ){
+            if(!hasMore()) {
+                break;
+            }
 
+            byte[] img = man.readImageUnsafe(order[i]);
+            INDArray in = Nd4j.create(1, img.length);
+            for( int j=0; j<img.length; j++ ){
+                in.putScalar(j, ((int)img[j]) & 0xFF);  //byte is loaded as signed -> convert to unsigned
+            }
+
+            INDArray out = createOutputVector(man.readLabel(i));
+
+            toConvert.add(new DataSet(in,out));
+        }
+        initializeCurrFromList(toConvert);
+
+        /*
         for(int i = 0; i < numExamples; i++,cursor++) {
             if(!hasMore()) {
                 break;
             }
-            if(man == null) {
-                try {
-                    man = new MnistManager(MNIST_ROOT + MnistFetcher.trainingFilesFilename_unzipped,MNIST_ROOT + MnistFetcher.trainingFileLabelsFilename_unzipped);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            man.setCurrent(cursor);
+//            if(man == null) {
+//                try {
+//                    if(train) man = new MnistManager(MNIST_ROOT + MnistFetcher.trainingFilesFilename_unzipped,MNIST_ROOT + MnistFetcher.trainingFileLabelsFilename_unzipped, train);
+//                    else man = new MnistManager(MNIST_ROOT + MnistFetcher.testFilesFilename_unzipped,MNIST_ROOT + MnistFetcher.testFileLabelsFilename_unzipped, train);
+//                } catch (IOException e) {
+//                    throw new RuntimeException(e);
+//                }
+//            }
+//            man.setCurrent(cursor);
             //note data normalization
             try {
-                INDArray in = ArrayUtil.toNDArray(ArrayUtil.flatten(man.readImage()));
+
+
+
+                INDArray in = ArrayUtil.toNDArray(ArrayUtil.flatten(man.readImageUnsafe()));
                 if(binarize) {
                     for(int d = 0; d < in.length(); d++) {
                         if(in.getDouble(d) > 30) {
@@ -133,19 +192,14 @@ public class MnistDataFetcher extends BaseDataFetcher {
                 throw new IllegalStateException("Unable to read image");
 
             }
-        }
-
-
-        initializeCurrFromList(toConvert);
-
-
-
+        }*/
     }
 
     @Override
     public void reset() {
         cursor = 0;
         curr = null;
+        MathUtils.shuffleArray(order, rng);
     }
 
     @Override

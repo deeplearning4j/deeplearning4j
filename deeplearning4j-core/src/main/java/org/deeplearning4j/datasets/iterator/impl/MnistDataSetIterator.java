@@ -40,8 +40,25 @@ public class MnistDataSetIterator extends BaseDatasetIterator {
      * @param binarize whether to binarize mnist or not
      * @throws IOException
      */
-    public MnistDataSetIterator(int batch,int numExamples,boolean binarize) throws IOException {
-        super(batch, numExamples,new MnistDataFetcher(binarize));
+    public MnistDataSetIterator(int batch, int numExamples, boolean binarize) throws IOException {
+        this(batch,numExamples,binarize,true,false,System.currentTimeMillis());
+    }
+
+    public MnistDataSetIterator(int batchSize, boolean train) throws IOException{
+        this(batchSize, (train ? MnistDataFetcher.NUM_EXAMPLES : MnistDataFetcher.NUM_EXAMPLES_TEST), false, train, true, System.currentTimeMillis());
+    }
+
+    /**
+     *
+     * @param batch Size of each patch
+     * @param numExamples total number of examples to load
+     * @param binarize whether to binarize the data or not (if false: normalize in range 0 to 1)
+     * @param train Train vs. test set
+     * @param shuffle whether to shuffle the examples
+     * @param rngSeed random number generator seed to use when shuffling examples
+     */
+    public MnistDataSetIterator(int batch, int numExamples, boolean binarize, boolean train, boolean shuffle, long rngSeed) throws IOException {
+        super(batch, numExamples,new MnistDataFetcher(binarize,train,shuffle,rngSeed));
     }
 
 
