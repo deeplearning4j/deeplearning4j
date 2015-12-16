@@ -57,3 +57,5 @@ deep-learningで学習させるときには非常に多くのパラメタを調�
 DL4Jが開発者のdeep-learning用のDIYツールとなると思います。
 
 もし何かご質問、ご要望などありましたら遠慮無く[Gitter](https://gitter.im/deeplearning4j/deeplearning4j?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)に参加してください。プレミアムサポートをご要望の方は[Skymind](http://www.skymind.io/contact/)までご連絡ください。
+
+[固有ベクトル、主成分分析、共分散、エントロピー入門](http://deeplearning4j.org/ja-eigenvector.html)
