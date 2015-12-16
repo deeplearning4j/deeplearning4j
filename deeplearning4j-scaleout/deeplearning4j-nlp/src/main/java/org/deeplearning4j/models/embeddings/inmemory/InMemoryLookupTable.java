@@ -527,6 +527,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
         this.syn1 = syn1;
     }
 
+    @Override
     public int getVectorLength() {
         return vectorLength;
     }
