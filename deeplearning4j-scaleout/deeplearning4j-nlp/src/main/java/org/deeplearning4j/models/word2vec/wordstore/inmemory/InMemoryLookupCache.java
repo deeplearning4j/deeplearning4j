@@ -18,13 +18,8 @@
 
 package org.deeplearning4j.models.word2vec.wordstore.inmemory;
 
-import lombok.Data;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.LineIterator;
 import org.deeplearning4j.berkeley.Counter;
-import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.VocabWord;
-import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.movingwindow.Util;
 import org.deeplearning4j.util.Index;
