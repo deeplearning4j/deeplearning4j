@@ -80,6 +80,23 @@ public class MnistManager {
         System.out.println();
     }
 
+    public MnistManager(String imagesFile, String labelsFile) throws IOException{
+        this(imagesFile,labelsFile,true);
+    }
+
+    /**
+     * Reads the current image.
+     *
+     * @return matrix
+     * @throws IOException
+     */
+    public int[][] readImage() throws IOException {
+        if (images == null) {
+            throw new IllegalStateException("Images file not initialized.");
+        }
+        return images.readImage();
+    }
+
     public byte[] readImageUnsafe(int i){
         return imagesArr[i];
     }
