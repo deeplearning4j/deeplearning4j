@@ -54,6 +54,13 @@ public class MnistLabelFile extends MnistDbFile {
         return readUnsignedByte();
     }
 
+    /** Read the specified number of labels from the current position*/
+    public int[] readLabels(int num) throws IOException {
+        int[] out = new int[num];
+        for( int i=0; i<num; i++ ) out[i] = readLabel();
+        return out;
+    }
+
     @Override
     protected int getMagicNumber() {
         return 2049;
