@@ -280,6 +280,11 @@ public class JointStorage<T extends SequenceElement> implements WeightLookupTabl
         return null;
     }
 
+    @Override
+    public int getVectorLength() {
+        return 0;
+    }
+
     public static class Builder<T extends SequenceElement> {
         private Map<Long, WeightLookupTable<T>> mapTables = new ConcurrentHashMap<>();
         private Map<Long, VocabCache<T>> mapVocabs = new ConcurrentHashMap<>();
