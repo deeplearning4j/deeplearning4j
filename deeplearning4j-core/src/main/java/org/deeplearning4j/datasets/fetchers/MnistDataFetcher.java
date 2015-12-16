@@ -49,6 +49,7 @@ public class MnistDataFetcher extends BaseDataFetcher {
     private boolean train;
     private int[] order;
     private Random rng;
+    private boolean shuffle;
 
 
     /**
@@ -88,6 +89,7 @@ public class MnistDataFetcher extends BaseDataFetcher {
         cursor = 0;
         inputColumns = man.getImages().getEntryLength();
         this.train = train;
+        this.shuffle = shuffle;
 
         if(train){
             order = new int[NUM_EXAMPLES];
@@ -129,13 +131,26 @@ public class MnistDataFetcher extends BaseDataFetcher {
                 break;
             }
 
-            byte[] img = man.readImageUnsafe(order[i]);
+            byte[] img = man.readImageUnsafe(order[cursor]);
             INDArray in = Nd4j.create(1, img.length);
             for( int j=0; j<img.length; j++ ){
                 in.putScalar(j, ((int)img[j]) & 0xFF);  //byte is loaded as signed -> convert to unsigned
             }
 
-            INDArray out = createOutputVector(man.readLabel(i));
+            if(binarize) {
+                for(int d = 0; d < in.length(); d++) {
+                    if(in.getDouble(d) > 30) {
+                        in.putScalar(d,1);
+                    }
+                    else {
+                        in.putScalar(d,0);
+                    }
+                }
+            } else {
+                in.divi(255);
+            }
+
+            INDArray out = createOutputVector(man.readLabel(cursor));
 
             toConvert.add(new DataSet(in,out));
         }
@@ -199,7 +214,7 @@ public class MnistDataFetcher extends BaseDataFetcher {
     public void reset() {
         cursor = 0;
         curr = null;
-        MathUtils.shuffleArray(order, rng);
+        if(shuffle) MathUtils.shuffleArray(order, rng);
     }
 
     @Override
