@@ -164,6 +164,23 @@ A gated recurrent unit (GRU) is basically an LSTM without an output gate, which 
 
 A [commented example of a Graves LSTM](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/rnn/GravesLSTMCharModellingExample.java) learning how to replicate Shakespearian drama, and implemented with Deeplearning4j, can be found here. The API is commented where it's not self-explanatory. If you have questions, please join us on [Gitter](gitter.im/deeplearning4j/deeplearning4j).
 
+## <a name="tuning">LSTM Hyperparameter Tuning</a>
+
+Here are a few ideas to keep in mind when manually optimizing hyperparameters for RNNs:
+
+* Watch out for *overfitting*, which happens when a neural network essentially "memorizes" the training data. Overfitting means you get great performance on training data, but the network's model is useless for out-of-sample prediction.
+* Regularization helps: regularization methods include l1, l2, and dropout among others.
+* So have a separate test set on which the network doesn't train.
+* The larger the network, the more powerful, but it's also easier to overfit. Don't want to try to learn a million parameters from 10,000 examples -- `parameters > examples = trouble`. 
+* More data is almost always better, because it helps fight overfitting. 
+* Train over multiple epochs (complete passes through the dataset). 
+* Evaluate test set performance at each epoch to know when to stop (early stopping).
+* The learning rate is the single most important hyperparameter. Tune this using [deeplearning4j-ui](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-ui); see [this graph] (http://cs231n.github.io/neural-networks-3/#baby)
+* In general, stacking layers can help.
+* For LSTMs, use the softsign (not softmax) activation function over tanh (it's faster and less prone to saturation (~0 gradients)).
+* Updaters: RMSProp, AdaGrad or momentum (Nesterovs) are usually good choices. AdaGrad also decays the learning rate, which can help sometimes.
+* Finally, remember data normalization, MSE loss function + identity activation function for regression, [Xavier weight initialization](../glossary.html#xavier)
+
 ## <a name="resources">Resources</a>
 * [DRAW: A Recurrent Neural Network For Image Generation](http://arxiv.org/pdf/1502.04623v2.pdf); (attention models)
 * [Gated Feedback Recurrent Neural Networks](http://arxiv.org/pdf/1502.02367v4.pdf)
