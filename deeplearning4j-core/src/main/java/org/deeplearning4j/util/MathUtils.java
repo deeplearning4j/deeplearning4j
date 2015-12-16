@@ -1291,4 +1291,18 @@ public class MathUtils  {
     public static double randomDoubleBetween(double begin,double end) {
         return	begin + (Math.random() * ((end - begin)));
     }
+
+    public static void shuffleArray(int[] array, long rngSeed) {
+        shuffleArray(array,new Random(rngSeed));
+    }
+
+    public static void shuffleArray(int[] array, Random rng ){
+        //https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm
+        for(int i=array.length-1; i>0; i-- ){
+            int j = rng.nextInt(i+1);
+            int temp = array[j];
+            array[j] = array[i];
+            array[i] = temp;
+        }
+    }
 }
