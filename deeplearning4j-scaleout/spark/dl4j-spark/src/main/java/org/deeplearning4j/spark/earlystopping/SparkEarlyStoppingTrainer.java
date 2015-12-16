@@ -16,54 +16,63 @@
  *
  */
 
-package org.deeplearning4j.earlystopping.trainer;
+package org.deeplearning4j.spark.earlystopping;
 
-import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.apache.spark.SparkContext;
+import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaSparkContext;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.EarlyStoppingResult;
 import org.deeplearning4j.earlystopping.scorecalc.ScoreCalculator;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.earlystopping.termination.EpochTerminationCondition;
 import org.deeplearning4j.earlystopping.termination.IterationTerminationCondition;
+import org.deeplearning4j.earlystopping.trainer.IEarlyStoppingTrainer;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.nd4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**Class for conducting early stopping training locally (single machine)
+/**Class for conducting early stopping training via Spark
  */
-public class EarlyStoppingTrainer implements IEarlyStoppingTrainer {
+public class SparkEarlyStoppingTrainer implements IEarlyStoppingTrainer {
 
-    private static Logger log = LoggerFactory.getLogger(EarlyStoppingTrainer.class);
+    private static Logger log = LoggerFactory.getLogger(SparkEarlyStoppingTrainer.class);
 
+    private JavaSparkContext sc;
     private final EarlyStoppingConfiguration esConfig;
     private MultiLayerNetwork net;
-    private final DataSetIterator train;
+    private final JavaRDD<DataSet> train;
+    private final int examplesPerFit;
 
     private double bestModelScore = Double.MAX_VALUE;
     private int bestModelEpoch = -1;
 
 
-    public EarlyStoppingTrainer(EarlyStoppingConfiguration earlyStoppingConfiguration, MultiLayerConfiguration configuration,
-                                DataSetIterator train) {
-        this(earlyStoppingConfiguration,new MultiLayerNetwork(configuration),train);
+    public SparkEarlyStoppingTrainer(JavaSparkContext sc, EarlyStoppingConfiguration earlyStoppingConfiguration, MultiLayerConfiguration configuration,
+                                     JavaRDD<DataSet> train, int examplesPerFit) {
+        this(sc, earlyStoppingConfiguration,new MultiLayerNetwork(configuration),train, examplesPerFit);
         net.init();
     }
 
-    public EarlyStoppingTrainer(EarlyStoppingConfiguration esConfig, MultiLayerNetwork net,
-                                DataSetIterator train) {
+    public SparkEarlyStoppingTrainer(JavaSparkContext sc, EarlyStoppingConfiguration esConfig, MultiLayerNetwork net,
+                                     JavaRDD<DataSet> train, int examplesPerFit) {
         if((esConfig.getEpochTerminationConditions() == null || esConfig.getEpochTerminationConditions().size() == 0)
                 && (esConfig.getIterationTerminationConditions() == null || esConfig.getIterationTerminationConditions().size() == 0)){
             throw new IllegalArgumentException("Cannot conduct early stopping without a termination condition (both Iteration "
                 + "and Epoch termination conditions are null/empty)");
         }
+        this.sc = sc;
         this.esConfig = esConfig;
         this.net = net;
         this.train = train;
+        this.examplesPerFit = examplesPerFit;
     }
 
     @Override
@@ -85,19 +94,42 @@ public class EarlyStoppingTrainer implements IEarlyStoppingTrainer {
 
         Map<Integer,Double> scoreVsEpoch = new LinkedHashMap<>();
 
+        SparkDl4jMultiLayer sparkNetwork = new SparkDl4jMultiLayer(sc, net);
+
+
         int epochCount = 0;
         while (true) {
-            train.reset();
             double lastScore;
             boolean terminate = false;
             IterationTerminationCondition terminationReason = null;
             int iterCount = 0;
-            while (train.hasNext()) {
-                DataSet ds = train.next();
 
-                try {
-                    net.fit(ds);
-                } catch(Exception e){
+            //Create random split of RDD:
+            int nSplits;
+            long nExamples = train.count();
+            if(nExamples%examplesPerFit==0){
+                nSplits = (int)(nExamples / examplesPerFit);
+            } else {
+                nSplits = (int)(nExamples / examplesPerFit) + 1;
+            }
+
+            JavaRDD<DataSet>[] subsets;
+            if(nSplits == 1){
+                sparkNetwork.fitDataSet(train);
+
+                subsets = (JavaRDD<DataSet>[])Array.newInstance(JavaRDD.class,1);   //new Object[]{train};
+                subsets[0] = train;
+            } else {
+                double[] splitWeights = new double[nSplits];
+                for( int i=0; i<nSplits; i++ ) splitWeights[i] = 1.0 / nSplits;
+                subsets = train.randomSplit(splitWeights);
+            }
+
+            for( int i=0; i<subsets.length; i++ ){
+                log.info("Initiating distributed training of subset {} of {}",(i+1),subsets.length);
+                try{
+                    sparkNetwork.fitDataSet(subsets[i]);
+                }catch(Exception e){
                     log.warn("Early stopping training terminated due to exception at epoch {}, iteration {}",
                             epochCount,iterCount,e);
                     //Load best model to return
@@ -118,7 +150,7 @@ public class EarlyStoppingTrainer implements IEarlyStoppingTrainer {
                 }
 
                 //Check per-iteration termination conditions
-                lastScore = net.score();
+                lastScore = sparkNetwork.getScore();
                 for (IterationTerminationCondition c : esConfig.getIterationTerminationConditions()) {
                     if (c.terminate(lastScore)) {
                         terminate = true;
@@ -130,6 +162,7 @@ public class EarlyStoppingTrainer implements IEarlyStoppingTrainer {
 
                 iterCount++;
             }
+
             if(terminate){
                 //Handle termination condition:
                 log.info("Hit per iteration epoch termination condition at epoch {}, iteration {}. Reason: {}",
