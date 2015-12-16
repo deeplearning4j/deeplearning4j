@@ -155,6 +155,12 @@ While support-vector machines are not neural networks, they are an important alg
 
 - [Reddit](https://www.reddit.com/r/MachineLearning/comments/2uynqa/please_explain_support_vector_regression_like_im/)
 
+### <a name="tensors">Tensors</a>
+
+Here is an example of tensor along dimension (TAD):
+
+![Alt text](../img/tensorAlongDimension.png)
+
 ### <a name="vectors">Vector</a>
 
 [Word2vec](../word2vec.html) and other neural networks represent input as vectors.
