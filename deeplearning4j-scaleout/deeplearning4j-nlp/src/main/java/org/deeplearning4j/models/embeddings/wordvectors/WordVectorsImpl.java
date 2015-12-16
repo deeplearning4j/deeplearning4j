@@ -19,8 +19,10 @@
 package org.deeplearning4j.models.embeddings.wordvectors;
 
 import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Getter;
 import org.deeplearning4j.berkeley.Counter;
+import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -38,15 +40,31 @@ import java.util.*;
  * Common word vector operations
  * @author Adam Gibson
  */
-public class WordVectorsImpl implements WordVectors {
+public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
 
     //number of times the word must occur in the vocab to appear in the calculations, otherwise treat as unknown
     @Getter protected int minWordFrequency = 5;
-    @Getter protected WeightLookupTable lookupTable;
-    @Getter protected VocabCache vocab;
+    @Getter protected WeightLookupTable<T> lookupTable;
+    @Getter protected VocabCache<T> vocab;
     @Getter protected int layerSize = 100;
+
+    protected int numIterations = 1;
+    protected int numEpochs = 1;
+    protected double negative = 0;
+    protected double sampling = 0;
+    protected AtomicDouble learningRate = new AtomicDouble(0.025);
+    protected double minLearningRate = 0.01;
+    @Getter protected int window = 5;
+    protected int batchSize;
+    protected int learningRateDecayWords;
+    protected boolean resetModel;
+    protected boolean useAdeGrad;
+    protected int workers = Runtime.getRuntime().availableProcessors();
+    protected boolean trainSequenceVectors = false;
+    protected boolean trainElementsVectors = true;
+
     public final static String UNK = "UNK";
-    protected List<String> stopWords = StopWords.getStopWords();
+    @Getter protected List<String> stopWords = new ArrayList<>(); //StopWords.getStopWords();
     /**
      * Returns true if the model has this word in the vocab
      * @param word the word to test for
@@ -245,7 +263,7 @@ public class WordVectorsImpl implements WordVectors {
             INDArray[] sorted = Nd4j.sortWithIndices(distances,0,false);
             INDArray sort = sorted[0];
             List<String> ret = new ArrayList<>();
-            VocabWord word2 = vocab().wordFor(word);
+            SequenceElement word2 = vocab().wordFor(word);
             if(n > sort.length())
                 n = sort.length();
             //there will be a redundant word
@@ -502,7 +520,9 @@ public class WordVectorsImpl implements WordVectors {
 
 
     /**
-     * Returns the similarity of 2 words
+     * Returns the similarity of 2 words. Result value will be in range [-1,1], where -1.0 is exact opposite similarity, i.e. NO similarity, and 1.0 is total match of two word vectors.
+     * However, most of time you'll see values in range [0,1], but that's something depends of training corpus.
+     *
      * @param word the first word
      * @param word2 the second word
      * @return a normalized similarity (cosine similarity)
@@ -517,7 +537,7 @@ public class WordVectorsImpl implements WordVectors {
     }
 
     @Override
-    public VocabCache vocab() {
+    public VocabCache<T> vocab() {
         return vocab;
     }
 
