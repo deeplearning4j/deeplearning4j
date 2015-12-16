@@ -1,15 +1,12 @@
-package org.deeplearning4j.models.abstractvectors.sequence;
+package org.deeplearning4j.models.sequencevectors.sequence;
 
-import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
-import org.apache.commons.collections.map.HashedMap;
 
 import java.io.Serializable;
 import java.util.*;
 
 /**
- * Sequence for AbstractVectors is defined as limited set of SequenceElements. It can also contain label, if you're going to learn Sequence features as well.
+ * Sequence for SequenceVectors is defined as limited set of SequenceElements. It can also contain label, if you're going to learn Sequence features as well.
  *
  * @author raver119@gmail.com
  */

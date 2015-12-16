@@ -1,22 +1,17 @@
 package org.deeplearning4j.models.word2vec.wordstore;
 
 import org.canova.api.util.ClassPathResource;
-import org.deeplearning4j.models.abstractvectors.iterators.AbstractSequenceIterator;
-import org.deeplearning4j.models.abstractvectors.transformers.impl.SentenceTransformer;
+import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
+import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
-import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
-import org.deeplearning4j.text.documentiterator.LabelsSource;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
-import org.deeplearning4j.text.sentenceiterator.UimaSentenceIterator;
-import org.deeplearning4j.text.sentenceiterator.interoperability.SentenceIteratorConverter;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
