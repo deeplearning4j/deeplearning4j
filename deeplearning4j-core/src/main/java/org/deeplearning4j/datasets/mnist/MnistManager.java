@@ -19,9 +19,14 @@
 package org.deeplearning4j.datasets.mnist;
 
 
+import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
+
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Arrays;
 
 
 /**
@@ -43,12 +48,16 @@ import java.io.IOException;
  * </pre>
  */
 public class MnistManager {
-    private MnistImageFile images;
+    MnistImageFile images;
     private MnistLabelFile labels;
+
+    private byte[][] imagesArr;
+    private int[] labelsArr;
+    private static final int HEADER_SIZE = 8;
 
     /**
      * Writes the given image in the given file using the PPM data format.
-     * 
+     *
      * @param image
      * @param ppmFileName
      * @throws IOException
@@ -74,7 +83,7 @@ public class MnistManager {
      * Constructs an instance managing the two given data files. Supports
      * <code>NULL</code> value for one of the arguments in case reading only one
      * of the files (images and labels) is required.
-     * 
+     *
      * @param imagesFile
      *            Can be <code>NULL</code>. In that case all future operations
      *            using that file will fail.
@@ -83,18 +92,27 @@ public class MnistManager {
      *            using that file will fail.
      * @throws IOException
      */
-    public MnistManager(String imagesFile, String labelsFile) throws IOException {
+    public MnistManager(String imagesFile, String labelsFile, boolean train) throws IOException {
         if (imagesFile != null) {
             images = new MnistImageFile(imagesFile, "r");
+            if(train) imagesArr = new MnistImageFile(imagesFile, "r").readImagesUnsafe(MnistDataFetcher.NUM_EXAMPLES);
+            else imagesArr = images.readImagesUnsafe(MnistDataFetcher.NUM_EXAMPLES_TEST);
         }
         if (labelsFile != null) {
             labels = new MnistLabelFile(labelsFile, "r");
+            if(train) labelsArr = labels.readLabels(MnistDataFetcher.NUM_EXAMPLES);
+            else labelsArr = labels.readLabels(MnistDataFetcher.NUM_EXAMPLES_TEST);
         }
+        System.out.println();
+    }
+
+    public MnistManager(String imagesFile, String labelsFile) throws IOException{
+        this(imagesFile,labelsFile,true);
     }
 
     /**
      * Reads the current image.
-     * 
+     *
      * @return matrix
      * @throws IOException
      */
@@ -105,9 +123,13 @@ public class MnistManager {
         return images.readImage();
     }
 
+    public byte[] readImageUnsafe(int i){
+        return imagesArr[i];
+    }
+
     /**
      * Set the position to be read.
-     * 
+     *
      * @param index
      */
     public void setCurrent(int index) {
@@ -117,7 +139,7 @@ public class MnistManager {
 
     /**
      * Reads the current label.
-     * 
+     *
      * @return int
      * @throws IOException
      */
@@ -128,9 +150,13 @@ public class MnistManager {
         return labels.readLabel();
     }
 
+    public int readLabel(int i){
+        return labelsArr[i];
+    }
+
     /**
      * Get the underlying images file as {@link MnistImageFile}.
-     * 
+     *
      * @return {@link MnistImageFile}.
      */
     public MnistImageFile getImages() {
@@ -139,7 +165,7 @@ public class MnistManager {
 
     /**
      * Get the underlying labels file as {@link MnistLabelFile}.
-     * 
+     *
      * @return {@link MnistLabelFile}.
      */
     public MnistLabelFile getLabels() {
