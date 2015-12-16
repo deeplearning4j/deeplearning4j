@@ -3,11 +3,10 @@ package org.deeplearning4j.models.word2vec;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import org.canova.api.records.Index;
-import org.deeplearning4j.models.abstractvectors.AbstractVectors;
-import org.deeplearning4j.models.abstractvectors.interfaces.SequenceIterator;
-import org.deeplearning4j.models.abstractvectors.iterators.AbstractSequenceIterator;
-import org.deeplearning4j.models.abstractvectors.transformers.impl.SentenceTransformer;
+import org.deeplearning4j.models.sequencevectors.SequenceVectors;
+import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
+import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
+import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
@@ -22,11 +21,11 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * This is Word2Vec implementation based on AbstractVectors
+ * This is Word2Vec implementation based on SequenceVectors
  *
  * @author raver119@gmail.com
  */
-public class Word2Vec extends AbstractVectors<VocabWord> {
+public class Word2Vec extends SequenceVectors<VocabWord> {
     @Getter protected SentenceIterator sentenceIter;
     @Getter @Setter protected TokenizerFactory tokenizerFactory;
 
@@ -40,7 +39,7 @@ public class Word2Vec extends AbstractVectors<VocabWord> {
         this.iterator = new AbstractSequenceIterator.Builder<VocabWord>(transformer).build();
     }
 
-    public static class Builder extends AbstractVectors.Builder<VocabWord> {
+    public static class Builder extends SequenceVectors.Builder<VocabWord> {
         protected SentenceIterator sentenceIterator;
         protected TokenizerFactory tokenizerFactory;
 

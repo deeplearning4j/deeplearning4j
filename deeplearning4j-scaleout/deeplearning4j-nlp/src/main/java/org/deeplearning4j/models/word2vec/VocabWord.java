@@ -18,22 +18,11 @@
 
 package org.deeplearning4j.models.word2vec;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.commons.math3.util.FastMath;
-import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
+import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 
-import com.google.common.util.concurrent.AtomicDouble;
-
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**

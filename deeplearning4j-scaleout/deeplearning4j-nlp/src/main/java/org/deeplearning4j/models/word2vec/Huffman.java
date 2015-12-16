@@ -18,9 +18,8 @@
 
 package org.deeplearning4j.models.word2vec;
 
-import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
+import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
-import org.deeplearning4j.models.word2vec.wordstore.VocabularyWord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
