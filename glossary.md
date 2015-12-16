@@ -71,6 +71,10 @@ Cosine is the angle attached to the origin, which makes it useful here. (We norm
     Deep Learning allows computational models composed of multiple processing layers to learn representations of data with multiple levels of abstraction.  These methods have dramatically improved the state-of-the-art in speech recognition, visual object recognition, object detection, and many other domains such as drug discovery and genomics. Deep learning discovers intricate structure in large datasets by using the back-propagation algorithm to indicate how a machine should change its internal parameters that are used to compute the representation in each layer from the representation in the previous layer.  Deep convolutional nets have brought about dramatic improvements in processing images, video, speech and audio, while recurrent nets have shone on sequential data such as text and speech.  Representation learning is a set of methods that allows a machine to be fed with raw data and to automatically discover the representations needed for detection or classification. Deep learning methods are representation learning methods with multiple levels of representation, obtained by composing simple but non-linear modules that each transform the representation at one level (starting with the raw input) into a representation at a higher, slightly more abstract level.
 -*NIPS*
 
+### <a name="distributed">Distributed Representations</a>
+
+The Nupic community has a good explanation of distributed representations [here](https://github.com/numenta/nupic/wiki/Sparse-Distributed-Representations). Other good explanations can be found on this [Quora page](https://www.quora.com/Deep-Learning/What-is-meant-by-a-distributed-representation).
+
 ### <a name="downpoursgd">Downpour Stochastic Gradient Descent</a>
 [Downpour stochastic gradient descent](http://research.google.com/archive/large_deep_networks_nips2012.html) is an asynchronous [stochastic gradient descent](#stochasticgradientdescent) procedure, employed by Google among others, that expands the scale and increases the speed of training deep-learning networks. 
 
