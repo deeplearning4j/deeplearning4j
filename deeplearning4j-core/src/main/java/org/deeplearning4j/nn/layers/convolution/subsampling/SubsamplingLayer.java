@@ -153,8 +153,8 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                 c = pooled.size(1);
                 kh = pooled.size(2);
                 kw = pooled.size(3);
-                outWidth = pooled.size(4);
-                outHeight = pooled.size(5);
+                outHeight = pooled.size(4);
+                outWidth = pooled.size(5);
                 ret = pooled.reshape(n, c, kh * kw, outHeight, outWidth);
                 maxIndexes = Nd4j.argMax(ret, 2);
                 return ret.max(2);

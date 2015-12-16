@@ -2,6 +2,7 @@ package org.deeplearning4j.models.word2vec.wordstore;
 
 import lombok.NonNull;
 import org.apache.commons.lang.ArrayUtils;
+import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -63,11 +64,11 @@ public class VocabularyHolder implements Serializable {
      * This code is required for compatibility between dl4j w2v implementation, and standalone w2v
      * @param cache
      */
-    protected VocabularyHolder(@NonNull VocabCache cache, boolean markAsSpecial) {
+    protected VocabularyHolder(@NonNull VocabCache<? extends SequenceElement> cache, boolean markAsSpecial) {
         this.vocabCache = cache;
-        for (VocabWord word: cache.tokens()) {
-            VocabularyWord vw = new VocabularyWord(word.getWord());
-            vw.setCount((int) word.getWordFrequency());
+        for (SequenceElement word: cache.tokens()) {
+            VocabularyWord vw = new VocabularyWord(word.getLabel());
+            vw.setCount((int) word.getElementFrequency());
 
             // since we're importing this word from external VocabCache, we'll assume that this word is SPECIAL, and should NOT be affected by minWordFrequency
             vw.setSpecial(markAsSpecial);

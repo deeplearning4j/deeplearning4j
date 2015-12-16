@@ -4,6 +4,7 @@ import lombok.NonNull;
 
 
 import java.io.*;
+import java.util.Iterator;
 
 /**
  * Primitive single-line iterator, without any options involved.
@@ -13,7 +14,7 @@ import java.io.*;
  *
  * @author raver119@gmail.com
   */
-public class BasicLineIterator implements SentenceIterator {
+public class BasicLineIterator implements SentenceIterator, Iterable<String> {
 
     private BufferedReader reader;
     private InputStream backendStream;
@@ -95,5 +96,34 @@ public class BasicLineIterator implements SentenceIterator {
             e.printStackTrace();
         }
         super.finalize();
+    }
+
+    /**
+     * Implentation for Iterable interface.
+     * Please note: each call for iterator() resets underlying SentenceIterator to the beginning;
+     *
+     * @return
+     */
+    @Override
+    public Iterator<String> iterator() {
+        this.reset();
+        Iterator<String> ret =  new Iterator<String>() {
+            @Override
+            public boolean hasNext() {
+                return BasicLineIterator.this.hasNext();
+            }
+
+            @Override
+            public String next() {
+                return BasicLineIterator.this.nextSentence();
+            }
+
+            @Override
+            public void remove() {
+                throw new UnsupportedOperationException();
+            }
+        };
+
+        return ret;
     }
 }

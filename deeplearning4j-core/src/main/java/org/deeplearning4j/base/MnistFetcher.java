@@ -43,7 +43,15 @@ public class MnistFetcher {
 	public static final String trainingFileLabelsFilename_unzipped = "labels-idx1-ubyte";
 	private static final String LOCAL_DIR_NAME = "MNIST";
 
-	
+	//Test data:
+	private static final String testFilesURL = "http://yann.lecun.com/exdb/mnist/t10k-images-idx3-ubyte.gz";
+	private static final String testFilesFilename = "t10k-images-idx3-ubyte.gz";
+	public static final String testFilesFilename_unzipped = "t10k-images-idx3-ubyte";
+	private static final String testFileLabelsURL = "http://yann.lecun.com/exdb/mnist/t10k-labels-idx1-ubyte.gz";
+	private static final String testFileLabelsFilename = "t10k-labels-idx1-ubyte.gz";
+	public static final String testFileLabelsFilename_unzipped = "t10k-labels-idx1-ubyte";
+
+
 	
 	public  File downloadAndUntar() throws IOException {
 		if(fileDir != null) {
@@ -62,25 +70,34 @@ public class MnistFetcher {
 		log.info("Downloading mnist...");
 		// getFromOrigin training records
 		File tarFile = new File(baseDir, trainingFilesFilename);
+		File tarFileLabels = new File(baseDir, testFilesFilename);
 
 		if(!tarFile.isFile()) {
 			FileUtils.copyURLToFile(new URL(trainingFilesURL), tarFile);      
 		}
 
-	    ArchiveUtils.unzipFileTo(tarFile.getAbsolutePath(),baseDir.getAbsolutePath());
+		if(!tarFileLabels.isFile()){
+			FileUtils.copyURLToFile(new URL(testFilesURL), tarFileLabels);
+		}
 
+	    ArchiveUtils.unzipFileTo(tarFile.getAbsolutePath(),baseDir.getAbsolutePath());
+		ArchiveUtils.unzipFileTo(tarFileLabels.getAbsolutePath(),baseDir.getAbsolutePath());
 
 
 
         // getFromOrigin training records
         File labels = new File(baseDir, trainingFileLabelsFilename);
+		File labelsTest = new File(baseDir, testFileLabelsFilename);
 
         if(!labels.isFile()) {
             FileUtils.copyURLToFile(new URL(trainingFileLabelsURL), labels);
         }
+		if(!labelsTest.isFile()) {
+			FileUtils.copyURLToFile(new URL(testFileLabelsURL), labelsTest);
+		}
 
         ArchiveUtils.unzipFileTo(labels.getAbsolutePath(),baseDir.getAbsolutePath());
-
+		ArchiveUtils.unzipFileTo(labelsTest.getAbsolutePath(),baseDir.getAbsolutePath());
 
 
         fileDir = baseDir;
