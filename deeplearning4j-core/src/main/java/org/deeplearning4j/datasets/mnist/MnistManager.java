@@ -21,6 +21,8 @@ package org.deeplearning4j.datasets.mnist;
 
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -40,7 +42,7 @@ import java.util.Arrays;
  * <pre>
  *  MnistManager m = new MnistManager("t10k-images.idx3-ubyte", "t10k-labels.idx1-ubyte");
  *  m.setCurrent(10); //index of the image that we are interested in
- *  int[][] image = m.readImageUnsafe();
+ *  int[][] image = m.readImage();
  *  System.out.println("Label:" + m.readLabel());
  *  MnistManager.writeImageToPpm(image, "10.ppm");
  * </pre>
@@ -52,6 +54,30 @@ public class MnistManager {
     private byte[][] imagesArr;
     private int[] labelsArr;
     private static final int HEADER_SIZE = 8;
+
+    /**
+     * Writes the given image in the given file using the PPM data format.
+     *
+     * @param image
+     * @param ppmFileName
+     * @throws IOException
+     */
+    public static void writeImageToPpm(int[][] image, String ppmFileName) throws IOException {
+        try (BufferedWriter ppmOut = new BufferedWriter(new FileWriter(ppmFileName))) {
+            int rows = image.length;
+            int cols = image[0].length;
+            ppmOut.write("P3\n");
+            ppmOut.write("" + rows + " " + cols + " 255\n");
+            for (int i = 0; i < rows; i++) {
+                StringBuilder s = new StringBuilder();
+                for (int j = 0; j < cols; j++) {
+                    s.append(image[i][j] + " " + image[i][j] + " " + image[i][j] + "  ");
+                }
+                ppmOut.write(s.toString());
+            }
+        }
+
+    }
 
     /**
      * Constructs an instance managing the two given data files. Supports

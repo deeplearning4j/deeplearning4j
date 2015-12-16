@@ -150,64 +150,11 @@ public class MnistDataFetcher extends BaseDataFetcher {
                 in.divi(255);
             }
 
-            INDArray out = createOutputVector(man.readLabel(cursor));
+            INDArray out = createOutputVector(man.readLabel(order[cursor]));
 
             toConvert.add(new DataSet(in,out));
         }
         initializeCurrFromList(toConvert);
-
-        /*
-        for(int i = 0; i < numExamples; i++,cursor++) {
-            if(!hasMore()) {
-                break;
-            }
-//            if(man == null) {
-//                try {
-//                    if(train) man = new MnistManager(MNIST_ROOT + MnistFetcher.trainingFilesFilename_unzipped,MNIST_ROOT + MnistFetcher.trainingFileLabelsFilename_unzipped, train);
-//                    else man = new MnistManager(MNIST_ROOT + MnistFetcher.testFilesFilename_unzipped,MNIST_ROOT + MnistFetcher.testFileLabelsFilename_unzipped, train);
-//                } catch (IOException e) {
-//                    throw new RuntimeException(e);
-//                }
-//            }
-//            man.setCurrent(cursor);
-            //note data normalization
-            try {
-
-
-
-                INDArray in = ArrayUtil.toNDArray(ArrayUtil.flatten(man.readImageUnsafe()));
-                if(binarize) {
-                    for(int d = 0; d < in.length(); d++) {
-                        if(in.getDouble(d) > 30) {
-                            in.putScalar(d,1);
-                        }
-                        else {
-                            in.putScalar(d,0);
-                        }
-                    }
-                } else {
-                    in.divi(255);
-                }
-
-
-                INDArray out = createOutputVector(man.readLabel());
-                boolean found = false;
-                for(int col = 0; col < out.length(); col++) {
-                    if(out.getDouble(col) > 0) {
-                        found = true;
-                        break;
-                    }
-                }
-                if(!found) {
-                    throw new IllegalStateException("Found a matrix without an outcome");
-                }
-
-                toConvert.add(new DataSet(in,out));
-            } catch (IOException e) {
-                throw new IllegalStateException("Unable to read image");
-
-            }
-        }*/
     }
 
     @Override
@@ -222,9 +169,5 @@ public class MnistDataFetcher extends BaseDataFetcher {
         DataSet next = super.next();
         return next;
     }
-
-
-
-
 
 }
