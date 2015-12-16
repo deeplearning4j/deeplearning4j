@@ -154,8 +154,17 @@ public class Glove extends AbstractVectors<VocabWord> {
             return this;
         }
 
+        @Override
+        public Builder workers(int numWorkers) {
+            super.workers(numWorkers);
+            return this;
+        }
+
         public Glove build() {
             Glove ret = new Glove();
+
+            // hardcoded value for glove
+            ret.trainingAlgorithm = TrainingAlgorithm.GLOVE;
 
             return ret;
         }
