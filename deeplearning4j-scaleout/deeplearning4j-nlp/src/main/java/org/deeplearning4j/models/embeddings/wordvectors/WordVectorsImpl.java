@@ -520,7 +520,7 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
      * @param resetTree
      * @return
      */
-    public Collection<String> wordsNearest(String word, int n, boolean resetTree) {
+    protected Collection<String> wordsNearest(String word, int n, boolean resetTree) {
         if (!vocab.hasToken(word)) return new ArrayList<>();
 
         // build new tree if it wasnt created before, or resetTree == TRUE
@@ -554,10 +554,22 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
      * @param n the n to get
      * @return the top n words
      */
-    @Deprecated
     public Collection<String> wordsNearest(String word,int n) {
-        return wordsNearest(Arrays.asList(word),new ArrayList<String>(),n);
+        if (!vocab.hasToken(word)) return new ArrayList<>();
 
+        INDArray mean = getWordVectorMatrix(word);
+
+        Counter<String> distances = new Counter<>();
+
+        for (String s : vocab().words()) {
+            INDArray otherVec = getWordVectorMatrix(s);
+            double sim = Transforms.cosineSim(mean, otherVec);
+            distances.incrementCount(s, sim);
+        }
+
+        distances.keepTopNKeys(n);
+        return distances.keySet();
+//        return wordsNearest(Arrays.asList(word),new ArrayList<String>(),n);
     }
 
 

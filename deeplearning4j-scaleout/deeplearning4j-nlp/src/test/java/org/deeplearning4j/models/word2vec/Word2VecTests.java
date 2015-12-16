@@ -128,7 +128,7 @@ public class Word2VecTests {
         assertEquals(new ArrayList<String>(), vec.getStopWords());
         vec.fit();
         WordVectorSerializer.writeWordVectors(vec, pathToWriteto);
-        Collection<String> lst = vec.wordsNearest("day", 10, true);
+        Collection<String> lst = vec.wordsNearest("day", 10);
         log.info(Arrays.toString(lst.toArray()));
 
         double sim = vec.similarity("day", "night");
