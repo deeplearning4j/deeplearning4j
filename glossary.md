@@ -14,7 +14,7 @@ Attention models "attend" to specific parts of an image in sequence, one after a
 
 ### <a name="backprop">Backpropagation</a> 
 To calculate the [gradient](#gradient) the relate weights to error, we use a technique known as backpropagation, which is also referred to as the backward pass of the network. Backpropagation is a repeated application of chain rule of calculus for partial
-derivatives. The first step is to calculate the derivatives of the objective function with respect to the output units, then the derivatives of the output of the last hidden layer to the input of the last hidden layer; then the input of the last hidden layer to the weights between it and the penultimate hidden layer, etc.
+derivatives. The first step is to calculate the derivatives of the objective function with respect to the output units, then the derivatives of the output of the last hidden layer to the input of the last hidden layer; then the input of the last hidden layer to the weights between it and the penultimate hidden layer, etc. Here's a [derivation of backpropagation](http://web.cs.swarthmore.edu/~meeden/cs81/s10/BackPropDeriv.pdf). And here's [Yann LeCun's important paper](http://yann.lecun.com/exdb/publis/pdf/lecun-88.pdf) on the subject.
 
 ![Alt text](../img/backprop_lecun.png)
 
