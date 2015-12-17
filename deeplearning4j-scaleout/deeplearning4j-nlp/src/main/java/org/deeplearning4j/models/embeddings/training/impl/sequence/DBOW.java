@@ -1,9 +1,10 @@
-package org.deeplearning4j.models.embeddings.training.impl;
+package org.deeplearning4j.models.embeddings.training.impl.sequence;
 
 import lombok.NonNull;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.embeddings.training.SequenceLearningAlgorithm;
+import org.deeplearning4j.models.embeddings.training.impl.elements.SkipGram;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
@@ -38,6 +39,9 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
 
     @Override
     public void configure(@NonNull VocabCache<T> vocabCache, @NonNull WeightLookupTable<T> lookupTable, @NonNull VectorsConfiguration configuration) {
+        this.vocabCache = vocabCache;
+        this.lookupTable = lookupTable;
+
         this.window = configuration.getWindow();
         this.useAdaGrad = configuration.isUseAdaGrad();
         this.negative = configuration.getNegative();
@@ -47,7 +51,9 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
 
     @Override
     public void learnSequence(Sequence<T> sequence, AtomicLong nextRandom, double learningRate) {
-
+        for(int i = 0; i < sequence.getElements().size(); i++) {
+            dbow(i, sequence,  (int) nextRandom.get() % window, nextRandom, learningRate);
+        }
     }
 
     protected void dbow(int i, Sequence<T> sequence, int b, AtomicLong nextRandom, double alpha) {

@@ -4,8 +4,8 @@ import lombok.Getter;
 import lombok.NonNull;
 import org.deeplearning4j.models.embeddings.training.ElementsLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.training.SequenceLearningAlgorithm;
-import org.deeplearning4j.models.embeddings.training.impl.DBOW;
-import org.deeplearning4j.models.embeddings.training.impl.SkipGram;
+import org.deeplearning4j.models.embeddings.training.impl.sequence.DBOW;
+import org.deeplearning4j.models.embeddings.training.impl.elements.SkipGram;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
@@ -38,8 +38,8 @@ import java.util.concurrent.atomic.AtomicLong;
 public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<T> implements WordVectors {
     protected SequenceIterator<T> iterator;
 
-    protected ElementsLearningAlgorithm<T> elementsLearningAlgorithm = new SkipGram<T>();
-    protected SequenceLearningAlgorithm<T> sequenceLearningAlgorithm = new DBOW<>();
+    protected transient ElementsLearningAlgorithm<T> elementsLearningAlgorithm;
+    protected transient SequenceLearningAlgorithm<T> sequenceLearningAlgorithm;
 
     @Getter protected VectorsConfiguration configuration;
 
@@ -82,6 +82,16 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         } else {
             // otherwise we reset weights, independent of actual current state of lookup table
             lookupTable.resetWeights(true);
+        }
+
+        log.info("Building learning algorithms:");
+        if (trainElementsVectors && elementsLearningAlgorithm != null) {
+            log.info("          building ElementsLearningAlgorithm: [" +elementsLearningAlgorithm.getCodeName()+ "]");
+            elementsLearningAlgorithm.configure(vocab, lookupTable, configuration);
+        }
+        if (trainSequenceVectors && sequenceLearningAlgorithm != null) {
+            log.info("          building SequenceLearningAlgorithm: [" +sequenceLearningAlgorithm.getCodeName()+ "]");
+            sequenceLearningAlgorithm.configure(vocab, lookupTable, configuration);
         }
 
         log.info("Starting learning process...");
@@ -129,7 +139,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             elementsLearningAlgorithm.learnSequence(sequence, nextRandom, alpha);
         }
 
-        if (trainSequenceVectors) for(int i = 0; i < sequence.getElements().size(); i++) {
+        if (trainSequenceVectors)  {
             // call for SequenceLearningAlgorithm
             nextRandom.set(nextRandom.get() * 25214903917L + 11);
             //dbow(i, sequence, (int) nextRandom.get() % window, nextRandom, alpha);
@@ -167,6 +177,9 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
         protected VectorsConfiguration configuration = new VectorsConfiguration();
 
+        protected ElementsLearningAlgorithm<T> elementsLearningAlgorithm = new SkipGram<T>();
+        protected SequenceLearningAlgorithm<T> sequenceLearningAlgorithm = new DBOW<>();
+
         public Builder() {
 
         }
@@ -196,6 +209,26 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
          */
         public Builder<T> iterate(@NonNull SequenceIterator<T> iterator) {
             this.iterator = iterator;
+            return this;
+        }
+
+        public Builder<T> sequenceLearningAlgorithm(@NonNull String algoName) {
+
+            return this;
+        }
+
+        public Builder<T> sequenceLearningAlgorithm(@NonNull SequenceLearningAlgorithm<T> algorithm) {
+
+            return this;
+        }
+
+        public Builder<T> elementsLearningAlgorithm(@NonNull String algoName) {
+
+            return this;
+        }
+
+        public Builder<T> elementsLearningAlgorithm(@NonNull ElementsLearningAlgorithm<T> algorithm) {
+
             return this;
         }
 
@@ -444,6 +477,20 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                         .seed(seed)
                         .build();
             }
+
+            if (trainElementsVectors) {
+                if (elementsLearningAlgorithm == null) {
+                    // create default implementation of ElementsLearningAlgorithm
+                    elementsLearningAlgorithm = new SkipGram<>();
+                }
+            }
+
+            if (trainSequenceVectors) {
+                if (sequenceLearningAlgorithm == null) {
+                    // create default implementation of SequenceLearningAlgorithm
+                    sequenceLearningAlgorithm = new DBOW<>();
+                }
+            }
         }
 
         /**
@@ -473,6 +520,9 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
             vectors.iterator = this.iterator;
             vectors.lookupTable = this.lookupTable;
+
+            vectors.elementsLearningAlgorithm = this.elementsLearningAlgorithm;
+            vectors.sequenceLearningAlgorithm = this.sequenceLearningAlgorithm;
 
             this.configuration.setLearningRate(this.learningRate);
             this.configuration.setLayersSize(layerSize);
@@ -626,7 +676,6 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             this.digitizer = digitizer;
             this.nextRandom = new AtomicLong(this.threadId);
             this.setName("VectorCalculationsThread " + this.threadId);
-            elementsLearningAlgorithm.configure(vocab, lookupTable, configuration);
         }
 
         @Override
@@ -660,7 +709,6 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                             alpha = Math.max(minLearningRate, learningRate.get() * (1 - (1.0 * this.wordsCounter.get() / (double) this.totalWordsCount)));
 
                             trainSequence(sequence, nextRandom, alpha);
-
 
                             // increment processed word count, please note: this affects learningRate decay
                             totalLines.incrementAndGet();
