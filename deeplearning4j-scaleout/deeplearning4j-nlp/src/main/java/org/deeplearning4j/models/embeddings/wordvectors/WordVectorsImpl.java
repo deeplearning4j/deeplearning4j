@@ -24,12 +24,10 @@ import lombok.Getter;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.deeplearning4j.clustering.vptree.VPTree;
-import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
+import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
-import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
-import org.deeplearning4j.text.stopwords.StopWords;
 import org.deeplearning4j.util.MathUtils;
 import org.deeplearning4j.util.SetUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -555,6 +553,9 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
      * @return the top n words
      */
     public Collection<String> wordsNearest(String word,int n) {
+        /*
+            TODO: This is temporary solution and we should get rid of flat array scan. Probably, after VPTree implementation gets fixed
+         */
         if (!vocab.hasToken(word)) return new ArrayList<>();
 
         INDArray mean = getWordVectorMatrix(word);
@@ -562,12 +563,14 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
         Counter<String> distances = new Counter<>();
 
         for (String s : vocab().words()) {
+            if (s.equals(word)) continue;
+
             INDArray otherVec = getWordVectorMatrix(s);
             double sim = Transforms.cosineSim(mean, otherVec);
             distances.incrementCount(s, sim);
         }
 
-        distances.keepTopNKeys(n);
+        distances.keepTopNKeys(n-1);
         return distances.keySet();
 //        return wordsNearest(Arrays.asList(word),new ArrayList<String>(),n);
     }

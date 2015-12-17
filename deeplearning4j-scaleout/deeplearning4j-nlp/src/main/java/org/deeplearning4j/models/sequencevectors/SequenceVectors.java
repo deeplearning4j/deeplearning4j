@@ -1,26 +1,18 @@
-package org.deeplearning4j.models.abstractvectors;
+package org.deeplearning4j.models.sequencevectors;
 
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
-import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.graph.iterator.GraphWalkIterator;
-import org.deeplearning4j.models.abstractvectors.interfaces.SequenceIterator;
-import org.deeplearning4j.models.abstractvectors.sequence.Sequence;
-import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
-import org.deeplearning4j.models.abstractvectors.transformers.SequenceTransformer;
+import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
+import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
+import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
-import org.deeplearning4j.models.glove.GloveWeightLookupTable;
-import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.VocabConstructor;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
-import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
-import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,23 +26,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * AbstractVectors implements abstract features extraction for Sequences and SequenceElements, using SkipGram, CBOW or DBOW (for Sequence features extraction).
+ * SequenceVectors implements abstract features extraction for Sequences and SequenceElements, using SkipGram, CBOW or DBOW (for Sequence features extraction).
  *
  *
  * @author raver119@gmail.com
  */
-public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<T> implements WordVectors {
-    public enum TrainingAlgorithm {
-        SKIPGRAM,
-        GLOVE,
-    }
-    protected TrainingAlgorithm trainingAlgorithm;
-
+public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<T> implements WordVectors {
     protected SequenceIterator<T> iterator;
 
     @Getter protected VectorsConfiguration configuration;
 
-    protected static final Logger log = LoggerFactory.getLogger(AbstractVectors.class);
+    protected static final Logger log = LoggerFactory.getLogger(SequenceVectors.class);
 
 
     /**
@@ -216,8 +202,6 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
         protected WeightLookupTable<T> lookupTable;
         protected SequenceIterator<T> iterator;
 
-        protected TrainingAlgorithm algorithm = TrainingAlgorithm.SKIPGRAM;
-
         protected double sampling = 0;
         protected double negative = 0;
         protected double learningRate = 0.025;
@@ -262,7 +246,6 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
             this.learningRateDecayWords = configuration.getLearningRateDecayWords();
             this.useAdaGrad = configuration.isUseAdaGrad();
             this.window = configuration.getWindow();
-            this.algorithm = configuration.getTrainingAlgorithm();
         }
 
         /**
@@ -294,18 +277,6 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
          */
         public Builder<T> iterations(int iterations) {
             this.iterations = iterations;
-            return this;
-        }
-
-        /**
-         * Algo used for learning elements representation.
-         * Currently available: SKIPGRAM, GLOVE
-         *
-         * @param algo
-         * @return
-         */
-        public Builder<T> trainingAlgorithm(@NonNull TrainingAlgorithm algo) {
-
             return this;
         }
 
@@ -523,23 +494,7 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
                             .build();
                 }
 
-
-
-                /*
-                    only GLOVE requires special lookup table.
-                    So, it would be nice if two these classes gets merged somehow
-               */
-                if (algorithm == TrainingAlgorithm.GLOVE) {
-                    lookupTable = new GloveWeightLookupTable.Builder<T>()
-                            .useAdaGrad(this.useAdaGrad)
-                            .cache(vocabCache)
-                            .negative(negative)
-                            .vectorLength(layerSize)
-                            .lr(learningRate)
-                            .seed(seed)
-                            .build();
-                } else {
-                    lookupTable = new InMemoryLookupTable.Builder<T>()
+                lookupTable = new InMemoryLookupTable.Builder<T>()
                         .useAdaGrad(this.useAdaGrad)
                         .cache(vocabCache)
                         .negative(negative)
@@ -547,18 +502,17 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
                         .lr(learningRate)
                         .seed(seed)
                         .build();
-                }
             }
         }
 
         /**
-         * Build AbstractVectors instance with defined settings/options
+         * Build SequenceVectors instance with defined settings/options
          * @return
          */
-        public AbstractVectors<T> build() {
+        public SequenceVectors<T> build() {
             presetTables();
 
-            AbstractVectors<T> vectors = new AbstractVectors<>();
+            SequenceVectors<T> vectors = new SequenceVectors<>();
             vectors.numEpochs = this.numEpochs;
             vectors.numIterations = this.iterations;
             vectors.vocab = this.vocabCache;
@@ -578,7 +532,6 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
 
             vectors.iterator = this.iterator;
             vectors.lookupTable = this.lookupTable;
-            vectors.trainingAlgorithm = this.algorithm;
 
             this.configuration.setLearningRate(this.learningRate);
             this.configuration.setLayersSize(layerSize);
@@ -594,7 +547,6 @@ public class AbstractVectors<T extends SequenceElement> extends WordVectorsImpl<
             this.configuration.setUseAdaGrad(useAdaGrad);
             this.configuration.setNegative(negative);
             this.configuration.setEpochs(this.numEpochs);
-            this.configuration.setTrainingAlgorithm(this.algorithm);
 
             vectors.configuration = this.configuration;
 
