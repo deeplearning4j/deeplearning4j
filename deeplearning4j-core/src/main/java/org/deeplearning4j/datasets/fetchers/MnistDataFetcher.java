@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Random;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.deeplearning4j.base.MnistFetcher;
 import org.deeplearning4j.datasets.mnist.MnistManager;
 import org.deeplearning4j.util.MathUtils;
@@ -39,17 +40,17 @@ import org.nd4j.linalg.factory.Nd4j;
  *
  */
 public class MnistDataFetcher extends BaseDataFetcher {
-    private static final long serialVersionUID = -3218754671561789818L;
-    private transient MnistManager man;
     public static final int NUM_EXAMPLES = 60000;
     public static final int NUM_EXAMPLES_TEST = 10000;
-    private static final String TEMP_ROOT = System.getProperty("user.home");
-    private static final String MNIST_ROOT = TEMP_ROOT + File.separator + "MNIST" + File.separator;
-    private boolean binarize = true;
-    private boolean train;
-    private int[] order;
-    private Random rng;
-    private boolean shuffle;
+    protected static final String TEMP_ROOT = System.getProperty("user.home");
+    protected static final String MNIST_ROOT = FilenameUtils.concat(TEMP_ROOT, "MNIST");
+
+    protected transient MnistManager man;
+    protected boolean binarize = true;
+    protected boolean train;
+    protected int[] order;
+    protected Random rng;
+    protected boolean shuffle;
 
 
     /**
@@ -63,27 +64,30 @@ public class MnistDataFetcher extends BaseDataFetcher {
 
     public MnistDataFetcher(boolean binarize, boolean train, boolean shuffle, long rngSeed) throws IOException {
         if(!mnistExists()) {
-            new MnistFetcher().downloadAndUntar();
+            new MnistFetcher().fetchMnist();
         }
         String images;
         String labels;
         if(train){
-            images = MNIST_ROOT + MnistFetcher.trainingFilesFilename_unzipped;
-            labels = MNIST_ROOT + MnistFetcher.trainingFileLabelsFilename_unzipped;
+            images = FilenameUtils.concat(MNIST_ROOT, MnistFetcher.mnistTrainData.get("filesFilenameUnzipped"));
+            labels = FilenameUtils.concat(MNIST_ROOT, MnistFetcher.mnistTrainLabel.get("filesFilenameUnzipped"));
             totalExamples = NUM_EXAMPLES;
         } else {
-            images = MNIST_ROOT + MnistFetcher.testFilesFilename_unzipped;
-            labels = MNIST_ROOT + MnistFetcher.testFileLabelsFilename_unzipped;
+            images = FilenameUtils.concat(MNIST_ROOT, MnistFetcher.mnistTestData.get("filesFilenameUnzipped"));
+            labels = FilenameUtils.concat(MNIST_ROOT, MnistFetcher.mnistTestLabel.get("filesFilenameUnzipped"));
             totalExamples = NUM_EXAMPLES_TEST;
         }
+
         try {
-            man = new MnistManager(images, labels, train);
+            if (train) man = new MnistManager(images, labels, NUM_EXAMPLES);
+            else man = new MnistManager(images, labels, NUM_EXAMPLES_TEST);
         }catch(Exception e) {
             FileUtils.deleteDirectory(new File(MNIST_ROOT));
-            new MnistFetcher().downloadAndUntar();
-            man = new MnistManager(images, labels, train);
-
+            new MnistFetcher().fetchMnist();
+            if (train) man = new MnistManager(images, labels, NUM_EXAMPLES);
+            else man = new MnistManager(images, labels, NUM_EXAMPLES_TEST);
         }
+
         numOutcomes = 10;
         this.binarize = binarize;
         cursor = 0;
@@ -103,13 +107,13 @@ public class MnistDataFetcher extends BaseDataFetcher {
 
     private boolean mnistExists(){
         //Check 4 files:
-        File f = new File(MNIST_ROOT,MnistFetcher.trainingFilesFilename_unzipped);
+        File f = new File(MNIST_ROOT,MnistFetcher.mnistTrainData.get("filesFilenameUnzipped"));
         if(!f.exists()) return false;
-        f = new File(MNIST_ROOT,MnistFetcher.trainingFileLabelsFilename_unzipped);
+        f = new File(MNIST_ROOT,MnistFetcher.mnistTrainLabel.get("filesFilenameUnzipped"));
         if(!f.exists()) return false;
-        f = new File(MNIST_ROOT,MnistFetcher.testFilesFilename_unzipped);
+        f = new File(MNIST_ROOT,MnistFetcher.mnistTestData.get("filesFilenameUnzipped"));
         if(!f.exists()) return false;
-        f = new File(MNIST_ROOT,MnistFetcher.testFileLabelsFilename_unzipped);
+        f = new File(MNIST_ROOT,MnistFetcher.mnistTestLabel.get("filesFilenameUnzipped"));
         if(!f.exists()) return false;
         return true;
     }

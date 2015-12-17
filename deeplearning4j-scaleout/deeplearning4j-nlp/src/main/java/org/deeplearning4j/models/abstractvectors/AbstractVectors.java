@@ -4,7 +4,6 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.graph.iterator.GraphWalkIterator;
 import org.deeplearning4j.models.abstractvectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.abstractvectors.sequence.Sequence;
 import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
