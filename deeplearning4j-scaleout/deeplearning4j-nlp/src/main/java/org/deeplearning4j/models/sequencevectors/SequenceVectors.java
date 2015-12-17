@@ -2,6 +2,10 @@ package org.deeplearning4j.models.sequencevectors;
 
 import lombok.Getter;
 import lombok.NonNull;
+import org.deeplearning4j.models.embeddings.training.ElementsLearningAlgorithm;
+import org.deeplearning4j.models.embeddings.training.SequenceLearningAlgorithm;
+import org.deeplearning4j.models.embeddings.training.impl.DBOW;
+import org.deeplearning4j.models.embeddings.training.impl.SkipGram;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
@@ -33,6 +37,9 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<T> implements WordVectors {
     protected SequenceIterator<T> iterator;
+
+    protected ElementsLearningAlgorithm<T> elementsLearningAlgorithm = new SkipGram<T>();
+    protected SequenceLearningAlgorithm<T> sequenceLearningAlgorithm = new DBOW<>();
 
     @Getter protected VectorsConfiguration configuration;
 
@@ -112,90 +119,24 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
     }
 
 
-    /**
-     * Train the distributed bag of words
-     * model
-     * @param i the word to train
-     * @param sequence of elements with labels to train over
-     * @param b
-     * @param nextRandom
-     * @param alpha
-     */
-    public void dbow(int i, Sequence<T> sequence, int b, AtomicLong nextRandom, double alpha) {
-
-        final T word = sequence.getElements().get(i);
-        List<T> sentence = sequence.getElements();
-
-        // TODO: fix this, there should be option to have few labels per sequence
-        List<T> labels = new ArrayList<>(); //(List<T>) sequence.getSequenceLabel();
-        labels.add(sequence.getSequenceLabel());
-        //    final VocabWord word = labels.get(0);
-
-        if (sequence.getSequenceLabel() == null) throw new IllegalStateException("Label is NULL");
-
-        if(word == null || sentence.isEmpty())
-            return;
-
-     //   log.info("Training word: " + word.getLabel() +  " against label: " + labels.get(0).getLabel());
-
-        int end =  window * 2 + 1 - b;
-        for(int a = b; a < end; a++) {
-            if(a != window) {
-                int c = i - window + a;
-                if(c >= 0 && c < labels.size()) {
-                    T lastWord = labels.get(c);
-                    iterate(word, lastWord,nextRandom,alpha);
-                }
-            }
-        }
-    }
-
-    /**
-     * Train via skip gram
-     * @param i
-     * @param sentence
-     */
-    protected void skipGram(int i,List<T> sentence, int b,AtomicLong nextRandom,double alpha) {
-
-        final T word = sentence.get(i);
-        if(word == null || sentence.isEmpty())
-            return;
-
-        int end =  window * 2 + 1 - b;
-        for(int a = b; a < end; a++) {
-            if(a != window) {
-                int c = i - window + a;
-                if(c >= 0 && c < sentence.size()) {
-                    T lastWord = sentence.get(c);
-                    iterate(word,lastWord,nextRandom,alpha);
-                }
-            }
-        }
-    }
-
-    /**
-     * Train the word vector
-     * on the given words
-     * @param w1 the first word to fit
-     */
-    protected void  iterate(T w1, T w2,AtomicLong nextRandom,double alpha) {
-        lookupTable.iterateSample(w1,w2,nextRandom,alpha);
-    }
-
     protected void trainSequence(@NonNull Sequence<T> sequence, AtomicLong nextRandom, double alpha) {
 
         if (sequence.getElements().size() == 0) return;
 
-        if (trainElementsVectors) for(int i = 0; i < sequence.getElements().size(); i++) {
+        if (trainElementsVectors) {
+            // call for ElementsLearningAlgorithm
             nextRandom.set(nextRandom.get() * 25214903917L + 11);
-            skipGram(i, sequence.getElements(), (int) nextRandom.get() % window,nextRandom,alpha);
+            elementsLearningAlgorithm.learnSequence(sequence, nextRandom, alpha);
         }
 
         if (trainSequenceVectors) for(int i = 0; i < sequence.getElements().size(); i++) {
+            // call for SequenceLearningAlgorithm
             nextRandom.set(nextRandom.get() * 25214903917L + 11);
-            dbow(i, sequence, (int) nextRandom.get() % window, nextRandom, alpha);
+            //dbow(i, sequence, (int) nextRandom.get() % window, nextRandom, alpha);
+            sequenceLearningAlgorithm.learnSequence(sequence, nextRandom, alpha);
         }
     }
+
 
     public static class Builder<T extends SequenceElement> {
         protected VocabCache<T> vocabCache;
@@ -685,6 +626,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             this.digitizer = digitizer;
             this.nextRandom = new AtomicLong(this.threadId);
             this.setName("VectorCalculationsThread " + this.threadId);
+            elementsLearningAlgorithm.configure(vocab, lookupTable, configuration);
         }
 
         @Override
@@ -718,6 +660,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                             alpha = Math.max(minLearningRate, learningRate.get() * (1 - (1.0 * this.wordsCounter.get() / (double) this.totalWordsCount)));
 
                             trainSequence(sequence, nextRandom, alpha);
+
 
                             // increment processed word count, please note: this affects learningRate decay
                             totalLines.incrementAndGet();
