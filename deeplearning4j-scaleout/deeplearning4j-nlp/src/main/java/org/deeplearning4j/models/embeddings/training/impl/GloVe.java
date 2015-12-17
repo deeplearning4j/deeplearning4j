@@ -9,8 +9,8 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 /**
  * Created by raver on 17.12.2015.
  */
-public class GloVe<T extends SequenceElement> implements ElementsLearningAlgorithm<T> {
-
+public abstract class GloVe<T extends SequenceElement> implements ElementsLearningAlgorithm<T> {
+/*
     @Override
     public String getCodeName() {
         return null;
@@ -25,4 +25,5 @@ public class GloVe<T extends SequenceElement> implements ElementsLearningAlgorit
     public void learnSequence(Sequence<T> sequence) {
 
     }
+    */
 }
