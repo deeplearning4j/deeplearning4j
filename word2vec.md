@@ -418,9 +418,9 @@ Loading and saving GloVe models to word2vec can be done like so:
 
         WordVectors wordVectors = WordVectorSerializer.loadTxtVectors(new File("glove.6B.50d.txt"));
 
-### <a name="abstract">Abstract Vectors</a>
+### <a name="sequence">Sequence Vectors</a>
 
-Deeplearning4j has a class called [AbstractVectors](https://github.com/deeplearning4j/deeplearning4j/blob/DistributedLookupTable_implementation/deeplearning4j-scaleout/deeplearning4j-nlp/src/test/java/org/deeplearning4j/models/abstractvectors/AbstractVectorsTest.java), which is one level of abstraction above word vectors, and which allows you to extract features from any sequence, including social media profiles, transactions, proteins, etc. If data can be described as sequence, it can be learned via skip-gram and hierarchic softmax with the AbstractVectors class. This is compatible with the [DeepWalk algorithm](https://github.com/deeplearning4j/deeplearning4j/blob/1ee1666d3a02953fc41ef41542668dd14e020396/deeplearning4j-scaleout/deeplearning4j-graph/src/main/java/org/deeplearning4j/graph/models/DeepWalk/DeepWalk.java), also implemented in Deeplearning4j. 
+Deeplearning4j has a class called [SequenceVectors](https://github.com/deeplearning4j/deeplearning4j/blob/b6d1cdd2445b9aa36a7e8230c51cea14d00b37b3/deeplearning4j-scaleout/deeplearning4j-nlp/src/main/java/org/deeplearning4j/models/sequencevectors/SequenceVectors.java), which is one level of abstraction above word vectors, and which allows you to extract features from any sequence, including social media profiles, transactions, proteins, etc. If data can be described as sequence, it can be learned via skip-gram and hierarchic softmax with the AbstractVectors class. This is compatible with the [DeepWalk algorithm](https://github.com/deeplearning4j/deeplearning4j/blob/1ee1666d3a02953fc41ef41542668dd14e020396/deeplearning4j-scaleout/deeplearning4j-graph/src/main/java/org/deeplearning4j/graph/models/DeepWalk/DeepWalk.java), also implemented in Deeplearning4j. 
 
 ### <a name="features">Word2Vec Features on Deeplearning4j</a>
 
