@@ -1,8 +1,8 @@
 package org.deeplearning4j.models.glove;
 
 import lombok.NonNull;
-import org.deeplearning4j.models.abstractvectors.AbstractVectors;
-import org.deeplearning4j.models.abstractvectors.interfaces.SequenceIterator;
+import org.deeplearning4j.models.sequencevectors.SequenceVectors;
+import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -16,13 +16,13 @@ import java.util.List;
  * WORK IN PROGRESS, PLEASE DO NOT USE
  * @author raver119@gmail.com
  */
-public class Glove extends AbstractVectors<VocabWord> {
+public class Glove extends SequenceVectors<VocabWord> {
 
     protected Glove() {
 
     }
 
-    public static class Builder extends AbstractVectors.Builder<VocabWord> {
+    public static class Builder extends SequenceVectors.Builder<VocabWord> {
         public Builder() {
             super();
         }
@@ -164,7 +164,7 @@ public class Glove extends AbstractVectors<VocabWord> {
             Glove ret = new Glove();
 
             // hardcoded value for glove
-            ret.trainingAlgorithm = TrainingAlgorithm.GLOVE;
+
 
             return ret;
         }

@@ -1,6 +1,6 @@
 package org.deeplearning4j.models.embeddings.training;
 
-import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
+import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 
 /**
  * This interface implementations will hold implementations for skip-gram and glove
