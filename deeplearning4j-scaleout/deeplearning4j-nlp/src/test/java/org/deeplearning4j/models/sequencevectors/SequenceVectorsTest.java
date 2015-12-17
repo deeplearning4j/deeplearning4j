@@ -197,4 +197,30 @@ public class SequenceVectorsTest {
         Collection<String> labels = vectors.wordsNearest("day", 10);
         logger.info("Nearest labels to 'day': " + labels);
     }
+
+    @Test
+    public void testElementsLearningAlgo1() throws Exception {
+        SequenceVectors<VocabWord> vectors = new SequenceVectors.Builder<VocabWord>(new VectorsConfiguration())
+                .minWordFrequency(5)
+                .batchSize(250)
+                .iterations(1)
+                .elementsLearningAlgorithm("org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram")
+                .epochs(1)
+                .resetModel(false)
+                .trainElementsRepresentation(true)
+                .build();
+    }
+
+    @Test
+    public void testSequenceLearningAlgo1() throws Exception {
+        SequenceVectors<VocabWord> vectors = new SequenceVectors.Builder<VocabWord>(new VectorsConfiguration())
+                .minWordFrequency(5)
+                .batchSize(250)
+                .iterations(1)
+                .sequenceLearningAlgorithm("org.deeplearning4j.models.embeddings.learning.impl.sequence.DBOW")
+                .epochs(1)
+                .resetModel(false)
+                .trainElementsRepresentation(false)
+                .build();
+    }
 }

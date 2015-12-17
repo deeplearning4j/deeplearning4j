@@ -2,10 +2,10 @@ package org.deeplearning4j.models.sequencevectors;
 
 import lombok.Getter;
 import lombok.NonNull;
-import org.deeplearning4j.models.embeddings.training.ElementsLearningAlgorithm;
-import org.deeplearning4j.models.embeddings.training.SequenceLearningAlgorithm;
-import org.deeplearning4j.models.embeddings.training.impl.sequence.DBOW;
-import org.deeplearning4j.models.embeddings.training.impl.elements.SkipGram;
+import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
+import org.deeplearning4j.models.embeddings.learning.SequenceLearningAlgorithm;
+import org.deeplearning4j.models.embeddings.learning.impl.sequence.DBOW;
+import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
@@ -177,8 +177,9 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
         protected VectorsConfiguration configuration = new VectorsConfiguration();
 
+        // defaults values for learning algorithms are set here
         protected ElementsLearningAlgorithm<T> elementsLearningAlgorithm = new SkipGram<T>();
-        protected SequenceLearningAlgorithm<T> sequenceLearningAlgorithm = new DBOW<>();
+        protected SequenceLearningAlgorithm<T> sequenceLearningAlgorithm = new DBOW<T>();
 
         public Builder() {
 
@@ -200,6 +201,14 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             this.learningRateDecayWords = configuration.getLearningRateDecayWords();
             this.useAdaGrad = configuration.isUseAdaGrad();
             this.window = configuration.getWindow();
+
+            if (configuration.getElementsLearningAlgorithm() != null && !configuration.getElementsLearningAlgorithm().isEmpty()) {
+                this.elementsLearningAlgorithm(configuration.getElementsLearningAlgorithm());
+            }
+
+            if (configuration.getSequenceLearningAlgorithm() != null && !configuration.getSequenceLearningAlgorithm().isEmpty()) {
+                this.sequenceLearningAlgorithm(configuration.getSequenceLearningAlgorithm());
+            }
         }
 
         /**
@@ -212,23 +221,57 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             return this;
         }
 
+        /**
+         * Sets specific LearningAlgorithm as Sequence Learning Algorithm
+         *
+         * @param algoName fully qualified class name
+         * @return
+         */
         public Builder<T> sequenceLearningAlgorithm(@NonNull String algoName) {
-
+            try {
+                Class clazz = Class.forName(algoName);
+                sequenceLearningAlgorithm = (SequenceLearningAlgorithm<T>) clazz.newInstance();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
             return this;
         }
 
+        /**
+         * Sets specific LearningAlgorithm as Sequence Learning Algorithm
+         *
+         * @param algorithm SequenceLearningAlgorithm implementation
+         * @return
+         */
         public Builder<T> sequenceLearningAlgorithm(@NonNull SequenceLearningAlgorithm<T> algorithm) {
-
+            this.sequenceLearningAlgorithm = algorithm;
             return this;
         }
 
+        /**
+         * * Sets specific LearningAlgorithm as Elements Learning Algorithm
+         *
+         * @param algoName fully qualified class name
+         * @return
+         */
         public Builder<T> elementsLearningAlgorithm(@NonNull String algoName) {
-
+            try {
+                Class clazz = Class.forName(algoName);
+                elementsLearningAlgorithm = (ElementsLearningAlgorithm<T>) clazz.newInstance();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
             return this;
         }
 
+        /**
+         * * Sets specific LearningAlgorithm as Elements Learning Algorithm
+         *
+         * @param algorithm ElementsLearningAlgorithm implementation
+         * @return
+         */
         public Builder<T> elementsLearningAlgorithm(@NonNull ElementsLearningAlgorithm<T> algorithm) {
-
+            this.elementsLearningAlgorithm = algorithm;
             return this;
         }
 

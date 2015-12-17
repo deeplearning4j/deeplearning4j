@@ -35,11 +35,12 @@ public class VectorsConfiguration implements Serializable {
     private double sampling = 0.0d;
     private int learningRateDecayWords;
 
-    private boolean hugeModelExpected;
+    private boolean hugeModelExpected = false;
     private int scavengerActivationThreshold = 2000000;
     private int scavengerRetentionDelay = 3;
 
-//    private Se.ElementsLearningAlgorithm trainingAlgorithm;
+    private String elementsLearningAlgorithm;
+    private String sequenceLearningAlgorithm;
 
     // overall model info
     private int vocabSize;
