@@ -1,4 +1,4 @@
-package org.deeplearning4j.models.embeddings.training;
+package org.deeplearning4j.models.embeddings.learning;
 
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
