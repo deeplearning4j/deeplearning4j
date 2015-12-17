@@ -13,6 +13,8 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFac
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.List;
@@ -24,7 +26,7 @@ import static org.junit.Assert.*;
  */
 public class AbstractCoOccurrencesTest {
 
-
+    private static final Logger log = LoggerFactory.getLogger(AbstractCoOccurrencesTest.class);
 
     @Before
     public void setUp() throws Exception {
@@ -33,7 +35,7 @@ public class AbstractCoOccurrencesTest {
 
     @Test
     public void testFit1() throws Exception {
-        ClassPathResource resource = new ClassPathResource("big/raw_sentences.txt");
+        ClassPathResource resource = new ClassPathResource("other/oneline.txt");
         File file = resource.getFile();
 
         AbstractCache<VocabWord> vocabCache = new AbstractCache.Builder<VocabWord>().build();
@@ -61,12 +63,16 @@ public class AbstractCoOccurrencesTest {
                 .iterate(sequenceIterator)
                 .vocabCache(vocabCache)
                 .symmetric(false)
+                .windowSize(15)
                 .build();
 
         coOccurrences.fit();
 
         List<Pair<String, String>> list = coOccurrences.coOccurrenceList();
         assertNotEquals(null, list);
+
+        log.info("CoOccurrences: " + list);
+
         assertEquals(16, list.size());
     }
 }
