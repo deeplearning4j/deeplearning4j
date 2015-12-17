@@ -24,6 +24,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
 import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.text.sentenceiterator.LineSentenceIterator;
@@ -106,7 +107,14 @@ public class CoOccurrencesTest {
             assertEquals("Sentence " + count,Integer.parseInt(split[1]),tokens.size());
             count++;
         }
+    }
 
+    @Test
+    public void testOriginalCoOccurrences() throws Exception {
+        coOccurrences.fit();
 
+        List<Pair<String, String>> list = coOccurrences.coOccurrenceList();
+        log.info("Number of CoOccurrences: ["+ list.size()+"]");
+        log.info("CoOccurences: " + list);
     }
 }

@@ -1,6 +1,8 @@
 package org.deeplearning4j.models.sequencevectors.sequence;
 
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 
 import java.io.Serializable;
 import java.util.*;
@@ -16,6 +18,8 @@ public class Sequence<T extends SequenceElement> implements Serializable {
 
     protected List<T> elements = new ArrayList<>();
     protected T label;
+
+    @Getter @Setter protected int sequenceId;
 
     /**
      * Creates new empty sequence

@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import lombok.Data;
-import org.deeplearning4j.models.abstractvectors.AbstractVectors;
+
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -39,7 +39,7 @@ public class VectorsConfiguration implements Serializable {
     private int scavengerActivationThreshold = 2000000;
     private int scavengerRetentionDelay = 3;
 
-    private AbstractVectors.TrainingAlgorithm trainingAlgorithm;
+//    private Se.TrainingAlgorithm trainingAlgorithm;
 
     // overall model info
     private int vocabSize;

@@ -8,6 +8,7 @@ import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 
 
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * This is basic generic SequenceIterator implementation
@@ -18,6 +19,9 @@ public class AbstractSequenceIterator<T extends SequenceElement> implements Sequ
 
     private Iterable<Sequence<T>> underlyingIterable;
     private Iterator<Sequence<T>> currentIterator;
+
+    // used to tag each sequence with own Id
+    protected AtomicInteger tagger = new AtomicInteger(0);
 
     protected AbstractSequenceIterator(@NonNull Iterable<Sequence<T>> iterable) {
         this.underlyingIterable = iterable;
@@ -39,7 +43,9 @@ public class AbstractSequenceIterator<T extends SequenceElement> implements Sequ
      */
     @Override
     public Sequence<T> nextSequence() {
-        return currentIterator.next();
+        Sequence<T> sequence = currentIterator.next();
+        sequence.setSequenceId(tagger.getAndIncrement());
+        return  sequence;
     }
 
     /**
@@ -47,6 +53,7 @@ public class AbstractSequenceIterator<T extends SequenceElement> implements Sequ
      */
     @Override
     public void reset() {
+        tagger.set(0);
         this.currentIterator = underlyingIterable.iterator();
     }
 
