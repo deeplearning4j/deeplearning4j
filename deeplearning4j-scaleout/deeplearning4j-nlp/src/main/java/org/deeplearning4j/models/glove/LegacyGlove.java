@@ -26,8 +26,8 @@ import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
 import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.models.abstractvectors.AbstractVectors;
-import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
+import org.deeplearning4j.models.sequencevectors.SequenceVectors;
+import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
@@ -214,7 +214,7 @@ public class LegacyGlove  extends WordVectorsImpl<VocabWord> {
                             continue;
 
                         }
-                        errorPerIteration.incrementCount(work.getFirst(),lookupTable().iterateSample(w1, w2, weight));
+                        //errorPerIteration.incrementCount(work.getFirst(),lookupTable().iterateSample(w1, w2, weight));
                         countUp.incrementAndGet();
                         if(countUp.get() % 10000 == 0)
                             log.info("Processed " + countUp.get() + " co occurrences");
