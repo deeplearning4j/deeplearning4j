@@ -39,7 +39,7 @@ public class VectorsConfiguration implements Serializable {
     private int scavengerActivationThreshold = 2000000;
     private int scavengerRetentionDelay = 3;
 
-//    private Se.TrainingAlgorithm trainingAlgorithm;
+//    private Se.ElementsLearningAlgorithm trainingAlgorithm;
 
     // overall model info
     private int vocabSize;

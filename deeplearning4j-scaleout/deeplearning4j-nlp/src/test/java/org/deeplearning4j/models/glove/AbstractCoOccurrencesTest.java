@@ -22,7 +22,7 @@ import java.util.List;
 import static org.junit.Assert.*;
 
 /**
- * Created by fartovii on 17.12.15.
+ * @author raver119@gmail.com
  */
 public class AbstractCoOccurrencesTest {
 
