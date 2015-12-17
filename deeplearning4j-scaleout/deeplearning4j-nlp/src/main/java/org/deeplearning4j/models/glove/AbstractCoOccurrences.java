@@ -12,8 +12,12 @@ import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.movingwindow.Util;
 import org.nd4j.linalg.factory.Nd4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -21,7 +25,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 /**
  * @author raver119@gmail.com
  */
-public class AbstractCoOccurrences<T extends SequenceElement> {
+public class AbstractCoOccurrences<T extends SequenceElement> implements Serializable {
 
     protected boolean symmetric;
     protected int windowSize;
@@ -35,12 +39,15 @@ public class AbstractCoOccurrences<T extends SequenceElement> {
     private List<Pair<String,String>> coOccurrences;
     private AtomicLong processedSequences = new AtomicLong(0);
 
+    protected static final Logger logger = LoggerFactory.getLogger(AbstractCoOccurrences.class);
 
     public void fit() {
 
+        sequenceIterator.reset();
+
         List<CoOccurrencesCalculatorThread> threads = new ArrayList<>();
         for (int x = 0; x < workers; x++) {
-            threads.add(x, new CoOccurrencesCalculatorThread<T>(x, new FilteredSequenceIterator<T>(sequenceIterator, vocabCache), processedSequences));
+            threads.add(x, new CoOccurrencesCalculatorThread<T>(x, new FilteredSequenceIterator<T>(new SynchronizedSequenceIterator<T>(sequenceIterator), vocabCache), processedSequences));
             threads.get(x).start();
         }
 
@@ -51,15 +58,37 @@ public class AbstractCoOccurrences<T extends SequenceElement> {
                 throw new RuntimeException(e);
             }
         }
+
+        logger.info("CoOccurrences map was built: ["+ coOCurreneCounts.size()+"]");
     }
 
+    /**
+     * Returns list of label pairs for each element met in each sequence
+     * @return
+     */
     public List<Pair<String,String>> coOccurrenceList() {
         if (coOccurrences != null)
             return coOccurrences;
 
         coOccurrences = new ArrayList<>();
+        Iterator<Pair<String, String>> iterator = coOCurreneCounts.getPairIterator();
+        while (iterator.hasNext()) {
+            Pair<String, String> pair = iterator.next();
 
-        return null;
+            if (pair.getFirst().equals(pair.getSecond())) continue;
+
+            // each pair should be checked against vocab, but that's not strictly required
+            if (!vocabCache.hasToken(pair.getFirst()) || !vocabCache.hasToken(pair.getSecond())) {
+                logger.debug("Skipping pair: '"+ pair.getFirst()+"', '"+ pair.getSecond()+"'");
+                continue;
+            } else logger.debug("Adding pair: '"+ pair.getFirst()+"', '"+ pair.getSecond()+"'");
+
+
+
+            coOccurrences.add(new Pair<String, String>(pair.getFirst(), pair.getSecond()));
+        }
+
+        return coOccurrences;
     }
 
     public static class Builder<T extends SequenceElement> {
@@ -130,7 +159,8 @@ public class AbstractCoOccurrences<T extends SequenceElement> {
 
                 // TODO: vocab filtering should take place
 
-                List<String> tokens = new ArrayList<>(vocabCache.words());
+                List<String> tokens = new ArrayList<>(sequence.asLabels());
+                logger.info("Tokens size: " + tokens.size());
                 for (int x = 0; x < sequence.getElements().size(); x++) {
                     int wordIdx = vocabCache.indexOf(tokens.get(x));
                     if (wordIdx < 0) continue;
@@ -143,11 +173,13 @@ public class AbstractCoOccurrences<T extends SequenceElement> {
 
                     int windowStop = Math.min(x + windowSize + 1,tokens.size());
                     for(int j = x; j < windowStop; j++) {
-                        int otherWord = tokens.indexOf(tokens.get(j));
+                        int otherWord = vocabCache.indexOf(tokens.get(j));
                         if (otherWord < 0) continue;
                         String w2 = vocabCache.wordFor(tokens.get(j)).getLabel();
-                        if(w2.equals(Glove.UNK) || otherWord == wordIdx)
+                        if(w2.equals(Glove.UNK) || otherWord == wordIdx) {
                             continue;
+                        }
+
                         if(wordIdx < otherWord) {
                             coOCurreneCounts.incrementCount(tokens.get(x), tokens.get(j), 1.0 / (j - x + Nd4j.EPS_THRESHOLD));
                             occurrenceAllocations.incrementCount(sequence.getSequenceId(),1.0);

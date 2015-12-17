@@ -69,6 +69,7 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
             @Override
             public Sequence<VocabWord> next() {
                 LabelledDocument document = iterator.nextDocument();
+                if  (document.getContent() == null) return new Sequence<>();
                 Sequence<VocabWord> sequence = SentenceTransformer.this.transformToSequence(document.getContent());
 
                 if (document.getLabel() != null && !document.getLabel().isEmpty()) {
