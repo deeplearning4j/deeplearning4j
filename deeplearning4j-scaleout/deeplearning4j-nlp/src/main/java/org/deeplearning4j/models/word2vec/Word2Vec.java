@@ -249,6 +249,9 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             ret.lookupTable = this.lookupTable;
             ret.tokenizerFactory = this.tokenizerFactory;
 
+            ret.elementsLearningAlgorithm = this.elementsLearningAlgorithm;
+            ret.sequenceLearningAlgorithm = this.sequenceLearningAlgorithm;
+
             this.configuration.setLearningRate(this.learningRate);
             this.configuration.setLayersSize(layerSize);
             this.configuration.setHugeModelExpected(hugeModelExpected);

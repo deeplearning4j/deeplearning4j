@@ -1,4 +1,4 @@
-package org.deeplearning4j.models.embeddings.training.impl;
+package org.deeplearning4j.models.embeddings.training.impl.elements;
 
 import lombok.NonNull;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
