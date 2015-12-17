@@ -1,10 +1,10 @@
-package org.deeplearning4j.models.embeddings.training.impl.sequence;
+package org.deeplearning4j.models.embeddings.learning.impl.sequence;
 
 import lombok.NonNull;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
-import org.deeplearning4j.models.embeddings.training.SequenceLearningAlgorithm;
-import org.deeplearning4j.models.embeddings.training.impl.elements.SkipGram;
+import org.deeplearning4j.models.embeddings.learning.SequenceLearningAlgorithm;
+import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;

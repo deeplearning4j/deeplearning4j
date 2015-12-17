@@ -44,6 +44,8 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author Adam Gibson
  */
+// Deprecated due to logic being pulled off WeightLookupTable classes into LearningAlgorithm interfaces for better code.
+@Deprecated
 public class GloveWeightLookupTable<T extends SequenceElement> extends InMemoryLookupTable<T> {
 
 

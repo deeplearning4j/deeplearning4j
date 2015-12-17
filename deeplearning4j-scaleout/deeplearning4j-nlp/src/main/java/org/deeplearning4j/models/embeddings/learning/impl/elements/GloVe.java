@@ -1,10 +1,7 @@
-package org.deeplearning4j.models.embeddings.training.impl.elements;
+package org.deeplearning4j.models.embeddings.learning.impl.elements;
 
-import org.deeplearning4j.models.embeddings.WeightLookupTable;
-import org.deeplearning4j.models.embeddings.training.ElementsLearningAlgorithm;
-import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
+import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
-import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 
 /**
  * GloVe implementation for SequenceVectors

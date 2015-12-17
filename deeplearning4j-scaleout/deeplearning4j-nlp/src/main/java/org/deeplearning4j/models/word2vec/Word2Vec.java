@@ -49,23 +49,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
         }
 
         public Builder(@NonNull VectorsConfiguration configuration) {
-            this.configuration = configuration;
-
-            this.configuration = configuration;
-            this.iterations = configuration.getIterations();
-            this.numEpochs = configuration.getEpochs();
-            this.minLearningRate = configuration.getMinLearningRate();
-            this.learningRate = configuration.getLearningRate();
-            this.sampling = configuration.getSampling();
-            this.negative = configuration.getNegative();
-            this.minWordFrequency = configuration.getMinWordFrequency();
-            this.seed = configuration.getSeed();
-            this.hugeModelExpected = configuration.isHugeModelExpected();
-            this.batchSize = configuration.getBatchSize();
-            this.layerSize = configuration.getLayersSize();
-            this.learningRateDecayWords = configuration.getLearningRateDecayWords();
-            this.useAdaGrad = configuration.isUseAdaGrad();
-            this.window = configuration.getWindow();
+            super(configuration);
         }
 
         public Builder iterate(@NonNull DocumentIterator iterator) {
