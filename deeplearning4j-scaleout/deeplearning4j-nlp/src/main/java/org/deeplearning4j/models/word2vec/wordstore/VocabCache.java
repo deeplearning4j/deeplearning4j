@@ -19,8 +19,7 @@
 package org.deeplearning4j.models.word2vec.wordstore;
 
 
-import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
-import org.deeplearning4j.models.word2vec.VocabWord;
+import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 
 import java.io.Serializable;
 import java.util.Collection;

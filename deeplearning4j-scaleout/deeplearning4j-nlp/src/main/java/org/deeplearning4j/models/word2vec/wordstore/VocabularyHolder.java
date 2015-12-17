@@ -1,8 +1,7 @@
 package org.deeplearning4j.models.word2vec.wordstore;
 
 import lombok.NonNull;
-import org.apache.commons.lang.ArrayUtils;
-import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
+import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
