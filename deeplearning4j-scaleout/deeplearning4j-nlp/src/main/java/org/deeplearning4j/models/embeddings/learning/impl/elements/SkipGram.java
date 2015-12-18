@@ -5,6 +5,7 @@ import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
+import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
@@ -33,15 +34,30 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
     protected double negative;
     protected INDArray syn0, syn1, syn1Neg, table;
 
+    /**
+     * Dummy construction is required for reflection
+     */
     public SkipGram() {
 
     }
 
+    /**
+     * Returns implementation code name
+     *
+     * @return
+     */
     @Override
     public String getCodeName() {
-        return "skipgram";
+        return "SkipGram";
     }
 
+    /**
+     * SkipGram initialization over given vocabulary and WeightLookupTable
+     *
+     * @param vocabCache
+     * @param lookupTable
+     * @param configuration
+     */
     @Override
     public void configure(@NonNull VocabCache<T> vocabCache, @NonNull WeightLookupTable<T> lookupTable, @NonNull VectorsConfiguration configuration) {
         this.vocabCache = vocabCache;
@@ -59,6 +75,23 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         this.negative = configuration.getNegative();
     }
 
+    /**
+     * SkipGram doesn't involves any pretraining
+     *
+     * @param iterator
+     */
+    @Override
+    public void pretrain(SequenceIterator<T> iterator) {
+
+    }
+
+    /**
+     * Learns sequence using SkipGram algorithm
+     *
+     * @param sequence
+     * @param nextRandom
+     * @param learningRate
+     */
     @Override
     public void learnSequence(@NonNull Sequence<T> sequence, @NonNull AtomicLong nextRandom, @NonNull double learningRate) {
         for(int i = 0; i < sequence.getElements().size(); i++) {
