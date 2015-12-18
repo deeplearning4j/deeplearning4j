@@ -1,8 +1,6 @@
 package org.nd4j.linalg.jcublas.blas;
 
 import jcuda.Pointer;
-import jcuda.cuComplex;
-import jcuda.cuDoubleComplex;
 import jcuda.jcublas.JCublas2;
 import org.nd4j.linalg.api.blas.impl.BaseLevel3;
 import org.nd4j.linalg.api.complex.IComplexDouble;
@@ -12,8 +10,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.DataTypeValidation;
 import org.nd4j.linalg.jcublas.CublasPointer;
-import org.nd4j.linalg.jcublas.SimpleJCublas;
-import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.util.OpUtil;
 import org.nd4j.linalg.jcublas.util.PointerUtil;

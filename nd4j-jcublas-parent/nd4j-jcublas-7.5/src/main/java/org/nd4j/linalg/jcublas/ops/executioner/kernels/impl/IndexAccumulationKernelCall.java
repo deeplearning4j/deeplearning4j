@@ -3,7 +3,6 @@ package org.nd4j.linalg.jcublas.ops.executioner.kernels.impl;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.IndexAccumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.shape.Shape;
@@ -14,12 +13,17 @@ import org.nd4j.linalg.jcublas.ops.executioner.kernels.BaseGpuKernelCall;
 import org.nd4j.linalg.jcublas.util.KernelParamsWrapper;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
 
+import java.util.Arrays;
+
 /**
- * Created by agibsonccc on 12/11/15.
+ * Index accumulation kernel call
+ * @author Adam Gibson
  */
 public class IndexAccumulationKernelCall extends BaseGpuKernelCall {
     protected int[] dimension;
     protected INDArray result;
+    protected int xStride;
+    protected int yStride;
 
     /**
      * Accumulation kernel call
@@ -29,8 +33,13 @@ public class IndexAccumulationKernelCall extends BaseGpuKernelCall {
      */
     public IndexAccumulationKernelCall(Op op,int[] dimension,INDArray result) {
         super(op);
+        if(dimension == null)
+            dimension = new int[] {Integer.MAX_VALUE};
+
         this.dimension = dimension;
-        Accumulation acc = (Accumulation) op;
+        //ensure dimensions are sorted
+        Arrays.sort(dimension);
+        IndexAccumulation acc = (IndexAccumulation) op;
         if(result == null)
             this.result = Nd4j.scalar(acc.zeroDouble());
         else
@@ -74,7 +83,7 @@ public class IndexAccumulationKernelCall extends BaseGpuKernelCall {
     public void createArgs() {
         if (op.y() != null) {
             metrics.setSharedMemoryNotOverMax(metrics.getSharedMemory() * 2);
-            int xStride = BlasBufferUtil.getBlasStride(dimension == null ? op.x() : op.x().tensorAlongDimension(0, dimension));
+            xStride = BlasBufferUtil.getBlasStride(dimension == null ? op.x() : op.x().tensorAlongDimension(0, dimension));
             if (xStride < 0) {
                 op.setX(op.x().dup());
                 xStride = BlasBufferUtil.getBlasStride(dimension == null ? op.x() : op.x().tensorAlongDimension(0, dimension));
@@ -83,7 +92,7 @@ public class IndexAccumulationKernelCall extends BaseGpuKernelCall {
 
             }
 
-            int yStride = BlasBufferUtil.getBlasStride(dimension == null ? op.y() : op.y().tensorAlongDimension(0, dimension));
+            yStride = BlasBufferUtil.getBlasStride(dimension == null ? op.y() : op.y().tensorAlongDimension(0, dimension));
             if (op.y().ordering() != op.x().ordering()) {
                 op.setY(op.y().dup(op.x().ordering()));
                 yStride = BlasBufferUtil.getBlasStride(dimension == null ? op.y() : op.y().tensorAlongDimension(0, dimension));
@@ -122,7 +131,7 @@ public class IndexAccumulationKernelCall extends BaseGpuKernelCall {
                     dimension = null;
             }
 
-            int xStride = BlasBufferUtil.getBlasStride(dimension == null ? op.x() : firstTad);
+            xStride = BlasBufferUtil.getBlasStride(dimension == null ? op.x() : firstTad);
             if (xStride < 0) {
                 op.setX(op.x().dup());
                 xStride = BlasBufferUtil.getBlasStride(dimension == null ? op.x() : firstTad);
@@ -197,6 +206,8 @@ public class IndexAccumulationKernelCall extends BaseGpuKernelCall {
         IndexAccumulation acc = (IndexAccumulation) op;
         try(KernelParamsWrapper kParams = new KernelParamsWrapper(op,true,args).setResultOp(acc, result,dimension)) {
             this.args = kParams.getKernelParameters();
+            this.cudaContext = kParams.getContext();
+            //setup the kernel parameters such that super.invoke() will call the kernel with the given parameters
             super.invoke();
         } catch(Exception e) {
             throw new RuntimeException("Could not execute kernel", e);

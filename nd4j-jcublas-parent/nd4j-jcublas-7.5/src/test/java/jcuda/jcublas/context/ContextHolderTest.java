@@ -24,7 +24,6 @@ import static org.junit.Assume.*;
 
 import jcuda.driver.CUcontext;
 import org.junit.Test;
-import org.nd4j.linalg.jcublas.SimpleJCublas;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
 
@@ -34,7 +33,6 @@ import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
 public class ContextHolderTest {
     @Test
     public void testContextHolder() throws Exception  {
-        SimpleJCublas.init();
         ContextHolder holder = ContextHolder.getInstance();
         CUcontext ctx = holder.getContext();
         assumeNotNull(ctx);

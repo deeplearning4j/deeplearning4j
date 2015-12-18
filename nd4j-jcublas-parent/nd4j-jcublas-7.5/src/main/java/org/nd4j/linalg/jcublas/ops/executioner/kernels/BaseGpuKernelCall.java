@@ -12,7 +12,10 @@ import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
 
 /**
- * Created by agibsonccc on 12/11/15.
+ * Base class for the kernel
+ * calls
+ *
+ * @author Adam Gibson
  */
 public abstract class BaseGpuKernelCall implements GpuKernelCall {
    protected CudaContext cudaContext;
@@ -55,7 +58,7 @@ public abstract class BaseGpuKernelCall implements GpuKernelCall {
     }
 
     @Override
-    public void invoke() {
+    public void invoke(String functionName) {
         /**
          * Invoke a cuda kernel by name. This will be wrt the function name.
          * Functions that are accumulations or transforms have names that end with _strided.
@@ -63,7 +66,6 @@ public abstract class BaseGpuKernelCall implements GpuKernelCall {
          */
 
         metrics.validate();
-        String functionName = op instanceof TransformOp || op instanceof Accumulation || op instanceof IndexAccumulation ? op.name() + "_strided" : op.name();
         //force blocks and threads to be even
         KernelFunctions.invoke(
                 metrics,
@@ -72,7 +74,12 @@ public abstract class BaseGpuKernelCall implements GpuKernelCall {
                 , getType(op), cudaContext
                 , args);
 
+    }
 
+    @Override
+    public void invoke() {
+        String functionName = op instanceof TransformOp || op instanceof Accumulation || op instanceof IndexAccumulation ? op.name() + "_strided" : op.name();
+        invoke(functionName);
     }
 
 

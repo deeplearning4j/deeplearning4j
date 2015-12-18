@@ -26,10 +26,7 @@ import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Accumulation;
-import org.nd4j.linalg.api.ops.IndexAccumulation;
-import org.nd4j.linalg.api.ops.ScalarOp;
-import org.nd4j.linalg.api.ops.TransformOp;
+import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.exception.IllegalOpException;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
@@ -350,25 +347,6 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore
-    public void testNegativeNumbersSoftmax() throws Exception {
-        Nd4j.MAX_ELEMENTS_PER_SLICE = Integer.MAX_VALUE;
-        Nd4j.MAX_SLICES_TO_PRINT = Integer.MAX_VALUE;
-        DataInputStream dis = new DataInputStream(new ClassPathResource("softmaxtest.nd").getInputStream());
-        INDArray read = Nd4j.read(dis);
-        dis.close();
-        INDArray max1 = read.max(1);
-        SoftMax softMax = new SoftMax(read);
-        softMax.exec(1);
-        INDArray z = softMax.z();
-        INDArray zSums = z.sum(1);
-        assertEquals(zSums.length(),zSums.sumNumber().doubleValue(),1e-1);
-    }
-
-
-
-
-    @Test
     public void testDimensionMax() {
         INDArray linspace = Nd4j.linspace(1, 6, 6).reshape(2, 3);
         int axis = 0;
@@ -519,8 +497,21 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         INDArray arr6 = Nd4j.ones(1,1,4,4,4,4);
         INDArray arr6m = arr6.mean(2, 3);
         INDArray arr6s = arr6.sum(2,3);
-        for( int i=0; i<arr6m.length(); i++ ) assertEquals(arr6m.getDouble(i),1,0.0);
-        for( int i=0; i<arr6s.length(); i++ ) assertEquals(arr6s.getDouble(i),16,0.0);
+        for( int i = 0; i<arr6m.length(); i++ )
+            assertEquals(arr6m.getDouble(i),1,0.0);
+        for( int i = 0; i<arr6s.length(); i++ )
+            assertEquals(arr6s.getDouble(i),16,0.0);
+    }
+
+    @Test
+    public void testTadCollapse() {
+        INDArray x = Nd4j.linspace(1,24,24).reshape(2,2,3,2);
+        Sum sum = new Sum(x);
+        TadCollapseAccumulation tadCollapseAccumulation = new TadCollapseAccumulation(sum,new int[]{2,3},new int[]{3});
+        tadCollapseAccumulation.exec();
+        INDArray normalSum = x.sum(2,3);
+        assertEquals(normalSum,tadCollapseAccumulation.getAccum().z());
+
     }
 
     @Test

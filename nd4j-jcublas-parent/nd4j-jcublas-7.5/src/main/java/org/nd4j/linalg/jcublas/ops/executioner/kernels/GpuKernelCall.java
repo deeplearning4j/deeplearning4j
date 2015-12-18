@@ -59,6 +59,11 @@ public interface GpuKernelCall {
      * Invoke the kernel
      */
     void invoke();
+    /**
+     * Invoke the kernel
+     * @param functionName  the name of the function to invoke
+     */
+    void invoke(String functionName);
 
 
 }

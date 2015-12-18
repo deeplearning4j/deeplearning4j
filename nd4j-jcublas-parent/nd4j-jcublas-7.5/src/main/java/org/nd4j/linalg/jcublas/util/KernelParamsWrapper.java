@@ -106,6 +106,9 @@ public class KernelParamsWrapper implements AutoCloseable {
      * @return
      */
     public KernelParamsWrapper setResultArray(INDArray array) {
+        if(!arrayToPointer.containsKey(array)) {
+            throw new IllegalStateException("No array found: unable to set array value");
+        }
         CublasPointer resultPointer = arrayToPointer.get(array).iterator().next();
         resultPointer.setResultPointer(true);
         if(resultPointer == null) {
@@ -152,8 +155,8 @@ public class KernelParamsWrapper implements AutoCloseable {
      * To set the array which is the result INDArray, use setResultArray()
      * @param kernelParams
      */
-    public KernelParamsWrapper(Op op,Object... kernelParams) {
-        this(op,false, kernelParams);
+    public KernelParamsWrapper(Object... kernelParams) {
+        this(false, kernelParams);
     }
     /**
      * Create a new wrapper for the kernel parameters.
@@ -164,7 +167,7 @@ public class KernelParamsWrapper implements AutoCloseable {
      * To set the array which is the result INDArray, use setResultArray()
      * @param kernelParams
      */
-    public KernelParamsWrapper(Op op,boolean closeContext,Object... kernelParams) {
+    public KernelParamsWrapper(boolean closeContext,Object... kernelParams) {
         kernelParameters = new Object[kernelParams.length];
         arrayToPointer = ArrayListMultimap.create();
         pointersToFree = new ArrayList<>();

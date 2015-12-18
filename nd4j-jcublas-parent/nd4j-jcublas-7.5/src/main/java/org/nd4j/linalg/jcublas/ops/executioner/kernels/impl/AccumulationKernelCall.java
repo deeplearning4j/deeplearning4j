@@ -4,22 +4,28 @@ import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.gpumetrics.GpuMetrics;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 import org.nd4j.linalg.jcublas.ops.executioner.kernels.BaseGpuKernelCall;
 import org.nd4j.linalg.jcublas.util.KernelParamsWrapper;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
+import org.nd4j.linalg.util.ArrayUtil;
+
+import java.util.Arrays;
 
 /**
- * Kernel call for accumulation
+ * Kernel call
+ *  for accumulation
  *
  * @author Adam Gibson
  */
 public class AccumulationKernelCall extends BaseGpuKernelCall {
     protected int[] dimension;
     protected INDArray result;
+    protected int xStride;
+    protected int yStride;
+    protected int[] multiDimension;
 
     /**
      * Accumulation kernel call
@@ -29,12 +35,47 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
      */
     public AccumulationKernelCall(Op op,int[] dimension,INDArray result) {
         super(op);
+        if(dimension == null)
+            dimension = new int[] {Integer.MAX_VALUE};
         this.dimension = dimension;
+
+        if(dimension.length > 1) {
+            if(dimension.length == op.x().rank()) {
+                this.dimension = new int[] {Integer.MAX_VALUE};
+            }
+            else {
+                //the dimensions need to be in order
+                Arrays.sort(dimension);
+                this.multiDimension = dimension;
+                //switch it to be being only the last dimension
+                //the tad will be the prod of the previous dimensions
+                this.dimension = new int[] {dimension[dimension.length - 1]};
+            }
+
+        }
+
         Accumulation acc = (Accumulation) op;
         if(result == null)
             this.result = Nd4j.scalar(acc.zeroDouble());
         else
             this.result = result;
+    }
+
+
+    public void multiReduce() {
+        int lengthDelta = op.x().tensorssAlongDimension(dimension) / op.x().tensorssAlongDimension(multiDimension);
+        //the shape of the new collapsed result
+        INDArray collapsedResult = Nd4j.create(ArrayUtil.removeIndex(op.x().shape(),multiDimension));
+        Accumulation acc = (Accumulation) op;
+        for(int i = 0; i < result.length(); i++) {
+            collapsedResult.putScalar(i % lengthDelta,acc.combineSubResults(collapsedResult.getDouble(i % lengthDelta),result.getDouble(i)));
+        }
+
+        for(int i = 0; i < collapsedResult.length(); i++) {
+            ((Accumulation) op).setFinalResult(collapsedResult.getDouble(i));
+            collapsedResult.putScalar(i,acc.getAndSetFinalResult(collapsedResult.getDouble(i)));
+        }
+
     }
 
     @Override
@@ -74,7 +115,7 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
     public void createArgs() {
         if (op.y() != null) {
             metrics.setSharedMemoryNotOverMax(metrics.getSharedMemory() * 2);
-            int xStride = BlasBufferUtil.getBlasStride(dimension == null ? op.x() : op.x().tensorAlongDimension(0, dimension));
+            xStride = BlasBufferUtil.getBlasStride(dimension == null ? op.x() : op.x().tensorAlongDimension(0, dimension));
             if (xStride < 0) {
                 op.setX(op.x().dup());
                 xStride = BlasBufferUtil.getBlasStride(dimension == null ? op.x() : op.x().tensorAlongDimension(0, dimension));
@@ -83,7 +124,7 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
 
             }
 
-            int yStride = BlasBufferUtil.getBlasStride(dimension == null ? op.y() : op.y().tensorAlongDimension(0, dimension));
+            yStride = BlasBufferUtil.getBlasStride(dimension == null ? op.y() : op.y().tensorAlongDimension(0, dimension));
             if (op.y().ordering() != op.x().ordering()) {
                 op.setY(op.y().dup(op.x().ordering()));
                 yStride = BlasBufferUtil.getBlasStride(dimension == null ? op.y() : op.y().tensorAlongDimension(0, dimension));
@@ -93,7 +134,7 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
             }
 
 
-            args = new Object[]{
+            args = new Object[] {
                     op.n(),
                     op.x(),
                     KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.x(), dimension)),
@@ -122,23 +163,13 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
                     dimension = null;
             }
 
-            int xStride = BlasBufferUtil.getBlasStride(dimension == null ? op.x() : firstTad);
+            xStride = BlasBufferUtil.getBlasStride(dimension == null ? op.x() : firstTad);
             if (xStride < 0) {
                 op.setX(op.x().dup());
                 xStride = BlasBufferUtil.getBlasStride(dimension == null ? op.x() : firstTad);
                 //dup didn't handle it
                 if (xStride < 0) {
-                    int[] squashed = Shape.squeeze(op.x().shape());
-                    int lengthDiff = Math.abs(op.x().shape().length - squashed.length);
-                    if (lengthDiff < 1) {
-                        throw new IllegalStateException("Unable to compute element wise stride for x");
-                    }
-                    for (int i = 0; i < dimension.length; i++)
-                        dimension[i] -= lengthDiff;
-                    INDArray reshapedX = op.x().reshape(squashed).dup();
-                    xStride = reshapedX.tensorAlongDimension(0, dimension).elementWiseStride();
-                    op.setX(reshapedX);
-                }
+                    throw new IllegalStateException("Unable to compute element wise stride for x");}
             }
 
             int sharedMemBasedOnBlockSize = op.n() * op.x().data().getElementSize();
@@ -151,7 +182,7 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
             if (dimension == null && xStride == 1 && op.x().offset() == 0)
                 length = op.n();
 
-            args = new Object[]{
+            args = new Object[] {
                     length,
                     op.x(),
                     KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.x(), dimension)),
@@ -165,10 +196,10 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
                     //by aggregating blocks on cpu first
                     toInt((dimension == null || dimension[0] == Integer.MAX_VALUE))
             };
-
-
         }
     }
+
+
 
     /**
      * Calculates a reduction across blocks
@@ -199,8 +230,10 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
     @Override
     public void invoke() {
         Accumulation acc = (Accumulation) op;
-        try(KernelParamsWrapper kParams = new KernelParamsWrapper(op,true,args).setResultOp(acc, result,dimension)) {
+        try(KernelParamsWrapper kParams = new KernelParamsWrapper(true,args).setResultOp(acc, result,dimension)) {
+            //setup the kernel parameters such that super.invoke() will call the kernel with the given parameters
             this.args = kParams.getKernelParameters();
+            this.cudaContext = kParams.getContext();
             super.invoke();
         } catch(Exception e) {
             throw new RuntimeException("Could not execute kernel", e);

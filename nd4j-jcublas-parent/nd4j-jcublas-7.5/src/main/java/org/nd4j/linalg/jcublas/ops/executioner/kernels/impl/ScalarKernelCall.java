@@ -88,10 +88,10 @@ public class ScalarKernelCall extends BaseGpuKernelCall {
 
     @Override
     public void invoke() {
-        try(KernelParamsWrapper kParams = new KernelParamsWrapper(op,true,args).setResultArray(op.z())) {
+        try(KernelParamsWrapper kParams = new KernelParamsWrapper(true,args).setResultArray(op.z())) {
             this.args = kParams.getKernelParameters();
-            super.invoke();
             cudaContext = kParams.getContext();
+            super.invoke();
         } catch(Exception e) {
             throw new RuntimeException("Could not execute kernel", e);
         }

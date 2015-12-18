@@ -20,9 +20,6 @@
 package org.nd4j.linalg.jcublas.ops.executioner;
 
 
-import org.apache.commons.math3.util.Pair;
-import org.nd4j.linalg.api.blas.BlasBufferUtil;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -30,19 +27,11 @@ import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDimensions;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.CopyOp;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.jcublas.SimpleJCublas;
-import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
-import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.context.CudaContext;
-import org.nd4j.linalg.jcublas.gpumetrics.GpuMetrics;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
-import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 import org.nd4j.linalg.jcublas.ops.executioner.kernels.GpuKernelCall;
 import org.nd4j.linalg.jcublas.ops.executioner.kernels.GpuKernelCallFactories;
-import org.nd4j.linalg.jcublas.util.KernelParamsWrapper;
-import org.nd4j.linalg.jcublas.util.PointerUtil;
 import org.nd4j.linalg.util.ArrayUtil;
 
 
@@ -55,11 +44,6 @@ import org.nd4j.linalg.util.ArrayUtil;
  */
 public class JCudaExecutioner extends DefaultOpExecutioner {
     public JCudaExecutioner() {
-        try {
-            SimpleJCublas.init();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override

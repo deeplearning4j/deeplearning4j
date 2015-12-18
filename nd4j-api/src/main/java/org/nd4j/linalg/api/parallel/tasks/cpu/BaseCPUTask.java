@@ -115,7 +115,7 @@ public abstract class BaseCPUTask<V> extends RecursiveTask<V> implements Task<V>
         } else if(z == x) {
             offsetZ = offsetX;
             incrZ = incrX;
-        } else if(z == y){
+        } else if(z == y) {
             offsetZ = offsetY;
             incrZ = incrY;
         } else {

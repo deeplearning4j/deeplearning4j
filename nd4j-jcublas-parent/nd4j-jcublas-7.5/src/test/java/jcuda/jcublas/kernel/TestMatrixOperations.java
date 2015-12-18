@@ -408,10 +408,10 @@ public class TestMatrixOperations {
 
     @Test
     public void testElementWiseStride() {
-        int length = ArrayUtil.prod(4,4,4,4);
-        INDArray ones = Nd4j.linspace(1,length,length).reshape(4,4,4,4);
-        int[] dimensions = {2,3};
-        INDArray dim = ones.tensorAlongDimension(0, dimensions);
+        int length = ArrayUtil.prod(2,2,3,2);
+        INDArray ones = Nd4j.linspace(1,length,length).reshape(2,2,3,2);
+        int[] dimensions = {3};
+        System.out.println("Tads for 2,3 " + ones.tensorssAlongDimension(2,3) + " and 3 only " + ones.tensorssAlongDimension(3));
         for(int i = 0; i < ones.tensorssAlongDimension(dimensions); i++) {
             System.out.println(ones.tensorAlongDimension(i,dimensions));
         }
