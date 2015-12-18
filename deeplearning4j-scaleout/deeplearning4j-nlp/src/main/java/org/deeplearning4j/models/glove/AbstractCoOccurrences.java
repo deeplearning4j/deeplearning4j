@@ -41,6 +41,10 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
 
     protected static final Logger logger = LoggerFactory.getLogger(AbstractCoOccurrences.class);
 
+    public double getCoOccurrenceCount(@NonNull T element1, @NonNull T element2) {
+        return coOCurreneCounts.getCount(element1, element2);
+    }
+
     public void fit() {
 
         sequenceIterator.reset();
@@ -160,7 +164,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                 // TODO: vocab filtering should take place
 
                 List<String> tokens = new ArrayList<>(sequence.asLabels());
-                logger.info("Tokens size: " + tokens.size());
+    //            logger.info("Tokens size: " + tokens.size());
                 for (int x = 0; x < sequence.getElements().size(); x++) {
                     int wordIdx = vocabCache.indexOf(tokens.get(x));
                     if (wordIdx < 0) continue;
