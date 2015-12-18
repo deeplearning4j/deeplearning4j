@@ -5,6 +5,7 @@ import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.embeddings.learning.SequenceLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
+import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
@@ -34,7 +35,7 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
 
     @Override
     public String getCodeName() {
-        return "dbow";
+        return "DBOW";
     }
 
     @Override
@@ -49,8 +50,18 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
         skipGram.configure(vocabCache, lookupTable, configuration);
     }
 
+    /**
+     * DBOW doesn't involves any pretraining
+     *
+     * @param iterator
+     */
     @Override
-    public void learnSequence(Sequence<T> sequence, AtomicLong nextRandom, double learningRate) {
+    public void pretrain(SequenceIterator<T> iterator) {
+
+    }
+
+    @Override
+    public void learnSequence(@NonNull Sequence<T> sequence, @NonNull AtomicLong nextRandom, double learningRate) {
         for(int i = 0; i < sequence.getElements().size(); i++) {
             dbow(i, sequence,  (int) nextRandom.get() % window, nextRandom, learningRate);
         }
