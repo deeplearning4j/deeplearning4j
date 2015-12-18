@@ -163,36 +163,49 @@ public class Norm2 extends BaseAccumulation {
     @Override
     public Op opForDimension(int index, int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-
+        Norm2 ret;
         if (y() != null)
-            return new Norm2(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            ret = new Norm2(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new Norm2(x.vectorAlongDimension(index, dimension));
-
+            ret = new Norm2(x.vectorAlongDimension(index, dimension));
+        ret.setApplyFinalTransform(applyFinalTransform());
+        return ret;
     }
 
     @Override
     public Op opForDimension(int index, int... dimension) {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
-
+        Norm2 ret;
         if (y() != null)
-            return new Norm2(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            ret = new Norm2(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new Norm2(x.tensorAlongDimension(index, dimension));
+            ret = new Norm2(x.tensorAlongDimension(index, dimension));
+        ret.setApplyFinalTransform(applyFinalTransform());
+        return ret;
     }
 
     @Override
     public double getAndSetFinalResult(double accum) {
-        double d = FastMath.sqrt(accum);
-        this.finalResult = d;
-        return d;
+        if(applyFinalTransform()) {
+            double d = FastMath.sqrt(accum);
+            this.finalResult = d;
+            return d;
+        }
+        else
+            return accum;
+
     }
 
     @Override
     public float getAndSetFinalResult(float accum) {
-        float f = (float)FastMath.sqrt(accum);
-        this.finalResult = f;
-        return f;
+        if(applyFinalTransform()) {
+            float f = (float) FastMath.sqrt(accum);
+            this.finalResult = f;
+            return f;
+        }
+        else
+            return  accum;
+
     }
 
     @Override
@@ -202,12 +215,16 @@ public class Norm2 extends BaseAccumulation {
     }
 
     @Override
-    public double calculateFinalResult(double accum, int n){
-        return FastMath.sqrt(accum);
+    public double calculateFinalResult(double accum, int n) {
+        if(applyFinalTransform())
+            return FastMath.sqrt(accum);
+        return accum;
     }
 
     @Override
-    public float calculateFinalResult(float accum, int n){
-        return (float)FastMath.sqrt(accum);
+    public float calculateFinalResult(float accum, int n) {
+        if(applyFinalTransform())
+            return (float)FastMath.sqrt(accum);
+        return accum;
     }
 }

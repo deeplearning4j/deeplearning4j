@@ -81,7 +81,7 @@ public class EuclideanDistance extends BaseAccumulation {
     @Override
     public IComplexNumber update( IComplexNumber accum, double x, double y) {
         double d = (x-y);
-        return accum.add(d*d);
+        return accum.add(d * d);
     }
 
     @Override
@@ -173,34 +173,38 @@ public class EuclideanDistance extends BaseAccumulation {
     @Override
     public Op opForDimension(int index, int dimension) {
         INDArray xForDimension = x.vectorAlongDimension(index, dimension);
-
+        EuclideanDistance ret;
         if (y() != null)
-            return new EuclideanDistance(xForDimension, y.vectorAlongDimension(index, dimension), xForDimension.length());
+            ret = new EuclideanDistance(xForDimension, y.vectorAlongDimension(index, dimension), xForDimension.length());
         else
-            return new EuclideanDistance(x.vectorAlongDimension(index, dimension));
-
+            ret = new EuclideanDistance(x.vectorAlongDimension(index, dimension));
+        ret.setApplyFinalTransform(applyFinalTransform());
+        return ret;
     }
 
     @Override
     public Op opForDimension(int index, int... dimension) {
         INDArray xForDimension = x.tensorAlongDimension(index, dimension);
+        EuclideanDistance ret;
         if (y() != null)
-            return new EuclideanDistance(xForDimension, y.tensorAlongDimension(index, dimension), xForDimension.length());
+            ret = new EuclideanDistance(xForDimension, y.tensorAlongDimension(index, dimension), xForDimension.length());
         else
-            return new EuclideanDistance(x.tensorAlongDimension(index, dimension));
+            ret = new EuclideanDistance(x.tensorAlongDimension(index, dimension));
+        ret.setApplyFinalTransform(applyFinalTransform());
+        return ret;
     }
 
     @Override
     public double getAndSetFinalResult(double accum) {
-       if(applyFinalTransform) {
-           double d = FastMath.sqrt(accum);
-           this.finalResult = d;
-           return d;
-       }
+        if(applyFinalTransform()) {
+            double d = FastMath.sqrt(accum);
+            this.finalResult = d;
+            return d;
+        }
         else {
-           this.finalResult = accum;
-           return accum;
-       }
+            this.finalResult = accum;
+            return accum;
+        }
 
     }
 

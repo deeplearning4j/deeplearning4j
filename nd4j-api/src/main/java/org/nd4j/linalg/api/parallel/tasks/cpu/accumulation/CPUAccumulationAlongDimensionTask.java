@@ -209,7 +209,8 @@ public class CPUAccumulationAlongDimensionTask extends BaseCPUTask<INDArray> {
 
             boolean canDoDirectly;
             if (y2 == null) canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x2);
-            else canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x2, y2);
+            else
+                canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x2, y2);
 
             if (canDoDirectly) {
                 subTask = new CPUAccumulationTask(opOnDimension, threshold, true);

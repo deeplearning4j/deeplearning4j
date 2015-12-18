@@ -547,7 +547,6 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         for(int i = 0; i < 12; i++) {
             int val = assertionMap.get(i);
             assertEquals(val, TadCollapseAccumulation.reductionIndexForTad(i, 4, 12));
-            assertEquals(i,TadCollapseAccumulation.tadIndexForExpanded(12,4,val));
         }
 
 

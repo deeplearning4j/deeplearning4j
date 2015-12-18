@@ -150,24 +150,30 @@ public class CosineSimilarity extends BaseAccumulation {
     @Override
     public Op opForDimension(int index, int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
+        CosineSimilarity ret;
         if (y() != null)
-            return new CosineSimilarity(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            ret = new CosineSimilarity(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new CosineSimilarity(x.vectorAlongDimension(index, dimension));
+            ret = new CosineSimilarity(x.vectorAlongDimension(index, dimension));
+        ret.setApplyFinalTransform(applyFinalTransform());
+        return ret;
 
     }
 
     @Override
     public Op opForDimension(int index, int... dimension) {
         INDArray xForDimesnion = x.tensorAlongDimension(index, dimension);
+        CosineSimilarity ret;
         if (y() != null)
-            return new CosineSimilarity(xForDimesnion, y.tensorAlongDimension(index, dimension), xForDimesnion.length());
+            ret = new CosineSimilarity(xForDimesnion, y.tensorAlongDimension(index, dimension), xForDimesnion.length());
         else
-            return new CosineSimilarity(x.tensorAlongDimension(index, dimension));
+            ret = new CosineSimilarity(x.tensorAlongDimension(index, dimension));
+        ret.setApplyFinalTransform(applyFinalTransform());
+        return ret;
     }
 
     @Override
-    public void exec(){
+    public void exec() {
         this.constantNormalizedByNorm2X = x.norm2Number();
         this.constantNormalizedByNorm2Y = y.norm2Number();
         this.extraArgs = new Object[]{0.0,constantNormalizedByNorm2X, constantNormalizedByNorm2Y};
@@ -188,9 +194,15 @@ public class CosineSimilarity extends BaseAccumulation {
 
     @Override
     public double getAndSetFinalResult(double accum){
-        double d = accum / (constantNormalizedByNorm2X.doubleValue()*constantNormalizedByNorm2Y.doubleValue());
-        this.finalResult = d;
-        return d;
+        if(applyFinalTransform()) {
+            double d = accum / (constantNormalizedByNorm2X.doubleValue()*constantNormalizedByNorm2Y.doubleValue());
+            this.finalResult = d;
+            return d;
+        }
+        else {
+            return accum;
+        }
+
     }
 
     @Override

@@ -313,18 +313,6 @@ public class TadCollapseAccumulation extends BaseOp {
         return tadsForOriginal / tadsForReduce;
     }
 
-    /**
-     * Maps the given index
-     * based
-     * @param originalTads the number of tads for a
-     * the multiplied problem
-     * @param numTads the number of tads for the
-     * shrunken/multi dimension problem
-     *
-     */
-    public static int tadIndexForExpanded(int originalTads,int numTads,int idx) {
-        return idx / tadsPerReduceIndex(numTads,originalTads);
-    }
 
     /**
      * Maps a linear index to a reduction index
