@@ -23,7 +23,7 @@ Now that the neural nets know the features that compose faces, the next step wil
 
 Here's some of the code used to run LFW on DL4J:
 
-<script src="https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/convolution/CNNLFWExample.java?slice=59:111"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/convolution/CNNLFWExample.java?slice=35:111"></script>
 
 To run the Labeled Faces in the Wild dataset on Deeplearning4j, you can either click "run" on the DBNLFWExample.java file in IntelliJ (see our [**Getting Started** page](../gettingstarted.html)).
 
