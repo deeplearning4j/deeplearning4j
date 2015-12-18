@@ -88,10 +88,12 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         if (trainElementsVectors && elementsLearningAlgorithm != null) {
             log.info("          building ElementsLearningAlgorithm: [" +elementsLearningAlgorithm.getCodeName()+ "]");
             elementsLearningAlgorithm.configure(vocab, lookupTable, configuration);
+            elementsLearningAlgorithm.pretrain(iterator);
         }
         if (trainSequenceVectors && sequenceLearningAlgorithm != null) {
             log.info("          building SequenceLearningAlgorithm: [" +sequenceLearningAlgorithm.getCodeName()+ "]");
             sequenceLearningAlgorithm.configure(vocab, lookupTable, configuration);
+            sequenceLearningAlgorithm.pretrain(this.iterator);
         }
 
         log.info("Starting learning process...");
