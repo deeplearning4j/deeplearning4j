@@ -23,4 +23,6 @@ public interface SequenceLearningAlgorithm<T extends SequenceElement> {
     void pretrain(SequenceIterator<T> iterator);
 
     void learnSequence(Sequence<T> sequence, AtomicLong nextRandom, double learningRate);
+
+    boolean isEarlyTerminationHit();
 }

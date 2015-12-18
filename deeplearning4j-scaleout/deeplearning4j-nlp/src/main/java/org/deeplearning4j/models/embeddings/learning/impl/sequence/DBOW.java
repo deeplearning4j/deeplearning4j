@@ -67,6 +67,15 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
         }
     }
 
+    /**
+     * DBOW has no reasons for early termination
+     * @return
+     */
+    @Override
+    public boolean isEarlyTerminationHit() {
+        return false;
+    }
+
     protected void dbow(int i, Sequence<T> sequence, int b, AtomicLong nextRandom, double alpha) {
 
         final T word = sequence.getElements().get(i);
