@@ -1,10 +1,8 @@
 package org.nd4j.linalg.jcublas.ops.executioner.kernels;
 
+import jcuda.utils.KernelLauncher;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.ops.Accumulation;
-import org.nd4j.linalg.api.ops.IndexAccumulation;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.TransformOp;
+import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.gpumetrics.GpuMetrics;
@@ -67,12 +65,27 @@ public abstract class BaseGpuKernelCall implements GpuKernelCall {
 
         metrics.validate();
         //force blocks and threads to be even
-        KernelFunctions.invoke(
-                metrics,
-                true
-                , functionName
-                , getType(op), cudaContext
-                , args);
+        if(op instanceof TadCollapseAccumulation) {
+            String functionName2 = KernelLauncher.FUNCTION_NAME + "_" + getType(op);
+            KernelFunctions.invoke(
+                    metrics,
+                    true
+                    , functionName,
+                    functionName2
+                    , getType(op), cudaContext
+                    , args);
+
+        }
+        else {
+            //module name is the op, function name is transform
+            KernelFunctions.invoke(
+                    metrics,
+                    true
+                    , functionName
+                    , getType(op), cudaContext
+                    , args);
+        }
+
 
     }
 
