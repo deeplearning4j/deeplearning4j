@@ -138,14 +138,14 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         if (trainElementsVectors) {
             // call for ElementsLearningAlgorithm
             nextRandom.set(nextRandom.get() * 25214903917L + 11);
-            elementsLearningAlgorithm.learnSequence(sequence, nextRandom, alpha);
+            if (!elementsLearningAlgorithm.isEarlyTerminationHit()) elementsLearningAlgorithm.learnSequence(sequence, nextRandom, alpha);
         }
 
         if (trainSequenceVectors)  {
             // call for SequenceLearningAlgorithm
             nextRandom.set(nextRandom.get() * 25214903917L + 11);
             //dbow(i, sequence, (int) nextRandom.get() % window, nextRandom, alpha);
-            sequenceLearningAlgorithm.learnSequence(sequence, nextRandom, alpha);
+            if (!sequenceLearningAlgorithm.isEarlyTerminationHit()) sequenceLearningAlgorithm.learnSequence(sequence, nextRandom, alpha);
         }
     }
 
