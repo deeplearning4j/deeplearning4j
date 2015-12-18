@@ -382,7 +382,7 @@ public class WordVectorSerializer {
         printWriter.println(builder.toString().trim());
 
         // saving table, available only if negative sampling is used
-        if (conf.getNegative() > 0) {
+        if (conf.getNegative() > 0 && ((InMemoryLookupTable) lookupTable).getTable() != null) {
             builder = new StringBuilder();
             for (int x = 0; x < ((InMemoryLookupTable) lookupTable).getTable().columns(); x++) {
                 builder.append(((InMemoryLookupTable) lookupTable).getTable().getDouble(x)).append(" ");
@@ -415,7 +415,7 @@ public class WordVectorSerializer {
             vw.setSyn1(dsyn1);
 
             // writing down syn1Neg, if negative sampling is used
-            if (conf.getNegative() > 0) {
+            if (conf.getNegative() > 0 && ((InMemoryLookupTable) lookupTable).getSyn1Neg() != null) {
                 INDArray syn1Neg = ((InMemoryLookupTable) lookupTable).getSyn1Neg().getRow(vocabCache.indexOf(word.getLabel()));
                 double[] dsyn1Neg = new double[syn1Neg.columns()];
                 for (int x = 0; x < syn1Neg.columns(); x++) {

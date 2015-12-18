@@ -68,7 +68,7 @@ public class AbstractCoOccurrencesTest {
 
         coOccurrences.fit();
 
-        List<Pair<String, String>> list = coOccurrences.coOccurrenceList();
+        List<Pair<VocabWord, VocabWord>> list = coOccurrences.coOccurrenceList();
         assertNotEquals(null, list);
 
         log.info("CoOccurrences: " + list);

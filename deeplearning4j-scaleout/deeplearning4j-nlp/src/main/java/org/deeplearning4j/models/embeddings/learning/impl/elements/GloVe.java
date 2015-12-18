@@ -1,6 +1,7 @@
 package org.deeplearning4j.models.embeddings.learning.impl.elements;
 
 import lombok.NonNull;
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
@@ -10,6 +11,7 @@ import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -71,8 +73,37 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
          */
     }
 
+    /**
+     *  Since GloVe is learning representations using elements CoOccurences, all training is done in GloVe class internally, so only first thread will execute learning process,
+     *  and the rest of parent threads will just exit learning process
+     *
+     * @return True, if training should stop, False otherwise.
+     */
     @Override
     public boolean isEarlyTerminationHit() {
         return false;
+    }
+
+    private class GloveCalculationsThread extends Thread implements Runnable {
+        private final int threadId;
+        private final AbstractCoOccurrences<T> coOccurrences;
+
+        public GloveCalculationsThread(int threadId, @NonNull AbstractCoOccurrences<T> coOccurrences) {
+            this.threadId = threadId;
+            this.coOccurrences = coOccurrences;
+
+            this.setName("GloVe ElementsLearningAlgorithm thread " + this.threadId);
+        }
+
+        @Override
+        public void run() {
+            List<Pair<T, T>> coList = coOccurrences.coOccurrenceList();
+            for (int x = 0; x < threadId; x++) {
+                // no for each pair do appropriate training
+                T element1 = coList.get(x).getFirst();
+                T element2 = coList.get(x).getFirst();
+                //double weight = coOccurrences.getCoOccurence
+            }
+        }
     }
 }
