@@ -18,7 +18,7 @@ Typically, a DataSetIterator handles inputs and dataset-specific concerns like b
 
 Next, we want to train a deep-belief network to reconstruct the MNIST dataset. Here's how you configure (and train) your deep-belief network (by giving it three **hiddenLayerSizes**, we have effectively created three hidden layers):
 
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/deepbelief/DBNFullMnistExample.java?slice=40:65"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/deepbelief/DBNMnistFullExample.java?slice=28:95"></script>
 
 Notice there is no DBN class, just a stack of [restricted Boltzmann machines (RBMs), which are discussed here alongside their parameters](http://deeplearning4j.org/restrictedboltzmannmachine.html). 
 
