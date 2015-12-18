@@ -34,9 +34,9 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
     protected int workers = Runtime.getRuntime().availableProcessors();
 
     private Counter<Integer> sentenceOccurrences = Util.parallelCounter();
-    private CounterMap<String,String> coOCurreneCounts = Util.parallelCounterMap();
+    private CounterMap<T, T> coOCurreneCounts = Util.parallelCounterMap();
     private Counter<Integer> occurrenceAllocations = Util.parallelCounter();
-    private List<Pair<String,String>> coOccurrences;
+    private List<Pair<T, T>> coOccurrences;
     private AtomicLong processedSequences = new AtomicLong(0);
 
     protected static final Logger logger = LoggerFactory.getLogger(AbstractCoOccurrences.class);
@@ -66,26 +66,26 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
      * Returns list of label pairs for each element met in each sequence
      * @return
      */
-    public List<Pair<String,String>> coOccurrenceList() {
+    public synchronized List<Pair<T, T>> coOccurrenceList() {
         if (coOccurrences != null)
             return coOccurrences;
 
         coOccurrences = new ArrayList<>();
-        Iterator<Pair<String, String>> iterator = coOCurreneCounts.getPairIterator();
+        Iterator<Pair<T, T>> iterator = coOCurreneCounts.getPairIterator();
         while (iterator.hasNext()) {
-            Pair<String, String> pair = iterator.next();
+            Pair<T, T> pair = iterator.next();
 
             if (pair.getFirst().equals(pair.getSecond())) continue;
 
             // each pair should be checked against vocab, but that's not strictly required
-            if (!vocabCache.hasToken(pair.getFirst()) || !vocabCache.hasToken(pair.getSecond())) {
+            if (!vocabCache.hasToken(pair.getFirst().getLabel()) || !vocabCache.hasToken(pair.getSecond().getLabel())) {
                 logger.debug("Skipping pair: '"+ pair.getFirst()+"', '"+ pair.getSecond()+"'");
                 continue;
             } else logger.debug("Adding pair: '"+ pair.getFirst()+"', '"+ pair.getSecond()+"'");
 
 
 
-            coOccurrences.add(new Pair<String, String>(pair.getFirst(), pair.getSecond()));
+            coOccurrences.add(new Pair<T, T>(pair.getFirst(), pair.getSecond()));
         }
 
         return coOccurrences;
@@ -181,19 +181,19 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                         }
 
                         if(wordIdx < otherWord) {
-                            coOCurreneCounts.incrementCount(tokens.get(x), tokens.get(j), 1.0 / (j - x + Nd4j.EPS_THRESHOLD));
+                            coOCurreneCounts.incrementCount(vocabCache.wordFor(tokens.get(x)), vocabCache.wordFor(tokens.get(j)), 1.0 / (j - x + Nd4j.EPS_THRESHOLD));
                             occurrenceAllocations.incrementCount(sequence.getSequenceId(),1.0);
                             if(symmetric) {
-                                coOCurreneCounts.incrementCount(tokens.get(j), tokens.get(x), 1.0 / (j - x + Nd4j.EPS_THRESHOLD));
+                                coOCurreneCounts.incrementCount(vocabCache.wordFor(tokens.get(j)), vocabCache.wordFor(tokens.get(x)), 1.0 / (j - x + Nd4j.EPS_THRESHOLD));
                                 occurrenceAllocations.incrementCount(sequence.getSequenceId(),1.0);
                             }
                         }
                         else {
-                            coOCurreneCounts.incrementCount(tokens.get(j),tokens.get(x), 1.0 / (j - x + Nd4j.EPS_THRESHOLD));
+                            coOCurreneCounts.incrementCount(vocabCache.wordFor(tokens.get(j)),vocabCache.wordFor(tokens.get(x)), 1.0 / (j - x + Nd4j.EPS_THRESHOLD));
                             occurrenceAllocations.incrementCount(sequence.getSequenceId(),1.0);
 
                             if(symmetric) {
-                                coOCurreneCounts.incrementCount(tokens.get(x), tokens.get(j), 1.0 / (j - x + Nd4j.EPS_THRESHOLD));
+                                coOCurreneCounts.incrementCount(vocabCache.wordFor(tokens.get(x)), vocabCache.wordFor(tokens.get(j)), 1.0 / (j - x + Nd4j.EPS_THRESHOLD));
                                 occurrenceAllocations.incrementCount(sequence.getSequenceId(),1.0);
                             }
                         }
