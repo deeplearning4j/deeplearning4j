@@ -56,7 +56,7 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
     }
 
     /**
-     * Learns sequence using SkipGram algorithm
+     * Learns sequence using GloVe algorithm
      *
      * @param sequence
      * @param nextRandom
@@ -64,6 +64,15 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
      */
     @Override
     public void learnSequence(@NonNull Sequence<T> sequence, @NonNull AtomicLong nextRandom, double learningRate) {
+        /*
+                GloVe learning algorithm is implemented like a hack, over existing code base. It's called in SequenceVectors context, but actually only for the first call.
+                All subsequent calls will met early termination condition, and will be successfully ignored. But since elements vectors will be updated within first call,
+                this will allow compatibility with everything beyond this implementaton
+         */
+    }
 
+    @Override
+    public boolean isEarlyTerminationHit() {
+        return false;
     }
 }

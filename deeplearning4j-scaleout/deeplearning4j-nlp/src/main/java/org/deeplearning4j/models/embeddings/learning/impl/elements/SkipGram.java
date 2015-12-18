@@ -100,6 +100,16 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         }
     }
 
+    /**
+     * SkipGram has no reasons for early termination ever.
+     *
+     * @return
+     */
+    @Override
+    public boolean isEarlyTerminationHit() {
+        return false;
+    }
+
     private void skipGram(int i, List<T> sentence, int b, AtomicLong nextRandom, double alpha) {
         final T word = sentence.get(i);
         if(word == null || sentence.isEmpty())
