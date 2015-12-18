@@ -50,7 +50,9 @@ import org.nd4j.linalg.io.ClassPathResource;
 import java.io.DataInputStream;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -512,10 +514,47 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         INDArray normalSum = x.sum(2,3);
         assertEquals(normalSum,tadCollapseAccumulation.getAccum().z());
 
+
+        Mean mean = new Mean(x);
+        TadCollapseAccumulation tadCollapseAccumulationMean = new TadCollapseAccumulation(mean,new int[]{2,3},new int[]{3});
+        tadCollapseAccumulationMean.exec();
+        INDArray normaMean = x.mean(2, 3);
+        assertEquals(normaMean,tadCollapseAccumulationMean.getAccum().z());
+
     }
 
     @Test
-    public void testStdev(){
+    public void testReductionIndex() {
+        INDArray x = Nd4j.linspace(1,24,24).reshape(2,2,3,2);
+        Map<Integer,Integer> assertionMap = new HashMap<>();
+        assertionMap.put(0,0);
+        assertionMap.put(1,0);
+        assertionMap.put(2,0);
+        assertionMap.put(3,1);
+        assertionMap.put(4,1);
+        assertionMap.put(5,1);
+        assertionMap.put(6,2);
+        assertionMap.put(7,2);
+        assertionMap.put(8,2);
+        assertionMap.put(9,3);
+        assertionMap.put(10,3);
+        assertionMap.put(11,3);
+        assertionMap.put(12,3);
+
+        int[] smallerDimension ={3};
+        int[] biggerDImensions = new int[] {2,3};
+        assertEquals(3,TadCollapseAccumulation.tadsPerReduceIndex(4,12));
+        for(int i = 0; i < 12; i++) {
+            int val = assertionMap.get(i);
+            assertEquals(val, TadCollapseAccumulation.reductionIndexForTad(i, 4, 12));
+            assertEquals(i,TadCollapseAccumulation.tadIndexForExpanded(12,4,val));
+        }
+
+
+    }
+
+    @Test
+    public void testStdev() {
 
         INDArray arr = Nd4j.create(new float[]{0.9296161f, 0.31637555f, 0.1839188f}, new int[]{1, 3}, ordering());
         double stdev = arr.stdNumber().doubleValue();

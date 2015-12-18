@@ -79,26 +79,45 @@ public class Mean extends Sum {
 
     @Override
     public double getAndSetFinalResult(double accum) {
-        double d = accum / n();
-        this.finalResult = d;
-        return d;
+        if(applyFinalTransform()) {
+            double d = accum / n();
+            this.finalResult = d;
+            return d;
+        }
+        else {
+            double d = accum;
+            this.finalResult = d;
+            return d;
+        }
+
     }
 
     @Override
-    public float getAndSetFinalResult(float accum){
-        float f = accum / n();
-        this.finalResult = f;
-        return f;
+    public float getAndSetFinalResult(float accum) {
+        if(applyFinalTransform()) {
+            float f = accum / n();
+            this.finalResult = f;
+            return f;
+        }
+        else {
+            this.finalResult = accum;
+            return accum;
+        }
+
     }
 
     @Override
     public double calculateFinalResult(double accum, int n) {
-        return accum / n;
+        if(applyFinalTransform())
+            return accum / n;
+        return accum;
     }
 
     @Override
     public float calculateFinalResult(float accum, int n) {
-        return accum / n;
+        if(applyFinalTransform())
+            return accum / n;
+        return accum;
     }
 
     @Override

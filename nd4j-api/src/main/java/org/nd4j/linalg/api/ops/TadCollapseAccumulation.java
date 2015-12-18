@@ -162,12 +162,15 @@ public class TadCollapseAccumulation extends BaseOp {
 
         if(accum instanceof Accumulation) {
             Accumulation acc2 = (Accumulation) accum;
+            //avoid the final transform till towards the end
+            acc2.setApplyFinalTransform(false);
             Nd4j.getExecutioner().exec(acc2,smallerDimension);
         }
         else if(accum instanceof IndexAccumulation) {
             IndexAccumulation acc2 = (IndexAccumulation) accum;
             Nd4j.getExecutioner().exec(acc2,smallerDimension);
         }
+
 
         /**
          * Now combine the results based on
@@ -177,10 +180,17 @@ public class TadCollapseAccumulation extends BaseOp {
         int smallerProblem = accum.x().tensorssAlongDimension(smallerDimension);
         int biggerProblem = accum.x().tensorssAlongDimension(originalDimension);
         if(accum instanceof Accumulation) {
+            int biggerTadLength = accum.x().tensorAlongDimension(0,originalDimension).length();
             Accumulation accumulation = (Accumulation) accum;
             for(int i = 0; i < smallerProblem; i++) {
                 int reductionIndex = reductionIndexForTad(i,biggerProblem,smallerProblem);
                 aggregated.putScalar(reductionIndex,accumulation.combineSubResults(aggregated.getDouble(reductionIndex),accumulation.z().getDouble(i)));
+            }
+
+            accum.setN(biggerTadLength);
+            accumulation.setApplyFinalTransform(true);
+            for(int i = 0; i < aggregated.length(); i++) {
+                aggregated.putScalar(i,accumulation.calculateFinalResult(aggregated.getDouble(i),biggerTadLength));
             }
         }
         else if(accum instanceof IndexAccumulation) {
@@ -190,6 +200,8 @@ public class TadCollapseAccumulation extends BaseOp {
                 aggregated.putScalar(reductionIndex,indexAccumulation.combineSubResults(accum.x().getDouble(i), i, aggregated.getDouble(reductionIndex), reductionIndex));
             }
         }
+
+
 
 
         //set the new result
