@@ -1,6 +1,7 @@
 package org.deeplearning4j.models.sequencevectors;
 
 import org.canova.api.util.ClassPathResource;
+import org.deeplearning4j.models.embeddings.learning.impl.elements.GloVe;
 import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
@@ -222,5 +223,46 @@ public class SequenceVectorsTest {
                 .resetModel(false)
                 .trainElementsRepresentation(false)
                 .build();
+    }
+
+    @Test
+    public void testGlove1() throws Exception {
+        ClassPathResource resource = new ClassPathResource("big/raw_sentences.txt");
+        File file = resource.getFile();
+
+        BasicLineIterator underlyingIterator = new BasicLineIterator(file);
+
+        TokenizerFactory t = new DefaultTokenizerFactory();
+        t.setTokenPreProcessor(new CommonPreprocessor());
+
+        SentenceTransformer transformer = new SentenceTransformer.Builder()
+                .iterator(underlyingIterator)
+                .tokenizerFactory(t)
+                .build();
+
+        AbstractSequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<VocabWord>(transformer)
+                .build();
+
+        SequenceVectors<VocabWord> vectors = new SequenceVectors.Builder<VocabWord>(new VectorsConfiguration())
+                .minWordFrequency(5)
+                .iterate(sequenceIterator)
+                .batchSize(250)
+                .iterations(1)
+                .epochs(3)
+                .elementsLearningAlgorithm(new GloVe<VocabWord>())
+                .resetModel(true)
+                .trainElementsRepresentation(true)
+                .build();
+
+        vectors.fit();
+
+        double sim = vectors.similarity("day", "night");
+        logger.info("Day/night similarity: " + sim);
+
+
+        Collection<String> labels = vectors.wordsNearest("day", 10);
+        logger.info("Nearest labels to 'day': " + labels);
+
+        assertTrue(sim > 0.6d);
     }
 }
