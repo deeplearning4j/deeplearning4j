@@ -64,11 +64,10 @@ public class LfwFetcherTest {
     public void testLfwReader() throws Exception {
         String subDir = "lfw-a/lfw";
         String path = FilenameUtils.concat(System.getProperty("user.home"), subDir);
-        RecordReader rr = new ImageRecordReader(250, 250, 3, true, null, ".[0-9]+");
+        RecordReader rr = new ImageRecordReader(250, 250, 3, true, ".[0-9]+");
         rr.initialize(new LimitFileSplit(new File(path), null, 10, 5, ".[0-9]+", new Random(123)));
         RecordReaderDataSetIterator rrd = new RecordReaderDataSetIterator(rr, 10, 250*250*3, 8);
-        DataSet d = rrd.next(1);
-        assertEquals("Aaron_Eckhart", d.get(0).toString());
+        assertEquals("Aaron_Sorkin", rr.getLabels().get(0));
     }
 
     @Test
@@ -78,15 +77,16 @@ public class LfwFetcherTest {
         int numChannels = 3;
         int outputNum = 432;
         int numSamples = 10;
-        int categories = 5;
+        int categories = 8;
         int iterations = 1;
         int seed = 123;
         int listenerFreq = iterations/5;
 
+        // TODO LfwDataSetIterator & example
 //        DataSetIterator lfw = new LFWDataSetIterator(batchSize, numSamples, numColumns, numRows, numChannels, true);
         String subDir = "lfw-a/lfw";
         String path = FilenameUtils.concat(System.getProperty("user.home"), subDir);
-        RecordReader rr = new ImageRecordReader(numColumns, numRows, numChannels, true, null, ".[0-9]+");
+        RecordReader rr = new ImageRecordReader(numColumns, numRows, numChannels, true, ".[0-9]+");
         rr.initialize(new LimitFileSplit(new File(path), null, numSamples, categories, ".[0-9]+", new Random(123)));
         RecordReaderDataSetIterator lfw = new RecordReaderDataSetIterator(rr, 10, 250*250*3, 8);
 
@@ -105,7 +105,7 @@ public class LfwFetcherTest {
                 .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2,2})
                         .build())
                 .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                        .nOut(outputNum)
+                        .nOut(categories)
                         .weightInit(WeightInit.XAVIER)
                         .activation("softmax")
                         .build())
