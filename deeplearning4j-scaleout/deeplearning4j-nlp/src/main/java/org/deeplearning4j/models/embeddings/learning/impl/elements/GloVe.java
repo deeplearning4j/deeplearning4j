@@ -31,6 +31,9 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * GloVe implementation for SequenceVectors
  *
+ *
+ * WORK IS IN PROGRESS, PLEASE DO NOT USE
+ *
  * @author raver119@gmail.com
  */
 public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgorithm<T> {
