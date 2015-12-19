@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Random;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.deeplearning4j.base.MnistFetcher;
 import org.deeplearning4j.datasets.mnist.MnistManager;
 import org.deeplearning4j.util.MathUtils;
@@ -39,17 +40,17 @@ import org.nd4j.linalg.factory.Nd4j;
  *
  */
 public class MnistDataFetcher extends BaseDataFetcher {
-    private static final long serialVersionUID = -3218754671561789818L;
-    private transient MnistManager man;
     public static final int NUM_EXAMPLES = 60000;
     public static final int NUM_EXAMPLES_TEST = 10000;
-    private static final String TEMP_ROOT = System.getProperty("user.home");
-    private static final String MNIST_ROOT = TEMP_ROOT + File.separator + "MNIST" + File.separator;
-    private boolean binarize = true;
-    private boolean train;
-    private int[] order;
-    private Random rng;
-    private boolean shuffle;
+    protected static final String TEMP_ROOT = System.getProperty("user.home");
+    protected static final String MNIST_ROOT = TEMP_ROOT + File.separator + "MNIST" + File.separator;
+
+    protected transient MnistManager man;
+    protected boolean binarize = true;
+    protected boolean train;
+    protected int[] order;
+    protected Random rng;
+    protected boolean shuffle;
 
 
     /**
@@ -76,14 +77,15 @@ public class MnistDataFetcher extends BaseDataFetcher {
             labels = MNIST_ROOT + MnistFetcher.testFileLabelsFilename_unzipped;
             totalExamples = NUM_EXAMPLES_TEST;
         }
+
         try {
             man = new MnistManager(images, labels, train);
         }catch(Exception e) {
             FileUtils.deleteDirectory(new File(MNIST_ROOT));
             new MnistFetcher().downloadAndUntar();
             man = new MnistManager(images, labels, train);
-
         }
+
         numOutcomes = 10;
         this.binarize = binarize;
         cursor = 0;
