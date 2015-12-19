@@ -238,7 +238,7 @@ sealed trait IndexRange{
 }
 
 case class IntRangeFrom(underlying: Int) extends IndexRange {
-  def apply(i: Int): (Int, Int) = (underlying, i)
+  def apply[T](a:T): (Int, T) = (underlying, a)
 
   override def toString: String = s"$underlying->"
 

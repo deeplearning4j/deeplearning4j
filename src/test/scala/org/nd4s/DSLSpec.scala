@@ -51,4 +51,7 @@ class DSLSpec extends FlatSpec with Matchers {
 
   }
 
+  "DSL" should "not prevent Map[Int,T] creation" in {
+    Map(0->"hello") shouldBe a [Map[_,_]]
+  }
 }
