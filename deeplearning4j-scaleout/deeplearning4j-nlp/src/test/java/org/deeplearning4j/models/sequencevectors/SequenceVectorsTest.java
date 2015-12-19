@@ -244,20 +244,22 @@ public class SequenceVectorsTest {
                 .build();
 
         VectorsConfiguration configuration = new VectorsConfiguration();
-        configuration.setShuffle(true);
-        configuration.setSymmetric(true);
-        configuration.setXMax(0.75);
         configuration.setWindow(5);
-        configuration.setLearningRate(0.05);
+        configuration.setLearningRate(0.06);
         configuration.setLayersSize(100);
-        configuration.setMaxCount(100);
 
 
         SequenceVectors<VocabWord> vectors = new SequenceVectors.Builder<VocabWord>(configuration)
                 .iterate(sequenceIterator)
                 .iterations(1)
-                .epochs(25)
-                .elementsLearningAlgorithm(new GloVe<VocabWord>())
+                .epochs(45)
+                .elementsLearningAlgorithm(new GloVe.Builder<VocabWord>()
+                        .shuffle(true)
+                        .symmetric(true)
+                        .learningRate(0.05)
+                        .alpha(0.75)
+                        .xMax(100.0)
+                        .build())
                 .resetModel(true)
                 .trainElementsRepresentation(true)
                 .trainSequencesRepresentation(false)
@@ -268,6 +270,15 @@ public class SequenceVectorsTest {
         double sim = vectors.similarity("day", "night");
         logger.info("Day/night similarity: " + sim);
 
+
+        sim = vectors.similarity("day", "another");
+        logger.info("Day/another similarity: " + sim);
+
+        sim = vectors.similarity("night", "year");
+        logger.info("Night/year similarity: " + sim);
+
+        sim = vectors.similarity("night", "me");
+        logger.info("Night/me similarity: " + sim);
 
         Collection<String> labels = vectors.wordsNearest("day", 10);
         logger.info("Nearest labels to 'day': " + labels);
