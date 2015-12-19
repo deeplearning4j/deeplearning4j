@@ -161,6 +161,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
             while (iterator.hasMoreSequences()) {
                 Sequence<T> sequence = iterator.nextSequence();
 
+//                logger.info("Sequence ID: " + sequence.getSequenceId());
                 // TODO: vocab filtering should take place
 
                 List<String> tokens = new ArrayList<>(sequence.asLabels());
@@ -180,9 +181,11 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                         int otherWord = vocabCache.indexOf(tokens.get(j));
                         if (otherWord < 0) continue;
                         String w2 = vocabCache.wordFor(tokens.get(j)).getLabel();
-                        if(w2.equals(Glove.UNK) || otherWord == wordIdx) {
+
+                        if(w2.equals(Glove.UNK) || otherWord == wordIdx ||w1.equals(w2)) {
                             continue;
                         }
+
 
                         if(wordIdx < otherWord) {
                             coOCurreneCounts.incrementCount(vocabCache.wordFor(tokens.get(x)), vocabCache.wordFor(tokens.get(j)), 1.0 / (j - x + Nd4j.EPS_THRESHOLD));

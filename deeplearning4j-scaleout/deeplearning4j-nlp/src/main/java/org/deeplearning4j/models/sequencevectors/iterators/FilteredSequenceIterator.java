@@ -47,6 +47,8 @@ public class FilteredSequenceIterator<T extends SequenceElement> implements Sequ
             }
         }
 
+        newSequence.setSequenceId(originalSequence.getSequenceId());
+
         return newSequence;
     }
 
