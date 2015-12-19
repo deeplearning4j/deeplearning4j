@@ -18,7 +18,7 @@
 
 package org.deeplearning4j.plot;
 
-import org.canova.image.recordreader.ImageLoader;
+import org.canova.image.loader.ImageLoader;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import javax.imageio.ImageIO;
