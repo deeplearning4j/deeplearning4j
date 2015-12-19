@@ -20,6 +20,8 @@ package org.deeplearning4j.datasets.iterator;
 
 import org.nd4j.linalg.dataset.DataSet;
 
+import java.util.List;
+
 /**
  * A wrapper for a dataset to sample from.
  * This will randomly sample from the given dataset.
@@ -108,9 +110,13 @@ public class SamplingDataSetIterator implements DataSetIterator {
         this.preProcessor = (DataSetPreProcessor) preProcessor;
     }
 
+	@Override
+	public List<String> getLabels() {
+		return null;
+	}
 
 
-    @Override
+	@Override
 	public DataSet next(int num) {
 		DataSet ret = sampleFrom.sample(num);
 		numTimesSampled++;

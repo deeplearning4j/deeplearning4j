@@ -20,7 +20,6 @@ package org.deeplearning4j.plot;
 
 import org.canova.image.loader.ImageLoader;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.shape.Shape;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;

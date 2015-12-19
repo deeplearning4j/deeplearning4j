@@ -23,6 +23,8 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+
 /**
  * A dataset iterator for doing multiple passes over a dataset
  */
@@ -140,6 +142,10 @@ public class MultipleEpochsIterator implements DataSetIterator {
         this.preProcessor = (DataSetPreProcessor) preProcessor;
     }
 
+    @Override
+    public List<String> getLabels() {
+        return null;
+    }
 
 
     /**
