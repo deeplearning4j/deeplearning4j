@@ -1,4 +1,4 @@
-package org.deeplearning4j.models.abstractvectors.sequence;
+package org.deeplearning4j.models.sequencevectors.sequence;
 
 import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Getter;
@@ -10,10 +10,9 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
- *  SequenceElement is basic building block for AbstractVectors. Any data sequence can be represented as ordered set of SequenceElements,
+ *  SequenceElement is basic building block for SequenceVectors. Any data sequence can be represented as ordered set of SequenceElements,
  *  and then one can learn distributed representation of each SequenceElement in this sequence using CBOW or SkipGram.
  *
  * @author raver119@gmail.com

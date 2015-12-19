@@ -21,7 +21,7 @@ package org.deeplearning4j.models.glove.actor;
 import akka.actor.UntypedActor;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.CounterMap;
-import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
+import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.glove.Glove;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
