@@ -245,15 +245,18 @@ public class SequenceVectorsTest {
 
         VectorsConfiguration configuration = new VectorsConfiguration();
         configuration.setShuffle(true);
-        configuration.setSymmetric(false);
+        configuration.setSymmetric(true);
         configuration.setXMax(0.75);
-        configuration.setWindow(15);
+        configuration.setWindow(5);
+        configuration.setLearningRate(0.05);
+        configuration.setLayersSize(100);
+        configuration.setMaxCount(100);
 
 
         SequenceVectors<VocabWord> vectors = new SequenceVectors.Builder<VocabWord>(configuration)
                 .iterate(sequenceIterator)
                 .iterations(1)
-                .epochs(10)
+                .epochs(25)
                 .elementsLearningAlgorithm(new GloVe<VocabWord>())
                 .resetModel(true)
                 .trainElementsRepresentation(true)
