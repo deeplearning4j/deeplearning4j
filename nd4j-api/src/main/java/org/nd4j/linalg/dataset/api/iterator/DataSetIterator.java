@@ -24,6 +24,7 @@ import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 
 import java.io.Serializable;
 import java.util.Iterator;
+import java.util.List;
 
 
 /**
@@ -116,5 +117,10 @@ public interface DataSetIterator extends Iterator<DataSet>, Serializable {
      */
     void setPreProcessor(DataSetPreProcessor preProcessor);
 
+    /**
+     * Get dataset iterator record reader labels
+     *
+     */
+    List<String> getLabels();
 
 }

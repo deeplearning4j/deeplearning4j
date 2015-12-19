@@ -23,6 +23,8 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.fetcher.DataSetFetcher;
 
+import java.util.List;
+
 /**
  * Baseline implementation includes
  * control over the data fetcher and some basic
@@ -107,6 +109,11 @@ public class BaseDatasetIterator implements DataSetIterator {
     @Override
     public void setPreProcessor(DataSetPreProcessor preProcessor) {
         this.preProcessor = preProcessor;
+    }
+
+    @Override
+    public List<String> getLabels() {
+        return null;
     }
 
     @Override
