@@ -4,6 +4,7 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 
 import java.util.ConcurrentModificationException;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -110,6 +111,11 @@ public class AsyncDataSetIterator implements DataSetIterator {
     @Override
     public void setPreProcessor(DataSetPreProcessor preProcessor) {
         baseIterator.setPreProcessor(preProcessor);
+    }
+
+    @Override
+    public List<String> getLabels() {
+        return null;
     }
 
     @Override

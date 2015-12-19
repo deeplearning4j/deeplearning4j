@@ -18,67 +18,94 @@
 
 package org.deeplearning4j.datasets.iterator.impl;
 
-import org.deeplearning4j.datasets.fetchers.LFWDataFetcher;
-import org.deeplearning4j.datasets.iterator.BaseDatasetIterator;
+import org.canova.image.loader.LFWLoader;
+import org.deeplearning4j.datasets.canova.RecordReaderDataSetIterator;
 
-import java.io.IOException;
 
-public class LFWDataSetIterator extends BaseDatasetIterator {
 
-	/**Get the all number of examples for the MNIST training data set.
-	 * @param batch the the batch size of the examples
-	 */
-	public LFWDataSetIterator(int batch) {
-		this(batch, LFWDataFetcher.NUM_IMAGES, 250, 250, 3);
-	}
+public class LFWDataSetIterator extends RecordReaderDataSetIterator {
 
-	/**Get the all number of examples for the MNIST training data set and set height and width
-	 * @param batch the the batch size of the examples
-	 * @param imageWidth
-	 * @param imageHeight
-	 */
-	public LFWDataSetIterator(int batch, int imageWidth, int imageHeight)  {
-		super(batch, LFWDataFetcher.NUM_IMAGES, new LFWDataFetcher(imageWidth,imageHeight, 3));
-	}
+	protected static int width = 250;
+	protected static int height = 250;
+	protected static int channels = 3;
 
-	/**Get the specified number of examples for the MNIST training data set.
-	 * @param batch the the batch size of the examples
+	/**
+	 * Create LFW data specific iterator
+	 * @param batchSize the the batch size of the examples
 	 * @param numExamples the overall number of examples
-	 */
-	public LFWDataSetIterator(int batch,int numExamples) {
-		this(batch, LFWDataFetcher.NUM_IMAGES, 250, 250, 3);
+	 * */
+	public LFWDataSetIterator(int batchSize, int numExamples) {
+		super(new LFWLoader().getRecordReader(numExamples), batchSize, width * height * channels, LFWLoader.NUM_LABELS);
 	}
 
-	/**Get the specified number of examples for the MNIST training data set and set height and width.
-	 * @param batch the the batch size of the examples
+	/**
+	 * Create LFW data specific iterator
+	 * @param batchSize the the batch size of the examples
+	 * @param imgDim an array of width, height and channels
 	 * @param numExamples the overall number of examples
-	 * @param imageWidth
-	 * @param imageHeight
-	 */
-	public LFWDataSetIterator(int batch,int numExamples, int imageWidth, int imageHeight, int channels) {
-		super(batch, numExamples,new LFWDataFetcher(imageWidth,imageHeight, channels));
+	 * */
+	public LFWDataSetIterator(int batchSize, int numExamples, int[] imgDim) {
+		super(new LFWLoader().getRecordReader(imgDim[0], imgDim[1], imgDim[2], numExamples), batchSize, imgDim[0] * imgDim[1] * imgDim[2], LFWLoader.NUM_LABELS);
 	}
 
-	/**Get the specified number of examples for the MNIST training data set and set height and width.
-	 * @param batch the the batch size of the examples
+	/**
+	 * Create LFW data specific iterator
+	 * @param batchSize the the batch size of the examples
+	 * @param imgDim an array of width, height and channels
 	 * @param numExamples the overall number of examples
-	 * @param imageWidth
-	 * @param imageHeight
-	 * @param isSubset use subset sample dataset for A names
-	 */
-	public LFWDataSetIterator(int batch,int numExamples,int imageWidth, int imageHeight, int channels, boolean isSubset) {
-		super(batch, numExamples,new LFWDataFetcher(imageWidth,imageHeight, channels, isSubset));
+	 * */
+	public LFWDataSetIterator(int batchSize, int numExamples, int[] imgDim, int numCategories) {
+		super(new LFWLoader().getRecordReader(imgDim[0], imgDim[1], imgDim[2], numExamples), batchSize, imgDim[0] * imgDim[1] * imgDim[2], numCategories);
 	}
-	/**Get the specified number of examples for the MNIST training data set and set height and width.
-	 * @param batch the the batch size of the examples
+
+	/**
+	 * Create LFW data specific iterator
+	 * @param batchSize the the batch size of the examples
 	 * @param numExamples the overall number of examples
-	 * @param imageWidth
-	 * @param imageHeight
-	 * @param path file path to the subset dataset
-	 * @param isSubset use subset sample dataset
+	 * @param numCategories the overall number of labels
+	 * */
+	public LFWDataSetIterator(int batchSize, int numExamples, int numCategories) {
+		super(new LFWLoader().getRecordReader(numExamples, numCategories), batchSize, width * height * channels, numCategories);
+	}
+
+	/**
+	 * Create LFW data specific iterator
+	 * @param batchSize the the batch size of the examples
+	 * @param imgDim an array of width, height and channels
 	 */
-	public LFWDataSetIterator(int batch,int numExamples, int imageWidth, int imageHeight, int channels, String path, boolean isSubset) {
-		super(batch, numExamples,new LFWDataFetcher(imageWidth,imageHeight, channels, path, isSubset));
+	public LFWDataSetIterator(int batchSize, int[] imgDim)  {
+		super(new LFWLoader().getRecordReader(imgDim[0], imgDim[1], imgDim[2]), batchSize, imgDim[0] * imgDim[1] * imgDim[2], LFWLoader.NUM_LABELS);
+	}
+
+
+	/**
+	 * Create LFW data specific iterator
+	 * @param batchSize the the batch size of the examples
+	 * @param numExamples the overall number of examples
+	 * @param numCategories the overall number of labels
+	 * */
+	public LFWDataSetIterator(int batchSize, int numExamples, int numCategories, boolean useSubset) {
+		super(new LFWLoader(useSubset).getRecordReader(numExamples, numCategories), batchSize, width * height * channels, numCategories);
+	}
+
+	/**
+	 * Create LFW data specific iterator
+	 * @param batchSize the the batch size of the examples
+	 * @param imgDim an array of width, height and channels
+	 */
+	public LFWDataSetIterator(int batchSize, int[] imgDim, boolean useSubset)  {
+		super(new LFWLoader(useSubset).getRecordReader(imgDim[0], imgDim[1], imgDim[2]), batchSize, imgDim[0] * imgDim[1] * imgDim[2], useSubset ? LFWLoader.SUB_NUM_LABELS : LFWLoader.NUM_LABELS);
+	}
+
+
+	/**
+	 * Create LFW data specific iterator
+	 * @param batchSize the the batch size of the examples
+	 * @param imgDim an array of width, height and channels
+	 * @param numExamples the overall number of examples
+	 * */
+	public LFWDataSetIterator(int batchSize, int numExamples, int[] imgDim, int numCategories, boolean useSubset) {
+		super(new LFWLoader(useSubset).getRecordReader(imgDim[0], imgDim[1], imgDim[2], numExamples), batchSize, imgDim[0] * imgDim[1] * imgDim[2], numCategories);
 	}
 
 }

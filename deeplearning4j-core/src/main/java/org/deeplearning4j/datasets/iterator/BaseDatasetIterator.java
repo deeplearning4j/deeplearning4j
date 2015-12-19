@@ -21,6 +21,8 @@ package org.deeplearning4j.datasets.iterator;
 import org.deeplearning4j.datasets.fetchers.BaseDataFetcher;
 import org.nd4j.linalg.dataset.DataSet;
 
+import java.util.List;
+
 /**
  * Baseline implementation includes
  * control over the data fetcher and some basic
@@ -112,6 +114,11 @@ public class BaseDatasetIterator implements DataSetIterator {
     public void setPreProcessor(org.nd4j.linalg.dataset.api.DataSetPreProcessor preProcessor) {
         this.preProcessor = (DataSetPreProcessor) preProcessor;
     }
+
+	@Override
+	public List<String> getLabels() {
+		return null;
+	}
 
 
 }

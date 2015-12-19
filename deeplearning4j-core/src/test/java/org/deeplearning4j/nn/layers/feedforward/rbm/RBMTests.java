@@ -74,7 +74,7 @@ public class RBMTests {
 
     @Test
     public void testLfw() {
-        LFWDataSetIterator iter = new LFWDataSetIterator(10,10,28,28, 1);
+        LFWDataSetIterator iter = new LFWDataSetIterator(10,10,new int[] {28,28,1});
         DataSet d = iter.next();
 
         d.normalizeZeroMeanZeroUnitVariance();
