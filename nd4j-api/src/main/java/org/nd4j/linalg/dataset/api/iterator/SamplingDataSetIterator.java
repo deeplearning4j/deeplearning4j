@@ -22,6 +22,8 @@ package org.nd4j.linalg.dataset.api.iterator;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 
+import java.util.List;
+
 /**
  * A wrapper for a dataset to sample from.
  * This will randomly sample from the given dataset.
@@ -129,6 +131,11 @@ public class SamplingDataSetIterator implements DataSetIterator {
     @Override
     public void setPreProcessor(DataSetPreProcessor preProcessor) {
         this.preProcessor = preProcessor;
+    }
+
+    @Override
+    public List<String> getLabels() {
+        return null;
     }
 
     @Override
