@@ -50,7 +50,8 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
     private double xMax;
     private boolean shuffle;
     private boolean symmetric;
-    private int maxCount;
+    protected double alpha = 0.75d;
+    protected double learningRate = 0.0d;
 
     private AdaGrad weightAdaGrad;
     private AdaGrad biasAdaGrad;
@@ -75,18 +76,16 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
 
         this.syn0 = ((InMemoryLookupTable<T>)lookupTable).getSyn0();
 
-        this.xMax = configuration.getXMax();
-        this.symmetric = configuration.isSymmetric();
-        this.shuffle = configuration.isShuffle();
-        this.maxCount = configuration.getMaxCount();
+
         this.vectorLength = configuration.getLayersSize();
 
+        if (this.learningRate == 0.0d) this.learningRate = configuration.getLearningRate();
 
-        log.info("Vectors configuration: " + configuration.toJson());
+        log.info("Learning rate: [" + this.learningRate +"], Vectors configuration: " + configuration.toJson());
 
-        weightAdaGrad = new AdaGrad(new int[]{this.vocabCache.numWords() + 1, vectorLength}, this.configuration.getLearningRate());
+        weightAdaGrad = new AdaGrad(new int[]{this.vocabCache.numWords() + 1, vectorLength}, learningRate);
         bias = Nd4j.create(syn0.rows());
-        biasAdaGrad = new AdaGrad(bias.shape(), this.configuration.getLearningRate());
+        biasAdaGrad = new AdaGrad(bias.shape(), this.learningRate);
     }
 
     /**
@@ -180,15 +179,16 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
 
         //w1 * w2 + bias
         double prediction = Nd4j.getBlasWrapper().dot(w1Vector,w2Vector);
-        prediction +=  bias.getDouble(element1.getIndex()) + bias.getDouble(element2.getIndex());
+        prediction +=  bias.getDouble(element1.getIndex()) + bias.getDouble(element2.getIndex()) - Math.log(score);
 
-        double weight = Math.pow(Math.min(1.0,(score / maxCount)),xMax);
+        double fDiff = (score > xMax) ? prediction : Math.pow(score / xMax, alpha) * prediction; // Math.pow(Math.min(1.0,(score / maxCount)),xMax);
 
-        double fDiff = score > xMax ? prediction :  weight * (prediction - Math.log(score));
+//        double fDiff = score > xMax ? prediction :  weight * (prediction - Math.log(score));
+
         if(Double.isNaN(fDiff))
             fDiff = Nd4j.EPS_THRESHOLD;
         //amount of change
-        double gradient =  fDiff;
+        double gradient =  fDiff * learningRate;
 
         //note the update step here: the gradient is
         //the gradient of the OPPOSITE word
@@ -196,7 +196,7 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
         //for the gradient calculation we will use the context vector
         update(element1, w1Vector, w2Vector, gradient);
         update(element2, w2Vector, w1Vector, gradient);
-        return fDiff;
+        return 0.5 * fDiff * prediction;
     }
 
     private void update(T element1, INDArray wordVector, INDArray contextVector, double gradient) {
@@ -256,6 +256,86 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
            //         log.info("Processed [" + pairsCounter.get() + "] word pairs so far...");
                 }
             }
+        }
+    }
+
+    public static class Builder<T extends SequenceElement> {
+
+        protected double xMax = 100.0d;
+        protected double alpha = 0.75d;
+        protected double learningRate = 0.0d;
+
+        protected boolean shuffle = false;
+        protected boolean symmetric = false;
+
+        public Builder() {
+
+        }
+
+        /**
+         * Initial learning rate; default 0.05
+         *
+         * @param eta
+         * @return
+         */
+        public Builder<T> learningRate(double eta) {
+            this.learningRate = eta;
+            return this;
+        }
+
+        /**
+         * Parameter in exponent of weighting function; default 0.75
+         *
+         * @param alpha
+         * @return
+         */
+        public Builder<T> alpha(double alpha) {
+            this.alpha = alpha;
+            return this;
+        }
+
+        /**
+         * Parameter specifying cutoff in weighting function; default 100.0
+         *
+         * @param xMax
+         * @return
+         */
+        public Builder<T> xMax(double xMax) {
+            this.xMax = xMax;
+            return this;
+        }
+
+        /**
+         * Parameter specifying, if cooccurrences list should be shuffled between training epochs
+         *
+         * @param reallyShuffle
+         * @return
+         */
+        public Builder<T> shuffle(boolean reallyShuffle) {
+            this.shuffle = reallyShuffle;
+            return this;
+        }
+
+        /**
+         * Parameters specifying, if cooccurrences list should be build into both directions from any current word.
+         *
+         * @param reallySymmetric
+         * @return
+         */
+        public Builder<T> symmetric(boolean reallySymmetric) {
+            this.symmetric = reallySymmetric;
+            return this;
+        }
+
+        public GloVe<T> build() {
+            GloVe<T> ret = new GloVe<T>();
+            ret.symmetric = this.symmetric;
+            ret.shuffle = this.shuffle;
+            ret.xMax = this.xMax;
+            ret.alpha = this.alpha;
+            ret.learningRate = this.learningRate;
+
+            return ret;
         }
     }
 }

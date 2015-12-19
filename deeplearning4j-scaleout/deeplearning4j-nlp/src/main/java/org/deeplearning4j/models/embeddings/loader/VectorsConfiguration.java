@@ -42,10 +42,6 @@ public class VectorsConfiguration implements Serializable {
     private String elementsLearningAlgorithm;
     private String sequenceLearningAlgorithm;
 
-    private boolean symmetric = false;
-    private double xMax = 0.75;
-    private int maxCount = 100;
-    private boolean shuffle = true;
 
     // overall model info
     private int vocabSize;
