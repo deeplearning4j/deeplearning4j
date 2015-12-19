@@ -115,9 +115,13 @@ public class ListDataSetIterator implements DataSetIterator {
         this.preProcessor = (DataSetPreProcessor) preProcessor;
     }
 
+	@Override
+	public List<String> getLabels() {
+		return null;
+	}
 
 
-    @Override
+	@Override
 	public DataSet next(int num) {
 		int end = curr + num;
 

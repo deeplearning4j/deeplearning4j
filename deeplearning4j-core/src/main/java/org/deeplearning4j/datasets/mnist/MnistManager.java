@@ -92,20 +92,22 @@ public class MnistManager {
      *            using that file will fail.
      * @throws IOException
      */
-    public MnistManager(String imagesFile, String labelsFile, int numExamples) throws IOException {
+    public MnistManager(String imagesFile, String labelsFile, boolean train) throws IOException {
         if (imagesFile != null) {
             images = new MnistImageFile(imagesFile, "r");
-            imagesArr = images.readImagesUnsafe(numExamples);
+            if(train) imagesArr = new MnistImageFile(imagesFile, "r").readImagesUnsafe(MnistDataFetcher.NUM_EXAMPLES);
+            else imagesArr = images.readImagesUnsafe(MnistDataFetcher.NUM_EXAMPLES_TEST);
         }
         if (labelsFile != null) {
             labels = new MnistLabelFile(labelsFile, "r");
-            labelsArr = labels.readLabels(numExamples);
+            if(train) labelsArr = labels.readLabels(MnistDataFetcher.NUM_EXAMPLES);
+            else labelsArr = labels.readLabels(MnistDataFetcher.NUM_EXAMPLES_TEST);
         }
         System.out.println();
     }
 
     public MnistManager(String imagesFile, String labelsFile) throws IOException{
-        this(imagesFile,labelsFile,MnistDataFetcher.NUM_EXAMPLES);
+        this(imagesFile,labelsFile,true);
     }
 
     /**

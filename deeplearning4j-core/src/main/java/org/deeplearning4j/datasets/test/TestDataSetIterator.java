@@ -22,6 +22,8 @@ import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.DataSet;
 
+import java.util.List;
+
 /**
  * Track number of times the dataset iterator has been called
  * @author agibsonccc
@@ -101,9 +103,13 @@ public class TestDataSetIterator implements DataSetIterator {
         this.preProcessor = (DataSetPreProcessor) preProcessor;
     }
 
+	@Override
+	public List<String> getLabels() {
+		return null;
+	}
 
 
-    public synchronized int getNumDataSets() {
+	public synchronized int getNumDataSets() {
 		return numDataSets;
 	}
 
