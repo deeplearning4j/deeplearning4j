@@ -1,9 +1,9 @@
-package org.deeplearning4j.models.abstractvectors.iterators;
+package org.deeplearning4j.models.sequencevectors.iterators;
 
 import lombok.NonNull;
-import org.deeplearning4j.models.abstractvectors.interfaces.SequenceIterator;
-import org.deeplearning4j.models.abstractvectors.sequence.Sequence;
-import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
+import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
+import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
+import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 
 
 

@@ -18,8 +18,7 @@
 
 package org.deeplearning4j.models.embeddings;
 
-import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
-import org.deeplearning4j.models.word2vec.VocabWord;
+import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.plot.Tsne;
 import org.nd4j.linalg.api.ndarray.INDArray;
 

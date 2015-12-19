@@ -1,8 +1,8 @@
-package org.deeplearning4j.models.abstractvectors;
+package org.deeplearning4j.models.sequencevectors;
 
 import org.canova.api.util.ClassPathResource;
-import org.deeplearning4j.models.abstractvectors.iterators.AbstractSequenceIterator;
-import org.deeplearning4j.models.abstractvectors.transformers.impl.SentenceTransformer;
+import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
+import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
@@ -10,7 +10,6 @@ import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabConstructor;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
-import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
@@ -28,9 +27,9 @@ import static org.junit.Assert.*;
  *
  * @author raver119@gmail.com
  */
-public class AbstractVectorsTest {
+public class SequenceVectorsTest {
 
-    protected static final Logger logger = LoggerFactory.getLogger(AbstractVectorsTest.class);
+    protected static final Logger logger = LoggerFactory.getLogger(SequenceVectorsTest.class);
 
     @Before
     public void setUp() throws Exception {
@@ -72,7 +71,7 @@ public class AbstractVectorsTest {
 
         /*
             Now we should build vocabulary out of sequence iterator.
-            We can skip this phase, and just set AbstractVectors.resetModel(TRUE), and vocabulary will be mastered internally
+            We can skip this phase, and just set SequenceVectors.resetModel(TRUE), and vocabulary will be mastered internally
         */
         VocabConstructor<VocabWord> constructor = new VocabConstructor.Builder<VocabWord>()
                 .addSource(sequenceIterator, 5)
@@ -98,15 +97,15 @@ public class AbstractVectorsTest {
                 .build();
 
          /*
-             reset model is viable only if you're setting AbstractVectors.resetModel() to false
+             reset model is viable only if you're setting SequenceVectors.resetModel() to false
              if set to True - it will be called internally
         */
         lookupTable.resetWeights(true);
 
         /*
-            Now we can build AbstractVectors model, that suits our needs
+            Now we can build SequenceVectors model, that suits our needs
          */
-        AbstractVectors<VocabWord> vectors = new AbstractVectors.Builder<VocabWord>(new VectorsConfiguration())
+        SequenceVectors<VocabWord> vectors = new SequenceVectors.Builder<VocabWord>(new VectorsConfiguration())
                 // minimum number of occurencies for each element in training corpus. All elements below this value will be ignored
                 // Please note: this value has effect only if resetModel() set to TRUE, for internal model building. Otherwise it'll be ignored, and actual vocabulary content will be used
                 .minWordFrequency(5)
@@ -150,7 +149,7 @@ public class AbstractVectorsTest {
 
         /*
             As soon as fit() exits, model considered built, and we can test it.
-            Please note: all similarity context is handled via SequenceElement's labels, so if you're using AbstractVectors to build models for complex
+            Please note: all similarity context is handled via SequenceElement's labels, so if you're using SequenceVectors to build models for complex
             objects/relations please take care of Labels uniqueness and meaning for yourself.
          */
         double sim = vectors.similarity("day", "night");
@@ -179,7 +178,7 @@ public class AbstractVectorsTest {
         AbstractSequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<VocabWord>(transformer)
                 .build();
 
-        AbstractVectors<VocabWord> vectors = new AbstractVectors.Builder<VocabWord>(new VectorsConfiguration())
+        SequenceVectors<VocabWord> vectors = new SequenceVectors.Builder<VocabWord>(new VectorsConfiguration())
                 .minWordFrequency(5)
                 .iterate(sequenceIterator)
                 .batchSize(250)
