@@ -241,6 +241,11 @@ public class Word2VecDataSetIterator implements DataSetIterator {
         this.preProcessor = (DataSetPreProcessor) preProcessor;
     }
 
+    @Override
+    public List<String> getLabels() {
+        return null;
+    }
+
 
     /**
      * Returns {@code true} if the iteration has more elements.

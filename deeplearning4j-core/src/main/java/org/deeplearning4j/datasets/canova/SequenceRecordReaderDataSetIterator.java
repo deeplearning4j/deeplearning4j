@@ -407,6 +407,11 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
     }
 
     @Override
+    public List<String> getLabels() {
+        return null;
+    }
+
+    @Override
     public void remove() {
         throw new UnsupportedOperationException("Remove not supported for this iterator");
     }
