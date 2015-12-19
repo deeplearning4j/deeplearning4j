@@ -79,6 +79,8 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
         this.vectorLength = configuration.getLayersSize();
 
 
+        log.info("Vectors configuration: " + configuration.toJson());
+
         weightAdaGrad = new AdaGrad(new int[]{this.vocabCache.numWords() + 1, vectorLength}, this.configuration.getLearningRate());
         bias = Nd4j.create(syn0.rows());
         biasAdaGrad = new AdaGrad(bias.shape(), this.configuration.getLearningRate());
@@ -96,7 +98,7 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
                 .symmetric(this.symmetric)
                 .windowSize(configuration.getWindow())
                 .iterate(iterator)
-                .workers(Runtime.getRuntime().availableProcessors())
+                .workers(workers)
                 .vocabCache(vocabCache)
                 .build();
 
@@ -232,20 +234,23 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
 
         @Override
         public void run() {
-
-            for (int x = 0; x < threadId; x++) {
+            int startPosition = threadId * (coList.size() / workers);
+            int stopPosition = (threadId + 1) *  (coList.size() / workers);
+//            log.info("Total size: [" + coList.size() + "], thread start: [" + startPosition + "], thread stop: [" + stopPosition + "]");
+            for (int x = startPosition; x < stopPosition; x++) {
                 // no for each pair do appropriate training
                 T element1 = coList.get(x).getFirst();
-                T element2 = coList.get(x).getFirst();
+                T element2 = coList.get(x).getSecond();
                 double weight = coOccurrences.getCoOccurrenceCount(element1, element2);
                 if (weight <= 0) {
+//                    log.warn("Skipping pair ("+ element1.getLabel()+", " + element2.getLabel()+")");
                     pairsCounter.incrementAndGet();
                     continue;
                 }
 
                 errorCounter.incrementCount(epochId, iterateSample(element1, element2, weight));
-                if (pairsCounter.get() % 10000 == 0) {
-                    log.info("Processed [" + pairsCounter.get() + "] word pairs so far...");
+                if (pairsCounter.getAndIncrement() % 10000 == 0) {
+           //         log.info("Processed [" + pairsCounter.get() + "] word pairs so far...");
                 }
             }
         }

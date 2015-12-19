@@ -243,15 +243,21 @@ public class SequenceVectorsTest {
         AbstractSequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<VocabWord>(transformer)
                 .build();
 
-        SequenceVectors<VocabWord> vectors = new SequenceVectors.Builder<VocabWord>(new VectorsConfiguration())
-                .minWordFrequency(5)
+        VectorsConfiguration configuration = new VectorsConfiguration();
+        configuration.setShuffle(true);
+        configuration.setSymmetric(false);
+        configuration.setXMax(0.75);
+        configuration.setWindow(15);
+
+
+        SequenceVectors<VocabWord> vectors = new SequenceVectors.Builder<VocabWord>(configuration)
                 .iterate(sequenceIterator)
-                .batchSize(250)
                 .iterations(1)
-                .epochs(3)
+                .epochs(10)
                 .elementsLearningAlgorithm(new GloVe<VocabWord>())
                 .resetModel(true)
                 .trainElementsRepresentation(true)
+                .trainSequencesRepresentation(false)
                 .build();
 
         vectors.fit();

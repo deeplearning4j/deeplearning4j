@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * This class is responsible for conversion lines of text to Sequences of SequenceElements
@@ -30,6 +31,7 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
     protected TokenizerFactory tokenizerFactory;
     protected LabelAwareIterator iterator;
     protected boolean readOnly = false;
+    protected AtomicInteger sentenceCounter = new AtomicInteger(0);
 
     protected static final Logger log = LoggerFactory.getLogger(SentenceTransformer.class);
 
@@ -53,6 +55,7 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
             sequence.addElement(word);
         }
 
+        sequence.setSequenceId(sentenceCounter.getAndIncrement());
         return sequence;
     }
 
