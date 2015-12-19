@@ -1,8 +1,8 @@
-package org.deeplearning4j.models.abstractvectors.transformers.impl;
+package org.deeplearning4j.models.sequencevectors.transformers.impl;
 
 import lombok.NonNull;
-import org.deeplearning4j.models.abstractvectors.sequence.Sequence;
-import org.deeplearning4j.models.abstractvectors.transformers.SequenceTransformer;
+import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
+import org.deeplearning4j.models.sequencevectors.transformers.SequenceTransformer;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.documentiterator.BasicLabelAwareIterator;

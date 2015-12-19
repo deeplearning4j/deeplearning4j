@@ -1,4 +1,4 @@
-package org.deeplearning4j.models.abstractvectors.transformers.impl;
+package org.deeplearning4j.models.sequencevectors.transformers.impl;
 
 /**
  *

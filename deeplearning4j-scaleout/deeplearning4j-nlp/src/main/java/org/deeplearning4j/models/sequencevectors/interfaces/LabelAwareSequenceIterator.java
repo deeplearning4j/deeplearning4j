@@ -1,6 +1,6 @@
-package org.deeplearning4j.models.abstractvectors.interfaces;
+package org.deeplearning4j.models.sequencevectors.interfaces;
 
-import org.deeplearning4j.models.abstractvectors.sequence.SequenceElement;
+import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 
 /**
  * @author raver119@gmail.com
