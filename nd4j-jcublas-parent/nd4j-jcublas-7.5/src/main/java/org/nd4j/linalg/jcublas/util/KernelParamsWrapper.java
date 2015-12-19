@@ -301,19 +301,10 @@ public class KernelParamsWrapper implements AutoCloseable {
                 ByteBuffer buff = devicePointer.getHostPointer().getByteBuffer(0,acc.x().data().getElementSize() * resultLength);
                 buff.order(ByteOrder.nativeOrder());
                 INDArray setResult = Nd4j.create(Nd4j.createBuffer(buff, DataBuffer.Type.FLOAT,resultLength));
-                JCudaExecutioner exec = (JCudaExecutioner) Nd4j.getExecutioner();
-                if(acc instanceof IndexAccumulation && resultLength > 1)
+                if(acc instanceof IndexAccumulation)
                     IndexAccumulationKernelCall.calculateBlockResult((IndexAccumulation) acc,setResult);
-                else if(acc instanceof Accumulation && resultLength > 1)
+                else if(acc instanceof Accumulation)
                     AccumulationKernelCall.calculateBlockResult((Accumulation) acc,setResult);
-                else if(acc instanceof Accumulation) {
-                    Accumulation acc2 = (Accumulation) acc;
-                    acc2.setFinalResult(setResult.getDouble(0));
-                }
-                else if(acc instanceof IndexAccumulation) {
-                    IndexAccumulation acc2 = (IndexAccumulation) acc;
-                    acc2.setFinalResult(setResult.getInt(0));
-                }
             }
             else {
                 float[] data = new float[resultLength];

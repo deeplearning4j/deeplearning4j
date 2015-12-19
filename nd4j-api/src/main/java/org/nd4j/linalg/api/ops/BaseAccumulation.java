@@ -220,4 +220,9 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     public IComplexNumber getFinalResultComplex(){
         return finalResultComplex;
     }
+
+    @Override
+    public void setZ(INDArray z) {
+        super.setZ(z);
+    }
 }

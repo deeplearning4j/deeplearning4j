@@ -76,7 +76,7 @@ public class PointerUtil {
      *
      */
     public static int[] toShapeInfoBuffer(INDArray arr,int...dimension) {
-        if(dimension == null)
+        if(dimension == null || dimension[0] == Integer.MAX_VALUE)
             return toShapeInfoBuffer(arr);
         int[] ret = new int[arr.rank() * 2 + 4];
         ret[0]= arr.rank();
@@ -305,6 +305,10 @@ public class PointerUtil {
         }
 
         throw new IllegalStateException("Unable to get pointer for scalar operation " + scalarOp);
+    }
+
+    public static Pointer getPointer(int alpha) {
+        return Pointer.to(new int[]{alpha});
     }
 
     public static Pointer getPointer(double alpha) {

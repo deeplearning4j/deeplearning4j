@@ -99,7 +99,7 @@ public class GpuMetrics  {
         int blocks = (n + (threads * 2 - 1)) / (threads * 2);
 
 
-        if ((float)threads*blocks > (float)prop.maxGridSize[0] * prop.maxThreadsPerBlock)
+        if ((float) threads * blocks > (float) prop.maxGridSize[0] * prop.maxThreadsPerBlock)
         {
             throw new IllegalStateException("n is too large, please choose a smaller number!\n");
         }

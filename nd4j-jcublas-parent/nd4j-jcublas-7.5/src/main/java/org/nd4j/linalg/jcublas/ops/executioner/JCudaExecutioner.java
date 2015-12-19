@@ -116,10 +116,10 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             //nothing to reduce
             if(ArrayUtil.prod(retShape) == op.x().length())
                 return op.x();
-
-            INDArray retArray = Nd4j.create(retShape);
-            invoke(op,dimension,retArray,true);
-            return retArray;
+            invoke(op,dimension);
+            if(op.z() == null)
+                throw new IllegalStateException("No result set");
+            return op.z();
         }
 
 
@@ -197,7 +197,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 return op.x();
 
             INDArray retArray = Nd4j.create(retShape);
-            invoke(op,dimension,retArray,true);
+            invoke(op,dimension,retArray);
             return retArray;
         }
 
@@ -232,21 +232,21 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         if (op instanceof TransformOp) {
             TransformOp t = (TransformOp) op;
-            invoke(t,true);
+            invoke(t);
         } else if (op instanceof Accumulation) {
             Accumulation acc = (Accumulation) op;
-            invoke(acc,null,Nd4j.scalar(0),true);
+            invoke(acc,null);
         } else if (op instanceof ScalarOp) {
             ScalarOp sc = (ScalarOp) op;
-            invoke(sc,true);
+            invoke(sc);
         }
         else if(op instanceof BroadcastOp) {
             BroadcastOp broadcastOp = (BroadcastOp) op;
-            invoke(broadcastOp,true);
+            invoke(broadcastOp);
         }
         else if(op instanceof IndexAccumulation) {
             IndexAccumulation indexAccumulation = (IndexAccumulation) op;
-            invoke(indexAccumulation,null,Nd4j.scalar(0),true);
+            invoke(indexAccumulation,null,Nd4j.scalar(0));
         }
         return op;
     }
@@ -255,7 +255,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray execAndReturn(TransformOp op) {
-        invoke(op,true);
+        invoke(op);
         return op.z();
     }
 
@@ -265,7 +265,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
 
-    private CudaContext invoke(BroadcastOp op,boolean sync) {
+    private CudaContext invoke(BroadcastOp op) {
         CudaContext ctx;
 
         if(!KernelFunctionLoader.getInstance().exists(op.name()) || executionMode() == ExecutionMode.JAVA || op.isPassThrough() || op instanceof CopyOp)
@@ -280,7 +280,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
 
-    private CudaContext invoke(IndexAccumulation op,int[] dimension,INDArray result,boolean sync)  {
+    private CudaContext invoke(IndexAccumulation op,int[] dimension,INDArray result)  {
         CudaContext ctx;
         GpuKernelCall accKernelCall = GpuKernelCallFactories.getFactory(op).create(op, dimension, result);
         accKernelCall.invoke();
@@ -292,19 +292,16 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     }
 
 
-    private CudaContext invoke(Accumulation op,int[] dimension,INDArray result,boolean sync)  {
+    private CudaContext invoke(Accumulation op,int[] dimension)  {
         CudaContext ctx;
-        GpuKernelCall accKernelCall = GpuKernelCallFactories.getFactory(op).create(op,dimension,result);
+        GpuKernelCall accKernelCall = GpuKernelCallFactories.getFactory(op).create(op,dimension);
         accKernelCall.invoke();
         ctx = accKernelCall.cudaContext();
-        if(result.isScalar())
-            result.putScalar(0,op.getFinalResult().doubleValue());
-
         return ctx;
     }
 
 
-    private CudaContext invoke(ScalarOp op,boolean sync) {
+    private CudaContext invoke(ScalarOp op) {
         if(!KernelFunctionLoader.getInstance().exists(op.name())  || executionMode() == ExecutionMode.JAVA)
             super.exec(op);
 
@@ -314,7 +311,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     }
 
-    private CudaContext invoke(TransformOp op,boolean sync) {
+    private CudaContext invoke(TransformOp op) {
         if(!KernelFunctionLoader.getInstance().exists(op.name()) || op.x() instanceof IComplexNDArray || op.isPassThrough()) {
             super.exec(op);
             return null;

@@ -31,7 +31,6 @@ public abstract class BaseGpuKernelCall implements GpuKernelCall {
     public BaseGpuKernelCall(Op op) {
         this.op = op;
         createMetrics();
-        createArgs();
         createCudaConext();
     }
 

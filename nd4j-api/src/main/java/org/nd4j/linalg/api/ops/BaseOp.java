@@ -50,7 +50,6 @@ public abstract class BaseOp implements Op {
             throw new IllegalArgumentException("X must not be null");
         this.x = x;
         numProcessed = 0;
-        this.n = x.length();
     }
 
     @Override
@@ -59,7 +58,6 @@ public abstract class BaseOp implements Op {
             throw new IllegalArgumentException("Z must not be null");
         this.z = z;
         numProcessed = 0;
-        this.n = z.length();
     }
 
     @Override
@@ -68,7 +66,6 @@ public abstract class BaseOp implements Op {
             throw new IllegalArgumentException("Y must not be null");
         this.y = y;
         numProcessed = 0;
-        this.n = y.length();
     }
 
     /**
