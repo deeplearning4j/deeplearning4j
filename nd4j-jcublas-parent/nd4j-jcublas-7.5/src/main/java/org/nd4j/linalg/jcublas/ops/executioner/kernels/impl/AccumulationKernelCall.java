@@ -1,11 +1,9 @@
 package org.nd4j.linalg.jcublas.ops.executioner.kernels.impl;
 
+import jcuda.Pointer;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Accumulation;
-import org.nd4j.linalg.api.ops.IndexAccumulation;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.TransformOp;
+import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.gpumetrics.GpuMetrics;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
@@ -252,16 +250,35 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
             //setup the kernel parameters such that super.invoke() will call the kernel with the given parameters
             this.args = kParams.getKernelParameters();
             this.cudaContext = kParams.getContext();
+            boolean collapseTad = dimension.length > 1;
+            int[] oldDimensionTemp = this.dimension;
+            //no element wise stride
+            if(dimension.length > 1) {
+                //reduce on smaller dimension
+                this.dimension = new int[] {dimension[dimension.length]};
+            }
+
+            //invoke basic reduce
             super.invoke();
+            //invoke the collapse tad
+            if(collapseTad) {
+                TadCollapseAccumulation collapseAccumulation = new TadCollapseAccumulation(this.op,oldDimensionTemp,this.dimension);
+                Nd4j.getExecutioner().exec(collapseAccumulation);
+            }
+
+            //now switch back for original problem
+            this.dimension = oldDimensionTemp;
+
+            //collapse dimension result
             //dimension result
             if(dimension != null && dimension[0] != Integer.MAX_VALUE) {
                 Object[] newArgs = new Object[] {
-                        PointerUtil.getPointer(op.x().tensorAlongDimension(0,dimension).length()),
-                        PointerUtil.getPointer(op.x().offset()),
-                        this.args[resultIndex],
-                        PointerUtil.getPointer(op.x().elementWiseStride()),
-                        this.args[extraParamsIndex],
-                        this.args[resultIndex],
+                        op.x().tensorAlongDimension(0,dimension).length(),
+                        op.x().offset(),
+                        (Pointer) this.args[resultIndex],
+                        op.x().tensorAlongDimension(0,dimension).elementWiseStride(),
+                        (Pointer) this.args[extraParamsIndex],
+                        (Pointer) this.args[resultIndex],
                 };
 
                 String functionName = op instanceof TransformOp || op instanceof Accumulation || op instanceof IndexAccumulation ? op.name() + "_strided" : op.name();

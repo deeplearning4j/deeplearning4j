@@ -223,7 +223,6 @@ public class KernelParamsWrapper implements AutoCloseable {
      */
     @Override
     public void close() throws Exception {
-
         if(context.getOldStream() != null)
             context.syncOldStream();
         if(context.getStream() != null)
