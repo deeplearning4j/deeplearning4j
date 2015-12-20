@@ -169,7 +169,7 @@ public class EarlyStoppingTrainer implements IEarlyStoppingTrainer {
                 double score = (sc == null ? 0.0 : esConfig.getScoreCalculator().calculateScore(net));
                 scoreVsEpoch.put(epochCount-1,score);
 
-                if (score < bestModelScore) {
+                if (sc != null && score < bestModelScore) {
                     //Save best model:
                     if (bestModelEpoch == -1) {
                         //First calculated/reported score

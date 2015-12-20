@@ -31,11 +31,12 @@ import java.util.List;
 /** Early stopping configuration: Specifies the various configuration options for running training with early stopping.<br>
  * Users need to specify the following:<br>
  * (a) EarlyStoppingModelSaver: How models will be saved (to disk, to memory, etc) (Default: in memory)<br>
- * (b) Termination conditions: at least one termination condition<br>
+ * (b) Termination conditions: at least one termination condition must be specified<br>
  *     (i) Iteration termination conditions: calculated once for each minibatch. For example, maxTime or invalid (NaN/infinite) scores<br>
  *     (ii) Epoch termination conditions: calculated once per epoch. For example, maxEpochs or no improvement for N epochs<br>
  * (c) Score calculator: what score should be calculated at every epoch? (For example: test set loss or test set accuracy)<br>
  * (d) How frequently (ever N epochs) should scores be calculated? (Default: every epoch)<br>
+ * @author Alex Black
  */
 @Data
 public class EarlyStoppingConfiguration {
@@ -94,7 +95,8 @@ public class EarlyStoppingConfiguration {
 
         /** Save the last model? If true: save the most recent model at each epoch, in addition to the best
          * model (whenever the best model improves). If false: only save the best model. Default: false
-         * Useful for example if you might want to
+         * Useful for example if you might want to continue training after a max-time terminatino condition
+         * occurs.
          */
         public Builder saveLastModel(boolean saveLastModel){
             this.saveLastModel = saveLastModel;
@@ -107,11 +109,15 @@ public class EarlyStoppingConfiguration {
             return this;
         }
 
+        /** Score calculator. Used to calculate a score (such as loss function on a test set), every N epochs,
+         * where N is set by {@link #evaluateEveryNEpochs}
+         */
         public Builder scoreCalculator(ScoreCalculator scoreCalculator){
             this.scoreCalculator = scoreCalculator;
             return this;
         }
 
+        /** Create the early stopping configuration */
         public EarlyStoppingConfiguration build(){
             return new EarlyStoppingConfiguration(this);
         }
