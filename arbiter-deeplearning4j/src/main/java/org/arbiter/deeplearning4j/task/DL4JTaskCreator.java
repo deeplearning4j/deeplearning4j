@@ -5,6 +5,7 @@ import org.arbiter.optimize.api.Candidate;
 import org.arbiter.optimize.api.OptimizationResult;
 import org.arbiter.optimize.api.TaskCreator;
 import org.arbiter.optimize.api.data.DataProvider;
+import org.arbiter.optimize.api.evaluation.ModelEvaluator;
 import org.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -12,29 +13,32 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 
 import java.util.concurrent.Callable;
 
-public class DL4JTaskCreator implements TaskCreator<MultiLayerConfiguration,MultiLayerNetwork,DataSetIterator>{
+@AllArgsConstructor
+public class DL4JTaskCreator<A> implements TaskCreator<MultiLayerConfiguration,MultiLayerNetwork,DataSetIterator,A>{
 
+    private ModelEvaluator<MultiLayerNetwork,DataSetIterator,A> modelEvaluator;
 
     @Override
-    public Callable<OptimizationResult<MultiLayerConfiguration, MultiLayerNetwork>>
+    public Callable<OptimizationResult<MultiLayerConfiguration, MultiLayerNetwork, A>>
             create(Candidate<MultiLayerConfiguration> candidate, DataProvider<DataSetIterator> dataProvider,
                    ScoreFunction<MultiLayerNetwork,DataSetIterator> scoreFunction) {
 
-        return new DL4JLearningTask(candidate,dataProvider,scoreFunction);
+        return new DL4JLearningTask(candidate,dataProvider,scoreFunction,modelEvaluator);
 
     }
 
 
     @AllArgsConstructor
-    private static class DL4JLearningTask implements Callable<OptimizationResult<MultiLayerConfiguration,MultiLayerNetwork>> {
+    private static class DL4JLearningTask<A> implements Callable<OptimizationResult<MultiLayerConfiguration,MultiLayerNetwork,A>> {
 
         private Candidate<MultiLayerConfiguration> candidate;
         private DataProvider<DataSetIterator> dataProvider;
         private ScoreFunction<MultiLayerNetwork,DataSetIterator> scoreFunction;
+        private ModelEvaluator<MultiLayerNetwork,DataSetIterator,A> modelEvaluator;
 
 
         @Override
-        public OptimizationResult<MultiLayerConfiguration, MultiLayerNetwork> call() throws Exception {
+        public OptimizationResult<MultiLayerConfiguration, MultiLayerNetwork,A> call() throws Exception {
             MultiLayerNetwork net = new MultiLayerNetwork(candidate.getValue());
             net.init();
 
@@ -45,8 +49,10 @@ public class DL4JTaskCreator implements TaskCreator<MultiLayerConfiguration,Mult
             // (a) Early stopping (better)
             // (b) Specify number of epochs (less good, but perhaps worth supporting)
 
+            A additionalEvaluation = (modelEvaluator != null ? modelEvaluator.evaluateModel(net,dataProvider) : null);
+
             return new OptimizationResult<>(candidate,net,scoreFunction.score(net,dataProvider,candidate.getDataParameters()),
-                    candidate.getIndex());
+                    candidate.getIndex(), additionalEvaluation);
         }
     }
 }

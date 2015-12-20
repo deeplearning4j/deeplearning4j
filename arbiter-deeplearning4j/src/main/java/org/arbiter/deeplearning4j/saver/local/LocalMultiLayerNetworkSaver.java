@@ -12,16 +12,14 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
 /**Basic MultiLayerNetwork saver. Saves config, parameters and score to: baseDir/0/, baseDir/1/, etc
  * where index is given by OptimizationResult.getIndex()
  */
-public class LocalMultiLayerNetworkSaver implements ResultSaver<MultiLayerConfiguration,MultiLayerNetwork> {
+public class LocalMultiLayerNetworkSaver<A> implements ResultSaver<MultiLayerConfiguration,MultiLayerNetwork,A> {
     private static Logger log = LoggerFactory.getLogger(LocalMultiLayerNetworkSaver.class);
     private String path;
 
@@ -38,7 +36,7 @@ public class LocalMultiLayerNetworkSaver implements ResultSaver<MultiLayerConfig
     }
 
     @Override
-    public ResultReference<MultiLayerConfiguration,MultiLayerNetwork> saveModel(OptimizationResult<MultiLayerConfiguration, MultiLayerNetwork> result) throws IOException {
+    public ResultReference<MultiLayerConfiguration,MultiLayerNetwork,A> saveModel(OptimizationResult<MultiLayerConfiguration, MultiLayerNetwork, A> result) throws IOException {
         String dir = new File(path,result.getIndex() + "/").getAbsolutePath();
 
         File f = new File(dir);
@@ -47,6 +45,7 @@ public class LocalMultiLayerNetworkSaver implements ResultSaver<MultiLayerConfig
         File paramsFile = new File(FilenameUtils.concat(dir,"params.bin"));
         File jsonFile = new File(FilenameUtils.concat(dir,"config.json"));
         File scoreFile = new File(FilenameUtils.concat(dir,"score.txt"));
+        File additionalResultsFile = new File(FilenameUtils.concat(dir,"additionalResults.bin"));
 
         INDArray params = result.getResult().params();
         String jsonConfig = result.getCandidate().getValue().toJson();
@@ -57,9 +56,15 @@ public class LocalMultiLayerNetworkSaver implements ResultSaver<MultiLayerConfig
             Nd4j.write(params, dos);
         }
 
+        A additionalResults = result.getModelSpecificResults();
+        if(additionalResults != null) {
+            try(ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(additionalResultsFile))) {
+                oos.writeObject(additionalResults);
+            }
+        }
 
         log.debug("Deeplearning4j model result (id={}, score={}) saved to directory: {}",result.getIndex(), result.getScore(), dir);
 
-        return new LocalFileMultiLayerNetworkResultReference(jsonFile,paramsFile,scoreFile,result.getCandidate());
+        return new LocalFileMultiLayerNetworkResultReference(jsonFile,paramsFile,scoreFile,additionalResultsFile,result.getCandidate());
     }
 }

@@ -21,28 +21,28 @@ import java.util.concurrent.*;
 
 
 @AllArgsConstructor
-public class SparkCandidateExecutor<T,M,D> implements CandidateExecutor<T,M,D> {
+public class SparkCandidateExecutor<C,M,D,A> implements CandidateExecutor<C,M,D,A> {
 
     private JavaSparkContext sparkContext;
-    private TaskCreator<T,M,D> taskCreator;
+    private TaskCreator<C,M,D,A> taskCreator;
 
 
     @Override
-    public ListenableFuture<OptimizationResult<T, M>> execute(Candidate<T> candidate, DataProvider<D> dataProvider, ScoreFunction<M,D> scoreFunction) {
+    public ListenableFuture<OptimizationResult<C, M, A>> execute(Candidate<C> candidate, DataProvider<D> dataProvider, ScoreFunction<M,D> scoreFunction) {
         return execute(Collections.singletonList(candidate),dataProvider,scoreFunction).get(0);
     }
 
     @Override
-    public List<ListenableFuture<OptimizationResult<T, M>>> execute(List<Candidate<T>> candidates, DataProvider<D> dataProvider, ScoreFunction<M,D> scoreFunction) {
-        List<ListenableFuture<OptimizationResult<T,M>>> list = new ArrayList<>(candidates.size());
-        for(Candidate<T> candidate : candidates ){
-            JavaRDD<CandidateDataScoreTuple<T,M,D>> rdd = sparkContext.parallelize(Collections.singletonList(
-                    new CandidateDataScoreTuple<T, M, D>(candidate, dataProvider, scoreFunction)));
+    public List<ListenableFuture<OptimizationResult<C, M, A>>> execute(List<Candidate<C>> candidates, DataProvider<D> dataProvider, ScoreFunction<M,D> scoreFunction) {
+        List<ListenableFuture<OptimizationResult<C,M,A>>> list = new ArrayList<>(candidates.size());
+        for(Candidate<C> candidate : candidates ){
+            JavaRDD<CandidateDataScoreTuple<C,M,D>> rdd = sparkContext.parallelize(Collections.singletonList(
+                    new CandidateDataScoreTuple<C, M, D>(candidate, dataProvider, scoreFunction)));
 
-            JavaRDD<OptimizationResult<T,M>> results = rdd.map(new ExecuteFunction<T, M, D>());
+            JavaRDD<OptimizationResult<C,M,A>> results = rdd.map(new ExecuteFunction<C, M, D, A>());
 
-            JavaFutureAction<List<OptimizationResult<T,M>>> out = results.collectAsync();
-            Future<OptimizationResult<T,M>> f = new FutureListAdapter(out);
+            JavaFutureAction<List<OptimizationResult<C,M,A>>> out = results.collectAsync();
+            Future<OptimizationResult<C,M,A>> f = new FutureListAdapter(out);
             list.add(JdkFutureAdapters.listenInPoolThread(f));
         }
 
@@ -61,13 +61,13 @@ public class SparkCandidateExecutor<T,M,D> implements CandidateExecutor<T,M,D> {
 
     @AllArgsConstructor
     private class Job {
-        private final Candidate<T> candidate;
+        private final Candidate<C> candidate;
         private final DataProvider<D> dataProvider;
     }
 
     @AllArgsConstructor
-    private class FutureListAdapter implements Future<OptimizationResult<T,M>>{
-        private JavaFutureAction<List<OptimizationResult<T,M>>> futureAction;
+    private class FutureListAdapter implements Future<OptimizationResult<C,M,A>>{
+        private JavaFutureAction<List<OptimizationResult<C,M,A>>> futureAction;
 
         @Override
         public boolean cancel(boolean mayInterruptIfRunning) {
@@ -85,12 +85,12 @@ public class SparkCandidateExecutor<T,M,D> implements CandidateExecutor<T,M,D> {
         }
 
         @Override
-        public OptimizationResult<T, M> get() throws InterruptedException, ExecutionException {
+        public OptimizationResult<C, M, A> get() throws InterruptedException, ExecutionException {
             return futureAction.get().get(0);
         }
 
         @Override
-        public OptimizationResult<T, M> get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+        public OptimizationResult<C, M, A> get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
             return futureAction.get(timeout,unit).get(0);
         }
     }

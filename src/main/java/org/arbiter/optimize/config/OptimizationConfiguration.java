@@ -17,15 +17,15 @@ import java.util.List;
  * @param <D>    Type of data
  */
 @Data
-public class OptimizationConfiguration<T,M,D> {
+public class OptimizationConfiguration<T,M,D,A> {
 
     private DataProvider<D> dataProvider;
     private CandidateGenerator<T> candidateGenerator;
-    private ResultSaver<T,M> resultSaver;
+    private ResultSaver<T,M,A> resultSaver;
     private ScoreFunction<M,D> scoreFunction;
     private List<TerminationCondition> terminationConditions;
 
-    private OptimizationConfiguration(Builder<T,M,D> builder ){
+    private OptimizationConfiguration(Builder<T,M,D,A> builder ){
         this.dataProvider = builder.dataProvider;
         this.candidateGenerator = builder.candidateGenerator;
         this.resultSaver = builder.resultSaver;
@@ -33,11 +33,11 @@ public class OptimizationConfiguration<T,M,D> {
         this.terminationConditions = builder.terminationConditions;
     }
 
-    public static class Builder<T,M,D> {
+    public static class Builder<T,M,D,A> {
 
         private DataProvider<D> dataProvider;
         private CandidateGenerator<T> candidateGenerator;
-        private ResultSaver<T,M> resultSaver;
+        private ResultSaver<T,M,A> resultSaver;
         private ScoreFunction<M,D> scoreFunction;
         private List<TerminationCondition> terminationConditions;
 
@@ -51,7 +51,7 @@ public class OptimizationConfiguration<T,M,D> {
             return this;
         }
 
-        public Builder modelSaver(ResultSaver<T,M> resultSaver){
+        public Builder modelSaver(ResultSaver<T,M,A> resultSaver){
             this.resultSaver = resultSaver;
             return this;
         }
@@ -71,8 +71,8 @@ public class OptimizationConfiguration<T,M,D> {
             return this;
         }
 
-        public OptimizationConfiguration<T,M,D> build(){
-            return new OptimizationConfiguration<T,M,D>(this);
+        public OptimizationConfiguration<T,M,D,A> build(){
+            return new OptimizationConfiguration<T,M,D,A>(this);
         }
 
 

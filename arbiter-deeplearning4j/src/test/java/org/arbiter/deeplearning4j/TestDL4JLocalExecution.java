@@ -1,6 +1,5 @@
 package org.arbiter.deeplearning4j;
 
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.math3.distribution.UniformIntegerDistribution;
 import org.arbiter.deeplearning4j.saver.local.LocalMultiLayerNetworkSaver;
 import org.arbiter.deeplearning4j.scoring.TestSetLossScoreFunction;
@@ -20,13 +19,13 @@ import org.arbiter.optimize.randomsearch.RandomSearchGenerator;
 import org.arbiter.optimize.runner.OptimizationRunner;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
+import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
-import org.nd4j.linalg.api.ops.LossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
@@ -79,9 +78,10 @@ public class TestDL4JLocalExecution {
         File f = new File(modelSavePath);
         if(f.exists()) f.delete();
         f.mkdir();
+        if(!f.exists()) throw new RuntimeException();
 
-        OptimizationConfiguration<MultiLayerConfiguration,MultiLayerNetwork,DataSetIterator> configuration
-                = new OptimizationConfiguration.Builder<MultiLayerConfiguration,MultiLayerNetwork,DataSetIterator>()
+        OptimizationConfiguration<MultiLayerConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> configuration
+                = new OptimizationConfiguration.Builder<MultiLayerConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation>()
                 .candidateGenerator(candidateGenerator)
                 .dataProvider(dataProvider)
                 .modelSaver(new LocalMultiLayerNetworkSaver(modelSavePath))
@@ -90,10 +90,10 @@ public class TestDL4JLocalExecution {
                         new MaxCandidatesCondition(10))
                 .build();
 
-        CandidateExecutor<MultiLayerConfiguration,MultiLayerNetwork,DataSetIterator> executor =
-                new LocalCandidateExecutor<>(new DL4JTaskCreator(),1);
+        CandidateExecutor<MultiLayerConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> executor =
+                new LocalCandidateExecutor<>(new DL4JTaskCreator(new DL4JClassificationEvaluator()),1);
 
-        OptimizationRunner<MultiLayerConfiguration,MultiLayerNetwork,DataSetIterator> runner
+        OptimizationRunner<MultiLayerConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> runner
                 = new OptimizationRunner<>(configuration, executor);
 
         runner.execute();

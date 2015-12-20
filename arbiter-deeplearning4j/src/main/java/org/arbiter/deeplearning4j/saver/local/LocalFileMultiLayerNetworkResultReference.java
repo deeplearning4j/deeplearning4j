@@ -10,21 +10,19 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 
 @AllArgsConstructor
-public class LocalFileMultiLayerNetworkResultReference implements ResultReference<MultiLayerConfiguration,MultiLayerNetwork> {
+public class LocalFileMultiLayerNetworkResultReference<A> implements ResultReference<MultiLayerConfiguration,MultiLayerNetwork,A> {
 
     private File configFile;
     private File networkParamsFile;
     private File scoreFile;
+    private File additionalResultsFile;
     private Candidate<MultiLayerConfiguration> candidate;
 
     @Override
-    public OptimizationResult<MultiLayerConfiguration, MultiLayerNetwork> getResult() throws IOException {
+    public OptimizationResult<MultiLayerConfiguration, MultiLayerNetwork,A> getResult() throws IOException {
         String jsonConfig = FileUtils.readFileToString(configFile);
         INDArray params;
         try( DataInputStream dis = new DataInputStream(new FileInputStream(networkParamsFile)) ){
@@ -39,6 +37,17 @@ public class LocalFileMultiLayerNetworkResultReference implements ResultReferenc
         net.init();
         net.setParams(params);
 
-        return new OptimizationResult<>(candidate,net,d,-1);     //TODO index
+        A additionalResults;
+        if(additionalResultsFile.exists()) {
+            try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(additionalResultsFile))) {
+                additionalResults = (A) ois.readObject();
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException("Error loading additional results",e);
+            }
+        } else {
+            additionalResults = null;
+        }
+
+        return new OptimizationResult<>(candidate,net,d,-1,additionalResults);     //TODO index
     }
 }

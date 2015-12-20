@@ -31,17 +31,17 @@ public class TestRandomSearch {
         //Define configuration:
 
         CandidateGenerator<BraninConfig> candidateGenerator = new RandomSearchGenerator<>(new BraninSpace());
-        OptimizationConfiguration<BraninConfig, BraninConfig, Void> configuration =
-                new OptimizationConfiguration.Builder<BraninConfig, BraninConfig, Void >()
+        OptimizationConfiguration<BraninConfig, BraninConfig, Void, Void> configuration =
+                new OptimizationConfiguration.Builder<BraninConfig, BraninConfig, Void, Void >()
                 .candidateGenerator(candidateGenerator)
                 .scoreFunction(new BraninScoreFunction())
                 .terminationConditions(new MaxCandidatesCondition(50))
                 .build();
 
-        CandidateExecutor<BraninConfig, BraninConfig, Void> executor =
-                new LocalCandidateExecutor<BraninConfig, BraninConfig, Void>(new BraninTaskCreator());
+        CandidateExecutor<BraninConfig, BraninConfig, Void, Void> executor =
+                new LocalCandidateExecutor<BraninConfig, BraninConfig, Void, Void>(new BraninTaskCreator());
 
-        OptimizationRunner<BraninConfig, BraninConfig, Void> runner
+        OptimizationRunner<BraninConfig, BraninConfig, Void, Void> runner
                 = new OptimizationRunner<>(configuration, executor);
 
         runner.execute();
@@ -82,17 +82,17 @@ public class TestRandomSearch {
         }
     }
 
-    private static class BraninTaskCreator implements TaskCreator<BraninConfig,BraninConfig,Void>{
+    private static class BraninTaskCreator implements TaskCreator<BraninConfig,BraninConfig,Void,Void>{
         @Override
-        public Callable<OptimizationResult<BraninConfig, BraninConfig>>
+        public Callable<OptimizationResult<BraninConfig, BraninConfig,Void>>
             create(final Candidate<BraninConfig> candidate, DataProvider<Void> dataProvider, final ScoreFunction<BraninConfig,Void> scoreFunction) {
-            return new Callable<OptimizationResult<BraninConfig, BraninConfig>>() {
+            return new Callable<OptimizationResult<BraninConfig, BraninConfig, Void>>() {
                 @Override
-                public OptimizationResult<BraninConfig, BraninConfig> call() throws Exception {
+                public OptimizationResult<BraninConfig, BraninConfig, Void> call() throws Exception {
 
                     double score = scoreFunction.score(candidate.getValue(),null,null);
                     System.out.println(candidate.getValue().getX1() + "\t" + candidate.getValue().getX2() + "\t" + score);
-                    return new OptimizationResult<>(candidate,candidate.getValue(), score, 0);
+                    return new OptimizationResult<>(candidate,candidate.getValue(), score, 0, null);
                 }
             };
         }

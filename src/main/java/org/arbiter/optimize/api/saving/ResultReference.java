@@ -9,8 +9,8 @@ import java.io.IOException;
  * So instead: return a reference to the saved result. Idea is that the result may be saved to disk or a database,
  * and we can easily load it back into memory (if required) using the methods here
  */
-public interface ResultReference<T,M> {
+public interface ResultReference<T,M,A> {
 
-    OptimizationResult<T,M> getResult() throws IOException;
+    OptimizationResult<T,M,A> getResult() throws IOException;
 
 }

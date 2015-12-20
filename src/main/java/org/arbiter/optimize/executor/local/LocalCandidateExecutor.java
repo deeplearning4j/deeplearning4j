@@ -17,27 +17,28 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 
-public class LocalCandidateExecutor<T,M,D> implements CandidateExecutor<T,M,D> {
+public class LocalCandidateExecutor<T, M, D, A> implements CandidateExecutor<T, M, D, A> {
 
-    private TaskCreator<T,M,D> taskCreator;
+    private TaskCreator<T, M, D, A> taskCreator;
     private ListeningExecutorService executor;
     private final int nThreads;
 
-    public LocalCandidateExecutor(TaskCreator<T,M,D> taskCreator){
-        this(taskCreator,1);
+    public LocalCandidateExecutor(TaskCreator<T, M, D, A> taskCreator) {
+        this(taskCreator, 1);
     }
 
-    public LocalCandidateExecutor(TaskCreator<T,M,D> taskCreator, int nThreads){
+    public LocalCandidateExecutor(TaskCreator<T, M, D, A> taskCreator, int nThreads) {
         this.taskCreator = taskCreator;
         this.nThreads = nThreads;
 
         ExecutorService exec = Executors.newFixedThreadPool(nThreads, new ThreadFactory() {
             private AtomicLong counter = new AtomicLong(0);
+
             @Override
             public Thread newThread(Runnable r) {
                 Thread t = Executors.defaultThreadFactory().newThread(r);
                 t.setDaemon(true);
-                t.setName("LocalCandidateExecutor-"+counter.getAndIncrement());
+                t.setName("LocalCandidateExecutor-" + counter.getAndIncrement());
                 return t;
             }
         });
@@ -46,16 +47,16 @@ public class LocalCandidateExecutor<T,M,D> implements CandidateExecutor<T,M,D> {
 
 
     @Override
-    public ListenableFuture<OptimizationResult<T, M>> execute(Candidate<T> candidate, DataProvider<D> dataProvider, ScoreFunction<M,D> scoreFunction ) {
-        Callable<OptimizationResult<T,M>> task = taskCreator.create(candidate,dataProvider,scoreFunction);
+    public ListenableFuture<OptimizationResult<T, M, A>> execute(Candidate<T> candidate, DataProvider<D> dataProvider, ScoreFunction<M, D> scoreFunction) {
+        Callable<OptimizationResult<T, M, A>> task = taskCreator.create(candidate, dataProvider, scoreFunction);
         return executor.submit(task);
     }
 
     @Override
-    public List<ListenableFuture<OptimizationResult<T, M>>> execute(List<Candidate<T>> candidates, DataProvider<D> dataProvider, ScoreFunction<M,D> scoreFunction ) {
-        List<ListenableFuture<OptimizationResult<T,M>>> list = new ArrayList<>(candidates.size());
-        for(Candidate<T> candidate : candidates){
-            Callable<OptimizationResult<T,M>> task = taskCreator.create(candidate, dataProvider, scoreFunction);
+    public List<ListenableFuture<OptimizationResult<T, M, A>>> execute(List<Candidate<T>> candidates, DataProvider<D> dataProvider, ScoreFunction<M, D> scoreFunction) {
+        List<ListenableFuture<OptimizationResult<T, M, A>>> list = new ArrayList<>(candidates.size());
+        for (Candidate<T> candidate : candidates) {
+            Callable<OptimizationResult<T, M, A>> task = taskCreator.create(candidate, dataProvider, scoreFunction);
             list.add(executor.submit(task));
         }
         return list;

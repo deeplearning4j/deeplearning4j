@@ -4,8 +4,8 @@ import org.arbiter.optimize.api.OptimizationResult;
 
 import java.io.IOException;
 
-public interface ResultSaver<T,M> {
+public interface ResultSaver<T,M,A> {
 
-    ResultReference<T,M> saveModel(OptimizationResult<T,M> result) throws IOException;
+    ResultReference<T,M,A> saveModel(OptimizationResult<T,M,A> result) throws IOException;
 
 }
