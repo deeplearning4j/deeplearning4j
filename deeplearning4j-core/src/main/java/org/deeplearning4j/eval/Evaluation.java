@@ -260,10 +260,9 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
      * @return A (multi-line) String with accuracy, precision, recall, f1 score etc
      */
     public String stats() {
-        StringBuilder builder = new StringBuilder().append("\n");
         String actual, expected;
+        StringBuilder builder = new StringBuilder().append("\n");
         List<Integer> classes = confusion.getClasses();
-
         if (labelsMap.isEmpty()){
             for (Integer clazz : classes) {
                 for (Integer clazz2 : classes) {
@@ -273,10 +272,11 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
                 }
             }
         } else {
+            int count = 0;
             for (Integer clazz : classes) {
                 for (Integer clazz2 : classes) {
-                    int count = confusion.getCount(clazz, clazz2);
-                    if (count != 0 && !labelsMap.get(clazz2).isEmpty()) {
+                    count = confusion.getCount(clazz, clazz2);
+                    if (count != 0 && labelsMap.containsKey(clazz) && labelsMap.containsKey(clazz2)) {
                         actual = labelsMap.get(clazz).isEmpty() ? clazz.toString() : labelsMap.get(clazz);
                         expected = labelsMap.get(clazz2).isEmpty() ? clazz2.toString() : labelsMap.get(clazz2);
                         builder.append("\n Examples labeled as " + actual + " classified by model as " + expected + ": " + count + " times\n");
@@ -284,7 +284,6 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
                 }
             }
         }
-
         DecimalFormat df = new DecimalFormat("#.####");
         builder.append("\n==========================Scores========================================");
         builder.append("\n Accuracy:  " + df.format(accuracy()));
