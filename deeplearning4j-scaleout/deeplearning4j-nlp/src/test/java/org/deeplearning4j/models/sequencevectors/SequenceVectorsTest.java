@@ -280,9 +280,17 @@ public class SequenceVectorsTest {
         sim = vectors.similarity("night", "me");
         logger.info("Night/me similarity: " + sim);
 
+        sim = vectors.similarity("day", "know");
+        logger.info("Day/know similarity: " + sim);
+
+        sim = vectors.similarity("best", "police");
+        logger.info("Best/police similarity: " + sim);
+
         Collection<String> labels = vectors.wordsNearest("day", 10);
         logger.info("Nearest labels to 'day': " + labels);
 
+
+        sim = vectors.similarity("day", "night");
         assertTrue(sim > 0.6d);
     }
 }

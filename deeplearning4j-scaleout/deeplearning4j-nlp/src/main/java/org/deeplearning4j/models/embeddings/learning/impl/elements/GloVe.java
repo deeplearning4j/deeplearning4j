@@ -81,7 +81,7 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
 
         if (this.learningRate == 0.0d) this.learningRate = configuration.getLearningRate();
 
-        log.info("Learning rate: [" + this.learningRate +"], Vectors configuration: " + configuration.toJson());
+        log.info("GloVe params: {Learning rate: [" + this.learningRate +"], Alpha: [" + alpha+"], xMax: [" + xMax +"], Symmetric: [" + symmetric+ "], Shuffle: [" + shuffle+ "]}");
 
         weightAdaGrad = new AdaGrad(new int[]{this.vocabCache.numWords() + 1, vectorLength}, learningRate);
         bias = Nd4j.create(syn0.rows());
