@@ -3,6 +3,7 @@ package org.deeplearning4j.datasets.iterator;
 import static org.junit.Assert.*;
 
 import java.util.Arrays;
+import java.util.Random;
 
 import org.canova.api.records.reader.impl.CSVRecordReader;
 import org.canova.api.split.FileSplit;
@@ -123,7 +124,7 @@ public class DataSetIteratorTest {
 		int seed = 123;
 		int listenerFreq = iterations;
 
-		LFWDataSetIterator lfw = new LFWDataSetIterator(batchSize, numSamples, new int[] {numRows,numColumns,numChannels}, outputNum, true);
+		LFWDataSetIterator lfw = new LFWDataSetIterator(batchSize, numSamples, new int[] {numRows,numColumns,numChannels}, outputNum, true, new Random(seed));
 
 		MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
 				.seed(seed)
