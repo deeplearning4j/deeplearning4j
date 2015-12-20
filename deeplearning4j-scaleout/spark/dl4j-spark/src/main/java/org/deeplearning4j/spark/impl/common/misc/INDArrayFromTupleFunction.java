@@ -4,10 +4,11 @@ import org.apache.spark.api.java.function.Function;
 import org.deeplearning4j.nn.api.Updater;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import scala.Tuple2;
+import scala.Tuple3;
 
-public class INDArrayFromTupleFunction implements Function<Tuple2<INDArray,Updater>,INDArray> {
+public class INDArrayFromTupleFunction implements Function<Tuple3<INDArray,Updater,Double>,INDArray> {
     @Override
-    public INDArray call(Tuple2<INDArray, Updater> indArrayTuple2) throws Exception {
+    public INDArray call(Tuple3<INDArray, Updater, Double> indArrayTuple2) throws Exception {
         return indArrayTuple2._1();
     }
 }

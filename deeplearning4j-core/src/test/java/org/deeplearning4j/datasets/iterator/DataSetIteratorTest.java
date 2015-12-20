@@ -2,12 +2,9 @@ package org.deeplearning4j.datasets.iterator;
 
 import static org.junit.Assert.*;
 
-import java.io.IOException;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Random;
 
-import jdk.nashorn.internal.ir.annotations.Ignore;
 import org.canova.api.records.reader.impl.CSVRecordReader;
 import org.canova.api.split.FileSplit;
 import org.canova.image.loader.CifarLoader;
@@ -30,6 +27,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;

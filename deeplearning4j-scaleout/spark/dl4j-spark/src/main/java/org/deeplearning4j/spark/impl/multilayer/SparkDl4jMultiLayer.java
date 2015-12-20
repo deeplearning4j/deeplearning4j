@@ -18,11 +18,12 @@
 
 package org.deeplearning4j.spark.impl.multilayer;
 
-import org.apache.spark.Accumulable;
 import org.apache.spark.Accumulator;
 import org.apache.spark.SparkContext;
+import org.apache.spark.api.java.JavaDoubleRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.DoubleFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.mllib.linalg.Matrix;
 import org.apache.spark.mllib.linalg.Vector;
@@ -52,6 +53,7 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple2;
+import scala.Tuple3;
 
 import java.io.Serializable;
 import java.util.List;
@@ -75,6 +77,7 @@ public class SparkDl4jMultiLayer implements Serializable {
     public final static String DIVIDE_ACCUM_GRADIENT = "org.deeplearning4j.spark.iteration.dividegrad";
 
     private Accumulator<Double> best_score_acc = null;
+    private double lastScore;
 
     private static final Logger log = LoggerFactory.getLogger(SparkDl4jMultiLayer.class);
 
@@ -92,7 +95,7 @@ public class SparkDl4jMultiLayer implements Serializable {
     public SparkDl4jMultiLayer(JavaSparkContext javaSparkContext, MultiLayerNetwork network ){
         this.sparkContext = javaSparkContext.sc();
         sc = javaSparkContext;
-        this.conf = this.network.getLayerWiseConfigurations().clone();
+        this.conf = network.getLayerWiseConfigurations().clone();
         this.network = network;
         this.network.init();
         this.averageEachIteration = sparkContext.conf().getBoolean(AVERAGE_EACH_ITERATION,false);
@@ -296,7 +299,7 @@ public class SparkDl4jMultiLayer implements Serializable {
 
 
         int paramsLength = network.numParams(false);
-        boolean accumGrad = sc.getConf().getBoolean(ACCUM_GRADIENT,false);
+        boolean accumGrad = sc.getConf().getBoolean(ACCUM_GRADIENT, false);
 
 
         if(accumGrad) {
@@ -331,7 +334,7 @@ public class SparkDl4jMultiLayer implements Serializable {
         }
         else {
             //Standard parameter averaging
-            JavaRDD<Tuple2<INDArray,Updater>> results = rdd.mapPartitions(new IterativeReduceFlatMap(conf.toJson(),
+            JavaRDD<Tuple3<INDArray,Updater,Double>> results = rdd.mapPartitions(new IterativeReduceFlatMap(conf.toJson(),
                     this.params, this.updater, this.best_score_acc),true).cache();
 
             JavaRDD<INDArray> resultsParams = results.map(new INDArrayFromTupleFunction());
@@ -347,6 +350,14 @@ public class SparkDl4jMultiLayer implements Serializable {
 
             log.info("Processing updaters");
             JavaRDD<Updater> resultsUpdater = results.map(new UpdaterFromTupleFunction());
+
+            JavaDoubleRDD scores = results.mapToDouble(new DoubleFunction<Tuple3<INDArray,Updater,Double>>(){
+                @Override
+                public double call(Tuple3<INDArray, Updater, Double> t3) throws Exception {
+                    return t3._3();
+                }
+            });
+            lastScore = scores.mean();
 
             UpdaterAggregator aggregator = resultsUpdater.aggregate(
                     resultsUpdater.first().getAggregator(false),
@@ -369,5 +380,20 @@ public class SparkDl4jMultiLayer implements Serializable {
     public static MultiLayerNetwork train(JavaRDD<LabeledPoint> data,MultiLayerConfiguration conf) {
         SparkDl4jMultiLayer multiLayer = new SparkDl4jMultiLayer(data.context(),conf);
         return multiLayer.fit(new JavaSparkContext(data.context()),data);
+    }
+
+    /** Gets the last (average) minibatch score from calling fit */
+    public double getScore(){
+        return lastScore;
+    }
+
+    public double calculateScore(JavaRDD<DataSet> data, boolean average){
+        long n = data.count();
+        JavaRDD<Double> scores = data.mapPartitions(new ScoreFlatMapFunction(conf.toJson(), sc.broadcast(network.params(false))));
+        List<Double> scoresList = scores.collect();
+        double sum = 0.0;
+        for(Double d : scoresList) sum += d;
+        if(average) return sum / n;
+        return sum;
     }
 }
