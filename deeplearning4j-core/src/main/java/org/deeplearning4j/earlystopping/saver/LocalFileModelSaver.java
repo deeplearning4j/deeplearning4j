@@ -40,10 +40,17 @@ public class LocalFileModelSaver implements EarlyStoppingModelSaver {
     private String directory;
     private Charset encoding;
 
+    /**Constructor that uses default character set for configuration (json) encoding
+     * @param directory Directory to save networks
+     */
     public LocalFileModelSaver(String directory) {
         this(directory, Charset.defaultCharset());
     }
 
+    /**
+     * @param directory Directory to save networks
+     * @param encoding Character encoding for configuration (json)
+     */
     public LocalFileModelSaver(String directory, Charset encoding){
         this.directory = directory;
         this.encoding = encoding;
