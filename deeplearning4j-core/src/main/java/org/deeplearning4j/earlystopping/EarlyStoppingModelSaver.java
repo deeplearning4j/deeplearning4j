@@ -25,12 +25,16 @@ import java.io.IOException;
 /** Interface for saving MultiLayerNetworks learned during early stopping, and retrieving them again later */
 public interface EarlyStoppingModelSaver {
 
+    /** Save the best model (so far) learned during early stopping training */
     void saveBestModel( MultiLayerNetwork net, double score ) throws IOException;
 
+    /** Save the latest (most recent) model learned during early stopping */
     void saveLatestModel( MultiLayerNetwork net, double score ) throws IOException;
 
+    /** Retrieve the best model that was previously saved */
     MultiLayerNetwork getBestModel() throws IOException;
 
+    /** Retrieve the most recent model that was previously saved */
     MultiLayerNetwork getLatestModel() throws IOException;
 
 }

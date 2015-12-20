@@ -139,7 +139,7 @@ public class TestEarlyStopping {
                 .epochTerminationConditions(new MaxEpochsTerminationCondition(10000))
                 .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(3, TimeUnit.SECONDS),
                         new MaxScoreIterationTerminationCondition(7.5))  //Initial score is ~2.5
-                .scoreCalculator(new DataSetLossCalculator(irisIter, true))
+                //.scoreCalculator(new DataSetLossCalculator(irisIter, true))   //No score calculator in this test (don't need score)
                 .modelSaver(saver)
                 .build();
 
