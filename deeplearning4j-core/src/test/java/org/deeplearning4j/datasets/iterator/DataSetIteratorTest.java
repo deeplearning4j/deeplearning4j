@@ -5,6 +5,7 @@ import static org.junit.Assert.*;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 
 import jdk.nashorn.internal.ir.annotations.Ignore;
 import org.canova.api.records.reader.impl.CSVRecordReader;
@@ -125,7 +126,7 @@ public class DataSetIteratorTest {
 		int seed = 123;
 		int listenerFreq = iterations;
 
-		LFWDataSetIterator lfw = new LFWDataSetIterator(batchSize, numSamples, new int[] {numRows,numColumns,numChannels}, outputNum, true);
+		LFWDataSetIterator lfw = new LFWDataSetIterator(batchSize, numSamples, new int[] {numRows,numColumns,numChannels}, outputNum, true, new Random(seed));
 
 		MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
 				.seed(seed)
