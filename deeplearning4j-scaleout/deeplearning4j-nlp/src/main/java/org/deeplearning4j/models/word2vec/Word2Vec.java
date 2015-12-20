@@ -200,6 +200,8 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
         }
 
         public Word2Vec build() {
+            presetTables();
+
             Word2Vec ret = new Word2Vec();
 
             if (tokenizerFactory == null) tokenizerFactory = new DefaultTokenizerFactory();
