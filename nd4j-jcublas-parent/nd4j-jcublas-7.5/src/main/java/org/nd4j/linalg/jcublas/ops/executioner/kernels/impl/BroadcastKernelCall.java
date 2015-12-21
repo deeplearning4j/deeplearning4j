@@ -4,6 +4,8 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.jcublas.gpumetrics.GpuMetrics;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 import org.nd4j.linalg.jcublas.ops.executioner.kernels.BaseGpuKernelCall;
+import org.nd4j.linalg.jcublas.ops.executioner.kernels.args.KernelCallPointerArgs;
+import org.nd4j.linalg.jcublas.ops.executioner.kernels.args.impl.BroadcastKernelCallPointerArgs;
 import org.nd4j.linalg.jcublas.util.KernelParamsWrapper;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
 
@@ -88,5 +90,10 @@ public class BroadcastKernelCall extends BaseGpuKernelCall {
 
 
 
+    }
+
+    @Override
+    public KernelCallPointerArgs getPointers() {
+        return new BroadcastKernelCallPointerArgs(op,args);
     }
 }

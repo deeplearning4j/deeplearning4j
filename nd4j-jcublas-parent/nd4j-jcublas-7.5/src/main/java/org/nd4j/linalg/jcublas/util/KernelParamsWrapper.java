@@ -19,7 +19,6 @@
 
 package org.nd4j.linalg.jcublas.util;
 
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import jcuda.Pointer;
 import jcuda.Sizeof;
@@ -32,11 +31,9 @@ import org.nd4j.linalg.api.ops.IndexAccumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.CublasPointer;
-import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.buffer.allocation.PinnedMemoryStrategy;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.context.CudaContext;
-import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
 import org.nd4j.linalg.jcublas.ops.executioner.kernels.impl.AccumulationKernelCall;
 import org.nd4j.linalg.jcublas.ops.executioner.kernels.impl.IndexAccumulationKernelCall;
 
@@ -56,7 +53,6 @@ import java.util.*;
  */
 public class KernelParamsWrapper implements AutoCloseable {
 
-    private boolean closeInvoked = false;
 
     private boolean closeContext;
 
@@ -168,52 +164,17 @@ public class KernelParamsWrapper implements AutoCloseable {
      * @param kernelParams
      */
     public KernelParamsWrapper(boolean closeContext,Object... kernelParams) {
-        kernelParameters = new Object[kernelParams.length];
-        arrayToPointer = ArrayListMultimap.create();
-        pointersToFree = new ArrayList<>();
         resultPointers = new ArrayList<>();
         context = new CudaContext(closeContext);
+
+        CudaArgs.ArgsAndReferences argsAndReferences = CudaArgs.argsAndReference(context,kernelParams);
+        kernelParameters = argsAndReferences.getArgs();
+        arrayToPointer = argsAndReferences.getArrayToPointer();
+        pointersToFree = argsAndReferences.getPointersToFree();
+
         context.initOldStream();
         context.initStream();
         this.closeContext = closeContext;
-        Map<Object,Object> idMap = new IdentityHashMap<>();
-        for(int i = 0; i < kernelParams.length; i++) {
-            Object arg = kernelParams[i];
-
-            // If the instance is a JCudaBuffer we should assign it to the device
-            if(arg instanceof JCudaBuffer) {
-                JCudaBuffer buffer = (JCudaBuffer) arg;
-                if(!idMap.containsKey(buffer)) {
-                    CublasPointer pointerToFree = new CublasPointer(buffer,context);
-                    kernelParameters[i] = pointerToFree.getDevicePointer();
-                    pointersToFree.add(pointerToFree);
-                    idMap.put(buffer,pointerToFree.getDevicePointer());
-                }
-                else {
-                    Pointer pointer = (Pointer) idMap.get(buffer);
-                    kernelParameters[i] = pointer;
-                }
-
-            }
-            else if(arg instanceof INDArray) {
-                INDArray array = (INDArray) arg;
-                if(!idMap.containsKey(array)) {
-                    CublasPointer pointerToFree = new CublasPointer(array,context);
-                    kernelParameters[i] = pointerToFree.getDevicePointer();
-                    pointersToFree.add(pointerToFree);
-                    arrayToPointer.put(array, pointerToFree);
-                    idMap.put(array,pointerToFree.getDevicePointer());
-                }
-                else {
-                    Pointer pointer = (Pointer) idMap.get(array);
-                    kernelParameters[i] = pointer;
-                }
-
-            }
-            else
-                kernelParameters[i] = arg;
-
-        }
 
 
     }
@@ -246,10 +207,8 @@ public class KernelParamsWrapper implements AutoCloseable {
 
         }
 
-
         if(closeContext)
             context.destroy();
-        closeInvoked = true;
     }
 
     /**
@@ -317,11 +276,6 @@ public class KernelParamsWrapper implements AutoCloseable {
                 context.syncOldStream();
 
             }
-
-
-
-
-
         }
     }
 
@@ -330,12 +284,6 @@ public class KernelParamsWrapper implements AutoCloseable {
     }
 
 
-    /**
-     * Sync the streams
-     */
-    public void sync() {
-        context.syncStream();
-    }
 
 
 }

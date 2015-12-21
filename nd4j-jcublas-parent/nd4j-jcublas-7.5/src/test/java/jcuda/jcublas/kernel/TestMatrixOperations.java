@@ -346,6 +346,15 @@ public class TestMatrixOperations {
         assertEquals(2.5, Nd4j.linspace(1, 4, 4).meanNumber().doubleValue(), 1e-1);
         assertEquals( 2.5, a.meanNumber().doubleValue(), 1e-1);
 
+
+        INDArray multipleMeans = Nd4j.linspace(1,24,24).reshape(2,2,3,2);
+        INDArray mean = multipleMeans.mean(2,3);
+        INDArray assertion = Nd4j.create(new double[][]{
+                {3.5,9.5},
+                {15.5,  21.5}
+        });
+
+        assertEquals(assertion,mean);
     }
 
     @Test

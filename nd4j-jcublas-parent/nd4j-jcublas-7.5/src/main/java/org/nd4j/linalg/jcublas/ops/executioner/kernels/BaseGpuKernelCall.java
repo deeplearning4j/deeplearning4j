@@ -7,6 +7,7 @@ import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.gpumetrics.GpuMetrics;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
+import org.nd4j.linalg.jcublas.util.CudaArgs;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
 
 /**
@@ -16,7 +17,7 @@ import org.nd4j.linalg.jcublas.util.PointerUtil;
  * @author Adam Gibson
  */
 public abstract class BaseGpuKernelCall implements GpuKernelCall {
-   protected CudaContext cudaContext;
+    protected CudaContext cudaContext;
     protected Object[] args;
     protected GpuMetrics metrics;
     protected Op op;
@@ -63,34 +64,28 @@ public abstract class BaseGpuKernelCall implements GpuKernelCall {
          */
 
         metrics.validate();
-        //force blocks and threads to be even
-        if(op instanceof TadCollapseAccumulation) {
-            String functionName2 = KernelLauncher.FUNCTION_NAME + "_" + getType(op);
-            KernelFunctions.invoke(
-                    metrics,
-                    true
-                    , functionName,
-                    functionName2
-                    , getType(op), cudaContext
-                    , args);
+        //module name is the op, function name is transform
+        KernelFunctions.invoke(
+                metrics,
+                true
+                , functionName
+                , getType(op), cudaContext
+                , args);
+    }
 
-        }
-        else {
-            //module name is the op, function name is transform
-            KernelFunctions.invoke(
-                    metrics,
-                    true
-                    , functionName
-                    , getType(op), cudaContext
-                    , args);
-        }
+    @Override
+    public String functionName() {
+        return CudaArgs.getModuleNameFor(op);
+    }
 
-
+    @Override
+    public String moduleName() {
+        return CudaArgs.getModuleNameFor(op);
     }
 
     @Override
     public void invoke() {
-        String functionName = op instanceof TransformOp || op instanceof Accumulation || op instanceof IndexAccumulation ? op.name() + "_strided" : op.name();
+        String functionName = CudaArgs.getModuleNameFor(op);
         invoke(functionName);
     }
 

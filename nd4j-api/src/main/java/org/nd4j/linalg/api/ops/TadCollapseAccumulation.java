@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.ops;
 
+import lombok.Data;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -99,20 +100,41 @@ import org.nd4j.linalg.util.ArrayUtil;
  * This way of mapping allows us to avoid race conditions.
  *
  */
+@Data
 public class TadCollapseAccumulation extends BaseOp {
     protected Op accum;
+    protected boolean performSmallerDimension;
     protected int[] smallerDimension;
     protected int[] originalDimension;
-
+    protected int tadsForSmallerDimension;
+    protected int tadsForLargerDimension;
     public final static String DEFAULT_NAME = "collapseTad";
 
     public TadCollapseAccumulation() {
     }
-
-    public TadCollapseAccumulation(Op accum, int[] originalDimension, int[] smallerDimension) {
+    /**
+     *
+     * @param accum the operation to accumulate
+     * @param originalDimension the bigger problem
+     * @param smallerDimension the smaller problem
+     */
+    public TadCollapseAccumulation(Op accum, int[] originalDimension, int[] smallerDimension,boolean performSmallerDimension) {
         this.accum = accum;
+        this.performSmallerDimension = performSmallerDimension;
         this.originalDimension = originalDimension;
         this.smallerDimension = smallerDimension;
+        tadsForSmallerDimension = accum.x().tensorssAlongDimension(smallerDimension);
+        tadsForLargerDimension = accum.x().tensorssAlongDimension(originalDimension);
+
+    }
+    /**
+     *
+     * @param accum the operation to accumulate
+     * @param originalDimension the bigger problem
+     * @param smallerDimension the smaller problem
+     */
+    public TadCollapseAccumulation(Op accum, int[] originalDimension, int[] smallerDimension) {
+        this(accum, originalDimension, smallerDimension,true);
     }
 
     public TadCollapseAccumulation(Op accum, int[] originalDimension) {
@@ -160,13 +182,13 @@ public class TadCollapseAccumulation extends BaseOp {
             smallerDimension = new int[] {originalDimension[originalDimension.length - 1]};
         }
 
-        if(accum instanceof Accumulation) {
+        if(accum instanceof Accumulation && performSmallerDimension) {
             Accumulation acc2 = (Accumulation) accum;
             //avoid the final transform till towards the end
             acc2.setApplyFinalTransform(false);
             Nd4j.getExecutioner().exec(acc2,smallerDimension);
         }
-        else if(accum instanceof IndexAccumulation) {
+        else if(accum instanceof IndexAccumulation && performSmallerDimension) {
             IndexAccumulation acc2 = (IndexAccumulation) accum;
             Nd4j.getExecutioner().exec(acc2,smallerDimension);
         }
@@ -207,6 +229,21 @@ public class TadCollapseAccumulation extends BaseOp {
         //set the new result
         accum.setZ(aggregated);
 
+    }
+
+    @Override
+    public INDArray x() {
+        return accum.x();
+    }
+
+    @Override
+    public INDArray y() {
+       return accum.y();
+    }
+
+    @Override
+    public INDArray z() {
+        return accum.z();
     }
 
     @Override

@@ -10,6 +10,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.gpumetrics.GpuMetrics;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 import org.nd4j.linalg.jcublas.ops.executioner.kernels.BaseGpuKernelCall;
+import org.nd4j.linalg.jcublas.ops.executioner.kernels.args.KernelCallPointerArgs;
+import org.nd4j.linalg.jcublas.ops.executioner.kernels.args.impl.IndexAccumulationKernelCallPointerArgs;
 import org.nd4j.linalg.jcublas.util.KernelParamsWrapper;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
 
@@ -213,6 +215,11 @@ public class IndexAccumulationKernelCall extends BaseGpuKernelCall {
             throw new RuntimeException("Could not execute kernel", e);
         }
 
+    }
+
+    @Override
+    public KernelCallPointerArgs getPointers() {
+        return new IndexAccumulationKernelCallPointerArgs(op,args);
     }
 
     private int toInt(boolean val) {

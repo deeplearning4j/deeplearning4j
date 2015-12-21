@@ -4,6 +4,8 @@ import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.jcublas.gpumetrics.GpuMetrics;
 import org.nd4j.linalg.jcublas.ops.executioner.kernels.BaseGpuKernelCall;
+import org.nd4j.linalg.jcublas.ops.executioner.kernels.args.KernelCallPointerArgs;
+import org.nd4j.linalg.jcublas.ops.executioner.kernels.args.impl.TransformKernelCallPointerArgs;
 import org.nd4j.linalg.jcublas.util.KernelParamsWrapper;
 
 /**
@@ -97,5 +99,10 @@ public class TransformKernelCall extends BaseGpuKernelCall {
             throw new RuntimeException("Could not execute kernel", e);
         }
 
+    }
+
+    @Override
+    public KernelCallPointerArgs getPointers() {
+        return new TransformKernelCallPointerArgs(op,args);
     }
 }
