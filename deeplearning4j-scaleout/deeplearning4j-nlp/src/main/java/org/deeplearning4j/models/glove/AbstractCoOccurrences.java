@@ -83,13 +83,14 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
 
             // each pair should be checked against vocab, but that's not strictly required
             if (!vocabCache.hasToken(pair.getFirst().getLabel()) || !vocabCache.hasToken(pair.getSecond().getLabel())) {
-                logger.debug("Skipping pair: '"+ pair.getFirst()+"', '"+ pair.getSecond()+"'");
+//                logger.debug("Skipping pair: '"+ pair.getFirst()+"', '"+ pair.getSecond()+"'");
                 continue;
-            } else logger.debug("Adding pair: '"+ pair.getFirst()+"', '"+ pair.getSecond()+"'");
+            }// else logger.debug("Adding pair: '"+ pair.getFirst()+"', '"+ pair.getSecond()+"'");
 
 
 
             coOccurrences.add(new Pair<T, T>(pair.getFirst(), pair.getSecond()));
+            if (coOccurrences.size() % 100000 == 0) logger.info("Cooccurrences gathered: " + coOccurrences.size());
         }
 
         return coOccurrences;
