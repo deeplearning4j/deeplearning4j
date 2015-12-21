@@ -4,6 +4,7 @@ import lombok.NonNull;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.CounterMap;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.models.glove.count.CountMap;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.iterators.FilteredSequenceIterator;
 import org.deeplearning4j.models.sequencevectors.iterators.SynchronizedSequenceIterator;
@@ -34,7 +35,8 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
     protected int workers = Runtime.getRuntime().availableProcessors();
 
     private Counter<Integer> sentenceOccurrences = Util.parallelCounter();
-    private CounterMap<T, T> coOCurreneCounts = Util.parallelCounterMap();
+    //private CounterMap<T, T> coOCurreneCounts = Util.parallelCounterMap();
+    private CountMap<T> coOCurreneCounts = new CountMap<>();
     private Counter<Integer> occurrenceAllocations = Util.parallelCounter();
     private List<Pair<T, T>> coOccurrences;
     private AtomicLong processedSequences = new AtomicLong(0);
