@@ -3,6 +3,19 @@
     <title>Arbiter</title>
 </head>
 <body>
+
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+<script>
+    //Set basic interval function to get some text
+    setInterval(function(){
+
+    },2000);
+
+</script>
+
+
 <h1>Arbiter Web UI</h1>
 
 This is some text.

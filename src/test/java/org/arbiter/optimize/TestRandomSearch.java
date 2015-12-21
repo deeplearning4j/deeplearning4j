@@ -11,6 +11,7 @@ import org.arbiter.optimize.executor.CandidateExecutor;
 import org.arbiter.optimize.executor.local.LocalCandidateExecutor;
 import org.arbiter.optimize.randomsearch.RandomSearchGenerator;
 import org.arbiter.optimize.runner.OptimizationRunner;
+import org.arbiter.optimize.runner.listener.LoggingStatusListener;
 import org.junit.Test;
 
 import java.util.Map;
@@ -43,6 +44,7 @@ public class TestRandomSearch {
 
         OptimizationRunner<BraninConfig, BraninConfig, Void, Void> runner
                 = new OptimizationRunner<>(configuration, executor);
+        runner.addListeners(new LoggingStatusListener());
 
         runner.execute();
 

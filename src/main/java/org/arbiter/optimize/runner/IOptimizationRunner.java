@@ -2,6 +2,7 @@ package org.arbiter.optimize.runner;
 
 import org.arbiter.optimize.api.OptimizationResult;
 import org.arbiter.optimize.api.saving.ResultReference;
+import org.arbiter.optimize.runner.listener.StatusListener;
 
 import java.util.List;
 
@@ -23,5 +24,11 @@ public interface IOptimizationRunner<T,M,A> {
     long bestScoreTime();
 
     List<ResultReference<T,M,A>> getResults();
+
+    void addListeners(StatusListener... listeners);
+
+    void removeListeners(StatusListener... listeners);
+
+    void removeAllListeners();
 
 }

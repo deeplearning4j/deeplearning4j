@@ -10,6 +10,7 @@ import org.arbiter.optimize.api.saving.ResultSaver;
 import org.arbiter.optimize.api.termination.TerminationCondition;
 import org.arbiter.optimize.config.OptimizationConfiguration;
 import org.arbiter.optimize.executor.CandidateExecutor;
+import org.arbiter.optimize.runner.listener.StatusListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +46,9 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
     private long bestScoreTime = 0;
     private List<ResultReference<C, M, A>> allResults = new ArrayList<>();
 
-    private ExecutorService listenerExecutor;
+    private ExecutorService futureListenerExecutor;
+
+    private List<StatusListener> statusListeners = new ArrayList<>();
 
 
     public OptimizationRunner(OptimizationConfiguration<C, M, D, A> config, CandidateExecutor<C, M, D, A> executor) {
@@ -57,7 +60,7 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
                     "termination conditions are null or empty)");
         }
 
-        listenerExecutor = Executors.newFixedThreadPool(executor.maxConcurrentTasks(),
+        futureListenerExecutor = Executors.newFixedThreadPool(executor.maxConcurrentTasks(),
                 new ThreadFactory() {
                     private AtomicLong counter = new AtomicLong(0);
 
@@ -74,6 +77,7 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
     public void execute() {
 
         log.info("OptimizationRunner: execution started");
+        for(StatusListener listener : statusListeners) listener.onInitialization(this);
 
         //Initialize termination conditions (start timers, etc)
         for (TerminationCondition c : config.getTerminationConditions()) {
@@ -115,7 +119,7 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
             while (queuedFutures.size() < executor.maxConcurrentTasks()) {
                 Candidate<C> candidate = config.getCandidateGenerator().getCandidate();
                 ListenableFuture<OptimizationResult<C, M, A>> f = executor.execute(candidate, config.getDataProvider(), config.getScoreFunction());
-                f.addListener(new OnCompletionListener(f), listenerExecutor);
+                f.addListener(new OnCompletionListener(f), futureListenerExecutor);
                 queuedFutures.add(f);
                 totalCandidateCount++;
             }
@@ -130,6 +134,7 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
         tempList.clear();
 
         log.info("Optimization runner: execution complete");
+        for(StatusListener listener : statusListeners) listener.onShutdown(this);
     }
 
     /**
@@ -151,6 +156,8 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
         } catch (TimeoutException e) {
             throw new RuntimeException(e);  //TODO
         }
+
+        for(StatusListener listener : statusListeners) listener.onCompletion(result);
 
         double score = result.getScore();
         log.info("Completed task {}, score = {}", result.getIndex(), result.getScore());
@@ -209,6 +216,26 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
     @Override
     public List<ResultReference<C, M, A>> getResults() {
         return new ArrayList<>(allResults);
+    }
+
+
+    @Override
+    public void addListeners(StatusListener... listeners) {
+        for(StatusListener l : listeners){
+            if(!statusListeners.contains(l)) statusListeners.add(l);
+        }
+    }
+
+    @Override
+    public void removeListeners(StatusListener... listeners) {
+        for(StatusListener l : listeners){
+            if(statusListeners.contains(l)) statusListeners.remove(l);
+        }
+    }
+
+    @Override
+    public void removeAllListeners() {
+        statusListeners.clear();
     }
 
     private boolean terminate() {
