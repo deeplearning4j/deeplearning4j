@@ -8,11 +8,11 @@ import io.dropwizard.views.View;
 
 @Path("/arbiter")
 @Produces(MediaType.TEXT_HTML)
-public class TestResource2 {
+public class ArbiterUIResource {
 
     @GET
     public View get() {
-        return new TestView();
+        return new ArbiterView();
     }
 
 }

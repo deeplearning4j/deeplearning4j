@@ -23,6 +23,11 @@ public class LoggingStatusListener implements StatusListener {
     }
 
     @Override
+    public void onStatusChange(IOptimizationRunner runner) {
+        log.info("OptimizationRunner - status change"); //TODO
+    }
+
+    @Override
     public void onCompletion(OptimizationResult<?, ?, ?> result) {
         log.info("Optimization runner: task complete. Index = {}, score = {}",result.getIndex(), result.getScore());
     }

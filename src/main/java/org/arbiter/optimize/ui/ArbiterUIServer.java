@@ -1,12 +1,25 @@
 package org.arbiter.optimize.ui;
 
+import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.views.ViewBundle;
+import org.arbiter.optimize.ui.components.RenderableComponentString;
+import org.arbiter.optimize.ui.listener.SummaryStatus;
+import org.arbiter.optimize.ui.rendering.RenderElements;
+import org.arbiter.optimize.ui.resources.SummaryStatusResource;
+import org.arbiter.optimize.ui.resources.LastUpdateResource;
 import org.arbiter.util.WebUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MediaType;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Created by Alex on 20/12/2015.
@@ -38,7 +51,7 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
         Creates a status update object, and passes this to UI server for async processing???
 
     - Information to be displayed is posted to the folowing addresses, in JSON format
-        /updateStatus   simple JSON, tracks when things were last updated. Loop on this, and update UI only when required
+        /lastUpdate     simple JSON, tracks when things were last updated. Loop on this, and update UI only when required
         /summary        summary results in JSON format -> table
         /config         optimization settings / details (hyperparameter space etc). JSON -> table
         /results        summary results for (non-accordian part) of results table. JSON -> table
@@ -61,6 +74,12 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
 
     private static final ArbiterUIServer instance = new ArbiterUIServer();
     private static final Logger log = LoggerFactory.getLogger(ArbiterUIServer.class);
+    private Client client = ClientBuilder.newClient().register(JacksonJsonProvider.class);
+
+    private AtomicLong lastSummaryUpdateTime = new AtomicLong(0);
+
+    private WebTarget targetSummaryStatusUpdate = client.target("http://localhost:8080/summary/update");
+    private WebTarget targetLastUpdateStatus = client.target("http://localhost:8080/lastUpdate/update");
 
     public static void main(String[] args) throws Exception {
         String[] str = new String[]{"server", "dropwizard.yml"};
@@ -89,10 +108,42 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
 //                configuration.getTemplate(),
 //                configuration.getDefaultName()
 //        );
-        final TestResource2 resource = new TestResource2();
+        final ArbiterUIResource resource = new ArbiterUIResource();
         environment.jersey().register(resource);
+
+        //Register our classes, so that Jerney knows what we want to return:
+//        environment.jersey().register(new UpdateStatus(0,0,0));
+        environment.jersey().register(new LastUpdateResource());
+        environment.jersey().register(new SummaryStatusResource());
     }
 
 
+    public void updateStatus(SummaryStatus status){
+
+        //Create a set of RenderableComponent objects to render:
+        RenderElements elements = getSummaryStatusComponents(status);
+
+        targetSummaryStatusUpdate.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
+                .post(Entity.entity(elements, MediaType.APPLICATION_JSON));
+        log.info("Posted summary status update: {}", elements);
+        lastSummaryUpdateTime.set(System.currentTimeMillis());
+
+        updateStatusTimes();
+    }
+
+    private void updateStatusTimes(){
+        UpdateStatus updateStatus = new UpdateStatus(lastSummaryUpdateTime.get(),0,0);
+        targetLastUpdateStatus.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
+                .post(Entity.entity(updateStatus, MediaType.APPLICATION_JSON));
+        log.info("Posted new update times: {}", updateStatus);
+    }
+
+    private RenderElements getSummaryStatusComponents( SummaryStatus status ){
+
+        RenderableComponentString str = new RenderableComponentString(status.toString());
+        System.out.println(status.toString());
+        return new RenderElements(str);
+
+    }
 
 }

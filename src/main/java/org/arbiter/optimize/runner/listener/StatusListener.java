@@ -13,6 +13,10 @@ public interface StatusListener {
     /** Called when optimization runner terminates */
     void onShutdown(IOptimizationRunner runner);
 
+    /** Called when any of the summary stats change: number scheduled, number completed, number failed,
+     * best score, etc. */
+    void onStatusChange(IOptimizationRunner runner);
+
     /** On completion of an optimization task - due to successful execution, failure, or being cancelled etc.*/
     void onCompletion(OptimizationResult<?,?,?> result);
 

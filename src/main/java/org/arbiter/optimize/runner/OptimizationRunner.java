@@ -89,7 +89,7 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
 
         List<Future<OptimizationResult<C, M, A>>> tempList = new ArrayList<>(100);
         while (true) {
-
+            boolean statusChange = false;
 
             //Otherwise: add tasks if required
             Future<OptimizationResult<C, M, A>> future = null;
@@ -105,6 +105,7 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
             for (Future<OptimizationResult<C, M, A>> f : tempList) {
                 queuedFutures.remove(f);
                 processReturnedTask(f);
+                statusChange = true;
             }
             tempList.clear();
 
@@ -122,7 +123,10 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
                 f.addListener(new OnCompletionListener(f), futureListenerExecutor);
                 queuedFutures.add(f);
                 totalCandidateCount++;
+                statusChange = true;
             }
+
+            for(StatusListener listener : statusListeners) listener.onStatusChange(this);
         }
 
         //Process any final (completed) tasks:

@@ -12,7 +12,12 @@ import org.arbiter.optimize.executor.local.LocalCandidateExecutor;
 import org.arbiter.optimize.randomsearch.RandomSearchGenerator;
 import org.arbiter.optimize.runner.OptimizationRunner;
 import org.arbiter.optimize.runner.listener.LoggingStatusListener;
+import org.arbiter.optimize.ui.ArbiterUIServer;
+import org.arbiter.optimize.ui.listener.UIStatusListener;
+import org.arbiter.util.WebUtils;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.Random;
@@ -22,9 +27,9 @@ import java.util.concurrent.Callable;
  * http://www.sfu.ca/~ssurjano/branin.html
  */
 public class TestRandomSearch {
-
+    public static Logger log = LoggerFactory.getLogger(TestRandomSearch.class);
     @Test
-    public void test(){
+    public void test() throws Exception {
 
         //Define hyperparameter space:
 
@@ -44,7 +49,13 @@ public class TestRandomSearch {
 
         OptimizationRunner<BraninConfig, BraninConfig, Void, Void> runner
                 = new OptimizationRunner<>(configuration, executor);
-        runner.addListeners(new LoggingStatusListener());
+//        runner.addListeners(new LoggingStatusListener());
+
+        ArbiterUIServer server = new ArbiterUIServer();
+        String[] str = new String[]{"server", "dropwizard.yml"};
+        server.run(str);
+        WebUtils.tryOpenBrowser("http://localhost:8080/arbiter", log);    //TODO don't hardcode
+        runner.addListeners(new UIStatusListener(server));
 
         runner.execute();
 
@@ -94,6 +105,9 @@ public class TestRandomSearch {
 
                     double score = scoreFunction.score(candidate.getValue(),null,null);
                     System.out.println(candidate.getValue().getX1() + "\t" + candidate.getValue().getX2() + "\t" + score);
+
+                    Thread.sleep(2500);
+
                     return new OptimizationResult<>(candidate,candidate.getValue(), score, 0, null);
                 }
             };
