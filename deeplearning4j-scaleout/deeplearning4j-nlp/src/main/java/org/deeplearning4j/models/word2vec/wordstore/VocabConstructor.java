@@ -141,7 +141,6 @@ public class VocabConstructor<T extends SequenceElement> {
                 }
 
                 for (String label: labelsToRemove) {
-                    log.debug("Removing label: '" + label + "'");
                     tempHolder.removeElement(label);
                 }
             }
@@ -150,8 +149,6 @@ public class VocabConstructor<T extends SequenceElement> {
 
             // at this moment we're ready to transfer
             topHolder.importVocabulary(tempHolder);
-            log.debug("Top holder size: ["+ topHolder.numWords()+"]");
-            log.debug("Target vocab size before building: [" + cache.numWords() + "]");
         }
 
         // at this moment, we have vocabulary full of words, and we have to reset counters before transfer everything back to VocabCache
