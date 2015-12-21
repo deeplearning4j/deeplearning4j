@@ -1,4 +1,4 @@
-package org.arbiter.optimize.report.web;
+package org.arbiter.optimize.ui;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dropwizard.Configuration;

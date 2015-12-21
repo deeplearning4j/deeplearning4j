@@ -1,4 +1,4 @@
-package org.arbiter.optimize.report.web;
+package org.arbiter.optimize.ui;
 
 import io.dropwizard.views.View;
 
@@ -10,7 +10,7 @@ import javax.ws.rs.GET;
 public class TestView extends View {
 
     protected TestView() {
-        super("arbiterui.ftl");
+        super("arbiter.ftl");
     }
 
     @GET

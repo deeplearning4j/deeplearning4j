@@ -1,9 +1,12 @@
-package org.arbiter.optimize.report.web;
+package org.arbiter.optimize.ui;
 
 import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.views.ViewBundle;
+import org.arbiter.util.WebUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Created by Alex on 20/12/2015.
@@ -40,7 +43,9 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
         /config         optimization settings / details (hyperparameter space etc). JSON -> table
         /results        summary results for (non-accordian part) of results table. JSON -> table
 
-    - Main web page code is in /resource/org/arbiter/optimize/report/web/arbiterui.ftl -> HTML + JavaScript
+    - Main web page code is in /resource/org/arbiter/optimize/report/web/arbiter.ftl -> HTML + JavaScript
+        DropWizard/FreeMarker looks specifically for this path based on class in which "arbiter.ftl" is used
+            http://www.dropwizard.io/0.9.1/docs/manual/views.html
         This operates on timed loop, every 1 second or so
         Loop: Fetches and parses JSON from /updateStatus. This information is used to determine what elements to update
           -> If no data has changed since the last rendering: do nothing
@@ -54,11 +59,18 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
 
      */
 
-
+    private static final ArbiterUIServer instance = new ArbiterUIServer();
+    private static final Logger log = LoggerFactory.getLogger(ArbiterUIServer.class);
 
     public static void main(String[] args) throws Exception {
         String[] str = new String[]{"server", "dropwizard.yml"};
         new ArbiterUIServer().run(str);
+        WebUtils.tryOpenBrowser("http://localhost:8080/arbiter",log);    //TODO don't hardcode
+    }
+
+    public ArbiterUIServer(){
+        super();
+        //TODO - necessary?
     }
 
     @Override
@@ -80,4 +92,7 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
         final TestResource2 resource = new TestResource2();
         environment.jersey().register(resource);
     }
+
+
+
 }

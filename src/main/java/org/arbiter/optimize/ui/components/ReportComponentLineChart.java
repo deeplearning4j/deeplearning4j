@@ -1,4 +1,4 @@
-package org.arbiter.optimize.report.components;
+package org.arbiter.optimize.ui.components;
 
 import lombok.AllArgsConstructor;
 

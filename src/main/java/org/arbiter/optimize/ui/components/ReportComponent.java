@@ -1,4 +1,4 @@
-package org.arbiter.optimize.report.components;
+package org.arbiter.optimize.ui.components;
 
 /**
  * Created by Alex on 21/12/2015.
