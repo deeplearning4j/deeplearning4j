@@ -1,9 +1,12 @@
 package org.deeplearning4j.models.glove.count;
 
 import com.google.common.util.concurrent.AtomicDouble;
+import lombok.Data;
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -36,6 +39,33 @@ public class CountMap<T extends SequenceElement> {
         } else return 0;
     }
 
+    public Iterator<Pair<T, T>> getPairIterator() {
+        return new Iterator<Pair<T, T>>() {
+            private  Iterator<CountMap.MapEntry<T>> iterator = backingMap.keySet().iterator();
+
+            @Override
+            public boolean hasNext() {
+                    return iterator.hasNext();
+            }
+
+            @Override
+            public Pair<T, T> next() {
+                MapEntry<T> entry = iterator.next();
+                return new Pair<>(entry.getElement1(), entry.getElement2());
+            }
+
+            @Override
+            public void remove() {
+                throw new UnsupportedOperationException("remove() isn't supported here");
+            }
+        };
+    }
+
+    public int size() {
+        return backingMap.size();
+    }
+
+    @Data
     public static class MapEntry<T extends SequenceElement> {
         private T element1;
         private T element2;
