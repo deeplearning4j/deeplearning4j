@@ -364,7 +364,7 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
      */
     public double f1(Integer classLabel) {
         double precision = precision(classLabel);
-        double recall = recall();
+        double recall = recall(classLabel);
         if(precision == 0 || recall == 0)
             return 0;
         return 2.0 * ((precision * recall / (precision + recall)));
