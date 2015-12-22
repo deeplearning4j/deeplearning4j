@@ -9,7 +9,7 @@ cache:
     - $HOME/.ivy2/cache
     - $HOME/.mvn/
 script:
-  - git clone https://github.com/deeplearning4j/nd4j.git && cd nd4j/ && mvn clean install -DskipTests -Dmaven.javadoc.skip=true --quiet && cd ../
+  - ./nd4j_install.sh
   - sbt ++${TRAVIS_SCALA_VERSION} test
   - find $HOME/.sbt -name "*.lock" | xargs rm
   - find $HOME/.ivy2 -name "ivydata-*.properties" | xargs rm
