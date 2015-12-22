@@ -39,8 +39,7 @@ public class ImageVectorizer implements Vectorizer {
 	private boolean normalize;
 	private int label;
 	private int numLabels;
-	private int threshold = 30;
-	
+
 	/**
 	 * Baseline knowledge needed for the vectorizer
 	 * @param image the input image to convert
@@ -98,6 +97,7 @@ public class ImageVectorizer implements Vectorizer {
 			else if(binarize) {
 				for(int i = 0; i < d.length(); i++) {
 					double curr = (double) d.getScalar(i).element();
+					int threshold = 30;
 					if(curr > threshold) {
 						d.putScalar(i, 1);
 					}
