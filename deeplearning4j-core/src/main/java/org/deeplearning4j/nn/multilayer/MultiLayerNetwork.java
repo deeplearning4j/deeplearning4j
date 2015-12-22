@@ -1703,6 +1703,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return the score (value of the loss function)
      */
     public double score(DataSet data, boolean training){
+        boolean hasMaskArray = data.hasMaskArrays();
+        if(hasMaskArray) setLayerMaskArrays(data.getFeaturesMaskArray(),data.getLabelsMaskArray());
         feedForward(data.getFeatureMatrix());
         setLabels(data.getLabels());
         if( getOutputLayer() instanceof BaseOutputLayer ){
@@ -1714,6 +1716,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             log.warn("Cannot calculate score wrt labels without an OutputLayer");
             return 0.0;
         }
+        if(hasMaskArray) clearLayerMaskArrays();
         return score();
     }
 

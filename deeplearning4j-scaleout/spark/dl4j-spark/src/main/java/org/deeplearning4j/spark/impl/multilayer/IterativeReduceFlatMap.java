@@ -32,6 +32,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple2;
+import scala.Tuple3;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -44,7 +45,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>,Tuple2<INDArray,Updater>> {
+public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>,Tuple3<INDArray,Updater,Double>> {
 
     private String json;
     private Broadcast<INDArray> params;
@@ -70,11 +71,10 @@ public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>
 
 
     @Override
-    public Iterable<Tuple2<INDArray,Updater>> call(Iterator<DataSet> dataSetIterator) throws Exception {
+    public Iterable<Tuple3<INDArray,Updater,Double>> call(Iterator<DataSet> dataSetIterator) throws Exception {
         if(!dataSetIterator.hasNext()) {
-            return Collections.singletonList(new Tuple2<INDArray,Updater>(Nd4j.zeros(params.value().shape()),null));
+            return Collections.singletonList(new Tuple3<INDArray,Updater,Double>(Nd4j.zeros(params.value().shape()),null,0.0));
         }
-
         List<DataSet> collect = new ArrayList<>();
         while(dataSetIterator.hasNext()) {
             collect.add(dataSetIterator.next());
@@ -95,7 +95,7 @@ public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>
         network.setUpdater(upd);
         network.fit(data);
 
-        return Collections.singletonList(new Tuple2<>(network.params(false),network.getUpdater()));
+        return Collections.singletonList(new Tuple3<>(network.params(false),network.getUpdater(),network.score()));
 
     }
 }
