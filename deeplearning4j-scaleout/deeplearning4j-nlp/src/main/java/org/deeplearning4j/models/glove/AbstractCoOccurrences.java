@@ -1,6 +1,11 @@
 package org.deeplearning4j.models.glove;
 
 import lombok.NonNull;
+import org.canova.api.conf.Configuration;
+import org.canova.api.records.reader.impl.CSVRecordReader;
+import org.canova.api.split.FileSplit;
+import org.canova.api.split.InputSplit;
+import org.canova.api.writable.Writable;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.CounterMap;
 import org.deeplearning4j.berkeley.Pair;
@@ -12,6 +17,7 @@ import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.movingwindow.Util;
+import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +29,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -37,6 +44,8 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
     protected SequenceIterator<T> sequenceIterator;
     protected int workers = Runtime.getRuntime().availableProcessors();
 
+    protected long memory_threshold = 0;
+
 //    private Counter<Integer> sentenceOccurrences = Util.parallelCounter();
     //private CounterMap<T, T> coOCurreneCounts = Util.parallelCounterMap();
     private CountMap<T> coOCurreneCounts = new CountMap<>();
@@ -48,6 +57,11 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
 
     public double getCoOccurrenceCount(@NonNull T element1, @NonNull T element2) {
         return coOCurreneCounts.getCount(element1, element2);
+    }
+
+    protected long getMemoryFootprint() {
+        // TODO: implement this method. It should return approx. memory used by appropriate CountMap
+        return 0;
     }
 
     public void fit() {
@@ -258,6 +272,11 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
      */
     private class ShadowCopyThread extends Thread implements Runnable {
 
+        private AtomicBoolean isFinished = new AtomicBoolean(false);
+        private AtomicBoolean isTerminate = new AtomicBoolean(false);
+        private AtomicBoolean isInvoked = new AtomicBoolean(false);
+        private AtomicBoolean shouldInvoke = new AtomicBoolean(false);
+
         public ShadowCopyThread() {
 
             this.setName("ACO ShadowCopy thread");
@@ -269,13 +288,100 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                   Basic idea is pretty simple: run quetly, untill memory gets filled up to some high volume.
                   As soon as this happens - execute shadow copy.
             */
+            while (!isFinished.get() && !isTerminate.get()) {
+                // check used memory. if memory use below threshold - sleep for a while. if above threshold - invoke copier
+
+                if (getMemoryFootprint() > memory_threshold || (shouldInvoke.get() && !isInvoked.get())) {
+                    // we'll just invoke copier, nothing
+                    invokeBlocking();
+                } else {
+                    try {
+                        Thread.sleep(100);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
         }
 
         /**
-         * This methods forces shadow copy process to start
+         * This methods advises shadow copy process to start
          */
         public void invoke() {
+            shouldInvoke.set(true);
+        }
 
+        /**
+         * This methods dumps cooccurrence map into save file.
+         * Please note: this method is synchronized and will block, until complete
+         */
+        public synchronized void invokeBlocking() {
+            isInvoked.set(true);
+
+            /*
+                Basic plan:
+                    1. Open temp file
+                    2. Read that file line by line
+                    3. For each read line do synchronization in memory > new file direction
+             */
+
+            File currentFile = null;
+
+            try {
+                File file = File.createTempFile("aco","tmp");
+                file.deleteOnExit();
+
+                InputSplit split = new FileSplit(currentFile);
+                Configuration canovaConf = new Configuration(true);
+
+                CSVRecordReader reader = new CSVRecordReader();
+                reader.initialize(canovaConf, split);
+
+                while (reader.hasNext()) {
+                    List<Writable> list = new ArrayList<>(reader.next());
+
+                    // first two elements are integers - vocab indexes
+                    // last, third element is double, pair weight
+                    T element1 = vocabCache.wordFor(vocabCache.wordAtIndex(list.get(0).toInt()));
+                    T element2 = vocabCache.wordFor(vocabCache.wordAtIndex(list.get(1).toInt()));
+
+                    // getting third element, previously stored weight
+                    double sWeight = list.get(2).toDouble();
+
+                    // now, since we have both elements ready, we can check this pair against inmemory map
+                    synchronized (element1) {
+                        double mWeight = coOCurreneCounts.getCount(element1, element2);
+                        if (mWeight <= 0) {
+                            // this means we have no such pair in memory, so we'll do nothing to sWeight
+                        } else {
+                            // since we have new weight value in memory, we should update sWeight value before moving it off memory
+                            sWeight += mWeight;
+
+                            // original pair can be safely removed from CountMap
+                            coOCurreneCounts.removePair(element1, element2);
+                        }
+                    }
+                }
+
+                //now, we can dump the rest of elements
+
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        /**
+         * This method provides soft finish ability for shadow copy process
+         */
+        public void finish() {
+            this.isFinished.set(true);
+        }
+
+        /**
+         * This method provides hard fiinish ability for shadow copy process
+         */
+        public void terminate() {
+            this.isTerminate.set(true);
         }
     }
 }
