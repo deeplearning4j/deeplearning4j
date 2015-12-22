@@ -16,6 +16,9 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -105,7 +108,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
         protected VocabCache<T> vocabCache;
         protected SequenceIterator<T> sequenceIterator;
         protected int workers = Runtime.getRuntime().availableProcessors();
-
+        protected File target;
 
         public Builder() {
 
@@ -133,6 +136,40 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
 
         public Builder<T> workers(int numWorkers) {
             this.workers = numWorkers;
+            return this;
+        }
+
+        /**
+         * This method allows you to specify maximum memory available for CoOccurrence map builder.
+         *
+         * Please note: this option can be considered a debugging method. In most cases setting proper -Xmx argument set to JVM is enough to limit this algorithm.
+         * Please note: this option won't override -Xmx JVM value.
+         *
+         * @param mbytes memory available, in GigaBytes
+         * @return
+         */
+        public Builder<T> maxMemory(int mbytes) {
+
+            return this;
+        }
+
+        /**
+         *
+         * @param path
+         * @return
+         */
+        public Builder<T> targetFile(@NonNull String path) {
+            this.targetFile(new File(path));
+            return this;
+        }
+
+        /**
+         *
+         * @param file
+         * @return
+         */
+        public Builder<T> targetFile(@NonNull File file) {
+            this.target = file;
             return this;
         }
 
@@ -212,6 +249,33 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
 
                 sequenceCounter.incrementAndGet();
             }
+        }
+    }
+
+    /**
+     * This class is designed to provide shadow copy functionality for CoOccurence maps, since with proper corpus size you can't fit such a map into memory
+     *
+     */
+    private class ShadowCopyThread extends Thread implements Runnable {
+
+        public ShadowCopyThread() {
+
+            this.setName("ACO ShadowCopy thread");
+        }
+
+        @Override
+        public void run() {
+            /*
+                  Basic idea is pretty simple: run quetly, untill memory gets filled up to some high volume.
+                  As soon as this happens - execute shadow copy.
+            */
+        }
+
+        /**
+         * This methods forces shadow copy process to start
+         */
+        public void invoke() {
+
         }
     }
 }
