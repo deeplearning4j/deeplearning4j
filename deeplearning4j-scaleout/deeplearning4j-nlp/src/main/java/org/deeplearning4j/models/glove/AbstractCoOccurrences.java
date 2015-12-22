@@ -34,10 +34,10 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
     protected SequenceIterator<T> sequenceIterator;
     protected int workers = Runtime.getRuntime().availableProcessors();
 
-    private Counter<Integer> sentenceOccurrences = Util.parallelCounter();
+//    private Counter<Integer> sentenceOccurrences = Util.parallelCounter();
     //private CounterMap<T, T> coOCurreneCounts = Util.parallelCounterMap();
     private CountMap<T> coOCurreneCounts = new CountMap<>();
-    private Counter<Integer> occurrenceAllocations = Util.parallelCounter();
+    //private Counter<Integer> occurrenceAllocations = Util.parallelCounter();
     private List<Pair<T, T>> coOccurrences;
     private AtomicLong processedSequences = new AtomicLong(0);
 
@@ -192,19 +192,19 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
 
                         if(wordIdx < otherWord) {
                             coOCurreneCounts.incrementCount(vocabCache.wordFor(tokens.get(x)), vocabCache.wordFor(tokens.get(j)), 1.0 / (j - x + Nd4j.EPS_THRESHOLD));
-                            occurrenceAllocations.incrementCount(sequence.getSequenceId(),1.0);
+                     //       occurrenceAllocations.incrementCount(sequence.getSequenceId(),1.0);
                             if(symmetric) {
                                 coOCurreneCounts.incrementCount(vocabCache.wordFor(tokens.get(j)), vocabCache.wordFor(tokens.get(x)), 1.0 / (j - x + Nd4j.EPS_THRESHOLD));
-                                occurrenceAllocations.incrementCount(sequence.getSequenceId(),1.0);
+//                                occurrenceAllocations.incrementCount(sequence.getSequenceId(),1.0);
                             }
                         }
                         else {
                             coOCurreneCounts.incrementCount(vocabCache.wordFor(tokens.get(j)),vocabCache.wordFor(tokens.get(x)), 1.0 / (j - x + Nd4j.EPS_THRESHOLD));
-                            occurrenceAllocations.incrementCount(sequence.getSequenceId(),1.0);
+                    //        occurrenceAllocations.incrementCount(sequence.getSequenceId(),1.0);
 
                             if(symmetric) {
                                 coOCurreneCounts.incrementCount(vocabCache.wordFor(tokens.get(x)), vocabCache.wordFor(tokens.get(j)), 1.0 / (j - x + Nd4j.EPS_THRESHOLD));
-                                occurrenceAllocations.incrementCount(sequence.getSequenceId(),1.0);
+                    //            occurrenceAllocations.incrementCount(sequence.getSequenceId(),1.0);
                             }
                         }
                     }
