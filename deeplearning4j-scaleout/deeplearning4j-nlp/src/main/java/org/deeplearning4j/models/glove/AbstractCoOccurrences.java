@@ -358,7 +358,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                             sWeight += mWeight;
 
                             // original pair can be safely removed from CountMap
-                            coOCurreneCounts.removePair(element1, element2);
+                            coOCurreneCounts.removePair(element1,element2);
                         }
                     }
                 }
