@@ -18,7 +18,10 @@
 
 package org.deeplearning4j.datasets.iterator;
 
+import org.deeplearning4j.datasets.fetchers.BaseDataFetcher;
 import org.nd4j.linalg.dataset.DataSet;
+
+import java.util.List;
 
 /**
  * Baseline implementation includes
@@ -29,14 +32,12 @@ import org.nd4j.linalg.dataset.DataSet;
  */
 public class BaseDatasetIterator implements DataSetIterator {
 
-
-	private static final long serialVersionUID = -116636792426198949L;
 	protected int batch,numExamples;
-	protected DataSetFetcher fetcher;
+	protected BaseDataFetcher fetcher;
 	protected DataSetPreProcessor preProcessor;
 	
 	
-	public BaseDatasetIterator(int batch,int numExamples,DataSetFetcher fetcher) {
+	public BaseDatasetIterator(int batch, int numExamples, BaseDataFetcher fetcher) {
 		this.batch = batch;
 		if(numExamples < 0)
 			numExamples = fetcher.totalExamples();
@@ -58,6 +59,15 @@ public class BaseDatasetIterator implements DataSetIterator {
 			preProcessor.preProcess(result);
 		}
 		return result;
+	}
+
+	@Override
+	public DataSet next(int num) {
+		fetcher.fetch(num);
+		DataSet next =  fetcher.next();
+		if(preProcessor != null)
+			preProcessor.preProcess(next);
+		return next;
 	}
 
 	@Override
@@ -105,19 +115,10 @@ public class BaseDatasetIterator implements DataSetIterator {
         this.preProcessor = (DataSetPreProcessor) preProcessor;
     }
 
-
-
-    @Override
-	public DataSet next(int num) {
-		fetcher.fetch(num);
-		DataSet next =  fetcher.next();
-        if(preProcessor != null)
-            preProcessor.preProcess(next);
-        return next;
+	@Override
+	public List<String> getLabels() {
+		return null;
 	}
-	
-	
 
-	
 
 }

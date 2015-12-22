@@ -292,4 +292,9 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     public void remove() {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public List<String> getLabels(){
+        return recordReader.getLabels();
+    }
 }

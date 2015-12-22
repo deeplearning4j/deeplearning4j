@@ -21,6 +21,8 @@ package org.deeplearning4j.datasets.iterator;
 
 import org.nd4j.linalg.dataset.DataSet;
 
+import java.util.List;
+
 /**
  * Wraps a data applyTransformToDestination iterator setting the first (feature matrix) as
  * the labels.
@@ -122,6 +124,10 @@ public class ReconstructionDataSetIterator implements DataSetIterator {
         this.preProcessor = (DataSetPreProcessor) preProcessor;
     }
 
+    @Override
+    public List<String> getLabels() {
+        return null;
+    }
 
 
     /**
