@@ -18,14 +18,13 @@ import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.movingwindow.Util;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
+import org.deeplearning4j.text.sentenceiterator.PrefetchingSentenceIterator;
+import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStream;
-import java.io.Serializable;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -34,6 +33,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
+ *
+ *
+ *
+ *
  * @author raver119@gmail.com
  */
 public class AbstractCoOccurrences<T extends SequenceElement> implements Serializable {
@@ -43,6 +46,10 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
     protected VocabCache<T> vocabCache;
     protected SequenceIterator<T> sequenceIterator;
     protected int workers = Runtime.getRuntime().availableProcessors();
+
+    protected File targetFile;
+
+    protected ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     protected long memory_threshold = 0;
 
@@ -89,7 +96,8 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
      * Returns list of label pairs for each element met in each sequence
      * @return
      */
-    public synchronized List<Pair<T, T>> coOccurrenceList() {
+    @Deprecated
+    private synchronized List<Pair<T, T>> coOccurrenceList() {
         if (coOccurrences != null)
             return coOccurrences;
 
@@ -115,6 +123,53 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
         return coOccurrences;
     }
 
+    /**
+     *
+     *  This method returns iterator with elements pairs and their weights. Resulting iterator is safe to use in multi-threaded environment.
+     *
+     * Developer's note: thread safety on received iterator is delegated to PrefetchedSentenceIterator
+     * @return
+     */
+    public Iterator<Pair<Pair<T, T>, Double>> iterator() {
+        final SentenceIterator iterator;
+
+        try {
+            iterator = new PrefetchingSentenceIterator.Builder(new BasicLineIterator(targetFile))
+                    .setFetchSize(500)
+                    .build();
+        } catch (Exception e) {
+            logger.error("Target file was not found on last stage!");
+            throw new RuntimeException(e);
+        }
+        return new Iterator<Pair<Pair<T, T>, Double>>() {
+            /*
+                    iterator should be built on top of current text file with all pairs
+             */
+
+            @Override
+            public boolean hasNext() {
+                return iterator.hasNext();
+            }
+
+            @Override
+            public Pair<Pair<T, T>, Double> next() {
+                String line = iterator.nextSentence();
+                String[] strings = line.split(" ");
+
+                T element1 = vocabCache.elementAtIndex(Integer.valueOf(strings[0]));
+                T element2 = vocabCache.elementAtIndex(Integer.valueOf(strings[1]));
+                Double weight = Double.valueOf(strings[2]);
+
+                return new Pair<>(new Pair<T, T>(element1, element2), weight);
+            }
+
+            @Override
+            public void remove() {
+                throw new UnsupportedOperationException("remove() method can't be supported on read-only interface");
+            }
+        };
+    }
+
     public static class Builder<T extends SequenceElement> {
 
         protected boolean symmetric;
@@ -123,6 +178,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
         protected SequenceIterator<T> sequenceIterator;
         protected int workers = Runtime.getRuntime().availableProcessors();
         protected File target;
+        protected long maxmemory;
 
         public Builder() {
 
@@ -162,12 +218,15 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
          * @param mbytes memory available, in GigaBytes
          * @return
          */
+        // TODO: change this to GBytes after tests complete :)
         public Builder<T> maxMemory(int mbytes) {
-
+            this.maxmemory = mbytes;
             return this;
         }
 
         /**
+         * Path to save cooccurrence map after construction.
+         * If targetFile is not specified, temporary file will be used.
          *
          * @param path
          * @return
@@ -178,6 +237,8 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
         }
 
         /**
+         * Path to save cooccurrence map after construction.
+         * If targetFile is not specified, temporary file will be used.
          *
          * @param file
          * @return
@@ -194,6 +255,17 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
             ret.vocabCache = this.vocabCache;
             ret.symmetric = this.symmetric;
             ret.workers = this.workers;
+            ret.memory_threshold = this.maxmemory;
+
+            // use temp file, if no target file was specified
+            try {
+                if (this.target == null) this.target = File.createTempFile("cooccurrence", "map");
+                this.target.deleteOnExit();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+
+            ret.targetFile = this.target;
 
             return ret;
         }
@@ -308,7 +380,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
          * This methods advises shadow copy process to start
          */
         public void invoke() {
-            shouldInvoke.set(true);
+            shouldInvoke.compareAndSet(false, true);
         }
 
         /**
@@ -326,10 +398,27 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
              */
 
             File currentFile = null;
+            CountMap<T> localMap;
+            try {
+                // in any given moment there's going to be only 1 WriteLock, due to invokeBlocking() being synchronized call
+                lock.writeLock().lock();
+
+                // obtain local copy of CountMap
+                 localMap = coOCurreneCounts;
+
+                // set new CountMap, and release write lock
+                coOCurreneCounts = new CountMap<T>();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            } finally {
+                lock.writeLock().unlock();
+            }
 
             try {
                 File file = File.createTempFile("aco","tmp");
                 file.deleteOnExit();
+
+                PrintWriter pw = new PrintWriter(file);
 
                 InputSplit split = new FileSplit(currentFile);
                 Configuration canovaConf = new Configuration(true);
@@ -349,8 +438,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                     double sWeight = list.get(2).toDouble();
 
                     // now, since we have both elements ready, we can check this pair against inmemory map
-                    synchronized (element1) {
-                        double mWeight = coOCurreneCounts.getCount(element1, element2);
+                        double mWeight = localMap.getCount(element1, element2);
                         if (mWeight <= 0) {
                             // this means we have no such pair in memory, so we'll do nothing to sWeight
                         } else {
@@ -358,13 +446,27 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                             sWeight += mWeight;
 
                             // original pair can be safely removed from CountMap
-                            coOCurreneCounts.removePair(element1,element2);
+                            localMap.removePair(element1,element2);
                         }
-                    }
+
+                        StringBuilder builder = new StringBuilder().append(element1.getIndex()).append(" ").append(element2.getIndex()).append(" ").append(sWeight);
+                        pw.println(builder.toString());
                 }
 
-                //now, we can dump the rest of elements
+                //now, we can dump the rest of elements, which were not represented at existing dump
+                Iterator<Pair<T, T>> iterator = localMap.getPairIterator();
+                while (iterator.hasNext()) {
+                    Pair<T, T> pair = iterator.next();
+                    double mWeight = localMap.getCount(pair);
 
+                    StringBuilder builder = new StringBuilder().append(pair.getFirst().getIndex()).append(" ").append(pair.getFirst().getIndex()).append(" ").append(mWeight);
+                    pw.println(builder.toString());
+                }
+
+                pw.flush();
+                pw.close();
+
+                localMap = null;
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
