@@ -227,6 +227,7 @@ public class SequenceVectorsTest {
 
     @Test
     public void testGlove1() throws Exception {
+        logger.info("Max available memory: " + Runtime.getRuntime().maxMemory());
         ClassPathResource resource = new ClassPathResource("big/raw_sentences.txt");
         File file = resource.getFile();
 
