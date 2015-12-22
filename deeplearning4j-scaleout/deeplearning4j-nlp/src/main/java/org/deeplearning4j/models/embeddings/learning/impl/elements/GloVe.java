@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -88,7 +89,7 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
         bias = Nd4j.create(syn0.rows());
         biasAdaGrad = new AdaGrad(bias.shape(), this.learningRate);
 
-        maxmemory = Runtime.getRuntime().maxMemory() - (vocabCache.numWords() * vectorLength * 2 * 8);
+      //  maxmemory = Runtime.getRuntime().maxMemory() - (vocabCache.numWords() * vectorLength * 2 * 8);
 
         log.info("GloVe params: {Max Memory: [" + maxmemory + "], Learning rate: [" + this.learningRate +"], Alpha: [" + alpha+"], xMax: [" + xMax +"], Symmetric: [" + symmetric+ "], Shuffle: [" + shuffle+ "]}");
     }
@@ -131,17 +132,19 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
         final AtomicInteger pairsCount = new AtomicInteger(0);
         final Counter<Integer> errorCounter = new Counter<>();
 
-        List<Pair<T, T>> coList = coOccurrences.coOccurrenceList();
+        //List<Pair<T, T>> coList = coOccurrences.coOccurrenceList();
 
         for (int i = 0; i < configuration.getEpochs(); i++ ) {
 
-            if (shuffle)
-                Collections.shuffle(coList);
+            // TODO: shuffle should be built in another way.
+            //if (shuffle)
+                //Collections.shuffle(coList);
 
+            Iterator<Pair<Pair<T,T>, Double>> pairs = coOccurrences.iterator();
 
             List<GloveCalculationsThread> threads = new ArrayList<>();
             for (int x = 0; x < workers; x++) {
-                threads.add(x, new GloveCalculationsThread(i, x, coOccurrences, coList, pairsCount, errorCounter));
+                threads.add(x, new GloveCalculationsThread(i, x, pairs, pairsCount, errorCounter));
                 threads.get(x).start();
             }
 
@@ -155,7 +158,7 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
                 }
             }
 
-            log.info("Processed ["+ pairsCount.get()+"] pairs, out of [" + ( coList.size() * configuration.getEpochs())+"]; Error was ["+ errorCounter.getCount(i) +"]");
+            log.info("Processed ["+ pairsCount.get()+"] pairs, Error was ["+ errorCounter.getCount(i) +"]");
         }
 
         isTerminate.set(true);
@@ -221,16 +224,16 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
     private class GloveCalculationsThread extends Thread implements Runnable {
         private final int threadId;
         private final int epochId;
-        private final AbstractCoOccurrences<T> coOccurrences;
-        private final List<Pair<T, T>> coList;
+//        private final AbstractCoOccurrences<T> coOccurrences;
+        private final Iterator<Pair<Pair<T, T>, Double>>  coList;
 
         private final AtomicInteger pairsCounter;
         private final Counter<Integer> errorCounter;
 
-        public GloveCalculationsThread(int epochId, int threadId, @NonNull AbstractCoOccurrences<T> coOccurrences, @NonNull List<Pair<T, T>> pairs, @NonNull AtomicInteger pairsCounter, @NonNull Counter<Integer> errorCounter) {
+        public GloveCalculationsThread(int epochId, int threadId, @NonNull Iterator<Pair<Pair<T, T>, Double>> pairs, @NonNull AtomicInteger pairsCounter, @NonNull Counter<Integer> errorCounter) {
             this.epochId = epochId;
             this.threadId = threadId;
-            this.coOccurrences = coOccurrences;
+          //  this.coOccurrences = coOccurrences;
 
             this.pairsCounter = pairsCounter;
             this.errorCounter = errorCounter;
@@ -242,14 +245,18 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
 
         @Override
         public void run() {
-            int startPosition = threadId * (coList.size() / workers);
-            int stopPosition = (threadId + 1) *  (coList.size() / workers);
+//            int startPosition = threadId * (coList.size() / workers);
+//            int stopPosition = (threadId + 1) *  (coList.size() / workers);
 //            log.info("Total size: [" + coList.size() + "], thread start: [" + startPosition + "], thread stop: [" + stopPosition + "]");
-            for (int x = startPosition; x < stopPosition; x++) {
+            while (coList.hasNext()){
                 // no for each pair do appropriate training
-                T element1 = coList.get(x).getFirst();
-                T element2 = coList.get(x).getSecond();
-                double weight = coOccurrences.getCoOccurrenceCount(element1, element2);
+                Pair<Pair<T, T>, Double> pairDoublePair = coList.next();
+
+                // That's probably ugly and probably should be improved somehow
+
+                T element1 = pairDoublePair.getFirst().getFirst();
+                T element2 = pairDoublePair.getFirst().getSecond();
+                double weight = pairDoublePair.getSecond();  //coOccurrences.getCoOccurrenceCount(element1, element2);
                 if (weight <= 0) {
 //                    log.warn("Skipping pair ("+ element1.getLabel()+", " + element2.getLabel()+")");
                     pairsCounter.incrementAndGet();
@@ -272,6 +279,7 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
 
         protected boolean shuffle = false;
         protected boolean symmetric = false;
+        protected int maxmemory = (int) (Runtime.getRuntime().totalMemory() / 1024 /1024 /1024);
 
         public Builder() {
 
@@ -296,6 +304,20 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
          */
         public Builder<T> alpha(double alpha) {
             this.alpha = alpha;
+            return this;
+        }
+
+        /**
+         * This method allows you to specify maximum memory available for CoOccurrence map builder.
+         *
+         * Please note: this option can be considered a debugging method. In most cases setting proper -Xmx argument set to JVM is enough to limit this algorithm.
+         * Please note: this option won't override -Xmx JVM value.
+         *
+         * @param gbytes
+         * @return
+         */
+        public Builder<T> maxMemory(int gbytes) {
+            this.maxmemory = gbytes;
             return this;
         }
 
@@ -339,6 +361,7 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
             ret.xMax = this.xMax;
             ret.alpha = this.alpha;
             ret.learningRate = this.learningRate;
+            ret.maxmemory = this.maxmemory;
 
             return ret;
         }
