@@ -36,14 +36,22 @@ public class CountMap<T extends SequenceElement> {
     public void removePair(T element1, T element2) {
         Pair<T, T> tempEntry = new Pair<>(element1, element2);
         backingMap.remove(tempEntry);
+    }
 
-        Pair<T, T> newpair;
+    public void removePair(Pair<T, T> pair) {
+        backingMap.remove(pair);
     }
 
     public double getCount(T element1, T element2) {
         Pair<T, T> tempEntry = new Pair<>(element1, element2);
         if (backingMap.containsKey(tempEntry)) {
             return backingMap.get(tempEntry).get();
+        } else return 0;
+    }
+
+    public double getCount(Pair<T, T> pair) {
+        if (backingMap.containsKey(pair)) {
+            return backingMap.get(pair).get();
         } else return 0;
     }
 
