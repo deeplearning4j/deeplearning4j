@@ -12,17 +12,23 @@ public interface IOptimizationRunner<C,M,A> {
     void execute();
 
     /** Total number of candidates: created (scheduled), completed and failed */
-    int numCandidatesScheduled();
+    int numCandidatesTotal();
 
     int numCandidatesCompleted();
 
     int numCandidatesFailed();
+
+    /** Number of candidates running or queued */
+    int numCandidatesQueued();
 
     /** Best score found so far */
     double bestScore();
 
     /** Time that the best score was found at, or 0 if no jobs have completed successfully */
     long bestScoreTime();
+
+    /** Index of the best scoring candidate */
+    int bestScoreCandidateIndex();
 
     List<ResultReference<C,M,A>> getResults();
 

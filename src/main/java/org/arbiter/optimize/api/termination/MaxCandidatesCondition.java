@@ -15,7 +15,7 @@ public class MaxCandidatesCondition implements TerminationCondition {
 
     @Override
     public boolean terminate(IOptimizationRunner optimizationRunner) {
-        return optimizationRunner.numCandidatesScheduled() >= maxCandidates;
+        return optimizationRunner.numCandidatesTotal() >= maxCandidates;
     }
 
     @Override

@@ -37,11 +37,14 @@ public class UIStatusListener implements StatusListener {
         long currentTime = System.currentTimeMillis();
         double score = runner.bestScore();
         long scoreTime = runner.bestScoreTime();
-        int queued = runner.numCandidatesScheduled();
+
         int completed = runner.numCandidatesCompleted();
+        int queued = runner.numCandidatesQueued();
         int failed = runner.numCandidatesFailed();
+        int total = runner.numCandidatesTotal();
+
         SummaryStatus status = new SummaryStatus(currentTime,score,scoreTime,
-                completed,queued,failed);
+                completed,queued,failed,total);
         server.updateStatus(status);
 
         server.updateResults(runner.getCandidateStatus());

@@ -13,6 +13,13 @@ public class RenderableComponentTable extends RenderableComponent {
         //No arg constructor for Jackson
     }
 
+    public RenderableComponentTable(String[] header, String[][] table){
+        super(COMPONENT_TYPE);
+        this.header = header;
+        this.table = table;
+    }
+
+
     private String[] header;
     private String[][] table;
 

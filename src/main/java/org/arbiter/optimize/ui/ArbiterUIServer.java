@@ -2,12 +2,14 @@ package org.arbiter.optimize.ui;
 
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import io.dropwizard.Application;
+import io.dropwizard.assets.AssetsBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.views.ViewBundle;
 import org.arbiter.optimize.runner.CandidateStatus;
 import org.arbiter.optimize.ui.components.RenderableComponent;
 import org.arbiter.optimize.ui.components.RenderableComponentString;
+import org.arbiter.optimize.ui.components.RenderableComponentTable;
 import org.arbiter.optimize.ui.listener.SummaryStatus;
 import org.arbiter.optimize.ui.rendering.RenderElements;
 import org.arbiter.optimize.ui.resources.ConfigResource;
@@ -108,7 +110,7 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
     public static void main(String[] args) throws Exception {
         String[] str = new String[]{"server", "dropwizard.yml"};
         new ArbiterUIServer().run(str);
-        WebUtils.tryOpenBrowser("http://localhost:8080/arbiter",log);    //TODO don't hardcode
+        WebUtils.tryOpenBrowser("http://localhost:8080/arbiter", log);    //TODO don't hardcode
     }
 
     public ArbiterUIServer(){
@@ -124,6 +126,7 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
     @Override
     public void initialize(Bootstrap<ArbiterUIConfig> bootstrap) {
         bootstrap.addBundle(new ViewBundle<ArbiterUIConfig>());
+        bootstrap.addBundle(new AssetsBundle());
     }
 
     @Override
@@ -161,9 +164,26 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
 
     private RenderElements getSummaryStatusComponents( SummaryStatus status ){
 
-        RenderableComponentString str = new RenderableComponentString(status.toString());
-        System.out.println(status.toString());
-        return new RenderElements(str);
+//        RenderableComponentString str = new RenderableComponentString(status.toString());
+//        System.out.println(status.toString());
+
+//        RenderableComponentTable table = new RenderableComponentTable(new String[]{"TestH1","TestH2"},
+//                new String[][]{{"v1","v2"},{"row2a","row2b"}});
+
+        RenderableComponentTable table = new RenderableComponentTable(
+                null,
+                new String[][]{
+                        {"Completed:", String.valueOf(status.getNumCompleted())},
+                        {"Queued/Running:", String.valueOf(status.getNumQueued())},
+                        {"Failed:", String.valueOf(status.getNumFailed())},
+                        {"Total:", String.valueOf(status.getNumTotal())},
+                        {"Best Score:", String.valueOf(status.getBestScore())},
+                        {"Best Score Time:", String.valueOf(status.getBestScoreTime())},
+                }
+        );
+
+
+        return new RenderElements(table);
     }
 
     //TODO Work out how to do this properly

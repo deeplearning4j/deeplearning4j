@@ -45,6 +45,7 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
     private int numCandidatesFailed = 0;
     private double bestScore = Double.MAX_VALUE;
     private long bestScoreTime = 0;
+    private int bestScoreCandidateIndex = -1;
     private List<ResultReference<C, M, A>> allResults = new ArrayList<>();
 
     private Map<Integer,CandidateStatus> currentStatus = new ConcurrentHashMap<>(); //TODO: better design possible?
@@ -202,6 +203,7 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
                 log.info("New best score: {} (prev={})", score, bestScore);
             }
             bestScore = score;
+            bestScoreCandidateIndex = result.getIndex();
         }
         numCandidatesCompleted++;
 
@@ -221,7 +223,7 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
     }
 
     @Override
-    public int numCandidatesScheduled() {
+    public int numCandidatesTotal() {
         return totalCandidateCount;
     }
 
@@ -236,6 +238,11 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
     }
 
     @Override
+    public int numCandidatesQueued() {
+        return queuedFutures.size();
+    }
+
+    @Override
     public double bestScore() {
         return bestScore;
     }
@@ -243,6 +250,11 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
     @Override
     public long bestScoreTime() {
         return bestScoreTime;
+    }
+
+    @Override
+    public int bestScoreCandidateIndex() {
+        return bestScoreCandidateIndex;
     }
 
     @Override
