@@ -59,6 +59,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author Adam Gibson
  */
+@Deprecated
 public class LegacyGlove  extends WordVectorsImpl<VocabWord> {
 
     private transient SentenceIterator sentenceIterator;

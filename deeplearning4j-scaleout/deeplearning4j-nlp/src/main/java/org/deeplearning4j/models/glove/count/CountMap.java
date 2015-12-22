@@ -8,6 +8,7 @@ import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Drop-in replacement for CounterMap
@@ -17,7 +18,7 @@ import java.util.Map;
  * @author raver119@gmail.com
  */
 public class CountMap<T extends SequenceElement> {
-    private Map<MapEntry<T>, AtomicDouble> backingMap = new HashMap<>();
+    private Map<MapEntry<T>, AtomicDouble> backingMap = new ConcurrentHashMap<>();
 
     public CountMap() {
         // placeholder
