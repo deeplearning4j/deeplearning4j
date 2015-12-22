@@ -2,6 +2,7 @@ package org.arbiter.optimize.ui.listener;
 
 import lombok.AllArgsConstructor;
 import org.arbiter.optimize.api.OptimizationResult;
+import org.arbiter.optimize.config.OptimizationConfiguration;
 import org.arbiter.optimize.runner.IOptimizationRunner;
 import org.arbiter.optimize.runner.listener.StatusListener;
 import org.arbiter.optimize.ui.ArbiterUIServer;
@@ -13,7 +14,17 @@ public class UIStatusListener implements StatusListener {
 
     @Override
     public void onInitialization(IOptimizationRunner runner) {
+        //TODO do this better
+        OptimizationConfiguration conf = runner.getConfiguration();
 
+        StringBuilder sb = new StringBuilder();
+        sb.append("Candidate generator: ").append(conf.getCandidateGenerator()).append("\n")
+            .append("Data Provider: ").append(conf.getDataProvider()).append("\n")
+            .append("Score Function: ").append(conf.getScoreFunction()).append("\n")
+            .append("Result saver: ").append(conf.getResultSaver()).append("\n")
+            .append("Model hyperparameter space: ").append(conf.getCandidateGenerator().getParameterSpace());
+
+        server.updateOptimizationSettings(sb.toString());
     }
 
     @Override
@@ -32,6 +43,8 @@ public class UIStatusListener implements StatusListener {
         SummaryStatus status = new SummaryStatus(currentTime,score,scoreTime,
                 completed,queued,failed);
         server.updateStatus(status);
+
+        server.updateResults(runner.getCandidateStatus());
     }
 
     @Override

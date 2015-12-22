@@ -138,39 +138,139 @@
             //Encoding: matches names in UpdateStatus class
 //            console.log(data);
             var jsonObj = JSON.parse(JSON.stringify(data));
-            var statusTime = jsonObj.statusUpdateTime;
-            var settingsTime = jsonObj.settingsUpdateTime;
-            var resultsUpdateTime = jsonObj.resultsUpdateTime
-            console.log("Last update times: " + statusTime + ", " + settingsTime + ", " + resultsUpdateTime);
+            var statusTime = jsonObj['statusUpdateTime'];
+            var settingsTime = jsonObj['settingsUpdateTime'];
+            var resultsTime = jsonObj['resultsUpdateTime'];
+            console.log("Last update times: " + statusTime + ", " + settingsTime + ", " + resultsTime);
 
             //Check last update times for each part of document, and update as necessary
             //First section: summary status
             if(lastStatusUpdateTime != statusTime){
                 //Get JSON: address set by SummaryStatusResource
                 $.get("/summary",function(data){
-                    console.log("data: " + data);
                     var jsonObj = JSON.parse(JSON.stringify(data));
-                    console.log("summary status: " + jsonObj);
+//                    console.log("summary status: " + jsonObj);
+                    console.log("Summary status JSON keys: " + Object.keys(jsonObj));
+
                     var summaryStatusDiv = $('#statusdiv');
+                    var components = jsonObj['renderableComponents'];
+                    if(!components) summaryStatusDiv.html('');
+                    //console.log("Number of renderable components: " + components.length);
+                    //TODO: put each into a div or something... (just using last here)
+                    var temp;
+                    var len = (!components ? 0 : components.length);
+                    for(var i=0; i<len; i++){
+                        var c = components[i];
+//                        console.log("Component " + i + " keys: " + Object.keys(c));
+                        temp = getComponentHTML(c);
+                    }
+
                     summaryStatusDiv.html('');
-                    summaryStatusDiv.html("Data: " + jsonObj.toString());
+//                    summaryStatusDiv.html("Data: " + jsonObj.toString());
+                    summaryStatusDiv.html(temp);
 
                     //Parse
                     //Update elements
-
-
                 });
+
+                lastStatusUpdateTime = statusTime;
             }
 
             //Second section: Optimization settings
             if(lastSettingsUpdateTime != settingsTime){
-                //Get
+                //Get JSON: address set by ConfigResource
+                $.get("/config",function(data){
+                    var jsonObj = JSON.parse(JSON.stringify(data));
+//                    console.log("summary status: " + jsonObj);
+                    console.log("Config JSON keys: " + Object.keys(jsonObj));
+
+                    var components = jsonObj['renderableComponents'];
+
+                    var configDiv = $('#settingsdiv');
+                    if(!components) configDiv.html('');
+
+                    //TODO: put each into a div or something... (just using last here)
+                    var temp;
+                    var len = (!components ? 0 : components.length);
+                    for(var i=0; i<len; i++){
+                        var c = components[i];
+//                        console.log("Component " + i + " keys: " + Object.keys(c));
+                        temp = getComponentHTML(c);
+                    }
+
+                    configDiv.html(temp);
+
+                });
+
+                lastSettingsUpdateTime = settingsTime;
             }
 
             //Third section: Summary results table (summary info for each candidate)
+            if(lastResultsUpdateTime != resultsTime){
 
+                //Get JSON; address set by ResultsResource
+                $.get("/results",function(data){
+                    //Expect an array of CandidateStatus type objects here
+//                    var jsonObj = JSON.parse(JSON.stringify(data));
+
+                    drawResultTable(data);
+
+//                    var toPost = "";
+//                    var len = (!data ? 0 : data.length);
+//                    for( var i=0; i<len; i++ ){
+//                        toPost = toPost.concat("<br>",data[i].index," - ",data[i].score," - ",data[i].status);
+////                        toPost = toPost.concat("<br>",jsonObj[i].index," - ",jsonObj[i].score," - ",jsonObj[i].status);
+//                    }
+//
+////                    var jsonObj = JSON.parse(JSON.stringify(data));
+//
+//                    //For now: just post JSON stuff as string (to test)
+//                    var resultsDiv = $('#resultsdiv');
+////                    resultsDiv.html(jsonObj[0]);
+//                    resultsDiv.html(toPost);
+//                    console.log("Results: " + jsonObj);
+                });
+
+                lastResultsUpdateTime = resultsTime;
+            }
         })
-    },5000);
+    },4000);
+
+    function getComponentHTML(renderableComponent){
+//        var type = renderableComponent['componentType'];
+        var key = Object.keys(renderableComponent)[0];
+        var type = renderableComponent[key]['componentType'];
+
+        switch(type){
+            case "string":
+                var s = renderableComponent[key]['string'];
+                return s.replace(new RegExp("\n",'g'),"<br>");
+            default:
+                return "UNKNOWN OBJECT";
+        }
+
+    }
+
+    function drawResultTable(resultArray){
+        var resultsTable = $('#resultsTable');
+
+//        $('#resultsTable tbody tr').html('');   //Remove all rows, but keep header
+//        $("#resultsTable > tbody > tr").remove();
+        $('#resultsTable tr').not(function(){if ($(this).has('th').length){return true}}).remove();
+
+        var len = (!resultArray ? 0 : resultArray.length);
+        for(var i=0; i<len; i++){
+            var row = $("<tr />");
+//            row.append("<td>" + resultArray[i].index + "</td>");
+//            row.append("<td>" + resultArray[i].score + "</td>");
+//            row.append("<td>" + resultArray[i].status + "</td>");
+//            row.append("</tr>");
+            row.append($("<td>" + resultArray[i].index + "</td>"));
+            row.append($("<td>" + resultArray[i].score + "</td>"));
+            row.append($("<td>" + resultArray[i].status + "</td>"));
+            resultsTable.append(row);
+        }
+    }
 
 </script>
 <script>
@@ -205,7 +305,7 @@
 <div class="outerelements" id="settings">
     <div id="accordion2">
         <h3 class="ui-accordion-header">Optimization Settings</h3>
-        <div class="settingsdiv">
+        <div class="settingsdiv" id="settingsdiv">
             Collapseable box with settings for hyperparameter space settings etc
         </div>
     </div>
@@ -214,7 +314,13 @@
 
 <div class="outerelements" id="results">
     <h3>Results</h3>
-    <div class="table"></div>
+    <div class="resultsdiv" id="resultsdiv">
+        <table style="width:100%" id="resultsTable">
+            <tr> <th>ID</th> <th>Score</th> <th>Status</th> </tr>
+
+        </table>
+
+    </div>
     Collapsable table goes here. Summary results when collapsed, full results when expanded.
     Also sortable by ID, status, score, runtime etc.
 </div>

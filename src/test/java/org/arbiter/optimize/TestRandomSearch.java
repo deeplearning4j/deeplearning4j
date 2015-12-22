@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**Test random search on the Branin Function:
  * http://www.sfu.ca/~ssurjano/branin.html
@@ -64,7 +65,6 @@ public class TestRandomSearch {
     }
 
     private static class BraninSpace implements ModelParameterSpace<BraninConfig>{
-
         private Random r = new Random(12345);
         @Override
         public BraninConfig randomCandidate() {
@@ -97,8 +97,9 @@ public class TestRandomSearch {
 
     private static class BraninTaskCreator implements TaskCreator<BraninConfig,BraninConfig,Void,Void>{
         @Override
-        public Callable<OptimizationResult<BraninConfig, BraninConfig,Void>>
-            create(final Candidate<BraninConfig> candidate, DataProvider<Void> dataProvider, final ScoreFunction<BraninConfig,Void> scoreFunction) {
+        public Callable<OptimizationResult<BraninConfig, BraninConfig,Void>> create(final Candidate<BraninConfig> candidate,
+                                DataProvider<Void> dataProvider, final ScoreFunction<BraninConfig,Void> scoreFunction) {
+
             return new Callable<OptimizationResult<BraninConfig, BraninConfig, Void>>() {
                 @Override
                 public OptimizationResult<BraninConfig, BraninConfig, Void> call() throws Exception {
@@ -108,7 +109,7 @@ public class TestRandomSearch {
 
                     Thread.sleep(2500);
 
-                    return new OptimizationResult<>(candidate,candidate.getValue(), score, 0, null);
+                    return new OptimizationResult<>(candidate,candidate.getValue(), score, candidate.getIndex(), null);
                 }
             };
         }

@@ -1,4 +1,4 @@
-package org.arbiter.optimize.ui.resources;
+package org.arbiter.optimize.ui.misc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;

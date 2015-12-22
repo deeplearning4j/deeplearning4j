@@ -10,7 +10,7 @@ public class RenderableComponentTable extends RenderableComponent {
 
     public RenderableComponentTable(){
         super(COMPONENT_TYPE);
-
+        //No arg constructor for Jackson
     }
 
     private String[] header;

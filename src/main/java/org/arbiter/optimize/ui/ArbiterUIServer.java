@@ -5,9 +5,13 @@ import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.views.ViewBundle;
+import org.arbiter.optimize.runner.CandidateStatus;
+import org.arbiter.optimize.ui.components.RenderableComponent;
 import org.arbiter.optimize.ui.components.RenderableComponentString;
 import org.arbiter.optimize.ui.listener.SummaryStatus;
 import org.arbiter.optimize.ui.rendering.RenderElements;
+import org.arbiter.optimize.ui.resources.ConfigResource;
+import org.arbiter.optimize.ui.resources.ResultsResource;
 import org.arbiter.optimize.ui.resources.SummaryStatusResource;
 import org.arbiter.optimize.ui.resources.LastUpdateResource;
 import org.arbiter.util.WebUtils;
@@ -19,6 +23,7 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -26,17 +31,19 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class ArbiterUIServer extends Application<ArbiterUIConfig> {
     /* Design details: How the UI System and server actually works.
-    UI system is web-based, running via a HTTP s
-    Using the combination of the following things:
+    UI system is web-based, running via a HTTP server. Java code posts information to server; Javascript (UI code in browser)
+    periodically fetches this info and renders it on the page.
+
+    Design utilizes a combination of the following:
         DropWizard: set of libraries. (Jetty server, Jackson for JSON, etc)
         FreeMarker: Java template library. Used to generate HTML (which actually does rendering)
-        d3: Javascript library, used to render charts, etc
+        d3: Javascript library, used to render charts, etc (todo: not being used yet)
 
     How it works, at an overview level:
     - Single web page containing all info, but using collapseable elements to avoid information overload
        Basic layout of the webpage:
        - Summary results: number of queued/completed tasks, best model score & index, total runtime etc
-         This is rendered in a basic table, always displayed
+         This is rendered in a basic table (todo, text only currently)
        - Optimization settings: hyperparameter optimization scheme (i.e., random search vs. Bayesian methods + settings)
          Plus details of the hyperparameter space for the model (i.e., set of valid configurations).
          This section is collapseable, and is collapsed by default.
@@ -64,22 +71,39 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
           -> If no data has changed since the last rendering: do nothing
           -> Otherwise: Update only the page elements that need to be updated
 
+    - How updates are actually executed:
+        Updates are posted to /lastUpdate/update, /summary/update, /config/update, /results/update
+        Format is JSON; POST to server is executed via the WebTarget.post(...) methods here
+        JSON serialization is done automatically on java objects using Jackson
+        These paths are set via the LastUpdateResource, SummaryStatusResource, ConfigResource
+        An instance of each of these resources classes must be registered with Jersey
+
+    - Elements to be rendered in the various sections of the webpage: this is customizable.
+        This is what the RenderableComponent classes are for: they define a set of things we want to render in the page.
+        For example, text, line charts, tables etc. The idea is that for any platform using Arbiter, we might want to
+        display a set of arbitrary objects as the status of each model/candidate.
+        A set of commonly used elements (text, tables, line charts, histograms etc) are (or will be) provided here.
+        TODO: Make this fully extensible/generic (i.e., able to render arbitrary objects via user-provided Javascript code)
+
       TODO: Work out how exactly to do full details (when accordian row is expanded)
         Maybe: Just do a request given the ID of the model? UI server then extracts/generates the required JSON
-      TODO: Work out encoding scheme for arbitrary objects in JSON (i.e., render a graph, a table, an image or whatever for each candidate)
-        Then work out what it is and insert it into page as required. Plu
       TODO: Work out how to support cancelling of tasks from UI
 
      */
 
-    private static final ArbiterUIServer instance = new ArbiterUIServer();
     private static final Logger log = LoggerFactory.getLogger(ArbiterUIServer.class);
+    private static final ArbiterUIServer instance = new ArbiterUIServer();
     private Client client = ClientBuilder.newClient().register(JacksonJsonProvider.class);
 
     private AtomicLong lastSummaryUpdateTime = new AtomicLong(0);
+    private AtomicLong lastConfigUpdateTime = new AtomicLong(0);
+    private AtomicLong lastResultsUpdateTime = new AtomicLong(0);
 
-    private WebTarget targetSummaryStatusUpdate = client.target("http://localhost:8080/summary/update");
     private WebTarget targetLastUpdateStatus = client.target("http://localhost:8080/lastUpdate/update");
+    private WebTarget targetSummaryStatusUpdate = client.target("http://localhost:8080/summary/update");
+    private WebTarget targetConfigUpdate = client.target("http://localhost:8080/config/update");
+    private WebTarget targetResultsUpdate = client.target("http://localhost:8080/results/update");
+
 
     public static void main(String[] args) throws Exception {
         String[] str = new String[]{"server", "dropwizard.yml"};
@@ -89,7 +113,7 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
 
     public ArbiterUIServer(){
         super();
-        //TODO - necessary?
+        log.info("Arbiter UI Server: Starting");
     }
 
     @Override
@@ -104,17 +128,14 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
 
     @Override
     public void run(ArbiterUIConfig configuration, Environment environment) {
-//        final TestResource resource = new TestResource(
-//                configuration.getTemplate(),
-//                configuration.getDefaultName()
-//        );
         final ArbiterUIResource resource = new ArbiterUIResource();
         environment.jersey().register(resource);
 
         //Register our classes, so that Jerney knows what we want to return:
-//        environment.jersey().register(new UpdateStatus(0,0,0));
         environment.jersey().register(new LastUpdateResource());
         environment.jersey().register(new SummaryStatusResource());
+        environment.jersey().register(new ConfigResource());
+        environment.jersey().register(new ResultsResource());
     }
 
 
@@ -132,7 +153,7 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
     }
 
     private void updateStatusTimes(){
-        UpdateStatus updateStatus = new UpdateStatus(lastSummaryUpdateTime.get(),0,0);
+        UpdateStatus updateStatus = new UpdateStatus(lastSummaryUpdateTime.get(),lastConfigUpdateTime.get(),lastResultsUpdateTime.get());
         targetLastUpdateStatus.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
                 .post(Entity.entity(updateStatus, MediaType.APPLICATION_JSON));
         log.info("Posted new update times: {}", updateStatus);
@@ -143,7 +164,37 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
         RenderableComponentString str = new RenderableComponentString(status.toString());
         System.out.println(status.toString());
         return new RenderElements(str);
+    }
 
+    //TODO Work out how to do this properly
+    public void updateOptimizationSettings(String settings){
+        RenderableComponent str = new RenderableComponentString(settings);
+        RenderElements elements = new RenderElements(str);
+        targetConfigUpdate.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
+                .post(Entity.entity(elements, MediaType.APPLICATION_JSON));
+        log.info("Posted optimization settings update: {}", elements);
+
+        lastConfigUpdateTime.set(System.currentTimeMillis());
+
+        updateStatusTimes();
+    }
+
+    public void updateResults(Collection<CandidateStatus> status){
+        List<CandidateStatus> list = new ArrayList<>(status);
+        Collections.sort(list, new Comparator<CandidateStatus>() {
+            @Override
+            public int compare(CandidateStatus o1, CandidateStatus o2) {
+                return Integer.compare(o1.getIndex(), o2.getIndex());
+            }
+        });
+
+        //Post update:
+        targetResultsUpdate.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
+                .post(Entity.entity(list, MediaType.APPLICATION_JSON));
+        log.info("Posted new results: {}", list);
+        lastResultsUpdateTime.set(System.currentTimeMillis());
+
+        updateStatusTimes();
     }
 
 }

@@ -9,18 +9,16 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.Collections;
 
-/**Summary stats: number of completed tasks etc
- */
-@Path("/summary")
+@Path("/config")
 @Produces(MediaType.APPLICATION_JSON)
-public class SummaryStatusResource {
-    public static Logger log = LoggerFactory.getLogger(SummaryStatusResource.class);
+public class ConfigResource {
 
+    public static final Logger log = LoggerFactory.getLogger(ConfigResource.class);
     private RenderElements renderElements = new RenderElements();
 
     @GET
-    public Response getStatus(){
-        log.info("Get with elements: {}",renderElements);
+    public Response getConfig(){
+        log.info("GET for config with current config: {}");
         return Response.ok(renderElements).build();
     }
 
@@ -29,7 +27,7 @@ public class SummaryStatusResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response update(RenderElements renderElements){
-        log.info("Post with new elements: {}",renderElements);
+        log.info("POST for config with new elements: {}",renderElements);
         this.renderElements = renderElements;
         return Response.ok(Collections.singletonMap("status", "ok")).build();
     }

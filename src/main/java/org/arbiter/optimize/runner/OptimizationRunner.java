@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -45,6 +46,8 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
     private double bestScore = Double.MAX_VALUE;
     private long bestScoreTime = 0;
     private List<ResultReference<C, M, A>> allResults = new ArrayList<>();
+
+    private Map<Integer,CandidateStatus> currentStatus = new ConcurrentHashMap<>(); //TODO: better design possible?
 
     private ExecutorService futureListenerExecutor;
 
@@ -124,9 +127,22 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
                 queuedFutures.add(f);
                 totalCandidateCount++;
                 statusChange = true;
+
+                CandidateStatus status = new CandidateStatus(
+                        candidate.getIndex(),
+                        CandidateStatus.Status.Created,
+                        null,
+                        System.currentTimeMillis(),
+                        null,
+                        null);
+                currentStatus.put(candidate.getIndex(),status);
             }
 
-            for(StatusListener listener : statusListeners) listener.onStatusChange(this);
+            if(statusChange) {
+                for (StatusListener listener : statusListeners){
+                    listener.onStatusChange(this);
+                }
+            }
         }
 
         //Process any final (completed) tasks:
@@ -161,6 +177,18 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
             throw new RuntimeException(e);  //TODO
         }
 
+        //Update internal status:
+        CandidateStatus status = currentStatus.get(result.getIndex());
+        CandidateStatus newStatus = new CandidateStatus(
+                result.getIndex(),
+                CandidateStatus.Status.Complete,
+                result.getScore(),
+                status.getCreatedTime(),
+                null,
+                null);
+        currentStatus.put(result.getIndex(),newStatus);
+
+        //Listeners:
         for(StatusListener listener : statusListeners) listener.onCompletion(result);
 
         double score = result.getScore();
@@ -222,6 +250,11 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
         return new ArrayList<>(allResults);
     }
 
+    @Override
+    public OptimizationConfiguration<C, M, ?, A> getConfiguration() {
+        return config;
+    }
+
 
     @Override
     public void addListeners(StatusListener... listeners) {
@@ -240,6 +273,13 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
     @Override
     public void removeAllListeners() {
         statusListeners.clear();
+    }
+
+    @Override
+    public List<CandidateStatus> getCandidateStatus() {
+        List<CandidateStatus> list = new ArrayList<>();
+        list.addAll(currentStatus.values());
+        return list;
     }
 
     private boolean terminate() {

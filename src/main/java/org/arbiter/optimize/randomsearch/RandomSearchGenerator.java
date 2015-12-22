@@ -24,4 +24,14 @@ public class RandomSearchGenerator<T> implements CandidateGenerator<T> {
     public void reportResults(Object result) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
+
+    @Override
+    public ModelParameterSpace<T> getParameterSpace() {
+        return parameterSpace;
+    }
+
+    @Override
+    public String toString(){
+        return "RandomSearchCandidateGenerator()";
+    }
 }
