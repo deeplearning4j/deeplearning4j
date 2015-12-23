@@ -36,7 +36,7 @@ public class Glove extends SequenceVectors<VocabWord> {
         private boolean symmetric;
         protected double alpha = 0.75d;
 
-        protected TokenizerFactory tokenizerFactory;
+        protected TokenizerFactory tokenFactory;
         protected SentenceIterator sentenceIterator;
         protected DocumentIterator documentIterator;
 
@@ -210,7 +210,7 @@ public class Glove extends SequenceVectors<VocabWord> {
          * @return
          */
         public Builder tokenizerFactory(@NonNull TokenizerFactory tokenizerFactory) {
-            this.tokenizerFactory = tokenizerFactory;
+            this.tokenFactory = tokenizerFactory;
             return this;
         }
 
@@ -281,7 +281,7 @@ public class Glove extends SequenceVectors<VocabWord> {
             if (sentenceIterator != null) {
                 SentenceTransformer transformer = new SentenceTransformer.Builder()
                         .iterator(sentenceIterator)
-                        .tokenizerFactory(tokenizerFactory)
+                        .tokenizerFactory(tokenFactory)
                         .build();
                 this.iterator = new AbstractSequenceIterator.Builder<VocabWord>(transformer).build();
             }

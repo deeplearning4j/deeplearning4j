@@ -17,6 +17,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -68,11 +70,22 @@ public class AbstractCoOccurrencesTest {
 
         coOccurrences.fit();
 
-        List<Pair<VocabWord, VocabWord>> list = coOccurrences.coOccurrenceList();
-        assertNotEquals(null, list);
+        //List<Pair<VocabWord, VocabWord>> list = coOccurrences.i();
+        Iterator<Pair<Pair<VocabWord, VocabWord>, Double>> iterator = coOccurrences.iterator();
+        assertNotEquals(null, iterator);
+        int cnt = 0;
+
+        List<Pair<VocabWord, VocabWord>> list = new ArrayList<>();
+        while (iterator.hasNext()) {
+            Pair<Pair<VocabWord, VocabWord>, Double> pair = iterator.next();
+            list.add(pair.getFirst());
+            cnt++;
+        }
+
 
         log.info("CoOccurrences: " + list);
 
         assertEquals(16, list.size());
+        assertEquals(16, cnt);
     }
 }
