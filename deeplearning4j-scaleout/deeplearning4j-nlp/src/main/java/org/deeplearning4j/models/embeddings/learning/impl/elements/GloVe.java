@@ -263,8 +263,8 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
                 }
 
                 errorCounter.incrementCount(epochId, iterateSample(element1, element2, weight));
-                if (pairsCounter.getAndIncrement() % 10000 == 0) {
-           //         log.info("Processed [" + pairsCounter.get() + "] word pairs so far...");
+                if (pairsCounter.getAndIncrement() % 100000 == 0) {
+                    log.info("Processed [" + pairsCounter.get() + "] word pairs so far...");
                 }
             }
         }
