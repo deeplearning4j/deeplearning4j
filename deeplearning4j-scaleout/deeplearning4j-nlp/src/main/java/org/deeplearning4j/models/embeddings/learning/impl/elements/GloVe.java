@@ -30,10 +30,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * GloVe implementation for SequenceVectors
+ * GloVe LearningAlgorithm implementation for SequenceVectors
  *
- *
- * WORK IS IN PROGRESS, PLEASE DO NOT USE
  *
  * @author raver119@gmail.com
  */
@@ -53,7 +51,7 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
     private boolean symmetric;
     protected double alpha = 0.75d;
     protected double learningRate = 0.0d;
-    protected long maxmemory = 0;
+    protected int maxmemory = 0;
 
     private AdaGrad weightAdaGrad;
     private AdaGrad biasAdaGrad;
@@ -108,6 +106,7 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
                 .iterate(iterator)
                 .workers(workers)
                 .vocabCache(vocabCache)
+                .maxMemory(maxmemory)
                 .build();
 
         coOccurrences.fit();
@@ -313,7 +312,7 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
          * Please note: this option can be considered a debugging method. In most cases setting proper -Xmx argument set to JVM is enough to limit this algorithm.
          * Please note: this option won't override -Xmx JVM value.
          *
-         * @param gbytes
+         * @param gbytes memory limit, in gigabytes
          * @return
          */
         public Builder<T> maxMemory(int gbytes) {
