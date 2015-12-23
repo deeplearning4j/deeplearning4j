@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author raver119@gmail.com
  */
 public class CountMap<T extends SequenceElement> {
-    private Map<Pair<T, T>, AtomicDouble> backingMap = new ConcurrentHashMap<>();
+    private volatile Map<Pair<T, T>, AtomicDouble> backingMap = new ConcurrentHashMap<>();
 
     public CountMap() {
         // placeholder
