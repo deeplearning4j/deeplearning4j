@@ -338,7 +338,6 @@ public class Glove extends SequenceVectors<VocabWord> {
             ret.vocab = this.vocabCache;
 
 
-
             ret.elementsLearningAlgorithm = new GloVe.Builder<VocabWord>()
                     .learningRate(this.learningRate)
                     .shuffle(this.shuffle)
