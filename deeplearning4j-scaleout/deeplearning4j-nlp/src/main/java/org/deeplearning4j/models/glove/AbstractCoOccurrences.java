@@ -130,9 +130,10 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
         final SentenceIterator iterator;
 
         try {
-            iterator = new PrefetchingSentenceIterator.Builder(new BasicLineIterator(targetFile))
+            iterator = new BasicLineIterator(targetFile); /*new PrefetchingSentenceIterator.Builder(new BasicLineIterator(targetFile))
                     .setFetchSize(500)
                     .build();
+                    */
         } catch (Exception e) {
             logger.error("Target file was not found on last stage!");
             throw new RuntimeException(e);
@@ -545,8 +546,8 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                         numberOfLinesSaved++;
                         linesRead++;
 
-                    if (numberOfLinesSaved % 100000 == 0) logger.info("Lines saved: [" + numberOfLinesSaved +"]");
-                    if (linesRead % 100000 == 0) logger.info("Lines read: [" + linesRead +"]");
+                   // if (numberOfLinesSaved % 100000 == 0) logger.info("Lines saved: [" + numberOfLinesSaved +"]");
+                  //  if (linesRead % 100000 == 0) logger.info("Lines read: [" + linesRead +"]");
                 }
 
                 logger.info("Lines read: [" + linesRead + "]");
@@ -561,7 +562,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                     pw.println(builder.toString());
                     numberOfLinesSaved++;
 
-                    if (numberOfLinesSaved % 100000 == 0) logger.info("Lines saved: [" + numberOfLinesSaved +"]");
+              //      if (numberOfLinesSaved % 100000 == 0) logger.info("Lines saved: [" + numberOfLinesSaved +"]");
                 }
 
                 pw.flush();
