@@ -35,6 +35,7 @@ public class Glove extends SequenceVectors<VocabWord> {
         private boolean shuffle;
         private boolean symmetric;
         protected double alpha = 0.75d;
+        private int maxmemory = (int) (Runtime.getRuntime().totalMemory() / 1024 /1024 / 1024);
 
         protected TokenizerFactory tokenFactory;
         protected SentenceIterator sentenceIterator;
@@ -270,6 +271,20 @@ public class Glove extends SequenceVectors<VocabWord> {
             return this;
         }
 
+        /**
+         * This method allows you to specify maximum memory available for CoOccurrence map builder.
+         *
+         * Please note: this option can be considered a debugging method. In most cases setting proper -Xmx argument set to JVM is enough to limit this algorithm.
+         * Please note: this option won't override -Xmx JVM value.
+         *
+         * @param gbytes memory limit, in gigabytes
+         * @return
+         */
+        public Builder maxMemory(int gbytes) {
+            this.maxmemory = gbytes;
+            return this;
+        }
+
         public Glove build() {
             presetTables();
 
@@ -330,6 +345,7 @@ public class Glove extends SequenceVectors<VocabWord> {
                     .symmetric(this.symmetric)
                     .xMax(this.xMax)
                     .alpha(this.alpha)
+                    .maxMemory(maxmemory)
                     .build();
 
             return ret;

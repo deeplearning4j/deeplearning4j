@@ -8,6 +8,7 @@ import org.canova.api.split.InputSplit;
 import org.canova.api.writable.Writable;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.glove.count.CountMap;
+import org.deeplearning4j.models.glove.count.RoundCount;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.iterators.FilteredSequenceIterator;
 import org.deeplearning4j.models.sequencevectors.iterators.SynchronizedSequenceIterator;
@@ -119,41 +120,6 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
     }
 
     /**
-     * Returns list of label pairs for each element met in each sequence
-     * @return
-     */
-    @Deprecated
-    private synchronized List<Pair<T, T>> coOccurrenceList() {
-        /*
-        if (coOccurrences != null)
-            return coOccurrences;
-
-        coOccurrences = new ArrayList<>();
-        Iterator<Pair<T, T>> iterator = coOccurrenceCounts.getPairIterator();
-        while (iterator.hasNext()) {
-            Pair<T, T> pair = iterator.next();
-
-            if (pair.getFirst().equals(pair.getSecond())) continue;
-
-            // each pair should be checked against vocab, but that's not strictly required
-            if (!vocabCache.hasToken(pair.getFirst().getLabel()) || !vocabCache.hasToken(pair.getSecond().getLabel())) {
-//                logger.debug("Skipping pair: '"+ pair.getFirst()+"', '"+ pair.getSecond()+"'");
-                continue;
-            }// else logger.debug("Adding pair: '"+ pair.getFirst()+"', '"+ pair.getSecond()+"'");
-
-
-
-            coOccurrences.add(new Pair<T, T>(pair.getFirst(), pair.getSecond()));
-            if (coOccurrences.size() % 100000 == 0) logger.info("Cooccurrences gathered: " + coOccurrences.size());
-        }
-
-        return coOccurrences;
-        */
-
-        return null;
-    }
-
-    /**
      *
      *  This method returns iterator with elements pairs and their weights. Resulting iterator is safe to use in multi-threaded environment.
      *
@@ -249,8 +215,8 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
          * @return
          */
         // TODO: change this to GBytes after tests complete :)
-        public Builder<T> maxMemory(int mbytes) {
-            this.maxmemory = mbytes * 1024 * 1024 * 1024;
+        public Builder<T> maxMemory(int gbytes) {
+            this.maxmemory = gbytes * 1024 * 1024 * 1024;
             return this;
         }
 
@@ -357,8 +323,8 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                                 lock.readLock().lock();
                                 int size = coOccurrenceCounts.size();
                                 lock.readLock().unlock();
-                                if (threadId == 0) logger.info("Memory consuimption > threshold: { size: ["+ size+ "], footrpint: ["+ getMemoryFootprint()+"], threshold: [" + getMemoryThreshold() +"] }");
-                                Thread.sleep(2000);
+                                if (threadId == 0) logger.debug("Memory consuimption > threshold: { size: ["+ size+ "], footrpint: ["+ getMemoryFootprint()+"], threshold: [" + getMemoryThreshold() +"] }");
+                                Thread.sleep(5000);
                             } catch (Exception e) {
                                 throw new RuntimeException(e);
                             } finally {
@@ -408,9 +374,23 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
         private AtomicBoolean shouldInvoke = new AtomicBoolean(false);
 
         // file that contains resuts from previous runs
-        private File latestFile;
+        private File[] tempFiles;
+        private RoundCount counter;
 
         public ShadowCopyThread() {
+            try {
+
+                counter = new RoundCount(1);
+                tempFiles = new File[2];
+
+                tempFiles[0] = File.createTempFile("aco", "tmp");
+                tempFiles[1] = File.createTempFile("aco", "tmp");
+
+                tempFiles[0].deleteOnExit();
+                tempFiles[1].deleteOnExit();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
 
             this.setName("ACO ShadowCopy thread");
         }
@@ -470,6 +450,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                     3. For each read line do synchronization in memory > new file direction
              */
 
+            counter.tick();
 
             CountMap<T> localMap;
             try {
@@ -492,7 +473,11 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
             try {
 
                 // if latestFile defined - use it. Create new temp file otherwise
-                File currentFile = null;
+           //     File currentFile = null;
+                Configuration configuration = null;
+
+
+/*
                 if (latestFile == null) {
                     logger.info("Creating new temp currentFile");
                     currentFile = File.createTempFile("acod", "tmp");
@@ -500,24 +485,24 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                 } else {
                     currentFile =  latestFile;
                 }
+                */
 
                 File file = null;
                 if (!isFinished.get()) {
-                    file = File.createTempFile("aco", "tmp");
-                    file.deleteOnExit();
+                    file = tempFiles[counter.previous()];
                 } else file = targetFile;
 
 
                 PrintWriter pw = new PrintWriter(file);
 
-                InputSplit split = new FileSplit(currentFile);
-                Configuration canovaConf = new Configuration(true);
+                InputSplit split = new FileSplit(tempFiles[counter.get()]);
 
-                CSVRecordReader reader = new CSVRecordReader();
-                reader.initialize(canovaConf, split);
-
+                CSVRecordReader reader = new CSVRecordReader(0, " ");
+                reader.initialize(split);
+                int linesRead = 0;
                 while (reader.hasNext()) {
                     List<Writable> list = new ArrayList<>(reader.next());
+
 
                     // first two elements are integers - vocab indexes
                     T element1 = vocabCache.wordFor(vocabCache.wordAtIndex(list.get(0).toInt()));
@@ -541,7 +526,10 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                         StringBuilder builder = new StringBuilder().append(element1.getIndex()).append(" ").append(element2.getIndex()).append(" ").append(sWeight);
                         pw.println(builder.toString());
                         numberOfLinesSaved++;
+                        linesRead++;
                 }
+
+                logger.info("Lines read: [" + linesRead + "]");
 
                 //now, we can dump the rest of elements, which were not presented in existing dump
                 Iterator<Pair<T, T>> iterator = localMap.getPairIterator();
@@ -558,8 +546,6 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                 pw.close();
 
                 // just a hint for gc
-                latestFile = currentFile;
-
                 localMap = null;
             } catch (Exception e) {
                 throw new RuntimeException(e);
