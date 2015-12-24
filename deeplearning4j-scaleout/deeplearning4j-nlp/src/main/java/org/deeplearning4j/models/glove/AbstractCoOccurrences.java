@@ -1,14 +1,8 @@
 package org.deeplearning4j.models.glove;
 
 import lombok.NonNull;
-import org.canova.api.conf.Configuration;
-import org.canova.api.records.reader.impl.CSVRecordReader;
-import org.canova.api.split.FileSplit;
-import org.canova.api.split.InputSplit;
-import org.canova.api.writable.Writable;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.models.glove.count.CountMap;
-import org.deeplearning4j.models.glove.count.RoundCount;
+import org.deeplearning4j.models.glove.count.*;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.iterators.FilteredSequenceIterator;
 import org.deeplearning4j.models.sequencevectors.iterators.SynchronizedSequenceIterator;
@@ -478,37 +472,55 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
 
             try {
 
-                // if latestFile defined - use it. Create new temp file otherwise
-           //     File currentFile = null;
-/*
-                if (latestFile == null) {
-                    logger.info("Creating new temp currentFile");
-                    currentFile = File.createTempFile("acod", "tmp");
-                    currentFile.deleteOnExit();
-                } else {
-                    currentFile =  latestFile;
-                }
-                */
-
                 File file = null;
                 if (!isFinished.get()) {
                     file = tempFiles[counter.previous()];
                 } else file = targetFile;
 
 
-                PrintWriter pw = new PrintWriter(file);
+            //    PrintWriter pw = new PrintWriter(file);
 
-                //InputSplit split = new FileSplit(tempFiles[counter.get()]);
+                int linesRead = 0;
 
+                CoOccurenceReader<T> reader = new BinaryCoOccurrenceReader<>(tempFiles[counter.previous()], vocabCache);
+                CoOccurrenceWriter<T> writer = (isFinished.get()) ? new ASCIICoOccurrenceWriter<T>(targetFile): new BinaryCoOccurrenceWriter<T>(tempFiles[counter.get()]);
+                while (reader.hasMoreObjects()) {
+                    CoOccurrenceWeight<T> line = reader.nextObject();
+
+                    double mWeight = localMap.getCount(line.getElement1(), line.getElement2());
+                    if (mWeight > 0) {
+                        line.setWeight(line.getWeight() + mWeight);
+                    }
+                    writer.writeObject(line);
+                }
+                reader.finish();
+
+                logger.info("Lines read: [" + linesRead + "]");
+
+                //now, we can dump the rest of elements, which were not presented in existing dump
+                Iterator<Pair<T, T>> iterator = localMap.getPairIterator();
+                while (iterator.hasNext()) {
+                    Pair<T, T> pair = iterator.next();
+                    double mWeight = localMap.getCount(pair);
+                    CoOccurrenceWeight<T> object = new CoOccurrenceWeight<>();
+                    object.setElement1(pair.getFirst());
+                    object.setElement2(pair.getSecond());
+                    object.setWeight(mWeight);
+
+                    writer.writeObject(object);
+
+                    numberOfLinesSaved++;
+                    //      if (numberOfLinesSaved % 100000 == 0) logger.info("Lines saved: [" + numberOfLinesSaved +"]");
+                }
+
+                writer.finish();
+
+            /*
                 SentenceIterator sIterator =  new PrefetchingSentenceIterator.Builder(new BasicLineIterator(tempFiles[counter.get()]))
                         .setFetchSize(500000)
                         .build();
 
 
-/*                CSVRecordReader reader = new CSVRecordReader(0, " ");
-
-                reader.initialize(split);
-                */
                 int linesRead = 0;
                 while (sIterator.hasNext()) {
                     //List<Writable> list = new ArrayList<>(reader.next());
@@ -546,7 +558,8 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                    // if (numberOfLinesSaved % 100000 == 0) logger.info("Lines saved: [" + numberOfLinesSaved +"]");
                   //  if (linesRead % 100000 == 0) logger.info("Lines read: [" + linesRead +"]");
                 }
-
+                */
+/*
                 logger.info("Lines read: [" + linesRead + "]");
 
                 //now, we can dump the rest of elements, which were not presented in existing dump
@@ -565,9 +578,11 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                 pw.flush();
                 pw.close();
 
+*/
+
                 // just a hint for gc
                 localMap = null;
-                sIterator.finish();
+                //sIterator.finish();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
