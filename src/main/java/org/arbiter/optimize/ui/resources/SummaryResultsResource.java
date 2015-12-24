@@ -11,11 +11,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/** Results for the results table (non-expanded)*/
 @Path("/results")
 @Produces(MediaType.APPLICATION_JSON)
-public class ResultsResource {
+public class SummaryResultsResource {
 
-    public static final Logger log = LoggerFactory.getLogger(ResultsResource.class);
+    public static final Logger log = LoggerFactory.getLogger(SummaryResultsResource.class);
     private List<CandidateStatus> statusList = new ArrayList<>();
 
     @GET

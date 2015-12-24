@@ -216,7 +216,7 @@
             //Third section: Summary results table (summary info for each candidate)
             if(lastResultsUpdateTime != resultsTime){
 
-                //Get JSON; address set by ResultsResource
+                //Get JSON; address set by SummaryResultsResource
                 $.get("/results",function(data){
                     //Expect an array of CandidateStatus type objects here
                     resultsTableContent = data;
@@ -314,16 +314,36 @@
 
             //Create hidden row for expanding:
             var contentRow = $('<tr id="resultTableRow-' + sorted[i].index + '-content", class="resultTableRowContent"/>');
-            contentRow.append($("<td colspan=3>Content goes here!</td>"));
+            var td3 = $("<td colspan=3></td>");
+            td3.append("Content goes here!");
+            contentRow.append(td3);
 
             tableBody.append(contentRow);
             console.log("Expanded row IDs: " + expandedRowsCandidateIDs);
             if(expandedRowsCandidateIDs.indexOf(sorted[i].index) == -1 ){
-                console.log("candidate not marked as expaned: " + sorted[i].index + ", idx="+sorted[i].index + ", expanded candidates = " + expandedRowsCandidateIDs)
+                //console.log("candidate not marked as expanded: " + sorted[i].index + ", idx="+sorted[i].index + ", expanded candidates = " + expandedRowsCandidateIDs)
                 contentRow.hide();
 
             } else {
-                console.log("candidate marked as expanded: " + sorted[i].index);
+                //console.log("candidate marked as expanded: " + sorted[i].index);
+
+                //Load info. TODO: make this more efficient (stored info, check for updates, etc)
+//                td3.empty();
+                var path = "/modelResults/" + sorted[i].index;
+                $.get(path,function(data){
+
+                    var jsonObj = JSON.parse(JSON.stringify(data));
+                    var components = jsonObj['renderableComponents'];
+                    var len = (!components ? 0 : components.length);
+//                    console.log("Appending " + len + " objects to " + sorted[i].index);
+                    for(var i=0; i<len; i++){
+                        var c = components[i];
+                        var temp = getComponentHTML(c);
+                        td3.append("<div>" + temp + "</div>");   //Not working...
+                        console.log(temp);
+                    }
+                });
+
                 contentRow.show();
             }
         }

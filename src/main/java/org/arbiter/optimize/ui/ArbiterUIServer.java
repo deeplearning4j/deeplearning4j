@@ -12,10 +12,7 @@ import org.arbiter.optimize.ui.components.RenderableComponentString;
 import org.arbiter.optimize.ui.components.RenderableComponentTable;
 import org.arbiter.optimize.ui.listener.SummaryStatus;
 import org.arbiter.optimize.ui.rendering.RenderElements;
-import org.arbiter.optimize.ui.resources.ConfigResource;
-import org.arbiter.optimize.ui.resources.ResultsResource;
-import org.arbiter.optimize.ui.resources.SummaryStatusResource;
-import org.arbiter.optimize.ui.resources.LastUpdateResource;
+import org.arbiter.optimize.ui.resources.*;
 import org.arbiter.util.WebUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -134,11 +131,12 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
         final ArbiterUIResource resource = new ArbiterUIResource();
         environment.jersey().register(resource);
 
-        //Register our classes, so that Jerney knows what we want to return:
+        //Register our resources
         environment.jersey().register(new LastUpdateResource());
         environment.jersey().register(new SummaryStatusResource());
         environment.jersey().register(new ConfigResource());
-        environment.jersey().register(new ResultsResource());
+        environment.jersey().register(new SummaryResultsResource());
+        environment.jersey().register(new CandidateResultsResource());
     }
 
 
