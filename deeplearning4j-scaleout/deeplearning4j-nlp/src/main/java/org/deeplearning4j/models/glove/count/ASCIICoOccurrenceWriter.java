@@ -19,7 +19,7 @@ public class ASCIICoOccurrenceWriter<T extends SequenceElement> implements CoOcc
     public ASCIICoOccurrenceWriter(@NonNull File file) {
         this.file = file;
         try {
-            this.writer = new PrintWriter(new BufferedOutputStream(new FileOutputStream(file), 65536));
+            this.writer = new PrintWriter(new BufferedOutputStream(new FileOutputStream(file), 10 * 1024 * 1024));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -36,10 +36,20 @@ public class ASCIICoOccurrenceWriter<T extends SequenceElement> implements CoOcc
     }
 
     @Override
+    public void queueObject(CoOccurrenceWeight<T> object) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void finish() {
         try {
                 writer.flush();
-                writer.close();
+        } catch (Exception e) {
+            ;
+        }
+
+        try {
+            writer.close();
         } catch (Exception e) {
             ;
         }

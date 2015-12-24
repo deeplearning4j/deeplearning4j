@@ -38,8 +38,11 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
     protected int windowSize;
     protected VocabCache<T> vocabCache;
     protected SequenceIterator<T> sequenceIterator;
-    protected int workers = Runtime.getRuntime().availableProcessors();
 
+    // please note, we need enough room for ShadowCopy thread, that's why -1 there
+    protected int workers = Math.max(Runtime.getRuntime().availableProcessors() - 1, 1);
+
+    // target file, where text with cooccurrencies should be saved
     protected File targetFile;
 
     protected ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
@@ -63,6 +66,13 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
         ;
     }
 
+    /**
+     * This method returns cooccurrence distance weights for two SequenceElements
+     *
+     * @param element1
+     * @param element2
+     * @return distance weight
+     */
     public double getCoOccurrenceCount(@NonNull T element1, @NonNull T element2) {
         return coOccurrenceCounts.getCount(element1, element2);
     }
@@ -482,6 +492,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
 
                 int linesRead = 0;
 
+                logger.info("Saving to: ["+ counter.get()+"], Reading from: [" + counter.previous()+"]");
                 CoOccurenceReader<T> reader = new BinaryCoOccurrenceReader<>(tempFiles[counter.previous()], vocabCache);
                 CoOccurrenceWriter<T> writer = (isFinished.get()) ? new ASCIICoOccurrenceWriter<T>(targetFile): new BinaryCoOccurrenceWriter<T>(tempFiles[counter.get()]);
                 while (reader.hasMoreObjects()) {
@@ -490,8 +501,12 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                     double mWeight = localMap.getCount(line.getElement1(), line.getElement2());
                     if (mWeight > 0) {
                         line.setWeight(line.getWeight() + mWeight);
+
+                        localMap.removePair(line.getElement1(),line.getElement2());
                     }
                     writer.writeObject(line);
+                    numberOfLinesSaved++;
+                    linesRead++;
                 }
                 reader.finish();
 

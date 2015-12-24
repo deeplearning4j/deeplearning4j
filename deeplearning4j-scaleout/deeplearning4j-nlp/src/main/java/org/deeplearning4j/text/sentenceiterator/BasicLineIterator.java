@@ -28,7 +28,7 @@ public class BasicLineIterator implements SentenceIterator, Iterable<String> {
 
     public BasicLineIterator(@NonNull InputStream stream) {
         this.backendStream = stream;
-        reader = new BufferedReader(new InputStreamReader(new BufferedInputStream(backendStream, 8192)));
+        reader = new BufferedReader(new InputStreamReader(new BufferedInputStream(backendStream, 10 * 1024 * 1024)));
     }
 
     public BasicLineIterator(@NonNull String filePath) throws FileNotFoundException {
