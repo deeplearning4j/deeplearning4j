@@ -130,10 +130,10 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
         final SentenceIterator iterator;
 
         try {
-            iterator = new BasicLineIterator(targetFile); /*new PrefetchingSentenceIterator.Builder(new BasicLineIterator(targetFile))
-                    .setFetchSize(500)
+            iterator = new PrefetchingSentenceIterator.Builder(new BasicLineIterator(targetFile))
+                    .setFetchSize(100000)
                     .build();
-                    */
+
         } catch (Exception e) {
             logger.error("Target file was not found on last stage!");
             throw new RuntimeException(e);
@@ -290,9 +290,6 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
         public void run() {
             while (iterator.hasMoreSequences()) {
                 Sequence<T> sequence = iterator.nextSequence();
-
-//                logger.info("Sequence ID: " + sequence.getSequenceId());
-                // TODO: vocab filtering should take place
 
                 List<String> tokens = new ArrayList<>(sequence.asLabels());
     //            logger.info("Tokens size: " + tokens.size());
@@ -502,11 +499,10 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
 
                 //InputSplit split = new FileSplit(tempFiles[counter.get()]);
 
-                SentenceIterator sIterator = new BasicLineIterator(tempFiles[counter.get()]);
-                /*new PrefetchingSentenceIterator.Builder(new BasicLineIterator(tempFiles[counter.get()]))
-                        .setFetchSize(500)
+                SentenceIterator sIterator =  new PrefetchingSentenceIterator.Builder(new BasicLineIterator(tempFiles[counter.get()]))
+                        .setFetchSize(100000)
                         .build();
-                        */
+
 
 /*                CSVRecordReader reader = new CSVRecordReader(0, " ");
 

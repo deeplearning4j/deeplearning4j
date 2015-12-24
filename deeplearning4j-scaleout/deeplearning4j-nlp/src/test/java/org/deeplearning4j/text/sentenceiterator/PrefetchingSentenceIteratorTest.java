@@ -75,4 +75,43 @@ public class PrefetchingSentenceIteratorTest {
             if (cnt % 10000 == 0) log.info("Line processed: " + cnt);
         }
     }
+
+    @Test
+    public void testPerformance1() throws Exception {
+        ClassPathResource resource = new ClassPathResource("/big/raw_sentences.txt");
+        File file = resource.getFile();
+
+        BasicLineIterator iterator = new BasicLineIterator(file);
+
+        PrefetchingSentenceIterator fetcher = new PrefetchingSentenceIterator.Builder(new BasicLineIterator(file))
+                .setFetchSize(500000)
+                .build();
+
+        long time01 = System.currentTimeMillis();
+        int cnt0 = 0;
+        while (iterator.hasNext()) {
+            iterator.nextSentence();
+            cnt0++;
+        }
+        long time02 = System.currentTimeMillis();
+
+        long time11 = System.currentTimeMillis();
+        int cnt1 = 0;
+        while (fetcher.hasNext()) {
+            fetcher.nextSentence();
+            cnt1++;
+        }
+        long time12 = System.currentTimeMillis();
+
+        log.info("Basic iterator: " + (time02 - time01));
+
+        log.info("Prefetched iterator: " + (time12 - time11));
+
+        long difference = (time12 - time11) - (time02 - time01);
+        log.info("Difference: " + difference);
+
+        // on small corpus time difference can fluctuate a lot
+        // but it's still can be used as effectiveness measurement
+        assertTrue(difference < 150);
+    }
 }
