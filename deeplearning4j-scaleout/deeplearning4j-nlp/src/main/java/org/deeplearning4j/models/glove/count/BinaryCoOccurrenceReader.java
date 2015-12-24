@@ -22,7 +22,7 @@ public class BinaryCoOccurrenceReader<T extends SequenceElement> implements CoOc
         this.vocabCache = vocabCache;
         this.file = file;
         try {
-            inputStream = new DataInputStream(new BufferedInputStream(new FileInputStream(file), 10 * 1024 * 1024));
+            inputStream = new DataInputStream(new BufferedInputStream(new FileInputStream(file), 100 * 1024 * 1024));
             //inputStream = new BufferedInputStream(new FileInputStream(file), 1024 * 1024);
         } catch (Exception e) {
             throw new RuntimeException(e);
