@@ -4,6 +4,7 @@ import lombok.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -18,7 +19,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *
  * @author raver119@gmail.com
  */
-@Deprecated
 public class PrefetchingSentenceIterator implements SentenceIterator {
 
     private SentenceIterator sourceIterator;
@@ -78,7 +78,7 @@ public class PrefetchingSentenceIterator implements SentenceIterator {
 
     public static class Builder {
         private SentenceIterator iterator;
-        private int fetchSize = 1000;
+        private int fetchSize = 10000;
         private SentencePreProcessor preProcessor;
 
         public Builder(@NonNull SentenceIterator iterator) {
@@ -113,13 +113,14 @@ public class PrefetchingSentenceIterator implements SentenceIterator {
         private ReentrantReadWriteLock lock =  new ReentrantReadWriteLock();
         private SentencePreProcessor preProcessor;
         private AtomicBoolean isRunning = new AtomicBoolean(true);
-        private LinkedBlockingQueue<String> buffer = new LinkedBlockingQueue<>();
+        private ArrayBlockingQueue<String> buffer;
 
         public AsyncIteratorReader(@NonNull SentenceIterator iterator, @NonNull int fetchSize, SentencePreProcessor preProcessor) {
             this.iterator = iterator;
             this.fetchSize = fetchSize;
             this.preProcessor = preProcessor;
 
+            buffer = new ArrayBlockingQueue<>(fetchSize * 3);
             this.setName("AsyncIteratorReader thread");
         }
 
