@@ -45,8 +45,6 @@
             border-collapse:collapse;
             background-color: white;
             /*border-collapse: collapse;*/
-            border-radius: 5px;
-            -moz-border-radius:5px;
         }
 
         table.resultsTable td, table.resultsTable tr, table.resultsTable th {
@@ -54,24 +52,51 @@
         }
 
         table.resultsTable th {
-            background-color: #063E53;
+            background-color: /*headingbgcol*/#063E53;
             color: white;
             padding-left: 4px;
             padding-right: 4px;
         }
+
         table.resultsTable td {
-            background-color: white;
+            /*background-color: white;*/
             padding-left: 4px;
             padding-right: 4px;
         }
 
+        /** CSS for result table rows */
+        .resultTableRow {
+            background-color: #E1E8EA; /*#D7E9EF;*/
+
+        }
+
+        /** CSS for result table CONTENT rows (i.e., only visible when expanded) */
+        .resultTableRowContent {
+            background-color: white;
+            cursor: pointer;
+        }
+
+        .resultsHeadingDiv {
+            background-color: /*headingbgcol*/#063E53;
+            color: white;
+            font-family: Georgia, Times, 'Times New Roman', serif;
+            font-size: 20px;
+            font-style: bold;
+            font-variant: normal;
+            font-weight: 500;
+            line-height: 26.4px;
+            cursor: default;
+            padding-top: 8px;
+            padding-bottom: 8px;
+            padding-left: 45px;
+            padding-right: 45px;
+            border-style: solid;
+            border-width: 1px;
+            border-color: #AAAAAA;
+        }
+
         div.outerelements {
-            /*
-            padding-top: 20px;
-            padding-left: 20px;
-            padding-right: 20px;
-            padding-bottom: 20px;
-            */
+            padding-bottom: 30px;
         }
 
         #accordion, #accordion2 {
@@ -118,7 +143,6 @@
 <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
 <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
-<script type="text/javascript" src="http://localhost:8080/assets/jquery.tablesorter.min.js"></script>
 
 <script>
     //Store last update times:
@@ -126,6 +150,11 @@
     var lastSettingsUpdateTime = -1;
     var lastResultsUpdateTime = -1;
 
+    var resultTableSortIndex = 0;
+    var resultTableSortOrder = "ascending";
+    var resultsTableContent;
+
+    var expandedRowsCandidateIDs = [];
 
     //Set basic interval function to do updates
     setInterval(function(){
@@ -136,7 +165,7 @@
             var statusTime = jsonObj['statusUpdateTime'];
             var settingsTime = jsonObj['settingsUpdateTime'];
             var resultsTime = jsonObj['resultsUpdateTime'];
-            console.log("Last update times: " + statusTime + ", " + settingsTime + ", " + resultsTime);
+            //console.log("Last update times: " + statusTime + ", " + settingsTime + ", " + resultsTime);
 
             //Check last update times for each part of document, and update as necessary
             //First section: summary status
@@ -166,7 +195,6 @@
                 //Get JSON: address set by ConfigResource
                 $.get("/config",function(data){
                     var jsonObj = JSON.parse(JSON.stringify(data));
-//                    console.log("summary status: " + jsonObj);
                     console.log("Config JSON keys: " + Object.keys(jsonObj));
 
                     var components = jsonObj['renderableComponents'];
@@ -191,7 +219,8 @@
                 //Get JSON; address set by ResultsResource
                 $.get("/results",function(data){
                     //Expect an array of CandidateStatus type objects here
-                    drawResultTable(data);
+                    resultsTableContent = data;
+                    drawResultTable();
                 });
 
                 lastResultsUpdateTime = resultsTime;
@@ -249,36 +278,127 @@
         return table;
     }
 
-    function drawResultTable(resultArray){
-//        var resultsTable = $('#resultsTable');
-//        /*$('#resultsTable tr').not(function(){if ($(this).has('th').length){return true}}).remove(); //Remove all rows, but keep header*/
-//        $('#resultstablebody').empty();
-//
-////        resultsTable.append($("<tbody>"));
-//        var len = (!resultArray ? 0 : resultArray.length);
-//        for(var i=0; i<len; i++){
-//            var row = $("<tr />");
-//            row.append($("<td>" + resultArray[i].index + "</td>"));
-//            row.append($("<td>" + resultArray[i].score + "</td>"));
-//            row.append($("<td>" + resultArray[i].status + "</td>"));
-//            resultsTable.append(row);
-//        }
-////        resultsTable.append($("</tbody>"));
+    function drawResultTable(){
 
-        var tableBody = $('#resultstablebody');
+        //Remove all elements from the table body
+        var tableBody = $('#resultsTableBody');
         tableBody.empty();
 
-        var len = (!resultArray ? 0 : resultArray.length);
-        for(var i=0; i<len; i++){
-            var row = $("<tr />");
-            row.append($("<td>" + resultArray[i].index + "</td>"));
-            row.append($("<td>" + resultArray[i].score + "</td>"));
-            row.append($("<td>" + resultArray[i].status + "</td>"));
-            tableBody.append(row);
-        }
+        //Recreate the table header, with appropriate sort order:
+        var tableHeader = $('#resultsTableHeader');
+        tableHeader.empty();
+        var headerRow = $("<tr />");
+        var char = (resultTableSortOrder== "ascending" ? "&blacktriangledown;" : "&blacktriangle;");
+        if(resultTableSortIndex == 0) headerRow.append("$(<th>ID &nbsp; " + char + "</th>");
+        else headerRow.append("$(<th>ID</th>");
+        if(resultTableSortIndex == 1) headerRow.append("$(<th>Score &nbsp; " + char + "</th>");
+        else headerRow.append("$(<th>Score</th>");
+        if(resultTableSortIndex == 2) headerRow.append("$(<th>Status &nbsp; " + char + "</th>");
+        else headerRow.append("$(<th>Status</th>");
+        tableHeader.append(headerRow);
 
-        $('.tablesorter').trigger('update');
+
+        //Sort rows, and insert into table:
+        var sorted;
+        if(resultTableSortIndex == 0) sorted = resultsTableContent.sort(compareResultsIndex);
+        else if(resultTableSortIndex == 1) sorted = resultsTableContent.sort(compareScores);
+        else sorted = resultsTableContent.sort(compareStatus);
+
+        var len = (!resultsTableContent ? 0 : resultsTableContent.length);
+        for(var i=0; i<len; i++){
+            var row = $('<tr class="resultTableRow" id="resultTableRow-' + sorted[i].index + '"/>');
+            row.append($("<td class=>" + sorted[i].index + "</td>"));
+            row.append($("<td>" + sorted[i].score + "</td>"));
+            row.append($("<td>" + sorted[i].status + "</td>"));
+            tableBody.append(row);
+
+            //Create hidden row for expanding:
+            var contentRow = $('<tr id="resultTableRow-' + sorted[i].index + '-content", class="resultTableRowContent"/>');
+            contentRow.append($("<td colspan=3>Content goes here!</td>"));
+
+            tableBody.append(contentRow);
+            console.log("Expanded row IDs: " + expandedRowsCandidateIDs);
+            if(expandedRowsCandidateIDs.indexOf(sorted[i].index) == -1 ){
+                console.log("candidate not marked as expaned: " + sorted[i].index + ", idx="+sorted[i].index + ", expanded candidates = " + expandedRowsCandidateIDs)
+                contentRow.hide();
+
+            } else {
+                console.log("candidate marked as expanded: " + sorted[i].index);
+                contentRow.show();
+            }
+        }
     }
+
+    //Compare function for results, based on sort order
+    function compareResultsIndex(a, b){
+        return (resultTableSortOrder == "ascending" ? a.index - b.index : b.index - a.index);
+    }
+    function compareScores(a,b){
+        //TODO Not always numbers...
+        if(resultTableSortOrder == "ascending"){
+            return a.score - b.score;
+        } else {
+            return b.score - a.score;
+        }
+    }
+    function compareStatus(a,b){
+        //TODO: secondary sort on... score? index?
+        if(resultTableSortOrder == "ascending"){
+            return (a.status < b.status ? -1 : (a.status > b.status ? 1 : 0));
+        } else {
+            return (a.status < b.status ? 1 : (a.status > b.status ? -1 : 0));
+        }
+    }
+
+
+    //Intercept click events on table header
+    $(function(){
+        $("#resultsTableHeader").delegate("th", "click", function(e) {
+            //console.log("Header clicked on at: " + $(e.currentTarget).index() + " - " + $(e.currentTarget).html());
+            //Update the sort order for the table:
+            var clickIndex = $(e.currentTarget).index();
+            if(clickIndex == resultTableSortIndex){
+                //Switch sort order: ascending -> descending or descending -> ascending
+                if(resultTableSortOrder == "ascending"){
+                    resultTableSortOrder = "descending";
+                } else {
+                    resultTableSortOrder = "ascending";
+                }
+            } else {
+                //Sort on column, ascending:
+                resultTableSortIndex = clickIndex;
+                resultTableSortOrder = "ascending";
+            }
+
+            //Clear record of expanded rows
+            expandedRowsCandidateIDs = [];
+
+            //Redraw table
+            drawResultTable();
+        });
+    });
+
+    //Intercept click events on table rows -> toggle visibility on content rows
+    $(function(){
+        $("#resultsTableBody").delegate("tr", "click", function(e){
+            console.log("Clicked row: " + this.id + " with class: " + this.className);
+            var id = this.id;   //Expect: resultTableRow-X  where X is some index
+            var dashIdx = id.indexOf("-");
+            var candidateID = Number(id.substring(dashIdx+1));
+            if(this.className == "resultTableRow"){
+                var contentRow = $('#' + this.id + '-content');
+                var expRowsArrayIdx = expandedRowsCandidateIDs.indexOf(candidateID);
+                if(expRowsArrayIdx == -1 ){
+                    //Currently hidden
+                    expandedRowsCandidateIDs.push(candidateID); //Mark as expanded
+                } else {
+                    //Currently expanded
+                    expandedRowsCandidateIDs.splice(expRowsArrayIdx,1);
+                }
+                contentRow.toggle();
+            }
+        });
+    });
 
 </script>
 <script>
@@ -296,11 +416,8 @@
     });
 </script>
 
-<script type="text/javascript">
-    $(function(){
-        $('#resultsTable').tablesorter();
-    });
-</script>
+
+
 
 <div class="outerelements" id="heading">
     <h1>Arbiter</h1>
@@ -327,16 +444,13 @@
 
 
 <div class="outerelements" id="results">
-    <h3>Results</h3>
+    <div class="resultsHeadingDiv">Results</div>
     <div class="resultsdiv" id="resultsdiv">
-        <table style="width:100%" id="resultsTable" class="resultsTable tablesorter">
-            <thead><tr> <th>ID</th> <th>Score</th> <th>Status</th> </tr></thead>
-            <tbody id="resultstablebody"></tbody>
+        <table style="width:100%" id="resultsTable" class="resultsTable">
+            <thead id="resultsTableHeader"></thead>
+            <tbody id="resultsTableBody"></tbody>
         </table>
-
     </div>
-    Collapsable table goes here. Summary results when collapsed, full results when expanded.
-    Also sortable by ID, status, score, runtime etc.
 </div>
 
 
