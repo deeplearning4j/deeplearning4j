@@ -239,7 +239,7 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
 
             coList = pairs;
 
-            this.setName("GloVe ElementsLearningAlgorithm thread " + this.threadId);
+            this.setName("GloVe ELA t." + this.threadId);
         }
 
         @Override
@@ -263,7 +263,7 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
                 }
 
                 errorCounter.incrementCount(epochId, iterateSample(element1, element2, weight));
-                if (pairsCounter.getAndIncrement() % 100000 == 0) {
+                if (pairsCounter.incrementAndGet() % 100000 == 0) {
                     log.info("Processed [" + pairsCounter.get() + "] word pairs so far...");
                 }
             }
