@@ -31,7 +31,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- *
+ * This class implements building cooccurrence map for abstract training corpus.
+ * However it's performance rather low, due to exsessive IO that happens in ShadowCopyThread
  *
  *
  *
@@ -131,7 +132,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
 
         try {
             iterator = new PrefetchingSentenceIterator.Builder(new BasicLineIterator(targetFile))
-                    .setFetchSize(100000)
+                    .setFetchSize(500000)
                     .build();
 
         } catch (Exception e) {
@@ -500,7 +501,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                 //InputSplit split = new FileSplit(tempFiles[counter.get()]);
 
                 SentenceIterator sIterator =  new PrefetchingSentenceIterator.Builder(new BasicLineIterator(tempFiles[counter.get()]))
-                        .setFetchSize(100000)
+                        .setFetchSize(500000)
                         .build();
 
 
