@@ -13,8 +13,11 @@ import java.util.ArrayList;
 /**
  *
  * Reference: https://cs231n.github.io/neural-networks-3/
+ *
+ * @deprecated try to use deeplearning4j-ui instead
  */
 
+@Deprecated
 public class AccuracyPlotterIterationListener implements IterationListener {
     private int epochs = 1; // number times the model saw all the data
     private INDArray input;
