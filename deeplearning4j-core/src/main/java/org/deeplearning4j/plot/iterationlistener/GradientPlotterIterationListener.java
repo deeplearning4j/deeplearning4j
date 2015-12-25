@@ -7,7 +7,10 @@ import org.deeplearning4j.plot.NeuralNetPlotter;
 
 /**
  * Plots weight distributions and activation probabilities
+ *
+ * @deprecated use {@link org.deeplearning4j.ui.weights.HistogramIterationListener} from deeplearning4j-ui instead
  */
+@Deprecated
 public class GradientPlotterIterationListener implements IterationListener {
     private int iterations = 10;
     private NeuralNetPlotter plotter = new NeuralNetPlotter();
