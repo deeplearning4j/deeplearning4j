@@ -1,9 +1,8 @@
 package org.arbiter.optimize.runner;
 
-import org.arbiter.optimize.api.OptimizationResult;
 import org.arbiter.optimize.api.saving.ResultReference;
 import org.arbiter.optimize.config.OptimizationConfiguration;
-import org.arbiter.optimize.runner.listener.StatusListener;
+import org.arbiter.optimize.runner.listener.runner.OptimizationRunnerStatusListener;
 
 import java.util.List;
 
@@ -34,9 +33,9 @@ public interface IOptimizationRunner<C,M,A> {
 
     OptimizationConfiguration<C,M,?,A> getConfiguration();
 
-    void addListeners(StatusListener... listeners);
+    void addListeners(OptimizationRunnerStatusListener... listeners);
 
-    void removeListeners(StatusListener... listeners);
+    void removeListeners(OptimizationRunnerStatusListener... listeners);
 
     void removeAllListeners();
 

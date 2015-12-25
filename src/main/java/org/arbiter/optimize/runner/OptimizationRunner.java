@@ -10,7 +10,7 @@ import org.arbiter.optimize.api.saving.ResultSaver;
 import org.arbiter.optimize.api.termination.TerminationCondition;
 import org.arbiter.optimize.config.OptimizationConfiguration;
 import org.arbiter.optimize.executor.CandidateExecutor;
-import org.arbiter.optimize.runner.listener.StatusListener;
+import org.arbiter.optimize.runner.listener.runner.OptimizationRunnerStatusListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +52,7 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
 
     private ExecutorService futureListenerExecutor;
 
-    private List<StatusListener> statusListeners = new ArrayList<>();
+    private List<OptimizationRunnerStatusListener> statusListeners = new ArrayList<>();
 
 
     public OptimizationRunner(OptimizationConfiguration<C, M, D, A> config, CandidateExecutor<C, M, D, A> executor) {
@@ -81,7 +81,7 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
     public void execute() {
 
         log.info("OptimizationRunner: execution started");
-        for(StatusListener listener : statusListeners) listener.onInitialization(this);
+        for(OptimizationRunnerStatusListener listener : statusListeners) listener.onInitialization(this);
 
         //Initialize termination conditions (start timers, etc)
         for (TerminationCondition c : config.getTerminationConditions()) {
@@ -131,7 +131,7 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
 
                 CandidateStatus status = new CandidateStatus(
                         candidate.getIndex(),
-                        CandidateStatus.Status.Created,
+                        Status.Created,
                         null,
                         System.currentTimeMillis(),
                         null,
@@ -140,7 +140,7 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
             }
 
             if(statusChange) {
-                for (StatusListener listener : statusListeners){
+                for (OptimizationRunnerStatusListener listener : statusListeners){
                     listener.onStatusChange(this);
                 }
             }
@@ -155,7 +155,7 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
         tempList.clear();
 
         log.info("Optimization runner: execution complete");
-        for(StatusListener listener : statusListeners) listener.onShutdown(this);
+        for(OptimizationRunnerStatusListener listener : statusListeners) listener.onShutdown(this);
     }
 
     /**
@@ -182,7 +182,7 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
         CandidateStatus status = currentStatus.get(result.getIndex());
         CandidateStatus newStatus = new CandidateStatus(
                 result.getIndex(),
-                CandidateStatus.Status.Complete,
+                Status.Complete,
                 result.getScore(),
                 status.getCreatedTime(),
                 null,
@@ -190,7 +190,7 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
         currentStatus.put(result.getIndex(),newStatus);
 
         //Listeners:
-        for(StatusListener listener : statusListeners) listener.onCompletion(result);
+        for(OptimizationRunnerStatusListener listener : statusListeners) listener.onCompletion(result);
 
         double score = result.getScore();
         log.info("Completed task {}, score = {}", result.getIndex(), result.getScore());
@@ -269,15 +269,15 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
 
 
     @Override
-    public void addListeners(StatusListener... listeners) {
-        for(StatusListener l : listeners){
+    public void addListeners(OptimizationRunnerStatusListener... listeners) {
+        for(OptimizationRunnerStatusListener l : listeners){
             if(!statusListeners.contains(l)) statusListeners.add(l);
         }
     }
 
     @Override
-    public void removeListeners(StatusListener... listeners) {
-        for(StatusListener l : listeners){
+    public void removeListeners(OptimizationRunnerStatusListener... listeners) {
+        for(OptimizationRunnerStatusListener l : listeners){
             if(statusListeners.contains(l)) statusListeners.remove(l);
         }
     }

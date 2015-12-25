@@ -1,6 +1,4 @@
-package org.arbiter.optimize.ui.rendering;
-
-import org.arbiter.optimize.ui.components.RenderableComponent;
+package org.arbiter.optimize.ui.components;
 
 public class RenderElements {
 
@@ -43,6 +41,6 @@ public class RenderElements {
     }
 
     public String toString() {
-        return "org.arbiter.optimize.ui.rendering.RenderElements(renderableComponents=" + java.util.Arrays.deepToString(this.renderableComponents) + ")";
+        return "org.arbiter.optimize.ui.components.RenderElements(renderableComponents=" + java.util.Arrays.deepToString(this.renderableComponents) + ")";
     }
 }

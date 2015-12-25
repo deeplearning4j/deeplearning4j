@@ -1,7 +1,6 @@
 package org.arbiter.optimize.ui.components;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.arbiter.optimize.ui.rendering.RenderElements;
 import org.junit.Test;
 
 public class RenderableComponentsJSONTest {

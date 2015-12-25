@@ -64,16 +64,21 @@
             padding-right: 4px;
         }
 
+        /* Properties for table cells in the tables generated using the RenderableComponent mechanism */
+        .renderableComponentTable td {
+            padding-left: 4px;
+            padding-right: 4px;
+        }
+
         /** CSS for result table rows */
         .resultTableRow {
             background-color: #E1E8EA; /*#D7E9EF;*/
-
+            cursor: pointer;
         }
 
         /** CSS for result table CONTENT rows (i.e., only visible when expanded) */
         .resultTableRowContent {
             background-color: white;
-            cursor: pointer;
         }
 
         .resultsHeadingDiv {
@@ -182,8 +187,9 @@
                     var len = (!components ? 0 : components.length);
                     for(var i=0; i<len; i++){
                         var c = components[i];
-                        var temp = getComponentHTML(c);
-                        summaryStatusDiv.append(temp);
+//                        var temp = createAndAddComponent(c);
+//                        summaryStatusDiv.append(temp);
+                        createAndAddComponent(c,summaryStatusDiv);
                     }
                 });
 
@@ -205,8 +211,9 @@
                     var len = (!components ? 0 : components.length);
                     for(var i=0; i<len; i++){
                         var c = components[i];
-                        var temp = getComponentHTML(c);
-                        configDiv.append(temp);
+//                        var temp = createAndAddComponent(c,configDiv);
+//                        configDiv.append(temp);
+                        createAndAddComponent(c,configDiv);
                     }
                 });
 
@@ -228,16 +235,21 @@
         })
     },4000);
 
-    function getComponentHTML(renderableComponent){
+    function createAndAddComponent(renderableComponent, appendTo){
         var key = Object.keys(renderableComponent)[0];
         var type = renderableComponent[key]['componentType'];
 
         switch(type){
             case "string":
                 var s = renderableComponent[key]['string'];
-                return s.replace(new RegExp("\n",'g'),"<br>");
+                appendTo.append(s.replace(new RegExp("\n",'g'),"<br>"));
+                break;
             case "simpletable":
-                return createTable(renderableComponent[key],"someidhere");
+                appendTo.append(createTable(renderableComponent[key],null));
+                break;
+            case "linechart":
+                createLineChart(renderableComponent[key],"chartidhere",appendTo);
+                break;
             default:
                 return "UNKNOWN OBJECT";
         }
@@ -245,12 +257,14 @@
     }
 
     function createTable(tableObj,tableId){
-        //Expect RenderComponentTable
+        //Expect RenderableComponentTable
         var header = tableObj['header'];
         var values = tableObj['table'];
         var nRows = (values ? values.length : 0);
 
-        var table = $("<table id=\"" + tableId + "\">");
+        var table;
+        if(tableId) table = $("<table id=\"" + tableId + "\" class=\"renderableComponentTable\">");
+        else table = $("<table class=\"renderableComponentTable\">");
         if(header){
             var headerRow = $("<tr>");
             var len = header.length;
@@ -276,6 +290,111 @@
 
         table.append($("</table>"));
         return table;
+    }
+
+    function createLineChart(chartObj, chartId, appendTo){
+        //Expect: RenderableComponentLineChart
+        var title = chartObj['title'];
+        var xData = chartObj['x'];
+        var yData = chartObj['y'];
+        var nSeries = (!xData ? 0 : xData.length);
+
+        // Set the dimensions of the canvas / graph
+        var margin = {top: 30, right: 20, bottom: 60, left: 50},
+                width = 650 - margin.left - margin.right,
+                height = 350 - margin.top - margin.bottom;
+
+        // Set the ranges
+        var x = d3.scale.linear().range([0, width]);
+        var y = d3.scale.linear().range([height, 0]);
+
+        // Define the axes
+        var xAxis = d3.svg.axis().scale(x)
+                .innerTickSize(-height)     //used as grid line
+                .orient("bottom").ticks(5);
+
+        var yAxis = d3.svg.axis().scale(y)
+                .innerTickSize(-width)      //used as grid line
+                .orient("left").ticks(5);
+
+        // Define the line
+        var valueline = d3.svg.line()
+                .x(function(d,i) { return x(i); })
+                .y(function(d) { return y(d); });
+
+        // Adds the svg canvas
+//        var selector = $("<div id=\""+chartId+"\"></div>"); //Doesn't work
+//        var div = document.createElement("div");
+//        div.id = chartId;
+//        var svg = d3.select("#" + appendTo.id)  //Nope
+        var svg = d3.select(appendTo.get())
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform",
+                "translate(" + margin.left + "," + margin.top + ")");
+
+        // Scale the range of the data
+        var max = -Number.MAX_VALUE;
+        var size = 1;
+//        for( var key in map ){
+//            var values = map[key];
+        for( var i=0; i<nSeries; i++){
+            var values = xData[i];
+            var thisMax = d3.max(values);
+            if(thisMax > max) max = thisMax;
+            size = values.length;
+        }
+        x.domain([0,size]);
+        y.domain([0, max]);
+
+        // Add the valueline path.
+        var color = d3.scale.category10();
+//        var i=0;
+//        for( var key in map ){
+//            var values = map[key];
+        for( var i=0; i<nSeries; i++){
+            var values = xData[i];
+            svg.append("path")
+                    .attr("class", "line")
+                    .style("stroke", color(i))
+                    .attr("d", valueline(values));
+//            i++;
+        }
+
+        // Add the X Axis
+        svg.append("g")
+                .attr("class", "x axis")
+                .attr("transform", "translate(0," + height + ")")
+                .call(xAxis);
+
+        // Add the Y Axis
+        svg.append("g")
+                .attr("class", "y axis")
+                .call(yAxis);
+
+        //Add legend
+        var legendSpace = width/i;
+//        i = 0;
+//        for( var key in map ){
+//            var values = map[key];
+        for( var i=0; i<nSeries; i++){
+            var values = xData[i];
+            var last = values[values.length-1];
+//            var toDisplay = key + " (" + last.toPrecision(5) + ") ";
+            var toDisplay = "toDisplay text (todo)";
+            svg.append("text")
+                    .attr("x", (legendSpace/2)+i*legendSpace) // spacing
+                    .attr("y", height + (margin.bottom/2)+ 5)
+                    .attr("class", "legend")    // style the legend
+                    .style("fill", color(i))
+                    .text(toDisplay);
+
+//            i++;
+        }
+
+//        return title + "nSeries=" + nSeries + ", " + xData + ", " + yData;
     }
 
     function drawResultTable(){
@@ -319,30 +438,17 @@
             contentRow.append(td3);
 
             tableBody.append(contentRow);
-            console.log("Expanded row IDs: " + expandedRowsCandidateIDs);
+//            console.log("Expanded row IDs: " + expandedRowsCandidateIDs);
             if(expandedRowsCandidateIDs.indexOf(sorted[i].index) == -1 ){
                 //console.log("candidate not marked as expanded: " + sorted[i].index + ", idx="+sorted[i].index + ", expanded candidates = " + expandedRowsCandidateIDs)
                 contentRow.hide();
 
             } else {
-                //console.log("candidate marked as expanded: " + sorted[i].index);
-
                 //Load info. TODO: make this more efficient (stored info, check for updates, etc)
-//                td3.empty();
-                var path = "/modelResults/" + sorted[i].index;
-                $.get(path,function(data){
+                td3.empty();
 
-                    var jsonObj = JSON.parse(JSON.stringify(data));
-                    var components = jsonObj['renderableComponents'];
-                    var len = (!components ? 0 : components.length);
-//                    console.log("Appending " + len + " objects to " + sorted[i].index);
-                    for(var i=0; i<len; i++){
-                        var c = components[i];
-                        var temp = getComponentHTML(c);
-                        td3.append("<div>" + temp + "</div>");   //Not working...
-                        console.log(temp);
-                    }
-                });
+                var path = "/modelResults/" + sorted[i].index;
+                loadCandidateDetails(path, td3);
 
                 contentRow.show();
             }
@@ -370,8 +476,24 @@
         }
     }
 
+    //Do a HTTP request on the specified path, parse and insert into the provided element
+    function loadCandidateDetails(path, elementToAppendTo){
+        $.get(path, function (data) {
+            var jsonObj = JSON.parse(JSON.stringify(data));
+            var components = jsonObj['renderableComponents'];
+            var len = (!components ? 0 : components.length);
+            for (var i = 0; i < len; i++) {
+                var c = components[i];
+                var temp = createAndAddComponent(c,elementToAppendTo);
+//                elementToAppendTo.append("<div>" + temp + "</div>");
+//                console.log(temp);
+            }
+        });
+    }
 
-    //Intercept click events on table header
+
+
+    //Sorting by column: Intercept click events on table header
     $(function(){
         $("#resultsTableHeader").delegate("th", "click", function(e) {
             //console.log("Header clicked on at: " + $(e.currentTarget).index() + " - " + $(e.currentTarget).html());
@@ -398,7 +520,7 @@
         });
     });
 
-    //Intercept click events on table rows -> toggle visibility on content rows
+    //Displaying model/candidate details: Intercept click events on table rows -> toggle visibility on content rows
     $(function(){
         $("#resultsTableBody").delegate("tr", "click", function(e){
             console.log("Clicked row: " + this.id + " with class: " + this.className);
@@ -411,6 +533,11 @@
                 if(expRowsArrayIdx == -1 ){
                     //Currently hidden
                     expandedRowsCandidateIDs.push(candidateID); //Mark as expanded
+//                    var innerTD = contentRow.children("td")[0];
+                    var innerTD = $('#' + this.id + '-content > td');
+                    innerTD.empty();
+                    var path = "/modelResults/" + candidateID;
+                    loadCandidateDetails(path,innerTD);
                 } else {
                     //Currently expanded
                     expandedRowsCandidateIDs.splice(expRowsArrayIdx,1);

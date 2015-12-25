@@ -1,6 +1,6 @@
 package org.arbiter.optimize.ui.resources;
 
-import org.arbiter.optimize.ui.rendering.RenderElements;
+import org.arbiter.optimize.ui.components.RenderElements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

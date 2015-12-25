@@ -11,7 +11,7 @@ import org.arbiter.optimize.ui.components.RenderableComponent;
 import org.arbiter.optimize.ui.components.RenderableComponentString;
 import org.arbiter.optimize.ui.components.RenderableComponentTable;
 import org.arbiter.optimize.ui.listener.SummaryStatus;
-import org.arbiter.optimize.ui.rendering.RenderElements;
+import org.arbiter.optimize.ui.components.RenderElements;
 import org.arbiter.optimize.ui.resources.*;
 import org.arbiter.util.WebUtils;
 import org.slf4j.Logger;
@@ -53,7 +53,7 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
            candidate: its configuration, plus model-specific information (such as score vs. epoch for DL4J).
            Clicking again collapses the row.
 
-    - OptimizationRunner has a UIStatusListener object. Called whenever something happens (task completion, etc)
+    - OptimizationRunner has a UIOptimizationRunnerStatusListener object. Called whenever something happens (task completion, etc)
         Creates a status update object, and passes this to UI server for async processing???
 
     - Information to be displayed is posted to the folowing addresses, in JSON format
@@ -92,7 +92,7 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
 
     private static final Logger log = LoggerFactory.getLogger(ArbiterUIServer.class);
     private static final ArbiterUIServer instance = new ArbiterUIServer();
-    private Client client = ClientBuilder.newClient().register(JacksonJsonProvider.class);
+    private Client client = ClientProvider.getClient();
 
     private AtomicLong lastSummaryUpdateTime = new AtomicLong(0);
     private AtomicLong lastConfigUpdateTime = new AtomicLong(0);
@@ -140,10 +140,23 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
     }
 
 
-    public void updateStatus(SummaryStatus status){
+//    public void updateStatus(SummaryStatus status){
+//
+//        //Create a set of RenderableComponent objects to render:
+//        RenderElements elements = getSummaryStatusComponents(status);
+//
+//        targetSummaryStatusUpdate.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
+//                .post(Entity.entity(elements, MediaType.APPLICATION_JSON));
+//        log.info("Posted summary status update: {}", elements);
+//        lastSummaryUpdateTime.set(System.currentTimeMillis());
+//
+//        updateStatusTimes();
+//    }
 
-        //Create a set of RenderableComponent objects to render:
-        RenderElements elements = getSummaryStatusComponents(status);
+    public void updateStatus(RenderElements elements){
+//
+//        //Create a set of RenderableComponent objects to render:
+//        RenderElements elements = getSummaryStatusComponents(status);
 
         targetSummaryStatusUpdate.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
                 .post(Entity.entity(elements, MediaType.APPLICATION_JSON));
@@ -185,9 +198,9 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
     }
 
     //TODO Work out how to do this properly
-    public void updateOptimizationSettings(String settings){
-        RenderableComponent str = new RenderableComponentString(settings);
-        RenderElements elements = new RenderElements(str);
+    public void updateOptimizationSettings(RenderElements elements){
+//        RenderableComponent str = new RenderableComponentString(settings);
+//        RenderElements elements = new RenderElements(str);
         targetConfigUpdate.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
                 .post(Entity.entity(elements, MediaType.APPLICATION_JSON));
         log.info("Posted optimization settings update: {}", elements);

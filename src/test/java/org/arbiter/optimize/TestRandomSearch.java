@@ -11,9 +11,11 @@ import org.arbiter.optimize.executor.CandidateExecutor;
 import org.arbiter.optimize.executor.local.LocalCandidateExecutor;
 import org.arbiter.optimize.randomsearch.RandomSearchGenerator;
 import org.arbiter.optimize.runner.OptimizationRunner;
-import org.arbiter.optimize.runner.listener.LoggingStatusListener;
+import org.arbiter.optimize.runner.Status;
+import org.arbiter.optimize.runner.listener.candidate.UICandidateStatusListener;
 import org.arbiter.optimize.ui.ArbiterUIServer;
-import org.arbiter.optimize.ui.listener.UIStatusListener;
+import org.arbiter.optimize.ui.components.RenderableComponentString;
+import org.arbiter.optimize.ui.listener.UIOptimizationRunnerStatusListener;
 import org.arbiter.util.WebUtils;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -22,7 +24,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**Test random search on the Branin Function:
  * http://www.sfu.ca/~ssurjano/branin.html
@@ -50,13 +51,13 @@ public class TestRandomSearch {
 
         OptimizationRunner<BraninConfig, BraninConfig, Void, Void> runner
                 = new OptimizationRunner<>(configuration, executor);
-//        runner.addListeners(new LoggingStatusListener());
+//        runner.addListeners(new LoggingOptimizationRunnerStatusListener());
 
         ArbiterUIServer server = new ArbiterUIServer();
         String[] str = new String[]{"server", "dropwizard.yml"};
         server.run(str);
         WebUtils.tryOpenBrowser("http://localhost:8080/arbiter", log);    //TODO don't hardcode
-        runner.addListeners(new UIStatusListener(server));
+        runner.addListeners(new UIOptimizationRunnerStatusListener(server));
 
         runner.execute();
 
@@ -98,16 +99,33 @@ public class TestRandomSearch {
     private static class BraninTaskCreator implements TaskCreator<BraninConfig,BraninConfig,Void,Void>{
         @Override
         public Callable<OptimizationResult<BraninConfig, BraninConfig,Void>> create(final Candidate<BraninConfig> candidate,
-                                DataProvider<Void> dataProvider, final ScoreFunction<BraninConfig,Void> scoreFunction) {
+                                DataProvider<Void> dataProvider, final ScoreFunction<BraninConfig,Void> scoreFunction,
+                                final UICandidateStatusListener statusListener) {
+
+            if(statusListener != null){
+                statusListener.reportStatus(Status.Created,new RenderableComponentString("Config: " + candidate.toString()));
+            }
 
             return new Callable<OptimizationResult<BraninConfig, BraninConfig, Void>>() {
                 @Override
                 public OptimizationResult<BraninConfig, BraninConfig, Void> call() throws Exception {
 
+                    if(statusListener != null) {
+                        statusListener.reportStatus(Status.Running,
+                                new RenderableComponentString("Config: " + candidate.toString())
+                        );
+                    }
+
                     double score = scoreFunction.score(candidate.getValue(),null,null);
                     System.out.println(candidate.getValue().getX1() + "\t" + candidate.getValue().getX2() + "\t" + score);
 
-                    Thread.sleep(2500);
+                    Thread.sleep(5000);
+                    if(statusListener != null) {
+                        statusListener.reportStatus(Status.Complete,
+                                new RenderableComponentString("Config: " + candidate.toString()),
+                                new RenderableComponentString("Score: " + score)
+                        );
+                    }
 
                     return new OptimizationResult<>(candidate,candidate.getValue(), score, candidate.getIndex(), null);
                 }

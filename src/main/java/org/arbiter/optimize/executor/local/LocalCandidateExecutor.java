@@ -10,8 +10,10 @@ import org.arbiter.optimize.api.TaskCreator;
 import org.arbiter.optimize.api.data.DataProvider;
 import org.arbiter.optimize.api.score.ScoreFunction;
 import org.arbiter.optimize.executor.CandidateExecutor;
+import org.arbiter.optimize.runner.listener.candidate.UICandidateStatusListenerImpl;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -48,15 +50,15 @@ public class LocalCandidateExecutor<T, M, D, A> implements CandidateExecutor<T, 
 
     @Override
     public ListenableFuture<OptimizationResult<T, M, A>> execute(Candidate<T> candidate, DataProvider<D> dataProvider, ScoreFunction<M, D> scoreFunction) {
-        Callable<OptimizationResult<T, M, A>> task = taskCreator.create(candidate, dataProvider, scoreFunction);
-        return executor.submit(task);
+        return execute(Collections.singletonList(candidate),dataProvider,scoreFunction).get(0);
     }
 
     @Override
     public List<ListenableFuture<OptimizationResult<T, M, A>>> execute(List<Candidate<T>> candidates, DataProvider<D> dataProvider, ScoreFunction<M, D> scoreFunction) {
         List<ListenableFuture<OptimizationResult<T, M, A>>> list = new ArrayList<>(candidates.size());
         for (Candidate<T> candidate : candidates) {
-            Callable<OptimizationResult<T, M, A>> task = taskCreator.create(candidate, dataProvider, scoreFunction);
+            Callable<OptimizationResult<T, M, A>> task = taskCreator.create(candidate, dataProvider, scoreFunction,
+                    new UICandidateStatusListenerImpl(candidate.getIndex()));
             list.add(executor.submit(task));
         }
         return list;

@@ -1,4 +1,4 @@
-package org.arbiter.optimize.runner.listener;
+package org.arbiter.optimize.runner.listener.runner;
 
 import org.arbiter.optimize.api.OptimizationResult;
 import org.arbiter.optimize.runner.IOptimizationRunner;
@@ -8,9 +8,9 @@ import org.slf4j.LoggerFactory;
 /**
  * Created by Alex on 21/12/2015.
  */
-public class LoggingStatusListener implements StatusListener {
+public class LoggingOptimizationRunnerStatusListener implements OptimizationRunnerStatusListener {
 
-    private static final Logger log = LoggerFactory.getLogger(LoggingStatusListener.class);
+    private static final Logger log = LoggerFactory.getLogger(LoggingOptimizationRunnerStatusListener.class);
 
     @Override
     public void onInitialization(IOptimizationRunner runner) {

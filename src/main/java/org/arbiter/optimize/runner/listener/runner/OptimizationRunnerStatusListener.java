@@ -1,11 +1,11 @@
-package org.arbiter.optimize.runner.listener;
+package org.arbiter.optimize.runner.listener.runner;
 
 import org.arbiter.optimize.api.OptimizationResult;
 import org.arbiter.optimize.runner.IOptimizationRunner;
 
 /**Status listener: is registered with the OptimizationRunner, and recieves callbacks whenever events occur
  */
-public interface StatusListener {
+public interface OptimizationRunnerStatusListener {
 
     /** Called when optimization runner starts execution */
     void onInitialization(IOptimizationRunner runner);

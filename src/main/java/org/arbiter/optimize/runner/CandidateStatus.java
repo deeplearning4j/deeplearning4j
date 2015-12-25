@@ -6,8 +6,6 @@ import lombok.Data;
 @AllArgsConstructor @Data
 public class CandidateStatus {
 
-    public enum Status {Created,Running,Complete,Failed,Cancelled};
-
     public CandidateStatus(){
         //No arg constructor for Jackson
     }
