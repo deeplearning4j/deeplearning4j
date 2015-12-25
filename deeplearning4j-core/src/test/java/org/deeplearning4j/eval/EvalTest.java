@@ -233,4 +233,37 @@ public class EvalTest {
         assertEquals(evaluation.trueNegatives(),evaluation2.trueNegatives(),1e-12);
         for( int i=0; i<nOut; i++) assertEquals(evaluation.classCount(i),evaluation2.classCount(i));
     }
+
+    @Test
+    public void testFalsePerfectRecall() {
+        int testSize = 100;
+        int numClasses = 5;
+        int winner = 1;
+        int seed = 241;
+
+        INDArray labels = Nd4j.zeros(testSize, numClasses);
+        INDArray predicted = Nd4j.zeros(testSize, numClasses);
+
+        Nd4j.getRandom().setSeed(seed);
+        Random r = new Random(seed);
+
+        //Modelling the situation when system predicts the same class every time
+        for(int i = 0; i < testSize; i++) {
+            //Generating random prediction but with a guaranteed winner
+            INDArray rand = Nd4j.rand(1, numClasses);
+            rand.put(0, winner, rand.sumNumber());
+            rand.divi(rand.sumNumber());
+            predicted.put(new INDArrayIndex[]{NDArrayIndex.point(i),NDArrayIndex.all()}, rand);
+            //Generating random label
+            int label = r.nextInt(numClasses);
+            labels.putScalar(new int[]{i,label},1.0);
+        }
+
+        //Explicitly specify the amount of classes
+        Evaluation eval = new Evaluation(numClasses);
+        eval.eval(labels, predicted);
+
+        //For sure we shouldn't arrive at 100% recall unless we guessed everything right for every class
+        assertNotEquals(1.0, eval.recall());
+    }
 }
