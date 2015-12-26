@@ -203,6 +203,7 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
                 log.info("New best score: {} (prev={})", score, bestScore);
             }
             bestScore = score;
+            bestScoreTime = System.currentTimeMillis();
             bestScoreCandidateIndex = result.getIndex();
         }
         numCandidatesCompleted++;

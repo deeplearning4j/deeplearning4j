@@ -45,6 +45,7 @@
             border-collapse:collapse;
             background-color: white;
             /*border-collapse: collapse;*/
+            padding: 15px;
         }
 
         table.resultsTable td, table.resultsTable tr, table.resultsTable th {
@@ -133,6 +134,21 @@
             line-height: 16pt;
         }
 
+        /** Line charts */
+        path {
+            stroke: steelblue;
+            stroke-width: 2;
+            fill: none;
+        }
+        .axis path, .axis line {
+            fill: none;
+            stroke: #000;
+            shape-rendering: crispEdges;
+        }
+        .tick line {
+            opacity: 0.2;
+            shape-rendering: crispEdges;
+        }
 
     </style>
     <title>Arbiter UI</title>
@@ -187,8 +203,6 @@
                     var len = (!components ? 0 : components.length);
                     for(var i=0; i<len; i++){
                         var c = components[i];
-//                        var temp = createAndAddComponent(c);
-//                        summaryStatusDiv.append(temp);
                         createAndAddComponent(c,summaryStatusDiv);
                     }
                 });
@@ -211,8 +225,6 @@
                     var len = (!components ? 0 : components.length);
                     for(var i=0; i<len; i++){
                         var c = components[i];
-//                        var temp = createAndAddComponent(c,configDiv);
-//                        configDiv.append(temp);
                         createAndAddComponent(c,configDiv);
                     }
                 });
@@ -233,7 +245,7 @@
                 lastResultsUpdateTime = resultsTime;
             }
         })
-    },4000);
+    },2000);
 
     function createAndAddComponent(renderableComponent, appendTo){
         var key = Object.keys(renderableComponent)[0];
@@ -292,75 +304,78 @@
         return table;
     }
 
+    /** Create + add line chart with multiple lines, (optional) title, (optional) series names.
+     * appendTo: jquery selector of object to append to. MUST HAVE ID
+     * */
     function createLineChart(chartObj, chartId, appendTo){
         //Expect: RenderableComponentLineChart
         var title = chartObj['title'];
         var xData = chartObj['x'];
         var yData = chartObj['y'];
+        var seriesNames = chartObj['seriesNames'];
         var nSeries = (!xData ? 0 : xData.length);
+        var title = chartObj['title'];
 
         // Set the dimensions of the canvas / graph
-        var margin = {top: 30, right: 20, bottom: 60, left: 50},
+        var margin = {top: 60, right: 20, bottom: 60, left: 50},
                 width = 650 - margin.left - margin.right,
                 height = 350 - margin.top - margin.bottom;
 
         // Set the ranges
-        var x = d3.scale.linear().range([0, width]);
-        var y = d3.scale.linear().range([height, 0]);
+        var xScale = d3.scale.linear().range([0, width]);
+        var yScale = d3.scale.linear().range([height, 0]);
 
         // Define the axes
-        var xAxis = d3.svg.axis().scale(x)
+        var xAxis = d3.svg.axis().scale(xScale)
                 .innerTickSize(-height)     //used as grid line
                 .orient("bottom").ticks(5);
 
-        var yAxis = d3.svg.axis().scale(y)
+        var yAxis = d3.svg.axis().scale(yScale)
                 .innerTickSize(-width)      //used as grid line
                 .orient("left").ticks(5);
 
         // Define the line
         var valueline = d3.svg.line()
-                .x(function(d,i) { return x(i); })
-                .y(function(d) { return y(d); });
+                .x(function(d) { return xScale(d.xPos); })
+                .y(function(d) { return yScale(d.yPos); });
 
         // Adds the svg canvas
-//        var selector = $("<div id=\""+chartId+"\"></div>"); //Doesn't work
-//        var div = document.createElement("div");
-//        div.id = chartId;
-//        var svg = d3.select("#" + appendTo.id)  //Nope
-        var svg = d3.select(appendTo.get())
+        var svg = d3.select("#" + appendTo.attr("id"))
                 .append("svg")
                 .attr("width", width + margin.left + margin.right)
                 .attr("height", height + margin.top + margin.bottom)
+                .attr("padding", "20px")
                 .append("g")
                 .attr("transform",
                 "translate(" + margin.left + "," + margin.top + ")");
 
-        // Scale the range of the data
-        var max = -Number.MAX_VALUE;
-        var size = 1;
-//        for( var key in map ){
-//            var values = map[key];
+        // Scale the range of the chart
+        var xMax = -Number.MAX_VALUE;
+        var yMax = -Number.MAX_VALUE;
         for( var i=0; i<nSeries; i++){
-            var values = xData[i];
-            var thisMax = d3.max(values);
-            if(thisMax > max) max = thisMax;
-            size = values.length;
+            var xV = xData[i];
+            var yV = yData[i];
+            var thisMax = d3.max(xV);
+            var thisMaxY = d3.max(yV);
+            if(thisMax > xMax) xMax = thisMax;
+            if(thisMaxY > yMax) yMax = thisMaxY;
         }
-        x.domain([0,size]);
-        y.domain([0, max]);
+        xScale.domain([0, xMax]);
+        yScale.domain([0, yMax]);
 
         // Add the valueline path.
         var color = d3.scale.category10();
-//        var i=0;
-//        for( var key in map ){
-//            var values = map[key];
         for( var i=0; i<nSeries; i++){
-            var values = xData[i];
+            var xVals = xData[i];
+            var yVals = yData[i];
+
+            var data = xVals.map(function(d, i){
+                return { 'xPos' : xVals[i], 'yPos' : yVals[i] };
+            });
             svg.append("path")
                     .attr("class", "line")
                     .style("stroke", color(i))
-                    .attr("d", valueline(values));
-//            i++;
+                    .attr("d", valueline(data));
         }
 
         // Add the X Axis
@@ -374,27 +389,36 @@
                 .attr("class", "y axis")
                 .call(yAxis);
 
-        //Add legend
-        var legendSpace = width/i;
-//        i = 0;
-//        for( var key in map ){
-//            var values = map[key];
-        for( var i=0; i<nSeries; i++){
-            var values = xData[i];
-            var last = values[values.length-1];
-//            var toDisplay = key + " (" + last.toPrecision(5) + ") ";
-            var toDisplay = "toDisplay text (todo)";
-            svg.append("text")
-                    .attr("x", (legendSpace/2)+i*legendSpace) // spacing
-                    .attr("y", height + (margin.bottom/2)+ 5)
-                    .attr("class", "legend")    // style the legend
-                    .style("fill", color(i))
-                    .text(toDisplay);
+        //Add legend (if present)
+        if(seriesNames) {
+            var legendSpace = width / i;
+            for (var i = 0; i < nSeries; i++) {
+                var values = xData[i];
+                var yValues = yData[i];
+                var lastX = values[values.length - 1];
+                var lastY = yValues[yValues.length - 1];
+                var toDisplay = seriesNames[i] + " (" + lastX.toPrecision(5) + "," + lastY.toPrecision(5) + ")";
+                svg.append("text")
+                        .attr("x", (legendSpace / 2) + i * legendSpace) // spacing
+                        .attr("y", height + (margin.bottom / 2) + 5)
+                        .attr("class", "legend")    // style the legend
+                        .style("fill", color(i))
+                        .text(toDisplay);
 
-//            i++;
+            }
         }
 
-//        return title + "nSeries=" + nSeries + ", " + xData + ", " + yData;
+        //Add title (if present)
+        if(title){
+            svg.append("text")
+                    .attr("x", (width / 2))
+                    .attr("y", 0 - ((margin.top-30) / 2))
+                    .attr("text-anchor", "middle")
+                    .style("font-size", "13px")
+                    .style("text-decoration", "underline")
+                    .text(title);
+        }
+
     }
 
     function drawResultTable(){
@@ -438,9 +462,7 @@
             contentRow.append(td3);
 
             tableBody.append(contentRow);
-//            console.log("Expanded row IDs: " + expandedRowsCandidateIDs);
             if(expandedRowsCandidateIDs.indexOf(sorted[i].index) == -1 ){
-                //console.log("candidate not marked as expanded: " + sorted[i].index + ", idx="+sorted[i].index + ", expanded candidates = " + expandedRowsCandidateIDs)
                 contentRow.hide();
 
             } else {
@@ -485,8 +507,6 @@
             for (var i = 0; i < len; i++) {
                 var c = components[i];
                 var temp = createAndAddComponent(c,elementToAppendTo);
-//                elementToAppendTo.append("<div>" + temp + "</div>");
-//                console.log(temp);
             }
         });
     }
@@ -533,7 +553,6 @@
                 if(expRowsArrayIdx == -1 ){
                     //Currently hidden
                     expandedRowsCandidateIDs.push(candidateID); //Mark as expanded
-//                    var innerTD = contentRow.children("td")[0];
                     var innerTD = $('#' + this.id + '-content > td');
                     innerTD.empty();
                     var path = "/modelResults/" + candidateID;

@@ -26,7 +26,7 @@ public interface IOptimizationRunner<C,M,A> {
     /** Time that the best score was found at, or 0 if no jobs have completed successfully */
     long bestScoreTime();
 
-    /** Index of the best scoring candidate */
+    /** Index of the best scoring candidate, or -1 if no candidate has scored yet*/
     int bestScoreCandidateIndex();
 
     List<ResultReference<C,M,A>> getResults();
