@@ -11,4 +11,9 @@ public class FixedValue<T> implements ParameterSpace<T> {
     public T randomValue() {
         return value;
     }
+
+    @Override
+    public String toString(){
+        return "FixedValue("+value+")";
+    }
 }

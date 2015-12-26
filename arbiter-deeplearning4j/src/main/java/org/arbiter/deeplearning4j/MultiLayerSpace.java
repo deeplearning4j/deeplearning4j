@@ -9,6 +9,7 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
+import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import sun.plugin.javascript.navig4.Layer;
 
@@ -130,6 +131,16 @@ public class MultiLayerSpace implements ModelParameterSpace<MultiLayerConfigurat
         if(gradientNormalization != null) builder.gradientNormalization(gradientNormalization.randomValue());
         if(gradientNormalizationThreshold != null) builder.gradientNormalizationThreshold(gradientNormalizationThreshold.randomValue());
 
+
+        //Set nIn based on nOut of previous layer.
+        //TODO This won't work for all cases (at minimum: cast is an issue)
+        int lastNOut = ((FeedForwardLayer)layers.get(0)).getNOut();
+        for( int i=1; i<layers.size(); i++ ){
+            FeedForwardLayer ffl = (FeedForwardLayer)layers.get(i);
+            ffl.setNIn(lastNOut);
+            lastNOut = ffl.getNOut();
+        }
+
         NeuralNetConfiguration.ListBuilder listBuilder = builder.list(layers.size());
         for( int i=0; i<layers.size(); i++ ){
             listBuilder.layer(i,layers.get(i));
@@ -142,6 +153,40 @@ public class MultiLayerSpace implements ModelParameterSpace<MultiLayerConfigurat
         if(tbpttBwdLength != null) listBuilder.tBPTTBackwardLength(tbpttBwdLength.randomValue());
 
         return listBuilder.build();
+    }
+
+    @Override
+    public String toString(){
+        StringBuilder sb = new StringBuilder();
+        if(useDropConnect != null) sb.append("useDropConnect: ").append(useDropConnect).append("\n");
+        if(iterations != null) sb.append("iterations: ").append(iterations).append("\n");
+        if(seed != null) sb.append("seed: ").append(seed).append("\n");
+        if(optimizationAlgo != null) sb.append("optimizationAlgo: ").append(optimizationAlgo).append("\n");
+        if(regularization != null) sb.append("regularization: ").append(regularization).append("\n");
+        if(schedules != null) sb.append("schedules: ").append(schedules).append("\n");
+        if(activationFunction != null) sb.append("activationFunction: ").append(activationFunction).append("\n");
+        if(weightInit != null) sb.append("weightInit: ").append(weightInit).append("\n");
+        if(dist != null) sb.append("dist: ").append(dist).append("\n");
+        if(learningRate != null) sb.append("learningRate: ").append(learningRate).append("\n");
+        if(learningRateAfter != null) sb.append("learningRateAfter: ").append(learningRateAfter).append("\n");
+        if(lrScoreBasedDecay != null) sb.append("lrScoreBasedDecay: ").append(lrScoreBasedDecay).append("\n");
+        if(l1 != null) sb.append("l1: ").append(l1).append("\n");
+        if(l2 != null) sb.append("l2: ").append(l2).append("\n");
+        if(dropOut != null) sb.append("dropOut: ").append(dropOut).append("\n");
+        if(momentum != null) sb.append("momentum: ").append(momentum).append("\n");
+        if(momentumAfter != null) sb.append("momentumAfter: ").append(momentumAfter).append("\n");
+        if(updater != null) sb.append("updater: ").append(updater).append("\n");
+        if(rho != null) sb.append("rho: ").append(rho).append("\n");
+        if(rmsDecay != null) sb.append("rmsDecay: ").append(rmsDecay).append("\n");
+        if(gradientNormalization != null) sb.append("gradientNormalization: ").append(gradientNormalization).append("\n");
+        if(gradientNormalizationThreshold != null) sb.append("gradientNormalizationThreshold: ").append(gradientNormalizationThreshold).append("\n");
+        if(backprop != null) sb.append("backprop: ").append(backprop).append("\n");
+        if(pretrain != null) sb.append("pretrain: ").append(pretrain).append("\n");
+        if(backpropType != null) sb.append("backpropType: ").append(backpropType).append("\n");
+        if(tbpttFwdLength != null) sb.append("tbpttFwdLength: ").append(tbpttFwdLength).append("\n");
+        if(tbpttBwdLength != null) sb.append("tbpttBwdLength: ").append(tbpttBwdLength).append("\n");
+
+        return sb.toString();
     }
 
     @AllArgsConstructor

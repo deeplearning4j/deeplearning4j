@@ -1,6 +1,8 @@
 package org.arbiter.deeplearning4j;
 
 import org.apache.commons.math3.distribution.UniformIntegerDistribution;
+import org.arbiter.deeplearning4j.layers.DenseLayerSpace;
+import org.arbiter.deeplearning4j.layers.OutputLayerSpace;
 import org.arbiter.deeplearning4j.saver.local.LocalMultiLayerNetworkSaver;
 import org.arbiter.deeplearning4j.scoring.TestSetLossScoreFunction;
 import org.arbiter.deeplearning4j.task.DL4JTaskCreator;
@@ -45,33 +47,18 @@ public class TestDL4JLocalExecution {
     public void testLocalExecution() throws Exception {
 
         //Define: network config (hyperparameter space)
-        LayerSpace ls1 = new LayerSpace.Builder()
-                .layer(DenseLayer.class)
-                .numLayersDistribution(new UniformIntegerDistribution(1, 2))     //1 or 2 layers
-                .add("nIn", new FixedValue<Integer>(4))
-                .add("nOut", new IntegerParameterSpace(2, 10))
-                .add("activation", new DiscreteParameterSpace<String>("relu", "tanh"))
-                .build();
-
-        LayerSpace ls2 = new LayerSpace.Builder()
-                .layer(OutputLayer.class)
-                .add("nOut", new FixedValue<Integer>(3))
-                .add("activation", new FixedValue<>("softmax"))
-                .add("lossFunction", new FixedValue<>(LossFunctions.LossFunction.MCXENT))
-                .build();
-
-        MultiLayerSpaceOld mls = new MultiLayerSpaceOld.Builder()
-                .add("optimizationAlgo", new FixedValue<>(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT))
-                .add("pretrain", new FixedValue<>(false))
-                .add("backprop", new FixedValue<>(true))
-                .add("learningRate", new ContinuousParameterSpace(0.0001, 0.1))  //TODO: logarithmic
-                .add("regularization", new FixedValue<>(true))
-                .add("l2", new ContinuousParameterSpace(0.0001, 0.01))
-                .add("optimizationAlgo", new FixedValue<>(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT))
-                .add("iterations",new FixedValue<>(100))
-                .addLayer(ls1)
-                .addLayer(ls2)
-                .build();
+        MultiLayerSpace mls = new MultiLayerSpace.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .learningRate(new ContinuousParameterSpace(0.0001, 0.1))
+                .regularization(true)
+                .l2(new ContinuousParameterSpace(0.0001, 0.01))
+                .iterations(100)
+                .addLayer(new DenseLayerSpace.Builder().nIn(4).nOut(new IntegerParameterSpace(2,10))
+                            .activation(new DiscreteParameterSpace<String>("relu","tanh"))
+                            .build(),new IntegerParameterSpace(1,2),true)   //1-2 identical layers (except nIn)
+                .addLayer(new OutputLayerSpace.Builder().nOut(3).activation("softmax")
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .pretrain(false).backprop(true).build();
 
         //Define configuration:
 

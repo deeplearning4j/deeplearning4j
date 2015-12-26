@@ -23,4 +23,16 @@ public class DiscreteParameterSpace<P> implements ParameterSpace<P> {
         int randomIdx = random.nextInt(values.size());
         return values.get(randomIdx);
     }
+
+    @Override
+    public String toString(){
+        StringBuilder sb = new StringBuilder();
+        sb.append("DiscreteParameterSpace(");
+        int n = values.size();
+        for( int i=0; i<n; i++ ){
+            sb.append(values.get(i));
+            sb.append( (i == n-1 ? ")" : ","));
+        }
+        return sb.toString();
+    }
 }

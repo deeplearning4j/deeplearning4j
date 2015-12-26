@@ -69,6 +69,8 @@
         .renderableComponentTable td {
             padding-left: 4px;
             padding-right: 4px;
+            white-space: pre;   /* assume text is pre-processed (important for line breaks etc)*/
+            vertical-align: top;
         }
 
         /** CSS for result table rows */

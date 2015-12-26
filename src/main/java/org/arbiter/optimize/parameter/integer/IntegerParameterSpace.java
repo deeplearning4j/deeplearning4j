@@ -25,4 +25,13 @@ public class IntegerParameterSpace implements ParameterSpace<Integer> {
     public Integer randomValue() {
         return distribution.sample();
     }
+
+    @Override
+    public String toString() {
+        if (distribution instanceof UniformIntegerDistribution) {
+            return "IntegerParameterSpace(min="+distribution.getSupportLowerBound() + ",max="+distribution.getSupportUpperBound()+")";
+        } else {
+            return "IntegerParameterSpace("+distribution+")";
+        }
+    }
 }

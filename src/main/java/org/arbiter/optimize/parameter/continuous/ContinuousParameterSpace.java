@@ -6,7 +6,6 @@ import org.arbiter.optimize.parameter.ParameterSpace;
 
 public class ContinuousParameterSpace implements ParameterSpace<Double> {
 
-    //TODO: Do we use Apache commons RealDistribution? Works fine, but whether we
     private RealDistribution distribution;
 
     public ContinuousParameterSpace(double min, double max){
@@ -20,5 +19,14 @@ public class ContinuousParameterSpace implements ParameterSpace<Double> {
     @Override
     public Double randomValue() {
         return distribution.sample();
+    }
+
+    @Override
+    public String toString(){
+        if(distribution instanceof UniformRealDistribution){
+            return "ContinuousParameterSpace(min="+distribution.getSupportLowerBound()+",max="+distribution.getSupportUpperBound()+")";
+        } else {
+            return "ContinuousParameterSpace(" + distribution + ")";
+        }
     }
 }
