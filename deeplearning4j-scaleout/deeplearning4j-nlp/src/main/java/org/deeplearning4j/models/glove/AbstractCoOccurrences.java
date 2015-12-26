@@ -28,7 +28,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * This class implements building cooccurrence map for abstract training corpus.
  * However it's performance rather low, due to exsessive IO that happens in ShadowCopyThread
  *
- *
+ * PLEASE NOTE: Current implementation involves massive IO, and it should be rewritter as soon as ND4j gets sparse arrays support
  *
  * @author raver119@gmail.com
  */
@@ -121,7 +121,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
         }
 
         shadowThread.finish();
-        logger.info("CoOccurrences map was built: ["+ coOccurrenceCounts.size()+"]");
+        logger.info("CoOccurrences map was built.");
     }
 
     /**
@@ -261,7 +261,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
             ret.memory_threshold = this.maxmemory;
 
 
-            logger.info("Memory limit: ["+ this.maxmemory +"]");
+            logger.info("Actual memory limit: ["+ this.maxmemory +"]");
 
             // use temp file, if no target file was specified
             try {
@@ -451,7 +451,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
 
             isInvoked.set(true);
 
-            logger.info("invokeBlocking() started.");
+            logger.debug("Memory purge started.");
 
             /*
                 Basic plan:
@@ -492,7 +492,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
 
                 int linesRead = 0;
 
-                logger.info("Saving to: ["+ counter.get()+"], Reading from: [" + counter.previous()+"]");
+                logger.debug("Saving to: ["+ counter.get()+"], Reading from: [" + counter.previous()+"]");
                 CoOccurenceReader<T> reader = new BinaryCoOccurrenceReader<>(tempFiles[counter.previous()], vocabCache, localMap);
                 CoOccurrenceWriter<T> writer = (isFinished.get()) ? new ASCIICoOccurrenceWriter<T>(targetFile): new BinaryCoOccurrenceWriter<T>(tempFiles[counter.get()]);
                 while (reader.hasMoreObjects()) {
@@ -506,7 +506,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                 }
                 reader.finish();
 
-                logger.info("Lines read: [" + linesRead + "]");
+                logger.debug("Lines read: [" + linesRead + "]");
 
                 //now, we can dump the rest of elements, which were not presented in existing dump
                 Iterator<Pair<T, T>> iterator = localMap.getPairIterator();
@@ -598,7 +598,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                 throw new RuntimeException(e);
             }
 
-            logger.info("invokeBlocking() finished. Number of lines saved: [" + numberOfLinesSaved + "]");
+            logger.debug("Memory purge finished. Number of word pairs saved so far: [" + numberOfLinesSaved + "]");
             isInvoked.set(false);
         }
 

@@ -16,6 +16,8 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * Binary implementation of CoOccurenceReader interface, used to provide off-memory storage for cooccurrence maps generated for GloVe
@@ -38,7 +40,7 @@ public class BinaryCoOccurrenceReader<T extends SequenceElement> implements CoOc
         this.vocabCache = vocabCache;
         this.file = file;
         this.countMap = map;
-        buffer = new ArrayBlockingQueue<CoOccurrenceWeight<T>>(20000);
+        buffer = new ArrayBlockingQueue<CoOccurrenceWeight<T>>(200000);
 
         try {
             inputStream = new BufferedInputStream(new FileInputStream(this.file), 100 * 1024 * 1024);
@@ -52,10 +54,14 @@ public class BinaryCoOccurrenceReader<T extends SequenceElement> implements CoOc
 
     @Override
     public boolean hasMoreObjects() {
+
+        if (buffer.size() > 0) return true;
+
         try {
-            return buffer.size() > 0 || readerThread.hasMoreObjects();
+            return readerThread.hasMoreObjects() || buffer.size() > 0;
         } catch (Exception e) {
-            return false;
+            throw new RuntimeException(e);
+            //return false;
         }
     }
 
@@ -75,11 +81,7 @@ public class BinaryCoOccurrenceReader<T extends SequenceElement> implements CoOc
         }
 
 
-        try {
-            return buffer.poll(5, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            return null;
-        }
+        return null;
         /*
         try {
             CoOccurrenceWeight<T> ret = new CoOccurrenceWeight<>();
@@ -96,7 +98,6 @@ public class BinaryCoOccurrenceReader<T extends SequenceElement> implements CoOc
 
     @Override
     public void finish() {
-        logger.debug("Finishing on BinaryReader");
         try {
             if (inputStream != null) inputStream.close();
         } catch (Exception e) {
@@ -110,24 +111,28 @@ public class BinaryCoOccurrenceReader<T extends SequenceElement> implements CoOc
 
         public StreamReaderThread(@NonNull InputStream stream) {
             this.stream = stream;
+            isReading.set(false);
         }
 
         @Override
         public void run() {
             try {
-                isReading.set(true);
                 // we read pre-defined number of objects as byte array
-                byte[] array = new byte[16 * 100000];
-                for (int count = stream.read(array); count >= 0; count = stream.read(array)) {
+                byte[] array = new byte[16 * 500000];
+                while (true) {
+                    int count = stream.read(array);
+
+                    isReading.set(true);
+                    if (count == 0) break;
 
                     // now we deserialize them in separate threads to gain some speedup, if possible
                     List<AsyncDeserializationThread> threads = new ArrayList<>();
                     AtomicInteger internalPosition = new AtomicInteger(0);
+
                     for (int t = 0; t < workers; t++ ) {
-                        threads.add(t, new AsyncDeserializationThread(t, array, buffer, internalPosition));
+                        threads.add(t, new AsyncDeserializationThread(t, array, buffer, internalPosition, count));
                         threads.get(t).start();
                     }
-
 
                     // we'll block this cycle untill all objects are fit into queue
                     for (int t = 0; t < workers; t++) {
@@ -137,8 +142,11 @@ public class BinaryCoOccurrenceReader<T extends SequenceElement> implements CoOc
                             throw new RuntimeException(e);
                         }
                     }
+
+                    isReading.set(false);
+                    if (count < array.length) break;
                 }
-                isReading.set(false);
+
             } catch (Exception e) {
                 isReading.set(false);
                 throw new RuntimeException(e);
@@ -147,9 +155,11 @@ public class BinaryCoOccurrenceReader<T extends SequenceElement> implements CoOc
 
         public boolean hasMoreObjects() {
             try {
-                return isReading.get();
+                return stream.available() > 0 || isReading.get();
             } catch (Exception e) {
                 return false;
+            } finally {
+                ;
             }
         }
     }
@@ -162,27 +172,33 @@ public class BinaryCoOccurrenceReader<T extends SequenceElement> implements CoOc
         private byte[] arrayReference;
         private ArrayBlockingQueue<CoOccurrenceWeight<T>> targetBuffer;
         private AtomicInteger pointer;
+        private int limit;
 
-        public AsyncDeserializationThread(int threadId, @NonNull byte[] array, @NonNull ArrayBlockingQueue<CoOccurrenceWeight<T>> targetBuffer, @NonNull AtomicInteger sharedPointer) {
+        public AsyncDeserializationThread(int threadId, @NonNull byte[] array, @NonNull ArrayBlockingQueue<CoOccurrenceWeight<T>> targetBuffer, @NonNull AtomicInteger sharedPointer, int limit) {
             this.threadId = threadId;
             this.arrayReference = array;
             this.targetBuffer = targetBuffer;
             this.pointer = sharedPointer;
+            this.limit = limit;
+
 
             setName("AsynDeserialization thread " + this.threadId);
         }
 
         @Override
         public void run() {
-            while (pointer.get() < arrayReference.length) {
-                int position = pointer.getAndAdd(16);
+            ByteBuffer bB = ByteBuffer.wrap(arrayReference);
+            int position = 0;
+            while ((position = pointer.getAndAdd(16)) < this.limit) {
+                if (position >= limit) {
+                    continue;
+                }
 
-                if (position >= arrayReference.length) continue;
 
-                //logger.debug("Position: [" + position + "], Array len: ["+ arrayReference.length+"] ");
-                int e1idx = ByteBuffer.wrap(arrayReference).getInt(position);
-                int e2idx = ByteBuffer.wrap(arrayReference).getInt(position + 4);
-                double eW = ByteBuffer.wrap(arrayReference).getDouble( position + 8);
+                int e1idx = bB.getInt(position);
+                int e2idx = bB.getInt(position + 4);
+                double eW = bB.getDouble( position + 8);
+
 
                 CoOccurrenceWeight<T> object = new CoOccurrenceWeight<T>();
                 object.setElement1(vocabCache.elementAtIndex(e1idx));
