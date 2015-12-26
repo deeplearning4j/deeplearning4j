@@ -27,4 +27,9 @@ public class TestSetLossScoreFunction implements ScoreFunction<MultiLayerNetwork
 
         return sumScore;
     }
+
+    @Override
+    public String toString(){
+        return "TestSetLossScoreFunction()";
+    }
 }

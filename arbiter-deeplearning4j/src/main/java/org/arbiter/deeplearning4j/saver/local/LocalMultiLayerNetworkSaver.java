@@ -65,6 +65,11 @@ public class LocalMultiLayerNetworkSaver<A> implements ResultSaver<MultiLayerCon
 
         log.debug("Deeplearning4j model result (id={}, score={}) saved to directory: {}",result.getIndex(), result.getScore(), dir);
 
-        return new LocalFileMultiLayerNetworkResultReference(jsonFile,paramsFile,scoreFile,additionalResultsFile,result.getCandidate());
+        return new LocalFileMultiLayerNetworkResultReference(dir,jsonFile,paramsFile,scoreFile,additionalResultsFile,result.getCandidate());
+    }
+
+    @Override
+    public String toString(){
+        return "LocalMultiLayerNetworkScoreSaver(path=" + path + ")";
     }
 }

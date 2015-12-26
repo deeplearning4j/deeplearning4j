@@ -17,6 +17,9 @@ import org.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
 import org.arbiter.optimize.parameter.integer.IntegerParameterSpace;
 import org.arbiter.optimize.randomsearch.RandomSearchGenerator;
 import org.arbiter.optimize.runner.OptimizationRunner;
+import org.arbiter.optimize.ui.ArbiterUIServer;
+import org.arbiter.optimize.ui.listener.UIOptimizationRunnerStatusListener;
+import org.arbiter.util.WebUtils;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
@@ -27,6 +30,8 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.Map;
@@ -34,8 +39,10 @@ import java.util.concurrent.TimeUnit;
 
 public class TestDL4JLocalExecution {
 
+    private static Logger log = LoggerFactory.getLogger(TestDL4JLocalExecution.class);
+
     @Test
-    public void testLocalExecution(){
+    public void testLocalExecution() throws Exception {
 
         //Define: network config (hyperparameter space)
         LayerSpace ls1 = new LayerSpace.Builder()
@@ -53,7 +60,7 @@ public class TestDL4JLocalExecution {
                 .add("lossFunction", new FixedValue<>(LossFunctions.LossFunction.MCXENT))
                 .build();
 
-        MultiLayerSpace mls = new MultiLayerSpace.Builder()
+        MultiLayerSpaceOld mls = new MultiLayerSpaceOld.Builder()
                 .add("optimizationAlgo", new FixedValue<>(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT))
                 .add("pretrain", new FixedValue<>(false))
                 .add("backprop", new FixedValue<>(true))
@@ -69,7 +76,7 @@ public class TestDL4JLocalExecution {
         //Define configuration:
 
         CandidateGenerator<MultiLayerConfiguration> candidateGenerator = new RandomSearchGenerator<>(mls);
-        DataProvider<DataSetIterator> dataProvider = new IrisDSP();
+        DataProvider<DataSetIterator> dataProvider = new IrisDataSetProvider();
 
 
 //        String modelSavePath = FilenameUtils.concat(System.getProperty("java.io.tmpdir"),"ArbiterDL4JTest/");
@@ -87,7 +94,7 @@ public class TestDL4JLocalExecution {
                 .modelSaver(new LocalMultiLayerNetworkSaver(modelSavePath))
                 .scoreFunction(new TestSetLossScoreFunction())
                 .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
-                        new MaxCandidatesCondition(10))
+                        new MaxCandidatesCondition(100))
                 .build();
 
         CandidateExecutor<MultiLayerConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> executor =
@@ -95,6 +102,12 @@ public class TestDL4JLocalExecution {
 
         OptimizationRunner<MultiLayerConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> runner
                 = new OptimizationRunner<>(configuration, executor);
+
+        ArbiterUIServer server = new ArbiterUIServer();
+        String[] str = new String[]{"server", "dropwizard.yml"};
+        server.run(str);
+        WebUtils.tryOpenBrowser("http://localhost:8080/arbiter", log);    //TODO don't hardcode
+        runner.addListeners(new UIOptimizationRunnerStatusListener(server));
 
         runner.execute();
 
@@ -105,7 +118,7 @@ public class TestDL4JLocalExecution {
     }
 
 
-    private static class IrisDSP implements DataProvider<DataSetIterator>{
+    private static class IrisDataSetProvider implements DataProvider<DataSetIterator>{
 
         @Override
         public DataSetIterator trainData(Map<String, Object> dataParameters) {
@@ -120,6 +133,11 @@ public class TestDL4JLocalExecution {
         @Override
         public DataSetIterator testData(Map<String, Object> dataParameters) {
             return trainData(dataParameters);
+        }
+
+        @Override
+        public String toString(){
+            return "IrisDataSetProvider()";
         }
     }
 }

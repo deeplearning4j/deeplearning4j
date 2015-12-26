@@ -44,7 +44,7 @@ public class TestMultiLayerSpace {
                 .numLayersDistribution(new DegenerateIntegerDistribution(1))
                 .build();
 
-        MultiLayerSpace mls = new MultiLayerSpace.Builder()
+        MultiLayerSpaceOld mls = new MultiLayerSpaceOld.Builder()
                 .add("learningRate", new FixedValue<Double>(0.005))
                 .add("backprop", new FixedValue<Boolean>(true))
                 .add("pretrain", new FixedValue<Boolean>(false))
@@ -75,7 +75,7 @@ public class TestMultiLayerSpace {
                 .add("activation", new FixedValue<Object>("softmax"))
                 .build();
 
-        MultiLayerSpace mls = new MultiLayerSpace.Builder()
+        MultiLayerSpaceOld mls = new MultiLayerSpaceOld.Builder()
                 .add("pretrain", new FixedValue<>(false))
                 .add("backprop", new FixedValue<>(true))
                 .add("learningRate", new ContinuousParameterSpace(0.0001,0.1))

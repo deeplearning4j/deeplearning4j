@@ -29,6 +29,12 @@
             <version>0.0.0.5-SNAPSHOT</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>18.0</version>
+        </dependency>
+
     </dependencies>
 
 </project>

@@ -15,6 +15,7 @@ import java.io.*;
 @AllArgsConstructor
 public class LocalFileMultiLayerNetworkResultReference<A> implements ResultReference<MultiLayerConfiguration,MultiLayerNetwork,A> {
 
+    private String dir;
     private File configFile;
     private File networkParamsFile;
     private File scoreFile;
@@ -49,5 +50,10 @@ public class LocalFileMultiLayerNetworkResultReference<A> implements ResultRefer
         }
 
         return new OptimizationResult<>(candidate,net,d,-1,additionalResults);     //TODO index
+    }
+
+    @Override
+    public String toString(){
+        return "LocalFileMultiLayerNetworkResultReference(" + dir + ")";
     }
 }
