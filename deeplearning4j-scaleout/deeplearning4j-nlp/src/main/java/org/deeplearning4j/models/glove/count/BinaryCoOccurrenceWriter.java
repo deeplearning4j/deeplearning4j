@@ -23,7 +23,7 @@ public class BinaryCoOccurrenceWriter<T extends SequenceElement> implements CoOc
         this.file = file;
 
         try {
-            outputStream = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(file), 50 * 1024 * 1024));
+            outputStream = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(file), 100 * 1024 * 1024));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
