@@ -64,7 +64,7 @@ public class BinaryCoOccurrenceReaderTest {
 
         writer.finish();
 
-        BinaryCoOccurrenceReader<VocabWord> reader = new BinaryCoOccurrenceReader<>(tempFile, vocabCache);
+        BinaryCoOccurrenceReader<VocabWord> reader = new BinaryCoOccurrenceReader<>(tempFile, vocabCache ,null);
 
         int cnt = 0;
         while (reader.hasMoreObjects()) {

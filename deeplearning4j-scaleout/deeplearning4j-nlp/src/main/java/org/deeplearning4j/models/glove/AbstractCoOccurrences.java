@@ -493,20 +493,16 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                 int linesRead = 0;
 
                 logger.info("Saving to: ["+ counter.get()+"], Reading from: [" + counter.previous()+"]");
-                CoOccurenceReader<T> reader = new BinaryCoOccurrenceReader<>(tempFiles[counter.previous()], vocabCache);
+                CoOccurenceReader<T> reader = new BinaryCoOccurrenceReader<>(tempFiles[counter.previous()], vocabCache, localMap);
                 CoOccurrenceWriter<T> writer = (isFinished.get()) ? new ASCIICoOccurrenceWriter<T>(targetFile): new BinaryCoOccurrenceWriter<T>(tempFiles[counter.get()]);
                 while (reader.hasMoreObjects()) {
                     CoOccurrenceWeight<T> line = reader.nextObject();
 
-                    double mWeight = localMap.getCount(line.getElement1(), line.getElement2());
-                    if (mWeight > 0) {
-                        line.setWeight(line.getWeight() + mWeight);
-
-                        localMap.removePair(line.getElement1(),line.getElement2());
+                    if (line != null) {
+                        writer.writeObject(line);
+                        numberOfLinesSaved++;
+                        linesRead++;
                     }
-                    writer.writeObject(line);
-                    numberOfLinesSaved++;
-                    linesRead++;
                 }
                 reader.finish();
 
