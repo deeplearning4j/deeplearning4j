@@ -8,6 +8,10 @@ public class IntegerParameterSpace implements ParameterSpace<Integer> {
 
     private IntegerDistribution distribution;
 
+    /**
+     * @param min Min value, inclusive
+     * @param max Max value, inclusive
+     */
     public IntegerParameterSpace(int min, int max){
         this(new UniformIntegerDistribution(min,max));
     }

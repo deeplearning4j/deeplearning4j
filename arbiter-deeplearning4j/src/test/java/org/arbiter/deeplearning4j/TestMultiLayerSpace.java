@@ -1,15 +1,19 @@
 package org.arbiter.deeplearning4j;
 
 import org.apache.commons.math3.distribution.UniformIntegerDistribution;
+import org.arbiter.deeplearning4j.layers.DenseLayerSpace;
+import org.arbiter.deeplearning4j.layers.OutputLayerSpace;
 import org.arbiter.optimize.distribution.DegenerateIntegerDistribution;
 import org.arbiter.optimize.parameter.FixedValue;
 import org.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
 import org.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
+import org.arbiter.optimize.parameter.integer.IntegerParameterSpace;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.junit.Test;
+import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 import java.util.Arrays;
 
@@ -27,30 +31,16 @@ public class TestMultiLayerSpace {
                 .list(3)
                 .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
                 .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).build())
-                .layer(2, new OutputLayer.Builder().nIn(10).nOut(5).build())
+                .layer(2, new OutputLayer.Builder().lossFunction(LossFunction.MCXENT).nIn(10).nOut(5).build())
                 .backprop(true).pretrain(false)
                 .build();
 
-        LayerSpace ls1 = new LayerSpace.Builder()
-                .layer(DenseLayer.class)
-                .add("nIn", new FixedValue<Integer>(10))
-                .add("nOut", new FixedValue<Integer>(10))
-                .numLayersDistribution(new DegenerateIntegerDistribution(2))
-                .build();
-
-        LayerSpace ls2 = new LayerSpace.Builder()
-                .layer(OutputLayer.class)
-                .add("nOut", new FixedValue<Integer>(5))
-                .numLayersDistribution(new DegenerateIntegerDistribution(1))
-                .build();
-
-        MultiLayerSpaceOld mls = new MultiLayerSpaceOld.Builder()
-                .add("learningRate", new FixedValue<Double>(0.005))
-                .add("backprop", new FixedValue<Boolean>(true))
-                .add("pretrain", new FixedValue<Boolean>(false))
-                .add("seed", new FixedValue<Integer>(12345))
-                .addLayer(ls1)
-                .addLayer(ls2)
+        MultiLayerSpace mls = new MultiLayerSpace.Builder()
+                .learningRate(0.005)
+                .seed(12345)
+                .addLayer(new DenseLayerSpace.Builder().nIn(10).nOut(10).build(), new FixedValue<Integer>(2), true) //2 identical layers
+                .addLayer(new OutputLayerSpace.Builder().lossFunction(LossFunction.MCXENT).nIn(10).nOut(5).build())
+                .backprop(true).pretrain(false)
                 .build();
 
         MultiLayerConfiguration conf = mls.randomCandidate();
@@ -61,29 +51,17 @@ public class TestMultiLayerSpace {
     @Test
     public void testBasic2(){
 
-        LayerSpace ls1 = new LayerSpace.Builder()
-                .layer(DenseLayer.class)
-                .numLayersDistribution(new UniformIntegerDistribution(1,3))
-                .add("nIn", new FixedValue<Integer>(10))
-                .add("nOut", new FixedValue<Integer>(10))
-                .add("activation", new DiscreteParameterSpace<String>("relu","tanh"))
-                .build();
-
-        LayerSpace ls2 = new LayerSpace.Builder()
-                .layer(OutputLayer.class)
-                .add("nOut", new FixedValue<Integer>(5))
-                .add("activation", new FixedValue<Object>("softmax"))
-                .build();
-
-        MultiLayerSpaceOld mls = new MultiLayerSpaceOld.Builder()
-                .add("pretrain", new FixedValue<>(false))
-                .add("backprop", new FixedValue<>(true))
-                .add("learningRate", new ContinuousParameterSpace(0.0001,0.1))
-                .add("regularization", new FixedValue<Object>(true))
-                .add("l2", new ContinuousParameterSpace(0.2, 0.5))
-                .addLayer(ls1)
-                .addLayer(ls2)
-                .build();
+        MultiLayerSpace mls = new MultiLayerSpace.Builder()
+                .learningRate(new ContinuousParameterSpace(0.0001,0.1))
+                .regularization(true)
+                .l2(new ContinuousParameterSpace(0.2,0.5))
+                .addLayer(new DenseLayerSpace.Builder().nIn(10).nOut(10)
+                        .activation(new DiscreteParameterSpace<String>("relu","tanh"))
+                        .build(),
+                        new IntegerParameterSpace(1,3),true)    //1-3 identical layers
+                .addLayer(new OutputLayerSpace.Builder().nIn(10).nOut(10)
+                        .activation("softmax").build())
+                .pretrain(false).backprop(true).build();
 
         int[] nLayerCounts = new int[3];
         int reluCount = 0;
@@ -118,6 +96,10 @@ public class TestMultiLayerSpace {
                     else tanhCount++;
                 }
             }
+        }
+
+        for( int i=0; i<3; i++ ){
+            assertTrue(nLayerCounts[i] >= 5);    //Expect approx equal (50/3 each), but some variation randomly
         }
 
         System.out.println("Number of layers: " + Arrays.toString(nLayerCounts));

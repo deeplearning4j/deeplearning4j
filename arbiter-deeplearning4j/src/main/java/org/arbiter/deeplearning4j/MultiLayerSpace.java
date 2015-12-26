@@ -1,33 +1,162 @@
 package org.arbiter.deeplearning4j;
 
+import lombok.AllArgsConstructor;
+import org.arbiter.deeplearning4j.layers.LayerSpace;
 import org.arbiter.optimize.api.ModelParameterSpace;
 import org.arbiter.optimize.parameter.FixedValue;
 import org.arbiter.optimize.parameter.ParameterSpace;
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.nn.conf.GradientNormalization;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.weights.WeightInit;
+import sun.plugin.javascript.navig4.Layer;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
-/**
- * Created by Alex on 26/12/2015.
- */
 public class MultiLayerSpace implements ModelParameterSpace<MultiLayerConfiguration> {
+
+    private ParameterSpace<Boolean> useDropConnect;
+    private ParameterSpace<Integer> iterations;
+    private Long seed;
+    private ParameterSpace<OptimizationAlgorithm> optimizationAlgo;
+    private ParameterSpace<Boolean> regularization;
+    private ParameterSpace<Boolean> schedules;
+    private ParameterSpace<String> activationFunction;
+    private ParameterSpace<WeightInit> weightInit;
+    private ParameterSpace<Distribution> dist;
+    private ParameterSpace<Double> learningRate;
+    private ParameterSpace<Map<Integer,Double>> learningRateAfter;
+    private ParameterSpace<Double> lrScoreBasedDecay;
+    private ParameterSpace<Double> l1;
+    private ParameterSpace<Double> l2;
+    private ParameterSpace<Double> dropOut;
+    private ParameterSpace<Double> momentum;
+    private ParameterSpace<Map<Integer,Double>> momentumAfter;
+    private ParameterSpace<Updater> updater;
+    private ParameterSpace<Double> rho;
+    private ParameterSpace<Double> rmsDecay;
+    private ParameterSpace<GradientNormalization> gradientNormalization;
+    private ParameterSpace<Double> gradientNormalizationThreshold;
+
+    private List<LayerConf> layerSpaces = new ArrayList<>();
+
+    //NeuralNetConfiguration.ListBuilder/MultiLayerConfiguration.Builder options:
+    private ParameterSpace<Boolean> backprop;
+    private ParameterSpace<Boolean> pretrain;
+    private ParameterSpace<BackpropType> backpropType;
+    private ParameterSpace<Integer> tbpttFwdLength;
+    private ParameterSpace<Integer> tbpttBwdLength;
+
+    private MultiLayerSpace(Builder builder){
+        this.useDropConnect = builder.useDropConnect;
+        this.iterations = builder.iterations;
+        this.seed = builder.seed;
+        this.optimizationAlgo = builder.optimizationAlgo;
+        this.regularization = builder.regularization;
+        this.schedules = builder.schedules;
+        this.activationFunction = builder.activationFunction;
+        this.weightInit = builder.weightInit;
+        this.dist = builder.dist;
+        this.learningRate = builder.learningRate;
+        this.learningRateAfter = builder.learningRateAfter;
+        this.lrScoreBasedDecay = builder.lrScoreBasedDecay;
+        this.l1 = builder.l1;
+        this.l2 = builder.l2;
+        this.dropOut = builder.dropOut;
+        this.momentum = builder.momentum;
+        this.momentumAfter = builder.momentumAfter;
+        this.updater = builder.updater;
+        this.rho = builder.rho;
+        this.rmsDecay = builder.rmsDecay;
+        this.gradientNormalization = builder.gradientNormalization;
+        this.gradientNormalizationThreshold = builder.gradientNormalizationThreshold;
+        this.layerSpaces = builder.layerSpaces;
+
+        this.backprop = builder.backprop;
+        this.pretrain = builder.pretrain;
+        this.backpropType = builder.backpropType;
+        this.tbpttFwdLength = builder.tbpttFwdLength;
+        this.tbpttBwdLength = builder.tbpttBwdLength;
+    }
+
 
 
     @Override
     public MultiLayerConfiguration randomCandidate() {
-        throw new UnsupportedOperationException("Not yet implemented");
+
+        //First: create layer configs
+        List<org.deeplearning4j.nn.conf.layers.Layer> layers = new ArrayList<>();
+        for(LayerConf c : layerSpaces){
+            int n = c.numLayers.randomValue();
+            if(c.duplicateConfig){
+                //Generate N identical configs
+                org.deeplearning4j.nn.conf.layers.Layer l = c.layerSpace.randomLayer();
+                for( int i=0; i<n; i++ ){
+                    layers.add(l.clone());
+                }
+            } else {
+                //Generate N indepedent configs
+                for( int i=0; i<n; i++ ){
+                    layers.add(c.layerSpace.randomLayer());
+                }
+            }
+        }
+
+        //Create MultiLayerConfiguration...
+        NeuralNetConfiguration.Builder builder = new NeuralNetConfiguration.Builder();
+        if(useDropConnect != null) builder.useDropConnect(useDropConnect.randomValue());
+        if(iterations != null) builder.iterations(iterations.randomValue());
+        if(seed != null) builder.seed(seed);
+        if(optimizationAlgo != null) builder.optimizationAlgo(optimizationAlgo.randomValue());
+        if(regularization != null) builder.regularization(regularization.randomValue());
+        if(schedules != null) builder.schedules(schedules.randomValue());
+        if(activationFunction != null) builder.activation(activationFunction.randomValue());
+        if(weightInit != null) builder.weightInit(weightInit.randomValue());
+        if(dist != null) builder.dist(dist.randomValue());
+        if(learningRate != null) builder.learningRate(learningRate.randomValue());
+        if(learningRateAfter != null) builder.learningRateAfter(learningRateAfter.randomValue());
+        if(lrScoreBasedDecay != null) builder.learningRateScoreBasedDecayRate(lrScoreBasedDecay.randomValue());
+        if(l1 != null) builder.l1(l1.randomValue());
+        if(l2 != null) builder.l2(l2.randomValue());
+        if(dropOut != null) builder.dropOut(dropOut.randomValue());
+        if(momentum != null) builder.momentum(momentum.randomValue());
+        if(momentumAfter != null) builder.momentumAfter(momentumAfter.randomValue());
+        if(updater != null) builder.updater(updater.randomValue());
+        if(rho != null) builder.rho(rho.randomValue());
+        if(rmsDecay != null) builder.rmsDecay(rmsDecay.randomValue());
+        if(gradientNormalization != null) builder.gradientNormalization(gradientNormalization.randomValue());
+        if(gradientNormalizationThreshold != null) builder.gradientNormalizationThreshold(gradientNormalizationThreshold.randomValue());
+
+        NeuralNetConfiguration.ListBuilder listBuilder = builder.list(layers.size());
+        for( int i=0; i<layers.size(); i++ ){
+            listBuilder.layer(i,layers.get(i));
+        }
+
+        if(backprop != null) listBuilder.backprop(backprop.randomValue());
+        if(pretrain != null) listBuilder.pretrain(pretrain.randomValue());
+        if(backpropType != null) listBuilder.backpropType(backpropType.randomValue());
+        if(tbpttFwdLength != null) listBuilder.tBPTTForwardLength(tbpttFwdLength.randomValue());
+        if(tbpttBwdLength != null) listBuilder.tBPTTBackwardLength(tbpttBwdLength.randomValue());
+
+        return listBuilder.build();
+    }
+
+    @AllArgsConstructor
+    private static class LayerConf {
+        private final LayerSpace<?> layerSpace;
+        private final ParameterSpace<Integer> numLayers;
+        private final boolean duplicateConfig;
+
     }
 
     public static class Builder {
 
         private ParameterSpace<Boolean> useDropConnect;
         private ParameterSpace<Integer> iterations;
-        private long seed;
+        private Long seed;
         private ParameterSpace<OptimizationAlgorithm> optimizationAlgo;
         private ParameterSpace<Boolean> regularization;
         private ParameterSpace<Boolean> schedules;
@@ -47,6 +176,15 @@ public class MultiLayerSpace implements ModelParameterSpace<MultiLayerConfigurat
         private ParameterSpace<Double> rmsDecay;
         private ParameterSpace<GradientNormalization> gradientNormalization;
         private ParameterSpace<Double> gradientNormalizationThreshold;
+
+        private List<LayerConf> layerSpaces = new ArrayList<>();
+
+        //NeuralNetConfiguration.ListBuilder/MultiLayerConfiguration.Builder options:
+        private ParameterSpace<Boolean> backprop;
+        private ParameterSpace<Boolean> pretrain;
+        private ParameterSpace<BackpropType> backpropType;
+        private ParameterSpace<Integer> tbpttFwdLength;
+        private ParameterSpace<Integer> tbpttBwdLength;
 
 
         public Builder useDropConnect(boolean useDropConnect){
@@ -190,7 +328,7 @@ public class MultiLayerSpace implements ModelParameterSpace<MultiLayerConfigurat
         }
 
         public Builder momentumAfter(Map<Integer,Double> momentumAfter){
-            return momentumAfter(new FixedValue<Map<Integer,Double>>(momentumAfter));
+            return momentumAfter(new FixedValue<Map<Integer, Double>>(momentumAfter));
         }
 
         public Builder momentumAfter(ParameterSpace<Map<Integer,Double>> momentumAfter){
@@ -241,6 +379,74 @@ public class MultiLayerSpace implements ModelParameterSpace<MultiLayerConfigurat
         public Builder gradientNormalizationThreshold(ParameterSpace<Double> gradientNormalizationThreshold){
             this.gradientNormalizationThreshold = gradientNormalizationThreshold;
             return this;
+        }
+
+        public Builder backprop(boolean backprop){
+            return backprop(new FixedValue<Boolean>(backprop));
+        }
+
+        public Builder backprop(ParameterSpace<Boolean> backprop){
+            this.backprop = backprop;
+            return this;
+        }
+
+        public Builder pretrain(boolean pretrain){
+            return pretrain(new FixedValue<Boolean>(pretrain));
+        }
+
+        public Builder pretrain(ParameterSpace<Boolean> pretrain){
+            this.pretrain = pretrain;
+            return this;
+        }
+
+        public Builder backpropType(BackpropType backpropType){
+            return backpropType(new FixedValue<BackpropType>(backpropType));
+        }
+
+        public Builder backpropType(ParameterSpace<BackpropType> backpropType){
+            this.backpropType = backpropType;
+            return this;
+        }
+
+        public Builder tbpttFwdLength(int tbpttFwdLength){
+            return tbpttFwdLength(new FixedValue<Integer>(tbpttFwdLength));
+        }
+
+        public Builder tbpttFwdLength(ParameterSpace<Integer> tbpttFwdLength){
+            this.tbpttBwdLength = tbpttFwdLength;
+            return this;
+        }
+
+        public Builder tbpttBwdLength(int tbpttBwdLength){
+            return tbpttBwdLength(new FixedValue<Integer>(tbpttBwdLength));
+        }
+
+        public Builder tbpttBwdLength(ParameterSpace<Integer> tbpttBwdLength){
+            this.tbpttBwdLength = tbpttBwdLength;
+            return this;
+        }
+
+
+        public Builder addLayer(LayerSpace<?> layerSpace){
+            return addLayer(layerSpace,new FixedValue<Integer>(1),true);
+        }
+
+
+
+        /**
+         * @param layerSpace
+         * @param numLayersDistribution Distribution for number of layers to generate
+         * @param duplicateConfig Only used if more than 1 layer can be generated. If true: generate N identical (stacked) layers.
+         *                        If false: generate N independent layers
+         */
+        public Builder addLayer(LayerSpace<? extends org.deeplearning4j.nn.conf.layers.Layer> layerSpace,
+                                ParameterSpace<Integer> numLayersDistribution, boolean duplicateConfig){
+            layerSpaces.add(new LayerConf(layerSpace,numLayersDistribution,duplicateConfig));
+            return this;
+        }
+
+        public MultiLayerSpace build(){
+            return new MultiLayerSpace(this);
         }
     }
 
