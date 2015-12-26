@@ -215,7 +215,6 @@
                 //Get JSON: address set by ConfigResource
                 $.get("/config",function(data){
                     var jsonObj = JSON.parse(JSON.stringify(data));
-                    console.log("Config JSON keys: " + Object.keys(jsonObj));
 
                     var components = jsonObj['renderableComponents'];
 
@@ -245,7 +244,7 @@
                 lastResultsUpdateTime = resultsTime;
             }
         })
-    },2000);
+    },2000);    //Loop every 2 seconds
 
     function createAndAddComponent(renderableComponent, appendTo){
         var key = Object.keys(renderableComponent)[0];
@@ -263,9 +262,8 @@
                 createLineChart(renderableComponent[key],"chartidhere",appendTo);
                 break;
             default:
-                return "UNKNOWN OBJECT";
+                return "(Error rendering component: Unknown object)";
         }
-
     }
 
     function createTable(tableObj,tableId){
@@ -594,7 +592,6 @@
     <div id="accordion" class="hcol2">
         <h3 class="hcol2 headingcolor ui-accordion-header">Summary</h3>
         <div class="statusdiv" id="statusdiv">
-            Table with: best score, best index, total runtime, date, etc
         </div>
     </div>
 </div>
@@ -603,7 +600,6 @@
     <div id="accordion2">
         <h3 class="ui-accordion-header headingcolor">Optimization Settings</h3>
         <div class="settingsdiv" id="settingsdiv">
-            Collapseable box with settings for hyperparameter space settings etc
         </div>
     </div>
 </div>

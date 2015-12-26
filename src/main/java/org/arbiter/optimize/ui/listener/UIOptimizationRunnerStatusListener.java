@@ -94,13 +94,12 @@ public class UIOptimizationRunnerStatusListener implements OptimizationRunnerSta
                 {"Best Score Model Index:", (bestScoreIdx == -1 ? "-" : String.valueOf(bestScoreIdx)) },
                 {"Best Score Model Found At:",
                         (bestScoreIdx == -1 ? "-" : formatTimeMS(scoreTime) + " (" + formatDurationMS(durationSinceBest,true) + " ago)") },
-                {"Total Runtime:",formatDurationMS(totalRuntime,true)}
+                {"Total Runtime:",formatDurationMS(totalRuntime,true)},
+                {"Termination Conditions:",runner.getConfiguration().getTerminationConditions().toString()}
         };
 
-        //TODO: best score vs. time
-            //How? record this info manually...
-            //Then chart as a step function
-        //TODO: best score vs. iteration
+        //TODO: best score vs. iteration or model number?
+        //TODO: add (overlay) completed candidate score vs. time on chart (i.e., as 'x' marks on score vs. time graph, one for each completed model)
 
         List<RenderableComponent> components = new ArrayList<>();
         components.add(new RenderableComponentTable(null,table));
