@@ -2,6 +2,7 @@ package org.deeplearning4j.earlystopping;
 
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
+import org.deeplearning4j.earlystopping.listener.EarlyStoppingListener;
 import org.deeplearning4j.earlystopping.termination.ScoreImprovementEpochTerminationCondition;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -21,6 +22,8 @@ import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -54,7 +57,6 @@ public class TestEarlyStopping {
                 .build();
 
         IEarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConf,net,irisIter);
-        trainer.fit();
 
         EarlyStoppingResult result = trainer.fit();
         System.out.println(result);
@@ -196,5 +198,65 @@ public class TestEarlyStopping {
         assertEquals(EarlyStoppingResult.TerminationReason.EpochTerminationCondition,result.getTerminationReason());
         String expDetails = new ScoreImprovementEpochTerminationCondition(5).toString();
         assertEquals(expDetails, result.getTerminationDetails());
+    }
+
+
+    @Test
+    public void testListeners(){
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                .updater(Updater.SGD)
+                .weightInit(WeightInit.XAVIER)
+                .list(1)
+                .layer(0,new OutputLayer.Builder().nIn(4).nOut(3).lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .pretrain(false).backprop(true)
+                .build();
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.setListeners(new ScoreIterationListener(1));
+
+        DataSetIterator irisIter = new IrisDataSetIterator(150,150);
+        EarlyStoppingModelSaver saver = new InMemoryModelSaver();
+        EarlyStoppingConfiguration esConf = new EarlyStoppingConfiguration.Builder()
+                .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
+                .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES))
+                .scoreCalculator(new DataSetLossCalculator(irisIter,true))
+                .modelSaver(saver)
+                .build();
+
+        LoggingEarlyStoppingListener listener = new LoggingEarlyStoppingListener();
+
+        IEarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConf,net,irisIter,listener);
+
+        trainer.fit();
+
+        assertEquals(1,listener.onStartCallCount);
+        assertEquals(5,listener.onEpochCallCount);
+        assertEquals(1,listener.onCompletionCallCount);
+    }
+
+    private static class LoggingEarlyStoppingListener implements EarlyStoppingListener {
+
+        private static Logger log = LoggerFactory.getLogger(LoggingEarlyStoppingListener.class);
+        private int onStartCallCount = 0;
+        private int onEpochCallCount = 0;
+        private int onCompletionCallCount = 0;
+
+        @Override
+        public void onStart(EarlyStoppingConfiguration esConfig, MultiLayerNetwork net) {
+            log.info("EarlyStopping: onStart called");
+            onStartCallCount++;
+        }
+
+        @Override
+        public void onEpoch(int epochNum, double score, EarlyStoppingConfiguration esConfig, MultiLayerNetwork net) {
+            log.info("EarlyStopping: onEpoch called (epochNum={}, score={}}",epochNum,score);
+            onEpochCallCount++;
+        }
+
+        @Override
+        public void onCompletion(EarlyStoppingResult esResult) {
+            log.info("EorlyStopping: onCompletion called (result: {})",esResult);
+            onCompletionCallCount++;
+        }
     }
 }
