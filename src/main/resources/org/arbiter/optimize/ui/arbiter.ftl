@@ -50,6 +50,7 @@
 
         table.resultsTable td, table.resultsTable tr, table.resultsTable th {
             border:solid black 1px;
+            white-space: pre;   /* assume text is preprocessed for formatting */
         }
 
         table.resultsTable th {
@@ -255,13 +256,17 @@
         switch(type){
             case "string":
                 var s = renderableComponent[key]['string'];
-                appendTo.append(s.replace(new RegExp("\n",'g'),"<br>"));
+//                appendTo.append(s.replace(new RegExp("\n",'g'),"<br>"));
+                appendTo.append(s);
                 break;
             case "simpletable":
                 appendTo.append(createTable(renderableComponent[key],null));
                 break;
             case "linechart":
-                createLineChart(renderableComponent[key],"chartidhere",appendTo);
+                createLineChart(renderableComponent[key],"linechart",appendTo);
+                break;
+            case "accordion":
+                createAccordion(renderableComponent[key],appendTo);
                 break;
             default:
                 return "(Error rendering component: Unknown object)";
@@ -418,7 +423,34 @@
                     .style("text-decoration", "underline")
                     .text(title);
         }
+    }
 
+    function createAccordion(accordionObj, appendTo) {
+        var title = accordionObj['title'];
+        var defaultCollapsed = accordionObj['defaultCollapsed'];
+
+        var tempDivOuter = $('<div><h3>' + title + '</h3></div>');
+        tempDivOuter.uniqueId();
+        var generatedIDOuter = tempDivOuter.attr('id');
+        var tempDivInner = $('<div></div>');
+        tempDivInner.uniqueId();
+        var generatedIDInner = tempDivInner.attr('id');
+        tempDivOuter.append(tempDivInner);
+        appendTo.append(tempDivOuter);
+
+        if (defaultCollapsed == true) {
+            $("#" + generatedIDOuter).accordion({collapsible: true, heightStyle: "content", active: false});
+        } else {
+            $("#" + generatedIDOuter).accordion({collapsible: true, heightStyle: "content"});
+        }
+
+        //Add the inner components:
+        var innerComponents = accordionObj['innerComponents'];
+        var len = (!innerComponents ? 0 : innerComponents.length);
+        for( var i=0; i<len; i++ ){
+            var component = innerComponents[i];
+            createAndAddComponent(component,$("#"+generatedIDInner));
+        }
     }
 
     function drawResultTable(){
@@ -456,8 +488,9 @@
             tableBody.append(row);
 
             //Create hidden row for expanding:
-            var contentRow = $('<tr id="resultTableRow-' + sorted[i].index + '-content", class="resultTableRowContent"/>');
-            var td3 = $("<td colspan=3></td>");
+            var rowID = 'resultTableRow-' + sorted[i].index + '-content';
+            var contentRow = $('<tr id=' + rowID + ', class="resultTableRowContent"/>');
+            var td3 = $("<td colspan=3 id=" + rowID + "-td></td>");
             td3.append("Content goes here!");
             contentRow.append(td3);
 
@@ -543,7 +576,7 @@
     //Displaying model/candidate details: Intercept click events on table rows -> toggle visibility on content rows
     $(function(){
         $("#resultsTableBody").delegate("tr", "click", function(e){
-            console.log("Clicked row: " + this.id + " with class: " + this.className);
+//            console.log("Clicked row: " + this.id + " with class: " + this.className);
             var id = this.id;   //Expect: resultTableRow-X  where X is some index
             var dashIdx = id.indexOf("-");
             var candidateID = Number(id.substring(dashIdx+1));
@@ -580,6 +613,7 @@
             heightStyle: "content"
         });
     });
+
 </script>
 
 

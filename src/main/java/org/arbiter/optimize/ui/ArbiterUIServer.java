@@ -139,25 +139,7 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
         environment.jersey().register(new CandidateResultsResource());
     }
 
-
-//    public void updateStatus(SummaryStatus status){
-//
-//        //Create a set of RenderableComponent objects to render:
-//        RenderElements elements = getSummaryStatusComponents(status);
-//
-//        targetSummaryStatusUpdate.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
-//                .post(Entity.entity(elements, MediaType.APPLICATION_JSON));
-//        log.info("Posted summary status update: {}", elements);
-//        lastSummaryUpdateTime.set(System.currentTimeMillis());
-//
-//        updateStatusTimes();
-//    }
-
     public void updateStatus(RenderElements elements){
-//
-//        //Create a set of RenderableComponent objects to render:
-//        RenderElements elements = getSummaryStatusComponents(status);
-
         targetSummaryStatusUpdate.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
                 .post(Entity.entity(elements, MediaType.APPLICATION_JSON));
         log.info("Posted summary status update: {}", elements);
@@ -173,34 +155,8 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
         log.info("Posted new update times: {}", updateStatus);
     }
 
-    private RenderElements getSummaryStatusComponents( SummaryStatus status ){
 
-//        RenderableComponentString str = new RenderableComponentString(status.toString());
-//        System.out.println(status.toString());
-
-//        RenderableComponentTable table = new RenderableComponentTable(new String[]{"TestH1","TestH2"},
-//                new String[][]{{"v1","v2"},{"row2a","row2b"}});
-
-        RenderableComponentTable table = new RenderableComponentTable(
-                null,
-                new String[][]{
-                        {"Completed:", String.valueOf(status.getNumCompleted())},
-                        {"Queued/Running:", String.valueOf(status.getNumQueued())},
-                        {"Failed:", String.valueOf(status.getNumFailed())},
-                        {"Total:", String.valueOf(status.getNumTotal())},
-                        {"Best Score:", String.valueOf(status.getBestScore())},
-                        {"Best Score Time:", String.valueOf(status.getBestScoreTime())},
-                }
-        );
-
-
-        return new RenderElements(table);
-    }
-
-    //TODO Work out how to do this properly
     public void updateOptimizationSettings(RenderElements elements){
-//        RenderableComponent str = new RenderableComponentString(settings);
-//        RenderElements elements = new RenderElements(str);
         targetConfigUpdate.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
                 .post(Entity.entity(elements, MediaType.APPLICATION_JSON));
         log.info("Posted optimization settings update: {}", elements);

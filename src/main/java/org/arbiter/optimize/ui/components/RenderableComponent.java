@@ -9,6 +9,7 @@ import lombok.Data;
         @JsonSubTypes.Type(value = RenderableComponentString.class, name = "RenderableComponentString"),
         @JsonSubTypes.Type(value = RenderableComponentLineChart.class, name = "RenderableComponentLineChart"),
         @JsonSubTypes.Type(value = RenderableComponentTable.class, name = "RenderableComponentTable"),
+        @JsonSubTypes.Type(value = RenderableComponentAccordionDecorator.class, name = "RenderableComponentAccordionDecorator")
 })
 @Data
 public abstract class RenderableComponent {

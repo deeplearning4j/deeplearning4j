@@ -138,10 +138,6 @@ public class UIOptimizationRunnerStatusListener implements OptimizationRunnerSta
                     .build();
 
             components.add(chart);
-
-            System.out.println("SCORES VS TIME:");
-            System.out.println("x: " + Arrays.toString(times));
-            System.out.println("y: " + Arrays.toString(scores));
         }
 
         RenderElements elements = new RenderElements(components.toArray(new RenderableComponent[components.size()]));

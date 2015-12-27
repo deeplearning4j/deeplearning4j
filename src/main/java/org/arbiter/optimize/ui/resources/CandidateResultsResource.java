@@ -31,9 +31,6 @@ public class CandidateResultsResource {
     public Response getModelStatus(@PathParam("id") int candidateId){
         if(!map.containsKey(candidateId)) return Response.ok(NOT_FOUND).build();
         return Response.ok(map.get(candidateId)).build();
-//        return Response.ok(
-//                new RenderElements(new RenderableComponentString("Renderable elements for candidate " + candidateId + " goes here..."))
-//        ).build();
     }
 
     @GET
@@ -56,7 +53,7 @@ public class CandidateResultsResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response update(@PathParam("id")int candidateID, RenderElements renderElements){
-        log.info("Candidate status updated: {}, {}",candidateID,renderElements);
+//        log.info("Candidate status updated: {}, {}",candidateID,renderElements);
         map.put(candidateID,renderElements);
         return Response.ok(Collections.singletonMap("status", "ok")).build();
     }

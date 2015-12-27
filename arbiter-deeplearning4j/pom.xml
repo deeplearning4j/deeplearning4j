@@ -13,7 +13,8 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <dl4j.version>0.4-rc3.7</dl4j.version>
+        <dl4j.version>0.4-rc3.8-SNAPSHOT</dl4j.version>
+        <nd4j.version>0.4-rc3.8-SNAPSHOT</nd4j.version>
     </properties>
 
     <dependencies>
@@ -21,6 +22,12 @@
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-core</artifactId>
             <version>${dl4j.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-x86</artifactId>
+            <version>${nd4j.version}</version>
         </dependency>
 
         <dependency>
