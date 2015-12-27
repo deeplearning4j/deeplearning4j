@@ -52,6 +52,7 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
     protected double alpha = 0.75d;
     protected double learningRate = 0.0d;
     protected int maxmemory = 0;
+    protected int batchSize = 1000;
 
     private AdaGrad weightAdaGrad;
     private AdaGrad biasAdaGrad;
@@ -122,7 +123,7 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
     @Override
     public synchronized void learnSequence(@NonNull Sequence<T> sequence, @NonNull AtomicLong nextRandom, double learningRate) {
         /*
-                GloVe learning algorithm is implemented like a hack, over existing code base. It's called in SequenceVectors context, but actually only for the first call.
+                GloVe learning algorithm is implemented like a hack over settled ElementsLearningAlgorithm mechanics. It's called in SequenceVectors context, but actually only for the first call.
                 All subsequent calls will met early termination condition, and will be successfully ignored. But since elements vectors will be updated within first call,
                 this will allow compatibility with everything beyond this implementaton
          */
@@ -175,13 +176,14 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
     }
 
     private double iterateSample(T element1, T element2, double score) {
-        INDArray w1Vector = syn0.slice(element1.getIndex());
-        INDArray w2Vector = syn0.slice(element2.getIndex());
         //prediction: input + bias
         if(element1.getIndex() < 0 || element1.getIndex() >= syn0.rows())
             throw new IllegalArgumentException("Illegal index for word " + element1.getLabel());
         if(element2.getIndex() < 0 || element2.getIndex() >= syn0.rows())
             throw new IllegalArgumentException("Illegal index for word " + element2.getLabel());
+
+        INDArray w1Vector = syn0.slice(element1.getIndex());
+        INDArray w2Vector = syn0.slice(element2.getIndex());
 
 
         //w1 * w2 + bias
@@ -248,24 +250,41 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
 //            int stopPosition = (threadId + 1) *  (coList.size() / workers);
 //            log.info("Total size: [" + coList.size() + "], thread start: [" + startPosition + "], thread stop: [" + stopPosition + "]");
             while (coList.hasNext()){
-                // no for each pair do appropriate training
-                Pair<Pair<T, T>, Double> pairDoublePair = coList.next();
 
-                // That's probably ugly and probably should be improved somehow
+                // now we fetch pairs into batch
+                List<Pair<Pair<T,T>, Double>> pairs = new ArrayList<>();
+                int cnt = 0;
+                while (coList.hasNext() && cnt < batchSize ) {
+                    pairs.add(coList.next());
+                    cnt ++;
+                }
 
-                T element1 = pairDoublePair.getFirst().getFirst();
-                T element2 = pairDoublePair.getFirst().getSecond();
-                double weight = pairDoublePair.getSecond();  //coOccurrences.getCoOccurrenceCount(element1, element2);
-                if (weight <= 0) {
+                if (shuffle)
+                    Collections.shuffle(pairs);
+
+                Iterator<Pair<Pair<T,T>, Double>> iterator = pairs.iterator();
+
+                while (iterator.hasNext()) {
+                    // now for each pair do appropriate training
+                    Pair<Pair<T, T>, Double> pairDoublePair = iterator.next();
+
+                    // That's probably ugly and probably should be improved somehow
+
+                    T element1 = pairDoublePair.getFirst().getFirst();
+                    T element2 = pairDoublePair.getFirst().getSecond();
+                    double weight = pairDoublePair.getSecond();  //coOccurrences.getCoOccurrenceCount(element1, element2);
+                    if (weight <= 0) {
 //                    log.warn("Skipping pair ("+ element1.getLabel()+", " + element2.getLabel()+")");
-                    pairsCounter.incrementAndGet();
-                    continue;
+                        pairsCounter.incrementAndGet();
+                        continue;
+                    }
+
+                    errorCounter.incrementCount(epochId, iterateSample(element1, element2, weight));
+                    if (pairsCounter.incrementAndGet() % 100000 == 0) {
+                        log.info("Processed [" + pairsCounter.get() + "] word pairs so far...");
+                    }
                 }
 
-                errorCounter.incrementCount(epochId, iterateSample(element1, element2, weight));
-                if (pairsCounter.incrementAndGet() % 100000 == 0) {
-                    log.info("Processed [" + pairsCounter.get() + "] word pairs so far...");
-                }
             }
         }
     }
@@ -280,9 +299,23 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
         protected boolean symmetric = false;
         protected int maxmemory = (int) (Runtime.getRuntime().totalMemory() / 1024 /1024 /1024);
 
+        protected int batchSize = 1000;
+
         public Builder() {
 
         }
+
+        /**
+         * This parameter specifies batch size for each thread. Also, if shuffle == TRUE, this batch will be shuffled before processing. Default value: 1000;
+         *
+         * @param batchSize
+         * @return
+         */
+        public Builder<T> batchSize(int batchSize) {
+            this.batchSize = batchSize;
+            return this;
+        }
+
 
         /**
          * Initial learning rate; default 0.05
@@ -361,6 +394,7 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
             ret.alpha = this.alpha;
             ret.learningRate = this.learningRate;
             ret.maxmemory = this.maxmemory;
+            ret.batchSize = this.batchSize;
 
             return ret;
         }
