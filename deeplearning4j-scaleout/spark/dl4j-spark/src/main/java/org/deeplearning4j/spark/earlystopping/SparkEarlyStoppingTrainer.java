@@ -23,6 +23,7 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.EarlyStoppingResult;
+import org.deeplearning4j.earlystopping.listener.EarlyStoppingListener;
 import org.deeplearning4j.earlystopping.scorecalc.ScoreCalculator;
 import org.deeplearning4j.earlystopping.termination.EpochTerminationCondition;
 import org.deeplearning4j.earlystopping.termination.IterationTerminationCondition;
@@ -50,6 +51,7 @@ public class SparkEarlyStoppingTrainer implements IEarlyStoppingTrainer {
     private MultiLayerNetwork net;
     private final JavaRDD<DataSet> train;
     private final int examplesPerFit;
+    private EarlyStoppingListener listener;
 
     private double bestModelScore = Double.MAX_VALUE;
     private int bestModelEpoch = -1;
@@ -57,12 +59,17 @@ public class SparkEarlyStoppingTrainer implements IEarlyStoppingTrainer {
 
     public SparkEarlyStoppingTrainer(JavaSparkContext sc, EarlyStoppingConfiguration earlyStoppingConfiguration, MultiLayerConfiguration configuration,
                                      JavaRDD<DataSet> train, int examplesPerFit) {
-        this(sc, earlyStoppingConfiguration,new MultiLayerNetwork(configuration),train, examplesPerFit);
+        this(sc, earlyStoppingConfiguration, new MultiLayerNetwork(configuration), train, examplesPerFit);
         net.init();
     }
 
     public SparkEarlyStoppingTrainer(JavaSparkContext sc, EarlyStoppingConfiguration esConfig, MultiLayerNetwork net,
                                      JavaRDD<DataSet> train, int examplesPerFit) {
+        this(sc, esConfig, net, train, examplesPerFit, null);
+    }
+
+    public SparkEarlyStoppingTrainer(JavaSparkContext sc, EarlyStoppingConfiguration esConfig, MultiLayerNetwork net,
+                                     JavaRDD<DataSet> train, int examplesPerFit, EarlyStoppingListener listener) {
         if((esConfig.getEpochTerminationConditions() == null || esConfig.getEpochTerminationConditions().size() == 0)
                 && (esConfig.getIterationTerminationConditions() == null || esConfig.getIterationTerminationConditions().size() == 0)){
             throw new IllegalArgumentException("Cannot conduct early stopping without a termination condition (both Iteration "
@@ -73,6 +80,7 @@ public class SparkEarlyStoppingTrainer implements IEarlyStoppingTrainer {
         this.net = net;
         this.train = train;
         this.examplesPerFit = examplesPerFit;
+        this.listener = listener;
     }
 
     @Override
@@ -91,6 +99,8 @@ public class SparkEarlyStoppingTrainer implements IEarlyStoppingTrainer {
                 c.initialize();
             }
         }
+
+        if(listener != null) listener.onStart(esConfig,net);
 
         Map<Integer,Double> scoreVsEpoch = new LinkedHashMap<>();
 
@@ -183,7 +193,7 @@ public class SparkEarlyStoppingTrainer implements IEarlyStoppingTrainer {
                 }catch(IOException e2){
                     throw new RuntimeException(e2);
                 }
-                return new EarlyStoppingResult(
+                EarlyStoppingResult result = new EarlyStoppingResult(
                         EarlyStoppingResult.TerminationReason.IterationTerminationCondition,
                         terminationReason.toString(),
                         scoreVsEpoch,
@@ -191,6 +201,8 @@ public class SparkEarlyStoppingTrainer implements IEarlyStoppingTrainer {
                         bestModelScore,
                         epochCount,
                         bestModel);
+                if(listener != null) listener.onCompletion(result);
+                return result;
             }
 
             log.info("Completed training epoch {}",epochCount);
@@ -230,6 +242,8 @@ public class SparkEarlyStoppingTrainer implements IEarlyStoppingTrainer {
                     }
                 }
 
+                if(listener != null) listener.onEpoch(epochCount,score,esConfig,net);
+
                 //Check per-epoch termination conditions:
                 boolean epochTerminate = false;
                 EpochTerminationCondition termReason = null;
@@ -248,7 +262,7 @@ public class SparkEarlyStoppingTrainer implements IEarlyStoppingTrainer {
                     }catch(IOException e2){
                         throw new RuntimeException(e2);
                     }
-                    return new EarlyStoppingResult(
+                    EarlyStoppingResult result = new EarlyStoppingResult(
                             EarlyStoppingResult.TerminationReason.EpochTerminationCondition,
                             termReason.toString(),
                             scoreVsEpoch,
@@ -256,10 +270,17 @@ public class SparkEarlyStoppingTrainer implements IEarlyStoppingTrainer {
                             bestModelScore,
                             epochCount+1,
                             bestModel);
+                    if(listener != null) listener.onCompletion(result);
+                    return result;
                 }
 
                 epochCount++;
             }
         }
+    }
+
+    @Override
+    public void setListener(EarlyStoppingListener listener) {
+        this.listener = listener;
     }
 }
