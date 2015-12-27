@@ -1,6 +1,7 @@
 package org.arbiter.deeplearning4j.task;
 
 import lombok.AllArgsConstructor;
+import org.arbiter.deeplearning4j.DL4JConfiguration;
 import org.arbiter.deeplearning4j.listener.UIStatusReportingListener;
 import org.arbiter.optimize.api.Candidate;
 import org.arbiter.optimize.api.OptimizationResult;
@@ -12,20 +13,24 @@ import org.arbiter.optimize.runner.Status;
 import org.arbiter.optimize.runner.listener.candidate.UICandidateStatusListener;
 import org.arbiter.optimize.ui.components.RenderableComponent;
 import org.arbiter.optimize.ui.components.RenderableComponentString;
+import org.arbiter.optimize.ui.components.RenderableComponentTable;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
+import org.deeplearning4j.earlystopping.EarlyStoppingResult;
+import org.deeplearning4j.earlystopping.trainer.EarlyStoppingTrainer;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 
 import java.util.concurrent.Callable;
 
 @AllArgsConstructor
-public class DL4JTaskCreator<A> implements TaskCreator<MultiLayerConfiguration,MultiLayerNetwork,DataSetIterator,A>{
+public class DL4JTaskCreator<A> implements TaskCreator<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,A>{
 
     private ModelEvaluator<MultiLayerNetwork,DataSetIterator,A> modelEvaluator;
 
     @Override
-    public Callable<OptimizationResult<MultiLayerConfiguration, MultiLayerNetwork, A>>
-            create(Candidate<MultiLayerConfiguration> candidate, DataProvider<DataSetIterator> dataProvider,
+    public Callable<OptimizationResult<DL4JConfiguration, MultiLayerNetwork, A>> create(
+                Candidate<DL4JConfiguration> candidate, DataProvider<DataSetIterator> dataProvider,
                    ScoreFunction<MultiLayerNetwork,DataSetIterator> scoreFunction,
                    UICandidateStatusListener statusListener) {
 
@@ -34,67 +39,60 @@ public class DL4JTaskCreator<A> implements TaskCreator<MultiLayerConfiguration,M
     }
 
 
-    private static class DL4JLearningTask<A> implements Callable<OptimizationResult<MultiLayerConfiguration,MultiLayerNetwork,A>> {
+    private static class DL4JLearningTask<A> implements Callable<OptimizationResult<DL4JConfiguration,MultiLayerNetwork,A>> {
 
-        private Candidate<MultiLayerConfiguration> candidate;
+        private Candidate<DL4JConfiguration> candidate;
         private DataProvider<DataSetIterator> dataProvider;
         private ScoreFunction<MultiLayerNetwork,DataSetIterator> scoreFunction;
         private ModelEvaluator<MultiLayerNetwork,DataSetIterator,A> modelEvaluator;
-        private UICandidateStatusListener listener;
+//        private UICandidateStatusListener listener;
 
         private UIStatusReportingListener dl4jListener;
 
-        public DL4JLearningTask(Candidate<MultiLayerConfiguration> candidate, DataProvider<DataSetIterator> dataProvider, ScoreFunction<MultiLayerNetwork, DataSetIterator> scoreFunction, ModelEvaluator<MultiLayerNetwork, DataSetIterator, A> modelEvaluator, UICandidateStatusListener listener) {
+        public DL4JLearningTask(Candidate<DL4JConfiguration> candidate, DataProvider<DataSetIterator> dataProvider, ScoreFunction<MultiLayerNetwork, DataSetIterator> scoreFunction, ModelEvaluator<MultiLayerNetwork, DataSetIterator, A> modelEvaluator, UICandidateStatusListener listener) {
             this.candidate = candidate;
             this.dataProvider = dataProvider;
             this.scoreFunction = scoreFunction;
             this.modelEvaluator = modelEvaluator;
-            this.listener = listener;
+//            this.listener = listener;
 
             dl4jListener = new UIStatusReportingListener(listener);
         }
 
 
         @Override
-        public OptimizationResult<MultiLayerConfiguration, MultiLayerNetwork,A> call() throws Exception {
-            MultiLayerNetwork net = new MultiLayerNetwork(candidate.getValue());
+        public OptimizationResult<DL4JConfiguration, MultiLayerNetwork,A> call() throws Exception {
+            //Create network
+            MultiLayerNetwork net = new MultiLayerNetwork(candidate.getValue().getMultiLayerConfiguration());
             net.init();
             net.setListeners(dl4jListener);
 
-//            reportStatus(net, Status.Running);
-
+            //Early stopping or fixed number of epochs:
             DataSetIterator dataSetIterator = dataProvider.testData(candidate.getDataParameters());
-            net.fit(dataSetIterator);
 
-            //TODO: This only fits for a single epoch. Need additional functionality here:
-            // (a) Early stopping (better)
-            // (b) Specify number of epochs (less good, but perhaps worth supporting)
+
+            EarlyStoppingConfiguration esConfig = candidate.getValue().getEarlyStoppingConfiguration();
+            if(esConfig != null){
+                EarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConfig,net,dataSetIterator,dl4jListener);
+                EarlyStoppingResult esResult = trainer.fit();
+                net = esResult.getBestModel();
+            } else {
+                //Fixed number of epochs
+                int nEpochs = candidate.getValue().getNumEpochs();
+                for( int i=0; i<nEpochs; i++){
+                    net.fit(dataSetIterator);
+                    dataSetIterator.reset();
+                }
+                //Do a final status update
+                dl4jListener.postReport(Status.Complete);
+            }
 
             A additionalEvaluation = (modelEvaluator != null ? modelEvaluator.evaluateModel(net,dataProvider) : null);
 
-//            reportStatus(net,Status.Complete);
-
-            OptimizationResult<MultiLayerConfiguration,MultiLayerNetwork,A> result = new OptimizationResult<>(candidate,net,scoreFunction.score(net,dataProvider,candidate.getDataParameters()),
-                    candidate.getIndex(), additionalEvaluation);
-
-            //Do a final status update
-            dl4jListener.postReport(Status.Complete);   //TODO don't hardcode; don't do this if early stopping is used
+            OptimizationResult<DL4JConfiguration,MultiLayerNetwork,A> result = new OptimizationResult<>(candidate,net,
+                    scoreFunction.score(net,dataProvider,candidate.getDataParameters()),candidate.getIndex(), additionalEvaluation);
 
             return result;
         }
-
-//        private void reportStatus(MultiLayerNetwork network, Status status){
-//            if(listener == null) return;
-//            //Status to report:
-//            //(a) configuration
-//            //(b) score vs. iteration
-//            //(c) score vs. epoch
-//
-//            RenderableComponent config = new RenderableComponentString(network.getLayerWiseConfigurations().toString());
-//
-//            listener.reportStatus(status,config);
-//
-//
-//        }
     }
 }

@@ -1,4 +1,4 @@
-package org.arbiter.deeplearning4j;
+package org.arbiter.deeplearning4j.evaluator;
 
 import org.arbiter.optimize.api.data.DataProvider;
 import org.arbiter.optimize.api.evaluation.ModelEvaluator;

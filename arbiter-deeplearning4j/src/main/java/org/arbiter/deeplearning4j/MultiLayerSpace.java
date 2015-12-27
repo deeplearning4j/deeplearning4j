@@ -5,19 +5,19 @@ import org.arbiter.deeplearning4j.layers.LayerSpace;
 import org.arbiter.optimize.api.ModelParameterSpace;
 import org.arbiter.optimize.parameter.FixedValue;
 import org.arbiter.optimize.parameter.ParameterSpace;
-import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.weights.WeightInit;
-import sun.plugin.javascript.navig4.Layer;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class MultiLayerSpace implements ModelParameterSpace<MultiLayerConfiguration> {
+//public class MultiLayerSpace implements ModelParameterSpace<MultiLayerConfiguration> {
+public class MultiLayerSpace implements ModelParameterSpace<DL4JConfiguration> {
 
     private ParameterSpace<Boolean> useDropConnect;
     private ParameterSpace<Integer> iterations;
@@ -51,6 +51,10 @@ public class MultiLayerSpace implements ModelParameterSpace<MultiLayerConfigurat
     private ParameterSpace<Integer> tbpttFwdLength;
     private ParameterSpace<Integer> tbpttBwdLength;
 
+    //Early stopping configuration / (fixed) number of epochs:
+    private EarlyStoppingConfiguration earlyStoppingConfiguration;
+    private int numEpochs = 1;
+
     private MultiLayerSpace(Builder builder){
         this.useDropConnect = builder.useDropConnect;
         this.iterations = builder.iterations;
@@ -81,12 +85,15 @@ public class MultiLayerSpace implements ModelParameterSpace<MultiLayerConfigurat
         this.backpropType = builder.backpropType;
         this.tbpttFwdLength = builder.tbpttFwdLength;
         this.tbpttBwdLength = builder.tbpttBwdLength;
+
+        this.earlyStoppingConfiguration = builder.earlyStoppingConfiguration;
+        this.numEpochs = builder.numEpochs;
     }
 
 
 
     @Override
-    public MultiLayerConfiguration randomCandidate() {
+    public DL4JConfiguration randomCandidate() {
 
         //First: create layer configs
         List<org.deeplearning4j.nn.conf.layers.Layer> layers = new ArrayList<>();
@@ -152,7 +159,8 @@ public class MultiLayerSpace implements ModelParameterSpace<MultiLayerConfigurat
         if(tbpttFwdLength != null) listBuilder.tBPTTForwardLength(tbpttFwdLength.randomValue());
         if(tbpttBwdLength != null) listBuilder.tBPTTBackwardLength(tbpttBwdLength.randomValue());
 
-        return listBuilder.build();
+        MultiLayerConfiguration configuration = listBuilder.build();
+        return new DL4JConfiguration(configuration,earlyStoppingConfiguration,numEpochs);
     }
 
     @Override
@@ -185,6 +193,20 @@ public class MultiLayerSpace implements ModelParameterSpace<MultiLayerConfigurat
         if(backpropType != null) sb.append("backpropType: ").append(backpropType).append("\n");
         if(tbpttFwdLength != null) sb.append("tbpttFwdLength: ").append(tbpttFwdLength).append("\n");
         if(tbpttBwdLength != null) sb.append("tbpttBwdLength: ").append(tbpttBwdLength).append("\n");
+
+        int i=0;
+        for(LayerConf conf : layerSpaces){
+
+            sb.append("Layer config ").append(i++).append(": (Number layers:").append(conf.numLayers)
+                    .append(", duplicate: ").append(conf.duplicateConfig).append("), ")
+                    .append(conf.toString()).append("\n");
+        }
+
+        if(earlyStoppingConfiguration != null){
+            sb.append("Early stopping configuration:").append(earlyStoppingConfiguration.toString()).append("\n");
+        } else {
+            sb.append("Training # epochs:").append(numEpochs).append("\n");
+        }
 
         return sb.toString();
     }
@@ -230,6 +252,10 @@ public class MultiLayerSpace implements ModelParameterSpace<MultiLayerConfigurat
         private ParameterSpace<BackpropType> backpropType;
         private ParameterSpace<Integer> tbpttFwdLength;
         private ParameterSpace<Integer> tbpttBwdLength;
+
+        //Early stopping configuration / (fixed) number of epochs:
+        private EarlyStoppingConfiguration earlyStoppingConfiguration;
+        private int numEpochs = 1;
 
 
         public Builder useDropConnect(boolean useDropConnect){
@@ -487,6 +513,22 @@ public class MultiLayerSpace implements ModelParameterSpace<MultiLayerConfigurat
         public Builder addLayer(LayerSpace<? extends org.deeplearning4j.nn.conf.layers.Layer> layerSpace,
                                 ParameterSpace<Integer> numLayersDistribution, boolean duplicateConfig){
             layerSpaces.add(new LayerConf(layerSpace,numLayersDistribution,duplicateConfig));
+            return this;
+        }
+
+        /** Early stopping configuration (optional). Note if both EarlyStoppingConfiguration and number of epochs is
+         * present, early stopping will be used in preference.
+         */
+        public Builder earlyStoppingConfiguration(EarlyStoppingConfiguration earlyStoppingConfiguration){
+            this.earlyStoppingConfiguration = earlyStoppingConfiguration;
+            return this;
+        }
+
+        /** Fixed number of training epochs. Default: 1
+         * Note if both EarlyStoppingConfiguration and number of epochs is present, early stopping will be used in preference.
+         */
+        public Builder numEpochs(int numEpochs){
+            this.numEpochs = numEpochs;
             return this;
         }
 

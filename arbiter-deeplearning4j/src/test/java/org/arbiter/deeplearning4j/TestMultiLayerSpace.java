@@ -43,7 +43,7 @@ public class TestMultiLayerSpace {
                 .backprop(true).pretrain(false)
                 .build();
 
-        MultiLayerConfiguration conf = mls.randomCandidate();
+        MultiLayerConfiguration conf = mls.randomCandidate().getMultiLayerConfiguration();
 
         assertEquals(expected, conf);
     }
@@ -68,7 +68,7 @@ public class TestMultiLayerSpace {
         int tanhCount = 0;
         for( int i=0; i<50; i++ ){
 
-            MultiLayerConfiguration conf = mls.randomCandidate();
+            MultiLayerConfiguration conf = mls.randomCandidate().getMultiLayerConfiguration();
             assertEquals(false, conf.isPretrain());
             assertEquals(true, conf.isBackprop());
 

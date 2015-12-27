@@ -260,10 +260,11 @@
                 appendTo.append(s);
                 break;
             case "simpletable":
-                appendTo.append(createTable(renderableComponent[key],null));
+//                appendTo.append(createTable(renderableComponent[key],null));
+                createTable(renderableComponent[key],null,appendTo);
                 break;
             case "linechart":
-                createLineChart(renderableComponent[key],"linechart",appendTo);
+                createLineChart(renderableComponent[key],appendTo);
                 break;
             case "accordion":
                 createAccordion(renderableComponent[key],appendTo);
@@ -273,11 +274,16 @@
         }
     }
 
-    function createTable(tableObj,tableId){
+    function createTable(tableObj,tableId,appendTo){
         //Expect RenderableComponentTable
         var header = tableObj['header'];
         var values = tableObj['table'];
+        var title = tableObj['title'];
         var nRows = (values ? values.length : 0);
+
+        if(title){
+            appendTo.append("<h5>"+title+"</h5>");
+        }
 
         var table;
         if(tableId) table = $("<table id=\"" + tableId + "\" class=\"renderableComponentTable\">");
@@ -306,13 +312,13 @@
         }
 
         table.append($("</table>"));
-        return table;
+        appendTo.append(table);
     }
 
     /** Create + add line chart with multiple lines, (optional) title, (optional) series names.
      * appendTo: jquery selector of object to append to. MUST HAVE ID
      * */
-    function createLineChart(chartObj, chartId, appendTo){
+    function createLineChart(chartObj, appendTo){
         //Expect: RenderableComponentLineChart
         var title = chartObj['title'];
         var xData = chartObj['x'];

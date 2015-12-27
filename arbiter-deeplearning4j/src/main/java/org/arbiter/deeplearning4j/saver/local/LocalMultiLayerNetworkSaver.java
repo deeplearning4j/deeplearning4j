@@ -2,9 +2,11 @@ package org.arbiter.deeplearning4j.saver.local;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.arbiter.deeplearning4j.DL4JConfiguration;
 import org.arbiter.optimize.api.OptimizationResult;
 import org.arbiter.optimize.api.saving.ResultReference;
 import org.arbiter.optimize.api.saving.ResultSaver;
+import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -19,7 +21,7 @@ import java.nio.file.Paths;
 /**Basic MultiLayerNetwork saver. Saves config, parameters and score to: baseDir/0/, baseDir/1/, etc
  * where index is given by OptimizationResult.getIndex()
  */
-public class LocalMultiLayerNetworkSaver<A> implements ResultSaver<MultiLayerConfiguration,MultiLayerNetwork,A> {
+public class LocalMultiLayerNetworkSaver<A> implements ResultSaver<DL4JConfiguration,MultiLayerNetwork,A> {
     private static Logger log = LoggerFactory.getLogger(LocalMultiLayerNetworkSaver.class);
     private String path;
 
@@ -36,7 +38,7 @@ public class LocalMultiLayerNetworkSaver<A> implements ResultSaver<MultiLayerCon
     }
 
     @Override
-    public ResultReference<MultiLayerConfiguration,MultiLayerNetwork,A> saveModel(OptimizationResult<MultiLayerConfiguration, MultiLayerNetwork, A> result) throws IOException {
+    public ResultReference<DL4JConfiguration,MultiLayerNetwork,A> saveModel(OptimizationResult<DL4JConfiguration, MultiLayerNetwork, A> result) throws IOException {
         String dir = new File(path,result.getIndex() + "/").getAbsolutePath();
 
         File f = new File(dir);
@@ -46,9 +48,11 @@ public class LocalMultiLayerNetworkSaver<A> implements ResultSaver<MultiLayerCon
         File jsonFile = new File(FilenameUtils.concat(dir,"config.json"));
         File scoreFile = new File(FilenameUtils.concat(dir,"score.txt"));
         File additionalResultsFile = new File(FilenameUtils.concat(dir,"additionalResults.bin"));
+        File esConfigFile = new File(FilenameUtils.concat(dir,"earlyStoppingConfig.bin"));
+        File numEpochsFile = new File(FilenameUtils.concat(dir,"numEpochs.txt"));
 
         INDArray params = result.getResult().params();
-        String jsonConfig = result.getCandidate().getValue().toJson();
+        String jsonConfig = result.getCandidate().getValue().getMultiLayerConfiguration().toJson();
 
         FileUtils.writeStringToFile(scoreFile, String.valueOf(result.getScore()));
         FileUtils.writeStringToFile(jsonFile, jsonConfig);
@@ -63,9 +67,27 @@ public class LocalMultiLayerNetworkSaver<A> implements ResultSaver<MultiLayerCon
             }
         }
 
+        //Write early stopping configuration (if present) to file:
+        EarlyStoppingConfiguration esc = result.getCandidate().getValue().getEarlyStoppingConfiguration();
+        if(esc != null){
+            try(ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(esConfigFile))){
+                oos.writeObject(esc);
+            }
+        } else {
+            int nEpochs = result.getCandidate().getValue().getNumEpochs();
+            FileUtils.writeStringToFile(numEpochsFile,String.valueOf(nEpochs));
+        }
+
         log.debug("Deeplearning4j model result (id={}, score={}) saved to directory: {}",result.getIndex(), result.getScore(), dir);
 
-        return new LocalFileMultiLayerNetworkResultReference(dir,jsonFile,paramsFile,scoreFile,additionalResultsFile,result.getCandidate());
+        return new LocalFileMultiLayerNetworkResultReference(result.getIndex(),dir,
+                jsonFile,
+                paramsFile,
+                scoreFile,
+                additionalResultsFile,
+                esConfigFile,
+                numEpochsFile,
+                result.getCandidate());
     }
 
     @Override

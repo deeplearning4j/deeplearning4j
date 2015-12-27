@@ -2,10 +2,8 @@ package org.arbiter.deeplearning4j.listener;
 
 import org.arbiter.optimize.runner.Status;
 import org.arbiter.optimize.runner.listener.candidate.UICandidateStatusListener;
-import org.arbiter.optimize.ui.components.RenderableComponent;
-import org.arbiter.optimize.ui.components.RenderableComponentAccordionDecorator;
-import org.arbiter.optimize.ui.components.RenderableComponentLineChart;
-import org.arbiter.optimize.ui.components.RenderableComponentString;
+import org.arbiter.optimize.ui.components.*;
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.EarlyStoppingResult;
 import org.deeplearning4j.earlystopping.listener.EarlyStoppingListener;
@@ -13,9 +11,7 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 /**Listener designed to report status to Arbiter UI
  * Combines listener functionality for both early stopping AND iteration listeners
@@ -43,6 +39,7 @@ public class UIStatusReportingListener implements EarlyStoppingListener, Iterati
     private long scoreCount = 0;
     private List<Double> scoreList = new ArrayList<>(MAX_SCORE_COMPONENTS);
     private List<Long> iterationList = new ArrayList<>(MAX_SCORE_COMPONENTS);
+    private List<Pair<Integer,Double>> scoreVsEpochEarlyStopping = new ArrayList<>();
 
     private RenderableComponent config;
 
@@ -61,18 +58,47 @@ public class UIStatusReportingListener implements EarlyStoppingListener, Iterati
     @Override
     public void onEpoch(int epochNum, double score, EarlyStoppingConfiguration esConfig, MultiLayerNetwork net) {
         if(config == null) createConfigComponent(net);
-        postReport(Status.Running);
+        scoreVsEpochEarlyStopping.add(new Pair<>(epochNum,score));
+
+        postReport(Status.Running, createEarlyStoppingScoreVsEpochChart());
     }
 
     @Override
     public void onCompletion(EarlyStoppingResult esResult) {
         if(config == null) createConfigComponent(esResult.getBestModel());
+
+        //Final status update: including early stopping results
+        String[][] table = new String[][]{
+                {"Termination reason:", esResult.getTerminationReason().toString()},
+                {"Termination details:", esResult.getTerminationDetails()},
+                {"Best model epoch:", String.valueOf(esResult.getBestModelEpoch())},
+                {"Best model score:", String.valueOf(esResult.getBestModelScore())},
+                {"Total epochs:", String.valueOf(esResult.getTotalEpochs())}
+        };
+        RenderableComponent rcTable = new RenderableComponentTable("Early Stopping",null,table);
+
         if(esResult.getTerminationReason() == EarlyStoppingResult.TerminationReason.Error){
-            postReport(Status.Failed);
+            postReport(Status.Failed, rcTable);
         } else {
-            postReport(Status.Complete);
+            postReport(Status.Complete, createEarlyStoppingScoreVsEpochChart(), rcTable);
+        }
+    }
+
+    private RenderableComponent createEarlyStoppingScoreVsEpochChart(){
+        double[] x = new double[scoreVsEpochEarlyStopping.size()];
+        double[] y = new double[scoreVsEpochEarlyStopping.size()];
+        int i=0;
+        for(Pair<Integer,Double> p : scoreVsEpochEarlyStopping){
+            x[i] = p.getFirst();
+            y[i] = p.getSecond();
+            i++;
         }
 
+        RenderableComponent esScoreVsEpoch = new RenderableComponentLineChart.Builder()
+                .addSeries("Score vs. Epoch",x,y)
+                .title("Early Stopping: Score vs. Epoch")
+                .build();
+        return esScoreVsEpoch;
     }
 
     @Override
@@ -125,18 +151,14 @@ public class UIStatusReportingListener implements EarlyStoppingListener, Iterati
         if(currTime - lastReportTime > MAX_REPORTING_FREQUENCY_MS ){
             //Post report
             postReport(Status.Running);
-        } else {
-            //Reported very recently -> wait
-
         }
-
     }
 
     private void createConfigComponent(MultiLayerNetwork network){
         config = new RenderableComponentString(network.getLayerWiseConfigurations().toString());
     }
 
-    public void postReport(Status status){
+    public void postReport(Status status, RenderableComponent... additionalComponents){
 
         //Create score vs. iteration graph:
         double[] x = new double[scoreList.size()];
@@ -155,7 +177,15 @@ public class UIStatusReportingListener implements EarlyStoppingListener, Iterati
                 .title("Score vs. Iteration").build();
 
 //        uiListener.reportStatus(status,config,scoreVsIterGraph);
-        uiListener.reportStatus(status,new RenderableComponentAccordionDecorator("Network Configuration",true,config),scoreVsIterGraph);
+        RenderableComponent[] rcs = new RenderableComponent[2 + (additionalComponents != null ? additionalComponents.length : 0)];
+        rcs[0] = new RenderableComponentAccordionDecorator("Network Configuration",true,config);
+        rcs[1] = scoreVsIterGraph;
+        i = 2;
+        for(RenderableComponent c : additionalComponents){
+            rcs[i++] = c;
+        }
+
+        uiListener.reportStatus(status,rcs);
 
         lastReportTime = System.currentTimeMillis();
     }
