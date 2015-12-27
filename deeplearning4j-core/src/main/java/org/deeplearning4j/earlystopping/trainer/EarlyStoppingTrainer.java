@@ -21,6 +21,7 @@ package org.deeplearning4j.earlystopping.trainer;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.EarlyStoppingResult;
+import org.deeplearning4j.earlystopping.listener.EarlyStoppingListener;
 import org.deeplearning4j.earlystopping.scorecalc.ScoreCalculator;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.earlystopping.termination.EpochTerminationCondition;
@@ -43,6 +44,7 @@ public class EarlyStoppingTrainer implements IEarlyStoppingTrainer {
     private final EarlyStoppingConfiguration esConfig;
     private MultiLayerNetwork net;
     private final DataSetIterator train;
+    private EarlyStoppingListener listener;
 
     private double bestModelScore = Double.MAX_VALUE;
     private int bestModelEpoch = -1;
@@ -56,6 +58,11 @@ public class EarlyStoppingTrainer implements IEarlyStoppingTrainer {
 
     public EarlyStoppingTrainer(EarlyStoppingConfiguration esConfig, MultiLayerNetwork net,
                                 DataSetIterator train) {
+        this(esConfig,net,train,null);
+    }
+
+    public EarlyStoppingTrainer(EarlyStoppingConfiguration esConfig, MultiLayerNetwork net,
+                                DataSetIterator train, EarlyStoppingListener listener) {
         if((esConfig.getEpochTerminationConditions() == null || esConfig.getEpochTerminationConditions().size() == 0)
                 && (esConfig.getIterationTerminationConditions() == null || esConfig.getIterationTerminationConditions().size() == 0)){
             throw new IllegalArgumentException("Cannot conduct early stopping without a termination condition (both Iteration "
@@ -64,6 +71,7 @@ public class EarlyStoppingTrainer implements IEarlyStoppingTrainer {
         this.esConfig = esConfig;
         this.net = net;
         this.train = train;
+        this.listener = listener;
     }
 
     @Override
@@ -82,6 +90,8 @@ public class EarlyStoppingTrainer implements IEarlyStoppingTrainer {
                 c.initialize();
             }
         }
+
+        if(listener != null) listener.onStart(esConfig,net);
 
         Map<Integer,Double> scoreVsEpoch = new LinkedHashMap<>();
 
@@ -150,7 +160,9 @@ public class EarlyStoppingTrainer implements IEarlyStoppingTrainer {
                 }catch(IOException e2){
                     throw new RuntimeException(e2);
                 }
-                return new EarlyStoppingResult(
+
+
+                EarlyStoppingResult result = new EarlyStoppingResult(
                         EarlyStoppingResult.TerminationReason.IterationTerminationCondition,
                         terminationReason.toString(),
                         scoreVsEpoch,
@@ -158,6 +170,8 @@ public class EarlyStoppingTrainer implements IEarlyStoppingTrainer {
                         bestModelScore,
                         epochCount,
                         bestModel);
+                if(listener != null) listener.onCompletion(result);
+                return result;
             }
 
             log.info("Completed training epoch {}",epochCount);
@@ -197,6 +211,8 @@ public class EarlyStoppingTrainer implements IEarlyStoppingTrainer {
                     }
                 }
 
+                if(listener != null) listener.onEpoch(epochCount,score,esConfig,net);
+
                 //Check per-epoch termination conditions:
                 boolean epochTerminate = false;
                 EpochTerminationCondition termReason = null;
@@ -215,7 +231,7 @@ public class EarlyStoppingTrainer implements IEarlyStoppingTrainer {
                     }catch(IOException e2){
                         throw new RuntimeException(e2);
                     }
-                    return new EarlyStoppingResult(
+                    EarlyStoppingResult result = new EarlyStoppingResult(
                             EarlyStoppingResult.TerminationReason.EpochTerminationCondition,
                             termReason.toString(),
                             scoreVsEpoch,
@@ -223,10 +239,18 @@ public class EarlyStoppingTrainer implements IEarlyStoppingTrainer {
                             bestModelScore,
                             epochCount+1,
                             bestModel);
+                    if(listener != null) listener.onCompletion(result);
+
+                    return result;
                 }
 
                 epochCount++;
             }
         }
+    }
+
+    @Override
+    public void setListener(EarlyStoppingListener listener) {
+        this.listener = listener;
     }
 }
