@@ -12,6 +12,7 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.PrefetchingSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
+import org.deeplearning4j.text.sentenceiterator.SynchronizedSentenceIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,9 +136,9 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
         final SentenceIterator iterator;
 
         try {
-            iterator = new PrefetchingSentenceIterator.Builder(new BasicLineIterator(targetFile))
+            iterator = new SynchronizedSentenceIterator(new PrefetchingSentenceIterator.Builder(new BasicLineIterator(targetFile))
                     .setFetchSize(500000)
-                    .build();
+                    .build());
 
         } catch (Exception e) {
             logger.error("Target file was not found on last stage!");
@@ -598,7 +599,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                 throw new RuntimeException(e);
             }
 
-            logger.debug("Memory purge finished. Number of word pairs saved so far: [" + numberOfLinesSaved + "]");
+            logger.info("Number of word pairs saved so far: [" + numberOfLinesSaved + "]");
             isInvoked.set(false);
         }
 
