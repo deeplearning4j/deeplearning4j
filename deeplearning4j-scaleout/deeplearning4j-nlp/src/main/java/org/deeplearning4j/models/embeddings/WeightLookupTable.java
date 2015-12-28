@@ -136,5 +136,10 @@ public interface WeightLookupTable<T extends SequenceElement> extends Serializab
 
     INDArray getWeights();
 
-
+    /**
+     * Returns outcome vector length
+     *
+     * @return
+     */
+    int getVectorLength();
 }

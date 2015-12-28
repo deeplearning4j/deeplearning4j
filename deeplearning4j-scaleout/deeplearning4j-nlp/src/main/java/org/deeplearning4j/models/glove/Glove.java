@@ -1,476 +1,353 @@
-/*
- *
- *  * Copyright 2015 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
- *
- */
-
 package org.deeplearning4j.models.glove;
 
-import akka.actor.ActorSystem;
-import com.google.common.collect.Lists;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.LineIterator;
-import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
-import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
-import org.deeplearning4j.berkeley.Counter;
-import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
+import lombok.NonNull;
+import org.deeplearning4j.models.embeddings.learning.impl.elements.GloVe;
+import org.deeplearning4j.models.sequencevectors.SequenceVectors;
+import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
+import org.deeplearning4j.models.embeddings.WeightLookupTable;
+import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
+import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
+import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
 import org.deeplearning4j.models.word2vec.VocabWord;
-import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
-import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
-import org.deeplearning4j.parallel.Parallelization;
-import org.deeplearning4j.text.invertedindex.InvertedIndex;
-import org.deeplearning4j.text.invertedindex.LuceneInvertedIndex;
-import org.deeplearning4j.text.movingwindow.Util;
+import org.deeplearning4j.text.documentiterator.DocumentIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
-import org.deeplearning4j.text.stopwords.StopWords;
-import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
+import org.deeplearning4j.text.sentenceiterator.StreamLineIterator;
+import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.rng.Random;
-import org.nd4j.linalg.factory.Nd4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.*;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Collection;
+import java.util.List;
 
 /**
- * Glove by socher et. al
  *
- * @author Adam Gibson
+ * WORK IN PROGRESS, PLEASE DO NOT USE
+ * @author raver119@gmail.com
  */
-public class Glove  extends WordVectorsImpl<VocabWord> {
+public class Glove extends SequenceVectors<VocabWord> {
 
-    private transient SentenceIterator sentenceIterator;
-    private transient TextVectorizer textVectorizer;
-    private transient TokenizerFactory tokenizerFactory;
-    private double learningRate = 0.05;
-    private double xMax = 0.75;
-    private int windowSize = 15;
-    private CoOccurrences coOccurrences;
-    private boolean stem = false;
-    protected Queue<Pair<Integer,List<Pair<VocabWord,VocabWord>>>> jobQueue = new LinkedBlockingDeque<>();
-    private int batchSize = 1000;
-    private int minWordFrequency = 5;
-    private double maxCount = 100;
-    public final static String UNK = Word2Vec.UNK;
-    private int iterations = 5;
-    private static final Logger log = LoggerFactory.getLogger(Glove.class);
-    private boolean symmetric = true;
-    private transient Random gen;
-    private boolean shuffle = true;
-    private transient Random shuffleRandom;
-    private int numWorkers = Runtime.getRuntime().availableProcessors();
+    protected Glove() {
 
-    private Glove(){}
-
-    public Glove(VocabCache cache, SentenceIterator sentenceIterator, TextVectorizer textVectorizer, TokenizerFactory tokenizerFactory, GloveWeightLookupTable lookupTable, int layerSize, double learningRate, double xMax, int windowSize, CoOccurrences coOccurrences, List<String> stopWords, boolean stem,int batchSize,int minWordFrequency,double maxCount,int iterations,boolean symmetric,Random gen,boolean shuffle,long seed,int numWorkers) {
-        this.numWorkers = numWorkers;
-        this.gen = gen;
-        this.vocab = cache;
-        this.layerSize = layerSize;
-        this.shuffle = shuffle;
-        this.sentenceIterator = sentenceIterator;
-        this.textVectorizer = textVectorizer;
-        this.tokenizerFactory = tokenizerFactory;
-        this.lookupTable = lookupTable;
-        this.learningRate = learningRate;
-        this.xMax = xMax;
-        this.windowSize = windowSize;
-        this.coOccurrences = coOccurrences;
-        this.stopWords = stopWords;
-        this.stem = stem;
-        this.batchSize = batchSize;
-        this.minWordFrequency = minWordFrequency;
-        this.maxCount = maxCount;
-        this.iterations = iterations;
-        this.symmetric = symmetric;
-        shuffleRandom = Nd4j.getRandom();
     }
 
-    public void fit() {
-        boolean cacheFresh = false;
+    public static class Builder extends SequenceVectors.Builder<VocabWord> {
+        private double xMax;
+        private boolean shuffle;
+        private boolean symmetric;
+        protected double alpha = 0.75d;
+        private int maxmemory = (int) (Runtime.getRuntime().totalMemory() / 1024 /1024 / 1024);
 
-        if(vocab() == null) {
-            cacheFresh  = true;
-            setVocab(new InMemoryLookupCache());
-        }
+        protected TokenizerFactory tokenFactory;
+        protected SentenceIterator sentenceIterator;
+        protected DocumentIterator documentIterator;
 
-        if(textVectorizer == null && cacheFresh) {
-            InvertedIndex index = new LuceneInvertedIndex(vocab(),false,"glove-index");
-            textVectorizer = new TfidfVectorizer.Builder().tokenize(tokenizerFactory).index(index)
-                    .cache(vocab()).iterate(sentenceIterator).minWords(minWordFrequency)
-                    .stopWords(stopWords).stem(stem).build();
-
-            textVectorizer.fit();
-        }
-
-        if(sentenceIterator != null)
-            sentenceIterator.reset();
-
-        if(coOccurrences == null) {
-            coOccurrences = new CoOccurrences.Builder()
-                    .cache(vocab()).iterate(sentenceIterator).symmetric(symmetric)
-                    .tokenizer(tokenizerFactory).windowSize(windowSize)
-                    .build();
-
-            coOccurrences.fit();
-
-        }
-
-        if(lookupTable == null) {
-            lookupTable = new GloveWeightLookupTable.Builder()
-                    .cache(textVectorizer.vocab()).lr(learningRate)
-                    .vectorLength(layerSize).maxCount(maxCount)
-                   .build();
+        public Builder() {
+            super();
         }
 
 
-        if(lookupTable().getSyn0() == null)
-            lookupTable().resetWeights();
-        final List<Pair<String,String>> pairList = coOccurrences.coOccurrenceList();
-        if(shuffle)
-            Collections.shuffle(pairList,new java.util.Random());
-
-
-
-        final AtomicInteger countUp = new AtomicInteger(0);
-        final Counter<Integer> errorPerIteration = Util.parallelCounter();
-        log.info("Processing # of co occurrences " + coOccurrences.numCoOccurrences());
-        for(int i = 0; i < iterations; i++) {
-            final AtomicInteger processed = new AtomicInteger(coOccurrences.numCoOccurrences());
-            doIteration(i, pairList, errorPerIteration, processed, countUp);
-            log.info("Processed " + countUp.doubleValue() + " out of " + (pairList.size() * iterations) + " error was " + errorPerIteration.getCount(i));
-
+        public Builder(@NonNull VectorsConfiguration configuration) {
+            super(configuration);
         }
 
-
-    }
-
-
-    public void doIteration(final int i,List<Pair<String,String>> pairList, final Counter<Integer> errorPerIteration,final AtomicInteger processed,final AtomicInteger countUp) {
-        log.info("Iteration " + i);
-        if(shuffle)
-            Collections.shuffle(pairList,new java.util.Random());
-        List<List<Pair<String,String>>> miniBatches = Lists.partition(pairList,batchSize);
-        ActorSystem actor = ActorSystem.create();
-        Parallelization.iterateInParallel(miniBatches,new Parallelization.RunnableWithParams<List<Pair<String, String>>>() {
-            @Override
-            public void run(List<Pair<String, String>> currentItem, Object[] args) {
-                List<Pair<VocabWord,VocabWord>> send = new ArrayList<>();
-                for (Pair<String, String> next : currentItem) {
-                    String w1 = next.getFirst();
-                    String w2 = next.getSecond();
-                    VocabWord vocabWord = vocab().wordFor(w1);
-                    VocabWord vocabWord1 = vocab().wordFor(w2);
-                    send.add(new Pair<>(vocabWord, vocabWord1));
-
-                }
-
-                jobQueue.add(new Pair<>(i, send));
-            }
-        },actor);
-
-
-
-        actor.shutdown();
-
-        Parallelization.runInParallel(numWorkers,new Runnable() {
-            @Override
-            public void run() {
-                while(processed.get() > 0 || !jobQueue.isEmpty()) {
-                    Pair<Integer,List<Pair<VocabWord,VocabWord>>> work = jobQueue.poll();
-                    if(work == null)
-                        continue;
-                    List<Pair<VocabWord,VocabWord>> batch = work.getSecond();
-
-                    for(Pair<VocabWord,VocabWord> pair : batch) {
-                        VocabWord w1 = pair.getFirst();
-                        VocabWord w2 = pair.getSecond();
-                        double weight = getCount(w1.getWord(),w2.getWord());
-                        if(weight <= 0) {
-                            countUp.incrementAndGet();
-                            processed.decrementAndGet();
-                            continue;
-
-                        }
-                        errorPerIteration.incrementCount(work.getFirst(),lookupTable().iterateSample(w1, w2, weight));
-                        countUp.incrementAndGet();
-                        if(countUp.get() % 10000 == 0)
-                            log.info("Processed " + countUp.get() + " co occurrences");
-                        processed.decrementAndGet();
-                    }
-
-
-
-
-                }
-            }
-        },true);
-    }
-
-
-    /**
-     * Load a glove model from an input stream.
-     * The format is:
-     * word num1 num2....
-     * @param is the input stream to read from for the weights
-     * @param biases the bias input stream
-     * @return the loaded model
-     * @throws IOException if one occurs
-     */
-    public static Glove load(InputStream is,InputStream biases) throws IOException {
-        LineIterator iter = IOUtils.lineIterator(is,"UTF-8");
-        Glove glove = new Glove();
-        Map<String,float[]> wordVectors = new HashMap<>();
-        int count = 0;
-        while(iter.hasNext()) {
-            String line = iter.nextLine().trim();
-            if(line.isEmpty())
-                continue;
-            String[] split = line.split(" ");
-            String word = split[0];
-            if(glove.vocab() == null)
-                glove.setVocab(new InMemoryLookupCache());
-
-            if(glove.lookupTable() == null) {
-                glove.lookupTable = new GloveWeightLookupTable.Builder()
-                        .cache(glove.vocab()).vectorLength(split.length - 1)
-                        .build();
-
-            }
-
-            if(word.isEmpty())
-                continue;
-            float[] read = read(split,glove.lookupTable().getVectorLength());
-            if(read.length < 1)
-                continue;
-
-            VocabWord w1 = new VocabWord(1,word);
-            w1.setIndex(count);
-            glove.vocab().addToken(w1);
-            glove.vocab().addWordToIndex(count, word);
-            glove.vocab().putVocabWord(word);
-            wordVectors.put(word,read);
-            count++;
-
-
-
-        }
-
-        glove.lookupTable().setSyn0(weights(glove, wordVectors));
-
-
-
-        iter.close();
-
-        glove.lookupTable().setBias(Nd4j.read(biases));
-
-        return glove;
-
-    }
-
-
-
-
-    private static INDArray weights(Glove glove,Map<String,float[]> data) {
-        INDArray ret = Nd4j.create(data.size(),glove.lookupTable().getVectorLength());
-        for(String key : data.keySet()) {
-            INDArray row = Nd4j.create(Nd4j.createBuffer(data.get(key)));
-            if(row.length() != glove.lookupTable().getVectorLength())
-                continue;
-            if(glove.vocab().indexOf(key) >= data.size())
-                continue;
-            ret.putRow(glove.vocab().indexOf(key), row);
-        }
-        return ret;
-    }
-
-
-    private static float[] read(String[] split,int length) {
-        float[] ret = new float[length];
-        for(int i = 1; i < split.length; i++) {
-            ret[i - 1] = Float.parseFloat(split[i]);
-        }
-        return ret;
-    }
-
-
-    public double getCount(String w1,String w2) {
-        return coOccurrences.getCoOCurreneCounts().getCount(w1,w2);
-    }
-
-    public CoOccurrences getCoOccurrences() {
-        return coOccurrences;
-    }
-
-    public void setCoOccurrences(CoOccurrences coOccurrences) {
-        this.coOccurrences = coOccurrences;
-    }
-
-
-
-
-
-
-
-    @Override
-    public GloveWeightLookupTable lookupTable() {
-        return (GloveWeightLookupTable) lookupTable;
-    }
-
-    public void setLookupTable(GloveWeightLookupTable lookupTable) {
-        this.lookupTable = lookupTable;
-    }
-
-    public static class Builder {
-        private VocabCache vocabCache;
-        private SentenceIterator sentenceIterator;
-        private TextVectorizer textVectorizer;
-        private TokenizerFactory tokenizerFactory = new DefaultTokenizerFactory();
-        private GloveWeightLookupTable weightLookupTable;
-        private int layerSize = 300;
-        private double learningRate = 0.05;
-        private double xMax = 0.75;
-        private int windowSize = 5;
-        private CoOccurrences coOccurrences;
-        private List<String> stopWords = StopWords.getStopWords();
-        private boolean stem = false;
-        private int batchSize = 100;
-        private int minWordFrequency = 5;
-        private double maxCount = 100;
-        private int iterations = 5;
-        private boolean symmetric = true;
-        private boolean shuffle = true;
-        private long seed = 123;
-        private int numWorkers = Runtime.getRuntime().availableProcessors();
-        private org.nd4j.linalg.api.rng.Random gen = Nd4j.getRandom();
-
-
-        public Builder numWorkers(int numWorkers) {
-            this.numWorkers = numWorkers;
+        @Override
+        public Builder iterate(@NonNull SequenceIterator<VocabWord> iterator) {
+            super.iterate(iterator);
             return this;
         }
 
-        public Builder seed(long seed) {
-            this.seed = seed;
+        /**
+         * Specifies minibatch size for training process.
+         *
+         * @param batchSize
+         * @return
+         */
+        @Override
+        public Builder batchSize(int batchSize) {
+            super.batchSize(batchSize);
             return this;
         }
 
-        public Builder shuffle(boolean shuffle) {
-            this.shuffle = shuffle;
-            return this;
-        }
-        public Builder rng(org.nd4j.linalg.api.rng.Random gen) {
-            this.gen = gen;
-            return this;
-        }
-
-        public Builder symmetric(boolean symmetric) {
-            this.symmetric = symmetric;
-            return this;
-        }
-
+        /**
+         * Ierations and epochs are the same in GloVe implementation.
+         *
+         * @param iterations
+         * @return
+         */
+        @Override
         public Builder iterations(int iterations) {
-            this.iterations = iterations;
+            super.epochs(iterations);
             return this;
         }
 
-        public Builder maxCount(double maxCount) {
-            this.maxCount = maxCount;
+        /**
+         * Sets the number of iteration over training corpus during training
+         *
+         * @param numEpochs
+         * @return
+         */
+        @Override
+        public Builder epochs(int numEpochs) {
+            super.epochs(numEpochs);
             return this;
         }
 
-        public Builder minWordFrequency(int minWordFrequency) {
-            this.minWordFrequency = minWordFrequency;
+        @Override
+        public Builder useAdaGrad(boolean reallyUse) {
+            super.useAdaGrad(true);
             return this;
         }
 
-        public Builder cache(VocabCache vocabCache) {
-            this.vocabCache = vocabCache;
-            return this;
-        }
-
-        public Builder iterate(SentenceIterator sentenceIterator) {
-            this.sentenceIterator = sentenceIterator;
-            return this;
-        }
-
-        public Builder vectorizer(TextVectorizer textVectorizer) {
-            this.textVectorizer = textVectorizer;
-            return this;
-        }
-
-        public Builder tokenizer(TokenizerFactory tokenizerFactory) {
-            this.tokenizerFactory = tokenizerFactory;
-            return this;
-        }
-
-        public Builder weights(GloveWeightLookupTable weightLookupTable) {
-            this.weightLookupTable = weightLookupTable;
-            return this;
-        }
-
+        @Override
         public Builder layerSize(int layerSize) {
-            this.layerSize = layerSize;
+            super.layerSize(layerSize);
             return this;
         }
 
+        @Override
         public Builder learningRate(double learningRate) {
-            this.learningRate = learningRate;
+            super.learningRate(learningRate);
             return this;
         }
 
+        /**
+         * Sets minimum word frequency during vocabulary mastering.
+         * Please note: this option is ignored, if vocabulary is built outside of GloVe
+         *
+         * @param minWordFrequency
+         * @return
+         */
+        @Override
+        public Builder minWordFrequency(int minWordFrequency) {
+            super.minWordFrequency(minWordFrequency);
+            return this;
+        }
+
+        @Override
+        public Builder minLearningRate(double minLearningRate) {
+            super.minLearningRate(minLearningRate);
+            return this;
+        }
+
+        @Override
+        public Builder resetModel(boolean reallyReset) {
+            super.resetModel(reallyReset);
+            return this;
+        }
+
+        @Override
+        public Builder vocabCache(@NonNull VocabCache<VocabWord> vocabCache) {
+            super.vocabCache(vocabCache);
+            return this;
+        }
+
+        @Override
+        public Builder lookupTable(@NonNull WeightLookupTable<VocabWord> lookupTable) {
+            super.lookupTable(lookupTable);
+            return this;
+        }
+
+        @Override
+        @Deprecated
+        public Builder sampling(double sampling) {
+            super.sampling(sampling);
+            return this;
+        }
+
+        @Override
+        @Deprecated
+        public Builder negativeSample(double negative) {
+            super.negativeSample(negative);
+            return this;
+        }
+
+        @Override
+        public Builder stopWords(@NonNull List<String> stopList) {
+            super.stopWords(stopList);
+            return this;
+        }
+
+        @Override
+        public Builder trainElementsRepresentation(boolean trainElements) {
+            super.trainElementsRepresentation(true);
+            return this;
+        }
+
+        @Override
+        @Deprecated
+        public Builder trainSequencesRepresentation(boolean trainSequences) {
+            super.trainSequencesRepresentation(false);
+            return this;
+        }
+
+        @Override
+        public Builder stopWords(@NonNull Collection<VocabWord> stopList) {
+            super.stopWords(stopList);
+            return this;
+        }
+
+        @Override
+        public Builder windowSize(int windowSize) {
+            super.windowSize(windowSize);
+            return this;
+        }
+
+        @Override
+        public Builder seed(long randomSeed) {
+            super.seed(randomSeed);
+            return this;
+        }
+
+        @Override
+        public Builder workers(int numWorkers) {
+            super.workers(numWorkers);
+            return this;
+        }
+
+        /**
+         * Sets TokenizerFactory to be used for training
+         *
+         * @param tokenizerFactory
+         * @return
+         */
+        public Builder tokenizerFactory(@NonNull TokenizerFactory tokenizerFactory) {
+            this.tokenFactory = tokenizerFactory;
+            return this;
+        }
+
+        /**
+         * Parameter specifying cutoff in weighting function; default 100.0
+         *
+         * @param xMax
+         * @return
+         */
         public Builder xMax(double xMax) {
             this.xMax = xMax;
             return this;
         }
 
-        public Builder windowSize(int windowSize) {
-            this.windowSize = windowSize;
+        /**
+         * Parameters specifying, if cooccurrences list should be build into both directions from any current word.
+         *
+         * @param reallySymmetric
+         * @return
+         */
+        public Builder symmetric(boolean reallySymmetric) {
+            this.symmetric = reallySymmetric;
             return this;
         }
 
-        public Builder coOccurrences(CoOccurrences coOccurrences) {
-            this.coOccurrences = coOccurrences;
+        /**
+         * Parameter specifying, if cooccurrences list should be shuffled between training epochs
+         *
+         * @param reallyShuffle
+         * @return
+         */
+        public Builder shuffle(boolean reallyShuffle) {
+            this.shuffle = reallyShuffle;
             return this;
         }
 
-        public Builder stopWords(List<String> stopWords) {
-            this.stopWords = stopWords;
+        /**
+         * Parameter in exponent of weighting function; default 0.75
+         *
+         * @param alpha
+         * @return
+         */
+        public Builder alpha(double alpha) {
+            this.alpha = alpha;
             return this;
         }
 
-        public Builder stem(boolean stem) {
-            this.stem = stem;
+        public Builder iterate(@NonNull SentenceIterator iterator) {
+            this.sentenceIterator = iterator;
             return this;
         }
 
-        public Builder batchSize(int batchSize) {
-            this.batchSize = batchSize;
+        public Builder iterate(@NonNull DocumentIterator iterator) {
+            this.sentenceIterator = new StreamLineIterator.Builder(iterator)
+                    .setFetchSize(100)
+                    .build();
+            return this;
+        }
+
+        /**
+         * This method allows you to specify maximum memory available for CoOccurrence map builder.
+         *
+         * Please note: this option can be considered a debugging method. In most cases setting proper -Xmx argument set to JVM is enough to limit this algorithm.
+         * Please note: this option won't override -Xmx JVM value.
+         *
+         * @param gbytes memory limit, in gigabytes
+         * @return
+         */
+        public Builder maxMemory(int gbytes) {
+            this.maxmemory = gbytes;
             return this;
         }
 
         public Glove build() {
-            return new Glove(vocabCache, sentenceIterator, textVectorizer, tokenizerFactory, weightLookupTable, layerSize, learningRate, xMax, windowSize, coOccurrences, stopWords, stem, batchSize,minWordFrequency,maxCount,iterations,symmetric,gen,shuffle,seed,numWorkers);
+            presetTables();
+
+            Glove ret = new Glove();
+
+
+            // hardcoded value for glove
+
+            if (sentenceIterator != null) {
+                SentenceTransformer transformer = new SentenceTransformer.Builder()
+                        .iterator(sentenceIterator)
+                        .tokenizerFactory(tokenFactory)
+                        .build();
+                this.iterator = new AbstractSequenceIterator.Builder<VocabWord>(transformer).build();
+            }
+
+
+            ret.trainElementsVectors = true;
+            ret.trainSequenceVectors = false;
+            ret.useAdeGrad = true;
+            this.useAdaGrad = true;
+
+            ret.learningRate.set(this.learningRate);
+            ret.resetModel = this.resetModel;
+            ret.batchSize = this.batchSize;
+            ret.iterator = this.iterator;
+            ret.numEpochs = this.numEpochs;
+            ret.numIterations = this.iterations;
+            ret.layerSize = this.layerSize;
+
+
+            this.configuration.setLearningRate(this.learningRate);
+            this.configuration.setLayersSize(layerSize);
+            this.configuration.setHugeModelExpected(hugeModelExpected);
+            this.configuration.setWindow(window);
+            this.configuration.setMinWordFrequency(minWordFrequency);
+            this.configuration.setIterations(iterations);
+            this.configuration.setSeed(seed);
+            this.configuration.setBatchSize(batchSize);
+            this.configuration.setLearningRateDecayWords(learningRateDecayWords);
+            this.configuration.setMinLearningRate(minLearningRate);
+            this.configuration.setSampling(this.sampling);
+            this.configuration.setUseAdaGrad(useAdaGrad);
+            this.configuration.setNegative(negative);
+            this.configuration.setEpochs(this.numEpochs);
+
+
+            ret.configuration = this.configuration;
+
+            ret.lookupTable = this.lookupTable;
+            ret.vocab = this.vocabCache;
+
+
+            ret.elementsLearningAlgorithm = new GloVe.Builder<VocabWord>()
+                    .learningRate(this.learningRate)
+                    .shuffle(this.shuffle)
+                    .symmetric(this.symmetric)
+                    .xMax(this.xMax)
+                    .alpha(this.alpha)
+                    .maxMemory(maxmemory)
+                    .build();
+
+            return ret;
         }
     }
-
 }
