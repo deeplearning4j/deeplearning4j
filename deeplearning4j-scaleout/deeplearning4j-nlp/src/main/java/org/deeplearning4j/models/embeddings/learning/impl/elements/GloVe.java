@@ -129,7 +129,7 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
          */
         if (isTerminate.get()) return;
 
-        final AtomicInteger pairsCount = new AtomicInteger(0);
+        final AtomicLong pairsCount = new AtomicLong(0);
         final Counter<Integer> errorCounter = new Counter<>();
 
         //List<Pair<T, T>> coList = coOccurrences.coOccurrenceList();
@@ -228,10 +228,10 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
 //        private final AbstractCoOccurrences<T> coOccurrences;
         private final Iterator<Pair<Pair<T, T>, Double>>  coList;
 
-        private final AtomicInteger pairsCounter;
+        private final AtomicLong pairsCounter;
         private final Counter<Integer> errorCounter;
 
-        public GloveCalculationsThread(int epochId, int threadId, @NonNull Iterator<Pair<Pair<T, T>, Double>> pairs, @NonNull AtomicInteger pairsCounter, @NonNull Counter<Integer> errorCounter) {
+        public GloveCalculationsThread(int epochId, int threadId, @NonNull Iterator<Pair<Pair<T, T>, Double>> pairs, @NonNull AtomicLong pairsCounter, @NonNull Counter<Integer> errorCounter) {
             this.epochId = epochId;
             this.threadId = threadId;
           //  this.coOccurrences = coOccurrences;

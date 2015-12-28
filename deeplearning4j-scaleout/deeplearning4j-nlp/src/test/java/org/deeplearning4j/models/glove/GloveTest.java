@@ -93,7 +93,7 @@ public class GloveTest {
                 .iterate(iter)
                 .tokenizerFactory(t)
                 .alpha(0.75)
-                .learningRate(0.05)
+                .learningRate(0.1)
                 .epochs(45)
                 .xMax(100)
                 .shuffle(true)
@@ -103,7 +103,7 @@ public class GloveTest {
         glove.fit();
 
         double simD = glove.similarity("day", "night");
-        double simP = glove.similarity("Best", "police");
+        double simP = glove.similarity("best", "police");
 
         log.info("Day/night similarity: " + simD);
         log.info("Best/police similarity: " + simP);
@@ -113,10 +113,12 @@ public class GloveTest {
 
 
         assertTrue(simD > 0.7);
+
+        // actually simP should be somewhere at 0
         assertTrue(simP < 0.5);
 
-        assertTrue(words.contains("week"));
         assertTrue(words.contains("night"));
         assertTrue(words.contains("year"));
+        assertTrue(words.contains("week"));
     }
 }
