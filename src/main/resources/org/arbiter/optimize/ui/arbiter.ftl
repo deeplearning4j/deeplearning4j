@@ -67,10 +67,15 @@
         }
 
         /* Properties for table cells in the tables generated using the RenderableComponent mechanism */
+        .renderableComponentTable {
+            /*table-layout:fixed; */    /*Avoids scrollbar, but makes fixed width for all columns :( */
+            width: 100%
+        }
         .renderableComponentTable td {
             padding-left: 4px;
             padding-right: 4px;
             white-space: pre;   /* assume text is pre-processed (important for line breaks etc)*/
+            word-wrap:break-word;
             vertical-align: top;
         }
 
@@ -135,6 +140,7 @@
             color: black;  /* text etc color */
             font-size: 10pt;
             line-height: 16pt;
+            overflow:visible !important;
         }
 
         /** Line charts */
@@ -304,7 +310,7 @@
                 var rowValues = values[i];
                 var len = rowValues.length;
                 for( var j=0; j<len; j++ ){
-                    row.append($("<td>"+rowValues[j]+"</td>"));
+                    row.append($('<td>'+rowValues[j]+'</td>'));
                 }
                 row.append($("</tr>"));
                 table.append(row);

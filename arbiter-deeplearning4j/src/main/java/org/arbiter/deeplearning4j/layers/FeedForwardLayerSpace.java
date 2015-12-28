@@ -45,7 +45,20 @@ public abstract class FeedForwardLayerSpace<L extends FeedForwardLayer> extends 
             this.nOut = nOut;
             return (T)this;
         }
+    }
 
+    @Override
+    public String toString(){
+        return toString(", ");
+    }
+
+    @Override
+    protected String toString(String delim){
+        StringBuilder sb = new StringBuilder();
+        if(nIn != null) sb.append("nIn: ").append(nIn).append(delim);
+        if(nOut != null) sb.append("nOut: ").append(nOut).append(delim);
+        sb.append(super.toString(delim));
+        return sb.toString();
     }
 
 }

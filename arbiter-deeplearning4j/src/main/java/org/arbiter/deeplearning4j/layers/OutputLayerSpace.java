@@ -28,4 +28,14 @@ public class OutputLayerSpace extends BaseOutputLayerSpace<OutputLayer> {
             return new OutputLayerSpace(this);
         }
     }
+
+    @Override
+    public String toString(){
+        return toString(", ");
+    }
+
+    @Override
+    public String toString(String delim){
+        return "OutputLayerSpace(" + super.toString(delim) + ")";
+    }
 }

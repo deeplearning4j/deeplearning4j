@@ -77,6 +77,38 @@ public abstract class LayerSpace<L extends Layer> {
     }
 
 
+    @Override
+    public String toString() {
+        return toString(", ");
+    }
+
+    protected String toString(String delim){
+        StringBuilder sb = new StringBuilder();
+        if(activationFunction != null) sb.append("activationFunction: ").append(activationFunction).append(delim);
+        if(weightInit != null) sb.append("weightInit: ").append(weightInit).append(delim);
+        if(biasInit != null) sb.append("biasInit: ").append(biasInit).append(delim);
+        if(dist != null) sb.append("dist: ").append(dist).append(delim);
+        if(learningRate != null) sb.append("learningRate: ").append(learningRate).append(delim);
+        if(learningRateAfter != null) sb.append("learningRateAfter: ").append(learningRateAfter).append(delim);
+        if(lrScoreBasedDecay != null) sb.append("lrScoreBasedDecay: ").append(lrScoreBasedDecay).append(delim);
+        if(l1 != null) sb.append("l1: ").append(l1).append(delim);
+        if(l2 != null) sb.append("l2: ").append(l2).append(delim);
+        if(dropOut != null) sb.append("dropOut: ").append(dropOut).append(delim);
+        if(momentum != null) sb.append("momentum: ").append(momentum).append(delim);
+        if(momentumAfter != null) sb.append("momentumAfter: ").append(momentumAfter).append(delim);
+        if(updater != null) sb.append("updater: ").append(updater).append(delim);
+        if(rho != null) sb.append("rho: ").append(rho).append(delim);
+        if(rmsDecay != null) sb.append("rmsDecay: ").append(rmsDecay).append(delim);
+        if(gradientNormalization != null) sb.append("gradientNormalization: ").append(gradientNormalization).append(delim);
+        if(gradientNormalizationThreshold != null) sb.append("gradientNormalizationThreshold").append(gradientNormalizationThreshold);
+        String s = sb.toString();
+
+        if(s.endsWith(delim)){
+            //Remove final delimiter
+            int last = s.lastIndexOf(delim);
+            return s.substring(0,last);
+        } else return s;
+    }
 
 //    public abstract static class Builder<T extends Builder<T>> {
     @SuppressWarnings("unchecked")

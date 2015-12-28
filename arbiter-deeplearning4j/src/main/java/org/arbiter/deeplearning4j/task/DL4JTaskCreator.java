@@ -45,7 +45,6 @@ public class DL4JTaskCreator<A> implements TaskCreator<DL4JConfiguration,MultiLa
         private DataProvider<DataSetIterator> dataProvider;
         private ScoreFunction<MultiLayerNetwork,DataSetIterator> scoreFunction;
         private ModelEvaluator<MultiLayerNetwork,DataSetIterator,A> modelEvaluator;
-//        private UICandidateStatusListener listener;
 
         private UIStatusReportingListener dl4jListener;
 
@@ -54,7 +53,6 @@ public class DL4JTaskCreator<A> implements TaskCreator<DL4JConfiguration,MultiLa
             this.dataProvider = dataProvider;
             this.scoreFunction = scoreFunction;
             this.modelEvaluator = modelEvaluator;
-//            this.listener = listener;
 
             dl4jListener = new UIStatusReportingListener(listener);
         }

@@ -20,7 +20,6 @@ public class DenseLayerSpace extends FeedForwardLayerSpace<DenseLayer> {
         super.setLayerOptionsBuilder(builder);
     }
 
-//    public static class Builder<T extends Builder<T>> extends FeedForwardLayerSpace.Builder<T>{
     public static class Builder extends FeedForwardLayerSpace.Builder<Builder>{
 
         @Override
@@ -28,6 +27,16 @@ public class DenseLayerSpace extends FeedForwardLayerSpace<DenseLayer> {
         public DenseLayerSpace build(){
             return new DenseLayerSpace(this);
         }
+    }
+
+    @Override
+    public String toString(){
+        return toString(", ");
+    }
+
+    @Override
+    public String toString(String delim){
+        return "DenseLayerSpace(" + super.toString(delim) + ")";
     }
 
 }

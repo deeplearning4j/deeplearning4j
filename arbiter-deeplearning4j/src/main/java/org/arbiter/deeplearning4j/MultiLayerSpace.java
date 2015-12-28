@@ -199,7 +199,7 @@ public class MultiLayerSpace implements ModelParameterSpace<DL4JConfiguration> {
 
             sb.append("Layer config ").append(i++).append(": (Number layers:").append(conf.numLayers)
                     .append(", duplicate: ").append(conf.duplicateConfig).append("), ")
-                    .append(conf.toString()).append("\n");
+                    .append(conf.layerSpace.toString()).append("\n");
         }
 
         if(earlyStoppingConfiguration != null){
