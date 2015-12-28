@@ -18,11 +18,13 @@
 
 package org.deeplearning4j.earlystopping.termination;
 
+import java.io.Serializable;
+
 /**Interface for termination conditions to be evaluated once per iteration (i.e., once per minibatch).
  * Used for example to more quickly terminate training, instead of waiting for an epoch to complete before
  * checking termination conditions.
  * */
-public interface IterationTerminationCondition {
+public interface IterationTerminationCondition extends Serializable {
 
     /** Initialize the iteration termination condition (sometimes a no-op)*/
     void initialize();
