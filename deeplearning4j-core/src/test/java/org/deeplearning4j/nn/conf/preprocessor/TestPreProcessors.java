@@ -3,7 +3,11 @@ package org.deeplearning4j.nn.conf.preprocessor;
 import static org.junit.Assert.*;
 
 import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.GravesLSTM;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.layers.convolution.ConvolutionLayer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.layers.feedforward.dense.DenseLayer;
@@ -12,6 +16,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
+import java.util.Map;
 
 public class TestPreProcessors {
 
@@ -326,5 +331,55 @@ public class TestPreProcessors {
                 }
             }
         }
+    }
+
+
+    @Test
+    public void testAutoAdditionOfPreprocessors(){
+        //FF->RNN and RNN->FF
+        MultiLayerConfiguration conf1 = new NeuralNetConfiguration.Builder()
+                .list(4)
+                .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
+                        .nIn(5).nOut(6).build())
+                .layer(1, new GravesLSTM.Builder().nIn(6).nOut(7).build())
+                .layer(2, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
+                        .nIn(7).nOut(8).build())
+                .layer(3, new RnnOutputLayer.Builder().nIn(8).nOut(9).build())
+                .build();
+        //Expect preprocessors: layer1: FF->RNN; 2: RNN->FF; 3: FF->RNN
+        assertEquals(3, conf1.getInputPreProcessors().size());
+        assertTrue(conf1.getInputPreProcess(1) instanceof FeedForwardToRnnPreProcessor);
+        assertTrue(conf1.getInputPreProcess(2) instanceof RnnToFeedForwardPreProcessor);
+        assertTrue(conf1.getInputPreProcess(3) instanceof FeedForwardToRnnPreProcessor);
+
+
+        //FF-> CNN, CNN-> FF, FF->RNN
+        MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                .list(3)
+                .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder()
+                        .nOut(10).kernelSize(5, 5).stride(1, 1).build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nOut(6).build())
+                .layer(2, new RnnOutputLayer.Builder().nIn(6).nOut(5).build())
+                .cnnInputSize(28, 28, 1)
+                .build();
+        //Expect preprocessors: 0: FF->CNN, 1: CNN->FF; 2: FF->RNN
+        assertEquals(3, conf2.getInputPreProcessors().size());
+        assertTrue(conf2.getInputPreProcess(0) instanceof FeedForwardToCnnPreProcessor);
+        assertTrue(conf2.getInputPreProcess(1) instanceof CnnToFeedForwardPreProcessor);
+        assertTrue(conf2.getInputPreProcess(2) instanceof FeedForwardToRnnPreProcessor);
+
+        //FF->CNN and CNN->RNN:
+        MultiLayerConfiguration conf3 = new NeuralNetConfiguration.Builder()
+                .list(3)
+                .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder()
+                        .nOut(10).kernelSize(5, 5).stride(1, 1).build())
+                .layer(1, new GravesLSTM.Builder().nOut(6).build())
+                .layer(2, new RnnOutputLayer.Builder().nIn(6).nOut(5).build())
+                .cnnInputSize(28, 28, 1)
+                .build();
+        //Expect preprocessors: 0: FF->CNN, 1: CNN->RNN;
+        assertEquals(2, conf3.getInputPreProcessors().size());
+        assertTrue( conf3.getInputPreProcess(0) instanceof FeedForwardToCnnPreProcessor );
+        assertTrue(conf3.getInputPreProcess(1) instanceof CnnToRnnPreProcessor);
     }
 }
