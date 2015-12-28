@@ -27,7 +27,11 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
 import org.deeplearning4j.nn.conf.override.ConfOverride;
+import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
+import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.IOException;
@@ -168,6 +172,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         protected int tbpttFwdLength = 20;
         protected int tbpttBackLength = 20;
         protected boolean redistributeParams = false;
+        protected int[] cnnInputSize = null;    //Order: height/width/depth
         
         @Deprecated
         protected Map<Integer,ConfOverride> confOverrides = new HashMap<>();
@@ -265,10 +270,61 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         public Builder confs(List<NeuralNetConfiguration> confs) {
             this.confs = confs;
             return this;
+        }
 
+        /** Size of input for CNNs. Should only be used when convolutional layers are present.
+         * This information (input size) is necessary in order to:<br>
+         * (a) automatically add layer preprocessors, which allow CNN and dense/output layers to be used together
+         * (as well as CNN/RNN layers) <br>
+         * (b) automatically calculate input/output sizes; for example, input size for a dense layer, in a
+         *     Convolutional->DenseLayer or Convolutional->OutputLayer configuratio
+         * @param height Input image height
+         * @param width Input image width
+         * @param depth Input image depth / number of channels (for example: 3 for color, 1 for grayscale etc)
+         */
+        public Builder cnnInputSize(int height, int width, int depth){
+            this.cnnInputSize = new int[]{height,width,depth};
+            return this;
+        }
+
+        /** CNN input size, in order of {height,width,depth}.
+         * @see #cnnInputSize(int, int, int)
+         */
+        public Builder cnnInputSize(int[] cnnInputSize){
+            this.cnnInputSize = cnnInputSize;
+            return this;
         }
 
         public MultiLayerConfiguration build() {
+
+            //First: apply ConvolutionLayerSetup if necessary...
+            if(cnnInputSize != null){
+                new ConvolutionLayerSetup(this,cnnInputSize[0],cnnInputSize[1],cnnInputSize[2]);
+            }
+
+            //Second: apply layer preprocessors (dense/rnn layers etc) (a) where required, and (b) where no override is specified
+            //ConvolutionLayerSetup should handle all CNN-related preprocessors; so just need to handle dense -> RNN etc
+            int nLayers = this.confs.size();
+            for( int i=1; i<nLayers; i++ ){
+                if(inputPreProcessors.containsKey(i)) continue; //Override or ConvolutionLayerSetup
+
+                Layer currLayer = this.confs.get(i).getLayer();
+                if( currLayer instanceof ConvolutionLayer || currLayer instanceof SubsamplingLayer ) continue;  //Handled by ConvolutionLayerSetup
+                Layer lastLayer = this.confs.get(i-1).getLayer();
+                if(lastLayer instanceof ConvolutionLayer || lastLayer instanceof SubsamplingLayer ) continue; //Handled by ConvolutionLayerSetup
+                //At this point: no CNN layers. must be dense/autoencoder/rbm etc or RNN
+                if(currLayer instanceof DenseLayer || currLayer instanceof BasePretrainNetwork || currLayer instanceof OutputLayer ){
+                    if(lastLayer instanceof BaseRecurrentLayer ){   //RNN -> FF
+                        inputPreProcessors.put(i,new RnnToFeedForwardPreProcessor());
+                    }
+                } else if( currLayer instanceof BaseRecurrentLayer || currLayer instanceof RnnOutputLayer ){
+                    if(lastLayer instanceof DenseLayer || lastLayer instanceof BasePretrainNetwork ){   //FF -> RNN
+                        inputPreProcessors.put(i,new FeedForwardToRnnPreProcessor());
+                    }
+                }
+            }
+
+
             MultiLayerConfiguration conf = new MultiLayerConfiguration();
             conf.confs = this.confs;
             conf.pretrain = pretrain;
