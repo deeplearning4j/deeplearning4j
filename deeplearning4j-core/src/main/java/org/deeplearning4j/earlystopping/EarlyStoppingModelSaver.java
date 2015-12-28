@@ -21,9 +21,10 @@ package org.deeplearning4j.earlystopping;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 
 import java.io.IOException;
+import java.io.Serializable;
 
 /** Interface for saving MultiLayerNetworks learned during early stopping, and retrieving them again later */
-public interface EarlyStoppingModelSaver {
+public interface EarlyStoppingModelSaver extends Serializable {
 
     /** Save the best model (so far) learned during early stopping training */
     void saveBestModel( MultiLayerNetwork net, double score ) throws IOException;

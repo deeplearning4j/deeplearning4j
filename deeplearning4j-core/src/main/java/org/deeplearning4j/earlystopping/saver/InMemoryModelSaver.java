@@ -8,8 +8,8 @@ import java.io.IOException;
 /** Save the best (and latest) models for early stopping training to memory for later retrieval */
 public class InMemoryModelSaver implements EarlyStoppingModelSaver {
 
-    private MultiLayerNetwork bestModel;
-    private MultiLayerNetwork latestModel;
+    private transient MultiLayerNetwork bestModel;
+    private transient MultiLayerNetwork latestModel;
 
     @Override
     public void saveBestModel(MultiLayerNetwork net, double score) throws IOException {
@@ -29,5 +29,10 @@ public class InMemoryModelSaver implements EarlyStoppingModelSaver {
     @Override
     public MultiLayerNetwork getLatestModel() throws IOException {
         return latestModel;
+    }
+
+    @Override
+    public String toString(){
+        return "InMemoryModelSaver()";
     }
 }
