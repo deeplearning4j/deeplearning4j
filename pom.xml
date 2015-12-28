@@ -20,7 +20,11 @@
     <groupId>org.arbiter</groupId>
     <artifactId>arbiter</artifactId>
     <version>0.0.0.5-SNAPSHOT</version>
-    <packaging>jar</packaging>
+    <modules>
+        <module>arbiter-deeplearning4j</module>
+        <module>arbiter-spark</module>
+    </modules>
+    <packaging>pom</packaging>
     <name>Arbiter</name>
 
     <description>Model Evaluation and Testing</description>
@@ -28,9 +32,10 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <nd4j.version>0.0.3.5.5.3</nd4j.version>
+        <nd4j.version>0.4-rc3.7</nd4j.version>
         <slf4j.version>1.7.5</slf4j.version>
-        <jackson.version>2.5.1</jackson.version>
+        <jackson.version>2.6.3</jackson.version>
+        <dropwizard.version>0.9.1</dropwizard.version>
     </properties>
 
     <dependencies>
@@ -40,6 +45,13 @@
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-api</artifactId>
             <version>${nd4j.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-x86</artifactId>
+            <version>${nd4j.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -99,12 +111,10 @@
             <artifactId>jackson-core</artifactId>
             <version>${jackson.version}</version>
         </dependency>
-        
         <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-core</artifactId>
-            <version>3.2.5.RELEASE</version>
-            <scope>test</scope>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>${jackson.version}</version>
         </dependency>
 
 
@@ -115,10 +125,37 @@
         </dependency>
 
         <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-jblas</artifactId>
-            <version>${nd4j.version}</version>
-            <scope>test</scope>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.16.6</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.dropwizard</groupId>
+            <artifactId>dropwizard-assets</artifactId>
+            <version>${dropwizard.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.dropwizard</groupId>
+            <artifactId>dropwizard-client</artifactId>
+            <version>${dropwizard.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.dropwizard</groupId>
+            <artifactId>dropwizard-forms</artifactId>
+            <version>${dropwizard.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.dropwizard</groupId>
+            <artifactId>dropwizard-views-mustache</artifactId>
+            <version>${dropwizard.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.dropwizard</groupId>
+            <artifactId>dropwizard-views-freemarker</artifactId>
+            <version>${dropwizard.version}</version>
         </dependency>
 
 
