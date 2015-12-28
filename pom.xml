@@ -33,6 +33,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <nd4j.version>0.4-rc3.7</nd4j.version>
+        <canova.version>0.0.0.13</canova.version>
         <slf4j.version>1.7.5</slf4j.version>
         <jackson.version>2.6.3</jackson.version>
         <dropwizard.version>0.9.1</dropwizard.version>
@@ -57,19 +58,19 @@
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>canova-api</artifactId>
-            <version>${project.version}</version>
+            <version>${canova.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>canova-nd4j-image</artifactId>
-            <version>${project.version}</version>
+            <version>${canova.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>canova-nd4j-nlp</artifactId>
-            <version>${project.version}</version>
+            <version>${canova.version}</version>
         </dependency>
 
         <dependency>
