@@ -138,6 +138,9 @@ public class ParagraphVectors extends Word2Vec {
             ret.stopWords = this.stopWords;
             ret.workers = this.workers;
 
+            ret.elementsLearningAlgorithm = this.elementsLearningAlgorithm;
+            ret.sequenceLearningAlgorithm = this.sequenceLearningAlgorithm;
+
             ret.lookupTable = this.lookupTable;
 
             this.configuration.setLearningRate(this.learningRate);

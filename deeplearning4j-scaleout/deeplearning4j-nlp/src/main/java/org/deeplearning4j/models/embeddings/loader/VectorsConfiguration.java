@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import lombok.Data;
 
+
 import java.io.IOException;
 import java.io.Serializable;
 
@@ -34,9 +35,13 @@ public class VectorsConfiguration implements Serializable {
     private double sampling = 0.0d;
     private int learningRateDecayWords;
 
-    private boolean hugeModelExpected;
+    private boolean hugeModelExpected = false;
     private int scavengerActivationThreshold = 2000000;
     private int scavengerRetentionDelay = 3;
+
+    private String elementsLearningAlgorithm;
+    private String sequenceLearningAlgorithm;
+
 
     // overall model info
     private int vocabSize;
