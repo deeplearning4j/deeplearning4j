@@ -128,11 +128,15 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
             // TODO: fix this to non-exclusive termination
             if (trainElementsVectors && elementsLearningAlgorithm != null) {
-                if (elementsLearningAlgorithm.isEarlyTerminationHit()) break;
+                if (!trainSequenceVectors || sequenceLearningAlgorithm == null) {
+                    if (elementsLearningAlgorithm.isEarlyTerminationHit()) break;
+                }
             }
 
             if (trainSequenceVectors && sequenceLearningAlgorithm!= null) {
-                if (sequenceLearningAlgorithm.isEarlyTerminationHit()) break;
+                if (!trainElementsVectors || elementsLearningAlgorithm == null) {
+                    if (sequenceLearningAlgorithm.isEarlyTerminationHit()) break;
+                }
             }
             log.info("Epoch: [" + currentEpoch+ "]; Words vectorized so far: [" + wordsCounter.get() + "];  Lines vectorized so far: [" + linesCounter.get() + "]; learningRate: [" + minLearningRate + "]");
         }

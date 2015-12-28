@@ -66,15 +66,14 @@ public class BinaryCoOccurrenceReaderTest {
 
         BinaryCoOccurrenceReader<VocabWord> reader = new BinaryCoOccurrenceReader<>(tempFile, vocabCache ,null);
 
-        int cnt = 0;
-        while (reader.hasMoreObjects()) {
-            CoOccurrenceWeight<VocabWord> r1 = reader.nextObject();
-            log.info("Object received: " + r1);
-            assertNotEquals(null, r1);
-            cnt++;
-        }
 
-        assertEquals(2, cnt);
+        CoOccurrenceWeight<VocabWord> r1 = reader.nextObject();
+        log.info("Object received: " + r1);
+        assertNotEquals(null, r1);
+
+        r1 = reader.nextObject();
+        log.info("Object received: " + r1);
+        assertNotEquals(null, r1);
     }
 
     @Test
@@ -125,14 +124,18 @@ public class BinaryCoOccurrenceReaderTest {
 
         BinaryCoOccurrenceReader<VocabWord> reader = new BinaryCoOccurrenceReader<>(tempFile, vocabCache ,null);
 
-        int cnt = 0;
-        while (reader.hasMoreObjects()) {
-            CoOccurrenceWeight<VocabWord> r1 = reader.nextObject();
-            log.info("Object received: " + r1);
-            assertNotEquals(null, r1);
-            cnt++;
-        }
 
-        assertEquals(3, cnt);
+        CoOccurrenceWeight<VocabWord> r1 = reader.nextObject();
+        log.info("Object received: " + r1);
+       assertNotEquals(null, r1);
+
+        r1 = reader.nextObject();
+        log.info("Object received: " + r1);
+        assertNotEquals(null, r1);
+
+        r1 = reader.nextObject();
+        log.info("Object received: " + r1);
+        assertNotEquals(null, r1);
+
     }
 }
