@@ -123,12 +123,18 @@ public class Word2VecTests {
                 .lr(0.025f).build();
 
         Word2Vec vec = new Word2Vec.Builder()
-                .minWordFrequency(5).iterations(1)
-                .layerSize(100).lookupTable(table)
+                .minWordFrequency(5)
+                .iterations(1)
+                .layerSize(100)
+                .lookupTable(table)
                 .stopWords(new ArrayList<String>())
-                .vocabCache(cache).seed(42)
+                .vocabCache(cache)
+                .seed(42)
                 .sampling(0)
-                .windowSize(5).iterate(iter).tokenizerFactory(t).build();
+                .windowSize(5)
+                .iterate(iter)
+                .tokenizerFactory(t)
+                .build();
 
         assertEquals(new ArrayList<String>(), vec.getStopWords());
         vec.fit();

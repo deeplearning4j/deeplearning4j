@@ -22,6 +22,7 @@ package org.deeplearning4j.models.glove;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
+import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
@@ -43,7 +44,9 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author Adam Gibson
  */
-public class GloveWeightLookupTable extends InMemoryLookupTable<VocabWord> {
+// Deprecated due to logic being pulled off WeightLookupTable classes into LearningAlgorithm interfaces for better code.
+@Deprecated
+public class GloveWeightLookupTable<T extends SequenceElement> extends InMemoryLookupTable<T> {
 
 
     private AdaGrad weightAdaGrad;
@@ -54,7 +57,7 @@ public class GloveWeightLookupTable extends InMemoryLookupTable<VocabWord> {
     private double maxCount = 100;
 
 
-    public GloveWeightLookupTable(VocabCache vocab, int vectorLength, boolean useAdaGrad, double lr, Random gen, double negative, double xMax,double maxCount) {
+    public GloveWeightLookupTable(VocabCache<T> vocab, int vectorLength, boolean useAdaGrad, double lr, Random gen, double negative, double xMax,double maxCount) {
         super(vocab, vectorLength, useAdaGrad, lr, gen, negative);
         this.xMax = xMax;
         this.maxCount = maxCount;
@@ -102,14 +105,14 @@ public class GloveWeightLookupTable extends InMemoryLookupTable<VocabWord> {
      * @param w2 the second word
      * @param score the weight learned for the particular co occurrences
      */
-    public   double iterateSample(VocabWord w1, VocabWord w2,double score) {
+    public   double iterateSample(T w1, T w2,double score) {
         INDArray w1Vector = syn0.slice(w1.getIndex());
         INDArray w2Vector = syn0.slice(w2.getIndex());
         //prediction: input + bias
         if(w1.getIndex() < 0 || w1.getIndex() >= syn0.rows())
-            throw new IllegalArgumentException("Illegal index for word " + w1.getWord());
+            throw new IllegalArgumentException("Illegal index for word " + w1.getLabel());
         if(w2.getIndex() < 0 || w2.getIndex() >= syn0.rows())
-            throw new IllegalArgumentException("Illegal index for word " + w2.getWord());
+            throw new IllegalArgumentException("Illegal index for word " + w2.getLabel());
 
 
         //w1 * w2 + bias
@@ -137,7 +140,7 @@ public class GloveWeightLookupTable extends InMemoryLookupTable<VocabWord> {
     }
 
 
-    private void update(VocabWord w1,INDArray wordVector,INDArray contextVector,double gradient) {
+    private void update(T w1,INDArray wordVector,INDArray contextVector,double gradient) {
         //gradient for word vectors
         INDArray grad1 =  contextVector.mul(gradient);
         INDArray update = weightAdaGrad.getGradient(grad1,w1.getIndex(),syn0.shape());
@@ -171,7 +174,7 @@ public class GloveWeightLookupTable extends InMemoryLookupTable<VocabWord> {
      * @return the loaded model
      * @throws java.io.IOException if one occurs
      */
-    public static GloveWeightLookupTable load(InputStream is,VocabCache vocab) throws IOException {
+    public static GloveWeightLookupTable load(InputStream is,VocabCache<? extends SequenceElement> vocab) throws IOException {
         LineIterator iter = IOUtils.lineIterator(is, "UTF-8");
         GloveWeightLookupTable glove = null;
         Map<String,float[]> wordVectors = new HashMap<>();
@@ -238,7 +241,7 @@ public class GloveWeightLookupTable extends InMemoryLookupTable<VocabWord> {
 
 
     @Override
-    public void iterateSample(VocabWord w1, VocabWord w2, AtomicLong nextRandom, double alpha) {
+    public void iterateSample(T w1, T w2, AtomicLong nextRandom, double alpha) {
         throw new UnsupportedOperationException();
 
     }
@@ -267,66 +270,66 @@ public class GloveWeightLookupTable extends InMemoryLookupTable<VocabWord> {
         this.bias = bias;
     }
 
-    public static class Builder extends  InMemoryLookupTable.Builder {
+    public static class Builder<T extends SequenceElement> extends  InMemoryLookupTable.Builder<T> {
         private double xMax = 0.75;
         private double maxCount = 100;
 
 
-        public Builder maxCount(double maxCount) {
+        public Builder<T> maxCount(double maxCount) {
             this.maxCount = maxCount;
             return this;
         }
 
 
-        public Builder xMax(double xMax) {
+        public Builder<T> xMax(double xMax) {
             this.xMax = xMax;
             return this;
         }
 
         @Override
-        public Builder cache(VocabCache vocab) {
+        public Builder<T> cache(VocabCache<T> vocab) {
             super.cache(vocab);
             return this;
         }
 
         @Override
-        public Builder negative(double negative) {
+        public Builder<T> negative(double negative) {
             super.negative(negative);
             return this;
         }
 
         @Override
-        public Builder vectorLength(int vectorLength) {
+        public Builder<T> vectorLength(int vectorLength) {
             super.vectorLength(vectorLength);
             return this;
         }
 
         @Override
-        public Builder useAdaGrad(boolean useAdaGrad) {
+        public Builder<T> useAdaGrad(boolean useAdaGrad) {
             super.useAdaGrad(useAdaGrad);
             return this;
         }
 
         @Override
-        public Builder lr(double lr) {
+        public Builder<T> lr(double lr) {
             super.lr(lr);
             return this;
         }
 
         @Override
-        public Builder gen(Random gen) {
+        public Builder<T> gen(Random gen) {
             super.gen(gen);
             return this;
         }
 
         @Override
-        public Builder seed(long seed) {
+        public Builder<T> seed(long seed) {
             super.seed(seed);
             return this;
         }
 
-        public GloveWeightLookupTable build() {
-            return new GloveWeightLookupTable(vocabCache,vectorLength,useAdaGrad,lr,gen,negative,xMax,maxCount);
+        public GloveWeightLookupTable<T> build() {
+            return new GloveWeightLookupTable<T>(vocabCache,vectorLength,useAdaGrad,lr,gen,negative,xMax,maxCount);
         }
     }
 

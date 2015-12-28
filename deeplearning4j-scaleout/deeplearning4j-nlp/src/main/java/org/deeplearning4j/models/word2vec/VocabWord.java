@@ -183,7 +183,7 @@ public  class VocabWord extends SequenceElement implements Serializable {
 
     @Override
     public int hashCode() {
-        int result = this.word.hashCode(); //this.elementFrequency.hashCode();
+        int result = this.word == null ? 0 : this.word.hashCode(); //this.elementFrequency.hashCode();
         /*result = 31 * result + index;
         result = 31 * result + codes.hashCode();
         result = 31 * result + word.hashCode();
