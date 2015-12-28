@@ -24,6 +24,7 @@ import org.deeplearning4j.earlystopping.scorecalc.ScoreCalculator;
 import org.deeplearning4j.earlystopping.termination.EpochTerminationCondition;
 import org.deeplearning4j.earlystopping.termination.IterationTerminationCondition;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -39,7 +40,7 @@ import java.util.List;
  * @author Alex Black
  */
 @Data
-public class EarlyStoppingConfiguration {
+public class EarlyStoppingConfiguration implements Serializable {
 
     private EarlyStoppingModelSaver modelSaver;
     private List<EpochTerminationCondition> epochTerminationConditions;

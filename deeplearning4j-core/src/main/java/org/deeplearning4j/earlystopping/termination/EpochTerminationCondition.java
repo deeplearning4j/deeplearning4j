@@ -18,10 +18,12 @@
 
 package org.deeplearning4j.earlystopping.termination;
 
+import java.io.Serializable;
+
 /** Interface for termination conditions to be evaluated once per epoch (i.e., once per pass of the full data set),
  *  based on a score and epoch number
  */
-public interface EpochTerminationCondition {
+public interface EpochTerminationCondition extends Serializable {
 
     /** Initialize the epoch termination condition (often a no-op)*/
     void initialize();

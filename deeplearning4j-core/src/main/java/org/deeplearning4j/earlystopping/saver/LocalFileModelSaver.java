@@ -77,7 +77,7 @@ public class LocalFileModelSaver implements EarlyStoppingModelSaver {
         INDArray params = net.params();
         Updater updater = net.getUpdater();
 
-        FileUtils.writeStringToFile(new File(confOut),confJSON,encoding);
+        FileUtils.writeStringToFile(new File(confOut), confJSON, encoding);
         try(DataOutputStream dos = new DataOutputStream(Files.newOutputStream(Paths.get(paramOut)))){
             Nd4j.write(params, dos);
         }
@@ -89,9 +89,9 @@ public class LocalFileModelSaver implements EarlyStoppingModelSaver {
 
     @Override
     public MultiLayerNetwork getBestModel() throws IOException {
-        String confOut = FilenameUtils.concat(directory,bestFileNameConf);
-        String paramOut = FilenameUtils.concat(directory,bestFileNameParam);
-        String updaterOut = FilenameUtils.concat(directory,bestFileNameUpdater);
+        String confOut = FilenameUtils.concat(directory, bestFileNameConf);
+        String paramOut = FilenameUtils.concat(directory, bestFileNameParam);
+        String updaterOut = FilenameUtils.concat(directory, bestFileNameUpdater);
         return load(confOut, paramOut, updaterOut);
     }
 
@@ -104,7 +104,7 @@ public class LocalFileModelSaver implements EarlyStoppingModelSaver {
     }
 
     private MultiLayerNetwork load(String confOut, String paramOut, String updaterOut) throws IOException {
-        String confJSON = FileUtils.readFileToString(new File(confOut),encoding);
+        String confJSON = FileUtils.readFileToString(new File(confOut), encoding);
         INDArray params;
         Updater updater;
         try(DataInputStream dis = new DataInputStream(Files.newInputStream(Paths.get(paramOut)))){
@@ -121,5 +121,10 @@ public class LocalFileModelSaver implements EarlyStoppingModelSaver {
         net.setParams(params);
         net.setUpdater(updater);
         return net;
+    }
+
+    @Override
+    public String toString(){
+        return "LocalFileModelSaver(dir=" + directory + ")";
     }
 }

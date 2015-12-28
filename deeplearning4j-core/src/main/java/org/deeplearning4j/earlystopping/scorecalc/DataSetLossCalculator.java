@@ -38,4 +38,9 @@ public class DataSetLossCalculator implements ScoreCalculator{
         if(average) return lossSum / exCount;
         else return lossSum;
     }
+
+    @Override
+    public String toString(){
+        return "DataSetLossCalculator(" + dataSetIterator + ",average="+average+")";
+    }
 }
