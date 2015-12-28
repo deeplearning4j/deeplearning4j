@@ -1029,7 +1029,7 @@ public class KernelLauncher {
                 Pointer.to(kernelParameters), null
         );
 
-   
+
 
     }
 
