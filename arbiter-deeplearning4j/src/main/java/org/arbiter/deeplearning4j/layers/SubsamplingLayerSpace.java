@@ -59,7 +59,7 @@ public class SubsamplingLayerSpace extends LayerSpace<SubsamplingLayer> {
         protected ParameterSpace<int[]> padding;
 
         public Builder poolingType(SubsamplingLayer.PoolingType poolingType){
-            return poolingType(new FixedValue<SubsamplingLayer.PoolingType>(poolingType));
+            return poolingType(new FixedValue<>(poolingType));
         }
 
         public Builder poolingType(ParameterSpace<SubsamplingLayer.PoolingType> poolingType){
@@ -68,7 +68,7 @@ public class SubsamplingLayerSpace extends LayerSpace<SubsamplingLayer> {
         }
 
         public Builder kernelSize(int... kernelSize){
-            return kernelSize(new FixedValue<int[]>(kernelSize));
+            return kernelSize(new FixedValue<>(kernelSize));
         }
 
         public Builder kernelSize(ParameterSpace<int[]> kernelSize){

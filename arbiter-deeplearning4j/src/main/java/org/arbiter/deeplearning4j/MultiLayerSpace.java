@@ -259,7 +259,7 @@ public class MultiLayerSpace implements ModelParameterSpace<DL4JConfiguration> {
 
 
         public Builder useDropConnect(boolean useDropConnect){
-            return useDropConnect(new FixedValue<Boolean>(useDropConnect));
+            return useDropConnect(new FixedValue<>(useDropConnect));
         }
 
         public Builder useDropConnect(ParameterSpace<Boolean> parameterSpace){
@@ -268,7 +268,7 @@ public class MultiLayerSpace implements ModelParameterSpace<DL4JConfiguration> {
         }
 
         public Builder iterations(int iterations){
-            return iterations(new FixedValue<Integer>(iterations));
+            return iterations(new FixedValue<>(iterations));
         }
 
         public Builder iterations(ParameterSpace<Integer> parameterSpace){
@@ -282,7 +282,7 @@ public class MultiLayerSpace implements ModelParameterSpace<DL4JConfiguration> {
         }
 
         public Builder optimizationAlgo(OptimizationAlgorithm optimizationAlgorithm){
-            return optimizationAlgo(new FixedValue<OptimizationAlgorithm>(optimizationAlgorithm));
+            return optimizationAlgo(new FixedValue<>(optimizationAlgorithm));
         }
 
         public Builder optimizationAlgo(ParameterSpace<OptimizationAlgorithm> parameterSpace){
@@ -291,7 +291,7 @@ public class MultiLayerSpace implements ModelParameterSpace<DL4JConfiguration> {
         }
 
         public Builder regularization(boolean useRegularization){
-            return regularization(new FixedValue<Boolean>(useRegularization));
+            return regularization(new FixedValue<>(useRegularization));
         }
 
         public Builder regularization(ParameterSpace<Boolean> parameterSpace){
@@ -300,7 +300,7 @@ public class MultiLayerSpace implements ModelParameterSpace<DL4JConfiguration> {
         }
 
         public Builder schedules(boolean schedules){
-            return schedules(new FixedValue<Boolean>(schedules));
+            return schedules(new FixedValue<>(schedules));
         }
 
         public Builder schedules(ParameterSpace<Boolean> schedules){
@@ -309,7 +309,7 @@ public class MultiLayerSpace implements ModelParameterSpace<DL4JConfiguration> {
         }
 
         public Builder activation(String activationFunction){
-            return activation(new FixedValue<String>(activationFunction));
+            return activation(new FixedValue<>(activationFunction));
         }
 
         public Builder activation(ParameterSpace<String> activationFunction){
@@ -318,7 +318,7 @@ public class MultiLayerSpace implements ModelParameterSpace<DL4JConfiguration> {
         }
 
         public Builder weightInit(WeightInit weightInit){
-            return weightInit(new FixedValue<WeightInit>(weightInit));
+            return weightInit(new FixedValue<>(weightInit));
         }
 
         public Builder weightInit(ParameterSpace<WeightInit> weightInit){
@@ -327,7 +327,7 @@ public class MultiLayerSpace implements ModelParameterSpace<DL4JConfiguration> {
         }
 
         public Builder dist(Distribution dist){
-            return dist(new FixedValue<Distribution>(dist));
+            return dist(new FixedValue<>(dist));
         }
 
         public Builder dist(ParameterSpace<Distribution> dist){
@@ -336,7 +336,7 @@ public class MultiLayerSpace implements ModelParameterSpace<DL4JConfiguration> {
         }
 
         public Builder learningRate(double learningRate){
-            return learningRate(new FixedValue<Double>(learningRate));
+            return learningRate(new FixedValue<>(learningRate));
         }
 
         public Builder learningRate(ParameterSpace<Double> learningRate){
@@ -345,7 +345,7 @@ public class MultiLayerSpace implements ModelParameterSpace<DL4JConfiguration> {
         }
 
         public Builder learningRateAfter(Map<Integer,Double> learningRateAfter){
-            return learningRateAfter(new FixedValue<Map<Integer, Double>>(learningRateAfter));
+            return learningRateAfter(new FixedValue<>(learningRateAfter));
         }
 
         public Builder learningRateAfter(ParameterSpace<Map<Integer,Double>> learningRateAfter ){
@@ -354,7 +354,7 @@ public class MultiLayerSpace implements ModelParameterSpace<DL4JConfiguration> {
         }
 
         public Builder learningRateScoreBasedDecayRate(double lrScoreBasedDecay){
-            return learningRateScoreBasedDecayRate(new FixedValue<Double>(lrScoreBasedDecay));
+            return learningRateScoreBasedDecayRate(new FixedValue<>(lrScoreBasedDecay));
         }
 
         public Builder learningRateScoreBasedDecayRate(ParameterSpace<Double> lrScoreBasedDecay){
@@ -363,7 +363,7 @@ public class MultiLayerSpace implements ModelParameterSpace<DL4JConfiguration> {
         }
 
         public Builder l1(double l1){
-            return l1(new FixedValue<Double>(l1));
+            return l1(new FixedValue<>(l1));
         }
 
         public Builder l1(ParameterSpace<Double> l1){
@@ -372,7 +372,7 @@ public class MultiLayerSpace implements ModelParameterSpace<DL4JConfiguration> {
         }
 
         public Builder l2(double l2){
-            return l2(new FixedValue<Double>(l2));
+            return l2(new FixedValue<>(l2));
         }
 
         public Builder l2(ParameterSpace<Double> l2){
@@ -381,7 +381,7 @@ public class MultiLayerSpace implements ModelParameterSpace<DL4JConfiguration> {
         }
 
         public Builder dropOut(double dropOut){
-            return dropOut(new FixedValue<Double>(dropOut));
+            return dropOut(new FixedValue<>(dropOut));
         }
 
         public Builder dropOut(ParameterSpace<Double> dropOut){
@@ -390,7 +390,7 @@ public class MultiLayerSpace implements ModelParameterSpace<DL4JConfiguration> {
         }
 
         public Builder momentum(double momentum){
-            return momentum(new FixedValue<Double>(momentum));
+            return momentum(new FixedValue<>(momentum));
         }
 
         public Builder momentum(ParameterSpace<Double> momentum){
@@ -399,7 +399,7 @@ public class MultiLayerSpace implements ModelParameterSpace<DL4JConfiguration> {
         }
 
         public Builder momentumAfter(Map<Integer,Double> momentumAfter){
-            return momentumAfter(new FixedValue<Map<Integer, Double>>(momentumAfter));
+            return momentumAfter(new FixedValue<>(momentumAfter));
         }
 
         public Builder momentumAfter(ParameterSpace<Map<Integer,Double>> momentumAfter){
@@ -408,7 +408,7 @@ public class MultiLayerSpace implements ModelParameterSpace<DL4JConfiguration> {
         }
 
         public Builder updater(Updater updater){
-            return updater(new FixedValue<Updater>(updater));
+            return updater(new FixedValue<>(updater));
         }
 
         public Builder updater(ParameterSpace<Updater> updater){
@@ -417,7 +417,7 @@ public class MultiLayerSpace implements ModelParameterSpace<DL4JConfiguration> {
         }
 
         public Builder rho(double rho){
-            return rho(new FixedValue<Double>(rho));
+            return rho(new FixedValue<>(rho));
         }
 
         public Builder rho(ParameterSpace<Double> rho){
@@ -426,7 +426,7 @@ public class MultiLayerSpace implements ModelParameterSpace<DL4JConfiguration> {
         }
 
         public Builder rmsDecay(double rmsDecay){
-            return rmsDecay(new FixedValue<Double>(rmsDecay));
+            return rmsDecay(new FixedValue<>(rmsDecay));
         }
 
         public Builder rmsDecay(ParameterSpace<Double> rmsDecay){
@@ -435,7 +435,7 @@ public class MultiLayerSpace implements ModelParameterSpace<DL4JConfiguration> {
         }
 
         public Builder gradientNormalization(GradientNormalization gradientNormalization){
-            return gradientNormalization(new FixedValue<GradientNormalization>(gradientNormalization));
+            return gradientNormalization(new FixedValue<>(gradientNormalization));
         }
 
         public Builder gradientNormalization(ParameterSpace<GradientNormalization> gradientNormalization){
@@ -444,7 +444,7 @@ public class MultiLayerSpace implements ModelParameterSpace<DL4JConfiguration> {
         }
 
         public Builder gradientNormalizationThreshold(double threshold){
-            return gradientNormalizationThreshold(new FixedValue<Double>(threshold));
+            return gradientNormalizationThreshold(new FixedValue<>(threshold));
         }
 
         public Builder gradientNormalizationThreshold(ParameterSpace<Double> gradientNormalizationThreshold){
@@ -453,7 +453,7 @@ public class MultiLayerSpace implements ModelParameterSpace<DL4JConfiguration> {
         }
 
         public Builder backprop(boolean backprop){
-            return backprop(new FixedValue<Boolean>(backprop));
+            return backprop(new FixedValue<>(backprop));
         }
 
         public Builder backprop(ParameterSpace<Boolean> backprop){
@@ -462,7 +462,7 @@ public class MultiLayerSpace implements ModelParameterSpace<DL4JConfiguration> {
         }
 
         public Builder pretrain(boolean pretrain){
-            return pretrain(new FixedValue<Boolean>(pretrain));
+            return pretrain(new FixedValue<>(pretrain));
         }
 
         public Builder pretrain(ParameterSpace<Boolean> pretrain){
@@ -471,7 +471,7 @@ public class MultiLayerSpace implements ModelParameterSpace<DL4JConfiguration> {
         }
 
         public Builder backpropType(BackpropType backpropType){
-            return backpropType(new FixedValue<BackpropType>(backpropType));
+            return backpropType(new FixedValue<>(backpropType));
         }
 
         public Builder backpropType(ParameterSpace<BackpropType> backpropType){
@@ -480,7 +480,7 @@ public class MultiLayerSpace implements ModelParameterSpace<DL4JConfiguration> {
         }
 
         public Builder tbpttFwdLength(int tbpttFwdLength){
-            return tbpttFwdLength(new FixedValue<Integer>(tbpttFwdLength));
+            return tbpttFwdLength(new FixedValue<>(tbpttFwdLength));
         }
 
         public Builder tbpttFwdLength(ParameterSpace<Integer> tbpttFwdLength){
@@ -489,7 +489,7 @@ public class MultiLayerSpace implements ModelParameterSpace<DL4JConfiguration> {
         }
 
         public Builder tbpttBwdLength(int tbpttBwdLength){
-            return tbpttBwdLength(new FixedValue<Integer>(tbpttBwdLength));
+            return tbpttBwdLength(new FixedValue<>(tbpttBwdLength));
         }
 
         public Builder tbpttBwdLength(ParameterSpace<Integer> tbpttBwdLength){
@@ -499,7 +499,7 @@ public class MultiLayerSpace implements ModelParameterSpace<DL4JConfiguration> {
 
 
         public Builder addLayer(LayerSpace<?> layerSpace){
-            return addLayer(layerSpace,new FixedValue<Integer>(1),true);
+            return addLayer(layerSpace,new FixedValue<>(1),true);
         }
 
 

@@ -48,7 +48,7 @@ public class AutoEncoderLayerSpace extends BasePretrainNetworkLayerSpace<AutoEnc
         private ParameterSpace<Double> sparsity;
 
         public Builder corruptionLevel(double corruptionLevel){
-            return corruptionLevel(new FixedValue<Double>(corruptionLevel));
+            return corruptionLevel(new FixedValue<>(corruptionLevel));
         }
 
         public Builder corruptionLevel(ParameterSpace<Double> corruptionLevel){
@@ -57,7 +57,7 @@ public class AutoEncoderLayerSpace extends BasePretrainNetworkLayerSpace<AutoEnc
         }
 
         public Builder sparsity(double sparsity){
-            return sparsity(new FixedValue<Double>(sparsity));
+            return sparsity(new FixedValue<>(sparsity));
         }
 
         public Builder sparsity(ParameterSpace<Double> sparsity){

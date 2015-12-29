@@ -87,10 +87,8 @@ public class DL4JTaskCreator<A> implements TaskCreator<DL4JConfiguration,MultiLa
 
             A additionalEvaluation = (modelEvaluator != null ? modelEvaluator.evaluateModel(net,dataProvider) : null);
 
-            OptimizationResult<DL4JConfiguration,MultiLayerNetwork,A> result = new OptimizationResult<>(candidate,net,
+            return new OptimizationResult<>(candidate,net,
                     scoreFunction.score(net,dataProvider,candidate.getDataParameters()),candidate.getIndex(), additionalEvaluation);
-
-            return result;
         }
     }
 }

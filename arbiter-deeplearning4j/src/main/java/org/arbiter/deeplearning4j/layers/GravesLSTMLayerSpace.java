@@ -44,7 +44,7 @@ public class GravesLSTMLayerSpace extends FeedForwardLayerSpace<GravesLSTM> {
         private ParameterSpace<Double> forgetGateBiasInit;
 
         public Builder forgetGateBiasInit(double forgetGateBiasInit){
-            return forgetGateBiasInit(new FixedValue<Double>(forgetGateBiasInit));
+            return forgetGateBiasInit(new FixedValue<>(forgetGateBiasInit));
         }
 
         public Builder forgetGateBiasInit( ParameterSpace<Double> forgetGateBiasInit){

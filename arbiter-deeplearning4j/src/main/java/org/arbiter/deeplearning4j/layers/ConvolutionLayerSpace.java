@@ -60,7 +60,7 @@ public class ConvolutionLayerSpace extends FeedForwardLayerSpace<ConvolutionLaye
         protected ParameterSpace<int[]> padding;
 
         public Builder convolutionType(Convolution.Type convolutionType){
-            return convolutionType(new FixedValue<Convolution.Type>(convolutionType));
+            return convolutionType(new FixedValue<>(convolutionType));
         }
 
         public Builder convolutionType(ParameterSpace<Convolution.Type> convolutionType ){
@@ -69,7 +69,7 @@ public class ConvolutionLayerSpace extends FeedForwardLayerSpace<ConvolutionLaye
         }
 
         public Builder kernelSize(int... kernelSize){
-            return kernelSize(new FixedValue<int[]>(kernelSize));
+            return kernelSize(new FixedValue<>(kernelSize));
         }
 
         public Builder kernelSize(ParameterSpace<int[]> kernelSize){
@@ -78,7 +78,7 @@ public class ConvolutionLayerSpace extends FeedForwardLayerSpace<ConvolutionLaye
         }
 
         public Builder stride(int... stride){
-            return stride(new FixedValue<int[]>(stride));
+            return stride(new FixedValue<>(stride));
         }
 
         public Builder stride(ParameterSpace<int[]> stride){
@@ -87,7 +87,7 @@ public class ConvolutionLayerSpace extends FeedForwardLayerSpace<ConvolutionLaye
         }
 
         public Builder padding(int... padding){
-            return padding(new FixedValue<int[]>(padding));
+            return padding(new FixedValue<>(padding));
         }
 
         public Builder padding(ParameterSpace<int[]> padding){

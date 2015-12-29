@@ -25,7 +25,7 @@ public abstract class BaseOutputLayerSpace<L extends BaseOutputLayer> extends Fe
         protected ParameterSpace<LossFunction> lossFunction;
 
         public T lossFunction(LossFunction lossFunction){
-            return lossFunction(new FixedValue<LossFunction>(lossFunction));
+            return lossFunction(new FixedValue<>(lossFunction));
         }
 
         public T lossFunction(ParameterSpace<LossFunction> lossFunction){

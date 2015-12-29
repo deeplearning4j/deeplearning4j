@@ -94,11 +94,10 @@ public class UIStatusReportingListener implements EarlyStoppingListener, Iterati
             i++;
         }
 
-        RenderableComponent esScoreVsEpoch = new RenderableComponentLineChart.Builder()
+        return new RenderableComponentLineChart.Builder()
                 .addSeries("Score vs. Epoch",x,y)
                 .title("Early Stopping: Score vs. Epoch")
                 .build();
-        return esScoreVsEpoch;
     }
 
     @Override

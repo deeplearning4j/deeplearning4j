@@ -58,7 +58,7 @@ public class RBMLayerSpace extends BasePretrainNetworkLayerSpace<RBM> {
         private ParameterSpace<Double> sparsity;
 
         public Builder hiddenUnit(RBM.HiddenUnit hiddenUnit){
-            return hiddenUnit(new FixedValue<RBM.HiddenUnit>(hiddenUnit));
+            return hiddenUnit(new FixedValue<>(hiddenUnit));
         }
 
         public Builder hiddenUnit(ParameterSpace<RBM.HiddenUnit> hiddenUnit){
@@ -67,7 +67,7 @@ public class RBMLayerSpace extends BasePretrainNetworkLayerSpace<RBM> {
         }
 
         public Builder visibleUnit(RBM.VisibleUnit visibleUnit){
-            return visibleUnit(new FixedValue<RBM.VisibleUnit>(visibleUnit));
+            return visibleUnit(new FixedValue<>(visibleUnit));
         }
 
         public Builder visibleUnit(ParameterSpace<RBM.VisibleUnit> visibleUnit){
@@ -76,7 +76,7 @@ public class RBMLayerSpace extends BasePretrainNetworkLayerSpace<RBM> {
         }
 
         public Builder k( int k ){
-            return k(new FixedValue<Integer>(k));
+            return k(new FixedValue<>(k));
         }
 
         public Builder k(ParameterSpace<Integer> k){
@@ -85,7 +85,7 @@ public class RBMLayerSpace extends BasePretrainNetworkLayerSpace<RBM> {
         }
 
         public Builder sparsity(double sparsity){
-            return sparsity(new FixedValue<Double>(sparsity));
+            return sparsity(new FixedValue<>(sparsity));
         }
 
         public Builder sparsity(ParameterSpace<Double> sparsity){
