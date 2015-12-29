@@ -164,4 +164,24 @@ public interface DataSet extends Iterable<org.nd4j.linalg.dataset.DataSet>, Seri
 
     @Override
     Iterator<org.nd4j.linalg.dataset.DataSet> iterator();
+
+    /** Input mask array: a mask array for input, where each value is in {0,1} in order to specify whether an input is
+     *  actually present or not. Typically used for situations such as RNNs with variable length inputs
+      * @return Input mask array
+     */
+    INDArray getFeaturesMaskArray();
+
+    void setFeaturesMaskArray(INDArray inputMask);
+
+    /** Labels (output) mask array: a mask array for input, where each value is in {0,1} in order to specify whether an
+     * output is actually present or not. Typically used for situations such as RNNs with variable length inputs or many-
+     * to-one situations.
+     * @return Labels (output) mask array
+     */
+    INDArray getLabelsMaskArray();
+
+    void setLabelsMaskArray(INDArray labelsMask);
+
+    /** Whether the labels or input (features) mask arrays are present for this DataSet */
+    boolean hasMaskArrays();
 }

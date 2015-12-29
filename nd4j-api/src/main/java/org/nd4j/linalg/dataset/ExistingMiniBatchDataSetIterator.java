@@ -86,6 +86,11 @@ public class ExistingMiniBatchDataSetIterator implements DataSetIterator {
     }
 
     @Override
+    public List<String> getLabels() {
+        return null;
+    }
+
+    @Override
     public boolean hasNext() {
         return currIdx < totalBatches;
     }

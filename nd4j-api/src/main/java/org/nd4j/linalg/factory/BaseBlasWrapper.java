@@ -1,9 +1,6 @@
 package org.nd4j.linalg.factory;
 
-import org.nd4j.linalg.api.blas.BlasBufferUtil;
-import org.nd4j.linalg.api.blas.Level1;
-import org.nd4j.linalg.api.blas.Level2;
-import org.nd4j.linalg.api.blas.Level3;
+import org.nd4j.linalg.api.blas.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
@@ -23,6 +20,12 @@ import org.nd4j.linalg.util.LinAlgExceptions;
  */
 
 public abstract class BaseBlasWrapper implements BlasWrapper {
+
+    @Override
+    public Lapack lapack() {
+        return Nd4j.factory().lapack();
+    }
+
     @Override
     public Level1 level1() {
         return Nd4j.factory().level1();

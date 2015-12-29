@@ -56,12 +56,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-jcublas-kernels</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
         </dependency>

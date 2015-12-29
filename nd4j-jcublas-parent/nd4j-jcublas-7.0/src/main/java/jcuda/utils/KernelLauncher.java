@@ -52,8 +52,6 @@ import jcuda.driver.JCudaDriver;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.dim3;
 
-import org.nd4j.linalg.jcublas.SimpleJCublas;
-import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -620,18 +618,9 @@ public class KernelLauncher {
      * context.
      */
     private void initialize() {
-        context = ContextHolder.getInstance().getContext(deviceNumber);
+
     }
 
-    /**
-     * Sync the context for the current thread.
-     */
-    public static  void setContext() {
-        JCudaDriver.cuCtxSetCurrent(ContextHolder.getInstance().getContext());
-        JCuda.cudaSetDevice(ContextHolder.getInstance().getDeviceForThread());
-        JCudaDriver.cuCtxSynchronize();
-        JCuda.cudaDeviceSynchronize();
-    }
 
     /**
      * Create a new KernelLauncher which uses the same module as
@@ -1039,12 +1028,6 @@ public class KernelLauncher {
                 Pointer.to(kernelParameters), null
         );
 
-        ContextHolder.syncStream();
-        try {
-            //SimpleJCublas.sync();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
 
     }
 

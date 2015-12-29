@@ -40,14 +40,13 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
                     , parameters.getAOrdering()
                     , parameters.getM()
                     , parameters.getN()
-                    ,
-                    alpha
-                    , A
+                    , alpha
+                    , parameters.getA()
                     , parameters.getLda()
-                    , X
+                    , parameters.getX()
                     , parameters.getIncx()
                     , beta
-                    , Y
+                    , parameters.getY()
                     , parameters.getIncy());
         else
             sgemv(order
@@ -55,14 +54,13 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
                     , parameters.getM()
                     , parameters.getN()
                     , (float) alpha
-                    , A
+                    , parameters.getA()
                     ,parameters.getLda()
-                    , X
+                    , parameters.getX()
                     , parameters.getIncx()
                     , (float) beta
-                    , Y
+                    , parameters.getY()
                     , parameters.getIncy());
-
     }
 
     /**

@@ -52,8 +52,7 @@ import jcuda.driver.JCudaDriver;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.dim3;
 
-import org.nd4j.linalg.jcublas.SimpleJCublas;
-import org.nd4j.linalg.jcublas.context.ContextHolder;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -604,34 +603,10 @@ public class KernelLauncher {
      * methods.
      */
     private KernelLauncher() {
-        initialize();
+
     }
 
-    /**
-     * Initializes this KernelLauncher. This method will try to 
-     * initialize the JCuda driver API. Then it will try to 
-     * attach to the current CUDA context. If no active CUDA 
-     * context exists, then it will try to create one, for
-     * the device which is specified by the current 
-     * deviceNumber.
-     *
-     * @throws CudaException If it is neither possible to 
-     * attach to an existing context, nor to create a new
-     * context.
-     */
-    private void initialize() {
-        context = ContextHolder.getInstance().getContext(deviceNumber);
-    }
 
-    /**
-     * Sync the context for the current thread.
-     */
-    public static  void setContext() {
-        JCudaDriver.cuCtxSetCurrent(ContextHolder.getInstance().getContext());
-        JCuda.cudaSetDevice(ContextHolder.getInstance().getDeviceForThread());
-        JCudaDriver.cuCtxSynchronize();
-        JCuda.cudaDeviceSynchronize();
-    }
 
     /**
      * Create a new KernelLauncher which uses the same module as
@@ -1039,7 +1014,6 @@ public class KernelLauncher {
                 Pointer.to(kernelParameters), null
         );
 
-        ContextHolder.syncStream();
         try {
             //SimpleJCublas.sync();
         } catch (Exception e) {
