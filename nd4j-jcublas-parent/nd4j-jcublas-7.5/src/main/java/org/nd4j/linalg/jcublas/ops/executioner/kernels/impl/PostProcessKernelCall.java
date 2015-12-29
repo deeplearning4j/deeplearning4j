@@ -1,6 +1,5 @@
 package org.nd4j.linalg.jcublas.ops.executioner.kernels.impl;
 
-import jcuda.Pointer;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.gpumetrics.GpuMetrics;
@@ -19,19 +18,15 @@ import org.nd4j.linalg.jcublas.util.CudaArgs;
 public class PostProcessKernelCall extends BaseGpuKernelCall {
     public final static String POST_PROCESS_NAME = "postProcessLoop";
     protected int[] dimension;
-    protected int resultIndex;
-    protected int extraParamsIndex;
     protected Object[] originalArgs;
+    protected KernelCallPointerArgs kernelCallPointerArgs;
 
-
-    public PostProcessKernelCall(Op op,int[] dimension,int resultIndex,int extraParamsIndex,Object[] originalArgs,CudaContext ctx,GpuMetrics metrics) {
+    public PostProcessKernelCall(Op op,int[] dimension,KernelCallPointerArgs kernelCallPointerArgs,Object[] originalArgs,CudaContext ctx) {
         super(op);
+        this.kernelCallPointerArgs = kernelCallPointerArgs;
         this.dimension = dimension;
-        this.resultIndex = resultIndex;
-        this.extraParamsIndex = extraParamsIndex;
         this.originalArgs = originalArgs;
         this.cudaContext = ctx;
-        this.metrics = metrics;
         createArgs();
     }
 
@@ -40,21 +35,18 @@ public class PostProcessKernelCall extends BaseGpuKernelCall {
         args = new Object[] {
                 op.x().tensorAlongDimension(0, dimension).length(),
                 op.x().offset(),
-                (Pointer) this.originalArgs[resultIndex],
+                kernelCallPointerArgs.getX(),
                 op.x().tensorAlongDimension(0, dimension).elementWiseStride(),
-                (Pointer) this.originalArgs[extraParamsIndex],
-                (Pointer) this.originalArgs[resultIndex],
+                kernelCallPointerArgs.getExtraArgs(),
+                kernelCallPointerArgs.getZ(),
         };
     }
 
     @Override
-    public void createCudaConext() {
-
-    }
-
-    @Override
     public void createMetrics() {
-
+        GpuMetrics metrics = GpuMetrics.blockAndThreads(getType(op),op.n());
+        metrics.setSharedMemoryNotOverMax(metrics.getBlockSize() * op.x().data().getElementSize());
+        this.metrics = metrics;
     }
 
     @Override

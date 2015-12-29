@@ -47,11 +47,6 @@ public interface GpuKernelCall {
     void createArgs();
 
     /**
-     * Creates the cuda contexts for this call
-     */
-    void createCudaConext();
-
-    /**
      * Creates the metrics for this call
      */
     void createMetrics();

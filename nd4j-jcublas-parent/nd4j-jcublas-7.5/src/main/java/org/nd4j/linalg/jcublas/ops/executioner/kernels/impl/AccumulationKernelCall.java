@@ -1,10 +1,12 @@
 package org.nd4j.linalg.jcublas.ops.executioner.kernels.impl;
 
-import jcuda.Pointer;
+import jcuda.jcublas.JCublas;
+import jcuda.runtime.JCuda;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.gpumetrics.GpuMetrics;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 import org.nd4j.linalg.jcublas.ops.executioner.kernels.BaseGpuKernelCall;
@@ -30,8 +32,7 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
     protected int yStride;
     protected boolean scalarResult;
     protected int[] multiDimension;
-    protected int dataIndex,resultIndex,extraParamsIndex,xShapeInfoIndex,yShapeInfoIndex;
-
+    protected int resultIndex,resultShapeInfoIndex;
 
     /**
      * Accumulation kernel call
@@ -101,11 +102,6 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
     }
 
     @Override
-    public void createCudaConext() {
-
-    }
-
-    @Override
     public void createArgs() {
         if (op.y() != null) {
             metrics.setSharedMemoryNotOverMax(metrics.getSharedMemory() * 2);
@@ -126,12 +122,9 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
                     throw new IllegalStateException("Unable to compute element wise stride");
 
             }
-
+            resultIndex = 5;
+            resultShapeInfoIndex = resultIndex + 1;
             //result index for the pointer to use when invoking the post process method
-            resultIndex = 6;
-            extraParamsIndex = 5;
-            dataIndex = 1;
-            xShapeInfoIndex = 2;
             args = new Object[] {
                     op.n(),
                     op.x(),
@@ -179,11 +172,9 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
             int length = op.x().data().length();
             if (dimension == null && xStride == 1 && op.x().offset() == 0)
                 length = op.n();
-            //result index for the pointer to use when invoking the post process method
             resultIndex = 4;
-            dataIndex = 1;
-            extraParamsIndex = 3;
-            xShapeInfoIndex = 2;
+            resultShapeInfoIndex = resultIndex + 1;
+            //result index for the pointer to use when invoking the post process method
             args = new Object[] {
                     length,
                     op.x(),
@@ -234,31 +225,48 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
     @Override
     public void invoke() {
         Accumulation acc = (Accumulation) op;
+        INDArray tempResult;
+
+        JCudaBuffer tempResultInfo;
+        //allocate the memory for the temp solution
+        if(multiDimension != null) {
+            tempResult = Nd4j.create(ArrayUtil.removeIndex(acc.x().shape(),dimension));
+            args[resultIndex] = tempResult;
+            op.setZ(tempResult);
+            tempResultInfo = KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.z()));
+            args[resultShapeInfoIndex] = tempResultInfo;
+        }
+
         try(KernelParamsWrapper kParams = new KernelParamsWrapper(true,args).setResultOp(acc, op.z(),dimension)) {
             //setup the kernel parameters such that super.invoke() will call the kernel with the given parameters
             this.args = kParams.getKernelParameters();
             this.cudaContext = kParams.getContext();
             boolean collapseTad = multiDimension != null;
-           if(collapseTad)
-               acc.setApplyFinalTransform(false);
-            //invoke basic reduce
-            super.invoke();
+            if(collapseTad)
+                acc.setApplyFinalTransform(false);
+            KernelCallPointerArgs devicePointers = getPointers();
+            for(int i = multiDimension.length - 1; i >= 0 ; i--) {
+                //invoke basic reduce
+                super.invoke();
+
+            }
+
             //invoke the collapse tad
             if(collapseTad) {
                 TadCollapseAccumulation collapseAccumulation = new TadCollapseAccumulation(this.op,multiDimension,this.dimension,false);
                 GpuKernelCall collapseKernelCall = new CollapseAccumuationKernelCall(
-                        new Pointer[] {(Pointer) this.args[dataIndex],(Pointer) this.args[resultIndex],(Pointer) this.args[xShapeInfoIndex]},collapseAccumulation,metrics,cudaContext);
+                        getPointers(),collapseAccumulation,metrics,cudaContext);
                 collapseKernelCall.invoke();
             }
 
             //collapse dimension result
             //dimension result
-            if(dimension != null && dimension[0] != Integer.MAX_VALUE) {
+            /*if(dimension != null && dimension[0] != Integer.MAX_VALUE) {
                 GpuKernelCall postProcessCall = new PostProcessKernelCall(
-                        op,dimension,resultIndex,extraParamsIndex,args,cudaContext,metrics);
+                        op,dimension,getPointers(),args,cudaContext);
                 postProcessCall.invoke();
 
-            }
+            }*/
         } catch(Exception e) {
             throw new RuntimeException("Could not execute kernel", e);
         }

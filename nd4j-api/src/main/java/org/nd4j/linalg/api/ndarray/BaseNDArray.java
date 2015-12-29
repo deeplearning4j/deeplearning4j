@@ -761,7 +761,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if(sliceIdx == 0 && length == NDArrayMath.lengthPerSlice(ret2))
             return ret2.slice(offset);
 
-        if(length == NDArrayMath.lengthPerSlice(ret2)) {
+        else if(length == NDArrayMath.lengthPerSlice(ret2)) {
             offset -= ret2.slices() * (offset / ret2.slices());
             ret2 = ret2.slice(offset);
             return ret2;

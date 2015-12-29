@@ -78,11 +78,6 @@ public class TransformKernelCall extends BaseGpuKernelCall {
     }
 
     @Override
-    public void createCudaConext() {
-
-    }
-
-    @Override
     public void createMetrics() {
         GpuMetrics metrics = GpuMetrics.blockAndThreads(getType(op),op.n());
         metrics.setSharedMemoryNotOverMax(metrics.getBlockSize() * op.x().data().getElementSize());

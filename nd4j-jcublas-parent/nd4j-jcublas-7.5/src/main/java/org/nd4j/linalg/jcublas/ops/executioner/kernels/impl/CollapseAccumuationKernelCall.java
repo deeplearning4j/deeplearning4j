@@ -1,6 +1,7 @@
 package org.nd4j.linalg.jcublas.ops.executioner.kernels.impl;
 
-import jcuda.Pointer;
+import jcuda.jcublas.JCublas;
+import jcuda.runtime.JCuda;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
@@ -11,7 +12,7 @@ import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 import org.nd4j.linalg.jcublas.ops.executioner.kernels.BaseGpuKernelCall;
 import org.nd4j.linalg.jcublas.ops.executioner.kernels.args.KernelCallPointerArgs;
 import org.nd4j.linalg.jcublas.ops.executioner.kernels.args.impl.CollapseAccumulationKernelCallPointerArgs;
-import org.nd4j.linalg.jcublas.util.PointerUtil;
+import org.nd4j.linalg.jcublas.util.CudaArgs;
 
 /**
  * Kernel call
@@ -24,18 +25,15 @@ import org.nd4j.linalg.jcublas.util.PointerUtil;
 public class CollapseAccumuationKernelCall extends BaseGpuKernelCall {
     protected  int xStride;
     protected int yStride;
-    protected int resultIndex;
-    protected int extraParamsIndex;
     protected boolean scalarResult;
     protected TadCollapseAccumulation accumulation;
-    protected Pointer[] devicePointers;
-
-    public CollapseAccumuationKernelCall(Pointer[] devicePointers,Op op,GpuMetrics metrics,CudaContext cudaContext) {
+    protected KernelCallPointerArgs kernelCallPointerArgs;
+    public CollapseAccumuationKernelCall(KernelCallPointerArgs kernelCallPointerArgs,Op op,GpuMetrics metrics,CudaContext cudaContext) {
         super(op);
         if(!(op instanceof TadCollapseAccumulation))
             throw new IllegalArgumentException("Op must be of type " + TadCollapseAccumulation.class.getName());
         this.accumulation = (TadCollapseAccumulation) op;
-        this.devicePointers = devicePointers;
+        this.kernelCallPointerArgs = kernelCallPointerArgs;
         this.metrics = metrics;
         this.cudaContext = cudaContext;
         createArgs();
@@ -74,19 +72,16 @@ public class CollapseAccumuationKernelCall extends BaseGpuKernelCall {
             }
 
             //result index for the pointer to use when invoking the post process method
-            resultIndex = 6;
-            extraParamsIndex = 5;
             args = new Object[] {
-                    op.x(),
-                    KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.x(), accumulation.getSmallerDimension())),
-                    op.y(),
-                    KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.y(), accumulation.getSmallerDimension())),
-                    toArgs(op.extraArgs(),
-                            getType(op)),
-                    op.z(),
-                    KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.z())),
-                    KernelFunctions.alloc(metrics.getGpuDefinitionInfo()),
-                    KernelFunctions.alloc(scalarResult ? new int[]{Integer.MAX_VALUE} : accumulation.getSmallerDimension()),
+                    kernelCallPointerArgs.getX(),
+                    kernelCallPointerArgs.getXShapeInfoPointer(),
+                    kernelCallPointerArgs.getY(),
+                    kernelCallPointerArgs.getYShapeInfoPointer(),
+                    kernelCallPointerArgs.getExtraArgs(),
+                    kernelCallPointerArgs.getZ(),
+                    kernelCallPointerArgs.getZShapeInfoPointer(),
+                    kernelCallPointerArgs.getGpuInfoPointer(),
+                    kernelCallPointerArgs.getDimensionArrPointer(),
                     //reason here: we only work with smaller dimensions
                     1,
                     //if the whole buffer is to be used don't do final aggregation this happens
@@ -120,8 +115,7 @@ public class CollapseAccumuationKernelCall extends BaseGpuKernelCall {
             if (scalarResult && xStride == 1 && op.x().offset() == 0)
                 length = op.n();
             //result index for the pointer to use when invoking the post process method
-            resultIndex = 4;
-            extraParamsIndex = 3;
+
             /**
              * 		T *data
              ,T *result
@@ -136,25 +130,43 @@ public class CollapseAccumuationKernelCall extends BaseGpuKernelCall {
              */
 
             args = new Object[] {
-                    devicePointers[0],
-                    devicePointers[1],
-                    toArgs(op.extraArgs(), getType(op)),
-                    op.x().tensorAlongDimension(0,accumulation.getSmallerDimension()).length(),
-                    op.x().tensorssAlongDimension(accumulation.getSmallerDimension()),
-                    op.n(),
-                    op.x().tensorAlongDimension(0,accumulation.getSmallerDimension()).elementWiseStride(),
+                    kernelCallPointerArgs.getZ(),
+                    kernelCallPointerArgs.getZ(),
+                    kernelCallPointerArgs.getExtraArgs(),
+                    op.x().tensorAlongDimension(0,accumulation.getOriginalDimension()).length(),
                     op.x().tensorssAlongDimension(accumulation.getOriginalDimension()),
+                    length,
+                    op.x().tensorAlongDimension(0, accumulation.getSmallerDimension()).elementWiseStride(),
+                    op.x().tensorssAlongDimension(accumulation.getSmallerDimension()),
                     metrics.getSharedMemory(),
-                    devicePointers[2],
-                    KernelFunctions.alloc(scalarResult ? new int[]{Integer.MAX_VALUE} : accumulation.getSmallerDimension()),
-                    1
+                    kernelCallPointerArgs.getXShapeInfoPointer(),
+                    kernelCallPointerArgs.getZShapeInfoPointer(),
+                    kernelCallPointerArgs.getDimensionArrPointer(),
+                    1,
+                    //iterate along the last dimension wrt the solution
+                    accumulation.getOriginalDimension()[accumulation.getOriginalDimension().length - 2]
             };
         }
     }
 
     @Override
-    public void createCudaConext() {
+    public void invoke() {
+        String moduleName = CudaArgs.getModuleNameFor(op);
+        /**
+         * Invoke a cuda kernel by name. This will be wrt the function name.
+         * Functions that are accumulations or transforms have names that end with _strided.
+         *
+         */
 
+        metrics.validate();
+        //module name is the op, function name is transform
+        KernelFunctions.invoke(
+                metrics,
+                true
+                , moduleName,
+                functionName()
+                , getType(op), cudaContext
+                , args);
     }
 
     @Override
@@ -162,8 +174,6 @@ public class CollapseAccumuationKernelCall extends BaseGpuKernelCall {
 
     }
 
-    private int toInt(boolean val) {
-        return val ? 1 : 0;
-    }
+
 
 }

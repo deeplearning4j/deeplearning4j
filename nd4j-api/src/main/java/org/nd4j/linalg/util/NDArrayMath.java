@@ -144,7 +144,8 @@ public class NDArrayMath {
      */
     public static int sliceOffsetForTensor(int index, INDArray arr, int[] tensorShape) {
         int tensorLength = ArrayUtil.prod(tensorShape);
-        int offset = index * tensorLength / NDArrayMath.lengthPerSlice(arr);
+        int lengthPerSlice = NDArrayMath.lengthPerSlice(arr);
+        int offset = index * tensorLength / lengthPerSlice;
         return offset;
     }
 

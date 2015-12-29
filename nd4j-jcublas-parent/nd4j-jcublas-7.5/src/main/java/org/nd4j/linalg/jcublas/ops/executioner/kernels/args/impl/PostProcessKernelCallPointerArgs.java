@@ -5,7 +5,9 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.jcublas.ops.executioner.kernels.args.BaseKernelCallPointerArgs;
 
 /**
- * Created by agibsonccc on 12/21/15.
+ * Post process kernel call device pointers
+ *
+ * @author Adam Gibson
  */
 public class PostProcessKernelCallPointerArgs extends BaseKernelCallPointerArgs {
     /**

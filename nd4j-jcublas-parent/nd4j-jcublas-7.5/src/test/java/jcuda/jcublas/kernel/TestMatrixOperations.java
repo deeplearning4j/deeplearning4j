@@ -357,6 +357,27 @@ public class TestMatrixOperations {
         assertEquals(assertion,mean);
     }
 
+
+    @Test
+    public void testSums3() {
+        INDArray multipleMeans = Nd4j.linspace(1,24,24).reshape(2,2,3,2);
+        for(int i = 2; i < multipleMeans.tensorssAlongDimension(3); i++) {
+            System.out.println(multipleMeans.tensorAlongDimension(i,3).offset());
+        }
+        INDArray mean = multipleMeans.sum(2, 3);
+       /* INDArray sumAlongLast = multipleMeans.sum(3);
+        for(int i = 0; i < sumAlongLast.tensorssAlongDimension(2); i++)
+            System.out.println(sumAlongLast.tensorAlongDimension(i,2).offset());
+*/
+        INDArray assertion = Nd4j.create(new double[][]{
+                {21,57},
+                {93,  129}
+        });
+
+        assertEquals(assertion,mean);
+    }
+
+
     @Test
     public void testMultiThreading() throws Exception {
         ExecutorService ex = ExecutorServiceProvider.getExecutorService();

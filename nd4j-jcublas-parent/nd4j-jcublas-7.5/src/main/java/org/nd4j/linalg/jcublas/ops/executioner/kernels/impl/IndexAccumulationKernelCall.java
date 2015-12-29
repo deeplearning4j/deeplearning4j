@@ -77,11 +77,6 @@ public class IndexAccumulationKernelCall extends BaseGpuKernelCall {
     }
 
     @Override
-    public void createCudaConext() {
-
-    }
-
-    @Override
     public void createArgs() {
         if (op.y() != null) {
             metrics.setSharedMemoryNotOverMax(metrics.getSharedMemory() * 2);

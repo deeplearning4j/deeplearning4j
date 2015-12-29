@@ -75,11 +75,6 @@ public class ScalarKernelCall extends BaseGpuKernelCall {
     }
 
     @Override
-    public void createCudaConext() {
-
-    }
-
-    @Override
     public void createMetrics() {
         GpuMetrics metrics = GpuMetrics.blockAndThreads(getType(op),op.n());
         metrics.setGridSize(op.n());
