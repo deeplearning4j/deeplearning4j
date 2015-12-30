@@ -116,40 +116,6 @@ public class MultiLayerTest {
         assertEquals(params,params2);
     }
 
-    @Test
-    public void testDbnFaces() {
-        DataSetIterator iter = new LFWDataSetIterator(28,28);
-
-        DataSet next = iter.next();
-        next.normalizeZeroMeanZeroUnitVariance();
-
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                .iterations(5).learningRate(1e-3)
-                .list(4)
-                .layer(0, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
-                        .nIn(next.numInputs()).nOut(600)
-                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1e-5))
-                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
-                .layer(1, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
-                        .nIn(600).nOut(250)
-                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1e-5))
-                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
-                .layer(2, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
-                        .nIn(250).nOut(100)
-                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1e-5))
-                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
-                .layer(3, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .nIn(100).nOut(iter.totalOutcomes())
-                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1e-5)).build())
-                .build();
-
-        MultiLayerNetwork network = new MultiLayerNetwork(conf);
-        network.init();
-        network.setListeners(Arrays.<IterationListener>asList(new ScoreIterationListener(4)));
-        network.fit(next);
-
-    }
 
 
     @Test

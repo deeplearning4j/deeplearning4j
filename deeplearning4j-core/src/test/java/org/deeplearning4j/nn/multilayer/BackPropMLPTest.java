@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.multilayer;
 import static org.junit.Assert.*;
 
 import java.util.Arrays;
+import java.util.List;
 
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
@@ -157,7 +158,7 @@ public class BackPropMLPTest {
             for( int i = 0; i < 3; i++ )
                 expectedL2BiasAfter[i] = l2BiasFloatArray[i] - 0.1f * dLdbOut[i];
 
-            
+
             //Finally, do back-prop on network, and compare parameters vs. expected parameters
             network.fit(data);
 
@@ -192,19 +193,17 @@ public class BackPropMLPTest {
         }
     }
 
-    @Test
-    public void testMiniBatchWeightUpdates(){
-        //Manually calculate weight updates (outside of DL4J, but using ND4J matrix ops)
-        // and compare expected and actual weights after backprop
 
-        testIrisMiniBatchWeightUpdates(1,new int[]{1}, "sigmoid");
-        testIrisMiniBatchWeightUpdates(1, new int[]{5}, "sigmoid");
-        testIrisMiniBatchWeightUpdates(12,new int[]{15,25,10},"sigmoid");
-        testIrisMiniBatchWeightUpdates(50,new int[]{10,50,200,50,10},"tanh");
-        testIrisMiniBatchWeightUpdates(150,new int[]{30,50,20},"tanh");
+    @Test
+    public void testMLPGradientCalculation() {
+        testIrisMiniBatchGradients(1,new int[]{1}, "sigmoid");
+        testIrisMiniBatchGradients(1, new int[]{5}, "sigmoid");
+        testIrisMiniBatchGradients(12,new int[]{15,25,10},"sigmoid");
+        testIrisMiniBatchGradients(50,new int[]{10,50,200,50,10},"tanh");
+        testIrisMiniBatchGradients(150,new int[]{30,50,20},"tanh");
     }
 
-    private static void testIrisMiniBatchWeightUpdates( int miniBatchSize, int[] hiddenLayerSizes, String activationFunction) {
+    private static void testIrisMiniBatchGradients(int miniBatchSize, int[] hiddenLayerSizes, String activationFunction) {
         int totalExamples = 10 * miniBatchSize;
         if( totalExamples > 150) {
             totalExamples = miniBatchSize * (150/miniBatchSize);
@@ -212,110 +211,6 @@ public class BackPropMLPTest {
         if( miniBatchSize > 150 ) fail();
         DataSetIterator iris = new IrisDataSetIterator(miniBatchSize,totalExamples);
 
-        if(!activationFunction.equals("tanh") && !activationFunction.equals("sigmoid") ) fail();
-        boolean sigmoid = activationFunction.equals("sigmoid");
-
-        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMLPSimpleConfig(hiddenLayerSizes,activationFunction));
-        network.init();
-
-        Layer[] layers = network.getLayers();
-        int nLayers = layers.length;
-
-        final float learningRate = 0.1f;
-        while(iris.hasNext()){
-            DataSet data = iris.next();
-            INDArray x = data.getFeatureMatrix();
-            INDArray y = data.getLabels();
-
-            //Do forward pass:
-            INDArray[] layerWeights = new INDArray[nLayers];
-            INDArray[] layerBiases = new INDArray[nLayers];
-            for( int i=0; i < nLayers; i++) {
-                layerWeights[i] = layers[i].getParam(DefaultParamInitializer.WEIGHT_KEY).dup();
-                layerBiases[i] = layers[i].getParam(DefaultParamInitializer.BIAS_KEY).dup();
-            }
-
-            INDArray[] layerZs = new INDArray[nLayers];
-            INDArray[] layerActivations = new INDArray[nLayers];
-            for( int  i= 0; i < nLayers; i++) {
-                INDArray layerInput = (i == 0 ? x : layerActivations[i-1]);
-                layerZs[i] = layerInput.mmul(layerWeights[i]).addiRowVector(layerBiases[i]);
-                if(sigmoid) layerActivations[i] = (i==nLayers-1 ? doSoftmax(layerZs[i].dup(),1) : doSigmoid(layerZs[i].dup()) );
-                else layerActivations[i] = (i == nLayers-1 ? doSoftmax(layerZs[i].dup(),1) : doTanh(layerZs[i].dup()) );
-            }
-
-            //Do backward pass:
-            INDArray[] deltas = new INDArray[nLayers];
-            deltas[nLayers - 1] = layerActivations[nLayers-1].sub(y);	//Out - labels; shape=[miniBatchSize,nOut];
-            assertArrayEquals(deltas[nLayers-1].shape(),new int[]{miniBatchSize,3});
-            for( int i = nLayers - 2; i >= 0; i--){
-                INDArray sigmaPrimeOfZ;
-                if(sigmoid) sigmaPrimeOfZ = doSigmoidDerivative(layerZs[i]);
-                else sigmaPrimeOfZ = doTanhDerivative(layerZs[i]);
-                INDArray epsilon = layerWeights[i+1].mmul(deltas[i + 1].transpose()).transpose();
-                deltas[i] = epsilon.mul(sigmaPrimeOfZ);
-                assertArrayEquals(deltas[i].shape(),new int[]{miniBatchSize,hiddenLayerSizes[i]});
-            }
-
-            INDArray[] dLdw = new INDArray[nLayers];
-            INDArray[] dLdb = new INDArray[nLayers];
-            for( int i = 0; i<nLayers; i++) {
-                INDArray prevActivations = (i == 0 ? x : layerActivations[i-1]);
-                dLdw[i] = deltas[i].transpose().mmul(prevActivations).divi(miniBatchSize).transpose();	//Shape: [nIn, nOut]
-                dLdb[i] = deltas[i].mean(0); //Shape: [1,nOut]
-
-                int nIn = (i == 0 ? 4 : hiddenLayerSizes[i - 1]);
-                int nOut = (i < nLayers - 1 ? hiddenLayerSizes[i] : 3);
-                assertArrayEquals(dLdw[i].shape(),new int[]{nIn, nOut});
-                assertArrayEquals(dLdb[i].shape(),new int[]{1, nOut});
-            }
-
-            INDArray[] expectedWeights = new INDArray[nLayers];
-            INDArray[] expectedBiases = new INDArray[nLayers];
-            for( int i = 0; i < nLayers; i++) {
-                expectedWeights[i] = layerWeights[i].sub(dLdw[i].mul(learningRate));
-                expectedBiases[i] = layerBiases[i].sub(dLdb[i].mul(learningRate));
-
-                int nIn = (i == 0 ? 4 : hiddenLayerSizes[i-1]);
-                int nOut = (i < nLayers - 1 ? hiddenLayerSizes[i] : 3);
-                assertArrayEquals(expectedWeights[i].shape(),new int[]{nIn, nOut});
-                assertArrayEquals(expectedBiases[i].shape(),new int[]{1, nOut});
-            }
-
-            //Do backprop, and compare resulting weights with expected weights:
-            network.fit(data);
-            INDArray[] layerWeightsAfter = new INDArray[nLayers];
-            INDArray[] layerBiasesAfter = new INDArray[nLayers];
-            for( int i=0; i<nLayers; i++) {
-                layerWeightsAfter[i] = layers[i].getParam(DefaultParamInitializer.WEIGHT_KEY).dup();
-                layerBiasesAfter[i] = layers[i].getParam(DefaultParamInitializer.BIAS_KEY).dup();
-            }
-
-            float eps = 1e-6f;
-            for( int i = 0; i < nLayers; i++) {
-                assertArrayEquals(asFloat(expectedWeights[i]), asFloat(layerWeightsAfter[i]),eps);
-                assertArrayEquals(asFloat(expectedBiases[i]), asFloat(layerBiasesAfter[i]),eps);
-            }
-        }
-    }
-    
-    @Test
-    public void testMLPGradientCalculation(){
-    	testIrisMiniBatchGradients(1,new int[]{1}, "sigmoid");
-        testIrisMiniBatchGradients(1, new int[]{5}, "sigmoid");
-        testIrisMiniBatchGradients(12,new int[]{15,25,10},"sigmoid");
-        testIrisMiniBatchGradients(50,new int[]{10,50,200,50,10},"tanh");
-        testIrisMiniBatchGradients(150,new int[]{30,50,20},"tanh");
-    }
-
-    private static void testIrisMiniBatchGradients( int miniBatchSize, int[] hiddenLayerSizes, String activationFunction) {
-    	int totalExamples = 10 * miniBatchSize;
-        if( totalExamples > 150) {
-            totalExamples = miniBatchSize * (150/miniBatchSize);
-        }
-        if( miniBatchSize > 150 ) fail();
-        DataSetIterator iris = new IrisDataSetIterator(miniBatchSize,totalExamples);
-        
         MultiLayerNetwork network = new MultiLayerNetwork(getIrisMLPSimpleConfig(hiddenLayerSizes,"sigmoid"));
         network.init();
 
@@ -340,7 +235,7 @@ public class BackPropMLPTest {
             for( int  i= 0; i < nLayers; i++ ){
                 INDArray layerInput = (i == 0 ? x : layerActivations[i-1]);
                 layerZs[i] = layerInput.mmul(layerWeights[i]).addiRowVector(layerBiases[i]);
-                layerActivations[i] = (i==nLayers-1 ? doSoftmax(layerZs[i].dup(),1) : doSigmoid(layerZs[i].dup()) );
+                layerActivations[i] = (i==nLayers-1 ? doSoftmax(layerZs[i].dup()) : doSigmoid(layerZs[i].dup()));
             }
 
             //Do backward pass:
@@ -369,25 +264,25 @@ public class BackPropMLPTest {
                 assertArrayEquals(dLdb[i].shape(),new int[]{1, nOut});
             }
 
-            
+
             //Calculate and get gradient, compare to expected
             network.setInput(x);
             network.setLabels(y);
             network.computeGradientAndScore();
             Gradient gradient = network.gradientAndScore().getFirst();
-            
+
             float eps = 1e-6f;
             for( int i=0; i<hiddenLayerSizes.length; i++ ){
-            	String wKey = i + "_" + DefaultParamInitializer.WEIGHT_KEY;
-            	String bKey = i + "_" + DefaultParamInitializer.BIAS_KEY;
-            	INDArray wGrad = gradient.getGradientFor(wKey);
-            	INDArray bGrad = gradient.getGradientFor(bKey);
-            	float[] wGradf = asFloat(wGrad);
-            	float[] bGradf = asFloat(bGrad);
-            	float[] expWGradf = asFloat(dLdw[i]);
-            	float[] expBGradf = asFloat(dLdb[i]);
-            	assertArrayEquals(wGradf,expWGradf,eps);
-            	assertArrayEquals(bGradf,expBGradf,eps);
+                String wKey = i + "_" + DefaultParamInitializer.WEIGHT_KEY;
+                String bKey = i + "_" + DefaultParamInitializer.BIAS_KEY;
+                INDArray wGrad = gradient.getGradientFor(wKey);
+                INDArray bGrad = gradient.getGradientFor(bKey);
+                float[] wGradf = asFloat(wGrad);
+                float[] bGradf = asFloat(bGrad);
+                float[] expWGradf = asFloat(dLdw[i]);
+                float[] expBGradf = asFloat(dLdb[i]);
+                assertArrayEquals(wGradf,expWGradf,eps);
+                assertArrayEquals(bGradf,expBGradf,eps);
             }
         }
     }
@@ -398,9 +293,9 @@ public class BackPropMLPTest {
      * No regularization, no Adagrad, no momentum etc. One iteration.
      */
     private static MultiLayerConfiguration getIrisMLPSimpleConfig(int[] hiddenLayerSizes, String activationFunction) {
-    	NeuralNetConfiguration.ListBuilder lb = new NeuralNetConfiguration.Builder()
+        NeuralNetConfiguration.ListBuilder lb = new NeuralNetConfiguration.Builder()
                 .iterations(1)
-                .learningRate(0.1)
+                .learningRate(0.1).updater(Updater.SGD)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .regularization(false)
                 .l1(0.0)
@@ -408,24 +303,25 @@ public class BackPropMLPTest {
                 .momentum(0.0)
                 .seed(12345L)
                 .list(hiddenLayerSizes.length + 1);
-    	
-    	for( int i=0; i<hiddenLayerSizes.length; i++) {
-    		int nIn = (i == 0 ? 4 : hiddenLayerSizes[i-1]);
-    		lb.layer(i, new DenseLayer.Builder()
+
+        for( int i = 0; i < hiddenLayerSizes.length; i++) {
+            int nIn = (i == 0 ? 4 : hiddenLayerSizes[i - 1]);
+            lb.layer(i, new DenseLayer.Builder()
                     .nIn(nIn).nOut(hiddenLayerSizes[i])
-                    .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 0.1))
+                    .weightInit(WeightInit.XAVIER)
                     .updater(Updater.SGD)
                     .activation(activationFunction)
                     .build());
-    	}
-    	lb.layer(hiddenLayerSizes.length, new OutputLayer.Builder(LossFunction.MCXENT)
-    			.nIn(hiddenLayerSizes[hiddenLayerSizes.length-1]).nOut(3)
-                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 0.1))
+        }
+
+        lb.layer(hiddenLayerSizes.length, new OutputLayer.Builder(LossFunction.MCXENT)
+                .nIn(hiddenLayerSizes[hiddenLayerSizes.length - 1]).nOut(3)
+                .weightInit(WeightInit.XAVIER)
                 .updater(Updater.SGD)
-                .activation("softmax")
+                .activation(activationFunction.equals("identity") ? "identity" : "softmax")
                 .build());
-    	lb.pretrain(false).backprop(true);
-    	
+        lb.pretrain(false).backprop(true);
+
         return lb.build();
     }
 
@@ -481,19 +377,19 @@ public class BackPropMLPTest {
     }
 
     public static INDArray doTanh(INDArray input){
-        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("tanh", input));
+        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("tanh", input.dup()));
     }
 
     public static INDArray doTanhDerivative(INDArray input){
-        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("tanh", input).derivative());
+        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("tanh", input.dup()).derivative());
     }
 
-    public static INDArray doSoftmax(INDArray input, int dimension){
-        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", input), dimension);
+    public static INDArray doSoftmax(INDArray input) {
+        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", input.dup()));
     }
 
-    public static INDArray doSigmoid(INDArray input){
-        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", input));
+    public static INDArray doSigmoid(INDArray input) {
+        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", input.dup()));
     }
 
     public static INDArray doSigmoidDerivative(INDArray input){
