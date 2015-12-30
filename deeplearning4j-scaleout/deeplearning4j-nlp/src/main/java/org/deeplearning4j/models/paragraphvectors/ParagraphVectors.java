@@ -127,33 +127,72 @@ public class ParagraphVectors extends Word2Vec {
             return this;
         }
 
+        /**
+         * This method builds new LabelSource instance from labels.
+         *
+         * PLEASE NOTE: Order synchro between labels and input documents delegated to end-user.
+         * PLEASE NOTE: Due to order issues it's recommended to use label aware iterators instead.
+         *
+         * @param labels
+         * @return
+         */
         @Deprecated
         public Builder labels(@NonNull List<String> labels) {
-
+            this.labelsSource = new LabelsSource(labels);
             return this;
         }
 
+        /**
+         * This method used to feed LabelAwareDocumentIterator, that contains training corpus, into ParagraphVectors
+         *
+         * @param iterator
+         * @return
+         */
         public Builder iterate(@NonNull LabelAwareDocumentIterator iterator) {
             this.docIter = iterator;
             return this;
         }
 
+        /**
+         * This method used to feed LabelAwareSentenceIterator, that contains training corpus, into ParagraphVectors
+         *
+         * @param iterator
+         * @return
+         */
         public Builder iterate(@NonNull LabelAwareSentenceIterator iterator) {
             this.sentenceIterator = iterator;
             return this;
         }
 
+        /**
+         * This method used to feed LabelAwareIterator, that contains training corpus, into ParagraphVectors
+         *
+         * @param iterator
+         * @return
+         */
         public Builder iterate(@NonNull LabelAwareIterator iterator) {
             this.labelAwareIterator = iterator;
             return this;
         }
 
+        /**
+         * This method used to feed DocumentIterator, that contains training corpus, into ParagraphVectors
+         *
+         * @param iterator
+         * @return
+         */
         @Override
         public Builder iterate(@NonNull DocumentIterator iterator) {
             this.docIter = iterator;
             return this;
         }
 
+        /**
+         * This method used to feed SentenceIterator, that contains training corpus, into ParagraphVectors
+         *
+         * @param iterator
+         * @return
+         */
         @Override
         public Builder iterate(@NonNull SentenceIterator iterator) {
             this.sentenceIterator = iterator;
@@ -258,7 +297,13 @@ public class ParagraphVectors extends Word2Vec {
         }
 
 
-
+        /**
+         * This method defines TokenizerFactory to be used for strings tokenization during training
+         * PLEASE NOTE: If external VocabCache is used, the same TokenizerFactory should be used to keep derived tokens equal.
+         *
+         * @param tokenizerFactory
+         * @return
+         */
         @Override
         public Builder tokenizerFactory(@NonNull TokenizerFactory tokenizerFactory) {
             super.tokenizerFactory(tokenizerFactory);
@@ -272,7 +317,7 @@ public class ParagraphVectors extends Word2Vec {
         }
 
         /**
-         * This method used to feed SequenceIterator that contains training corpus, into ParagraphVectors
+         * This method used to feed SequenceIterator, that contains training corpus, into ParagraphVectors
          *
          * @param iterator
          * @return
@@ -316,6 +361,11 @@ public class ParagraphVectors extends Word2Vec {
             return this;
         }
 
+        /**
+         * This method defines number of dimensions for output vectors
+         * @param layerSize
+         * @return
+         */
         @Override
         public Builder layerSize(int layerSize) {
             super.layerSize(layerSize);
