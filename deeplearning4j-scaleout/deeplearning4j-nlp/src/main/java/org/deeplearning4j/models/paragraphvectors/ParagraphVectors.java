@@ -3,6 +3,7 @@ package org.deeplearning4j.models.paragraphvectors;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
@@ -21,6 +22,9 @@ import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.interoperability.SentenceIteratorConverter;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.Collection;
 import java.util.List;
@@ -33,6 +37,66 @@ import java.util.List;
 public class ParagraphVectors extends Word2Vec {
     @Getter protected LabelsSource labelsSource;
     @Getter @Setter protected LabelAwareIterator labelAwareIterator;
+
+
+    /**
+     * Predict several based on the document.
+     * Computes a similarity wrt the mean of the
+     * representation of words in the document
+     * @param document the document
+     * @return the word distances for each label
+     */
+    public String predict(List<VocabWord> document) {
+        /*
+            This code was transferred from original ParagraphVectors DL4j implementation, and yet to be tested
+         */
+        INDArray arr = Nd4j.create(document.size(),this.layerSize);
+        for(int i = 0; i < document.size(); i++) {
+            arr.putRow(i,getWordVectorMatrix(document.get(i).getWord()));
+        }
+
+        INDArray docMean = arr.mean(0);
+        Counter<String> distances = new Counter<>();
+
+        for(String s : labelsSource.getLabels()) {
+            INDArray otherVec = getWordVectorMatrix(s);
+            double sim = Transforms.cosineSim(docMean, otherVec);
+            distances.incrementCount(s, sim);
+        }
+
+        return distances.argMax();
+
+    }
+
+
+    /**
+     * Predict several based on the document.
+     * Computes a similarity wrt the mean of the
+     * representation of words in the document
+     * @param document the document
+     * @return the word distances for each label
+     */
+    public Counter<String> predictSeveral(List<VocabWord> document) {
+        /*
+            This code was transferred from original ParagraphVectors DL4j implementation, and yet to be tested
+         */
+        INDArray arr = Nd4j.create(document.size(),this.layerSize);
+        for(int i = 0; i < document.size(); i++) {
+            arr.putRow(i,getWordVectorMatrix(document.get(i).getWord()));
+        }
+
+        INDArray docMean = arr.mean(0);
+        Counter<String> distances = new Counter<>();
+
+        for(String s : labelsSource.getLabels()) {
+            INDArray otherVec = getWordVectorMatrix(s);
+            double sim = Transforms.cosineSim(docMean, otherVec);
+            distances.incrementCount(s, sim);
+        }
+
+        return distances;
+
+    }
 
 
     public static class Builder extends Word2Vec.Builder {
