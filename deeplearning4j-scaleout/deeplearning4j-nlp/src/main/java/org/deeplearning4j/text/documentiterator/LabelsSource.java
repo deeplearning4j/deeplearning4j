@@ -91,7 +91,7 @@ public class LabelsSource implements Serializable {
     public synchronized void storeLabel(String label) {
         if (labels == null) labels = new ArrayList<String>();
 
-        labels.add(label);
+        if (!labels.contains(label)) labels.add(label);
     }
 
     /**
@@ -101,6 +101,11 @@ public class LabelsSource implements Serializable {
         this.counter.set(0);
     }
 
+    /**
+     * This method returns number of labels used up to the method's call
+     *
+     * @return
+     */
     public int getNumberOfLabelsUsed() {
         if (labels != null && !labels.isEmpty()) return labels.size();
             else return ((Long) (maxCount + 1)).intValue();

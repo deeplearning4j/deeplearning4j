@@ -16,28 +16,43 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class BasicLabelAwareIterator implements LabelAwareIterator {
     // this counter is used for dumb labels generation
-    private AtomicLong documentPosition = new AtomicLong(0);
+    protected AtomicLong documentPosition = new AtomicLong(0);
 
-    private LabelsSource generator;
+    protected LabelsSource generator;
 
-    private transient LabelAwareIterator backendIterator;
+    protected transient LabelAwareIterator backendIterator;
 
     private BasicLabelAwareIterator() {
 
     }
 
+    /**
+     * This method checks, if there's more LabelledDocuments
+     * @return
+     */
     public boolean hasNextDocument() {
         return backendIterator.hasNextDocument();
     }
 
+    /**
+     * This method returns next LabelledDocument
+     * @return
+     */
     public LabelledDocument nextDocument() {
         return backendIterator.nextDocument();
     }
 
+    /**
+    * This methods resets LabelAwareIterator
+    */
     public void reset() {
         backendIterator.reset();
     }
 
+    /**
+     * This method returns LabelsSource instance, containing all labels derived from this iterator
+     * @return
+     */
     @Override
     public LabelsSource getLabelsSource() {
         return generator;
@@ -118,7 +133,7 @@ public class BasicLabelAwareIterator implements LabelAwareIterator {
          * @return
          */
         public Builder setLabelsSource(@NonNull LabelsSource source) {
-
+            this.generator = source;
             return this;
         }
 

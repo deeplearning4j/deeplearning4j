@@ -191,6 +191,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
      * @param nextRandom next random for sampling
      */
     @Override
+    @Deprecated
     public  void iterateSample(T w1, T w2,AtomicLong nextRandom,double alpha) {
         if(w2 == null || w2.getIndex() < 0 || w1.getIndex() == w2.getIndex() || w1.getLabel().equals("STOP") || w2.getLabel().equals("STOP") || w1.getLabel().equals("UNK") || w2.getLabel().equals("UNK"))
            return;
