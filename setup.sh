@@ -16,4 +16,5 @@ git pull
 mvn clean install -DskipTests -Dmaven.javadoc.skip=true
 cd ..
 cd deeplearning4j
+git pull
 mvn clean install -DskipTests -Dmaven.javadoc.skip=true
