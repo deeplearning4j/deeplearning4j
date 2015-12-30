@@ -19,13 +19,15 @@
 package org.deeplearning4j.models.embeddings.wordvectors;
 
 import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Getter;
 import org.deeplearning4j.berkeley.Counter;
+import org.deeplearning4j.clustering.sptree.DataPoint;
+import org.deeplearning4j.clustering.vptree.VPTree;
+import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
-import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
-import org.deeplearning4j.text.stopwords.StopWords;
 import org.deeplearning4j.util.MathUtils;
 import org.deeplearning4j.util.SetUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -38,15 +40,33 @@ import java.util.*;
  * Common word vector operations
  * @author Adam Gibson
  */
-public class WordVectorsImpl implements WordVectors {
+public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
 
     //number of times the word must occur in the vocab to appear in the calculations, otherwise treat as unknown
     @Getter protected int minWordFrequency = 5;
-    @Getter protected WeightLookupTable lookupTable;
-    @Getter protected VocabCache vocab;
+    @Getter protected WeightLookupTable<T> lookupTable;
+    @Getter protected VocabCache<T> vocab;
     @Getter protected int layerSize = 100;
+
+    protected int numIterations = 1;
+    protected int numEpochs = 1;
+    protected double negative = 0;
+    protected double sampling = 0;
+    protected AtomicDouble learningRate = new AtomicDouble(0.025);
+    protected double minLearningRate = 0.01;
+    @Getter protected int window = 5;
+    protected int batchSize;
+    protected int learningRateDecayWords;
+    protected boolean resetModel;
+    protected boolean useAdeGrad;
+    protected int workers = Runtime.getRuntime().availableProcessors();
+    protected boolean trainSequenceVectors = false;
+    protected boolean trainElementsVectors = true;
+
+    protected transient VPTree vpTree;
+
     public final static String UNK = "UNK";
-    protected List<String> stopWords = StopWords.getStopWords();
+    @Getter protected List<String> stopWords = new ArrayList<>(); //StopWords.getStopWords();
     /**
      * Returns true if the model has this word in the vocab
      * @param word the word to test for
@@ -245,7 +265,7 @@ public class WordVectorsImpl implements WordVectors {
             INDArray[] sorted = Nd4j.sortWithIndices(distances,0,false);
             INDArray sort = sorted[0];
             List<String> ret = new ArrayList<>();
-            VocabWord word2 = vocab().wordFor(word);
+            SequenceElement word2 = vocab().wordFor(word);
             if(n > sort.length())
                 n = sort.length();
             //there will be a redundant word
@@ -294,12 +314,18 @@ public class WordVectorsImpl implements WordVectors {
     public Map<String,Double> accuracy(List<String> questions) {
         Map<String,Double> accuracy = new HashMap<>();
         Counter<String> right = new Counter<>();
+        String analogyType = "";
         for(String s : questions) {
             if(s.startsWith(":")) {
                 double correct = right.getCount("correct");
                 double wrong = right.getCount("wrong");
-                double accuracyRet = 100.0 * correct / (correct / wrong);
-                accuracy.put(s,accuracyRet);
+                if(analogyType.isEmpty()){
+                    analogyType=s;
+                    continue;
+                }
+                double accuracyRet = 100.0 * correct / (correct + wrong);
+                accuracy.put(analogyType,accuracyRet);
+                analogyType = s;
                 right.clear();
             }
             else {
@@ -316,7 +342,12 @@ public class WordVectorsImpl implements WordVectors {
 
             }
         }
-
+        if(!analogyType.isEmpty()){
+            double correct = right.getCount("correct");
+            double wrong = right.getCount("wrong");
+            double accuracyRet = 100.0 * correct / (correct + wrong);
+            accuracy.put(analogyType,accuracyRet);
+        }
         return accuracy;
     }
 
@@ -490,19 +521,76 @@ public class WordVectorsImpl implements WordVectors {
 
 
     /**
+     * This method returns nearest words for target word, based on tree structure.
+     * This method is recommended to use if you're going to call for nearest words multiple times.
+     *
+     * @param word
+     * @param n
+     * @param resetTree
+     * @return
+     */
+    protected Collection<String> wordsNearest(String word, int n, boolean resetTree) {
+        if (!vocab.hasToken(word)) return new ArrayList<>();
+
+        // build new tree if it wasnt created before, or resetTree == TRUE
+        if (vpTree == null || resetTree) {
+            List<DataPoint> points = new ArrayList<>();
+            for (String label: vocab.words()) {
+                points.add(new DataPoint(vocab.indexOf(label), getWordVectorMatrix(label)));
+            }
+            vpTree = new VPTree(points);
+
+        }
+        List<DataPoint> add = new ArrayList<>();
+        List<Double> distances = new ArrayList<>();
+
+        // we need n+1 to address original datapoint removal
+        vpTree.search(new DataPoint(0, getWordVectorMatrix(word)), n+1, add, distances );
+
+        Collection<String> ret = new ArrayList<>();
+        for (DataPoint e: add) {
+            String label  = vocab.wordAtIndex(e.getIndex());
+            if (!label.equals(word)) ret.add(label);
+        }
+
+        return ret;
+    }
+
+
+    /**
      * Get the top n words most similar to the given word
      * @param word the word to compare
      * @param n the n to get
      * @return the top n words
      */
     public Collection<String> wordsNearest(String word,int n) {
-        return wordsNearest(Arrays.asList(word),new ArrayList<String>(),n);
+        /*
+            TODO: This is temporary solution and we should get rid of flat array scan. Probably, after VPTree implementation gets fixed
+         */
+        if (!vocab.hasToken(word)) return new ArrayList<>();
 
+        INDArray mean = getWordVectorMatrix(word);
+
+        Counter<String> distances = new Counter<>();
+
+        for (String s : vocab().words()) {
+            if (s.equals(word)) continue;
+
+            INDArray otherVec = getWordVectorMatrix(s);
+            double sim = Transforms.cosineSim(mean, otherVec);
+            distances.incrementCount(s, sim);
+        }
+
+        distances.keepTopNKeys(n-1);
+        return distances.keySet();
+//        return wordsNearest(Arrays.asList(word),new ArrayList<String>(),n);
     }
 
 
     /**
-     * Returns the similarity of 2 words
+     * Returns the similarity of 2 words. Result value will be in range [-1,1], where -1.0 is exact opposite similarity, i.e. NO similarity, and 1.0 is total match of two word vectors.
+     * However, most of time you'll see values in range [0,1], but that's something depends of training corpus.
+     *
      * @param word the first word
      * @param word2 the second word
      * @return a normalized similarity (cosine similarity)
@@ -511,15 +599,13 @@ public class WordVectorsImpl implements WordVectors {
         if(word.equals(word2))
             return 1.0;
 
-        INDArray vector = Transforms.unitVec(getWordVectorMatrix(word));
-        INDArray vector2 = Transforms.unitVec(getWordVectorMatrix(word2));
-        if(vector == null || vector2 == null)
+        if(getWordVectorMatrix(word) == null || getWordVectorMatrix(word2) == null)
             return -1;
-        return  Nd4j.getBlasWrapper().dot(vector, vector2);
+        return  Transforms.cosineSim(getWordVectorMatrix(word), getWordVectorMatrix(word2));
     }
 
     @Override
-    public VocabCache vocab() {
+    public VocabCache<T> vocab() {
         return vocab;
     }
 

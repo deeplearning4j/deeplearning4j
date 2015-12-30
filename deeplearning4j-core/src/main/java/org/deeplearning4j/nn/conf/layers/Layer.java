@@ -35,7 +35,6 @@ import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
  * A neural network layer.

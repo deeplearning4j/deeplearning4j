@@ -29,6 +29,7 @@ import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.glove.GloveWeightLookupTable;
+import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.spark.text.BaseSparkTest;
 import org.junit.Ignore;
@@ -52,8 +53,8 @@ public class GloveTest extends BaseSparkTest {
         }).cache();
 
 
-        Pair<VocabCache,GloveWeightLookupTable> table = glove.train(corpus);
-        WordVectors vectors = WordVectorSerializer.fromPair(new Pair<>((InMemoryLookupTable) table.getSecond(), table.getFirst()));
+        Pair<VocabCache<VocabWord>,GloveWeightLookupTable> table = glove.train(corpus);
+        WordVectors vectors = WordVectorSerializer.fromPair(new Pair<>((InMemoryLookupTable) table.getSecond(), (VocabCache) table.getFirst()));
         Collection<String> words = vectors.wordsNearest("day", 20);
         assertTrue(words.contains("week"));
     }

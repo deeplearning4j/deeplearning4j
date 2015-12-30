@@ -10,7 +10,7 @@
  *  *
  *  *    Unless required by applicable law or agreed to in writing, software
  *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUInteger WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *  *    See the License for the specific language governing permissions and
  *  *    limitations under the License.
  *
@@ -24,7 +24,9 @@ import java.util.*;
 
 import org.deeplearning4j.berkeley.Counter;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +46,8 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
     private List<Integer> labelsList = new ArrayList<>();
     private Map<Integer, String> labelsMap = new HashMap<>();
     private static Logger log = LoggerFactory.getLogger(Evaluation.class);
+    //What to output from the precision/recall function when we encounter an edge case
+    private static final double DEFAULT_EDGE_VALUE = 0.0;
 
     // Empty constructor
     public Evaluation() {}
@@ -157,7 +161,8 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
         }
     }
 
-    /** Convenience method for evaluation of time series.
+    /**
+     * Convenience method for evaluation of time series.
      * Reshapes time series (3d) to 2d, then calls eval
      * @see #eval(INDArray, INDArray)
      */
@@ -168,6 +173,10 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
             throw new IllegalArgumentException("Labels and predicted have different shapes: labels="
                 + Arrays.toString(labels.shape()) + ", predicted="+Arrays.toString(predicted.shape()));
         }
+
+        if( labels.ordering() == 'f' ) labels = Shape.toOffsetZeroCopy(labels, 'c');
+        if( predicted.ordering() == 'f' ) predicted = Shape.toOffsetZeroCopy(predicted, 'c');
+
         //Reshape, as per RnnToFeedForwardPreProcessor:
         int[] shape = labels.shape();
         labels = labels.permute(0,2,1);	//Permute, so we get correct order after reshaping
@@ -179,7 +188,38 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
         eval(labels,predicted);
     }
 
-    /** Evaluate a single prediction (one prediction at a time)
+    /**
+     * Evaluate a time series, whether the output is masked usind a masking array. That is,
+     * the mask array specified whether the output at a given time step is actually present, or whether it
+     * is just padding.<br>
+     * For example, for N examples, nOut output size, and T time series length:
+     * labels and predicted will have shape [N,nOut,T], and outputMask will have shape [N,T].
+     * @see #evalTimeSeries(INDArray, INDArray)
+     */
+    public void evalTimeSeries(INDArray labels, INDArray predicted, INDArray outputMask){
+
+        int totalOutputExamples = outputMask.sumNumber().intValue();
+        int outSize = labels.size(1);
+
+        INDArray labels2d = Nd4j.create(totalOutputExamples, outSize);
+        INDArray predicted2d = Nd4j.create(totalOutputExamples,outSize);
+
+        int rowCount = 0;
+        for( int ex=0; ex<outputMask.size(0); ex++ ){
+            for( int t=0; t<outputMask.size(1); t++ ){
+                if(outputMask.getDouble(ex,t) == 0.0) continue;
+
+                labels2d.putRow(rowCount, labels.get(NDArrayIndex.point(ex), NDArrayIndex.all(), NDArrayIndex.point(t)));
+                predicted2d.putRow(rowCount, predicted.get(NDArrayIndex.point(ex), NDArrayIndex.all(), NDArrayIndex.point(t)));
+
+                rowCount++;
+            }
+        }
+        eval(labels2d,predicted2d);
+    }
+
+    /**
+     * Evaluate a single prediction (one prediction at a time)
      * @param predictedIdx Index of class predicted by the network
      * @param actualIdx Index of actual class
      */
@@ -221,45 +261,57 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
         }
     }
 
-    /** Method to obtain the classification report, as a String
+    /**
+     * Method to obtain the classification report, as a String
      * @return A (multi-line) String with accuracy, precision, recall, f1 score etc
      */
     public String stats() {
-        StringBuilder builder = new StringBuilder().append("\n");
         String actual, expected;
+        StringBuilder builder = new StringBuilder().append("\n");
+        StringBuilder warnings = new StringBuilder();
         List<Integer> classes = confusion.getClasses();
-
-        if (labelsMap.isEmpty()){
-            for (Integer clazz : classes) {
-                for (Integer clazz2 : classes) {
-                    int count = confusion.getCount(clazz, clazz2);
-                    if (count != 0)
-                        builder.append("\n Examples labeled as " + clazz + " classified by model as " + clazz2 + ": " + count + " times\n");
+        for (Integer clazz : classes) {
+            actual = resolveLabelForClass(clazz);
+            //Output confusion matrix
+            for (Integer clazz2 : classes) {
+                int count = confusion.getCount(clazz, clazz2);
+                if (count != 0) {
+                    expected = resolveLabelForClass(clazz2);
+                    builder.append(String.format("Examples labeled as %s classified by model as %s: %d times\n", actual, expected, count));
                 }
             }
-        } else {
-            for (Integer clazz : classes) {
-                for (Integer clazz2 : classes) {
-                    int count = confusion.getCount(clazz, clazz2);
-                    if (count != 0 && !labelsMap.get(clazz2).isEmpty()) {
-                        actual = labelsMap.get(clazz).isEmpty() ? clazz.toString() : labelsMap.get(clazz);
-                        expected = labelsMap.get(clazz2).isEmpty() ? clazz2.toString() : labelsMap.get(clazz2);
-                        builder.append("\n Examples labeled as " + actual + " classified by model as " + expected + ": " + count + " times\n");
-                    }
+
+            //Output possible warnings regarding precision/recall calculation
+            if (truePositives.getCount(clazz) == 0) {
+                if (falsePositives.getCount(clazz) == 0) {
+                    warnings.append(String.format("Warning: class %s was never predicted by the model. This class was excluded from the average precision\n", actual));
+                }
+                if (falseNegatives.getCount(clazz) == 0) {
+                    warnings.append(String.format("Warning: class %s has never appeared as a true label. This class was excluded from the average recall\n", actual));
                 }
             }
         }
+        builder.append("\n");
+        builder.append(warnings);
 
         DecimalFormat df = new DecimalFormat("#.####");
         builder.append("\n==========================Scores========================================");
-        builder.append("\n Accuracy:  " + df.format(accuracy()));
-        builder.append("\n Precision: " + df.format(precision()));
-        builder.append("\n Recall:    " + df.format(recall()));
-        builder.append("\n F1 Score:  " + f1());
-        builder.append("\n===========================================================================");
+        builder.append("\n Accuracy:  ").append(df.format(accuracy()));
+        builder.append("\n Precision: ").append(df.format(precision()));
+        builder.append("\n Recall:    ").append(df.format(recall()));
+        builder.append("\n F1 Score:  ").append(df.format(f1()));
+        builder.append("\n========================================================================");
         return builder.toString();
     }
 
+    private String resolveLabelForClass(Integer clazz) {
+        //Use label in map if it is correct, integer otherwise
+        String label = labelsMap.get(clazz);
+        if (label == null || label.isEmpty()) {
+            label = clazz.toString();
+        }
+        return label;
+    }
 
     /**
      * Returns the precision for a given label
@@ -267,60 +319,88 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
      * @return the precision for the label
      */
     public double precision(Integer classLabel) {
+        return precision(classLabel, DEFAULT_EDGE_VALUE);
+    }
+
+    /**
+     * Returns the precision for a given label
+     * @param classLabel the label
+     * @param edgeCase What to output in case of 0/0
+     * @return the precision for the label
+     */
+    public double precision(Integer classLabel, double edgeCase) {
         double tpCount = truePositives.getCount(classLabel);
         double fpCount = falsePositives.getCount(classLabel);
-        if (tpCount == 0)
-            return 0;
+
+        //Edge case
+        if (tpCount == 0 && fpCount == 0) {
+            return edgeCase;
+        }
+
         return tpCount / (tpCount + fpCount);
     }
 
     /**
-     * Total precision based on guesses so far
+     * Precision based on guesses so far
+     * Takes into account all known classes and outputs average precision across all of them
      * @return the total precision based on guesses so far
-     *
      */
     public double precision() {
         double precisionAcc = 0.0;
-        double classCount = 0.0;
+        int classCount = 0;
         for(Integer classLabel : confusion.getClasses()) {
-            precisionAcc += precision(classLabel);
-            if (truePositives.getCount(classLabel) > 0) {
-               classCount += 1.0;
+            double precision = precision(classLabel, -1);
+            if (precision != -1) {
+                precisionAcc += precision(classLabel);
+                classCount++;
             }
         }
-        return precisionAcc / classCount;
+        return precisionAcc / (double) classCount;
     }
 
     /**
-     * Get the recall for a particular class label
-     * @param classLabel Integer the indicate which class
+     * Returns the recall for a given label
+     * @param classLabel the label
      * @return Recall rate as a double
      */
     public double recall(Integer classLabel) {
+        return recall(classLabel, DEFAULT_EDGE_VALUE);
+    }
+
+    /**
+     * Returns the recall for a given label
+     * @param classLabel the label
+     * @param edgeCase What to output in case of 0/0
+     * @return Recall rate as a double
+     */
+    public double recall(Integer classLabel, double edgeCase) {
         double tpCount = truePositives.getCount(classLabel);
         double fnCount = falseNegatives.getCount(classLabel);
 
-        if (tpCount == 0)
-            return 0;
+        //Edge case
+        if (tpCount == 0 && fnCount == 0) {
+            return edgeCase;
+        }
 
         return tpCount / (tpCount + fnCount);
     }
 
     /**
-     * Returns the recall for the outcomes
+     * Recall based on guesses so far
+     * Takes into account all known classes and outputs average recall across all of them
      * @return the recall for the outcomes
      */
     public double recall() {
         double recallAcc = 0.0;
-        double classCount = 0.0;
+        int classCount = 0;
         for(Integer classLabel : confusion.getClasses()) {
-            recallAcc += recall(classLabel);
-            if (truePositives.getCount(classLabel) > 0) {
-                classCount += 1.0;
+            double recall = recall(classLabel, -1.0);
+            if (recall != -1.0) {
+                recallAcc += recall(classLabel);
+                classCount++;
             }
-
         }
-        return recallAcc / classCount;
+        return recallAcc / (double) classCount;
     }
 
     /**
@@ -330,7 +410,7 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
      */
     public double f1(Integer classLabel) {
         double precision = precision(classLabel);
-        double recall = recall();
+        double recall = recall(classLabel);
         if(precision == 0 || recall == 0)
             return 0;
         return 2.0 * ((precision * recall / (precision + recall)));
@@ -447,6 +527,12 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
     public double getNumRowCounter() {return (double) numRowCounter;}
 
     public String getClassLabel(Integer clazz) { return labelsMap.get(clazz);}
-
-
+    
+    /**
+     * Returns the confusion matrix variable
+     * @return confusion matrix variable for this evaluation
+     */
+    public ConfusionMatrix<Integer> getConfusionMatrix(){
+        return confusion;
+    }
 }

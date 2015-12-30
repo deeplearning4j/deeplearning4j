@@ -66,7 +66,6 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
 
 
-
     @Override
     public DataSet next(int num) {
         List<DataSet> dataSets = new ArrayList<>();
@@ -165,6 +164,11 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     @Override
     public void setPreProcessor(org.nd4j.linalg.dataset.api.DataSetPreProcessor preProcessor) {
 
+    }
+
+    @Override
+    public List<String> getLabels() {
+        return null;
     }
 
 

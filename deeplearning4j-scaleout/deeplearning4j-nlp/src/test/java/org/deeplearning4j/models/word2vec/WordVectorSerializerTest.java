@@ -26,6 +26,7 @@ import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
+import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.UimaSentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
@@ -42,6 +43,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -134,7 +136,7 @@ public class WordVectorSerializerTest {
     @Ignore
     public void testWriteWordVectorsFromWord2Vec() throws IOException {
         WordVectors vec = WordVectorSerializer.loadGoogleModel(binaryFile, true);
-        WordVectorSerializer.writeWordVectors(vec, pathToWriteto);
+        WordVectorSerializer.writeWordVectors((Word2Vec) vec, pathToWriteto);
 
         WordVectors wordVectors = WordVectorSerializer.loadTxtVectors(new File(pathToWriteto));
         INDArray wordVector1 = wordVectors.getWordVectorMatrix("Morgan_Freeman");
@@ -327,6 +329,52 @@ public class WordVectorSerializerTest {
         assertTrue(simN > 0.70);
 
         modelFile.delete();
+    }
+
+
+    @Test
+    public void testOutputStream() throws Exception {
+        File file = File.createTempFile("tmp_ser", "ssa");
+        file.deleteOnExit();
+
+        File inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
+        SentenceIterator iter = new BasicLineIterator(inputFile);
+        // Split on white spaces in the line to get words
+        TokenizerFactory t = new DefaultTokenizerFactory();
+        t.setTokenPreProcessor(new CommonPreprocessor());
+
+        InMemoryLookupCache cache = new InMemoryLookupCache(false);
+        WeightLookupTable table = new InMemoryLookupTable.Builder()
+                .vectorLength(100)
+                .useAdaGrad(false)
+                .negative(5.0)
+                .cache(cache)
+                .lr(0.025f).build();
+
+        Word2Vec vec = new Word2Vec.Builder()
+                .minWordFrequency(5)
+                .iterations(1)
+                .epochs(1)
+                .layerSize(100).lookupTable(table)
+                .stopWords(new ArrayList<String>())
+                .useAdaGrad(false)
+                .negativeSample(5)
+                .vocabCache(cache).seed(42)
+//                .workers(6)
+                .windowSize(5).iterate(iter).tokenizerFactory(t).build();
+
+        assertEquals(new ArrayList<String>(), vec.getStopWords());
+        vec.fit();
+
+        INDArray day1 = vec.getWordVectorMatrix("day");
+
+        WordVectorSerializer.writeWordVectors(vec, new FileOutputStream(file));
+
+        WordVectors vec2 = WordVectorSerializer.loadTxtVectors(file);
+
+        INDArray day2 = vec2.getWordVectorMatrix("day");
+
+        assertEquals(day1, day2);
     }
 
     private double arraysSimilarity(INDArray array1, INDArray array2) {

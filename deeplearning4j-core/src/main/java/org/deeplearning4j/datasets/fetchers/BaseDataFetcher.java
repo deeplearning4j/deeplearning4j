@@ -92,7 +92,17 @@ public abstract class BaseDataFetcher implements DataSetFetcher {
         examples.clear();
 
 	}
-	
+
+	/**
+	 * Sets a list of label names to the curr dataset
+	 */
+	public void setLabelNames(List<String > names) {
+		curr.setLabelNames(names);
+	}
+
+	public String getLabelName(int i) {
+		return curr.getLabelNames().get(i);
+	}
 	@Override
 	public boolean hasMore() {
 		return cursor < totalExamples;

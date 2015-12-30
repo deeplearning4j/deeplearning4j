@@ -24,6 +24,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.models.word2vec.Huffman;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
@@ -56,8 +57,8 @@ public class TextPipeline {
     private Broadcast<List<String>> stopWordBroadCast;
     // Return values
     private JavaRDD<Pair<List<String>, AtomicLong>> sentenceWordsCountRDD;
-    private VocabCache vocabCache = new InMemoryLookupCache();
-    private Broadcast<VocabCache> vocabCacheBroadcast;
+    private VocabCache<VocabWord> vocabCache = new InMemoryLookupCache();
+    private Broadcast<VocabCache<VocabWord>> vocabCacheBroadcast;
     private JavaRDD<List<VocabWord>> vocabWordListRDD;
     private JavaRDD<AtomicLong> sentenceCountRDD;
     private long totalWordCount;
@@ -122,7 +123,7 @@ public class TextPipeline {
         VocabWord actualToken;
         if (vocabCache.hasToken(stringToken)) {
             actualToken = vocabCache.tokenFor(stringToken);
-            actualToken.increment(tokenCount.intValue());
+            actualToken.increaseElementFrequency(tokenCount.intValue());
         } else {
             actualToken = new VocabWord(tokenCount, stringToken);
         }
@@ -132,6 +133,7 @@ public class TextPipeline {
         boolean vocabContainsWord = vocabCache.containsWord(stringToken);
         if (!vocabContainsWord) {
             vocabCache.addToken(actualToken);
+
             int idx = vocabCache.numWords();
             actualToken.setIndex(idx);
             vocabCache.putVocabWord(stringToken);
@@ -170,6 +172,11 @@ public class TextPipeline {
         // Filter out low count words and add to vocab cache object and feed into LookupCache
         filterMinWordAddVocab(wordFreqCounter);
 
+        // huffman tree should be built BEFORE vocab broadcast
+        Huffman huffman = new Huffman(vocabCache.vocabWords());
+        huffman.build();
+        huffman.applyIndexes(vocabCache);
+
         // At this point the vocab cache is built. Broadcast vocab cache
         vocabCacheBroadcast = sc.broadcast(vocabCache);
 
@@ -188,6 +195,7 @@ public class TextPipeline {
         vocabWordListRDD.count();
         totalWordCount = sentenceCountRDD.reduce(new ReduceSentenceCount()).get();
 
+        System.out.println("RDD: " + vocabWordListRDD.first());
         // Release sentenceWordsCountRDD from cache
         sentenceWordsCountRDD.unpersist();
     }
@@ -201,7 +209,7 @@ public class TextPipeline {
         }
     }
 
-    public Broadcast<VocabCache> getBroadCastVocabCache() throws IllegalStateException {
+    public Broadcast<VocabCache<VocabWord>> getBroadCastVocabCache() throws IllegalStateException {
         if (vocabCache.numWords() > 0) {
             return vocabCacheBroadcast;
         } else {
@@ -209,8 +217,8 @@ public class TextPipeline {
         }
     }
 
-    public VocabCache getVocabCache() throws IllegalStateException {
-        if (vocabCache.numWords() > 0) {
+    public VocabCache<VocabWord> getVocabCache() throws IllegalStateException {
+        if (vocabCache != null && vocabCache.numWords() > 0) {
             return vocabCache;
         } else {
             throw new IllegalStateException("IllegalStateException: VocabCache not set at TextPipline.");

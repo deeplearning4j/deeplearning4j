@@ -72,13 +72,18 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     }
 
     /** Compute score after labels and input have been set.
+     * @param fullNetworkL1 L1 regularization term for the entire network
+     * @param fullNetworkL2 L2 regularization term for the entire network
+     * @param training whether score should be calculated at train or test time (this affects things like application of
+     *                 dropout, etc)
+     * @return score (loss function)
      */
-    public double computeScore( double fullNetworkL1, double fullNetworkL2) {
+    public double computeScore( double fullNetworkL1, double fullNetworkL2, boolean training) {
         if( input == null || labels == null )
             throw new IllegalStateException("Cannot calculate score without input and labels");
         this.fullNetworkL1 = fullNetworkL1;
         this.fullNetworkL2 = fullNetworkL2;
-        INDArray preOut = preOutput2d(input,true);
+        INDArray preOut = preOutput2d(training);
         INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), preOut.dup()));
         setScore(output,preOut);
         return score;
@@ -89,15 +94,15 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         if(input == null || labels == null)
             return;
 
-        INDArray preOut = preOutput2d(input,true);
+        INDArray preOut = preOutput2d(true);
         Triple<Gradient,INDArray,INDArray> triple = getGradientsAndDelta(preOut);
         this.gradient = triple.getFirst();
-        setScore(triple.getThird(),preOut);
+        setScore(triple.getThird(), preOut);
     }
 
     @Override
     protected void setScoreWithZ(INDArray z) {
-        setScore(z,null);
+        setScore(z, null);
     }
 
     private void setScore(INDArray z, INDArray preOut ){
@@ -113,7 +118,8 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
                     .preOut(preOut).activationFn(conf().getLayer().getActivationFunction())
                     .lossFunction(layerConf().getLossFunction())
                     .miniBatch(conf.isMiniBatch()).miniBatchSize(getInputMiniBatchSize())
-                    .useRegularization(conf.isUseRegularization()).build().score();
+                    .useRegularization(conf.isUseRegularization())
+                    .mask(maskArray).build().score();
         }
     }
 
@@ -124,7 +130,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
     @Override
     public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon) {
-        Triple<Gradient,INDArray,INDArray> triple = getGradientsAndDelta(preOutput2d(input,true));	//Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
+        Triple<Gradient,INDArray,INDArray> triple = getGradientsAndDelta(preOutput2d(true));	//Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
         INDArray delta = triple.getSecond();
 
         INDArray epsilonNext = params.get(DefaultParamInitializer.WEIGHT_KEY).mmul(delta.transpose()).transpose();
@@ -148,52 +154,70 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         INDArray outSubLabels = output.sub(getLabels2d());
         Gradient gradient = new DefaultGradient();
 
+        if(maskArray != null){
+            //Masking on gradients. Mask values are 0 or 1. If 0: no output -> no error for this example
+            outSubLabels.muliColumnVector(maskArray);
+        }
+
+        Triple<Gradient,INDArray,INDArray> triple;
         switch (layerConf().getLossFunction()) {
             case MCXENT:	//cross-entropy (multi-class, with one-hot encoding)
                 gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(outSubLabels));
                 gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
-                return new Triple<>(gradient,outSubLabels,output);
+                triple = new Triple<>(gradient,outSubLabels,output);
+                break;
+
             case XENT: // cross-entropy (single binary output variable)
                 gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(outSubLabels.div(output.mul(output.rsub(1)))));
                 gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
-                return new Triple<>(gradient,outSubLabels,output);
+                triple = new Triple<>(gradient,outSubLabels,output);
+                break;
 
             case MSE: // mean squared error
                 INDArray delta = outSubLabels.mul(derivativeActivation(preOut));
                 gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(delta));
                 gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, delta.sum(0));
-                return new Triple<>(gradient,delta,output);
+                triple = new Triple<>(gradient,delta,output);
+                break;
 
             case EXPLL: // exponential logarithmic
                 gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(labels.rsub(1).divi(output)));
                 gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
-                return new Triple<>(gradient,outSubLabels,output);
+                triple = new Triple<>(gradient,outSubLabels,output);
+                break;
 
             case RMSE_XENT: // root mean squared error cross entropy
                 INDArray squaredrmseXentDiff = pow(outSubLabels, 2.0);
                 INDArray sqrt = sqrt(squaredrmseXentDiff);
                 gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(sqrt));
                 gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
-                return new Triple<>(gradient,outSubLabels,output);
+                triple = new Triple<>(gradient,outSubLabels,output);
+                break;
 
             case SQUARED_LOSS:
                 gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(pow(outSubLabels,2)));
                 gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
-                return new Triple<>(gradient,outSubLabels,output);
+                triple = new Triple<>(gradient,outSubLabels,output);
+                break;
 
             case NEGATIVELOGLIKELIHOOD: // multi-class cross-entropy
                 gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(outSubLabels));
                 gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
-                return new Triple<>(gradient,outSubLabels,output);
+                triple = new Triple<>(gradient,outSubLabels,output);
+                break;
+
             default:
                 throw new IllegalStateException("Invalid loss function: " + layerConf().getLossFunction());
         }
+
+
+        return triple;
     }
 
 
     @Override
     public INDArray activate(INDArray input, boolean training) {
-        setInput(input, training);
+        setInput(input);
         return output(training);
     }
 
@@ -209,12 +233,12 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     }
 
     public  INDArray output(INDArray input, boolean training) {
-        setInput(input, training);
+        setInput(input);
         return output(training);
     }
 
     public  INDArray output(INDArray input) {
-        setInput(input, false);
+        setInput(input);
         return output(false);
     }
 
@@ -231,15 +255,19 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         if(input == null)
             throw new IllegalArgumentException("No null input allowed");
 
-        INDArray preOutput = preOutput2d(input, training);
+        INDArray preOutput = preOutput2d(training);
         if(conf.getLayer().getActivationFunction().equals("softmax")) {
             SoftMax softMax = new SoftMax(preOutput);
             softMax.exec(1);
-            return softMax.z();
+            INDArray z = softMax.z();
+            if(maskArray != null){
+                z.muliColumnVector(maskArray);
+            }
+            return z;
         }
 
         if(training)
-            applyDropOutIfNecessary(input(),training);
+            applyDropOutIfNecessary(training);
 
         return super.activate(true);
     }
@@ -325,7 +353,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     public void fit(INDArray input, INDArray labels) {
         setInput(input);
         setLabels(labels);
-        applyDropOutIfNecessary(this.input, true);
+        applyDropOutIfNecessary(true);
         if( solver == null ){
             solver = new Solver.Builder()
                     .configure(conf())
@@ -393,8 +421,8 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         this.labels = labels;
     }
 
-    protected INDArray preOutput2d(INDArray input, boolean training){
-        return preOutput(input,training);
+    protected INDArray preOutput2d(boolean training){
+        return preOutput(training);
     }
 
     protected INDArray output2d(INDArray input){
@@ -407,7 +435,5 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         }
         return labels;
     }
-
-
 
 }

@@ -26,7 +26,10 @@ import org.deeplearning4j.plot.NeuralNetPlotter;
 /**
  * Renders network activations every n iterations
  * @author Adam Gibson
+ *
+ * @deprecated use {@link org.deeplearning4j.ui.weights.HistogramIterationListener} from deeplearning4j-ui instead
  */
+@Deprecated
 public class NeuralNetPlotterIterationListener implements IterationListener {
     private int iterations = 10;
     private NeuralNetPlotter plotter = new NeuralNetPlotter();

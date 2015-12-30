@@ -18,8 +18,6 @@
 
 package org.deeplearning4j.models.embeddings.loader;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -29,6 +27,7 @@ import org.apache.commons.compress.compressors.gzip.GzipUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
@@ -317,7 +316,6 @@ public class WordVectorSerializer {
 
         write.flush();
         write.close();
-
     }
 
     private static ObjectMapper getModelMapper() {
@@ -357,7 +355,7 @@ public class WordVectorSerializer {
         if (!(lookupTable instanceof InMemoryLookupTable)) throw new IllegalStateException("At this moment only InMemoryLookupTable is supported.");
         if (!(vocabCache instanceof InMemoryLookupCache)) throw new IllegalStateException("At this moment only InMemoryLookupCache is supported.");
 
-        Word2VecConfiguration conf = vec.getConfiguration();
+        VectorsConfiguration conf = vec.getConfiguration();
         conf.setVocabSize(vocabCache.numWords());
 
         VocabularyHolder holder = new VocabularyHolder.Builder()
@@ -368,7 +366,7 @@ public class WordVectorSerializer {
         log.info("Word2Vec conf. JSON: " + conf.toJson());
         /*
             We have the following map:
-            Line 0 - Word2VecConfiguration JSON string
+            Line 0 - VectorsConfiguration JSON string
             Line 1 - expTable
             Line 2 - table
 
@@ -384,7 +382,7 @@ public class WordVectorSerializer {
         printWriter.println(builder.toString().trim());
 
         // saving table, available only if negative sampling is used
-        if (conf.getNegative() > 0) {
+        if (conf.getNegative() > 0 && ((InMemoryLookupTable) lookupTable).getTable() != null) {
             builder = new StringBuilder();
             for (int x = 0; x < ((InMemoryLookupTable) lookupTable).getTable().columns(); x++) {
                 builder.append(((InMemoryLookupTable) lookupTable).getTable().getDouble(x)).append(" ");
@@ -393,15 +391,15 @@ public class WordVectorSerializer {
         } else printWriter.println("");
 
         List<VocabWord> words = new ArrayList<>(((InMemoryLookupCache) vocabCache).getVocabs().values());
-        for (VocabWord word: words) {
-            VocabularyWord vw = new VocabularyWord(word.getWord());
-            vw.setCount(vocabCache.wordFrequency(word.getWord()));
+        for (SequenceElement word: words) {
+            VocabularyWord vw = new VocabularyWord(word.getLabel());
+            vw.setCount(vocabCache.wordFrequency(word.getLabel()));
 
             vw.setHuffmanNode(VocabularyHolder.buildNode(word.getCodes(), word.getPoints(), word.getCodeLength(), word.getIndex()));
 
 
             // writing down syn0
-            INDArray syn0 = ((InMemoryLookupTable) lookupTable).getSyn0().getRow(vocabCache.indexOf(word.getWord()));
+            INDArray syn0 = ((InMemoryLookupTable) lookupTable).getSyn0().getRow(vocabCache.indexOf(word.getLabel()));
             double[] dsyn0 = new double[syn0.columns()];
             for (int x =0; x < conf.getLayersSize(); x++) {
                 dsyn0[x] = syn0.getDouble(x);
@@ -409,7 +407,7 @@ public class WordVectorSerializer {
             vw.setSyn0(dsyn0);
 
             // writing down syn1
-            INDArray syn1 = ((InMemoryLookupTable) lookupTable).getSyn1().getRow(vocabCache.indexOf(word.getWord()));
+            INDArray syn1 = ((InMemoryLookupTable) lookupTable).getSyn1().getRow(vocabCache.indexOf(word.getLabel()));
             double[] dsyn1 = new double[syn1.columns()];
             for (int x =0; x < syn1.columns(); x++) {
                 dsyn1[x] = syn1.getDouble(x);
@@ -417,8 +415,8 @@ public class WordVectorSerializer {
             vw.setSyn1(dsyn1);
 
             // writing down syn1Neg, if negative sampling is used
-            if (conf.getNegative() > 0) {
-                INDArray syn1Neg = ((InMemoryLookupTable) lookupTable).getSyn1Neg().getRow(vocabCache.indexOf(word.getWord()));
+            if (conf.getNegative() > 0 && ((InMemoryLookupTable) lookupTable).getSyn1Neg() != null) {
+                INDArray syn1Neg = ((InMemoryLookupTable) lookupTable).getSyn1Neg().getRow(vocabCache.indexOf(word.getLabel()));
                 double[] dsyn1Neg = new double[syn1Neg.columns()];
                 for (int x = 0; x < syn1Neg.columns(); x++) {
                     dsyn1Neg[x] = syn1Neg.getDouble(x);
@@ -463,7 +461,7 @@ public class WordVectorSerializer {
         // first 3 lines should be processed separately
         String confJson  = iterator.nextSentence();
         log.info("Word2Vec conf. JSON: " + confJson);
-        Word2VecConfiguration configuration = Word2VecConfiguration.fromJson(confJson);
+        VectorsConfiguration configuration = VectorsConfiguration.fromJson(confJson);
 
 
         // actually we dont need expTable, since it produces exact results on subsequent runs untill you dont modify expTable size :)
@@ -553,9 +551,46 @@ public class WordVectorSerializer {
      *            the path to write
      * @throws IOException
      */
-    public static void writeWordVectors(WordVectors vec, String path)
+    public static void writeWordVectors(@NonNull Word2Vec vec, @NonNull String path)
             throws IOException {
         BufferedWriter write = new BufferedWriter(new FileWriter(new File(path), false));
+
+        writeWordVectors(vec, write);
+
+        write.flush();
+        write.close();
+
+    }
+
+    /**
+     * Writes the word vectors to the given OutputStream. Note that this assumes an in memory cache.
+     *
+     * @param vec
+     *            the word2vec to write
+     * @param outputStream - OutputStream, where all data should be sent to
+     *            the path to write
+     * @throws IOException
+     */
+    public static void writeWordVectors(@NonNull Word2Vec vec, @NonNull OutputStream outputStream) throws IOException {
+        BufferedWriter writer =  new BufferedWriter(new OutputStreamWriter(outputStream));
+
+        writeWordVectors(vec, writer);
+
+        writer.flush();
+        writer.close();
+    }
+
+    /**
+     * Writes the word vectors to the given BufferedWriter. Note that this assumes an in memory cache.
+     * BufferedWriter can be writer to local file, or hdfs file, or any compatible to java target.
+     *
+     * @param vec
+     *            the word2vec to write
+     * @param writer - BufferedWriter, where all data should be written to
+     *            the path to write
+     * @throws IOException
+     */
+    public static void writeWordVectors(@NonNull Word2Vec vec, @NonNull BufferedWriter writer) throws IOException  {
         int words = 0;
         for (String word : vec.vocab().words()) {
             if (word == null) {
@@ -572,15 +607,11 @@ public class WordVectorSerializer {
                 }
             }
             sb.append("\n");
-            write.write(sb.toString());
+            writer.write(sb.toString());
             words++;
-
         }
 
         log.info("Wrote " + words + " with size of " + vec.lookupTable().layerSize());
-        write.flush();
-        write.close();
-
     }
 
     /**

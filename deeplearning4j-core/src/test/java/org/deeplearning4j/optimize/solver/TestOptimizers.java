@@ -915,5 +915,7 @@ public class TestOptimizers {
         @Override
         public int getInputMiniBatchSize(){ return 1; }
 
+        @Override
+        public void setMaskArray(INDArray maskArray) { }
     }
 }
