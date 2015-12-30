@@ -150,11 +150,6 @@
 			<artifactId>dropwizard-views-freemarker</artifactId>
 			<version>${dropwizard.version}</version>
 		</dependency>
-		<dependency>
-			<groupId>org.deeplearning4j</groupId>
-			<artifactId>deeplearning4j-graph</artifactId>
-			<version>0.4-rc3.8-SNAPSHOT</version>
-		</dependency>
 
 	</dependencies>
 </project>
