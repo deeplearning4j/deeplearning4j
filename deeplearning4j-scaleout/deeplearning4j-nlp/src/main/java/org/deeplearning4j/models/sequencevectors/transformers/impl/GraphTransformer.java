@@ -12,6 +12,7 @@ import java.util.Iterator;
  * @author raver119@gmail.com
  */
 public class GraphTransformer<T extends SequenceElement,V> implements Iterable<T> {
+    // TODO: to be implemented
 
     @Override
     public Iterator<T> iterator() {

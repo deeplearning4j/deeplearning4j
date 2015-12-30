@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * This class is responsible for conversion lines of text to Sequences of SequenceElements
+ * This simple class is responsible for conversion lines of text to Sequences of SequenceElements to fit them into SequenceVectors model
  *
  * @author raver119@gmail.com
  */
