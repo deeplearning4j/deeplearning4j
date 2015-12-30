@@ -17,6 +17,12 @@ public class FilteredSequenceIterator<T extends SequenceElement> implements Sequ
     private final SequenceIterator<T> underlyingIterator;
     private final VocabCache<T> vocabCache;
 
+    /**
+     * Creates Filtered SequenceIterator on top of another SequenceIterator and appropriate VocabCache instance
+     *
+     * @param iterator
+     * @param vocabCache
+     */
     public FilteredSequenceIterator(@NonNull SequenceIterator<T> iterator, @NonNull VocabCache<T> vocabCache) {
         this.vocabCache = vocabCache;
         this.underlyingIterator = iterator;
