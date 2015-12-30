@@ -11,7 +11,7 @@ jdk:
 sudo: true
 
 before_install:
-  - sudo apt-get install build-essential  gfortran libopenblas-base git
+  - sudo apt-get install build-essential   libopenblas-base git
   - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 script:
   -  cd /home/travis/build/deeplearning4j/nd4j && chmod +x ./runtests.sh && ./runtests.sh
