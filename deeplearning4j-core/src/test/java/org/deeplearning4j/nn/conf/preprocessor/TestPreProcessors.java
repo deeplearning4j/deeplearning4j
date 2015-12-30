@@ -2,18 +2,24 @@ package org.deeplearning4j.nn.conf.preprocessor;
 
 import static org.junit.Assert.*;
 
+import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.GravesLSTM;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
+import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
 import org.deeplearning4j.nn.layers.convolution.ConvolutionLayer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.layers.feedforward.dense.DenseLayer;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -379,7 +385,56 @@ public class TestPreProcessors {
                 .build();
         //Expect preprocessors: 0: FF->CNN, 1: CNN->RNN;
         assertEquals(2, conf3.getInputPreProcessors().size());
-        assertTrue( conf3.getInputPreProcess(0) instanceof FeedForwardToCnnPreProcessor );
+        assertTrue(conf3.getInputPreProcess(0) instanceof FeedForwardToCnnPreProcessor);
         assertTrue(conf3.getInputPreProcess(1) instanceof CnnToRnnPreProcessor);
+    }
+
+    @Test
+    public void testCnnToDense(){
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        //.gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .learningRate(0.01) // default
+                        //.momentum(0.9)
+                .regularization(true)
+                .list(3)
+                .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(4, 4) // 28*28*1 => 15*15*10
+                        .nIn(1)
+                        .nOut(10)
+                        .padding(2, 2)
+                        .stride(2, 2)
+                        .weightInit(WeightInit.RELU)
+                        .activation("relu")
+                        .build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().activation("relu")
+                        .nOut(200).build())
+                .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.RMSE_XENT)
+                        .nIn(200)
+                        .nOut(5)
+                        .weightInit(WeightInit.RELU)
+                        .activation("softmax")
+                        .updater(Updater.SGD)
+                        .build())
+                .cnnInputSize(28,28,1)
+                .backprop(true).pretrain(false).build();
+
+        assertNotNull(conf.getInputPreProcess(0));
+        assertNotNull(conf.getInputPreProcess(1));
+
+        assertTrue(conf.getInputPreProcess(0) instanceof FeedForwardToCnnPreProcessor);
+        assertTrue(conf.getInputPreProcess(1) instanceof CnnToFeedForwardPreProcessor);
+
+        FeedForwardToCnnPreProcessor ffcnn = (FeedForwardToCnnPreProcessor)conf.getInputPreProcess(0);
+        CnnToFeedForwardPreProcessor cnnff = (CnnToFeedForwardPreProcessor)conf.getInputPreProcess(1);
+
+        assertEquals(28,ffcnn.getInputHeight());
+        assertEquals(28,ffcnn.getInputWidth());
+        assertEquals(1,ffcnn.getNumChannels());
+
+        assertEquals(15,cnnff.getInputHeight());
+        assertEquals(15,cnnff.getInputWidth());
+        assertEquals(10,cnnff.getNumChannels());
+
+        assertEquals(15*15*10,((FeedForwardLayer)conf.getConf(1).getLayer()).getNIn());
     }
 }
