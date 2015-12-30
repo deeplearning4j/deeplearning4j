@@ -36,6 +36,7 @@ import java.util.concurrent.CountDownLatch;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
+import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.nn.layers.feedforward.autoencoder.recursive.Tree;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
@@ -135,8 +136,8 @@ public class RNTN implements Layer {
      */
     private Map<String, INDArray> unaryClassification;
 
-    private WeightLookupTable featureVectors;
-    private VocabCache vocabCache;
+    private WeightLookupTable<VocabWord> featureVectors;
+    private VocabCache<VocabWord> vocabCache;
 
     /**
      * CxN+1, where N = size of word vectors, C is the number of classes
@@ -1332,7 +1333,7 @@ public class RNTN implements Layer {
         private int numUnaryMatrices;
         private int unaryClassificationSize;
         private Map<Integer, Double> classWeights;
-        private VocabCache vocabCache;
+        private VocabCache<VocabWord> vocabCache;
 
 
 
@@ -1410,7 +1411,7 @@ public class RNTN implements Layer {
             return this;
         }
 
-        public Builder setFeatureVectors(WeightLookupTable featureVectors) {
+        public Builder setFeatureVectors(WeightLookupTable<VocabWord> featureVectors) {
             this.featureVectors = featureVectors;
             this.numHidden = featureVectors.vectors().next().columns();
             return this;
@@ -1479,5 +1480,10 @@ public class RNTN implements Layer {
     @Override
     public int getInputMiniBatchSize(){
     	return inputMiniBatchSize;
+    }
+
+    @Override
+    public void setMaskArray(INDArray maskArray) {
+        throw new UnsupportedOperationException();
     }
 }

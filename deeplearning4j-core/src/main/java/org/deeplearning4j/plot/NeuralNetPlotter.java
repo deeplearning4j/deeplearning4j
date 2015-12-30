@@ -45,7 +45,10 @@ import org.springframework.core.io.ClassPathResource;
  * for visualizations
  * @author Adam Gibson
  *
+ * @deprecated take a look at deeplearning4j-ui as new visualisation means
+ *
  */
+@Deprecated
 public class NeuralNetPlotter implements Serializable {
 
     private static 	ClassPathResource script = new ClassPathResource("scripts" + File.separator + "plot.py");

@@ -6,8 +6,8 @@ import org.apache.spark.ml.UnaryTransformer
 import org.apache.spark.ml.param.{Param, IntParam, ParamValidators}
 import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.sql.types.{BinaryType, DataType}
-import org.deeplearning4j.spark.ml.util.Identifiable
 import org.canova.image.loader.ImageLoader
+import org.deeplearning4j.spark.ml.util.Identifiable
 import org.deeplearning4j.spark.sql.types.VectorUDT
 import org.deeplearning4j.spark.util.conversions.toVector
 

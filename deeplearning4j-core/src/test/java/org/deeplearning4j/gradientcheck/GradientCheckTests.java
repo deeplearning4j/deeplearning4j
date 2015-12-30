@@ -606,10 +606,10 @@ public class GradientCheckTests {
 		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
 				.seed(12345)
 				.list(5)
-				.layer(0, new ConvolutionLayer.Builder(5,5)
+				.layer(0, new ConvolutionLayer.Builder(5, 5)
 						.nIn(3)
 						.nOut(5)
-						.stride(1,1)
+						.stride(1, 1)
 						.activation("relu")
 						.weightInit(WeightInit.XAVIER)
 						.updater(Updater.NONE)
@@ -639,11 +639,12 @@ public class GradientCheckTests {
 						.activation("softmax")
 						.updater(Updater.NONE)
 						.build())
-				.inputPreProcessor(0, new RnnToCnnPreProcessor(10, 10, 3))	//Time series input processing
-				.inputPreProcessor(2, new CnnToFeedForwardPreProcessor(5, 5, 5))
-				.inputPreProcessor(3, new FeedForwardToRnnPreProcessor())
+				.cnnInputSize(10, 10, 3)
 				.pretrain(false).backprop(true)
 				.build();
+
+		//Here: ConvolutionLayerSetup in config builder doesn't know that we are expecting time series input, not standard FF input -> override it here
+		conf.getInputPreProcessors().put(0,new RnnToCnnPreProcessor(10, 10, 3));
 
 		MultiLayerNetwork mln = new MultiLayerNetwork(conf);
 		mln.init();
@@ -835,5 +836,4 @@ public class GradientCheckTests {
             }
         }
     }
-
 }

@@ -25,6 +25,7 @@ import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
+import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.UimaSentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
@@ -32,6 +33,8 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFac
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -88,8 +91,13 @@ public class Word2VecTests {
     public void testWordsNearest() throws Exception {
         testGoogleModelLoaded();
         List<Object> lst = Arrays.asList(googleModel.wordsNearest("Benkovic", 10).toArray());
+
+        assertTrue(lst.contains("Gopie"));
+        assertTrue(lst.contains("JIM_HOOK_Senior"));
+        /*
         assertEquals(lst.get(0), "Gopie");
         assertEquals(lst.get(1), "JIM_HOOK_Senior");
+        */
     }
 
     @Test
@@ -102,7 +110,7 @@ public class Word2VecTests {
     @Test
     public void testRunWord2Vec() throws Exception {
         // Strip white space before and after for each line
-        SentenceIterator iter = UimaSentenceIterator.createWithPath(inputFile.getAbsolutePath());
+        SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
         // Split on white spaces in the line to get words
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
@@ -115,18 +123,32 @@ public class Word2VecTests {
                 .lr(0.025f).build();
 
         Word2Vec vec = new Word2Vec.Builder()
-                .minWordFrequency(5).iterations(1)
-                .layerSize(100).lookupTable(table)
+                .minWordFrequency(5)
+                .iterations(1)
+                .layerSize(100)
+                .lookupTable(table)
                 .stopWords(new ArrayList<String>())
-                .vocabCache(cache).seed(42)
-                .windowSize(5).iterate(iter).tokenizerFactory(t).build();
+                .vocabCache(cache)
+                .seed(42)
+                .sampling(0)
+                .windowSize(5)
+                .iterate(iter)
+                .tokenizerFactory(t)
+                .build();
 
         assertEquals(new ArrayList<String>(), vec.getStopWords());
         vec.fit();
         WordVectorSerializer.writeWordVectors(vec, pathToWriteto);
         Collection<String> lst = vec.wordsNearest("day", 10);
         log.info(Arrays.toString(lst.toArray()));
-        log.info("Day/night similarity: " + vec.similarity("day", "night"));
+
+        assertEquals(10, lst.size());
+
+        double sim = vec.similarity("day", "night");
+        log.info("Day/night similarity: " + sim);
+
+        assertTrue(sim < 1.0);
+        assertTrue(sim > 0.6);
 
 
         assertTrue(lst.contains("week"));
@@ -136,6 +158,26 @@ public class Word2VecTests {
         assertFalse(lst.contains(null));
 
         new File("cache.ser").delete();
+    }
+
+    /**
+     * Adding test for cosine similarity, to track changes in Transforms.cosineSim()
+     */
+    @Test
+    public void testCosineSim() {
+        double[] array1 = new double[]{1.01, 0.91, 0.81, 0.71};
+        double[] array2 = new double[]{1.01, 0.91, 0.81, 0.71};
+        double[] array3 = new double[]{1.0, 0.9, 0.8, 0.7};
+
+        double sim12 = Transforms.cosineSim(Nd4j.create(array1), Nd4j.create(array2));
+        double sim23 = Transforms.cosineSim(Nd4j.create(array2), Nd4j.create(array3));
+        log.info("Arrays 1/2 cosineSim: " + sim12);
+        log.info("Arrays 2/3 cosineSim: " + sim23);
+        log.info("Arrays 1/2 dot: " + Nd4j.getBlasWrapper().dot(Nd4j.create(array1), Nd4j.create(array2)));
+        log.info("Arrays 2/3 dot: " + Nd4j.getBlasWrapper().dot(Nd4j.create(array2), Nd4j.create(array3)));
+
+        assertEquals(1.0d, sim12, 0.01d);
+        assertEquals(0.99d, sim23, 0.01d);
     }
 
     @Test
@@ -151,3 +193,4 @@ public class Word2VecTests {
 
 //
 }
+

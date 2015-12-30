@@ -42,7 +42,8 @@ public class VocabularyHolderTest {
         InMemoryLookupCache cache = new InMemoryLookupCache(true);
         VocabularyHolder holder = new VocabularyHolder(cache, false);
 
-        assertEquals(1, holder.numWords());
+        // no more UNK token here
+        assertEquals(0, holder.numWords());
     }
 
     /**

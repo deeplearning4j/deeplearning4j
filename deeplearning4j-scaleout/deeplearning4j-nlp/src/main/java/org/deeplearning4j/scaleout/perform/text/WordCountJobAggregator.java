@@ -35,7 +35,7 @@ import java.util.Set;
  * @author Adam Gibson
  */
 public class WordCountJobAggregator implements JobAggregator {
-    private VocabCache vocabCache;
+    private VocabCache<VocabWord> vocabCache;
     public final static String MIN_WORD_FREQUENCY = "org.deeplearning4j.scaleout.perform.text.minwordfrequency";
     private int minWordFrequency = 5;
 

@@ -48,7 +48,7 @@ public class Word2VecWork implements Serializable {
     private Map<String,INDArray> originalNegative = new ConcurrentHashMap<>();
     private Map<String,INDArray> syn1Vectors = new ConcurrentHashMap<>();
 
-    public Word2VecWork(InMemoryLookupTable table,InMemoryLookupCache cache,List<List<VocabWord>> sentences) {
+    public Word2VecWork(InMemoryLookupTable<VocabWord> table,InMemoryLookupCache cache,List<List<VocabWord>> sentences) {
         this.sentences = sentences;
         for(List<VocabWord> sentence : sentences)
             for(VocabWord word : sentence) {
@@ -62,18 +62,18 @@ public class Word2VecWork implements Serializable {
             }
     }
 
-    private void addWord(VocabWord word,InMemoryLookupTable table) {
+    private void addWord(VocabWord word,InMemoryLookupTable<VocabWord> table) {
         if(word == null)
             throw new IllegalArgumentException("Word must not be null!");
 
-        indexes.put(word.getIndex(),word);
-        vectors.put(word.getWord(),new Pair<>(word,table.getSyn0().getRow(word.getIndex()).dup()));
-        originalVectors.put(word.getWord(),table.getSyn0().getRow(word.getIndex()).dup());
-        syn1Vectors.put(word.getWord(), table.getSyn1().slice(word.getIndex()).dup());
-        originalSyn1Vectors.put(word.getWord(), table.getSyn1().slice(word.getIndex()).dup());
+        indexes.put(word.getIndex(),  word);
+        vectors.put(word.getLabel(),new Pair<>(word,table.getSyn0().getRow(word.getIndex()).dup()));
+        originalVectors.put(word.getLabel(),table.getSyn0().getRow(word.getIndex()).dup());
+        syn1Vectors.put(word.getLabel(), table.getSyn1().slice(word.getIndex()).dup());
+        originalSyn1Vectors.put(word.getLabel(), table.getSyn1().slice(word.getIndex()).dup());
         if(table.getSyn1Neg() != null) {
-            originalNegative.put(word.getWord(), table.getSyn1Neg().slice(word.getIndex()).dup());
-            negativeVectors.put(word.getWord(), new Pair<>(word, table.getSyn1Neg().slice(word.getIndex()).dup()));
+            originalNegative.put(word.getLabel(), table.getSyn1Neg().slice(word.getIndex()).dup());
+            negativeVectors.put(word.getLabel(), new Pair<>(word, table.getSyn1Neg().slice(word.getIndex()).dup()));
         }
 
     }
@@ -85,10 +85,10 @@ public class Word2VecWork implements Serializable {
         Map<String,INDArray> negativeChange = new HashMap<>();
         for(List<VocabWord> sentence : sentences)
             for(VocabWord word : sentence) {
-                syn0Change.put(word.getWord(),vectors.get(word.getWord()).getSecond().sub(originalVectors.get(word.getWord())));
-                syn1Change.put(word.getWord(),syn1Vectors.get(word.getWord()).sub(originalSyn1Vectors.get(word.getWord())));
+                syn0Change.put(word.getLabel(),vectors.get(word.getLabel()).getSecond().sub(originalVectors.get(word.getLabel())));
+                syn1Change.put(word.getLabel(),syn1Vectors.get(word.getLabel()).sub(originalSyn1Vectors.get(word.getLabel())));
                 if(!negativeVectors.isEmpty())
-                    negativeChange.put(word.getWord(),negativeVectors.get(word.getWord()).getSecond().subi(originalNegative.get(word.getWord())));
+                    negativeChange.put(word.getLabel(),negativeVectors.get(word.getLabel()).getSecond().subi(originalNegative.get(word.getLabel())));
             }
 
         return new Word2VecResult(syn0Change,syn1Change,negativeChange);

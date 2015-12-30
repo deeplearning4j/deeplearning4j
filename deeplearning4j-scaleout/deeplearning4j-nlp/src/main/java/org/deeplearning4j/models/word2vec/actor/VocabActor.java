@@ -30,6 +30,7 @@ import akka.dispatch.Futures;
 import akka.dispatch.OnFailure;
 import akka.dispatch.OnSuccess;
 import org.apache.commons.compress.utils.IOUtils;
+import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.StreamWork;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.VocabWork;
@@ -88,7 +89,7 @@ public class VocabActor extends UntypedActor {
         final Set<String> encountered = new HashSet<>();
 
         if(message  instanceof VocabWork) {
-            final List<VocabWord> document = new ArrayList<>();
+            final List<SequenceElement> document = new ArrayList<>();
             final VocabWork work = (VocabWork) message;
             if(work.getWork() == null || work.getWork().isEmpty())
                 return;
@@ -141,7 +142,7 @@ public class VocabActor extends UntypedActor {
 
         else if(message instanceof StreamWork) {
             StreamWork work = (StreamWork) message;
-            List<VocabWord> document = new ArrayList<>();
+            List<SequenceElement> document = new ArrayList<>();
 
             InputStream is = work.getIs();
             if(is == null)
@@ -188,7 +189,7 @@ public class VocabActor extends UntypedActor {
 
 
 
-    protected synchronized void processToken(String token,Set<String> encountered,List<VocabWord> words,boolean stem) {
+    protected synchronized void processToken(String token,Set<String> encountered,List<SequenceElement> words,boolean stem) {
         if(stopWords.contains(token))
             token = "STOP";
         if(token.isEmpty())
@@ -217,7 +218,7 @@ public class VocabActor extends UntypedActor {
         }
 
 
-        VocabWord token2;
+        SequenceElement token2;
         if(cache.hasToken(token))
             token2 = cache.tokenFor(token);
         else {
