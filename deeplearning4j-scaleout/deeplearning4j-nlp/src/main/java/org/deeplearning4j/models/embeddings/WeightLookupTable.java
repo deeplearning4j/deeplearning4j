@@ -99,6 +99,7 @@ public interface WeightLookupTable<T extends SequenceElement> extends Serializab
      * @param nextRandom nextRandom for sampling
      * @param alpha the alpha to use for learning
      */
+    @Deprecated
     void iterateSample(T w1,T w2,AtomicLong nextRandom,double alpha);
 
 

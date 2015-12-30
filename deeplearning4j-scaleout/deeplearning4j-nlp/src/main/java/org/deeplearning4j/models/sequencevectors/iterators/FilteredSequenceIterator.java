@@ -17,6 +17,12 @@ public class FilteredSequenceIterator<T extends SequenceElement> implements Sequ
     private final SequenceIterator<T> underlyingIterator;
     private final VocabCache<T> vocabCache;
 
+    /**
+     * Creates Filtered SequenceIterator on top of another SequenceIterator and appropriate VocabCache instance
+     *
+     * @param iterator
+     * @param vocabCache
+     */
     public FilteredSequenceIterator(@NonNull SequenceIterator<T> iterator, @NonNull VocabCache<T> vocabCache) {
         this.vocabCache = vocabCache;
         this.underlyingIterator = iterator;
@@ -41,8 +47,8 @@ public class FilteredSequenceIterator<T extends SequenceElement> implements Sequ
         Sequence<T> originalSequence = underlyingIterator.nextSequence();
         Sequence<T> newSequence = new Sequence<>();
 
-        for (T element: originalSequence.getElements()) {
-            if (vocabCache.hasToken(element.getLabel())) {
+        if (originalSequence != null) for (T element: originalSequence.getElements()) {
+            if (element != null && vocabCache.hasToken(element.getLabel())) {
                 newSequence.addElement(vocabCache.wordFor(element.getLabel()));
             }
         }
