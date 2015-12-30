@@ -21,6 +21,7 @@ package org.deeplearning4j.models.glove.actor;
 import akka.actor.UntypedActor;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.CounterMap;
+import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.glove.Glove;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
@@ -40,7 +41,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class CoOccurrenceActor extends UntypedActor {
     private TokenizerFactory tokenizerFactory;
     private int windowSize = 5;
-    private VocabCache cache;
+    private VocabCache<? extends SequenceElement> cache;
     private CounterMap<String,String> coOCurreneCounts = new CounterMap<>();
     private Counter<Integer> occurrenceAllocations;
     private AtomicInteger processed;
@@ -66,7 +67,7 @@ public class CoOccurrenceActor extends UntypedActor {
             for(int i = 0; i < tokens.size(); i++) {
                 int wordIdx = cache.indexOf(tokens.get(i));
                 if (wordIdx < 0) continue;
-                String w1 = cache.wordFor(tokens.get(i)).getWord();
+                String w1 = cache.wordFor(tokens.get(i)).getLabel();
 
                 if(w1.equals(Glove.UNK))
                     continue;
@@ -74,7 +75,7 @@ public class CoOccurrenceActor extends UntypedActor {
                 for(int j = i; j < windowStop; j++) {
                     int otherWord = cache.indexOf(tokens.get(j));
                     if (otherWord < 0) continue;
-                    String w2 = cache.wordFor(tokens.get(j)).getWord();
+                    String w2 = cache.wordFor(tokens.get(j)).getLabel();
                     if(w2.equals(Glove.UNK) || otherWord == wordIdx)
                         continue;
                     if(wordIdx < otherWord) {

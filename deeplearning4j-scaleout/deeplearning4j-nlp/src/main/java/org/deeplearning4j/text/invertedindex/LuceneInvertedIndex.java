@@ -19,6 +19,7 @@
 package org.deeplearning4j.text.invertedindex;
 
 import com.google.common.base.Function;
+import lombok.NonNull;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -30,7 +31,7 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.Bits;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.models.word2vec.VocabWord;
+import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.stopwords.StopWords;
 import org.slf4j.Logger;
@@ -40,7 +41,6 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -55,13 +55,13 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author Adam Gibson
  */
-public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClosedListener,
-    Iterator<List<VocabWord>> {
+public class LuceneInvertedIndex<T extends SequenceElement> implements InvertedIndex<T>, IndexReader.ReaderClosedListener,
+    Iterator<List<T>> {
 
     private transient  Directory dir;
     private transient IndexReader reader;
     private   transient Analyzer analyzer;
-    private VocabCache vocabCache;
+    private VocabCache<T> vocabCache;
     public final static String WORD_FIELD = "word";
     public final static String LABEL = "label";
 
@@ -72,12 +72,12 @@ public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClo
     private AtomicBoolean readerClosed = new AtomicBoolean(false);
     private AtomicInteger totalWords = new AtomicInteger(0);
     private int batchSize = 1000;
-    private List<List<VocabWord>> miniBatches = new CopyOnWriteArrayList<>();
-    private List<VocabWord> currMiniBatch = Collections.synchronizedList(new ArrayList<VocabWord>());
+    private List<List<T>> miniBatches = new CopyOnWriteArrayList<>();
+    private List<T> currMiniBatch = Collections.synchronizedList(new ArrayList<T>());
     private double sample = 0;
     private AtomicLong nextRandom = new AtomicLong(5);
     private String indexPath = INDEX_PATH;
-    private Queue<List<VocabWord>> miniBatchDocs = new ConcurrentLinkedDeque<>();   // FIXME this is never used
+    private Queue<List<T>> miniBatchDocs = new ConcurrentLinkedDeque<>();   // FIXME this is never used
     private AtomicBoolean miniBatchGoing = new AtomicBoolean(true);
     private boolean miniBatch = false;
     public final static String DEFAULT_INDEX_DIR = "word2vec-index";
@@ -107,12 +107,12 @@ public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClo
     }
 
     @Override
-    public Iterator<List<List<VocabWord>>> batchIter(int batchSize) {
+    public Iterator<List<List<T>>> batchIter(int batchSize) {
         return new BatchDocIter(batchSize);
     }
 
     @Override
-    public Iterator<List<VocabWord>> docs() {
+    public Iterator<List<T>> docs() {
         return new DocIter();
     }
 
@@ -138,22 +138,22 @@ public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClo
     }
 
     @Override
-    public Iterator<List<VocabWord>> miniBatches() {
+    public Iterator<List<T>> miniBatches() {
         return this;
     }
 
     @Override
-    public synchronized List<VocabWord> document(int index) {
-        List<VocabWord> ret = new CopyOnWriteArrayList<>();
+    public synchronized List<T> document(int index) {
+        List<T> ret = new CopyOnWriteArrayList<>();
         try {
             DirectoryReader reader = readerManager.acquire();
             Document doc = reader.document(index);
             reader.close();
             String[] values = doc.getValues(WORD_FIELD);
             for(String s : values) {
-                VocabWord word = vocabCache.wordFor(s);
+                T word = vocabCache.wordFor(s);
                 if(word != null)
-                    ret.add(vocabCache.wordFor(s));
+                    ret.add(word);
             }
 
 
@@ -170,9 +170,9 @@ public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClo
 
 
     @Override
-    public int[] documents(VocabWord vocabWord) {
+    public int[] documents(T vocabWord) {
         try {
-            TermQuery query = new TermQuery(new Term(WORD_FIELD,vocabWord.getWord().toLowerCase()));
+            TermQuery query = new TermQuery(new Term(WORD_FIELD,vocabWord.getLabel().toLowerCase()));
             searcherManager.maybeRefresh();
             IndexSearcher searcher = searcherManager.acquire();
             TopDocs topdocs = searcher.search(query,Integer.MAX_VALUE);
@@ -249,8 +249,8 @@ public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClo
     }
 
     @Override
-    public void addWordToDoc(int doc, VocabWord word) {
-        Field f = new TextField(WORD_FIELD,word.getWord(),Field.Store.YES);
+    public void addWordToDoc(int doc, T word) {
+        Field f = new TextField(WORD_FIELD,word.getLabel(),Field.Store.YES);
         try {
             IndexSearcher searcher = searcherManager.acquire();
             Document doc2 = searcher.doc(doc);
@@ -300,13 +300,13 @@ public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClo
     }
 
     @Override
-    public void addWordsToDoc(int doc,final List<VocabWord> words) {
+    public void addWordsToDoc(int doc,final List<T> words) {
 
 
         Document d = new Document();
 
-        for (VocabWord word : words)
-            d.add(new TextField(WORD_FIELD, word.getWord(), Field.Store.YES));
+        for (T word : words)
+            d.add(new TextField(WORD_FIELD, word.getLabel(), Field.Store.YES));
 
 
 
@@ -321,8 +321,8 @@ public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClo
 
 
     @Override
-    public Pair<List<VocabWord>, String> documentWithLabel(int index) {
-        List<VocabWord> ret = new CopyOnWriteArrayList<>();
+    public Pair<List<T>, String> documentWithLabel(int index) {
+        List<T> ret = new CopyOnWriteArrayList<>();
         String label = "NONE";
         try {
             DirectoryReader reader = readerManager.acquire();
@@ -333,7 +333,9 @@ public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClo
             if(label == null)
                 label = "NONE";
             for(String s : values) {
-                ret.add(vocabCache.wordFor(s));
+                T tok = vocabCache.wordFor(s);
+                if (tok != null)
+                    ret.add(tok);
             }
 
 
@@ -350,8 +352,8 @@ public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClo
     }
 
     @Override
-    public Pair<List<VocabWord>, Collection<String>> documentWithLabels(int index) {
-        List<VocabWord> ret = new CopyOnWriteArrayList<>();
+    public Pair<List<T>, Collection<String>> documentWithLabels(int index) {
+        List<T> ret = new CopyOnWriteArrayList<>();
         Collection<String> labels = new ArrayList<>();
 
         try {
@@ -362,7 +364,9 @@ public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClo
             String[] labels2 = doc.getValues(LABEL);
 
             for(String s : values) {
-                ret.add(vocabCache.wordFor(s));
+                T tok = vocabCache.wordFor(s);
+                if (tok != null)
+                    ret.add(tok);
             }
 
             Collections.addAll(labels, labels2);
@@ -379,8 +383,8 @@ public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClo
     }
 
     @Override
-    public void addLabelForDoc(int doc, VocabWord word) {
-        addLabelForDoc(doc,word.getWord());
+    public void addLabelForDoc(int doc, T word) {
+        addLabelForDoc(doc,word.getLabel());
     }
 
     @Override
@@ -399,11 +403,11 @@ public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClo
     }
 
     @Override
-    public void addWordsToDoc(int doc, List<VocabWord> words, String label) {
+    public void addWordsToDoc(int doc, List<T> words, String label) {
         Document d = new Document();
 
-        for (VocabWord word : words)
-            d.add(new TextField(WORD_FIELD, word.getWord(), Field.Store.YES));
+        for (T word : words)
+            d.add(new TextField(WORD_FIELD, word.getLabel(), Field.Store.YES));
 
         d.add(new TextField(LABEL,label,Field.Store.YES));
 
@@ -419,23 +423,23 @@ public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClo
     }
 
     @Override
-    public void addWordsToDoc(int doc, List<VocabWord> words, VocabWord label) {
-        addWordsToDoc(doc,words,label.getWord());
+    public void addWordsToDoc(int doc, List<T> words, T label) {
+        addWordsToDoc(doc,words,label.getLabel());
     }
 
     @Override
-    public void addLabelsForDoc(int doc, List<VocabWord> label) {
+    public void addLabelsForDoc(int doc, List<T> label) {
         try {
             DirectoryReader reader = readerManager.acquire();
 
             Document doc2 = reader.document(doc);
-            for(VocabWord s : label)
-                doc2.add(new TextField(LABEL,s.getWord(),Field.Store.YES));
+            for(T s : label)
+                doc2.add(new TextField(LABEL,s.getLabel(),Field.Store.YES));
             readerManager.release(reader);
             TrackingIndexWriter writer = getWriter();
             List<Term> terms = new ArrayList<>();
-            for(VocabWord s : label) {
-                Term term = new Term(LABEL,s.getWord());
+            for(T s : label) {
+                Term term = new Term(LABEL,s.getLabel());
                 terms.add(term);
             }
             writer.addDocument(doc2);
@@ -466,11 +470,11 @@ public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClo
     }
 
     @Override
-    public void addWordsToDoc(int doc, List<VocabWord> words, Collection<String> label) {
+    public void addWordsToDoc(int doc, List<T> words, Collection<String> label) {
         Document d = new Document();
 
-        for (VocabWord word : words)
-            d.add(new TextField(WORD_FIELD, word.getWord(), Field.Store.YES));
+        for (T word : words)
+            d.add(new TextField(WORD_FIELD, word.getLabel(), Field.Store.YES));
 
         for(String s : label)
             d.add(new TextField(LABEL,s,Field.Store.YES));
@@ -485,14 +489,14 @@ public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClo
     }
 
     @Override
-    public void addWordsToDocVocabWord(int doc, List<VocabWord> words, Collection<VocabWord> label) {
+    public void addWordsToDocVocabWord(int doc, List<T> words, Collection<T> label) {
         Document d = new Document();
 
-        for (VocabWord word : words)
-            d.add(new TextField(WORD_FIELD, word.getWord(), Field.Store.YES));
+        for (T word : words)
+            d.add(new TextField(WORD_FIELD, word.getLabel(), Field.Store.YES));
 
-        for(VocabWord s : label)
-            d.add(new TextField(LABEL,s.getWord(),Field.Store.YES));
+        for(T s : label)
+            d.add(new TextField(LABEL,s.getLabel(),Field.Store.YES));
 
         totalWords.set(totalWords.get() + words.size());
         addWords(words);
@@ -504,14 +508,14 @@ public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClo
     }
 
 
-    private void addWords(List<VocabWord> words) {
+    private void addWords(List<T> words) {
         if(!miniBatch)
             return;
-        for (VocabWord word : words) {
+        for (T word : words) {
             // The subsampling randomly discards frequent words while keeping the ranking same
             if (sample > 0) {
-                double ran = (Math.sqrt(word.getWordFrequency() / (sample * numDocuments())) + 1)
-                        * (sample * numDocuments()) / word.getWordFrequency();
+                double ran = (Math.sqrt(word.getElementFrequency() / (sample * numDocuments())) + 1)
+                        * (sample * numDocuments()) / word.getElementFrequency();
 
                 if (ran < (nextRandom.get() & 0xFFFF) / (double) 65536) {
                     continue;
@@ -664,7 +668,7 @@ public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClo
     }
 
     @Override
-    public void eachDocWithLabels(final Function<Pair<List<VocabWord>, Collection<String>>, Void> func, ExecutorService exec) {
+    public void eachDocWithLabels(final Function<Pair<List<T>, Collection<String>>, Void> func, ExecutorService exec) {
         int[] docIds = allDocs();
         for(int i : docIds) {
             final int j = i;
@@ -678,7 +682,7 @@ public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClo
     }
 
     @Override
-    public void eachDocWithLabel(final Function<Pair<List<VocabWord>, String>, Void> func, ExecutorService exec) {
+    public void eachDocWithLabel(final Function<Pair<List<T>, String>, Void> func, ExecutorService exec) {
         int[] docIds = allDocs();
         for(int i : docIds) {
             final int j = i;
@@ -692,7 +696,7 @@ public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClo
     }
 
     @Override
-    public void eachDoc(final Function<List<VocabWord>, Void> func,ExecutorService exec) {
+    public void eachDoc(final Function<List<T>, Void> func,ExecutorService exec) {
         int[] docIds = allDocs();
         for(int i : docIds) {
             final int j = i;
@@ -725,7 +729,7 @@ public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClo
     }
 
     @Override
-    public List<VocabWord> next() {
+    public List<T> next() {
         if(!miniBatch)
             throw new IllegalStateException("Mini batch mode turned off");
         if(!miniBatches.isEmpty())
@@ -757,10 +761,10 @@ public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClo
 
 
 
-    public class BatchDocIter implements Iterator<List<List<VocabWord>>> {
+    public class BatchDocIter implements Iterator<List<List<T>>> {
 
         private int batchSize = 1000;
-        private Iterator<List<VocabWord>> docIter = new DocIter();
+        private Iterator<List<T>> docIter = new DocIter();
 
         public BatchDocIter(int batchSize) {
             this.batchSize = batchSize;
@@ -772,8 +776,8 @@ public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClo
         }
 
         @Override
-        public List<List<VocabWord>> next() {
-            List<List<VocabWord>> ret = new ArrayList<>();
+        public List<List<T>> next() {
+            List<List<T>> ret = new ArrayList<>();
             for(int i = 0; i < batchSize; i++) {
                 if(!docIter.hasNext())
                     break;
@@ -789,7 +793,7 @@ public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClo
     }
 
 
-    public class DocIter implements Iterator<List<VocabWord>> {
+    public class DocIter implements Iterator<List<T>> {
         private int currIndex = 0;
         private int[] docs = allDocs();
 
@@ -800,7 +804,7 @@ public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClo
         }
 
         @Override
-        public List<VocabWord> next() {
+        public List<T> next() {
             return document(docs[currIndex++]);
         }
 
@@ -811,7 +815,7 @@ public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClo
     }
 
 
-    public static class Builder {
+    public static class Builder<T extends SequenceElement> {
         private File indexDir;
         private  Directory dir;
         private IndexReader reader;
@@ -819,7 +823,7 @@ public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClo
         private IndexSearcher searcher;
         private IndexWriter writer;
         private  IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
-        private VocabCache vocabCache;
+        private VocabCache<T> vocabCache;
         private List<String> stopWords = StopWords.getStopWords();
         private boolean cache = false;
         private int batchSize = 1000;
@@ -828,69 +832,69 @@ public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClo
 
 
 
-        public Builder miniBatch(boolean miniBatch) {
+        public Builder<T> miniBatch(boolean miniBatch) {
             this.miniBatch = miniBatch;
             return this;
         }
-        public Builder cacheInRam(boolean cache) {
+        public Builder<T> cacheInRam(boolean cache) {
             this.cache = cache;
             return this;
         }
 
-        public Builder sample(double sample) {
+        public Builder<T> sample(double sample) {
             this.sample = sample;
             return this;
         }
 
-        public Builder batchSize(int batchSize) {
+        public Builder<T> batchSize(int batchSize) {
             this.batchSize = batchSize;
             return this;
         }
 
 
 
-        public Builder indexDir(File indexDir) {
+        public Builder<T> indexDir(File indexDir) {
             this.indexDir = indexDir;
             return this;
         }
 
-        public Builder cache(VocabCache cache) {
+        public Builder<T> cache(@NonNull VocabCache<T> cache) {
             this.vocabCache = cache;
             return this;
         }
 
-        public Builder stopWords(List<String> stopWords) {
+        public Builder<T> stopWords(@NonNull List<String> stopWords) {
             this.stopWords = stopWords;
             return this;
         }
 
-        public Builder dir(Directory dir) {
+        public Builder<T> dir(Directory dir) {
             this.dir = dir;
             return this;
         }
 
-        public Builder reader(IndexReader reader) {
+        public Builder<T> reader(IndexReader reader) {
             this.reader = reader;
             return this;
         }
 
-        public Builder writer(IndexWriter writer) {
+        public Builder<T> writer(IndexWriter writer) {
             this.writer = writer;
             return this;
         }
 
-        public Builder analyzer(Analyzer analyzer) {
+        public Builder<T> analyzer(Analyzer analyzer) {
             this.analyzer = analyzer;
             return this;
         }
 
-        public InvertedIndex build() {
-            LuceneInvertedIndex ret;
+        public InvertedIndex<T> build() {
+            LuceneInvertedIndex<T> ret;
             if(indexDir != null) {
-                ret = new LuceneInvertedIndex(vocabCache,cache,indexDir.getAbsolutePath());
+                ret = new LuceneInvertedIndex<T>(vocabCache,cache,indexDir.getAbsolutePath());
             }
             else
-                ret = new LuceneInvertedIndex(vocabCache);
+                ret = new LuceneInvertedIndex<T>(vocabCache);
             try {
                 ret.batchSize = batchSize;
 

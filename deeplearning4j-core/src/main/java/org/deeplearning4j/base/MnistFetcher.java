@@ -23,30 +23,44 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.util.ArchiveUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+@Data
+@NoArgsConstructor
 public class MnistFetcher {
+	protected static final Logger log = LoggerFactory.getLogger(MnistFetcher.class);
+
+	protected File BASE_DIR = new File(System.getProperty("user.home"));
+	protected static final String LOCAL_DIR_NAME = "MNIST";
+	protected File FILE_DIR = new File(BASE_DIR, LOCAL_DIR_NAME);
+
 
 	private File fileDir;
-	private static final Logger log = LoggerFactory.getLogger(MnistFetcher.class);
 	private static final String trainingFilesURL = "http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz";
-
 	private static final String trainingFilesFilename = "images-idx1-ubyte.gz";
 	public static final String trainingFilesFilename_unzipped = "images-idx1-ubyte";
-
 	private static final String trainingFileLabelsURL = "http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz";
 	private static final String trainingFileLabelsFilename = "labels-idx1-ubyte.gz";
 	public static final String trainingFileLabelsFilename_unzipped = "labels-idx1-ubyte";
-	private static final String LOCAL_DIR_NAME = "MNIST";
 
-	
-	
+	//Test data:
+	private static final String testFilesURL = "http://yann.lecun.com/exdb/mnist/t10k-images-idx3-ubyte.gz";
+	private static final String testFilesFilename = "t10k-images-idx3-ubyte.gz";
+	public static final String testFilesFilename_unzipped = "t10k-images-idx3-ubyte";
+	private static final String testFileLabelsURL = "http://yann.lecun.com/exdb/mnist/t10k-labels-idx1-ubyte.gz";
+	private static final String testFileLabelsFilename = "t10k-labels-idx1-ubyte.gz";
+	public static final String testFileLabelsFilename_unzipped = "t10k-labels-idx1-ubyte";
+
+
 	public  File downloadAndUntar() throws IOException {
-		if(fileDir != null) {
+		if (fileDir != null) {
 			return fileDir;
 		}
 		// mac gives unique tmp each run and we want to store this persist
@@ -54,7 +68,7 @@ public class MnistFetcher {
 		File tmpDir = new File(System.getProperty("user.home"));
 
 		File baseDir = new File(tmpDir, LOCAL_DIR_NAME);
-		if(!(baseDir.isDirectory() || baseDir.mkdir())) {
+		if (!(baseDir.isDirectory() || baseDir.mkdir())) {
 			throw new IOException("Could not mkdir " + baseDir);
 		}
 
@@ -62,56 +76,43 @@ public class MnistFetcher {
 		log.info("Downloading mnist...");
 		// getFromOrigin training records
 		File tarFile = new File(baseDir, trainingFilesFilename);
+		File tarFileLabels = new File(baseDir, testFilesFilename);
 
-		if(!tarFile.isFile()) {
-			FileUtils.copyURLToFile(new URL(trainingFilesURL), tarFile);      
+		if (!tarFile.isFile()) {
+			FileUtils.copyURLToFile(new URL(trainingFilesURL), tarFile);
 		}
 
-	    ArchiveUtils.unzipFileTo(tarFile.getAbsolutePath(),baseDir.getAbsolutePath());
+		if (!tarFileLabels.isFile()) {
+			FileUtils.copyURLToFile(new URL(testFilesURL), tarFileLabels);
+		}
 
+		ArchiveUtils.unzipFileTo(tarFile.getAbsolutePath(), baseDir.getAbsolutePath());
+		ArchiveUtils.unzipFileTo(tarFileLabels.getAbsolutePath(), baseDir.getAbsolutePath());
 
+		// getFromOrigin training records
+		File labels = new File(baseDir, trainingFileLabelsFilename);
+		File labelsTest = new File(baseDir, testFileLabelsFilename);
 
+		if (!labels.isFile()) {
+			FileUtils.copyURLToFile(new URL(trainingFileLabelsURL), labels);
+		}
+		if (!labelsTest.isFile()) {
+			FileUtils.copyURLToFile(new URL(testFileLabelsURL), labelsTest);
+		}
 
-        // getFromOrigin training records
-        File labels = new File(baseDir, trainingFileLabelsFilename);
+		ArchiveUtils.unzipFileTo(labels.getAbsolutePath(), baseDir.getAbsolutePath());
+		ArchiveUtils.unzipFileTo(labelsTest.getAbsolutePath(), baseDir.getAbsolutePath());
 
-        if(!labels.isFile()) {
-            FileUtils.copyURLToFile(new URL(trainingFileLabelsURL), labels);
-        }
-
-        ArchiveUtils.unzipFileTo(labels.getAbsolutePath(),baseDir.getAbsolutePath());
-
-
-
-        fileDir = baseDir;
+		fileDir = baseDir;
 		return fileDir;
 	}
 
-	public  void untarFile(File baseDir, File tarFile) throws IOException {
-
-		log.info("Untaring File: " + tarFile.toString());
-
-		Process p = Runtime.getRuntime().exec(String.format("tar -C %s -xvf %s", 
-				baseDir.getAbsolutePath(), tarFile.getAbsolutePath()));
-		BufferedReader stdError = new BufferedReader(new 
-				InputStreamReader(p.getErrorStream()));
-		log.info("Here is the standard error of the command (if any):\n");
-		String s;
-		while ((s = stdError.readLine()) != null) {
-			log.info(s);
-		}
-		stdError.close();
-
-
-	}
 
 	public static void gunzipFile(File baseDir, File gzFile) throws IOException {
-
 		log.info("gunzip'ing File: " + gzFile.toString());
-
-		Process p = Runtime.getRuntime().exec(String.format("gunzip %s", 
+		Process p = Runtime.getRuntime().exec(String.format("gunzip %s",
 				gzFile.getAbsolutePath()));
-		BufferedReader stdError = new BufferedReader(new 
+		BufferedReader stdError = new BufferedReader(new
 				InputStreamReader(p.getErrorStream()));
 		log.info("Here is the standard error of the command (if any):\n");
 		String s;
@@ -119,8 +120,6 @@ public class MnistFetcher {
 			log.info(s);
 		}
 		stdError.close();
-
-
 	}
 
 

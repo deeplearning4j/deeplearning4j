@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.util.Dropout;
+import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.api.shape.Shape;
@@ -52,8 +53,8 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
 		int[] shape = in.shape();
 		if(shape[0]==1) return in.tensorAlongDimension(0,1,2);	//Edge case: miniBatchSize==1
 		if(shape[2]==1) return in.tensorAlongDimension(0,1,0);	//Edge case: timeSeriesLength=1
-		INDArray permuted = in.permute(0,2,1);	//Permute, so we get correct order after reshaping
-		return permuted.reshape(shape[0]*shape[2],shape[1]);
+		INDArray permuted = in.permute(0, 2, 1);	//Permute, so we get correct order after reshaping
+		return permuted.reshape(shape[0] * shape[2], shape[1]);
 	}
 	
 	private INDArray reshape2dTo3d(INDArray in, int miniBatchSize){
@@ -97,11 +98,12 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
     
     @Override
     public INDArray preOutput(INDArray x, boolean training){
-    	return reshape2dTo3d(preOutput2d(x,training),input.size(0));
+        setInput(x);
+        return reshape2dTo3d(preOutput2d(training),input.size(0));
     }
-    
+
     @Override
-    protected INDArray preOutput2d(INDArray input, boolean training){
+    protected INDArray preOutput2d(boolean training){
         if(input.rank() == 3 ) {
             //Case when called from RnnOutputLayer
             INDArray inputTemp = input;
@@ -131,7 +133,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
     public INDArray output(INDArray input) {
         if(input.rank() != 3) throw new IllegalArgumentException("Input must be rank 3 (is: " + input.rank());
         //Returns 3d activations from 3d input
-        setInput(input,false);
+        setInput(input);
         return output(false);
     }
 
@@ -139,22 +141,25 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
     public INDArray output(boolean training){
         //Assume that input is 3d
         if(input.rank() != 3 ) throw new IllegalArgumentException("input must be rank 3");
-        INDArray preOutput2d = preOutput2d(input,training);
+        INDArray preOutput2d = preOutput2d(training);
 
         if(conf.getLayer().getActivationFunction().equals("softmax")) {
             SoftMax softMax = new SoftMax(preOutput2d);
             softMax.exec(1);
             INDArray out2d = softMax.z();
+            if(maskArray != null){
+                out2d.muliColumnVector(maskArray);
+            }
             return reshape2dTo3d(out2d,input.size(0));
         }
 
         if(training)
-            applyDropOutIfNecessary(input(),training);
+            applyDropOutIfNecessary(training);
         INDArray origInput = input;
         this.input = reshape3dTo2d(input);
         INDArray out = super.activate(true);
         this.input = origInput;
-        return out;
+        return reshape2dTo3d(out,input.size(0));
     }
 
     @Override
@@ -171,5 +176,13 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         INDArray act2d = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(),
                 input2d.mmul(W).addiRowVector(b)));
         return reshape2dTo3d(act2d, input.size(0));
+    }
+
+    @Override
+    public void setMaskArray(INDArray maskArray) {
+        if(maskArray != null && maskArray.size(1) != 1){
+            maskArray = TimeSeriesUtils.reshapeTimeSeriesMaskToVector(maskArray);
+        }
+        this.maskArray = maskArray;
     }
 }

@@ -5,7 +5,10 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.plot.NeuralNetPlotter;
 
-
+/**
+ * @deprecated try to use deeplearning4j-ui instead
+ */
+@Deprecated
 public class RenderFilterIterationListener implements IterationListener {
     private int iterations = 10;
     private NeuralNetPlotter plotter = new NeuralNetPlotter();

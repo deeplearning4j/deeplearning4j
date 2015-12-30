@@ -19,9 +19,12 @@
 package org.deeplearning4j.models.embeddings.inmemory;
 
 import com.google.common.util.concurrent.AtomicDouble;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
 import org.apache.commons.math3.util.FastMath;
+import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
-import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.plot.Tsne;
@@ -42,7 +45,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author Adam Gibson
  */
-public class InMemoryLookupTable implements WeightLookupTable {
+public class InMemoryLookupTable<T extends SequenceElement> implements WeightLookupTable<T> {
 
 
     protected INDArray syn0,syn1;
@@ -56,9 +59,10 @@ public class InMemoryLookupTable implements WeightLookupTable {
     protected INDArray table,syn1Neg;
     protected boolean useAdaGrad;
     protected double negative = 0;
-    protected VocabCache vocab;
+    protected VocabCache<T> vocab;
     protected Map<Integer,INDArray> codes = new ConcurrentHashMap<>();
 
+    @Getter @Setter protected Long tableId;
 
     public InMemoryLookupTable() {}
 
@@ -92,7 +96,7 @@ public class InMemoryLookupTable implements WeightLookupTable {
         if(syn0 == null || reset) {
             syn0 = Nd4j.rand(new int[]{vocab.numWords() + 1, vectorLength}, rng).subi(0.5).divi(vectorLength);
             INDArray randUnk = Nd4j.rand(1, vectorLength, rng).subi(0.5).divi(vectorLength);
-            putVector(Word2Vec.UNK, randUnk);
+//            putVector(Word2Vec.UNK, randUnk);
         }
         if(syn1 == null || reset)
             syn1 = Nd4j.create(syn0.shape());
@@ -187,8 +191,8 @@ public class InMemoryLookupTable implements WeightLookupTable {
      * @param nextRandom next random for sampling
      */
     @Override
-    public  void iterateSample(VocabWord w1, VocabWord w2,AtomicLong nextRandom,double alpha) {
-        if(w2 == null || w2.getIndex() < 0 || w1.getIndex() == w2.getIndex() || w1.getWord().equals("STOP") || w2.getWord().equals("STOP") || w1.getWord().equals("UNK") || w2.getWord().equals("UNK"))
+    public  void iterateSample(T w1, T w2,AtomicLong nextRandom,double alpha) {
+        if(w2 == null || w2.getIndex() < 0 || w1.getIndex() == w2.getIndex() || w1.getLabel().equals("STOP") || w2.getLabel().equals("STOP") || w1.getLabel().equals("UNK") || w2.getLabel().equals("UNK"))
            return;
             //current word vector
         INDArray l1 = this.syn0.slice(w2.getIndex());
@@ -314,7 +318,7 @@ public class InMemoryLookupTable implements WeightLookupTable {
      * @param w2 the second word to iterate on
      */
     @Override
-    public  void iterate(VocabWord w1, VocabWord w2) {
+    public  void iterate(T w1, T w2) {
         if(w2.getIndex() < 0)
             return;
         //current word vector
@@ -405,31 +409,23 @@ public class InMemoryLookupTable implements WeightLookupTable {
             trainWordsPow += Math.pow(vocab.wordFrequency(word), power);
         }
 
-
-        for(String word : vocab.words()) {
-            double d1 = Math.pow(vocab.wordFrequency(word),power) / trainWordsPow;
-            for(int i = 0; i < tableSize; i++) {
-                int wordIdx = vocab.indexOf(word);
-                if(wordIdx < 0)
-                    continue;
-
-                table.putScalar(i,wordIdx);
-                double mul = i * 1.0 / (double) tableSize;
-                if(mul > d1) {
+        int wordIdx = 0;
+        String word = vocab.wordAtIndex(wordIdx);
+        double d1 = Math.pow(vocab.wordFrequency(word),power) / trainWordsPow;
+        for(int i = 0; i < tableSize; i++) {
+            table.putScalar(i,wordIdx);
+            double mul = i * 1.0 / (double) tableSize;
+            if(mul > d1) {
+                if( wordIdx < vocabSize-1 )
                     wordIdx++;
-                    String wordAtIndex = vocab.wordAtIndex(wordIdx);
-                    if(wordAtIndex == null)
-                        continue;
-                    d1 += Math.pow(vocab.wordFrequency(wordAtIndex),power) / trainWordsPow;
-
-                }
-
+                word = vocab.wordAtIndex(wordIdx);
+                String wordAtIndex = vocab.wordAtIndex(wordIdx);
+                if(word == null)
+                    continue;
+                d1 += Math.pow(vocab.wordFrequency(wordAtIndex),power) / trainWordsPow;
             }
-
         }
-
     }
-
     /**
      * Inserts a word vector
      *
@@ -530,6 +526,7 @@ public class InMemoryLookupTable implements WeightLookupTable {
         this.syn1 = syn1;
     }
 
+    @Override
     public int getVectorLength() {
         return vectorLength;
     }
@@ -562,58 +559,58 @@ public class InMemoryLookupTable implements WeightLookupTable {
         this.codes = codes;
     }
 
-    public static class Builder {
+    public static class Builder<T extends SequenceElement> {
         protected int vectorLength = 100;
         protected boolean useAdaGrad = false;
         protected double lr = 0.025;
         protected Random gen = Nd4j.getRandom();
         protected long seed = 123;
         protected double negative = 0;
-        protected VocabCache vocabCache;
+        protected VocabCache<T> vocabCache;
 
 
 
 
 
-        public Builder cache(VocabCache vocab) {
+        public Builder<T> cache(@NonNull VocabCache<T> vocab) {
             this.vocabCache = vocab;
             return this;
         }
 
-        public Builder negative(double negative) {
+        public Builder<T> negative(double negative) {
             this.negative = negative;
             return this;
         }
 
-        public Builder vectorLength(int vectorLength) {
+        public Builder<T> vectorLength(int vectorLength) {
             this.vectorLength = vectorLength;
             return this;
         }
 
-        public Builder useAdaGrad(boolean useAdaGrad) {
+        public Builder<T> useAdaGrad(boolean useAdaGrad) {
             this.useAdaGrad = useAdaGrad;
             return this;
         }
 
 
-        public Builder lr(double lr) {
+        public Builder<T> lr(double lr) {
             this.lr = lr;
             return this;
         }
 
-        public Builder gen(Random gen) {
+        public Builder<T> gen(Random gen) {
             this.gen = gen;
             return this;
         }
 
-        public Builder seed(long seed) {
+        public Builder<T> seed(long seed) {
             this.seed = seed;
             return this;
         }
 
 
 
-        public WeightLookupTable build() {
+        public WeightLookupTable<T> build() {
             if(vocabCache == null)
                 throw new IllegalStateException("Vocab cache must be specified");
 

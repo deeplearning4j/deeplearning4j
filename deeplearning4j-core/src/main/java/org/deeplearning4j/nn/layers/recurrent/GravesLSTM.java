@@ -294,7 +294,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 
     @Override
     public INDArray activate(INDArray input, boolean training) {
-        setInput(input, training);
+        setInput(input);
         return activateHelper(training, null, null, false).fwdPassOutput;
     }
 

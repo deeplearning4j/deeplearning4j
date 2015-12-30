@@ -22,8 +22,11 @@ import java.util.UUID;
 
 /**
  * Reference: https://cs231n.github.io/neural-networks-3/
+ *
+ * @deprecated try to use deeplearning4j-ui instead
  */
 
+@Deprecated
 public class LossPlotterIterationListener implements IterationListener {
     private int iterations = 1;
     private NeuralNetPlotter plotter = new NeuralNetPlotter();

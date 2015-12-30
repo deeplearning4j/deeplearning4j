@@ -186,7 +186,8 @@ public class CoOccurrences implements Serializable {
         @Override
         public Pair<VocabWord, VocabWord> next() {
             Pair<String,String> next = iter.next();
-            Pair<VocabWord,VocabWord> ret = new Pair<>(cache.wordFor(next.getFirst()),cache.wordFor(next.getSecond()));
+            // TODO: fix this
+            Pair<VocabWord,VocabWord> ret = new Pair<>((VocabWord)cache.wordFor(next.getFirst()),(VocabWord) cache.wordFor(next.getSecond()));
             return ret;
         }
 

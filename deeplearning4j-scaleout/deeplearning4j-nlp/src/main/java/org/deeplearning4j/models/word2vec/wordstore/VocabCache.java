@@ -19,7 +19,7 @@
 package org.deeplearning4j.models.word2vec.wordstore;
 
 
-import org.deeplearning4j.models.word2vec.VocabWord;
+import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -30,7 +30,7 @@ import java.util.Collection;
  *
  * @author Adam Gibson
  */
-public interface VocabCache extends Serializable {
+public interface VocabCache<T extends SequenceElement> extends Serializable {
 
 
 
@@ -98,6 +98,14 @@ public interface VocabCache extends Serializable {
     String wordAtIndex(int index);
 
     /**
+     * Returns SequenceElement at the given index or null
+     *
+     * @param index
+     * @return
+     */
+    T elementAtIndex(int index);
+
+    /**
      * Returns the index of a given word
      * @param word the index of a given word
      * @return the index of a given word or -1
@@ -110,7 +118,7 @@ public interface VocabCache extends Serializable {
      * Returns all of the vocab word nodes
      * @return
      */
-    Collection<VocabWord> vocabWords();
+    Collection<T> vocabWords();
 
 
     /**
@@ -125,7 +133,7 @@ public interface VocabCache extends Serializable {
      * @param word
      * @return
      */
-    VocabWord wordFor(String word);
+     T wordFor(String word);
 
 
     /**
@@ -142,6 +150,7 @@ public interface VocabCache extends Serializable {
      * Note that the index must be set on the token.
      * @param word the word to add to the vocab
      */
+    @Deprecated
     void putVocabWord(String word);
 
     /**
@@ -195,15 +204,15 @@ public interface VocabCache extends Serializable {
      * All of the tokens in the cache, (not necessarily apart of the vocab)
      * @return the tokens for this cache
      */
-    Collection<VocabWord> tokens();
+    Collection<T> tokens();
 
 
     /**
      * Adds a token
      * to the cache
-     * @param word the word to add
+     * @param element the word to add
      */
-    void addToken(VocabWord word);
+     void addToken(T element);
 
     /**
      * Returns the token (again not necessarily in the vocab)
@@ -211,7 +220,7 @@ public interface VocabCache extends Serializable {
      * @param word the word to get the token for
      * @return the vocab word for this token
      */
-    VocabWord tokenFor(String word);
+     T tokenFor(String word);
 
     /**
      * Returns whether the cache
@@ -224,6 +233,32 @@ public interface VocabCache extends Serializable {
     boolean hasToken(String token);
 
 
+    /**
+     * imports vocabulary
+     *
+     * @param vocabCache
+     */
+    void importVocabulary(VocabCache<T> vocabCache);
+
+    /**
+     * Updates counters
+     */
+    void updateWordsOccurencies();
+
+    /**
+     * Removes element with specified label from vocabulary
+     * Please note: Huffman index should be updated after element removal
+     *
+     * @param label label of the element to be removed
+     */
+    void removeElement(String label);
 
 
+    /**
+     * Removes specified element from vocabulary
+     * Please note: Huffman index should be updated after element removal
+     *
+     * @param element SequenceElement to be removed
+     */
+    void removeElement(T element);
 }

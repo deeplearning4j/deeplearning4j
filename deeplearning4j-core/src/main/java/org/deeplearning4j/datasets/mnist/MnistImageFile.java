@@ -67,6 +67,20 @@ public class MnistImageFile extends MnistDbFile {
         return dat;
     }
 
+    /** Read the specified number of images from the current position, to a byte[nImages][rows*cols]
+     * Note that MNIST data set is stored as unsigned bytes; this method returns signed bytes without conversion
+     * (i.e., same bits, but requires conversion before use)
+     * @param nImages Number of images
+     */
+    public byte[][] readImagesUnsafe(int nImages) throws IOException{
+        byte[][] out = new byte[nImages][0];
+        for( int i=0; i<nImages; i++){
+            out[i] = new byte[rows*cols];
+            read(out[i]);
+        }
+        return out;
+    }
+
     /**
      * Move the cursor to the next image.
      * 

@@ -49,12 +49,14 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     protected Map<String,INDArray> params;
     protected NeuralNetConfiguration conf;
     protected INDArray dropoutMask;
+    protected boolean dropoutApplied = false;
     protected ParamInitializer paramInitializer;
     protected double score = 0.0;
     protected ConvexOptimizer optimizer;
     protected Gradient gradient;
     protected Collection<IterationListener> iterationListeners = new ArrayList<>();
     protected int index = 0;
+    protected INDArray maskArray;
 
     public BaseLayer(NeuralNetConfiguration conf) {
         this.conf = conf;
@@ -73,15 +75,10 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         return input;
     }
 
-    public void setInput(INDArray input,boolean training) {
-        if(conf.getLayer().getDropOut() > 0 && training)
-            this.dropoutMask = Dropout.applyDropout(input,conf.getLayer().getDropOut(),dropoutMask);
-        this.input = input;
-    }
-
     @Override
     public void setInput(INDArray input) {
-        setInput(input,true);
+        this.input = input;
+        dropoutApplied = false;
     }
 
     @Override
@@ -145,6 +142,10 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         INDArray z = preOutput(input);
         INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), z).derivative());
         INDArray delta = epsilon.muli(activationDerivative);
+
+        if(maskArray != null){
+            delta.muliColumnVector(maskArray);
+        }
 
         Gradient ret = new DefaultGradient();
         ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, delta.transpose().mmul(input).transpose());
@@ -212,7 +213,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     @Override
     public void iterate(INDArray input) {
         setInput(input.dup());
-        applyDropOutIfNecessary(this.input,true);
+        applyDropOutIfNecessary(true);
         Gradient gradient = gradient();
         for(String paramType : gradient.gradientForVariable().keySet()) {
             update(gradient.getGradientFor(paramType), paramType);
@@ -305,11 +306,14 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public INDArray preOutput(INDArray x, boolean training) {
-        if(x == null)
+        if (x == null)
             throw new IllegalArgumentException("No null input allowed");
+        setInput(x);
+        return preOutput(training);
+    }
 
-        setInput(x,training);
-        applyDropOutIfNecessary(x,training);
+    public INDArray preOutput(boolean training) {
+        applyDropOutIfNecessary(training);
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
         if(conf.isUseDropConnect() && training) {
@@ -318,7 +322,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             }
         }
 
-        INDArray ret = x.mmul(W).addiRowVector(b);
+        INDArray ret = input.mmul(W).addiRowVector(b);
         return ret;
     }
 
@@ -330,19 +334,25 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             W = Dropout.applyDropConnect(this,DefaultParamInitializer.WEIGHT_KEY);
         }
 
-        INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), input().mmul(W).addiRowVector(b)));
+        INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(),
+                        input().mmul(W).addiRowVector(b)));
+
+        if(maskArray != null){
+            ret.muliColumnVector(maskArray);
+        }
+
         return ret;
     }
 
     @Override
     public  INDArray activate(INDArray input) {
-        setInput(input, true);
+        setInput(input);
         return activate(true);
     }
 
     @Override
     public INDArray activate(INDArray input, boolean training) {
-        setInput(input, training);
+        setInput(input);
         return activate(training);
     }
 
@@ -362,7 +372,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
      */
     @Override
     public  INDArray preOutput(INDArray x) {
-        return preOutput(x,true);
+        return preOutput(x, true);
     }
 
     @Override
@@ -404,9 +414,10 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         }
     }
 
-    protected void applyDropOutIfNecessary(INDArray input,boolean training) {
-        if(conf.getLayer().getDropOut() > 0 && !conf.isUseDropConnect() && training) {
-            dropoutMask = Dropout.applyDropout(input,conf.getLayer().getDropOut(),dropoutMask);
+    protected void applyDropOutIfNecessary(boolean training) {
+        if(conf.getLayer().getDropOut() > 0 && !conf.isUseDropConnect() && training && !dropoutApplied ) {
+            dropoutMask = Dropout.applyDropout(input,conf.getLayer().getDropOut(),null);
+            dropoutApplied = true;
         }
     }
 
@@ -466,7 +477,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     public void fit(INDArray input) {
         if(input != null) {
             setInput(input.dup());
-            applyDropOutIfNecessary(this.input,true);
+            applyDropOutIfNecessary(true);
         }
         Solver solver = new Solver.Builder()
                 .model(this).configure(conf()).listeners(getListeners())
@@ -570,4 +581,8 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         conf.getLayer().setLearningRate(conf.getLayer().getLearningRate() * (conf.getLayer().getLrScoreBasedDecay() + Nd4j.EPS_THRESHOLD));
     }
 
+    @Override
+    public void setMaskArray(INDArray maskArray) {
+        this.maskArray = maskArray;
+    }
 }

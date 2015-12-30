@@ -81,9 +81,9 @@ public class CNNGradientCheckTest {
                                     .weightInit(WeightInit.XAVIER)
                                     .updater(Updater.NONE)
                                     .build())
+                            .cnnInputSize(2,2,1)
                             .pretrain(false).backprop(true);
 
-                    new ConvolutionLayerSetup(builder,2,2,1);
                     MultiLayerConfiguration conf = builder.build();
 
                     MultiLayerNetwork mln = new MultiLayerNetwork(conf);
@@ -173,10 +173,7 @@ public class CNNGradientCheckTest {
                                         .updater(Updater.NONE)
                                         .build())
                                 .pretrain(false).backprop(true)
-                                .inputPreProcessor(0, new FeedForwardToCnnPreProcessor(2, 2, 1))
-                                .inputPreProcessor(1, new CnnToFeedForwardPreProcessor());
-
-                        new ConvolutionLayerSetup(builder,2,2,1);
+                                .cnnInputSize(2,2,1);   //Equivalent to: new ConvolutionLayerSetup(builder,2,2,1);
 
                         MultiLayerNetwork mln = new MultiLayerNetwork(builder.build());
                         mln.init();
