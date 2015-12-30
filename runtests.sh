@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # Abort on Error
 set -e
-ls /opt/OpenBLAS/lib
 export PING_SLEEP=30s
 export WORKDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 export BUILD_OUTPUT=$WORKDIR/build.out
@@ -9,7 +8,6 @@ export BUILD_OUTPUT=$WORKDIR/build.out
 touch $BUILD_OUTPUT
 
 dump_output() {
-   ls /opt/OpenBLAS/lib
    echo Tailing the last 500 lines of output:
    tail -500 $BUILD_OUTPUT  
 }
