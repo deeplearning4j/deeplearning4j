@@ -47,8 +47,8 @@ public class FilteredSequenceIterator<T extends SequenceElement> implements Sequ
         Sequence<T> originalSequence = underlyingIterator.nextSequence();
         Sequence<T> newSequence = new Sequence<>();
 
-        for (T element: originalSequence.getElements()) {
-            if (vocabCache.hasToken(element.getLabel())) {
+        if (originalSequence != null) for (T element: originalSequence.getElements()) {
+            if (element != null && vocabCache.hasToken(element.getLabel())) {
                 newSequence.addElement(vocabCache.wordFor(element.getLabel()));
             }
         }
