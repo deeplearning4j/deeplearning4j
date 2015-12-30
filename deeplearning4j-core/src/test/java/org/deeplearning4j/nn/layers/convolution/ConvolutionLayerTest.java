@@ -343,8 +343,11 @@ public class ConvolutionLayerTest {
         MultiLayerNetwork model = getCNNMLNConfig(false, true);
         model.fit(mnistIter);
 
+        mnistIter.reset();
+
         MultiLayerNetwork model2 = getCNNMLNConfig(false, true);
         model2.fit(mnistIter);
+        mnistIter.reset();
 
         DataSet test = mnistIter.next();
 
@@ -410,7 +413,6 @@ public class ConvolutionLayerTest {
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                 .list(3)
                 .layer(0, new ConvolutionLayer.Builder(new int[]{10, 10})
-                        .nIn(nChannels)
                         .nOut(6)
                         .build())
                 .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[]{2, 2})
@@ -418,14 +420,13 @@ public class ConvolutionLayerTest {
                         .activation("relu")
                         .build())
                 .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                        .nIn(150)
                         .nOut(outputNum)
                         .weightInit(WeightInit.XAVIER)
                         .activation("softmax")
                         .build())
                 .backprop(backprop).pretrain(pretrain);
 
-        new ConvolutionLayerSetup(conf,numRows,numColumns,1);
+        new ConvolutionLayerSetup(conf,numRows,numColumns,nChannels);
 
         MultiLayerNetwork model = new MultiLayerNetwork(conf.build());
         model.init();
