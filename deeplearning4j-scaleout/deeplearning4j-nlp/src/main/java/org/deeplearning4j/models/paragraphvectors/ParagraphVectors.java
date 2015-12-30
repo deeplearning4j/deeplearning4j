@@ -3,6 +3,7 @@ package org.deeplearning4j.models.paragraphvectors;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
@@ -21,16 +22,81 @@ import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.interoperability.SentenceIteratorConverter;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.Collection;
 import java.util.List;
 
 /**
+ * Basic ParagraphVectors (aka Doc2Vec) implementation for DL4j, as wrapper over SequenceVectors
+ *
  * @author raver119@gmail.com
  */
 public class ParagraphVectors extends Word2Vec {
     @Getter protected LabelsSource labelsSource;
     @Getter @Setter protected LabelAwareIterator labelAwareIterator;
+
+
+    /**
+     * Predict several based on the document.
+     * Computes a similarity wrt the mean of the
+     * representation of words in the document
+     * @param document the document
+     * @return the word distances for each label
+     */
+    public String predict(List<VocabWord> document) {
+        /*
+            This code was transferred from original ParagraphVectors DL4j implementation, and yet to be tested
+         */
+        INDArray arr = Nd4j.create(document.size(),this.layerSize);
+        for(int i = 0; i < document.size(); i++) {
+            arr.putRow(i,getWordVectorMatrix(document.get(i).getWord()));
+        }
+
+        INDArray docMean = arr.mean(0);
+        Counter<String> distances = new Counter<>();
+
+        for(String s : labelsSource.getLabels()) {
+            INDArray otherVec = getWordVectorMatrix(s);
+            double sim = Transforms.cosineSim(docMean, otherVec);
+            distances.incrementCount(s, sim);
+        }
+
+        return distances.argMax();
+
+    }
+
+
+    /**
+     * Predict several based on the document.
+     * Computes a similarity wrt the mean of the
+     * representation of words in the document
+     * @param document the document
+     * @return the word distances for each label
+     */
+    public Counter<String> predictSeveral(List<VocabWord> document) {
+        /*
+            This code was transferred from original ParagraphVectors DL4j implementation, and yet to be tested
+         */
+        INDArray arr = Nd4j.create(document.size(),this.layerSize);
+        for(int i = 0; i < document.size(); i++) {
+            arr.putRow(i,getWordVectorMatrix(document.get(i).getWord()));
+        }
+
+        INDArray docMean = arr.mean(0);
+        Counter<String> distances = new Counter<>();
+
+        for(String s : labelsSource.getLabels()) {
+            INDArray otherVec = getWordVectorMatrix(s);
+            double sim = Transforms.cosineSim(docMean, otherVec);
+            distances.incrementCount(s, sim);
+        }
+
+        return distances;
+
+    }
 
 
     public static class Builder extends Word2Vec.Builder {
@@ -39,43 +105,94 @@ public class ParagraphVectors extends Word2Vec {
         protected DocumentIterator docIter;
 
 
+        /**
+         * This method defines, if words representations should be build together with documents representations.
+         *
+         * @param trainElements
+         * @return
+         */
         public Builder trainWordVectors(boolean trainElements) {
             this.trainElementsRepresentation(trainElements);
             return this;
         }
 
+        /**
+         * This method attaches pre-defined labels source to ParagraphVectors
+         *
+         * @param source
+         * @return
+         */
         public Builder labelsSource(@NonNull LabelsSource source) {
             this.labelsSource = source;
             return this;
         }
 
+        /**
+         * This method builds new LabelSource instance from labels.
+         *
+         * PLEASE NOTE: Order synchro between labels and input documents delegated to end-user.
+         * PLEASE NOTE: Due to order issues it's recommended to use label aware iterators instead.
+         *
+         * @param labels
+         * @return
+         */
         @Deprecated
         public Builder labels(@NonNull List<String> labels) {
-
+            this.labelsSource = new LabelsSource(labels);
             return this;
         }
 
+        /**
+         * This method used to feed LabelAwareDocumentIterator, that contains training corpus, into ParagraphVectors
+         *
+         * @param iterator
+         * @return
+         */
         public Builder iterate(@NonNull LabelAwareDocumentIterator iterator) {
             this.docIter = iterator;
             return this;
         }
 
+        /**
+         * This method used to feed LabelAwareSentenceIterator, that contains training corpus, into ParagraphVectors
+         *
+         * @param iterator
+         * @return
+         */
         public Builder iterate(@NonNull LabelAwareSentenceIterator iterator) {
             this.sentenceIterator = iterator;
             return this;
         }
 
+        /**
+         * This method used to feed LabelAwareIterator, that contains training corpus, into ParagraphVectors
+         *
+         * @param iterator
+         * @return
+         */
         public Builder iterate(@NonNull LabelAwareIterator iterator) {
             this.labelAwareIterator = iterator;
             return this;
         }
 
+        /**
+         * This method used to feed DocumentIterator, that contains training corpus, into ParagraphVectors
+         *
+         * @param iterator
+         * @return
+         */
         @Override
         public Builder iterate(@NonNull DocumentIterator iterator) {
             this.docIter = iterator;
             return this;
         }
 
+        /**
+         * This method used to feed SentenceIterator, that contains training corpus, into ParagraphVectors
+         *
+         * @param iterator
+         * @return
+         */
         @Override
         public Builder iterate(@NonNull SentenceIterator iterator) {
             this.sentenceIterator = iterator;
@@ -180,7 +297,13 @@ public class ParagraphVectors extends Word2Vec {
         }
 
 
-
+        /**
+         * This method defines TokenizerFactory to be used for strings tokenization during training
+         * PLEASE NOTE: If external VocabCache is used, the same TokenizerFactory should be used to keep derived tokens equal.
+         *
+         * @param tokenizerFactory
+         * @return
+         */
         @Override
         public Builder tokenizerFactory(@NonNull TokenizerFactory tokenizerFactory) {
             super.tokenizerFactory(tokenizerFactory);
@@ -193,126 +316,246 @@ public class ParagraphVectors extends Word2Vec {
             return this;
         }
 
+        /**
+         * This method used to feed SequenceIterator, that contains training corpus, into ParagraphVectors
+         *
+         * @param iterator
+         * @return
+         */
         @Override
         public Builder iterate(@NonNull SequenceIterator<VocabWord> iterator) {
             super.iterate(iterator);
             return this;
         }
 
+        /**
+         * This method defines mini-batch size
+         * @param batchSize
+         * @return
+         */
         @Override
         public Builder batchSize(int batchSize) {
             super.batchSize(batchSize);
             return this;
         }
 
+        /**
+         * This method defines number of iterations done for each mini-batch during training
+         * @param iterations
+         * @return
+         */
         @Override
         public Builder iterations(int iterations) {
             super.iterations(iterations);
             return this;
         }
 
+        /**
+         * This method defines number of epochs (iterations over whole training corpus) for training
+         * @param numEpochs
+         * @return
+         */
         @Override
         public Builder epochs(int numEpochs) {
             super.epochs(numEpochs);
             return this;
         }
 
+        /**
+         * This method defines number of dimensions for output vectors
+         * @param layerSize
+         * @return
+         */
         @Override
         public Builder layerSize(int layerSize) {
             super.layerSize(layerSize);
             return this;
         }
 
+        /**
+         * This method defines initial learning rate for model training
+         *
+         * @param learningRate
+         * @return
+         */
         @Override
         public Builder learningRate(double learningRate) {
             super.learningRate(learningRate);
             return this;
         }
 
+        /**
+         * This method defines minimal word frequency in training corpus. All words below this threshold will be removed prior model training
+         *
+         * @param minWordFrequency
+         * @return
+         */
         @Override
         public Builder minWordFrequency(int minWordFrequency) {
             super.minWordFrequency(minWordFrequency);
             return this;
         }
 
+        /**
+         * This method defines minimal learning rate value for training
+         *
+         * @param minLearningRate
+         * @return
+         */
         @Override
         public Builder minLearningRate(double minLearningRate) {
             super.minLearningRate(minLearningRate);
             return this;
         }
 
+        /**
+         * This method defines whether model should be totally wiped out prior building, or not
+         *
+         * @param reallyReset
+         * @return
+         */
         @Override
         public Builder resetModel(boolean reallyReset) {
             super.resetModel(reallyReset);
             return this;
         }
 
+        /**
+         * This method allows to define external VocabCache to be used
+         *
+         * @param vocabCache
+         * @return
+         */
         @Override
         public Builder vocabCache(@NonNull VocabCache<VocabWord> vocabCache) {
             super.vocabCache(vocabCache);
             return this;
         }
 
+        /**
+         * This method allows to define external WeightLookupTable to be used
+         *
+         * @param lookupTable
+         * @return
+         */
         @Override
         public Builder lookupTable(@NonNull WeightLookupTable<VocabWord> lookupTable) {
             super.lookupTable(lookupTable);
             return this;
         }
 
+        /**
+         * This method defines whether subsampling should be used or not
+         *
+         * @param sampling set > 0 to subsampling argument, or 0 to disable
+         * @return
+         */
         @Override
         public Builder sampling(double sampling) {
             super.sampling(sampling);
             return this;
         }
 
+        /**
+         * This method defines whether adaptive gradients should be used or not
+         *
+         * @param reallyUse
+         * @return
+         */
         @Override
         public Builder useAdaGrad(boolean reallyUse) {
             super.useAdaGrad(reallyUse);
             return this;
         }
 
+        /**
+         * This method defines whether negative sampling should be used or not
+         *
+         * @param negative set > 0 as negative sampling argument, or 0 to disable
+         * @return
+         */
         @Override
         public Builder negativeSample(double negative) {
             super.negativeSample(negative);
             return this;
         }
 
+        /**
+         * This method defines stop words that should be ignored during training
+         * @param stopList
+         * @return
+         */
         @Override
         public Builder stopWords(@NonNull List<String> stopList) {
             super.stopWords(stopList);
             return this;
         }
 
+        /**
+         * This method defines, if words representation should be build together with documents representations.
+         *
+         * @param trainElements
+         * @return
+         */
         @Override
         public Builder trainElementsRepresentation(boolean trainElements) {
             this.trainElementsVectors = trainElements;
             return this;
         }
 
+        /**
+         * This method is hardcoded to TRUE, since that's whole point of ParagraphVectors
+         *
+         * @param trainSequences
+         * @return
+         */
         @Override
         public Builder trainSequencesRepresentation(boolean trainSequences) {
             this.trainSequenceVectors = trainSequences;
             return this;
         }
 
+        /**
+         * This method defines stop words that should be ignored during training
+         *
+         * @param stopList
+         * @return
+         */
         @Override
         public Builder stopWords(@NonNull Collection<VocabWord> stopList) {
             super.stopWords(stopList);
             return this;
         }
 
+        /**
+         * This method defines context window size
+         *
+         * @param windowSize
+         * @return
+         */
         @Override
         public Builder windowSize(int windowSize) {
             super.windowSize(windowSize);
             return this;
         }
 
+        /**
+         * This method defines maximum number of concurrent threads available for training
+         *
+         * @param numWorkers
+         * @return
+         */
         @Override
         public Builder workers(int numWorkers) {
             super.workers(numWorkers);
             return this;
         }
 
+        /**
+         * This method defines random seed for random numbers generator
+         * @param randomSeed
+         * @return
+         */
         @Override
         public Builder seed(long randomSeed) {
             super.seed(randomSeed);
