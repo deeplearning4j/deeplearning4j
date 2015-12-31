@@ -184,11 +184,11 @@ public class CPUAccumulationTask extends BaseCPUAccumulationTask {
                     FloatBuffer floatBufferY = nbby.asFloatBuffer();
                     float accum = op.zeroFloat();
                     if (incrX == 1 && incrY == 1) {
-                        for (int i = 0; i < 4 * n; i++) {
+                        for (int i = 0; i < n; i++) {
                             accum = op.update(accum, op.op(floatBufferX.get(byteOffsetX + i), floatBufferY.get(byteOffsetY + i)));
                         }
                     } else {
-                        for (int i = 0; i < 4 * n; i ++) {
+                        for (int i = 0; i < n; i ++) {
                             accum = op.update(accum, op.op(floatBufferX.get(byteOffsetX + i * incrX), floatBufferY.get(byteOffsetY + i * incrY)));
                         }
                     }
@@ -200,11 +200,11 @@ public class CPUAccumulationTask extends BaseCPUAccumulationTask {
                     DoubleBuffer doubleBufferY = nbby.asDoubleBuffer();
                     double accum = op.zeroDouble();
                     if (incrX == 1 && incrY == 1) {
-                        for (int i = 0; i < 8 * n; i ++) {
+                        for (int i = 0; i < n; i ++) {
                             accum = op.update(accum, op.op(doubleBufferX.get(byteOffsetX + i), doubleBufferY.get(byteOffsetY + i)));
                         }
                     } else {
-                        for (int i = 0; i < 8 * n; i ++) {
+                        for (int i = 0; i < n; i ++) {
                             accum = op.update(accum, op.op(doubleBufferX.get(byteOffsetX + i * incrX), doubleBufferY.get(byteOffsetY + i * incrY)));
                         }
                     }

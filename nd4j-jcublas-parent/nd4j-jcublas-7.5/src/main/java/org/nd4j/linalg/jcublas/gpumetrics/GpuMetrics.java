@@ -197,7 +197,7 @@ public class GpuMetrics  {
      * @param sharedMemory
      */
     public void setSharedMemoryNotOverMax(int sharedMemory) {
-        setSharedMemory(Math.min(sharedMemory,ContextHolder.getInstance().getCurrentGpuInformation().getMaxSharedMemoryPerBlock() - 1));
+        setSharedMemory(Math.min(sharedMemory,1024));
     }
 
     /**

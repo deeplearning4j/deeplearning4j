@@ -90,7 +90,7 @@ public class PointerUtil {
 
         //note here we do offset of zero due to the offset
         //already being handled by the cuda device pointer
-        ret[ret.length - 3] = 0;
+        ret[ret.length - 3] = arr.offset();
         ret[ret.length -2] = arr.tensorAlongDimension(0,dimension).elementWiseStride();
         ret[ret.length - 1] = arr.ordering();
         return ret;
@@ -130,7 +130,7 @@ public class PointerUtil {
 
         //note here we do offset of zero due to the offset
         //already being handled by the cuda device pointer
-        ret[ret.length - 3] = 0;
+        ret[ret.length - 3] = arr.offset();
         ret[ret.length -2] = arr.elementWiseStride();
         ret[ret.length - 1] = arr.ordering();
         return ret;

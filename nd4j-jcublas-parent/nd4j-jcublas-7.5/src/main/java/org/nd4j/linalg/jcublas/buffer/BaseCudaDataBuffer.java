@@ -391,8 +391,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                     throw new IllegalStateException("No pointer found for name " + name + " and offset/length " + offset + " / " + length);
                 HostDevicePointer zero = info2.getPointers();
                 HostDevicePointer retOffset = new HostDevicePointer(
-                        zero.getHostPointer().withByteOffset(offset * getElementSize()),
-                        zero.getDevicePointer().withByteOffset(offset * getElementSize())
+                        zero.getHostPointer(),
+                        zero.getDevicePointer()
                 );
                 Pointer ret =  retOffset.getDevicePointer();
                 devicePointerInfo = new DevicePointerInfo(retOffset,length,stride,offset,false);

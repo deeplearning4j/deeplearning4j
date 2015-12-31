@@ -13,9 +13,5 @@ sudo: true
 before_install:
   - sudo apt-get install build-essential git
   - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
-  - git clone https://github.com/xianyi/OpenBLAS && cd OpenBLAS && sudo make && sudo make install
-  - ls /opt/OpenBLAS/lib
-  - sudo ln -s /opt/OpenBLAS/lib/libopenblas_haswellp-*.so /usr/lib/libblas.so.3
-  - sudo ln -s /opt/OpenBLAS/lib/libopenblas_haswellp-*.so /usr/lib/liblapack.so.3
 script:
   -  cd /home/travis/build/deeplearning4j/nd4j && chmod +x ./runtests.sh && ./runtests.sh

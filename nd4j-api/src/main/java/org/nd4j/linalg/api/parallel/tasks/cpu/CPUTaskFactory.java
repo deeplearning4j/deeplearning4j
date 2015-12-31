@@ -81,7 +81,7 @@ public class CPUTaskFactory implements TaskFactory {
                 canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x,z);
                 if(!Arrays.equals(x.shape(), z.shape())){
                     throw new IllegalArgumentException("Shapes do not match: x.shape="+Arrays.toString(x.shape()) +
-                        ", z.shape="+Arrays.toString(z.shape()));
+                            ", z.shape="+Arrays.toString(z.shape()));
                 }
             }
         } else {
@@ -162,7 +162,7 @@ public class CPUTaskFactory implements TaskFactory {
     }
 
     @Override
-    public Task<Double> getAccumulationTask(Accumulation op) {
+    public Task<Double> getAccumulationTask(Accumulation op, boolean outerTask) {
         INDArray x = op.x();
         INDArray y = op.y();
 
@@ -178,11 +178,15 @@ public class CPUTaskFactory implements TaskFactory {
         }
 
         if (canDoDirectly) {
-            return new CPUAccumulationTask(op, parallelThreshold,true);
+            return new CPUAccumulationTask(op, parallelThreshold,outerTask);
         } else {
             //Need to break the accumulation into tensors first
-            return new CPUAccumulationViaTensorTask(op,parallelThreshold,true);
+            return new CPUAccumulationViaTensorTask(op,parallelThreshold,outerTask);
         }
+    }
+    @Override
+    public Task<Double> getAccumulationTask(Accumulation op) {
+        return getAccumulationTask(op,true);
     }
 
     @Override
