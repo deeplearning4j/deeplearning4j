@@ -10,7 +10,7 @@ import java.util.PriorityQueue;
  * Vertices in graph are indexed by an integer, 0 to nVertices-1
  */
 public class GraphHuffman implements BinaryTree {
-    private static final int MAX_CODE_LENGTH = 64;
+    private final int MAX_CODE_LENGTH;
     private final long[] codes;
     private final byte[] codeLength;
     private final int[][] innerNodePathToLeaf;
@@ -19,9 +19,18 @@ public class GraphHuffman implements BinaryTree {
      * @param nVertices number of vertices in the graph that this Huffman tree is being built for
      */
     public GraphHuffman(int nVertices) {
-        codes = new long[nVertices];
-        codeLength = new byte[nVertices];
-        innerNodePathToLeaf = new int[nVertices][0];
+        this(nVertices, 64);
+    }
+
+    /**
+     * @param nVertices nVertices number of vertices in the graph that this Huffman tree is being built for
+     * @param maxCodeLength MAX_CODE_LENGTH for Huffman tree
+     */
+    public GraphHuffman(int nVertices, int maxCodeLength) {
+        this.codes = new long[nVertices];
+        this.codeLength = new byte[nVertices];
+        this.innerNodePathToLeaf = new int[nVertices][0];
+        this.MAX_CODE_LENGTH = maxCodeLength;
     }
 
     /** Build the Huffman tree given an array of vertex degrees
@@ -61,7 +70,7 @@ public class GraphHuffman implements BinaryTree {
 
     private int traverse(Node node, long codeSoFar, byte codeLengthSoFar, int innerNodeCount, int[] innerNodePath,
                          int currDepth ) {
-        if (codeLengthSoFar >= 64) throw new RuntimeException("Cannot generate code: code length exceeds 64 bits");
+        if (codeLengthSoFar >= MAX_CODE_LENGTH) throw new RuntimeException("Cannot generate code: code length exceeds "+ MAX_CODE_LENGTH+" bits");
         if (node.left == null && node.right == null) {
             //Leaf node
             codes[node.vertexIdx] = codeSoFar;
