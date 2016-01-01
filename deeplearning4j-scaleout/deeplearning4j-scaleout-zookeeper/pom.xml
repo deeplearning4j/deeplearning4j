@@ -21,7 +21,7 @@
 	<parent>
 		<groupId>org.deeplearning4j</groupId>
 		<artifactId>deeplearning4j-scaleout</artifactId>
-		<version>0.4-rc3.8</version>
+		<version>0.4-rc3.9-SNAPSHOT</version>
 	</parent>
 	<artifactId>deeplearning4j-scaleout-zookeeper</artifactId>
 	<properties>
@@ -38,7 +38,7 @@
 		<dependency>
 			<groupId>org.deeplearning4j</groupId>
 			<artifactId>deeplearning4j-scaleout-api</artifactId>
-			<version>0.4-rc3.8</version>
+			<version>0.4-rc3.9-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.zookeeper</groupId>
