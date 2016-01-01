@@ -20,7 +20,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.deeplearning4j</groupId>
     <artifactId>deeplearning4j-parent</artifactId>
-    <version>0.4-rc3.8-SNAPSHOT</version>
+    <version>0.4-rc3.8</version>
     <packaging>pom</packaging>
     <name>DeepLearning4j</name>
 
@@ -163,7 +163,7 @@
         <connection>scm:git:git@github.com:deeplearning4j/deeplearning4j.git</connection>
         <developerConnection>scm:git:git@github.com:deeplearning4j/deeplearning4j.git</developerConnection>
         <url>git@github.com:deeplearning4j/deeplearning4j.git</url>
-        <tag>HEAD</tag>
+        <tag>deeplearning4j-parent-0.4-rc3.8</tag>
     </scm>
 
     <modules>
