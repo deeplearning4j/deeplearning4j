@@ -34,6 +34,7 @@ import org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.layers.recurrent.BaseRecurrentLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
@@ -2252,13 +2253,17 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     }
 
     /** Get the updater for this MultiLayerNetwork
-     * @return Updater, or null if updater has not been created (i.e., fit not called)
+     * @return Updater for MultiLayerNetwork
      */
     public synchronized Updater getUpdater() {
-        if(solver == null) return null;
-        ConvexOptimizer optimizer = solver.getOptimizer();
-        if(optimizer == null) return null;
-        return optimizer.getUpdater();
+        if(solver == null){
+            solver = new Solver.Builder()
+                    .configure(conf())
+                    .listeners(getListeners())
+                    .model(this).build();
+            solver.getOptimizer().setUpdater(UpdaterCreator.getUpdater(this));
+        }
+        return solver.getOptimizer().getUpdater();
     }
 
     /** Set the updater for the MultiLayerNetwork */
