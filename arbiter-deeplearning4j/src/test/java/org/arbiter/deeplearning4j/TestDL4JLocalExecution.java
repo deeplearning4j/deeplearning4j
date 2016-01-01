@@ -55,7 +55,7 @@ public class TestDL4JLocalExecution {
                 .l2(new ContinuousParameterSpace(0.0001, 0.01))
                 .iterations(100)
                 .addLayer(new DenseLayerSpace.Builder().nIn(4).nOut(new IntegerParameterSpace(2,10))
-                            .activation(new DiscreteParameterSpace<String>("relu","tanh"))
+                            .activation(new DiscreteParameterSpace<>("relu","tanh"))
                             .build(),new IntegerParameterSpace(1,2),true)   //1-2 identical layers (except nIn)
                 .addLayer(new OutputLayerSpace.Builder().nOut(3).activation("softmax")
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())

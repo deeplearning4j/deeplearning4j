@@ -48,7 +48,7 @@ public class LocalResponseNormalizationLayerSpace extends LayerSpace<LocalRespon
 
 
         public Builder n(double n){
-            return n(new FixedValue<Double>(n));
+            return n(new FixedValue<>(n));
         }
 
         public Builder n(ParameterSpace<Double> n){
@@ -57,7 +57,7 @@ public class LocalResponseNormalizationLayerSpace extends LayerSpace<LocalRespon
         }
 
         public Builder k(double k){
-            return k(new FixedValue<Double>(k));
+            return k(new FixedValue<>(k));
         }
 
         public Builder k(ParameterSpace<Double> k){
@@ -66,7 +66,7 @@ public class LocalResponseNormalizationLayerSpace extends LayerSpace<LocalRespon
         }
 
         public Builder alpha(double alpha){
-            return alpha(new FixedValue<Double>(alpha));
+            return alpha(new FixedValue<>(alpha));
         }
 
         public Builder alpha(ParameterSpace<Double> alpha){
@@ -75,7 +75,7 @@ public class LocalResponseNormalizationLayerSpace extends LayerSpace<LocalRespon
         }
 
         public Builder beta(double beta){
-            return beta(new FixedValue<Double>(beta));
+            return beta(new FixedValue<>(beta));
         }
 
         public Builder beta(ParameterSpace<Double> beta){

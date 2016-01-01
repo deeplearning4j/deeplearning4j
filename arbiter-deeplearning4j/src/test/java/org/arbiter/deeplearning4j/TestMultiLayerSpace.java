@@ -38,7 +38,7 @@ public class TestMultiLayerSpace {
         MultiLayerSpace mls = new MultiLayerSpace.Builder()
                 .learningRate(0.005)
                 .seed(12345)
-                .addLayer(new DenseLayerSpace.Builder().nIn(10).nOut(10).build(), new FixedValue<Integer>(2), true) //2 identical layers
+                .addLayer(new DenseLayerSpace.Builder().nIn(10).nOut(10).build(), new FixedValue<>(2), true) //2 identical layers
                 .addLayer(new OutputLayerSpace.Builder().lossFunction(LossFunction.MCXENT).nIn(10).nOut(5).build())
                 .backprop(true).pretrain(false)
                 .build();
@@ -56,7 +56,7 @@ public class TestMultiLayerSpace {
                 .regularization(true)
                 .l2(new ContinuousParameterSpace(0.2,0.5))
                 .addLayer(new DenseLayerSpace.Builder().nIn(10).nOut(10)
-                        .activation(new DiscreteParameterSpace<String>("relu","tanh"))
+                        .activation(new DiscreteParameterSpace<>("relu","tanh"))
                         .build(),
                         new IntegerParameterSpace(1,3),true)    //1-3 identical layers
                 .addLayer(new OutputLayerSpace.Builder().nIn(10).nOut(10)

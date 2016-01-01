@@ -29,7 +29,7 @@ public abstract class FeedForwardLayerSpace<L extends FeedForwardLayer> extends 
         protected ParameterSpace<Integer> nOut;
 
         public T nIn(int nIn){
-            return nIn(new FixedValue<Integer>(nIn));
+            return nIn(new FixedValue<>(nIn));
         }
 
         public T nIn(ParameterSpace<Integer> nIn){
@@ -38,7 +38,7 @@ public abstract class FeedForwardLayerSpace<L extends FeedForwardLayer> extends 
         }
 
         public T nOut(int nOut){
-            return nOut(new FixedValue<Integer>(nOut));
+            return nOut(new FixedValue<>(nOut));
         }
 
         public T nOut(ParameterSpace<Integer> nOut){
