@@ -529,7 +529,7 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
      * @param resetTree
      * @return
      */
-    protected Collection<String> wordsNearest(String word, int n, boolean resetTree) {
+    public Collection<String> wordsNearest(String word, int n, boolean resetTree) {
         if (!vocab.hasToken(word)) return new ArrayList<>();
 
         // build new tree if it wasnt created before, or resetTree == TRUE
