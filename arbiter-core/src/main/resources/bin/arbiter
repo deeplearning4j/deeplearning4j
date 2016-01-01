@@ -1,0 +1,21 @@
+#!/bin/sh
+
+# Reference all jar files
+# params:
+
+export jar_name="./lib/*:./arbiter-0.0.3.3.5.alpha2-SNAPSHOT.jar"
+
+export main_class_name="org.arbiter.cli.driver.CommandLineInterfaceDriver"
+
+export params=""
+
+for i in $*;
+do
+    export params="$params $i"
+done
+
+echo $params
+java -cp "$jar_name" "$main_class_name" $params
+
+
+printf '\n\n'

@@ -6,13 +6,13 @@ import lombok.AllArgsConstructor;
 import org.apache.spark.api.java.JavaFutureAction;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.Function;
 import org.arbiter.optimize.api.Candidate;
 import org.arbiter.optimize.api.OptimizationResult;
 import org.arbiter.optimize.api.TaskCreator;
 import org.arbiter.optimize.api.data.DataProvider;
 import org.arbiter.optimize.api.score.ScoreFunction;
 import org.arbiter.optimize.executor.CandidateExecutor;
-import org.arbiter.optimize.executor.spark.functions.ExecuteFunction;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -35,14 +35,24 @@ public class SparkCandidateExecutor<C,M,D,A> implements CandidateExecutor<C,M,D,
     @Override
     public List<ListenableFuture<OptimizationResult<C, M, A>>> execute(List<Candidate<C>> candidates, DataProvider<D> dataProvider, ScoreFunction<M,D> scoreFunction) {
         List<ListenableFuture<OptimizationResult<C,M,A>>> list = new ArrayList<>(candidates.size());
-        for(Candidate<C> candidate : candidates ){
-            JavaRDD<CandidateDataScoreTuple<C,M,D>> rdd = sparkContext.parallelize(Collections.singletonList(
-                    new CandidateDataScoreTuple<C, M, D>(candidate, dataProvider, scoreFunction)));
-
-            JavaRDD<OptimizationResult<C,M,A>> results = rdd.map(new ExecuteFunction<C, M, D, A>());
+        for(Candidate<C> candidate : candidates) {
+            CandidateDataScoreTuple<C,D,M> tuple =
+                    new CandidateDataScoreTuple<>();
+            tuple.setCandidate(candidate);
+            tuple.setDataProvider(dataProvider);
+            tuple.setScoreFunction(scoreFunction);
+            List<CandidateDataScoreTuple<C,D,M>> singleList = new ArrayList<>();
+            singleList.add(tuple);
+            JavaRDD<CandidateDataScoreTuple<C,D,M>> rdd = sparkContext.parallelize(singleList);
+            JavaRDD<OptimizationResult<C,M,A>> results = rdd.map(new Function<CandidateDataScoreTuple<C, D, M>, OptimizationResult<C, M, A>>() {
+                @Override
+                public OptimizationResult<C, M, A> call(CandidateDataScoreTuple<C, D, M> cdmCandidateDataScoreTuple) throws Exception {
+                    return null;
+                }
+            });
 
             JavaFutureAction<List<OptimizationResult<C,M,A>>> out = results.collectAsync();
-            Future<OptimizationResult<C,M,A>> f = new FutureListAdapter(out);
+            Future<OptimizationResult<C,M,A>> f = new FutureListAdapter<>(out);
             list.add(JdkFutureAdapters.listenInPoolThread(f));
         }
 
@@ -61,12 +71,12 @@ public class SparkCandidateExecutor<C,M,D,A> implements CandidateExecutor<C,M,D,
 
     @AllArgsConstructor
     private class Job {
-        private final Candidate<C> candidate;
-        private final DataProvider<D> dataProvider;
+        private  Candidate<C> candidate;
+        private  DataProvider<D> dataProvider;
     }
 
     @AllArgsConstructor
-    private class FutureListAdapter implements Future<OptimizationResult<C,M,A>>{
+    private class FutureListAdapter<C,M,A> implements Future<OptimizationResult<C,M,A>> {
         private JavaFutureAction<List<OptimizationResult<C,M,A>>> futureAction;
 
         @Override

@@ -1,23 +1,22 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>arbiter</artifactId>
-        <groupId>org.arbiter</groupId>
+        <groupId>org.deeplearning4j</groupId>
         <version>0.0.0.5-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>arbiter-deeplearning4j</artifactId>
 
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <dl4j.version>0.4-rc3.8-SNAPSHOT</dl4j.version>
-        <nd4j.version>0.4-rc3.8-SNAPSHOT</nd4j.version>
-    </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>arbiter-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-core</artifactId>
@@ -30,11 +29,6 @@
             <version>${nd4j.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.arbiter</groupId>
-            <artifactId>arbiter</artifactId>
-            <version>0.0.0.5-SNAPSHOT</version>
-        </dependency>
 
         <dependency>
             <groupId>com.google.guava</groupId>
