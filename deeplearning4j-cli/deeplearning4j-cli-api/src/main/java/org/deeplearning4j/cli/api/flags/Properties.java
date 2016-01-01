@@ -19,7 +19,6 @@
 package org.deeplearning4j.cli.api.flags;
 
 import org.canova.api.conf.Configuration;
-import org.springframework.core.io.ClassPathResource;
 
 import java.io.BufferedInputStream;
 import java.io.File;

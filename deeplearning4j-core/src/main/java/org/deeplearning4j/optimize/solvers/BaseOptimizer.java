@@ -112,6 +112,9 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
     @Override
     public Updater getUpdater() {
+        if(updater == null) {
+            updater = UpdaterCreator.getUpdater(model);
+        }
         return updater;
     }
 

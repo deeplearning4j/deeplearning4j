@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.layers.feedforward.rbm;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import org.deeplearning4j.datasets.fetchers.IrisDataFetcher;
@@ -27,15 +28,12 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ComposableIterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
-import org.deeplearning4j.plot.iterationlistener.LossPlotterIterationListener;
-import org.deeplearning4j.plot.iterationlistener.NeuralNetPlotterIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -193,9 +191,7 @@ public class RBMTests {
 
         INDArray input = d2.getFeatureMatrix();
 
-        RBM rbm = LayerFactories.getFactory(conf).create(conf,
-                Arrays.<IterationListener>asList(new ComposableIterationListener(new NeuralNetPlotterIterationListener(10), new ScoreIterationListener(5)),
-                new LossPlotterIterationListener(10)),0);
+        RBM rbm = LayerFactories.getFactory(conf).create(conf);
         rbm.fit(input);
 
     }
@@ -238,8 +234,7 @@ public class RBMTests {
                         .nIn(6).nOut(4)
                         .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
                 .build();
-        RBM rbm = LayerFactories.getFactory(conf).create(conf, Arrays.asList(new ComposableIterationListener(new NeuralNetPlotterIterationListener(10),
-                        new ScoreIterationListener(5)), new LossPlotterIterationListener(10)),0);
+        RBM rbm = LayerFactories.getFactory(conf).create(conf);
         double value = rbm.score();
         rbm.fit(input);
         value = rbm.score();

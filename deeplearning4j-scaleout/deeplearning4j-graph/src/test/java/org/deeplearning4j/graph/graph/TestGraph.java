@@ -7,8 +7,8 @@ import org.deeplearning4j.graph.iterator.RandomWalkIterator;
 import org.deeplearning4j.graph.iterator.WeightedRandomWalkIterator;
 import org.deeplearning4j.graph.vertexfactory.VertexFactory;
 import org.junit.Test;
-import org.nd4j.linalg.util.ArrayUtil;
-import org.springframework.core.io.ClassPathResource;
+import org.nd4j.linalg.io.ClassPathResource;
+
 
 import java.util.Arrays;
 import java.util.HashSet;
