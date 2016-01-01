@@ -1,19 +1,24 @@
+lazy val nd4jVersion = SettingKey[String]("nd4jVersion")
+
+def scalaTestDependency(v:String):ModuleID = "org.scalatest" %% "scalatest" % v
+
 lazy val root = (project in file(".")).settings(
   scalaVersion := "2.11.7",
-  crossScalaVersions := Seq("2.10.6", "2.11.7", "2.12.0-M1"),
+  crossScalaVersions := Seq("2.10.6", "2.11.7", "2.12.0-M3"),
   name := "nd4s",
-  version := "0.4-rc3.7",
+  version := "0.4-rc3.8",
   organization := "org.nd4j",
   resolvers += "Local Maven Repository" at "file://" + Path.userHome.absolutePath + "/.m2/repository",
+  nd4jVersion := "0.4-rc3.8",
   libraryDependencies ++= Seq(
-    "org.nd4j" % "nd4j-api" % "0.4-rc3.7",
-    "org.nd4j" % "nd4j-x86" % "0.4-rc3.7" % Test,
-    "ch.qos.logback" % "logback-classic" %  "1.1.3" % Test,
-    "org.scalatest" %% "scalatest" % "2.2.4" % Test cross CrossVersion.binaryMapped {
-      case x if x startsWith "2.12" => "2.11"
-      case x => x
-    }
+    "org.nd4j" % "nd4j-api" % nd4jVersion.value,
+    "org.nd4j" % "nd4j-x86" % nd4jVersion.value % Test,
+    "ch.qos.logback" % "logback-classic" %  "1.1.3" % Test
   ),
+  libraryDependencies <+= scalaVersion{
+    case x if x startsWith "2.12" => scalaTestDependency("2.2.5-M3")
+    case x => scalaTestDependency("2.2.4")
+  },
   scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature", "-language:implicitConversions", "-language:higherKinds", "-language:postfixOps"),
   publishMavenStyle := true,
   publishArtifact in Test := false,
