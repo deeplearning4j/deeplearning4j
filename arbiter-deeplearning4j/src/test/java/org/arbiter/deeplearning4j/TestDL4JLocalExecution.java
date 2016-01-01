@@ -29,8 +29,8 @@ import org.deeplearning4j.earlystopping.scorecalc.DataSetLossCalculator;
 import org.deeplearning4j.earlystopping.termination.MaxEpochsTerminationCondition;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
@@ -45,6 +45,7 @@ public class TestDL4JLocalExecution {
     private static Logger log = LoggerFactory.getLogger(TestDL4JLocalExecution.class);
 
     @Test
+    @org.junit.Ignore
     public void testLocalExecution() throws Exception {
 
         //Define: network config (hyperparameter space)
@@ -91,20 +92,21 @@ public class TestDL4JLocalExecution {
 
         OptimizationRunner<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> runner
                 = new OptimizationRunner<>(configuration, executor);
-
+/*
         ArbiterUIServer server = new ArbiterUIServer();
         String[] str = new String[]{"server", "dropwizard.yml"};
         server.run(str);
         WebUtils.tryOpenBrowser("http://localhost:8080/arbiter", log);    //TODO don't hardcode
         runner.addListeners(new UIOptimizationRunnerStatusListener(server));
 
-        runner.execute();
+      */  runner.execute();
 
 
         System.out.println("----- COMPLETE -----");
     }
 
     @Test
+    @Ignore
     public void testLocalExecutionEarlyStopping() throws Exception {
 
         EarlyStoppingConfiguration esConf = new EarlyStoppingConfiguration.Builder()
@@ -157,13 +159,13 @@ public class TestDL4JLocalExecution {
         OptimizationRunner<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> runner
                 = new OptimizationRunner<>(configuration, executor);
 
-        ArbiterUIServer server = new ArbiterUIServer();
+       /* ArbiterUIServer server = new ArbiterUIServer();
         String[] str = new String[]{"server", "dropwizard.yml"};
         server.run(str);
         WebUtils.tryOpenBrowser("http://localhost:8080/arbiter", log);    //TODO don't hardcode
         runner.addListeners(new UIOptimizationRunnerStatusListener(server));
 
-        runner.execute();
+       */ runner.execute();
 
 
         System.out.println("----- COMPLETE -----");
