@@ -58,14 +58,16 @@ public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>
      * Pass in json configuration and baseline parameters
      * @param json json configuration for the network
      * @param params the parameters to use for the network
-     * @param best_score_acc accumulator which tracks best score seen
+     * @param bestScoreAcc accumulator which tracks best score seen
      */
     public IterativeReduceFlatMap(String json, Broadcast<INDArray> params, Broadcast<Updater> updater,
-                                  Accumulator<Double> best_score_acc) {
+                                  Accumulator<Double> bestScoreAcc) {
         this.json = json;
         this.params = params;
         this.updater = updater;
-        this.best_score_acc = best_score_acc;
+        if(updater.getValue() == null)
+            throw new IllegalArgumentException("Updater shouldn't be null");
+        this.best_score_acc = bestScoreAcc;
     }
 
 

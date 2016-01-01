@@ -130,21 +130,10 @@
             <version>${commonsmath.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-core</artifactId>
-            <version>${spring.version}</version>
-        </dependency>
-        <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
             <version>${commonsio.version}</version>
         </dependency>
-        <dependency>
-            <groupId>au.com.bytecode</groupId>
-            <artifactId>opencsv</artifactId>
-            <version>2.4</version>
-        </dependency>
-
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-compress</artifactId>

@@ -878,7 +878,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             Constructor<MultiLayerNetwork> constructor = (Constructor<MultiLayerNetwork>) getClass().getDeclaredConstructor(MultiLayerConfiguration.class);
             ret = constructor.newInstance(getLayerWiseConfigurations());
             ret.update(this);
-
+            ret.setParameters(params());
         } catch (Exception e) {
             throw new IllegalStateException("Unable to clone network",e);
         }
@@ -2254,14 +2254,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     /** Get the updater for this MultiLayerNetwork
      * @return Updater, or null if updater has not been created (i.e., fit not called)
      */
-    public Updater getUpdater(){
-        if(solver==null) return null;
+    public synchronized Updater getUpdater() {
         return solver.getOptimizer().getUpdater();
     }
 
     /** Set the updater for the MultiLayerNetwork */
-    public void setUpdater(Updater updater){
-        if( solver == null) {
+    public void setUpdater(Updater updater) {
+        if(solver == null) {
             solver = new Solver.Builder()
                     .configure(conf())
                     .listeners(getListeners())

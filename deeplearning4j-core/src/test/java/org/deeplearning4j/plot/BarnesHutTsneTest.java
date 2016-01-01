@@ -25,7 +25,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.springframework.core.io.ClassPathResource;
+import org.nd4j.linalg.io.ClassPathResource;
 
 
 import java.io.File;

@@ -10,14 +10,12 @@ import org.deeplearning4j.graph.iterator.GraphWalkIterator;
 import org.deeplearning4j.graph.iterator.parallel.GraphWalkIteratorProvider;
 import org.deeplearning4j.graph.iterator.parallel.WeightedRandomWalkGraphIteratorProvider;
 import org.deeplearning4j.graph.models.GraphVectors;
-import org.deeplearning4j.graph.models.embeddings.InMemoryGraphLookupTable;
 import org.deeplearning4j.graph.models.loader.GraphVectorSerializer;
-import org.deeplearning4j.graph.models.deepwalk.DeepWalk;
 import org.deeplearning4j.graph.vertexfactory.StringVertexFactory;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.springframework.core.io.ClassPathResource;
+import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.File;
 import java.io.IOException;

@@ -61,7 +61,6 @@
         <junit.version>4.12</junit.version>
         <logback.version>1.1.2</logback.version>
         <jackson.version>2.5.1</jackson.version>
-        <spring.version>3.2.5.RELEASE</spring.version>
         <netty.version>3.10.4.Final</netty.version>
         <netty.buffer.version>4.0.28.Final</netty.buffer.version>
         <lombok.version>1.16.4</lombok.version>

@@ -31,8 +31,8 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.springframework.core.io.ClassPathResource;
 
 public class DataSetIteratorTest {
 	
