@@ -17,6 +17,8 @@ import org.arbiter.optimize.ui.ArbiterUIServer;
 import org.arbiter.optimize.ui.components.RenderableComponentString;
 import org.arbiter.optimize.ui.listener.UIOptimizationRunnerStatusListener;
 import org.arbiter.util.WebUtils;
+import org.canova.api.util.ClassPathResource;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,12 +27,15 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Callable;
 
-/**Test random search on the Branin Function:
+/**
+ *
+ * Test random search on the Branin Function:
  * http://www.sfu.ca/~ssurjano/branin.html
  */
 public class TestRandomSearch {
     public static Logger log = LoggerFactory.getLogger(TestRandomSearch.class);
     @Test
+    @Ignore
     public void test() throws Exception {
 
         //Define hyperparameter space:
@@ -41,24 +46,24 @@ public class TestRandomSearch {
         CandidateGenerator<BraninConfig> candidateGenerator = new RandomSearchGenerator<>(new BraninSpace());
         OptimizationConfiguration<BraninConfig, BraninConfig, Void, Void> configuration =
                 new OptimizationConfiguration.Builder<BraninConfig, BraninConfig, Void, Void >()
-                .candidateGenerator(candidateGenerator)
-                .scoreFunction(new BraninScoreFunction())
-                .terminationConditions(new MaxCandidatesCondition(50))
-                .build();
+                        .candidateGenerator(candidateGenerator)
+                        .scoreFunction(new BraninScoreFunction())
+                        .terminationConditions(new MaxCandidatesCondition(50))
+                        .build();
 
         CandidateExecutor<BraninConfig, BraninConfig, Void, Void> executor =
-                new LocalCandidateExecutor<BraninConfig, BraninConfig, Void, Void>(new BraninTaskCreator());
+                new LocalCandidateExecutor<>(new BraninTaskCreator());
 
         OptimizationRunner<BraninConfig, BraninConfig, Void, Void> runner
                 = new OptimizationRunner<>(configuration, executor);
 //        runner.addListeners(new LoggingOptimizationRunnerStatusListener());
 
-        ArbiterUIServer server = new ArbiterUIServer();
-        String[] str = new String[]{"server", "dropwizard.yml"};
+       /* ArbiterUIServer server = new ArbiterUIServer();
+        String[] str = new String[]{"server", new ClassPathResource("dropwizard.yml").getFile().getAbsolutePath()};
         server.run(str);
         WebUtils.tryOpenBrowser("http://localhost:8080/arbiter", log);    //TODO don't hardcode
         runner.addListeners(new UIOptimizationRunnerStatusListener(server));
-
+*/
         runner.execute();
 
 
@@ -99,8 +104,8 @@ public class TestRandomSearch {
     private static class BraninTaskCreator implements TaskCreator<BraninConfig,BraninConfig,Void,Void>{
         @Override
         public Callable<OptimizationResult<BraninConfig, BraninConfig,Void>> create(final Candidate<BraninConfig> candidate,
-                                DataProvider<Void> dataProvider, final ScoreFunction<BraninConfig,Void> scoreFunction,
-                                final UICandidateStatusListener statusListener) {
+                                                                                    DataProvider<Void> dataProvider, final ScoreFunction<BraninConfig,Void> scoreFunction,
+                                                                                    final UICandidateStatusListener statusListener) {
 
             if(statusListener != null){
                 statusListener.reportStatus(Status.Created,new RenderableComponentString("Config: " + candidate.toString()));

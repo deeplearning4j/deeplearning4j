@@ -77,7 +77,7 @@ public class TestEvaluate {
 		
 		String[] args = { "-conf", conf_file }; // ,"-input",conf_file};
 		
-		Evaluate cmd = new Evaluate( args );
+		Evaluate cmd = new Evaluate(args);
 		//cmd.execute();
 	
 	}
