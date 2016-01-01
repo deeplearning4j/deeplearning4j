@@ -45,7 +45,7 @@ import static org.junit.Assert.assertTrue;
 public class TestEarlyStoppingSpark extends BaseSparkTest {
 
     @Test
-    public void testEarlyStoppingIris(){
+    public void testEarlyStoppingIris() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
                 .updater(Updater.SGD)
@@ -90,7 +90,7 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
     }
 
     @Test
-    public void testBadTuning(){
+    public void testBadTuning() {
         //Test poor tuning (high LR): should terminate on MaxScoreIterationTerminationCondition
 
         Nd4j.getRandom().setSeed(12345);
@@ -126,7 +126,7 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
     }
 
     @Test
-    public void testTimeTermination(){
+    public void testTimeTermination() {
         //test termination after max time
 
         Nd4j.getRandom().setSeed(12345);
@@ -168,7 +168,7 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
     }
 
     @Test
-    public void testNoImprovementNEpochsTermination(){
+    public void testNoImprovementNEpochsTermination() {
         //Idea: terminate training if score (test set loss) does not improve for 5 consecutive epochs
         //Simulate this by setting LR = 0.0
 

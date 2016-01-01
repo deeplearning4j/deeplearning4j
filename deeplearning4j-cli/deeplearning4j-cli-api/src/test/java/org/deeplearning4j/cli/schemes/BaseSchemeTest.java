@@ -24,7 +24,7 @@ import org.canova.api.writable.Writable;
 import org.deeplearning4j.cli.api.schemes.Scheme;
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.core.io.ClassPathResource;
+import org.nd4j.linalg.io.ClassPathResource;
 
 import java.net.URI;
 import java.util.ArrayList;

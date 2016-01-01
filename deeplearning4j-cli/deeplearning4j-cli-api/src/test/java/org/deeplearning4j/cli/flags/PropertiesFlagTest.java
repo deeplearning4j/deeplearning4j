@@ -22,7 +22,7 @@ import org.canova.api.conf.Configuration;
 import org.deeplearning4j.cli.api.flags.Properties;
 import org.deeplearning4j.cli.api.flags.test.BaseFlagTest;
 import org.junit.Test;
-import org.springframework.core.io.ClassPathResource;
+import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.File;
 

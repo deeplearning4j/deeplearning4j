@@ -24,10 +24,8 @@ import org.deeplearning4j.cli.subcommands.Train;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.RBM;
-import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
-import org.nd4j.linalg.factory.Nd4j;
-import org.springframework.core.io.ClassPathResource;
+import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.File;
 
