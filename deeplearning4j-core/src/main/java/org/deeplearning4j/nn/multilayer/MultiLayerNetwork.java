@@ -2255,7 +2255,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return Updater, or null if updater has not been created (i.e., fit not called)
      */
     public synchronized Updater getUpdater() {
-        return solver.getOptimizer().getUpdater();
+        if(solver == null) return null;
+        ConvexOptimizer optimizer = solver.getOptimizer();
+        if(optimizer == null) return null;
+        return optimizer.getUpdater();
     }
 
     /** Set the updater for the MultiLayerNetwork */
