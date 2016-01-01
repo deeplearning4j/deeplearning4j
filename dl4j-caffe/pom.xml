@@ -50,12 +50,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-core</artifactId>
-            <version>${spring.version}</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.graphchi</groupId>
             <artifactId>graphchi-java_2.11</artifactId>
             <version>${graphchi.version}</version>

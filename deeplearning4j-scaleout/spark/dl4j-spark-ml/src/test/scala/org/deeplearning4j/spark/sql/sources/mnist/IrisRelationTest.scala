@@ -3,9 +3,9 @@ package org.deeplearning4j.spark.sql.sources.iris
 import org.apache.spark.Logging
 import org.deeplearning4j.spark.util.TestSparkContext
 import org.junit.runner.RunWith
+import org.nd4j.linalg.io.ClassPathResource
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.{Matchers, FunSuite}
-import org.springframework.core.io.ClassPathResource
 
 /**
  * Test IrisRelation

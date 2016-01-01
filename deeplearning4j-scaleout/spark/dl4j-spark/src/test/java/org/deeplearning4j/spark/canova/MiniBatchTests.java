@@ -19,15 +19,14 @@
 package org.deeplearning4j.spark.canova;
 
 import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
 import org.canova.api.records.reader.impl.SVMLightRecordReader;
 import org.deeplearning4j.spark.BaseSparkTest;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.io.ClassPathResource;
 
 import static org.junit.Assert.*;
 

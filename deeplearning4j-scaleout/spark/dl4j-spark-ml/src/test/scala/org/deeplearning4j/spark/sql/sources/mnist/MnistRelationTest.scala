@@ -10,10 +10,10 @@ import org.deeplearning4j.spark.sql.sources.mnist.DefaultSource._
 import org.deeplearning4j.spark.util.TestSparkContext
 import org.junit.Ignore
 import org.junit.runner.RunWith
+import org.nd4j.linalg.io.ClassPathResource
 import org.nd4j.linalg.util.ArrayUtil
 import org.scalatest.{Matchers, FunSuite}
 import org.scalatest.junit.JUnitRunner
-import org.springframework.core.io.ClassPathResource
 
 /**
  * Test Mnist relation

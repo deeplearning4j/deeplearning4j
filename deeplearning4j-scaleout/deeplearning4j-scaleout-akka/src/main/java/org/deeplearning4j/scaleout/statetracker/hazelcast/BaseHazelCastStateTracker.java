@@ -33,9 +33,9 @@ import org.deeplearning4j.scaleout.job.Job;
 import org.deeplearning4j.scaleout.statetracker.updatesaver.LocalFileUpdateSaver;
 import org.deeplearning4j.scaleout.statetracker.workretriever.LocalWorkRetriever;
 
+import org.nd4j.linalg.io.ClassPathResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.io.ClassPathResource;
 
 import java.io.*;
 import java.net.InetAddress;

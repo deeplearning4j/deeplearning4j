@@ -35,6 +35,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.updater.aggregate.UpdaterAggregator;
 import org.deeplearning4j.spark.canova.RecordReaderFunction;
 import org.deeplearning4j.spark.impl.common.Adder;
@@ -76,7 +77,7 @@ public class SparkDl4jMultiLayer implements Serializable {
     public final static String ACCUM_GRADIENT = "org.deeplearning4j.spark.iteration.accumgrad";
     public final static String DIVIDE_ACCUM_GRADIENT = "org.deeplearning4j.spark.iteration.dividegrad";
 
-    private Accumulator<Double> best_score_acc = null;
+    private Accumulator<Double> bestScoreAcc = null;
     private double lastScore;
 
     private static final Logger log = LoggerFactory.getLogger(SparkDl4jMultiLayer.class);
@@ -92,14 +93,15 @@ public class SparkDl4jMultiLayer implements Serializable {
         this(new JavaSparkContext(sparkContext),network);
     }
 
-    public SparkDl4jMultiLayer(JavaSparkContext javaSparkContext, MultiLayerNetwork network ){
+    public SparkDl4jMultiLayer(JavaSparkContext javaSparkContext, MultiLayerNetwork network){
         this.sparkContext = javaSparkContext.sc();
         sc = javaSparkContext;
         this.conf = network.getLayerWiseConfigurations().clone();
         this.network = network;
         this.network.init();
+        this.updater = sc.broadcast(network.getUpdater());
         this.averageEachIteration = sparkContext.conf().getBoolean(AVERAGE_EACH_ITERATION,false);
-        this.best_score_acc = BestScoreAccumulator.create(sparkContext);
+        this.bestScoreAcc = BestScoreAccumulator.create(sparkContext);
     }
 
     /**
@@ -114,7 +116,8 @@ public class SparkDl4jMultiLayer implements Serializable {
         this.network = new MultiLayerNetwork(conf);
         this.network.init();
         this.averageEachIteration = sparkContext.conf().getBoolean(AVERAGE_EACH_ITERATION, false);
-        this.best_score_acc = BestScoreAccumulator.create(sparkContext);
+        this.bestScoreAcc = BestScoreAccumulator.create(sparkContext);
+        this.updater = sc.broadcast(network.getUpdater());
     }
 
     /**
@@ -295,6 +298,11 @@ public class SparkDl4jMultiLayer implements Serializable {
         INDArray valToBroadcast = network.params(false);
         this.params = sc.broadcast(valToBroadcast);
         Updater updater = network.getUpdater();
+        if(updater == null) {
+            network.setUpdater(UpdaterCreator.getUpdater(network));
+            log.warn("Unable to propagate null updater");
+            updater = network.getUpdater();
+        }
         this.updater = sc.broadcast(updater);
 
 
@@ -335,7 +343,7 @@ public class SparkDl4jMultiLayer implements Serializable {
         else {
             //Standard parameter averaging
             JavaRDD<Tuple3<INDArray,Updater,Double>> results = rdd.mapPartitions(new IterativeReduceFlatMap(conf.toJson(),
-                    this.params, this.updater, this.best_score_acc),true).cache();
+                    this.params, this.updater, this.bestScoreAcc),true).cache();
 
             JavaRDD<INDArray> resultsParams = results.map(new INDArrayFromTupleFunction());
             log.info("Ran iterative reduce... averaging parameters now.");
@@ -359,14 +367,21 @@ public class SparkDl4jMultiLayer implements Serializable {
             });
             lastScore = scores.mean();
 
-            UpdaterAggregator aggregator = resultsUpdater.aggregate(
-                    resultsUpdater.first().getAggregator(false),
-                    new UpdaterElementCombiner(),
-                    new UpdaterAggregatorCombiner()
-            );
-            Updater combinedUpdater = aggregator.getUpdater();
-            network.setUpdater(combinedUpdater);
-            log.info("Set updater");
+            Updater resultsUpdaterFirst = resultsUpdater.first();
+            if(resultsUpdaterFirst != null) {
+                UpdaterAggregator aggregator = resultsUpdater.aggregate(
+                        resultsUpdaterFirst.getAggregator(false),
+                        new UpdaterElementCombiner(),
+                        new UpdaterAggregatorCombiner()
+                );
+                Updater combinedUpdater = aggregator.getUpdater();
+                network.setUpdater(combinedUpdater);
+                log.info("Set updater");
+            }
+            else {
+                throw new IllegalStateException("No updater to combine");
+            }
+
         }
     }
 
