@@ -5,7 +5,7 @@ package org.deeplearning4j.cli.subcommands;
 import org.apache.commons.io.FileUtils;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.springframework.core.io.ClassPathResource;
+import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.File;
 

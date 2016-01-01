@@ -18,7 +18,6 @@
 
 package org.deeplearning4j.spark.earlystopping;
 
-import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
@@ -40,7 +39,10 @@ import java.lang.reflect.Array;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**Class for conducting early stopping training via Spark
+/**
+ * Class for conducting early
+ * stopping training via Spark
+ * @author Alex Black
  */
 public class SparkEarlyStoppingTrainer implements IEarlyStoppingTrainer {
 
@@ -78,6 +80,7 @@ public class SparkEarlyStoppingTrainer implements IEarlyStoppingTrainer {
         this.sc = sc;
         this.esConfig = esConfig;
         this.net = net;
+        this.net.init();
         this.train = train;
         this.examplesPerFit = examplesPerFit;
         this.listener = listener;
@@ -100,7 +103,8 @@ public class SparkEarlyStoppingTrainer implements IEarlyStoppingTrainer {
             }
         }
 
-        if(listener != null) listener.onStart(esConfig,net);
+        if(listener != null)
+            listener.onStart(esConfig,net);
 
         Map<Integer,Double> scoreVsEpoch = new LinkedHashMap<>();
 
@@ -135,7 +139,7 @@ public class SparkEarlyStoppingTrainer implements IEarlyStoppingTrainer {
                 subsets = train.randomSplit(splitWeights);
             }
 
-            for( int i=0; i<subsets.length; i++ ){
+            for(int i = 0; i<subsets.length; i++) {
                 log.info("Initiating distributed training of subset {} of {}",(i+1),subsets.length);
                 try{
                     sparkNetwork.fitDataSet(subsets[i]);
