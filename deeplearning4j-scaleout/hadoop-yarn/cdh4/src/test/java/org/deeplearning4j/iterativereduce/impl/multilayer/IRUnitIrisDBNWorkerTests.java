@@ -18,29 +18,14 @@
 
 package org.deeplearning4j.iterativereduce.impl.multilayer;
 
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.Properties;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.mapred.FileInputFormat;
-import org.apache.hadoop.mapred.InputSplit;
 import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.TextInputFormat;
 import org.deeplearning4j.iterativereduce.irunit.IRUnitDriver;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.RBM;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
 import org.nd4j.linalg.factory.Nd4j;
-import org.springframework.core.io.ClassPathResource;
-
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-
+import org.nd4j.linalg.io.ClassPathResource;
 
 public class IRUnitIrisDBNWorkerTests {
 
