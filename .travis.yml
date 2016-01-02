@@ -11,6 +11,7 @@ jdk:
 sudo: true
 
 before_install:
+  - sed -i.bak -e 's|https://nexus.codehaus.org/snapshots/|https://oss.sonatype.org/content/repositories/codehaus-snapshots/|g' ~/.m2/settings.xml
   - sudo apt-get install build-essential git
   - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 script:
