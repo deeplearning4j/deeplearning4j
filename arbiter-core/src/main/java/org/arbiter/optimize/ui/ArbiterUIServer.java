@@ -1,16 +1,28 @@
+/*
+ *
+ *  * Copyright 2016 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
+ *
+ */
 package org.arbiter.optimize.ui;
 
-import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import io.dropwizard.Application;
 import io.dropwizard.assets.AssetsBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.views.ViewBundle;
 import org.arbiter.optimize.runner.CandidateStatus;
-import org.arbiter.optimize.ui.components.RenderableComponent;
-import org.arbiter.optimize.ui.components.RenderableComponentString;
-import org.arbiter.optimize.ui.components.RenderableComponentTable;
-import org.arbiter.optimize.ui.listener.SummaryStatus;
 import org.arbiter.optimize.ui.components.RenderElements;
 import org.arbiter.optimize.ui.resources.*;
 import org.arbiter.util.WebUtils;
@@ -18,16 +30,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Created by Alex on 20/12/2015.
- */
 public class ArbiterUIServer extends Application<ArbiterUIConfig> {
     /* Design details: How the UI System and server actually works.
     UI system is web-based, running via a HTTP server. Java code posts information to server; Javascript (UI code in browser)

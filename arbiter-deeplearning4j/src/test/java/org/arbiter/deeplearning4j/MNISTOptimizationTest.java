@@ -52,7 +52,7 @@ public class MNISTOptimizationTest {
     public static void main(String[] args) throws Exception {
 
         EarlyStoppingConfiguration esConf = new EarlyStoppingConfiguration.Builder()
-                .epochTerminationConditions(new MaxEpochsTerminationCondition(1))
+                .epochTerminationConditions(new MaxEpochsTerminationCondition(3))
                 .iterationTerminationConditions(
                         new MaxTimeIterationTerminationCondition(5, TimeUnit.MINUTES),
                         new MaxScoreIterationTerminationCondition(6.0) //Random score: -log_e(0.1) ~= 2.3
