@@ -15,6 +15,8 @@ env:
     JAVA_OPTS=-Xmx2g
 
 before_install:
+  - sed -i.bak -e 's|https://nexus.codehaus.org/snapshots/|https://oss.sonatype.org/content/repositories/codehaus-snapshots/|g' ~/.m2/settings.xml
+
   - sudo apt-get install build-essential git
   - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
   - git clone https://github.com/xianyi/OpenBLAS && cd OpenBLAS && sudo make && sudo make install
