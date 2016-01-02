@@ -55,9 +55,9 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <dl4j.version>0.4-rc3.8</dl4j.version>
-        <nd4j.version>0.4-rc3.8</nd4j.version>
-        <canova.version>0.0.0.14</canova.version>
+        <dl4j.version>0.4-rc3.9-SNAPSHOT</dl4j.version>
+        <nd4j.version>0.4-rc3.9-SNAPSHOT</nd4j.version>
+        <canova.version>0.0.0.15-SNAPSHOT</canova.version>
         <slf4j.version>1.7.12</slf4j.version>
         <jackson.version>2.6.4</jackson.version>
         <dropwizard.version>0.9.1</dropwizard.version>
