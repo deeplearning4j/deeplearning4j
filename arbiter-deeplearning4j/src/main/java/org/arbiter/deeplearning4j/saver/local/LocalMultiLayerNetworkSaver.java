@@ -1,3 +1,20 @@
+/*
+ *
+ *  * Copyright 2016 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
+ *
+ */
 package org.arbiter.deeplearning4j.saver.local;
 
 import org.apache.commons.io.FileUtils;
@@ -51,14 +68,20 @@ public class LocalMultiLayerNetworkSaver<A> implements ResultSaver<DL4JConfigura
         File esConfigFile = new File(FilenameUtils.concat(dir,"earlyStoppingConfig.bin"));
         File numEpochsFile = new File(FilenameUtils.concat(dir,"numEpochs.txt"));
 
-        INDArray params = result.getResult().params();
-        String jsonConfig = result.getCandidate().getValue().getMultiLayerConfiguration().toJson();
-
         FileUtils.writeStringToFile(scoreFile, String.valueOf(result.getScore()));
+        String jsonConfig = result.getCandidate().getValue().getMultiLayerConfiguration().toJson();
         FileUtils.writeStringToFile(jsonFile, jsonConfig);
-        try(DataOutputStream dos = new DataOutputStream(Files.newOutputStream(paramsFile.toPath()))){
-            Nd4j.write(params, dos);
+
+
+
+
+        if(result.getResult() != null) {
+            INDArray params = result.getResult().params();
+            try (DataOutputStream dos = new DataOutputStream(Files.newOutputStream(paramsFile.toPath()))) {
+                Nd4j.write(params, dos);
+            }
         }
+
 
         A additionalResults = result.getModelSpecificResults();
         if(additionalResults != null) {

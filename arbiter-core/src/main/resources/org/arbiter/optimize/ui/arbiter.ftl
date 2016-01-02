@@ -262,11 +262,9 @@
         switch(type){
             case "string":
                 var s = renderableComponent[key]['string'];
-//                appendTo.append(s.replace(new RegExp("\n",'g'),"<br>"));
                 appendTo.append(s);
                 break;
             case "simpletable":
-//                appendTo.append(createTable(renderableComponent[key],null));
                 createTable(renderableComponent[key],null,appendTo);
                 break;
             case "linechart":
@@ -414,7 +412,9 @@
                 var yValues = yData[i];
                 var lastX = values[values.length - 1];
                 var lastY = yValues[yValues.length - 1];
-                var toDisplay = seriesNames[i] + " (" + lastX.toPrecision(5) + "," + lastY.toPrecision(5) + ")";
+                var toDisplay;
+                if(!lastX || !lastY) toDisplay = seriesNames[i] + " (no data)";
+                else toDisplay = seriesNames[i] + " (" + lastX.toPrecision(5) + "," + lastY.toPrecision(5) + ")";
                 svg.append("text")
                         .attr("x", (legendSpace / 2) + i * legendSpace) // spacing
                         .attr("y", height + (margin.bottom / 2) + 5)
@@ -494,16 +494,17 @@
         var len = (!resultsTableContent ? 0 : resultsTableContent.length);
         for(var i=0; i<len; i++){
             var row = $('<tr class="resultTableRow" id="resultTableRow-' + sorted[i].index + '"/>');
-            row.append($("<td class=>" + sorted[i].index + "</td>"));
-            row.append($("<td>" + sorted[i].score + "</td>"));
+            row.append($("<td>" + sorted[i].index + "</td>"));
+            var score = sorted[i].score;
+            row.append($("<td>" + ((!score || score == "null") ? "-" : score) + "</td>"));
             row.append($("<td>" + sorted[i].status + "</td>"));
             tableBody.append(row);
 
             //Create hidden row for expanding:
             var rowID = 'resultTableRow-' + sorted[i].index + '-content';
-            var contentRow = $('<tr id=' + rowID + ', class="resultTableRowContent"/>');
+            var contentRow = $('<tr id="' + rowID + '" class="resultTableRowContent"/>');
             var td3 = $("<td colspan=3 id=" + rowID + "-td></td>");
-            td3.append("Content goes here!");
+            td3.append("(Result status - loading)");
             contentRow.append(td3);
 
             tableBody.append(contentRow);
@@ -598,7 +599,7 @@
                 if(expRowsArrayIdx == -1 ){
                     //Currently hidden
                     expandedRowsCandidateIDs.push(candidateID); //Mark as expanded
-                    var innerTD = $('#' + this.id + '-content > td');
+                    var innerTD = $('#' + this.id + '-content-td');
                     innerTD.empty();
                     var path = "/modelResults/" + candidateID;
                     loadCandidateDetails(path,innerTD);
