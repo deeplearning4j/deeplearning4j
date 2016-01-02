@@ -16,7 +16,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
 /**
- * Created by benjo on 12/31/15.
+ * Created by benny on 12/31/15.
  */
 public class LSTMHelpers {
 

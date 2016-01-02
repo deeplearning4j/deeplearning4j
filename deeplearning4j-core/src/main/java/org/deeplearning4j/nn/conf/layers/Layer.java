@@ -44,6 +44,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
         @JsonSubTypes.Type(value = ConvolutionLayer.class, name = "convolution"),
         @JsonSubTypes.Type(value = ImageLSTM.class, name = "imageLSTM"),
         @JsonSubTypes.Type(value = GravesLSTM.class, name = "gravesLSTM"),
+        @JsonSubTypes.Type(value = GravesBidirectionalLSTM.class, name = "gravesBidirectionalLSTM"),
         @JsonSubTypes.Type(value = GRU.class, name = "gru"),
         @JsonSubTypes.Type(value = OutputLayer.class, name = "output"),
         @JsonSubTypes.Type(value = RnnOutputLayer.class, name = "rnnoutput"),
