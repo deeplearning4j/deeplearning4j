@@ -209,11 +209,11 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
         //Listeners:
         for(OptimizationRunnerStatusListener listener : statusListeners) listener.onCompletion(result);
 
-        double score = result.getScore();
+        Double score = result.getScore();
         log.info("Completed task {}, score = {}", result.getIndex(), result.getScore());
 
         //TODO handle minimization vs. maximization
-        if (score < bestScore) {
+        if (score != null && score < bestScore) {
             if (bestScore == Double.MAX_VALUE) {
                 log.info("New best score: {} (first completed model)", score);
             } else {

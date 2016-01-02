@@ -69,7 +69,7 @@ public class UIStatusReportingListener implements EarlyStoppingListener, Iterati
     @Override
     public void onStart(EarlyStoppingConfiguration esConfig, MultiLayerNetwork net) {
         if(config == null) createConfigComponent(net);
-        postReport(Status.Running);
+        postReport(Status.Running,null);
     }
 
     @Override
@@ -77,28 +77,12 @@ public class UIStatusReportingListener implements EarlyStoppingListener, Iterati
         if(config == null) createConfigComponent(net);
         scoreVsEpochEarlyStopping.add(new Pair<>(epochNum,score));
 
-        postReport(Status.Running, createEarlyStoppingScoreVsEpochChart());
+        postReport(Status.Running, null, createEarlyStoppingScoreVsEpochChart());
     }
 
     @Override
     public void onCompletion(EarlyStoppingResult esResult) {
         if(config == null) createConfigComponent(esResult.getBestModel());
-
-        //Final status update: including early stopping results
-        String[][] table = new String[][]{
-                {"Termination reason:", esResult.getTerminationReason().toString()},
-                {"Termination details:", esResult.getTerminationDetails()},
-                {"Best model epoch:", String.valueOf(esResult.getBestModelEpoch())},
-                {"Best model score:", String.valueOf(esResult.getBestModelScore())},
-                {"Total epochs:", String.valueOf(esResult.getTotalEpochs())}
-        };
-        RenderableComponent rcTable = new RenderableComponentTable("Early Stopping",null,table);
-
-        if(esResult.getTerminationReason() == EarlyStoppingResult.TerminationReason.Error){
-            postReport(Status.Failed, rcTable);
-        } else {
-            postReport(Status.Complete, createEarlyStoppingScoreVsEpochChart(), rcTable);
-        }
     }
 
     private RenderableComponent createEarlyStoppingScoreVsEpochChart(){
@@ -166,7 +150,7 @@ public class UIStatusReportingListener implements EarlyStoppingListener, Iterati
         long currTime = System.currentTimeMillis();
         if(currTime - lastReportTime > MAX_REPORTING_FREQUENCY_MS ){
             //Post report
-            postReport(Status.Running);
+            postReport(Status.Running,null);
         }
     }
 
@@ -174,7 +158,7 @@ public class UIStatusReportingListener implements EarlyStoppingListener, Iterati
         config = new RenderableComponentString(network.getLayerWiseConfigurations().toString());
     }
 
-    public void postReport(Status status, RenderableComponent... additionalComponents){
+    public void postReport(Status status, EarlyStoppingResult esResult, RenderableComponent... additionalComponents){
 
         //Create score vs. iteration graph:
         double[] x = new double[scoreList.size()];
@@ -188,20 +172,35 @@ public class UIStatusReportingListener implements EarlyStoppingListener, Iterati
             i++;
         }
 
+        List<RenderableComponent> components = new ArrayList<>();
+        components.add(new RenderableComponentAccordionDecorator("Network Configuration",true,config));
+
         RenderableComponent scoreVsIterGraph = new RenderableComponentLineChart.Builder()
                 .addSeries("Minibatch Score vs. Iteration",x,y)
                 .title("Score vs. Iteration").build();
+        components.add(scoreVsIterGraph);
 
-//        uiListener.reportStatus(status,config,scoreVsIterGraph);
-        RenderableComponent[] rcs = new RenderableComponent[2 + (additionalComponents != null ? additionalComponents.length : 0)];
-        rcs[0] = new RenderableComponentAccordionDecorator("Network Configuration",true,config);
-        rcs[1] = scoreVsIterGraph;
-        i = 2;
-        for(RenderableComponent c : additionalComponents){
-            rcs[i++] = c;
+        if(esResult != null){
+            //Final status update: including early stopping results
+            int bestEpoch = esResult.getBestModelEpoch();
+
+
+            String[][] table = new String[][]{
+                    {"Termination reason:", esResult.getTerminationReason().toString()},
+                    {"Termination details:", esResult.getTerminationDetails()},
+                    {"Best model epoch:", (bestEpoch < 0 ? "n/a" : String.valueOf(bestEpoch)) },
+                    {"Best model score:", (bestEpoch < 0 ? "n/a" : String.valueOf(esResult.getBestModelScore())) },
+                    {"Total epochs:", String.valueOf(esResult.getTotalEpochs())}
+            };
+            RenderableComponent rcTable = new RenderableComponentTable("Early Stopping",null,table);
+            components.add(rcTable);
         }
 
-        uiListener.reportStatus(status,rcs);
+        if(additionalComponents != null){
+            Collections.addAll(components, additionalComponents);
+        }
+
+        uiListener.reportStatus(status,components.toArray(new RenderableComponent[components.size()]));
 
         lastReportTime = System.currentTimeMillis();
     }

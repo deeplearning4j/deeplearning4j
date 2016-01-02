@@ -72,7 +72,7 @@ public class MNISTOptimizationTest {
                 .epochTerminationConditions(new MaxEpochsTerminationCondition(3))
                 .iterationTerminationConditions(
                         new MaxTimeIterationTerminationCondition(5, TimeUnit.MINUTES),
-                        new MaxScoreIterationTerminationCondition(6.0) //Random score: -log_e(0.1) ~= 2.3
+                        new MaxScoreIterationTerminationCondition(4.6) //Random score: -log_e(0.1) ~= 2.3
                         )
                 .scoreCalculator(new DataSetLossCalculator(
                         new MnistDataSetIterator(64, 2000, false, false, true, 123), true))

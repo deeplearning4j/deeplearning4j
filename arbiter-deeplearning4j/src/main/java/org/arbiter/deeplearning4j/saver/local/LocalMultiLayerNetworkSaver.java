@@ -68,14 +68,20 @@ public class LocalMultiLayerNetworkSaver<A> implements ResultSaver<DL4JConfigura
         File esConfigFile = new File(FilenameUtils.concat(dir,"earlyStoppingConfig.bin"));
         File numEpochsFile = new File(FilenameUtils.concat(dir,"numEpochs.txt"));
 
-        INDArray params = result.getResult().params();
-        String jsonConfig = result.getCandidate().getValue().getMultiLayerConfiguration().toJson();
-
         FileUtils.writeStringToFile(scoreFile, String.valueOf(result.getScore()));
+        String jsonConfig = result.getCandidate().getValue().getMultiLayerConfiguration().toJson();
         FileUtils.writeStringToFile(jsonFile, jsonConfig);
-        try(DataOutputStream dos = new DataOutputStream(Files.newOutputStream(paramsFile.toPath()))){
-            Nd4j.write(params, dos);
+
+
+
+
+        if(result.getResult() != null) {
+            INDArray params = result.getResult().params();
+            try (DataOutputStream dos = new DataOutputStream(Files.newOutputStream(paramsFile.toPath()))) {
+                Nd4j.write(params, dos);
+            }
         }
+
 
         A additionalResults = result.getModelSpecificResults();
         if(additionalResults != null) {

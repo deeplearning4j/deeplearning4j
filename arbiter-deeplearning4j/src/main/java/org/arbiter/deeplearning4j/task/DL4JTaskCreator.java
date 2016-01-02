@@ -18,6 +18,7 @@
 package org.arbiter.deeplearning4j.task;
 
 import lombok.AllArgsConstructor;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.arbiter.deeplearning4j.DL4JConfiguration;
 import org.arbiter.deeplearning4j.listener.UIStatusReportingListener;
 import org.arbiter.optimize.api.Candidate;
@@ -87,10 +88,29 @@ public class DL4JTaskCreator<A> implements TaskCreator<DL4JConfiguration,MultiLa
 
 
             EarlyStoppingConfiguration esConfig = candidate.getValue().getEarlyStoppingConfiguration();
+            EarlyStoppingResult esResult = null;
             if(esConfig != null){
                 EarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConfig,net,dataSetIterator,dl4jListener);
-                EarlyStoppingResult esResult = trainer.fit();
-                net = esResult.getBestModel();
+                try{
+                    esResult = trainer.fit();
+                    net = esResult.getBestModel();  //Can return null if failed OR if
+                } catch(Exception e){
+                    dl4jListener.postReport(Status.Failed, null,
+                            new RenderableComponentString("Unexpected exception during model training\n"),
+                            new RenderableComponentString(ExceptionUtils.getFullStackTrace(e)));
+                    throw e;
+                }
+
+                switch(esResult.getTerminationReason()){
+                    case Error:
+                        dl4jListener.postReport(Status.Failed, esResult);
+                        break;
+                    case IterationTerminationCondition:
+                    case EpochTerminationCondition:
+                        dl4jListener.postReport(Status.Complete, esResult);
+                        break;
+                }
+
             } else {
                 //Fixed number of epochs
                 int nEpochs = candidate.getValue().getNumEpochs();
@@ -99,13 +119,37 @@ public class DL4JTaskCreator<A> implements TaskCreator<DL4JConfiguration,MultiLa
                     dataSetIterator.reset();
                 }
                 //Do a final status update
-                dl4jListener.postReport(Status.Complete);
+                dl4jListener.postReport(Status.Complete,null);
             }
 
-            A additionalEvaluation = (modelEvaluator != null ? modelEvaluator.evaluateModel(net,dataProvider) : null);
+            A additionalEvaluation = null;
+            if( esConfig != null && esResult.getTerminationReason() != EarlyStoppingResult.TerminationReason.Error ) {
+                try {
+                    additionalEvaluation = (modelEvaluator != null ? modelEvaluator.evaluateModel(net, dataProvider) : null);
+                } catch (Exception e) {
+                    dl4jListener.postReport(Status.Failed, esResult,
+                            new RenderableComponentString("Failed during additional evaluation stage\n"),
+                            new RenderableComponentString(ExceptionUtils.getFullStackTrace(e)));
+                }
+            }
 
-            return new OptimizationResult<>(candidate,net,
-                    scoreFunction.score(net,dataProvider,candidate.getDataParameters()),candidate.getIndex(), additionalEvaluation);
+            Double score = null;
+            if( esConfig != null && esResult.getTerminationReason() != EarlyStoppingResult.TerminationReason.Error ) {
+                if(net == null){
+                    dl4jListener.postReport(Status.Complete, esResult,
+                            new RenderableComponentString("No best model available; cannot calculate model score"));
+                } else {
+                    try {
+                        score = scoreFunction.score(net, dataProvider, candidate.getDataParameters());
+                    } catch (Exception e) {
+                        dl4jListener.postReport(Status.Failed, esResult,
+                                new RenderableComponentString("Failed during score calculation stage\n"),
+                                new RenderableComponentString(ExceptionUtils.getFullStackTrace(e)));
+                    }
+                }
+            }
+
+            return new OptimizationResult<>(candidate, net, score, candidate.getIndex(), additionalEvaluation);
         }
     }
 }
