@@ -10,6 +10,15 @@ import java.util.Map;
 
 public class TestSetLossScoreFunction implements ScoreFunction<MultiLayerNetwork,DataSetIterator> {
 
+    private final boolean average;
+
+    public TestSetLossScoreFunction(){
+        this(false);
+    }
+
+    public TestSetLossScoreFunction(boolean average){
+        this.average = average;
+    }
 
     @Override
     public double score(MultiLayerNetwork model, DataProvider<DataSetIterator> dataProvider, Map<String,Object> dataParameters) {
@@ -18,14 +27,17 @@ public class TestSetLossScoreFunction implements ScoreFunction<MultiLayerNetwork
 
         //TODO: do this properly taking into account division by N, L1/L2 etc
         double sumScore = 0.0;
+        int totalExamples = 0;
         while(testData.hasNext()){
             DataSet ds = testData.next();
             int numExamples = testData.numExamples();
 
             sumScore += numExamples*model.score(ds);
+            totalExamples += numExamples;
         }
 
-        return sumScore;
+        if(!average) return sumScore;
+        return sumScore / totalExamples;
     }
 
     @Override

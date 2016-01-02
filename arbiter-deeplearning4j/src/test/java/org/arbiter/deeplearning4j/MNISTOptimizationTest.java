@@ -1,6 +1,7 @@
 package org.arbiter.deeplearning4j;
 
 import org.arbiter.deeplearning4j.evaluator.DL4JClassificationEvaluator;
+import org.arbiter.deeplearning4j.layers.ConvolutionLayerSpace;
 import org.arbiter.deeplearning4j.layers.DenseLayerSpace;
 import org.arbiter.deeplearning4j.layers.OutputLayerSpace;
 import org.arbiter.deeplearning4j.saver.local.LocalMultiLayerNetworkSaver;
@@ -23,10 +24,13 @@ import org.arbiter.optimize.ui.listener.UIOptimizationRunnerStatusListener;
 import org.arbiter.util.WebUtils;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.saver.InMemoryModelSaver;
 import org.deeplearning4j.earlystopping.scorecalc.DataSetLossCalculator;
 import org.deeplearning4j.earlystopping.termination.MaxEpochsTerminationCondition;
+import org.deeplearning4j.earlystopping.termination.MaxScoreIterationTerminationCondition;
+import org.deeplearning4j.earlystopping.termination.MaxTimeIterationTerminationCondition;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -40,37 +44,53 @@ import java.io.File;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-public class TestDL4JLocalExecution {
+/** Not strictly a unit test. Rather: part example, part debugging on MNIST */
+public class MNISTOptimizationTest {
 
-    private static Logger log = LoggerFactory.getLogger(TestDL4JLocalExecution.class);
+    private static Logger log = LoggerFactory.getLogger(MNISTOptimizationTest.class);
 
-    @Test
-    @org.junit.Ignore
-    public void testLocalExecution() throws Exception {
+    public static void main(String[] args) throws Exception {
+
+        EarlyStoppingConfiguration esConf = new EarlyStoppingConfiguration.Builder()
+                .epochTerminationConditions(new MaxEpochsTerminationCondition(1))
+                .iterationTerminationConditions(
+                        new MaxTimeIterationTerminationCondition(5, TimeUnit.MINUTES),
+                        new MaxScoreIterationTerminationCondition(6.0) //Random score: -log_e(0.1) ~= 2.3
+                        )
+                .scoreCalculator(new DataSetLossCalculator(
+                        new MnistDataSetIterator(64, 2000, false, false, true, 123), true))
+                .modelSaver(new InMemoryModelSaver())
+                .build();
 
         //Define: network config (hyperparameter space)
         MultiLayerSpace mls = new MultiLayerSpace.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .learningRate(new ContinuousParameterSpace(0.0001, 0.1))
+                .learningRate(new ContinuousParameterSpace(0.0001, 0.2))
                 .regularization(true)
-                .l2(new ContinuousParameterSpace(0.0001, 0.01))
-                .iterations(100)
-                .addLayer(new DenseLayerSpace.Builder().nIn(4).nOut(new IntegerParameterSpace(2,10))
-                            .activation(new DiscreteParameterSpace<>("relu","tanh"))
-                            .build(),new IntegerParameterSpace(1,2),true)   //1-2 identical layers (except nIn)
-                .addLayer(new OutputLayerSpace.Builder().nOut(3).activation("softmax")
+                .l2(new ContinuousParameterSpace(0.0001, 0.05))
+                .dropOut(new ContinuousParameterSpace(0.2, 0.7))
+                .iterations(1)
+                .addLayer(new ConvolutionLayerSpace.Builder()
+                        .nIn(1).nOut(new IntegerParameterSpace(5, 30))
+                        .kernelSize(new DiscreteParameterSpace<>(new int[]{3, 3}, new int[]{4, 4}, new int[]{5, 5}))
+                        .stride(new DiscreteParameterSpace<>(new int[]{1, 1}, new int[]{2, 2}))
+                        .activation(new DiscreteParameterSpace<>("relu","softplus","leakyrelu"))
+                        .build(), new IntegerParameterSpace(1, 2), true) //1-2 identical layers
+                .addLayer(new DenseLayerSpace.Builder().nIn(4).nOut(new IntegerParameterSpace(2, 10))
+                        .activation(new DiscreteParameterSpace<String>("relu", "tanh"))
+                        .build(), new IntegerParameterSpace(0, 1), true)   //0 to 1 layers
+                .addLayer(new OutputLayerSpace.Builder().nOut(10).activation("softmax")
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                .numEpochs(3)
+                .earlyStoppingConfiguration(esConf)
+                .cnnInputSize(28,28,1)
                 .pretrain(false).backprop(true).build();
 
         //Define configuration:
-
         CandidateGenerator<DL4JConfiguration> candidateGenerator = new RandomSearchGenerator<>(mls);
-        DataProvider<DataSetIterator> dataProvider = new IrisDataSetProvider();
+        DataProvider<DataSetIterator> dataProvider = new MnistDataSetProvider();
 
 
-//        String modelSavePath = FilenameUtils.concat(System.getProperty("java.io.tmpdir"),"ArbiterDL4JTest/");
-        String modelSavePath = new File(System.getProperty("java.io.tmpdir"),"ArbiterDL4JTest\\").getAbsolutePath();
+        String modelSavePath = new File(System.getProperty("java.io.tmpdir"),"ArbiterMNISTSmall\\").getAbsolutePath();
 
         File f = new File(modelSavePath);
         if(f.exists()) f.delete();
@@ -82,8 +102,8 @@ public class TestDL4JLocalExecution {
                 .candidateGenerator(candidateGenerator)
                 .dataProvider(dataProvider)
                 .modelSaver(new LocalMultiLayerNetworkSaver(modelSavePath))
-                .scoreFunction(new TestSetLossScoreFunction())
-                .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
+                .scoreFunction(new TestSetLossScoreFunction(true))
+                .terminationConditions(new MaxTimeCondition(120, TimeUnit.MINUTES),
                         new MaxCandidatesCondition(100))
                 .build();
 
@@ -105,84 +125,23 @@ public class TestDL4JLocalExecution {
         System.out.println("----- COMPLETE -----");
     }
 
-    @Test
-    @Ignore
-    public void testLocalExecutionEarlyStopping() throws Exception {
 
-        EarlyStoppingConfiguration esConf = new EarlyStoppingConfiguration.Builder()
-                .epochTerminationConditions(new MaxEpochsTerminationCondition(100))
-                .scoreCalculator(new DataSetLossCalculator(new IrisDataSetIterator(150,150),true))
-                .modelSaver(new InMemoryModelSaver())
-                .build();
-
-        //Define: network config (hyperparameter space)
-        MultiLayerSpace mls = new MultiLayerSpace.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .learningRate(new ContinuousParameterSpace(0.0001, 0.1))
-                .regularization(true)
-                .l2(new ContinuousParameterSpace(0.0001, 0.01))
-                .iterations(1)
-                .addLayer(new DenseLayerSpace.Builder().nIn(4).nOut(new IntegerParameterSpace(2, 10))
-                        .activation(new DiscreteParameterSpace<String>("relu", "tanh"))
-                        .build(), new IntegerParameterSpace(1, 2), true)   //1-2 identical layers (except nIn)
-                .addLayer(new OutputLayerSpace.Builder().nOut(3).activation("softmax")
-                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                .earlyStoppingConfiguration(esConf)
-                .pretrain(false).backprop(true).build();
-
-        //Define configuration:
-
-        CandidateGenerator<DL4JConfiguration> candidateGenerator = new RandomSearchGenerator<>(mls);
-        DataProvider<DataSetIterator> dataProvider = new IrisDataSetProvider();
-
-
-        String modelSavePath = new File(System.getProperty("java.io.tmpdir"),"ArbiterDL4JTest2\\").getAbsolutePath();
-
-        File f = new File(modelSavePath);
-        if(f.exists()) f.delete();
-        f.mkdir();
-        if(!f.exists()) throw new RuntimeException();
-
-        OptimizationConfiguration<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> configuration
-                = new OptimizationConfiguration.Builder<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation>()
-                .candidateGenerator(candidateGenerator)
-                .dataProvider(dataProvider)
-                .modelSaver(new LocalMultiLayerNetworkSaver(modelSavePath))
-                .scoreFunction(new TestSetLossScoreFunction())
-                .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
-                        new MaxCandidatesCondition(100))
-                .build();
-
-        CandidateExecutor<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> executor =
-                new LocalCandidateExecutor<>(new DL4JTaskCreator(new DL4JClassificationEvaluator()),1);
-
-        OptimizationRunner<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> runner
-                = new OptimizationRunner<>(configuration, executor);
-
-       /* ArbiterUIServer server = new ArbiterUIServer();
-        String[] str = new String[]{"server", "dropwizard.yml"};
-        server.run(str);
-        WebUtils.tryOpenBrowser("http://localhost:8080/arbiter", log);    //TODO don't hardcode
-        runner.addListeners(new UIOptimizationRunnerStatusListener(server));
-
-       */ runner.execute();
-
-
-        System.out.println("----- COMPLETE -----");
-
-    }
-
-
-    private static class IrisDataSetProvider implements DataProvider<DataSetIterator>{
+    private static class MnistDataSetProvider implements DataProvider<DataSetIterator>{
 
         @Override
         public DataSetIterator trainData(Map<String, Object> dataParameters) {
-            if(dataParameters == null || dataParameters.isEmpty()) return new IrisDataSetIterator(150,150);
-            if(dataParameters.containsKey("batchsize")){
-                int b = (Integer)dataParameters.get("batchsize");
-                return new IrisDataSetIterator(b,150);
+            try{
+                if(dataParameters == null || dataParameters.isEmpty()){
+                    return new MnistDataSetIterator(64, 10000, false, true, true, 123);
+                }
+                if(dataParameters.containsKey("batchsize")){
+                    int b = (Integer)dataParameters.get("batchsize");
+                    return new MnistDataSetIterator(b, 10000, false, true, true, 123);
+                }
+                return new MnistDataSetIterator(64, 10000, false, true, true, 123);
+            } catch(Exception e){
+                throw new RuntimeException(e);
             }
-            return new IrisDataSetIterator(150,150);
         }
 
         @Override
@@ -192,7 +151,7 @@ public class TestDL4JLocalExecution {
 
         @Override
         public String toString(){
-            return "IrisDataSetProvider()";
+            return "MnistDataSetProvider()";
         }
     }
 }
