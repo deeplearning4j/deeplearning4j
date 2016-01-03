@@ -145,7 +145,7 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
         WeightLookupTable weightLookupTable = lookupTable;
         INDArray words = Nd4j.create(positive.size() + negative.size(), weightLookupTable.layerSize());
         int row = 0;
-        Set<String> union = SetUtils.union(new HashSet<>(positive), new HashSet<>(negative));
+        //Set<String> union = SetUtils.union(new HashSet<>(positive), new HashSet<>(negative));
         for (String s : positive) {
             words.putRow(row++, weightLookupTable.vector(s));
         }
