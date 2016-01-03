@@ -47,8 +47,8 @@ public class GravesBidirectionalLSTMParamInitializer implements ParamInitializer
 
     @Override
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {
-        org.deeplearning4j.nn.conf.layers.GravesLSTM layerConf =
-                (org.deeplearning4j.nn.conf.layers.GravesLSTM) conf.getLayer();
+        org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM layerConf =
+                (org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM) conf.getLayer();
         double forgetGateInit = layerConf.getForgetGateBiasInit();
 
         Distribution dist = Distributions.createDistribution(layerConf.getDist());
