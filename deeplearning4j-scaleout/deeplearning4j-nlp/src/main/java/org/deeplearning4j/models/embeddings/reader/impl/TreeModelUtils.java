@@ -1,7 +1,9 @@
 package org.deeplearning4j.models.embeddings.reader.impl;
 
+import lombok.NonNull;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.deeplearning4j.clustering.vptree.VPTree;
+import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 
 import java.util.ArrayList;
@@ -11,8 +13,14 @@ import java.util.List;
 /**
  * @author raver119@gmail.com
  */
-public class TreeReader<T extends SequenceElement> extends BasicReader<T> {
+public class TreeModelUtils<T extends SequenceElement> extends BasicModelUtils<T> {
     protected VPTree vpTree;
+
+    @Override
+    public void init(@NonNull WeightLookupTable<T> lookupTable) {
+        super.init(lookupTable);
+        vpTree = null;
+    }
 
     /**
      * This method returns nearest words for target word, based on tree structure.
