@@ -2,6 +2,7 @@ package org.deeplearning4j.models.glove;
 
 import lombok.NonNull;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.GloVe;
+import org.deeplearning4j.models.embeddings.reader.ModelUtils;
 import org.deeplearning4j.models.sequencevectors.SequenceVectors;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
@@ -268,6 +269,18 @@ public class Glove extends SequenceVectors<VocabWord> {
             this.sentenceIterator = new StreamLineIterator.Builder(iterator)
                     .setFetchSize(100)
                     .build();
+            return this;
+        }
+
+        /**
+         * Sets ModelUtils that gonna be used as provider for utility methods: similarity(), wordsNearest(), accuracy(), etc
+         *
+         * @param modelUtils model utils to be used
+         * @return
+         */
+        @Override
+        public Builder modelUtils(@NonNull ModelUtils<VocabWord> modelUtils) {
+            super.modelUtils(modelUtils);
             return this;
         }
 

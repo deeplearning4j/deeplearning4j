@@ -541,6 +541,12 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
         this.vectorLength = vectorLength;
     }
 
+    /**
+     * This method is deprecated, since all logic was pulled out from this class and is not used anymore.
+     * However this method will be around for a while, due to backward compatibility issues.
+     * @return initial learning rate
+     */
+    @Deprecated
     public AtomicDouble getLr() {
         return lr;
     }
@@ -598,7 +604,12 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
             return this;
         }
 
-
+        /**
+         * This method is deprecated, since all logic was pulled out from this class
+         * @param lr
+         * @return
+         */
+        @Deprecated
         public Builder<T> lr(double lr) {
             this.lr = lr;
             return this;
