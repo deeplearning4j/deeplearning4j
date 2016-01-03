@@ -43,12 +43,9 @@ Documentation is available at [deeplearning4j.org](http://deeplearning4j.org/) a
 We are not support stackoverflow right now. GH issues with installation issues are
 also not the place to post anything other than bug reports.
 .
-Please come in to gitter:
-
-https:://gitter.im/deepelearning4j/deeplearning4j
+Please come in to [gitter](https:://gitter.im/deepelearning4j/deeplearning4j)
 
 
----
 ## Installation
 To install Deeplearning4J, there are a couple approaches (briefly described below). More information can be found on the  [ND4J website](http://nd4j.org/getstarted.html) and [here](http://deeplearning4j.org/gettingstarted.html).
 
