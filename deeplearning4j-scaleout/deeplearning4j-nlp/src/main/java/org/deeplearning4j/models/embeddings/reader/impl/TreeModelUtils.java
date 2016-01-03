@@ -5,13 +5,15 @@ import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.deeplearning4j.clustering.vptree.VPTree;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
+import org.deeplearning4j.util.SetUtils;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 /**
- *
+ * This is VPTree-based implementation for wordsNearest method, suited for multiple consequent calls.
+ * Please note: VPTree will take some memory, dependant on your model size.
  *
  * @author raver119@gmail.com
  */
@@ -23,6 +25,18 @@ public class TreeModelUtils<T extends SequenceElement> extends BasicModelUtils<T
         super.init(lookupTable);
         vpTree = null;
     }
+
+    protected synchronized void checkTree() {
+        // build new tree if it wasn't created before
+        if (vpTree == null) {
+            List<DataPoint> points = new ArrayList<>();
+            for (String word: vocabCache.words()) {
+                points.add(new DataPoint(vocabCache.indexOf(word), lookupTable.vector(word)));
+            }
+            vpTree = new VPTree(points);
+        }
+    }
+
 
     /**
      * This method returns nearest words for target word, based on tree structure.
@@ -37,27 +51,53 @@ public class TreeModelUtils<T extends SequenceElement> extends BasicModelUtils<T
     public Collection<String> wordsNearest(String label, int n) {
         if (!vocabCache.hasToken(label)) return new ArrayList<>();
 
-        // build new tree if it wasn't created before
-        if (vpTree == null) {
-            List<DataPoint> points = new ArrayList<>();
-            for (String word: vocabCache.words()) {
-                points.add(new DataPoint(vocabCache.indexOf(word), lookupTable.vector(word)));
-            }
-            vpTree = new VPTree(points);
+        Collection<String> collection = wordsNearest(Arrays.asList(label),new ArrayList<String>(),n + 1);
+        if (collection.contains(label)) collection.remove(label);
 
+        return collection;
+    }
+
+    @Override
+    public Collection<String> wordsNearest(Collection<String> positive, Collection<String> negative, int top) {
+
+        // Check every word is in the model
+        for (String p : SetUtils.union(new HashSet<>(positive), new HashSet<>(negative))) {
+            if (!vocabCache.containsWord(p)) {
+                return new ArrayList<>();
+            }
         }
+
+        INDArray words = Nd4j.create(positive.size() + negative.size(), lookupTable.layerSize());
+        int row = 0;
+        for (String s : positive) {
+            words.putRow(row++, lookupTable.vector(s));
+        }
+
+        for (String s : negative) {
+            words.putRow(row++, lookupTable.vector(s).mul(-1));
+        }
+
+        INDArray mean = words.isMatrix() ? words.mean(0) : words;
+
+        return wordsNearest(mean, top);
+    }
+
+    @Override
+    public Collection<String> wordsNearest(INDArray words, int top) {
+        checkTree();
+
         List<DataPoint> add = new ArrayList<>();
         List<Double> distances = new ArrayList<>();
 
         // we need n+1 to address original datapoint removal
-        vpTree.search(new DataPoint(0, lookupTable.vector(label)), n+1, add, distances );
+        vpTree.search(new DataPoint(0, words), top, add, distances );
 
         Collection<String> ret = new ArrayList<>();
         for (DataPoint e: add) {
             String word  = vocabCache.wordAtIndex(e.getIndex());
-            if (!word.equals(label)) ret.add(word);
+            ret.add(word);
         }
 
-        return ret;
+        return super.wordsNearest(words, top);
     }
 }
