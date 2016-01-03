@@ -31,7 +31,7 @@ public class Word2VecTestsSmall
 
         Collection<String> nearestWords = word2vec.wordsNearest(word, neighbours);
         System.out.println(nearestWords);
-        assertEquals(nearestWords.iterator().next(), expectedNeighbour);
+        assertEquals(expectedNeighbour, nearestWords.iterator().next());
     }
 
     @Test
@@ -42,7 +42,7 @@ public class Word2VecTestsSmall
 
         Collection<String> nearestWords = word2vec.wordsNearest(word, neighbours);
         System.out.println(nearestWords);
-        assertEquals(nearestWords.size(), neighbours);
+        assertEquals(neighbours, nearestWords.size());
 
     }
 

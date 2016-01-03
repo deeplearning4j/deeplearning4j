@@ -2,6 +2,7 @@ package org.deeplearning4j.models.glove;
 
 import lombok.NonNull;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.GloVe;
+import org.deeplearning4j.models.embeddings.reader.ModelUtils;
 import org.deeplearning4j.models.sequencevectors.SequenceVectors;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
@@ -272,6 +273,18 @@ public class Glove extends SequenceVectors<VocabWord> {
         }
 
         /**
+         * Sets ModelUtils that gonna be used as provider for utility methods: similarity(), wordsNearest(), accuracy(), etc
+         *
+         * @param modelUtils model utils to be used
+         * @return
+         */
+        @Override
+        public Builder modelUtils(@NonNull ModelUtils<VocabWord> modelUtils) {
+            super.modelUtils(modelUtils);
+            return this;
+        }
+
+        /**
          * This method allows you to specify maximum memory available for CoOccurrence map builder.
          *
          * Please note: this option can be considered a debugging method. In most cases setting proper -Xmx argument set to JVM is enough to limit this algorithm.
@@ -336,6 +349,7 @@ public class Glove extends SequenceVectors<VocabWord> {
 
             ret.lookupTable = this.lookupTable;
             ret.vocab = this.vocabCache;
+            ret.modelUtils = this.modelUtils;
 
 
             ret.elementsLearningAlgorithm = new GloVe.Builder<VocabWord>()
