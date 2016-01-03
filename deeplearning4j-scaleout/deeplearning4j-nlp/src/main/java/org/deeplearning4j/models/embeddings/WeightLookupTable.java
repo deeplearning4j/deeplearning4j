@@ -19,6 +19,7 @@
 package org.deeplearning4j.models.embeddings;
 
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
+import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.plot.Tsne;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -91,6 +92,7 @@ public interface WeightLookupTable<T extends SequenceElement> extends Serializab
      * @param w1 the first word to iterate on
      * @param w2 the second word to iterate on
      */
+    @Deprecated
     void iterate(T w1,T w2);
     /**
      * Iterate on the given 2 vocab words
@@ -143,4 +145,9 @@ public interface WeightLookupTable<T extends SequenceElement> extends Serializab
      * @return
      */
     int getVectorLength();
+
+    /**
+     * Returns corresponding vocabulary
+     */
+    VocabCache<T> getVocabCache();
 }

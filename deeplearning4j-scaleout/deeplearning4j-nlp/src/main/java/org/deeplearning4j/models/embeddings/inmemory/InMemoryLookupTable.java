@@ -532,6 +532,11 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
         return vectorLength;
     }
 
+    @Override
+    public VocabCache<T> getVocabCache() {
+        return vocab;
+    }
+
     public void setVectorLength(int vectorLength) {
         this.vectorLength = vectorLength;
     }
