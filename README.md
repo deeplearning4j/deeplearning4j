@@ -40,7 +40,8 @@ Documentation is available at [deeplearning4j.org](http://deeplearning4j.org/) a
 
 ## Support
 
-We are not support stackoverflow right now. GH issues with installation issues are
+We are not supporting stackoverflow right now.
+GH issues with installation issues are
 also not the place to post anything other than bug reports.
 .
 Please come in to [gitter](https:://gitter.im/deepelearning4j/deeplearning4j)
