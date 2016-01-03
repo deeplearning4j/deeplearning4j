@@ -47,7 +47,8 @@ before_install:
   - sudo ln -s /opt/OpenBLAS/lib/libopenblas_haswellp-*.so /usr/lib/liblapack.so.3
   - git clone https://github.com/deeplearning4j/nd4j && cd nd4j && mvn clean install -DskipTests -Dmaven.javadoc.skip=true && cd ..
   - git clone https://github.com/deeplearning4j/Canova && cd Canova && mvn clean install -DskipTests -Dmaven.javadoc.skip=true && cd ..
+  - git clone https://github.com/deeplearning4j/deeplearning4j && cd deeplearning4j && mvn clean install -DskipTests -Dmaven.javadoc.skip=true && cd ..
 
 
 script:
-  -  cd /home/travis/build/deeplearning4j/deeplearning4j && chmod +x ./runtests.sh && ./runtests.sh
+  -  cd /home/travis/build/deeplearning4j/Arbiter && chmod +x ./runtests.sh && ./runtests.sh
