@@ -13,6 +13,8 @@ import org.deeplearning4j.util.SetUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -24,6 +26,8 @@ import java.util.*;
 public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T> {
     protected VocabCache<T> vocabCache;
     protected WeightLookupTable<T> lookupTable;
+
+    private static final Logger log = LoggerFactory.getLogger(BasicModelUtils.class);
 
     public BasicModelUtils() {
 
@@ -175,6 +179,7 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
      */
     @Override
     public Collection<String> wordsNearest(INDArray words, int top) {
+        log.info("INDArray: " + Arrays.toString(words.dup().data().asDouble()));
         if(lookupTable instanceof InMemoryLookupTable) {
             InMemoryLookupTable l = (InMemoryLookupTable) lookupTable;
             INDArray syn0 = l.getSyn0();
