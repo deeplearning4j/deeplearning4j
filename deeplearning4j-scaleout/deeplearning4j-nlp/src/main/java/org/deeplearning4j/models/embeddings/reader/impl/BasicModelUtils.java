@@ -179,33 +179,29 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
      */
     @Override
     public Collection<String> wordsNearest(INDArray words, int top) {
-        log.info("INDArray: " + Arrays.toString(words.dup().data().asDouble()));
         if(lookupTable instanceof InMemoryLookupTable) {
             InMemoryLookupTable l = (InMemoryLookupTable) lookupTable;
+
             INDArray syn0 = l.getSyn0();
-            INDArray weights = syn0.norm2(0).rdivi(1).muli(words);
-            INDArray distances = syn0.mulRowVector(weights).mean(1);
-            INDArray[] sorted = Nd4j.sortWithIndices(distances,0,false);
-            INDArray sort = sorted[0];
+            syn0.diviRowVector(syn0.norm2(0));
+
+            INDArray similarity = Transforms.unitVec(words).mmul(syn0.transpose());
+            // We assume that syn0 is normalized.
+            // Hence, the following division is not needed anymore.
+            // distances.diviRowVector(distances.norm2(1));
+            //INDArray[] sorted = Nd4j.sortWithIndices(distances,0,false);
+            List<Double> highToLowSimList = getTopN(similarity, top);
             List<String> ret = new ArrayList<>();
-            if(top > sort.length())
-                top = sort.length();
-            //there will be a redundant word
-            int end = top;
-            for(int i = 0; i < end; i++) {
-                int s = sort.getInt(0, i);
-                String add = vocabCache.wordAtIndex(s);
-                if(add == null || add.equals("UNK") || add.equals("STOP")) {
-                    end++;
-                    if(end >= sort.length())
+
+            for (int i = 0; i < highToLowSimList.size(); i++) {
+                String word = vocabCache.wordAtIndex(highToLowSimList.get(i).intValue());
+                if (word != null && !word.equals("UNK") && !word.equals("STOP")) {
+                    ret.add(word);
+                    if (ret.size() >= top) {
                         break;
-                    continue;
+                    }
                 }
-
-
-                ret.add(vocabCache.wordAtIndex(s));
             }
-
 
             return ret;
         }
@@ -313,7 +309,7 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
     @Override
     public Collection<String> wordsNearestSum(Collection<String> positive, Collection<String> negative, int top) {
         INDArray words = Nd4j.create(lookupTable.layerSize());
-        Set<String> union = SetUtils.union(new HashSet<>(positive), new HashSet<>(negative));
+    //    Set<String> union = SetUtils.union(new HashSet<>(positive), new HashSet<>(negative));
         for(String s : positive)
             words.addi(lookupTable.vector(s));
 
@@ -321,7 +317,7 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
         for(String s : negative)
             words.addi(lookupTable.vector(s).mul(-1));
 
-        return wordsNearest(words,top);
+        return wordsNearestSum(words,top);
     }
 
 
