@@ -336,6 +336,7 @@ public class Glove extends SequenceVectors<VocabWord> {
 
             ret.lookupTable = this.lookupTable;
             ret.vocab = this.vocabCache;
+            ret.modelUtils = this.modelUtils;
 
 
             ret.elementsLearningAlgorithm = new GloVe.Builder<VocabWord>()

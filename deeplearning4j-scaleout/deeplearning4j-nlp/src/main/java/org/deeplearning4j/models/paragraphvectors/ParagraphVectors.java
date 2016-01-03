@@ -259,6 +259,7 @@ public class ParagraphVectors extends Word2Vec {
             ret.sequenceLearningAlgorithm = this.sequenceLearningAlgorithm;
 
             ret.lookupTable = this.lookupTable;
+            ret.modelUtils = this.modelUtils;
 
             this.configuration.setLearningRate(this.learningRate);
             this.configuration.setLayersSize(layerSize);
