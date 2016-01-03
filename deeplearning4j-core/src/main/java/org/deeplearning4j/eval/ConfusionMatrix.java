@@ -236,6 +236,13 @@ public class ConfusionMatrix<T extends Comparable<? super T>> implements Seriali
         return builder.toString();
     }
 
+    @Override
+    public boolean equals(Object o){
+        if( !(o instanceof ConfusionMatrix) ) return false;
+        ConfusionMatrix<?> c = (ConfusionMatrix<?>)o;
+        return matrix.equals(c.matrix) && classes.equals(c.classes);
+    }
+
     public static void main(String[] args) {
         ConfusionMatrix<String> confusionMatrix = new ConfusionMatrix<>(Arrays.asList("a", "b", "c"));
 

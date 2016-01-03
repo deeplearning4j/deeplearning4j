@@ -188,8 +188,8 @@ public class EvalTest {
         int nOut = 3;
         int tsLength = 6;
 
-        INDArray labels = Nd4j.zeros(miniBatch,nOut,tsLength);
-        INDArray predicted = Nd4j.zeros(miniBatch,nOut,tsLength);
+        INDArray labels = Nd4j.zeros(miniBatch, nOut, tsLength);
+        INDArray predicted = Nd4j.zeros(miniBatch, nOut, tsLength);
 
         Nd4j.getRandom().setSeed(12345);
         Random r = new Random(12345);
@@ -205,9 +205,9 @@ public class EvalTest {
 
         //Create a longer labels/predicted with mask for first and last time step
         //Expect masked evaluation to be identical to original evaluation
-        INDArray labels2 = Nd4j.zeros(miniBatch,nOut,tsLength+2);
+        INDArray labels2 = Nd4j.zeros(miniBatch, nOut, tsLength + 2);
         labels2.put(new INDArrayIndex[]{NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.interval(1,tsLength+1)},labels);
-        INDArray predicted2 = Nd4j.zeros(miniBatch,nOut,tsLength+2);
+        INDArray predicted2 = Nd4j.zeros(miniBatch, nOut, tsLength + 2);
         predicted2.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(1, tsLength + 1)}, predicted);
 
         INDArray labelsMask = Nd4j.ones(miniBatch,tsLength+2);
@@ -227,10 +227,10 @@ public class EvalTest {
 
         assertEquals(evaluation.accuracy(), evaluation2.accuracy(), 1e-12);
         assertEquals(evaluation.f1(), evaluation2.f1(), 1e-12);
-        assertEquals(evaluation.falsePositives(),evaluation2.falsePositives(),1e-12);
+        assertEquals(evaluation.falsePositives(), evaluation2.falsePositives(), 1e-12);
         assertEquals(evaluation.falseNegatives(),evaluation2.falseNegatives(),1e-12);
         assertEquals(evaluation.truePositives(),evaluation2.truePositives(),1e-12);
-        assertEquals(evaluation.trueNegatives(),evaluation2.trueNegatives(),1e-12);
+        assertEquals(evaluation.trueNegatives(), evaluation2.trueNegatives(), 1e-12);
         for( int i=0; i<nOut; i++) assertEquals(evaluation.classCount(i),evaluation2.classCount(i));
     }
 
@@ -265,5 +265,71 @@ public class EvalTest {
 
         //For sure we shouldn't arrive at 100% recall unless we guessed everything right for every class
         assertNotEquals(1.0, eval.recall());
+    }
+
+    @Test
+    public void testEvaluationMerging(){
+
+        int nRows = 20;
+        int nCols = 3;
+
+        Random r = new Random(12345);
+        INDArray actual = Nd4j.create(nRows,nCols);
+        INDArray predicted = Nd4j.create(nRows, nCols);
+        for( int i=0; i<nRows; i++ ){
+            int x1 = r.nextInt(nCols);
+            int x2 = r.nextInt(nCols);
+            actual.putScalar(new int[]{i,x1},1.0);
+            predicted.putScalar(new int[]{i,x2},1.0);
+        }
+
+        Evaluation evalExpected = new Evaluation();
+        evalExpected.eval(actual,predicted);
+
+
+        //Now: split into 3 separate evaluation objects -> expect identical values after merging
+        Evaluation eval1 = new Evaluation();
+        eval1.eval(actual.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all()), predicted.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all()));
+
+        Evaluation eval2 = new Evaluation();
+        eval2.eval(actual.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all()), predicted.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all()));
+
+        Evaluation eval3 = new Evaluation();
+        eval3.eval(actual.get(NDArrayIndex.interval(10, nRows), NDArrayIndex.all()), predicted.get(NDArrayIndex.interval(10, nRows), NDArrayIndex.all()));
+
+        eval1.merge(eval2);
+        eval1.merge(eval3);
+
+        checkEvaluationEquality(evalExpected,eval1);
+
+
+        //Next: check evaluation merging with empty, and empty merging with non-empty
+        eval1 = new Evaluation();
+        eval1.eval(actual.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all()), predicted.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all()));
+
+        Evaluation evalInitiallyEmpty = new Evaluation();
+        evalInitiallyEmpty.merge(eval1);
+        evalInitiallyEmpty.merge(eval2);
+        evalInitiallyEmpty.merge(eval3);
+        checkEvaluationEquality(evalExpected, evalInitiallyEmpty);
+
+        eval1.merge(new Evaluation());
+        eval1.merge(eval2);
+        eval1.merge(new Evaluation());
+        eval1.merge(eval3);
+        checkEvaluationEquality(evalExpected, eval1);
+    }
+
+    private static void checkEvaluationEquality(Evaluation evalExpected, Evaluation evalActual){
+        assertEquals(evalExpected.accuracy(), evalActual.accuracy(), 1e-3);
+        assertEquals(evalExpected.f1(), evalActual.f1(), 1e-3);
+        assertEquals(evalExpected.getNumRowCounter(),evalActual.getNumRowCounter(), 1e-3);
+        assertEquals(evalExpected.falseNegatives(),evalActual.falseNegatives(),1e-3);
+        assertEquals(evalExpected.falsePositives(),evalActual.falsePositives(),1e-3);
+        assertEquals(evalExpected.trueNegatives(),evalActual.trueNegatives(),1e-3);
+        assertEquals(evalExpected.truePositives(),evalActual.truePositives(),1e-3);
+        assertEquals(evalExpected.precision(),evalActual.precision(),1e-3);
+        assertEquals(evalExpected.recall(),evalActual.recall(),1e-3);
+        assertEquals(evalExpected.getConfusionMatrix(), evalActual.getConfusionMatrix());
     }
 }
