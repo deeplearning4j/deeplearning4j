@@ -563,6 +563,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                     sequenceLearningAlgorithm = new DBOW<>();
                 }
             }
+
+            this.modelUtils.init(lookupTable);
         }
 
         /**
@@ -592,6 +594,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
             vectors.iterator = this.iterator;
             vectors.lookupTable = this.lookupTable;
+            vectors.modelUtils = this.modelUtils;
 
             vectors.elementsLearningAlgorithm = this.elementsLearningAlgorithm;
             vectors.sequenceLearningAlgorithm = this.sequenceLearningAlgorithm;
