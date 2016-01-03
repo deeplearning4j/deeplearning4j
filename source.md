@@ -10,9 +10,7 @@ On the other hand, our [Github repo is here](https://github.com/deeplearning4j/d
 
       mvn clean install -DskipTests=true -Dmaven.javadoc.skip=true
 
-If you want to run Deeplearning4j examples after installing from trunk, you should *git clone* ND4J, Canova and Deeplearning4j, in that order, and then install all from source using Maven with this command:
-
-      mvn clean install -DskipTests -Dmaven.javadoc.skip=true
+If you want to run Deeplearning4j examples after installing from trunk, you should *git clone* ND4J, Canova and Deeplearning4j, in that order, and then install all from source using Maven with the command above.
 
 Following these steps, you should be able to run the 0.4-rc* examples. 
 
