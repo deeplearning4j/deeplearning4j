@@ -53,6 +53,23 @@ namespace functions {
 
 	}
 #endif
+
+            virtual void transform(T *x,int xStride,T *result,int resultStride,T scalar,T *extraParams,int n) {
+                if(xStride == 1 && resultStride == 1) {
+                    for(int i = 0; i < n; i++) {
+                        result[i] = op(x[i],scalar,extraParams);
+                    }
+
+                }
+                else {
+                    for(int i = 0; i < n; i++) {
+                        result[i * resultStride] = op(x[i * resultStride],scalar,extraParams);
+                    }
+                }
+
+            }
+
+
             virtual ~ScalarTransform() {}
         };
 
