@@ -49,7 +49,7 @@ namespace nd4j {
                         return 0;
                 }
                 for(int i = 0; i < length; i++) {
-                    T diff = data[i] - other.data[i];
+                    T diff = (T) data[i] - other.data[i];
                     if(abs(diff) >= EPSILON)
                         return 0;
                 }
@@ -108,7 +108,8 @@ namespace nd4j {
             static
 #ifdef __CUDACC__
             __host__
-#endif void allocateNDArrayOnGpu(NDArray<T> **arr);
+#endif
+            void allocateNDArrayOnGpu(NDArray<T> **arr);
 
 
             /**
@@ -116,14 +117,11 @@ namespace nd4j {
              * given parameters
              * and then allocates it on the gpu
              */
-            static
+
 #ifdef __CUDACC__
-            __host__
-#endif NDArray<T>	 *
+            static  __host__ NDArray<T> * createFromAndAllocateOnGpu(int rank, int *shape, int *stride, int offset, T defaultValue);
 
-            createFromAndAllocateOnGpu(int rank, int *shape, int *stride, int offset, T defaultValue);
-
-
+#endif
             /**
              * Copies the host data
              * from the gpu
@@ -133,7 +131,8 @@ namespace nd4j {
             static
 #ifdef __CUDACC__
             __host__
-#endif void copyFromGpu(NDArray<T> **arr);
+#endif
+            void copyFromGpu(NDArray<T> **arr);
 
             /**
              * Frees data on gpu and cpu
@@ -142,7 +141,8 @@ namespace nd4j {
             static
 #ifdef __CUDACC__
             __host__
-#endif void freeNDArrayOnGpuAndCpu(NDArray<T> **arr);
+#endif
+            void freeNDArrayOnGpuAndCpu(NDArray<T> **arr);
 
 
             /**
@@ -198,7 +198,11 @@ namespace nd4j {
              * Print the array on the host
              * @param arr
              */
-            static __host__ void printArrHost(NDArray<T> *arr);
+            static
+#ifdef __CUDACC__
+            __host__
+#endif
+            void printArrHost(NDArray<T> *arr);
 
 
 
@@ -274,10 +278,11 @@ namespace nd4j {
  * have already been initialized.
  *
  */
-        template<typename T>
 #ifdef __CUDACC__
+        template<typename T>
+
         __host__
-#endif
+
         void NDArrays<T>::allocateNDArrayOnGpu(NDArray <T> **arr) {
             NDArray <T> *arrRef = *arr;
             size_t size = lengthInBytes(arrRef);
@@ -285,6 +290,7 @@ namespace nd4j {
 
             size_t intRankSize = arrRef->rank * sizeof(int);
             int *gShape = 0, *gStride = 0;
+
             checkCudaErrors(cudaMalloc(&gShape, intRankSize));
             checkCudaErrors(cudaMemcpy(gShape, arrRef->shape, intRankSize, cudaMemcpyHostToDevice));
             checkCudaErrors(cudaMalloc(&gStride, intRankSize));
@@ -292,23 +298,21 @@ namespace nd4j {
             arrRef->gShape = gShape;
             arrRef->gStride = gStride;
         }
-
+#endif
 /**
  * Creates an ndarray based on the
  * given parameters
  * and then allocates it on the gpu
  */
-        template<typename T>
 #ifdef __CUDACC__
-        __host__
-#endif
-        NDArray<T> *
-
-        NDArrays<T>::createFromAndAllocateOnGpu(int rank, int *shape, int *stride, int offset, T defaultValue) {
+        template<typename T>
+ __host__     NDArray<T> *   NDArrays<T>::createFromAndAllocateOnGpu(int rank, int *shape, int *stride, int offset, T defaultValue) {
             NDArray<T> * ret = createFrom(rank, shape, stride, offset, defaultValue);
             allocateNDArrayOnGpu(&ret);
             return ret;
         }
+#endif
+
 
 
 /**
@@ -317,16 +321,17 @@ namespace nd4j {
  * to the cpu
  * for the given ndarray
  */
-        template<typename T>
 #ifdef __CUDACC__
+        template<typename T>
+
         __host__
-#endif
+
         void NDArrays<T>::copyFromGpu(NDArray<T> **arr) {
             NDArray<T> * arrRef = *arr;
             checkCudaErrors(cudaMemcpy(arrRef->data, arrRef->gData, lengthInBytes(arrRef), cudaMemcpyDeviceToHost));
         }
 
-
+#endif
         template<typename T>
 #ifdef __CUDACC__
         __host__
@@ -336,9 +341,12 @@ namespace nd4j {
             nd4j::buffer::Buffer<T> *dataBuf = arrRef->data;
             nd4j::buffer::freeBuffer(&dataBuf);
             delete[] arrRef->shape;
-            checkCudaErrors(cudaFree(arrRef->gShape));
             delete[] arrRef->stride;
+
+#ifdef __CUDACC__
+            checkCudaErrors(cudaFree(arrRef->gShape));
             checkCudaErrors(cudaFree(arrRef->gStride));
+#endif
         }
 
 
@@ -353,8 +361,8 @@ namespace nd4j {
 
         void NDArrays<T>::allocArrayData(NDArray<T> * *arr) {
             NDArray<T> * arrRef = *arr;
-            int dataLength = prod(arrRef->shape, arrRef->rank);
-            arrRef->data = malloc(sizeof(T) * dataLength);
+            int dataLength = shape::prod(arrRef->shape, arrRef->rank);
+            arrRef->data = (T *) malloc(sizeof(T) * dataLength);
         }
 
 /**
@@ -398,16 +406,17 @@ namespace nd4j {
         }
 
 
-        template<typename T>
 #ifdef __CUDACC__
+        template<typename T>
+
         __device__
-#endif
+
         void NDArrays<T>::printArrGpu(NDArray<T> *arr) {
             for (int i = 0; i < length(arr); i++) {
                 printf("Arr[%d] is %f\n", arr->gData[i]);
             }
         }
-
+#endif
 
         template<typename T>
 #ifdef __CUDACC__
