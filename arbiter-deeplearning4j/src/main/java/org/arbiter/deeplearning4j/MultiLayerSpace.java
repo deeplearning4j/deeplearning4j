@@ -41,6 +41,7 @@ public class MultiLayerSpace implements ModelParameterSpace<DL4JConfiguration> {
     private ParameterSpace<Double> rmsDecay;
     private ParameterSpace<GradientNormalization> gradientNormalization;
     private ParameterSpace<Double> gradientNormalizationThreshold;
+    private ParameterSpace<int[]> cnnInputSize;
 
     private List<LayerConf> layerSpaces = new ArrayList<>();
 
@@ -85,6 +86,7 @@ public class MultiLayerSpace implements ModelParameterSpace<DL4JConfiguration> {
         this.backpropType = builder.backpropType;
         this.tbpttFwdLength = builder.tbpttFwdLength;
         this.tbpttBwdLength = builder.tbpttBwdLength;
+        this.cnnInputSize = builder.cnnInputSize;
 
         this.earlyStoppingConfiguration = builder.earlyStoppingConfiguration;
         this.numEpochs = builder.numEpochs;
@@ -158,6 +160,7 @@ public class MultiLayerSpace implements ModelParameterSpace<DL4JConfiguration> {
         if(backpropType != null) listBuilder.backpropType(backpropType.randomValue());
         if(tbpttFwdLength != null) listBuilder.tBPTTForwardLength(tbpttFwdLength.randomValue());
         if(tbpttBwdLength != null) listBuilder.tBPTTBackwardLength(tbpttBwdLength.randomValue());
+        if(cnnInputSize != null) listBuilder.cnnInputSize(cnnInputSize.randomValue());
 
         MultiLayerConfiguration configuration = listBuilder.build();
         return new DL4JConfiguration(configuration,earlyStoppingConfiguration,numEpochs);
@@ -193,6 +196,7 @@ public class MultiLayerSpace implements ModelParameterSpace<DL4JConfiguration> {
         if(backpropType != null) sb.append("backpropType: ").append(backpropType).append("\n");
         if(tbpttFwdLength != null) sb.append("tbpttFwdLength: ").append(tbpttFwdLength).append("\n");
         if(tbpttBwdLength != null) sb.append("tbpttBwdLength: ").append(tbpttBwdLength).append("\n");
+        if(cnnInputSize != null) sb.append("cnnInputSize: ").append(cnnInputSize).append("\n");
 
         int i=0;
         for(LayerConf conf : layerSpaces){
@@ -243,6 +247,7 @@ public class MultiLayerSpace implements ModelParameterSpace<DL4JConfiguration> {
         private ParameterSpace<Double> rmsDecay;
         private ParameterSpace<GradientNormalization> gradientNormalization;
         private ParameterSpace<Double> gradientNormalizationThreshold;
+        private ParameterSpace<int[]> cnnInputSize;
 
         private List<LayerConf> layerSpaces = new ArrayList<>();
 
@@ -494,6 +499,15 @@ public class MultiLayerSpace implements ModelParameterSpace<DL4JConfiguration> {
 
         public Builder tbpttBwdLength(ParameterSpace<Integer> tbpttBwdLength){
             this.tbpttBwdLength = tbpttBwdLength;
+            return this;
+        }
+
+        public Builder cnnInputSize(int height, int width, int depth){
+            return cnnInputSize(new FixedValue<>(new int[]{height, width, depth}));
+        }
+
+        public Builder cnnInputSize(ParameterSpace<int[]> cnnInputSize){
+            this.cnnInputSize = cnnInputSize;
             return this;
         }
 

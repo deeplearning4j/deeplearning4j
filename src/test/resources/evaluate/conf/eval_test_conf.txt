@@ -1,2 +1,0 @@
-
-arbiter.model.path=/tmp/foo.model
