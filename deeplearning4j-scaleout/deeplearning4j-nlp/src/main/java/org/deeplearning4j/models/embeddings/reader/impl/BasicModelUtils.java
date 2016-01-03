@@ -66,7 +66,9 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
 
     @Override
     public Collection<String> wordsNearest(String label, int n) {
-        return wordsNearest(Arrays.asList(label),new ArrayList<String>(),n);
+        Collection<String> collection = wordsNearest(Arrays.asList(label),new ArrayList<String>(),n + 1);
+        if (collection.contains(label)) collection.remove(label);
+        return collection;
     }
 
     /**
