@@ -29,6 +29,7 @@ import org.apache.spark.mllib.linalg.Matrix;
 import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.canova.api.records.reader.RecordReader;
+import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -47,6 +48,7 @@ import org.deeplearning4j.spark.impl.common.misc.UpdaterFromGradientTupleFunctio
 import org.deeplearning4j.spark.impl.common.misc.UpdaterFromTupleFunction;
 import org.deeplearning4j.spark.impl.common.updater.UpdaterAggregatorCombiner;
 import org.deeplearning4j.spark.impl.common.updater.UpdaterElementCombiner;
+import org.deeplearning4j.spark.impl.multilayer.evaluation.EvaluateFlatMapFunction;
 import org.deeplearning4j.spark.impl.multilayer.gradientaccum.GradientAccumFlatMap;
 import org.deeplearning4j.spark.util.MLLibUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -57,6 +59,7 @@ import scala.Tuple2;
 import scala.Tuple3;
 
 import java.io.Serializable;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -410,5 +413,29 @@ public class SparkDl4jMultiLayer implements Serializable {
         for(Double d : scoresList) sum += d;
         if(average) return sum / n;
         return sum;
+    }
+
+    /**Evaluate the network (classification performance) in a distributed manner.
+     * @param data Data to evaluate on
+     * @param maxExamplesPerEvaluation Maximum number of examples to use during each evaluation step. If an executor has
+     *                                 more than maxExamplesPerEvaluation, it will split the data into multiple evaluation
+     *                                 steps. Results should not depend on this number (only affects memory requirements)
+     * @return Evaluation object; results of evaluation on all examples in the data set
+     */
+    public Evaluation evaluate(JavaRDD<DataSet> data, int maxExamplesPerEvaluation){
+
+        JavaRDD<Evaluation> evaluation = data.mapPartitions(
+                new EvaluateFlatMapFunction(conf.toJson(),sc.broadcast(network.params(false)),maxExamplesPerEvaluation));
+
+        //Evaluation objects are small, and merging is quick -> fine to do this locally
+        List<Evaluation> evaluationList = evaluation.collect();
+        Iterator<Evaluation> evaluationIterator = evaluationList.iterator();
+        Evaluation eval = evaluationIterator.next();
+
+        while(evaluationIterator.hasNext()){
+            eval.merge(evaluationIterator.next());
+        }
+
+        return eval;
     }
 }

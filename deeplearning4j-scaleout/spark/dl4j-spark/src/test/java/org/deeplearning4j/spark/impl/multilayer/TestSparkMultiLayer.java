@@ -27,6 +27,7 @@ import org.apache.spark.mllib.regression.LabeledPoint;
 import org.apache.spark.mllib.util.MLUtils;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -46,7 +47,9 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
@@ -216,9 +219,9 @@ public class TestSparkMultiLayer extends BaseSparkTest {
         DataSet dataSet = new IrisDataSetIterator(150,150).next();
         List<DataSet> list = dataSet.asList();
         JavaRDD<DataSet> data = sc.parallelize(list);
-        JavaRDD<LabeledPoint> mllLibData = MLLibUtil.fromDataSet(sc,data);
+        JavaRDD<LabeledPoint> mllLibData = MLLibUtil.fromDataSet(sc, data);
 
-        MultiLayerNetwork network = SparkDl4jMultiLayer.train(mllLibData,conf);
+        MultiLayerNetwork network = SparkDl4jMultiLayer.train(mllLibData, conf);
         INDArray params = network.params(true);
         File writeTo = new File(UUID.randomUUID().toString());
         Nd4j.writeTxt(params,writeTo.getAbsolutePath(),",");
@@ -228,15 +231,80 @@ public class TestSparkMultiLayer extends BaseSparkTest {
 
         String json = network.getLayerWiseConfigurations().toJson();
         MultiLayerConfiguration conf2 = MultiLayerConfiguration.fromJson(json);
-        assertEquals(conf,conf2);
+        assertEquals(conf, conf2);
 
         MultiLayerNetwork network3 = new MultiLayerNetwork(conf2);
         network3.init();
         network3.setParameters(params);
         INDArray params4 = network3.params(true);
-        assertEquals(params,params4);
+        assertEquals(params, params4);
 
 
     }
 
+
+    @Test
+    public void testEvaluation(){
+
+        int nIn = 4;
+        int nOut = 3;
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .list(2)
+                .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
+                        .nIn(nIn).nOut(3)
+                        .activation("tanh").build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .nIn(3).nOut(nOut)
+                        .activation("softmax")
+                        .build())
+                .build();
+
+        int nRows = 200;
+
+
+
+        Random r = new Random(12345);
+        INDArray labels = Nd4j.create(nRows,nOut);
+        INDArray input = Nd4j.rand(nRows,nIn);
+        INDArray rowSums = input.sum(1);
+        input.diviColumnVector(rowSums);
+
+        for( int i=0; i<nRows; i++ ){
+            int x1 = r.nextInt(nOut);
+            labels.putScalar(new int[]{i, x1}, 1.0);
+        }
+
+        SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc,conf);
+
+        MultiLayerNetwork netCopy = sparkNet.getNetwork().clone();
+
+        Evaluation evalExpected = new Evaluation();
+        INDArray outLocal = netCopy.output(input, Layer.TrainingMode.TEST);
+        evalExpected.eval(labels,outLocal);
+
+        List<DataSet> list = new ArrayList<>();
+        for( int i=0; i<nRows; i++ ){
+            INDArray inRow = input.getRow(i).dup();
+            INDArray outRow = labels.getRow(i).dup();
+
+            DataSet ds = new DataSet(inRow,outRow);
+            list.add(ds);
+        }
+
+        JavaRDD<DataSet> ds = sc.parallelize(list);
+
+        Evaluation evalActual = sparkNet.evaluate(ds,10);
+
+        assertEquals(evalExpected.accuracy(), evalActual.accuracy(), 1e-3);
+        assertEquals(evalExpected.f1(), evalActual.f1(), 1e-3);
+        assertEquals(evalExpected.getNumRowCounter(),evalActual.getNumRowCounter(), 1e-3);
+        assertEquals(evalExpected.falseNegatives(),evalActual.falseNegatives(),1e-3);
+        assertEquals(evalExpected.falsePositives(),evalActual.falsePositives(),1e-3);
+        assertEquals(evalExpected.trueNegatives(),evalActual.trueNegatives(),1e-3);
+        assertEquals(evalExpected.truePositives(),evalActual.truePositives(),1e-3);
+        assertEquals(evalExpected.precision(),evalActual.precision(),1e-3);
+        assertEquals(evalExpected.recall(),evalActual.recall(),1e-3);
+        assertEquals(evalExpected.getConfusionMatrix(), evalActual.getConfusionMatrix());
+    }
 }
