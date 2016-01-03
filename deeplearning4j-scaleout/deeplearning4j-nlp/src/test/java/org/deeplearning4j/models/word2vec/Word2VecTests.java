@@ -23,6 +23,7 @@ import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
+import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
@@ -132,6 +133,7 @@ public class Word2VecTests {
                 .seed(42)
                 .sampling(0)
                 .windowSize(5)
+                .modelUtils(new BasicModelUtils<VocabWord>())
                 .iterate(iter)
                 .tokenizerFactory(t)
                 .build();
@@ -156,6 +158,14 @@ public class Word2VecTests {
         assertTrue(lst.contains("year"));
 
         assertFalse(lst.contains(null));
+
+
+        lst = vec.wordsNearestSum("day", 10);
+        log.info(Arrays.toString(lst.toArray()));
+
+        assertTrue(lst.contains("week"));
+        assertTrue(lst.contains("night"));
+        assertTrue(lst.contains("year"));
 
         new File("cache.ser").delete();
     }

@@ -6,6 +6,8 @@ import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.learning.SequenceLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.learning.impl.sequence.DBOW;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
+import org.deeplearning4j.models.embeddings.reader.ModelUtils;
+import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
@@ -166,6 +168,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         protected VocabCache<T> vocabCache;
         protected WeightLookupTable<T> lookupTable;
         protected SequenceIterator<T> iterator;
+        protected ModelUtils<T> modelUtils = new BasicModelUtils<>();
 
         protected double sampling = 0;
         protected double negative = 0;
@@ -511,6 +514,18 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         }
 
         /**
+         * ModelUtils implementation, that will be used to access model.
+         * Methods like: similarity, wordsNearest, accuracy are provided by user-defined ModelUtils
+         *
+         * @param modelUtils model utils to be used
+         * @return
+         */
+        public Builder<T> modelUtils(@NonNull ModelUtils<T> modelUtils) {
+            this.modelUtils = modelUtils;
+            return this;
+        }
+
+        /**
          * This method creates new WeightLookupTable<T> and VocabCache<T> if there were none set
          */
         protected void presetTables() {
@@ -548,6 +563,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                     sequenceLearningAlgorithm = new DBOW<>();
                 }
             }
+
+            this.modelUtils.init(lookupTable);
         }
 
         /**
@@ -577,6 +594,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
             vectors.iterator = this.iterator;
             vectors.lookupTable = this.lookupTable;
+            vectors.modelUtils = this.modelUtils;
 
             vectors.elementsLearningAlgorithm = this.elementsLearningAlgorithm;
             vectors.sequenceLearningAlgorithm = this.sequenceLearningAlgorithm;

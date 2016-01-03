@@ -3,6 +3,7 @@ package org.deeplearning4j.models.word2vec;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import org.deeplearning4j.models.embeddings.reader.ModelUtils;
 import org.deeplearning4j.models.sequencevectors.SequenceVectors;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
@@ -332,6 +333,18 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             return this;
         }
 
+        /**
+         * Sets ModelUtils that gonna be used as provider for utility methods: similarity(), wordsNearest(), accuracy(), etc
+         *
+         * @param modelUtils model utils to be used
+         * @return
+         */
+        @Override
+        public Builder modelUtils(@NonNull ModelUtils<VocabWord> modelUtils) {
+            super.modelUtils(modelUtils);
+            return this;
+        }
+
         public Word2Vec build() {
             presetTables();
 
@@ -367,6 +380,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             ret.iterator = this.iterator;
             ret.lookupTable = this.lookupTable;
             ret.tokenizerFactory = this.tokenizerFactory;
+            ret.modelUtils = this.modelUtils;
 
             ret.elementsLearningAlgorithm = this.elementsLearningAlgorithm;
             ret.sequenceLearningAlgorithm = this.sequenceLearningAlgorithm;
