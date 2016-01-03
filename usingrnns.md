@@ -48,6 +48,7 @@ Truncated backpropagation through time (BPTT) was developed in order to reduce t
 
 
 Consider what happens when training a recurrent neural network with a time series of length 12 time steps. Here, we need to do a forward pass of 12 steps, calculate the error (based on predicted vs. actual), and do a backward pass of 12 time steps:
+
 ![Standard Backprop Training](../img/rnn_tbptt_1.png)
 
 For 12 time steps, in the image above, this is not a problem. Consider, however, that instead the input time series was 10,000 or more time steps. In this case, standard backpropagation through time would require 10,000 time steps for each of the forward and backward passes for each and every parameter update. This is of course very computationally demanding.
@@ -81,6 +82,7 @@ Some things of note:
 DL4J supports a number of related training features for RNNs, based on the idea of padding and masking. Padding and masking allows us to support training situations including one-to-many, many-to-one, as also support variable length time series (in the same mini-batch).
 
 Suppose we want to train a recurrent neural network with inputs or outputs that don't occur at every time step. Examples of this (for a single example) are shown in the image below. DL4J supports training networks for all of these situations:
+
 ![RNN Training Types](../img/rnn_masking_1.png)
 
 Without masking and padding, we are restricted to the many-to-one case (above, left): that is, (a) All examples are of the same length, and (b) Examples have both inputs and outputs at all time steps.
@@ -91,6 +93,7 @@ Of course, if this was all we did, it would cause problems during training. Thus
 Recall that with RNNs, our minibatch data has 3 dimensions, with shape [miniBatchSize,inputSize,timeSeriesLength] and [miniBatchSize,outputSize,timeSeriesLength] for the input and output respectively. The padding arrays are then 2 dimensional, with shape [miniBatchSize,timeSeriesLength] for both the input and output, with values of 0 ('absent') or 1 ('present') for each time series and example. The masking arrays for the input and output are stored in separate arrays.
 
 For a single example, the input and output masking arrays are shown below:
+
 ![RNN Training Types](../img/rnn_masking_2.png)
 
 For the “Masking not required” cases, we could equivalently use a masking array of all 1s, which will give the same result as not having a mask array at all. Also note that it is possible to use zero, one or two masking arrays when learning RNNs - for example, the many-to-one case could have a masking array for the output only.
@@ -143,9 +146,11 @@ For example, suppose we want to use a RNN to predict the weather, one hour in ad
 If we were to use the output method, at each hour we would need to feed in the full 100 hours of data to predict the weather for hour 101. Then to predict the weather for hour 102, we would need to feed in the full 100 (or 101) hours of data; and so on for hours 103+.
 
 Alternatively, we could use the rnnTimeStep method. Of course, if we want to use the full 100 hours of history before we make our first prediction, we still need to do the full forward pass:
+
 ![RNN Time Step](../img/rnn_timestep_1.png)
 
 For the first time we call rnnTimeStep, the only practical difference between the two approaches is that the activations/state of the last time step are stored - this is shown in orange. However, the next time we use the rnnTimeStep method, this stored state will be used to make the next predictions:
+
 ![RNN Time Step](../img/rnn_timestep_2.png)
 
 There are a number of important differences here:
@@ -195,6 +200,7 @@ To use the [SequenceRecordReaderDataSetIterator](https://github.com/deeplearning
 SequenceRecordReader featureReader = new CSVSequenceRecordReader(1, ",");
 SequenceRecordReader labelReader = new CSVSequenceRecordReader(1, ",");
 ```
+
 This particular constructor takes the number of lines to skip (1 row skipped here), and the delimiter (comma character used here).
 
 Second, we need to initialize these two readers, by telling them where to get the data from. We do this with an InputSplit object.
@@ -206,9 +212,11 @@ labelReader.initialize(new NumberedFileInputSplit(/path/to/data/myLabels_%d.csv"
 In this particular approach, the "%d" is replaced by the corresponding number, and the numbers 0 to 9 (both inclusive) are used.
 
 Finally, we can create our SequenceRecordReaderdataSetIterator:
+
 ```java
 DataSetIterator iter = new SequenceRecordReaderDataSetIterator(featureReader, labelReader, miniBatchSize, numPossibleLabels, regression);
 ```
+
 This DataSetIterator can then be passed to MultiLayerNetwork.fit() to train the network.
 
 
@@ -232,6 +240,7 @@ Following on from the last example, suppose that instead of a separate files for
 As of DL4J 0.4-rc3.8, this approach has the restriction of a single column for the output (either a class index, or a single real-valued regression output)
 
 In this case, we create and initialize a single reader. Again, we are skipping one header row, and specifying the format as comma delimited, and assuming our data files are named "myData_0.csv", ..., "myData_9.csv":
+
 ```java
 SequenceRecordReader reader = new CSVSequenceRecordReader(1, ",");
 reader.initialize(new NumberedFileInputSplit("/path/to/data/myData_%d.csv", 0, 9));
@@ -242,9 +251,11 @@ miniBatchSize and numPossibleLabels are the same as the previous example.
 Here, labelIndex specifies which column the labels are in. For example, if the labels are in the fifth column, use labelIndex = 4 (i.e., columns are indexed 0 to numColumns-1).
 
 For regression on a single output value, we use:
+
 ```java
 DataSetIterator iterRegression = new SequenceRecordReaderDataSetIterator(reader, miniBatchSize, -1, labelIndex, true);
 ```
+
 Again, the numPossibleLabels argument is not used for regression.
 
 
@@ -279,10 +290,13 @@ DataSetIterator variableLengthIter = new SequenceRecordReaderDataSetIterator(fea
 ```
 
 Alignment modes are relatively straightforward. They specify whether to pad the start or the end of the shorter time series. The diagram below shows how this works, along with the masking arrays (as discussed earlier in this document):
+
 ![Sequence Alignment](../img/rnn_seq_alignment.png)
+
 The one-to-many case (similar to the last case above, but with only one input) is done by using AlignmentMode.ALIGN_START.
 
 Note that in the case of training data that contains time series of different lengths, the labels and inputs will be aligned for each example individually, and then the shorter time series will be padded as required:
+
 ![Sequence Alignment](../img/rnn_seq_alignment_2.png)
 
 
@@ -300,7 +314,7 @@ For example of this approach in practice, see the the iterator for the [tex/char
 
 DL4J currently has three recurrent neural network examples:
 
-(a) A [character modelling example](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/rnn/GravesLSTMCharModellingExample.java), which generates Shakespearean prose, one character at a time
-(b) A [basic video frame classification example](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/video/VideoClassificationExample.java), that imports videos (.mp4 format) and classifies the shapes present in each frame
-(c) A [word2vec sequence classification example](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/word2vec/sentiment/Word2VecSentimentRNN.java) that uses pre-trained word vectors and a RNN to classify movie reviews as either positive or negative.
+* A [character modelling example](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/rnn/GravesLSTMCharModellingExample.java), which generates Shakespearean prose, one character at a time
+* A [basic video frame classification example](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/video/VideoClassificationExample.java), that imports videos (.mp4 format) and classifies the shapes present in each frame
+* A [word2vec sequence classification example](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/word2vec/sentiment/Word2VecSentimentRNN.java) that uses pre-trained word vectors and a RNN to classify movie reviews as either positive or negative.
 
