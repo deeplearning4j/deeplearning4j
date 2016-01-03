@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import org.deeplearning4j.berkeley.Counter;
+import org.deeplearning4j.models.embeddings.reader.ModelUtils;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
@@ -199,6 +200,18 @@ public class ParagraphVectors extends Word2Vec {
             return this;
         }
 
+        /**
+         * Sets ModelUtils that gonna be used as provider for utility methods: similarity(), wordsNearest(), accuracy(), etc
+         *
+         * @param modelUtils model utils to be used
+         * @return
+         */
+        @Override
+        public Builder modelUtils(@NonNull ModelUtils<VocabWord> modelUtils) {
+            super.modelUtils(modelUtils);
+            return this;
+        }
+
         @Override
         public ParagraphVectors build() {
             presetTables();
@@ -259,6 +272,7 @@ public class ParagraphVectors extends Word2Vec {
             ret.sequenceLearningAlgorithm = this.sequenceLearningAlgorithm;
 
             ret.lookupTable = this.lookupTable;
+            ret.modelUtils = this.modelUtils;
 
             this.configuration.setLearningRate(this.learningRate);
             this.configuration.setLayersSize(layerSize);
