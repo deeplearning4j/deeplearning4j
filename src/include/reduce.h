@@ -572,6 +572,8 @@ namespace functions {
 #endif
             ~ReduceFunction(){}
 
+
+
         };
 
 

@@ -15,6 +15,7 @@
 #include <helper_cuda.h>
 #include <math.h>
 #include <buffer.h>
+
 namespace nd4j {
     namespace array {
 
@@ -63,7 +64,10 @@ namespace nd4j {
             /**
              * Returns the length of this ndarray
              */
-            static	__device__ __host__
+            static
+#ifdef __CUDACC__
+            __device__ __host__
+#endif
 
             size_t length(NDArray<T> *arr);
 
@@ -72,8 +76,10 @@ namespace nd4j {
              * this ndarray
              * in bytes
              */
-            static __device__ __host__
-
+            static
+#ifdef __CUDACC__
+            __device__ __host__
+#endif
             size_t lengthInBytes(NDArray<T> *arr);
 
 
@@ -296,7 +302,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__
 #endif
-         NDArray<T> *
+        NDArray<T> *
 
         NDArrays<T>::createFromAndAllocateOnGpu(int rank, int *shape, int *stride, int offset, T defaultValue) {
             NDArray<T> * ret = createFrom(rank, shape, stride, offset, defaultValue);
@@ -407,7 +413,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__
 #endif
-         void NDArrays<T>::printArrHost(NDArray<T> *arr) {
+        void NDArrays<T>::printArrHost(NDArray<T> *arr) {
             for (int i = 0; i < length(arr); i++) {
                 printf("Arr[%d] is %f\n", i, arr->data[i]);
             }

@@ -47,10 +47,6 @@ namespace functions {
             virtual Op<T> * create(std::string name) = 0;
             virtual ~OpFactory() {}
         };
-
-
-
-
     }
 }
 

@@ -38,6 +38,22 @@ namespace functions {
 
 			}
 #endif
+
+
+            virtual void exec(T *dx,int xStride,T *result, int resultStride,T *extraParams,int n) {
+                if(xStride == 1 && resultStride == 1) {
+                    for(int i = 0; i < n; i++) {
+                        result[i] = op(dx[i],extraParams);
+                    }
+
+                }
+                else {
+                    for(int i = 0; i < n; i++) {
+                        result[i * resultStride] = op(dx[i * resultStride],extraParams);
+                    }
+                }
+
+            }
             virtual ~Transform() {}
 
         };

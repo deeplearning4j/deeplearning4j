@@ -22,32 +22,32 @@ namespace nd4j {
             int allocatedOnGpu;
             T *data;
             T *gData;
-            T one,two;
+            T one, two;
         public:
             void assign(T *val) {
                 data = val;
             }
-            T & operator=(T x) {
+
+            T &operator=(T x) {
                 one = x;
                 return x;
             }
+
             class Proxy {
                 Buffer<T> &a;
                 int idx;
             public:
-                Proxy(Buffer &a, int idx) : a(a), idx(idx) {}
-                T& operator= (T x) {
+                Proxy(Buffer &a, int idx) : a(a), idx(idx) { }
+
+                T &operator=(T x) {
                     a.two = x;
                     a.data[idx] = x;
                     return a.data[idx];
                 }
             };
 
-            Proxy operator[] (int index) { return Proxy(*this, index); }
+            Proxy operator[](int index) { return Proxy(*this, index); }
         };
-
-
-
 
 
 /**
@@ -143,7 +143,7 @@ namespace nd4j {
         __host__ __device__
 #endif
 
-        size_t bufferSize(Buffer <T> *buffer) {
+        size_t bufferSize(Buffer<T> *buffer) {
             return sizeof(T) * buffer->length;
         }
 
@@ -171,6 +171,7 @@ namespace nd4j {
             checkCudaErrors(cudaMemcpy(bufferRef->data, bufferRef->gData, bufferTotalSize, cudaMemcpyDeviceToHost));
         }
 #endif
+
 /**
  * Allocate buffer of the given
  * length on the cpu and gpu.
@@ -179,8 +180,8 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__
 #endif
-        void allocBuffer(Buffer <T> **buffer, int length) {
-            Buffer <T> *bufferRef = *buffer;
+        void allocBuffer(Buffer<T> **buffer, int length) {
+            Buffer<T> *bufferRef = *buffer;
             bufferRef->length = length;
             bufferRef->data = (T *) malloc(sizeof(T) * length);
 #ifdef __CUDACC__
@@ -198,8 +199,8 @@ namespace nd4j {
         __host__
 #endif
 
-        void freeBuffer(Buffer <T> **buffer) {
-            Buffer <T> *bufferRef = *buffer;
+        void freeBuffer(Buffer<T> **buffer) {
+            Buffer<T> *bufferRef = *buffer;
             delete[] bufferRef->data;
 #ifdef __CUDACC__
             if(bufferRef->allocatedOnGpu)
@@ -218,8 +219,8 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__
 #endif
-        Buffer<T> *createBuffer(T *data,int length) {
-            Buffer<T> *ret = (Buffer<T> * )
+        Buffer<T> *createBuffer(T *data, int length) {
+            Buffer<T> *ret = (Buffer<T> *)
                     malloc(sizeof(Buffer<T>));
             ret->data = data;
             ret->length = length;
@@ -233,18 +234,20 @@ namespace nd4j {
 #endif
             return ret;
         }
-
+    }
+}
 #ifdef __CUDACC__
-        template<typename T>
-        __host__ void printArr(Buffer <T> *buff) {
-            for (int i = 0; i < buff->length; i++) {
-                printf("Buffer[%d] was %f\n", i, buff->data[i]);
-            }
-        }
+template<typename T>
+__host__ void printArr(Buffer <T> *buff) {
+    for (int i = 0; i < buff->length; i++) {
+        printf("Buffer[%d] was %f\n", i, buff->data[i]);
+    }
+}
 
-    }
+}
+
 #endif
-    }
+
 
 
 #endif /* BUFFER_H_ */
