@@ -535,4 +535,26 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
     public ConfusionMatrix<Integer> getConfusionMatrix(){
         return confusion;
     }
+
+    /** Merge the other evaluation object into this one. The result is that this Evaluation instance contains the counts
+     * etc from both
+     * @param other Evaluation object to merge into this one.
+     */
+    public void merge(Evaluation other){
+        if(other == null) return;
+
+        truePositives.incrementAll(other.truePositives);
+        falsePositives.incrementAll(other.falsePositives);
+        trueNegatives.incrementAll(other.trueNegatives);
+        falseNegatives.incrementAll(other.falseNegatives);
+
+        if(confusion == null){
+            if(other.confusion != null) confusion = new ConfusionMatrix<>(other.confusion);
+        } else {
+            if (other.confusion != null) confusion.add(other.confusion);
+        }
+        numRowCounter += other.numRowCounter;
+        if(labelsList.isEmpty()) labelsList.addAll(other.labelsList);
+        if(labelsMap.isEmpty()) labelsMap.putAll(other.labelsMap);
+    }
 }
