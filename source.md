@@ -8,7 +8,7 @@ If you are not planning to contribute to Deeplearning4j as a committer, or don't
 
 On the other hand, our [Github repo is here](https://github.com/deeplearning4j/deeplearning4j/). Install [Github](http://nd4j.org/getstarted.html) for [Mac](https://mac.github.com/) or [Windows](https://windows.github.com/). Then 'git clone' the repository, and run this command for Maven:
 
-      mvn clean install -DskipTests -Dmaven.javadoc.skip=true
+      mvn clean install -DskipTests=true -Dmaven.javadoc.skip=true
 
 If you want to run Deeplearning4j examples after installing from trunk, you should *git clone* ND4J, Canova and Deeplearning4j, in that order, and then install all from source using Maven with this command:
 
