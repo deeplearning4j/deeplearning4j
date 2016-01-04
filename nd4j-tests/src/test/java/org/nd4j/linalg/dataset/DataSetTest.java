@@ -249,7 +249,6 @@ public class DataSetTest extends BaseNd4jTest {
 
     @Test
     public void testTimeSeriesMergeWithMasking(){
-        fail();
         //Test merging of time series with (a) different lengths, and (b) mask arrays in the input DataSets
 
         int numExamples = 10;

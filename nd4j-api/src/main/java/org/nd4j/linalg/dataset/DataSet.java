@@ -155,8 +155,8 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
             if( ds.getLabelsMaskArray() != null ) hasOutputMask = true;
         }
 
-        boolean needInputMask = hasInputMask | lengthsDiffer;
-        boolean needOutputMask = hasOutputMask | lengthsDiffer;
+        boolean needInputMask = hasInputMask || lengthsDiffer;
+        boolean needOutputMask = hasOutputMask || lengthsDiffer;
 
         int numExamples = totalExamples(data);
         int nIn = first.getFeatureMatrix().size(1);
@@ -201,11 +201,8 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
                                 .assign(inputMask);
                     } else {
                         //No input mask -> all feature values are present for entire length of the time series
-//                        featuresMask.get(NDArrayIndex.interval(rowCount, rowCount + nEx), NDArrayIndex.interval(0,thisLength))
-//                                .assign(1.0);
-                        INDArray subset = featuresMask.get(NDArrayIndex.interval(rowCount, rowCount + nEx), NDArrayIndex.interval(0,thisLength));
-                        subset.assign(1.0);
-                        System.out.println();
+                        featuresMask.get(NDArrayIndex.interval(rowCount, rowCount + nEx), NDArrayIndex.interval(0,thisLength))
+                                .assign(1.0);
                     }
                 }
 
