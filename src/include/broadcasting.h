@@ -12,7 +12,6 @@
 #include <shape.h>
 #include <op.h>
 #include <templatemath.h>
-#include <jni.h>
 
 namespace functions {
 	namespace broadcast {
@@ -362,6 +361,38 @@ namespace functions {
 			};
 		}
 
+
+        template <typename T>
+		class BroadcastOpFactory {
+        public:
+            BroadcastOpFactory() {}
+            Broadcast<T> * getOp(std::string name) {
+                if(name == "add_strided") {
+                    return new functions::broadcast::ops::Add<T>();
+
+                }
+                else if(name == "sub_strided") {
+                    return new functions::broadcast::ops::Subtract<T>();
+                }
+                else if(name == "mul_strided") {
+                    return new functions::broadcast::ops::Multiply<T>();
+                }
+                else if(name == "div_strided") {
+                    return new functions::broadcast::ops::Divide<T>();
+                }
+                else if(name == "rdiv_strided") {
+                    return new functions::broadcast::ops::ReverseDivide<T>();
+                }
+                else if(name == "rsub_strided") {
+                    return new functions::broadcast::ops::ReverseSubtract<T>();
+                }
+                else if(name == "copy_strided") {
+                    return new functions::broadcast::ops::Copy<T>();
+                }
+
+            }
+
+		};
 
 	}
 }

@@ -13,6 +13,6 @@ set(CMAKE_CXX_FLAGS "-Wall -O3 -std=c++11 -msse2 -ftree-vectorizer-verbose=2 -fa
 
 set(SOURCE_FILES
         src/array/shape.cc
-        main.cpp src/templatemath.cpp)
+        main.cpp src/templatemath.cpp src/tests/broadcaststests.h)
 
 add_executable(nativeoperations ${SOURCE_FILES})

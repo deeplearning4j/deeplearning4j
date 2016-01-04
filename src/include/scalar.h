@@ -545,6 +545,45 @@ namespace functions {
             };
         }
 
+
+        template <typename T>
+        class ScalarOpFactory {
+        public:
+            ScalarOpFactory() {}
+
+            ScalarTransform<T> * getOp(std::string) {
+                if(name == "add_scalar")
+                    return new functions::scalar::ops::Add<T>();
+                else if(name == "sub_scalar")
+                    return new functions::scalar::ops::Subtract<T>();
+                else if(name == "mul_scalar")
+                    return new functions::scalar::ops::Multiply<T>();
+                else if(name == "div_scalar")
+                    return new functions::scalar::ops::Divide<T>();
+                else if(name == "rdiv_scalar")
+                    return new functions::scalar::ops::ReverseDivide<T>();
+                else if(name == "rsub_scalar")
+                    return new functions::scalar::ops::ReverseSubtract<T>();
+                else if(name == "max_scalar")
+                    return new functions::scalar::ops::Max<T>();
+                else if(name == "lt_scalar")
+                    return new functions::scalar::ops::LessThan<T>();
+                else if(name == "gt_scalar")
+                    return new functions::scalar::ops::GreaterThan<T>();
+                else if(name == "eq_scalar")
+                    return new functions::scalar::ops::Equals<T>();
+                else if(name == "lessthanorequal_scalar")
+                    return new functions::scalar::ops::LessThanOrEqual<T>();
+                else if(name == "neq_scalar")
+                    return new functions::scalar::ops::NotEquals<T>();
+                else if(name == "min_scalar")
+                    return new functions::scalar::ops::Min<T>();
+                else if(name == "set_scalar")
+                    return new functions::scalar::ops::Set<T>();
+                return NULL;
+            }
+        };
+
     }
 }
 

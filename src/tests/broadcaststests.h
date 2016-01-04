@@ -1,21 +1,18 @@
 //
-// Created by agibsonccc on 1/3/16.
+// Created by agibsonccc on 1/4/16.
 //
 
-#ifndef NATIVEOPERATIONS_PAIRWISE_TRANSFORM_TESTS_H
-#define NATIVEOPERATIONS_PAIRWISE_TRANSFORM_TESTS_H
-
-#include <pairwise_transform.h>
+#ifndef NATIVEOPERATIONS_BROADCASTSTESTS_H
+#define NATIVEOPERATIONS_BROADCASTSTESTS_H
+#include <broadcasting.h>
 #include <CppUTest/TestHarness.h>
 #include <array.h>
 #include <shape.h>
 #include "testhelpers.h"
 
+static functions::pairwise_transforms::PairWiseTransformOpFactory<double> *opFactory3 = 0;
 
-
-static functions::pairwise_transforms::PairWiseTransformOpFactory<double> *opFactory2 = 0;
-
-TEST_GROUP(PairWiseTransform) {
+TEST_GROUP(BroadCasting) {
     static int output_method(const char* output, ...)
     {
         va_list arguments;
@@ -25,17 +22,17 @@ TEST_GROUP(PairWiseTransform) {
     }
     void setup()
     {
-        opFactory2 = new  functions::pairwise_transforms::PairWiseTransformOpFactory<double>();
+        opFactory3 = new  functions::pairwise_transforms::PairWiseTransformOpFactory<double>();
 
     }
     void teardown()
     {
-        delete opFactory2;
+        delete opFactory3;
     }
 };
 
 
-TEST(PairWiseTransform,Addition) {
+TEST(BroadCasting,Addition) {
     functions::pairwise_transforms::PairWiseTransform<double> *add = opFactory2->getOp("add_strided");
     int rank = 2;
     int *shape = (int *) malloc(sizeof(int) * rank);
@@ -44,6 +41,7 @@ TEST(PairWiseTransform,Addition) {
     int *stride = shape::calcStrides(shape,rank);
     nd4j::array::NDArray<double> *data = nd4j::array::NDArrays<double>::createFrom(rank,shape,stride,0,0.0);
     int length = nd4j::array::NDArrays<double>::length(data);
+
     double *extraParams = (double *) malloc(sizeof(double));
 
     add->exec(data->data->data,1,data->data->data,1,data->data->data,1,extraParams,length);
@@ -58,4 +56,6 @@ TEST(PairWiseTransform,Addition) {
 }
 
 
-#endif //NATIVEOPERATIONS_PAIRWISE_TRANSFORM_TESTS_H
+
+
+#endif //NATIVEOPERATIONS_BROADCASTSTESTS_H
