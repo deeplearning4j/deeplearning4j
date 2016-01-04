@@ -1,21 +1,21 @@
 //
-// Created by agibsonccc on 1/3/16.
+// Created by agibsonccc on 1/4/16.
 //
 
-#ifndef NATIVEOPERATIONS_PAIRWISE_TRANSFORM_TESTS_H
-#define NATIVEOPERATIONS_PAIRWISE_TRANSFORM_TESTS_H
-
-#include <pairwise_transform.h>
+#ifndef NATIVEOPERATIONS_SCALARTESTS_H
+#define NATIVEOPERATIONS_SCALARTESTS_H
+#include <transform.h>
 #include <CppUTest/TestHarness.h>
 #include <array.h>
 #include <shape.h>
+#include <scalar.h>
 #include "testhelpers.h"
 
 
 
-static functions::pairwise_transforms::PairWiseTransformOpFactory<double> *opFactory2 = 0;
+static functions::scalar::ScalarOpFactory<double> *opFactory4 = 0;
 
-TEST_GROUP(PairWiseTransform) {
+TEST_GROUP(ScalarTransform) {
     static int output_method(const char* output, ...)
     {
         va_list arguments;
@@ -25,18 +25,20 @@ TEST_GROUP(PairWiseTransform) {
     }
     void setup()
     {
-        opFactory2 = new  functions::pairwise_transforms::PairWiseTransformOpFactory<double>();
+        opFactory4 = new  functions::scalar::ScalarOpFactory<double>();
+
+
 
     }
     void teardown()
     {
-        delete opFactory2;
+        delete opFactory4;
     }
 };
 
 
-TEST(PairWiseTransform,Addition) {
-    functions::pairwise_transforms::PairWiseTransform<double> *add = opFactory2->getOp("add_strided");
+TEST(ScalarTransform,ScalarAdd) {
+    functions::scalar::ScalarTransform<double> *add = opFactory4->getOp("add_scalar");
     int rank = 2;
     int *shape = (int *) malloc(sizeof(int) * rank);
     shape[0] = 2;
@@ -47,9 +49,10 @@ TEST(PairWiseTransform,Addition) {
     for(int i = 0; i < length; i++)
         data->data->data[i] = i + 1;
     double *extraParams = (double *) malloc(sizeof(double));
+    add->transform(data->data->data,1,data->data->data,1,1.0,extraParams,length);
 
-    add->exec(data->data->data,1,data->data->data,1,data->data->data,1,extraParams,length);
-    double comparison[4] = {2,4,6,8};
+
+    double comparison[4] = {2,3,4,5};
     CHECK(arrsEquals(rank,comparison,data->data->data));
     free(data);
     free(extraParams);
@@ -59,5 +62,4 @@ TEST(PairWiseTransform,Addition) {
 
 }
 
-
-#endif //NATIVEOPERATIONS_PAIRWISE_TRANSFORM_TESTS_H
+#endif //NATIVEOPERATIONS_SCALARTESTS_H

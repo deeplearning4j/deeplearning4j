@@ -551,7 +551,7 @@ namespace functions {
         public:
             ScalarOpFactory() {}
 
-            ScalarTransform<T> * getOp(std::string) {
+            ScalarTransform<T> * getOp(std::string name) {
                 if(name == "add_scalar")
                     return new functions::scalar::ops::Add<T>();
                 else if(name == "sub_scalar")
