@@ -33,7 +33,7 @@ TEST_GROUP(Transform) {
     }
     void teardown()
     {
-        free(opFactory);
+       delete opFactory;
     }
 };
 
@@ -46,21 +46,25 @@ TEST(Transform,Log) {
     nd4j::array::NDArray<double> *data = nd4j::array::NDArrays<double>::createFrom(rank,shape,stride,0,0.0);
     int length = nd4j::array::NDArrays<double>::length(data);
     for(int i = 0; i < length; i++) {
-        data->data[i] = i + 1;
+        data->data->data[i] = i + 1;
+        printf("Data[%d] is now %f\n",i,data->data->data[i]);
     }
 
+    double *extraParams = (double *) malloc(sizeof(double));
+
     functions::transform::Transform<double> *log = opFactory->getOp("log_strided");
-    log->exec(data->data->data,1,data->data->data,1,0,1);
+    log->exec(data->data->data,1,data->data->data,1,extraParams,length);
+    for(int i = 0; i < length; i++) {
+        printf("Data[%d] was %f\n",i,data->data->data[i]);
+    }
+
     double comparison[4] = {0.,0.69314718,1.09861229,1.38629436};
     CHECK(arrsEquals(rank,comparison,data->data->data));
-    nd4j::array::NDArrays<double>::freeNDArrayOnGpuAndCpu(&data);
+    free(data);
+    free(extraParams);
     free(shape);
     free(stride);
-
-
-
-
-
+    delete log;
 
 }
 
