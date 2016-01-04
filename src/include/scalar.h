@@ -27,7 +27,7 @@ namespace functions {
 #ifdef __CUDACC__
             __host__ __device__
 #endif
-           __inline__ T op(T	d1,	T d2, T	*params) = 0;
+            T op(T	d1,	T d2, T	*params) = 0;
 
 #ifdef __CUDACC__
             /**
@@ -88,7 +88,7 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __inline__ T op(T	d1,	T d2, T	*params) {
+                inline T op(T	d1,	T d2, T	*params) {
                     return d1 + d2;
                 }
                 /** Name of the op
@@ -119,7 +119,7 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __inline__ T op(T	d1,	T d2, T	*params) {
+                inline T op(T	d1,	T d2, T	*params) {
                     return d1 / d2;
                 }
                 /** Name of the op
@@ -150,7 +150,7 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __inline__ T op(T	d1,	T d2, T	*params) {
+                inline T op(T	d1,	T d2, T	*params) {
                     return d1 == d2;
                 }
                 /** Name of the op
@@ -181,7 +181,7 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __inline__  T op(T	d1,	T d2, T	*params) {
+                inline  T op(T	d1,	T d2, T	*params) {
                     return d1 > d2;
                 }
                 /** Name of the op
@@ -212,7 +212,7 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __inline__  T op(T	d1,	T d2, T	*params) {
+                inline  T op(T	d1,	T d2, T	*params) {
                     return d1 < d2;
                 }
                 /** Name of the op
@@ -243,7 +243,7 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __inline__  T op(T	d1,	T d2, T	*params) {
+                inline  T op(T	d1,	T d2, T	*params) {
                     return d1 <= d2;
                 }
                 /** Name of the op
@@ -274,7 +274,7 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __inline__  T op(T	d1,	T d2, T	*params) {
+                inline  T op(T	d1,	T d2, T	*params) {
                     return nd4j::math::nd4j_max<T>(d1,d2);
                 }
                 /** Name of the op
@@ -305,7 +305,7 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __inline__ T op(T	d1,	T d2, T	*params) {
+                inline T op(T	d1,	T d2, T	*params) {
                     return nd4j::math::nd4j_min<T>(d1,d2);
                 }
                 /** Name of the op
@@ -336,7 +336,7 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __inline__  T op(T	d1,	T d2, T	*params) {
+                inline  T op(T	d1,	T d2, T	*params) {
                     return d1 * d2;
                 }
                 /** Name of the op
@@ -367,7 +367,7 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __inline__  T op(T	d1,	T d2, T	*params) {
+                inline  T op(T	d1,	T d2, T	*params) {
                     return d1 != d2;
                 }
                 /** Name of the op
@@ -398,7 +398,7 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __inline__  T op(T	d1,	T d2, T	*params) {
+                inline  T op(T	d1,	T d2, T	*params) {
                     return d2 / d1;
                 }
                 /** Name of the op
@@ -429,7 +429,7 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __inline__  T op(T	d1,	T d2, T	*params) {
+                inline  T op(T	d1,	T d2, T	*params) {
                     return d2 - d1;
                 }
                 /** Name of the op
@@ -460,7 +460,7 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __inline__   T op(T	d1,	T d2, T	*params) {
+                inline   T op(T	d1,	T d2, T	*params) {
                     return d2;
                 }
                 /** Name of the op
@@ -491,7 +491,7 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __inline__  T op(T	d1,	T d2, T	*params) {
+                inline  T op(T	d1,	T d2, T	*params) {
                     return d1 - d2;
                 }
                 /** Name of the op
@@ -523,7 +523,7 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __inline__  T op(T	d1,	T d2, T	*params) {
+                inline  T op(T	d1,	T d2, T	*params) {
                     if(d2 < d1) {
                         return d1;
                     }
