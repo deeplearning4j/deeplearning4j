@@ -12,7 +12,7 @@
 #include <shape.h>
 #include <op.h>
 #include <templatemath.h>
-
+#include <jni.h>
 
 namespace functions {
 	namespace broadcast {
@@ -366,8 +366,6 @@ namespace functions {
 	}
 }
 
-template<typename T>
-inline functions::broadcast::Broadcast<T>::~Broadcast() {
-}
+
 
 #endif /* BROADCASTING_H_ */

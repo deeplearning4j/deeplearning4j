@@ -14,13 +14,14 @@ namespace functions {
 #define MIN 1e-12
 
         template<typename T>
-        class PairWiseTransform : public virtual functions::ops::Op<T>{
+        class PairWiseTransform : public virtual functions::ops::Op<T> {
 
             virtual
 #ifdef __CUDACC__
             __host__ __device__
 #endif
-            T op(T d1,T d2, T *params) = 0;
+            T op(T d1, T d2, T *params) = 0;
+
             virtual
 #ifdef __CUDACC__
             __host__ __device__
@@ -29,70 +30,71 @@ namespace functions {
 
 #ifdef __CUDACC__
             /**
-	 *
-	 * @param n
-	 * @param xOffset
-	 * @param yOffset
-	 * @param resultOffset
-	 * @param dx
-	 * @param dy
-	 * @param incx
-	 * @param incy
-	 * @param params
-	 * @param result
-	 * @param incz
-	 * @param blockSize
-	 */
-	virtual __device__ void transform(
-			int n,
-			int xOffset,
-			int yOffset,
-			int resultOffset,
-			T *dx,
-			T *dy,
-			int incx,
-			int incy,
-			T *params,
-			T *result, int incz, int blockSize) {
+     *
+     * @param n
+     * @param xOffset
+     * @param yOffset
+     * @param resultOffset
+     * @param dx
+     * @param dy
+     * @param incx
+     * @param incy
+     * @param params
+     * @param result
+     * @param incz
+     * @param blockSize
+     */
+    virtual __device__ void transform(
+            int n,
+            int xOffset,
+            int yOffset,
+            int resultOffset,
+            T *dx,
+            T *dy,
+            int incx,
+            int incy,
+            T *params,
+            T *result, int incz, int blockSize) {
 
-		int totalThreads = gridDim.x * blockDim.x;
-		int tid = threadIdx.x;
-		int i = blockIdx.x * blockDim.x + tid;
+        int totalThreads = gridDim.x * blockDim.x;
+        int tid = threadIdx.x;
+        int i = blockIdx.x * blockDim.x + tid;
 
-		if (incy == 0) {
-			if ((blockIdx.x == 0) && (tid == 0)) {
-				for (; i < n; i++) {
-					result[resultOffset + i * incz] = op(dx[xOffset + i * incx], params);
-				}
+        if (incy == 0) {
+            if ((blockIdx.x == 0) && (tid == 0)) {
+                for (; i < n; i++) {
+                    result[resultOffset + i * incz] = op(dx[xOffset + i * incx], params);
+                }
 
-			}
-		} else if ((incx == incy) && (incx > 0)) {
-			/* equal, positive, increments */
-			if (incx == 1) {
-				/* both increments equal to 1 */
-				for (; i < n; i += totalThreads) {
-					result[resultOffset + i * incz] = op(dx[xOffset + i * incx], dy[yOffset + i * incy],
-							params);
-				}
-			} else {
-				/* equal, positive, non-unit increments. */
-				for (; i < n; i += totalThreads) {
-					result[resultOffset + i * incz] = op(dx[xOffset + i * incx], dy[yOffset + i * incy],
-							params);
-				}
-			}
-		} else {
-			/* unequal or nonpositive increments */
-			for (; i < n; i += totalThreads) {
-				result[resultOffset + i * incz] = op(dx[xOffset + i * incx], dy[yOffset + i * incy],
-						params);
-			}
-		}
-	}
+            }
+        } else if ((incx == incy) && (incx > 0)) {
+            /* equal, positive, increments */
+            if (incx == 1) {
+                /* both increments equal to 1 */
+                for (; i < n; i += totalThreads) {
+                    result[resultOffset + i * incz] = op(dx[xOffset + i * incx], dy[yOffset + i * incy],
+                            params);
+                }
+            } else {
+                /* equal, positive, non-unit increments. */
+                for (; i < n; i += totalThreads) {
+                    result[resultOffset + i * incz] = op(dx[xOffset + i * incx], dy[yOffset + i * incy],
+                            params);
+                }
+            }
+        } else {
+            /* unequal or nonpositive increments */
+            for (; i < n; i += totalThreads) {
+                result[resultOffset + i * incz] = op(dx[xOffset + i * incx], dy[yOffset + i * incy],
+                        params);
+            }
+        }
+    }
 
 #endif
-
-            virtual void exec(T *dx,int xStride,T *y,int yStride,T *result, int resultStride,T *extraParams,int n) {
+        public:
+            virtual void exec(T *dx, int xStride, T *y, int yStride, T *result, int resultStride, T *extraParams,
+                              int n) {
                 if (xStride == 1 && yStride == 1 && resultStride == 1) {
                     for (int i = 0; i < n; i++) {
                         result[i] = op(dx[i], y[i], extraParams);
@@ -105,12 +107,13 @@ namespace functions {
                     }
                 }
             }
-            virtual ~PairWiseTransform() {}
+
+            virtual ~PairWiseTransform() { }
 
         };
 
         namespace ops {
-            template <typename T>
+            template<typename T>
             class Add : public virtual PairWiseTransform<T> {
 
                 /**
@@ -131,9 +134,10 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                T op(T d1,T d2, T *params)  {
+                T op(T d1, T d2, T *params) {
                     return d1 + d2;
                 }
+
                 virtual
 #ifdef __CUDACC__
                 __host__ __device__
@@ -142,10 +146,10 @@ namespace functions {
                     return d1;
                 }
 
-                virtual ~Add() {}
+                virtual ~Add() { }
             };
 
-            template <typename T>
+            template<typename T>
             class Copy : public virtual PairWiseTransform<T> {
 
                 /**
@@ -165,9 +169,10 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                T op(T d1,T d2, T *params)  {
+                T op(T d1, T d2, T *params) {
                     return d2;
                 }
+
                 virtual
 #ifdef __CUDACC__
                 __host__ __device__
@@ -176,10 +181,10 @@ namespace functions {
                     return d1;
                 }
 
-                virtual ~Copy() {}
+                virtual ~Copy() { }
             };
 
-            template <typename T>
+            template<typename T>
             class Divide : public virtual PairWiseTransform<T> {
 
                 /**
@@ -201,9 +206,10 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                T op(T d1,T d2, T *params)  {
+                T op(T d1, T d2, T *params) {
                     return d1 / d2;
                 }
+
                 virtual
 #ifdef __CUDACC__
                 __host__ __device__
@@ -212,10 +218,10 @@ namespace functions {
                     return d1;
                 }
 
-                virtual ~Divide() {}
+                virtual ~Divide() { }
             };
 
-            template <typename T>
+            template<typename T>
             class Epsilon : public virtual PairWiseTransform<T> {
 
                 /**
@@ -236,13 +242,14 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                T op(T d1,T d2, T *params)  {
+                T op(T d1, T d2, T *params) {
                     T diff = d1 - d2;
                     T absDiff = abs(diff);
-                    if(absDiff < MIN)
+                    if (absDiff < MIN)
                         return 1;
                     return 0;
                 }
+
                 virtual
 #ifdef __CUDACC__
                 __host__ __device__
@@ -251,10 +258,10 @@ namespace functions {
                     return d1;
                 }
 
-                virtual ~Epsilon() {}
+                virtual ~Epsilon() { }
             };
 
-            template <typename T>
+            template<typename T>
             class EqualTo : public virtual PairWiseTransform<T> {
 
                 /**
@@ -275,9 +282,10 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                T op(T d1,T d2, T *params)  {
+                T op(T d1, T d2, T *params) {
                     return d1 != d2;
                 }
+
                 virtual
 #ifdef __CUDACC__
                 __host__ __device__
@@ -286,10 +294,10 @@ namespace functions {
                     return d1;
                 }
 
-                virtual ~EqualTo() {}
+                virtual ~EqualTo() { }
             };
 
-            template <typename T>
+            template<typename T>
             class GreaterThan : public virtual PairWiseTransform<T> {
 
                 /**
@@ -310,9 +318,10 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                T op(T d1,T d2, T *params)  {
+                T op(T d1, T d2, T *params) {
                     return d1 > d2;
                 }
+
                 virtual
 #ifdef __CUDACC__
                 __host__ __device__
@@ -321,11 +330,11 @@ namespace functions {
                     return d1;
                 }
 
-                virtual ~GreaterThan() {}
+                virtual ~GreaterThan() { }
             };
 
-            template <typename T>
-            class LessThan: public virtual PairWiseTransform<T> {
+            template<typename T>
+            class LessThan : public virtual PairWiseTransform<T> {
 
                 /**
                  * Name of the op
@@ -345,9 +354,10 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                T op(T d1,T d2, T *params)  {
+                T op(T d1, T d2, T *params) {
                     return d1 < d2;
                 }
+
                 virtual
 #ifdef __CUDACC__
                 __host__ __device__
@@ -356,11 +366,11 @@ namespace functions {
                     return d1;
                 }
 
-                virtual ~LessThan() {}
+                virtual ~LessThan() { }
             };
 
 
-            template <typename T>
+            template<typename T>
             class Multiply : public virtual PairWiseTransform<T> {
 
                 /**
@@ -381,9 +391,10 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                T op(T d1,T d2, T *params)  {
+                T op(T d1, T d2, T *params) {
                     return d1 * d2;
                 }
+
                 virtual
 #ifdef __CUDACC__
                 __host__ __device__
@@ -392,10 +403,10 @@ namespace functions {
                     return d1;
                 }
 
-                virtual ~Multiply() {}
+                virtual ~Multiply() { }
             };
 
-            template <typename T>
+            template<typename T>
             class ReverseDivide : public virtual PairWiseTransform<T> {
 
                 /**
@@ -416,9 +427,10 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                T op(T d1,T d2, T *params)  {
+                T op(T d1, T d2, T *params) {
                     return d2 / d1;
                 }
+
                 virtual
 #ifdef __CUDACC__
                 __host__ __device__
@@ -427,10 +439,10 @@ namespace functions {
                     return d1;
                 }
 
-                virtual ~ReverseDivide() {}
+                virtual ~ReverseDivide() { }
             };
 
-            template <typename T>
+            template<typename T>
             class ReverseSubtraction : public virtual PairWiseTransform<T> {
 
                 /**
@@ -451,18 +463,19 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                T op(T d1,T d2, T *params)  {
+                T op(T d1, T d2, T *params) {
                     return d2 - d2;
                 }
+
                 virtual
                 T op(T d1, T *params) {
                     return d1;
                 }
 
-                virtual ~ReverseSubtraction() {}
+                virtual ~ReverseSubtraction() { }
             };
 
-            template <typename T>
+            template<typename T>
             class Subtract : public virtual PairWiseTransform<T> {
 
                 /**
@@ -483,9 +496,10 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                T op(T d1,T d2, T *params)  {
+                T op(T d1, T d2, T *params) {
                     return d1 - d2;
                 }
+
                 virtual
 #ifdef __CUDACC__
                 __host__ __device__
@@ -494,10 +508,10 @@ namespace functions {
                     return d1;
                 }
 
-                virtual ~Subtract() {}
+                virtual ~Subtract() { }
             };
 
-            template <typename T>
+            template<typename T>
             class Softmax : public virtual PairWiseTransform<T> {
 
                 /**
@@ -518,9 +532,10 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                T op(T d1,T d2, T *params)  {
+                T op(T d1, T d2, T *params) {
                     return d1 / d2;
                 }
+
                 virtual
 #ifdef __CUDACC__
                 __host__ __device__
@@ -529,9 +544,34 @@ namespace functions {
                     return d1;
                 }
 
-                virtual ~Softmax() {}
+                virtual ~Softmax() { }
             };
         }
+
+        template<typename T>
+        class PairWiseTransformOpFactory {
+        public:
+            PairWiseTransformOpFactory() {
+            }
+
+            PairWiseTransform<T> *getOp(std::string name) {
+                if (name == "add_strided") return new pairwise_transforms::ops::Add<T>();
+                if (name == "copy_strided") return new pairwise_transforms::ops::Copy<T>();
+                if (name == "div_strided") return new pairwise_transforms::ops::Divide<T>();
+                if (name == "eps_strided") return new pairwise_transforms::ops::Epsilon<T>();
+                if (name == "eq_strided") return new pairwise_transforms::ops::EqualTo<T>();
+                if (name == "gt_strided") return new pairwise_transforms::ops::GreaterThan<T>();
+                if (name == "lt_strided") return new pairwise_transforms::ops::LessThan<T>();
+                if (name == "mul_strided") return new pairwise_transforms::ops::Multiply<T>();
+                if (name == "div_strided") return new pairwise_transforms::ops::Divide<T>();
+                if (name == "rdiv_strided") return new pairwise_transforms::ops::ReverseDivide<T>();
+                if (name == "rsub_strided") return new pairwise_transforms::ops::ReverseSubtraction<T>();
+                if (name == "sub_strided") return new pairwise_transforms::ops::Subtract<T>();
+                return NULL;
+            }
+
+
+        };
     }
 }
 

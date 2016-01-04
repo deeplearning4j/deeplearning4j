@@ -29,12 +29,13 @@
 //#include <reducetests.h>
 #include <shapetests.h>
 #include <transformtests.h>
+#include <pairwise_transform_tests.h>
 int main(int ac, char** av) {
     return CommandLineTestRunner::RunAllTests(ac, av);
 }
 
 
-//IMPORT_TEST_GROUP(Mean);
+IMPORT_TEST_GROUP(PairWiseTransform);
 IMPORT_TEST_GROUP(Shape);
 IMPORT_TEST_GROUP(Transform);
 //IMPORT_TEST_GROUP(Buffer);
