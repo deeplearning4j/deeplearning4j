@@ -19,9 +19,12 @@
 package org.deeplearning4j.models.paragraphvectors;
 
 
+import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
+import org.deeplearning4j.text.documentiterator.FileLabelAwareIterator;
+import org.deeplearning4j.text.documentiterator.LabelAwareIterator;
 import org.deeplearning4j.text.documentiterator.LabelsSource;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.LineSentenceIterator;
@@ -321,11 +324,71 @@ public class ParagraphVectorsTest {
         assertTrue(similarityX < 0.5d);
     }
 
+
+    @Test
+    public void testParagraphVectorsReducedLabels1() throws Exception {
+        ClassPathResource resource = new ClassPathResource("/labeled");
+        File file = resource.getFile();
+
+        LabelAwareIterator iter = new FileLabelAwareIterator.Builder()
+                .addSourceFolder(file)
+                .build();
+
+        TokenizerFactory t = new DefaultTokenizerFactory();
+
+        /**
+         * Please note: text corpus is REALLY small, and some kind of "results" could be received with HIGH epochs number, like 30.
+         * But there's no reason to keep at that high
+         */
+
+        ParagraphVectors vec = new ParagraphVectors.Builder()
+                .minWordFrequency(1)
+                .epochs(3)
+                .layerSize(100)
+                .stopWords(new ArrayList<String>())
+                .windowSize(5)
+                .iterate(iter)
+                .tokenizerFactory(t)
+                .build();
+
+        vec.fit();
+
+        //WordVectorSerializer.writeWordVectors(vec, "vectors.txt");
+
+        INDArray w1 = vec.lookupTable().vector("I");
+        INDArray w2 = vec.lookupTable().vector("am");
+        INDArray w3 = vec.lookupTable().vector("sad.");
+
+        INDArray words = Nd4j.create(3, vec.lookupTable().layerSize());
+
+        words.putRow(0, w1);
+        words.putRow(1, w2);
+        words.putRow(2, w3);
+
+
+        INDArray mean = words.isMatrix() ? words.mean(0) : words;
+
+        log.info("Mean" + Arrays.toString(mean.dup().data().asDouble()));
+        log.info("Array" + Arrays.toString(vec.lookupTable().vector("negative").dup().data().asDouble()));
+
+        double simN = Transforms.cosineSim(mean, vec.lookupTable().vector("negative"));
+        log.info("Similarity negative: " + simN);
+
+
+        double simP = Transforms.cosineSim(mean, vec.lookupTable().vector("neutral"));
+        log.info("Similarity neutral: " + simP);
+
+        double simV = Transforms.cosineSim(mean, vec.lookupTable().vector("positive"));
+        log.info("Similarity positive: " + simV);
+    }
+
+
     /*
         In this test we'll build w2v model, and will use it's vocab and weights for ParagraphVectors.
         IS NOT READY YET
     */
     @Test
+    @Ignore
     public void testParagraphVectorsOverExistingWordVectorsModel() throws Exception {
         /*
         ClassPathResource resource = new ClassPathResource("/big/raw_sentences.txt");
