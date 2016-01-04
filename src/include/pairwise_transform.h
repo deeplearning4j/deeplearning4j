@@ -97,7 +97,6 @@ namespace functions {
                               int n) {
                 if (xStride == 1 && yStride == 1 && resultStride == 1) {
 #pragma omp simd
-#pragma omp parallel for
                     for (int i = 0; i < n; i++) {
                         result[i] = op(dx[i], y[i], extraParams);
                     }
@@ -105,7 +104,6 @@ namespace functions {
                 }
                 else {
 #pragma omp simd
-#pragma omp parallel for
                     for (int i = 0; i < n; i++) {
                         result[i * resultStride] = op(dx[i * resultStride], y[i * yStride], extraParams);
                     }

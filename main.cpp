@@ -30,13 +30,13 @@
 #include <shapetests.h>
 #include <transformtests.h>
 #include <pairwise_transform_tests.h>
-//#include <broadcaststests.h>
+#include <broadcaststests.h>
 #include <scalartests.h>
 int main(int ac, char** av) {
     return CommandLineTestRunner::RunAllTests(ac, av);
 }
 
-
+IMPORT_TEST_GROUP(BroadCasting);
 IMPORT_TEST_GROUP(PairWiseTransform);
 IMPORT_TEST_GROUP(Shape);
 IMPORT_TEST_GROUP(Transform);

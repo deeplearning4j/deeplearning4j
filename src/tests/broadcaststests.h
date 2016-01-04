@@ -10,7 +10,7 @@
 #include <shape.h>
 #include "testhelpers.h"
 
-static functions::pairwise_transforms::PairWiseTransformOpFactory<double> *opFactory3 = 0;
+static functions::broadcast::BroadcastOpFactory<double> *opFactory3 = 0;
 
 TEST_GROUP(BroadCasting) {
     static int output_method(const char* output, ...)
@@ -22,7 +22,7 @@ TEST_GROUP(BroadCasting) {
     }
     void setup()
     {
-        opFactory3 = new  functions::pairwise_transforms::PairWiseTransformOpFactory<double>();
+        opFactory3 = new  functions::broadcast::BroadcastOpFactory<double>();
 
     }
     void teardown()
@@ -33,24 +33,61 @@ TEST_GROUP(BroadCasting) {
 
 
 TEST(BroadCasting,Addition) {
-    functions::pairwise_transforms::PairWiseTransform<double> *add = opFactory2->getOp("add_strided");
+    functions::broadcast::Broadcast<double> *add = opFactory3->getOp("add_strided");
     int rank = 2;
     int *shape = (int *) malloc(sizeof(int) * rank);
     shape[0] = 2;
     shape[1] = 2;
     int *stride = shape::calcStrides(shape,rank);
     nd4j::array::NDArray<double> *data = nd4j::array::NDArrays<double>::createFrom(rank,shape,stride,0,0.0);
+    shape::ShapeInformation *shapeInformation = nd4j::array::NDArrays<double>::shapeInfoForArray(data);
+    int *shapeInfoBuffer = shape::toShapeBuffer(shapeInformation);
     int length = nd4j::array::NDArrays<double>::length(data);
+    for(int i = 0; i < length; i++)
+        data->data->data[i] = i + 1;
+
+    int *vectorShape = (int *) malloc(rank * sizeof(int));
+    vectorShape[0] = 1;
+    vectorShape[1] = 2;
+    int *vectorStride = shape::calcStrides(vectorShape,rank);
+    nd4j::array::NDArray<double> *vector = nd4j::array::NDArrays<double>::createFrom(rank,vectorShape,vectorStride,0,0.0);
+    for(int i = 0; i < 2; i++)
+        vector->data->data[i] = i + 1;
+    shape::ShapeInformation *vectorShapeInformation = nd4j::array::NDArrays<double>::shapeInfoForArray(vector);
+    int *vectorShapeInfoBuff = shape::toShapeBuffer(vectorShapeInformation);
+
+    int dimensionLength = 1;
+    int *dimension = (int *) malloc(sizeof(int));
+    dimension[0] = 1;
 
     double *extraParams = (double *) malloc(sizeof(double));
 
-    add->exec(data->data->data,1,data->data->data,1,data->data->data,1,extraParams,length);
-    double comparison[4] = {2,4,6,8};
+    add->exec(data->data->data,
+            shapeInfoBuffer,
+            vector->data->data,
+            vectorShapeInfoBuff,
+            data->data->data,
+            shapeInfoBuffer,
+            dimension,
+            dimensionLength);
+
+
+    double comparison[4] = {2,4,5,6};
     CHECK(arrsEquals(rank,comparison,data->data->data));
     free(data);
     free(extraParams);
     free(shape);
     free(stride);
+    free(shapeInformation);
+    free(shapeInfoBuffer);
+
+    free(vector);
+    free(vectorShape);
+    free(vectorStride);
+    free(vectorShapeInformation);
+    free(vectorShapeInfoBuff);
+
+    free(dimension);
     delete add;
 
 }

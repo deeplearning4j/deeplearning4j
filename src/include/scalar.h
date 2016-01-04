@@ -23,7 +23,7 @@ namespace functions {
              * @param params
              * @return
              */
-            virtual
+            virtual __always_inline
 #ifdef __CUDACC__
             __host__ __device__
 #endif
@@ -57,7 +57,7 @@ namespace functions {
             virtual void transform(T *x,int xStride,T *result,int resultStride,T scalar,T *extraParams,int n) {
                 if(xStride == 1 && resultStride == 1) {
 #pragma omp simd
-#pragma omp parallel for
+
                     for(int i = 0; i < n; i++) {
                         result[i] = op(x[i],scalar,extraParams);
                     }
@@ -65,7 +65,6 @@ namespace functions {
                 }
                 else {
 #pragma omp simd
-#pragma omp parallel for
                     for(int i = 0; i < n; i++) {
                         result[i * resultStride] = op(x[i * resultStride],scalar,extraParams);
                     }

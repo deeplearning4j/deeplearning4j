@@ -385,6 +385,8 @@ namespace nd4j {
             info->shape = arr->shape;
             info->stride = arr->stride;
             info->rank = arr->rank;
+            int elementWiseStride = shape::computeElementWiseStride(arr->rank,arr->shape,arr->stride,arr->ordering == 'c');
+            info->elementWiseStride = elementWiseStride;
             return info;
         }
 

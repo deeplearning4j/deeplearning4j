@@ -23,26 +23,27 @@ namespace shape {
  * @return the strides for a matrix of n dimensions
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
-	int * calcStridesFortran(int *shape, int rank,int startNum) {
-		if(isVector(shape,rank)) {
-			int *ret = (int *) malloc(sizeof(int) * 2);
-			memset(ret,2 * sizeof(int),startNum);
-			return ret;
+    int * calcStridesFortran(int *shape, int rank,int startNum) {
+        if(isVector(shape,rank)) {
+            int *ret = (int *) malloc(sizeof(int) * 2);
+            for(int i = 0; i < 2; i++)
+                ret[i] = 1;
+            return ret;
 
-		}
+        }
 
-		int dimensions = rank;
-		int *stride = (int *) malloc(sizeof(int) * dimensions);
-		int st = startNum;
-		for (int j = 0; j < rank; j++) {
-			stride[j] = st;
-			st *= shape[j];
-		}
+        int dimensions = rank;
+        int *stride = (int *) malloc(sizeof(int) * dimensions);
+        int st = startNum;
+        for (int j = 0; j < rank; j++) {
+            stride[j] = st;
+            st *= shape[j];
+        }
 
-		return stride;
-	}
+        return stride;
+    }
 
 
 /**
@@ -53,30 +54,31 @@ namespace shape {
  * @return the strides for a matrix of n dimensions
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
-	int * calcStrides(int *shape, int rank,int startNum) {
-		if(isVector(shape,rank)) {
-			int *ret = (int *) malloc(sizeof(int) * 2);
-			memset(ret,2 * sizeof(int),startNum);
-			return ret;
+    int * calcStrides(int *shape, int rank,int startNum) {
+        if(isVector(shape,rank)) {
+            int *ret = (int *) malloc(sizeof(int) * 2);
+            for(int i = 0; i < 2; i++)
+                ret[i] = 1;
+            return ret;
 
-		}
-
-
-		int dimensions = rank;
-		int *stride = (int *) malloc(sizeof(int) * dimensions);
-
-		int st = startNum;
-		for (int j = dimensions - 1; j >= 0; j--) {
-			stride[j] = st;
-			st *= shape[j];
-		}
+        }
 
 
+        int dimensions = rank;
+        int *stride = (int *) malloc(sizeof(int) * dimensions);
 
-		return stride;
-	}
+        int st = startNum;
+        for (int j = dimensions - 1; j >= 0; j--) {
+            stride[j] = st;
+            st *= shape[j];
+        }
+
+
+
+        return stride;
+    }
 
 
 
@@ -88,11 +90,11 @@ namespace shape {
  * @return the strides for a matrix of n dimensions
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
-	int * calcStridesFortran(int *shape, int rank) {
-		return calcStridesFortran(shape,rank,1);
-	}
+    int * calcStridesFortran(int *shape, int rank) {
+        return calcStridesFortran(shape,rank,1);
+    }
 
 
 /**
@@ -103,11 +105,11 @@ namespace shape {
  * @return the strides for a matrix of n dimensions
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
-	int * calcStrides(int *shape, int rank) {
-		return calcStrides(shape,rank,1);
-	}
+    int * calcStrides(int *shape, int rank) {
+        return calcStrides(shape,rank,1);
+    }
 
 
 /**
@@ -115,152 +117,154 @@ namespace shape {
  * @return a copy of the original struct
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	ShapeInformation *shapeCopy(ShapeInformation *toCopy) {
-		ShapeInformation *copy = (ShapeInformation *) malloc(sizeof(ShapeInformation));
-		copy->shape = (int *) malloc(sizeof(int) * toCopy->rank);
-		for (int i = 0; i < toCopy->rank; i++) {
-			copy->shape[i] = toCopy->shape[i];
-		}
+    ShapeInformation *shapeCopy(ShapeInformation *toCopy) {
+        ShapeInformation *copy = (ShapeInformation *) malloc(sizeof(ShapeInformation));
+        copy->shape = (int *) malloc(sizeof(int) * toCopy->rank);
+        for (int i = 0; i < toCopy->rank; i++) {
+            copy->shape[i] = toCopy->shape[i];
+        }
 
 
-		copy->stride = (int *) malloc(sizeof(int) * toCopy->rank);
-		for (int i = 0; i < toCopy->rank; i++) {
-			copy->stride[i] = toCopy->stride[i];
-		}
-		copy->order = toCopy->order;
-		copy->rank = toCopy->rank;
-		copy->offset = toCopy->offset;
-		copy->elementWiseStride = toCopy->elementWiseStride;
-		return copy;
-	}
+        copy->stride = (int *) malloc(sizeof(int) * toCopy->rank);
+        for (int i = 0; i < toCopy->rank; i++) {
+            copy->stride[i] = toCopy->stride[i];
+        }
+        copy->order = toCopy->order;
+        copy->rank = toCopy->rank;
+        copy->offset = toCopy->offset;
+        copy->elementWiseStride = toCopy->elementWiseStride;
+        return copy;
+    }
 
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
-	int computeElementWiseStride(int rank,int *shape,int *stride,int isFOrder) {
-		int oldnd;
-		int *olddims = shape::copyOf(rank,shape);
-		int *oldstrides = shape::copyOf(rank,stride);
-		int np, op, last_stride;
-		int oi, oj, ok, ni, nj, nk;
-		int *newStrides = (int *) malloc(sizeof(int) * rank);
-		oldnd = 0;
-		//set the shape to be 1 x length
-		int newShapeRank = 2;
-		int *newShape = (int *) malloc(sizeof(int) * newShapeRank);
-		newShape[0] = 1;
-		newShape[1] = shape::prod(shape,rank);
+    int computeElementWiseStride(int rank,int *shape,int *stride,int isFOrder) {
+        if(isVector(shape,rank))
+            return stride[rank - 1];
+        int oldnd;
+        int *olddims = shape::copyOf(rank,shape);
+        int *oldstrides = shape::copyOf(rank,stride);
+        int np, op, last_stride;
+        int oi, oj, ok, ni, nj, nk;
+        int *newStrides = (int *) malloc(sizeof(int) * rank);
+        oldnd = 0;
+        //set the shape to be 1 x length
+        int newShapeRank = 2;
+        int *newShape = (int *) malloc(sizeof(int) * newShapeRank);
+        newShape[0] = 1;
+        newShape[1] = shape::prod(shape,rank);
 
-		/*
+        /*
          * Remove axes with dimension 1 from the old array. They have no effect
          * but would need special cases since their strides do not matter.
          */
-		for (oi = 0; oi < rank; oi++) {
-			if (shape[oi] != 1) {
-				olddims[oldnd] = shape[oi];
-				oldstrides[oldnd] = stride[oi];
-				oldnd++;
-			}
-		}
+        for (oi = 0; oi < rank; oi++) {
+            if (shape[oi] != 1) {
+                olddims[oldnd] = shape[oi];
+                oldstrides[oldnd] = stride[oi];
+                oldnd++;
+            }
+        }
 
-		np = 1;
-		for (ni = 0; ni < newShapeRank; ni++) {
-			np *= newShape[ni];
-		}
-		op = 1;
-		for (oi = 0; oi < oldnd; oi++) {
-			op *= olddims[oi];
-		}
-		if (np != op) {
-			/* different total sizes; no hope */
-			return -1;
-		}
+        np = 1;
+        for (ni = 0; ni < newShapeRank; ni++) {
+            np *= newShape[ni];
+        }
+        op = 1;
+        for (oi = 0; oi < oldnd; oi++) {
+            op *= olddims[oi];
+        }
+        if (np != op) {
+            /* different total sizes; no hope */
+            return -1;
+        }
 
-		if (np == 0) {
-			/* the current code does not handle 0-sized arrays, so give up */
-			return -1;
-		}
+        if (np == 0) {
+            /* the current code does not handle 0-sized arrays, so give up */
+            return -1;
+        }
 
-		/* oi to oj and ni to nj give the axis ranges currently worked with */
-		oi = 0;
-		oj = 1;
-		ni = 0;
-		nj = 1;
-		while (ni < newShapeRank && oi < oldnd) {
-			np = newShape[ni];
-			op = olddims[oi];
+        /* oi to oj and ni to nj give the axis ranges currently worked with */
+        oi = 0;
+        oj = 1;
+        ni = 0;
+        nj = 1;
+        while (ni < newShapeRank && oi < oldnd) {
+            np = newShape[ni];
+            op = olddims[oi];
 
-			while (np != op) {
-				if (np < op) {
-					/* Misses trailing 1s, these are handled later */
-					np *= newShape[nj++];
-				} else {
-					op *= olddims[oj++];
-				}
-			}
+            while (np != op) {
+                if (np < op) {
+                    /* Misses trailing 1s, these are handled later */
+                    np *= newShape[nj++];
+                } else {
+                    op *= olddims[oj++];
+                }
+            }
 
-			/* Check whether the original axes can be combined */
-			for (ok = oi; ok < oj - 1; ok++) {
-				if (isFOrder) {
-					if (oldstrides[ok + 1] != olddims[ok] * oldstrides[ok]) {
-						/* not contiguous enough */
-						return -1;
-					}
-				}
-				else {
-					/* C order */
-					if (oldstrides[ok] != olddims[ok + 1]*oldstrides[ok + 1]) {
-						/* not contiguous enough */
-						return -1;
-					}
-				}
-			}
+            /* Check whether the original axes can be combined */
+            for (ok = oi; ok < oj - 1; ok++) {
+                if (isFOrder) {
+                    if (oldstrides[ok + 1] != olddims[ok] * oldstrides[ok]) {
+                        /* not contiguous enough */
+                        return -1;
+                    }
+                }
+                else {
+                    /* C order */
+                    if (oldstrides[ok] != olddims[ok + 1]*oldstrides[ok + 1]) {
+                        /* not contiguous enough */
+                        return -1;
+                    }
+                }
+            }
 
-			/* Calculate new strides for all axes currently worked with */
-			if (isFOrder) {
-				newStrides[ni] = oldstrides[oi];
-				for (nk = ni + 1; nk < nj; nk++) {
-					newStrides[nk] = newStrides[nk - 1]* newShape[nk - 1];
-				}
-			}
-			else {
-				/* C order */
-				newStrides[nj - 1] = oldstrides[oj - 1];
-				for (nk = nj - 1; nk > ni; nk--) {
-					newStrides[nk - 1] = newStrides[nk]* newShape[nk];
-				}
-			}
-			ni = nj++;
-			oi = oj++;
-		}
+            /* Calculate new strides for all axes currently worked with */
+            if (isFOrder) {
+                newStrides[ni] = oldstrides[oi];
+                for (nk = ni + 1; nk < nj; nk++) {
+                    newStrides[nk] = newStrides[nk - 1]* newShape[nk - 1];
+                }
+            }
+            else {
+                /* C order */
+                newStrides[nj - 1] = oldstrides[oj - 1];
+                for (nk = nj - 1; nk > ni; nk--) {
+                    newStrides[nk - 1] = newStrides[nk]* newShape[nk];
+                }
+            }
+            ni = nj++;
+            oi = oj++;
+        }
 
-		/*
+        /*
          * Set strides corresponding to trailing 1s of the new shape.
          */
-		if (ni >= 1) {
-			last_stride = newStrides[ni - 1];
-		}
-		else {
-			last_stride = stride[rank - 1];
-		}
-		if (isFOrder) {
-			if(ni >= 1)
-				last_stride *= newShape[ni - 1];
-		}
-		for (nk = ni; nk < newShapeRank; nk++) {
-			newStrides[nk] = last_stride;
-		}
-		//returns the last element of the new stride array
-		int ret =  newStrides[rank - 1];
-		free(newStrides);
-		free(newShape);
-		free(oldstrides);
-		free(olddims);
-		return ret;
-	}
+        if (ni >= 1) {
+            last_stride = newStrides[ni - 1];
+        }
+        else {
+            last_stride = stride[rank - 1];
+        }
+        if (isFOrder) {
+            if(ni >= 1)
+                last_stride *= newShape[ni - 1];
+        }
+        for (nk = ni; nk < newShapeRank; nk++) {
+            newStrides[nk] = last_stride;
+        }
+        //returns the last element of the new stride array
+        int ret =  newStrides[rank - 1];
+        free(newStrides);
+        free(newShape);
+        free(oldstrides);
+        free(olddims);
+        return ret;
+    }
 
 /**
  *
@@ -270,16 +274,16 @@ namespace shape {
  * @return
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	int *doPermuteSwap(int length, int *shape, int *rearrange) {
-		int *ret = (int *) malloc(sizeof(int) * length);
-		for (int i = 0; i < length; i++) {
-			ret[i] = shape[rearrange[i]];
-		}
-		return ret;
-	}
+    int *doPermuteSwap(int length, int *shape, int *rearrange) {
+        int *ret = (int *) malloc(sizeof(int) * length);
+        for (int i = 0; i < length; i++) {
+            ret[i] = shape[rearrange[i]];
+        }
+        return ret;
+    }
 
 /**
  *
@@ -289,28 +293,28 @@ namespace shape {
  * @return
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	void doPermuteSwap(int length, int **shape, int *rearrange) {
-		int *shapeDeref = *shape;
-		for (int i = 0; i < length; i++) {
-			int x = shapeDeref[i];
-			int j = i;
-			while(1) {
-				int k = rearrange[j];
-				rearrange[j] = j;
-				if(k == i)
-					break;
-				shapeDeref[j] = shapeDeref[k];
-				j = k;
+    void doPermuteSwap(int length, int **shape, int *rearrange) {
+        int *shapeDeref = *shape;
+        for (int i = 0; i < length; i++) {
+            int x = shapeDeref[i];
+            int j = i;
+            while(1) {
+                int k = rearrange[j];
+                rearrange[j] = j;
+                if(k == i)
+                    break;
+                shapeDeref[j] = shapeDeref[k];
+                j = k;
 
-			}
+            }
 
-			shapeDeref[j] = x;
-		}
+            shapeDeref[j] = x;
+        }
 
-	}
+    }
 
 /**
  * Get the ordering for the device
@@ -321,57 +325,57 @@ namespace shape {
  * @return
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	char getOrder(int length, int *shape, int *stride, int elementStride) {
-		int sd = -1;
-		int dim = -1;
-		int i = -1;
-		int cContiguous = 1;
-		int isFortran = 1;
+    char getOrder(int length, int *shape, int *stride, int elementStride) {
+        int sd = -1;
+        int dim = -1;
+        int i = -1;
+        int cContiguous = 1;
+        int isFortran = 1;
 
-		sd = 1;
-		for (i = length - 1; i >= 0; --i) {
-			dim = shape[i];
+        sd = 1;
+        for (i = length - 1; i >= 0; --i) {
+            dim = shape[i];
 
-			if (stride[i] != sd) {
-				cContiguous = 0;
-				break;
-			}
-			/* contiguous, if it got this far */
-			if (dim == 0) {
-				break;
-			}
-			sd *= dim;
+            if (stride[i] != sd) {
+                cContiguous = 0;
+                break;
+            }
+            /* contiguous, if it got this far */
+            if (dim == 0) {
+                break;
+            }
+            sd *= dim;
 
-		}
+        }
 
 
-		/* check if fortran contiguous */
-		sd = elementStride;
-		for (i = 0; i < length; ++i) {
-			dim = shape[i];
-			if (stride[i] != sd) {
-				isFortran = 0;
-			}
-			if (dim == 0) {
-				break;
-			}
-			sd *= dim;
+        /* check if fortran contiguous */
+        sd = elementStride;
+        for (i = 0; i < length; ++i) {
+            dim = shape[i];
+            if (stride[i] != sd) {
+                isFortran = 0;
+            }
+            if (dim == 0) {
+                break;
+            }
+            sd *= dim;
 
-		}
+        }
 
-		if (isFortran && cContiguous)
-			return 'a';
-		else if (isFortran && !cContiguous)
-			return 'f';
-		else if (!isFortran && !cContiguous)
-			return 'c';
-		else
-			return 'c';
+        if (isFortran && cContiguous)
+            return 'a';
+        else if (isFortran && !cContiguous)
+            return 'f';
+        else if (!isFortran && !cContiguous)
+            return 'c';
+        else
+            return 'c';
 
-	}
+    }
 
 /**
  * Ensure that every value in the re arrange
@@ -383,26 +387,26 @@ namespace shape {
  * @return
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	int checkArrangeArray(int *arr, int *shape, int arrLength, int shapeLength) {
-		if (arrLength != shapeLength)
-			return -1;
-		for (int i = 0; i < arrLength; i++) {
-			if (arr[i] >= arrLength || arr[i] < 0)
-				return -1;
-		}
+    int checkArrangeArray(int *arr, int *shape, int arrLength, int shapeLength) {
+        if (arrLength != shapeLength)
+            return -1;
+        for (int i = 0; i < arrLength; i++) {
+            if (arr[i] >= arrLength || arr[i] < 0)
+                return -1;
+        }
 
-		for (int i = 0; i < arrLength; i++) {
-			for (int j = 0; j < arrLength; j++) {
-				if (i != j && arr[i] == arr[j])
-					return -1;
-			}
-		}
+        for (int i = 0; i < arrLength; i++) {
+            for (int j = 0; j < arrLength; j++) {
+                if (i != j && arr[i] == arr[j])
+                    return -1;
+            }
+        }
 
-		return 1;
-	}
+        return 1;
+    }
 
 
 /**
@@ -412,18 +416,18 @@ namespace shape {
  * @param rank the rank of the rearrange array
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	void permute(ShapeInformation **info, int *rearrange, int rank) {
-		ShapeInformation *infoDeref = (ShapeInformation * ) * info;
-		checkArrangeArray(rearrange, infoDeref->shape, rank, rank);
-		shape::doPermuteSwap(rank,&infoDeref->shape,rearrange);
-		shape::doPermuteSwap(rank,&infoDeref->stride,rearrange);
-		char order = getOrder(rank, infoDeref->shape, infoDeref->stride, infoDeref->elementWiseStride);
-		infoDeref->order = order;
+    void permute(ShapeInformation **info, int *rearrange, int rank) {
+        ShapeInformation *infoDeref = (ShapeInformation * ) * info;
+        checkArrangeArray(rearrange, infoDeref->shape, rank, rank);
+        shape::doPermuteSwap(rank,&infoDeref->shape,rearrange);
+        shape::doPermuteSwap(rank,&infoDeref->stride,rearrange);
+        char order = getOrder(rank, infoDeref->shape, infoDeref->stride, infoDeref->elementWiseStride);
+        infoDeref->order = order;
 
-	}
+    }
 
 
 /**
@@ -433,18 +437,18 @@ namespace shape {
  * @param rank the rank of the shape
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	int isVector(int *shape, int rank) {
-		if (rank > 2)
-			return 0;
-		else if (rank <= 2) {
-			if (shape[0] == 1 || shape[1] == 1)
-				return 1;
-		}
-		return 0;
-	}
+    int isVector(int *shape, int rank) {
+        if (rank > 2)
+            return 0;
+        else if (rank <= 2) {
+            if (shape[0] == 1 || shape[1] == 1)
+                return 1;
+        }
+        return 0;
+    }
 
 
 /**
@@ -452,12 +456,12 @@ namespace shape {
  * buffer
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	int *shapeOf(int *buffer) {
-		return buffer + 1;
-	}
+    int *shapeOf(int *buffer) {
+        return buffer + 1;
+    }
 
 
 /**
@@ -466,15 +470,15 @@ namespace shape {
  * that must be freed elsewhere.
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	int *copyOf(int length, int *toCopy) {
-		int *ret = (int *) malloc(sizeof(int) * length);
-		for (int i = 0; i < length; i++)
-			ret[i] = toCopy[i];
-		return ret;
-	}
+    int *copyOf(int length, int *toCopy) {
+        int *ret = (int *) malloc(sizeof(int) * length);
+        for (int i = 0; i < length; i++)
+            ret[i] = toCopy[i];
+        return ret;
+    }
 
 
 /**
@@ -487,15 +491,15 @@ namespace shape {
  * @return the rearranged array
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
-	int *permutedStrides(int *toPermute, int shapeRank, int *rearrange) {
-		int *strideCopy = copyOf(shapeRank, toPermute);
-		checkArrangeArray(rearrange, strideCopy, shapeRank, shapeRank);
-		int *newStride = doPermuteSwap(shapeRank, strideCopy, rearrange);
-		free(strideCopy);
-		return newStride;
-	}
+    int *permutedStrides(int *toPermute, int shapeRank, int *rearrange) {
+        int *strideCopy = copyOf(shapeRank, toPermute);
+        checkArrangeArray(rearrange, strideCopy, shapeRank, shapeRank);
+        int *newStride = doPermuteSwap(shapeRank, strideCopy, rearrange);
+        free(strideCopy);
+        return newStride;
+    }
 
 
 /**
@@ -504,12 +508,12 @@ namespace shape {
  * @return the shape array - the first entry
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	int *slice(int *shape) {
-		return shape + 1;
-	}
+    int *slice(int *shape) {
+        return shape + 1;
+    }
 
 
 /**
@@ -521,12 +525,12 @@ namespace shape {
  * @return rank * 2 + 4
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	int shapeInfoLength(int rank) {
-		return rank * 2 + 4;
-	}
+    int shapeInfoLength(int rank) {
+        return rank * 2 + 4;
+    }
 
 
 /**
@@ -534,12 +538,12 @@ namespace shape {
  * an information buffer
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	int rank(int *buffer) {
-		return buffer[0];
-	}
+    int rank(int *buffer) {
+        return buffer[0];
+    }
 
 
 /**
@@ -553,25 +557,25 @@ namespace shape {
  * where shape and stride are both straight int pointers
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	ShapeInformation *infoFromBuffer(int *buffer) {
-		ShapeInformation *info = (ShapeInformation *) malloc(sizeof(ShapeInformation));
-		int length = shapeInfoLength(rank(buffer));
-		int rank = buffer[0];
+    ShapeInformation *infoFromBuffer(int *buffer) {
+        ShapeInformation *info = (ShapeInformation *) malloc(sizeof(ShapeInformation));
+        int length = shapeInfoLength(rank(buffer));
+        int rank = buffer[0];
 
-		//start after rank
-		info->shape = buffer + 1;
-		info->stride = buffer + (1 + rank);
-		info->rank = rank;
-		info->offset = buffer[length - 3];
-		info->elementWiseStride = buffer[length - 2];
-		int *stride = buffer + 1 + rank;
-		info->stride = stride;
-		info->order = (char) buffer[length - 1];
-		return info;
-	}
+        //start after rank
+        info->shape = buffer + 1;
+        info->stride = buffer + (1 + rank);
+        info->rank = rank;
+        info->offset = buffer[length - 3];
+        info->elementWiseStride = buffer[length - 2];
+        int *stride = buffer + 1 + rank;
+        info->stride = stride;
+        info->order = (char) buffer[length - 1];
+        return info;
+    }
 
 
 /**
@@ -579,37 +583,37 @@ namespace shape {
  * buffer
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	int *stride(int *buffer) {
-		return buffer + (1 + rank(buffer));
-	}
+    int *stride(int *buffer) {
+        return buffer + (1 + rank(buffer));
+    }
 
 
 /**
  * Compute the length of the given shape
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	int length(int *shapeInfo) {
-		return prod(shapeOf(shapeInfo), rank(shapeInfo));
-	}
+    int length(int *shapeInfo) {
+        return prod(shapeOf(shapeInfo), rank(shapeInfo));
+    }
 
 
 /***
  * Returns the offset portion of an information buffer
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	int offset(int *buffer) {
-		int length = shapeInfoLength(rank(buffer));
-		return buffer[length - 3];
-	}
+    int offset(int *buffer) {
+        int length = shapeInfoLength(rank(buffer));
+        return buffer[length - 3];
+    }
 
 
 /**
@@ -617,13 +621,13 @@ namespace shape {
  * for this shape information buffer
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	char order(int *buffer) {
-		int length = buffer[0] * 2 + 4;
-		return (char) buffer[length - 1];
-	}
+    char order(int *buffer) {
+        int length = buffer[0] * 2 + 4;
+        return (char) buffer[length - 1];
+    }
 
 
 /**
@@ -631,13 +635,13 @@ namespace shape {
  * buffer
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	int elementWiseStride(int *buffer) {
-		int length2 = shapeInfoLength(buffer[0]);
-		return buffer[length2 - 2];
-	}
+    int elementWiseStride(int *buffer) {
+        int length2 = shapeInfoLength(buffer[0]);
+        return buffer[length2 - 2];
+    }
 
 
 /**
@@ -646,19 +650,19 @@ namespace shape {
  * represents a scalar shape
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	int isScalar(int *info) {
-		if (rank(info) > 2)
-			return 0;
-		if (rank(info) == 1)
-			return shapeOf(info)[0] == 1;
-		else if (rank(info) == 2) {
-			return shapeOf(info)[0] == 1 && shapeOf(info)[1] == 1;
-		}
-		return 0;
-	}
+    int isScalar(int *info) {
+        if (rank(info) > 2)
+            return 0;
+        if (rank(info) == 1)
+            return shapeOf(info)[0] == 1;
+        else if (rank(info) == 2) {
+            return shapeOf(info)[0] == 1 && shapeOf(info)[1] == 1;
+        }
+        return 0;
+    }
 
 
 /**
@@ -668,19 +672,19 @@ namespace shape {
  * shape or not
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	int isScalar(volatile ShapeInformation *info) {
-		if (info->rank > 2)
-			return 0;
-		if (info->rank == 1)
-			return info->shape[0] == 1;
-		else if (info->rank == 2) {
-			return info->shape[0] == 1 && info->shape[1] == 1;
-		}
-		return 0;
-	}
+    int isScalar(volatile ShapeInformation *info) {
+        if (info->rank > 2)
+            return 0;
+        if (info->rank == 1)
+            return info->shape[0] == 1;
+        else if (info->rank == 2) {
+            return info->shape[0] == 1 && info->shape[1] == 1;
+        }
+        return 0;
+    }
 
 
 /**
@@ -696,29 +700,29 @@ namespace shape {
  * item
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	void removeIndex(int *data, int *indexes, int dataLength, int indexesLength, int **out) {
-		int *ret = (int *) *out;
-		int count = 0;
-		int absLength = dataLength - indexesLength;
-		for (int i = 0; i < dataLength && count < absLength; i++) {
-			int contains = 0;
-			for (int j = 0; j < indexesLength; j++) {
-				if (i == indexes[j]) {
-					contains = 1;
-					break;
-				}
-			}
+    void removeIndex(int *data, int *indexes, int dataLength, int indexesLength, int **out) {
+        int *ret = (int *) *out;
+        int count = 0;
+        int absLength = dataLength - indexesLength;
+        for (int i = 0; i < dataLength && count < absLength; i++) {
+            int contains = 0;
+            for (int j = 0; j < indexesLength; j++) {
+                if (i == indexes[j]) {
+                    contains = 1;
+                    break;
+                }
+            }
 
-			if (!contains) {
-				ret[count] = data[i];
-				count++;
-			}
+            if (!contains) {
+                ret[count] = data[i];
+                count++;
+            }
 
-		}
-	}
+        }
+    }
 
 
 /**
@@ -727,7 +731,7 @@ namespace shape {
  * and the offset to be read.
  */
 #ifdef __CUDACC__
-	__device__ int tadOffset(ShapeInformation *xInfo, int offset) {
+    __device__ int tadOffset(ShapeInformation *xInfo, int offset) {
 	return offset + threadIdx.x * xInfo->elementWiseStride;
 
 }
@@ -743,21 +747,21 @@ namespace shape {
  * @return the new shape
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	int *ensureVectorShape(int *shape, int dimension) {
-		int *ret = (int *) malloc(sizeof(int) * 2);
-		if (dimension == 0) {
-			ret[0] = 1;
-			ret[1] = shape[0];
-		}
-		else {
-			ret[0] = shape[0];
-			ret[1] = 1;
-		}
-		return ret;
-	}
+    int *ensureVectorShape(int *shape, int dimension) {
+        int *ret = (int *) malloc(sizeof(int) * 2);
+        if (dimension == 0) {
+            ret[0] = 1;
+            ret[1] = shape[0];
+        }
+        else {
+            ret[0] = shape[0];
+            ret[1] = 1;
+        }
+        return ret;
+    }
 
 
 /**
@@ -767,31 +771,31 @@ namespace shape {
  *
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	int *range(int from, int to, int increment) {
-		int diff = nd4j::math::nd4j_abs(from - to);
-		int retLength = diff / increment;
-		int *ret = diff / increment < 1 ? (int *) malloc(sizeof(int)) : (int *) malloc(sizeof(int) * diff / increment);
-		if (from < to) {
-			int count = 0;
-			for (int i = from; i < to; i += increment) {
-				if (count >= retLength)
-					break;
-				ret[count++] = i;
-			}
-		} else if (from > to) {
-			int count = 0;
-			for (int i = from - 1; i >= to; i -= increment) {
-				if (count >= retLength)
-					break;
-				ret[count++] = i;
-			}
-		}
+    int *range(int from, int to, int increment) {
+        int diff = nd4j::math::nd4j_abs(from - to);
+        int retLength = diff / increment;
+        int *ret = diff / increment < 1 ? (int *) malloc(sizeof(int)) : (int *) malloc(sizeof(int) * diff / increment);
+        if (from < to) {
+            int count = 0;
+            for (int i = from; i < to; i += increment) {
+                if (count >= retLength)
+                    break;
+                ret[count++] = i;
+            }
+        } else if (from > to) {
+            int count = 0;
+            for (int i = from - 1; i >= to; i -= increment) {
+                if (count >= retLength)
+                    break;
+                ret[count++] = i;
+            }
+        }
 
-		return ret;
-	}
+        return ret;
+    }
 
 
 /**
@@ -803,12 +807,12 @@ namespace shape {
  * @return the int array starting at from and ending at to
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	int *range(int from, int to) {
-		return range(from, to, 1);
-	}
+    int *range(int from, int to) {
+        return range(from, to, 1);
+    }
 
 
 /**
@@ -820,26 +824,26 @@ namespace shape {
  * @return
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	int *keep(volatile int *data, int *index, int indexLength, int dataLength) {
-		int *ret = (int *) malloc((indexLength) * sizeof(int));
-		int count = 0;
-		for (int i = 0; i < dataLength; i++) {
-			int contains = 0;
-			for (int j = 0; j < indexLength; j++) {
-				if (i == index[j]) {
-					contains = 1;
-					break;
-				}
-			}
+    int *keep(volatile int *data, int *index, int indexLength, int dataLength) {
+        int *ret = (int *) malloc((indexLength) * sizeof(int));
+        int count = 0;
+        for (int i = 0; i < dataLength; i++) {
+            int contains = 0;
+            for (int j = 0; j < indexLength; j++) {
+                if (i == index[j]) {
+                    contains = 1;
+                    break;
+                }
+            }
 
-			if (contains)
-				ret[count++] = data[i];
-		}
-		return ret;
-	}
+            if (contains)
+                ret[count++] = data[i];
+        }
+        return ret;
+    }
 
 
 /**
@@ -847,21 +851,21 @@ namespace shape {
  * copy of the data
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	int *reverseCopy(int *data, int length) {
-		if (length < 1)
-			return data;
+    int *reverseCopy(int *data, int length) {
+        if (length < 1)
+            return data;
 
-		int *copy = (int *) malloc(length * sizeof(int));
-		for (int i = 0; i <= length / 2; i++) {
-			int temp = data[i];
-			copy[i] = data[length - i - 1];
-			copy[length - i - 1] = temp;
-		}
-		return copy;
-	}
+        int *copy = (int *) malloc(length * sizeof(int));
+        for (int i = 0; i <= length / 2; i++) {
+            int temp = data[i];
+            copy[i] = data[length - i - 1];
+            copy[length - i - 1] = temp;
+        }
+        return copy;
+    }
 
 
 /**
@@ -873,15 +877,15 @@ namespace shape {
  * @return
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	int *concat(int *arr1, int arr1Length, int *arr2, int arr2Length) {
-		int *ret = (int *) malloc((arr1Length + arr2Length) * sizeof(int));
-		memcpy(ret, arr1, arr1Length * sizeof(int));
-		memcpy(ret + arr1Length, arr2, arr2Length * sizeof(int));
-		return ret;
-	}
+    int *concat(int *arr1, int arr1Length, int *arr2, int arr2Length) {
+        int *ret = (int *) malloc((arr1Length + arr2Length) * sizeof(int));
+        memcpy(ret, arr1, arr1Length * sizeof(int));
+        memcpy(ret + arr1Length, arr2, arr2Length * sizeof(int));
+        return ret;
+    }
 
 
 /**
@@ -893,21 +897,21 @@ namespace shape {
  * @return
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	int *concat(int numArrays, int numTotalElements, int **arr, int *lengths) {
-		int *ret = (int *) malloc(numTotalElements * sizeof(int));
-		int count = 0;
-		for (int i = 0; i < numArrays; i++) {
-			for (int j = 0; j < lengths[i]; j++) {
-				ret[count++] = arr[i][j];
+    int *concat(int numArrays, int numTotalElements, int **arr, int *lengths) {
+        int *ret = (int *) malloc(numTotalElements * sizeof(int));
+        int count = 0;
+        for (int i = 0; i < numArrays; i++) {
+            for (int j = 0; j < lengths[i]; j++) {
+                ret[count++] = arr[i][j];
 
-			}
-		}
+            }
+        }
 
-		return ret;
-	}
+        return ret;
+    }
 
 
 /**
@@ -923,17 +927,17 @@ namespace shape {
  * along the given dimension
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	int lengthPerSlice(int rank, int *shape, int *dimension, int dimensionLength) {
-		int *ret2 = (int *) malloc((nd4j::math::nd4j_abs(rank - dimensionLength)) * sizeof(int));
-		removeIndex(shape, dimension, rank, dimensionLength, &ret2);
-		int length = rank - dimensionLength;
-		int ret = prod(ret2, length);
-		free(ret2);
-		return ret;
-	}
+    int lengthPerSlice(int rank, int *shape, int *dimension, int dimensionLength) {
+        int *ret2 = (int *) malloc((nd4j::math::nd4j_abs(rank - dimensionLength)) * sizeof(int));
+        removeIndex(shape, dimension, rank, dimensionLength, &ret2);
+        int length = rank - dimensionLength;
+        int ret = prod(ret2, length);
+        free(ret2);
+        return ret;
+    }
 
 
 /**
@@ -944,22 +948,22 @@ namespace shape {
  * @return
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	int sliceOffsetForTensor(int rank, int index, int *shape, int *tensorShape, int tensorShapeLength, int *dimension,
-							 int dimensionLength) {
-		int tensorLength = prod(tensorShape, tensorShapeLength);
-		int lengthPerSlice2 = lengthPerSlice(rank, shape, dimension, dimensionLength);
-		if (lengthPerSlice2 <= 0)
-			return 0;
+    int sliceOffsetForTensor(int rank, int index, int *shape, int *tensorShape, int tensorShapeLength, int *dimension,
+                             int dimensionLength) {
+        int tensorLength = prod(tensorShape, tensorShapeLength);
+        int lengthPerSlice2 = lengthPerSlice(rank, shape, dimension, dimensionLength);
+        if (lengthPerSlice2 <= 0)
+            return 0;
 
-		int offset = index * tensorLength / lengthPerSlice2;
-		return offset;
-	}
+        int offset = index * tensorLength / lengthPerSlice2;
+        return offset;
+    }
 #ifdef __CUDACC__
 
-	/**
+    /**
  * Computes the offset for accessing
  * a global element given the shape information
  * and the offset to be read.
@@ -979,133 +983,133 @@ __device__ int tadOffset(int *xInfo, int offset) {
  * @param dimension the dimensions to use for computing the tensor along dimensions
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	int offset(int index, int rank, ShapeInformation *info, int *dimension, int dimensionLength) {
-		int *tensorShape = keep(info->shape, dimension, dimensionLength, rank);
-		if (dimensionLength == 1) {
-			int *newTensorShape = ensureVectorShape(tensorShape, dimension[0]);
-			free(tensorShape);
-			tensorShape = newTensorShape;
-		}
+    int offset(int index, int rank, ShapeInformation *info, int *dimension, int dimensionLength) {
+        int *tensorShape = keep(info->shape, dimension, dimensionLength, rank);
+        if (dimensionLength == 1) {
+            int *newTensorShape = ensureVectorShape(tensorShape, dimension[0]);
+            free(tensorShape);
+            tensorShape = newTensorShape;
+        }
 
-		//change the value
-		ShapeInformation *copy = shapeCopy(info);
-		info = copy;
+        //change the value
+        ShapeInformation *copy = shapeCopy(info);
+        info = copy;
 
-		int *reverseDimensions = reverseCopy(dimension, dimensionLength);
-		int *rangeRet = range(0, rank);
-		int *remove = (int *) malloc((rank - dimensionLength) * sizeof(int));
-		removeIndex(rangeRet, dimension, rank, dimensionLength, &remove);
+        int *reverseDimensions = reverseCopy(dimension, dimensionLength);
+        int *rangeRet = range(0, rank);
+        int *remove = (int *) malloc((rank - dimensionLength) * sizeof(int));
+        removeIndex(rangeRet, dimension, rank, dimensionLength, &remove);
 
-		int *zeroDimension = (int *) malloc(1 * sizeof(int));
-		zeroDimension[0] = 0;
+        int *zeroDimension = (int *) malloc(1 * sizeof(int));
+        zeroDimension[0] = 0;
 
-		int removeLength = rank - dimensionLength;
-		int *newPermuteDims = concat(remove, removeLength, reverseDimensions, dimensionLength);
+        int removeLength = rank - dimensionLength;
+        int *newPermuteDims = concat(remove, removeLength, reverseDimensions, dimensionLength);
 
-		//__device__ void permute(ShapeInformation *info,int *rearrange,int rank) {
-		permute(&info, newPermuteDims, rank);
+        //__device__ void permute(ShapeInformation *info,int *rearrange,int rank) {
+        permute(&info, newPermuteDims, rank);
 
-		int *permuted = info->shape;
-		int *permutedStrides = info->stride;
-		int tensorShapeLength = rank - removeLength;
-		if (tensorShapeLength < 2)
-			tensorShapeLength = 2;
-		int sliceIdx = sliceOffsetForTensor(rank, index, permuted, tensorShape, tensorShapeLength, zeroDimension, 1);
+        int *permuted = info->shape;
+        int *permutedStrides = info->stride;
+        int tensorShapeLength = rank - removeLength;
+        if (tensorShapeLength < 2)
+            tensorShapeLength = 2;
+        int sliceIdx = sliceOffsetForTensor(rank, index, permuted, tensorShape, tensorShapeLength, zeroDimension, 1);
 
-		//determine offset here
+        //determine offset here
 
-		int *ret2 = slice(info->shape);
-		int *ret2Stride = slice(info->stride);
-
-
-		int ret2Length = prod(ret2, rank - 1);
-		int ret2Rank = rank - 1;
-
-		int retOffset = sliceIdx * permutedStrides[0];
+        int *ret2 = slice(info->shape);
+        int *ret2Stride = slice(info->stride);
 
 
-		int length = prod(tensorShape, tensorShapeLength);
-		int tensorLength = length;
-		//__device__ int lengthPerSlice(int rank,int *shape,int *dimension) {
-		int offset = index * tensorLength / lengthPerSlice(ret2Rank, ret2, zeroDimension, 1);
-		/**
+        int ret2Length = prod(ret2, rank - 1);
+        int ret2Rank = rank - 1;
+
+        int retOffset = sliceIdx * permutedStrides[0];
+
+
+        int length = prod(tensorShape, tensorShapeLength);
+        int tensorLength = length;
+        //__device__ int lengthPerSlice(int rank,int *shape,int *dimension) {
+        int offset = index * tensorLength / lengthPerSlice(ret2Rank, ret2, zeroDimension, 1);
+        /**
          * Need to do slice(offset) here
          */
-		if (sliceIdx == 0 && length == lengthPerSlice(ret2Rank, ret2, zeroDimension, 1)) {
-			/**
+        if (sliceIdx == 0 && length == lengthPerSlice(ret2Rank, ret2, zeroDimension, 1)) {
+            /**
              * NOTE STRIDE[1] HERE. WE DO THIS TO AVOID CREATING A NEW SLICE OBJECT.
              */
-			//account for shape[i] == 1
-			int strideIndex = 1;
-			for (int i = 0; i < info->rank; i++) {
-				if (info->shape[i] == 1)
-					strideIndex++;
-			}
+            //account for shape[i] == 1
+            int strideIndex = 1;
+            for (int i = 0; i < info->rank; i++) {
+                if (info->shape[i] == 1)
+                    strideIndex++;
+            }
 
-			if (strideIndex >= info->rank)
-				strideIndex = info->rank - 1;
+            if (strideIndex >= info->rank)
+                strideIndex = info->rank - 1;
 
-			retOffset = info->offset + offset * info->stride[strideIndex];
-		}
+            retOffset = info->offset + offset * info->stride[strideIndex];
+        }
 
-			//determine offset here
-			//note here offset doesn't change, just the shape
-			//of the tad
-		else if (length == lengthPerSlice(ret2Rank, ret2, zeroDimension, 1)) {
-			offset -= ret2[0] * (offset / ret2[0]);
-			//set offset here
-			ret2 = slice(ret2);
-			ret2Rank--;
-			//account for shape[i] == 1
-			int strideIndex = 1;
-			for (int i = 0; i < info->rank; i++) {
-				if (info->shape[i] == 1)
-					strideIndex++;
-			}
+            //determine offset here
+            //note here offset doesn't change, just the shape
+            //of the tad
+        else if (length == lengthPerSlice(ret2Rank, ret2, zeroDimension, 1)) {
+            offset -= ret2[0] * (offset / ret2[0]);
+            //set offset here
+            ret2 = slice(ret2);
+            ret2Rank--;
+            //account for shape[i] == 1
+            int strideIndex = 1;
+            for (int i = 0; i < info->rank; i++) {
+                if (info->shape[i] == 1)
+                    strideIndex++;
+            }
 
-			if (strideIndex >= info->rank)
-				strideIndex = info->rank - 1;
+            if (strideIndex >= info->rank)
+                strideIndex = info->rank - 1;
 
-			retOffset += info->stride[strideIndex] * offset;
-		}
+            retOffset += info->stride[strideIndex] * offset;
+        }
 
 
-		else {
+        else {
 
-			while (ret2Length > length) {
-				sliceIdx = sliceOffsetForTensor(ret2Rank, index, ret2, tensorShape, tensorShapeLength, zeroDimension,
-												1);
-				sliceIdx -= ret2[0] * (sliceIdx / ret2[0]);
-				//set offset
-				ret2 = slice(ret2);
-				ret2Stride = slice(ret2Stride);
-				ret2Rank--;
-				//slice wise offsets are offset + i * majorStride()
-				//dividing by the slice index will adjust the offset by a factor of sliceIndex
-				ret2Length = prod(ret2, ret2Rank);
+            while (ret2Length > length) {
+                sliceIdx = sliceOffsetForTensor(ret2Rank, index, ret2, tensorShape, tensorShapeLength, zeroDimension,
+                                                1);
+                sliceIdx -= ret2[0] * (sliceIdx / ret2[0]);
+                //set offset
+                ret2 = slice(ret2);
+                ret2Stride = slice(ret2Stride);
+                ret2Rank--;
+                //slice wise offsets are offset + i * majorStride()
+                //dividing by the slice index will adjust the offset by a factor of sliceIndex
+                ret2Length = prod(ret2, ret2Rank);
 
-			}
-		}
+            }
+        }
 
-		retOffset = info->offset + sliceIdx;
+        retOffset = info->offset + sliceIdx;
 
-		free(reverseDimensions);
-		free(rangeRet);
-		free(remove);
-		free(copy);
-		//free the new pointer
-		if (rank <= 2) {
-			free(tensorShape);
-		}
+        free(reverseDimensions);
+        free(rangeRet);
+        free(remove);
+        free(copy);
+        //free the new pointer
+        if (rank <= 2) {
+            free(tensorShape);
+        }
 
-		if (retOffset < 0)
-			retOffset = 0;
+        if (retOffset < 0)
+            retOffset = 0;
 
-		return retOffset;
-	}
+        return retOffset;
+    }
 
 
 /**
@@ -1115,60 +1119,60 @@ __device__ int tadOffset(int *xInfo, int offset) {
  * calculations
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	TADPermuteInfo tadInfo(int *xShapeInfo, int *dimension, int dimensionLength) {
-		int *shapeOfX = shapeOf(xShapeInfo);
-		int xRank = rank(xShapeInfo);
-		int *tensorShape = keep(shapeOfX, dimension, dimensionLength, xRank);
-		if (dimensionLength == 1) {
-			int *newTensorShape = ensureVectorShape(tensorShape, dimension[0]);
-			free(tensorShape);
-			tensorShape = newTensorShape;
-		}
+    TADPermuteInfo tadInfo(int *xShapeInfo, int *dimension, int dimensionLength) {
+        int *shapeOfX = shapeOf(xShapeInfo);
+        int xRank = rank(xShapeInfo);
+        int *tensorShape = keep(shapeOfX, dimension, dimensionLength, xRank);
+        if (dimensionLength == 1) {
+            int *newTensorShape = ensureVectorShape(tensorShape, dimension[0]);
+            free(tensorShape);
+            tensorShape = newTensorShape;
+        }
 
-		int removeLength = nd4j::math::nd4j_abs(xRank - dimensionLength);
-		int tensorShapeLength = rank(xShapeInfo) - removeLength;
-		if (tensorShapeLength < 2)
-			tensorShapeLength = 2;
-
-
-		int tensorShapeProd = prod(tensorShape, tensorShapeLength);
+        int removeLength = nd4j::math::nd4j_abs(xRank - dimensionLength);
+        int tensorShapeLength = rank(xShapeInfo) - removeLength;
+        if (tensorShapeLength < 2)
+            tensorShapeLength = 2;
 
 
-		int *reverseDimensions = reverseCopy(dimension, dimensionLength);
-		int *rangeRet = range(0, xRank);
-
-		int *remove = (int *) malloc((removeLength) * sizeof(int));
-		removeIndex(rangeRet, dimension, xRank, dimensionLength, &remove);
-
-		int *zeroDimension = (int *) malloc(1 * sizeof(int));
-		zeroDimension[0] = 0;
-
-		int *newPermuteDims = concat(remove, removeLength, reverseDimensions, dimensionLength);
+        int tensorShapeProd = prod(tensorShape, tensorShapeLength);
 
 
-		int *permutedShape = doPermuteSwap(rank(xShapeInfo), shapeOf(xShapeInfo), newPermuteDims);
-		int *permutedStrides = doPermuteSwap(rank(xShapeInfo), stride(xShapeInfo), newPermuteDims);
+        int *reverseDimensions = reverseCopy(dimension, dimensionLength);
+        int *rangeRet = range(0, xRank);
 
-		TADPermuteInfo info = {
-				tensorShape,
-				xRank,
-				reverseDimensions,
-				rangeRet,
-				removeLength,
-				remove,
-				zeroDimension,
-				newPermuteDims,
-				permutedShape,
-				permutedStrides,
-				tensorShapeLength,
-				tensorShapeProd
-		};
+        int *remove = (int *) malloc((removeLength) * sizeof(int));
+        removeIndex(rangeRet, dimension, xRank, dimensionLength, &remove);
 
-		return info;
-	}
+        int *zeroDimension = (int *) malloc(1 * sizeof(int));
+        zeroDimension[0] = 0;
+
+        int *newPermuteDims = concat(remove, removeLength, reverseDimensions, dimensionLength);
+
+
+        int *permutedShape = doPermuteSwap(rank(xShapeInfo), shapeOf(xShapeInfo), newPermuteDims);
+        int *permutedStrides = doPermuteSwap(rank(xShapeInfo), stride(xShapeInfo), newPermuteDims);
+
+        TADPermuteInfo info = {
+                tensorShape,
+                xRank,
+                reverseDimensions,
+                rangeRet,
+                removeLength,
+                remove,
+                zeroDimension,
+                newPermuteDims,
+                permutedShape,
+                permutedStrides,
+                tensorShapeLength,
+                tensorShapeProd
+        };
+
+        return info;
+    }
 
 
 /**
@@ -1176,20 +1180,20 @@ __device__ int tadOffset(int *xInfo, int offset) {
  * @param info the info to free
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	void freePermuteInfo(TADPermuteInfo info) {
-		free(info.tensorShape);
-		free(info.reverseDimensions);
-		free(info.rangeRet);
-		free(info.remove);
-		free(info.zeroDimension);
-		free(info.newPermuteDims);
-		free(info.permutedShape);
-		free(info.permutedStrides);
+    void freePermuteInfo(TADPermuteInfo info) {
+        free(info.tensorShape);
+        free(info.reverseDimensions);
+        free(info.rangeRet);
+        free(info.remove);
+        free(info.zeroDimension);
+        free(info.newPermuteDims);
+        free(info.permutedShape);
+        free(info.permutedStrides);
 
-	}
+    }
 
 
 /**
@@ -1198,16 +1202,16 @@ __device__ int tadOffset(int *xInfo, int offset) {
  * a given dimension
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	int tensorsAlongDimension(volatile int rank, volatile int length, volatile int *shape, int *dimension,
-							  int dimensionLength) {
-		int *tensorShape = keep(shape, dimension, dimensionLength, rank);
-		int ret = length / prod(tensorShape, dimensionLength);
-		free(tensorShape);
-		return ret;
-	}
+    int tensorsAlongDimension(volatile int rank, volatile int length, volatile int *shape, int *dimension,
+                              int dimensionLength) {
+        int *tensorShape = keep(shape, dimension, dimensionLength, rank);
+        int ret = length / prod(tensorShape, dimensionLength);
+        free(tensorShape);
+        return ret;
+    }
 
 
 /**
@@ -1216,15 +1220,15 @@ __device__ int tadOffset(int *xInfo, int offset) {
  * a given dimension
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	int tensorsAlongDimension(int *shapeInfo, int *dimension, int dimensionLength) {
-		int *tensorShape = keep(shapeOf(shapeInfo), dimension, dimensionLength, rank(shapeInfo));
-		int ret = length(shapeInfo) / prod(tensorShape, dimensionLength);
-		free(tensorShape);
-		return ret;
-	}
+    int tensorsAlongDimension(int *shapeInfo, int *dimension, int dimensionLength) {
+        int *tensorShape = keep(shapeOf(shapeInfo), dimension, dimensionLength, rank(shapeInfo));
+        int ret = length(shapeInfo) / prod(tensorShape, dimensionLength);
+        free(tensorShape);
+        return ret;
+    }
 
 
 /**
@@ -1235,13 +1239,13 @@ __device__ int tadOffset(int *xInfo, int offset) {
  * @return
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	int tensorsAlongDimension(TADPermuteInfo info, int *dimension, int dimensionLength) {
-		int length = prod(info.permutedShape, info.xRank);
-		return length / prod(info.tensorShape, info.tensorShapeLength);
-	}
+    int tensorsAlongDimension(TADPermuteInfo info, int *dimension, int dimensionLength) {
+        int length = prod(info.permutedShape, info.xRank);
+        return length / prod(info.tensorShape, info.tensorShapeLength);
+    }
 
 
 /**
@@ -1253,101 +1257,101 @@ __device__ int tadOffset(int *xInfo, int offset) {
  * @param dimension the dimensions to use for computing the tensor along dimensions
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	int offset(int index, int *xShapeInfo, int *dimension, int dimensionLength, TADPermuteInfo info) {
-		int sliceIdx = sliceOffsetForTensor(rank(xShapeInfo), index, info.permutedShape, info.tensorShape,
-											info.tensorShapeLength, info.zeroDimension, 1);
+    int offset(int index, int *xShapeInfo, int *dimension, int dimensionLength, TADPermuteInfo info) {
+        int sliceIdx = sliceOffsetForTensor(rank(xShapeInfo), index, info.permutedShape, info.tensorShape,
+                                            info.tensorShapeLength, info.zeroDimension, 1);
 
-		//determine offset here
+        //determine offset here
 
-		int *ret2 = slice(info.permutedShape);
-		int *ret2Stride = slice(info.permutedStrides);
-		int ret2Length = prod(ret2, rank(xShapeInfo) - 1);
-		int ret2Rank = info.xRank - 1;
+        int *ret2 = slice(info.permutedShape);
+        int *ret2Stride = slice(info.permutedStrides);
+        int ret2Length = prod(ret2, rank(xShapeInfo) - 1);
+        int ret2Rank = info.xRank - 1;
 
-		int retOffset = sliceIdx * info.permutedStrides[0];
-		int tensorShapeProd = info.tensorShapeProd;
+        int retOffset = sliceIdx * info.permutedStrides[0];
+        int tensorShapeProd = info.tensorShapeProd;
 
-		int tensorShapeRoughlyEquals = dimensionLength == 1 && nd4j::math::nd4j_abs(info.tensorShapeLength - dimensionLength) <= 1;
-		if ((tensorShapeProd == ret2Length && tensorShapeRoughlyEquals == 1) ||
-			dimensionLength == info.tensorShapeLength) {
-			return retOffset;
-		}
+        int tensorShapeRoughlyEquals = dimensionLength == 1 && nd4j::math::nd4j_abs(info.tensorShapeLength - dimensionLength) <= 1;
+        if ((tensorShapeProd == ret2Length && tensorShapeRoughlyEquals == 1) ||
+            dimensionLength == info.tensorShapeLength) {
+            return retOffset;
+        }
 
 
-		int length = info.tensorShapeProd;
-		int tensorLength = length;
-		int sliceOffset = index * tensorLength / lengthPerSlice(ret2Rank, ret2, info.zeroDimension, 1);
-		/**
+        int length = info.tensorShapeProd;
+        int tensorLength = length;
+        int sliceOffset = index * tensorLength / lengthPerSlice(ret2Rank, ret2, info.zeroDimension, 1);
+        /**
          * Need to do slice(offset) here
          */
-		int lengthPerSlice2 = lengthPerSlice(ret2Rank, ret2, info.zeroDimension, 1);
+        int lengthPerSlice2 = lengthPerSlice(ret2Rank, ret2, info.zeroDimension, 1);
 
-		if (sliceIdx == 0 && length == lengthPerSlice2) {
-			ret2 = slice(ret2);
-			ret2Stride = slice(ret2Stride);
-			ret2Rank--;
-			ret2Length = prod(ret2, ret2Rank);
-			int newStride = ret2Stride[ret2Rank - 1];
-			retOffset += (sliceOffset * ret2Length * newStride);
+        if (sliceIdx == 0 && length == lengthPerSlice2) {
+            ret2 = slice(ret2);
+            ret2Stride = slice(ret2Stride);
+            ret2Rank--;
+            ret2Length = prod(ret2, ret2Rank);
+            int newStride = ret2Stride[ret2Rank - 1];
+            retOffset += (sliceOffset * ret2Length * newStride);
 
-			if (retOffset < 0)
-				retOffset = 0;
+            if (retOffset < 0)
+                retOffset = 0;
 
-			return retOffset;
-		}
+            return retOffset;
+        }
 
-			//determine offset here
-			//note here offset doesn't change, just the shape
-			//of the tad
-		else if (length == lengthPerSlice2) {
-			sliceOffset -= ret2[0] * (sliceOffset / ret2[0]);
-			//set offset here
-			ret2 = slice(ret2);
-			ret2Stride = slice(ret2Stride);
-			ret2Rank--;
-			//accumulate from the slice
-			int newStride = ret2Stride[ret2Rank - 1];
-			retOffset += (lengthPerSlice2 * newStride * sliceOffset);
+            //determine offset here
+            //note here offset doesn't change, just the shape
+            //of the tad
+        else if (length == lengthPerSlice2) {
+            sliceOffset -= ret2[0] * (sliceOffset / ret2[0]);
+            //set offset here
+            ret2 = slice(ret2);
+            ret2Stride = slice(ret2Stride);
+            ret2Rank--;
+            //accumulate from the slice
+            int newStride = ret2Stride[ret2Rank - 1];
+            retOffset += (lengthPerSlice2 * newStride * sliceOffset);
 
-			if (retOffset < 0)
-				retOffset = 0;
+            if (retOffset < 0)
+                retOffset = 0;
 
-			return retOffset;
-		}
-
-
-		else {
-			ret2Length = prod(ret2, ret2Rank);
-			//start at zero incrementing whenever we hit a slice > 0
-			while (ret2Length > length && ret2Rank > 0) {
-				sliceIdx = sliceOffsetForTensor(ret2Rank, index, ret2, info.tensorShape, info.tensorShapeLength,
-												info.zeroDimension, 1);
-				sliceIdx -= ret2[0] * (sliceIdx / ret2[0]);
-				if (sliceIdx > 0) {
-					if (ret2Rank > 1) {
-						retOffset += sliceIdx * ret2Stride[0];
-					}
-					else {
-						retOffset += sliceIdx;
-					}
-				}
-				//set offset
-				ret2 = slice(ret2);
-				ret2Stride = slice(ret2Stride);
-				//bump the offset wrt the slice idx when its not just truncating output
-
-				ret2Rank--;
-				ret2Length = prod(ret2, ret2Rank);
-			}
-
-			return retOffset;
-		}
+            return retOffset;
+        }
 
 
-	}
+        else {
+            ret2Length = prod(ret2, ret2Rank);
+            //start at zero incrementing whenever we hit a slice > 0
+            while (ret2Length > length && ret2Rank > 0) {
+                sliceIdx = sliceOffsetForTensor(ret2Rank, index, ret2, info.tensorShape, info.tensorShapeLength,
+                                                info.zeroDimension, 1);
+                sliceIdx -= ret2[0] * (sliceIdx / ret2[0]);
+                if (sliceIdx > 0) {
+                    if (ret2Rank > 1) {
+                        retOffset += sliceIdx * ret2Stride[0];
+                    }
+                    else {
+                        retOffset += sliceIdx;
+                    }
+                }
+                //set offset
+                ret2 = slice(ret2);
+                ret2Stride = slice(ret2Stride);
+                //bump the offset wrt the slice idx when its not just truncating output
+
+                ret2Rank--;
+                ret2Length = prod(ret2, ret2Rank);
+            }
+
+            return retOffset;
+        }
+
+
+    }
 
 
 /**
@@ -1359,12 +1363,12 @@ __device__ int tadOffset(int *xInfo, int offset) {
  * @return
  */
 #ifdef __CUDACC__
-	__device__ __host__
+    __device__ __host__
 #endif
-	int tadForBlockIndex(int blockSize, int blockIdx, int i) {
-		int ret = blockIdx + i * blockSize;
-		return ret;
-	}
+    int tadForBlockIndex(int blockSize, int blockIdx, int i) {
+        int ret = blockIdx + i * blockSize;
+        return ret;
+    }
 
 
 /**
@@ -1372,39 +1376,39 @@ __device__ int tadOffset(int *xInfo, int offset) {
  *
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	int tadsPerBlock(int blockSize, int tads) {
-		return nd4j::math::nd4j_ceil<double>(tads / (double) blockSize);
-	}
+    int tadsPerBlock(int blockSize, int tads) {
+        return nd4j::math::nd4j_ceil<double>(tads / (double) blockSize);
+    }
 
 /**
  * Returns a shape buffer
  * for the shape information metadata.
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	int *toShapeBuffer(ShapeInformation *info) {
-		int *ret = (int *) malloc(sizeof(int) * shapeInfoLength(info->rank));
-		int count = 1;
-		ret[0] = info->rank;
-		for (int i = 0; i < info->rank; i++) {
-			ret[count++] = info->shape[i];
-		}
-		for (int i = 0; i < info->rank; i++) {
-			ret[count++] = info->stride[i];
-		}
+    int *toShapeBuffer(ShapeInformation *info) {
+        int *ret = (int *) malloc(sizeof(int) * shapeInfoLength(info->rank));
+        int count = 1;
+        ret[0] = info->rank;
+        for (int i = 0; i < info->rank; i++) {
+            ret[count++] = info->shape[i];
+        }
+        for (int i = 0; i < info->rank; i++) {
+            ret[count++] = info->stride[i];
+        }
 
-		ret[count++] = info->offset;
-		ret[count++] = info->elementWiseStride;
-		ret[count++] = info->order;
+        ret[count++] = info->offset;
+        ret[count++] = info->elementWiseStride;
+        ret[count++] = info->order;
 
 
-		return ret;
-	}
+        return ret;
+    }
 
 
 /**
@@ -1417,12 +1421,12 @@ __device__ int tadOffset(int *xInfo, int offset) {
  * per tad
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	int tadIndex(int i, int elementWiseStride, int numElementsPerTad) {
-		return i / (numElementsPerTad * elementWiseStride);
-	}
+    int tadIndex(int i, int elementWiseStride, int numElementsPerTad) {
+        return i / (numElementsPerTad * elementWiseStride);
+    }
 
 /**
  * Map a tad to a
@@ -1433,14 +1437,14 @@ __device__ int tadOffset(int *xInfo, int offset) {
  * @param tadsForOriginal the number of tads for the smaller problem (eg: 3)
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	int reductionIndexForTad(int tadIndexForOriginal, int tadsForReduced, int tadsForOriginal) {
-		if (tadIndexForOriginal == 0)
-			return 0;
-		return tadIndexForOriginal / (tadsForOriginal / tadsForReduced);
-	}
+    int reductionIndexForTad(int tadIndexForOriginal, int tadsForReduced, int tadsForOriginal) {
+        if (tadIndexForOriginal == 0)
+            return 0;
+        return tadIndexForOriginal / (tadsForOriginal / tadsForReduced);
+    }
 
 /**
  * Computes the number of tads
@@ -1448,12 +1452,12 @@ __device__ int tadOffset(int *xInfo, int offset) {
  * reduction tad.
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	int tadsPerReduceIndex(int tadsForReduce, int tadsForOriginal) {
-		return tadsForOriginal / tadsForReduce;
-	}
+    int tadsPerReduceIndex(int tadsForReduce, int tadsForOriginal) {
+        return tadsForOriginal / tadsForReduce;
+    }
 
 
 /**
@@ -1465,13 +1469,13 @@ __device__ int tadOffset(int *xInfo, int offset) {
  * @param originalTadNum the tad number for the reduced version of the problem
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
-	int reductionIndexForLinear(
-			int i, int elementWiseStride, int numElementsPerTad, int tadNum, int originalTadNum) {
-		int tad = tadIndex(i, elementWiseStride, numElementsPerTad);
-		return reductionIndexForTad(tad, tadNum, originalTadNum);
-	}
+    int reductionIndexForLinear(
+            int i, int elementWiseStride, int numElementsPerTad, int tadNum, int originalTadNum) {
+        int tad = tadIndex(i, elementWiseStride, numElementsPerTad);
+        return reductionIndexForTad(tad, tadNum, originalTadNum);
+    }
 
 
 /**
@@ -1479,17 +1483,17 @@ __device__ int tadOffset(int *xInfo, int offset) {
  * up to the given length
  */
 #ifdef __CUDACC__
-	__host__ __device__
+    __host__ __device__
 #endif
 
-	int prod(int *data, int length) {
-		int prod = 1;
-		for (int i = 0; i < length; i++) {
-			prod *= data[i];
-		}
+    int prod(int *data, int length) {
+        int prod = 1;
+        for (int i = 0; i < length; i++) {
+            prod *= data[i];
+        }
 
-		return prod;
-	}
+        return prod;
+    }
 
 
 }

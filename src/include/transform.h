@@ -22,7 +22,7 @@ namespace functions {
              * @param params
              * @return
              */
-            virtual inline
+            virtual __always_inline
 #ifdef __CUDACC__
             __host__ __device__
 #endif
@@ -46,7 +46,6 @@ namespace functions {
             virtual void exec(T *dx,int xStride,T *result, int resultStride,T *extraParams,int n) {
                 if(xStride == 1 && resultStride == 1) {
 #pragma omp simd
-#pragma omp parallel for
                     for(int i = 0; i < n; i++) {
                         result[i] = op(dx[i],extraParams);
                     }
@@ -54,7 +53,6 @@ namespace functions {
                 }
                 else {
 #pragma omp simd
-#pragma omp parallel for
                     for(int i = 0; i < n; i++) {
                         result[i * resultStride] = op(dx[i * resultStride],extraParams);
                     }
@@ -77,7 +75,7 @@ namespace functions {
                  * @param params
                  * @return
                  */
-                virtual inline
+                virtual __always_inline
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -107,7 +105,7 @@ namespace functions {
                  * @param params
                  * @return
                  */
-                virtual inline
+                virtual __always_inline
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -148,7 +146,7 @@ namespace functions {
                 /** Name of the op
                  * @return the name of the operation
                  */
-                virtual inline
+                virtual __always_inline
 #ifdef __CUDACC__
                 __host__
 #endif
@@ -167,7 +165,7 @@ namespace functions {
                  * @param params
                  * @return
                  */
-                virtual inline
+                virtual __always_inline
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -178,7 +176,7 @@ namespace functions {
                 /** Name of the op
                  * @return the name of the operation
                  */
-                virtual inline
+                virtual __always_inline
 #ifdef __CUDACC__
                 __host__
 #endif
@@ -197,7 +195,7 @@ namespace functions {
                  * @param params
                  * @return
                  */
-                virtual inline
+                virtual __always_inline
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -227,7 +225,7 @@ namespace functions {
                  * @param params
                  * @return
                  */
-                virtual inline
+                virtual __always_inline
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -257,7 +255,7 @@ namespace functions {
                  * @param params
                  * @return
                  */
-                virtual inline
+                virtual __always_inline
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -287,7 +285,7 @@ namespace functions {
                  * @param params
                  * @return
                  */
-                virtual inline
+                virtual __always_inline
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -318,7 +316,7 @@ namespace functions {
                  * @param params
                  * @return
                  */
-                virtual inline
+                virtual __always_inline
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -350,7 +348,7 @@ namespace functions {
                  * @param params
                  * @return
                  */
-                virtual inline
+                virtual __always_inline
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -381,7 +379,7 @@ namespace functions {
                  * @param params
                  * @return
                  */
-                virtual inline
+                virtual __always_inline
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -402,7 +400,7 @@ namespace functions {
                 /** Name of the op
                  * @return the name of the operation
                  */
-                virtual inline
+                virtual __always_inline
 #ifdef __CUDACC__
                 __host__
 #endif
@@ -421,7 +419,7 @@ namespace functions {
                  * @param params
                  * @return
                  */
-                virtual inline
+                virtual __always_inline
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -451,7 +449,7 @@ namespace functions {
                  * @param params
                  * @return
                  */
-                virtual inline
+                virtual __always_inline
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -482,7 +480,7 @@ namespace functions {
                  * @param params
                  * @return
                  */
-                virtual inline
+                virtual __always_inline
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -512,7 +510,7 @@ namespace functions {
                  * @param params
                  * @return
                  */
-                virtual inline
+                virtual __always_inline
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -543,7 +541,7 @@ namespace functions {
                  * @param params
                  * @return
                  */
-                virtual inline
+                virtual __always_inline
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -574,7 +572,7 @@ namespace functions {
                  * @param params
                  * @return
                  */
-                virtual inline
+                virtual __always_inline
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -585,7 +583,7 @@ namespace functions {
                 /** Name of the op
                  * @return the name of the operation
                  */
-                virtual inline
+                virtual __always_inline
 #ifdef __CUDACC__
                 __host__
 #endif
@@ -604,7 +602,7 @@ namespace functions {
                  * @param params
                  * @return
                  */
-                virtual inline
+                virtual __always_inline
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -634,7 +632,7 @@ namespace functions {
                  * @param params
                  * @return
                  */
-                virtual inline
+                virtual __always_inline
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
