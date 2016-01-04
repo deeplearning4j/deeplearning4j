@@ -470,7 +470,7 @@ namespace functions {
                 __host__ __device__
 #endif
                 T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) {
-                    return sqrt<T>(reduction);
+                    return nd4j::math::nd4j_sqrt<T>(reduction);
                 }
                 /**
                  *
@@ -485,7 +485,7 @@ namespace functions {
                 __host__ __device__
 #endif
                 T op(T d1, T d2, T *extraParams) {
-                    return pow<T>(d1 - d2,2);
+                    return nd4j::math::nd4j_pow<T>(d1 - d2,2);
                 }
 
                 //calculate an update of the reduce operation
@@ -573,7 +573,7 @@ namespace functions {
                 __host__ __device__
 #endif
                 T update(T old, T opOutput, T *extraParams) {
-                    return pow<T>(old,2) + opOutput;
+                    return nd4j::math::nd4j_pow<T>(old,2) + opOutput;
                 }
 
 

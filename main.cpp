@@ -26,13 +26,15 @@
  */
 
 #include <CppUTest/CommandLineTestRunner.h>
-#include <reducetests.h>
+//#include <reducetests.h>
 #include <shapetests.h>
+#include <transformtests.h>
 int main(int ac, char** av) {
     return CommandLineTestRunner::RunAllTests(ac, av);
 }
 
 
-IMPORT_TEST_GROUP(Mean);
+//IMPORT_TEST_GROUP(Mean);
 IMPORT_TEST_GROUP(Shape);
+IMPORT_TEST_GROUP(Transform);
 //IMPORT_TEST_GROUP(Buffer);

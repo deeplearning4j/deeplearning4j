@@ -275,7 +275,7 @@ namespace functions {
                 __host__ __device__
 #endif
                 T op(T	d1,	T d2, T	*params) {
-                    return max<T>(d1,d2);
+                    return nd4j::math::nd4j_max<T>(d1,d2);
                 }
                 /** Name of the op
                  * @return the name of the operation
@@ -306,7 +306,7 @@ namespace functions {
                 __host__ __device__
 #endif
                 T op(T	d1,	T d2, T	*params) {
-                    return min<T>(d1,d2);
+                    return nd4j::math::nd4j_min<T>(d1,d2);
                 }
                 /** Name of the op
                  * @return the name of the operation

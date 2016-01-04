@@ -13,6 +13,7 @@
 // These are CUDA Helper functions for initialization and error checking
 
 #ifndef HELPER_CUDA_H
+#ifdef __CUDACC__
 #define HELPER_CUDA_H
 
 #pragma once
@@ -957,4 +958,5 @@ inline bool checkCudaCapabilities(int major_version, int minor_version)
 // end of CUDA Helper Functions
 
 
+#endif
 #endif

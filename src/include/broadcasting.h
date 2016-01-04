@@ -155,7 +155,7 @@ namespace functions {
 				__host__ __device__
 #endif
 				T op(T d1) {
-					return d2;
+					return d1;
 				}
 
 				virtual ~Copy() {}

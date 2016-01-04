@@ -97,8 +97,8 @@ TEST(Shape,ShapeInfoBuffer) {
 	info->rank = rank;
 
 	int *shapeInfoBuff = shape::toShapeBuffer(info);
-	CHECK(arrsEquals(rank,shape,shape::shapeOf(shapeInfoBuff)));
-	CHECK(arrsEquals(rank,stride,shape::stride(shapeInfoBuff)));
+	CHECK(arrsEquals<int>(rank,shape,shape::shapeOf(shapeInfoBuff)));
+	CHECK(arrsEquals<int>(rank,stride,shape::stride(shapeInfoBuff)));
     CHECK(info->elementWiseStride == shape::elementWiseStride(shapeInfoBuff));
 	free(shape);
 	free(stride);
@@ -125,7 +125,7 @@ TEST(Shape,ReverseCopy) {
 	int assertion[4] = {4,3,2,1};
 	int *rangeArr = shape::range(1,5);
 	int *reverseCopy2 = shape::reverseCopy(rangeArr,4);
-	CHECK(arrsEquals(4,assertion,reverseCopy2));
+	CHECK(arrsEquals<int>(4,assertion,reverseCopy2));
 	free(reverseCopy2);
     free(rangeArr);
 
@@ -137,13 +137,13 @@ TEST(Shape,Keep) {
 	int keepIndexes[2] = {0,1};
 	int *keep = shape::keep(rangeArr,keepIndexes,2,4);
 
-	CHECK(arrsEquals(2,keepAssertion,keep));
+	CHECK(arrsEquals<int>(2,keepAssertion,keep));
 
 
 	int keepAssertion2[2] = {2,3};
 	int keepAssertionIndexes2[2] = {1,2};
 	int *keep2 = shape::keep(rangeArr,keepAssertionIndexes2,2,4);
-	CHECK(arrsEquals(2,keepAssertion2,keep2));
+	CHECK(arrsEquals<int>(2,keepAssertion2,keep2));
 
 	free(keep2);
 	free(rangeArr);

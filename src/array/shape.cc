@@ -494,7 +494,7 @@ namespace shape {
 		checkArrangeArray(rearrange, strideCopy, shapeRank, shapeRank);
 		int *newStride = doPermuteSwap(shapeRank, strideCopy, rearrange);
 		free(strideCopy);
-		return strideCopy;
+		return newStride;
 	}
 
 
@@ -771,7 +771,7 @@ namespace shape {
 #endif
 
 	int *range(int from, int to, int increment) {
-		int diff = abs(from - to);
+		int diff = nd4j::math::nd4j_abs(from - to);
 		int retLength = diff / increment;
 		int *ret = diff / increment < 1 ? (int *) malloc(sizeof(int)) : (int *) malloc(sizeof(int) * diff / increment);
 		if (from < to) {
@@ -927,7 +927,7 @@ namespace shape {
 #endif
 
 	int lengthPerSlice(int rank, int *shape, int *dimension, int dimensionLength) {
-		int *ret2 = (int *) malloc((abs(rank - dimensionLength)) * sizeof(int));
+		int *ret2 = (int *) malloc((nd4j::math::nd4j_abs(rank - dimensionLength)) * sizeof(int));
 		removeIndex(shape, dimension, rank, dimensionLength, &ret2);
 		int length = rank - dimensionLength;
 		int ret = prod(ret2, length);
@@ -1025,7 +1025,6 @@ __device__ int tadOffset(int *xInfo, int offset) {
 		int ret2Rank = rank - 1;
 
 		int retOffset = sliceIdx * permutedStrides[0];
-		int tensorShapeProd = prod(tensorShape, tensorShapeLength);
 
 
 		int length = prod(tensorShape, tensorShapeLength);
@@ -1129,7 +1128,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
 			tensorShape = newTensorShape;
 		}
 
-		int removeLength = abs(xRank - dimensionLength);
+		int removeLength = nd4j::math::nd4j_abs(xRank - dimensionLength);
 		int tensorShapeLength = rank(xShapeInfo) - removeLength;
 		if (tensorShapeLength < 2)
 			tensorShapeLength = 2;
@@ -1271,7 +1270,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
 		int retOffset = sliceIdx * info.permutedStrides[0];
 		int tensorShapeProd = info.tensorShapeProd;
 
-		int tensorShapeRoughlyEquals = dimensionLength == 1 && abs(info.tensorShapeLength - dimensionLength) <= 1;
+		int tensorShapeRoughlyEquals = dimensionLength == 1 && nd4j::math::nd4j_abs(info.tensorShapeLength - dimensionLength) <= 1;
 		if ((tensorShapeProd == ret2Length && tensorShapeRoughlyEquals == 1) ||
 			dimensionLength == info.tensorShapeLength) {
 			return retOffset;
@@ -1377,7 +1376,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
 #endif
 
 	int tadsPerBlock(int blockSize, int tads) {
-		return ceil<double>(tads / (double) blockSize);
+		return nd4j::math::nd4j_ceil<double>(tads / (double) blockSize);
 	}
 
 /**

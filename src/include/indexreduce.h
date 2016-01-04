@@ -690,7 +690,7 @@ struct SharedIndexValue<double> {
 #ifdef __CUDACC__
 __host__ __device__
 #endif
-IndexValue<T> op(IndexValue<T> val,T *extraParams) {
+            functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> val,T *extraParams) {
                 return val;
             }
 
@@ -706,7 +706,7 @@ IndexValue<T> op(IndexValue<T> val,T *extraParams) {
 #ifdef __CUDACC__
             __host__ __device__
 #endif
-            IndexValue<T> update(IndexValue<T> old,IndexValue <T> opOutput, T *extraParams)  {
+            functions::indexreduce::IndexValue<T> update(functions::indexreduce::IndexValue<T> old,functions::indexreduce::IndexValue <T> opOutput, T *extraParams)  {
                 if(opOutput.value > old.value)
                     return opOutput;
                 return old;
@@ -724,10 +724,10 @@ IndexValue<T> op(IndexValue<T> val,T *extraParams) {
 #ifdef __CUDACC__
             __host__ __device__
 #endif
-            IndexValue<T> merge(IndexValue<T> f1,IndexValue <T> f2, T *extraParams) {
-                if(opOutput.value > old.value)
-                    return opOutput;
-                return old;
+            functions::indexreduce::IndexValue<T> merge(functions::indexreduce::IndexValue<T> f1,functions::indexreduce::IndexValue <T> f2, T *extraParams) {
+                if(f1.value > f2.value)
+                    return f2;
+                return f1;
             }
 
             /**
@@ -746,7 +746,7 @@ IndexValue<T> op(IndexValue<T> val,T *extraParams) {
 #ifdef __CUDACC__
             __host__ __device__
 #endif
-            IndexValue<T> postProcess(IndexValue<T> reduction,int n,int xOffset, T *dx,int incx, T *extraParams,T *result)  {
+            functions::indexreduce::IndexValue<T> postProcess(functions::indexreduce::IndexValue<T> reduction,int n,int xOffset, T *dx,int incx, T *extraParams,T *result)  {
                 return reduction;
             }
 
@@ -761,7 +761,7 @@ IndexValue<T> op(IndexValue<T> val,T *extraParams) {
 #ifdef __CUDACC__
             __host__ __device__
 #endif
-            T op(IndexValue<T> d1, IndexValue <T> d2, T *extraParams)  {
+            T op(functions::indexreduce::IndexValue<T> d1, functions::indexreduce::IndexValue <T> d2, T *extraParams)  {
                 return d1;
             }
 
@@ -794,7 +794,7 @@ IndexValue<T> op(IndexValue<T> val,T *extraParams) {
 #ifdef __CUDACC__
             __host__ __device__
 #endif
-            IndexValue<T> op(IndexValue<T> val,T *extraParams) {
+            functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> val,T *extraParams) {
                 return val;
             }
 
@@ -810,7 +810,7 @@ IndexValue<T> op(IndexValue<T> val,T *extraParams) {
 #ifdef __CUDACC__
             __host__ __device__
 #endif
-            IndexValue<T> update(IndexValue<T> old,IndexValue <T> opOutput, T *extraParams)  {
+            functions::indexreduce::IndexValue<T> update(functions::indexreduce::IndexValue<T> old,functions::indexreduce::IndexValue <T> opOutput, T *extraParams)  {
                 if(opOutput.value < old.value)
                     return opOutput;
                 return old;
@@ -828,10 +828,10 @@ IndexValue<T> op(IndexValue<T> val,T *extraParams) {
 #ifdef __CUDACC__
             __host__ __device__
 #endif
-            IndexValue<T> merge(IndexValue<T> f1,IndexValue <T> f2, T *extraParams) {
-                if(opOutput.value < old.value)
-                    return opOutput;
-                return old;
+            functions::indexreduce::IndexValue<T> merge(functions::indexreduce::IndexValue<T> f1,functions::indexreduce::IndexValue <T> f2, T *extraParams) {
+                if(f1.value < f2.value)
+                    return f2;
+                return f1;
             }
 
             /**
@@ -850,7 +850,7 @@ IndexValue<T> op(IndexValue<T> val,T *extraParams) {
 #ifdef __CUDACC__
             __host__ __device__
 #endif
-            IndexValue<T> postProcess(IndexValue<T> reduction,int n,int xOffset, T *dx,int incx, T *extraParams,T *result)  {
+            functions::indexreduce::IndexValue<T> postProcess(functions::indexreduce::IndexValue<T> reduction,int n,int xOffset, T *dx,int incx, T *extraParams,T *result)  {
                 return reduction;
             }
 
@@ -865,7 +865,7 @@ IndexValue<T> op(IndexValue<T> val,T *extraParams) {
 #ifdef __CUDACC__
             __host__ __device__
 #endif
-            T op(IndexValue<T> d1, IndexValue <T> d2, T *extraParams)  {
+            T op(functions::indexreduce::IndexValue<T> d1, functions::indexreduce::IndexValue <T> d2, T *extraParams)  {
                 return d1;
             }
 

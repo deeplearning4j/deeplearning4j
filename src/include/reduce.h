@@ -839,14 +839,14 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 __host__ __device__
 #endif
                 virtual T merge(T old,T opOutput,T *extraParams) override {
-                    return max<T>(old,opOutput);
+                    return nd4j::math::nd4j_max<T>(old,opOutput);
                 }
 
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
                 virtual T update(T old,T opOutput,T *extraParams) override {
-                    return max<T>(opOutput,old);
+                    return nd4j::math::nd4j_max<T>(opOutput,old);
                 }
 
 #ifdef __CUDACC__
@@ -894,14 +894,14 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 __host__ __device__
 #endif
                 virtual T merge(T old,T opOutput,T *extraParams) override {
-                    return min<T>(old,opOutput);
+                    return nd4j::math::nd4j_min<T>(old,opOutput);
                 }
 
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
                 virtual T update(T old,T opOutput,T *extraParams) override {
-                    return min<T>(opOutput,old);
+                    return nd4j::math::nd4j_min<T>(opOutput,old);
                 }
 
 #ifdef __CUDACC__
@@ -966,7 +966,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 __host__ __device__
 #endif
                 virtual T op(T d1,T *extraParams) override {
-                    return abs<T>(d1);
+                    return nd4j::math::nd4j_abs<T>(d1);
                 }
 
 
@@ -1037,7 +1037,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                         T *dx,
                         int incx,
                         T *extraParams,T *result) override {
-                    return sqrt<T>(reduction);
+                    return nd4j::math::nd4j_sqrt<T>(reduction);
                 }
 
                 virtual
@@ -1071,7 +1071,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 __host__ __device__
 #endif
                 virtual T update(T old,T opOutput,T *extraParams) override {
-                    return max<T>(abs<T>(old),abs<T>(opOutput));
+                    return nd4j::math::nd4j_max<T>(nd4j::math::nd4j_abs<T>(old),nd4j::math::nd4j_abs<T>(opOutput));
 
                 }
 
@@ -1094,7 +1094,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                         T *dx,
                         int incx,
                         T *extraParams,T *result) override {
-                    return max<T>(abs<T>(reduction),abs<T>(result[0]));
+                    return nd4j::math::nd4j_max<T>(nd4j::math::nd4j_abs<T>(reduction),nd4j::math::nd4j_abs<T>(result[0]));
                 }
 
                 virtual
@@ -1122,7 +1122,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 __host__ __device__
 #endif
                 virtual T merge(T old,T opOutput,T *extraParams) override {
-                    return f1 + f2;
+                    return old + opOutput;
 
                 }
 
@@ -1131,7 +1131,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 #endif
                 virtual T update(T old,T opOutput,T *extraParams) override {
                     T mean = extraParams[2];
-                    T curr = pow<T>(opOutput - mean,2.0);
+                    T curr = nd4j::math::nd4j_pow<T>(opOutput - mean,2.0);
                     return old + curr;
 
                 }
@@ -1156,7 +1156,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                         int incx,
                         T *extraParams,T *result) override {
                     T bias = extraParams[1];
-                    return  sqrt<T>((reduction - (pow<T>(bias,2.0) / n)) / (T) (n - 1.0));
+                    return  nd4j::math::nd4j_sqrt<T>((reduction - (nd4j::math::nd4j_pow<T>(bias,2.0) / n)) / (T) (n - 1.0));
                 }
 
                 virtual
@@ -1184,7 +1184,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 __host__ __device__
 #endif
                 virtual T merge(T old,T opOutput,T *extraParams) override {
-                    return f1 + f2;
+                    return old + opOutput;
 
                 }
 
@@ -1193,7 +1193,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 #endif
                 virtual T update(T old,T opOutput,T *extraParams) override {
                     T mean = extraParams[2];
-                    T curr = pow<T>(opOutput - mean,2.0);
+                    T curr = nd4j::math::nd4j_pow<T>(opOutput - mean,2.0);
                     return old + curr;
 
                 }
@@ -1218,7 +1218,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                         int incx,
                         T *extraParams,T *result) override {
                     T bias = extraParams[1];
-                    return  (reduction - (pow<T>(bias,2.0) / n)) / (T) (n - 1.0);
+                    return  (reduction - (nd4j::math::nd4j_pow<T>(bias,2.0) / n)) / (T) (n - 1.0);
                     ;
                 }
 
@@ -1250,7 +1250,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 
             template <typename T>
             class ReduceOpFactory : public virtual functions::ops::OpFactory<T> {
-                virtual functions::ops::Op<T> create(std::string name) {
+                virtual functions::ops::Op<T> * create(std::string name) {
                     if(name == "mean")
                         return new Mean<T>();
                     else if(name == "sum") {

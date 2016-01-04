@@ -11,6 +11,9 @@
 #include <op.h>
 namespace functions {
     namespace transform {
+
+
+
         template<typename T>
         class Transform : public virtual functions::ops::Op<T> {
             /**
@@ -39,7 +42,7 @@ namespace functions {
 			}
 #endif
 
-
+        public:
             virtual void exec(T *dx,int xStride,T *result, int resultStride,T *extraParams,int n) {
                 if(xStride == 1 && resultStride == 1) {
                     for(int i = 0; i < n; i++) {
@@ -58,6 +61,9 @@ namespace functions {
 
         };
 
+
+
+
         namespace ops {
             template <typename T>
             class Abs : public virtual Transform<T> {
@@ -72,7 +78,7 @@ namespace functions {
                 __host__ __device__
 #endif
                 T op(T d1, T *params) {
-                    return abs<T>(d1);
+                    return nd4j::math::nd4j_abs<T>(d1);
                 }
 
                 /** Name of the op
@@ -102,7 +108,7 @@ namespace functions {
                 __host__ __device__
 #endif
                 T op(T d1, T *params) {
-                    return ceil<T>(d1);
+                    return nd4j::math::nd4j_ceil<T>(d1);
                 }
 
                 /** Name of the op
@@ -132,7 +138,7 @@ namespace functions {
                 __host__ __device__
 #endif
                 T op(T d1, T *params) {
-                    return cos<T>(d1);
+                    return nd4j::math::nd4j_cos<T>(d1);
                 }
 
                 /** Name of the op
@@ -162,7 +168,7 @@ namespace functions {
                 __host__ __device__
 #endif
                 T op(T d1, T *params) {
-                    return exp<T>(d1);
+                    return nd4j::math::nd4j_exp<T>(d1);
                 }
 
                 /** Name of the op
@@ -192,7 +198,7 @@ namespace functions {
                 __host__ __device__
 #endif
                 T op(T d1, T *params) {
-                    return floor<T>(d1);
+                    return nd4j::math::nd4j_floor<T>(d1);
                 }
 
                 /** Name of the op
@@ -222,7 +228,7 @@ namespace functions {
                 __host__ __device__
 #endif
                 T op(T d1, T *params) {
-                    return log<T>(d1);
+                    return nd4j::math::nd4j_log<T>(d1);
                 }
 
                 /** Name of the op
@@ -282,7 +288,7 @@ namespace functions {
                 __host__ __device__
 #endif
                 T op(T d1, T *params) {
-                    return pow<T>(d1,params[0]);
+                    return nd4j::math::nd4j_pow<T>(d1,params[0]);
                 }
 
                 /** Name of the op
@@ -313,7 +319,7 @@ namespace functions {
                 __host__ __device__
 #endif
                 T op(T d1, T *params) {
-                    return round<T>(d1);
+                    return nd4j::math::nd4j_round<T>(d1);
                 }
 
                 /** Name of the op
@@ -345,7 +351,7 @@ namespace functions {
                 __host__ __device__
 #endif
                 T op(T d1, T *params) {
-                    return sigmoid<T>(d1);
+                    return nd4j::math::nd4j_sigmoid<T>(d1);
                 }
 
                 /** Name of the op
@@ -381,11 +387,11 @@ namespace functions {
                     if(d1 >= min && d1 <= max)
                         return d1;
                     if(min == 0 && max == 1) {
-                        T val = 1 / (1 + exp<T>(-d1));
-                        return (floor<T>(val * (max - min)) + min);
+                        T val = 1 / (1 + nd4j::math::nd4j_exp<T>(-d1));
+                        return (nd4j::math::nd4j_floor<T>(val * (max - min)) + min);
                     }
 
-                    T ret =  (floor<T>(d1 * (max - min)) + min);
+                    T ret =  (nd4j::math::nd4j_floor<T>(d1 * (max - min)) + min);
                     return ret;
                 }
 
@@ -416,7 +422,7 @@ namespace functions {
                 __host__ __device__
 #endif
                 T op(T d1, T *params) {
-                    return sin<T>(d1);
+                    return nd4j::math::nd4j_sin<T>(d1);
                 }
 
                 /** Name of the op
@@ -446,7 +452,7 @@ namespace functions {
                 __host__ __device__
 #endif
                 T op(T d1, T *params) {
-                    return sqrt<T>(d1);
+                    return nd4j::math::nd4j_sqrt<T>(d1);
                 }
 
                 /** Name of the op
@@ -477,7 +483,7 @@ namespace functions {
                 __host__ __device__
 #endif
                 T op(T d1, T *params) {
-                    return softplus<T>(d1);
+                    return nd4j::math::softplus<T>(d1);
                 }
 
                 /** Name of the op
@@ -538,7 +544,7 @@ namespace functions {
                 __host__ __device__
 #endif
                 T op(T d1, T *params) {
-                    return tanh<T>(d1);
+                    return nd4j::math::nd4j_tanh<T>(d1);
                 }
 
                 /** Name of the op
@@ -569,7 +575,7 @@ namespace functions {
                 __host__ __device__
 #endif
                 T op(T d1, T *params) {
-                    return acos<T>(d1);
+                    return nd4j::math::nd4j_acos<T>(d1);
                 }
 
                 /** Name of the op
@@ -599,7 +605,7 @@ namespace functions {
                 __host__ __device__
 #endif
                 T op(T d1, T *params) {
-                    return asin<T>(d1);
+                    return nd4j::math::nd4j_asin<T>(d1);
                 }
 
                 /** Name of the op
@@ -629,7 +635,7 @@ namespace functions {
                 __host__ __device__
 #endif
                 T op(T d1, T *params) {
-                    return atan<T>(d1);
+                    return nd4j::math::nd4j_atan<T>(d1);
                 }
 
                 /** Name of the op
@@ -651,7 +657,44 @@ namespace functions {
 
         }
 
+
+        template <typename T>
+        class TransformOpFactory {
+        public:
+            TransformOpFactory() {
+            }
+
+            Transform<T> * getOp(std::string name) {
+                if(name == "abs_strided")  return new transform::ops::Abs<T>();
+                if(name == "ceil_strided")  return new transform::ops::Ceiling<T>();
+                if(name == "cos_strided")  return new transform::ops::Cosine<T>();
+                if(name == "exp_strided")  return new transform::ops::Exp<T>();
+                if(name == "floor_strided")  return new transform::ops::Floor<T>();
+                if(name == "log_strided")  return new transform::ops::Log<T>();
+                if(name == "neg_strided")  return new transform::ops::Neg<T>();
+                if(name == "pow_strided")  return new transform::ops::Pow<T>();
+                if(name == "round_strided")  return new transform::ops::Round<T>();
+                if(name == "setrange_strided")  return new transform::ops::SetRange<T>();
+                if(name == "sigmoid_strided")  return new transform::ops::Sigmoid<T>();
+                if(name == "sign_strided")  return new transform::ops::Sign<T>();
+                if(name == "sin_strided")  return new transform::ops::Sin<T>();
+                if(name == "softplus_strided")  return new transform::ops::SoftPlus<T>();
+                if(name == "sqrt_strided")  return new transform::ops::Sqrt<T>();
+                if(name == "tanh_strided")  return new transform::ops::Tanh<T>();
+                if(name == "acos_strided")  return new transform::ops::ACos<T>();
+                if(name == "asin_strided")  return new transform::ops::ASin<T>();
+                if(name == "atan_strided")  return new transform::ops::ATan<T>();
+                return NULL;
+            }
+
+
+
+        };
+
     }
+
+
+
 }
 
 
