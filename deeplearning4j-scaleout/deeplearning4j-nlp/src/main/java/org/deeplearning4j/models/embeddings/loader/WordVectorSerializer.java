@@ -353,7 +353,7 @@ public class WordVectorSerializer {
 
 
         if (!(lookupTable instanceof InMemoryLookupTable)) throw new IllegalStateException("At this moment only InMemoryLookupTable is supported.");
-        if (!(vocabCache instanceof InMemoryLookupCache)) throw new IllegalStateException("At this moment only InMemoryLookupCache is supported.");
+     //   if (!(vocabCache instanceof InMemoryLookupCache)) throw new IllegalStateException("At this moment only InMemoryLookupCache is supported.");
 
         VectorsConfiguration conf = vec.getConfiguration();
         conf.setVocabSize(vocabCache.numWords());
@@ -390,7 +390,9 @@ public class WordVectorSerializer {
             printWriter.println(builder.toString().trim());
         } else printWriter.println("");
 
-        List<VocabWord> words = new ArrayList<>(((InMemoryLookupCache) vocabCache).getVocabs().values());
+
+
+        List<VocabWord> words = new ArrayList<VocabWord>(vocabCache.vocabWords());
         for (SequenceElement word: words) {
             VocabularyWord vw = new VocabularyWord(word.getLabel());
             vw.setCount(vocabCache.wordFrequency(word.getLabel()));
