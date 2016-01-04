@@ -42,7 +42,7 @@ namespace functions {
 #ifdef __CUDACC__
             __host__ __device__
 #endif
-             __always_inline T op(T d1,T *extraParams) = 0;
+            __always_inline T op(T d1,T *extraParams) = 0;
 
             //calculate an update of the reduce operation
             /**
@@ -56,7 +56,7 @@ namespace functions {
 #ifdef __CUDACC__
             __host__ __device__
 #endif
-             __always_inline T update(T old, T opOutput, T *extraParams) = 0;
+            __always_inline T update(T old, T opOutput, T *extraParams) = 0;
 #ifdef __CUDACC__
 
             /**
@@ -554,7 +554,7 @@ namespace functions {
             __host__ __device__
 #endif
 
-             __always_inline T postProcess(
+            __always_inline T postProcess(
                     T reduction,
                     int n,
                     int xOffset,
@@ -571,6 +571,30 @@ namespace functions {
             __host__ __device__
 #endif
             ~ReduceFunction(){}
+
+            T exec(T *x,int *xShapeInfo,T *extraParams,T *result,int *resultShapeInfo) {
+                T startingVal = extraParams[0];
+                int length = shape::length(xShapeInfo);
+                int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+                int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
+                if (xElementWiseStride == 1 && resultElementWiseStride == 1) {
+#pragma omp simd
+
+                    for (int i = 0; i < length; i++) {
+                        result[i] = update(startingVal, op(x[i], extraParams), extraParams);
+                    }
+
+                }
+                else {
+#pragma omp simd
+
+                    for (int i = 0; i < length; i++) {
+                        result[i * resultElementWiseStride] = update(startingVal, op(x[i * xElementWiseStride], extraParams), extraParams);
+                    }
+
+                }
+
+            }
 
 
 

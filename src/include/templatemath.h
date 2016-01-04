@@ -8,6 +8,7 @@
 #ifndef TEMPLATEMATH_H_
 #define TEMPLATEMATH_H_
 #include <math.h>
+
 namespace nd4j {
     namespace math {
         template <typename T>
@@ -525,7 +526,6 @@ namespace nd4j {
 
     }
 }
-
 
 
 

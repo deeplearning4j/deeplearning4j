@@ -11,7 +11,7 @@
 #include <CppUTest/TestHarness.h>
 
 
-TEST_GROUP(Mean)
+TEST_GROUP(Reduce)
 {
 
 	static int output_method(const char* output, ...)
@@ -30,7 +30,7 @@ TEST_GROUP(Mean)
 	}
 };
 
-TEST(Mean, SimpleTwoByTwo)
+TEST(Reduce, Sum)
 {
 
 

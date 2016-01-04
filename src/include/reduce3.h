@@ -385,6 +385,30 @@ namespace functions {
 	}
 #endif
 
+            T exec(T *x,int *xShapeInfo,T *extraParams,T *y,int *yShapeInfo,T *result,int *resultShapeInfo) {
+                T startingVal = extraParams[0];
+                int length = shape::length(xShapeInfo);
+                int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+                int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
+                int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
+                if (xElementWiseStride == 1 && resultElementWiseStride == 1) {
+#pragma omp simd
+
+                    for (int i = 0; i < length; i++) {
+                        result[i] = update(startingVal, op(x[i], y[i],extraParams), extraParams);
+                    }
+
+                }
+                else {
+#pragma omp simd
+
+                    for (int i = 0; i < length; i++) {
+                        result[i * resultElementWiseStride] = update(startingVal, op(x[i * xElementWiseStride],y[i * yElementWiseStride],extraParams), extraParams);
+                    }
+
+                }
+
+            }
             virtual ~Reduce3() {}
 
 
@@ -608,6 +632,21 @@ namespace functions {
             };
 
         }
+
+        template <typename T>
+        class Reduce3OpFactory {
+        public:
+            Reduce3OpFactory() {}
+            Reduce3<T> * getOp(std::string name) {
+                if(name == "manhattan_strided")
+                    return new functions::reduce3::ops::ManhattanDistance<T>();
+                else if(name == "euclidean_strided")
+                    return new functions::reduce3::ops::EuclideanDistance<T>();
+                else if(name == "cosinesimilarity_strided")
+                    return new functions::reduce3::ops::CosineSimilarity<T>();
+                return NULL;
+            }
+        };
 
     }
 }
