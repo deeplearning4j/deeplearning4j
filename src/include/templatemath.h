@@ -14,70 +14,70 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        T nd4j_abs(T value);
+        __inline__ T nd4j_abs(T value);
 
         template <typename T>
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        T nd4j_max(T val1, T val2);
+        __inline__  T nd4j_max(T val1, T val2);
 
         template <typename T>
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        T nd4j_min(T val1, T val2);
+        __inline__ T nd4j_min(T val1, T val2);
 
         template <typename T>
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        T nd4j_ceil(T val1);
+        __inline__  T nd4j_ceil(T val1);
 
         template <typename T>
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        T nd4j_cos(T val);
+        __inline__  T nd4j_cos(T val);
 
-
-
-        template <typename T>
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-        T nd4j_exp(T val);
 
 
         template <typename T>
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        T nd4j_floor(T val);
+        __inline__   T nd4j_exp(T val);
+
 
         template <typename T>
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        T nd4j_log(T val);
+        __inline__  T nd4j_floor(T val);
 
         template <typename T>
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        T nd4j_pow(T val, T val2);
+        __inline__  T nd4j_log(T val);
 
         template <typename T>
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        T nd4j_round(T val);
+        __inline__  T nd4j_pow(T val, T val2);
 
         template <typename T>
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        T nd4j_sigmoid(T val) {
+        __inline__  T nd4j_round(T val);
+
+        template <typename T>
+#ifdef __CUDACC__
+        __host__ __device__
+#endif
+        __inline__   T nd4j_sigmoid(T val) {
             return 1.0 / (1.0 + nd4j_exp<T>(-val));
         }
 
@@ -92,7 +92,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        T softplus(T val) {
+        __inline__ T softplus(T val) {
             return nd4j_log<T>(1 + nd4j_exp<T>(val));
 
         }
@@ -107,25 +107,25 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        T nd4j_tanh(T val);
+        __inline__   T nd4j_tanh(T val);
 
         template <typename T>
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        T nd4j_acos(T val);
+        __inline__ T nd4j_acos(T val);
 
         template <typename T>
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        T nd4j_asin(T val);
+        __inline__  T nd4j_asin(T val);
 
         template <typename T>
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        T nd4j_atan(T val);
+        __inline__  T nd4j_atan(T val);
 
     }
 }

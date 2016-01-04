@@ -30,7 +30,7 @@ namespace functions {
 #ifdef __CUDACC__
             __host__ __device__
 #endif
-            virtual T merge(T old,T opOutput,T *extraParams) = 0;
+            virtual __inline__ T merge(T old,T opOutput,T *extraParams) = 0;
 
             /**
              * Op with 1 parameter
@@ -42,7 +42,7 @@ namespace functions {
 #ifdef __CUDACC__
             __host__ __device__
 #endif
-            T op(T d1,T *extraParams) = 0;
+            __inline__ T op(T d1,T *extraParams) = 0;
 
             //calculate an update of the reduce operation
             /**
@@ -56,7 +56,7 @@ namespace functions {
 #ifdef __CUDACC__
             __host__ __device__
 #endif
-            T update(T old, T opOutput, T *extraParams) = 0;
+            __inline__ T update(T old, T opOutput, T *extraParams) = 0;
 #ifdef __CUDACC__
 
             /**
@@ -554,7 +554,7 @@ namespace functions {
             __host__ __device__
 #endif
 
-            T postProcess(
+            __inline__ T postProcess(
                     T reduction,
                     int n,
                     int xOffset,
@@ -615,21 +615,21 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T merge(T old,T opOutput,T *extraParams) override {
+                virtual __inline__ T merge(T old,T opOutput,T *extraParams) override {
                     return opOutput + old;
                 }
 
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T update(T old,T opOutput,T *extraParams) override {
+                virtual __inline__ T update(T old,T opOutput,T *extraParams) override {
                     return opOutput + old;
                 }
 
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T op(T d1,T *extraParams) override {
+                virtual __inline__ T op(T d1,T *extraParams) override {
                     return d1;
                 }
 
@@ -638,7 +638,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T postProcess(
+                virtual __inline__ T postProcess(
                         T reduction
                         ,int n,
                         int xOffset,
@@ -670,21 +670,21 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T merge(T old,T opOutput,T *extraParams) override {
+                virtual __inline__ T merge(T old,T opOutput,T *extraParams) override {
                     return opOutput * old;
                 }
 
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T update(T old,T opOutput,T *extraParams) override {
+                virtual __inline__ T update(T old,T opOutput,T *extraParams) override {
                     return opOutput * old;
                 }
 
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T op(T d1,T *extraParams) override {
+                virtual __inline__ T op(T d1,T *extraParams) override {
                     return d1;
                 }
 
@@ -693,7 +693,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T postProcess(
+                virtual __inline__ T postProcess(
                         T reduction
                         ,int n,
                         int xOffset,
@@ -725,21 +725,21 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T merge(T old,T opOutput,T *extraParams) override {
+                virtual __inline__ T merge(T old,T opOutput,T *extraParams) override {
                     return opOutput + old;
                 }
 
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T update(T old,T opOutput,T *extraParams) override {
+                virtual __inline__ T update(T old,T opOutput,T *extraParams) override {
                     return opOutput + old;
                 }
 
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T op(T d1,T *extraParams) override {
+                virtual __inline__ T op(T d1,T *extraParams) override {
                     return d1;
                 }
 
@@ -748,7 +748,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T postProcess(
+                virtual __inline__ T postProcess(
                         T reduction
                         ,int n,
                         int xOffset,
@@ -781,21 +781,21 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T merge(T old,T opOutput,T *extraParams) override {
+                virtual __inline__ T merge(T old,T opOutput,T *extraParams) override {
                     return opOutput + old;
                 }
 
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T update(T old,T opOutput,T *extraParams) override {
+                virtual __inline__ T update(T old,T opOutput,T *extraParams) override {
                     return opOutput + old;
                 }
 
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T op(T d1,T *extraParams) override {
+                virtual __inline__ T op(T d1,T *extraParams) override {
                     T mean = extraParams[1];
                     T curr = (d1 - mean);
                     return  curr;
@@ -806,7 +806,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T postProcess(
+                virtual __inline__ T postProcess(
                         T reduction
                         ,int n,
                         int xOffset,
@@ -838,21 +838,21 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T merge(T old,T opOutput,T *extraParams) override {
+                virtual __inline__ T merge(T old,T opOutput,T *extraParams) override {
                     return nd4j::math::nd4j_max<T>(old,opOutput);
                 }
 
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T update(T old,T opOutput,T *extraParams) override {
+                virtual __inline__ T update(T old,T opOutput,T *extraParams) override {
                     return nd4j::math::nd4j_max<T>(opOutput,old);
                 }
 
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T op(T d1,T *extraParams) override {
+                virtual __inline__ T op(T d1,T *extraParams) override {
                     return d1;
                 }
 
@@ -861,7 +861,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T postProcess(
+                virtual __inline__ T postProcess(
                         T reduction
                         ,int n,
                         int xOffset,
@@ -893,21 +893,21 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T merge(T old,T opOutput,T *extraParams) override {
+                virtual __inline__ T merge(T old,T opOutput,T *extraParams) override {
                     return nd4j::math::nd4j_min<T>(old,opOutput);
                 }
 
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T update(T old,T opOutput,T *extraParams) override {
+                virtual __inline__ T update(T old,T opOutput,T *extraParams) override {
                     return nd4j::math::nd4j_min<T>(opOutput,old);
                 }
 
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T op(T d1,T *extraParams) override {
+                virtual __inline__ T op(T d1,T *extraParams) override {
                     return d1;
                 }
 
@@ -916,7 +916,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T postProcess(
+                virtual __inline__ T postProcess(
                         T reduction
                         ,int n,
                         int xOffset,
@@ -949,7 +949,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T merge(T old,T opOutput,T *extraParams) override {
+                virtual __inline__ T merge(T old,T opOutput,T *extraParams) override {
                     return opOutput + old;
 
                 }
@@ -957,7 +957,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T update(T old,T opOutput,T *extraParams) override {
+                virtual __inline__ T update(T old,T opOutput,T *extraParams) override {
                     return opOutput + old;
 
                 }
@@ -965,7 +965,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T op(T d1,T *extraParams) override {
+                virtual __inline__ T op(T d1,T *extraParams) override {
                     return nd4j::math::nd4j_abs<T>(d1);
                 }
 
@@ -974,7 +974,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T postProcess(
+                virtual __inline__ T postProcess(
                         T reduction
                         ,int n,
                         int xOffset,
@@ -1005,7 +1005,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T merge(T old,T opOutput,T *extraParams) override {
+                virtual __inline__ T merge(T old,T opOutput,T *extraParams) override {
                     return opOutput + old;
 
                 }
@@ -1013,7 +1013,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T update(T old,T opOutput,T *extraParams) override {
+                virtual __inline__ T update(T old,T opOutput,T *extraParams) override {
                     return opOutput + old;
 
                 }
@@ -1021,7 +1021,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T op(T d1,T *extraParams) override {
+                virtual __inline__ T op(T d1,T *extraParams) override {
                     return d1 * d1;
                 }
 
@@ -1030,7 +1030,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T postProcess(
+                virtual __inline__ T postProcess(
                         T reduction
                         ,int n,
                         int xOffset,
@@ -1062,7 +1062,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T merge(T old,T opOutput,T *extraParams) override {
+                virtual __inline__ T merge(T old,T opOutput,T *extraParams) override {
                     return opOutput + old;
 
                 }
@@ -1070,7 +1070,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T update(T old,T opOutput,T *extraParams) override {
+                virtual __inline__ T update(T old,T opOutput,T *extraParams) override {
                     return nd4j::math::nd4j_max<T>(nd4j::math::nd4j_abs<T>(old),nd4j::math::nd4j_abs<T>(opOutput));
 
                 }
@@ -1078,7 +1078,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T op(T d1,T *extraParams) override {
+                virtual __inline__ T op(T d1,T *extraParams) override {
                     return d1;
                 }
 
@@ -1087,7 +1087,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T postProcess(
+                virtual __inline__ T postProcess(
                         T reduction
                         ,int n,
                         int xOffset,
@@ -1121,7 +1121,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T merge(T old,T opOutput,T *extraParams) override {
+                virtual __inline__ T merge(T old,T opOutput,T *extraParams) override {
                     return old + opOutput;
 
                 }
@@ -1129,7 +1129,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T update(T old,T opOutput,T *extraParams) override {
+                virtual __inline__ T update(T old,T opOutput,T *extraParams) override {
                     T mean = extraParams[2];
                     T curr = nd4j::math::nd4j_pow<T>(opOutput - mean,2.0);
                     return old + curr;
@@ -1139,7 +1139,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T op(T d1,T *extraParams) override {
+                virtual __inline__ T op(T d1,T *extraParams) override {
                     return d1;
                 }
 
@@ -1148,7 +1148,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T postProcess(
+                virtual __inline__ T postProcess(
                         T reduction
                         ,int n,
                         int xOffset,
@@ -1183,7 +1183,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T merge(T old,T opOutput,T *extraParams) override {
+                virtual __inline__ T merge(T old,T opOutput,T *extraParams) override {
                     return old + opOutput;
 
                 }
@@ -1191,7 +1191,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T update(T old,T opOutput,T *extraParams) override {
+                virtual __inline__ T update(T old,T opOutput,T *extraParams) override {
                     T mean = extraParams[2];
                     T curr = nd4j::math::nd4j_pow<T>(opOutput - mean,2.0);
                     return old + curr;
@@ -1201,7 +1201,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T op(T d1,T *extraParams) override {
+                virtual __inline__ T op(T d1,T *extraParams) override {
                     return d1;
                 }
 
@@ -1210,7 +1210,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                virtual T postProcess(
+                virtual __inline__ T postProcess(
                         T reduction
                         ,int n,
                         int xOffset,
@@ -1230,21 +1230,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
             };
 
 
-            template<typename T>
-            std::map<std::string,functions::reduce::ReduceFunction<T>> getFunctionMap() {
-                std::map<std::string,functions::reduce::ReduceFunction<T>> ret;
-                ret["mean"] = Mean<T>();
-                ret["sum"] = Sum<T>();
-                ret["bias"] = Bias<T>();
-                ret["max"] = Max<T>();
-                ret["min"] = Min<T>();
-                ret["norm1"] = Norm1<T>();
-                ret["norm2"] = Norm2<T>();
-                ret["normmax"] = NormMax<T>();
-                ret["prod"] = Prod<T>();
-                ret["std"] = StandardDeviation<T>();
-                ret["var"] = Variance<T>();
-            }
+
 
 
 
@@ -1253,9 +1239,28 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 virtual functions::ops::Op<T> * create(std::string name) {
                     if(name == "mean")
                         return new Mean<T>();
-                    else if(name == "sum") {
+                    else if(name == "sum")
                         return new Sum<T>();
-                    }
+                    else if(name == "bias")
+                        return new Bias<T>();
+                    else if(name == "max")
+                        return new Max<T>();
+                    else if(name == "min")
+                        return new Min<T>();
+                    else if(name == "norm1")
+                        return new Norm1<T>();
+                    else if(name == "norm2")
+                        return new Norm2<T>();
+                    else if(name == "normmax")
+                        return new NormMax<T>();
+                    else if(name == "prod")
+                        return new Prod<T>();
+                    else if(name == "std")
+                        return new StandardDeviation<T>();
+                    else if(name == "var")
+                        return new Variance<T>();
+
+
 
                     return NULL;
                 }
