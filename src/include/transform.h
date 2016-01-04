@@ -45,12 +45,16 @@ namespace functions {
         public:
             virtual void exec(T *dx,int xStride,T *result, int resultStride,T *extraParams,int n) {
                 if(xStride == 1 && resultStride == 1) {
+#pragma omp simd
+#pragma omp parallel for
                     for(int i = 0; i < n; i++) {
                         result[i] = op(dx[i],extraParams);
                     }
 
                 }
                 else {
+#pragma omp simd
+#pragma omp parallel for
                     for(int i = 0; i < n; i++) {
                         result[i * resultStride] = op(dx[i * resultStride],extraParams);
                     }

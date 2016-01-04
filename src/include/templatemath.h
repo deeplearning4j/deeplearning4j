@@ -14,70 +14,70 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__ T nd4j_abs(T value);
+        __always_inline T nd4j_abs(T value);
 
         template <typename T>
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__  T nd4j_max(T val1, T val2);
+        __always_inline  T nd4j_max(T val1, T val2);
 
         template <typename T>
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__ T nd4j_min(T val1, T val2);
+        __always_inline T nd4j_min(T val1, T val2);
 
         template <typename T>
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__  T nd4j_ceil(T val1);
+        __always_inline  T nd4j_ceil(T val1);
 
         template <typename T>
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__  T nd4j_cos(T val);
+        __always_inline  T nd4j_cos(T val);
 
-
-
-        template <typename T>
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-        __inline__   T nd4j_exp(T val);
 
 
         template <typename T>
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__  T nd4j_floor(T val);
+        __always_inline   T nd4j_exp(T val);
+
 
         template <typename T>
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__  T nd4j_log(T val);
+        __always_inline  T nd4j_floor(T val);
 
         template <typename T>
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__  T nd4j_pow(T val, T val2);
+        __always_inline  T nd4j_log(T val);
 
         template <typename T>
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__  T nd4j_round(T val);
+        __always_inline  T nd4j_pow(T val, T val2);
 
         template <typename T>
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__   T nd4j_sigmoid(T val) {
+        __always_inline  T nd4j_round(T val);
+
+        template <typename T>
+#ifdef __CUDACC__
+        __host__ __device__
+#endif
+        __always_inline   T nd4j_sigmoid(T val) {
             return 1.0 / (1.0 + nd4j_exp<T>(-val));
         }
 
@@ -85,14 +85,14 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__ T nd4j_sin(T val);
+        __always_inline T nd4j_sin(T val);
 
 
         template <typename T>
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__ T softplus(T val) {
+        __always_inline T softplus(T val) {
             return nd4j_log<T>(1 + nd4j_exp<T>(val));
         }
 
@@ -100,31 +100,31 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__  T nd4j_sqrt(T val);
+        __always_inline  T nd4j_sqrt(T val);
 
         template <typename T>
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__   T nd4j_tanh(T val);
+        __always_inline   T nd4j_tanh(T val);
 
         template <typename T>
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__ T nd4j_acos(T val);
+        __always_inline T nd4j_acos(T val);
 
         template <typename T>
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__  T nd4j_asin(T val);
+        __always_inline  T nd4j_asin(T val);
 
         template <typename T>
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__  T nd4j_atan(T val);
+        __always_inline  T nd4j_atan(T val);
 
 
 
@@ -132,7 +132,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__  float nd4j_abs<float>(float value) {
+        __always_inline  float nd4j_abs<float>(float value) {
             return fabsf(value);
         }
 
@@ -140,7 +140,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__    double nd4j_abs<double>(double value) {
+        __always_inline    double nd4j_abs<double>(double value) {
             return abs(value);
         }
 
@@ -148,7 +148,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__ int nd4j_abs<int>(int value) {
+        __always_inline int nd4j_abs<int>(int value) {
             return abs(value);
         }
 
@@ -157,7 +157,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__ float nd4j_max<float>(float val1, float val2) {
+        __always_inline float nd4j_max<float>(float val1, float val2) {
             return fmaxf(val1,val2);
         }
 
@@ -165,7 +165,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__  double nd4j_max<double>(double val1, double val2) {
+        __always_inline  double nd4j_max<double>(double val1, double val2) {
             return fmax(val1,val2);
         }
 
@@ -173,7 +173,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__   int nd4j_max<int>(int val1, int val2) {
+        __always_inline   int nd4j_max<int>(int val1, int val2) {
             return fmax(val1,val2);
         }
 
@@ -181,7 +181,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__  float nd4j_min<float>(float val1, float val2) {
+        __always_inline  float nd4j_min<float>(float val1, float val2) {
             return fminf(val1,val2);
         }
 
@@ -189,14 +189,14 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__  double nd4j_min<double>(double val1, double val2) {
+        __always_inline  double nd4j_min<double>(double val1, double val2) {
             return fmin(val1,val2);
         }
         template <>
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__  int nd4j_min<int>(int val1, int val2) {
+        __always_inline  int nd4j_min<int>(int val1, int val2) {
             return fmin(val1,val2);
         }
 
@@ -204,7 +204,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__ float nd4j_ceil<float>(float val1) {
+        __always_inline float nd4j_ceil<float>(float val1) {
             return ceilf(val1);
         }
 
@@ -212,7 +212,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__  double nd4j_ceil<double>(double val) {
+        __always_inline  double nd4j_ceil<double>(double val) {
             return ceil(val);
         }
 
@@ -220,7 +220,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__  int nd4j_ceil<int>(int val) {
+        __always_inline  int nd4j_ceil<int>(int val) {
             return ceil(val);
         }
 
@@ -228,7 +228,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__  float nd4j_cos<float>(float val) {
+        __always_inline  float nd4j_cos<float>(float val) {
             return cosf(val);
         }
 
@@ -236,7 +236,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__ double nd4j_cos<double>(double val) {
+        __always_inline double nd4j_cos<double>(double val) {
             return cos(val);
         }
 
@@ -244,7 +244,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__  int nd4j_cos<int>(int val) {
+        __always_inline  int nd4j_cos<int>(int val) {
             return cos(val);
         }
 
@@ -253,7 +253,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__ float nd4j_exp<float>(float val) {
+        __always_inline float nd4j_exp<float>(float val) {
             return expf(val);
         }
 
@@ -261,7 +261,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__  double nd4j_exp<double>(double val) {
+        __always_inline  double nd4j_exp<double>(double val) {
             return exp(val);
         }
 
@@ -269,7 +269,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__  int nd4j_exp<int>(int val) {
+        __always_inline  int nd4j_exp<int>(int val) {
             return exp(val);
         }
 
@@ -278,7 +278,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__  float nd4j_floor<float>(float val) {
+        __always_inline  float nd4j_floor<float>(float val) {
             return floorf(val);
         }
 
@@ -286,7 +286,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__  double nd4j_floor<double>(double val) {
+        __always_inline  double nd4j_floor<double>(double val) {
             return floor(val);
         }
 
@@ -294,7 +294,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__  int nd4j_floor<int>(int val) {
+        __always_inline  int nd4j_floor<int>(int val) {
             return floor(val);
         }
 
@@ -305,7 +305,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__ float nd4j_log<float>(float val) {
+        __always_inline float nd4j_log<float>(float val) {
             return logf(val);
         }
 
@@ -313,7 +313,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__  double nd4j_log<double>(double val) {
+        __always_inline  double nd4j_log<double>(double val) {
             return log(val);
         }
 
@@ -321,7 +321,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__   int nd4j_log<int>(int val) {
+        __always_inline   int nd4j_log<int>(int val) {
             return log(val);
         }
 
@@ -330,7 +330,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__ float nd4j_pow<float>(float val, float val2) {
+        __always_inline float nd4j_pow<float>(float val, float val2) {
             return powf(val,val2);
         }
 
@@ -338,7 +338,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__   double nd4j_pow<double>(double val, double val2) {
+        __always_inline   double nd4j_pow<double>(double val, double val2) {
             return pow(val,val2);
         }
 
@@ -347,7 +347,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__  int nd4j_pow<int>(int val, int val2) {
+        __always_inline  int nd4j_pow<int>(int val, int val2) {
             return pow(val,val2);
         }
 
@@ -356,7 +356,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__   float nd4j_round<float>(float val) {
+        __always_inline   float nd4j_round<float>(float val) {
             return roundf(val);
         }
 
@@ -364,7 +364,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__   double nd4j_round<double>(double val) {
+        __always_inline   double nd4j_round<double>(double val) {
             return round(val);
         }
 
@@ -372,7 +372,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__   int nd4j_round<int>(int val) {
+        __always_inline   int nd4j_round<int>(int val) {
             return round(val);
         }
 
@@ -381,7 +381,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__   float nd4j_sin<float>(float val) {
+        __always_inline   float nd4j_sin<float>(float val) {
             return sinf(val);
         }
 
@@ -389,7 +389,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__  double nd4j_sin<double>(double val) {
+        __always_inline  double nd4j_sin<double>(double val) {
             return sin(val);
         }
 
@@ -397,7 +397,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__  int nd4j_sin<int>(int val) {
+        __always_inline  int nd4j_sin<int>(int val) {
             return sin(val);
         }
 
@@ -405,7 +405,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__  float nd4j_sqrt<float>(float val) {
+        __always_inline  float nd4j_sqrt<float>(float val) {
             return sqrtf(val);
         }
 
@@ -413,7 +413,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__ double nd4j_sqrt<double>(double val) {
+        __always_inline double nd4j_sqrt<double>(double val) {
             return sqrt(val);
         }
 
@@ -421,7 +421,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__   int nd4j_sqrt<int>(int val) {
+        __always_inline   int nd4j_sqrt<int>(int val) {
             return sqrt(val);
         }
 
@@ -430,7 +430,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__   float nd4j_tanh<float>(float val) {
+        __always_inline   float nd4j_tanh<float>(float val) {
             return tanhf(val);
         }
 
@@ -439,21 +439,21 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__  double nd4j_tanh<double>(double val) {
+        __always_inline  double nd4j_tanh<double>(double val) {
             return tanh(val);
         }
         template <>
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__  int nd4j_tanh<int>(int val) {
+        __always_inline  int nd4j_tanh<int>(int val) {
             return tanh(val);
         }
         template <>
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__   float nd4j_acos<float>(float val) {
+        __always_inline   float nd4j_acos<float>(float val) {
             return acosf(val);
         }
 
@@ -461,7 +461,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__   double nd4j_acos<double>(double val) {
+        __always_inline   double nd4j_acos<double>(double val) {
             return acos(val);
         }
 
@@ -469,7 +469,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__  int nd4j_acos<int>(int val) {
+        __always_inline  int nd4j_acos<int>(int val) {
             return acos(val);
         }
 
@@ -478,7 +478,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__    float nd4j_asin<float>(float val) {
+        __always_inline    float nd4j_asin<float>(float val) {
             return asinf(val);
         }
 
@@ -486,7 +486,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__   double nd4j_asin<double>(double val) {
+        __always_inline   double nd4j_asin<double>(double val) {
             return asin(val);
         }
 
@@ -494,7 +494,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__ int nd4j_asin<int>(int val) {
+        __always_inline int nd4j_asin<int>(int val) {
             return asin(val);
         }
 
@@ -503,7 +503,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__ float nd4j_atan<float>(float val) {
+        __always_inline float nd4j_atan<float>(float val) {
             return atanf(val);
         }
 
@@ -511,7 +511,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__  double nd4j_atan<double>(double val) {
+        __always_inline  double nd4j_atan<double>(double val) {
             return atan(val);
         }
 
@@ -519,7 +519,7 @@ namespace nd4j {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        __inline__  int nd4j_atan<int>(int val) {
+        __always_inline  int nd4j_atan<int>(int val) {
             return atan(val);
         }
 
