@@ -5,7 +5,6 @@
 #ifndef NATIVEOPERATIONS_SCALARTESTS_H
 #define NATIVEOPERATIONS_SCALARTESTS_H
 #include <transform.h>
-#include <CppUTest/TestHarness.h>
 #include <array.h>
 #include <shape.h>
 #include <scalar.h>

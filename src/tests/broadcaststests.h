@@ -5,7 +5,6 @@
 #ifndef NATIVEOPERATIONS_BROADCASTSTESTS_H
 #define NATIVEOPERATIONS_BROADCASTSTESTS_H
 #include <broadcasting.h>
-#include <CppUTest/TestHarness.h>
 #include <array.h>
 #include <shape.h>
 #include "testhelpers.h"
@@ -42,6 +41,7 @@ TEST(BroadCasting,Addition) {
     nd4j::array::NDArray<double> *data = nd4j::array::NDArrays<double>::createFrom(rank,shape,stride,0,0.0);
     shape::ShapeInformation *shapeInformation = nd4j::array::NDArrays<double>::shapeInfoForArray(data);
     int *shapeInfoBuffer = shape::toShapeBuffer(shapeInformation);
+    assertBufferProperties(shapeInfoBuffer);
     int length = nd4j::array::NDArrays<double>::length(data);
     for(int i = 0; i < length; i++)
         data->data->data[i] = i + 1;
@@ -55,7 +55,7 @@ TEST(BroadCasting,Addition) {
         vector->data->data[i] = i + 1;
     shape::ShapeInformation *vectorShapeInformation = nd4j::array::NDArrays<double>::shapeInfoForArray(vector);
     int *vectorShapeInfoBuff = shape::toShapeBuffer(vectorShapeInformation);
-
+    assertBufferProperties(vectorShapeInfoBuff);
     int dimensionLength = 1;
     int *dimension = (int *) malloc(sizeof(int));
     dimension[0] = 1;

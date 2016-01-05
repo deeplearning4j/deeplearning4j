@@ -579,7 +579,6 @@ namespace functions {
                 int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
                 if (xElementWiseStride == 1 && resultElementWiseStride == 1) {
 #pragma omp simd
-
                     for (int i = 0; i < length; i++) {
                         result[i] = update(startingVal, op(x[i], extraParams), extraParams);
                     }
@@ -587,7 +586,6 @@ namespace functions {
                 }
                 else {
 #pragma omp simd
-
                     for (int i = 0; i < length; i++) {
                         result[i * resultElementWiseStride] = update(startingVal, op(x[i * xElementWiseStride], extraParams), extraParams);
                     }
@@ -595,6 +593,32 @@ namespace functions {
                 }
 
             }
+
+/*
+            T *exec(T *x,int *xShapeInfo,T *extraParams,int *dimension,int dimensionLength) {
+                int resultRank = shape::rank(xShapeInfo)  - dimensionLength;
+                int *resultShape = (int *) malloc((resultRank* sizeof(int));
+                shape::removeIndex(shape::shapeOf(xShapeInfo),dimension,shape::rank(xShapeInfo),dimensionLength,&resultShape);
+                int *stride = shape::calcStrides(resultShape,resultRank);
+                int resultLength = shape::prod(resultShape,shape::rank(xShapeInfo)  - dimensionLength);
+
+                shape::ShapeInformation *shapeInformation = (shape::ShapeInformation *) malloc(sizeof(shape::ShapeInformation));
+                shapeInformation->shape = resultShape;
+                shapeInformation->stride = stride;
+                shapeInformation->elementWiseStride = 1;
+                shapeInformation->offset = 0;
+
+                int *resultShapeInfoBuffer = shape::toShapeBuffer(shapeInformation);
+                shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo,dimension,dimensionLength);
+                int tadElementWiseStride = shape::computeElementWiseStride(tadPermuteInfo.xRank,tadPermuteInfo.permutedShape,tadPermuteInfo.permutedStrides,shape::order(xShapeInfo));
+                int tadLength = shape::prod(tadPermuteInfo.permutedShape,tadPermuteInfo.xRank);
+               for(int i = 0; i < shape::length(xShapeInfo); i++) {
+                   int reductionIndex = shape::reductionIndexForLinear(i,tadElementWiseStride,tadLength,i,1);
+               }
+
+                shape::freePermuteInfo(tadPermuteInfo);
+                free(resultShape);
+            }*/
 
 
 

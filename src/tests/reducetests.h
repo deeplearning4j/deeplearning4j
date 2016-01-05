@@ -8,8 +8,7 @@
 #ifndef REDUCETESTS_H_
 #define REDUCETESTS_H_
 #include <array.h>
-#include <CppUTest/TestHarness.h>
-
+#include "testhelpers.h"
 
 TEST_GROUP(Reduce)
 {

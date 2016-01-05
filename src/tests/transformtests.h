@@ -6,7 +6,6 @@
 #define NATIVEOPERATIONS_TRANSFORMTESTS_H
 
 #include <transform.h>
-#include <CppUTest/TestHarness.h>
 #include <array.h>
 #include <shape.h>
 #include "testhelpers.h"

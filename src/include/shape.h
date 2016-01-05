@@ -139,6 +139,25 @@ namespace shape {
 	__host__ __device__
 #endif
 	int computeElementWiseStride(int rank,int *shape,int *stride,int isFOrder);
+
+
+
+	/**
+ * Compute the element wise stride
+ * for a given shape/stride configuration
+ * @param rank the rank of the shape/stride
+ * @param shape the shape
+ * @param stride the stride
+ * @param isFOrder 0 or 1 for whether the array is f
+ * ordered or not
+ * @return -1 if there is no element wise stride the
+ * element wise stride of reshape(1,length) otherwise
+ */
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	int computeElementWiseStride(int rank,int *shape,int *stride,int isFOrder,int *dimension,int dimensionLength);
+
 /**
  *
  * @param length
@@ -429,6 +448,19 @@ int tadOffset(shape::ShapeInformation *xInfo, int offset);
 
 	int *ensureVectorShape(int *shape, int dimension);
 
+/**
+ * Returns a shape
+ * forces the given length to be 2.
+ * @param shape the shape to modify
+ * @param dimension the dimension (row or column)
+ * for the shape to be returned as
+ * @return the new shape
+ */
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+
+	int *ensureVectorShape(int *shape);
 
 /**
  * Generate an int buffer
@@ -622,7 +654,7 @@ int tadOffset(shape::ShapeInformation *xInfo, int offset);
 	__host__ __device__
 #endif
 
-	int tensorsAlongDimension(TADPermuteInfo info, int *dimension, int dimensionLength);
+	int tensorsAlongDimension(TADPermuteInfo info);
 
 /**
  * Computes the tensor along dimension
@@ -636,7 +668,7 @@ int tadOffset(shape::ShapeInformation *xInfo, int offset);
 	__host__ __device__
 #endif
 
-	int offset(int index, int *xShapeInfo, int *dimension, int dimensionLength, TADPermuteInfo info);
+	int offset(int index, int *xShapeInfo, int dimensionLength, TADPermuteInfo info);
 
 /**
  * Returns the tensor along dimension
@@ -662,6 +694,12 @@ int tadOffset(shape::ShapeInformation *xInfo, int offset);
 #endif
 
 	int tadsPerBlock(int blockSize, int tads);
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    int * tadShapeInfo(int index, int *xShapeInfo, int *dimension, int dimensionLength);
 
 
 /**

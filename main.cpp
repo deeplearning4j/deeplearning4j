@@ -32,6 +32,7 @@
 #include <pairwise_transform_tests.h>
 #include <broadcaststests.h>
 #include <scalartests.h>
+
 int main(int ac, char** av) {
     return CommandLineTestRunner::RunAllTests(ac, av);
 }
