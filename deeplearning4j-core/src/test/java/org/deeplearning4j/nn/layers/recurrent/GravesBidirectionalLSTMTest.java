@@ -26,6 +26,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -36,13 +38,13 @@ import static org.junit.Assert.*;
 
 
 public class GravesBidirectionalLSTMTest {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GravesBidirectionalLSTMTest.class);
 
     double score  = 0.0;
 	@Test
 	public void testBidirectionalLSTMGravesForwardBasic(){
 		//Very basic test of forward prop. of LSTM layer with a time series.
 		//Essentially make sure it doesn't throw any exceptions, and provides output in the correct shape.
-		
 		int nIn = 13;
 		int nHiddenUnits = 17;
 		
@@ -315,11 +317,16 @@ public class GravesBidirectionalLSTMTest {
 
         final INDArray activation3Reverse = Nd4j.zeros(activation3.shape());
 
-        //THIS IS NOT WORKING YET -- columns / rows screwed 
-        final int N = activation3.size(0);
-        for (int idx0 = 0; idx0 < N; idx0++) {
-            activation3Reverse.putRow(N - idx0 - 1,activation3.getRow(idx0));
+        //reverse result, and compare to forwards signal
+        final int T = activation3.size(1);
+        for (int t = 0; t < T; t++) {
+            activation3Reverse.putColumn(T - t - 1,activation3.getColumn(t));
         }
+        LOGGER.info("{}",activation3);
+
+        LOGGER.info("{}",activation3Reverse);
+        LOGGER.info("{}",activation1);
+
 
         assertArrayEquals(activation3Reverse.data().asFloat(),activation1.data().asFloat(),1e-5f);
 
