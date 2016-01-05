@@ -572,7 +572,7 @@ namespace functions {
 #endif
             ~ReduceFunction(){}
 
-            T exec(T *x,int *xShapeInfo,T *extraParams,T *result,int *resultShapeInfo) {
+            void exec(T *x,int *xShapeInfo,T *extraParams,T *result,int *resultShapeInfo) {
                 T startingVal = extraParams[0];
                 int length = shape::length(xShapeInfo);
                 int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
@@ -580,24 +580,28 @@ namespace functions {
                 if (xElementWiseStride == 1 && resultElementWiseStride == 1) {
 #pragma omp simd
                     for (int i = 0; i < length; i++) {
-                        result[i] = update(startingVal, op(x[i], extraParams), extraParams);
+                        T curr = op(x[i], extraParams);
+                        startingVal = update(startingVal, curr, extraParams);
                     }
 
+                    result[0] = startingVal;
                 }
                 else {
 #pragma omp simd
                     for (int i = 0; i < length; i++) {
-                        result[i * resultElementWiseStride] = update(startingVal, op(x[i * xElementWiseStride], extraParams), extraParams);
+                        startingVal = update(startingVal, op(x[i * xElementWiseStride], extraParams), extraParams);
                     }
+
+                    result[0] = startingVal;
+
 
                 }
 
             }
 
-/*
             T *exec(T *x,int *xShapeInfo,T *extraParams,int *dimension,int dimensionLength) {
                 int resultRank = shape::rank(xShapeInfo)  - dimensionLength;
-                int *resultShape = (int *) malloc((resultRank* sizeof(int));
+                int *resultShape = (int *) malloc((resultRank* sizeof(int)));
                 shape::removeIndex(shape::shapeOf(xShapeInfo),dimension,shape::rank(xShapeInfo),dimensionLength,&resultShape);
                 int *stride = shape::calcStrides(resultShape,resultRank);
                 int resultLength = shape::prod(resultShape,shape::rank(xShapeInfo)  - dimensionLength);
@@ -612,13 +616,13 @@ namespace functions {
                 shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo,dimension,dimensionLength);
                 int tadElementWiseStride = shape::computeElementWiseStride(tadPermuteInfo.xRank,tadPermuteInfo.permutedShape,tadPermuteInfo.permutedStrides,shape::order(xShapeInfo));
                 int tadLength = shape::prod(tadPermuteInfo.permutedShape,tadPermuteInfo.xRank);
-               for(int i = 0; i < shape::length(xShapeInfo); i++) {
-                   int reductionIndex = shape::reductionIndexForLinear(i,tadElementWiseStride,tadLength,i,1);
-               }
+                for(int i = 0; i < shape::length(xShapeInfo); i++) {
+                    int reductionIndex = shape::reductionIndexForLinear(i,tadElementWiseStride,tadLength,i,1);
+                }
 
                 shape::freePermuteInfo(tadPermuteInfo);
                 free(resultShape);
-            }*/
+            }
 
 
 
@@ -1277,54 +1281,48 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 ~Variance() {}
             };
 
-
-
-
-
-
-            template <typename T>
-            class ReduceOpFactory : public virtual functions::ops::OpFactory<T> {
-                virtual functions::ops::Op<T> * create(std::string name) {
-                    if(name == "mean")
-                        return new Mean<T>();
-                    else if(name == "sum")
-                        return new Sum<T>();
-                    else if(name == "bias")
-                        return new Bias<T>();
-                    else if(name == "max")
-                        return new Max<T>();
-                    else if(name == "min")
-                        return new Min<T>();
-                    else if(name == "norm1")
-                        return new Norm1<T>();
-                    else if(name == "norm2")
-                        return new Norm2<T>();
-                    else if(name == "normmax")
-                        return new NormMax<T>();
-                    else if(name == "prod")
-                        return new Prod<T>();
-                    else if(name == "std")
-                        return new StandardDeviation<T>();
-                    else if(name == "var")
-                        return new Variance<T>();
-
-
-
-                    return NULL;
-                }
-                virtual ~ReduceOpFactory() {}
-            };
-
-
-
-            template <typename T>
-            functions::ops::OpFactory<T> * functions::reduce::ops::getOpFactory<T>() {
-                return new functions::reduce::ops::ReduceOpFactory<T>();
-            }
-
         }
 
+
+        template <typename T>
+        class ReduceOpFactory : public virtual functions::ops::OpFactory<T> {
+        public:
+            ReduceOpFactory() {}
+
+            virtual functions::reduce::ReduceFunction<T> * create(std::string name) {
+                if(name == "mean")
+                    return new functions::reduce::ops::Mean<T>();
+                else if(name == "sum")
+                    return new functions::reduce::ops::Sum<T>();
+                else if(name == "bias")
+                    return new functions::reduce::ops::Bias<T>();
+                else if(name == "max")
+                    return new functions::reduce::ops::Max<T>();
+                else if(name == "min")
+                    return new functions::reduce::ops::Min<T>();
+                else if(name == "norm1")
+                    return new functions::reduce::ops::Norm1<T>();
+                else if(name == "norm2")
+                    return new functions::reduce::ops::Norm2<T>();
+                else if(name == "normmax")
+                    return new functions::reduce::ops::NormMax<T>();
+                else if(name == "prod")
+                    return new functions::reduce::ops::Prod<T>();
+                else if(name == "std")
+                    return new functions::reduce::ops::StandardDeviation<T>();
+                else if(name == "var")
+                    return new functions::reduce::ops::Variance<T>();
+
+
+
+                return NULL;
+            }
+            virtual ~ReduceOpFactory() {}
+        };
+
     }
+
+
 
 
 

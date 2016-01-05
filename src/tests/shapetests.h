@@ -10,8 +10,7 @@
 #include <shape.h>
 #include "testhelpers.h"
 
-TEST_GROUP(Shape)
-{
+TEST_GROUP(Shape) {
 
     static int output_method(const char* output, ...)
     {
@@ -39,9 +38,6 @@ TEST(Shape, IsVector) {
     shape[0] = 2;
     shape[1] = 1;
     CHECK(shape::isVector(shape,2));
-
-
-
     delete[] shape;
 
 
@@ -115,7 +111,6 @@ TEST(Shape,Range) {
     }
 
     CHECK(shapeAssertionCorrect);
-
     free(testArr);
 
 }
@@ -194,13 +189,21 @@ TEST(Shape,ReductionIndexForLinear) {
     int elementWiseStride = shape::computeElementWiseStride(shape::rank(tadShapeInfo),shape::shapeOf(tadShapeInfo),shape::stride(tadShapeInfo),0,dimension,dimensionLength);
     CHECK(6 == elementWiseStride);
     int tensorsAlongDimension = shape::tensorsAlongDimension(shapeInfoBuffer,dimension,dimensionLength);
-    int idx = shape::reductionIndexForLinear(1,1,tadLength,tensorsAlongDimension,tensorsAlongDimension);
+    int idx = shape::reductionIndexForLinear(1,elementWiseStride,tadLength,tensorsAlongDimension,tensorsAlongDimension);
+    CHECK(idx == 0);
+    int idx2 = shape::reductionIndexForLinear(4,1,tadLength,tensorsAlongDimension,tensorsAlongDimension);
+    CHECK(idx2 == 2);
     free(tadShapeInfo);
     free(shapeInfoBuffer);
 }
 
-TEST(Shape,ReductionIndexForTad) {
-
+TEST(Shape,PermuteSwap) {
+    int rearrangeIndexes[3] = {2,1,0};
+    int *range = shape::range(0,3);
+    int *permuted = shape::doPermuteSwap(3,range,rearrangeIndexes);
+    CHECK(arrsEquals<int>(3,permuted,rearrangeIndexes));
+    free(range);
+    free(permuted);
 }
 
 

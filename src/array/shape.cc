@@ -1679,6 +1679,28 @@ __device__ int tadOffset(int *xInfo, int offset) {
     }
 
 
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    int * createScalarShapeInfo() {
+        int *shape = (int *) malloc(sizeof(int) * 2);
+        shape[0] = 1;
+        shape[1] = 1;
+        int *stride = (int *) malloc(sizeof(int) * 2);
+        stride[0] = 1;
+        stride[1] = 1;
+        ShapeInformation *shapeInformation2 = (ShapeInformation *) malloc(sizeof(ShapeInformation));
+        shapeInformation2->rank = 2;
+        shapeInformation2->offset = 0;
+        shapeInformation2->stride = stride;
+        shapeInformation2->shape = shape;
+        shapeInformation2->elementWiseStride = 1;
+        int *ret = shape::toShapeBuffer(shapeInformation2);
+        free(shapeInformation2);
+        return ret;
+    }
+
 /**
  * Returns the prod of the data
  * up to the given length

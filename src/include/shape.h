@@ -462,6 +462,12 @@ int tadOffset(shape::ShapeInformation *xInfo, int offset);
 
 	int *ensureVectorShape(int *shape);
 
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    int * createScalarShapeInfo();
+
+
 /**
  * Generate an int buffer
  * up to the given length
