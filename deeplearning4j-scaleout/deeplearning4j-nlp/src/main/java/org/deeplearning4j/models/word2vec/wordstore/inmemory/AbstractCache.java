@@ -222,8 +222,10 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      */
     @Override
     public void addWordToIndex(int index, String label) {
-        if (index >= 0 && hasToken(label))
+        if (index >= 0 && hasToken(label)) {
             idxMap.put(index, tokenFor(label));
+            tokenFor(label).setIndex(index);
+        }
     }
 
     @Override
