@@ -234,6 +234,7 @@ public class InMemoryLookupCache implements VocabCache<VocabWord>,Serializable {
             VocabWord vw = tokenFor(word);
             vw.setIndex(index);
             vocabs.put(word, vw);
+            vw.setIndex(index);
         }
 
         if (!wordFrequencies.containsKey(word))
