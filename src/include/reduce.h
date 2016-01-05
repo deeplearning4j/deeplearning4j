@@ -599,29 +599,18 @@ namespace functions {
 
             }
 
-            T *exec(T *x,int *xShapeInfo,T *extraParams,int *dimension,int dimensionLength) {
-                int resultRank = shape::rank(xShapeInfo)  - dimensionLength;
-                int *resultShape = (int *) malloc((resultRank* sizeof(int)));
-                shape::removeIndex(shape::shapeOf(xShapeInfo),dimension,shape::rank(xShapeInfo),dimensionLength,&resultShape);
-                int *stride = shape::calcStrides(resultShape,resultRank);
-                int resultLength = shape::prod(resultShape,shape::rank(xShapeInfo)  - dimensionLength);
-
-                shape::ShapeInformation *shapeInformation = (shape::ShapeInformation *) malloc(sizeof(shape::ShapeInformation));
-                shapeInformation->shape = resultShape;
-                shapeInformation->stride = stride;
-                shapeInformation->elementWiseStride = 1;
-                shapeInformation->offset = 0;
-
-                int *resultShapeInfoBuffer = shape::toShapeBuffer(shapeInformation);
+            void exec(T *x,int *xShapeInfo,T *extraParams,T *result,int *resultShapeInfoBuffer,int *dimension,int dimensionLength) {
                 shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo,dimension,dimensionLength);
+                int resultLength = shape::length(resultShapeInfoBuffer);
                 int tadElementWiseStride = shape::computeElementWiseStride(tadPermuteInfo.xRank,tadPermuteInfo.permutedShape,tadPermuteInfo.permutedStrides,shape::order(xShapeInfo));
-                int tadLength = shape::prod(tadPermuteInfo.permutedShape,tadPermuteInfo.xRank);
+                int tadLength = tadPermuteInfo.tensorShapeProd;
+#pragma omp simd
                 for(int i = 0; i < shape::length(xShapeInfo); i++) {
-                    int reductionIndex = shape::reductionIndexForLinear(i,tadElementWiseStride,tadLength,i,1);
+                    int reductionIndex = shape::reductionIndexForLinear(i,tadElementWiseStride,tadLength,resultLength,resultLength);
+                    result[reductionIndex] = update(result[reductionIndex],op(x[i],extraParams),extraParams);
                 }
 
                 shape::freePermuteInfo(tadPermuteInfo);
-                free(resultShape);
             }
 
 
