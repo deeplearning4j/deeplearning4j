@@ -204,11 +204,6 @@ public class WordVectorSerializer {
                 cache.addWordToIndex(cache.numWords(), word);
                 cache.putVocabWord(word);
 
-                if (word.equals("Mangalam")) {
-                    log.info("Mangalam i: " + i);
-                    log.info("Mangalam token:" + cache.wordFor("Mangalam"));
-                }
-
                 if (linebreaks) {
                     dis.readByte(); // line break
                 }
