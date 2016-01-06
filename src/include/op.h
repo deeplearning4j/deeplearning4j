@@ -32,7 +32,7 @@ namespace functions {
 #ifdef __CUDACC__
             __host__ __device__
 #endif
-            ~Op(){}
+           virtual ~Op(){}
 
         };
 

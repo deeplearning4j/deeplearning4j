@@ -21,7 +21,10 @@ namespace functions {
 #ifdef __CUDACC__
             __host__ __device__
 #endif
-            __always_inline  T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) = 0;
+#ifdef __GNUC__
+            __always_inline
+#endif
+              T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) = 0;
 
             /**
              *
@@ -35,7 +38,11 @@ namespace functions {
 #ifdef __CUDACC__
             __host__
 #endif
-            __always_inline T op(T d1, T d2, T *extraParams) = 0;
+
+#ifdef __GNUC__
+            __always_inline
+#endif
+            T op(T d1, T d2, T *extraParams) = 0;
 
             //calculate an update of the reduce operation
             /**
@@ -49,7 +56,11 @@ namespace functions {
 #ifdef __CUDACC__
             __host__
 #endif
-            __always_inline  T update(T old, T opOutput, T *extraParams) = 0;
+
+#ifdef __GNUC__
+            __always_inline
+#endif
+              T update(T old, T opOutput, T *extraParams) = 0;
 
 
             /**
@@ -63,7 +74,10 @@ namespace functions {
 #ifdef __CUDACC__
             __host__
 #endif
-            __always_inline   T merge(T old,T opOutput, T *extraParams) = 0;
+#ifdef __GNUC__
+            __always_inline
+#endif
+               T merge(T old,T opOutput, T *extraParams) = 0;
 
 
 #ifdef __CUDACC__
@@ -457,7 +471,10 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __always_inline  T op(T d1, T d2, T *extraParams) {
+#ifdef __GNUC__
+                __always_inline
+#endif
+                  T op(T d1, T d2, T *extraParams) {
                     return d1 * d2;
                 }
 
@@ -473,7 +490,10 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __always_inline   T update(T old, T opOutput, T *extraParams) {
+#ifdef __GNUC__
+                __always_inline
+#endif
+                  T update(T old, T opOutput, T *extraParams) {
                     return old + opOutput;
                 }
 
@@ -489,7 +509,11 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __always_inline   T merge(T old,T opOutput, T *extraParams) {
+
+#ifdef __GNUC__
+                __always_inline
+#endif
+                   T merge(T old,T opOutput, T *extraParams) {
                     return update(old,opOutput,extraParams);
                 }
 
@@ -514,7 +538,11 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __always_inline  T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) {
+
+#ifdef __GNUC__
+                __always_inline
+#endif
+                  T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) {
                     return nd4j::math::nd4j_sqrt<T>(reduction);
                 }
                 /**
@@ -529,7 +557,10 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __always_inline   T op(T d1, T d2, T *extraParams) {
+#ifdef __GNUC__
+                __always_inline
+#endif
+                  T op(T d1, T d2, T *extraParams) {
                     return d1 - d2;
                 }
 
@@ -545,7 +576,10 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __always_inline   T update(T old, T opOutput, T *extraParams) {
+#ifdef __GNUC__
+                __always_inline
+#endif
+                  T update(T old, T opOutput, T *extraParams) {
                     T squared = nd4j::math::nd4j_pow(opOutput,2.0);
                     return squared + old;
                 }
@@ -562,7 +596,10 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __always_inline    T merge(T old,T opOutput, T *extraParams) {
+#ifdef __GNUC__
+                __always_inline
+#endif
+                   T merge(T old,T opOutput, T *extraParams) {
                     return update(old,opOutput,extraParams);
                 }
 
@@ -586,7 +623,11 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __always_inline   T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) {
+
+#ifdef __GNUC__
+                __always_inline
+#endif
+                  T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) {
                     return reduction / extraParams[0] / extraParams[1];
                 }
                 /**
@@ -602,7 +643,10 @@ namespace functions {
                 __host__ __device__
 #endif
 
-                __always_inline    T op(T d1, T d2, T *extraParams) {
+#ifdef __GNUC__
+                __always_inline
+#endif
+                    T op(T d1, T d2, T *extraParams) {
                     return d1 - d2;
                 }
 
@@ -618,7 +662,10 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __always_inline  T update(T old, T opOutput, T *extraParams) {
+#ifdef __GNUC__
+                __always_inline
+#endif
+                  T update(T old, T opOutput, T *extraParams) {
                     return nd4j::math::nd4j_pow<T>(old,2) + opOutput;
                 }
 
@@ -634,7 +681,10 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __always_inline    T merge(T old,T opOutput, T *extraParams) {
+#ifdef __GNUC__
+                __always_inline
+#endif
+                   T merge(T old,T opOutput, T *extraParams) {
                     return update(old,opOutput,extraParams);
                 }
 

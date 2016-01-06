@@ -22,7 +22,11 @@ namespace functions {
              * @param params
              * @return
              */
-            virtual __always_inline
+            virtual
+#ifdef __GNUC__
+            __always_inline
+#endif
+
 #ifdef __CUDACC__
             __host__ __device__
 #endif
@@ -75,7 +79,11 @@ namespace functions {
                  * @param params
                  * @return
                  */
-                virtual __always_inline
+                virtual
+#ifdef __GNUC__
+                __always_inline
+#endif
+
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -105,7 +113,11 @@ namespace functions {
                  * @param params
                  * @return
                  */
-                virtual __always_inline
+                virtual
+#ifdef __GNUC__
+                __always_inline
+#endif
+
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -135,7 +147,11 @@ namespace functions {
                  * @param params
                  * @return
                  */
-                virtual inline
+                virtual
+#ifdef __GNUC__
+                __always_inline
+#endif
+
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -146,7 +162,11 @@ namespace functions {
                 /** Name of the op
                  * @return the name of the operation
                  */
-                virtual __always_inline
+                virtual
+#ifdef __GNUC__
+                __always_inline
+#endif
+
 #ifdef __CUDACC__
                 __host__
 #endif
@@ -176,7 +196,11 @@ namespace functions {
                 /** Name of the op
                  * @return the name of the operation
                  */
-                virtual __always_inline
+                virtual
+#ifdef __GNUC__
+                __always_inline
+#endif
+
 #ifdef __CUDACC__
                 __host__
 #endif
@@ -195,7 +219,11 @@ namespace functions {
                  * @param params
                  * @return
                  */
-                virtual __always_inline
+                virtual
+#ifdef __GNUC__
+                __always_inline
+#endif
+
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -225,7 +253,11 @@ namespace functions {
                  * @param params
                  * @return
                  */
-                virtual __always_inline
+                virtual
+#ifdef __GNUC__
+                __always_inline
+#endif
+
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -255,7 +287,11 @@ namespace functions {
                  * @param params
                  * @return
                  */
-                virtual __always_inline
+                virtual
+#ifdef __GNUC__
+                __always_inline
+#endif
+
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -285,7 +321,11 @@ namespace functions {
                  * @param params
                  * @return
                  */
-                virtual __always_inline
+                virtual
+#ifdef __GNUC__
+                __always_inline
+#endif
+
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -316,7 +356,11 @@ namespace functions {
                  * @param params
                  * @return
                  */
-                virtual __always_inline
+                virtual
+#ifdef __GNUC__
+                __always_inline
+#endif
+
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -348,7 +392,11 @@ namespace functions {
                  * @param params
                  * @return
                  */
-                virtual __always_inline
+                virtual
+#ifdef __GNUC__
+                __always_inline
+#endif
+
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -379,7 +427,11 @@ namespace functions {
                  * @param params
                  * @return
                  */
-                virtual __always_inline
+                virtual
+#ifdef __GNUC__
+                __always_inline
+#endif
+
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -400,7 +452,11 @@ namespace functions {
                 /** Name of the op
                  * @return the name of the operation
                  */
-                virtual __always_inline
+                virtual
+#ifdef __GNUC__
+                __always_inline
+#endif
+
 #ifdef __CUDACC__
                 __host__
 #endif
@@ -419,7 +475,11 @@ namespace functions {
                  * @param params
                  * @return
                  */
-                virtual __always_inline
+                virtual
+#ifdef __GNUC__
+                __always_inline
+#endif
+
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -449,7 +509,11 @@ namespace functions {
                  * @param params
                  * @return
                  */
-                virtual __always_inline
+                virtual
+#ifdef __GNUC__
+                __always_inline
+#endif
+
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -480,7 +544,11 @@ namespace functions {
                  * @param params
                  * @return
                  */
-                virtual __always_inline
+                virtual
+#ifdef __GNUC__
+                __always_inline
+#endif
+
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -510,7 +578,11 @@ namespace functions {
                  * @param params
                  * @return
                  */
-                virtual __always_inline
+                virtual
+#ifdef __GNUC__
+                __always_inline
+#endif
+
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -541,7 +613,11 @@ namespace functions {
                  * @param params
                  * @return
                  */
-                virtual __always_inline
+                virtual
+#ifdef __GNUC__
+                __always_inline
+#endif
+
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -572,7 +648,11 @@ namespace functions {
                  * @param params
                  * @return
                  */
-                virtual __always_inline
+                virtual
+#ifdef __GNUC__
+                __always_inline
+#endif
+
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -602,7 +682,11 @@ namespace functions {
                  * @param params
                  * @return
                  */
-                virtual __always_inline
+                virtual
+#ifdef __GNUC__
+                __always_inline
+#endif
+
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -632,7 +716,11 @@ namespace functions {
                  * @param params
                  * @return
                  */
-                virtual __always_inline
+                virtual
+#ifdef __GNUC__
+                __always_inline
+#endif
+
 #ifdef __CUDACC__
                 __host__ __device__
 #endif

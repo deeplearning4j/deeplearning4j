@@ -124,7 +124,11 @@ struct SharedIndexValue<double> {
             __host__ __device__
 #endif
 
-            __always_inline IndexValue<T> merge(IndexValue<T> f1,IndexValue <T> f2, T *extraParams) = 0;
+
+#ifdef __GNUC__
+            __always_inline
+#endif
+            IndexValue<T> merge(IndexValue<T> f1,IndexValue <T> f2, T *extraParams) = 0;
 
             /**
              *
@@ -142,7 +146,11 @@ struct SharedIndexValue<double> {
 #ifdef __CUDACC__
             __host__ __device__
 #endif
-            __always_inline IndexValue<T> postProcess(IndexValue<T> reduction,int n,int xOffset, T *dx,int incx, T *extraParams,T *result) = 0;
+
+#ifdef __GNUC__
+            __always_inline
+#endif
+            IndexValue<T> postProcess(IndexValue<T> reduction,int n,int xOffset, T *dx,int incx, T *extraParams,T *result) = 0;
 
             /**
              *
@@ -155,7 +163,11 @@ struct SharedIndexValue<double> {
 #ifdef __CUDACC__
             __host__ __device__
 #endif
-            __always_inline IndexValue<T> op(IndexValue<T> d1, IndexValue <T> d2, T *extraParams) = 0;
+
+#ifdef __GNUC__
+            __always_inline
+#endif
+            IndexValue<T> op(IndexValue<T> d1, IndexValue <T> d2, T *extraParams) = 0;
 
 #ifdef __CUDACC__
             /**
@@ -766,7 +778,11 @@ struct SharedIndexValue<double> {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __always_inline functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> val,T *extraParams) {
+
+#ifdef __GNUC__
+                __always_inline
+#endif
+                 functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> val,T *extraParams) {
                     return val;
                 }
 
@@ -782,7 +798,11 @@ struct SharedIndexValue<double> {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __always_inline functions::indexreduce::IndexValue<T> update(functions::indexreduce::IndexValue<T> old,functions::indexreduce::IndexValue <T> opOutput, T *extraParams)  {
+
+#ifdef __GNUC__
+                __always_inline
+#endif
+                 functions::indexreduce::IndexValue<T> update(functions::indexreduce::IndexValue<T> old,functions::indexreduce::IndexValue <T> opOutput, T *extraParams)  {
                     if(opOutput.value > old.value)
                         return opOutput;
                     return old;
@@ -800,7 +820,10 @@ struct SharedIndexValue<double> {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __always_inline  functions::indexreduce::IndexValue<T> merge(functions::indexreduce::IndexValue<T> f1,functions::indexreduce::IndexValue <T> f2, T *extraParams) {
+#ifdef __GNUC__
+                __always_inline
+#endif
+                 functions::indexreduce::IndexValue<T> merge(functions::indexreduce::IndexValue<T> f1,functions::indexreduce::IndexValue <T> f2, T *extraParams) {
                     if(f1.value > f2.value)
                         return f2;
                     return f1;
@@ -822,7 +845,11 @@ struct SharedIndexValue<double> {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __always_inline functions::indexreduce::IndexValue<T> postProcess(functions::indexreduce::IndexValue<T> reduction,int n,int xOffset, T *dx,int incx, T *extraParams,T *result)  {
+
+#ifdef __GNUC__
+                __always_inline
+#endif
+                 functions::indexreduce::IndexValue<T> postProcess(functions::indexreduce::IndexValue<T> reduction,int n,int xOffset, T *dx,int incx, T *extraParams,T *result)  {
                     return reduction;
                 }
 
@@ -837,7 +864,11 @@ struct SharedIndexValue<double> {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __always_inline IndexValue<T> op(functions::indexreduce::IndexValue<T> d1, functions::indexreduce::IndexValue <T> d2, T *extraParams)  {
+
+#ifdef __GNUC__
+                __always_inline
+#endif
+                 IndexValue<T> op(functions::indexreduce::IndexValue<T> d1, functions::indexreduce::IndexValue <T> d2, T *extraParams)  {
                     return d1;
                 }
 
@@ -870,7 +901,11 @@ struct SharedIndexValue<double> {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __always_inline functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> val,T *extraParams) {
+
+#ifdef __GNUC__
+                __always_inline
+#endif
+                 functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> val,T *extraParams) {
                     return val;
                 }
 
@@ -886,7 +921,11 @@ struct SharedIndexValue<double> {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __always_inline functions::indexreduce::IndexValue<T> update(functions::indexreduce::IndexValue<T> old,functions::indexreduce::IndexValue <T> opOutput, T *extraParams)  {
+
+#ifdef __GNUC__
+                __always_inline
+#endif
+                 functions::indexreduce::IndexValue<T> update(functions::indexreduce::IndexValue<T> old,functions::indexreduce::IndexValue <T> opOutput, T *extraParams)  {
                     if(opOutput.value < old.value)
                         return opOutput;
                     return old;
@@ -904,7 +943,11 @@ struct SharedIndexValue<double> {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __always_inline functions::indexreduce::IndexValue<T> merge(functions::indexreduce::IndexValue<T> f1,functions::indexreduce::IndexValue <T> f2, T *extraParams) {
+
+#ifdef __GNUC__
+                __always_inline
+#endif
+                 functions::indexreduce::IndexValue<T> merge(functions::indexreduce::IndexValue<T> f1,functions::indexreduce::IndexValue <T> f2, T *extraParams) {
                     if(f1.value < f2.value)
                         return f2;
                     return f1;
@@ -926,7 +969,10 @@ struct SharedIndexValue<double> {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __always_inline functions::indexreduce::IndexValue<T> postProcess(functions::indexreduce::IndexValue<T> reduction,int n,int xOffset, T *dx,int incx, T *extraParams,T *result)  {
+#ifdef __GNUC__
+                __always_inline
+#endif
+                functions::indexreduce::IndexValue<T> postProcess(functions::indexreduce::IndexValue<T> reduction,int n,int xOffset, T *dx,int incx, T *extraParams,T *result)  {
                     return reduction;
                 }
 
@@ -941,7 +987,10 @@ struct SharedIndexValue<double> {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __always_inline IndexValue<T> op(functions::indexreduce::IndexValue<T> d1, functions::indexreduce::IndexValue <T> d2, T *extraParams)  {
+#ifdef __GNUC__
+                __always_inline
+#endif
+                 IndexValue<T> op(functions::indexreduce::IndexValue<T> d1, functions::indexreduce::IndexValue <T> d2, T *extraParams)  {
                     return d1;
                 }
 

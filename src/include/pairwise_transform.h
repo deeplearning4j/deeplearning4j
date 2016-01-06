@@ -20,13 +20,19 @@ namespace functions {
 #ifdef __CUDACC__
             __host__ __device__
 #endif
-             __always_inline T op(T d1, T d2, T *params) = 0;
+#ifdef __GNUC__
+            __always_inline
+#endif
+             T op(T d1, T d2, T *params) = 0;
 
             virtual
 #ifdef __CUDACC__
             __host__ __device__
 #endif
-            __always_inline  T op(T d1, T *params) = 0;
+#ifdef __GNUC__
+            __always_inline
+#endif
+             T op(T d1, T *params) = 0;
 
 #ifdef __CUDACC__
             /**
@@ -136,7 +142,11 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __always_inline T op(T d1, T d2, T *params) {
+
+#ifdef __GNUC__
+                __always_inline
+#endif
+                 T op(T d1, T d2, T *params) {
                     return d1 + d2;
                 }
 
@@ -144,7 +154,11 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                 __always_inline T op(T d1, T *params) {
+
+#ifdef __GNUC__
+                __always_inline
+#endif
+                 T op(T d1, T *params) {
                     return d1;
                 }
 
@@ -171,7 +185,11 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __always_inline T op(T d1, T d2, T *params) {
+
+#ifdef __GNUC__
+                __always_inline
+#endif
+                 T op(T d1, T d2, T *params) {
                     return d2;
                 }
 
@@ -179,7 +197,10 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __always_inline T op(T d1, T *params) {
+#ifdef __GNUC__
+                __always_inline
+#endif
+                T op(T d1, T *params) {
                     return d1;
                 }
 
@@ -208,7 +229,10 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __always_inline T op(T d1, T d2, T *params) {
+#ifdef __GNUC__
+                __always_inline
+#endif
+                 T op(T d1, T d2, T *params) {
                     return d1 / d2;
                 }
 
@@ -216,7 +240,10 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-               __always_inline  T op(T d1, T *params) {
+#ifdef __GNUC__
+                __always_inline
+#endif
+                  T op(T d1, T *params) {
                     return d1;
                 }
 
@@ -244,7 +271,11 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                 __always_inline T op(T d1, T d2, T *params) {
+
+#ifdef __GNUC__
+                __always_inline
+#endif
+                 T op(T d1, T d2, T *params) {
                     T diff = d1 - d2;
                     T absDiff = abs(diff);
                     if (absDiff < MIN)
@@ -256,7 +287,11 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __always_inline T op(T d1, T *params) {
+
+#ifdef __GNUC__
+                __always_inline
+#endif
+                 T op(T d1, T *params) {
                     return d1;
                 }
 
@@ -284,7 +319,11 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __always_inline T op(T d1, T d2, T *params) {
+
+#ifdef __GNUC__
+                __always_inline
+#endif
+                 T op(T d1, T d2, T *params) {
                     return d1 != d2;
                 }
 
@@ -292,7 +331,11 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __always_inline T op(T d1, T *params) {
+
+#ifdef __GNUC__
+                __always_inline
+#endif
+                 T op(T d1, T *params) {
                     return d1;
                 }
 
@@ -320,7 +363,11 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-               __always_inline  T op(T d1, T d2, T *params) {
+
+#ifdef __GNUC__
+                __always_inline
+#endif
+                 T op(T d1, T d2, T *params) {
                     return d1 > d2;
                 }
 
@@ -328,7 +375,11 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __always_inline T op(T d1, T *params) {
+
+#ifdef __GNUC__
+                __always_inline
+#endif
+                 T op(T d1, T *params) {
                     return d1;
                 }
 
@@ -356,7 +407,11 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                 __always_inline T op(T d1, T d2, T *params) {
+
+#ifdef __GNUC__
+                __always_inline
+#endif
+                 T op(T d1, T d2, T *params) {
                     return d1 < d2;
                 }
 
@@ -364,7 +419,11 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __always_inline T op(T d1, T *params) {
+
+#ifdef __GNUC__
+                __always_inline
+#endif
+                 T op(T d1, T *params) {
                     return d1;
                 }
 
@@ -393,7 +452,11 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                 __always_inline T op(T d1, T d2, T *params) {
+
+#ifdef __GNUC__
+                __always_inline
+#endif
+                 T op(T d1, T d2, T *params) {
                     return d1 * d2;
                 }
 
@@ -401,7 +464,11 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __always_inline T op(T d1, T *params) {
+
+#ifdef __GNUC__
+                __always_inline
+#endif
+                 T op(T d1, T *params) {
                     return d1;
                 }
 
@@ -429,7 +496,11 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __always_inline T op(T d1, T d2, T *params) {
+
+#ifdef __GNUC__
+                __always_inline
+#endif
+                 T op(T d1, T d2, T *params) {
                     return d2 / d1;
                 }
 
@@ -437,7 +508,11 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                 __always_inline  T op(T d1, T *params) {
+
+#ifdef __GNUC__
+                __always_inline
+#endif
+                 T op(T d1, T *params) {
                     return d1;
                 }
 
@@ -465,7 +540,11 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                 __always_inline T op(T d1, T d2, T *params) {
+
+#ifdef __GNUC__
+                __always_inline
+#endif
+                 T op(T d1, T d2, T *params) {
                     return d2 - d2;
                 }
 
@@ -473,7 +552,11 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __always_inline  T op(T d1, T *params) {
+
+#ifdef __GNUC__
+                __always_inline
+#endif
+                  T op(T d1, T *params) {
                     return d1;
                 }
 
@@ -501,7 +584,11 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __always_inline T op(T d1, T d2, T *params) {
+
+#ifdef __GNUC__
+                __always_inline
+#endif
+                 T op(T d1, T d2, T *params) {
                     return d1 - d2;
                 }
 
@@ -509,7 +596,11 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-               __always_inline  T op(T d1, T *params) {
+
+#ifdef __GNUC__
+                __always_inline
+#endif
+                 T op(T d1, T *params) {
                     return d1;
                 }
 
@@ -537,7 +628,11 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                __always_inline T op(T d1, T d2, T *params) {
+
+#ifdef __GNUC__
+                __always_inline
+#endif
+                 T op(T d1, T d2, T *params) {
                     return d1 / d2;
                 }
 
@@ -545,7 +640,10 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-               __always_inline  T op(T d1, T *params) {
+#ifdef __GNUC__
+                __always_inline
+#endif
+                  T op(T d1, T *params) {
                     return d1;
                 }
 

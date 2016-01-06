@@ -83,11 +83,7 @@ TEST(Transform,Sigmoid) {
 
 
 
-
     double comparison[4] = {0.7310585786300049,0.8807970779778823,0.9525741268224334,0.9820137900379085};
-    for(int i = 0; i < 4; i++) {
-        printf("Result value[%d] is %f with name %s\n",i,data->data->data[i],log->name().c_str());
-    }
     CHECK(arrsEquals(rank,comparison,data->data->data));
     free(data);
     free(extraParams);
