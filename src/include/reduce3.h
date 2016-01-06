@@ -443,7 +443,7 @@ namespace functions {
                 __host__ __device__
 #endif
                 T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) {
-                    return reduction / extraParams[1] / extraParams[2];
+                    return reduction / (extraParams[1] * extraParams[2]);
                 }
                 /**
                  *

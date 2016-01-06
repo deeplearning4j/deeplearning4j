@@ -28,6 +28,49 @@ TEST_GROUP(Reduce3)
     }
 };
 
+
+
+TEST(Reduce3,CosineSimilarity) {
+    functions::reduce3::Reduce3OpFactory<double> *opFactory6 = new functions::reduce3::Reduce3OpFactory<double>();
+    functions::reduce3::Reduce3<double> *op = opFactory6->getOp("cosinesimilarity_strided");
+    int vectorLength = 4;
+    shape::ShapeInformation *vecShapeInfo = (shape::ShapeInformation *) malloc(sizeof(shape::ShapeInformation));
+    int rank = 2;
+    int shape[rank] = {1,vectorLength};
+    int *stride = shape::calcStrides(shape,rank);
+    vecShapeInfo->shape = shape;
+    vecShapeInfo->stride = stride;
+    vecShapeInfo ->offset = 0;
+    vecShapeInfo->rank = rank;
+    vecShapeInfo->elementWiseStride = 1;
+    vecShapeInfo->order = 'c';
+    int *shapeInfo = shape::toShapeBuffer(vecShapeInfo);
+    assertBufferProperties(shapeInfo);
+    double *result = (double *) malloc(sizeof(double));
+    result[0] = 0.0;
+    int *scalarShape = shape::createScalarShapeInfo();
+    assertBufferProperties(scalarShape);
+
+    double vec1[vectorLength] = {1,2,3,4};
+    double vec2[vectorLength] = {1,2,3,4};
+    int extraParamsLength = 3;
+    double *extraParams = (double *) malloc(extraParamsLength * sizeof(double));
+    extraParams[0] = 0.0;
+    extraParams[1] = 5.4772255750516612;
+    extraParams[2] = 5.4772255750516612;
+    op->exec(vec1,shapeInfo,extraParams,vec2,shapeInfo,result,scalarShape);
+    CHECK(1.0 == result[0]);
+
+
+    free(result);
+
+    free(scalarShape);
+    free(vecShapeInfo);
+    free(shapeInfo);
+    delete (opFactory6);
+    delete (op);
+}
+
 TEST(Reduce3,EuclideanDistance) {
     functions::reduce3::Reduce3OpFactory<double> *opFactory6 = new functions::reduce3::Reduce3OpFactory<double>();
     functions::reduce3::Reduce3<double> *op = opFactory6->getOp("euclidean_strided");
