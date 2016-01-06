@@ -592,7 +592,7 @@ namespace functions {
                         startingVal = update(startingVal, op(x[i * xElementWiseStride], extraParams), extraParams);
                     }
 
-                    result[0] = startingVal;
+                    result[0] = postProcess(startingVal,length,shape::offset(xShapeInfo),x,shape::elementWiseStride(xShapeInfo),extraParams,result);
 
 
                 }
@@ -602,12 +602,16 @@ namespace functions {
             void exec(T *x,int *xShapeInfo,T *extraParams,T *result,int *resultShapeInfoBuffer,int *dimension,int dimensionLength) {
                 shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo,dimension,dimensionLength);
                 int resultLength = shape::length(resultShapeInfoBuffer);
-                int tadElementWiseStride = shape::computeElementWiseStride(tadPermuteInfo.xRank,tadPermuteInfo.permutedShape,tadPermuteInfo.permutedStrides,shape::order(xShapeInfo));
+                int tadElementWiseStride = shape::computeElementWiseStride(tadPermuteInfo.xRank,tadPermuteInfo.permutedShape,tadPermuteInfo.permutedStrides,shape::order(xShapeInfo) == 'f');
                 int tadLength = tadPermuteInfo.tensorShapeProd;
 #pragma omp simd
                 for(int i = 0; i < shape::length(xShapeInfo); i++) {
                     int reductionIndex = shape::reductionIndexForLinear(i,tadElementWiseStride,tadLength,resultLength,resultLength);
                     result[reductionIndex] = update(result[reductionIndex],op(x[i],extraParams),extraParams);
+                }
+#pragma omp simd
+                for(int i = 0; i < resultLength; i++) {
+                    result[i] = postProcess(result[i],tadLength,shape::offset(xShapeInfo),x,shape::elementWiseStride(xShapeInfo),extraParams,result);
                 }
 
                 shape::freePermuteInfo(tadPermuteInfo);

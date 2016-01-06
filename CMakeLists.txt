@@ -15,6 +15,6 @@ set(CMAKE_CXX_FLAGS "-Wall -O0 -fopenmp -std=c++11 -ftree-vectorize -fopt-info-v
 SET(PARALLELISM_ENABLED 1)
 set(SOURCE_FILES
         src/array/shape.cc
-        main.cpp)
+        main.cpp src/tests/reduce3tests.h)
 
 add_executable(nativeoperations ${SOURCE_FILES})
