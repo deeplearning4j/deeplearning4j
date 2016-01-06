@@ -124,7 +124,6 @@
                 </exclusions>
 
             </dependency>
-
         </dependencies>
     </dependencyManagement>
     <dependencies>
@@ -168,6 +167,20 @@
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>canova-nd4j-image</artifactId>
+            <version>${canova.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>canova-nd4j-codec</artifactId>
+            <version>${canova.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>canova-spark</artifactId>
             <version>${canova.version}</version>
         </dependency>
     </dependencies>
