@@ -168,8 +168,8 @@ public class WordVectorSerializer {
     private static Word2Vec readBinaryModel(File modelFile, boolean linebreaks)
             throws NumberFormatException, IOException
     {
-        InMemoryLookupTable lookupTable;
-        VocabCache cache;
+        InMemoryLookupTable<VocabWord> lookupTable;
+        VocabCache<VocabWord> cache;
         INDArray syn0;
         int words, size;
         try (BufferedInputStream bis = new BufferedInputStream(
@@ -181,7 +181,8 @@ public class WordVectorSerializer {
             size = Integer.parseInt(readString(dis));
             syn0 = Nd4j.create(words, size);
             cache = new InMemoryLookupCache(false);
-            lookupTable = (InMemoryLookupTable) new InMemoryLookupTable.Builder().cache(cache)
+            lookupTable = (InMemoryLookupTable<VocabWord>) new InMemoryLookupTable.Builder<VocabWord>()
+                    .cache(cache)
                     .vectorLength(size).build();
 
             String word;
@@ -196,11 +197,17 @@ public class WordVectorSerializer {
                     vector[j] = readFloat(dis);
                 }
 
+
                 syn0.putRow(i, Transforms.unitVec(Nd4j.create(vector)));
 
-                cache.addWordToIndex(cache.numWords(), word);
                 cache.addToken(new VocabWord(1, word));
+                cache.addWordToIndex(cache.numWords(), word);
                 cache.putVocabWord(word);
+
+                if (word.equals("Mangalam")) {
+                    log.info("Mangalam i: " + i);
+                    log.info("Mangalam token:" + cache.wordFor("Mangalam"));
+                }
 
                 if (linebreaks) {
                     dis.readByte(); // line break
