@@ -81,7 +81,6 @@ namespace functions {
                               int dimensionLength) {
 
                 int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-                int xOffset = shape::offset(xShapeInfo);
                 int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
                 int yOffset = shape::offset(yShapeInfo);
 

@@ -584,7 +584,7 @@ namespace functions {
                         startingVal = update(startingVal, curr, extraParams);
                     }
 
-                    result[0] = startingVal;
+                    result[0] = postProcess(startingVal,length,shape::offset(xShapeInfo),x,shape::elementWiseStride(xShapeInfo),extraParams,result);
                 }
                 else {
 #pragma omp simd

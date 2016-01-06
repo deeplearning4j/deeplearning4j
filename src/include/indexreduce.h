@@ -95,7 +95,7 @@ struct SharedIndexValue<double> {
 #ifdef __CUDACC__
             __host__ __device__
 #endif
-             __always_inline IndexValue<T> op(IndexValue<T> val,T *extraParams) = 0;
+            __always_inline IndexValue<T> op(IndexValue<T> val,T *extraParams) = 0;
 
             /**
              *
@@ -109,7 +109,7 @@ struct SharedIndexValue<double> {
 #ifdef __CUDACC__
             __host__ __device__
 #endif
-             __always_inline IndexValue<T> update(IndexValue<T> old,IndexValue <T> opOutput, T *extraParams) = 0;
+            __always_inline IndexValue<T> update(IndexValue<T> old,IndexValue <T> opOutput, T *extraParams) = 0;
 
             /**
              *
@@ -124,7 +124,7 @@ struct SharedIndexValue<double> {
             __host__ __device__
 #endif
 
-             __always_inline IndexValue<T> merge(IndexValue<T> f1,IndexValue <T> f2, T *extraParams) = 0;
+            __always_inline IndexValue<T> merge(IndexValue<T> f1,IndexValue <T> f2, T *extraParams) = 0;
 
             /**
              *
@@ -142,7 +142,7 @@ struct SharedIndexValue<double> {
 #ifdef __CUDACC__
             __host__ __device__
 #endif
-             __always_inline IndexValue<T> postProcess(IndexValue<T> reduction,int n,int xOffset, T *dx,int incx, T *extraParams,T *result) = 0;
+            __always_inline IndexValue<T> postProcess(IndexValue<T> reduction,int n,int xOffset, T *dx,int incx, T *extraParams,T *result) = 0;
 
             /**
              *
@@ -155,7 +155,7 @@ struct SharedIndexValue<double> {
 #ifdef __CUDACC__
             __host__ __device__
 #endif
-             __always_inline T op(IndexValue<T> d1, IndexValue <T> d2, T *extraParams) = 0;
+            __always_inline IndexValue<T> op(IndexValue<T> d1, IndexValue <T> d2, T *extraParams) = 0;
 
 #ifdef __CUDACC__
             /**
@@ -656,223 +656,319 @@ struct SharedIndexValue<double> {
                 }
             }
 #endif
+
+
+
+            void exec(T *x,int *xShapeInfo,T *extraParams,T *result,int *resultShapeInfo) {
+                T startingVal = extraParams[0];
+                IndexValue<T> *startingIndex = (IndexValue<T> *) malloc(sizeof(IndexValue<T>));
+                startingIndex->value = startingVal;
+                startingIndex->index = 0;
+                int length = shape::length(xShapeInfo);
+                int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+                int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
+                if (xElementWiseStride == 1 && resultElementWiseStride == 1) {
+
+#pragma omp simd
+                    for (int i = 0; i < length; i++) {
+                        IndexValue<T> curr = {.value = x[i],.index = i};
+                        curr = op(curr, extraParams);
+                        IndexValue<T> updated = update(*startingIndex, curr, extraParams);
+                        //update to the new value
+                        startingIndex->value = updated.value;
+                        startingIndex->index= updated.index;
+                    }
+
+                    result[0] = startingIndex->index;
+                }
+                else {
+
+#pragma omp simd
+                    for (int i = 0; i < length; i++) {
+                        IndexValue<T> curr = {.value = x[i * xElementWiseStride],.index = i};
+                        curr = op(curr,extraParams);
+                        IndexValue<T> computedUpdate = update(*startingIndex, curr, extraParams);
+                        //update to the new value
+                        startingIndex->value = computedUpdate.value;
+                        startingIndex->index= computedUpdate.index;
+                    }
+
+                    result[0] = startingIndex->index;
+
+                }
+
+                free(startingIndex);
+
+            }
+
+            void exec(T *x,int *xShapeInfo,T *extraParams,T *result,int *resultShapeInfoBuffer,int *dimension,int dimensionLength) {
+                shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo,dimension,dimensionLength);
+                int resultLength = shape::length(resultShapeInfoBuffer);
+                IndexValue<T> *startingIndex = (IndexValue<T> *) malloc(sizeof(IndexValue<T>) * resultLength);
+#pragma omp simd
+                for(int i = 0; i < resultLength; i++) {
+                    startingIndex[i].value = extraParams[0];
+                    startingIndex[i].index = 0;
+                }
+
+
+                int tadElementWiseStride = shape::computeElementWiseStride(tadPermuteInfo.xRank,tadPermuteInfo.permutedShape,tadPermuteInfo.permutedStrides,shape::order(xShapeInfo) == 'f');
+                int tadLength = tadPermuteInfo.tensorShapeProd;
+
+
+#pragma omp simd
+                for(int i = 0; i < shape::length(xShapeInfo); i++) {
+                    int reductionIndex = shape::reductionIndexForLinear(i,tadElementWiseStride,tadLength,resultLength,resultLength);
+                    IndexValue<T> comp = {.value = x[i],.index = i % tadLength};
+                    comp = op(comp,extraParams);
+                    IndexValue<T> currStartingValue = startingIndex[i];
+                    IndexValue<T> computedUpdate = update(currStartingValue,comp,extraParams);
+                    result[reductionIndex] = computedUpdate.index;
+                }
+
+
+                free(startingIndex);
+                shape::freePermuteInfo(tadPermuteInfo);
+            }
+
+
+
+
             virtual ~IndexReduce() {}
 
         };
 
 
 
+        namespace ops {
+            template <typename T>
+            class IMax : public virtual functions::indexreduce::IndexReduce<T> {
+                /**
+                 * Name of the op
+                 * @return the name of the operation
+                 */
+                virtual
+#ifdef __CUDACC__
+                __host__
+#endif
+
+                std::string name() {
+                    return std::string("imax");
+                }
+                /**
+                 *
+                 * @param val
+                 * @param extraParams
+                 * @return
+                 */
+                //an op for the kernel
+                virtual
+#ifdef __CUDACC__
+                __host__ __device__
+#endif
+                __always_inline functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> val,T *extraParams) {
+                    return val;
+                }
+
+                /**
+                 *
+                 * @param old
+                 * @param opOutput
+                 * @param extraParams
+                 * @return
+                 */
+                //calculate an update of the reduce operation
+                virtual
+#ifdef __CUDACC__
+                __host__ __device__
+#endif
+                __always_inline functions::indexreduce::IndexValue<T> update(functions::indexreduce::IndexValue<T> old,functions::indexreduce::IndexValue <T> opOutput, T *extraParams)  {
+                    if(opOutput.value > old.value)
+                        return opOutput;
+                    return old;
+                }
+
+                /**
+                 *
+                 * @param f1
+                 * @param f2
+                 * @param extraParams
+                 * @return
+                 */
+                //invoked when combining two kernels
+                virtual
+#ifdef __CUDACC__
+                __host__ __device__
+#endif
+                __always_inline  functions::indexreduce::IndexValue<T> merge(functions::indexreduce::IndexValue<T> f1,functions::indexreduce::IndexValue <T> f2, T *extraParams) {
+                    if(f1.value > f2.value)
+                        return f2;
+                    return f1;
+                }
+
+                /**
+                 *
+                 * @param reduction
+                 * @param n
+                 * @param xOffset
+                 * @param dx
+                 * @param incx
+                 * @param extraParams
+                 * @param result
+                 * @return
+                 */
+                //post process result (for things like means etc)
+                virtual
+#ifdef __CUDACC__
+                __host__ __device__
+#endif
+                __always_inline functions::indexreduce::IndexValue<T> postProcess(functions::indexreduce::IndexValue<T> reduction,int n,int xOffset, T *dx,int incx, T *extraParams,T *result)  {
+                    return reduction;
+                }
+
+                /**
+                 *
+                 * @param d1
+                 * @param d2
+                 * @param extraParams
+                 * @return
+                 */
+                virtual
+#ifdef __CUDACC__
+                __host__ __device__
+#endif
+                __always_inline IndexValue<T> op(functions::indexreduce::IndexValue<T> d1, functions::indexreduce::IndexValue <T> d2, T *extraParams)  {
+                    return d1;
+                }
+
+                virtual ~IMax() {}
+
+            };
+
+
+            template <typename T>
+            class IMin : public virtual functions::indexreduce::IndexReduce<T> {
+                /**
+                 * Name of the op
+                 * @return the name of the operation
+                 */
+                virtual
+#ifdef __CUDACC__
+                __host__
+#endif
+                std::string name() {
+                    return std::string("imin");
+                }
+                /**
+                 *
+                 * @param val
+                 * @param extraParams
+                 * @return
+                 */
+                //an op for the kernel
+                virtual
+#ifdef __CUDACC__
+                __host__ __device__
+#endif
+                __always_inline functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> val,T *extraParams) {
+                    return val;
+                }
+
+                /**
+                 *
+                 * @param old
+                 * @param opOutput
+                 * @param extraParams
+                 * @return
+                 */
+                //calculate an update of the reduce operation
+                virtual
+#ifdef __CUDACC__
+                __host__ __device__
+#endif
+                __always_inline functions::indexreduce::IndexValue<T> update(functions::indexreduce::IndexValue<T> old,functions::indexreduce::IndexValue <T> opOutput, T *extraParams)  {
+                    if(opOutput.value < old.value)
+                        return opOutput;
+                    return old;
+                }
+
+                /**
+                 *
+                 * @param f1
+                 * @param f2
+                 * @param extraParams
+                 * @return
+                 */
+                //invoked when combining two kernels
+                virtual
+#ifdef __CUDACC__
+                __host__ __device__
+#endif
+                __always_inline functions::indexreduce::IndexValue<T> merge(functions::indexreduce::IndexValue<T> f1,functions::indexreduce::IndexValue <T> f2, T *extraParams) {
+                    if(f1.value < f2.value)
+                        return f2;
+                    return f1;
+                }
+
+                /**
+                 *
+                 * @param reduction
+                 * @param n
+                 * @param xOffset
+                 * @param dx
+                 * @param incx
+                 * @param extraParams
+                 * @param result
+                 * @return
+                 */
+                //post process result (for things like means etc)
+                virtual
+#ifdef __CUDACC__
+                __host__ __device__
+#endif
+                __always_inline functions::indexreduce::IndexValue<T> postProcess(functions::indexreduce::IndexValue<T> reduction,int n,int xOffset, T *dx,int incx, T *extraParams,T *result)  {
+                    return reduction;
+                }
+
+                /**
+                 *
+                 * @param d1
+                 * @param d2
+                 * @param extraParams
+                 * @return
+                 */
+                virtual
+#ifdef __CUDACC__
+                __host__ __device__
+#endif
+                __always_inline IndexValue<T> op(functions::indexreduce::IndexValue<T> d1, functions::indexreduce::IndexValue <T> d2, T *extraParams)  {
+                    return d1;
+                }
+
+                virtual ~IMin() {}
+
+            };
+        }
+
+
+        template <typename T>
+        class IndexReduceOpFactory {
+        public:
+            IndexReduceOpFactory() {}
+            functions::indexreduce::IndexReduce<T> * getOp(std::string name) {
+                if(name == "imax") {
+                    return new functions::indexreduce::ops::IMax<T>();
+                }
+                else if(name == "imin") {
+                    return new functions::indexreduce::ops::IMin<T>();
+
+                }
+                return NULL;
+            }
+        };
     }
 
-    namespace ops {
-        template <typename T>
-        class IMax : public virtual functions::indexreduce::IndexReduce<T> {
-            /**
-             * Name of the op
-             * @return the name of the operation
-             */
-            virtual
-#ifdef __CUDACC__
-            __host__
-#endif
 
-            std::string name() {
-                return std::string("imax");
-            }
-            /**
-             *
-             * @param val
-             * @param extraParams
-             * @return
-             */
-            //an op for the kernel
-            virtual
-#ifdef __CUDACC__
-__host__ __device__
-#endif
-            __always_inline functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> val,T *extraParams) {
-                return val;
-            }
-
-            /**
-             *
-             * @param old
-             * @param opOutput
-             * @param extraParams
-             * @return
-             */
-            //calculate an update of the reduce operation
-            virtual
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-             __always_inline functions::indexreduce::IndexValue<T> update(functions::indexreduce::IndexValue<T> old,functions::indexreduce::IndexValue <T> opOutput, T *extraParams)  {
-                if(opOutput.value > old.value)
-                    return opOutput;
-                return old;
-            }
-
-            /**
-             *
-             * @param f1
-             * @param f2
-             * @param extraParams
-             * @return
-             */
-            //invoked when combining two kernels
-            virtual
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            __always_inline  functions::indexreduce::IndexValue<T> merge(functions::indexreduce::IndexValue<T> f1,functions::indexreduce::IndexValue <T> f2, T *extraParams) {
-                if(f1.value > f2.value)
-                    return f2;
-                return f1;
-            }
-
-            /**
-             *
-             * @param reduction
-             * @param n
-             * @param xOffset
-             * @param dx
-             * @param incx
-             * @param extraParams
-             * @param result
-             * @return
-             */
-            //post process result (for things like means etc)
-            virtual
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            __always_inline functions::indexreduce::IndexValue<T> postProcess(functions::indexreduce::IndexValue<T> reduction,int n,int xOffset, T *dx,int incx, T *extraParams,T *result)  {
-                return reduction;
-            }
-
-            /**
-             *
-             * @param d1
-             * @param d2
-             * @param extraParams
-             * @return
-             */
-            virtual
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-             __always_inline T op(functions::indexreduce::IndexValue<T> d1, functions::indexreduce::IndexValue <T> d2, T *extraParams)  {
-                return d1;
-            }
-
-            virtual ~IMax() {}
-
-        };
-
-
-        template <typename T>
-        class IMin : public virtual functions::indexreduce::IndexReduce<T> {
-            /**
-             * Name of the op
-             * @return the name of the operation
-             */
-            virtual
-#ifdef __CUDACC__
-            __host__
-#endif
-            std::string name() {
-                return std::string("imin");
-            }
-            /**
-             *
-             * @param val
-             * @param extraParams
-             * @return
-             */
-            //an op for the kernel
-            virtual
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-             __always_inline functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> val,T *extraParams) {
-                return val;
-            }
-
-            /**
-             *
-             * @param old
-             * @param opOutput
-             * @param extraParams
-             * @return
-             */
-            //calculate an update of the reduce operation
-            virtual
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-             __always_inline functions::indexreduce::IndexValue<T> update(functions::indexreduce::IndexValue<T> old,functions::indexreduce::IndexValue <T> opOutput, T *extraParams)  {
-                if(opOutput.value < old.value)
-                    return opOutput;
-                return old;
-            }
-
-            /**
-             *
-             * @param f1
-             * @param f2
-             * @param extraParams
-             * @return
-             */
-            //invoked when combining two kernels
-            virtual
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-             __always_inline functions::indexreduce::IndexValue<T> merge(functions::indexreduce::IndexValue<T> f1,functions::indexreduce::IndexValue <T> f2, T *extraParams) {
-                if(f1.value < f2.value)
-                    return f2;
-                return f1;
-            }
-
-            /**
-             *
-             * @param reduction
-             * @param n
-             * @param xOffset
-             * @param dx
-             * @param incx
-             * @param extraParams
-             * @param result
-             * @return
-             */
-            //post process result (for things like means etc)
-            virtual
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-             __always_inline functions::indexreduce::IndexValue<T> postProcess(functions::indexreduce::IndexValue<T> reduction,int n,int xOffset, T *dx,int incx, T *extraParams,T *result)  {
-                return reduction;
-            }
-
-            /**
-             *
-             * @param d1
-             * @param d2
-             * @param extraParams
-             * @return
-             */
-            virtual
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-             __always_inline T op(functions::indexreduce::IndexValue<T> d1, functions::indexreduce::IndexValue <T> d2, T *extraParams)  {
-                return d1;
-            }
-
-            virtual ~IMin() {}
-
-        };
-    }
 
 }
 

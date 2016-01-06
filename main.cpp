@@ -33,6 +33,8 @@
 #include <scalartests.h>
 #include <reducetests.h>
 #include <reduce3tests.h>
+#include <indexreducetests.h>
+
 
 int main(int ac, char** av) {
     return CommandLineTestRunner::RunAllTests(ac, av);
@@ -44,4 +46,5 @@ IMPORT_TEST_GROUP(Shape);
 IMPORT_TEST_GROUP(Transform);
 IMPORT_TEST_GROUP(Reduce);
 IMPORT_TEST_GROUP(Reduce3);
+IMPORT_TEST_GROUP(IndexReduce);
 //IMPORT_TEST_GROUP(Buffer);
