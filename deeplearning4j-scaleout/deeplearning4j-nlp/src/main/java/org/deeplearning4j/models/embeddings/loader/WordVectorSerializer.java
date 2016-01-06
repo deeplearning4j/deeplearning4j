@@ -278,7 +278,7 @@ public class WordVectorSerializer {
             bytes[i] = b;
             b = dis.readByte();
             if (i == 49) {
-                sb.append(new String(bytes));
+                sb.append(new String(bytes, "UTF-8"));
                 i = -1;
                 bytes = new byte[MAX_SIZE];
             }
