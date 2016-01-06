@@ -155,7 +155,10 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
-                T op(T d1, T *params) {
+#ifdef __GNUC__
+                __always_inline
+#endif
+                 T op(T d1, T *params) {
                     return nd4j::math::nd4j_cos<T>(d1);
                 }
 
@@ -185,7 +188,11 @@ namespace functions {
                  * @param params
                  * @return
                  */
-                virtual __always_inline
+                virtual
+#ifdef __GNUC__
+                __always_inline
+#endif
+
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
