@@ -194,6 +194,17 @@ public class GravesBidirectionalLSTMTest {
 		}
 	}
 
+	static private void reverseColumnsInPlace(final INDArray x) {
+		final int N = x.size(1);
+		final INDArray x2 = x.dup();
+
+		for (int t= 0 ; t < N; t++) {
+			final int b = N - t - 1;
+			//clone?
+			x.putColumn(t,x2.getColumn(b));
+		}
+	}
+
     @Test
     public void testSimpleForwardsAndBackwardsActivation() {
 
@@ -277,9 +288,15 @@ public class GravesBidirectionalLSTMTest {
 
         assertArrayEquals(activation1.data().asFloat(),activation2.data().asFloat(),1e-5f);
 
-        final INDArray ones = Nd4j.ones(new int[]{1,layerSize,timeSeriesLength});
-        final Pair<Gradient,INDArray> backprop1 = forwardsLSTM.backpropGradient(ones);
-        final Pair<Gradient,INDArray> backprop2 = bidirectionalLSTM.backpropGradient(ones);
+        final INDArray randSig = Nd4j.rand(new int[]{1,layerSize,timeSeriesLength});
+		final INDArray randSigB = Nd4j.zeros(new int[]{1,layerSize,timeSeriesLength});
+
+		for (int i = 0; i < timeSeriesLength; i++) {
+			randSigB.slice(0).putColumn(i,randSig.slice(0).getColumn(i));
+		}
+
+        final Pair<Gradient,INDArray> backprop1 = forwardsLSTM.backpropGradient(randSig);
+        final Pair<Gradient,INDArray> backprop2 = bidirectionalLSTM.backpropGradient(randSig);
 
         //compare gradients
         assertArrayEquals(
@@ -322,15 +339,35 @@ public class GravesBidirectionalLSTMTest {
         for (int t = 0; t < T; t++) {
             activation3Reverse.putColumn(T - t - 1,activation3.getColumn(t));
         }
-        LOGGER.info("{}",activation3);
-
-        LOGGER.info("{}",activation3Reverse);
-        LOGGER.info("{}",activation1);
-
 
         assertArrayEquals(activation3Reverse.data().asFloat(),activation1.data().asFloat(),1e-5f);
+        assertArrayEquals(activation3Reverse.shape(),activation1.shape());
 
-        int foo = 3;
+
+        //test backprop now
+		final Pair<Gradient,INDArray> backprop3 = bidirectionalLSTM.backpropGradient(randSigB);
+
+		final INDArray backGradientReccurrent = backprop3.getFirst().getGradientFor(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS).slice(0);
+		final INDArray backGradientInput = backprop3.getFirst().getGradientFor(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS).slice(0);
+		final INDArray backGradientBias = backprop3.getFirst().getGradientFor(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS).slice(0);
+
+		reverseColumnsInPlace(backGradientReccurrent);
+		reverseColumnsInPlace(backGradientInput);
+		reverseColumnsInPlace(backGradientBias);
+
+		assertArrayEquals(backprop1.getFirst().getGradientFor(
+				GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY).slice(0).data().asFloat(),
+				backGradientReccurrent.data().asFloat(),1e-5f);
+
+		assertArrayEquals(backprop1.getFirst().getGradientFor(
+				GravesLSTMParamInitializer.INPUT_WEIGHT_KEY).slice(0).data().asFloat(),
+				backGradientInput.data().asFloat(),1e-5f);
+
+		assertArrayEquals(backprop1.getFirst().getGradientFor(
+				GravesLSTMParamInitializer.BIAS_KEY).slice(0).data().asFloat(),
+				backGradientBias.data().asFloat(),1e-5f);
+
+		int foo = 3;
         foo++;
     }
 
