@@ -283,7 +283,7 @@ public class WordVectorSerializer {
                 bytes = new byte[MAX_SIZE];
             }
         }
-        sb.append(new String(bytes, 0, i + 1));
+        sb.append(new String(bytes, 0, i + 1, "UTF-8"));
         return sb.toString();
     }
 
