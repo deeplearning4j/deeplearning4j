@@ -526,7 +526,7 @@ namespace functions {
                 __host__
 #endif
                 std::string name() {
-                    return std::string("sigmoid_strided");
+                    return std::string("sign_strided");
                 }
 
                 virtual ~Sign() {}

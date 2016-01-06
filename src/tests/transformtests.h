@@ -43,7 +43,8 @@ TEST(Transform,Log) {
     int *stride = shape::calcStrides(shape,rank);
     nd4j::array::NDArray<double> *data = nd4j::array::NDArrays<double>::createFrom(rank,shape,stride,0,0.0);
     int length = nd4j::array::NDArrays<double>::length(data);
-
+    for(int i = 0; i < length; i++)
+        data->data->data[i] = i + 1;
 
     double *extraParams = (double *) malloc(sizeof(double));
 
@@ -71,8 +72,10 @@ TEST(Transform,Sigmoid) {
     shape[1] = 2;
     int *stride = shape::calcStrides(shape,rank);
     nd4j::array::NDArray<double> *data = nd4j::array::NDArrays<double>::createFrom(rank,shape,stride,0,0.0);
-    int length = nd4j::array::NDArrays<double>::length(data);
 
+    int length = nd4j::array::NDArrays<double>::length(data);
+    for(int i = 0; i < length; i++)
+        data->data->data[i] = i + 1;
     double *extraParams = (double *) malloc(sizeof(double));
 
     functions::transform::Transform<double> *log = opFactory->getOp("sigmoid_strided");
@@ -82,6 +85,9 @@ TEST(Transform,Sigmoid) {
 
 
     double comparison[4] = {0.7310585786300049,0.8807970779778823,0.9525741268224334,0.9820137900379085};
+    for(int i = 0; i < 4; i++) {
+        printf("Result value[%d] is %f with name %s\n",i,data->data->data[i],log->name().c_str());
+    }
     CHECK(arrsEquals(rank,comparison,data->data->data));
     free(data);
     free(extraParams);
