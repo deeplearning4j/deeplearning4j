@@ -670,7 +670,11 @@ namespace functions {
                 /** Name of the op
                  * @return the name of the operation
                  */
-                virtual __always_inline
+                virtual
+#ifdef __GNUC__
+                __always_inline
+#endif
+
 #ifdef __CUDACC__
                 __host__
 #endif
