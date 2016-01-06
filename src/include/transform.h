@@ -28,7 +28,7 @@ namespace functions {
 #endif
 
 #ifdef __CUDACC__
-            __host__ __device__
+            inline __host__ __device__
 #endif
             T op(T d1, T *params) = 0;
 
@@ -85,7 +85,7 @@ namespace functions {
 #endif
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline  __host__ __device__
 #endif
                 T op(T d1, T *params) {
                     return nd4j::math::nd4j_abs<T>(d1);
@@ -119,7 +119,7 @@ namespace functions {
 #endif
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline    __host__ __device__
 #endif
                 T op(T d1, T *params) {
                     return nd4j::math::nd4j_ceil<T>(d1);
@@ -130,7 +130,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline     __host__
 #endif
                 std::string name() {
                     return std::string("ceil_strided");
@@ -153,7 +153,7 @@ namespace functions {
 #endif
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline     __host__ __device__
 #endif
 #ifdef __GNUC__
                 __always_inline
@@ -171,7 +171,7 @@ namespace functions {
 #endif
 
 #ifdef __CUDACC__
-                __host__
+                inline   __host__
 #endif
                 std::string name() {
                     return std::string("cos_strided");
@@ -194,7 +194,7 @@ namespace functions {
 #endif
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline      __host__ __device__
 #endif
                 T op(T d1, T *params) {
                     return nd4j::math::nd4j_exp<T>(d1);
@@ -209,7 +209,7 @@ namespace functions {
 #endif
 
 #ifdef __CUDACC__
-                __host__
+                inline     __host__
 #endif
                 std::string name() {
                     return std::string("exp_strided");
@@ -232,7 +232,7 @@ namespace functions {
 #endif
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline    __host__ __device__
 #endif
                 T op(T d1, T *params) {
                     return nd4j::math::nd4j_floor<T>(d1);
@@ -243,7 +243,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline   __host__
 #endif
                 std::string name() {
                     return std::string("floor_strided");
@@ -266,7 +266,7 @@ namespace functions {
 #endif
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline    __host__ __device__
 #endif
                 T op(T d1, T *params) {
                     return nd4j::math::nd4j_log<T>(d1);
@@ -277,7 +277,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline   __host__
 #endif
                 std::string name() {
                     return std::string("log_strided");
@@ -300,7 +300,7 @@ namespace functions {
 #endif
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline  __host__ __device__
 #endif
                 T op(T d1, T *params) {
                     return -d1;
@@ -311,7 +311,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline  __host__
 #endif
                 std::string name() {
                     return std::string("neg_strided");
@@ -334,7 +334,7 @@ namespace functions {
 #endif
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline       __host__ __device__
 #endif
                 T op(T d1, T *params) {
                     return nd4j::math::nd4j_pow<T>(d1,params[0]);
@@ -345,7 +345,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline   __host__
 #endif
                 std::string name() {
                     return std::string("pow_strided");
@@ -369,7 +369,7 @@ namespace functions {
 #endif
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline      __host__ __device__
 #endif
                 T op(T d1, T *params) {
                     return nd4j::math::nd4j_round<T>(d1);
@@ -380,7 +380,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline   __host__
 #endif
                 std::string name() {
                     return std::string("round_strided");
@@ -405,7 +405,7 @@ namespace functions {
 #endif
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline    __host__ __device__
 #endif
                 T op(T d1, T *params) {
                     return nd4j::math::nd4j_sigmoid<T>(d1);
@@ -416,7 +416,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline   __host__
 #endif
                 std::string name() {
                     return std::string("sigmoid_strided");
@@ -440,7 +440,7 @@ namespace functions {
 #endif
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline   __host__ __device__
 #endif
                 T op(T d1, T *params) {
                     T min = params[0];
@@ -465,7 +465,7 @@ namespace functions {
 #endif
 
 #ifdef __CUDACC__
-                __host__
+                inline   __host__
 #endif
                 std::string name() {
                     return std::string("setrange_strided");
@@ -488,7 +488,7 @@ namespace functions {
 #endif
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline   __host__ __device__
 #endif
                 T op(T d1, T *params) {
                     return nd4j::math::nd4j_sin<T>(d1);
@@ -499,7 +499,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline   __host__
 #endif
                 std::string name() {
                     return std::string("sin_strided");
@@ -522,7 +522,7 @@ namespace functions {
 #endif
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline   __host__ __device__
 #endif
                 T op(T d1, T *params) {
                     return nd4j::math::nd4j_sqrt<T>(d1);
@@ -533,7 +533,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline  __host__
 #endif
                 std::string name() {
                     return std::string("sqrt_strided");
@@ -557,7 +557,7 @@ namespace functions {
 #endif
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline   __host__ __device__
 #endif
                 T op(T d1, T *params) {
                     return nd4j::math::softplus<T>(d1);
@@ -568,7 +568,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline   __host__
 #endif
                 std::string name() {
                     return std::string("softplus_strided");
@@ -591,7 +591,7 @@ namespace functions {
 #endif
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline   __host__ __device__
 #endif
                 T op(T d1, T *params) {
                     return (d1 > 0) - (d1 < 0);
@@ -602,7 +602,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline   __host__
 #endif
                 std::string name() {
                     return std::string("sign_strided");
@@ -626,7 +626,7 @@ namespace functions {
 #endif
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline   __host__ __device__
 #endif
                 T op(T d1, T *params) {
                     return nd4j::math::nd4j_tanh<T>(d1);
@@ -637,7 +637,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline   __host__
 #endif
                 std::string name() {
                     return std::string("tanh_strided");
@@ -661,7 +661,7 @@ namespace functions {
 #endif
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline     __host__ __device__
 #endif
                 T op(T d1, T *params) {
                     return nd4j::math::nd4j_acos<T>(d1);
@@ -676,7 +676,7 @@ namespace functions {
 #endif
 
 #ifdef __CUDACC__
-                __host__
+                inline   __host__
 #endif
                 std::string name() {
                     return std::string("acos_strided");
@@ -699,7 +699,7 @@ namespace functions {
 #endif
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline    __host__ __device__
 #endif
                 T op(T d1, T *params) {
                     return nd4j::math::nd4j_asin<T>(d1);
@@ -710,7 +710,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline  __host__
 #endif
                 std::string name() {
                     return std::string("asin_strided");
@@ -733,7 +733,7 @@ namespace functions {
 #endif
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline     __host__ __device__
 #endif
                 T op(T d1, T *params) {
                     return nd4j::math::nd4j_atan<T>(d1);
@@ -744,7 +744,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline    __host__
 #endif
                 std::string name() {
                     return std::string("atan_strided");

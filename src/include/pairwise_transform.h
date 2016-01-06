@@ -18,7 +18,7 @@ namespace functions {
 
             virtual
 #ifdef __CUDACC__
-            __host__ __device__
+            inline __host__ __device__
 #endif
 #ifdef __GNUC__
             __always_inline
@@ -27,7 +27,7 @@ namespace functions {
 
             virtual
 #ifdef __CUDACC__
-            __host__ __device__
+            inline __host__ __device__
 #endif
 #ifdef __GNUC__
             __always_inline
@@ -130,7 +130,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline __host__
 #endif
 
                 std::string name() {
@@ -140,7 +140,7 @@ namespace functions {
 
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -152,7 +152,7 @@ namespace functions {
 
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -174,7 +174,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline __host__
 #endif
                 std::string name() {
                     return std::string("copy_strided");
@@ -183,7 +183,7 @@ namespace functions {
 
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -195,7 +195,7 @@ namespace functions {
 
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 #ifdef __GNUC__
                 __always_inline
@@ -227,7 +227,7 @@ namespace functions {
 
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline  __host__ __device__
 #endif
 #ifdef __GNUC__
                 __always_inline
@@ -238,7 +238,7 @@ namespace functions {
 
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 #ifdef __GNUC__
                 __always_inline
@@ -259,7 +259,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline __host__
 #endif
 
                 std::string name() {
@@ -269,7 +269,7 @@ namespace functions {
 
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -285,7 +285,7 @@ namespace functions {
 
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -307,7 +307,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline __host__
 #endif
 
                 std::string name() {
@@ -317,7 +317,7 @@ namespace functions {
 
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -329,7 +329,7 @@ namespace functions {
 
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -351,7 +351,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline __host__
 #endif
 
                 std::string name() {
@@ -361,7 +361,7 @@ namespace functions {
 
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -373,7 +373,7 @@ namespace functions {
 
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -395,7 +395,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline __host__
 #endif
 
                 std::string name() {
@@ -405,7 +405,7 @@ namespace functions {
 
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -417,7 +417,7 @@ namespace functions {
 
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -440,7 +440,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline __host__
 #endif
 
                 std::string name() {
@@ -450,7 +450,7 @@ namespace functions {
 
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -462,7 +462,7 @@ namespace functions {
 
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -484,7 +484,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline __host__
 #endif
 
                 std::string name() {
@@ -494,7 +494,7 @@ namespace functions {
 
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -506,7 +506,7 @@ namespace functions {
 
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -528,7 +528,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline  __host__
 #endif
 
                 std::string name() {
@@ -538,7 +538,7 @@ namespace functions {
 
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -550,7 +550,7 @@ namespace functions {
 
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -572,7 +572,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline __host__
 #endif
 
                 std::string name() {
@@ -582,7 +582,7 @@ namespace functions {
 
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -594,7 +594,7 @@ namespace functions {
 
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline  __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -626,7 +626,7 @@ namespace functions {
 
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline  __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -638,7 +638,7 @@ namespace functions {
 
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline  __host__ __device__
 #endif
 #ifdef __GNUC__
                 __always_inline

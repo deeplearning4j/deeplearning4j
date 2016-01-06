@@ -29,7 +29,7 @@ namespace functions {
             virtual
 
 #ifdef __CUDACC__
-            __device__
+           inline __device__
 #endif
 #ifdef __GNUC__
             __always_inline
@@ -42,7 +42,7 @@ namespace functions {
              */
             virtual
 #ifdef __CUDACC__
-            __device__
+            inline   __device__
 #endif
 
 #ifdef __GNUC__
@@ -148,7 +148,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline    __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -164,7 +164,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 #ifdef __GNUC__
                 __always_inline
@@ -210,7 +210,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -228,7 +228,7 @@ namespace functions {
             class Divide : public virtual functions::broadcast::Broadcast<T> {
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline __host__
 #endif
                 std::string name() override {
                     return std::string("div");
@@ -242,7 +242,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline  __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -258,7 +258,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -275,7 +275,7 @@ namespace functions {
             class Multiply : public virtual functions::broadcast::Broadcast<T> {
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline   __host__
 #endif
                 std::string name() override {
                     return std::string("mul");
@@ -289,7 +289,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline   __host__ __device__
 #endif
 #ifdef __GNUC__
                 __always_inline
@@ -304,7 +304,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 #ifdef __GNUC__
                 __always_inline
@@ -321,7 +321,7 @@ namespace functions {
             class ReverseDivide : public virtual functions::broadcast::Broadcast<T> {
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline __host__
 #endif
                 std::string name() override {
                     return std::string("rdiv");
@@ -335,7 +335,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -351,7 +351,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -369,7 +369,7 @@ namespace functions {
             class ReverseSubtract : public virtual functions::broadcast::Broadcast<T> {
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline  __host__
 #endif
                 std::string name() override {
                     return std::string("rsub");
@@ -383,7 +383,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 #ifdef __GNUC__
                 __always_inline
@@ -398,7 +398,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 #ifdef __GNUC__
                 __always_inline
@@ -415,7 +415,7 @@ namespace functions {
             class Subtract : public virtual functions::broadcast::Broadcast<T> {
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline __host__
 #endif
 
                 std::string name() override {
@@ -430,7 +430,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 #ifdef __GNUC__
                 __always_inline
@@ -445,7 +445,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 #ifdef __GNUC__
                 __always_inline

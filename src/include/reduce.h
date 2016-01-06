@@ -28,7 +28,7 @@ namespace functions {
              * @return
              */
 #ifdef __CUDACC__
-            __host__ __device__
+            inline    __host__ __device__
 #endif
             virtual
 #ifdef __GNUC__
@@ -44,7 +44,7 @@ namespace functions {
              */
             virtual
 #ifdef __CUDACC__
-            __host__ __device__
+            inline   __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -62,7 +62,7 @@ namespace functions {
              */
             virtual
 #ifdef __CUDACC__
-            __host__ __device__
+            inline    __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -563,7 +563,7 @@ namespace functions {
              */
             virtual
 #ifdef __CUDACC__
-            __host__ __device__
+            inline    __host__ __device__
 #endif
 
 
@@ -667,14 +667,14 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
             public:
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline      __host__
 #endif
                 std::string name() override {
                     return std::string("sum");
                 }
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline    __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -686,7 +686,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 }
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline       __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -697,7 +697,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 }
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline      __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -710,7 +710,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline    __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -728,7 +728,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline    __host__ __device__
 #endif
                 ~Sum() {}
             };
@@ -739,14 +739,14 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
             public:
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline      __host__
 #endif
                 std::string name() override {
                     return std::string("prod");
                 }
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline    __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -757,7 +757,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 }
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline    __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -768,7 +768,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 }
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline     __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -781,7 +781,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline       __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -809,7 +809,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
             public:
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline      __host__
 #endif
 
                 std::string name() override {
@@ -817,7 +817,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 }
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline     __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -828,7 +828,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 }
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline      __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -839,7 +839,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 }
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline     __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -852,7 +852,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline       __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -870,7 +870,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline     __host__ __device__
 #endif
                 ~Mean() {}
             };
@@ -882,14 +882,14 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
             public:
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline      __host__
 #endif
                 std::string name() override {
                     return std::string("bias");
                 }
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline      __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -900,7 +900,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 }
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline       __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -911,7 +911,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 }
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline     __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -926,7 +926,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline    __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -944,7 +944,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline      __host__ __device__
 #endif
                 ~Bias() {}
             };
@@ -955,14 +955,14 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
             public:
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline      __host__
 #endif
                 std::string name() override {
                     return std::string("max");
                 }
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline      __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -973,7 +973,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 }
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline       __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -984,7 +984,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 }
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline       __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -997,7 +997,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline         __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -1015,7 +1015,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline       __host__ __device__
 #endif
                 ~Max() {}
             };
@@ -1026,14 +1026,14 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
             public:
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline      __host__
 #endif
                 std::string name() override {
                     return std::string("min");
                 }
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline      __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -1044,7 +1044,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 }
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline    __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -1055,11 +1055,11 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 }
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline   __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
-                __always_inline
+                inline     __always_inline
 #endif
                 T op(T d1,T *extraParams) override {
                     return d1;
@@ -1068,7 +1068,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline   __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -1086,7 +1086,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline    __host__ __device__
 #endif
                 ~Min() {}
             };
@@ -1105,7 +1105,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 }
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline      __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -1117,7 +1117,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 }
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline      __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -1129,7 +1129,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 }
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline      __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -1142,7 +1142,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline     __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -1160,7 +1160,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline    __host__ __device__
 #endif
                 ~Norm1() {}
             };
@@ -1170,14 +1170,14 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
             public:
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline   __host__
 #endif
                 std::string name() override {
                     return std::string("norm1");
                 }
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline    __host__ __device__
 #endif
                 virtual
 
@@ -1190,7 +1190,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 }
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline    __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -1202,7 +1202,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 }
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline    __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -1215,7 +1215,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline    __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -1233,7 +1233,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline    __host__ __device__
 #endif
                 ~Norm2() {}
             };
@@ -1244,14 +1244,14 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
             public:
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline    __host__
 #endif
                 std::string name() override {
                     return std::string("normmax");
                 }
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline    __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -1263,7 +1263,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 }
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline     __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -1275,7 +1275,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 }
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline     __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -1288,7 +1288,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline    __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -1306,7 +1306,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline    __host__ __device__
 #endif
                 ~NormMax() {}
             };
@@ -1319,14 +1319,14 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
             public:
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline      __host__
 #endif
                 std::string name() override {
                     return std::string("std");
                 }
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline    __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -1338,7 +1338,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 }
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline   __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -1352,7 +1352,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 }
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline    __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -1365,7 +1365,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline    __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -1384,7 +1384,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline  __host__ __device__
 #endif
                 ~StandardDeviation() {}
             };
@@ -1397,14 +1397,14 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 virtual
 
 #ifdef __CUDACC__
-                __host__
+                inline   __host__
 #endif
                 std::string name() override {
                     return std::string("var");
                 }
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline  __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -1416,7 +1416,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 }
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline   __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -1430,7 +1430,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 }
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline    __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -1443,7 +1443,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 
 
 #ifdef __CUDACC__
-                __host__ __device__
+                inline  __host__ __device__
 #endif
                 virtual
 #ifdef __GNUC__
@@ -1463,7 +1463,7 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
                 ~Variance() {}
             };

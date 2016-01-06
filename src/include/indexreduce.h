@@ -93,7 +93,7 @@ struct SharedIndexValue<double> {
             //an op for the kernel
             virtual
 #ifdef __CUDACC__
-            __host__ __device__
+            inline __host__ __device__
 #endif
             __always_inline IndexValue<T> op(IndexValue<T> val,T *extraParams) = 0;
 
@@ -107,7 +107,7 @@ struct SharedIndexValue<double> {
             //calculate an update of the reduce operation
             virtual
 #ifdef __CUDACC__
-            __host__ __device__
+            inline __host__ __device__
 #endif
             __always_inline IndexValue<T> update(IndexValue<T> old,IndexValue <T> opOutput, T *extraParams) = 0;
 
@@ -121,7 +121,7 @@ struct SharedIndexValue<double> {
             //invoked when combining two kernels
             virtual
 #ifdef __CUDACC__
-            __host__ __device__
+            inline __host__ __device__
 #endif
 
 
@@ -144,7 +144,7 @@ struct SharedIndexValue<double> {
             //post process result (for things like means etc)
             virtual
 #ifdef __CUDACC__
-            __host__ __device__
+            inline __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -161,7 +161,7 @@ struct SharedIndexValue<double> {
              */
             virtual
 #ifdef __CUDACC__
-            __host__ __device__
+            inline __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -761,7 +761,7 @@ struct SharedIndexValue<double> {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline __host__
 #endif
 
                 std::string name() {
@@ -776,7 +776,7 @@ struct SharedIndexValue<double> {
                 //an op for the kernel
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -796,7 +796,7 @@ struct SharedIndexValue<double> {
                 //calculate an update of the reduce operation
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -818,7 +818,7 @@ struct SharedIndexValue<double> {
                 //invoked when combining two kernels
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 #ifdef __GNUC__
                 __always_inline
@@ -843,7 +843,7 @@ struct SharedIndexValue<double> {
                 //post process result (for things like means etc)
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -862,7 +862,7 @@ struct SharedIndexValue<double> {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline  __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -885,7 +885,7 @@ struct SharedIndexValue<double> {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline __host__
 #endif
                 std::string name() {
                     return std::string("imin");
@@ -899,7 +899,7 @@ struct SharedIndexValue<double> {
                 //an op for the kernel
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -919,7 +919,7 @@ struct SharedIndexValue<double> {
                 //calculate an update of the reduce operation
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -941,7 +941,7 @@ struct SharedIndexValue<double> {
                 //invoked when combining two kernels
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline  __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -967,7 +967,7 @@ struct SharedIndexValue<double> {
                 //post process result (for things like means etc)
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 #ifdef __GNUC__
                 __always_inline
@@ -985,7 +985,7 @@ struct SharedIndexValue<double> {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline __host__ __device__
 #endif
 #ifdef __GNUC__
                 __always_inline

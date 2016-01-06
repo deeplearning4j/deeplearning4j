@@ -29,7 +29,7 @@ namespace functions {
 #endif
 
 #ifdef __CUDACC__
-            __host__ __device__
+            inline    __host__ __device__
 #endif
             T op(T	d1,	T d2, T	*params) = 0;
 
@@ -93,7 +93,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline      __host__ __device__
 #endif
 
 
@@ -108,7 +108,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline       __host__
 #endif
                 std::string name() {
                     return std::string("add_scalar");
@@ -129,7 +129,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline       __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -143,7 +143,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline          __host__
 #endif
                 std::string name() {
                     return std::string("div_scalar");
@@ -164,7 +164,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline       __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -178,7 +178,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline      __host__
 #endif
                 std::string name() {
                     return std::string("eq_scalar");
@@ -199,7 +199,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline      __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -213,7 +213,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline       __host__
 #endif
                 std::string name() {
                     return std::string("gt_scalar");
@@ -234,7 +234,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline       __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -248,7 +248,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline     __host__
 #endif
                 std::string name() {
                     return std::string("add_scalar");
@@ -269,7 +269,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline    __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -283,7 +283,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline      __host__
 #endif
                 std::string name() {
                     return std::string("ltoreq_scalar");
@@ -304,7 +304,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline     __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -318,7 +318,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline     __host__
 #endif
                 std::string name() {
                     return std::string("max_scalar");
@@ -339,7 +339,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline      __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -353,7 +353,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline     __host__
 #endif
                 std::string name() {
                     return std::string("min_scalar");
@@ -374,7 +374,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline     __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -409,7 +409,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline      __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -423,7 +423,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline       __host__
 #endif
                 std::string name() {
                     return std::string("noteq_scalar");
@@ -444,7 +444,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline       __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -458,7 +458,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline    __host__
 #endif
                 std::string name() {
                     return std::string("rdiv_scalar");
@@ -479,7 +479,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline    __host__ __device__
 #endif
 
 #ifdef __GNUC__
@@ -493,7 +493,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline    __host__
 #endif
                 std::string name() {
                     return std::string("rsib_scalar");
@@ -514,7 +514,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline     __host__ __device__
 #endif
 #ifdef __GNUC__
                 __always_inline
@@ -527,7 +527,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline     __host__
 #endif
                 std::string name() {
                     return std::string("set_scalar");
@@ -548,7 +548,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline     __host__ __device__
 #endif
 #ifdef __GNUC__
                 __always_inline
@@ -561,7 +561,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline      __host__
 #endif
 
                 std::string name() {
@@ -583,7 +583,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline       __host__ __device__
 #endif
 #ifdef __GNUC__
                 __always_inline
@@ -599,7 +599,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline      __host__
 #endif
                 std::string name() {
                     return std::string("setvalorless_scalar");

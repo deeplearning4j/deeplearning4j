@@ -19,12 +19,12 @@ namespace functions {
 
             virtual
 #ifdef __CUDACC__
-            __host__ __device__
+            inline   __host__ __device__
 #endif
 #ifdef __GNUC__
             __always_inline
 #endif
-              T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) = 0;
+            T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) = 0;
 
             /**
              *
@@ -36,7 +36,7 @@ namespace functions {
             //an op for the kernel
             virtual
 #ifdef __CUDACC__
-            __host__
+            inline   __host__
 #endif
 
 #ifdef __GNUC__
@@ -54,13 +54,13 @@ namespace functions {
              */
             virtual
 #ifdef __CUDACC__
-            __host__
+            inline    __host__
 #endif
 
 #ifdef __GNUC__
             __always_inline
 #endif
-              T update(T old, T opOutput, T *extraParams) = 0;
+            T update(T old, T opOutput, T *extraParams) = 0;
 
 
             /**
@@ -72,12 +72,12 @@ namespace functions {
              */
             virtual
 #ifdef __CUDACC__
-            __host__
+            inline  __host__
 #endif
 #ifdef __GNUC__
             __always_inline
 #endif
-               T merge(T old,T opOutput, T *extraParams) = 0;
+            T merge(T old,T opOutput, T *extraParams) = 0;
 
 
 #ifdef __CUDACC__
@@ -454,7 +454,7 @@ namespace functions {
             template <typename T>
             class CosineSimilarity : public virtual Reduce3<T> {
 #ifdef __CUDACC__
-                __host__ __device__
+                inline        __host__ __device__
 #endif
                 T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) {
                     return reduction / (extraParams[1] * extraParams[2]);
@@ -469,12 +469,12 @@ namespace functions {
                 //an op for the kernel
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline      __host__ __device__
 #endif
 #ifdef __GNUC__
                 __always_inline
 #endif
-                  T op(T d1, T d2, T *extraParams) {
+                T op(T d1, T d2, T *extraParams) {
                     return d1 * d2;
                 }
 
@@ -488,12 +488,12 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline     __host__ __device__
 #endif
 #ifdef __GNUC__
                 __always_inline
 #endif
-                  T update(T old, T opOutput, T *extraParams) {
+                T update(T old, T opOutput, T *extraParams) {
                     return old + opOutput;
                 }
 
@@ -513,7 +513,7 @@ namespace functions {
 #ifdef __GNUC__
                 __always_inline
 #endif
-                   T merge(T old,T opOutput, T *extraParams) {
+                T merge(T old,T opOutput, T *extraParams) {
                     return update(old,opOutput,extraParams);
                 }
 
@@ -523,7 +523,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline    __host__
 #endif
                 std::string name() {
                     return std::string("cosinesimilarity_strided");
@@ -536,13 +536,13 @@ namespace functions {
             template <typename T>
             class EuclideanDistance : public virtual Reduce3<T> {
 #ifdef __CUDACC__
-                __host__ __device__
+                inline     __host__ __device__
 #endif
 
 #ifdef __GNUC__
                 __always_inline
 #endif
-                  T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) {
+                T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) {
                     return nd4j::math::nd4j_sqrt<T>(reduction);
                 }
                 /**
@@ -555,12 +555,12 @@ namespace functions {
                 //an op for the kernel
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline      __host__ __device__
 #endif
 #ifdef __GNUC__
                 __always_inline
 #endif
-                  T op(T d1, T d2, T *extraParams) {
+                T op(T d1, T d2, T *extraParams) {
                     return d1 - d2;
                 }
 
@@ -574,12 +574,12 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline     __host__ __device__
 #endif
 #ifdef __GNUC__
                 __always_inline
 #endif
-                  T update(T old, T opOutput, T *extraParams) {
+                T update(T old, T opOutput, T *extraParams) {
                     T squared = nd4j::math::nd4j_pow(opOutput,2.0);
                     return squared + old;
                 }
@@ -594,12 +594,12 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline     __host__ __device__
 #endif
 #ifdef __GNUC__
                 __always_inline
 #endif
-                   T merge(T old,T opOutput, T *extraParams) {
+                T merge(T old,T opOutput, T *extraParams) {
                     return update(old,opOutput,extraParams);
                 }
 
@@ -609,7 +609,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline     __host__
 #endif
                 std::string name() {
                     return std::string("euclidean_strided");
@@ -621,13 +621,13 @@ namespace functions {
             template <typename T>
             class ManhattanDistance : public virtual Reduce3<T> {
 #ifdef __CUDACC__
-                __host__ __device__
+                inline      __host__ __device__
 #endif
 
 #ifdef __GNUC__
                 __always_inline
 #endif
-                  T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) {
+                T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) {
                     return reduction / extraParams[0] / extraParams[1];
                 }
                 /**
@@ -640,13 +640,13 @@ namespace functions {
                 //an op for the kernel
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline     __host__ __device__
 #endif
 
 #ifdef __GNUC__
                 __always_inline
 #endif
-                    T op(T d1, T d2, T *extraParams) {
+                T op(T d1, T d2, T *extraParams) {
                     return d1 - d2;
                 }
 
@@ -660,12 +660,12 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline    __host__ __device__
 #endif
 #ifdef __GNUC__
                 __always_inline
 #endif
-                  T update(T old, T opOutput, T *extraParams) {
+                T update(T old, T opOutput, T *extraParams) {
                     return nd4j::math::nd4j_pow<T>(old,2) + opOutput;
                 }
 
@@ -679,12 +679,12 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__ __device__
+                inline    __host__ __device__
 #endif
 #ifdef __GNUC__
                 __always_inline
 #endif
-                   T merge(T old,T opOutput, T *extraParams) {
+                T merge(T old,T opOutput, T *extraParams) {
                     return update(old,opOutput,extraParams);
                 }
 
@@ -694,7 +694,7 @@ namespace functions {
                  */
                 virtual
 #ifdef __CUDACC__
-                __host__
+                inline    __host__
 #endif
                 std::string name() {
                     return std::string("manhattan_strided");
