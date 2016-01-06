@@ -433,6 +433,8 @@ namespace functions {
                     return new functions::broadcast::ops::Copy<T>();
                 }
 
+                return NULL;
+
             }
 
         };
