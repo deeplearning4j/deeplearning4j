@@ -5,7 +5,7 @@ import org.canova.api.io.WritableConverter;
 import org.canova.api.io.converters.WritableConverterException;
 import org.canova.api.writable.Writable;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.FeatureUtil;
