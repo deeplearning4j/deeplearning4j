@@ -65,6 +65,7 @@ public class CanovaDataSetFunction implements Function<Collection<Writable>,Data
         int featureCount = 0;
         for (int j = 0; j < list.size(); j++) {
             Writable current = list.get(j);
+            if(converter != null) current = converter.convert(current);
             if (labelIndex >= 0 && j == labelIndex) {
                 //Current value is the label
                 if (converter != null) {

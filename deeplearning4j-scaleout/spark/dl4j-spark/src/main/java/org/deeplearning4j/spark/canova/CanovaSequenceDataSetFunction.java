@@ -3,6 +3,7 @@ package org.deeplearning4j.spark.canova;
 import org.apache.spark.api.java.function.Function;
 import org.canova.api.io.WritableConverter;
 import org.canova.api.writable.Writable;
+import org.deeplearning4j.datasets.canova.SequenceRecordReaderDataSetIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
@@ -15,8 +16,9 @@ import java.util.Iterator;
 
 /**Map {@code Collection<Collection<Writable>>} objects (out of a canova-spark sequence record reader function) to
  *  DataSet objects for Spark training.
- * Analogous to SequenceRecordReaderDataSetIterator, but in the context of Spark.
+ * Analogous to {@link SequenceRecordReaderDataSetIterator}, but in the context of Spark.
  * Supports loading data from a single source only (hence no masknig arrays, many-to-one etc here)
+ * see {@link CanovaTwoSequenceDataSetFunction} for the separate collections for input and labels version
  * @author Alex Black
  */
 public class CanovaSequenceDataSetFunction implements Function<Collection<Collection<Writable>>,DataSet>, Serializable {
@@ -65,6 +67,7 @@ public class CanovaSequenceDataSetFunction implements Function<Collection<Collec
             int countFeatures = 0;
             while (timeStepIter.hasNext()) {
                 Writable current = timeStepIter.next();
+                if(converter != null) current = converter.convert(current);
                 if(countIn++ == labelIndex){
                     //label
                     if(regression){
