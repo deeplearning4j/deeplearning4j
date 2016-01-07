@@ -23,8 +23,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * A normal distribution.
- *
+ * @deprecated Use {@link NormalDistribution}
  */
+@Deprecated
 public class GaussianDistribution extends Distribution {
 
     private double mean, std;
