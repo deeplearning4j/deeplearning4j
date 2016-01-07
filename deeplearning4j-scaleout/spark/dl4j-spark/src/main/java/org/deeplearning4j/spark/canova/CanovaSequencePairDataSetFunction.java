@@ -5,7 +5,7 @@ import org.canova.api.io.WritableConverter;
 import org.canova.api.writable.Writable;
 import org.deeplearning4j.datasets.canova.SequenceRecordReaderDataSetIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -23,7 +23,7 @@ import java.util.Iterator;
  * see {@link CanovaSequenceDataSetFunction} for the single file version
  * @author Alex Black
  */
-public class CanovaTwoSequenceDataSetFunction implements Function<Tuple2<Collection<Collection<Writable>>,Collection<Collection<Writable>>>,DataSet>, Serializable {
+public class CanovaSequencePairDataSetFunction implements Function<Tuple2<Collection<Collection<Writable>>,Collection<Collection<Writable>>>,DataSet>, Serializable {
     /**Alignment mode for dealing with input/labels of differing lengths (for example, one-to-many and many-to-one type situations).
      * For example, might have 10 time steps total but only one label at end for sequence classification.<br>
      * Currently supported modes:<br>
@@ -51,30 +51,37 @@ public class CanovaTwoSequenceDataSetFunction implements Function<Tuple2<Collect
     private final DataSetPreProcessor preProcessor;
     private final WritableConverter converter;
 
-    /**Constructor for equal length, no data set preprocessor or writable converter
-     * @see #CanovaTwoSequenceDataSetFunction(int, boolean, AlignmentMode, DataSetPreProcessor, WritableConverter)
+    /** Constructor for equal length and no conversion of labels (i.e., regression or already in one-hot representation).
+     * No data set proprocessor or writable converter
      */
-    public CanovaTwoSequenceDataSetFunction(int numPossibleLabels, boolean regression){
+    public CanovaSequencePairDataSetFunction(){
+        this(-1, true);
+    }
+
+    /**Constructor for equal length, no data set preprocessor or writable converter
+     * @see #CanovaSequencePairDataSetFunction(int, boolean, AlignmentMode, DataSetPreProcessor, WritableConverter)
+     */
+    public CanovaSequencePairDataSetFunction(int numPossibleLabels, boolean regression){
         this(numPossibleLabels, regression, AlignmentMode.EQUAL_LENGTH);
     }
 
     /**Constructor for data with a specified alignment mode, no data set preprocessor or writable converter
-     * @see #CanovaTwoSequenceDataSetFunction(int, boolean, AlignmentMode, DataSetPreProcessor, WritableConverter)
+     * @see #CanovaSequencePairDataSetFunction(int, boolean, AlignmentMode, DataSetPreProcessor, WritableConverter)
      */
-    public CanovaTwoSequenceDataSetFunction(int numPossibleLabels, boolean regression, AlignmentMode alignmentMode){
+    public CanovaSequencePairDataSetFunction(int numPossibleLabels, boolean regression, AlignmentMode alignmentMode){
         this(numPossibleLabels, regression, alignmentMode, null, null);
     }
 
     /**
      * @param numPossibleLabels Number of classes for classification  (not used if regression = true)
      * @param regression False for classification, true for regression
-     * @param alignmentMode Alignment mode for data. See {@link org.deeplearning4j.spark.canova.CanovaTwoSequenceDataSetFunction.AlignmentMode}
+     * @param alignmentMode Alignment mode for data. See {@link CanovaSequencePairDataSetFunction.AlignmentMode}
      * @param preProcessor DataSetPreprocessor (may be null)
      * @param converter WritableConverter (may be null)
      */
-    public CanovaTwoSequenceDataSetFunction(int numPossibleLabels, boolean regression,
-                                            AlignmentMode alignmentMode, DataSetPreProcessor preProcessor,
-                                            WritableConverter converter){
+    public CanovaSequencePairDataSetFunction(int numPossibleLabels, boolean regression,
+                                             AlignmentMode alignmentMode, DataSetPreProcessor preProcessor,
+                                             WritableConverter converter){
         this.numPossibleLabels = numPossibleLabels;
         this.regression = regression;
         this.alignmentMode = alignmentMode;
@@ -108,13 +115,14 @@ public class CanovaTwoSequenceDataSetFunction implements Function<Tuple2<Collect
             }
             Iterator<Writable> timeStepIter = step.iterator();
             int f = 0;
+            idx[1] = 0;
             while (timeStepIter.hasNext()) {
                 Writable current = timeStepIter.next();
                 if(converter != null) current = converter.convert(current);
-                idx[1] = f++;
                 inputArr.putScalar(idx, current.toDouble());
+                idx[1] = ++f;
             }
-            idx[2] = i++;
+            idx[2] = ++i;
         }
 
         idx = new int[3];
@@ -127,13 +135,24 @@ public class CanovaTwoSequenceDataSetFunction implements Function<Tuple2<Collect
             }
             Iterator<Writable> timeStepIter = step.iterator();
             int f = 0;
-            while (timeStepIter.hasNext()) {
-                Writable current = timeStepIter.next();
-                if(converter != null) current = converter.convert(current);
-                idx[1] = f++;
-                outputArr.putScalar(idx, current.toDouble());
+            idx[1] = 0;
+            if(regression){
+                //Load all values without modification
+                while (timeStepIter.hasNext()) {
+                    Writable current = timeStepIter.next();
+                    if(converter != null) current = converter.convert(current);
+                    outputArr.putScalar(idx, current.toDouble());
+                    idx[1] = ++f;
+                }
+            } else {
+                //Expect a single value (index) -> convert to one-hot vector
+                Writable value = timeStepIter.next();
+                int labelClassIdx = value.toInt();
+                INDArray line = FeatureUtil.toOutcomeVector(labelClassIdx, numPossibleLabels);
+                outputArr.tensorAlongDimension(i, 1).assign(line); //1d from [1,nOut,timeSeriesLength] -> tensor i along dimension 1 is at time i
             }
-            idx[2] = i++;
+
+            idx[2] = ++i;
         }
 
         DataSet ds;
@@ -148,7 +167,7 @@ public class CanovaTwoSequenceDataSetFunction implements Function<Tuple2<Collect
                 //Need an output mask array, but not an input mask array
                 INDArray outputMask = Nd4j.create(1,featuresLength);
                 for( int j=featuresLength-labelsLength; j<featuresLength; j++ ) outputMask.putScalar(j,1.0);
-                ds = new org.nd4j.linalg.dataset.DataSet(inputArr,newOutput,null,outputMask);
+                ds = new DataSet(inputArr,newOutput,null,outputMask);
             } else {
                 //Output longer, pad input
                 INDArray newInput = Nd4j.create(1,inputArr.size(1),labelsLength);
@@ -157,7 +176,7 @@ public class CanovaTwoSequenceDataSetFunction implements Function<Tuple2<Collect
                 //Need an input mask array, but not an output mask array
                 INDArray inputMask = Nd4j.create(1,labelsLength);
                 for( int j=labelsLength-featuresLength; j<labelsLength; j++ ) inputMask.putScalar(j,1.0);
-                ds = new org.nd4j.linalg.dataset.DataSet(newInput,outputArr,inputMask,null);
+                ds = new DataSet(newInput,outputArr,inputMask,null);
             }
         } else if(alignmentMode == AlignmentMode.ALIGN_START){
             if(featuresLength > labelsLength ){
@@ -175,7 +194,7 @@ public class CanovaTwoSequenceDataSetFunction implements Function<Tuple2<Collect
                 //Need an input mask array, but not an output mask array
                 INDArray inputMask = Nd4j.create(1,labelsLength);
                 for( int j=0; j<featuresLength; j++ ) inputMask.putScalar(j,1.0);
-                ds = new org.nd4j.linalg.dataset.DataSet(newInput,outputArr,inputMask,null);
+                ds = new DataSet(newInput,outputArr,inputMask,null);
             }
         } else {
             throw new UnsupportedOperationException("Invalid alignment mode: " + alignmentMode);
