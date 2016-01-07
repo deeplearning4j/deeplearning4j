@@ -20,9 +20,8 @@ namespace functions {
             virtual
 #ifdef __CUDACC__
             inline   __host__ __device__
-#endif
-#ifdef __GNUC__
-            __always_inline
+#elseif __GNUC__
+                __always_inline
 #endif
             T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) = 0;
 
@@ -37,10 +36,8 @@ namespace functions {
             virtual
 #ifdef __CUDACC__
             inline   __host__
-#endif
-
-#ifdef __GNUC__
-            __always_inline
+#elseif __GNUC__
+                __always_inline
 #endif
             T op(T d1, T d2, T *extraParams) = 0;
 
@@ -55,10 +52,8 @@ namespace functions {
             virtual
 #ifdef __CUDACC__
             inline    __host__
-#endif
-
-#ifdef __GNUC__
-            __always_inline
+#elseif __GNUC__
+                __always_inline
 #endif
             T update(T old, T opOutput, T *extraParams) = 0;
 
@@ -73,9 +68,8 @@ namespace functions {
             virtual
 #ifdef __CUDACC__
             inline  __host__
-#endif
-#ifdef __GNUC__
-            __always_inline
+#elseif __GNUC__
+                __always_inline
 #endif
             T merge(T old,T opOutput, T *extraParams) = 0;
 
@@ -470,8 +464,7 @@ namespace functions {
                 virtual
 #ifdef __CUDACC__
                 inline      __host__ __device__
-#endif
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T op(T d1, T d2, T *extraParams) {
@@ -489,8 +482,7 @@ namespace functions {
                 virtual
 #ifdef __CUDACC__
                 inline     __host__ __device__
-#endif
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T update(T old, T opOutput, T *extraParams) {
@@ -508,9 +500,7 @@ namespace functions {
                 virtual
 #ifdef __CUDACC__
                 __host__ __device__
-#endif
-
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T merge(T old,T opOutput, T *extraParams) {
@@ -537,9 +527,7 @@ namespace functions {
             class EuclideanDistance : public virtual Reduce3<T> {
 #ifdef __CUDACC__
                 inline     __host__ __device__
-#endif
-
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) {
@@ -556,8 +544,7 @@ namespace functions {
                 virtual
 #ifdef __CUDACC__
                 inline      __host__ __device__
-#endif
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T op(T d1, T d2, T *extraParams) {
@@ -575,8 +562,7 @@ namespace functions {
                 virtual
 #ifdef __CUDACC__
                 inline     __host__ __device__
-#endif
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T update(T old, T opOutput, T *extraParams) {
@@ -595,8 +581,7 @@ namespace functions {
                 virtual
 #ifdef __CUDACC__
                 inline     __host__ __device__
-#endif
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T merge(T old,T opOutput, T *extraParams) {
@@ -622,9 +607,7 @@ namespace functions {
             class ManhattanDistance : public virtual Reduce3<T> {
 #ifdef __CUDACC__
                 inline      __host__ __device__
-#endif
-
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) {
@@ -641,9 +624,7 @@ namespace functions {
                 virtual
 #ifdef __CUDACC__
                 inline     __host__ __device__
-#endif
-
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T op(T d1, T d2, T *extraParams) {
@@ -661,8 +642,7 @@ namespace functions {
                 virtual
 #ifdef __CUDACC__
                 inline    __host__ __device__
-#endif
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T update(T old, T opOutput, T *extraParams) {
@@ -680,8 +660,7 @@ namespace functions {
                 virtual
 #ifdef __CUDACC__
                 inline    __host__ __device__
-#endif
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T merge(T old,T opOutput, T *extraParams) {

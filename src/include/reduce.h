@@ -27,12 +27,11 @@ namespace functions {
              * @param extraParams
              * @return
              */
+            virtual
 #ifdef __CUDACC__
             inline    __host__ __device__
-#endif
-            virtual
-#ifdef __GNUC__
-            __always_inline
+#elseif __GNUC__
+                __always_inline
 #endif
             T merge(T old,T opOutput,T *extraParams) = 0;
 
@@ -45,10 +44,8 @@ namespace functions {
             virtual
 #ifdef __CUDACC__
             inline   __host__ __device__
-#endif
-
-#ifdef __GNUC__
-            __always_inline
+#elseif __GNUC__
+                __always_inline
 #endif
             T op(T d1,T *extraParams) = 0;
 
@@ -63,12 +60,10 @@ namespace functions {
             virtual
 #ifdef __CUDACC__
             inline    __host__ __device__
+#elseif __GNUC__
+                __always_inline
 #endif
-
-#ifdef __GNUC__
-            __always_inline
-#endif
-             T update(T old, T opOutput, T *extraParams) = 0;
+            T update(T old, T opOutput, T *extraParams) = 0;
 #ifdef __CUDACC__
 
             /**
@@ -564,13 +559,10 @@ namespace functions {
             virtual
 #ifdef __CUDACC__
             inline    __host__ __device__
+#elseif __GNUC__
+                __always_inline
 #endif
-
-
-#ifdef __GNUC__
-            __always_inline
-#endif
-             T postProcess(
+            T postProcess(
                     T reduction,
                     int n,
                     int xOffset,
@@ -672,35 +664,29 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 std::string name() override {
                     return std::string("sum");
                 }
-
+                virtual
 #ifdef __CUDACC__
                 inline    __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
 
                 T merge(T old,T opOutput,T *extraParams) override {
                     return opOutput + old;
                 }
-
+                virtual
 #ifdef __CUDACC__
                 inline       __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T update(T old,T opOutput,T *extraParams) override {
                     return opOutput + old;
                 }
-
+                virtual
 #ifdef __CUDACC__
                 inline      __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T op(T d1,T *extraParams) override {
@@ -708,12 +694,10 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 }
 
 
-
+                virtual
 #ifdef __CUDACC__
                 inline    __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T postProcess(
@@ -744,34 +728,28 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 std::string name() override {
                     return std::string("prod");
                 }
-
+                virtual
 #ifdef __CUDACC__
                 inline    __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T merge(T old,T opOutput,T *extraParams) override {
                     return opOutput * old;
                 }
-
+                virtual
 #ifdef __CUDACC__
                 inline    __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T update(T old,T opOutput,T *extraParams) override {
                     return opOutput * old;
                 }
-
+                virtual
 #ifdef __CUDACC__
                 inline     __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T op(T d1,T *extraParams) override {
@@ -779,12 +757,10 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 }
 
 
-
+                virtual
 #ifdef __CUDACC__
                 inline       __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T postProcess(
@@ -816,33 +792,29 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                     return std::string("mean");
                 }
 
+                virtual
 #ifdef __CUDACC__
                 inline     __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T merge(T old,T opOutput,T *extraParams) override {
                     return opOutput + old;
                 }
 
+                virtual
 #ifdef __CUDACC__
                 inline      __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T update(T old,T opOutput,T *extraParams) override {
                     return opOutput + old;
                 }
-
+                virtual
 #ifdef __CUDACC__
                 inline     __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T op(T d1,T *extraParams) override {
@@ -850,12 +822,10 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 }
 
 
-
+                virtual
 #ifdef __CUDACC__
                 inline       __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T postProcess(
@@ -888,33 +858,29 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                     return std::string("bias");
                 }
 
+                virtual
 #ifdef __CUDACC__
                 inline      __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T merge(T old,T opOutput,T *extraParams) override {
                     return opOutput + old;
                 }
 
+                virtual
 #ifdef __CUDACC__
                 inline       __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T update(T old,T opOutput,T *extraParams) override {
                     return opOutput + old;
                 }
-
+                virtual
 #ifdef __CUDACC__
                 inline     __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T op(T d1,T *extraParams) override {
@@ -924,12 +890,10 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 }
 
 
-
+                virtual
 #ifdef __CUDACC__
                 inline    __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T postProcess(
@@ -961,33 +925,29 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                     return std::string("max");
                 }
 
+                virtual
 #ifdef __CUDACC__
                 inline      __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T merge(T old,T opOutput,T *extraParams) override {
                     return nd4j::math::nd4j_max<T>(old,opOutput);
                 }
-
+                virtual
 #ifdef __CUDACC__
                 inline       __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T update(T old,T opOutput,T *extraParams) override {
                     return nd4j::math::nd4j_max<T>(opOutput,old);
                 }
 
+                virtual
 #ifdef __CUDACC__
                 inline       __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T op(T d1,T *extraParams) override {
@@ -995,12 +955,10 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 }
 
 
-
+                virtual
 #ifdef __CUDACC__
                 inline         __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T postProcess(
@@ -1032,46 +990,40 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                     return std::string("min");
                 }
 
+                virtual
 #ifdef __CUDACC__
                 inline      __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T merge(T old,T opOutput,T *extraParams) override {
                     return nd4j::math::nd4j_min<T>(old,opOutput);
                 }
 
+                virtual
 #ifdef __CUDACC__
                 inline    __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T update(T old,T opOutput,T *extraParams) override {
                     return nd4j::math::nd4j_min<T>(opOutput,old);
                 }
-
+                virtual
 #ifdef __CUDACC__
                 inline   __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
-                inline     __always_inline
+#elseif __GNUC__
+                __always_inline
 #endif
                 T op(T d1,T *extraParams) override {
                     return d1;
                 }
 
 
-
+                virtual
 #ifdef __CUDACC__
                 inline   __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T postProcess(
@@ -1103,36 +1055,30 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 std::string name() override {
                     return std::string("norm1");
                 }
-
+                virtual
 #ifdef __CUDACC__
                 inline      __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T merge(T old,T opOutput,T *extraParams) override {
                     return opOutput + old;
 
                 }
-
+                virtual
 #ifdef __CUDACC__
                 inline      __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T update(T old,T opOutput,T *extraParams) override {
                     return opOutput + old;
 
                 }
-
+                virtual
 #ifdef __CUDACC__
                 inline      __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T op(T d1,T *extraParams) override {
@@ -1140,12 +1086,10 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 }
 
 
-
+                virtual
 #ifdef __CUDACC__
                 inline     __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T postProcess(
@@ -1176,12 +1120,10 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                     return std::string("norm1");
                 }
 
+                virtual
 #ifdef __CUDACC__
                 inline    __host__ __device__
-#endif
-                virtual
-
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T merge(T old,T opOutput,T *extraParams) override {
@@ -1189,11 +1131,10 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 
                 }
 
+                virtual
 #ifdef __CUDACC__
                 inline    __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T update(T old,T opOutput,T *extraParams) override {
@@ -1201,11 +1142,11 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 
                 }
 
+
+                virtual
 #ifdef __CUDACC__
                 inline    __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T op(T d1,T *extraParams) override {
@@ -1213,12 +1154,10 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 }
 
 
-
+                virtual
 #ifdef __CUDACC__
                 inline    __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T postProcess(
@@ -1250,11 +1189,10 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                     return std::string("normmax");
                 }
 
+                virtual
 #ifdef __CUDACC__
                 inline    __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T merge(T old,T opOutput,T *extraParams) override {
@@ -1262,23 +1200,20 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 
                 }
 
+                virtual
 #ifdef __CUDACC__
                 inline     __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T update(T old,T opOutput,T *extraParams) override {
                     return nd4j::math::nd4j_max<T>(nd4j::math::nd4j_abs<T>(old),nd4j::math::nd4j_abs<T>(opOutput));
 
                 }
-
+                virtual
 #ifdef __CUDACC__
                 inline     __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T op(T d1,T *extraParams) override {
@@ -1286,12 +1221,10 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 }
 
 
-
+                virtual
 #ifdef __CUDACC__
                 inline    __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T postProcess(
@@ -1325,25 +1258,23 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                     return std::string("std");
                 }
 
+                virtual
 #ifdef __CUDACC__
                 inline    __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T merge(T old,T opOutput,T *extraParams) override {
                     return old + opOutput;
 
                 }
-
+                virtual
 #ifdef __CUDACC__
                 inline   __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
+
                 T update(T old,T opOutput,T *extraParams) override {
                     T mean = extraParams[2];
                     T curr = nd4j::math::nd4j_pow<T>(opOutput - mean,2.0);
@@ -1351,11 +1282,10 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 
                 }
 
+                virtual
 #ifdef __CUDACC__
                 inline    __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T op(T d1,T *extraParams) override {
@@ -1363,12 +1293,10 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 }
 
 
-
+                virtual
 #ifdef __CUDACC__
                 inline    __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T postProcess(
@@ -1402,24 +1330,20 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 std::string name() override {
                     return std::string("var");
                 }
-
+                virtual
 #ifdef __CUDACC__
                 inline  __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T merge(T old,T opOutput,T *extraParams) override {
                     return old + opOutput;
 
                 }
-
+                virtual
 #ifdef __CUDACC__
                 inline   __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T update(T old,T opOutput,T *extraParams) override {
@@ -1429,11 +1353,12 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
 
                 }
 
+
+                virtual
 #ifdef __CUDACC__
                 inline    __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+
+#elseif __GNUC__
                 __always_inline
 #endif
                 T op(T d1,T *extraParams) override {
@@ -1441,12 +1366,10 @@ __device__ void functions::reduce::initializeShared(T *extraParams, T **sPartial
                 }
 
 
-
+                virtual
 #ifdef __CUDACC__
                 inline  __host__ __device__
-#endif
-                virtual
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T postProcess(

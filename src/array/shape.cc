@@ -10,7 +10,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <templatemath.h>
-#include <stdio.h>
 
 namespace shape {
 
