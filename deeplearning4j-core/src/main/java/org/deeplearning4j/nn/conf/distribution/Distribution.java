@@ -33,6 +33,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 @JsonSubTypes(value={
         @JsonSubTypes.Type(value = BinomialDistribution.class, name = "binomial"),
         @JsonSubTypes.Type(value = NormalDistribution.class, name = "normal"),
+        @JsonSubTypes.Type(value = GaussianDistribution.class, name = "gaussian"),
         @JsonSubTypes.Type(value = UniformDistribution.class, name = "uniform"),
         })
 public abstract class Distribution implements Serializable, Cloneable {
