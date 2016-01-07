@@ -127,23 +127,23 @@ public class LSTMHelpers {
         }
 
         for (int iTimeIndex = 0; iTimeIndex < timeSeriesLength; iTimeIndex++) {
-            int t = iTimeIndex;
+            int time = iTimeIndex;
 
             if (!forwards) {
-                t = timeSeriesLength - iTimeIndex - 1;
+                time = timeSeriesLength - iTimeIndex - 1;
             }
 
 
-            INDArray miniBatchData = (is2dInput ? input : input.tensorAlongDimension(t, 1, 0));    //[Expected shape: [m,nIn]. Also deals with edge case of T=1, with 'time series' data of shape [m,nIn], equiv. to [m,nIn,1]
+            INDArray miniBatchData = (is2dInput ? input : input.tensorAlongDimension(time, 1, 0));    //[Expected shape: [m,nIn]. Also deals with edge case of T=1, with 'time series' data of shape [m,nIn], equiv. to [m,nIn,1]
             miniBatchData = Shape.toMmulCompatible(miniBatchData);
 
             //Calculate activations for: network input + forget, output, input modulation gates.
             INDArray inputActivations = miniBatchData.mmul(wi);
             Nd4j.gemm(prevOutputActivations, wI, inputActivations, false, false, 1.0, 1.0);
             inputActivations.addiRowVector(bi);
-            if (forBackprop) toReturn.iz[t] = inputActivations.dup('f');
+            if (forBackprop) toReturn.iz[time] = inputActivations.dup('f');
             Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), inputActivations));
-            if (forBackprop) toReturn.ia[t] = inputActivations;
+            if (forBackprop) toReturn.ia[time] = inputActivations;
 
             INDArray forgetGateActivations = miniBatchData.mmul(wf);
             Nd4j.gemm(prevOutputActivations, wF, forgetGateActivations, false, false, 1.0, 1.0);
@@ -152,7 +152,7 @@ public class LSTMHelpers {
             //Above line: treats matrix as a vector. Can only do this because we're sure both pwcelWFF and forgetGateACtivations are f order, offset 0 and have same strides
             forgetGateActivations.addiRowVector(bf);
             Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", forgetGateActivations));
-            if (forBackprop) toReturn.fa[t] = forgetGateActivations;
+            if (forBackprop) toReturn.fa[time] = forgetGateActivations;
 
 
             INDArray inputModGateActivations = miniBatchData.mmul(wg);
@@ -161,7 +161,7 @@ public class LSTMHelpers {
             l1BLAS.axpy(pmcellWGG.length(), 1.0, pmcellWGG, inputModGateActivations);   //inputModGateActivations.addi(pmcellWGG)
             inputModGateActivations.addiRowVector(bg);
             Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", inputModGateActivations));
-            if (forBackprop) toReturn.ga[t] = inputModGateActivations;
+            if (forBackprop) toReturn.ga[time] = inputModGateActivations;
 
             //Memory cell state
             INDArray currentMemoryCellState = forgetGateActivations.dup('f').muli(prevMemCellState);
@@ -174,18 +174,18 @@ public class LSTMHelpers {
             l1BLAS.axpy(pmcellWOO.length(), 1.0, pmcellWOO, outputGateActivations);   //outputGateActivations.addi(pmcellWOO)
             outputGateActivations.addiRowVector(bo);
             Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", outputGateActivations));
-            if (forBackprop) toReturn.oa[t] = outputGateActivations;
+            if (forBackprop) toReturn.oa[time] = outputGateActivations;
 
             //LSTM unit outputs:
             INDArray currMemoryCellActivation = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), currentMemoryCellState.dup('f')));
             INDArray currHiddenUnitActivations = currMemoryCellActivation.dup('f').muli(outputGateActivations);    //Expected shape: [m,hiddenLayerSize]
 
             if (forBackprop) {
-                toReturn.fwdPassOutputAsArrays[t] = currHiddenUnitActivations;
-                toReturn.memCellState[t] = currentMemoryCellState;
-                toReturn.memCellActivations[t] = currMemoryCellActivation;
+                toReturn.fwdPassOutputAsArrays[time] = currHiddenUnitActivations;
+                toReturn.memCellState[time] = currentMemoryCellState;
+                toReturn.memCellActivations[time] = currMemoryCellActivation;
             } else {
-                outputActivations.tensorAlongDimension(t, 1, 0).assign(currHiddenUnitActivations);
+                outputActivations.tensorAlongDimension(time, 1, 0).assign(currHiddenUnitActivations);
             }
 
             prevOutputActivations = currHiddenUnitActivations;
@@ -266,15 +266,17 @@ public class LSTMHelpers {
         }
 
         for (int iTimeIndex = timeSeriesLength - 1; iTimeIndex >= endIdx; iTimeIndex--) {
-            int t = iTimeIndex;
+            int time = iTimeIndex;
+            int inext = 1;
 
             if (!forwards) {
-                t = timeSeriesLength - iTimeIndex - 1;
+                time = timeSeriesLength - iTimeIndex - 1;
+                inext = -1;
             }
 
-            INDArray prevMemCellState = (iTimeIndex == 0 ? null : fwdPass.memCellState[t - 1]);
-            INDArray prevHiddenUnitActivation = (iTimeIndex == 0 ? null : fwdPass.fwdPassOutputAsArrays[t - 1]);
-            INDArray currMemCellState = fwdPass.memCellState[t];
+            INDArray prevMemCellState = (iTimeIndex == 0 ? null : fwdPass.memCellState[time - inext]);
+            INDArray prevHiddenUnitActivation = (iTimeIndex == 0 ? null : fwdPass.fwdPassOutputAsArrays[time - inext]);
+            INDArray currMemCellState = fwdPass.memCellState[time];
 
             //For variable length mini-batch data: Zero out deltas as necessary, so deltas beyond end of each time series are always 0
             //Not implemented yet, but left here for when this is implemented
@@ -288,7 +290,7 @@ public class LSTMHelpers {
 			}*/
 
             //LSTM unit output errors (dL/d(a_out)); not to be confused with \delta=dL/d(z_out)
-            INDArray epsilonSlice = (is2dInput ? epsilon : epsilon.tensorAlongDimension(t, 1, 0));        //(w^{L+1}*(delta^{(L+1)t})^T)^T or equiv.
+            INDArray epsilonSlice = (is2dInput ? epsilon : epsilon.tensorAlongDimension(time, 1, 0));        //(w^{L+1}*(delta^{(L+1)t})^T)^T or equiv.
             INDArray nablaOut = Shape.toOffsetZeroCopy(epsilonSlice, 'f'); //Shape: [m,n^L]
             if (iTimeIndex != timeSeriesLength - 1) {
                 //if t == timeSeriesLength-1 then deltaiNext etc are zeros
@@ -299,8 +301,8 @@ public class LSTMHelpers {
             }
 
             //Output gate deltas:
-            INDArray sigmahOfS = fwdPass.memCellActivations[t];
-            INDArray ao = fwdPass.oa[t];
+            INDArray sigmahOfS = fwdPass.memCellActivations[time];
+            INDArray ao = fwdPass.oa[time];
             INDArray sigmaoPrimeOfZo = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("timesoneminus", ao.dup('f')));    //Equivalent to sigmoid deriv on zo
             //Normally would use zo.dup() in above line, but won't be using zo again (for this time step). Ditto for zf, zg, zi
             INDArray deltao = nablaOut.dup('f').muli(sigmahOfS).muli(sigmaoPrimeOfZo); //Shape: [m,n^L]
@@ -311,7 +313,7 @@ public class LSTMHelpers {
             INDArray deltaMulRowWOO = deltao.dup('f').muliRowVector(wOOTranspose);
             l1BLAS.axpy(nablaCellState.length(), 1.0, deltaMulRowWOO, nablaCellState); //nablaCellState.addi(deltao.mulRowVector(wOOTranspose));
             if (iTimeIndex != timeSeriesLength - 1) {
-                INDArray nextForgetGateAs = fwdPass.fa[t + 1];
+                INDArray nextForgetGateAs = fwdPass.fa[time + inext];
                 int length = nablaCellState.length();
                 l1BLAS.axpy(length, 1.0, nextForgetGateAs.muli(nablaCellStateNext), nablaCellState);       //nablaCellState.addi(nextForgetGateAs.mul(nablaCellStateNext))
                 l1BLAS.axpy(length, 1.0, deltafNext.dup('f').muliRowVector(wFFTranspose), nablaCellState);    //nablaCellState.addi(deltafNext.mulRowVector(wFFTranspose))
@@ -320,7 +322,7 @@ public class LSTMHelpers {
             nablaCellStateNext = nablaCellState;    //Store for use in next iteration
 
             //Forget gate delta:
-            INDArray af = fwdPass.fa[t];
+            INDArray af = fwdPass.fa[time];
             INDArray deltaf = null;
             if (iTimeIndex > 0) {
                 deltaf = nablaCellState.dup('f').muli(prevMemCellState)
@@ -329,19 +331,19 @@ public class LSTMHelpers {
             //Shape: [m,n^L]
 
             //Input modulation gate delta:
-            INDArray ag = fwdPass.ga[t];
-            INDArray ai = fwdPass.ia[t];
+            INDArray ag = fwdPass.ga[time];
+            INDArray ai = fwdPass.ia[time];
             INDArray deltag = ai.muli(nablaCellState)
                     .muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("timesoneminus", ag.dup('f'))));    //Equivalent to sigmoid deriv on zg
             //Shape: [m,n^L]
 
             //Network input delta:
-            INDArray zi = fwdPass.iz[t];
+            INDArray zi = fwdPass.iz[time];
             INDArray deltai = ag.muli(nablaCellState)
                     .muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), zi).derivative()));
             //Shape: [m,n^L]
 
-            INDArray prevLayerActivationSlice = Shape.toMmulCompatible(is2dInput ? input : input.tensorAlongDimension(t, 1, 0));
+            INDArray prevLayerActivationSlice = Shape.toMmulCompatible(is2dInput ? input : input.tensorAlongDimension(time, 1, 0));
             Nd4j.gemm(prevLayerActivationSlice, deltai, iwGradients[0], true, false, 1.0, 1.0);   //iwGradients[0].addi(prevLayerActivationSliceTransposed.mmul(deltai));
 
             if (iTimeIndex > 0) {
@@ -388,7 +390,7 @@ public class LSTMHelpers {
                 Nd4j.gemm(deltaf, wf, epsilonNextSlice, false, true, 1.0, 1.0); //epsilonNextSlice.addi(deltaf.mmul(wfTranspose));
             }
 
-            epsilonNext.tensorAlongDimension(t, 1, 0).assign(epsilonNextSlice);
+            epsilonNext.tensorAlongDimension(time, 1, 0).assign(epsilonNextSlice);
 
             deltaiNext = deltai;
             deltafNext = deltaf;
