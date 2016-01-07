@@ -26,6 +26,7 @@ import lombok.NonNull;
 import org.apache.commons.compress.compressors.gzip.GzipUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
+import org.apache.commons.io.output.StringBuilderWriter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
@@ -48,6 +49,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
@@ -280,6 +282,36 @@ public class WordVectorSerializer {
         }
         sb.append(new String(bytes, 0, i + 1, "UTF-8"));
         return sb.toString();
+    }
+
+    /**
+     * This mehod writes word vectors to the given path.
+     * Please note: this method doesn't load whole vocab/lookupTable into memory, so it's able to process large vocabularies served over network.
+     *
+     * @param lookupTable
+     * @param path
+     * @param <T>
+     */
+    public static <T extends SequenceElement> void writeWordVectors(WeightLookupTable<T> lookupTable, String path) throws IOException {
+        VocabCache<T> vocabCache = lookupTable.getVocabCache();
+
+        PrintWriter writer = new PrintWriter(new File(path));
+
+        for (int x = 0; x < vocabCache.numWords(); x++) {
+            T element = vocabCache.elementAtIndex(x);
+
+            StringBuilder builder = new StringBuilder();
+
+            builder.append(element.getLabel().replaceAll(" ", "_")).append(" ");
+            INDArray vec = lookupTable.vector(element.getLabel());
+            for (int i = 0; i < vec.length(); i++) {
+                builder.append(vec.getDouble(i));
+                if (i < vec.length() - 1) builder.append(" ");
+            }
+            writer.println(builder.toString());
+        }
+        writer.flush();
+        writer.close();
     }
 
     /**
