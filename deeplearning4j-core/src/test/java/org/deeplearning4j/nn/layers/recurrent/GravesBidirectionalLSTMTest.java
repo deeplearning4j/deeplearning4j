@@ -289,11 +289,9 @@ public class GravesBidirectionalLSTMTest {
         assertArrayEquals(activation1.data().asFloat(),activation2.data().asFloat(),1e-5f);
 
         final INDArray randSig = Nd4j.rand(new int[]{1,layerSize,timeSeriesLength});
-		final INDArray randSigB = Nd4j.zeros(new int[]{1,layerSize,timeSeriesLength});
+		final INDArray randSigB = randSig.dup();
+		reverseColumnsInPlace(randSigB.slice(0));
 
-		for (int i = 0; i < timeSeriesLength; i++) {
-			randSigB.slice(0).putColumn(i,randSig.slice(0).getColumn(i));
-		}
 
         final Pair<Gradient,INDArray> backprop1 = forwardsLSTM.backpropGradient(randSig);
         final Pair<Gradient,INDArray> backprop2 = bidirectionalLSTM.backpropGradient(randSig);
@@ -332,43 +330,37 @@ public class GravesBidirectionalLSTMTest {
         //run on reversed signal
         final INDArray activation3 = bidirectionalLSTM.activate(sigb).slice(0);
 
-        final INDArray activation3Reverse = Nd4j.zeros(activation3.shape());
-
-        //reverse result, and compare to forwards signal
-        final int T = activation3.size(1);
-        for (int t = 0; t < T; t++) {
-            activation3Reverse.putColumn(T - t - 1,activation3.getColumn(t));
-        }
+        final INDArray activation3Reverse = activation3.dup();
+		reverseColumnsInPlace(activation3Reverse);
 
         assertArrayEquals(activation3Reverse.data().asFloat(),activation1.data().asFloat(),1e-5f);
         assertArrayEquals(activation3Reverse.shape(),activation1.shape());
 
+		//test backprop now
+		final INDArray refBackGradientReccurrent = backprop1.getFirst().getGradientFor(
+				GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY);
 
-        //test backprop now
+		final INDArray refBackGradientInput = backprop1.getFirst().getGradientFor(
+				GravesLSTMParamInitializer.INPUT_WEIGHT_KEY);
+
+		final INDArray refBackGradientBias = backprop1.getFirst().getGradientFor(
+				GravesLSTMParamInitializer.BIAS_KEY);
+
 		final Pair<Gradient,INDArray> backprop3 = bidirectionalLSTM.backpropGradient(randSigB);
 
-		final INDArray backGradientReccurrent = backprop3.getFirst().getGradientFor(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS).slice(0);
-		final INDArray backGradientInput = backprop3.getFirst().getGradientFor(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS).slice(0);
-		final INDArray backGradientBias = backprop3.getFirst().getGradientFor(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS).slice(0);
+		final INDArray backGradientRecurrent = backprop3.getFirst().getGradientFor(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS);
+		final INDArray backGradientInput = backprop3.getFirst().getGradientFor(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS);
+		final INDArray backGradientBias = backprop3.getFirst().getGradientFor(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS);
 
-		reverseColumnsInPlace(backGradientReccurrent);
-		reverseColumnsInPlace(backGradientInput);
-		reverseColumnsInPlace(backGradientBias);
-
-		assertArrayEquals(backprop1.getFirst().getGradientFor(
-				GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY).slice(0).data().asFloat(),
-				backGradientReccurrent.data().asFloat(),1e-5f);
-
-		assertArrayEquals(backprop1.getFirst().getGradientFor(
-				GravesLSTMParamInitializer.INPUT_WEIGHT_KEY).slice(0).data().asFloat(),
-				backGradientInput.data().asFloat(),1e-5f);
-
-		assertArrayEquals(backprop1.getFirst().getGradientFor(
-				GravesLSTMParamInitializer.BIAS_KEY).slice(0).data().asFloat(),
+		assertArrayEquals(refBackGradientBias.data().asFloat(),
 				backGradientBias.data().asFloat(),1e-5f);
 
-		int foo = 3;
-        foo++;
+		assertArrayEquals(refBackGradientInput.data().asFloat(),
+				backGradientInput.data().asFloat(),1e-5f);
+
+		assertArrayEquals(refBackGradientReccurrent.data().asFloat(),
+				backGradientRecurrent.data().asFloat(),1e-5f);
+
     }
 
 	@Test
@@ -452,7 +444,7 @@ public class GravesBidirectionalLSTMTest {
         net.setListeners(scoreSaver,new ScoreIterationListener(1));
         double oldScore = Double.POSITIVE_INFINITY;
         net.init();
-        for (int iEpoch = 0; iEpoch < 3; iEpoch++) {
+        for (int iEpoch = 0; iEpoch < 5; iEpoch++) {
             net.fit(ds);
 
             System.out.print(String.format("score is %f\n",score));
