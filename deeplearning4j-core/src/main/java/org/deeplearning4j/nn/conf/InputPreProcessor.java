@@ -38,10 +38,12 @@ import java.io.Serializable;
 @JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
 @JsonSubTypes(value={
         @JsonSubTypes.Type(value = CnnToFeedForwardPreProcessor.class, name = "cnnToFeedForward"),
+        @JsonSubTypes.Type(value = CnnToRnnPreProcessor.class, name = "cnnToRnn"),
         @JsonSubTypes.Type(value = ComposableInputPreProcessor.class, name = "composableInput"),
         @JsonSubTypes.Type(value = FeedForwardToCnnPreProcessor.class, name = "feedForwardToCnn"),
         @JsonSubTypes.Type(value = FeedForwardToRnnPreProcessor.class, name = "feedForwardToRnn"),
         @JsonSubTypes.Type(value = RnnToFeedForwardPreProcessor.class, name = "rnnToFeedForward"),
+        @JsonSubTypes.Type(value = RnnToCnnPreProcessor.class, name = "rnnToCnn"),
         @JsonSubTypes.Type(value = BinomialSamplingPreProcessor.class, name = "binomialSampling"),
         @JsonSubTypes.Type(value = ReshapePreProcessor.class, name = "reshape"),
         @JsonSubTypes.Type(value = UnitVarianceProcessor.class, name = "unitVariance"),
