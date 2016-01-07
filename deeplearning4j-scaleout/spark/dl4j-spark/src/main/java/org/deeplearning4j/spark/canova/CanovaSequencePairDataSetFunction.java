@@ -26,18 +26,10 @@ import java.util.Iterator;
 public class CanovaSequencePairDataSetFunction implements Function<Tuple2<Collection<Collection<Writable>>,Collection<Collection<Writable>>>,DataSet>, Serializable {
     /**Alignment mode for dealing with input/labels of differing lengths (for example, one-to-many and many-to-one type situations).
      * For example, might have 10 time steps total but only one label at end for sequence classification.<br>
-     * Currently supported modes:<br>
-     * <b>EQUAL_LENGTH</b>: Default. Assume that label and input time series are of equal length, and all examples are of
-     * the same length<br>
+     * <b>EQUAL_LENGTH</b>: Default. Assume that label and input time series are of equal length<br>
      * <b>ALIGN_START</b>: Align the label/input time series at the first time step, and zero pad either the labels or
-     * the input at the end<br>
+     * the input at the end (pad whichever is shorter)<br>
      * <b>ALIGN_END</b>: Align the label/input at the last time step, zero padding either the input or the labels as required<br>
-     *
-     * Note 1: When the time series for each example are of different lengths, the shorter time series will be padded to
-     * the length of the longest time series.<br>
-     * Note 2: When ALIGN_START or ALIGN_END are used, the DataSet masking functionality is used. Thus, the returned DataSets
-     * will have the input and mask arrays set. These mask arrays identify whether an input/label is actually present,
-     * or whether the value is merely masked.<br>
      */
     public enum AlignmentMode {
         EQUAL_LENGTH,

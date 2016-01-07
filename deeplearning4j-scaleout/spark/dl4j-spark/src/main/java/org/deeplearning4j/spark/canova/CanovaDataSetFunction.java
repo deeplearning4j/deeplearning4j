@@ -4,6 +4,7 @@ import org.apache.spark.api.java.function.Function;
 import org.canova.api.io.WritableConverter;
 import org.canova.api.io.converters.WritableConverterException;
 import org.canova.api.writable.Writable;
+import org.deeplearning4j.datasets.canova.RecordReaderDataSetIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
@@ -16,7 +17,7 @@ import java.util.Collection;
 import java.util.List;
 
 /**Map {@code Collection<Writable>} objects (out of a canova-spark record reader function) to DataSet objects for Spark training.
- * Analogous to RecordReaderDataSetIterator, but in the context of Spark.
+ * Analogous to {@link RecordReaderDataSetIterator}, but in the context of Spark.
  * @author Alex Black
  */
 public class CanovaDataSetFunction implements Function<Collection<Writable>,DataSet>, Serializable {

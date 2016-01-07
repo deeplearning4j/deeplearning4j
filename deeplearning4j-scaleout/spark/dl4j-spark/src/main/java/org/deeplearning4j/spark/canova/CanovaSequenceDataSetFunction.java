@@ -33,6 +33,15 @@ public class CanovaSequenceDataSetFunction implements Function<Collection<Collec
      * @param labelIndex Index of the label column
      * @param numPossibleLabels Number of classes for classification  (not used if regression = true)
      * @param regression False for classification, true for regression
+     */
+    public CanovaSequenceDataSetFunction(int labelIndex, int numPossibleLabels, boolean regression){
+        this(labelIndex, numPossibleLabels, regression, null, null);
+    }
+
+    /**
+     * @param labelIndex Index of the label column
+     * @param numPossibleLabels Number of classes for classification  (not used if regression = true)
+     * @param regression False for classification, true for regression
      * @param preProcessor DataSetPreprocessor (may be null)
      * @param converter WritableConverter (may be null)
      */
