@@ -36,6 +36,7 @@ import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreproc
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
+import org.deeplearning4j.util.SerializationUtils;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -238,6 +239,20 @@ public class ParagraphVectorsTest {
         double similarityX = vec.similarity("DOC_3720", "DOC_9852");
         log.info("3720/9852 similarity: " + similarityX);
         assertTrue(similarityX < 0.5d);
+
+        File tempFile = File.createTempFile("paravec", "ser");
+        tempFile.deleteOnExit();
+
+        INDArray day = vec.getWordVectorMatrix("day");
+
+        SerializationUtils.saveObject(vec, tempFile);
+
+        ParagraphVectors vec2 = (ParagraphVectors) SerializationUtils.readObject(tempFile);
+        INDArray day2 = vec2.getWordVectorMatrix("day");
+
+        tempFile.delete();
+
+        assertEquals(day, day2);
     }
 
     @Test
