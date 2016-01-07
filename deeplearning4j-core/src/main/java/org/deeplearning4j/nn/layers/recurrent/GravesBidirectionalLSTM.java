@@ -123,8 +123,8 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning
                 epsilon,
                 truncatedBPTT,
                 tbpttBackwardLength,
-                fwdPass,
-                true,
+                backPass,
+                false,
                 GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS,
                 GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS,
                 GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS);
