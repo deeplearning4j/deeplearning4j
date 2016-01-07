@@ -9,6 +9,7 @@ find_path(STDIO_INCLUDE_PATH stdio.h)
 find_package(CUDA)
 
 if(UNIX)
+    message("IN UNIX")
     include_directories("/usr/include")
     include_directories("/usr/local/include")
     include_directories("/usr/include/c++/4.9.2")
@@ -16,6 +17,7 @@ if(UNIX)
     LINK_DIRECTORIES(/usr/local/lib)
 
     if(CUDA_FOUND)
+        message("RUNNING CUDA")
         set(CUDA_INCLUDE_DIRS "/usr/local/cuda/include/"  ${CUDA_INCLUDE_DIRS})
         SET(CUDA_CC "50" CACHE STRING "CUDA Compute Capability of the target GPU.")
         SET(CUDA_NVCC_FLAGS
