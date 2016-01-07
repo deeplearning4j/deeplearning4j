@@ -466,4 +466,41 @@ public class GravesBidirectionalLSTMTest {
 
 
 	}
+
+	@Test
+	public void testSerialization() {
+
+		final MultiLayerConfiguration conf1 = new NeuralNetConfiguration.Builder()
+				.optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+				.iterations(5)
+				.learningRate(0.1)
+				.rmsDecay(0.95)
+				.regularization(true)
+				.l2(0.001)
+				.updater(Updater.ADAGRAD)
+				.seed(12345)
+				.list(3)
+				.pretrain(false)
+				.layer(0, new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder().activation("tanh").nIn(2).nOut(2)
+						.weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-0.05,0.05))
+						.build())
+				.layer(1, new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder().activation("tanh").nIn(2).nOut(2)
+						.weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-0.05,0.05))
+						.build())
+				.layer(2, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT).nIn(2).nOut(2).activation("tanh").build())
+				.backprop(true)
+				.build();
+
+
+
+		final String json1 = conf1.toJson();
+
+		final MultiLayerConfiguration conf2 = MultiLayerConfiguration.fromJson(json1);
+
+		final String json2 = conf1.toJson();
+
+
+		TestCase.assertEquals(json1,json2);
+
+	}
 }
