@@ -22,7 +22,7 @@ import java.util.*;
  */
 public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
     /**Alignment mode for dealing with input/labels of differing lengths (for example, one-to-many and many-to-one type situations).
-     * For example, might have 10 inputs but only one label at end for sequence classification.<br>
+     * For example, might have 10 time steps total but only one label at end for sequence classification.<br>
      * Currently supported modes:<br>
      * <b>EQUAL_LENGTH</b>: Default. Assume that label and input time series are of equal length, and all examples are of
      * the same length<br>
