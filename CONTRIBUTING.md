@@ -4,7 +4,7 @@ Thanks for your interest in DL4J. Our goal is to bring fast, open-source deep le
 
 ## Getting Started
 
-
+Deeplearning4j's [open issues are here](https://github.com/deeplearning4j/deeplearning4j/issues). In time, we'll tag issues that would make a good first pull request for new contributors. 
 
 ## Contributions
 
