@@ -93,7 +93,7 @@ public class CanovaDataSetFunction implements Function<Collection<Writable>,Data
             }
         }
 
-        DataSet ds = new org.nd4j.linalg.dataset.DataSet(featureVector, (labelIndex >= 0 ? label : featureVector) );
+        DataSet ds = new DataSet(featureVector, (labelIndex >= 0 ? label : featureVector) );
         if(preProcessor != null) preProcessor.preProcess(ds);
         return ds;
     }

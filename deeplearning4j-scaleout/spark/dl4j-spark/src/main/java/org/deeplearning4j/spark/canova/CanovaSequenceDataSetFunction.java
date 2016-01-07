@@ -5,7 +5,7 @@ import org.canova.api.io.WritableConverter;
 import org.canova.api.writable.Writable;
 import org.deeplearning4j.datasets.canova.SequenceRecordReaderDataSetIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.FeatureUtil;
@@ -18,7 +18,7 @@ import java.util.Iterator;
  *  DataSet objects for Spark training.
  * Analogous to {@link SequenceRecordReaderDataSetIterator}, but in the context of Spark.
  * Supports loading data from a single source only (hence no masknig arrays, many-to-one etc here)
- * see {@link CanovaTwoSequenceDataSetFunction} for the separate collections for input and labels version
+ * see {@link CanovaSequencePairDataSetFunction} for the separate collections for input and labels version
  * @author Alex Black
  */
 public class CanovaSequenceDataSetFunction implements Function<Collection<Collection<Writable>>,DataSet>, Serializable {
@@ -50,12 +50,13 @@ public class CanovaSequenceDataSetFunction implements Function<Collection<Collec
     public DataSet call(Collection<Collection<Writable>> input) throws Exception {
         Iterator<Collection<Writable>> iter = input.iterator();
 
-        int i=0;
         INDArray features = null;
         INDArray labels = Nd4j.zeros(1, (regression ? 1 : numPossibleLabels), input.size());
 
         int[] fIdx = new int[3];
         int[] lIdx = new int[3];
+
+        int i=0;
         while(iter.hasNext()){
             Collection<Writable> step = iter.next();
             if (i == 0) {
@@ -75,7 +76,7 @@ public class CanovaSequenceDataSetFunction implements Function<Collection<Collec
                         labels.putScalar(lIdx,current.toDouble());
                     } else {
                         INDArray line = FeatureUtil.toOutcomeVector(current.toInt(), numPossibleLabels);
-                        labels.tensorAlongDimension(i,1).assign(line);  //1d from [1,nIn,timeSeriesLength] -> tensor i along dimension 1 is at time i
+                        labels.tensorAlongDimension(i,1).assign(line);  //1d from [1,nOut,timeSeriesLength] -> tensor i along dimension 1 is at time i
                     }
                 } else {
                     //feature
@@ -87,7 +88,7 @@ public class CanovaSequenceDataSetFunction implements Function<Collection<Collec
             i++;
         }
 
-        DataSet ds = new org.nd4j.linalg.dataset.DataSet(features,labels);
+        DataSet ds = new DataSet(features,labels);
         if(preProcessor != null) preProcessor.preProcess(ds);
         return ds;
     }
