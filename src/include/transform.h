@@ -23,13 +23,13 @@ namespace functions {
              * @return
              */
             virtual
-#ifdef __GNUC__
+#ifdef __CUDACC__
+            inline __host__ __device__
+#elseif  __GNUC__
             __always_inline
 #endif
 
-#ifdef __CUDACC__
-            inline __host__ __device__
-#endif
+
             T op(T d1, T *params) = 0;
 
 #ifdef __CUDACC__
@@ -80,13 +80,14 @@ namespace functions {
                  * @return
                  */
                 virtual
-#ifdef __GNUC__
-                __always_inline
-#endif
 
 #ifdef __CUDACC__
                 inline  __host__ __device__
+#elseif __GNUC__
+                __always_inline
 #endif
+
+
                 T op(T d1, T *params) {
                     return nd4j::math::nd4j_abs<T>(d1);
                 }
@@ -114,13 +115,14 @@ namespace functions {
                  * @return
                  */
                 virtual
-#ifdef __GNUC__
-                __always_inline
-#endif
+
 
 #ifdef __CUDACC__
                 inline    __host__ __device__
+#elseif __GNUC__
+                __always_inline
 #endif
+
                 T op(T d1, T *params) {
                     return nd4j::math::nd4j_ceil<T>(d1);
                 }
@@ -148,30 +150,25 @@ namespace functions {
                  * @return
                  */
                 virtual
-#ifdef __GNUC__
-                __always_inline
-#endif
-
 #ifdef __CUDACC__
                 inline     __host__ __device__
-#endif
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
-                 T op(T d1, T *params) {
+                T op(T d1, T *params) {
                     return nd4j::math::nd4j_cos<T>(d1);
                 }
 
                 /** Name of the op
                  * @return the name of the operation
                  */
-                virtual
-#ifdef __GNUC__
-                __always_inline
-#endif
+
 
 #ifdef __CUDACC__
                 inline   __host__
+                virtual
+#elseif __GNUC__
+                __always_inline
 #endif
                 std::string name() {
                     return std::string("cos_strided");
@@ -189,12 +186,13 @@ namespace functions {
                  * @return
                  */
                 virtual
-#ifdef __GNUC__
-                __always_inline
-#endif
+
 
 #ifdef __CUDACC__
                 inline      __host__ __device__
+                virtual
+#elseif __GNUC__
+                __always_inline
 #endif
                 T op(T d1, T *params) {
                     return nd4j::math::nd4j_exp<T>(d1);
@@ -204,12 +202,12 @@ namespace functions {
                  * @return the name of the operation
                  */
                 virtual
-#ifdef __GNUC__
-                __always_inline
-#endif
+
 
 #ifdef __CUDACC__
                 inline     __host__
+#elseif __GNUC__
+                __always_inline
 #endif
                 std::string name() {
                     return std::string("exp_strided");
@@ -227,12 +225,12 @@ namespace functions {
                  * @return
                  */
                 virtual
-#ifdef __GNUC__
-                __always_inline
-#endif
+
 
 #ifdef __CUDACC__
                 inline    __host__ __device__
+#elseif __GNUC__
+                __always_inline
 #endif
                 T op(T d1, T *params) {
                     return nd4j::math::nd4j_floor<T>(d1);
@@ -261,12 +259,12 @@ namespace functions {
                  * @return
                  */
                 virtual
-#ifdef __GNUC__
-                __always_inline
-#endif
+
 
 #ifdef __CUDACC__
                 inline    __host__ __device__
+#elseif __GNUC__
+                __always_inline
 #endif
                 T op(T d1, T *params) {
                     return nd4j::math::nd4j_log<T>(d1);
@@ -278,6 +276,8 @@ namespace functions {
                 virtual
 #ifdef __CUDACC__
                 inline   __host__
+#elseif __GNUC__
+                __always_inline
 #endif
                 std::string name() {
                     return std::string("log_strided");
@@ -295,12 +295,12 @@ namespace functions {
                  * @return
                  */
                 virtual
-#ifdef __GNUC__
-                __always_inline
-#endif
+
 
 #ifdef __CUDACC__
                 inline  __host__ __device__
+#elseif __GNUC__
+                __always_inline
 #endif
                 T op(T d1, T *params) {
                     return -d1;
@@ -329,13 +329,13 @@ namespace functions {
                  * @return
                  */
                 virtual
-#ifdef __GNUC__
-                __always_inline
-#endif
 
 #ifdef __CUDACC__
                 inline       __host__ __device__
+#elseif __GNUC__
+                __always_inline
 #endif
+
                 T op(T d1, T *params) {
                     return nd4j::math::nd4j_pow<T>(d1,params[0]);
                 }
@@ -364,12 +364,11 @@ namespace functions {
                  * @return
                  */
                 virtual
-#ifdef __GNUC__
-                __always_inline
-#endif
 
 #ifdef __CUDACC__
                 inline      __host__ __device__
+#elseif __GNUC__
+                __always_inline
 #endif
                 T op(T d1, T *params) {
                     return nd4j::math::nd4j_round<T>(d1);
@@ -400,13 +399,14 @@ namespace functions {
                  * @return
                  */
                 virtual
-#ifdef __GNUC__
-                __always_inline
-#endif
+
 
 #ifdef __CUDACC__
                 inline    __host__ __device__
+#elseif __GNUC__
+                __always_inline
 #endif
+
                 T op(T d1, T *params) {
                     return nd4j::math::nd4j_sigmoid<T>(d1);
                 }
@@ -435,12 +435,11 @@ namespace functions {
                  * @return
                  */
                 virtual
-#ifdef __GNUC__
-                __always_inline
-#endif
 
 #ifdef __CUDACC__
                 inline   __host__ __device__
+#elseif __GNUC__
+                __always_inline
 #endif
                 T op(T d1, T *params) {
                     T min = params[0];
@@ -460,12 +459,11 @@ namespace functions {
                  * @return the name of the operation
                  */
                 virtual
-#ifdef __GNUC__
-                __always_inline
-#endif
 
 #ifdef __CUDACC__
                 inline   __host__
+#elseif __GNUC__
+                __always_inline
 #endif
                 std::string name() {
                     return std::string("setrange_strided");
@@ -483,12 +481,11 @@ namespace functions {
                  * @return
                  */
                 virtual
-#ifdef __GNUC__
-                __always_inline
-#endif
 
 #ifdef __CUDACC__
                 inline   __host__ __device__
+#elseif __GNUC__
+                __always_inline
 #endif
                 T op(T d1, T *params) {
                     return nd4j::math::nd4j_sin<T>(d1);
@@ -517,14 +514,13 @@ namespace functions {
                  * @return
                  */
                 virtual
-#ifdef __GNUC__
-                __always_inline
-#endif
 
 #ifdef __CUDACC__
                 inline   __host__ __device__
+#elseif __GNUC__
+                __always_inline
 #endif
-                T op(T d1, T *params) {
+                      T op(T d1, T *params) {
                     return nd4j::math::nd4j_sqrt<T>(d1);
                 }
 
@@ -552,12 +548,11 @@ namespace functions {
                  * @return
                  */
                 virtual
-#ifdef __GNUC__
-                __always_inline
-#endif
 
 #ifdef __CUDACC__
                 inline   __host__ __device__
+#elseif __GNUC__
+                __always_inline
 #endif
                 T op(T d1, T *params) {
                     return nd4j::math::softplus<T>(d1);
@@ -586,12 +581,11 @@ namespace functions {
                  * @return
                  */
                 virtual
-#ifdef __GNUC__
-                __always_inline
-#endif
 
 #ifdef __CUDACC__
                 inline   __host__ __device__
+#elseif __GNUC__
+                __always_inline
 #endif
                 T op(T d1, T *params) {
                     return (d1 > 0) - (d1 < 0);
@@ -621,12 +615,12 @@ namespace functions {
                  * @return
                  */
                 virtual
-#ifdef __GNUC__
-                __always_inline
-#endif
+
 
 #ifdef __CUDACC__
                 inline   __host__ __device__
+#elseif __GNUC__
+                __always_inline
 #endif
                 T op(T d1, T *params) {
                     return nd4j::math::nd4j_tanh<T>(d1);
@@ -656,12 +650,12 @@ namespace functions {
                  * @return
                  */
                 virtual
-#ifdef __GNUC__
-                __always_inline
-#endif
+
 
 #ifdef __CUDACC__
                 inline     __host__ __device__
+#elseif __GNUC__
+                __always_inline
 #endif
                 T op(T d1, T *params) {
                     return nd4j::math::nd4j_acos<T>(d1);
@@ -671,12 +665,11 @@ namespace functions {
                  * @return the name of the operation
                  */
                 virtual
-#ifdef __GNUC__
-                __always_inline
-#endif
 
 #ifdef __CUDACC__
                 inline   __host__
+#elseif __GNUC__
+                __always_inline
 #endif
                 std::string name() {
                     return std::string("acos_strided");
@@ -694,12 +687,12 @@ namespace functions {
                  * @return
                  */
                 virtual
-#ifdef __GNUC__
-                __always_inline
-#endif
+
 
 #ifdef __CUDACC__
                 inline    __host__ __device__
+#elseif __GNUC__
+                __always_inline
 #endif
                 T op(T d1, T *params) {
                     return nd4j::math::nd4j_asin<T>(d1);
@@ -728,12 +721,12 @@ namespace functions {
                  * @return
                  */
                 virtual
-#ifdef __GNUC__
-                __always_inline
-#endif
+
 
 #ifdef __CUDACC__
                 inline     __host__ __device__
+#elseif __GNUC__
+                __always_inline
 #endif
                 T op(T d1, T *params) {
                     return nd4j::math::nd4j_atan<T>(d1);
@@ -787,8 +780,6 @@ namespace functions {
                 if(name == "atan_strided")  return new transform::ops::ATan<T>();
                 return NULL;
             }
-
-
 
         };
 

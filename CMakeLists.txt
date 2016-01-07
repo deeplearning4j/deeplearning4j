@@ -7,17 +7,7 @@ include_directories("src/tests/")
 find_path(STDIO_INCLUDE_PATH stdio.h)
 # packages
 find_package(CUDA)
-set(CUDA_INCLUDE_DIRS "/usr/local/cuda/include/"  ${CUDA_INCLUDE_DIRS})
-SET(CUDA_CC "50" CACHE STRING "CUDA Compute Capability of the target GPU.")
-SET(CUDA_NVCC_FLAGS
-        "-x ${CUDA_NVCC_FLAGS};-gencode;arch=compute_${CUDA_CC},code=sm_${CUDA_CC};")
-SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Xcompiler;-fPIC")
 
-# Disable warnings for CUDA
-SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-w")
-
-SET(CUDA_SEPARABLE_COMPILATION OFF)
-SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-rdc=true")
 if(UNIX)
     include_directories("/usr/include")
     include_directories("/usr/local/include")
@@ -26,6 +16,18 @@ if(UNIX)
     LINK_DIRECTORIES(/usr/local/lib)
 
     if(CUDA_FOUND)
+        set(CUDA_INCLUDE_DIRS "/usr/local/cuda/include/"  ${CUDA_INCLUDE_DIRS})
+        SET(CUDA_CC "50" CACHE STRING "CUDA Compute Capability of the target GPU.")
+        SET(CUDA_NVCC_FLAGS
+                "-x ${CUDA_NVCC_FLAGS};-gencode;arch=compute_${CUDA_CC},code=sm_${CUDA_CC};")
+        SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Xcompiler;-fPIC")
+
+        # Note: only static libraries are supported by the device linker.
+        SET(BUILD_SHARED_LIBS OFF)
+        # Disable warnings for CUDA
+        SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS}; -w")
+
+        SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS}; -rdc=true")
         include_directories("/usr/include")
         include_directories(/usr/local/cuda-7.5/include/)
         LINK_DIRECTORIES(/usr/local/cuda-7.5/lib64)
@@ -50,6 +52,7 @@ if (CUDA_FOUND)
     message("CUDA found!")
     set(CUDA_FILES
             src/array/shape.cc
+            src/array/templatemath.cc
             main.cpp)
     cuda_add_executable(nativeoperations ${CUDA_FILES})
 
@@ -58,7 +61,7 @@ else()
     message("CUDA not found")
     set(SOURCE_FILES
             src/array/shape.cc
-            main.cpp)
-    add_executable(nativeoperations ${SOURCE_FILES})
+            main.cpp src/array/templatemath.cc)
+    add_executable(nativeoperations ${SOURCE_FILES} src/array/templatemath.cc src/array/templatemath.h)
 endif()
 

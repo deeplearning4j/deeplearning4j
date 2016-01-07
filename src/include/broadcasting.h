@@ -29,12 +29,11 @@ namespace functions {
             virtual
 
 #ifdef __CUDACC__
-           inline __device__
+            inline __device__
+#elseif __GNUC__
+                __always_inline
 #endif
-#ifdef __GNUC__
-            __always_inline
-#endif
-             T op(T d1,T d2) = 0;
+            T op(T d1,T d2) = 0;
             /**
              *
              * @param d1
@@ -43,12 +42,10 @@ namespace functions {
             virtual
 #ifdef __CUDACC__
             inline   __device__
+#elseif __GNUC__
+                __always_inline
 #endif
-
-#ifdef __GNUC__
-            __always_inline
-#endif
-             T op(T d1) = 0;
+            T op(T d1) = 0;
 
 #ifdef __CUDACC__
             __device__ void transform(
@@ -90,8 +87,6 @@ namespace functions {
                 int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
                 int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
                 int yOffset = shape::offset(yShapeInfo);
-
-                int tads = shape::tensorsAlongDimension(xShapeInfo,dimension,dimensionLength);
 
 
                 //length for the tad
@@ -149,12 +144,10 @@ namespace functions {
                 virtual
 #ifdef __CUDACC__
                 inline    __host__ __device__
-#endif
-
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
-                 T op(T d1,T d2)  {
+                T op(T d1,T d2)  {
                     return d1 + d2;
                 }
                 /**
@@ -165,11 +158,10 @@ namespace functions {
                 virtual
 #ifdef __CUDACC__
                 inline __host__ __device__
-#endif
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
-                 T op(T d1) {
+                T op(T d1) {
                     return d1;
                 }
 
@@ -196,8 +188,7 @@ namespace functions {
                 virtual
 #ifdef __CUDACC__
                 __host__ __device__
-#endif
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T op(T d1,T d2)  {
@@ -211,12 +202,10 @@ namespace functions {
                 virtual
 #ifdef __CUDACC__
                 inline __host__ __device__
-#endif
-
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
-                 T op(T d1) {
+                T op(T d1) {
                     return d1;
                 }
 
@@ -243,12 +232,10 @@ namespace functions {
                 virtual
 #ifdef __CUDACC__
                 inline  __host__ __device__
-#endif
-
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
-                 T op(T d1,T d2)  {
+                T op(T d1,T d2)  {
                     return d1 / d2;
                 }
                 /**
@@ -259,12 +246,10 @@ namespace functions {
                 virtual
 #ifdef __CUDACC__
                 inline __host__ __device__
-#endif
-
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
-                   T op(T d1) {
+                T op(T d1) {
                     return d1;
                 }
 
@@ -290,11 +275,10 @@ namespace functions {
                 virtual
 #ifdef __CUDACC__
                 inline   __host__ __device__
-#endif
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
-                 T op(T d1,T d2)  {
+                T op(T d1,T d2)  {
                     return d1 * d2;
                 }
                 /**
@@ -305,8 +289,7 @@ namespace functions {
                 virtual
 #ifdef __CUDACC__
                 inline __host__ __device__
-#endif
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T op(T d1) {
@@ -336,12 +319,10 @@ namespace functions {
                 virtual
 #ifdef __CUDACC__
                 inline __host__ __device__
-#endif
-
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
-                 T op(T d1,T d2)  {
+                T op(T d1,T d2)  {
                     return d2 / d1;
                 }
                 /**
@@ -352,12 +333,10 @@ namespace functions {
                 virtual
 #ifdef __CUDACC__
                 inline __host__ __device__
-#endif
-
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
-                 T op(T d1) {
+                T op(T d1) {
                     return d1;
                 }
 
@@ -384,11 +363,10 @@ namespace functions {
                 virtual
 #ifdef __CUDACC__
                 inline __host__ __device__
-#endif
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
-                 T op(T d1,T d2)  {
+                T op(T d1,T d2)  {
                     return d2 - d1;
                 }
                 /**
@@ -399,8 +377,7 @@ namespace functions {
                 virtual
 #ifdef __CUDACC__
                 inline __host__ __device__
-#endif
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
                 T op(T d1) {
@@ -431,11 +408,10 @@ namespace functions {
                 virtual
 #ifdef __CUDACC__
                 inline __host__ __device__
-#endif
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
-                 T op(T d1,T d2)  {
+                T op(T d1,T d2)  {
                     return d1 - d2;
                 }
                 /**
@@ -446,11 +422,10 @@ namespace functions {
                 virtual
 #ifdef __CUDACC__
                 inline __host__ __device__
-#endif
-#ifdef __GNUC__
+#elseif __GNUC__
                 __always_inline
 #endif
-                 T op(T d1) {
+                T op(T d1) {
                     return d1;
                 }
 
