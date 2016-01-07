@@ -224,9 +224,10 @@ namespace nd4j {
                     malloc(sizeof(Buffer<T>));
             ret->data = data;
             ret->length = length;
+
+#ifdef __CUDACC__
             T *gData;
             T **gDataRef = &(gData);
-#ifdef __CUDACC__
             checkCudaErrors(cudaMalloc((void **) gDataRef, sizeof(T) * length));
             ret->
                     gData = gData;

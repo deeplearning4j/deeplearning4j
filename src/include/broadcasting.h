@@ -88,8 +88,6 @@ namespace functions {
                 int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
                 int yOffset = shape::offset(yShapeInfo);
 
-                int tads = shape::tensorsAlongDimension(xShapeInfo,dimension,dimensionLength);
-
 
                 //length for the tad
                 int yLength = shape::length(yShapeInfo);

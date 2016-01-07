@@ -5,6 +5,8 @@
  *      Author: agibsonccc
  */
 
+#ifndef SHAPE_C_
+#define SHAPE_C_
 
 #include <shape.h>
 #include <stdlib.h>
@@ -1719,6 +1721,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
 
 
 }
+#endif /* BROADCASTING_H_ */
 
 
 
