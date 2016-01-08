@@ -16,7 +16,25 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
 /**
- * Created by benny on 12/31/15.
+ *
+ * RNN tutorial: http://deeplearning4j.org/usingrnns.html
+ * READ THIS FIRST if you want to understand what the heck is happening here.
+ *
+ * Shared code for the standard "forwards" LSTM RNN and the bidirectional LSTM RNN
+ * This was extracted from GravesLSTM and refactored into static helper functions.  The general reasoning for this was
+ * so we only have math in one place, instead of two.
+ *
+ * Based on Graves: Supervised Sequence Labelling with Recurrent Neural Networks
+ * http://www.cs.toronto.edu/~graves/phd.pdf
+ * See also for full/vectorized equations (and a comparison to other LSTM variants):
+ * Greff et al. 2015, "LSTM: A Search Space Odyssey", pg11. This is the "vanilla" variant in said paper
+ * http://arxiv.org/pdf/1503.04069.pdf
+ *
+ * Please note that truncated backpropagation through time (BPTT) will not work with the bidirectional layer as-is.
+ * Additionally, variable length data sets will also not work with the bidirectional layer.
+ *
+ * @author Alex Black
+ * @author Benjamin Joseph
  */
 public class LSTMHelpers {
 

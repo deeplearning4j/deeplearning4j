@@ -30,12 +30,23 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import java.util.Map;
 
 /**
- * LSTM layer implementation.
+ *
+ * RNN tutorial: http://deeplearning4j.org/usingrnns.html
+ * READ THIS FIRST
+ *
+ * Bdirectional LSTM layer implementation.
  * Based on Graves: Supervised Sequence Labelling with Recurrent Neural Networks
  * http://www.cs.toronto.edu/~graves/phd.pdf
  * See also for full/vectorized equations (and a comparison to other LSTM variants):
  * Greff et al. 2015, "LSTM: A Search Space Odyssey", pg11. This is the "vanilla" variant in said paper
  * http://arxiv.org/pdf/1503.04069.pdf
+ *
+ * A high level description of bidirectional LSTM can be found from
+ * "Hybrid Speech Recognition with Deep Bidirectional LSTM"
+ *  http://www.cs.toronto.edu/~graves/asru_2013.pdf
+ *
+ * PLEASE NOTE that truncated backpropagation through time (BPTT) will not work with the bidirectional layer as-is.
+ * Additionally, variable length data sets will also not work with the bidirectional layer.
  *
  * @author Alex Black
  * @author Benjamin Joseph
