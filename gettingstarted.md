@@ -19,11 +19,10 @@ After those installs, please read the following:
     * <a href="#osx">OSX</a>
     * <a href="#windows">Windows</a>
 8. [GitHub](http://nd4j.org/getstarted.html#github)
-9. <a href="#source">Working With Source</a>
-10. <a href="#eclipse">Eclipse</a>
-11. <a href="#trouble">Troubleshooting</a>
-12. <a href="#results">Reproducible Results</a>
-13. <a href="#next">Next Steps</a>
+9. <a href="#eclipse">Eclipse</a>
+10. <a href="#trouble">Troubleshooting</a>
+11. <a href="#results">Reproducible Results</a>
+12. <a href="#next">Next Steps</a>
 
 ### <a name="linux">Linux</a>
 
