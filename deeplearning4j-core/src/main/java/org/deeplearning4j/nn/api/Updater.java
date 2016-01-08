@@ -10,7 +10,7 @@ import java.io.Serializable;
  *
  * @author Adam Gibson
  */
-public interface Updater extends Serializable {
+public interface Updater extends Serializable, Cloneable {
     /**
      * Updater: updates the model
      *
@@ -27,5 +27,7 @@ public interface Updater extends Serializable {
       * @param addThis whether to add the Updater to the UpdaterAggregator, or just return an empy aggregator
      */
     UpdaterAggregator getAggregator(boolean addThis);
+
+    Updater clone();
 
 }
