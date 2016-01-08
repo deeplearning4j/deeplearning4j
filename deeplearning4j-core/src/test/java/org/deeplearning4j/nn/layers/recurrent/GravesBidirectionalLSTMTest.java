@@ -484,7 +484,7 @@ public class GravesBidirectionalLSTMTest {
         net.setListeners(scoreSaver,new ScoreIterationListener(1));
         double oldScore = Double.POSITIVE_INFINITY;
         net.init();
-        for (int iEpoch = 0; iEpoch < 5; iEpoch++) {
+        for (int iEpoch = 0; iEpoch < 3; iEpoch++) {
             net.fit(ds);
 
             System.out.print(String.format("score is %f\n",score));
