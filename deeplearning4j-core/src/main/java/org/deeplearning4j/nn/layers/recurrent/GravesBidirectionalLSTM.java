@@ -143,8 +143,12 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning
             combinedGradient.setGradientFor(entry.getKey(),entry.getValue());
         }
 
+        final INDArray forwardEpsilon = forwardsGradient.getSecond();
+        final INDArray backwardsEpsilon = backwardsGradient.getSecond();
+        final INDArray combinedEpsilon = forwardEpsilon.add(backwardsEpsilon);
+
         //sum the errors that were back-propagated
-        return  new Pair<>(combinedGradient, forwardsGradient.getSecond().add(backwardsGradient.getSecond()));
+        return  new Pair<>(combinedGradient,combinedEpsilon );
 
     }
 
@@ -163,30 +167,27 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning
     @Override
     public INDArray activate(INDArray input, boolean training) {
         setInput(input);
-        return activateOutput(training, null, null, false);
+        return activateOutput(training, false);
     }
 
     @Override
     public INDArray activate(INDArray input) {
         setInput(input);
-        return activateOutput(true, null, null, false);
+        return activateOutput(true, false);
     }
 
     @Override
     public INDArray activate(boolean training) {
-        return activateOutput(training, null, null, false);
+        return activateOutput(training, false);
     }
 
     @Override
     public INDArray activate() {
 
-        return activateOutput(false, null, null, false);
+        return activateOutput(false, false);
     }
 
-    private INDArray activateOutput(final boolean training,
-                                    final INDArray prevOutputActivations,
-                                    final INDArray prevMemCellState,
-                                    boolean forBackprop) {
+    private INDArray activateOutput(final boolean training, boolean forBackprop) {
 
 
         final FwdPassReturn forwardsEval = LSTMHelpers.activateHelper(
@@ -196,7 +197,7 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning
                 getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS),
                 getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS),
                 getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS),
-                training,prevOutputActivations,prevMemCellState,forBackprop,true,
+                training,null,null,forBackprop,true,
                 GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS);
 
         final FwdPassReturn backwardsEval = LSTMHelpers.activateHelper(
@@ -206,12 +207,16 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning
                 getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS),
                 getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS),
                 getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS),
-                training,prevOutputActivations,prevMemCellState,forBackprop,false,
+                training,null,null,forBackprop,false,
                 GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS);
 
 
         //sum outputs
-        return forwardsEval.fwdPassOutput.add(backwardsEval.fwdPassOutput);
+        final INDArray fwdOutput = forwardsEval.fwdPassOutput;
+        final INDArray backOutput = backwardsEval.fwdPassOutput;
+        final INDArray totalOutput = fwdOutput.add(backOutput);
+
+        return totalOutput;
     }
 
     private FwdPassReturn activateHelperDirectional(final boolean training,
@@ -220,38 +225,29 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning
                                          boolean forBackprop,
                                          boolean forwards) {
 
-        if (forwards) {
-            return LSTMHelpers.activateHelper(
-                    this,
-                    this.conf,
-                    this.input,
-                    getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS),
-                    getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS),
-                    getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS),
-                    training,
-                    prevOutputActivations,
-                    prevMemCellState,
-                    forBackprop,
-                    forwards,
-                    GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS);
+        String recurrentKey = GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS;
+        String inputKey = GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS;
+        String biasKey = GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS;
 
-        }
-        else {
-            return LSTMHelpers.activateHelper(
-                    this,
-                    this.conf,
-                    this.input,
-                    getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS),
-                    getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS),
-                    getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS),
-                    training,
-                    prevOutputActivations,
-                    prevMemCellState,
-                    forBackprop,
-                    forwards,
-                    GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS);
+        if (!forwards) {
+            recurrentKey = GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS;
+            inputKey = GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS;
+            biasKey = GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS;
         }
 
+        return LSTMHelpers.activateHelper(
+                this,
+                this.conf,
+                this.input,
+                getParam(recurrentKey),
+                getParam(inputKey),
+                getParam(biasKey),
+                training,
+                prevOutputActivations,
+                prevMemCellState,
+                forBackprop,
+                forwards,
+                inputKey);
 
     }
 
@@ -304,16 +300,16 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning
     @Override
     public INDArray rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT) {
         setInput(input);
-        FwdPassReturn fwdPass = activateHelperDirectional(training, stateMap.get(STATE_KEY_PREV_ACTIVATION_FORWARDS), stateMap.get(STATE_KEY_PREV_MEMCELL_FORWARDS), false,true);
-        INDArray outActForwards = fwdPass.fwdPassOutput;
+        final FwdPassReturn fwdPass = activateHelperDirectional(training, stateMap.get(STATE_KEY_PREV_ACTIVATION_FORWARDS), stateMap.get(STATE_KEY_PREV_MEMCELL_FORWARDS), false,true);
+        final INDArray outActForwards = fwdPass.fwdPassOutput;
         if (storeLastForTBPTT) {
             //Store last time step of output activations and memory cell state in tBpttStateMap
             tBpttStateMap.put(STATE_KEY_PREV_ACTIVATION_FORWARDS, fwdPass.lastAct);
             tBpttStateMap.put(STATE_KEY_PREV_MEMCELL_FORWARDS, fwdPass.lastMemCell);
         }
 
-        FwdPassReturn backPass = activateHelperDirectional(training, stateMap.get(STATE_KEY_PREV_ACTIVATION_BACKWARDS), stateMap.get(STATE_KEY_PREV_MEMCELL_BACKWARDS), false,true);
-        INDArray outActBackwards = backPass.fwdPassOutput;
+        final FwdPassReturn backPass = activateHelperDirectional(training, stateMap.get(STATE_KEY_PREV_ACTIVATION_BACKWARDS), stateMap.get(STATE_KEY_PREV_MEMCELL_BACKWARDS), false,false);
+        final INDArray outActBackwards = backPass.fwdPassOutput;
         if (storeLastForTBPTT) {
             //Store last time step of output activations and memory cell state in tBpttStateMap
             tBpttStateMap.put(STATE_KEY_PREV_ACTIVATION_BACKWARDS, backPass.lastAct);
