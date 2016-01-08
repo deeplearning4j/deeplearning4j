@@ -1664,6 +1664,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         } else {
             this.layers = null;
         }
+        if(network.solver != null){
+            //Network updater state: should be cloned over also
+            this.setUpdater(network.getUpdater().clone());
+        } else {
+            this.solver = null;
+        }
     }
 
 
