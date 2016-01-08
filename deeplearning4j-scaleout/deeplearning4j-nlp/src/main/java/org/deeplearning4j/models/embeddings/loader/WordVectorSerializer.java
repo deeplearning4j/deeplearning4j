@@ -26,6 +26,7 @@ import lombok.NonNull;
 import org.apache.commons.compress.compressors.gzip.GzipUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
+import org.apache.commons.io.output.StringBuilderWriter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
@@ -48,6 +49,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
@@ -168,8 +170,8 @@ public class WordVectorSerializer {
     private static Word2Vec readBinaryModel(File modelFile, boolean linebreaks)
             throws NumberFormatException, IOException
     {
-        InMemoryLookupTable lookupTable;
-        VocabCache cache;
+        InMemoryLookupTable<VocabWord> lookupTable;
+        VocabCache<VocabWord> cache;
         INDArray syn0;
         int words, size;
         try (BufferedInputStream bis = new BufferedInputStream(
@@ -181,7 +183,8 @@ public class WordVectorSerializer {
             size = Integer.parseInt(readString(dis));
             syn0 = Nd4j.create(words, size);
             cache = new InMemoryLookupCache(false);
-            lookupTable = (InMemoryLookupTable) new InMemoryLookupTable.Builder().cache(cache)
+            lookupTable = (InMemoryLookupTable<VocabWord>) new InMemoryLookupTable.Builder<VocabWord>()
+                    .cache(cache)
                     .vectorLength(size).build();
 
             String word;
@@ -196,10 +199,11 @@ public class WordVectorSerializer {
                     vector[j] = readFloat(dis);
                 }
 
+
                 syn0.putRow(i, Transforms.unitVec(Nd4j.create(vector)));
 
-                cache.addWordToIndex(cache.numWords(), word);
                 cache.addToken(new VocabWord(1, word));
+                cache.addWordToIndex(cache.numWords(), word);
                 cache.putVocabWord(word);
 
                 if (linebreaks) {
@@ -271,13 +275,43 @@ public class WordVectorSerializer {
             bytes[i] = b;
             b = dis.readByte();
             if (i == 49) {
-                sb.append(new String(bytes));
+                sb.append(new String(bytes, "UTF-8"));
                 i = -1;
                 bytes = new byte[MAX_SIZE];
             }
         }
-        sb.append(new String(bytes, 0, i + 1));
+        sb.append(new String(bytes, 0, i + 1, "UTF-8"));
         return sb.toString();
+    }
+
+    /**
+     * This mehod writes word vectors to the given path.
+     * Please note: this method doesn't load whole vocab/lookupTable into memory, so it's able to process large vocabularies served over network.
+     *
+     * @param lookupTable
+     * @param path
+     * @param <T>
+     */
+    public static <T extends SequenceElement> void writeWordVectors(WeightLookupTable<T> lookupTable, String path) throws IOException {
+        VocabCache<T> vocabCache = lookupTable.getVocabCache();
+
+        PrintWriter writer = new PrintWriter(new File(path));
+
+        for (int x = 0; x < vocabCache.numWords(); x++) {
+            T element = vocabCache.elementAtIndex(x);
+
+            StringBuilder builder = new StringBuilder();
+
+            builder.append(element.getLabel().replaceAll(" ", "_")).append(" ");
+            INDArray vec = lookupTable.vector(element.getLabel());
+            for (int i = 0; i < vec.length(); i++) {
+                builder.append(vec.getDouble(i));
+                if (i < vec.length() - 1) builder.append(" ");
+            }
+            writer.println(builder.toString());
+        }
+        writer.flush();
+        writer.close();
     }
 
     /**
@@ -353,7 +387,7 @@ public class WordVectorSerializer {
 
 
         if (!(lookupTable instanceof InMemoryLookupTable)) throw new IllegalStateException("At this moment only InMemoryLookupTable is supported.");
-        if (!(vocabCache instanceof InMemoryLookupCache)) throw new IllegalStateException("At this moment only InMemoryLookupCache is supported.");
+     //   if (!(vocabCache instanceof InMemoryLookupCache)) throw new IllegalStateException("At this moment only InMemoryLookupCache is supported.");
 
         VectorsConfiguration conf = vec.getConfiguration();
         conf.setVocabSize(vocabCache.numWords());
@@ -390,7 +424,9 @@ public class WordVectorSerializer {
             printWriter.println(builder.toString().trim());
         } else printWriter.println("");
 
-        List<VocabWord> words = new ArrayList<>(((InMemoryLookupCache) vocabCache).getVocabs().values());
+
+
+        List<VocabWord> words = new ArrayList<VocabWord>(vocabCache.vocabWords());
         for (SequenceElement word: words) {
             VocabularyWord vw = new VocabularyWord(word.getLabel());
             vw.setCount(vocabCache.wordFrequency(word.getLabel()));
