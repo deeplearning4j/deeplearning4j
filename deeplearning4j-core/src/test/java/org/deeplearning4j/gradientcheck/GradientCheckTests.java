@@ -527,6 +527,8 @@ public class GradientCheckTests {
 			}
     	}
     }
+
+
     
     @Test
     public void testGradientGravesLSTMEdgeCases(){
@@ -578,6 +580,138 @@ public class GradientCheckTests {
 	        assertTrue(msg,gradOK);
     	}
     }
+
+	@Test
+	public void testGradientGravesBidirectionalLSTMFull(){
+		String[] activFns = {"tanh","relu"};
+
+		LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE};
+		String[] outputActivations = {"softmax","tanh"};	//i.e., lossFunctions[i] used with outputActivations[i] here
+
+		int timeSeriesLength = 4;
+		int nIn = 1;
+		int layerSize = 1;
+		int nOut = 2;
+		int miniBatchSize = 3;
+
+		Random r = new Random(12345L);
+		INDArray input = Nd4j.zeros(miniBatchSize,nIn,timeSeriesLength);
+		for( int i=0; i<miniBatchSize; i++ ){
+			for( int j=0; j<nIn; j++ ){
+				for( int k=0; k<timeSeriesLength; k++ ){
+					input.putScalar(new int[]{i,j,k},r.nextDouble() - 0.5);
+				}
+			}
+		}
+
+		INDArray labels = Nd4j.zeros(miniBatchSize,nOut,timeSeriesLength);
+		for( int i=0; i<miniBatchSize; i++ ){
+			for( int j=0; j<timeSeriesLength; j++ ){
+				int idx = r.nextInt(nOut);
+				labels.putScalar(new int[]{i,idx,j}, 1.0f);
+			}
+		}
+
+
+		double[] l2vals = {0.0, 0.4, 0.0};
+		double[] l1vals = {0.0, 0.0, 0.5};	//i.e., use l2vals[i] with l1vals[i]
+
+		for(String afn : activFns) {
+			for( int i = 0; i<lossFunctions.length; i++ ){
+				for( int k = 0; k<l2vals.length; k++ ){
+					LossFunction lf = lossFunctions[i];
+					String outputActivation = outputActivations[i];
+					double l2 = l2vals[k];
+					double l1 = l1vals[k];
+
+					MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+							.regularization(l1>0.0 && l2>0.0)
+							.l2(l2).l1(l1)
+							.seed(12345L)
+							.list(2)
+							.layer(0, new GravesBidirectionalLSTM.Builder().nIn(nIn).nOut(layerSize)
+									.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
+									.activation(afn).updater(Updater.NONE).build())
+							.layer(1, new RnnOutputLayer.Builder(lf).activation(outputActivation).nIn(layerSize).nOut(nOut)
+									.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
+									.updater(Updater.NONE).build())
+							.pretrain(false).backprop(true)
+							.build();
+
+
+
+					MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+
+					mln.init();
+
+					if( PRINT_RESULTS ){
+						System.out.println("testGradientGravesBidirectionalLSTMFull() - activationFn="+afn+", lossFn="+lf+", outputActivation="+outputActivation
+								+", l2="+l2+", l1="+l1 );
+						for( int j=0; j < mln.getnLayers(); j++ )
+							System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+					}
+
+					boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+							PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, true);
+
+					String msg = "testGradientGravesLSTMFull() - activationFn="+afn+", lossFn="+lf+", outputActivation="+outputActivation
+							+", l2="+l2+", l1="+l1;
+					assertTrue(msg,gradOK);
+				}
+			}
+		}
+	}
+
+	@Test
+	public void testGradientGravesBidirectionalLSTMEdgeCases(){
+		//Edge cases: T=1, miniBatchSize=1, both
+		int[] timeSeriesLength = {1,5,1};
+		int[] miniBatchSize = {7,1,1};
+
+		int nIn = 7;
+		int layerSize = 9;
+		int nOut = 4;
+
+		for( int i=0; i<timeSeriesLength.length; i++ ){
+
+			Random r = new Random(12345L);
+			INDArray input = Nd4j.zeros(miniBatchSize[i],nIn,timeSeriesLength[i]);
+			for( int m=0; m<miniBatchSize[i]; m++ ){
+				for( int j=0; j<nIn; j++ ){
+					for( int k=0; k<timeSeriesLength[i]; k++ ){
+						input.putScalar(new int[]{m,j,k},r.nextDouble() - 0.5);
+					}
+				}
+			}
+
+			INDArray labels = Nd4j.zeros(miniBatchSize[i],nOut,timeSeriesLength[i]);
+			for( int m=0; m<miniBatchSize[i]; m++){
+				for( int j=0; j<timeSeriesLength[i]; j++ ){
+					int idx = r.nextInt(nOut);
+					labels.putScalar(new int[]{m,idx,j}, 1.0f);
+				}
+			}
+
+			MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+					.regularization(false)
+					.seed(12345L)
+					.list(2)
+					.layer(0, new GravesBidirectionalLSTM.Builder().nIn(nIn).nOut(layerSize).weightInit(WeightInit.DISTRIBUTION)
+							.dist(new NormalDistribution(0,1)).updater(Updater.NONE).build())
+					.layer(1, new RnnOutputLayer.Builder(LossFunction.MCXENT).activation("softmax").nIn(layerSize).nOut(nOut)
+							.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1)).updater(Updater.NONE).build())
+					.pretrain(false).backprop(true)
+					.build();
+			MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+			mln.init();
+
+			boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+					PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, true);
+
+			String msg = "testGradientGravesLSTMEdgeCases() - timeSeriesLength="+timeSeriesLength[i]+", miniBatchSize="+miniBatchSize[i];
+			assertTrue(msg,gradOK);
+		}
+	}
 
 	@Test
 	public void testGradientCnnFfRnn(){
