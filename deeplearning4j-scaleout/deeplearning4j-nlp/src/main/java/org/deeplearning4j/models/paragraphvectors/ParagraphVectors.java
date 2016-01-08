@@ -36,8 +36,8 @@ import java.util.List;
  * @author raver119@gmail.com
  */
 public class ParagraphVectors extends Word2Vec {
-    @Getter protected LabelsSource labelsSource;
-    @Getter @Setter protected LabelAwareIterator labelAwareIterator;
+    @Getter protected transient LabelsSource labelsSource;
+    @Getter @Setter protected transient LabelAwareIterator labelAwareIterator;
 
 
     /**
@@ -238,9 +238,6 @@ public class ParagraphVectors extends Word2Vec {
             } else  {
                 // we have nothing, probably that's restored model building. ignore iterator for now.
                 // probably there's few reasons to move iterator initialization code into ParagraphVectors methos. Like protected setLabelAwareIterator method.
-                // TODO: to be investigated ^^^
-                log.warn("Unexpected path taken");
-                throw new RuntimeException("Unexpected path taken");
             }
 
             if (labelAwareIterator != null) {
@@ -249,7 +246,7 @@ public class ParagraphVectors extends Word2Vec {
                         .tokenizerFactory(tokenizerFactory)
                         .build();
                 this.iterator = new AbstractSequenceIterator.Builder<VocabWord>(transformer).build();
-            } else throw new IllegalStateException("LabelAwareIterator is NULL");
+            }
 
             ret.numEpochs = this.numEpochs;
             ret.numIterations = this.iterations;

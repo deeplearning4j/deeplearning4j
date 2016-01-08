@@ -27,8 +27,8 @@ import java.util.List;
  * @author raver119@gmail.com
  */
 public class Word2Vec extends SequenceVectors<VocabWord> {
-    @Getter protected SentenceIterator sentenceIter;
-    @Getter @Setter protected TokenizerFactory tokenizerFactory;
+    @Getter protected transient SentenceIterator sentenceIter;
+    @Getter @Setter protected transient TokenizerFactory tokenizerFactory;
 
     public void setSentenceIter(@NonNull SentenceIterator iterator) {
         if (tokenizerFactory == null) throw new IllegalStateException("Please call setTokenizerFactory() prior to setSentenceIter() call.");
