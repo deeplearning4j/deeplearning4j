@@ -370,20 +370,14 @@ public class SparkDl4jMultiLayer implements Serializable {
             });
             lastScore = scores.mean();
 
-            Updater resultsUpdaterFirst = resultsUpdater.first();
-            if(resultsUpdaterFirst != null) {
-                UpdaterAggregator aggregator = resultsUpdater.aggregate(
-                        resultsUpdaterFirst.getAggregator(false),
-                        new UpdaterElementCombiner(),
-                        new UpdaterAggregatorCombiner()
-                );
-                Updater combinedUpdater = aggregator.getUpdater();
-                network.setUpdater(combinedUpdater);
-                log.info("Set updater");
-            }
-            else {
-                throw new IllegalStateException("No updater to combine");
-            }
+            UpdaterAggregator aggregator = resultsUpdater.aggregate(
+                    null,
+                    new UpdaterElementCombiner(),
+                    new UpdaterAggregatorCombiner()
+            );
+            Updater combinedUpdater = aggregator.getUpdater();
+            network.setUpdater(combinedUpdater);
+            log.info("Set updater");
 
         }
     }
