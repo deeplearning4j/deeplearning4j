@@ -29,6 +29,13 @@ public class MultiLayerUpdater implements Updater {
 		}
 	}
 
+	public MultiLayerUpdater(MultiLayerUpdater updater){
+		layerUpdaters = new Updater[updater.layerUpdaters.length];
+		for( int i=0; i<updater.layerUpdaters.length; i++ ){
+			layerUpdaters[i] = updater.layerUpdaters[i].clone();
+		}
+	}
+
 	private MultiLayerUpdater(int size){
 		layerUpdaters = new Updater[size];
 	}
@@ -109,5 +116,10 @@ public class MultiLayerUpdater implements Updater {
 			}
 			return multiLayerUpdater;
 		}
+	}
+
+	@Override
+	public Updater clone(){
+		return new MultiLayerUpdater(this);
 	}
 }
