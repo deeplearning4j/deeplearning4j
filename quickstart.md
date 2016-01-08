@@ -13,7 +13,7 @@ This Quick Start guide assumes that you have the following already installed:
 1. Java 7 or later
 2. IntelliJ (or another IDE)
 3. Maven (Automated build tool)
-4. Github 
+4. Github
  
 If you need to install any of the above, please read the [ND4J Getting Started guide](http://nd4j.org/getstarted.html). (ND4J is the linear-algebra engine behind Deeplearning4j, and instructions there apply to both projects.) For the examples, don't install everything listed on that page, just the software listed above. 
 
