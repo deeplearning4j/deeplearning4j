@@ -877,9 +877,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         MultiLayerNetwork ret;
         try {
             Constructor<MultiLayerNetwork> constructor = (Constructor<MultiLayerNetwork>) getClass().getDeclaredConstructor(MultiLayerConfiguration.class);
-            ret = constructor.newInstance(getLayerWiseConfigurations());
+            ret = constructor.newInstance(getLayerWiseConfigurations().clone());
             ret.update(this);
-            ret.setParameters(params());
+            ret.setParameters(params().dup());
         } catch (Exception e) {
             throw new IllegalStateException("Unable to clone network",e);
         }
@@ -1653,10 +1653,23 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @param network the network to getFromOrigin parameters from
      */
     public void update(MultiLayerNetwork network) {
-        this.defaultConfiguration = network.defaultConfiguration;
-        if(network.input != null) setInput(network.input);
+        this.defaultConfiguration = (network.defaultConfiguration != null ? network.defaultConfiguration.clone() : null);
+        if(network.input != null) setInput(network.input.dup());    //Dup in case of dropout etc
         this.labels = network.labels;
-        this.layers = ArrayUtils.clone(network.layers);
+        if(network.layers != null){
+            layers = new Layer[network.layers.length];
+            for( int i=0; i<layers.length; i++ ){
+                layers[i] = network.layers[i].clone();
+            }
+        } else {
+            this.layers = null;
+        }
+        if(network.solver != null){
+            //Network updater state: should be cloned over also
+            this.setUpdater(network.getUpdater().clone());
+        } else {
+            this.solver = null;
+        }
     }
 
 

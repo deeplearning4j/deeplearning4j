@@ -219,4 +219,21 @@ public abstract class BaseUpdater implements Updater {
         if(!(other instanceof BaseUpdater)) return false;
         return updaterForVariable.equals(((BaseUpdater)other).updaterForVariable);
     }
+
+    @Override
+    public Updater clone(){
+        Map<String,GradientUpdater> newMap = new HashMap<>();
+        for( String s : updaterForVariable.keySet()){
+            newMap.put(s, updaterForVariable.get(s).getAggregator(true).getUpdater());
+        }
+
+        BaseUpdater updater;
+        try{
+            updater = this.getClass().getConstructor().newInstance();
+        }catch (Exception e){
+            throw new RuntimeException(e);
+        }
+        updater.updaterForVariable = newMap;
+        return updater;
+    }
 }
