@@ -135,6 +135,7 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning
 
         final Gradient combinedGradient = new DefaultGradient();
 
+
         for (Map.Entry<String,INDArray> entry : forwardsGradient.getFirst().gradientForVariable().entrySet()) {
             combinedGradient.setGradientFor(entry.getKey(),entry.getValue());
         }
@@ -143,12 +144,18 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning
             combinedGradient.setGradientFor(entry.getKey(),entry.getValue());
         }
 
+        final Gradient correctOrderedGradient = new DefaultGradient();
+
+        for (final String key : params.keySet()) {
+            correctOrderedGradient.setGradientFor(key,combinedGradient.getGradientFor(key));
+        }
+
         final INDArray forwardEpsilon = forwardsGradient.getSecond();
         final INDArray backwardsEpsilon = backwardsGradient.getSecond();
         final INDArray combinedEpsilon = forwardEpsilon.add(backwardsEpsilon);
 
         //sum the errors that were back-propagated
-        return  new Pair<>(combinedGradient,combinedEpsilon );
+        return  new Pair<>(correctOrderedGradient,combinedEpsilon );
 
     }
 

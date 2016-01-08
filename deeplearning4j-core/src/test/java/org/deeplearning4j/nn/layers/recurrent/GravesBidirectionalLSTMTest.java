@@ -205,12 +205,52 @@ public class GravesBidirectionalLSTMTest {
 		}
 	}
 
+	@Test
+	public void testGetSetParmas() {
+		final int nIn = 2;
+		final int layerSize = 3;
+		final int miniBatchSize = 2;
+		final int timeSeriesLength = 10;
+
+		Nd4j.getRandom().setSeed(12345);
+
+		final NeuralNetConfiguration confBidirectional = new NeuralNetConfiguration.Builder()
+				.layer(new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder()
+						.nIn(nIn).nOut(layerSize)
+						.weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-0.1,0.1))
+						.activation("tanh")
+						.build())
+				.build();
+
+
+		final GravesBidirectionalLSTM bidirectionalLSTM = LayerFactories.getFactory(confBidirectional.getLayer()).create(confBidirectional);
+
+
+
+		final INDArray sig = Nd4j.rand(new int[]{miniBatchSize,nIn,timeSeriesLength});
+
+		final INDArray act1 = bidirectionalLSTM.activate(sig);
+
+		final INDArray params = bidirectionalLSTM.params();
+
+		bidirectionalLSTM.setParams(params);
+
+		final INDArray act2 = bidirectionalLSTM.activate(sig);
+
+		assertArrayEquals(act2.data().asDouble(), act1.data().asDouble(),1e-14);
+
+
+
+
+	}
+
     @Test
     public void testSimpleForwardsAndBackwardsActivation() {
 
         final int nIn = 2;
         final int layerSize = 3;
         final int miniBatchSize = 1;
+		final int timeSeriesLength = 5;
 
         Nd4j.getRandom().setSeed(12345);
 
@@ -219,6 +259,7 @@ public class GravesBidirectionalLSTMTest {
                         .nIn(nIn).nOut(layerSize)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-0.1,0.1))
                         .activation("tanh")
+						.updater(Updater.NONE)
                         .build())
                 .build();
 
@@ -233,18 +274,10 @@ public class GravesBidirectionalLSTMTest {
         final GravesBidirectionalLSTM bidirectionalLSTM = LayerFactories.getFactory(confBidirectional.getLayer()).create(confBidirectional);
         final GravesLSTM forwardsLSTM = LayerFactories.getFactory(confForwards.getLayer()).create(confForwards);
 
-        final double [] rawsig = new double[]{-1.0,0.0,1.0,2.0,-1.0,0.0,1.0,2.0};
-        final double [] backwardsrawsig = new double[rawsig.length];
 
-        int j = 0;
-        for (int i = rawsig.length - 1; i >= 0; i--) {
-            backwardsrawsig[j] = rawsig[i];
-            j++;
-        }
-        final int timeSeriesLength = rawsig.length / nIn;
-
-        final INDArray sig = Nd4j.create(rawsig,new int[]{miniBatchSize,nIn,timeSeriesLength});
-        final INDArray sigb = Nd4j.create(backwardsrawsig,new int[]{miniBatchSize,nIn,timeSeriesLength});
+        final INDArray sig = Nd4j.rand(new int[]{miniBatchSize,nIn,timeSeriesLength});
+        final INDArray sigb = sig.dup();
+		reverseColumnsInPlace(sigb.slice(0));
 
         final INDArray recurrentWeightsF = bidirectionalLSTM.getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS);
         final INDArray inputWeightsF = bidirectionalLSTM.getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS);
@@ -289,8 +322,8 @@ public class GravesBidirectionalLSTMTest {
         assertArrayEquals(activation1.data().asFloat(),activation2.data().asFloat(),1e-5f);
 
         final INDArray randSig = Nd4j.rand(new int[]{1,layerSize,timeSeriesLength});
-		final INDArray randSigB = randSig.dup();
-		reverseColumnsInPlace(randSigB.slice(0));
+		final INDArray randSigBackwards = randSig.dup();
+		reverseColumnsInPlace(randSigBackwards.slice(0));
 
 
         final Pair<Gradient,INDArray> backprop1 = forwardsLSTM.backpropGradient(randSig);
@@ -346,20 +379,27 @@ public class GravesBidirectionalLSTMTest {
 		final INDArray refBackGradientBias = backprop1.getFirst().getGradientFor(
 				GravesLSTMParamInitializer.BIAS_KEY);
 
-		final Pair<Gradient,INDArray> backprop3 = bidirectionalLSTM.backpropGradient(randSigB);
+		//reverse weights only with backwards signal should yield same result as forwards weights with forwards signal
+		final Pair<Gradient,INDArray> backprop3 = bidirectionalLSTM.backpropGradient(randSigBackwards);
 
 		final INDArray backGradientRecurrent = backprop3.getFirst().getGradientFor(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS);
 		final INDArray backGradientInput = backprop3.getFirst().getGradientFor(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS);
 		final INDArray backGradientBias = backprop3.getFirst().getGradientFor(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS);
 
-		assertArrayEquals(refBackGradientBias.data().asFloat(),
-				backGradientBias.data().asFloat(),1e-5f);
+		assertArrayEquals(refBackGradientBias.data().asDouble(),
+				backGradientBias.data().asDouble(),1e-6);
 
-		assertArrayEquals(refBackGradientInput.data().asFloat(),
-				backGradientInput.data().asFloat(),1e-5f);
+		assertArrayEquals(refBackGradientInput.data().asDouble(),
+				backGradientInput.data().asDouble(),1e-6);
 
-		assertArrayEquals(refBackGradientReccurrent.data().asFloat(),
-				backGradientRecurrent.data().asFloat(),1e-5f);
+		assertArrayEquals(refBackGradientReccurrent.data().asDouble(),
+				backGradientRecurrent.data().asDouble(),1e-6);
+
+		final INDArray refEpsilon = backprop1.getSecond().dup();
+		final INDArray backEpsilon = backprop3.getSecond().dup();
+
+		reverseColumnsInPlace(refEpsilon.slice(0));
+		assertArrayEquals(backEpsilon.data().asDouble(),refEpsilon.data().asDouble(),1e-6);
 
     }
 
