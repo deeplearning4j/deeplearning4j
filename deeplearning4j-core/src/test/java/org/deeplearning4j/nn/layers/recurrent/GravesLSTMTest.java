@@ -150,7 +150,7 @@ public class GravesLSTMTest {
 		actHelper.setAccessible(true);
 
 		//Call activateHelper with both forBackprop == true, and forBackprop == false and compare
-		Class<?> innerClass = Class.forName("org.deeplearning4j.nn.layers.recurrent.GravesLSTM$FwdPassReturn");
+		Class<?> innerClass = Class.forName("org.deeplearning4j.nn.layers.recurrent.FwdPassReturn");
 
 		Object oFalse = actHelper.invoke(lstm, false,null,null,false);	//GravesLSTM.FwdPassReturn object; want fwdPassOutput INDArray
 		Object oTrue = actHelper.invoke(lstm, false,null,null,true);	//want fwdPassOutputAsArrays object
