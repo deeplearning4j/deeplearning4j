@@ -28,6 +28,7 @@ import org.apache.spark.mllib.util.MLUtils;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -47,10 +48,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 
@@ -294,17 +292,52 @@ public class TestSparkMultiLayer extends BaseSparkTest {
 
         JavaRDD<DataSet> ds = sc.parallelize(list);
 
-        Evaluation evalActual = sparkNet.evaluate(ds,10);
+        Evaluation evalActual = sparkNet.evaluate(ds, 10);
 
         assertEquals(evalExpected.accuracy(), evalActual.accuracy(), 1e-3);
         assertEquals(evalExpected.f1(), evalActual.f1(), 1e-3);
-        assertEquals(evalExpected.getNumRowCounter(),evalActual.getNumRowCounter(), 1e-3);
+        assertEquals(evalExpected.getNumRowCounter(), evalActual.getNumRowCounter(), 1e-3);
         assertEquals(evalExpected.falseNegatives(),evalActual.falseNegatives(),1e-3);
-        assertEquals(evalExpected.falsePositives(),evalActual.falsePositives(),1e-3);
+        assertEquals(evalExpected.falsePositives(), evalActual.falsePositives(), 1e-3);
         assertEquals(evalExpected.trueNegatives(),evalActual.trueNegatives(),1e-3);
         assertEquals(evalExpected.truePositives(),evalActual.truePositives(),1e-3);
-        assertEquals(evalExpected.precision(),evalActual.precision(),1e-3);
-        assertEquals(evalExpected.recall(),evalActual.recall(),1e-3);
+        assertEquals(evalExpected.precision(), evalActual.precision(), 1e-3);
+        assertEquals(evalExpected.recall(), evalActual.recall(), 1e-3);
         assertEquals(evalExpected.getConfusionMatrix(), evalActual.getConfusionMatrix());
+    }
+
+    @Test
+    public void testSmallAmountOfData(){
+        //Idea: Test spark training where some executors don't get any data
+        //in this case: by having fewer examples (2 DataSets) than executors (local[*])
+
+        int nIn = 4;
+        int nOut = 3;
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(Updater.RMSPROP)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                .list(2)
+                .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
+                        .nIn(nIn).nOut(3)
+                        .activation("tanh").build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MSE)
+                        .nIn(3).nOut(nOut)
+                        .activation("softmax")
+                        .build())
+                .build();
+
+        SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc,conf);
+
+        Nd4j.getRandom().setSeed(12345);
+        DataSet d1 = new DataSet(Nd4j.rand(1,nIn),Nd4j.rand(1,nOut));
+        DataSet d2 = new DataSet(Nd4j.rand(1,nIn),Nd4j.rand(1,nOut));
+
+        JavaRDD<DataSet> rddData = sc.parallelize(Arrays.asList(d1,d2));
+
+        sparkNet.fitDataSet(rddData);
+
+
+
     }
 }
