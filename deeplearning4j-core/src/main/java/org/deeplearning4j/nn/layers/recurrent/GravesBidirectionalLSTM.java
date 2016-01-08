@@ -41,10 +41,6 @@ import java.util.Map;
  * @author Benjamin Joseph
  */
 public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.GravesLSTM> {
-    public static final String STATE_KEY_PREV_ACTIVATION_FORWARDS = "prevActForwards";
-    public static final String STATE_KEY_PREV_MEMCELL_FORWARDS = "prevMemForwards";
-    public static final String STATE_KEY_PREV_ACTIVATION_BACKWARDS = "prevActBackwards";
-    public static final String STATE_KEY_PREV_MEMCELL_BACKWARDS = "prevMemBackwards";
 
     public GravesBidirectionalLSTM(NeuralNetConfiguration conf) {
         super(conf);
@@ -77,18 +73,11 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning
 
     private Pair<Gradient, INDArray> backpropGradientHelper(final INDArray epsilon,final boolean truncatedBPTT,final int tbpttBackwardLength) {
 
-
-
-        //First: Do forward pass to get gate activations, zs etc.
-        FwdPassReturn fwdPass;
         if (truncatedBPTT) {
-            fwdPass = activateHelperDirectional(true, stateMap.get(STATE_KEY_PREV_ACTIVATION_FORWARDS), stateMap.get(STATE_KEY_PREV_MEMCELL_FORWARDS), true,true);
-            //Store last time step of output activations and memory cell state in tBpttStateMap
-            tBpttStateMap.put(STATE_KEY_PREV_ACTIVATION_FORWARDS, fwdPass.lastAct);
-            tBpttStateMap.put(STATE_KEY_PREV_MEMCELL_FORWARDS, fwdPass.lastMemCell);
-        } else {
-            fwdPass = activateHelperDirectional(true, null, null, true,true);
+            throw new UnsupportedOperationException("you can not time step a bidirectional RNN, it has to run on a batch of data all at once");
         }
+
+        final FwdPassReturn fwdPass = activateHelperDirectional(true, null, null, true,true);
 
         final Pair<Gradient, INDArray> forwardsGradient = LSTMHelpers.backpropGradientHelper(
                 this.conf,
@@ -105,15 +94,8 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning
                 GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS);
 
 
-        FwdPassReturn backPass;
-        if (truncatedBPTT) {
-            backPass = activateHelperDirectional(true, stateMap.get(STATE_KEY_PREV_ACTIVATION_BACKWARDS), stateMap.get(STATE_KEY_PREV_MEMCELL_BACKWARDS), true,false);
-            //Store last time step of output activations and memory cell state in tBpttStateMap
-            tBpttStateMap.put(STATE_KEY_PREV_ACTIVATION_BACKWARDS, fwdPass.lastAct);
-            tBpttStateMap.put(STATE_KEY_PREV_MEMCELL_BACKWARDS, fwdPass.lastMemCell);
-        } else {
-            backPass = activateHelperDirectional(true, null, null, true,false);
-        }
+
+        final FwdPassReturn backPass = activateHelperDirectional(true, null, null, true,false);
 
         final Pair<Gradient, INDArray> backwardsGradient = LSTMHelpers.backpropGradientHelper(
                 this.conf,
@@ -152,7 +134,7 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning
 
         final INDArray forwardEpsilon = forwardsGradient.getSecond();
         final INDArray backwardsEpsilon = backwardsGradient.getSecond();
-        final INDArray combinedEpsilon = forwardEpsilon.add(backwardsEpsilon);
+        final INDArray combinedEpsilon = forwardEpsilon.addi(backwardsEpsilon);
 
         //sum the errors that were back-propagated
         return  new Pair<>(correctOrderedGradient,combinedEpsilon );
@@ -221,7 +203,7 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning
         //sum outputs
         final INDArray fwdOutput = forwardsEval.fwdPassOutput;
         final INDArray backOutput = backwardsEval.fwdPassOutput;
-        final INDArray totalOutput = fwdOutput.add(backOutput);
+        final INDArray totalOutput = fwdOutput.addi(backOutput);
 
         return totalOutput;
     }
@@ -306,23 +288,6 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning
 
     @Override
     public INDArray rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT) {
-        setInput(input);
-        final FwdPassReturn fwdPass = activateHelperDirectional(training, stateMap.get(STATE_KEY_PREV_ACTIVATION_FORWARDS), stateMap.get(STATE_KEY_PREV_MEMCELL_FORWARDS), false,true);
-        final INDArray outActForwards = fwdPass.fwdPassOutput;
-        if (storeLastForTBPTT) {
-            //Store last time step of output activations and memory cell state in tBpttStateMap
-            tBpttStateMap.put(STATE_KEY_PREV_ACTIVATION_FORWARDS, fwdPass.lastAct);
-            tBpttStateMap.put(STATE_KEY_PREV_MEMCELL_FORWARDS, fwdPass.lastMemCell);
-        }
-
-        final FwdPassReturn backPass = activateHelperDirectional(training, stateMap.get(STATE_KEY_PREV_ACTIVATION_BACKWARDS), stateMap.get(STATE_KEY_PREV_MEMCELL_BACKWARDS), false,false);
-        final INDArray outActBackwards = backPass.fwdPassOutput;
-        if (storeLastForTBPTT) {
-            //Store last time step of output activations and memory cell state in tBpttStateMap
-            tBpttStateMap.put(STATE_KEY_PREV_ACTIVATION_BACKWARDS, backPass.lastAct);
-            tBpttStateMap.put(STATE_KEY_PREV_MEMCELL_BACKWARDS, backPass.lastMemCell);
-        }
-
-        return outActForwards.add(outActBackwards);
+        throw new UnsupportedOperationException("no such thing as stored state for bidirectional RNN");
     }
 }

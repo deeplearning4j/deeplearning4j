@@ -244,14 +244,6 @@ public class LSTMHelpers {
 
         INDArray epsilonNext = Nd4j.zeros(miniBatchSize, prevLayerSize, timeSeriesLength);    //i.e., what would be W^L*(delta^L)^T. Shape: [m,n^(L-1),T]
 
-		/*Placeholder. To be replaced by masking array for used for variable length time series
-		 *Idea: M[i,j] = 1 if data is present for time j in example i in mini-batch.
-		 *M[i,j] = 0 otherwise
-		 *Then do a column multiply to set appropriate deltas to 0 if data is beyond end of time series
-		 *for the corresponding example
-		 */
-//		INDArray timeSeriesMaskArray = Nd4j.ones(miniBatchSize,timeSeriesLength);	//For now: assume that all data in mini-batch is of length 'timeSeriesLength'
-
         INDArray nablaCellStateNext = null;
         INDArray deltaiNext = null;
         INDArray deltafNext = null;
@@ -278,16 +270,6 @@ public class LSTMHelpers {
             INDArray prevHiddenUnitActivation = (iTimeIndex == 0 ? null : fwdPass.fwdPassOutputAsArrays[time - inext]);
             INDArray currMemCellState = fwdPass.memCellState[time];
 
-            //For variable length mini-batch data: Zero out deltas as necessary, so deltas beyond end of each time series are always 0
-            //Not implemented yet, but left here for when this is implemented
-			/*
-			if( t < timeSeriesLength-1 ){
-				INDArray maskColumn = timeSeriesMaskArray.getColumn(t);
-				deltaiNext.muliColumnVector(maskColumn);
-				deltafNext.muliColumnVector(maskColumn);
-				deltaoNext.muliColumnVector(maskColumn);
-				deltagNext.muliColumnVector(maskColumn);
-			}*/
 
             //LSTM unit output errors (dL/d(a_out)); not to be confused with \delta=dL/d(z_out)
             INDArray epsilonSlice = (is2dInput ? epsilon : epsilon.tensorAlongDimension(time, 1, 0));        //(w^{L+1}*(delta^{(L+1)t})^T)^T or equiv.
