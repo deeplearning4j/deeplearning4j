@@ -619,7 +619,7 @@ namespace shape {
 #endif
 
     int length(int *shapeInfo) {
-        return prod(shapeOf(shapeInfo), rank(shapeInfo));
+        return shape::prod(shape::shapeOf(shapeInfo), shape::rank(shapeInfo));
     }
 
 
@@ -631,7 +631,7 @@ namespace shape {
 #endif
 
     int offset(int *buffer) {
-        int length = shapeInfoLength(rank(buffer));
+        int length = shape::shapeInfoLength(shape::rank(buffer));
         return buffer[length - 3];
     }
 
@@ -674,12 +674,12 @@ namespace shape {
 #endif
 
     int isScalar(int *info) {
-        if (rank(info) > 2)
+        if (shape::rank(info) > 2)
             return 0;
-        if (rank(info) == 1)
+        if (shape::rank(info) == 1)
             return shapeOf(info)[0] == 1;
         else if (rank(info) == 2) {
-            return shapeOf(info)[0] == 1 && shapeOf(info)[1] == 1;
+            return shape::shapeOf(info)[0] == 1 && shape::shapeOf(info)[1] == 1;
         }
         return 0;
     }
@@ -811,7 +811,7 @@ namespace shape {
 #endif
 
     int *range(int from, int to, int increment) {
-        int diff = nd4j::math::nd4j_abs(from - to);
+        int diff = nd4j::math::nd4j_abs<int>(from - to);
         int retLength = diff / increment;
         int *ret = diff / increment < 1 ? (int *) malloc(sizeof(int)) : (int *) malloc(sizeof(int) * diff / increment);
         if (from < to) {
@@ -1159,38 +1159,38 @@ __device__ int tadOffset(int *xInfo, int offset) {
 #endif
 
     TADPermuteInfo tadInfo(int *xShapeInfo, int *dimension, int dimensionLength) {
-        int *shapeOfX = shapeOf(xShapeInfo);
-        int xRank = rank(xShapeInfo);
-        int *tensorShape = keep(shapeOfX, dimension, dimensionLength, xRank);
+        int *shapeOfX = shape::shapeOf(xShapeInfo);
+        int xRank = shape::rank(xShapeInfo);
+        int *tensorShape = shape::keep(shapeOfX, dimension, dimensionLength, xRank);
         if (dimensionLength == 1) {
-            int *newTensorShape = ensureVectorShape(tensorShape, dimension[0]);
+            int *newTensorShape = shape::ensureVectorShape(tensorShape, dimension[0]);
             free(tensorShape);
             tensorShape = newTensorShape;
         }
 
-        int removeLength = nd4j::math::nd4j_abs(xRank - dimensionLength);
-        int tensorShapeLength = rank(xShapeInfo) - removeLength;
+        int removeLength = nd4j::math::nd4j_abs<int>(xRank - dimensionLength);
+        int tensorShapeLength = shape::rank(xShapeInfo) - removeLength;
         if (tensorShapeLength < 2)
             tensorShapeLength = 2;
 
 
-        int tensorShapeProd = prod(tensorShape, tensorShapeLength);
+        int tensorShapeProd = shape::prod(tensorShape, tensorShapeLength);
 
 
-        int *reverseDimensions = reverseCopy(dimension, dimensionLength);
-        int *rangeRet = range(0, xRank);
+        int *reverseDimensions = shape::reverseCopy(dimension, dimensionLength);
+        int *rangeRet = shape::range(0, xRank);
 
         int *remove = (int *) malloc((removeLength) * sizeof(int));
-        removeIndex(rangeRet, dimension, xRank, dimensionLength, &remove);
+        shape::removeIndex(rangeRet, dimension, xRank, dimensionLength, &remove);
 
         int *zeroDimension = (int *) malloc(1 * sizeof(int));
         zeroDimension[0] = 0;
 
-        int *newPermuteDims = concat(remove, removeLength, reverseDimensions, dimensionLength);
+        int *newPermuteDims = shape::concat(remove, removeLength, reverseDimensions, dimensionLength);
 
 
-        int *permutedShape = doPermuteSwap(rank(xShapeInfo), shapeOf(xShapeInfo), newPermuteDims);
-        int *permutedStrides = doPermuteSwap(rank(xShapeInfo), stride(xShapeInfo), newPermuteDims);
+        int *permutedShape = shape::doPermuteSwap(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), newPermuteDims);
+        int *permutedStrides = shape::doPermuteSwap(shape::rank(xShapeInfo), shape::stride(xShapeInfo), newPermuteDims);
 
         TADPermuteInfo info = {
                 tensorShape,
@@ -1243,8 +1243,8 @@ __device__ int tadOffset(int *xInfo, int offset) {
 
     int tensorsAlongDimension(volatile int rank, volatile int length, volatile int *shape, int *dimension,
                               int dimensionLength) {
-        int *tensorShape = keep(shape, dimension, dimensionLength, rank);
-        int ret = length / prod(tensorShape, dimensionLength);
+        int *tensorShape = shape::keep(shape, dimension, dimensionLength, rank);
+        int ret = length / shape::prod(tensorShape, dimensionLength);
         free(tensorShape);
         return ret;
     }
@@ -1260,9 +1260,9 @@ __device__ int tadOffset(int *xInfo, int offset) {
 #endif
 
     int tensorsAlongDimension(int *shapeInfo, int *dimension, int dimensionLength) {
-        int *keepShape = shapeOf(shapeInfo);
-        int *tensorShape = keep(keepShape, dimension, dimensionLength, rank(shapeInfo));
-        int ret = length(shapeInfo) / prod(tensorShape, dimensionLength);
+        int *keepShape = shape::shapeOf(shapeInfo);
+        int *tensorShape = shape::keep(keepShape, dimension, dimensionLength, rank(shapeInfo));
+        int ret = shape::length(shapeInfo) / shape::prod(tensorShape, dimensionLength);
         free(tensorShape);
         return ret;
     }
@@ -1280,8 +1280,8 @@ __device__ int tadOffset(int *xInfo, int offset) {
 #endif
 
     int tensorsAlongDimension(TADPermuteInfo info) {
-        int length = prod(info.permutedShape, info.xRank);
-        return length / prod(info.tensorShape, info.tensorShapeLength);
+        int length = shape::prod(info.permutedShape, info.xRank);
+        return length / shape::prod(info.tensorShape, info.tensorShapeLength);
     }
 
 
@@ -1295,7 +1295,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
 
     int * tadShapeInfo(int index, int *xShapeInfo, int *dimension, int dimensionLength) {
         TADPermuteInfo tadInfo = shape::tadInfo(xShapeInfo, dimension, dimensionLength);
-        int sliceIdx = sliceOffsetForTensor(rank(xShapeInfo), index, tadInfo.permutedShape, tadInfo.tensorShape,
+        int sliceIdx = shape::sliceOffsetForTensor(rank(xShapeInfo), index, tadInfo.permutedShape, tadInfo.tensorShape,
                                             tadInfo.tensorShapeLength, tadInfo.zeroDimension, 1);
 
         //no more dimensions
@@ -1306,9 +1306,9 @@ __device__ int tadOffset(int *xInfo, int offset) {
 
         //determine offset here
 
-        int *ret2 = slice(tadInfo.permutedShape);
-        int *ret2Stride = slice(tadInfo.permutedStrides);
-        int ret2Length = prod(ret2, rank(xShapeInfo) - 1);
+        int *ret2 = shape::slice(tadInfo.permutedShape);
+        int *ret2Stride = shape::slice(tadInfo.permutedStrides);
+        int ret2Length = shape::prod(ret2, shape::rank(xShapeInfo) - 1);
         int ret2Rank = tadInfo.xRank - 1;
 
         int retOffset = sliceIdx * tadInfo.permutedStrides[0];
@@ -1322,8 +1322,8 @@ __device__ int tadOffset(int *xInfo, int offset) {
             //row vector
             if(ret2Rank == 1) {
                 ret2Rank++;
-                ret2 = ensureVectorShape(ret2);
-                ret2Stride = ensureVectorShape(ret2Stride);
+                ret2 = shape::ensureVectorShape(ret2);
+                ret2Stride = shape::ensureVectorShape(ret2Stride);
             }
             info->shape = ret2;
             info->stride = ret2Stride;
@@ -1338,17 +1338,17 @@ __device__ int tadOffset(int *xInfo, int offset) {
 
         int length = tadInfo.tensorShapeProd;
         int tensorLength = length;
-        int sliceOffset = index * tensorLength / lengthPerSlice(ret2Rank, ret2, tadInfo.zeroDimension, 1);
+        int sliceOffset = index * tensorLength / shape::lengthPerSlice(ret2Rank, ret2, tadInfo.zeroDimension, 1);
         /**
          * Need to do slice(offset) here
          */
-        int lengthPerSlice2 = lengthPerSlice(ret2Rank, ret2, tadInfo.zeroDimension, 1);
+        int lengthPerSlice2 = shape::lengthPerSlice(ret2Rank, ret2, tadInfo.zeroDimension, 1);
 
         if (sliceIdx == 0 && length == lengthPerSlice2) {
             ret2 = slice(ret2);
-            ret2Stride = slice(ret2Stride);
+            ret2Stride = shape::slice(ret2Stride);
             ret2Rank--;
-            ret2Length = prod(ret2, ret2Rank);
+            ret2Length = shape::prod(ret2, ret2Rank);
             int newStride = ret2Stride[ret2Rank - 1];
             retOffset += (sliceOffset * ret2Length * newStride);
 
@@ -1357,8 +1357,8 @@ __device__ int tadOffset(int *xInfo, int offset) {
             //row vector
             if(ret2Rank == 1) {
                 ret2Rank++;
-                ret2 = ensureVectorShape(ret2);
-                ret2Stride = ensureVectorShape(ret2Stride);
+                ret2 = shape::ensureVectorShape(ret2);
+                ret2Stride = shape::ensureVectorShape(ret2Stride);
             }
             ShapeInformation *info = (ShapeInformation *) malloc(sizeof(ShapeInformation));
             info->shape = ret2;
@@ -1421,12 +1421,12 @@ __device__ int tadOffset(int *xInfo, int offset) {
                     }
                 }
                 //set offset
-                ret2 = slice(ret2);
-                ret2Stride = slice(ret2Stride);
+                ret2 = shape::slice(ret2);
+                ret2Stride = shape::slice(ret2Stride);
                 //bump the offset wrt the slice idx when its not just truncating output
 
                 ret2Rank--;
-                ret2Length = prod(ret2, ret2Rank);
+                ret2Length = shape::prod(ret2, ret2Rank);
             }
 
             ShapeInformation *info = (ShapeInformation *) malloc(sizeof(ShapeInformation));

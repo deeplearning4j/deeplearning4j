@@ -106,9 +106,12 @@ TEST(Reduce,DimensionSum) {
     dimension[0] = 1;
 
     sum->exec(data,shapeBuffer,extraParams,result,resultShapeInfo,dimension,dimensionLength);
-    double comp[resultLength] {3.0,7.0};
+    double *comp = (double *)malloc(sizeof(double) * resultLength);
+    comp[0] = 3.0;
+    comp[1] = 7.0;
     CHECK(arrsEquals(2,comp,result));
     free(extraParams);
+    free(comp);
     free(dimension);
     free(shapeBuffer);
     free(shapeInfo);

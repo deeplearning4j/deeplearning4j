@@ -11,30 +11,30 @@
 #include <op.h>
 #include <templatemath.h>
 namespace functions {
-    namespace scalar {
-        template<typename T>
-        class ScalarTransform : public virtual functions::ops::Op<T> {
+namespace scalar {
+template<typename T>
+class ScalarTransform : public virtual functions::ops::Op<T> {
 
-        public:
-            /**
-             *
-             * @param d1
-             * @param d2
-             * @param params
-             * @return
-             */
-            virtual
+public:
+	/**
+	 *
+	 * @param d1
+	 * @param d2
+	 * @param params
+	 * @return
+	 */
+	virtual
 
 
 #ifdef __CUDACC__
-            inline    __host__ __device__
-#elseif __GNUC__
-                __always_inline
+	inline    __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
 #endif
-            T op(T	d1,	T d2, T	*params) = 0;
+	T op(T	d1,	T d2, T	*params) = 0;
 
 #ifdef __CUDACC__
-            /**
+	/**
 	 *
 	 * @param n
 	 * @param idx
@@ -58,570 +58,635 @@ namespace functions {
 	}
 #endif
 
-            virtual void transform(T *x,int xStride,T *result,int resultStride,T scalar,T *extraParams,int n) {
-                if(xStride == 1 && resultStride == 1) {
+	virtual void transform(T *x,int xStride,T *result,int resultStride,T scalar,T *extraParams,int n) {
+		if(xStride == 1 && resultStride == 1) {
 #pragma omp simd
 
-                    for(int i = 0; i < n; i++) {
-                        result[i] = op(x[i],scalar,extraParams);
-                    }
+			for(int i = 0; i < n; i++) {
+				result[i] = op(x[i],scalar,extraParams);
+			}
 
-                }
-                else {
+		}
+		else {
 #pragma omp simd
-                    for(int i = 0; i < n; i++) {
-                        result[i * resultStride] = op(x[i * resultStride],scalar,extraParams);
-                    }
-                }
+			for(int i = 0; i < n; i++) {
+				result[i * resultStride] = op(x[i * resultStride],scalar,extraParams);
+			}
+		}
 
-            }
+	}
 
-
-            virtual ~ScalarTransform() {}
-        };
-
-
-        namespace ops {
-            template <typename T>
-            class Add : public virtual ScalarTransform<T> {
-                /**
-                 *
-                 * @param d1
-                 * @param d2
-                 * @param params
-                 * @return
-                 */
-                virtual
 #ifdef __CUDACC__
-                inline      __host__ __device__
-#elseif __GNUC__
-                __always_inline
+	inline     __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
 #endif
-                T op(T	d1,	T d2, T	*params) {
-                    return d1 + d2;
-                }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
+	virtual ~ScalarTransform() {}
+};
+
+
+namespace ops {
+template <typename T>
+class Add : public virtual ScalarTransform<T> {
+	/**
+	 *
+	 * @param d1
+	 * @param d2
+	 * @param params
+	 * @return
+	 */
+	virtual
 #ifdef __CUDACC__
-                inline       __host__
+	inline      __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
 #endif
-                std::string name() {
-                    return std::string("add_scalar");
-                }
-
-                virtual ~Add(){}
-
-            };
-
-            template <typename T>
-            class Divide : public virtual ScalarTransform<T> {
-                /**
-                 *
-                 * @param d1
-                 * @param d2
-                 * @param params
-                 * @return
-                 */
-                virtual
+	T op(T	d1,	T d2, T	*params) {
+		return d1 + d2;
+	}
+	/** Name of the op
+	 * @return the name of the operation
+	 */
+	virtual
 #ifdef __CUDACC__
-                inline       __host__ __device__
-#elseif __GNUC__
-                __always_inline
+	inline       __host__
 #endif
-                T op(T	d1,	T d2, T	*params) {
-                    return d1 / d2;
-                }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
+	std::string name() {
+		return std::string("add_scalar");
+	}
 #ifdef __CUDACC__
-                inline          __host__
+	inline     __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
 #endif
-                std::string name() {
-                    return std::string("div_scalar");
-                }
+	virtual ~Add(){}
 
-                virtual ~Divide(){}
+};
 
-            };
-
-            template <typename T>
-            class Equals : public virtual ScalarTransform<T> {
-                /**
-                 *
-                 * @param d1
-                 * @param d2
-                 * @param params
-                 * @return
-                 */
-                virtual
+template <typename T>
+class Divide : public virtual ScalarTransform<T> {
+	/**
+	 *
+	 * @param d1
+	 * @param d2
+	 * @param params
+	 * @return
+	 */
+	virtual
 #ifdef __CUDACC__
-                inline       __host__ __device__
-#elseif __GNUC__
-                __always_inline
+	inline       __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
 #endif
-                T op(T	d1,	T d2, T	*params) {
-                    return d1 == d2;
-                }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
+	T op(T	d1,	T d2, T	*params) {
+		return d1 / d2;
+	}
+	/** Name of the op
+	 * @return the name of the operation
+	 */
+	virtual
 #ifdef __CUDACC__
-                inline      __host__
+	inline          __host__
 #endif
-                std::string name() {
-                    return std::string("eq_scalar");
-                }
-
-                virtual ~Equals(){}
-
-            };
-
-            template <typename T>
-            class GreaterThan : public virtual ScalarTransform<T> {
-                /**
-                 *
-                 * @param d1
-                 * @param d2
-                 * @param params
-                 * @return
-                 */
-                virtual
+	std::string name() {
+		return std::string("div_scalar");
+	}
 #ifdef __CUDACC__
-                inline      __host__ __device__
-#elseif __GNUC__
-                __always_inline
+	inline     __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
 #endif
-                T op(T	d1,	T d2, T	*params) {
-                    return d1 > d2;
-                }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
+	virtual ~Divide(){}
+
+};
+
+template <typename T>
+class Equals : public virtual ScalarTransform<T> {
+	/**
+	 *
+	 * @param d1
+	 * @param d2
+	 * @param params
+	 * @return
+	 */
+	virtual
 #ifdef __CUDACC__
-                inline       __host__
+	inline       __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
 #endif
-                std::string name() {
-                    return std::string("gt_scalar");
-                }
-
-                virtual ~GreaterThan(){}
-
-            };
-
-            template <typename T>
-            class LessThan: public virtual ScalarTransform<T> {
-                /**
-                 *
-                 * @param d1
-                 * @param d2
-                 * @param params
-                 * @return
-                 */
-                virtual
+	T op(T	d1,	T d2, T	*params) {
+		return d1 == d2;
+	}
+	/** Name of the op
+	 * @return the name of the operation
+	 */
+	virtual
 #ifdef __CUDACC__
-                inline       __host__ __device__
-#elseif __GNUC__
-                __always_inline
+	inline      __host__
 #endif
-                T op(T	d1,	T d2, T	*params) {
-                    return d1 < d2;
-                }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
+	std::string name() {
+		return std::string("eq_scalar");
+	}
 #ifdef __CUDACC__
-                inline     __host__
+	inline     __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
 #endif
-                std::string name() {
-                    return std::string("add_scalar");
-                }
+	virtual ~Equals(){}
 
-                virtual ~LessThan(){}
+};
 
-            };
-
-            template <typename T>
-            class LessThanOrEqual : public virtual ScalarTransform<T> {
-                /**
-                 *
-                 * @param d1
-                 * @param d2
-                 * @param params
-                 * @return
-                 */
-                virtual
+template <typename T>
+class GreaterThan : public virtual ScalarTransform<T> {
+	/**
+	 *
+	 * @param d1
+	 * @param d2
+	 * @param params
+	 * @return
+	 */
+	virtual
 #ifdef __CUDACC__
-                inline    __host__ __device__
-#elseif __GNUC__
-                __always_inline
+	inline      __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
 #endif
-                T op(T	d1,	T d2, T	*params) {
-                    return d1 <= d2;
-                }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
+	T op(T	d1,	T d2, T	*params) {
+		return d1 > d2;
+	}
+	/** Name of the op
+	 * @return the name of the operation
+	 */
+	virtual
 #ifdef __CUDACC__
-                inline      __host__
+	inline       __host__
 #endif
-                std::string name() {
-                    return std::string("ltoreq_scalar");
-                }
-
-                virtual ~LessThanOrEqual(){}
-
-            };
-
-            template <typename T>
-            class Max : public virtual ScalarTransform<T> {
-                /**
-                 *
-                 * @param d1
-                 * @param d2
-                 * @param params
-                 * @return
-                 */
-                virtual
+	std::string name() {
+		return std::string("gt_scalar");
+	}
 #ifdef __CUDACC__
-                inline     __host__ __device__
-#elseif __GNUC__
-                __always_inline
+	inline     __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
 #endif
-                T op(T	d1,	T d2, T	*params) {
-                    return nd4j::math::nd4j_max<T>(d1,d2);
-                }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
+	virtual ~GreaterThan(){}
+
+};
+
+template <typename T>
+class LessThan: public virtual ScalarTransform<T> {
+	/**
+	 *
+	 * @param d1
+	 * @param d2
+	 * @param params
+	 * @return
+	 */
+	virtual
 #ifdef __CUDACC__
-                inline     __host__
+	inline       __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
 #endif
-                std::string name() {
-                    return std::string("max_scalar");
-                }
-
-                virtual ~Max(){}
-
-            };
-
-            template <typename T>
-            class Min: public virtual ScalarTransform<T> {
-                /**
-                 *
-                 * @param d1
-                 * @param d2
-                 * @param params
-                 * @return
-                 */
-                virtual
+	T op(T	d1,	T d2, T	*params) {
+		return d1 < d2;
+	}
+	/** Name of the op
+	 * @return the name of the operation
+	 */
+	virtual
 #ifdef __CUDACC__
-                inline      __host__ __device__
-#elseif __GNUC__
-                __always_inline
+	inline     __host__
 #endif
-                T op(T	d1,	T d2, T	*params) {
-                    return nd4j::math::nd4j_min<T>(d1,d2);
-                }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
+	std::string name() {
+		return std::string("add_scalar");
+	}
 #ifdef __CUDACC__
-                inline     __host__
+	inline     __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
 #endif
-                std::string name() {
-                    return std::string("min_scalar");
-                }
+	virtual ~LessThan(){}
 
-                virtual ~Min(){}
+};
 
-            };
-
-            template <typename T>
-            class Multiply : public virtual ScalarTransform<T> {
-                /**
-                 *
-                 * @param d1
-                 * @param d2
-                 * @param params
-                 * @return
-                 */
-                virtual
+template <typename T>
+class LessThanOrEqual : public virtual ScalarTransform<T> {
+	/**
+	 *
+	 * @param d1
+	 * @param d2
+	 * @param params
+	 * @return
+	 */
+	virtual
 #ifdef __CUDACC__
-                inline     __host__ __device__
-#elseif __GNUC__
-                __always_inline
+	inline    __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
 #endif
-                T op(T	d1,	T d2, T	*params) {
-                    return d1 * d2;
-                }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
+	T op(T	d1,	T d2, T	*params) {
+		return d1 <= d2;
+	}
+	/** Name of the op
+	 * @return the name of the operation
+	 */
+	virtual
 #ifdef __CUDACC__
-                __host__
+	inline      __host__
 #endif
-                std::string name() {
-                    return std::string("mul_scalar");
-                }
-
-                virtual ~Multiply(){}
-
-            };
-
-            template <typename T>
-            class NotEquals : public virtual ScalarTransform<T> {
-                /**
-                 *
-                 * @param d1
-                 * @param d2
-                 * @param params
-                 * @return
-                 */
-                virtual
+	std::string name() {
+		return std::string("ltoreq_scalar");
+	}
 #ifdef __CUDACC__
-                inline      __host__ __device__
-#elseif __GNUC__
-                __always_inline
+	inline     __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
 #endif
-                T op(T	d1,	T d2, T	*params) {
-                    return d1 != d2;
-                }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
+	virtual ~LessThanOrEqual(){}
+
+};
+
+template <typename T>
+class Max : public virtual ScalarTransform<T> {
+	/**
+	 *
+	 * @param d1
+	 * @param d2
+	 * @param params
+	 * @return
+	 */
+	virtual
 #ifdef __CUDACC__
-                inline       __host__
+	inline     __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
 #endif
-                std::string name() {
-                    return std::string("noteq_scalar");
-                }
-
-                virtual ~NotEquals(){}
-
-            };
-
-            template <typename T>
-            class ReverseDivide : public virtual ScalarTransform<T> {
-                /**
-                 *
-                 * @param d1
-                 * @param d2
-                 * @param params
-                 * @return
-                 */
-                virtual
+	T op(T	d1,	T d2, T	*params) {
+		return nd4j::math::nd4j_max<T>(d1,d2);
+	}
+	/** Name of the op
+	 * @return the name of the operation
+	 */
+	virtual
 #ifdef __CUDACC__
-                inline       __host__ __device__
-#elseif __GNUC__
-                __always_inline
+	inline     __host__
 #endif
-                T op(T	d1,	T d2, T	*params) {
-                    return d2 / d1;
-                }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
+	std::string name() {
+		return std::string("max_scalar");
+	}
 #ifdef __CUDACC__
-                inline    __host__
+	inline     __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
 #endif
-                std::string name() {
-                    return std::string("rdiv_scalar");
-                }
+	virtual ~Max(){}
 
-                virtual ~ReverseDivide(){}
+};
 
-            };
-
-            template <typename T>
-            class ReverseSubtract : public virtual ScalarTransform<T> {
-                /**
-                 *
-                 * @param d1
-                 * @param d2
-                 * @param params
-                 * @return
-                 */
-                virtual
+template <typename T>
+class Min: public virtual ScalarTransform<T> {
+	/**
+	 *
+	 * @param d1
+	 * @param d2
+	 * @param params
+	 * @return
+	 */
+	virtual
 #ifdef __CUDACC__
-                inline    __host__ __device__
-#elseif __GNUC__
-                __always_inline
+	inline      __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
 #endif
-                T op(T	d1,	T d2, T	*params) {
-                    return d2 - d1;
-                }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
+	T op(T	d1,	T d2, T	*params) {
+		return nd4j::math::nd4j_min<T>(d1,d2);
+	}
+	/** Name of the op
+	 * @return the name of the operation
+	 */
+	virtual
 #ifdef __CUDACC__
-                inline    __host__
+	inline     __host__
 #endif
-                std::string name() {
-                    return std::string("rsib_scalar");
-                }
-
-                virtual ~ReverseSubtract(){}
-
-            };
-
-            template <typename T>
-            class Set : public virtual ScalarTransform<T> {
-                /**
-                 *
-                 * @param d1
-                 * @param d2
-                 * @param params
-                 * @return
-                 */
-                virtual
+	std::string name() {
+		return std::string("min_scalar");
+	}
 #ifdef __CUDACC__
-                inline     __host__ __device__
-#elseif __GNUC__
-                __always_inline
+	inline     __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
 #endif
-                T op(T	d1,	T d2, T	*params) {
-                    return d2;
-                }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
+	virtual ~Min(){}
+
+};
+
+template <typename T>
+class Multiply : public virtual ScalarTransform<T> {
+	/**
+	 *
+	 * @param d1
+	 * @param d2
+	 * @param params
+	 * @return
+	 */
+	virtual
 #ifdef __CUDACC__
-                inline     __host__
+	inline     __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
 #endif
-                std::string name() {
-                    return std::string("set_scalar");
-                }
-
-                virtual ~Set(){}
-
-            };
-
-            template <typename T>
-            class Subtract : public virtual ScalarTransform<T> {
-                /**
-                 *
-                 * @param d1
-                 * @param d2
-                 * @param params
-                 * @return
-                 */
-                virtual
+	T op(T	d1,	T d2, T	*params) {
+		return d1 * d2;
+	}
+	/** Name of the op
+	 * @return the name of the operation
+	 */
+	virtual
 #ifdef __CUDACC__
-                inline     __host__ __device__
-#elseif __GNUC__
-                __always_inline
+	__host__
 #endif
-                  T op(T	d1,	T d2, T	*params) {
-                    return d1 - d2;
-                }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
+	std::string name() {
+		return std::string("mul_scalar");
+	}
 #ifdef __CUDACC__
-                inline      __host__
+	inline     __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
 #endif
+	virtual ~Multiply(){}
 
-                std::string name() {
-                    return std::string("sub_scalar");
-                }
+};
 
-                virtual ~Subtract(){}
-
-            };
-
-            template <typename T>
-            class SetValOrLess : public virtual ScalarTransform<T> {
-                /**
-                 *
-                 * @param d1
-                 * @param d2
-                 * @param params
-                 * @return
-                 */
-                virtual
+template <typename T>
+class NotEquals : public virtual ScalarTransform<T> {
+	/**
+	 *
+	 * @param d1
+	 * @param d2
+	 * @param params
+	 * @return
+	 */
+	virtual
 #ifdef __CUDACC__
-                inline       __host__ __device__
-#elseif __GNUC__
-                __always_inline
+	inline      __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
 #endif
-                 T op(T	d1,	T d2, T	*params) {
-                    if(d2 < d1) {
-                        return d1;
-                    }
-                    return d2;
-                }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
+	T op(T	d1,	T d2, T	*params) {
+		return d1 != d2;
+	}
+	/** Name of the op
+	 * @return the name of the operation
+	 */
+	virtual
 #ifdef __CUDACC__
-                inline      __host__
+	inline       __host__
 #endif
-                std::string name() {
-                    return std::string("setvalorless_scalar");
-                }
+	std::string name() {
+		return std::string("noteq_scalar");
+	}
+#ifdef __CUDACC__
+	inline     __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	virtual ~NotEquals(){}
 
-                virtual ~SetValOrLess(){}
+};
 
-            };
-        }
+template <typename T>
+class ReverseDivide : public virtual ScalarTransform<T> {
+	/**
+	 *
+	 * @param d1
+	 * @param d2
+	 * @param params
+	 * @return
+	 */
+	virtual
+#ifdef __CUDACC__
+	inline       __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	T op(T	d1,	T d2, T	*params) {
+		return d2 / d1;
+	}
+	/** Name of the op
+	 * @return the name of the operation
+	 */
+	virtual
+#ifdef __CUDACC__
+	inline    __host__
+#endif
+	std::string name() {
+		return std::string("rdiv_scalar");
+	}
+#ifdef __CUDACC__
+	inline     __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	virtual ~ReverseDivide(){}
+
+};
+
+template <typename T>
+class ReverseSubtract : public virtual ScalarTransform<T> {
+	/**
+	 *
+	 * @param d1
+	 * @param d2
+	 * @param params
+	 * @return
+	 */
+	virtual
+#ifdef __CUDACC__
+	inline    __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	T op(T	d1,	T d2, T	*params) {
+		return d2 - d1;
+	}
+	/** Name of the op
+	 * @return the name of the operation
+	 */
+	virtual
+#ifdef __CUDACC__
+	inline    __host__
+#endif
+	std::string name() {
+		return std::string("rsib_scalar");
+	}
+#ifdef __CUDACC__
+	inline     __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	virtual ~ReverseSubtract(){}
+
+};
+
+template <typename T>
+class Set : public virtual ScalarTransform<T> {
+	/**
+	 *
+	 * @param d1
+	 * @param d2
+	 * @param params
+	 * @return
+	 */
+	virtual
+#ifdef __CUDACC__
+	inline     __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	T op(T	d1,	T d2, T	*params) {
+		return d2;
+	}
+	/** Name of the op
+	 * @return the name of the operation
+	 */
+	virtual
+#ifdef __CUDACC__
+	inline     __host__
+#endif
+	std::string name() {
+		return std::string("set_scalar");
+	}
+#ifdef __CUDACC__
+	inline     __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	virtual ~Set(){}
+
+};
+
+template <typename T>
+class Subtract : public virtual ScalarTransform<T> {
+	/**
+	 *
+	 * @param d1
+	 * @param d2
+	 * @param params
+	 * @return
+	 */
+	virtual
+#ifdef __CUDACC__
+	inline     __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	T op(T	d1,	T d2, T	*params) {
+		return d1 - d2;
+	}
+	/** Name of the op
+	 * @return the name of the operation
+	 */
+	virtual
+#ifdef __CUDACC__
+	inline      __host__
+#endif
+
+	std::string name() {
+		return std::string("sub_scalar");
+	}
+#ifdef __CUDACC__
+	inline     __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	virtual ~Subtract(){}
+
+};
+
+template <typename T>
+class SetValOrLess : public virtual ScalarTransform<T> {
+	/**
+	 *
+	 * @param d1
+	 * @param d2
+	 * @param params
+	 * @return
+	 */
+	virtual
+#ifdef __CUDACC__
+	inline       __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	T op(T	d1,	T d2, T	*params) {
+		if(d2 < d1) {
+			return d1;
+		}
+		return d2;
+	}
+	/** Name of the op
+	 * @return the name of the operation
+	 */
+	virtual
+#ifdef __CUDACC__
+	inline      __host__
+#endif
+	std::string name() {
+		return std::string("setvalorless_scalar");
+	}
+
+#ifdef __CUDACC__
+	inline     __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	virtual ~SetValOrLess(){}
+
+};
+}
 
 
-        template <typename T>
-        class ScalarOpFactory {
-        public:
-            ScalarOpFactory() {}
+template <typename T>
+class ScalarOpFactory {
+public:
+	ScalarOpFactory() {}
 
-            ScalarTransform<T> * getOp(std::string name) {
-                if(name == "add_scalar")
-                    return new functions::scalar::ops::Add<T>();
-                else if(name == "sub_scalar")
-                    return new functions::scalar::ops::Subtract<T>();
-                else if(name == "mul_scalar")
-                    return new functions::scalar::ops::Multiply<T>();
-                else if(name == "div_scalar")
-                    return new functions::scalar::ops::Divide<T>();
-                else if(name == "rdiv_scalar")
-                    return new functions::scalar::ops::ReverseDivide<T>();
-                else if(name == "rsub_scalar")
-                    return new functions::scalar::ops::ReverseSubtract<T>();
-                else if(name == "max_scalar")
-                    return new functions::scalar::ops::Max<T>();
-                else if(name == "lt_scalar")
-                    return new functions::scalar::ops::LessThan<T>();
-                else if(name == "gt_scalar")
-                    return new functions::scalar::ops::GreaterThan<T>();
-                else if(name == "eq_scalar")
-                    return new functions::scalar::ops::Equals<T>();
-                else if(name == "lessthanorequal_scalar")
-                    return new functions::scalar::ops::LessThanOrEqual<T>();
-                else if(name == "neq_scalar")
-                    return new functions::scalar::ops::NotEquals<T>();
-                else if(name == "min_scalar")
-                    return new functions::scalar::ops::Min<T>();
-                else if(name == "set_scalar")
-                    return new functions::scalar::ops::Set<T>();
-                return NULL;
-            }
-        };
+	ScalarTransform<T> * getOp(std::string name) {
+		if(name == "add_scalar")
+			return new functions::scalar::ops::Add<T>();
+		else if(name == "sub_scalar")
+			return new functions::scalar::ops::Subtract<T>();
+		else if(name == "mul_scalar")
+			return new functions::scalar::ops::Multiply<T>();
+		else if(name == "div_scalar")
+			return new functions::scalar::ops::Divide<T>();
+		else if(name == "rdiv_scalar")
+			return new functions::scalar::ops::ReverseDivide<T>();
+		else if(name == "rsub_scalar")
+			return new functions::scalar::ops::ReverseSubtract<T>();
+		else if(name == "max_scalar")
+			return new functions::scalar::ops::Max<T>();
+		else if(name == "lt_scalar")
+			return new functions::scalar::ops::LessThan<T>();
+		else if(name == "gt_scalar")
+			return new functions::scalar::ops::GreaterThan<T>();
+		else if(name == "eq_scalar")
+			return new functions::scalar::ops::Equals<T>();
+		else if(name == "lessthanorequal_scalar")
+			return new functions::scalar::ops::LessThanOrEqual<T>();
+		else if(name == "neq_scalar")
+			return new functions::scalar::ops::NotEquals<T>();
+		else if(name == "min_scalar")
+			return new functions::scalar::ops::Min<T>();
+		else if(name == "set_scalar")
+			return new functions::scalar::ops::Set<T>();
+		return NULL;
+	}
+};
 
-    }
+}
 }
 
 

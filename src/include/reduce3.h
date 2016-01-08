@@ -10,72 +10,72 @@
 #include <op.h>
 #include <templatemath.h>
 namespace functions {
-    namespace reduce3 {
+namespace reduce3 {
 
-        template<typename T>
-        class Reduce3 : public virtual functions::ops::Op<T> {
+template<typename T>
+class Reduce3 : public virtual functions::ops::Op<T> {
 
-        public:
+public:
 
-            virtual
+	virtual
 #ifdef __CUDACC__
-            inline   __host__ __device__
-#elseif __GNUC__
-                __always_inline
+	inline   __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
 #endif
-            T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) = 0;
+	T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) = 0;
 
-            /**
-             *
-             * @param d1
-             * @param d2
-             * @param extraParams
-             * @return
-             */
-            //an op for the kernel
-            virtual
+	/**
+	 *
+	 * @param d1
+	 * @param d2
+	 * @param extraParams
+	 * @return
+	 */
+	//an op for the kernel
+	virtual
 #ifdef __CUDACC__
-            inline   __host__
-#elseif __GNUC__
-                __always_inline
+	inline   __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
 #endif
-            T op(T d1, T d2, T *extraParams) = 0;
+	T op(T d1, T d2, T *extraParams) = 0;
 
-            //calculate an update of the reduce operation
-            /**
-             *
-             * @param old
-             * @param opOutput
-             * @param extraParams
-             * @return
-             */
-            virtual
+	//calculate an update of the reduce operation
+	/**
+	 *
+	 * @param old
+	 * @param opOutput
+	 * @param extraParams
+	 * @return
+	 */
+	virtual
 #ifdef __CUDACC__
-            inline    __host__
-#elseif __GNUC__
-                __always_inline
+	inline    __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
 #endif
-            T update(T old, T opOutput, T *extraParams) = 0;
+	T update(T old, T opOutput, T *extraParams) = 0;
 
 
-            /**
-             *
-             * @param old
-             * @param opOutput
-             * @param extraParams
-             * @return
-             */
-            virtual
+	/**
+	 *
+	 * @param old
+	 * @param opOutput
+	 * @param extraParams
+	 * @return
+	 */
+	virtual
 #ifdef __CUDACC__
-            inline  __host__
-#elseif __GNUC__
-                __always_inline
+	inline  __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
 #endif
-            T merge(T old,T opOutput, T *extraParams) = 0;
+	T merge(T old,T opOutput, T *extraParams) = 0;
 
 
 #ifdef __CUDACC__
-            /**
+	/**
 	 * Aggregate shared memory
 	 * @param sPartialsRef
 	 * @param tid
@@ -264,8 +264,8 @@ namespace functions {
 
 
 				resultScalar = shape::isScalar(resultShapeInfo);
-				currentBlockOffset = offset(blockIdx.x, xShapeInfo, dimension, dimensionLength, xTadInfo);
-				endingOffset = offset(blockIdx.x + 1, xShapeInfo, dimension, dimensionLength, xTadInfo);
+				currentBlockOffset = offset(blockIdx.x, xShapeInfo, dimensionLength, xTadInfo);
+				endingOffset = offset(blockIdx.x + 1, xShapeInfo, dimensionLength, xTadInfo);
 				resultLength = shape::prod(shape::shapeOf(resultShapeInfo), shape::rank(resultShapeInfo));
 
 				//initialize x
@@ -280,8 +280,8 @@ namespace functions {
 				yElementWiseStride = shape::elementWiseStride(yShapeInfo);
 
 
-				currentYBlockOffset = offset(blockIdx.x, yShapeInfo, dimension, dimensionLength, yTadInfo);
-				endingYOffset = offset(blockIdx.x + 1, yShapeInfo, dimension, dimensionLength, yTadInfo);
+				currentYBlockOffset = offset(blockIdx.x, yShapeInfo, dimensionLength, yTadInfo);
+				endingYOffset = offset(blockIdx.x + 1, yShapeInfo, dimensionLength, yTadInfo);
 
 
 				//reduction on whole buffer
@@ -315,8 +315,8 @@ namespace functions {
 			//number of tads per block to process
 			for (int i = 0; i < tadsForBlock; i++) {
 				int tadIndex = shape::tadForBlockIndex(gpuInformation[0], blockIdx.x, i);
-				int blockOffset = offset(tadIndex, xShapeInfo, dimension, dimensionLength, xTadInfo);
-				int blockYOffset = offset(tadIndex, yShapeInfo, dimension, dimensionLength, yTadInfo);
+				int blockOffset = offset(tadIndex, xShapeInfo, dimensionLength, xTadInfo);
+				int blockYOffset = offset(tadIndex, yShapeInfo, dimensionLength, yTadInfo);
 
 				//concurrently load all elements in to shared memory
 				if (elementsPerThread > 1) {
@@ -393,313 +393,330 @@ namespace functions {
 	}
 #endif
 
-            void exec(T *x,int *xShapeInfo,T *extraParams,T *y,int *yShapeInfo,T *result,int *resultShapeInfo) {
-                T startingVal = extraParams[0];
-                int length = shape::length(xShapeInfo);
-                int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-                int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
-                int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
-                if (xElementWiseStride == 1 && resultElementWiseStride == 1) {
+	void exec(T *x,int *xShapeInfo,T *extraParams,T *y,int *yShapeInfo,T *result,int *resultShapeInfo) {
+		T startingVal = extraParams[0];
+		int length = shape::length(xShapeInfo);
+		int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+		int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
+		int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
+		if (xElementWiseStride == 1 && resultElementWiseStride == 1) {
 #pragma omp simd
-                    for (int i = 0; i < length; i++) {
-                        startingVal= update(startingVal, op(x[i], y[i],extraParams), extraParams);
-                    }
+			for (int i = 0; i < length; i++) {
+				startingVal= update(startingVal, op(x[i], y[i],extraParams), extraParams);
+			}
 
-                    result[0] = postProcess(startingVal,length,shape::offset(xShapeInfo),x,shape::elementWiseStride(xShapeInfo),extraParams,result);
+			result[0] = postProcess(startingVal,length,shape::offset(xShapeInfo),x,shape::elementWiseStride(xShapeInfo),extraParams,result);
 
-                }
-                else {
+		}
+		else {
 #pragma omp simd
 
-                    for (int i = 0; i < length; i++) {
-                        startingVal = update(startingVal, op(x[i * xElementWiseStride],y[i * yElementWiseStride],extraParams), extraParams);
-                    }
+			for (int i = 0; i < length; i++) {
+				startingVal = update(startingVal, op(x[i * xElementWiseStride],y[i * yElementWiseStride],extraParams), extraParams);
+			}
 
-                    result[0] = postProcess(startingVal,length,shape::offset(xShapeInfo),x,shape::elementWiseStride(xShapeInfo),extraParams,result);
+			result[0] = postProcess(startingVal,length,shape::offset(xShapeInfo),x,shape::elementWiseStride(xShapeInfo),extraParams,result);
 
-                }
+		}
 
-            }
+	}
 
 
-            void exec(T *x,int *xShapeInfo,T *extraParams,T *y,int *yShapeInfo,T *result,int *resultShapeInfoBuffer,int *dimension,int dimensionLength) {
-                shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo,dimension,dimensionLength);
-                int resultLength = shape::length(resultShapeInfoBuffer);
-                int tadElementWiseStride = shape::computeElementWiseStride(tadPermuteInfo.xRank,tadPermuteInfo.permutedShape,tadPermuteInfo.permutedStrides,shape::order(xShapeInfo) == 'f');
-                int tadLength = tadPermuteInfo.tensorShapeProd;
+	void exec(T *x,int *xShapeInfo,T *extraParams,T *y,int *yShapeInfo,T *result,int *resultShapeInfoBuffer,int *dimension,int dimensionLength) {
+		shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo,dimension,dimensionLength);
+		int resultLength = shape::length(resultShapeInfoBuffer);
+		int tadElementWiseStride = shape::computeElementWiseStride(tadPermuteInfo.xRank,tadPermuteInfo.permutedShape,tadPermuteInfo.permutedStrides,shape::order(xShapeInfo) == 'f');
+		int tadLength = tadPermuteInfo.tensorShapeProd;
 #pragma omp simd
-                for(int i = 0; i < shape::length(xShapeInfo); i++) {
-                    int reductionIndex = shape::reductionIndexForLinear(i,tadElementWiseStride,tadLength,resultLength,resultLength);
-                    result[reductionIndex] = update(result[reductionIndex],op(x[i],y[i],extraParams),extraParams);
-                }
+		for(int i = 0; i < shape::length(xShapeInfo); i++) {
+			int reductionIndex = shape::reductionIndexForLinear(i,tadElementWiseStride,tadLength,resultLength,resultLength);
+			result[reductionIndex] = update(result[reductionIndex],op(x[i],y[i],extraParams),extraParams);
+		}
 #pragma omp simd
-                for(int i = 0; i < resultLength; i++) {
-                    result[i] = postProcess(result[i],tadLength,shape::offset(xShapeInfo),x,shape::elementWiseStride(xShapeInfo),extraParams,result);
-                }
-            }
+		for(int i = 0; i < resultLength; i++) {
+			result[i] = postProcess(result[i],tadLength,shape::offset(xShapeInfo),x,shape::elementWiseStride(xShapeInfo),extraParams,result);
+		}
+	}
 
-            virtual ~Reduce3() {}
-
-
-        };
-
-
-        namespace ops {
-            template <typename T>
-            class CosineSimilarity : public virtual Reduce3<T> {
 #ifdef __CUDACC__
-                inline        __host__ __device__
+	inline     __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
 #endif
-                T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) {
-                    return reduction / (extraParams[1] * extraParams[2]);
-                }
-                /**
-                 *
-                 * @param d1
-                 * @param d2
-                 * @param extraParams
-                 * @return
-                 */
-                //an op for the kernel
-                virtual
+	virtual ~Reduce3() {}
+
+
+};
+
+
+namespace ops {
+template <typename T>
+class CosineSimilarity : public virtual Reduce3<T> {
 #ifdef __CUDACC__
-                inline      __host__ __device__
-#elseif __GNUC__
-                __always_inline
+	inline        __host__ __device__
 #endif
-                T op(T d1, T d2, T *extraParams) {
-                    return d1 * d2;
-                }
-
-                //calculate an update of the reduce operation
-                /**
-                 *
-                 * @param old
-                 * @param opOutput
-                 * @param extraParams
-                 * @return
-                 */
-                virtual
+	T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) {
+		return reduction / (extraParams[1] * extraParams[2]);
+	}
+	/**
+	 *
+	 * @param d1
+	 * @param d2
+	 * @param extraParams
+	 * @return
+	 */
+	//an op for the kernel
+	virtual
 #ifdef __CUDACC__
-                inline     __host__ __device__
-#elseif __GNUC__
-                __always_inline
+	inline      __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
 #endif
-                T update(T old, T opOutput, T *extraParams) {
-                    return old + opOutput;
-                }
+	T op(T d1, T d2, T *extraParams) {
+		return d1 * d2;
+	}
 
-
-                /**
-                 *
-                 * @param old
-                 * @param opOutput
-                 * @param extraParams
-                 * @return
-                 */
-                virtual
+	//calculate an update of the reduce operation
+	/**
+	 *
+	 * @param old
+	 * @param opOutput
+	 * @param extraParams
+	 * @return
+	 */
+	virtual
 #ifdef __CUDACC__
-                __host__ __device__
-#elseif __GNUC__
-                __always_inline
+	inline     __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
 #endif
-                T merge(T old,T opOutput, T *extraParams) {
-                    return update(old,opOutput,extraParams);
-                }
+	T update(T old, T opOutput, T *extraParams) {
+		return old + opOutput;
+	}
 
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
+	/**
+	 *
+	 * @param old
+	 * @param opOutput
+	 * @param extraParams
+	 * @return
+	 */
+	virtual
 #ifdef __CUDACC__
-                inline    __host__
+	__host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
 #endif
-                std::string name() {
-                    return std::string("cosinesimilarity_strided");
-                }
-
-                virtual ~CosineSimilarity() {}
-            };
+	T merge(T old,T opOutput, T *extraParams) {
+		return update(old,opOutput,extraParams);
+	}
 
 
-            template <typename T>
-            class EuclideanDistance : public virtual Reduce3<T> {
+	/** Name of the op
+	 * @return the name of the operation
+	 */
+	virtual
 #ifdef __CUDACC__
-                inline     __host__ __device__
-#elseif __GNUC__
-                __always_inline
+	inline    __host__
 #endif
-                T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) {
-                    return nd4j::math::nd4j_sqrt<T>(reduction);
-                }
-                /**
-                 *
-                 * @param d1
-                 * @param d2
-                 * @param extraParams
-                 * @return
-                 */
-                //an op for the kernel
-                virtual
+	std::string name() {
+		return std::string("cosinesimilarity_strided");
+	}
 #ifdef __CUDACC__
-                inline      __host__ __device__
-#elseif __GNUC__
-                __always_inline
+	inline     __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
 #endif
-                T op(T d1, T d2, T *extraParams) {
-                    return d1 - d2;
-                }
+	virtual ~CosineSimilarity() {}
+};
 
-                //calculate an update of the reduce operation
-                /**
-                 *
-                 * @param old
-                 * @param opOutput
-                 * @param extraParams
-                 * @return
-                 */
-                virtual
+
+template <typename T>
+class EuclideanDistance : public virtual Reduce3<T> {
 #ifdef __CUDACC__
-                inline     __host__ __device__
-#elseif __GNUC__
-                __always_inline
+	inline     __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
 #endif
-                T update(T old, T opOutput, T *extraParams) {
-                    T squared = nd4j::math::nd4j_pow(opOutput,2.0);
-                    return squared + old;
-                }
-
-
-                /**
-                 *
-                 * @param old
-                 * @param opOutput
-                 * @param extraParams
-                 * @return
-                 */
-                virtual
+	T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) {
+		return nd4j::math::nd4j_sqrt<T>(reduction);
+	}
+	/**
+	 *
+	 * @param d1
+	 * @param d2
+	 * @param extraParams
+	 * @return
+	 */
+	//an op for the kernel
+	virtual
 #ifdef __CUDACC__
-                inline     __host__ __device__
-#elseif __GNUC__
-                __always_inline
+	inline      __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
 #endif
-                T merge(T old,T opOutput, T *extraParams) {
-                    return update(old,opOutput,extraParams);
-                }
+	T op(T d1, T d2, T *extraParams) {
+		return d1 - d2;
+	}
 
-
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
+	//calculate an update of the reduce operation
+	/**
+	 *
+	 * @param old
+	 * @param opOutput
+	 * @param extraParams
+	 * @return
+	 */
+	virtual
 #ifdef __CUDACC__
-                inline     __host__
+	inline     __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
 #endif
-                std::string name() {
-                    return std::string("euclidean_strided");
-                }
+	T update(T old, T opOutput, T *extraParams) {
+		T squared = nd4j::math::nd4j_pow(opOutput,2.0);
+		return squared + old;
+	}
 
-                virtual ~EuclideanDistance() {}
-            };
 
-            template <typename T>
-            class ManhattanDistance : public virtual Reduce3<T> {
+	/**
+	 *
+	 * @param old
+	 * @param opOutput
+	 * @param extraParams
+	 * @return
+	 */
+	virtual
 #ifdef __CUDACC__
-                inline      __host__ __device__
-#elseif __GNUC__
-                __always_inline
+	inline     __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
 #endif
-                T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) {
-                    return reduction / extraParams[0] / extraParams[1];
-                }
-                /**
-                 *
-                 * @param d1
-                 * @param d2
-                 * @param extraParams
-                 * @return
-                 */
-                //an op for the kernel
-                virtual
+	T merge(T old,T opOutput, T *extraParams) {
+		return update(old,opOutput,extraParams);
+	}
+
+
+	/** Name of the op
+	 * @return the name of the operation
+	 */
+	virtual
 #ifdef __CUDACC__
-                inline     __host__ __device__
-#elseif __GNUC__
-                __always_inline
+	inline     __host__
 #endif
-                T op(T d1, T d2, T *extraParams) {
-                    return d1 - d2;
-                }
-
-                //calculate an update of the reduce operation
-                /**
-                 *
-                 * @param old
-                 * @param opOutput
-                 * @param extraParams
-                 * @return
-                 */
-                virtual
+	std::string name() {
+		return std::string("euclidean_strided");
+	}
 #ifdef __CUDACC__
-                inline    __host__ __device__
-#elseif __GNUC__
-                __always_inline
+	inline     __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
 #endif
-                T update(T old, T opOutput, T *extraParams) {
-                    return nd4j::math::nd4j_pow<T>(old,2) + opOutput;
-                }
+	virtual ~EuclideanDistance() {}
+};
 
-
-                /**
-                 *
-                 * @param old
-                 * @param opOutput
-                 * @param extraParams
-                 * @return
-                 */
-                virtual
+template <typename T>
+class ManhattanDistance : public virtual Reduce3<T> {
 #ifdef __CUDACC__
-                inline    __host__ __device__
-#elseif __GNUC__
-                __always_inline
+	inline      __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
 #endif
-                T merge(T old,T opOutput, T *extraParams) {
-                    return update(old,opOutput,extraParams);
-                }
-
-
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
+	T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) {
+		return reduction / extraParams[0] / extraParams[1];
+	}
+	/**
+	 *
+	 * @param d1
+	 * @param d2
+	 * @param extraParams
+	 * @return
+	 */
+	//an op for the kernel
+	virtual
 #ifdef __CUDACC__
-                inline    __host__
+	inline     __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
 #endif
-                std::string name() {
-                    return std::string("manhattan_strided");
-                }
+	T op(T d1, T d2, T *extraParams) {
+		return d1 - d2;
+	}
 
-                virtual ~ManhattanDistance() {}
-            };
+	//calculate an update of the reduce operation
+	/**
+	 *
+	 * @param old
+	 * @param opOutput
+	 * @param extraParams
+	 * @return
+	 */
+	virtual
+#ifdef __CUDACC__
+	inline    __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	T update(T old, T opOutput, T *extraParams) {
+		return nd4j::math::nd4j_pow<T>(old,2) + opOutput;
+	}
 
-        }
 
-        template <typename T>
-        class Reduce3OpFactory {
-        public:
-            Reduce3OpFactory() {}
-            Reduce3<T> * getOp(std::string name) {
-                if(name == "manhattan_strided")
-                    return new functions::reduce3::ops::ManhattanDistance<T>();
-                else if(name == "euclidean_strided")
-                    return new functions::reduce3::ops::EuclideanDistance<T>();
-                else if(name == "cosinesimilarity_strided")
-                    return new functions::reduce3::ops::CosineSimilarity<T>();
-                return NULL;
-            }
-        };
+	/**
+	 *
+	 * @param old
+	 * @param opOutput
+	 * @param extraParams
+	 * @return
+	 */
+	virtual
+#ifdef __CUDACC__
+	inline    __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	T merge(T old,T opOutput, T *extraParams) {
+		return update(old,opOutput,extraParams);
+	}
 
-    }
+
+	/** Name of the op
+	 * @return the name of the operation
+	 */
+	virtual
+#ifdef __CUDACC__
+	inline    __host__
+#endif
+	std::string name() {
+		return std::string("manhattan_strided");
+	}
+#ifdef __CUDACC__
+	inline     __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	virtual ~ManhattanDistance() {}
+};
+
+}
+
+template <typename T>
+class Reduce3OpFactory {
+public:
+	Reduce3OpFactory() {}
+	Reduce3<T> * getOp(std::string name) {
+		if(name == "manhattan_strided")
+			return new functions::reduce3::ops::ManhattanDistance<T>();
+		else if(name == "euclidean_strided")
+			return new functions::reduce3::ops::EuclideanDistance<T>();
+		else if(name == "cosinesimilarity_strided")
+			return new functions::reduce3::ops::CosineSimilarity<T>();
+		return NULL;
+	}
+};
+
+}
 }
 
 

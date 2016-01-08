@@ -37,9 +37,6 @@
 
 
 int main(int ac, char** av) {
-#ifdef __CUDACC__
-	printf("CUDA HOLY SHIT\n");
-#endif
 	return CommandLineTestRunner::RunAllTests(ac, av);
 }
 IMPORT_TEST_GROUP(ScalarTransform);

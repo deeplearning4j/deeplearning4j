@@ -12,7 +12,9 @@ else
             python ./nsight-err-parse-patch.py ./project
 
     else
-           mkdir build
+           rm -rf build
+           echo "Running CMAKE"
+           mkdir -p build
            cd build && cmake ..
 fi
 

@@ -306,7 +306,9 @@ namespace nd4j {
  */
 #ifdef __CUDACC__
         template<typename T>
- __host__     NDArray<T> *   NDArrays<T>::createFromAndAllocateOnGpu(int rank, int *shape, int *stride, int offset, T defaultValue) {
+ __host__
+
+  NDArray<T> *   NDArrays<T>::createFromAndAllocateOnGpu(int rank, int *shape, int *stride, int offset, T defaultValue) {
             NDArray<T> * ret = createFrom(rank, shape, stride, offset, defaultValue);
             allocateNDArrayOnGpu(&ret);
             return ret;

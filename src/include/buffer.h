@@ -239,13 +239,13 @@ namespace nd4j {
 }
 #ifdef __CUDACC__
 template<typename T>
-__host__ void printArr(Buffer <T> *buff) {
+__host__ void printArr(nd4j::buffer::Buffer <T> *buff) {
     for (int i = 0; i < buff->length; i++) {
         printf("Buffer[%d] was %f\n", i, buff->data[i]);
     }
 }
 
-}
+
 
 #endif
 

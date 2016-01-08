@@ -9,45 +9,45 @@
 #define OP_H_
 #include <string>
 namespace functions {
-    namespace ops {
-        template <typename T>
+namespace ops {
+template <typename T>
 /**
  * Base class
  * for all operations
  */
-        class Op {
+class Op {
 
-        public:
-            /**
-             * Name of the op
-             * @return the name of the operation
-             */
-            virtual
+public:
+	/**
+	 * Name of the op
+	 * @return the name of the operation
+	 */
+	virtual
 #ifdef __CUDACC__
-            __host__
+	__host__
 #endif
-            std::string name() = 0;
+	std::string name() = 0;
 
-            virtual
+	virtual
 #ifdef __CUDACC__
-            __host__ __device__
+	__host__ __device__
 #endif
-            ~Op(){}
+	~Op(){}
 
-        };
+};
 
-        template <typename T>
-        class OpFactory {
-        public:
-            /**
-             * Create the op with the given name
-             * @param name
-             * @return
-             */
-            virtual Op<T> * create(std::string name) = 0;
-            virtual ~OpFactory() {}
-        };
-    }
+template <typename T>
+class OpFactory {
+public:
+	/**
+	 * Create the op with the given name
+	 * @param name
+	 * @return
+	 */
+	virtual Op<T> * create(std::string name) = 0;
+	virtual ~OpFactory() {}
+};
+}
 }
 
 
