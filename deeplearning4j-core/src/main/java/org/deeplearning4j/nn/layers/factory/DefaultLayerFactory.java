@@ -76,6 +76,8 @@ public class DefaultLayerFactory implements LayerFactory {
             return new org.deeplearning4j.nn.layers.recurrent.ImageLSTM(conf);
         if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.GravesLSTM)
         	return new org.deeplearning4j.nn.layers.recurrent.GravesLSTM(conf);
+        if (layerConfig instanceof org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM )
+            return new org.deeplearning4j.nn.layers.recurrent.GravesBidirectionalLSTM(conf);
         if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.GRU )
         	return new org.deeplearning4j.nn.layers.recurrent.GRU(conf);
         if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.OutputLayer)

@@ -156,6 +156,21 @@ public class LayerBuilderTest {
     	assertEquals(glstm.nOut,numOut);
     	assertEquals(glstm.activationFunction,"tanh");
     }
+
+    @Test
+    public void testGravesBidirectionalLSTM() throws Exception {
+        final GravesBidirectionalLSTM glstm = new GravesBidirectionalLSTM.Builder()
+                .forgetGateBiasInit(1.5)
+                .activation("tanh")
+                .nIn(numIn).nOut(numOut).build();
+
+        checkSerialization(glstm);
+
+        assertEquals(glstm.getForgetGateBiasInit(),1.5,0.0);
+        assertEquals(glstm.nIn,numIn);
+        assertEquals(glstm.nOut,numOut);
+        assertEquals(glstm.activationFunction,"tanh");
+    }
     
     @Test
     public void testGRU() throws Exception {
