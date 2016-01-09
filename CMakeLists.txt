@@ -9,7 +9,7 @@ find_path(STDIO_INCLUDE_PATH stdio.h)
 include_directories("src/include")
 include_directories("src/tests")
 LINK_LIBRARIES(CppUTest)
-set(CMAKE_CXX_FLAGS "-lCppUTest -Wall -O3 -fopenmp -std=c++11 -ftree-vectorize -msse2 -ftree-vectorizer-verbose=0 -fassociative-math -funsafe-math-optimizations -march=native")
+set(CMAKE_CXX_FLAGS "-lCppUTest -Wall -O0 -fopenmp -std=c++11 -ftree-vectorize -msse2 -ftree-vectorizer-verbose=0 -fassociative-math -funsafe-math-optimizations -march=native")
 
 if (CUDA_FOUND)
     message("CUDA found!")
