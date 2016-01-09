@@ -198,7 +198,6 @@ public class CublasPointer  implements AutoCloseable {
         DevicePointerInfo info = buffer.getPointersToContexts().get(Thread.currentThread().getName(), Triple.of(0, buffer.length(), 1));
         hostPointer = info.getPointers().getHostPointer();
 
-
     }
 
 

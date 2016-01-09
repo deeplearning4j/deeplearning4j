@@ -1,28 +1,25 @@
-package jcuda.jcublas;
+package jcuda;
 
-import jcuda.Pointer;
-import jcuda.runtime.JCuda;
+import jcuda.jcublas.JCublas2;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.io.Assert;
 import org.nd4j.linalg.jcublas.CublasPointer;
-import org.nd4j.linalg.jcublas.JCublasBackend;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
-import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Method;
+
 import static org.junit.Assert.*;
 
 /**
- * This set of tests will check for
+ * This set of tests will check for memory leaks in different allocation cases.
  *
  * @author raver119@gmail.com
  */
@@ -219,7 +216,9 @@ public class CublasPointerRevTests {
 
         CudaContext ctx = CudaContext.getBlasContext();
 
+        // We are NOT using try-with-resource here, hence we use explicit call to xAPointer.close() method, as exact emoulation of AutoCloseable behaviour
         CublasPointer xAPointer = new CublasPointer(slice1,ctx);
+
 
         BaseCudaDataBuffer buffer1 = (BaseCudaDataBuffer) xAPointer.getBuffer();
 
@@ -230,13 +229,20 @@ public class CublasPointerRevTests {
         // for sliced view we have whole original array allocated
         assertEquals(200000, buffer1.length());
 
-
         CublasPointer xBPointer = new CublasPointer(slice2,ctx);
+
+        long addr_buff1 = xAPointer.getDevicePointer().getNativePointer();
+        long addr_buff2 = xBPointer.getDevicePointer().getNativePointer();
+
+        System.out.println("Native buffer1 pointer: " + addr_buff1);
+        System.out.println("Native buffer2 pointer: " + addr_buff2);
+
+
 
         BaseCudaDataBuffer buffer2 = (BaseCudaDataBuffer) xBPointer.getBuffer();
 
+        // the same here, for sliced view we have whole original buffer allocated using cudaHostAlloc
         assertEquals(200000, buffer2.length());
-
 
 
         JCublas2.cublasDaxpy(
@@ -263,7 +269,7 @@ public class CublasPointerRevTests {
 
 
         // we emulate AutoCloseable by direct close() call
-        // close call should fire freeDevicePointer
+        // close() call should fire freeDevicePointer
         // AND freeHost
         xAPointer.close();
         xBPointer.close();
@@ -276,9 +282,44 @@ public class CublasPointerRevTests {
         // if not - freeHost() wasn't called for corresponding buffer and we have memory leak there
         assertTrue(buffer1.isFreed());
 
-        // we check result buffer
+        // we check if result buffer is freed too.
         assertTrue(buffer2.isFreed());
 
-    }
+        /*
+            As you can see, this test fails here - underlying buffer of size 200000 elements hasn't got cudaFreeHost call
+            That happens due to logical flaw in BaseCudaDataBuffer.free() method.
+            And since try-with-resource is nothing more then auto-call for close() method, overall idea is flawed by this delegation.
 
+            From now on, this buffer will stay allocated until application is terminated, however all subsequent view allocations will return proper pointers to this buffer + offset.
+         */
+
+
+        /*
+            Now we know, that array1 and array2 backing buffers were not freed, and they are still in allocated by cudaHostAlloc().
+            And we'll try to allocate one more slice from the same buffers.
+         */
+
+        slice1 = baseArray1.slice(2);
+        slice2 = baseArray2.slice(2);
+
+        ctx = CudaContext.getBlasContext();
+
+        /*
+            Since our backing buffer allocated for original array1/array2 was NOT freed, we'll obtain offset pointers to the buffer allocated on previous step.
+        */
+        xAPointer = new CublasPointer(slice1,ctx);
+        xBPointer = new CublasPointer(slice2,ctx);
+
+        // at this point we should have equal mem pointers to underlying buffers
+        long new_addr_buff1 = xAPointer.getDevicePointer().getNativePointer();
+        long new_addr_buff2 = xBPointer.getDevicePointer().getNativePointer();
+
+
+        assertEquals(addr_buff1, new_addr_buff1);
+        assertEquals(addr_buff2, new_addr_buff2);
+
+        xAPointer.close();
+        xBPointer.close();
+
+    }
 }
