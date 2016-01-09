@@ -22,3 +22,11 @@ We can't answer these questions for you, because the responses will be specific 
 * **Where will your net be trained and where will the model be deployed? What does it need to integrate with?** Most people don't think about these questions until they have a working prototype, at which point they find themselves forced to rewrite their net with more scalable tools. You should be asking whether you'll eventually need to use Spark, AWS or Hadoop, among other platforms. 
 
 Java developers using Deeplearning4j are welcome to join our [Gitter live chat](https://gitter.im/deeplearning4j/deeplearning4j), where our community helps answer these questions case by case. 
+
+## <a name="beginner">Other Beginner's Guides</a>
+* [Restricted Boltzmann Machines](../restrictedboltzmannmachine.html)
+* [Eigenvectors, Covariance, PCA and Entropy](../eigenvector.html)
+* [Word2vec](../word2vec.html)
+* [Neural Networks](../neuralnet-overview.html)
+* [Neural Networks and Regression](../linear-regression.html)
+* [Convolutional Networks](../convolutionalnets.html)
