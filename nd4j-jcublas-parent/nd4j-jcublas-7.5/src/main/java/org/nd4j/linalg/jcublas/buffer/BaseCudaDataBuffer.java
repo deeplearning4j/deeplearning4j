@@ -25,6 +25,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import jcuda.Pointer;
 import jcuda.jcublas.JCublas2;
+import lombok.Getter;
 import org.apache.commons.lang3.tuple.Triple;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
@@ -146,6 +147,15 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     public BaseCudaDataBuffer(ByteBuffer buffer, int length) {
         super(buffer,length);
+    }
+
+    /**
+     * This method is just for tests only. To check for successful freeHost call on buffer
+     *
+     * @return
+     */
+    public boolean isFreed() {
+        return freed.get();
     }
 
     @Override
@@ -567,12 +577,12 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     @Override
     public boolean freeDevicePointer(int offset, int length) {
         String name = Thread.currentThread().getName();
-        DevicePointerInfo devicePointerInfo = pointersToContexts.get(name,offset);
+        DevicePointerInfo devicePointerInfo = pointersToContexts.get(name,Triple.of(offset, length,1) );
 
         //nothing to free, there was no copy. Only the gpu pointer was reused with a different offset.
-        if(offset != 0)
-            pointersToContexts.remove(name,offset);
-        else if(offset == 0 && isPersist) {
+        if(offset != 0) {
+            pointersToContexts.remove(name, offset);
+        } else if(offset == 0 && isPersist) {
             return true;
         }
         else if (devicePointerInfo != null && !freed.get()) {

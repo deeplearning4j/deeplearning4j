@@ -247,6 +247,9 @@ public class KernelFunctionLoader {
      * @throws IOException If an I/O error occurs
      */
     private void compileAndLoad(Properties props,int compiledAttempts) throws IOException {
+
+        // TODO: REMOVE THAT BEFORE RELEASE
+        if (1>0) return;
         String f = props.getProperty(FUNCTION_KEY);
         String tmpDir = System.getProperty("java.io.tmpdir");
         StringBuffer dir = new StringBuffer();
@@ -259,7 +262,10 @@ public class KernelFunctionLoader {
                 .toString();
         File tmpDir2 = new File(tmpDir + File.separator + "nd4j-kernels" + File.separatorChar + "output");
 
+        log.info("Kernels to be loaded: " + f);
+
         boolean shouldCompile = !tmpDir2.exists() || tmpDir2.exists() && tmpDir2.listFiles().length <= 1 || alreadyCompiled;
+
         String[] split = f.split(",");
         this.modules = split;
         if(shouldCompile) {

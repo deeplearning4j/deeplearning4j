@@ -20,6 +20,7 @@
 package org.nd4j.linalg.jcublas;
 
 import jcuda.Pointer;
+import lombok.Getter;
 import org.apache.commons.lang3.tuple.Triple;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -48,7 +49,7 @@ public class CublasPointer  implements AutoCloseable {
     private JCudaBuffer buffer;
     private Pointer devicePointer;
     private Pointer hostPointer;
-    private boolean closed = false;
+    @Getter private boolean closed = false;
     private INDArray arr;
     private CudaContext cudaContext;
     private boolean resultPointer = false;
@@ -71,10 +72,11 @@ public class CublasPointer  implements AutoCloseable {
      */
     public void destroy() {
         if(!closed) {
-            if(arr != null)
-                buffer.freeDevicePointer(arr.offset(),arr.length());
-            else
-                buffer.freeDevicePointer(0,buffer.length());
+            if(arr != null) {
+                buffer.freeDevicePointer(arr.offset(), arr.length());
+            } else {
+                buffer.freeDevicePointer(0, buffer.length());
+            }
             closed = true;
         }
     }
