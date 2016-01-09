@@ -30,6 +30,7 @@ import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaDeviceProp;
 import jcuda.runtime.cudaStream_t;
 import lombok.Data;
+import lombok.NonNull;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.Op;
@@ -96,7 +97,8 @@ public class ContextHolder {
     private static Logger log = LoggerFactory.getLogger(ContextHolder.class);
     private AtomicBoolean shutdown = new AtomicBoolean(false);
 
-
+    // holder for memory strategies override
+    private Map<String, MemoryStrategy> forcedStrategies = new ConcurrentHashMap<>();
 
     /**
      * Singleton pattern
@@ -163,7 +165,16 @@ public class ContextHolder {
         return threads;
     }
 
-
+    /**
+     * This methord forces use of specific MemoryStrategy for current thread
+     *
+     * PLEASE NOTE: NEVER USE THIS METHOD IN PRODUCTION ENVIRONMENT, IT CAN LEAD TO UNPREDICTABLE RESULTS
+     *
+     * @param memoryStrategy
+     */
+    public void forceMemoryStrategyForThread(@NonNull MemoryStrategy memoryStrategy) {
+        forcedStrategies.put(Thread.currentThread().getName(), memoryStrategy);
+    }
 
     /**
      * Get the number of devices
@@ -190,7 +201,9 @@ public class ContextHolder {
      * @return
      */
     public MemoryStrategy getMemoryStrategy() {
-        return getConf().getMemoryStrategy();
+        // FIXME: this ad-hoc is used to get forced strategies working for initial pass on CUDA mem allocation tests, and this could/should be removed before release
+        if (forcedStrategies.containsKey(Thread.currentThread().getName())) return forcedStrategies.get(Thread.currentThread().getName());
+            else return getConf().getMemoryStrategy();
     }
 
 

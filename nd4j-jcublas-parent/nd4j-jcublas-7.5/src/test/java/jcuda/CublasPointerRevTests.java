@@ -19,7 +19,14 @@ import java.lang.reflect.Method;
 import static org.junit.Assert.*;
 
 /**
- * This set of tests will check for memory leaks in different allocation cases.
+ * This set of very vasic tests will check for memory leaks in different allocation cases.
+ *
+ * 1. full array/buffer allocation
+ * 2. view allocation
+ *
+ * On later stages, sparse allocations should be tested here as well. But for cuSparse that shouldn't be an issue, due to dense underlying CSR format.
+ *
+ * All this tests should be executed against both Pageable and Pinned MemoryStrategies.
  *
  * @author raver119@gmail.com
  */
@@ -77,7 +84,10 @@ public class CublasPointerRevTests {
         assertTrue(buffer.copied(Thread.currentThread().getName()));
         assertFalse(buffer.isPersist());
 
+        // we're pushing whole array to device, not a view; so buffer length should be equal to array length
         assertEquals(15, buffer.length());
+
+        long addr_buff1 = xCPointer.getDevicePointer().getNativePointer();
 
         CublasPointer yCPointer = new CublasPointer(array2,ctx);
 
@@ -113,6 +123,14 @@ public class CublasPointerRevTests {
         assertTrue(buffer.isFreed());
 
         // Please note: we do NOT test result pointer here,since we assume it's handled by JCuda
+
+        // now we try new allocation for the same array
+        // we should get absolutely new memory address, since allocation is done from scratches
+        xCPointer = new CublasPointer(array1,ctx);
+        long new_addr_buff1 = xCPointer.getDevicePointer().getNativePointer();
+        assertNotEquals(addr_buff1, new_addr_buff1);
+
+        xCPointer.close();
     }
 
 
