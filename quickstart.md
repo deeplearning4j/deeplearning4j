@@ -19,6 +19,8 @@ If you need to install any of the above, please read the [ND4J Getting Started g
 
 We recommend that you join our [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) if you have questions or feedback. Even if you're feeling anti-social, feel free to lurk and learn. In addition, if you are brand-new to deep learning, we've included [a road map of what to learn when you're starting out](../deeplearningforbeginners.html). 
 
+Deeplearning4j is an open-source project targetting professional Java developers familiar with production deployments, an IDE such as IntelliJ and an automated build tool such as Maven. Our tool will serve you best if you have those tools under your belt already.
+
 ## DL4J in a Few Easy Steps
 
 After those installs, if you can follow these steps, you'll be up and running (Windows users please see the [Walkthrough](#walk) section below):
