@@ -18,3 +18,6 @@ Mik Kocikowski - CLI
 
 Taisuke Oe - Android app
 
+Jeffrey Tang
+
+@bennythedataguy - Bi-directional LSTMs
