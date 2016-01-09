@@ -576,16 +576,22 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public boolean freeDevicePointer(int offset, int length) {
+        System.out.println("Trying to free buffer at offset: ["+ offset+"], length: [" + length +"]");
         String name = Thread.currentThread().getName();
+
+        // TODO: make sure that stride is always equals 1
         DevicePointerInfo devicePointerInfo = pointersToContexts.get(name,Triple.of(offset, length,1) );
 
         //nothing to free, there was no copy. Only the gpu pointer was reused with a different offset.
         if(offset != 0) {
-            pointersToContexts.remove(name, offset);
+            System.out.println("Path taken: 1");
+            pointersToContexts.remove(name, Triple.of(offset, length, 1));
         } else if(offset == 0 && isPersist) {
+            System.out.println("Path taken: 2");
             return true;
         }
         else if (devicePointerInfo != null && !freed.get()) {
+            System.out.println("Path taken: 3");
             allocated.addAndGet(-devicePointerInfo.getLength());
             log.trace("freeing {} bytes, total: {}", devicePointerInfo.getLength(), allocated.get());
             ContextHolder.getInstance().getMemoryStrategy().free(this,offset,length);
@@ -593,9 +599,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             copied.remove(name);
             pointersToContexts.remove(name,Triple.of(offset,length,devicePointerInfo.getStride()));
             return true;
-
-
         }
+
+        System.out.println("Path taken: 4; freed: ["+ freed.get() +"]; devicePointerInfo: " + devicePointerInfo);
 
         return false;
     }
