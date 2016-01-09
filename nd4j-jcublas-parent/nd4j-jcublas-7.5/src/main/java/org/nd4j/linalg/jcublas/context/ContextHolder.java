@@ -170,10 +170,11 @@ public class ContextHolder {
      *
      * PLEASE NOTE: NEVER USE THIS METHOD IN PRODUCTION ENVIRONMENT, IT CAN LEAD TO UNPREDICTABLE RESULTS
      *
-     * @param memoryStrategy
+     * @param memoryStrategy MemoryStrategy to be used withing current thread, if null - forced strategy for current thread will be purged
      */
-    public void forceMemoryStrategyForThread(@NonNull MemoryStrategy memoryStrategy) {
-        forcedStrategies.put(Thread.currentThread().getName(), memoryStrategy);
+    public void forceMemoryStrategyForThread(MemoryStrategy memoryStrategy) {
+        if (memoryStrategy == null) forcedStrategies.remove(Thread.currentThread().getName());
+            else forcedStrategies.put(Thread.currentThread().getName(), memoryStrategy);
     }
 
     /**

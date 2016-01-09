@@ -10,6 +10,9 @@ import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
+import org.nd4j.linalg.jcublas.buffer.allocation.PageableDirectBufferMemoryStrategy;
+import org.nd4j.linalg.jcublas.buffer.allocation.PinnedMemoryStrategy;
+import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,19 +53,107 @@ public class CublasPointerRevTests {
             INDArray array = Nd4j.create(new double[]{1.0});
     }
 
+
+    /**
+     * This is primitive test for forced MemoryStrategies
+     * @throws Exception
+     */
+    @Test
+    public void testForcedMemoryStrategy() throws Exception {
+        ContextHolder.getInstance().forceMemoryStrategyForThread(new PageableDirectBufferMemoryStrategy());
+
+        assertEquals("PageableDirectBufferMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
+
+        ContextHolder.getInstance().forceMemoryStrategyForThread(new PinnedMemoryStrategy());
+
+        assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
+    }
+
     /**
      *
      */
     @Test
     public void testPageableMemoryRelease() throws Exception {
+        // force current thread to use Pageable memory strategy
+        ContextHolder.getInstance().forceMemoryStrategyForThread(new PageableDirectBufferMemoryStrategy());
 
+        INDArray array1 = Nd4j.create(new float[]{1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
+        INDArray array2 = Nd4j.create(new float[]{1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
+
+        CudaContext ctx = CudaContext.getBlasContext();
+
+        double[] ret = new double[1];
+        ret[0] = 15.0d;
+        Pointer result = Pointer.to(ret);
+
+        CublasPointer xCPointer = new CublasPointer(array1,ctx);
+
+        BaseCudaDataBuffer buffer1 = (BaseCudaDataBuffer) xCPointer.getBuffer();
+
+        assertEquals(DataBuffer.AllocationMode.DIRECT, buffer1.allocationMode());
+        assertTrue(buffer1.copied(Thread.currentThread().getName()));
+        assertFalse(buffer1.isPersist());
+
+        // we're pushing whole array to device, not a view; so buffer length should be equal to array length
+        assertEquals(15, buffer1.length());
+
+        long addr_buff1 = xCPointer.getDevicePointer().getNativePointer();
+
+        CublasPointer yCPointer = new CublasPointer(array2,ctx);
+
+        BaseCudaDataBuffer buffer2 = (BaseCudaDataBuffer) yCPointer.getBuffer();
+
+        assertFalse(xCPointer.isResultPointer());
+        assertFalse(xCPointer.isClosed());
+
+
+        JCublas2.cublasDdot(
+                ctx.getHandle(),
+                array1.length(),
+                xCPointer.getDevicePointer().withByteOffset(array1.offset() * array1.data().getElementSize()),
+                BlasBufferUtil.getBlasStride(array1),
+                yCPointer.getDevicePointer().withByteOffset(array2.offset() * array2.data().getElementSize()),
+                BlasBufferUtil.getBlasStride(array2),
+                result);
+        ctx.syncOldStream();
+
+        // in this test copyToHost is handled by JCublas, so there's no need for explicit copyToHost call
+        ctx.finishBlasOperation();
+
+
+        // check that result not equals to 0
+        assertNotEquals(0, ret[0], 0.0001d);
+
+
+        // we emulate AutoCloseable by direct close() call
+        // close call should fire freeDevicePointer
+        // AND freeHost
+        xCPointer.close();
+        yCPointer.close();
+
+        // here we check, if device pointer was released
+        assertEquals(true, xCPointer.isClosed());
+        assertEquals(true, yCPointer.isClosed());
+
+        // now we should check, if host memory was released.
+        // if not - freeHost() wasn't called for corresponding buffer and we have memory leak there
+        assertTrue(buffer1.isFreed());
+
+        assertTrue(buffer2.isFreed());
     }
+
+
 
     @Test
     public void testPinnedMemoryRelease() throws Exception {
 
         // simple way to stop test if we're not on CUDA backend here
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
+
+        // reset to default MemoryStrategy, most probable is Pinned
+        ContextHolder.getInstance().forceMemoryStrategyForThread(null);
+
+        assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
 
         INDArray array1 = Nd4j.create(new float[]{1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
         INDArray array2 = Nd4j.create(new float[]{1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
@@ -143,6 +234,11 @@ public class CublasPointerRevTests {
     public void testPinnedMemoryReleaseResult() throws Exception {
         // simple way to stop test if we're not on CUDA backend here
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
+
+        // reset to default MemoryStrategy, most probable is Pinned
+        ContextHolder.getInstance().forceMemoryStrategyForThread(null);
+
+        assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
 
         CudaContext ctx = CudaContext.getBlasContext();
 
@@ -225,6 +321,11 @@ public class CublasPointerRevTests {
     public void testPinnedMemoryReleaseSliced() throws Exception {
         // simple way to stop test if we're not on CUDA backend here
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
+
+        // reset to default MemoryStrategy, most probable is Pinned
+        ContextHolder.getInstance().forceMemoryStrategyForThread(null);
+
+        assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
 
         INDArray baseArray1 = Nd4j.rand(new int[]{1000, 200}, -1.0, 1.0, new DefaultRandom());
         INDArray baseArray2 = Nd4j.rand(new int[]{1000, 200}, -1.0, 1.0, new DefaultRandom());
