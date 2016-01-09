@@ -4,9 +4,11 @@ layout: default
 
 # Full Installation
 
-This is a multistep install. We highly recommend you join our [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) if you have questions or feedback, so we can walk you through it. If you're feeling anti-social or brashly independent, you're still invited to lurk and learn. In addition, if you are utterly new to deep learning, we've got [a road map of what to learn when you're starting out](../deeplearningforbeginners.html). To run our examples simply and easily, please go to the [quickstart page](../quickstart.html) now.
+This is a multistep install. We highly recommend you join our [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) if you have questions or feedback, so we can walk you through it. If you're feeling anti-social or brashly independent, you're still invited to lurk and learn. In addition, if you are utterly new to deep learning, we've got [a road map of what to learn when you're starting out](../deeplearningforbeginners.html). 
 
-The prerequisites installs for Deeplearning4j are documented on the [ND4J "Getting Started" page](http://nd4j.org/getstarted.html) of ND4J, the linear algebra engine powering DL4J's neural nets:
+To run our examples in a few steps, please go to the [quickstart page](../quickstart.html) now. Seriously, go do that before you do this. It's the easy way to start with DL4J. 
+
+The prerequisite installs for Deeplearning4j are documented on the [ND4J "Getting Started" page](http://nd4j.org/getstarted.html) of ND4J, the linear algebra engine powering DL4J's neural nets:
 
 1. [Java 7 or above](http://nd4j.org/getstarted.html#java) 
 2. [Integrated Development Environment: IntelliJ](http://nd4j.org/getstarted.html#ide-for-java) 
