@@ -5,6 +5,8 @@
 #include <op.h>
 #include <templatemath.h>
 
+
+
 //an op for the kernel
 namespace functions {
 namespace reduce {
@@ -17,7 +19,7 @@ namespace reduce {
  * elements.
  */
 template<typename T>
-class ReduceFunction : public functions::ops::Op<T> {
+class ReduceFunction: public functions::ops::Op<T> {
 public:
 
 	/**
@@ -29,11 +31,13 @@ public:
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline    __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T merge(T old,T opOutput,T *extraParams) = 0;
+	T merge(T old, T opOutput, T *extraParams) = 0;
 
 	/**
 	 * Op with 1 parameter
@@ -43,11 +47,13 @@ public:
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline   __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T op(T d1,T *extraParams) = 0;
+	T op(T d1, T *extraParams) = 0;
 
 	//calculate an update of the reduce operation
 	/**
@@ -59,30 +65,26 @@ public:
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline    __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
 	T update(T old, T opOutput, T *extraParams) = 0;
 #ifdef __CUDACC__
-
 	/**
-	 * @param n n is the number of
-	 *        elements to loop through
-	 * @param dx the data to operate on
-	 * @param xVectorInfo the meta data for the vector:
-	 *                              0 is the offset
-	 *                              1 is the increment/stride
-	 *                              2 is the real length of the buffer (n and dx.length won't always be the same)
-	 *                              3 is the element wise stride for the buffer
-	 *                              4 is the number of elements it takes to get to the next row/column/tensor
-	 * @param gpuInformation
-	 *                              0 is the block size
-	 *                              1 is the grid size
-	 *                              2 is the shared memory size
-	 * @param problemDefinition
-	 *                          0 is the number of elements per vector
-	 *                          1 is the number of vectors
+	 * Kernel invocation for reduce
+	 * @param n the length of the buffer
+	 * @param dx the input
+	 * @param xShapeInfo the shape information for the input
+	 * @param extraParams extra parameters (starting value,..)
+	 * @param result the result buffer
+	 * @param resultShapeInfo the shapeinformation for the result buffer
+	 * @param gpuInformation the gpu information (shared memory allocated,..)
+	 * @param dimension the dimension to do reduce along
+	 * @param dimensionLength the length of the dimension buffer
+	 * @param postProcessOrNot whether to reduce or not
 	 */
 	__device__ virtual void transform(
 			int n,
@@ -94,20 +96,17 @@ public:
 			int *gpuInformation,
 			int *dimension,
 			int dimensionLength,
-			int postProcessOrNot)  {
+			int postProcessOrNot) {
 
 		/**
 		 * Gpu information for the problem
 		 */
 		int tid = threadIdx.x;
 
-
 		__shared__ volatile int resultScalar;
-
 
 		__shared__ int xElementWiseStride;
 		__shared__ int xOffset;
-
 
 		//shared memory space for storing intermediate results
 		SharedMemory <T> val;
@@ -122,7 +121,6 @@ public:
 
 		__shared__ int resultLength;
 
-
 		__shared__ int elementsPerTad;
 
 		__shared__ int tensorsForDimension;
@@ -130,7 +128,6 @@ public:
 		//only compute the tad indexes once
 		__shared__
 		shape::TADPermuteInfo xTadInfo;
-
 
 		__shared__ int reductionIndexesPerBlock;
 
@@ -161,9 +158,7 @@ public:
 				reductionIndexesPerBlock = resultLength / gridDim.x;
 			}
 
-
 			xTadInfo = shape::tadInfo(xShapeInfo, dimension, dimensionLength);
-
 
 		}
 		__syncthreads();
@@ -199,8 +194,6 @@ public:
 				T **sPartialsRef = (T **) &sPartials;
 				aggregatePartials(sPartialsRef, tid, extraParams);
 
-
-
 				// write result for this block to global mem
 				if (tid == 0) {
 					if (postProcessOrNot) {
@@ -216,7 +209,6 @@ public:
 			else if (!resultScalar) {
 				if (reductionIndexesPerBlock * blockIdx.x >= resultLength)
 					return;
-
 
 				int tadsPerReductionIndex = tensorsForDimension / resultLength;
 				//minimum number of threads needed for each reduction index
@@ -239,7 +231,6 @@ public:
 					}
 
 				}
-
 
 				//first thread for a reduction index
 				if (tid % tadsPerReductionIndex == 0 && tadsPerReductionIndex > 1) {
@@ -267,7 +258,6 @@ public:
 					}
 				}
 
-
 				__syncthreads();
 
 				//after all the threads are done processing each first item in shared memory
@@ -286,9 +276,7 @@ public:
 			}
 		}
 
-
 	}
-
 
 	/**
 	 * This implements a collapsing tad reduction
@@ -348,21 +336,21 @@ public:
 	 *
 	 * An example mapping relative to a gpu block is as follows:
 	 * ([[[[  1.,   2.],
-	                     [  3.,   4.],
-	                     [  5.,   6.]],
+	 [  3.,   4.],
+	 [  5.,   6.]],
 
-	                    [[  7.,   8.],
-	                     [  9.,  10.],
-	                     [ 11.,  12.]]],
+	 [[  7.,   8.],
+	 [  9.,  10.],
+	 [ 11.,  12.]]],
 
 
-	                   [[[ 13.,  14.],
-	                     [ 15.,  16.],
-	                     [ 17.,  18.]],
+	 [[[ 13.,  14.],
+	 [ 15.,  16.],
+	 [ 17.,  18.]],
 
-	                    [[ 19.,  20.],
-	                     [ 21.,  22.],
-	                     [ 23.,  24.]]]])
+	 [[ 19.,  20.],
+	 [ 21.,  22.],
+	 [ 23.,  24.]]]])
 
 
 
@@ -406,7 +394,7 @@ public:
 			T *data, T *result, T *extraParams,
 			int numOriginalTads,
 			int sharedMemorySize,
-			int *xShapeInfo, int *resultShapeInfo, int *dimension, int dimensionLength)  {
+			int *xShapeInfo, int *resultShapeInfo, int *dimension, int dimensionLength) {
 		SharedMemory <T> val;
 		//number of tads for the reduced solution
 		int numTads = shape::tensorsAlongDimension(xShapeInfo, dimension, dimensionLength);
@@ -421,11 +409,8 @@ public:
 		}
 		__syncthreads();
 
-
-
 		//each block processes a reduction index
 		//don't bother iterating on this block if it goes over the number of tads
-
 
 		__shared__
 		shape::TADPermuteInfo xTadInfo;
@@ -446,7 +431,6 @@ public:
 		 *
 		 */
 
-
 		//number of tads per reduce index
 		__shared__ int tadsPerReduceIndex2;
 		if (tid == 0) {
@@ -455,11 +439,9 @@ public:
 
 		__syncthreads();
 
-
 		//each thread does a tad
 		if (tid >= numTads || blockIdx.x >= tadsPerReduceIndex2)
 			return;
-
 
 		/**
 		 * Need to ensure we stay in bounds on each block -
@@ -496,7 +478,6 @@ public:
 			__syncthreads();
 		}
 
-
 		if (tid == 0 && blockIdx.x < numTads) {
 			//start at 1 so we don't count the first entry twice
 			for (int i = 1; i < numTads; i++) {
@@ -509,14 +490,13 @@ public:
 		}
 	}
 
-
 	/**
 	 *
 	 * @param sPartialsRef
 	 * @param tid
 	 * @param extraParams
 	 */
-	__device__ virtual void aggregatePartials(T **sPartialsRef, int tid, T *extraParams)  {
+	__device__ virtual void aggregatePartials(T **sPartialsRef, int tid, T *extraParams) {
 		// start the shared memory loop on the next power of 2 less
 		// than the block size.  If block size is not a power of 2,
 		// accumulate the intermediate sums in the remainder range.
@@ -542,91 +522,87 @@ public:
 
 	}
 #endif
-	/**
-	 *
-	 * @param reduction
-	 * @param n
-	 * @param xOffset
-	 * @param dx
-	 * @param incx
-	 * @param extraParams
-	 * @param result
-	 * @return
-	 */
 	virtual
 #ifdef __CUDACC__
-	inline    __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T postProcess(
-			T reduction,
-			int n,
-			int xOffset,
-			T *dx,
-			int incx,
-			T *extraParams,
-			T *result) = 0;
-
-
-
+	T postProcess(T reduction, int n, int xOffset, T *dx, int incx,
+			T *extraParams, T *result)  {
+		return reduction;
+	}
 
 	virtual
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	~ReduceFunction(){}
+	~ReduceFunction() {
+	}
 
-	void exec(T *x,int *xShapeInfo,T *extraParams,T *result,int *resultShapeInfo) {
+	void exec(T *x, int *xShapeInfo, T *extraParams, T *result,
+			int *resultShapeInfo) {
 		T startingVal = extraParams[0];
 		int length = shape::length(xShapeInfo);
 		int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 		int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
 		if (xElementWiseStride == 1 && resultElementWiseStride == 1) {
 #pragma omp simd
-for (int i = 0; i < length; i++) {
-	T curr = op(x[i], extraParams);
-	startingVal = update(startingVal, curr, extraParams);
-}
-
-result[0] = postProcess(startingVal,length,shape::offset(xShapeInfo),x,shape::elementWiseStride(xShapeInfo),extraParams,result);
-		}
-		else {
-#pragma omp simd
 			for (int i = 0; i < length; i++) {
-				startingVal = update(startingVal, op(x[i * xElementWiseStride], extraParams), extraParams);
+				T curr = op(x[i], extraParams);
+				startingVal = update(startingVal, curr, extraParams);
 			}
 
-			result[0] = postProcess(startingVal,length,shape::offset(xShapeInfo),x,shape::elementWiseStride(xShapeInfo),extraParams,result);
+			result[0] = postProcess(startingVal, length,
+					shape::offset(xShapeInfo), x,
+					shape::elementWiseStride(xShapeInfo), extraParams, result);
+		} else {
+#pragma omp simd
+			for (int i = 0; i < length; i++) {
+				startingVal = update(startingVal,
+						op(x[i * xElementWiseStride], extraParams),
+						extraParams);
+			}
 
+			result[0] = postProcess(startingVal, length,
+					shape::offset(xShapeInfo), x,
+					shape::elementWiseStride(xShapeInfo), extraParams, result);
 
 		}
 
 	}
 
-	void exec(T *x,int *xShapeInfo,T *extraParams,T *result,int *resultShapeInfoBuffer,int *dimension,int dimensionLength) {
-		shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo,dimension,dimensionLength);
+	void exec(T *x, int *xShapeInfo, T *extraParams, T *result,
+			int *resultShapeInfoBuffer, int *dimension, int dimensionLength) {
+		shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo,
+				dimension, dimensionLength);
 		int resultLength = shape::length(resultShapeInfoBuffer);
-		int tadElementWiseStride = shape::computeElementWiseStride(tadPermuteInfo.xRank,tadPermuteInfo.permutedShape,tadPermuteInfo.permutedStrides,shape::order(xShapeInfo) == 'f');
+		int tadElementWiseStride = shape::computeElementWiseStride(
+				tadPermuteInfo.xRank, tadPermuteInfo.permutedShape,
+				tadPermuteInfo.permutedStrides,
+				shape::order(xShapeInfo) == 'f');
 		int tadLength = tadPermuteInfo.tensorShapeProd;
 #pragma omp simd
-		for(int i = 0; i < shape::length(xShapeInfo); i++) {
-			int reductionIndex = shape::reductionIndexForLinear(i,tadElementWiseStride,tadLength,resultLength,resultLength);
-			result[reductionIndex] = update(result[reductionIndex],op(x[i],extraParams),extraParams);
+		for (int i = 0; i < shape::length(xShapeInfo); i++) {
+			int reductionIndex = shape::reductionIndexForLinear(i,
+					tadElementWiseStride, tadLength, resultLength,
+					resultLength);
+			result[reductionIndex] = update(result[reductionIndex],
+					op(x[i], extraParams), extraParams);
 		}
 #pragma omp simd
-for(int i = 0; i < resultLength; i++) {
-	result[i] = postProcess(result[i],tadLength,shape::offset(xShapeInfo),x,shape::elementWiseStride(xShapeInfo),extraParams,result);
-}
+		for (int i = 0; i < resultLength; i++) {
+			result[i] = postProcess(result[i], tadLength,
+					shape::offset(xShapeInfo), x,
+					shape::elementWiseStride(xShapeInfo), extraParams, result);
+		}
 
-shape::freePermuteInfo(tadPermuteInfo);
+		shape::freePermuteInfo(tadPermuteInfo);
 	}
 
-
-
 };
-
-
 
 #ifdef __CUDACC__
 /**
@@ -646,127 +622,129 @@ __device__ void initializeShared(T *extraParams, T **sPartials, int sMemSize) {
 
 #endif
 
-
-
 namespace ops {
 
-
-template <typename T>
-class Sum : public virtual functions::reduce::ReduceFunction<T> {
+template<typename T>
+class Sum: public virtual functions::reduce::ReduceFunction<T> {
 public:
 	virtual
 #ifdef __CUDACC__
-	inline      __host__
+	inline __host__
+
 #endif
 	std::string name() override {
 		return std::string("sum");
 	}
 	virtual
 #ifdef __CUDACC__
-	inline    __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
+	inline __host__  __device__
 
-	T merge(T old,T opOutput,T *extraParams) override {
+#elif defined(__GNUC__)
+	__always_inline
+
+#endif
+	T merge(T old, T opOutput, T *extraParams) override {
 		return opOutput + old;
 	}
 	virtual
 #ifdef __CUDACC__
-	inline       __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T update(T old,T opOutput,T *extraParams) override {
+	T update(T old, T opOutput, T *extraParams) override {
 		return opOutput + old;
 	}
 	virtual
 #ifdef __CUDACC__
-	inline      __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T op(T d1,T *extraParams) override {
+	T op(T d1, T *extraParams) override {
 		return d1;
 	}
 
-
 	virtual
 #ifdef __CUDACC__
-	inline    __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T postProcess(
-			T reduction
-			,int n,
-			int xOffset,
-			T *dx,
-			int incx,
-			T *extraParams,T *result) override {
+	T postProcess(T reduction, int n, int xOffset, T *dx, int incx,
+			T *extraParams, T *result) override {
 		return reduction;
 	}
 
 	virtual
 #ifdef __CUDACC__
-	inline    __host__ __device__
+	inline __host__ __device__
 #endif
-	~Sum() {}
+	~Sum() {
+	}
 };
 
-
-template <typename T>
-class Prod : public virtual functions::reduce::ReduceFunction<T> {
+template<typename T>
+class Prod: public virtual functions::reduce::ReduceFunction<T> {
 public:
 	virtual
 #ifdef __CUDACC__
-	inline      __host__
+	inline __host__
+
 #endif
 	std::string name() override {
 		return std::string("prod");
 	}
 	virtual
 #ifdef __CUDACC__
-	inline    __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T merge(T old,T opOutput,T *extraParams) override {
+	T merge(T old, T opOutput, T *extraParams) override {
 		return opOutput * old;
 	}
 	virtual
 #ifdef __CUDACC__
-	inline    __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T update(T old,T opOutput,T *extraParams) override {
+	T update(T old, T opOutput, T *extraParams) override {
 		return opOutput * old;
 	}
 	virtual
 #ifdef __CUDACC__
-	__host__ __device__
+	__host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T op(T d1,T *extraParams) override {
+	T op(T d1, T *extraParams) override {
 		return d1;
 	}
 
-
 	virtual
 #ifdef __CUDACC__
-	inline       __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T postProcess(
-			T reduction
-			,int n,
-			int xOffset,
-			T *dx,
-			int incx,
-			T *extraParams,T *result) override {
+	T postProcess(T reduction, int n, int xOffset, T *dx, int incx,
+			T *extraParams, T *result) override {
 		return reduction;
 	}
 
@@ -774,64 +752,67 @@ public:
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	~Prod() {}
+	~Prod() {
+	}
 };
 
-template <typename T>
-class Mean : public virtual functions::reduce::ReduceFunction<T> {
+template<typename T>
+class Mean: public virtual functions::reduce::ReduceFunction<T> {
 public:
 	virtual
 #ifdef __CUDACC__
-	inline      __host__
-#endif
+	inline __host__
 
+#endif
 	std::string name() override {
 		return std::string("mean");
 	}
 
 	virtual
 #ifdef __CUDACC__
-	__host__ __device__
+	__host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T merge(T old,T opOutput,T *extraParams) override {
+	T merge(T old, T opOutput, T *extraParams) override {
 		return opOutput + old;
 	}
 
 	virtual
 #ifdef __CUDACC__
-	inline      __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T update(T old,T opOutput,T *extraParams) override {
+	T update(T old, T opOutput, T *extraParams) override {
 		return opOutput + old;
 	}
 	virtual
 #ifdef __CUDACC__
-	__host__ __device__
+	__host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T op(T d1,T *extraParams) override {
+	T op(T d1, T *extraParams) override {
 		return d1;
 	}
 
-
 	virtual
 #ifdef __CUDACC__
-	inline       __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T postProcess(
-			T reduction
-			,int n,
-			int xOffset,
-			T *dx,
-			int incx,
-			T *extraParams,T *result) override {
+	T postProcess(T reduction, int n, int xOffset, T *dx, int incx,
+			T *extraParams, T *result) override {
 		return reduction / (T) n;
 	}
 
@@ -839,17 +820,17 @@ public:
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	~Mean() {}
+	~Mean() {
+	}
 };
 
-
-
-template <typename T>
-class Bias : public virtual functions::reduce::ReduceFunction<T> {
+template<typename T>
+class Bias: public virtual functions::reduce::ReduceFunction<T> {
 public:
 	virtual
 #ifdef __CUDACC__
-	inline      __host__
+	inline __host__
+
 #endif
 	std::string name() override {
 		return std::string("bias");
@@ -857,66 +838,69 @@ public:
 
 	virtual
 #ifdef __CUDACC__
-	inline      __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T merge(T old,T opOutput,T *extraParams) override {
+	T merge(T old, T opOutput, T *extraParams) override {
 		return opOutput + old;
 	}
 
 	virtual
 #ifdef __CUDACC__
-	inline       __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T update(T old,T opOutput,T *extraParams) override {
+	T update(T old, T opOutput, T *extraParams) override {
 		return opOutput + old;
 	}
 	virtual
 #ifdef __CUDACC__
-	__host__ __device__
+	__host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T op(T d1,T *extraParams) override {
+	T op(T d1, T *extraParams) override {
 		T mean = extraParams[1];
 		T curr = (d1 - mean);
-		return  curr;
+		return curr;
 	}
-
 
 	virtual
 #ifdef __CUDACC__
-	inline    __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T postProcess(
-			T reduction
-			,int n,
-			int xOffset,
-			T *dx,
-			int incx,
-			T *extraParams,T *result) override {
+	T postProcess(T reduction, int n, int xOffset, T *dx, int incx,
+			T *extraParams, T *result) override {
 		return reduction;
 	}
 
 	virtual
 #ifdef __CUDACC__
-	inline      __host__ __device__
+	inline __host__ __device__
 #endif
-	~Bias() {}
+	~Bias() {
+	}
 };
 
-
-template <typename T>
-class Max : public virtual functions::reduce::ReduceFunction<T> {
+template<typename T>
+class Max: public virtual functions::reduce::ReduceFunction<T> {
 public:
 	virtual
 #ifdef __CUDACC__
-	inline      __host__
+	inline __host__
+
 #endif
 	std::string name() override {
 		return std::string("max");
@@ -924,64 +908,67 @@ public:
 
 	virtual
 #ifdef __CUDACC__
-	inline      __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T merge(T old,T opOutput,T *extraParams) override {
-		return nd4j::math::nd4j_max<T>(old,opOutput);
+	T merge(T old, T opOutput, T *extraParams) override {
+		return nd4j::math::nd4j_max<T>(old, opOutput);
 	}
 	virtual
 #ifdef __CUDACC__
-	inline       __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T update(T old,T opOutput,T *extraParams) override {
-		return nd4j::math::nd4j_max<T>(opOutput,old);
+	T update(T old, T opOutput, T *extraParams) override {
+		return nd4j::math::nd4j_max<T>(opOutput, old);
 	}
 
 	virtual
 #ifdef __CUDACC__
-	inline       __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T op(T d1,T *extraParams) override {
+	T op(T d1, T *extraParams) override {
 		return d1;
 	}
 
-
 	virtual
 #ifdef __CUDACC__
-	inline         __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T postProcess(
-			T reduction
-			,int n,
-			int xOffset,
-			T *dx,
-			int incx,
-			T *extraParams,T *result) override {
+	T postProcess(T reduction, int n, int xOffset, T *dx, int incx,
+			T *extraParams, T *result) override {
 		return reduction;
 	}
 
 	virtual
 #ifdef __CUDACC__
-	inline       __host__ __device__
+	inline __host__ __device__
 #endif
-	~Max() {}
+	~Max() {
+	}
 };
 
-
-template <typename T>
-class Min : public virtual functions::reduce::ReduceFunction<T> {
+template<typename T>
+class Min: public virtual functions::reduce::ReduceFunction<T> {
 public:
 	virtual
 #ifdef __CUDACC__
-	inline      __host__
+	inline __host__
+
 #endif
 	std::string name() override {
 		return std::string("min");
@@ -989,129 +976,134 @@ public:
 
 	virtual
 #ifdef __CUDACC__
-	inline      __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T merge(T old,T opOutput,T *extraParams) override {
-		return nd4j::math::nd4j_min<T>(old,opOutput);
+	T merge(T old, T opOutput, T *extraParams) override {
+		return nd4j::math::nd4j_min<T>(old, opOutput);
 	}
 
 	virtual
 #ifdef __CUDACC__
-	inline    __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T update(T old,T opOutput,T *extraParams) override {
-		return nd4j::math::nd4j_min<T>(opOutput,old);
+	T update(T old, T opOutput, T *extraParams) override {
+		return nd4j::math::nd4j_min<T>(opOutput, old);
 	}
 	virtual
 #ifdef __CUDACC__
-	inline   __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T op(T d1,T *extraParams) override {
+	T op(T d1, T *extraParams) override {
 		return d1;
 	}
 
-
 	virtual
 #ifdef __CUDACC__
-	inline   __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T postProcess(
-			T reduction
-			,int n,
-			int xOffset,
-			T *dx,
-			int incx,
-			T *extraParams,T *result) override {
+	T postProcess(T reduction, int n, int xOffset, T *dx, int incx,
+			T *extraParams, T *result) override {
 		return reduction;
 	}
 
 	virtual
 #ifdef __CUDACC__
-	inline    __host__ __device__
+	inline __host__ __device__
 #endif
-	~Min() {}
+	~Min() {
+	}
 };
 
-
-
-template <typename T>
-class Norm1 : public virtual functions::reduce::ReduceFunction<T> {
+template<typename T>
+class Norm1: public virtual functions::reduce::ReduceFunction<T> {
 public:
 	virtual
 #ifdef __CUDACC__
 	__host__
+
 #endif
 	std::string name() override {
 		return std::string("norm1");
 	}
 	virtual
 #ifdef __CUDACC__
-	inline      __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T merge(T old,T opOutput,T *extraParams) override {
+	T merge(T old, T opOutput, T *extraParams) override {
 		return opOutput + old;
 
 	}
 	virtual
 #ifdef __CUDACC__
-	inline      __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T update(T old,T opOutput,T *extraParams) override {
+	T update(T old, T opOutput, T *extraParams) override {
 		return opOutput + old;
 
 	}
 	virtual
 #ifdef __CUDACC__
-	inline      __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T op(T d1,T *extraParams) override {
+	T op(T d1, T *extraParams) override {
 		return nd4j::math::nd4j_abs<T>(d1);
 	}
 
-
 	virtual
 #ifdef __CUDACC__
-	__host__ __device__
+	__host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T postProcess(
-			T reduction
-			,int n,
-			int xOffset,
-			T *dx,
-			int incx,
-			T *extraParams,T *result) override {
+	T postProcess(T reduction, int n, int xOffset, T *dx, int incx,
+			T *extraParams, T *result) override {
 		return reduction;
 	}
 
 	virtual
 #ifdef __CUDACC__
-	inline    __host__ __device__
+	inline __host__ __device__
 #endif
 	~Norm1() {}
 };
 
-template <typename T>
-class Norm2 : public virtual functions::reduce::ReduceFunction<T> {
+template<typename T>
+class Norm2: public virtual functions::reduce::ReduceFunction<T> {
 public:
 	virtual
 #ifdef __CUDACC__
-	inline   __host__
+	inline __host__
+
 #endif
 	std::string name() override {
 		return std::string("norm1");
@@ -1119,68 +1111,70 @@ public:
 
 	virtual
 #ifdef __CUDACC__
-	inline    __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T merge(T old,T opOutput,T *extraParams) override {
+	T merge(T old, T opOutput, T *extraParams) override {
 		return opOutput + old;
 
 	}
 
 	virtual
 #ifdef __CUDACC__
-	inline    __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T update(T old,T opOutput,T *extraParams) override {
+	T update(T old, T opOutput, T *extraParams) override {
 		return opOutput + old;
 
 	}
 
-
 	virtual
 #ifdef __CUDACC__
-	inline    __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T op(T d1,T *extraParams) override {
+	T op(T d1, T *extraParams) override {
 		return d1 * d1;
 	}
 
-
 	virtual
 #ifdef __CUDACC__
-	inline    __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T postProcess(
-			T reduction
-			,int n,
-			int xOffset,
-			T *dx,
-			int incx,
-			T *extraParams,T *result) override {
+	T postProcess(T reduction, int n, int xOffset, T *dx, int incx,
+			T *extraParams, T *result) override {
 		return nd4j::math::nd4j_sqrt<T>(reduction);
 	}
 
 	virtual
 #ifdef __CUDACC__
-	inline    __host__ __device__
+	inline __host__ __device__
 #endif
-	~Norm2() {}
+	~Norm2() {
+	}
 };
 
-
-template <typename T>
-class NormMax : public virtual functions::reduce::ReduceFunction<T> {
+template<typename T>
+class NormMax: public virtual functions::reduce::ReduceFunction<T> {
 public:
 	virtual
 #ifdef __CUDACC__
-	inline    __host__
+	inline __host__
+
 #endif
 	std::string name() override {
 		return std::string("normmax");
@@ -1188,68 +1182,71 @@ public:
 
 	virtual
 #ifdef __CUDACC__
-	inline    __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T merge(T old,T opOutput,T *extraParams) override {
+	T merge(T old, T opOutput, T *extraParams) override {
 		return opOutput + old;
 
 	}
 
 	virtual
 #ifdef __CUDACC__
-	__host__ __device__
+	__host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T update(T old,T opOutput,T *extraParams) override {
-		return nd4j::math::nd4j_max<T>(nd4j::math::nd4j_abs<T>(old),nd4j::math::nd4j_abs<T>(opOutput));
+	T update(T old, T opOutput, T *extraParams) override {
+		return nd4j::math::nd4j_max<T>(nd4j::math::nd4j_abs<T>(old),
+				nd4j::math::nd4j_abs<T>(opOutput));
 
 	}
 	virtual
 #ifdef __CUDACC__
-	__host__ __device__
+	__host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T op(T d1,T *extraParams) override {
+	T op(T d1, T *extraParams) override {
 		return d1;
 	}
 
-
 	virtual
 #ifdef __CUDACC__
-	inline    __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T postProcess(
-			T reduction
-			,int n,
-			int xOffset,
-			T *dx,
-			int incx,
-			T *extraParams,T *result) override {
-		return nd4j::math::nd4j_max<T>(nd4j::math::nd4j_abs<T>(reduction),nd4j::math::nd4j_abs<T>(result[0]));
+	T postProcess(T reduction, int n, int xOffset, T *dx, int incx,
+			T *extraParams, T *result) override {
+		return nd4j::math::nd4j_max<T>(nd4j::math::nd4j_abs<T>(reduction),
+				nd4j::math::nd4j_abs<T>(result[0]));
 	}
 
 	virtual
 #ifdef __CUDACC__
-	inline    __host__ __device__
+	inline __host__ __device__
 #endif
-	~NormMax() {}
+	~NormMax() {
+	}
 };
 
-
-
-
-template <typename T>
-class StandardDeviation : public virtual functions::reduce::ReduceFunction<T> {
+template<typename T>
+class StandardDeviation: public virtual functions::reduce::ReduceFunction<T> {
 public:
 	virtual
 #ifdef __CUDACC__
-	inline      __host__
+	inline __host__
+
 #endif
 	std::string name() override {
 		return std::string("std");
@@ -1257,192 +1254,267 @@ public:
 
 	virtual
 #ifdef __CUDACC__
-	inline    __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T merge(T old,T opOutput,T *extraParams) override {
+	T merge(T old, T opOutput, T *extraParams) override {
 		return old + opOutput;
 
 	}
 	virtual
 #ifdef __CUDACC__
-	inline   __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
-#endif
 
-	T update(T old,T opOutput,T *extraParams) override {
+#endif
+	T update(T old, T opOutput, T *extraParams) override {
 		T mean = extraParams[2];
-		T curr = nd4j::math::nd4j_pow<T>(opOutput - mean,2.0);
+		T curr = nd4j::math::nd4j_pow<T>(opOutput - mean, 2.0);
 		return old + curr;
 
 	}
 
 	virtual
 #ifdef __CUDACC__
-	inline    __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T op(T d1,T *extraParams) override {
+	T op(T d1, T *extraParams) override {
 		return d1;
 	}
 
-
 	virtual
 #ifdef __CUDACC__
-	inline    __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T postProcess(
-			T reduction
-			,int n,
-			int xOffset,
-			T *dx,
-			int incx,
-			T *extraParams,T *result) override {
+	T postProcess(T reduction, int n, int xOffset, T *dx, int incx,
+			T *extraParams, T *result) override {
 		T bias = extraParams[1];
-		return  nd4j::math::nd4j_sqrt<T>((reduction - (nd4j::math::nd4j_pow<T>(bias,2.0) / n)) / (T) (n - 1.0));
-	}
-
-	virtual
-#ifdef __CUDACC__
-	inline  __host__ __device__
-#endif
-	~StandardDeviation() {}
-};
-
-
-
-template <typename T>
-class Variance : public virtual functions::reduce::ReduceFunction<T> {
-public:
-	virtual
-
-#ifdef __CUDACC__
-	inline   __host__
-#endif
-	std::string name() override {
-		return std::string("var");
-	}
-	virtual
-#ifdef __CUDACC__
-	inline  __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	T merge(T old,T opOutput,T *extraParams) override {
-		return old + opOutput;
-
-	}
-	virtual
-#ifdef __CUDACC__
-	inline   __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	T update(T old,T opOutput,T *extraParams) override {
-		T mean = extraParams[2];
-		T curr = nd4j::math::nd4j_pow<T>(opOutput - mean,2.0);
-		return old + curr;
-
-	}
-
-
-	virtual
-#ifdef __CUDACC__
-	inline    __host__ __device__
-
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	T op(T d1,T *extraParams) override {
-		return d1;
-	}
-
-
-	virtual
-#ifdef __CUDACC__
-	inline  __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	T postProcess(
-			T reduction
-			,int n,
-			int xOffset,
-			T *dx,
-			int incx,
-			T *extraParams,T *result) override {
-		T bias = extraParams[1];
-		return  (reduction - (nd4j::math::nd4j_pow<T>(bias,2.0) / n)) / (T) (n - 1.0);
-		;
+		return nd4j::math::nd4j_sqrt<T>(
+				(reduction - (nd4j::math::nd4j_pow<T>(bias, 2.0) / n))
+				/ (T) (n - 1.0));
 	}
 
 	virtual
 #ifdef __CUDACC__
 	inline __host__ __device__
 #endif
-	~Variance() {}
+	~StandardDeviation() {
+	}
+};
+
+template<typename T>
+class Variance: public virtual functions::reduce::ReduceFunction<T> {
+public:
+	virtual
+#ifdef __CUDACC__
+	inline __host__
+
+#endif
+	std::string name() override {
+		return std::string("var");
+	}
+	virtual
+#ifdef __CUDACC__
+	inline __host__  __device__
+
+#elif defined(__GNUC__)
+	__always_inline
+
+#endif
+	T merge(T old, T opOutput, T *extraParams) override {
+		return old + opOutput;
+
+	}
+	virtual
+#ifdef __CUDACC__
+	inline __host__  __device__
+
+#elif defined(__GNUC__)
+	__always_inline
+
+#endif
+	T update(T old, T opOutput, T *extraParams) override {
+		T mean = extraParams[2];
+		T curr = nd4j::math::nd4j_pow<T>(opOutput - mean, 2.0);
+		return old + curr;
+
+	}
+
+	virtual
+#ifdef __CUDACC__
+	inline __host__  __device__
+
+
+#elif defined(__GNUC__)
+	__always_inline
+
+#endif
+	T op(T d1, T *extraParams) override {
+		return d1;
+	}
+
+	virtual
+#ifdef __CUDACC__
+	inline __host__  __device__
+
+#elif defined(__GNUC__)
+	__always_inline
+
+#endif
+	T postProcess(T reduction, int n, int xOffset, T *dx, int incx,
+			T *extraParams, T *result) override {
+		T bias = extraParams[1];
+		return (reduction - (nd4j::math::nd4j_pow<T>(bias, 2.0) / n))
+				/ (T) (n - 1.0);;
+	}
+
+	virtual
+#ifdef __CUDACC__
+	inline __host__ __device__
+#endif
+	~Variance() {
+	}
 };
 
 }
 
+template<typename T>
+class ReduceOpFactory: public virtual functions::ops::OpFactory<T> {
 
-template <typename T>
-class ReduceOpFactory : public virtual functions::ops::OpFactory<T> {
 public:
-	ReduceOpFactory() {}
+#ifdef __CUDACC__
+	__device__ __host__
+#endif
+	ReduceOpFactory() {
+	}
 
-	virtual functions::reduce::ReduceFunction<T> * create(std::string name) {
-		if(name == "mean")
-			return new functions::reduce::ops::Mean<T>();
-		else if(name == "sum")
-			return new functions::reduce::ops::Sum<T>();
-		else if(name == "bias")
-			return new functions::reduce::ops::Bias<T>();
-		else if(name == "max")
-			return new functions::reduce::ops::Max<T>();
-		else if(name == "min")
-			return new functions::reduce::ops::Min<T>();
-		else if(name == "norm1")
-			return new functions::reduce::ops::Norm1<T>();
-		else if(name == "norm2")
-			return new functions::reduce::ops::Norm2<T>();
-		else if(name == "normmax")
-			return new functions::reduce::ops::NormMax<T>();
-		else if(name == "prod")
-			return new functions::reduce::ops::Prod<T>();
-		else if(name == "std")
-			return new functions::reduce::ops::StandardDeviation<T>();
-		else if(name == "var")
-			return new functions::reduce::ops::Variance<T>();
+#ifdef __CUDACC__
+	__device__ __host__
+#endif
 
-
+	virtual functions::reduce::ReduceFunction<T> * create(char *name) {
+		if (functions::ops::strcmp(name,"mean"))
+			return (functions::reduce::ops::Mean<T> *) malloc(sizeof(functions::reduce::ops::Mean<T>));
+		else if (functions::ops::strcmp(name,"sum"))
+			return (functions::reduce::ops::Sum<T> *) malloc(sizeof(functions::reduce::ops::Sum<T>));
+		else if (functions::ops::strcmp(name,"bias"))
+			return (functions::reduce::ops::Bias<T> *)  malloc(sizeof(functions::reduce::ops::Bias<T>));
+		else if (functions::ops::strcmp(name,"max"))
+			return (functions::reduce::ops::Max<T> *)  malloc(sizeof(functions::reduce::ops::Max<T>));
+		else if (functions::ops::strcmp(name,"min"))
+			return (functions::reduce::ops::Min<T> *) malloc(sizeof(functions::reduce::ops::Min<T>));
+		else if (functions::ops::strcmp(name,"norm1"))
+			return (functions::reduce::ops::Norm1<T> *) malloc(sizeof(functions::reduce::ops::Norm1<T>));
+		else if (functions::ops::strcmp(name,"norm2"))
+			return (functions::reduce::ops::Norm2<T> * ) malloc(sizeof(functions::reduce::ops::Norm2<T>));
+		else if (functions::ops::strcmp(name,"normmax"))
+			return (functions::reduce::ops::NormMax<T> *) malloc(sizeof(functions::reduce::ops::NormMax<T>));
+		else if (functions::ops::strcmp(name,"prod"))
+			return (functions::reduce::ops::Prod<T> *) malloc(sizeof(functions::reduce::ops::Prod<T>));
+		else if (functions::ops::strcmp(name,"std"))
+			return ( functions::reduce::ops::StandardDeviation<T> *) malloc(sizeof(functions::reduce::ops::StandardDeviation<T>));
+		else if (functions::ops::strcmp(name,"var"))
+			return (functions::reduce::ops::Variance<T> *) malloc(sizeof(functions::reduce::ops::Variance<T>));
 
 		return NULL;
 	}
-	virtual ~ReduceOpFactory() {}
+
+#ifdef __CUDACC__
+	__host__
+#endif
+	virtual functions::reduce::ReduceFunction<T> * create(std::string name) {
+		return create(name.c_str());
+	}
+
+#ifdef __CUDACC__
+	__device__ __host__
+#endif
+
+	virtual ~ReduceOpFactory() {
+	}
 };
 
 }
 
+}
+
+
+#ifdef __CUDACC__
+__constant__ functions::reduce::ReduceOpFactory<double> *reduceOpFactory;
+__constant__ functions::reduce::ReduceOpFactory<float> *reduceOpFactoryFloat;
 
 
 
 
+extern "C" __global__ void reduceDouble(
+		char *name,
+		int n,
+		double *dx,
+		int *xShapeInfo,
+		double *extraParams,
+		double *result,
+		int *resultShapeInfo,
+		int *gpuInformation,
+		int *dimension,
+		int dimensionLength,
+		int postProcessOrNot) {
+	functions::reduce::ReduceFunction<double> *reduceFunctionToInvoke = reduceOpFactory->create(name);
+	reduceFunctionToInvoke->transform(
+			n,
+			dx,
+			xShapeInfo
+			,extraParams,
+			result,
+			resultShapeInfo,
+			gpuInformation,
+			dimension,
+			dimensionLength,
+			postProcessOrNot);
+	free(reduceFunctionToInvoke);
+
+}
+
+extern "C" __global__ void reduceFloat(
+		char *name,
+		int n,
+		float *dx,
+		int *xShapeInfo,
+		float *extraParams,
+		float *result,
+		int *resultShapeInfo,
+		int *gpuInformation,
+		int *dimension,
+		int dimensionLength,
+		int postProcessOrNot) {
+	functions::reduce::ReduceFunction<float> *reduceFunctionToInvoke = reduceOpFactoryFloat->create(name);
+	reduceFunctionToInvoke->transform(
+			n,
+			dx,
+			xShapeInfo
+			,extraParams,
+			result,
+			resultShapeInfo,
+			gpuInformation,
+			dimension,
+			dimensionLength,
+			postProcessOrNot);
+	free(reduceFunctionToInvoke);
 }
 
 
 
-
-
-
-
-
-
-
-
+#endif
 

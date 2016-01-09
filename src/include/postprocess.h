@@ -9,9 +9,8 @@
 #define POSTPROCESS_H_
 
 namespace nd4j {
-    namespace functions {
-        namespace reduce {
-
+namespace functions {
+namespace reduce {
 
 /**
  * Post process n items
@@ -22,16 +21,15 @@ namespace nd4j {
  * @param extraParams
  * @param result
  */
-            template<typename T>
+template<typename T>
 #ifdef __CUDACC__
-            __device__
+__device__
 #endif
-            void postProcessLoop(int n, int xOffset, T *dx, int incx, T *extraParams, T *result);
+void postProcessLoop(int n, int xOffset, T *dx, int incx, T *extraParams,
+		T *result);
 
-
-        }
-    }
 }
-
+}
+}
 
 #endif /* POSTPROCESS_H_ */

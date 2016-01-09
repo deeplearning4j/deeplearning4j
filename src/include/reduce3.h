@@ -13,15 +13,17 @@ namespace functions {
 namespace reduce3 {
 
 template<typename T>
-class Reduce3 : public virtual functions::ops::Op<T> {
+class Reduce3: public virtual functions::ops::Op<T> {
 
 public:
 
 	virtual
 #ifdef __CUDACC__
-	__host__ __device__
+	__host__  __device__
+
 #endif
-	inline T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) = 0;
+	inline T postProcess(T reduction, int n, int xOffset, T *dx, int incx,
+			T *extraParams, T *result) = 0;
 
 	/**
 	 *
@@ -33,7 +35,8 @@ public:
 	//an op for the kernel
 	virtual
 #ifdef __CUDACC__
-	__host__ __device__
+	__host__  __device__
+
 #endif
 	inline T op(T d1, T d2, T *extraParams) = 0;
 
@@ -47,10 +50,10 @@ public:
 	 */
 	virtual
 #ifdef __CUDACC__
-	__host__ __device__
+	__host__  __device__
+
 #endif
 	inline T update(T old, T opOutput, T *extraParams) = 0;
-
 
 	/**
 	 *
@@ -61,10 +64,10 @@ public:
 	 */
 	virtual
 #ifdef __CUDACC__
-	__host__ __device__
-#endif
-	inline T merge(T old,T opOutput, T *extraParams) = 0;
+	__host__  __device__
 
+#endif
+	inline T merge(T old, T opOutput, T *extraParams) = 0;
 
 #ifdef __CUDACC__
 	/**
@@ -100,13 +103,13 @@ public:
 
 	/**
 
-            Perform a reduction
-            @param n the number of elements
-            @param xOffset the starting offset
-            @param dx the data to perform the reduction on
-            @param incx the increment on which to perform the reduction
-            @param extraParams extra parameters used for calculations
-            @param result where to store the result of the reduction
+	 Perform a reduction
+	 @param n the number of elements
+	 @param xOffset the starting offset
+	 @param dx the data to perform the reduction on
+	 @param incx the increment on which to perform the reduction
+	 @param extraParams extra parameters used for calculations
+	 @param result where to store the result of the reduction
 	 */
 	virtual __device__ void transform(
 			int n, T *dx, int *xShapeInfo,
@@ -120,9 +123,7 @@ public:
 		 */
 		int tid = threadIdx.x;
 
-
 		__shared__ volatile int resultScalar;
-
 
 		__shared__ int *xShape;
 		__shared__ int xRank;
@@ -132,8 +133,6 @@ public:
 		__shared__ int yElementWiseStride;
 		__shared__ int yOffset;
 
-
-
 		//shared memory space for storing intermediate results
 		SharedMemory <T> val;
 		volatile T *sPartials = val.getPointer();
@@ -142,11 +141,9 @@ public:
 			sPartials[i] = extraParams[0];
 		__syncthreads();
 
-
 		sPartials[tid] = extraParams[0];
 		sPartials[(1 + tid) * 2] = extraParams[0];
 		__syncthreads();
-
 
 		//starting index for tad
 		__shared__ volatile int currentYBlockOffset;
@@ -155,9 +152,6 @@ public:
 		//length for the tad
 		__shared__ volatile int yLength;
 
-
-
-
 		//starting index for tad
 		__shared__ volatile int currentBlockOffset;
 		//ending index for tad
@@ -165,13 +159,11 @@ public:
 		//length for the tad
 		__shared__ volatile int xLength;
 
-
 		__shared__ volatile int resultLength;
 
 		__shared__ volatile int tadsForBlock;
 
 		__shared__ volatile int elementsPerThread;
-
 
 		//only compute the tad indexes once
 		__shared__
@@ -185,7 +177,6 @@ public:
 
 		__shared__
 		T startValue;
-
 
 		T reduction = extraParams[0];
 		if (tid == 0) {
@@ -205,7 +196,6 @@ public:
 			yOffset = shape::offset(yShapeInfo);
 		}
 
-
 		__syncthreads();
 
 		T curr, currY;
@@ -217,7 +207,6 @@ public:
 			unsigned int gridSize = blockDim.x * gridDim.x * xElementWiseStride;
 			unsigned int gridSizeY = blockDim.x * gridDim.x * yElementWiseStride;
 
-
 			// we reduce multiple elements per thread.  The number is determined by the
 			// number of active thread blocks (via gridDim).  More blocks will result
 			// in a larger gridSize and therefore fewer elements per thread
@@ -228,7 +217,6 @@ public:
 				i += gridSize;
 				j += gridSizeY;
 			}
-
 
 			// each thread puts its local sum into shared memory
 			sPartials[tid] = reduction;
@@ -254,7 +242,6 @@ public:
 				yTadInfo = shape::tadInfo(yShapeInfo, dimension, dimensionLength);
 				resultTadInfo = shape::tadInfo(resultShapeInfo, dimension, dimensionLength);
 
-
 				resultScalar = shape::isScalar(resultShapeInfo);
 				currentBlockOffset = offset(blockIdx.x, xShapeInfo, dimensionLength, xTadInfo);
 				endingOffset = offset(blockIdx.x + 1, xShapeInfo, dimensionLength, xTadInfo);
@@ -266,15 +253,11 @@ public:
 				xOffset = shape::offset(xShapeInfo);
 				xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 
-
-
 				yOffset = shape::offset(yShapeInfo);
 				yElementWiseStride = shape::elementWiseStride(yShapeInfo);
 
-
 				currentYBlockOffset = offset(blockIdx.x, yShapeInfo, dimensionLength, yTadInfo);
 				endingYOffset = offset(blockIdx.x + 1, yShapeInfo, dimensionLength, yTadInfo);
-
 
 				//reduction on whole buffer
 				if (resultScalar)
@@ -338,7 +321,6 @@ public:
 							sPartials[(1 + tid) * 2] = yVal;
 						}
 
-
 					}
 				}
 				else {
@@ -371,9 +353,7 @@ public:
 				}
 			}
 
-
 		}
-
 
 		if (resultScalar && tid == 0) {
 			shape::freePermuteInfo(xTadInfo);
@@ -381,11 +361,11 @@ public:
 			shape::freePermuteInfo(resultTadInfo);
 		}
 
-
 	}
 #endif
 
-	void exec(T *x,int *xShapeInfo,T *extraParams,T *y,int *yShapeInfo,T *result,int *resultShapeInfo) {
+	void exec(T *x, int *xShapeInfo, T *extraParams, T *y, int *yShapeInfo,
+			T *result, int *resultShapeInfo) {
 		T startingVal = extraParams[0];
 		int length = shape::length(xShapeInfo);
 		int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
@@ -394,58 +374,74 @@ public:
 		if (xElementWiseStride == 1 && resultElementWiseStride == 1) {
 #pragma omp simd
 			for (int i = 0; i < length; i++) {
-				startingVal= update(startingVal, op(x[i], y[i],extraParams), extraParams);
+				startingVal = update(startingVal, op(x[i], y[i], extraParams),
+						extraParams);
 			}
 
-			result[0] = postProcess(startingVal,length,shape::offset(xShapeInfo),x,shape::elementWiseStride(xShapeInfo),extraParams,result);
+			result[0] = postProcess(startingVal, length,
+					shape::offset(xShapeInfo), x,
+					shape::elementWiseStride(xShapeInfo), extraParams, result);
 
-		}
-		else {
+		} else {
 #pragma omp simd
 
 			for (int i = 0; i < length; i++) {
-				startingVal = update(startingVal, op(x[i * xElementWiseStride],y[i * yElementWiseStride],extraParams), extraParams);
+				startingVal = update(startingVal,
+						op(x[i * xElementWiseStride], y[i * yElementWiseStride],
+								extraParams), extraParams);
 			}
 
-			result[0] = postProcess(startingVal,length,shape::offset(xShapeInfo),x,shape::elementWiseStride(xShapeInfo),extraParams,result);
+			result[0] = postProcess(startingVal, length,
+					shape::offset(xShapeInfo), x,
+					shape::elementWiseStride(xShapeInfo), extraParams, result);
 
 		}
 
 	}
 
-
-	void exec(T *x,int *xShapeInfo,T *extraParams,T *y,int *yShapeInfo,T *result,int *resultShapeInfoBuffer,int *dimension,int dimensionLength) {
-		shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo,dimension,dimensionLength);
+	void exec(T *x, int *xShapeInfo, T *extraParams, T *y, int *yShapeInfo,
+			T *result, int *resultShapeInfoBuffer, int *dimension,
+			int dimensionLength) {
+		shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo,
+				dimension, dimensionLength);
 		int resultLength = shape::length(resultShapeInfoBuffer);
-		int tadElementWiseStride = shape::computeElementWiseStride(tadPermuteInfo.xRank,tadPermuteInfo.permutedShape,tadPermuteInfo.permutedStrides,shape::order(xShapeInfo) == 'f');
+		int tadElementWiseStride = shape::computeElementWiseStride(
+				tadPermuteInfo.xRank, tadPermuteInfo.permutedShape,
+				tadPermuteInfo.permutedStrides,
+				shape::order(xShapeInfo) == 'f');
 		int tadLength = tadPermuteInfo.tensorShapeProd;
 #pragma omp simd
-		for(int i = 0; i < shape::length(xShapeInfo); i++) {
-			int reductionIndex = shape::reductionIndexForLinear(i,tadElementWiseStride,tadLength,resultLength,resultLength);
-			result[reductionIndex] = update(result[reductionIndex],op(x[i],y[i],extraParams),extraParams);
+		for (int i = 0; i < shape::length(xShapeInfo); i++) {
+			int reductionIndex = shape::reductionIndexForLinear(i,
+					tadElementWiseStride, tadLength, resultLength,
+					resultLength);
+			result[reductionIndex] = update(result[reductionIndex],
+					op(x[i], y[i], extraParams), extraParams);
 		}
 #pragma omp simd
-		for(int i = 0; i < resultLength; i++) {
-			result[i] = postProcess(result[i],tadLength,shape::offset(xShapeInfo),x,shape::elementWiseStride(xShapeInfo),extraParams,result);
+		for (int i = 0; i < resultLength; i++) {
+			result[i] = postProcess(result[i], tadLength,
+					shape::offset(xShapeInfo), x,
+					shape::elementWiseStride(xShapeInfo), extraParams, result);
 		}
 	}
 
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	virtual ~Reduce3() {}
-
+	virtual ~Reduce3() {
+	}
 
 };
 
-
 namespace ops {
-template <typename T>
-class CosineSimilarity : public virtual Reduce3<T> {
+template<typename T>
+class CosineSimilarity: public virtual Reduce3<T> {
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	inline T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) {
+	inline T postProcess(T reduction, int n, int xOffset, T *dx, int incx,
+			T *extraParams, T *result) {
 		return reduction / (extraParams[1] * extraParams[2]);
 	}
 	/**
@@ -458,7 +454,8 @@ class CosineSimilarity : public virtual Reduce3<T> {
 	//an op for the kernel
 	virtual
 #ifdef __CUDACC__
-	__host__ __device__
+	__host__  __device__
+
 #endif
 	inline T op(T d1, T d2, T *extraParams) {
 		return d1 * d2;
@@ -474,12 +471,12 @@ class CosineSimilarity : public virtual Reduce3<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	__host__ __device__
+	__host__  __device__
+
 #endif
 	inline T update(T old, T opOutput, T *extraParams) {
 		return old + opOutput;
 	}
-
 
 	/**
 	 *
@@ -490,19 +487,20 @@ class CosineSimilarity : public virtual Reduce3<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	__host__ __device__
-#endif
-	inline T merge(T old,T opOutput, T *extraParams) {
-		return update(old,opOutput,extraParams);
-	}
+	__host__  __device__
 
+#endif
+	inline T merge(T old, T opOutput, T *extraParams) {
+		return update(old, opOutput, extraParams);
+	}
 
 	/** Name of the op
 	 * @return the name of the operation
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline    __host__
+	inline __host__
+
 #endif
 	std::string name() {
 		return std::string("cosinesimilarity_strided");
@@ -510,16 +508,17 @@ class CosineSimilarity : public virtual Reduce3<T> {
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	virtual ~CosineSimilarity() {}
+	virtual ~CosineSimilarity() {
+	}
 };
 
-
-template <typename T>
-class EuclideanDistance : public virtual Reduce3<T> {
+template<typename T>
+class EuclideanDistance: public virtual Reduce3<T> {
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	inline T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) {
+	inline T postProcess(T reduction, int n, int xOffset, T *dx, int incx,
+			T *extraParams, T *result) {
 		return nd4j::math::nd4j_sqrt<T>(reduction);
 	}
 	/**
@@ -532,7 +531,8 @@ class EuclideanDistance : public virtual Reduce3<T> {
 	//an op for the kernel
 	virtual
 #ifdef __CUDACC__
-	__host__ __device__
+	__host__  __device__
+
 #endif
 	inline T op(T d1, T d2, T *extraParams) {
 		return d1 - d2;
@@ -548,13 +548,13 @@ class EuclideanDistance : public virtual Reduce3<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	__host__ __device__
+	__host__  __device__
+
 #endif
 	inline T update(T old, T opOutput, T *extraParams) {
-		T squared = nd4j::math::nd4j_pow(opOutput,2.0);
+		T squared = nd4j::math::nd4j_pow(opOutput, 2.0);
 		return squared + old;
 	}
-
 
 	/**
 	 *
@@ -565,19 +565,20 @@ class EuclideanDistance : public virtual Reduce3<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	__host__ __device__
-#endif
-	inline T merge(T old,T opOutput, T *extraParams) {
-		return update(old,opOutput,extraParams);
-	}
+	__host__  __device__
 
+#endif
+	inline T merge(T old, T opOutput, T *extraParams) {
+		return update(old, opOutput, extraParams);
+	}
 
 	/** Name of the op
 	 * @return the name of the operation
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline     __host__
+	inline __host__
+
 #endif
 	std::string name() {
 		return std::string("euclidean_strided");
@@ -585,15 +586,17 @@ class EuclideanDistance : public virtual Reduce3<T> {
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	virtual ~EuclideanDistance() {}
+	virtual ~EuclideanDistance() {
+	}
 };
 
-template <typename T>
-class ManhattanDistance : public virtual Reduce3<T> {
+template<typename T>
+class ManhattanDistance: public virtual Reduce3<T> {
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	inline T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) {
+	inline T postProcess(T reduction, int n, int xOffset, T *dx, int incx,
+			T *extraParams, T *result) {
 		return reduction / extraParams[0] / extraParams[1];
 	}
 	/**
@@ -606,7 +609,8 @@ class ManhattanDistance : public virtual Reduce3<T> {
 	//an op for the kernel
 	virtual
 #ifdef __CUDACC__
-	__host__ __device__
+	__host__  __device__
+
 #endif
 	inline T op(T d1, T d2, T *extraParams) {
 		return d1 - d2;
@@ -622,12 +626,12 @@ class ManhattanDistance : public virtual Reduce3<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	__host__ __device__
+	__host__  __device__
+
 #endif
 	inline T update(T old, T opOutput, T *extraParams) {
-		return nd4j::math::nd4j_pow<T>(old,2) + opOutput;
+		return nd4j::math::nd4j_pow<T>(old, 2) + opOutput;
 	}
-
 
 	/**
 	 *
@@ -638,19 +642,20 @@ class ManhattanDistance : public virtual Reduce3<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	__host__ __device__
-#endif
-	inline T merge(T old,T opOutput, T *extraParams) {
-		return update(old,opOutput,extraParams);
-	}
+	__host__  __device__
 
+#endif
+	inline T merge(T old, T opOutput, T *extraParams) {
+		return update(old, opOutput, extraParams);
+	}
 
 	/** Name of the op
 	 * @return the name of the operation
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline    __host__
+	inline __host__
+
 #endif
 	std::string name() {
 		return std::string("manhattan_strided");
@@ -658,28 +663,74 @@ class ManhattanDistance : public virtual Reduce3<T> {
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	virtual ~ManhattanDistance() {}
+	virtual ~ManhattanDistance() {
+	}
 };
 
 }
 
-template <typename T>
+template<typename T>
 class Reduce3OpFactory {
 public:
-	Reduce3OpFactory() {}
+	Reduce3OpFactory() {
+	}
+
+#ifdef __CUDACC__
+	__host__
+#endif
 	Reduce3<T> * getOp(std::string name) {
-		if(name == "manhattan_strided")
-			return new functions::reduce3::ops::ManhattanDistance<T>();
-		else if(name == "euclidean_strided")
-			return new functions::reduce3::ops::EuclideanDistance<T>();
-		else if(name == "cosinesimilarity_strided")
-			return new functions::reduce3::ops::CosineSimilarity<T>();
+		return getOp(name.c_str());
+	}
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	Reduce3<T> * getOp(char * name) {
+		if (functions::ops::strcmp(name,"manhattan_strided"))
+			return (functions::reduce3::ops::ManhattanDistance<T> *) malloc(sizeof(functions::reduce3::ops::ManhattanDistance<T>));
+		else if (functions::ops::strcmp(name,"euclidean_strided"))
+			return (functions::reduce3::ops::EuclideanDistance<T> *) malloc(sizeof(functions::reduce3::ops::EuclideanDistance<T>));
+		else if (functions::ops::strcmp(name,"cosinesimilarity_strided"))
+			return (functions::reduce3::ops::CosineSimilarity<T> *) malloc(sizeof(functions::reduce3::ops::CosineSimilarity<T>));
 		return NULL;
 	}
 };
 
 }
 }
+
+#ifdef __CUDACC__
+__constant__ functions::reduce3::Reduce3OpFactory<double> *reduce3OpFactory;
+__constant__ functions::reduce3::Reduce3OpFactory<float> *reduce3OpFactoryFloat;
+extern "C" __global__ void reduce3Double(
+		char *name,
+		int n, double *dx, int *xShapeInfo,
+		double *dy,
+		int *yShapeInfo, double *extraParams, double *result,
+		int *resultShapeInfo, int *gpuInformation,
+		int *dimension,
+		int dimensionLength, int postProcessOrNot) {
+	functions::reduce3::Reduce3<double> * op = reduce3OpFactory->getOp(name);
+	op->transform(n,dx,xShapeInfo,dy,yShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
+	free(op);
+
+}
+extern "C" __global__ void reduce3Float(
+		char *name,
+		int n, float *dx, int *xShapeInfo,
+		float *dy,
+		int *yShapeInfo, float *extraParams,
+		float *result,
+		int *resultShapeInfo,
+		int *gpuInformation,
+		int *dimension,
+		int dimensionLength, int postProcessOrNot) {
+	functions::reduce3::Reduce3<float> * op = reduce3OpFactoryFloat->getOp(name);
+	op->transform(n,dx,xShapeInfo,dy,yShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
+	free(op);
+}
+
+#endif
+
 
 
 #endif /* REDUCE3_H_ */

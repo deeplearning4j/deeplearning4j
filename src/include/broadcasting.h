@@ -17,7 +17,7 @@ namespace functions {
 namespace broadcast {
 
 template<typename T>
-class Broadcast : public functions::ops::Op<T> {
+class Broadcast: public functions::ops::Op<T> {
 public:
 
 	/**
@@ -27,13 +27,14 @@ public:
 	 * @return
 	 */
 	virtual
-
 #ifdef __CUDACC__
-	inline __device__ __host__
+	inline __device__  __host__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T op(T d1,T d2) = 0;
+	T op(T d1, T d2) = 0;
 	/**
 	 *
 	 * @param d1
@@ -41,9 +42,11 @@ public:
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline   __device__ __host__
+	inline __device__  __host__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
 	T op(T d1) = 0;
 
@@ -54,13 +57,10 @@ public:
 			int dimensionLength,
 			int *gpuInformation) {
 
-
 		int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 		int xOffset = shape::offset(xShapeInfo);
 		int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
 		int yOffset = shape::offset(yShapeInfo);
-
-
 
 		//length for the tad
 		int yLength = shape::length(yShapeInfo);
@@ -80,14 +80,12 @@ public:
 	}
 #endif
 
-	virtual void exec(T *x, int *xShapeInfo, T *y, int *yShapeInfo, T *result, int *resultShapeInfo,
-			int *dimension,
-			int dimensionLength) {
+	virtual void exec(T *x, int *xShapeInfo, T *y, int *yShapeInfo, T *result,
+			int *resultShapeInfo, int *dimension, int dimensionLength) {
 
 		int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 		int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
 		int yOffset = shape::offset(yShapeInfo);
-
 
 		//length for the tad
 		int yLength = shape::length(yShapeInfo);
@@ -95,19 +93,22 @@ public:
 		int xLength = shape::length(xShapeInfo);
 
 		int resultLength = shape::length(resultShapeInfo);
-		if(xElementWiseStride == 1 && yElementWiseStride == 1) {
+		if (xElementWiseStride == 1 && yElementWiseStride == 1) {
 #pragma omp simd
 			for (int i = 0; i < xLength; i++) {
-				int yOffset2 = yOffset + ((i / xElementWiseStride) % yLength) * yElementWiseStride;
+				int yOffset2 = yOffset
+						+ ((i / xElementWiseStride) % yLength)
+						* yElementWiseStride;
 				if (i < resultLength)
 					result[i] = op(x[i], y[yOffset2]);
 
 			}
-		}
-		else {
+		} else {
 #pragma omp simd
 			for (int i = 0; i < xLength; i++) {
-				int yOffset2 = yOffset + ((i / xElementWiseStride) % yLength) * yElementWiseStride;
+				int yOffset2 = yOffset
+						+ ((i / xElementWiseStride) % yLength)
+						* yElementWiseStride;
 				if (i < resultLength)
 					result[i] = op(x[i], y[yOffset2]);
 
@@ -116,24 +117,23 @@ public:
 
 	}
 
-
-
-
 #ifdef __CUDACC__
 	inline __host__ __device__
 #elif defined(__GNUC__)
 	__always_inline
 #endif
-	virtual ~Broadcast() {}
+	virtual ~Broadcast() {
+	}
 
 };
 
 namespace ops {
-template <typename T>
-class Add : public virtual functions::broadcast::Broadcast<T> {
+template<typename T>
+class Add: public virtual functions::broadcast::Broadcast<T> {
 	virtual
 #ifdef __CUDACC__
 	__host__
+
 #endif
 	std::string name() override {
 		return std::string("add");
@@ -147,11 +147,13 @@ class Add : public virtual functions::broadcast::Broadcast<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline    __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T op(T d1,T d2)  {
+	T op(T d1, T d2) {
 		return d1 + d2;
 	}
 	/**
@@ -161,9 +163,11 @@ class Add : public virtual functions::broadcast::Broadcast<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
 	T op(T d1) {
 		return d1;
@@ -173,16 +177,17 @@ class Add : public virtual functions::broadcast::Broadcast<T> {
 #elif defined(__GNUC__)
 	__always_inline
 #endif
-	virtual ~Add() {}
+	virtual ~Add() {
+	}
 };
 
-template <typename T>
-class Copy : public virtual functions::broadcast::Broadcast<T> {
+template<typename T>
+class Copy: public virtual functions::broadcast::Broadcast<T> {
 	virtual
 #ifdef __CUDACC__
 	__host__
-#endif
 
+#endif
 	std::string name() override {
 		return std::string("copy");
 	}
@@ -195,11 +200,13 @@ class Copy : public virtual functions::broadcast::Broadcast<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	__host__ __device__
+	__host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T op(T d1,T d2)  {
+	T op(T d1, T d2) {
 		return d2;
 	}
 	/**
@@ -209,9 +216,11 @@ class Copy : public virtual functions::broadcast::Broadcast<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
 	T op(T d1) {
 		return d1;
@@ -221,15 +230,16 @@ class Copy : public virtual functions::broadcast::Broadcast<T> {
 #elif defined(__GNUC__)
 	__always_inline
 #endif
-	virtual ~Copy() {}
+	virtual ~Copy() {
+	}
 };
 
-
-template <typename T>
-class Divide : public virtual functions::broadcast::Broadcast<T> {
+template<typename T>
+class Divide: public virtual functions::broadcast::Broadcast<T> {
 	virtual
 #ifdef __CUDACC__
 	inline __host__
+
 #endif
 	std::string name() override {
 		return std::string("div");
@@ -243,11 +253,13 @@ class Divide : public virtual functions::broadcast::Broadcast<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline  __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T op(T d1,T d2)  {
+	T op(T d1, T d2) {
 		return d1 / d2;
 	}
 	/**
@@ -257,9 +269,11 @@ class Divide : public virtual functions::broadcast::Broadcast<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
 	T op(T d1) {
 		return d1;
@@ -269,14 +283,16 @@ class Divide : public virtual functions::broadcast::Broadcast<T> {
 #elif defined(__GNUC__)
 	__always_inline
 #endif
-	virtual ~Divide() {}
+	virtual ~Divide() {
+	}
 };
 
-template <typename T>
-class Multiply : public virtual functions::broadcast::Broadcast<T> {
+template<typename T>
+class Multiply: public virtual functions::broadcast::Broadcast<T> {
 	virtual
 #ifdef __CUDACC__
-	inline   __host__
+	inline __host__
+
 #endif
 	std::string name() override {
 		return std::string("mul");
@@ -290,11 +306,13 @@ class Multiply : public virtual functions::broadcast::Broadcast<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline   __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T op(T d1,T d2)  {
+	T op(T d1, T d2) {
 		return d1 * d2;
 	}
 	/**
@@ -304,9 +322,11 @@ class Multiply : public virtual functions::broadcast::Broadcast<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
 	T op(T d1) {
 		return d1;
@@ -316,15 +336,16 @@ class Multiply : public virtual functions::broadcast::Broadcast<T> {
 #elif defined(__GNUC__)
 	__always_inline
 #endif
-	virtual ~Multiply() {}
+	virtual ~Multiply() {
+	}
 };
 
-
-template <typename T>
-class ReverseDivide : public virtual functions::broadcast::Broadcast<T> {
+template<typename T>
+class ReverseDivide: public virtual functions::broadcast::Broadcast<T> {
 	virtual
 #ifdef __CUDACC__
 	inline __host__
+
 #endif
 	std::string name() override {
 		return std::string("rdiv");
@@ -338,11 +359,13 @@ class ReverseDivide : public virtual functions::broadcast::Broadcast<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T op(T d1,T d2)  {
+	T op(T d1, T d2) {
 		return d2 / d1;
 	}
 	/**
@@ -352,9 +375,11 @@ class ReverseDivide : public virtual functions::broadcast::Broadcast<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
 	T op(T d1) {
 		return d1;
@@ -364,15 +389,16 @@ class ReverseDivide : public virtual functions::broadcast::Broadcast<T> {
 #elif defined(__GNUC__)
 	__always_inline
 #endif
-	virtual ~ReverseDivide() {}
+	virtual ~ReverseDivide() {
+	}
 };
 
-
-template <typename T>
-class ReverseSubtract : public virtual functions::broadcast::Broadcast<T> {
+template<typename T>
+class ReverseSubtract: public virtual functions::broadcast::Broadcast<T> {
 	virtual
 #ifdef __CUDACC__
-	inline  __host__
+	inline __host__
+
 #endif
 	std::string name() override {
 		return std::string("rsub");
@@ -386,11 +412,13 @@ class ReverseSubtract : public virtual functions::broadcast::Broadcast<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T op(T d1,T d2)  {
+	T op(T d1, T d2) {
 		return d2 - d1;
 	}
 	/**
@@ -400,9 +428,11 @@ class ReverseSubtract : public virtual functions::broadcast::Broadcast<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
 	T op(T d1) {
 		return d1;
@@ -412,17 +442,17 @@ class ReverseSubtract : public virtual functions::broadcast::Broadcast<T> {
 #elif defined(__GNUC__)
 	__always_inline
 #endif
-	virtual ~ReverseSubtract() {}
+	virtual ~ReverseSubtract() {
+	}
 };
 
-
-template <typename T>
-class Subtract : public virtual functions::broadcast::Broadcast<T> {
+template<typename T>
+class Subtract: public virtual functions::broadcast::Broadcast<T> {
 	virtual
 #ifdef __CUDACC__
 	inline __host__
-#endif
 
+#endif
 	std::string name() override {
 		return std::string("sub");
 	}
@@ -435,11 +465,13 @@ class Subtract : public virtual functions::broadcast::Broadcast<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	T op(T d1,T d2)  {
+	T op(T d1, T d2) {
 		return d1 - d2;
 	}
 	/**
@@ -449,9 +481,11 @@ class Subtract : public virtual functions::broadcast::Broadcast<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
 	T op(T d1) {
 		return d1;
@@ -461,37 +495,43 @@ class Subtract : public virtual functions::broadcast::Broadcast<T> {
 #elif defined(__GNUC__)
 	__always_inline
 #endif
-	virtual ~Subtract() {}
+	virtual ~Subtract() {
+	}
 };
 }
 
-
-template <typename T>
+template<typename T>
 class BroadcastOpFactory {
 public:
-	BroadcastOpFactory() {}
+	BroadcastOpFactory() {
+	}
+#ifdef __CUDACC__
+	__host__
+#endif
 	Broadcast<T> * getOp(std::string name) {
-		if(name == "add_strided") {
-			return new functions::broadcast::ops::Add<T>();
+		return getOp(name.c_str());
 
-		}
-		else if(name == "sub_strided") {
-			return new functions::broadcast::ops::Subtract<T>();
-		}
-		else if(name == "mul_strided") {
-			return new functions::broadcast::ops::Multiply<T>();
-		}
-		else if(name == "div_strided") {
-			return new functions::broadcast::ops::Divide<T>();
-		}
-		else if(name == "rdiv_strided") {
-			return new functions::broadcast::ops::ReverseDivide<T>();
-		}
-		else if(name == "rsub_strided") {
-			return new functions::broadcast::ops::ReverseSubtract<T>();
-		}
-		else if(name == "copy_strided") {
-			return new functions::broadcast::ops::Copy<T>();
+	}
+
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	Broadcast<T> * getOp(char *name) {
+		if (functions::ops::strcmp(name,"add_strided")) {
+			return (functions::broadcast::ops::Add<T> *) malloc(sizeof(functions::broadcast::ops::Add<T>));
+
+		} else if (functions::ops::strcmp(name,"sub_strided")) {
+			return (functions::broadcast::ops::Subtract<T> *) malloc(sizeof(functions::broadcast::ops::Subtract<T>));
+		} else if (functions::ops::strcmp(name,"mul_strided")) {
+			return ( functions::broadcast::ops::Multiply<T> *) malloc(sizeof(functions::broadcast::ops::Multiply<T>));
+		} else if (functions::ops::strcmp(name,"div_strided")) {
+			return (functions::broadcast::ops::Divide<T>*) malloc(sizeof(functions::broadcast::ops::Divide<T>));
+		} else if (functions::ops::strcmp(name,"rdiv_strided")) {
+			return (functions::broadcast::ops::ReverseDivide<T> *) malloc(sizeof(functions::broadcast::ops::ReverseDivide<T>));
+		} else if (functions::ops::strcmp(name,"rsub_strided")) {
+			return (functions::broadcast::ops::ReverseSubtract<T> *) malloc(sizeof(functions::broadcast::ops::ReverseSubtract<T>));
+		} else if (functions::ops::strcmp(name,"copy_strided")) {
+			return (functions::broadcast::ops::Copy<T> *) malloc(sizeof(functions::broadcast::ops::Copy<T>));
 		}
 
 		return NULL;
@@ -502,6 +542,40 @@ public:
 
 }
 }
+
+#ifdef __CUDACC__
+
+__constant__ functions::broadcast::BroadcastOpFactory<double> *broadcastDoubleFactory;
+__constant__ functions::broadcast::BroadcastOpFactory<float> *broadcastFloatFactory;
+
+extern "C" __global__ void broadcastDouble(
+		char *name,
+		double *x, int *xShapeInfo,
+		double *y, int *yShapeInfo,
+		double *result, int *resultShapeInfo,
+		int *dimension,
+		int dimensionLength,
+		int *gpuInformation) {
+	functions::broadcast::Broadcast<double> *op = broadcastDoubleFactory->getOp(name);
+	op->transform(x,xShapeInfo,y,yShapeInfo,result,resultShapeInfo,dimension,dimensionLength,gpuInformation);
+	free(op);
+}
+
+extern "C" __global__ void broadcastFloat(
+		char *name,
+		float *x, int *xShapeInfo,
+		float *y, int *yShapeInfo,
+		float *result, int *resultShapeInfo,
+		int *dimension,
+		int dimensionLength,
+		int *gpuInformation) {
+	functions::broadcast::Broadcast<float> *op = broadcastFloatFactory->getOp(name);
+	op->transform(x,xShapeInfo,y,yShapeInfo,result,resultShapeInfo,dimension,dimensionLength,gpuInformation);
+	free(op);
+
+}
+
+#endif
 
 
 

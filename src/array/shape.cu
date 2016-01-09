@@ -15,11 +15,6 @@
 
 namespace shape {
 
-
-
 }
 #endif /* BROADCASTING_H_ */
-
-
-
 

@@ -8,7 +8,6 @@
 #ifndef SEMAPHORE_H_
 #define SEMAPHORE_H_
 
-
 /*
  *
  *
@@ -57,15 +56,14 @@
 
 class CudaSpinLock {
 public:
-    CudaSpinLock(int *p);
+	CudaSpinLock(int *p);
 
-    void acquire();
+	void acquire();
 
-    void release();
+	void release();
 
 private:
-    int *m_p;
+	int *m_p;
 };
-
 
 #endif /* SEMAPHORE_H_ */

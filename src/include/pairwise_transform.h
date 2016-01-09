@@ -14,8 +14,8 @@ namespace pairwise_transforms {
 #define MIN 1e-12
 
 template<typename T>
-class PairWiseTransform : public virtual functions::ops::Op<T> {
-
+class PairWiseTransform: public virtual functions::ops::Op<T> {
+public:
 	virtual
 #ifdef __CUDACC__
 	inline __host__ __device__
@@ -97,19 +97,19 @@ class PairWiseTransform : public virtual functions::ops::Op<T> {
 
 #endif
 public:
-	virtual void exec(T *dx, int xStride, T *y, int yStride, T *result, int resultStride, T *extraParams,
-			int n) {
+	virtual void exec(T *dx, int xStride, T *y, int yStride, T *result,
+			int resultStride, T *extraParams, int n) {
 		if (xStride == 1 && yStride == 1 && resultStride == 1) {
 #pragma omp simd
-for (int i = 0; i < n; i++) {
-	result[i] = op(dx[i], y[i], extraParams);
-}
+			for (int i = 0; i < n; i++) {
+				result[i] = op(dx[i], y[i], extraParams);
+			}
 
-		}
-		else {
+		} else {
 #pragma omp simd
 			for (int i = 0; i < n; i++) {
-				result[i * resultStride] = op(dx[i * resultStride], y[i * yStride], extraParams);
+				result[i * resultStride] = op(dx[i * resultStride],
+						y[i * yStride], extraParams);
 			}
 		}
 	}
@@ -117,14 +117,16 @@ for (int i = 0; i < n; i++) {
 	inline __host__ __device__
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	virtual ~PairWiseTransform() { }
+	virtual ~PairWiseTransform() {
+	}
 
 };
 
 namespace ops {
 template<typename T>
-class Add : public virtual PairWiseTransform<T> {
+class Add: public virtual PairWiseTransform<T> {
 
 	/**
 	 * Name of the op
@@ -133,12 +135,11 @@ class Add : public virtual PairWiseTransform<T> {
 	virtual
 #ifdef __CUDACC__
 	inline __host__
-#endif
 
+#endif
 	std::string name() {
 		return std::string("add_strided");
 	}
-
 
 	virtual
 #ifdef __CUDACC__
@@ -163,12 +164,14 @@ class Add : public virtual PairWiseTransform<T> {
 	inline __host__ __device__
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	virtual ~Add() { }
+	virtual ~Add() {
+	}
 };
 
 template<typename T>
-class Copy : public virtual PairWiseTransform<T> {
+class Copy: public virtual PairWiseTransform<T> {
 
 	/**
 	 * Name of the op
@@ -177,11 +180,11 @@ class Copy : public virtual PairWiseTransform<T> {
 	virtual
 #ifdef __CUDACC__
 	inline __host__
+
 #endif
 	std::string name() {
 		return std::string("copy_strided");
 	}
-
 
 	virtual
 #ifdef __CUDACC__
@@ -206,12 +209,14 @@ class Copy : public virtual PairWiseTransform<T> {
 	inline __host__ __device__
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	virtual ~Copy() { }
+	virtual ~Copy() {
+	}
 };
 
 template<typename T>
-class Divide : public virtual PairWiseTransform<T> {
+class Divide: public virtual PairWiseTransform<T> {
 
 	/**
 	 * Name of the op
@@ -220,17 +225,16 @@ class Divide : public virtual PairWiseTransform<T> {
 	virtual
 #ifdef __CUDACC__
 	__host__
-#endif
 
+#endif
 	std::string name() {
 
 		return std::string("div_strided");
 	}
 
-
 	virtual
 #ifdef __CUDACC__
-	inline  __host__ __device__
+	inline __host__ __device__
 #elif defined(__GNUC__)
 	__always_inline
 #endif
@@ -251,12 +255,14 @@ class Divide : public virtual PairWiseTransform<T> {
 	inline __host__ __device__
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	virtual ~Divide() { }
+	virtual ~Divide() {
+	}
 };
 
 template<typename T>
-class Epsilon : public virtual PairWiseTransform<T> {
+class Epsilon: public virtual PairWiseTransform<T> {
 
 	/**
 	 * Name of the op
@@ -265,12 +271,11 @@ class Epsilon : public virtual PairWiseTransform<T> {
 	virtual
 #ifdef __CUDACC__
 	inline __host__
-#endif
 
+#endif
 	std::string name() {
 		return std::string("eps_strided");
 	}
-
 
 	virtual
 #ifdef __CUDACC__
@@ -299,12 +304,14 @@ class Epsilon : public virtual PairWiseTransform<T> {
 	inline __host__ __device__
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	virtual ~Epsilon() { }
+	virtual ~Epsilon() {
+	}
 };
 
 template<typename T>
-class EqualTo : public virtual PairWiseTransform<T> {
+class EqualTo: public virtual PairWiseTransform<T> {
 
 	/**
 	 * Name of the op
@@ -313,12 +320,11 @@ class EqualTo : public virtual PairWiseTransform<T> {
 	virtual
 #ifdef __CUDACC__
 	inline __host__
-#endif
 
+#endif
 	std::string name() {
 		return std::string("eq_strided");
 	}
-
 
 	virtual
 #ifdef __CUDACC__
@@ -343,12 +349,14 @@ class EqualTo : public virtual PairWiseTransform<T> {
 	inline __host__ __device__
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	virtual ~EqualTo() { }
+	virtual ~EqualTo() {
+	}
 };
 
 template<typename T>
-class GreaterThan : public virtual PairWiseTransform<T> {
+class GreaterThan: public virtual PairWiseTransform<T> {
 
 	/**
 	 * Name of the op
@@ -357,12 +365,11 @@ class GreaterThan : public virtual PairWiseTransform<T> {
 	virtual
 #ifdef __CUDACC__
 	inline __host__
-#endif
 
+#endif
 	std::string name() {
 		return std::string("gt_strided");
 	}
-
 
 	virtual
 #ifdef __CUDACC__
@@ -387,12 +394,14 @@ class GreaterThan : public virtual PairWiseTransform<T> {
 	inline __host__ __device__
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	virtual ~GreaterThan() { }
+	virtual ~GreaterThan() {
+	}
 };
 
 template<typename T>
-class LessThan : public virtual PairWiseTransform<T> {
+class LessThan: public virtual PairWiseTransform<T> {
 
 	/**
 	 * Name of the op
@@ -401,12 +410,11 @@ class LessThan : public virtual PairWiseTransform<T> {
 	virtual
 #ifdef __CUDACC__
 	inline __host__
-#endif
 
+#endif
 	std::string name() {
 		return std::string("lt_strided");
 	}
-
 
 	virtual
 #ifdef __CUDACC__
@@ -431,13 +439,14 @@ class LessThan : public virtual PairWiseTransform<T> {
 	inline __host__ __device__
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	virtual ~LessThan() { }
+	virtual ~LessThan() {
+	}
 };
 
-
 template<typename T>
-class Multiply : public virtual PairWiseTransform<T> {
+class Multiply: public virtual PairWiseTransform<T> {
 
 	/**
 	 * Name of the op
@@ -446,12 +455,11 @@ class Multiply : public virtual PairWiseTransform<T> {
 	virtual
 #ifdef __CUDACC__
 	inline __host__
-#endif
 
+#endif
 	std::string name() {
 		return std::string("mul_strided");
 	}
-
 
 	virtual
 #ifdef __CUDACC__
@@ -477,12 +485,14 @@ class Multiply : public virtual PairWiseTransform<T> {
 	inline __host__ __device__
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	virtual ~Multiply() { }
+	virtual ~Multiply() {
+	}
 };
 
 template<typename T>
-class ReverseDivide : public virtual PairWiseTransform<T> {
+class ReverseDivide: public virtual PairWiseTransform<T> {
 
 	/**
 	 * Name of the op
@@ -491,12 +501,11 @@ class ReverseDivide : public virtual PairWiseTransform<T> {
 	virtual
 #ifdef __CUDACC__
 	inline __host__
-#endif
 
+#endif
 	std::string name() {
 		return std::string("rdiv_strided");
 	}
-
 
 	virtual
 #ifdef __CUDACC__
@@ -521,12 +530,14 @@ class ReverseDivide : public virtual PairWiseTransform<T> {
 	inline __host__ __device__
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	virtual ~ReverseDivide() { }
+	virtual ~ReverseDivide() {
+	}
 };
 
 template<typename T>
-class ReverseSubtraction : public virtual PairWiseTransform<T> {
+class ReverseSubtraction: public virtual PairWiseTransform<T> {
 
 	/**
 	 * Name of the op
@@ -534,13 +545,12 @@ class ReverseSubtraction : public virtual PairWiseTransform<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline  __host__
-#endif
+	inline __host__
 
+#endif
 	std::string name() {
 		return std::string("rsub_strided");
 	}
-
 
 	virtual
 #ifdef __CUDACC__
@@ -565,12 +575,14 @@ class ReverseSubtraction : public virtual PairWiseTransform<T> {
 	inline __host__ __device__
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	virtual ~ReverseSubtraction() { }
+	virtual ~ReverseSubtraction() {
+	}
 };
 
 template<typename T>
-class Subtract : public virtual PairWiseTransform<T> {
+class Subtract: public virtual PairWiseTransform<T> {
 
 	/**
 	 * Name of the op
@@ -579,12 +591,11 @@ class Subtract : public virtual PairWiseTransform<T> {
 	virtual
 #ifdef __CUDACC__
 	inline __host__
-#endif
 
+#endif
 	std::string name() {
 		return std::string("sub_strided");
 	}
-
 
 	virtual
 #ifdef __CUDACC__
@@ -598,7 +609,7 @@ class Subtract : public virtual PairWiseTransform<T> {
 
 	virtual
 #ifdef __CUDACC__
-	inline  __host__ __device__
+	inline __host__ __device__
 #elif defined(__GNUC__)
 	__always_inline
 #endif
@@ -609,12 +620,14 @@ class Subtract : public virtual PairWiseTransform<T> {
 	inline __host__ __device__
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	virtual ~Subtract() { }
+	virtual ~Subtract() {
+	}
 };
 
 template<typename T>
-class Softmax : public virtual PairWiseTransform<T> {
+class Softmax: public virtual PairWiseTransform<T> {
 
 	/**
 	 * Name of the op
@@ -623,16 +636,15 @@ class Softmax : public virtual PairWiseTransform<T> {
 	virtual
 #ifdef __CUDACC__
 	__host__
-#endif
 
+#endif
 	std::string name() {
 		return std::string("softmax_strided");
 	}
 
-
 	virtual
 #ifdef __CUDACC__
-	inline  __host__ __device__
+	inline __host__ __device__
 #elif defined(__GNUC__)
 	__always_inline
 #endif
@@ -642,7 +654,7 @@ class Softmax : public virtual PairWiseTransform<T> {
 
 	virtual
 #ifdef __CUDACC__
-	inline  __host__ __device__
+	inline __host__ __device__
 #elif defined(__GNUC__)
 	__always_inline
 #endif
@@ -653,8 +665,10 @@ class Softmax : public virtual PairWiseTransform<T> {
 	inline __host__ __device__
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-	virtual ~Softmax() { }
+	virtual ~Softmax() {
+	}
 };
 }
 
@@ -664,27 +678,91 @@ public:
 	PairWiseTransformOpFactory() {
 	}
 
-	PairWiseTransform<T> *getOp(std::string name) {
-		if (name == "add_strided") return new pairwise_transforms::ops::Add<T>();
-		if (name == "copy_strided") return new pairwise_transforms::ops::Copy<T>();
-		if (name == "div_strided") return new pairwise_transforms::ops::Divide<T>();
-		if (name == "eps_strided") return new pairwise_transforms::ops::Epsilon<T>();
-		if (name == "eq_strided") return new pairwise_transforms::ops::EqualTo<T>();
-		if (name == "gt_strided") return new pairwise_transforms::ops::GreaterThan<T>();
-		if (name == "lt_strided") return new pairwise_transforms::ops::LessThan<T>();
-		if (name == "mul_strided") return new pairwise_transforms::ops::Multiply<T>();
-		if (name == "div_strided") return new pairwise_transforms::ops::Divide<T>();
-		if (name == "rdiv_strided") return new pairwise_transforms::ops::ReverseDivide<T>();
-		if (name == "rsub_strided") return new pairwise_transforms::ops::ReverseSubtraction<T>();
-		if (name == "sub_strided") return new pairwise_transforms::ops::Subtract<T>();
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	PairWiseTransform<T> *getOp(char *name) {
+		if (functions::ops::strcmp(name,"add_strided"))
+			return (pairwise_transforms::ops::Add<T> *) malloc(sizeof(pairwise_transforms::ops::Add<T>));
+		if (functions::ops::strcmp(name,"copy_strided"))
+			return (pairwise_transforms::ops::Copy<T>*) malloc(sizeof(pairwise_transforms::ops::Copy<T>));
+		if (functions::ops::strcmp(name,"div_strided"))
+			return (pairwise_transforms::ops::Divide<T> *) malloc(sizeof(pairwise_transforms::ops::Divide<T>));
+		if (functions::ops::strcmp(name,"eps_strided"))
+			return (pairwise_transforms::ops::Divide<T>* )malloc(sizeof(pairwise_transforms::ops::Epsilon<T>));
+		if (functions::ops::strcmp(name, "eq_strided"))
+			return (pairwise_transforms::ops::EqualTo<T> *) malloc(sizeof(pairwise_transforms::ops::EqualTo<T>));
+		if (functions::ops::strcmp(name,"gt_strided"))
+			return ( pairwise_transforms::ops::GreaterThan<T> *) malloc(sizeof(pairwise_transforms::ops::GreaterThan<T>));
+		if (functions::ops::strcmp(name,"lt_strided"))
+			return (pairwise_transforms::ops::LessThan<T> *) malloc(sizeof(pairwise_transforms::ops::LessThan<T>));
+		if (functions::ops::strcmp(name,"mul_strided"))
+			return ( pairwise_transforms::ops::Multiply<T> *) malloc(sizeof(pairwise_transforms::ops::Multiply<T>));
+		if (functions::ops::strcmp(name,"div_strided"))
+			return (pairwise_transforms::ops::Divide<T> *) malloc(sizeof(pairwise_transforms::ops::Divide<T>));
+		if (functions::ops::strcmp(name,"rdiv_strided"))
+			return (pairwise_transforms::ops::ReverseDivide<T> *) malloc(sizeof(new pairwise_transforms::ops::ReverseDivide<T>));
+		if (functions::ops::strcmp(name,"rsub_strided"))
+			return (pairwise_transforms::ops::ReverseSubtraction<T> *) malloc(sizeof(pairwise_transforms::ops::ReverseSubtraction<T>));
+		if (functions::ops::strcmp(name,"sub_strided"))
+			return (pairwise_transforms::ops::Subtract<T> *) malloc(sizeof(pairwise_transforms::ops::Subtract<T>));
 		return NULL;
 	}
 
+#ifdef __CUDACC__
+	__host__
+#endif
+	PairWiseTransform<T> *getOp(std::string name) {
+		return getOp(name.c_str());
+	}
 
 };
 }
 }
 
+#ifdef __CUDACC__
+__constant__ functions::pairwise_transforms::PairWiseTransformOpFactory<double> *pairWiseDoubleFactory;
+__constant__ functions::pairwise_transforms::PairWiseTransformOpFactory<float> *pairWiseFloatFactory;
+
+extern "C" __global__ void pairWiseTransformDouble(
+		char *name,
+		int n,
+		int xOffset,
+		int yOffset,
+		int resultOffset,
+		double *dx,
+		double *dy,
+		int incx,
+		int incy,
+		double *params,
+		double *result, int incz, int blockSize) {
+	functions::pairwise_transforms::PairWiseTransform<double> *op = pairWiseDoubleFactory->getOp(name);
+	op->transform(n,xOffset,yOffset,resultOffset,dx,dy,incx,incy,params,result,incz,blockSize);
+	free(op);
+
+}
+
+
+
+extern "C" __global__ void pairWiseTransformFloat(
+		char *name,
+		int n,
+		int xOffset,
+		int yOffset,
+		int resultOffset,
+		float *dx,
+		float *dy,
+		int incx,
+		int incy,
+		float *params,
+		float *result, int incz, int blockSize) {
+	functions::pairwise_transforms::PairWiseTransform<float> *op = pairWiseFloatFactory->getOp(name);
+	op->transform(n,xOffset,yOffset,resultOffset,dx,dy,incx,incy,params,result,incz,blockSize);
+	free(op);
+
+}
+
+#endif
 
 
 #endif /* PAIRWISE_TRANSFORM_H_ */

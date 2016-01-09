@@ -12,10 +12,8 @@
 namespace functions {
 namespace transform {
 
-
-
 template<typename T>
-class Transform : public virtual functions::ops::Op<T> {
+class Transform: public virtual functions::ops::Op<T> {
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -24,12 +22,12 @@ class Transform : public virtual functions::ops::Op<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-
-
 	T op(T d1, T *params) = 0;
 
 #ifdef __CUDACC__
@@ -42,23 +40,23 @@ class Transform : public virtual functions::ops::Op<T> {
 			result[i * incy] = op(dy[i * incy], params);
 		}
 
-
 	}
 #endif
 
 public:
-	virtual void exec(T *dx,int xStride,T *result, int resultStride,T *extraParams,int n) {
-		if(xStride == 1 && resultStride == 1) {
+	virtual void exec(T *dx, int xStride, T *result, int resultStride,
+			T *extraParams, int n) {
+		if (xStride == 1 && resultStride == 1) {
 #pragma omp simd
-			for(int i = 0; i < n; i++) {
-				result[i] = op(dx[i],extraParams);
+			for (int i = 0; i < n; i++) {
+				result[i] = op(dx[i], extraParams);
 			}
 
-		}
-		else {
+		} else {
 #pragma omp simd
-			for(int i = 0; i < n; i++) {
-				result[i * resultStride] = op(dx[i * resultStride],extraParams);
+			for (int i = 0; i < n; i++) {
+				result[i * resultStride] = op(dx[i * resultStride],
+						extraParams);
 			}
 		}
 
@@ -69,16 +67,14 @@ public:
 #elif defined(__GNUC__)
 	__always_inline
 #endif
-	virtual ~Transform() {}
+	virtual ~Transform() {
+	}
 
 };
 
-
-
-
 namespace ops {
-template <typename T>
-class Abs : public virtual Transform<T> {
+template<typename T>
+class Abs: public virtual Transform<T> {
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -86,14 +82,13 @@ class Abs : public virtual Transform<T> {
 	 * @return
 	 */
 	virtual
-
 #ifdef __CUDACC__
-	inline  __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
-
-
 	T op(T d1, T *params) {
 		return nd4j::math::nd4j_abs<T>(d1);
 	}
@@ -104,6 +99,7 @@ class Abs : public virtual Transform<T> {
 	virtual
 #ifdef __CUDACC__
 	__host__
+
 #endif
 	std::string name() {
 		return std::string("abs_strided");
@@ -113,11 +109,12 @@ class Abs : public virtual Transform<T> {
 #elif defined(__GNUC__)
 	__always_inline
 #endif
-	virtual ~Abs() {}
+	virtual ~Abs() {
+	}
 };
 
-template <typename T>
-class Ceiling : public virtual Transform<T> {
+template<typename T>
+class Ceiling: public virtual Transform<T> {
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -125,14 +122,13 @@ class Ceiling : public virtual Transform<T> {
 	 * @return
 	 */
 	virtual
-
-
 #ifdef __CUDACC__
-	inline    __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
-#endif
 
+#endif
 	T op(T d1, T *params) {
 		return nd4j::math::nd4j_ceil<T>(d1);
 	}
@@ -142,7 +138,8 @@ class Ceiling : public virtual Transform<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline     __host__
+	inline __host__
+
 #endif
 	std::string name() {
 		return std::string("ceil_strided");
@@ -152,11 +149,12 @@ class Ceiling : public virtual Transform<T> {
 #elif defined(__GNUC__)
 	__always_inline
 #endif
-	virtual ~Ceiling() {}
+	virtual ~Ceiling() {
+	}
 };
 
-template <typename T>
-class Cosine : public virtual Transform<T> {
+template<typename T>
+class Cosine: public virtual Transform<T> {
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -165,9 +163,11 @@ class Cosine : public virtual Transform<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	__host__ __device__
+	__host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
 	T op(T d1, T *params) {
 		return nd4j::math::nd4j_cos<T>(d1);
@@ -177,9 +177,8 @@ class Cosine : public virtual Transform<T> {
 	 * @return the name of the operation
 	 */
 
-
 #ifdef __CUDACC__
-	inline   __host__
+	inline __host__
 	virtual
 #elif defined(__GNUC__)
 	__always_inline
@@ -192,11 +191,12 @@ class Cosine : public virtual Transform<T> {
 #elif defined(__GNUC__)
 	__always_inline
 #endif
-	virtual ~Cosine() {}
+	virtual ~Cosine() {
+	}
 };
 
-template <typename T>
-class Exp : public virtual Transform<T> {
+template<typename T>
+class Exp: public virtual Transform<T> {
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -204,12 +204,12 @@ class Exp : public virtual Transform<T> {
 	 * @return
 	 */
 	virtual
-
-
 #ifdef __CUDACC__
-	inline      __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
 	T op(T d1, T *params) {
 		return nd4j::math::nd4j_exp<T>(d1);
@@ -219,12 +219,12 @@ class Exp : public virtual Transform<T> {
 	 * @return the name of the operation
 	 */
 	virtual
-
-
 #ifdef __CUDACC__
-	inline     __host__
+	inline __host__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
 	std::string name() {
 		return std::string("exp_strided");
@@ -234,11 +234,12 @@ class Exp : public virtual Transform<T> {
 #elif defined(__GNUC__)
 	__always_inline
 #endif
-	virtual ~Exp() {}
+	virtual ~Exp() {
+	}
 };
 
-template <typename T>
-class Floor : public virtual Transform<T> {
+template<typename T>
+class Floor: public virtual Transform<T> {
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -246,12 +247,12 @@ class Floor : public virtual Transform<T> {
 	 * @return
 	 */
 	virtual
-
-
 #ifdef __CUDACC__
-	inline    __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
 	T op(T d1, T *params) {
 		return nd4j::math::nd4j_floor<T>(d1);
@@ -262,7 +263,8 @@ class Floor : public virtual Transform<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline   __host__
+	inline __host__
+
 #endif
 	std::string name() {
 		return std::string("floor_strided");
@@ -272,11 +274,12 @@ class Floor : public virtual Transform<T> {
 #elif defined(__GNUC__)
 	__always_inline
 #endif
-	virtual ~Floor() {}
+	virtual ~Floor() {
+	}
 };
 
-template <typename T>
-class Log : public virtual Transform<T> {
+template<typename T>
+class Log: public virtual Transform<T> {
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -284,12 +287,12 @@ class Log : public virtual Transform<T> {
 	 * @return
 	 */
 	virtual
-
-
 #ifdef __CUDACC__
-	inline    __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
 	T op(T d1, T *params) {
 		return nd4j::math::nd4j_log<T>(d1);
@@ -300,9 +303,11 @@ class Log : public virtual Transform<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline   __host__
+	inline __host__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
 	std::string name() {
 		return std::string("log_strided");
@@ -312,11 +317,12 @@ class Log : public virtual Transform<T> {
 #elif defined(__GNUC__)
 	__always_inline
 #endif
-	virtual ~Log() {}
+	virtual ~Log() {
+	}
 };
 
-template <typename T>
-class Neg : public virtual Transform<T> {
+template<typename T>
+class Neg: public virtual Transform<T> {
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -324,12 +330,12 @@ class Neg : public virtual Transform<T> {
 	 * @return
 	 */
 	virtual
-
-
 #ifdef __CUDACC__
-	inline  __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
 	T op(T d1, T *params) {
 		return -d1;
@@ -340,7 +346,8 @@ class Neg : public virtual Transform<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline  __host__
+	inline __host__
+
 #endif
 	std::string name() {
 		return std::string("neg_strided");
@@ -350,11 +357,12 @@ class Neg : public virtual Transform<T> {
 #elif defined(__GNUC__)
 	__always_inline
 #endif
-	virtual ~Neg() {}
+	virtual ~Neg() {
+	}
 };
 
-template <typename T>
-class Pow : public virtual Transform<T> {
+template<typename T>
+class Pow: public virtual Transform<T> {
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -362,15 +370,15 @@ class Pow : public virtual Transform<T> {
 	 * @return
 	 */
 	virtual
-
 #ifdef __CUDACC__
-	inline       __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
-#endif
 
+#endif
 	T op(T d1, T *params) {
-		return nd4j::math::nd4j_pow<T>(d1,params[0]);
+		return nd4j::math::nd4j_pow<T>(d1, params[0]);
 	}
 
 	/** Name of the op
@@ -378,7 +386,8 @@ class Pow : public virtual Transform<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline   __host__
+	inline __host__
+
 #endif
 	std::string name() {
 		return std::string("pow_strided");
@@ -388,12 +397,12 @@ class Pow : public virtual Transform<T> {
 #elif defined(__GNUC__)
 	__always_inline
 #endif
-	virtual ~Pow() {}
+	virtual ~Pow() {
+	}
 };
 
-
-template <typename T>
-class Round : public virtual Transform<T> {
+template<typename T>
+class Round: public virtual Transform<T> {
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -401,11 +410,12 @@ class Round : public virtual Transform<T> {
 	 * @return
 	 */
 	virtual
-
 #ifdef __CUDACC__
-	inline      __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
 	T op(T d1, T *params) {
 		return nd4j::math::nd4j_round<T>(d1);
@@ -416,7 +426,8 @@ class Round : public virtual Transform<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline   __host__
+	inline __host__
+
 #endif
 	std::string name() {
 		return std::string("round_strided");
@@ -426,13 +437,12 @@ class Round : public virtual Transform<T> {
 #elif defined(__GNUC__)
 	__always_inline
 #endif
-	virtual ~Round() {}
+	virtual ~Round() {
+	}
 };
 
-
-
-template <typename T>
-class Sigmoid : public virtual Transform<T> {
+template<typename T>
+class Sigmoid: public virtual Transform<T> {
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -440,14 +450,13 @@ class Sigmoid : public virtual Transform<T> {
 	 * @return
 	 */
 	virtual
-
-
 #ifdef __CUDACC__
-	inline    __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
-#endif
 
+#endif
 	T op(T d1, T *params) {
 		return nd4j::math::nd4j_sigmoid<T>(d1);
 	}
@@ -457,7 +466,8 @@ class Sigmoid : public virtual Transform<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline   __host__
+	inline __host__
+
 #endif
 	std::string name() {
 		return std::string("sigmoid_strided");
@@ -467,12 +477,12 @@ class Sigmoid : public virtual Transform<T> {
 #elif defined(__GNUC__)
 	__always_inline
 #endif
-	virtual ~Sigmoid() {}
+	virtual ~Sigmoid() {
+	}
 };
 
-
-template <typename T>
-class SetRange : public virtual Transform<T> {
+template<typename T>
+class SetRange: public virtual Transform<T> {
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -480,23 +490,24 @@ class SetRange : public virtual Transform<T> {
 	 * @return
 	 */
 	virtual
-
 #ifdef __CUDACC__
-	inline   __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
 	T op(T d1, T *params) {
 		T min = params[0];
 		T max = params[1];
-		if(d1 >= min && d1 <= max)
+		if (d1 >= min && d1 <= max)
 			return d1;
-		if(min == 0 && max == 1) {
+		if (min == 0 && max == 1) {
 			T val = 1 / (1 + nd4j::math::nd4j_exp<T>(-d1));
 			return (nd4j::math::nd4j_floor<T>(val * (max - min)) + min);
 		}
 
-		T ret =  (nd4j::math::nd4j_floor<T>(d1 * (max - min)) + min);
+		T ret = (nd4j::math::nd4j_floor<T>(d1 * (max - min)) + min);
 		return ret;
 	}
 
@@ -504,11 +515,12 @@ class SetRange : public virtual Transform<T> {
 	 * @return the name of the operation
 	 */
 	virtual
-
 #ifdef __CUDACC__
-	inline   __host__
+	inline __host__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
 	std::string name() {
 		return std::string("setrange_strided");
@@ -518,11 +530,12 @@ class SetRange : public virtual Transform<T> {
 #elif defined(__GNUC__)
 	__always_inline
 #endif
-	virtual ~SetRange() {}
+	virtual ~SetRange() {
+	}
 };
 
-template <typename T>
-class Sin : public virtual Transform<T> {
+template<typename T>
+class Sin: public virtual Transform<T> {
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -530,11 +543,12 @@ class Sin : public virtual Transform<T> {
 	 * @return
 	 */
 	virtual
-
 #ifdef __CUDACC__
-	inline   __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
 	T op(T d1, T *params) {
 		return nd4j::math::nd4j_sin<T>(d1);
@@ -545,7 +559,8 @@ class Sin : public virtual Transform<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline   __host__
+	inline __host__
+
 #endif
 	std::string name() {
 		return std::string("sin_strided");
@@ -555,11 +570,12 @@ class Sin : public virtual Transform<T> {
 #elif defined(__GNUC__)
 	__always_inline
 #endif
-	virtual ~Sin() {}
+	virtual ~Sin() {
+	}
 };
 
-template <typename T>
-class Sqrt : public virtual Transform<T> {
+template<typename T>
+class Sqrt: public virtual Transform<T> {
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -567,11 +583,12 @@ class Sqrt : public virtual Transform<T> {
 	 * @return
 	 */
 	virtual
-
 #ifdef __CUDACC__
-	inline   __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
 	T op(T d1, T *params) {
 		return nd4j::math::nd4j_sqrt<T>(d1);
@@ -582,7 +599,8 @@ class Sqrt : public virtual Transform<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline  __host__
+	inline __host__
+
 #endif
 	std::string name() {
 		return std::string("sqrt_strided");
@@ -592,12 +610,12 @@ class Sqrt : public virtual Transform<T> {
 #elif defined(__GNUC__)
 	__always_inline
 #endif
-	virtual ~Sqrt() {}
+	virtual ~Sqrt() {
+	}
 };
 
-
-template <typename T>
-class SoftPlus : public virtual Transform<T> {
+template<typename T>
+class SoftPlus: public virtual Transform<T> {
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -605,11 +623,12 @@ class SoftPlus : public virtual Transform<T> {
 	 * @return
 	 */
 	virtual
-
 #ifdef __CUDACC__
-	inline   __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
 	T op(T d1, T *params) {
 		return nd4j::math::softplus<T>(d1);
@@ -620,7 +639,8 @@ class SoftPlus : public virtual Transform<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline   __host__
+	inline __host__
+
 #endif
 	std::string name() {
 		return std::string("softplus_strided");
@@ -630,11 +650,12 @@ class SoftPlus : public virtual Transform<T> {
 #elif defined(__GNUC__)
 	__always_inline
 #endif
-	virtual ~SoftPlus() {}
+	virtual ~SoftPlus() {
+	}
 };
 
-template <typename T>
-class Sign : public virtual Transform<T> {
+template<typename T>
+class Sign: public virtual Transform<T> {
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -642,11 +663,12 @@ class Sign : public virtual Transform<T> {
 	 * @return
 	 */
 	virtual
-
 #ifdef __CUDACC__
-	inline   __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
 	T op(T d1, T *params) {
 		return (d1 > 0) - (d1 < 0);
@@ -657,7 +679,8 @@ class Sign : public virtual Transform<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline   __host__
+	inline __host__
+
 #endif
 	std::string name() {
 		return std::string("sign_strided");
@@ -667,12 +690,12 @@ class Sign : public virtual Transform<T> {
 #elif defined(__GNUC__)
 	__always_inline
 #endif
-	virtual ~Sign() {}
+	virtual ~Sign() {
+	}
 };
 
-
-template <typename T>
-class Tanh : public virtual Transform<T> {
+template<typename T>
+class Tanh: public virtual Transform<T> {
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -680,12 +703,12 @@ class Tanh : public virtual Transform<T> {
 	 * @return
 	 */
 	virtual
-
-
 #ifdef __CUDACC__
-	inline   __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
 	T op(T d1, T *params) {
 		return nd4j::math::nd4j_tanh<T>(d1);
@@ -696,7 +719,8 @@ class Tanh : public virtual Transform<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline   __host__
+	inline __host__
+
 #endif
 	std::string name() {
 		return std::string("tanh_strided");
@@ -706,12 +730,12 @@ class Tanh : public virtual Transform<T> {
 #elif defined(__GNUC__)
 	__always_inline
 #endif
-	virtual ~Tanh() {}
+	virtual ~Tanh() {
+	}
 };
 
-
-template <typename T>
-class ACos : public virtual Transform<T> {
+template<typename T>
+class ACos: public virtual Transform<T> {
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -719,12 +743,12 @@ class ACos : public virtual Transform<T> {
 	 * @return
 	 */
 	virtual
-
-
 #ifdef __CUDACC__
-	__host__ __device__
+	__host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
 	T op(T d1, T *params) {
 		return nd4j::math::nd4j_acos<T>(d1);
@@ -734,11 +758,12 @@ class ACos : public virtual Transform<T> {
 	 * @return the name of the operation
 	 */
 	virtual
-
 #ifdef __CUDACC__
-	inline   __host__
+	inline __host__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
 	std::string name() {
 		return std::string("acos_strided");
@@ -748,11 +773,12 @@ class ACos : public virtual Transform<T> {
 #elif defined(__GNUC__)
 	__always_inline
 #endif
-	virtual ~ACos() {}
+	virtual ~ACos() {
+	}
 };
 
-template <typename T>
-class ASin : public virtual Transform<T> {
+template<typename T>
+class ASin: public virtual Transform<T> {
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -760,12 +786,12 @@ class ASin : public virtual Transform<T> {
 	 * @return
 	 */
 	virtual
-
-
 #ifdef __CUDACC__
-	inline    __host__ __device__
+	inline __host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
 	T op(T d1, T *params) {
 		return nd4j::math::nd4j_asin<T>(d1);
@@ -776,7 +802,8 @@ class ASin : public virtual Transform<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline  __host__
+	inline __host__
+
 #endif
 	std::string name() {
 		return std::string("asin_strided");
@@ -786,11 +813,12 @@ class ASin : public virtual Transform<T> {
 #elif defined(__GNUC__)
 	__always_inline
 #endif
-	virtual ~ASin() {}
+	virtual ~ASin() {
+	}
 };
 
-template <typename T>
-class ATan : public virtual Transform<T> {
+template<typename T>
+class ATan: public virtual Transform<T> {
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -798,12 +826,12 @@ class ATan : public virtual Transform<T> {
 	 * @return
 	 */
 	virtual
-
-
 #ifdef __CUDACC__
-	__host__ __device__
+	__host__  __device__
+
 #elif defined(__GNUC__)
 	__always_inline
+
 #endif
 	T op(T d1, T *params) {
 		return nd4j::math::nd4j_atan<T>(d1);
@@ -814,7 +842,8 @@ class ATan : public virtual Transform<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline    __host__
+	inline __host__
+
 #endif
 	std::string name() {
 		return std::string("atan_strided");
@@ -824,41 +853,57 @@ class ATan : public virtual Transform<T> {
 #elif defined(__GNUC__)
 	__always_inline
 #endif
-	virtual ~ATan() {}
+	virtual ~ATan() {
+	}
 };
-
-
-
 
 }
 
-
-template <typename T>
+template<typename T>
 class TransformOpFactory {
 public:
 	TransformOpFactory() {
 	}
 
 	Transform<T> * getOp(std::string name) {
-		if(name == "abs_strided")  return new transform::ops::Abs<T>();
-		if(name == "ceil_strided")  return new transform::ops::Ceiling<T>();
-		if(name == "cos_strided")  return new transform::ops::Cosine<T>();
-		if(name == "exp_strided")  return new transform::ops::Exp<T>();
-		if(name == "floor_strided")  return new transform::ops::Floor<T>();
-		if(name == "log_strided")  return new transform::ops::Log<T>();
-		if(name == "neg_strided")  return new transform::ops::Neg<T>();
-		if(name == "pow_strided")  return new transform::ops::Pow<T>();
-		if(name == "round_strided")  return new transform::ops::Round<T>();
-		if(name == "setrange_strided")  return new transform::ops::SetRange<T>();
-		if(name == "sigmoid_strided")  return new transform::ops::Sigmoid<T>();
-		if(name == "sign_strided")  return new transform::ops::Sign<T>();
-		if(name == "sin_strided")  return new transform::ops::Sin<T>();
-		if(name == "softplus_strided")  return new transform::ops::SoftPlus<T>();
-		if(name == "sqrt_strided")  return new transform::ops::Sqrt<T>();
-		if(name == "tanh_strided")  return new transform::ops::Tanh<T>();
-		if(name == "acos_strided")  return new transform::ops::ACos<T>();
-		if(name == "asin_strided")  return new transform::ops::ASin<T>();
-		if(name == "atan_strided")  return new transform::ops::ATan<T>();
+		if (name == "abs_strided")
+			return new transform::ops::Abs<T>();
+		if (name == "ceil_strided")
+			return new transform::ops::Ceiling<T>();
+		if (name == "cos_strided")
+			return new transform::ops::Cosine<T>();
+		if (name == "exp_strided")
+			return new transform::ops::Exp<T>();
+		if (name == "floor_strided")
+			return new transform::ops::Floor<T>();
+		if (name == "log_strided")
+			return new transform::ops::Log<T>();
+		if (name == "neg_strided")
+			return new transform::ops::Neg<T>();
+		if (name == "pow_strided")
+			return new transform::ops::Pow<T>();
+		if (name == "round_strided")
+			return new transform::ops::Round<T>();
+		if (name == "setrange_strided")
+			return new transform::ops::SetRange<T>();
+		if (name == "sigmoid_strided")
+			return new transform::ops::Sigmoid<T>();
+		if (name == "sign_strided")
+			return new transform::ops::Sign<T>();
+		if (name == "sin_strided")
+			return new transform::ops::Sin<T>();
+		if (name == "softplus_strided")
+			return new transform::ops::SoftPlus<T>();
+		if (name == "sqrt_strided")
+			return new transform::ops::Sqrt<T>();
+		if (name == "tanh_strided")
+			return new transform::ops::Tanh<T>();
+		if (name == "acos_strided")
+			return new transform::ops::ACos<T>();
+		if (name == "asin_strided")
+			return new transform::ops::ASin<T>();
+		if (name == "atan_strided")
+			return new transform::ops::ATan<T>();
 		return NULL;
 	}
 
@@ -866,10 +911,6 @@ public:
 
 }
 
-
-
 }
-
-
 
 #endif /* TRANSFORM_H_ */

@@ -10,7 +10,7 @@
 #include <string>
 namespace functions {
 namespace ops {
-template <typename T>
+template<typename T>
 /**
  * Base class
  * for all operations
@@ -25,6 +25,7 @@ public:
 	virtual
 #ifdef __CUDACC__
 	__host__
+
 #endif
 	std::string name() = 0;
 
@@ -32,11 +33,12 @@ public:
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	~Op(){}
+	~Op() {
+	}
 
 };
 
-template <typename T>
+template<typename T>
 class OpFactory {
 public:
 	/**
@@ -44,9 +46,27 @@ public:
 	 * @param name
 	 * @return
 	 */
+#ifdef __CUDACC__
+	__host__
+#endif
 	virtual Op<T> * create(std::string name) = 0;
-	virtual ~OpFactory() {}
+#ifdef __CUDACC__
+	__device__ __host__
+#endif
+	virtual ~OpFactory() {
+	}
 };
+
+
+
+#ifdef __CUDACC__
+__host__ __device__
+#endif
+int strcmp(const char* s1, const char* s2) {
+	while(*s1 && (*s1==*s2))
+		s1++,s2++;
+	return *(const unsigned char*)s1-*(const unsigned char*)s2;
+}
 }
 }
 

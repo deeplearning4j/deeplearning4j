@@ -8,42 +8,41 @@
 #include "testhelpers.h"
 #include <indexreduce.h>
 
-TEST_GROUP(IndexReduce)
-{
+TEST_GROUP(IndexReduce) {
 
-	static int output_method(const char* output, ...)
-	{
+	static int output_method(const char* output, ...) {
 		va_list arguments;
 		va_start(arguments, output);
 		va_end(arguments);
 		return 1;
 	}
-	void setup()
-	{
+	void setup() {
 
 	}
-	void teardown()
-	{
+	void teardown() {
 	}
 };
 
 TEST(IndexReduce, IMax) {
-	functions::indexreduce::IndexReduceOpFactory<double> *opFactory5 = new functions::indexreduce::IndexReduceOpFactory<double>();
-	functions::indexreduce::IndexReduce<double> *sum = opFactory5->getOp(std::string("imax"));
+	functions::indexreduce::IndexReduceOpFactory<double> *opFactory5 =
+			new functions::indexreduce::IndexReduceOpFactory<double>();
+	functions::indexreduce::IndexReduce<double> *sum = opFactory5->getOp(
+			std::string("imax"));
 	CHECK(sum != NULL);
 	int length = 4;
 	double *data = (double *) malloc(sizeof(double) * length);
-	for(int i = 0; i < length; i++) {
+	for (int i = 0; i < length; i++) {
 		data[i] = i + 1;
 	}
 	int *resultShapeInfo = shape::createScalarShapeInfo();
 
-	shape::ShapeInformation *shapeInfo = (shape::ShapeInformation *) malloc(sizeof(shape::ShapeInformation));
+	shape::ShapeInformation *shapeInfo = (shape::ShapeInformation *) malloc(
+			sizeof(shape::ShapeInformation));
 	int rank = 2;
 	int *shape = (int *) malloc(sizeof(int) * rank);
 	shape[0] = 1;
 	shape[1] = length;
-	int *stride = shape::calcStrides(shape,rank);
+	int *stride = shape::calcStrides(shape, rank);
 	shapeInfo->shape = shape;
 	shapeInfo->stride = stride;
 	shapeInfo->offset = 0;
@@ -55,9 +54,9 @@ TEST(IndexReduce, IMax) {
 
 	double *result = (double *) malloc(sizeof(double));
 	result[0] = 0.0;
-	sum->exec(data,shapeBuffer,extraParams,result,resultShapeInfo);
+	sum->exec(data, shapeBuffer, extraParams, result, resultShapeInfo);
 	double comp = result[0];
-	CHECK(3.0 ==comp);
+	CHECK(3.0 == comp);
 	free(extraParams);
 	free(shapeBuffer);
 	free(shapeInfo);
@@ -65,26 +64,28 @@ TEST(IndexReduce, IMax) {
 	free(data);
 	delete opFactory5;
 
-
 }
 
 TEST(IndexReduce,DimensionIMax) {
-	functions::indexreduce::IndexReduceOpFactory<double> *opFactory5 = new functions::indexreduce::IndexReduceOpFactory<double>();
-	functions::indexreduce::IndexReduce<double> *sum = opFactory5->getOp(std::string("imax"));
+	functions::indexreduce::IndexReduceOpFactory<double> *opFactory5 =
+			new functions::indexreduce::IndexReduceOpFactory<double>();
+	functions::indexreduce::IndexReduce<double> *sum = opFactory5->getOp(
+			std::string("imax"));
 	CHECK(sum != NULL);
 	int length = 4;
 	double *data = (double *) malloc(sizeof(double) * length);
-	for(int i = 0; i < length; i++) {
+	for (int i = 0; i < length; i++) {
 		data[i] = i + 1;
 	}
 	int *resultShapeInfo = shape::createScalarShapeInfo();
 
-	shape::ShapeInformation *shapeInfo = (shape::ShapeInformation *) malloc(sizeof(shape::ShapeInformation));
+	shape::ShapeInformation *shapeInfo = (shape::ShapeInformation *) malloc(
+			sizeof(shape::ShapeInformation));
 	int rank = 2;
 	int *shape = (int *) malloc(sizeof(int) * rank);
 	shape[0] = 2;
 	shape[1] = 2;
-	int *stride = shape::calcStrides(shape,rank);
+	int *stride = shape::calcStrides(shape, rank);
 	shapeInfo->shape = shape;
 	shapeInfo->stride = stride;
 	shapeInfo->offset = 0;
@@ -96,19 +97,20 @@ TEST(IndexReduce,DimensionIMax) {
 
 	int resultLength = 2;
 	double *result = (double *) malloc(resultLength * sizeof(double));
-	for(int i = 0; i < resultLength; i++)
+	for (int i = 0; i < resultLength; i++)
 		result[i] = 0.0;
 	int dimensionLength = 1;
-	int *dimension = (int *) malloc(dimensionLength* sizeof(int));
+	int *dimension = (int *) malloc(dimensionLength * sizeof(int));
 	dimension[0] = 1;
 
-	sum->exec(data,shapeBuffer,extraParams,result,resultShapeInfo,dimension,dimensionLength);
+	sum->exec(data, shapeBuffer, extraParams, result, resultShapeInfo,
+			dimension, dimensionLength);
 	double *comp = (double *) malloc(sizeof(double) * resultLength);
-	for(int i = 0; i < resultLength; i++){
+	for (int i = 0; i < resultLength; i++) {
 		comp[i] = 1.0;
 	}
 
-	CHECK(arrsEquals(2,comp,result));
+	CHECK(arrsEquals(2, comp, result));
 	free(comp);
 	free(extraParams);
 	free(dimension);
@@ -118,7 +120,5 @@ TEST(IndexReduce,DimensionIMax) {
 	free(data);
 	delete opFactory5;
 }
-
-
 
 #endif //NATIVEOPERATIONS_INDEXREDUCETESTS_H_H
