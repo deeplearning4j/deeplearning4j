@@ -15,9 +15,9 @@ This Quick Start guide assumes that you have the following already installed:
 3. Maven (Automated build tool)
 4. Github
  
-If you need to install any of the above, please read the [ND4J Getting Started guide](http://nd4j.org/getstarted.html). (ND4J is the linear-algebra engine behind Deeplearning4j, and instructions there apply to both projects.) For the examples, don't install everything listed on that page, just the software listed above. 
+If you need to install any of the above, please read the [ND4J Getting Started guide](http://nd4j.org/getstarted.html). (ND4J is the scientific computing engine we use to make deep learning work, and instructions there apply to both projects.) For the examples, don't install everything listed on that page, just the software listed above. 
 
-We recommend you join our [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) if you have questions or feedback. Even if you're feeling anti-social, feel free to lurk and learn. In addition, if you are brand-new to deep learning, we've included [a road map of what to learn when you're starting out](../deeplearningforbeginners.html). 
+We recommend that you join our [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) if you have questions or feedback. Even if you're feeling anti-social, feel free to lurk and learn. In addition, if you are brand-new to deep learning, we've included [a road map of what to learn when you're starting out](../deeplearningforbeginners.html). 
 
 ## DL4J in a Few Easy Steps
 
@@ -33,7 +33,7 @@ After those installs, if you can follow these steps, you'll be up and running (W
 ### A Few Precautions
 
 * Make sure you have not cloned other repositories locally, the main deeplearning4j repo is undergoing continuous improvements, the latest of which may not be thoroughly tested with examples.
-* Make sure all your dependencies for examples are downloaded from Maven rather found locally `( rm -rf  ls ~/.m2/repository/org/deeplearning4j)`
+* Make sure all your dependencies for examples are downloaded from Maven rather found locally `(rm -rf  ls ~/.m2/repository/org/deeplearning4j)`
 * run `mvn clean install -DskipTests=true -Dmaven.javadoc.skip=true` in the dl4j-0.4-examples directory to make sure it's installed correctly
 * For TSNE, run `mvn exec:java -Dexec.mainClass="org.deeplearning4j.examples.tsne.TSNEStandardExample" -Dexec.cleanupDaemonThreads=false` to run the TSNE example or any other example. You might need the last argument if execution fails and Maven is not able to stop the daemon threads upon quitting.
 * 1000 iterations should result in `tsne-standard-coords.csv` being placed in `dl4j-0.4-examples/target/archive-tmp/`
