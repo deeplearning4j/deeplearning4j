@@ -27,11 +27,9 @@ public:
 
 
 #ifdef __CUDACC__
-	inline    __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	T op(T	d1,	T d2, T	*params) = 0;
+	inline T op(T	d1,	T d2, T	*params) = 0;
 
 #ifdef __CUDACC__
 	/**
@@ -77,11 +75,9 @@ public:
 	}
 
 #ifdef __CUDACC__
-	inline     __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	virtual ~ScalarTransform() {}
+	virtual inline  ~ScalarTransform() {}
 };
 
 
@@ -97,11 +93,9 @@ class Add : public virtual ScalarTransform<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline      __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	T op(T	d1,	T d2, T	*params) {
+	inline T op(T	d1,	T d2, T	*params) {
 		return d1 + d2;
 	}
 	/** Name of the op
@@ -115,11 +109,9 @@ class Add : public virtual ScalarTransform<T> {
 		return std::string("add_scalar");
 	}
 #ifdef __CUDACC__
-	inline     __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	virtual ~Add(){}
+	virtual inline  ~Add(){}
 
 };
 
@@ -134,11 +126,9 @@ class Divide : public virtual ScalarTransform<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline       __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	T op(T	d1,	T d2, T	*params) {
+	inline T op(T	d1,	T d2, T	*params) {
 		return d1 / d2;
 	}
 	/** Name of the op
@@ -152,11 +142,9 @@ class Divide : public virtual ScalarTransform<T> {
 		return std::string("div_scalar");
 	}
 #ifdef __CUDACC__
-	inline     __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	virtual ~Divide(){}
+	virtual inline  ~Divide(){}
 
 };
 
@@ -171,11 +159,9 @@ class Equals : public virtual ScalarTransform<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline       __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	T op(T	d1,	T d2, T	*params) {
+	inline T op(T	d1,	T d2, T	*params) {
 		return d1 == d2;
 	}
 	/** Name of the op
@@ -189,11 +175,9 @@ class Equals : public virtual ScalarTransform<T> {
 		return std::string("eq_scalar");
 	}
 #ifdef __CUDACC__
-	inline     __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	virtual ~Equals(){}
+	virtual inline  ~Equals(){}
 
 };
 
@@ -208,11 +192,9 @@ class GreaterThan : public virtual ScalarTransform<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline      __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	T op(T	d1,	T d2, T	*params) {
+	inline T op(T	d1,	T d2, T	*params) {
 		return d1 > d2;
 	}
 	/** Name of the op
@@ -226,11 +208,9 @@ class GreaterThan : public virtual ScalarTransform<T> {
 		return std::string("gt_scalar");
 	}
 #ifdef __CUDACC__
-	inline     __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	virtual ~GreaterThan(){}
+	virtual inline  ~GreaterThan(){}
 
 };
 
@@ -245,11 +225,9 @@ class LessThan: public virtual ScalarTransform<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline       __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	T op(T	d1,	T d2, T	*params) {
+	inline T op(T	d1,	T d2, T	*params) {
 		return d1 < d2;
 	}
 	/** Name of the op
@@ -263,11 +241,9 @@ class LessThan: public virtual ScalarTransform<T> {
 		return std::string("add_scalar");
 	}
 #ifdef __CUDACC__
-	inline     __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	virtual ~LessThan(){}
+	virtual inline  ~LessThan(){}
 
 };
 
@@ -282,11 +258,9 @@ class LessThanOrEqual : public virtual ScalarTransform<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline    __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	T op(T	d1,	T d2, T	*params) {
+	inline T op(T	d1,	T d2, T	*params) {
 		return d1 <= d2;
 	}
 	/** Name of the op
@@ -300,11 +274,9 @@ class LessThanOrEqual : public virtual ScalarTransform<T> {
 		return std::string("ltoreq_scalar");
 	}
 #ifdef __CUDACC__
-	inline     __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	virtual ~LessThanOrEqual(){}
+	virtual inline  ~LessThanOrEqual(){}
 
 };
 
@@ -319,11 +291,9 @@ class Max : public virtual ScalarTransform<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline     __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	T op(T	d1,	T d2, T	*params) {
+	inline T op(T	d1,	T d2, T	*params) {
 		return nd4j::math::nd4j_max<T>(d1,d2);
 	}
 	/** Name of the op
@@ -337,11 +307,9 @@ class Max : public virtual ScalarTransform<T> {
 		return std::string("max_scalar");
 	}
 #ifdef __CUDACC__
-	inline     __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	virtual ~Max(){}
+	virtual inline  ~Max(){}
 
 };
 
@@ -356,11 +324,9 @@ class Min: public virtual ScalarTransform<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline      __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	T op(T	d1,	T d2, T	*params) {
+	inline T op(T	d1,	T d2, T	*params) {
 		return nd4j::math::nd4j_min<T>(d1,d2);
 	}
 	/** Name of the op
@@ -374,11 +340,9 @@ class Min: public virtual ScalarTransform<T> {
 		return std::string("min_scalar");
 	}
 #ifdef __CUDACC__
-	inline     __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	virtual ~Min(){}
+	virtual inline  ~Min(){}
 
 };
 
@@ -393,11 +357,9 @@ class Multiply : public virtual ScalarTransform<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline     __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	T op(T	d1,	T d2, T	*params) {
+	inline T op(T	d1,	T d2, T	*params) {
 		return d1 * d2;
 	}
 	/** Name of the op
@@ -411,11 +373,9 @@ class Multiply : public virtual ScalarTransform<T> {
 		return std::string("mul_scalar");
 	}
 #ifdef __CUDACC__
-	inline     __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	virtual ~Multiply(){}
+	virtual inline  ~Multiply(){}
 
 };
 
@@ -430,11 +390,9 @@ class NotEquals : public virtual ScalarTransform<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline      __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	T op(T	d1,	T d2, T	*params) {
+	inline T op(T	d1,	T d2, T	*params) {
 		return d1 != d2;
 	}
 	/** Name of the op
@@ -448,11 +406,9 @@ class NotEquals : public virtual ScalarTransform<T> {
 		return std::string("noteq_scalar");
 	}
 #ifdef __CUDACC__
-	inline     __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	virtual ~NotEquals(){}
+	virtual inline  ~NotEquals(){}
 
 };
 
@@ -467,11 +423,9 @@ class ReverseDivide : public virtual ScalarTransform<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline       __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	T op(T	d1,	T d2, T	*params) {
+	inline T op(T	d1,	T d2, T	*params) {
 		return d2 / d1;
 	}
 	/** Name of the op
@@ -485,11 +439,9 @@ class ReverseDivide : public virtual ScalarTransform<T> {
 		return std::string("rdiv_scalar");
 	}
 #ifdef __CUDACC__
-	inline     __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	virtual ~ReverseDivide(){}
+	virtual inline  ~ReverseDivide(){}
 
 };
 
@@ -504,11 +456,9 @@ class ReverseSubtract : public virtual ScalarTransform<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline    __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	T op(T	d1,	T d2, T	*params) {
+	inline T op(T	d1,	T d2, T	*params) {
 		return d2 - d1;
 	}
 	/** Name of the op
@@ -522,11 +472,9 @@ class ReverseSubtract : public virtual ScalarTransform<T> {
 		return std::string("rsib_scalar");
 	}
 #ifdef __CUDACC__
-	inline     __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	virtual ~ReverseSubtract(){}
+	virtual inline  ~ReverseSubtract(){}
 
 };
 
@@ -541,11 +489,9 @@ class Set : public virtual ScalarTransform<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline     __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	T op(T	d1,	T d2, T	*params) {
+	inline T op(T	d1,	T d2, T	*params) {
 		return d2;
 	}
 	/** Name of the op
@@ -559,11 +505,9 @@ class Set : public virtual ScalarTransform<T> {
 		return std::string("set_scalar");
 	}
 #ifdef __CUDACC__
-	inline     __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	virtual ~Set(){}
+	virtual inline  ~Set(){}
 
 };
 
@@ -578,11 +522,9 @@ class Subtract : public virtual ScalarTransform<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline     __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	T op(T	d1,	T d2, T	*params) {
+	inline T op(T	d1,	T d2, T	*params) {
 		return d1 - d2;
 	}
 	/** Name of the op
@@ -597,11 +539,9 @@ class Subtract : public virtual ScalarTransform<T> {
 		return std::string("sub_scalar");
 	}
 #ifdef __CUDACC__
-	inline     __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	virtual ~Subtract(){}
+	virtual inline  ~Subtract(){}
 
 };
 
@@ -616,11 +556,9 @@ class SetValOrLess : public virtual ScalarTransform<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline       __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	T op(T	d1,	T d2, T	*params) {
+	inline T op(T	d1,	T d2, T	*params) {
 		if(d2 < d1) {
 			return d1;
 		}
@@ -638,11 +576,9 @@ class SetValOrLess : public virtual ScalarTransform<T> {
 	}
 
 #ifdef __CUDACC__
-	inline     __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	virtual ~SetValOrLess(){}
+	virtual inline  ~SetValOrLess(){}
 
 };
 }

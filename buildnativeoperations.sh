@@ -5,6 +5,7 @@ else
     command="$1"
     echo "Running $1"
     if [ "$1" == "clean" ]; then
+       rm -f CMakeCache.txt
        rm -rf build
        echo "Deleted build"
     elif [ "$1" ==  "eclipse" ]; then

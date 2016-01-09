@@ -745,7 +745,7 @@ public:
 	}
 	virtual
 #ifdef __CUDACC__
-	inline     __host__ __device__
+	__host__ __device__
 #elif defined(__GNUC__)
 	__always_inline
 #endif
@@ -791,7 +791,7 @@ public:
 
 	virtual
 #ifdef __CUDACC__
-	inline     __host__ __device__
+	__host__ __device__
 #elif defined(__GNUC__)
 	__always_inline
 #endif
@@ -810,7 +810,7 @@ public:
 	}
 	virtual
 #ifdef __CUDACC__
-	inline     __host__ __device__
+	__host__ __device__
 #elif defined(__GNUC__)
 	__always_inline
 #endif
@@ -837,7 +837,7 @@ public:
 
 	virtual
 #ifdef __CUDACC__
-	inline     __host__ __device__
+	__host__ __device__
 #endif
 	~Mean() {}
 };
@@ -876,7 +876,7 @@ public:
 	}
 	virtual
 #ifdef __CUDACC__
-	inline     __host__ __device__
+	__host__ __device__
 #elif defined(__GNUC__)
 	__always_inline
 #endif
@@ -1085,7 +1085,7 @@ public:
 
 	virtual
 #ifdef __CUDACC__
-	inline     __host__ __device__
+	__host__ __device__
 #elif defined(__GNUC__)
 	__always_inline
 #endif
@@ -1199,7 +1199,7 @@ public:
 
 	virtual
 #ifdef __CUDACC__
-	inline     __host__ __device__
+	__host__ __device__
 #elif defined(__GNUC__)
 	__always_inline
 #endif
@@ -1209,7 +1209,7 @@ public:
 	}
 	virtual
 #ifdef __CUDACC__
-	inline     __host__ __device__
+	__host__ __device__
 #elif defined(__GNUC__)
 	__always_inline
 #endif

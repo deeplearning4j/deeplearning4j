@@ -28,7 +28,7 @@ public:
 #endif
 	std::string name() = 0;
 
-	virtual
+	virtual inline
 #ifdef __CUDACC__
 	__host__ __device__
 #endif

@@ -7,6 +7,7 @@
 
 #include <transform.h>
 #include <array.h>
+#include <templatemath.h>
 #include <shape.h>
 #include "testhelpers.h"
 

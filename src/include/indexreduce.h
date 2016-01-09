@@ -731,7 +731,7 @@ public:
 
 
 #ifdef __CUDACC__
-	inline     __host__ __device__
+	__host__ __device__
 #elif defined(__GNUC__)
 	__always_inline
 #endif
@@ -852,7 +852,7 @@ class IMax : public virtual functions::indexreduce::IndexReduce<T> {
 		return d1;
 	}
 #ifdef __CUDACC__
-	inline     __host__ __device__
+	__host__ __device__
 #elif defined(__GNUC__)
 	__always_inline
 #endif
@@ -971,7 +971,7 @@ class IMin : public virtual functions::indexreduce::IndexReduce<T> {
 	}
 
 #ifdef __CUDACC__
-	inline     __host__ __device__
+	__host__ __device__
 #elif defined(__GNUC__)
 	__always_inline
 #endif

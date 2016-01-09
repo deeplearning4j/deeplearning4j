@@ -19,11 +19,9 @@ public:
 
 	virtual
 #ifdef __CUDACC__
-	inline   __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) = 0;
+	inline T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) = 0;
 
 	/**
 	 *
@@ -35,11 +33,9 @@ public:
 	//an op for the kernel
 	virtual
 #ifdef __CUDACC__
-	inline   __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	T op(T d1, T d2, T *extraParams) = 0;
+	inline T op(T d1, T d2, T *extraParams) = 0;
 
 	//calculate an update of the reduce operation
 	/**
@@ -51,11 +47,9 @@ public:
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline    __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	T update(T old, T opOutput, T *extraParams) = 0;
+	inline T update(T old, T opOutput, T *extraParams) = 0;
 
 
 	/**
@@ -67,11 +61,9 @@ public:
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline  __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	T merge(T old,T opOutput, T *extraParams) = 0;
+	inline T merge(T old,T opOutput, T *extraParams) = 0;
 
 
 #ifdef __CUDACC__
@@ -439,9 +431,7 @@ public:
 	}
 
 #ifdef __CUDACC__
-	inline     __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
 	virtual ~Reduce3() {}
 
@@ -453,9 +443,9 @@ namespace ops {
 template <typename T>
 class CosineSimilarity : public virtual Reduce3<T> {
 #ifdef __CUDACC__
-	inline        __host__ __device__
+	__host__ __device__
 #endif
-	T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) {
+	inline T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) {
 		return reduction / (extraParams[1] * extraParams[2]);
 	}
 	/**
@@ -468,11 +458,9 @@ class CosineSimilarity : public virtual Reduce3<T> {
 	//an op for the kernel
 	virtual
 #ifdef __CUDACC__
-	inline      __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	T op(T d1, T d2, T *extraParams) {
+	inline T op(T d1, T d2, T *extraParams) {
 		return d1 * d2;
 	}
 
@@ -486,11 +474,9 @@ class CosineSimilarity : public virtual Reduce3<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline     __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	T update(T old, T opOutput, T *extraParams) {
+	inline T update(T old, T opOutput, T *extraParams) {
 		return old + opOutput;
 	}
 
@@ -505,10 +491,8 @@ class CosineSimilarity : public virtual Reduce3<T> {
 	virtual
 #ifdef __CUDACC__
 	__host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
 #endif
-	T merge(T old,T opOutput, T *extraParams) {
+	inline T merge(T old,T opOutput, T *extraParams) {
 		return update(old,opOutput,extraParams);
 	}
 
@@ -524,9 +508,7 @@ class CosineSimilarity : public virtual Reduce3<T> {
 		return std::string("cosinesimilarity_strided");
 	}
 #ifdef __CUDACC__
-	inline     __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
 	virtual ~CosineSimilarity() {}
 };
@@ -535,11 +517,9 @@ class CosineSimilarity : public virtual Reduce3<T> {
 template <typename T>
 class EuclideanDistance : public virtual Reduce3<T> {
 #ifdef __CUDACC__
-	inline     __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) {
+	inline T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) {
 		return nd4j::math::nd4j_sqrt<T>(reduction);
 	}
 	/**
@@ -552,11 +532,9 @@ class EuclideanDistance : public virtual Reduce3<T> {
 	//an op for the kernel
 	virtual
 #ifdef __CUDACC__
-	inline      __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	T op(T d1, T d2, T *extraParams) {
+	inline T op(T d1, T d2, T *extraParams) {
 		return d1 - d2;
 	}
 
@@ -570,11 +548,9 @@ class EuclideanDistance : public virtual Reduce3<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline     __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	T update(T old, T opOutput, T *extraParams) {
+	inline T update(T old, T opOutput, T *extraParams) {
 		T squared = nd4j::math::nd4j_pow(opOutput,2.0);
 		return squared + old;
 	}
@@ -589,11 +565,9 @@ class EuclideanDistance : public virtual Reduce3<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline     __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	T merge(T old,T opOutput, T *extraParams) {
+	inline T merge(T old,T opOutput, T *extraParams) {
 		return update(old,opOutput,extraParams);
 	}
 
@@ -609,9 +583,7 @@ class EuclideanDistance : public virtual Reduce3<T> {
 		return std::string("euclidean_strided");
 	}
 #ifdef __CUDACC__
-	inline     __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
 	virtual ~EuclideanDistance() {}
 };
@@ -619,11 +591,9 @@ class EuclideanDistance : public virtual Reduce3<T> {
 template <typename T>
 class ManhattanDistance : public virtual Reduce3<T> {
 #ifdef __CUDACC__
-	inline      __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) {
+	inline T postProcess(T reduction,int n,int xOffset,T *dx,int incx,T *extraParams,T *result) {
 		return reduction / extraParams[0] / extraParams[1];
 	}
 	/**
@@ -636,11 +606,9 @@ class ManhattanDistance : public virtual Reduce3<T> {
 	//an op for the kernel
 	virtual
 #ifdef __CUDACC__
-	inline     __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	T op(T d1, T d2, T *extraParams) {
+	inline T op(T d1, T d2, T *extraParams) {
 		return d1 - d2;
 	}
 
@@ -654,11 +622,9 @@ class ManhattanDistance : public virtual Reduce3<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline    __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	T update(T old, T opOutput, T *extraParams) {
+	inline T update(T old, T opOutput, T *extraParams) {
 		return nd4j::math::nd4j_pow<T>(old,2) + opOutput;
 	}
 
@@ -672,11 +638,9 @@ class ManhattanDistance : public virtual Reduce3<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline    __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
-	T merge(T old,T opOutput, T *extraParams) {
+	inline T merge(T old,T opOutput, T *extraParams) {
 		return update(old,opOutput,extraParams);
 	}
 
@@ -692,9 +656,7 @@ class ManhattanDistance : public virtual Reduce3<T> {
 		return std::string("manhattan_strided");
 	}
 #ifdef __CUDACC__
-	inline     __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+	__host__ __device__
 #endif
 	virtual ~ManhattanDistance() {}
 };

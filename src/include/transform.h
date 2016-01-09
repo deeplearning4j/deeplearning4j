@@ -165,7 +165,7 @@ class Cosine : public virtual Transform<T> {
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline     __host__ __device__
+	__host__ __device__
 #elif defined(__GNUC__)
 	__always_inline
 #endif
@@ -722,7 +722,7 @@ class ACos : public virtual Transform<T> {
 
 
 #ifdef __CUDACC__
-	inline     __host__ __device__
+	__host__ __device__
 #elif defined(__GNUC__)
 	__always_inline
 #endif
@@ -801,7 +801,7 @@ class ATan : public virtual Transform<T> {
 
 
 #ifdef __CUDACC__
-	inline     __host__ __device__
+	__host__ __device__
 #elif defined(__GNUC__)
 	__always_inline
 #endif
