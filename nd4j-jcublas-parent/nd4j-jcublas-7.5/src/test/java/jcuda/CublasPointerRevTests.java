@@ -14,6 +14,7 @@ import org.nd4j.linalg.jcublas.buffer.allocation.PageableDirectBufferMemoryStrat
 import org.nd4j.linalg.jcublas.buffer.allocation.PinnedMemoryStrategy;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.context.CudaContext;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,13 +61,19 @@ public class CublasPointerRevTests {
      */
     @Test
     public void testForcedMemoryStrategy() throws Exception {
+        ContextHolder.getInstance().forceMemoryStrategyForThread(new PinnedMemoryStrategy());
+
+        assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
+
         ContextHolder.getInstance().forceMemoryStrategyForThread(new PageableDirectBufferMemoryStrategy());
 
         assertEquals("PageableDirectBufferMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
 
-        ContextHolder.getInstance().forceMemoryStrategyForThread(new PinnedMemoryStrategy());
+        // explicit check for nullified forced strategy, this should get back to default memory strategy for crr
+        ContextHolder.getInstance().forceMemoryStrategyForThread(null);
 
         assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
+
     }
 
     /**
@@ -192,10 +199,10 @@ public class CublasPointerRevTests {
         JCublas2.cublasDdot(
                 ctx.getHandle(),
                 array1.length(),
-                xCPointer.getDevicePointer().withByteOffset(array1.offset() * array1.data().getElementSize()),
-                BlasBufferUtil.getBlasStride(array1),
-                yCPointer.getDevicePointer().withByteOffset(array2.offset() * array2.data().getElementSize()),
-                BlasBufferUtil.getBlasStride(array2),
+                xCPointer.getDevicePointer(),
+                1,
+                yCPointer.getDevicePointer(),
+                1,
                 result);
         ctx.syncOldStream();
 
@@ -218,6 +225,8 @@ public class CublasPointerRevTests {
         assertTrue(buffer.isFreed());
 
         // Please note: we do NOT test result pointer here,since we assume it's handled by JCuda
+
+        System.out.println("Dot product: " + ret[0] + " Dot wrapped: " + dotWrapped);
     }
 
 
@@ -360,10 +369,10 @@ public class CublasPointerRevTests {
         assertEquals(200000, buffer2.length());
 
 
-        JCublas2.cublasDaxpy(
+        JCublas2.cublasSaxpy(
                 ctx.getHandle(),
                 slice1.length(),
-                Pointer.to(new double[]{1.0}),
+                Pointer.to(new float[]{1.0f}),
                 xAPointer.getDevicePointer().withByteOffset(slice1.offset() * slice1.data().getElementSize()),
                 BlasBufferUtil.getBlasStride(slice1),
                 xBPointer.getDevicePointer().withByteOffset(slice2.offset() * slice2.data().getElementSize()),
@@ -371,7 +380,7 @@ public class CublasPointerRevTests {
         ctx.syncOldStream();
 
         //now, since we have result array, we call for explicit copyback
-        double valBefore = slice2.getDouble(0);
+        double valBefore = slice2.getFloat(0);
 
         xBPointer.copyToHost();
 
@@ -436,5 +445,112 @@ public class CublasPointerRevTests {
         xAPointer.close();
         xBPointer.close();
 
+    }
+
+
+    @Test
+    public void testPageableBlasCallValue() throws Exception {
+        // simple way to stop test if we're not on CUDA backend here
+        assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
+
+        // reset to default MemoryStrategy, most probable is Pinned
+        ContextHolder.getInstance().forceMemoryStrategyForThread(new PageableDirectBufferMemoryStrategy());
+
+        assertEquals("PageableDirectBufferMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
+
+        CudaContext ctx = CudaContext.getBlasContext();
+
+        INDArray array1 = Nd4j.create(new float[]{1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
+        INDArray array2 = Nd4j.create(new float[]{1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f});
+
+
+        double dotWrapped = Nd4j.getBlasWrapper().dot(array1, array2);
+
+        CublasPointer xAPointer = new CublasPointer(array1,ctx);
+        CublasPointer xBPointer = new CublasPointer(array2,ctx);
+
+        float[] ret = new float[1];
+        ret[0] = 0;
+        Pointer result = Pointer.to(ret);
+
+
+        JCublas2.cublasSdot(
+                ctx.getHandle(),
+                array1.length(),
+                xAPointer.getDevicePointer().withByteOffset(array1.offset() * array1.data().getElementSize()),
+                BlasBufferUtil.getBlasStride(array1),
+                xBPointer.getDevicePointer().withByteOffset(array2.offset() * array2.data().getElementSize()),
+                BlasBufferUtil.getBlasStride(array2),
+                result);
+        ctx.syncOldStream();
+
+
+
+        ctx.finishBlasOperation();
+
+
+        double res = ret[0]; //  / (norm1.doubleValue() * norm2.doubleValue());
+
+        System.out.println("Val before: [0], after: ["+ ret[0]+"], norm: [" + res +"], dotWrapped: [" + dotWrapped + "]");
+
+        xAPointer.close();
+        xBPointer.close();
+
+        assertEquals(dotWrapped, res, 0.001d);
+    }
+
+    @Test
+    public void tesPinnedBlasCallValue() throws Exception {
+        // simple way to stop test if we're not on CUDA backend here
+        assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
+
+        // reset to default MemoryStrategy, most probable is Pinned
+        ContextHolder.getInstance().forceMemoryStrategyForThread(null);
+
+        assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
+
+        CudaContext ctx = CudaContext.getBlasContext();
+
+        INDArray array1 = Nd4j.create(new float[]{1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
+        INDArray array2 = Nd4j.create(new float[]{1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
+
+
+        double dotWrapped = Nd4j.getBlasWrapper().dot(array1, array2);
+
+        CublasPointer xAPointer = new CublasPointer(array1,ctx);
+        CublasPointer xBPointer = new CublasPointer(array2,ctx);
+
+        float[] ret = new float[1];
+        Pointer result = Pointer.to(ret);
+
+        System.out.println("Offset: ["+ array1.offset()+"], stride: ["+ BlasBufferUtil.getBlasStride(array1)+"]");
+        System.out.println("Offset: ["+ array2.offset()+"], stride: ["+ BlasBufferUtil.getBlasStride(array2)+"]");
+
+        try {
+            JCublas2.cublasSdot(
+                    ctx.getHandle(),
+                    array1.length(),
+                    xAPointer.getDevicePointer().withByteOffset(array1.offset() * array1.data().getElementSize()),
+                    BlasBufferUtil.getBlasStride(array1),
+                    xBPointer.getDevicePointer().withByteOffset(array2.offset() * array2.data().getElementSize()),
+                    BlasBufferUtil.getBlasStride(array2),
+                    result);
+            ctx.syncOldStream();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        xAPointer.close();
+        xBPointer.close();
+
+        ctx.finishBlasOperation();
+
+
+
+        double res = ret[0]; //  / (norm1.doubleValue() * norm2.doubleValue());
+
+
+        System.out.println("Val before: [0], after: ["+ ret[0]+"], norm: [" + res +"], wrapped: [" + dotWrapped + "]");
+        assertEquals(dotWrapped, res, 0.001d);
     }
 }

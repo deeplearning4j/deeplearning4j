@@ -10,8 +10,13 @@ import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.jcublas.buffer.DevicePointerInfo;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
+import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
+import org.nd4j.linalg.util.NioUtil;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 
 /**
@@ -109,9 +114,30 @@ public class PageableDirectBufferMemoryStrategy implements MemoryStrategy {
     @Override
     public Object alloc(DataBuffer buffer, int stride, int offset, int length, boolean initData) {
         Pointer hostData = new Pointer();
-        HostDevicePointer devicePointer = new HostDevicePointer(PointerUtil.getHostPointer(buffer),hostData);
+        Pointer hostPointer = PointerUtil.getHostPointer(buffer);
+        HostDevicePointer devicePointer = new HostDevicePointer(hostPointer,hostData);
         JCuda.cudaMalloc(hostData,buffer.length() * buffer.getElementSize());
-        return new DevicePointerInfo(devicePointer,buffer.getElementSize() * buffer.length(),stride,offset,false);
+
+        DevicePointerInfo devicePointerInfo = new DevicePointerInfo(devicePointer,buffer.getElementSize() * buffer.length(),stride,offset,false);
+        if (initData) {
+            JCuda.cudaMemcpyAsync(
+                    devicePointerInfo.getPointers().getDevicePointer()
+                    , hostPointer
+                    , devicePointerInfo.getLength()
+                    , cudaMemcpyKind.cudaMemcpyHostToDevice
+                    , CudaContext.getBlasContext().getOldStream());
+        }
+
+        return devicePointerInfo;
+    }
+
+    private NioUtil.BufferType getBufferType(DataBuffer buffer) {
+        switch(buffer.dataType()) {
+            case DOUBLE: return NioUtil.BufferType.DOUBLE;
+            case INT: return NioUtil.BufferType.FLOAT;
+            case FLOAT: return NioUtil.BufferType.FLOAT;
+            default: throw new UnsupportedOperationException("Unsupported data buffer type");
+        }
     }
 
     @Override
