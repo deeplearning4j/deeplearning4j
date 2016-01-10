@@ -27,7 +27,7 @@ Without the engagement of Skymind customers and the generous backing of [Tencent
 
 ## DL4J Co-founders
 
-| Name    | [Gitter Id](gitter.im/deeplearning4j/deeplearning4j) | Org | Time Zone
+| Name    | [Gitter Id](https://gitter.im/deeplearning4j/deeplearning4j) | Org | Time Zone
 | ------------- |:-------------:| :-----:| :-----:|-----:|
 | Adam Gibson | agibsonccc      | [Skymind](http://skymind.io) | GMT -8 |
 | Chris Nicholson | chrisvnicholson | [Skymind](http://skymind.io) | GMT -8 |
