@@ -4,11 +4,11 @@ layout: default
 
 # Beginner's Guide to Deep Learning and Reinforcement Learning
 
-Neural networks are well known for many recent advances in such diverse fields as computer vision, machine translation and time series prediction – but reinforcement learning may be their killer app. 
+Neural networks have become well known for recent advances in such diverse fields as computer vision, machine translation and time series prediction – but reinforcement learning may be their killer app. 
 
-Reinforcement learning is goal-oriented. RL algorithms learn how to attain a complex objective over many steps, starting from a blank slate, and under the right conditions achieving superhuman performance. 
+Reinforcement learning is goal-oriented. RL algorithms learn how to attain a complex objective or maximize along a dimension over many steps, starting from a blank slate, and under the right conditions they achieve superhuman performance. 
 
-Reinforcement algorithms with deep learning at their core are currently beating humans at numerous Atari video games. While that may sound trivial, it’s a vast improvement over their previous accomplishments, and advancing rapidly courtesy of DeepMind.
+Reinforcement algorithms with deep learning at their core are currently beating expert humans at numerous [Atari video games](https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf). While that may sound trivial, it’s a vast improvement over their previous accomplishments, and they are advancing rapidly courtesy of [Google's DeepMind](http://deepmind.com/). 
 
 In time, we expect RL to perform better in more ambiguous, real-life environments while choosing from an arbitrary number of possible actions, rather than from the limited options of a video game. When people talk about building robot armies, this is what they mean. :) 
 
@@ -24,7 +24,7 @@ An **action** is almost self-explanatory, but it should be noted that agents cho
 
 A **reward** is the feedback by which we measure the success or failure of an agent’s actions. For example, in a video game, when Mario touches a coin, he wins points. An agent sends output in the form of actions to the environment, and the environment returns the agent’s new state as well as rewards.
 
-IMAGE HERE
+![Alt text](../img/simple_RL_schema.png)
 
 In the feedback loop above, the subscripts denote time steps t and t+1, each of which refer to different states: the state at moment t, and the state at moment t+1. Unlike other forms of machine learning – such as supervised and unsupervised learning -- reinforcement learning can only be thought about sequentially in terms of state-action pairs that occur one after the other. 
 
@@ -77,3 +77,7 @@ Reinforcement learning relies on the environment to send it a scalar number in r
 This leads us to a more complete expression of the Q function, which takes into account not only the immediate rewards produced by an action, but also the delayed rewards that may be returned several time steps deeper in the sequence.
 
 Like human beings, the Q function is recursive. Just as calling the wetware method human() contains within it another method human(), of which we are all the fruit, calling the Q function on a given state-action pair requires us to call a nested Q function to predict the value of the next state, which in turn depends on the Q function of the state after that, and so forth. 
+
+## Further Reading
+
+* Andrej Karpathy's [ConvNetJS Deep Q Learning Demo](https://cs.stanford.edu/people/karpathy/convnetjs/demo/rldemo.html)
