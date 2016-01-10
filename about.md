@@ -35,7 +35,7 @@ Without the engagement of Skymind customers and the generous backing of [Tencent
 
 ## Major DL4J Contributors 
 
-| Name    | [Gitter Id](gitter.im/deeplearning4j/deeplearning4j) | Org | Time Zone
+| Name    | [Gitter Id](https://gitter.im/deeplearning4j/deeplearning4j) | Org | Time Zone
 | ------------- |:-------------:| :-----:| :-----:|-----:|
 | Alex Black  |  AlexDBlack | [Skymind](http://skymind.io) | GMT +10 |
 | Suneel Marthi  |  smarthi | Red Hat  | GMT -5 |
