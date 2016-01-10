@@ -38,6 +38,8 @@ Unsupervised learning: That thing is like this other thing. (Similarities w/o na
 Supervised learning: That thing is a “double bacon cheese burger”. (Labels)
 Reinforcement learning: Eat that thing because it tastes good and will keep you alive. (Actions based on short- and long-term rewards.) 
 
+<iframe src="https://youtu.be/-uXVu0l8guo" width="100%" height="630px;" style="border:none;"></iframe>
+
 The goal of reinforcement learning is to pick the best known action in any state, which means the actions have to be ranked, assigned values relative to one another. 
 
 Since those actions are state dependent, what we are really gauging is the value of state-action pairs; i.e. an action taken from a certain state, something you did somewhere. 
