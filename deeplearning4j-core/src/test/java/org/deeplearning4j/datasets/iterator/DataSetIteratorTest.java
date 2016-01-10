@@ -2,8 +2,7 @@ package org.deeplearning4j.datasets.iterator;
 
 import static org.junit.Assert.*;
 
-import java.util.Arrays;
-import java.util.Random;
+import java.util.*;
 
 import org.canova.api.records.reader.impl.CSVRecordReader;
 import org.canova.api.split.FileSplit;
@@ -27,7 +26,6 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -164,8 +162,7 @@ public class DataSetIteratorTest {
 
 	}
 
-	// TODO finish hooking up cifar data
-	@Test @Ignore
+	@Test
 	public void testCifarIterator() throws Exception {
 		int numExamples = 10;
 		int row = 28;
@@ -178,19 +175,20 @@ public class DataSetIteratorTest {
 		assertEquals(row*col*channels, data.getFeatureMatrix().size(1));
 	}
 
-	@Test @Ignore
+
+	@Test
 	public void testCifarModel() throws Exception{
-		final int numRows = 32;
-		final int numColumns = 32;
-		int numChannels = 3;
+		final int height = 32;
+		final int width = 32;
+		int channels = 3;
 		int outputNum = CifarLoader.NUM_LABELS;
-		int numSamples = 4;
-		int batchSize = 2;
+		int numSamples = 100;
+		int batchSize = 5;
 		int iterations = 1;
 		int seed = 123;
 		int listenerFreq = iterations;
 
-		CifarDataSetIterator cifar = new CifarDataSetIterator(batchSize, numSamples, new int[] {numRows,numColumns,numChannels}, outputNum);
+		CifarDataSetIterator cifar = new CifarDataSetIterator(batchSize, numSamples, "TRAIN");
 
 		MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
 				.seed(seed)
@@ -199,7 +197,7 @@ public class DataSetIteratorTest {
 				.optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
 				.list(3)
 				.layer(0, new ConvolutionLayer.Builder(5, 5)
-						.nIn(numChannels)
+						.nIn(channels)
 						.nOut(6)
 						.weightInit(WeightInit.XAVIER)
 						.activation("relu")
@@ -211,20 +209,23 @@ public class DataSetIteratorTest {
 						.weightInit(WeightInit.XAVIER)
 						.activation("softmax")
 						.build())
-				.backprop(true).pretrain(false);
-		new ConvolutionLayerSetup(builder,numRows,numColumns,numChannels);
+				.backprop(true).pretrain(false)
+				.cnnInputSize(height, width, channels);
 
 		MultiLayerNetwork model = new MultiLayerNetwork(builder.build());
 		model.init();
 
 		model.setListeners(Arrays.asList((IterationListener) new ScoreIterationListener(listenerFreq)));
 
-		model.fit(cifar.next());
+		model.fit(cifar);
 
-		DataSet dataTest = cifar.next();
-		INDArray output = model.output(dataTest.getFeatureMatrix());
-		Evaluation eval = new Evaluation(outputNum);
-		eval.eval(dataTest.getLabels(), output);
+		cifar = new CifarDataSetIterator(batchSize, numSamples, "TEST");
+		Evaluation eval = new Evaluation(cifar.getLabels());
+		while(cifar.hasNext()) {
+			DataSet testDS = cifar.next(batchSize);
+			INDArray output = model.output(testDS.getFeatureMatrix());
+			eval.eval(testDS.getLabels(), output);
+		}
 		System.out.println(eval.stats());
 
 
