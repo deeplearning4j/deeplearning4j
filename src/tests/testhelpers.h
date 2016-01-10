@@ -51,6 +51,4 @@ void assertBufferProperties(int *shapeBuffer) {
 
 
 
-
-
 #endif /* TESTHELPERS_H_ */

@@ -14,6 +14,7 @@ namespace transform {
 
 template<typename T>
 class Transform: public virtual functions::ops::Op<T> {
+public:
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -69,12 +70,20 @@ public:
 #endif
 	virtual ~Transform() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	Transform() {
+	}
 
 };
 
 namespace ops {
 template<typename T>
 class Abs: public virtual Transform<T> {
+public:
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -111,10 +120,18 @@ class Abs: public virtual Transform<T> {
 #endif
 	virtual ~Abs() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	Abs() {
+	}
 };
 
 template<typename T>
 class Ceiling: public virtual Transform<T> {
+public:
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -151,10 +168,18 @@ class Ceiling: public virtual Transform<T> {
 #endif
 	virtual ~Ceiling() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	Ceiling() {
+	}
 };
 
 template<typename T>
 class Cosine: public virtual Transform<T> {
+public:
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -193,10 +218,18 @@ class Cosine: public virtual Transform<T> {
 #endif
 	virtual ~Cosine() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	Cosine() {
+	}
 };
 
 template<typename T>
 class Exp: public virtual Transform<T> {
+public:
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -236,10 +269,18 @@ class Exp: public virtual Transform<T> {
 #endif
 	virtual ~Exp() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	Exp() {
+	}
 };
 
 template<typename T>
 class Floor: public virtual Transform<T> {
+public:
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -276,10 +317,18 @@ class Floor: public virtual Transform<T> {
 #endif
 	virtual ~Floor() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	Floor() {
+	}
 };
 
 template<typename T>
 class Log: public virtual Transform<T> {
+public:
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -319,10 +368,18 @@ class Log: public virtual Transform<T> {
 #endif
 	virtual ~Log() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	Log() {
+	}
 };
 
 template<typename T>
 class Neg: public virtual Transform<T> {
+public:
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -359,10 +416,18 @@ class Neg: public virtual Transform<T> {
 #endif
 	virtual ~Neg() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	Neg() {
+	}
 };
 
 template<typename T>
 class Pow: public virtual Transform<T> {
+public:
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -399,10 +464,18 @@ class Pow: public virtual Transform<T> {
 #endif
 	virtual ~Pow() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	Pow() {
+	}
 };
 
 template<typename T>
 class Round: public virtual Transform<T> {
+public:
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -439,10 +512,18 @@ class Round: public virtual Transform<T> {
 #endif
 	virtual ~Round() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	Round() {
+	}
 };
 
 template<typename T>
 class Sigmoid: public virtual Transform<T> {
+public:
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -479,10 +560,19 @@ class Sigmoid: public virtual Transform<T> {
 #endif
 	virtual ~Sigmoid() {
 	}
+
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	Sigmoid() {
+	}
 };
 
 template<typename T>
 class SetRange: public virtual Transform<T> {
+public:
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -532,10 +622,18 @@ class SetRange: public virtual Transform<T> {
 #endif
 	virtual ~SetRange() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	SetRange() {
+	}
 };
 
 template<typename T>
 class Sin: public virtual Transform<T> {
+public:
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -572,10 +670,18 @@ class Sin: public virtual Transform<T> {
 #endif
 	virtual ~Sin() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	Sin() {
+	}
 };
 
 template<typename T>
 class Sqrt: public virtual Transform<T> {
+public:
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -612,10 +718,18 @@ class Sqrt: public virtual Transform<T> {
 #endif
 	virtual ~Sqrt() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	Sqrt() {
+	}
 };
 
 template<typename T>
 class SoftPlus: public virtual Transform<T> {
+public:
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -652,10 +766,19 @@ class SoftPlus: public virtual Transform<T> {
 #endif
 	virtual ~SoftPlus() {
 	}
+
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	SoftPlus() {
+	}
 };
 
 template<typename T>
 class Sign: public virtual Transform<T> {
+public:
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -692,10 +815,18 @@ class Sign: public virtual Transform<T> {
 #endif
 	virtual ~Sign() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	Sign() {
+	}
 };
 
 template<typename T>
 class Tanh: public virtual Transform<T> {
+public:
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -732,10 +863,18 @@ class Tanh: public virtual Transform<T> {
 #endif
 	virtual ~Tanh() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	Tanh() {
+	}
 };
 
 template<typename T>
 class ACos: public virtual Transform<T> {
+public:
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -775,10 +914,18 @@ class ACos: public virtual Transform<T> {
 #endif
 	virtual ~ACos() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	ACos() {
+	}
 };
 
 template<typename T>
 class ASin: public virtual Transform<T> {
+public:
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -815,10 +962,18 @@ class ASin: public virtual Transform<T> {
 #endif
 	virtual ~ASin() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	ASin() {
+	}
 };
 
 template<typename T>
 class ATan: public virtual Transform<T> {
+public:
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -855,6 +1010,13 @@ class ATan: public virtual Transform<T> {
 #endif
 	virtual ~ATan() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	ATan() {
+	}
 };
 
 }
@@ -862,55 +1024,131 @@ class ATan: public virtual Transform<T> {
 template<typename T>
 class TransformOpFactory {
 public:
+#ifdef __CUDACC__
+	__device__ __host__
+#endif
 	TransformOpFactory() {
 	}
 
-	Transform<T> * getOp(std::string name) {
-		if (name == "abs_strided")
+
+#ifdef __CUDACC__
+	__device__ __host__
+#endif
+	Transform<T> * getOp(char *name) {
+		if (functions::ops::strcmp(name,"abs_strided") == 0) {
 			return new transform::ops::Abs<T>();
-		if (name == "ceil_strided")
-			return new transform::ops::Ceiling<T>();
-		if (name == "cos_strided")
+		}
+		if (functions::ops::strcmp(name,"ceil_strided") == 0) {
+			return new transform::ops::Ceiling<T> ();
+		}
+		if (functions::ops::strcmp(name,"cos_strided") == 0) {
 			return new transform::ops::Cosine<T>();
-		if (name == "exp_strided")
+		}
+		if (functions::ops::strcmp(name,"exp_strided") == 0) {
 			return new transform::ops::Exp<T>();
-		if (name == "floor_strided")
+		}
+		if (functions::ops::strcmp(name,"floor_strided") == 0) {
 			return new transform::ops::Floor<T>();
-		if (name == "log_strided")
+		}
+		if (functions::ops::strcmp(name,"log_strided") == 0) {
 			return new transform::ops::Log<T>();
-		if (name == "neg_strided")
+		}
+		if (functions::ops::strcmp(name,"neg_strided") == 0) {
 			return new transform::ops::Neg<T>();
-		if (name == "pow_strided")
+		}
+		if (functions::ops::strcmp(name,"pow_strided") == 0) {
 			return new transform::ops::Pow<T>();
-		if (name == "round_strided")
-			return new transform::ops::Round<T>();
-		if (name == "setrange_strided")
+		}
+		if (functions::ops::strcmp(name,"round_strided") == 0) {
+			return  new transform::ops::Round<T>();
+		}
+		if (functions::ops::strcmp(name,"setrange_strided") == 0) {
 			return new transform::ops::SetRange<T>();
-		if (name == "sigmoid_strided")
-			return new transform::ops::Sigmoid<T>();
-		if (name == "sign_strided")
+		}
+		if (functions::ops::strcmp(name,"sigmoid_strided") == 0) {
+			return  new transform::ops::Sigmoid<T>();
+		}
+		if (functions::ops::strcmp(name,"sign_strided") == 0) {
 			return new transform::ops::Sign<T>();
-		if (name == "sin_strided")
+		}
+		if (functions::ops::strcmp(name,"sin_strided") == 0) {
 			return new transform::ops::Sin<T>();
-		if (name == "softplus_strided")
+		}
+		if (functions::ops::strcmp(name,"softplus_strided") == 0) {
 			return new transform::ops::SoftPlus<T>();
-		if (name == "sqrt_strided")
+		}
+		if (functions::ops::strcmp(name,"sqrt_strided") == 0) {
 			return new transform::ops::Sqrt<T>();
-		if (name == "tanh_strided")
+		}
+		if (functions::ops::strcmp(name,"tanh_strided") == 0) {
 			return new transform::ops::Tanh<T>();
-		if (name == "acos_strided")
-			return new transform::ops::ACos<T>();
-		if (name == "asin_strided")
+		}
+		if (functions::ops::strcmp(name,"acos_strided") == 0) {
+			return new transform::ops::ACos<T> ();
+		}
+		if (functions::ops::strcmp(name,"asin_strided") == 0) {
 			return new transform::ops::ASin<T>();
-		if (name == "atan_strided")
+		}
+		if (functions::ops::strcmp(name,"atan_strided") == 0) {
 			return new transform::ops::ATan<T>();
+		}
 		return NULL;
 	}
+
+
 
 };
 
 }
 
 }
+
+#ifdef __CUDACC__
+__constant__ functions::transform::TransformOpFactory<double> *doubleTransformFactory;
+__constant__ functions::transform::TransformOpFactory<float> *floatTransformFactory;
+
+
+extern "C" __global__ void transformDouble(
+		char *name,
+		int n,
+		int idx,
+		double *dy,
+		int incy,
+		double *params,
+		double *result, int blockSize) {
+
+	functions::transform::Transform<double> *op = doubleTransformFactory->getOp(name);
+	op->transform(n,idx,dy,incy,params,result,blockSize);
+	free(op);
+}
+
+extern "C" __global__ void transformFloat(
+		char *name,
+		int n,
+		int idx,
+		float *dy,
+		int incy,
+		float *params,
+		float *result, int blockSize) {
+
+	functions::transform::Transform<float> *op = floatTransformFactory->getOp(name);
+	op->transform(n,idx,dy,incy,params,result,blockSize);
+	free(op);
+}
+
+
+extern "C"
+__host__ void setupTransfromFactories() {
+	functions::transform::TransformOpFactory<double> *newOpFactory = new functions::transform::TransformOpFactory<double>();
+	functions::transform::TransformOpFactory<float> *newOpFactoryFloat = new functions::transform::TransformOpFactory<float>();
+	cudaMemcpyToSymbol("doubleTransformFactory", newOpFactory, sizeof(newOpFactory));
+	cudaMemcpyToSymbol("floatTransformFactory", newOpFactory, sizeof(newOpFactoryFloat));
+	free(newOpFactory);
+	free(newOpFactoryFloat);
+
+}
+
+
+#endif
 
 #endif /* TRANSFORM_H_ */

@@ -432,11 +432,18 @@ public:
 	virtual ~Reduce3() {
 	}
 
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	Reduce3() {
+	}
+
 };
 
 namespace ops {
 template<typename T>
 class CosineSimilarity: public virtual Reduce3<T> {
+public:
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
@@ -510,10 +517,16 @@ class CosineSimilarity: public virtual Reduce3<T> {
 #endif
 	virtual ~CosineSimilarity() {
 	}
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	CosineSimilarity() {
+	}
 };
 
 template<typename T>
 class EuclideanDistance: public virtual Reduce3<T> {
+public:
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
@@ -588,10 +601,16 @@ class EuclideanDistance: public virtual Reduce3<T> {
 #endif
 	virtual ~EuclideanDistance() {
 	}
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	EuclideanDistance() {
+	}
 };
 
 template<typename T>
 class ManhattanDistance: public virtual Reduce3<T> {
+public:
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
@@ -665,6 +684,11 @@ class ManhattanDistance: public virtual Reduce3<T> {
 #endif
 	virtual ~ManhattanDistance() {
 	}
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	virtual ManhattanDistance() {
+	}
 };
 
 }
@@ -686,11 +710,11 @@ public:
 #endif
 	Reduce3<T> * getOp(char * name) {
 		if (functions::ops::strcmp(name,"manhattan_strided"))
-			return (functions::reduce3::ops::ManhattanDistance<T> *) malloc(sizeof(functions::reduce3::ops::ManhattanDistance<T>));
+			return new functions::reduce3::ops::ManhattanDistance<T>();
 		else if (functions::ops::strcmp(name,"euclidean_strided"))
-			return (functions::reduce3::ops::EuclideanDistance<T> *) malloc(sizeof(functions::reduce3::ops::EuclideanDistance<T>));
+			return new functions::reduce3::ops::EuclideanDistance<T ();
 		else if (functions::ops::strcmp(name,"cosinesimilarity_strided"))
-			return (functions::reduce3::ops::CosineSimilarity<T> *) malloc(sizeof(functions::reduce3::ops::CosineSimilarity<T>));
+			return new functions::reduce3::ops::CosineSimilarity<T>();
 		return NULL;
 	}
 };

@@ -725,12 +725,20 @@ public:
 #endif
 	virtual ~IndexReduce() {
 	}
+#ifdef __CUDACC__
+	__host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	IndexReduce() {
+	}
 
 };
 
 namespace ops {
 template<typename T>
 class IMax: public virtual functions::indexreduce::IndexReduce<T> {
+public:
 	/**
 	 * Name of the op
 	 * @return the name of the operation
@@ -863,11 +871,19 @@ class IMax: public virtual functions::indexreduce::IndexReduce<T> {
 #endif
 	virtual ~IMax() {
 	}
+#ifdef __CUDACC__
+	__host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	IMax() {
+	}
 
 };
 
 template<typename T>
 class IMin: public virtual functions::indexreduce::IndexReduce<T> {
+public:
 	/**
 	 * Name of the op
 	 * @return the name of the operation
@@ -1001,7 +1017,13 @@ class IMin: public virtual functions::indexreduce::IndexReduce<T> {
 #endif
 	virtual ~IMin() {
 	}
-
+#ifdef __CUDACC__
+	__host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	IMin() {
+	}
 };
 }
 

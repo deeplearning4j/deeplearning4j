@@ -121,12 +121,21 @@ public:
 #endif
 	virtual ~PairWiseTransform() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+
+#endif
+	virtual PairWiseTransform() {
+	}
 
 };
 
 namespace ops {
 template<typename T>
 class Add: public virtual PairWiseTransform<T> {
+public:
 
 	/**
 	 * Name of the op
@@ -168,10 +177,19 @@ class Add: public virtual PairWiseTransform<T> {
 #endif
 	virtual ~Add() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+
+#endif
+	Add() {
+	}
 };
 
 template<typename T>
 class Copy: public virtual PairWiseTransform<T> {
+public:
 
 	/**
 	 * Name of the op
@@ -213,10 +231,19 @@ class Copy: public virtual PairWiseTransform<T> {
 #endif
 	virtual ~Copy() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+
+#endif
+	Copy() {
+	}
 };
 
 template<typename T>
 class Divide: public virtual PairWiseTransform<T> {
+public:
 
 	/**
 	 * Name of the op
@@ -259,10 +286,19 @@ class Divide: public virtual PairWiseTransform<T> {
 #endif
 	virtual ~Divide() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+
+#endif
+	Divide() {
+	}
 };
 
 template<typename T>
 class Epsilon: public virtual PairWiseTransform<T> {
+public:
 
 	/**
 	 * Name of the op
@@ -308,10 +344,19 @@ class Epsilon: public virtual PairWiseTransform<T> {
 #endif
 	virtual ~Epsilon() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+
+#endif
+	Epsilon() {
+	}
 };
 
 template<typename T>
 class EqualTo: public virtual PairWiseTransform<T> {
+public:
 
 	/**
 	 * Name of the op
@@ -353,10 +398,19 @@ class EqualTo: public virtual PairWiseTransform<T> {
 #endif
 	virtual ~EqualTo() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+
+#endif
+	EqualTo() {
+	}
 };
 
 template<typename T>
 class GreaterThan: public virtual PairWiseTransform<T> {
+public:
 
 	/**
 	 * Name of the op
@@ -398,10 +452,19 @@ class GreaterThan: public virtual PairWiseTransform<T> {
 #endif
 	virtual ~GreaterThan() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+
+#endif
+	GreaterThan() {
+	}
 };
 
 template<typename T>
 class LessThan: public virtual PairWiseTransform<T> {
+public:
 
 	/**
 	 * Name of the op
@@ -443,10 +506,19 @@ class LessThan: public virtual PairWiseTransform<T> {
 #endif
 	virtual ~LessThan() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+
+#endif
+	LessThan() {
+	}
 };
 
 template<typename T>
 class Multiply: public virtual PairWiseTransform<T> {
+public:
 
 	/**
 	 * Name of the op
@@ -489,10 +561,19 @@ class Multiply: public virtual PairWiseTransform<T> {
 #endif
 	virtual ~Multiply() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+
+#endif
+	Multiply() {
+	}
 };
 
 template<typename T>
 class ReverseDivide: public virtual PairWiseTransform<T> {
+public:
 
 	/**
 	 * Name of the op
@@ -534,10 +615,19 @@ class ReverseDivide: public virtual PairWiseTransform<T> {
 #endif
 	virtual ~ReverseDivide() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+
+#endif
+	ReverseDivide() {
+	}
 };
 
 template<typename T>
 class ReverseSubtraction: public virtual PairWiseTransform<T> {
+public:
 
 	/**
 	 * Name of the op
@@ -579,10 +669,19 @@ class ReverseSubtraction: public virtual PairWiseTransform<T> {
 #endif
 	virtual ~ReverseSubtraction() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+
+#endif
+	ReverseSubtraction() {
+	}
 };
 
 template<typename T>
 class Subtract: public virtual PairWiseTransform<T> {
+public:
 
 	/**
 	 * Name of the op
@@ -624,10 +723,19 @@ class Subtract: public virtual PairWiseTransform<T> {
 #endif
 	virtual ~Subtract() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+
+#endif
+	Subtract() {
+	}
 };
 
 template<typename T>
 class Softmax: public virtual PairWiseTransform<T> {
+public:
 
 	/**
 	 * Name of the op
@@ -669,6 +777,14 @@ class Softmax: public virtual PairWiseTransform<T> {
 #endif
 	virtual ~Softmax() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+
+#endif
+	Softmax() {
+	}
 };
 }
 
@@ -683,29 +799,29 @@ public:
 #endif
 	PairWiseTransform<T> *getOp(char *name) {
 		if (functions::ops::strcmp(name,"add_strided"))
-			return (pairwise_transforms::ops::Add<T> *) malloc(sizeof(pairwise_transforms::ops::Add<T>));
+			return new pairwise_transforms::ops::Add<T>();
 		if (functions::ops::strcmp(name,"copy_strided"))
-			return (pairwise_transforms::ops::Copy<T>*) malloc(sizeof(pairwise_transforms::ops::Copy<T>));
+			return new pairwise_transforms::ops::Copy<T>();
 		if (functions::ops::strcmp(name,"div_strided"))
-			return (pairwise_transforms::ops::Divide<T> *) malloc(sizeof(pairwise_transforms::ops::Divide<T>));
+			return new pairwise_transforms::ops::Divide<T>();
 		if (functions::ops::strcmp(name,"eps_strided"))
-			return (pairwise_transforms::ops::Divide<T>* )malloc(sizeof(pairwise_transforms::ops::Epsilon<T>));
+			return new pairwise_transforms::ops::Divide<T>();
 		if (functions::ops::strcmp(name, "eq_strided"))
-			return (pairwise_transforms::ops::EqualTo<T> *) malloc(sizeof(pairwise_transforms::ops::EqualTo<T>));
+			return new pairwise_transforms::ops::EqualTo<T>();
 		if (functions::ops::strcmp(name,"gt_strided"))
-			return ( pairwise_transforms::ops::GreaterThan<T> *) malloc(sizeof(pairwise_transforms::ops::GreaterThan<T>));
+			return new pairwise_transforms::ops::GreaterThan<T>();
 		if (functions::ops::strcmp(name,"lt_strided"))
-			return (pairwise_transforms::ops::LessThan<T> *) malloc(sizeof(pairwise_transforms::ops::LessThan<T>));
+			return new pairwise_transforms::ops::LessThan<T>();
 		if (functions::ops::strcmp(name,"mul_strided"))
-			return ( pairwise_transforms::ops::Multiply<T> *) malloc(sizeof(pairwise_transforms::ops::Multiply<T>));
+			return new pairwise_transforms::ops::Multiply<T>();
 		if (functions::ops::strcmp(name,"div_strided"))
-			return (pairwise_transforms::ops::Divide<T> *) malloc(sizeof(pairwise_transforms::ops::Divide<T>));
+			return new pairwise_transforms::ops::Divide<T>();
 		if (functions::ops::strcmp(name,"rdiv_strided"))
-			return (pairwise_transforms::ops::ReverseDivide<T> *) malloc(sizeof(new pairwise_transforms::ops::ReverseDivide<T>));
+			return new pairwise_transforms::ops::ReverseDivide<T>();
 		if (functions::ops::strcmp(name,"rsub_strided"))
-			return (pairwise_transforms::ops::ReverseSubtraction<T> *) malloc(sizeof(pairwise_transforms::ops::ReverseSubtraction<T>));
+			return new pairwise_transforms::ops::ReverseSubtraction<T>();
 		if (functions::ops::strcmp(name,"sub_strided"))
-			return (pairwise_transforms::ops::Subtract<T> *) malloc(sizeof(pairwise_transforms::ops::Subtract<T>));
+			return new pairwise_transforms::ops::Subtract<T>();
 		return NULL;
 	}
 

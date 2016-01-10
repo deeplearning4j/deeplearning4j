@@ -541,6 +541,12 @@ public:
 #endif
 	~ReduceFunction() {
 	}
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	ReduceFunction() {
+	}
+
 
 	void exec(T *x, int *xShapeInfo, T *extraParams, T *result,
 			int *resultShapeInfo) {
@@ -688,6 +694,11 @@ public:
 #endif
 	~Sum() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#endif
+	Sum() {
+	}
 };
 
 template<typename T>
@@ -753,6 +764,11 @@ public:
 	__host__ __device__
 #endif
 	~Prod() {
+	}
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	Prod() {
 	}
 };
 
@@ -821,6 +837,11 @@ public:
 	__host__ __device__
 #endif
 	~Mean() {
+	}
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	Mean() {
 	}
 };
 
@@ -892,6 +913,11 @@ public:
 #endif
 	~Bias() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#endif
+	Bias() {
+	}
 };
 
 template<typename T>
@@ -959,6 +985,11 @@ public:
 	inline __host__ __device__
 #endif
 	~Max() {
+	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#endif
+	Max() {
 	}
 };
 
@@ -1028,6 +1059,11 @@ public:
 #endif
 	~Min() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#endif
+	Min() {
+	}
 };
 
 template<typename T>
@@ -1095,6 +1131,10 @@ public:
 	inline __host__ __device__
 #endif
 	~Norm1() {}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#endif
+	Norm1() {}
 };
 
 template<typename T>
@@ -1165,6 +1205,11 @@ public:
 	inline __host__ __device__
 #endif
 	~Norm2() {
+	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#endif
+	Norm2() {
 	}
 };
 
@@ -1237,6 +1282,12 @@ public:
 	inline __host__ __device__
 #endif
 	~NormMax() {
+	}
+
+#ifdef __CUDACC__
+	inline __host__ __device__
+#endif
+	NormMax() {
 	}
 };
 
@@ -1313,6 +1364,11 @@ public:
 #endif
 	~StandardDeviation() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#endif
+	StandardDeviation() {
+	}
 };
 
 template<typename T>
@@ -1387,6 +1443,11 @@ public:
 #endif
 	~Variance() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#endif
+	Variance() {
+	}
 };
 
 }
@@ -1407,27 +1468,27 @@ public:
 
 	virtual functions::reduce::ReduceFunction<T> * create(char *name) {
 		if (functions::ops::strcmp(name,"mean"))
-			return (functions::reduce::ops::Mean<T> *) malloc(sizeof(functions::reduce::ops::Mean<T>));
+			return new functions::reduce::ops::Mean<T>();
 		else if (functions::ops::strcmp(name,"sum"))
-			return (functions::reduce::ops::Sum<T> *) malloc(sizeof(functions::reduce::ops::Sum<T>));
+			return new functions::reduce::ops::Sum<T>();
 		else if (functions::ops::strcmp(name,"bias"))
-			return (functions::reduce::ops::Bias<T> *)  malloc(sizeof(functions::reduce::ops::Bias<T>));
+			return new functions::reduce::ops::Bias<T>();
 		else if (functions::ops::strcmp(name,"max"))
-			return (functions::reduce::ops::Max<T> *)  malloc(sizeof(functions::reduce::ops::Max<T>));
+			return new functions::reduce::ops::Max<T>();
 		else if (functions::ops::strcmp(name,"min"))
-			return (functions::reduce::ops::Min<T> *) malloc(sizeof(functions::reduce::ops::Min<T>));
+			return new functions::reduce::ops::Min<T>();
 		else if (functions::ops::strcmp(name,"norm1"))
-			return (functions::reduce::ops::Norm1<T> *) malloc(sizeof(functions::reduce::ops::Norm1<T>));
+			return new functions::reduce::ops::Norm1<T>();
 		else if (functions::ops::strcmp(name,"norm2"))
-			return (functions::reduce::ops::Norm2<T> * ) malloc(sizeof(functions::reduce::ops::Norm2<T>));
+			return new functions::reduce::ops::Norm2<T>();
 		else if (functions::ops::strcmp(name,"normmax"))
-			return (functions::reduce::ops::NormMax<T> *) malloc(sizeof(functions::reduce::ops::NormMax<T>));
+			return new functions::reduce::ops::NormMax<T>();
 		else if (functions::ops::strcmp(name,"prod"))
-			return (functions::reduce::ops::Prod<T> *) malloc(sizeof(functions::reduce::ops::Prod<T>));
+			return new functions::reduce::ops::Prod<T>();
 		else if (functions::ops::strcmp(name,"std"))
-			return ( functions::reduce::ops::StandardDeviation<T> *) malloc(sizeof(functions::reduce::ops::StandardDeviation<T>));
+			return new functions::reduce::ops::StandardDeviation<T>();
 		else if (functions::ops::strcmp(name,"var"))
-			return (functions::reduce::ops::Variance<T> *) malloc(sizeof(functions::reduce::ops::Variance<T>));
+			return new functions::reduce::ops::Variance<T>();
 
 		return NULL;
 	}

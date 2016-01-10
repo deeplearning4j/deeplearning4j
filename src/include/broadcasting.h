@@ -124,12 +124,20 @@ public:
 #endif
 	virtual ~Broadcast() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	 Broadcast() {
+	}
 
 };
 
 namespace ops {
 template<typename T>
 class Add: public virtual functions::broadcast::Broadcast<T> {
+public:
 	virtual
 #ifdef __CUDACC__
 	__host__
@@ -179,10 +187,18 @@ class Add: public virtual functions::broadcast::Broadcast<T> {
 #endif
 	virtual ~Add() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	Add() {
+	}
 };
 
 template<typename T>
 class Copy: public virtual functions::broadcast::Broadcast<T> {
+public:
 	virtual
 #ifdef __CUDACC__
 	__host__
@@ -232,10 +248,18 @@ class Copy: public virtual functions::broadcast::Broadcast<T> {
 #endif
 	virtual ~Copy() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	Copy() {
+	}
 };
 
 template<typename T>
 class Divide: public virtual functions::broadcast::Broadcast<T> {
+public:
 	virtual
 #ifdef __CUDACC__
 	inline __host__
@@ -285,10 +309,18 @@ class Divide: public virtual functions::broadcast::Broadcast<T> {
 #endif
 	virtual ~Divide() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	Divide() {
+	}
 };
 
 template<typename T>
 class Multiply: public virtual functions::broadcast::Broadcast<T> {
+public:
 	virtual
 #ifdef __CUDACC__
 	inline __host__
@@ -338,10 +370,18 @@ class Multiply: public virtual functions::broadcast::Broadcast<T> {
 #endif
 	virtual ~Multiply() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	Multiply() {
+	}
 };
 
 template<typename T>
 class ReverseDivide: public virtual functions::broadcast::Broadcast<T> {
+public:
 	virtual
 #ifdef __CUDACC__
 	inline __host__
@@ -391,10 +431,18 @@ class ReverseDivide: public virtual functions::broadcast::Broadcast<T> {
 #endif
 	virtual ~ReverseDivide() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	ReverseDivide() {
+	}
 };
 
 template<typename T>
 class ReverseSubtract: public virtual functions::broadcast::Broadcast<T> {
+public:
 	virtual
 #ifdef __CUDACC__
 	inline __host__
@@ -444,10 +492,18 @@ class ReverseSubtract: public virtual functions::broadcast::Broadcast<T> {
 #endif
 	virtual ~ReverseSubtract() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	ReverseSubtract() {
+	}
 };
 
 template<typename T>
 class Subtract: public virtual functions::broadcast::Broadcast<T> {
+public:
 	virtual
 #ifdef __CUDACC__
 	inline __host__
@@ -497,6 +553,13 @@ class Subtract: public virtual functions::broadcast::Broadcast<T> {
 #endif
 	virtual ~Subtract() {
 	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	Subtract() {
+	}
 };
 }
 
@@ -518,20 +581,20 @@ public:
 #endif
 	Broadcast<T> * getOp(char *name) {
 		if (functions::ops::strcmp(name,"add_strided")) {
-			return (functions::broadcast::ops::Add<T> *) malloc(sizeof(functions::broadcast::ops::Add<T>));
+			return new functions::broadcast::ops::Add<T>();
 
 		} else if (functions::ops::strcmp(name,"sub_strided")) {
-			return (functions::broadcast::ops::Subtract<T> *) malloc(sizeof(functions::broadcast::ops::Subtract<T>));
+			return new functions::broadcast::ops::Subtract<T>();
 		} else if (functions::ops::strcmp(name,"mul_strided")) {
-			return ( functions::broadcast::ops::Multiply<T> *) malloc(sizeof(functions::broadcast::ops::Multiply<T>));
+			return new  functions::broadcast::ops::Multiply<T>();
 		} else if (functions::ops::strcmp(name,"div_strided")) {
-			return (functions::broadcast::ops::Divide<T>*) malloc(sizeof(functions::broadcast::ops::Divide<T>));
+			return new functions::broadcast::ops::Divide<T>();
 		} else if (functions::ops::strcmp(name,"rdiv_strided")) {
-			return (functions::broadcast::ops::ReverseDivide<T> *) malloc(sizeof(functions::broadcast::ops::ReverseDivide<T>));
+			return new functions::broadcast::ops::ReverseDivide<T>();
 		} else if (functions::ops::strcmp(name,"rsub_strided")) {
-			return (functions::broadcast::ops::ReverseSubtract<T> *) malloc(sizeof(functions::broadcast::ops::ReverseSubtract<T>));
+			return new functions::broadcast::ops::ReverseSubtract<T>();
 		} else if (functions::ops::strcmp(name,"copy_strided")) {
-			return (functions::broadcast::ops::Copy<T> *) malloc(sizeof(functions::broadcast::ops::Copy<T>));
+			return new functions::broadcast::ops::Copy<T>();
 		}
 
 		return NULL;
