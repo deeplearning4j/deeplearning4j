@@ -40,17 +40,17 @@ import java.util.*;
  * @author Adam Gibson
  */
 public class RecordReaderDataSetIterator implements DataSetIterator {
-    private RecordReader recordReader;
-    private WritableConverter converter;
-    private int batchSize = 10;
-    private int labelIndex = -1;
-    private int numPossibleLabels = -1;
-    private boolean overshot = false;
-    private Iterator<Collection<Writable>> sequenceIter;
-    private DataSet last;
-    private boolean useCurrent = false;
-    private boolean regression = false;
-    private DataSetPreProcessor preProcessor;
+    protected RecordReader recordReader;
+    protected WritableConverter converter;
+    protected int batchSize = 10;
+    protected int labelIndex = -1;
+    protected int numPossibleLabels = -1;
+    protected boolean overshot = false;
+    protected Iterator<Collection<Writable>> sequenceIter;
+    protected DataSet last;
+    protected boolean useCurrent = false;
+    protected boolean regression = false;
+    protected DataSetPreProcessor preProcessor;
 
     /**
      * Use the record reader and batch size; no labels
