@@ -44,7 +44,7 @@ One way to imagine an autonomous RL agent would be as a blind person attempting 
 
 (In fact, deciding *which types* of feedback your agent should pay attention to is a hard problem to solve, and glossed over by algorithms that are learning how to play video games, where the kinds of feedback are limited and well defined. These video games are much closer to the sterile environment of the lab, where ideas about reinforcement learning were initially tested.)
 
-![Alt text](../img/rat_wired.png)
+![Alt text](../img/rat_wired.jpg)
 
 The goal of reinforcement learning is to pick the best known action in any state, which means the actions have to be ranked, assigned values relative to one another. 
 
