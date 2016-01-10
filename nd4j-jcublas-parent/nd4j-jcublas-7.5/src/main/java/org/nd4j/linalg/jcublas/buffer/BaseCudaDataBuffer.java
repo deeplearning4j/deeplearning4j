@@ -584,6 +584,14 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         //nothing to free, there was no copy. Only the gpu pointer was reused with a different offset.
         if(offset != 0) {
             pointersToContexts.remove(name, Triple.of(offset, length, 1));
+            // if after offset removal we have no more uses left - we should fire free call
+            // if we have no more uses - the only pointer left is 0-this.length() chunk
+            // FIXME: this code is ideal race condition bug, and needs to be fixed
+            if (pointersToContexts.size() == 1 && !(pointersToContexts.get(name, Triple.of(0, this.length(),1)).equals(null)) ) {
+                ContextHolder.getInstance().getMemoryStrategy().free(this,0,this.length());
+                freed.set(true);
+                copied.remove(name);
+            }
          } else if(offset == 0 && isPersist) {
             return true;
         }

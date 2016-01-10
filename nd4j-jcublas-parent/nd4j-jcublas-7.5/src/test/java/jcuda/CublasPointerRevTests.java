@@ -214,14 +214,6 @@ public class CublasPointerRevTests {
         assertTrue(buffer.isFreed());
 
         // Please note: we do NOT test result pointer here,since we assume it's handled by JCuda
-
-        // now we try new allocation for the same array
-        // we should get absolutely new memory address, since allocation is done from scratches
-        xCPointer = new CublasPointer(array1,ctx);
-        long new_addr_buff1 = xCPointer.getDevicePointer().getNativePointer();
-        assertNotEquals(addr_buff1, new_addr_buff1);
-
-        xCPointer.close();
     }
 
 
