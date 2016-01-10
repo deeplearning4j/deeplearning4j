@@ -27,24 +27,24 @@ Deeplearning4j는 [와이어드(Wired)](http://www.wired.com/2014/06/skymind-dee
 
 ## DL4J 공동 창업자들
 
-| Name    | [Gitter Id](https://gitter.im/deeplearning4j/deeplearning4j) | Org | Time Zone
+| 이름    | [Gitter 아이디](https://gitter.im/deeplearning4j/deeplearning4j) | 조직 | 시간대
 | ------------- |:-------------:| :-----:| :-----:|-----:|
-| Adam Gibson | agibsonccc      | [Skymind](http://skymind.io) | GMT -8 |
-| Chris Nicholson | chrisvnicholson | [Skymind](http://skymind.io) | GMT -8 |
-| Josh Patterson  |  jpatanooga | [Skymind](http://skymind.io) | GMT -5 |
+| Adam Gibson | agibsonccc      | [스카이마인드](http://skymind.io) | 그리니치 평균시 -8 |
+| Chris Nicholson | chrisvnicholson | [스카이마인드](http://skymind.io) | 그리니치 평균시 -8 |
+| Josh Patterson  |  jpatanooga | [스카이마인드](http://skymind.io) | 그리니치 평균시 -5 |
 
 ## 주요 DL4J 공헌자들
 
-| Name    | [Gitter Id](https://gitter.im/deeplearning4j/deeplearning4j) | Org | Time Zone
+| 이름    | [Gitter 아이디](https://gitter.im/deeplearning4j/deeplearning4j) | 조직 | 시간대
 | ------------- |:-------------:| :-----:| :-----:|-----:|
-| Alex Black  |  AlexDBlack | [Skymind](http://skymind.io) | GMT +10 |
-| Suneel Marthi  |  smarthi | Red Hat  | GMT -5 |
-| Kai Sasake  |  Lewuathe | Yahoo! Japan | GMT +9 |
-| Taisuke Oe  |  taisukeoe | Japan Scala Association  | GMT +9 |
-| NA  |  raver119 | NA | GMT +2 |
-| Jeffrey Tang | jyt109 | [Skymind](http://skymind.io) | GMT -8 |
-| Melanie Warrick | nyghtowl  | [Skymind](http://skymind.io) | GMT -8 |
-| Eron Wright  |  EronWright | EMC  | GMT -8 |
+| Alex Black  |  AlexDBlack | [스카이마인드](http://skymind.io) | 그리니치 평균시 +10 |
+| Suneel Marthi  |  smarthi | 레드햇  | 그리니치 평균시 -5 |
+| Kai Sasake  |  Lewuathe | 야후! 일본 | 그리니치 평균시 +9 |
+| Taisuke Oe  |  taisukeoe | 일본 스칼라 어소시에이션 | 그리니치 평균시 +9 |
+| raver119  |  raver119 | [스카이마인드](http://skymind.io) | 그리니치 평균시 +2 |
+| Jeffrey Tang | jyt109 | [스카이마인드](http://skymind.io) | 그리니치 평균시 -8 |
+| Melanie Warrick | nyghtowl  | [스카이마인드](http://skymind.io) | 그리니치 평균시 -8 |
+| Eron Wright  |  EronWright | 이엠씨  | 그리니치 평균시 -8 |
 
 # 스카이마인드의 인력 채용
 
