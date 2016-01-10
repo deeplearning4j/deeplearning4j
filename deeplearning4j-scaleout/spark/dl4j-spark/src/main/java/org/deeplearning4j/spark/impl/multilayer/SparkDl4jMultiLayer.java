@@ -138,7 +138,7 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @param labelIndex the label index
      * @param recordReader the record reader to parse results
      * @return {@link MultiLayerNetwork}
-     * @see #fit(String, int, RecordReader, int)
+     * @see #fit(String, int, RecordReader, int, int, int)
      */
     public MultiLayerNetwork fit(String path,int labelIndex,RecordReader recordReader) {
         JavaRDD<DataSet> points = loadFromTextFile(path, labelIndex, recordReader);
@@ -147,16 +147,16 @@ public class SparkDl4jMultiLayer implements Serializable {
 
     /**Train a multi layer network based on data loaded from a text file + {@link RecordReader}.
      * This method splits the data into approximately {@code examplesPerFit} sized splits, and trains on each split.
-     * one after the other. See {@link #fitDataSet(JavaRDD, int)} for further details.
+     * one after the other. See {@link #fitDataSet(JavaRDD, int, int, int)} for further details.
      * @param path the path to the text file
      * @param labelIndex the label index
      * @param recordReader the record reader to parse results
      * @param examplesPerFit Number of examples to fit on at each iteration
      * @return {@link MultiLayerNetwork}
      */
-    public MultiLayerNetwork fit(String path,int labelIndex,RecordReader recordReader, int examplesPerFit ) {
+    public MultiLayerNetwork fit(String path,int labelIndex,RecordReader recordReader, int examplesPerFit, int totalExamples, int numPartitions ) {
         JavaRDD<DataSet> points = loadFromTextFile(path, labelIndex, recordReader);
-        return fitDataSet(points, examplesPerFit);
+        return fitDataSet(points, examplesPerFit, totalExamples, numPartitions);
     }
 
     private JavaRDD<DataSet> loadFromTextFile(String path, int labelIndex, RecordReader recordReader ){
@@ -233,17 +233,18 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @param examplesPerFit Number of examples to learn on (between averaging) across all executors. For example, if set to
      *                       1000 and rdd.count() == 10k, then we do 10 sets of learning, each on 1000 examples.
      *                       To use all examples, set maxExamplesPerFit to Integer.MAX_VALUE
+     * @param totalExamples total number of examples in the data RDD
+     * @param numPartitions number of partitions to divide the data in to
      * @return Trained network
      */
-    public MultiLayerNetwork fitDataSet(JavaRDD<DataSet> rdd, int examplesPerFit ){
+    public MultiLayerNetwork fitDataSet(JavaRDD<DataSet> rdd, int examplesPerFit, int totalExamples, int numPartitions ){
         int nSplits;
-        if(examplesPerFit == Integer.MAX_VALUE) nSplits = 1;
+        if(examplesPerFit == Integer.MAX_VALUE || examplesPerFit >= totalExamples ) nSplits = 1;
         else {
-            long nExamples = rdd.count();
-            if(nExamples%examplesPerFit==0){
-                nSplits = (int)(nExamples / examplesPerFit);
+            if(totalExamples%examplesPerFit==0){
+                nSplits = (totalExamples / examplesPerFit);
             } else {
-                nSplits = (int)(nExamples / examplesPerFit) + 1;
+                nSplits = (totalExamples/ examplesPerFit) + 1;
             }
         }
 
@@ -254,8 +255,9 @@ public class SparkDl4jMultiLayer implements Serializable {
             for( int i=0; i<nSplits; i++ ) splitWeights[i] = 1.0 / nSplits;
             JavaRDD<DataSet>[] subsets = rdd.randomSplit(splitWeights);
             for( int i=0; i<subsets.length; i++ ){
-                log.info("Initiating distributed training of subset {} of {}",(i+1),subsets.length);
-                fitDataSet(subsets[i]);
+                log.info("Initiating distributed training of subset {} of {}", (i + 1), subsets.length);
+                JavaRDD<DataSet> next = subsets[i].repartition(numPartitions);
+                fitDataSet(next);
             }
         }
         return network;
@@ -268,7 +270,7 @@ public class SparkDl4jMultiLayer implements Serializable {
      */
     public MultiLayerNetwork fitDataSet(JavaRDD<DataSet> rdd) {
         int iterations = conf.getConf(0).getNumIterations();
-        log.info("Running distributed training:  (averaging each iteration = " + averageEachIteration + "), (iterations =" +
+        log.info("Running distributed training:  (averaging each iteration = " + averageEachIteration + "), (iterations = " +
                 iterations + "), (num partions = " + rdd.partitions().size() + ")");
         if(!averageEachIteration) {
             //Do multiple iterations and average once at the end
@@ -316,9 +318,9 @@ public class SparkDl4jMultiLayer implements Serializable {
         if(accumGrad) {
             //Learning via averaging gradients
             JavaRDD<Tuple2<Gradient,Updater>> results = rdd.mapPartitions(new GradientAccumFlatMap(conf.toJson(), this.params, this.updater),true).cache();
-            log.info("Ran iterative reduce...averaging results now.");
 
             JavaRDD<Gradient> resultsGradient = results.map(new GradientFromTupleFunction());
+            log.info("Ran iterative reduce... averaging results now.");
 
             GradientAdder a = new GradientAdder(paramsLength);
             resultsGradient.foreach(a);
@@ -349,7 +351,8 @@ public class SparkDl4jMultiLayer implements Serializable {
                     this.params, this.updater, this.bestScoreAcc),true).cache();
 
             JavaRDD<INDArray> resultsParams = results.map(new INDArrayFromTupleFunction());
-            log.info("Ran iterative reduce... averaging parameters now.");
+            log.info("Running iterative reduce and averaging parameters");
+
             Adder a = new Adder(paramsLength);
             resultsParams.foreach(a);
             INDArray newParams = a.getAccumulator().value();
