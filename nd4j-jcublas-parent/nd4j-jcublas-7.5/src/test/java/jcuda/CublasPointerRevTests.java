@@ -153,7 +153,205 @@ public class CublasPointerRevTests {
         assertTrue(buffer2.isFreed());
     }
 
+    /**
+     * This test addresses subsequent alloc/free for views within pageable memory.
+     * + we also test same offset allocation within same thread (sequental access test only)
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testPageableMemoryReleaseSlicedSubsequently() throws Exception {
+        // force current thread to use Pageable memory strategy
+        ContextHolder.getInstance().forceMemoryStrategyForThread(new PageableDirectBufferMemoryStrategy());
 
+        assertEquals("PageableDirectBufferMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
+
+        INDArray baseArray1 = Nd4j.rand(new int[]{1000, 200}, -1.0, 1.0, new DefaultRandom());
+        INDArray baseArray2 = Nd4j.rand(new int[]{1000, 200}, -1.0, 1.0, new DefaultRandom());
+
+
+        INDArray slice1 = baseArray1.slice(1);
+        INDArray slice2 = baseArray2.slice(1);
+
+        CudaContext ctx = CudaContext.getBlasContext();
+
+        CublasPointer xCPointer = new CublasPointer(slice1,ctx);
+        CublasPointer yCPointer = new CublasPointer(slice2,ctx);
+
+        // at this moment we have 2 buffers allocated, and 2 pointers + offsets set up. time to add new slices to the equation
+
+        INDArray slice3 = baseArray1.slice(3);
+
+        // please note, slice(1) isn't a type. we're testing one more edge here: double offset allocation being used within same thread
+        INDArray slice4 = baseArray2.slice(1);
+
+        CublasPointer xDPointer = new CublasPointer(slice3, ctx);
+        CublasPointer yDPointer = new CublasPointer(slice4, ctx);
+
+        BaseCudaDataBuffer bufferSlice1 = (BaseCudaDataBuffer) xCPointer.getBuffer();
+        BaseCudaDataBuffer bufferSlice2 = (BaseCudaDataBuffer) yCPointer.getBuffer();
+        BaseCudaDataBuffer bufferSlice3 = (BaseCudaDataBuffer) xDPointer.getBuffer();
+        BaseCudaDataBuffer bufferSlice4 = (BaseCudaDataBuffer) yDPointer.getBuffer();
+
+        JCublas2.cublasSaxpy(
+                ctx.getHandle(),
+                slice1.length(),
+                Pointer.to(new float[]{1.0f}),
+                xCPointer.getDevicePointer().withByteOffset(slice1.offset() * slice1.data().getElementSize()),
+                BlasBufferUtil.getBlasStride(slice1),
+                yCPointer.getDevicePointer().withByteOffset(slice2.offset() * slice2.data().getElementSize()),
+                BlasBufferUtil.getBlasStride(slice2));
+        ctx.syncOldStream();
+
+        // we have to copyback
+        yCPointer.copyToHost();
+
+        ctx.finishBlasOperation();
+
+        // now we'll start closing pointers
+        xCPointer.close();
+        yCPointer.close();
+        // at this point buffers should be NOT freed, since we have 2 more allocations
+        assertFalse(bufferSlice1.isFreed());
+        assertFalse(bufferSlice2.isFreed());
+        assertFalse(bufferSlice3.isFreed());
+        assertFalse(bufferSlice4.isFreed());
+
+        ctx = CudaContext.getBlasContext();
+
+        // at this moment we assume that yCPointer contains updated result, and we'll check it's equality to slice4
+        assertEquals(slice2.getDouble(1), slice4.getDouble(1), 0.001);
+
+        // now we'll fire axpy on slices 3 & 4
+        JCublas2.cublasSaxpy(
+                ctx.getHandle(),
+                slice3.length(),
+                Pointer.to(new float[]{1.0f}),
+                xDPointer.getDevicePointer().withByteOffset(slice3.offset() * slice3.data().getElementSize()),
+                BlasBufferUtil.getBlasStride(slice3),
+                yDPointer.getDevicePointer().withByteOffset(slice4.offset() * slice4.data().getElementSize()),
+                BlasBufferUtil.getBlasStride(slice4));
+        ctx.syncOldStream();
+
+        // copyback, once again
+        yDPointer.copyToHost();
+
+        ctx.finishBlasOperation();
+
+        // once again, we check that memory is updated properly
+        assertEquals(slice2.getDouble(1), slice4.getDouble(1), 0.001);
+
+
+        // now we free slice4, and all buffers should be released now
+        xDPointer.close();
+        yDPointer.close();
+
+        assertTrue(bufferSlice1.isFreed());
+        assertTrue(bufferSlice2.isFreed());
+        assertTrue(bufferSlice3.isFreed());
+        assertTrue(bufferSlice4.isFreed());
+    }
+
+
+    /**
+     * This test addresses subsequent alloc/free for views within pinned memory.
+     * + we also test same offset allocation within same thread (sequental access test only)
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testPinnedMemoryReleaseSlicedSubsequently() throws Exception {
+        // force current thread to use Pageable memory strategy
+        ContextHolder.getInstance().forceMemoryStrategyForThread(new PinnedMemoryStrategy());
+
+        assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
+
+        INDArray baseArray1 = Nd4j.rand(new int[]{1000, 200}, -1.0, 1.0, new DefaultRandom());
+        INDArray baseArray2 = Nd4j.rand(new int[]{1000, 200}, -1.0, 1.0, new DefaultRandom());
+
+
+        INDArray slice1 = baseArray1.slice(1);
+        INDArray slice2 = baseArray2.slice(1);
+
+        CudaContext ctx = CudaContext.getBlasContext();
+
+        CublasPointer xCPointer = new CublasPointer(slice1,ctx);
+        CublasPointer yCPointer = new CublasPointer(slice2,ctx);
+
+        // at this moment we have 2 buffers allocated, and 2 pointers + offsets set up. time to add new slices to the equation
+
+        INDArray slice3 = baseArray1.slice(3);
+
+        // please note, slice(1) isn't a type. we're testing one more edge here: double offset allocation being used within same thread
+        INDArray slice4 = baseArray2.slice(1);
+
+        CublasPointer xDPointer = new CublasPointer(slice3, ctx);
+        CublasPointer yDPointer = new CublasPointer(slice4, ctx);
+
+        BaseCudaDataBuffer bufferSlice1 = (BaseCudaDataBuffer) xCPointer.getBuffer();
+        BaseCudaDataBuffer bufferSlice2 = (BaseCudaDataBuffer) yCPointer.getBuffer();
+        BaseCudaDataBuffer bufferSlice3 = (BaseCudaDataBuffer) xDPointer.getBuffer();
+        BaseCudaDataBuffer bufferSlice4 = (BaseCudaDataBuffer) yDPointer.getBuffer();
+
+        JCublas2.cublasSaxpy(
+                ctx.getHandle(),
+                slice1.length(),
+                Pointer.to(new float[]{1.0f}),
+                xCPointer.getDevicePointer().withByteOffset(slice1.offset() * slice1.data().getElementSize()),
+                BlasBufferUtil.getBlasStride(slice1),
+                yCPointer.getDevicePointer().withByteOffset(slice2.offset() * slice2.data().getElementSize()),
+                BlasBufferUtil.getBlasStride(slice2));
+        ctx.syncOldStream();
+
+        // we have to copyback
+        yCPointer.copyToHost();
+
+        ctx.finishBlasOperation();
+
+        // now we'll start closing pointers
+        xCPointer.close();
+        yCPointer.close();
+
+        // at this point buffers should be NOT freed, since we have 2 more allocations
+        assertFalse(bufferSlice1.isFreed());
+        assertFalse(bufferSlice2.isFreed());
+        assertFalse(bufferSlice3.isFreed());
+        assertFalse(bufferSlice4.isFreed());
+
+        ctx = CudaContext.getBlasContext();
+
+        // at this moment we assume that yCPointer contains updated result, and we'll check it's equality to slice4
+        assertEquals(slice2.getDouble(1), slice4.getDouble(1), 0.001);
+
+        // now we'll fire axpy on slices 3 & 4
+        JCublas2.cublasSaxpy(
+                ctx.getHandle(),
+                slice3.length(),
+                Pointer.to(new float[]{1.0f}),
+                xDPointer.getDevicePointer().withByteOffset(slice3.offset() * slice3.data().getElementSize()),
+                BlasBufferUtil.getBlasStride(slice3),
+                yDPointer.getDevicePointer().withByteOffset(slice4.offset() * slice4.data().getElementSize()),
+                BlasBufferUtil.getBlasStride(slice4));
+        ctx.syncOldStream();
+
+        // copyback, once again
+        yDPointer.copyToHost();
+
+        ctx.finishBlasOperation();
+
+        // once again, we check that memory is updated properly
+        assertEquals(slice2.getDouble(1), slice4.getDouble(1), 0.001);
+
+
+        // now we free slice4, and all buffers should be released now
+        xDPointer.close();
+        yDPointer.close();
+
+        assertTrue(bufferSlice1.isFreed());
+        assertTrue(bufferSlice2.isFreed());
+        assertTrue(bufferSlice3.isFreed());
+        assertTrue(bufferSlice4.isFreed());
+    }
 
     @Test
     public void testPinnedMemoryRelease() throws Exception {
@@ -448,6 +646,12 @@ public class CublasPointerRevTests {
     }
 
 
+    /**
+     * This test makes sure that data is transferred host->device->host path properly.
+     * To check that, we use pre-calculated dot product validation
+     *
+     * @throws Exception
+     */
     @Test
     public void testPageableBlasCallValue() throws Exception {
         // simple way to stop test if we're not on CUDA backend here
@@ -497,8 +701,17 @@ public class CublasPointerRevTests {
         xBPointer.close();
 
         assertEquals(dotWrapped, res, 0.001d);
+
+        // this test fails since i don't have proper answer on laptop, will add it from desktop later
+        assertEquals(16.665000915527344, res, 0.001d);
     }
 
+    /**
+     * This test makes sure that data is transferred host->device->host path properly.
+     * To check that, we use pre-calculated dot product validation
+     *
+     * @throws Exception
+     */
     @Test
     public void tesPinnedBlasCallValue() throws Exception {
         // simple way to stop test if we're not on CUDA backend here
@@ -512,7 +725,7 @@ public class CublasPointerRevTests {
         CudaContext ctx = CudaContext.getBlasContext();
 
         INDArray array1 = Nd4j.create(new float[]{1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
-        INDArray array2 = Nd4j.create(new float[]{1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
+        INDArray array2 = Nd4j.create(new float[]{1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f});
 
 
         double dotWrapped = Nd4j.getBlasWrapper().dot(array1, array2);
@@ -552,5 +765,8 @@ public class CublasPointerRevTests {
 
         System.out.println("Val before: [0], after: ["+ ret[0]+"], norm: [" + res +"], wrapped: [" + dotWrapped + "]");
         assertEquals(dotWrapped, res, 0.001d);
+
+        // this test fails since i don't have proper answer on laptop, will add it from desktop later
+        assertEquals(16.665000915527344, res, 0.001d);
     }
 }
