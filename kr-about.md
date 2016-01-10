@@ -13,23 +13,40 @@ Deeplearning4j는 샌프란시스코 기반의 비즈니스 인텔리전스 및 
 
 여러분이 배포된 딥 러닝 네트워크를 학습할 때 조정해야할 많은 요소들이 있습니다. 저희가 이것들을 설명하는데 최선을 다한 결과, Deeplearning4j는 하둡(Hadoop) 및 다른 파일 시스템들에서 작업하는 자바, 스칼라 및 Clojure의 프로그래머들에게 DIY 도구로서의 역할을 할 수 있습니다. 만약 이 튜토리얼을 넘어선 지원 또는 사용자 지정이 필요하시다면, [스카이마인드](http://www.skymind.io/contact/)로 문의하시기 바랍니다.
 
-ND4J & ND4S[HEADING]
+## ND4J & ND4S
 
 [ND4J는 저희의 상위체계 조작에 동력을 지원하는 자바 과학 컴퓨팅 엔진입니다](http://nd4j.org/). ([Github repo](https://github.com/deeplearning4j/nd4j/)를 참조하십시오.) [ND4S](https://github.com/deeplearning4j/nd4s)는 ND4J의 스칼라 래퍼 입니다; [Deeplearing4s](https://github.com/deeplearning4j/deeplearning4s)는 DL4J 상 스칼라 래퍼 입니다.
 
-미디어[HEADING]
+## 미디어
 
 Deeplearning4j는 [와이어드(Wired)](http://www.wired.com/2014/06/skymind-deep-learning/), [GigaOM](http://gigaom.com/2014/06/02/a-startup-called-skymind-launches-pushing-open-source-deep-learning/), [비즈니스위크](http://www.businessweek.com/articles/2014-06-03/teaching-smaller-companies-how-to-probe-deep-learning-on-their-own), [벤처비트(Venturebeat)](http://venturebeat.com/2014/06/02/skymind-launches-with-open-source-plug-and-play-deep-learning-features-for-your-app/), [월스트리트 저널](http://blogs.wsj.com/cio/2014/06/03/the-morning-download-apple-relies-on-ecosystem-for-innovation/), [퓨전](http://fusion.net/story/177825/privacy-conscious-siris-that-dont-give-up-your-secrets-are-coming/) 및 [자바 매거진](http://deeplearning4j.org/oraclejavamagazine-digital.com/javamagazine/may_june_2015?sub_id=DJ9kzXBnuXELe#pg58)에서 다뤄져 왔습니다. DL4J 워크샵은 샌프란시스코에서 [GalvanizeU](http://www.galvanizeu.com/)를 통해 제공됩니다.
 
-지원[HEADING]
+## 지원
 
 스카이마인드 고객들의 참여와 David Wallerstein이 이끄는 [Tencent](http://www.tencent.com/en-us/at/managementteam.shtml)의 투자 팀의 관대한 지원 없이 Deeplearning4j는 현재와 같은 형태로 존재할 수 없었을 것 입니다.
 
-DL4J 공동 창업자들[HEADING]
+## DL4J 공동 창업자들
 
-주요 DL4J 공헌자들[HEADING]
+| Name    | [Gitter Id](https://gitter.im/deeplearning4j/deeplearning4j) | Org | Time Zone
+| ------------- |:-------------:| :-----:| :-----:|-----:|
+| Adam Gibson | agibsonccc      | [Skymind](http://skymind.io) | GMT -8 |
+| Chris Nicholson | chrisvnicholson | [Skymind](http://skymind.io) | GMT -8 |
+| Josh Patterson  |  jpatanooga | [Skymind](http://skymind.io) | GMT -5 |
 
-스카이마인드의 인력 채용[HEADING]
+## 주요 DL4J 공헌자들
+
+| Name    | [Gitter Id](https://gitter.im/deeplearning4j/deeplearning4j) | Org | Time Zone
+| ------------- |:-------------:| :-----:| :-----:|-----:|
+| Alex Black  |  AlexDBlack | [Skymind](http://skymind.io) | GMT +10 |
+| Suneel Marthi  |  smarthi | Red Hat  | GMT -5 |
+| Kai Sasake  |  Lewuathe | Yahoo! Japan | GMT +9 |
+| Taisuke Oe  |  taisukeoe | Japan Scala Association  | GMT +9 |
+| NA  |  raver119 | NA | GMT +2 |
+| Jeffrey Tang | jyt109 | [Skymind](http://skymind.io) | GMT -8 |
+| Melanie Warrick | nyghtowl  | [Skymind](http://skymind.io) | GMT -8 |
+| Eron Wright  |  EronWright | EMC  | GMT -8 |
+
+# 스카이마인드의 인력 채용
 
 저희는 오픈 소스 공헌자들 중에서 채용합니다. 저희와 함께 딥러닝의 미래를 만들어 갈 업무에 지원하시는 가장 좋은 방법은 [Gitter](https://gitter.im/deeplearning4j/deeplearning4j)에서 저희의 커뮤니티에 가입, [Github](https://github.com/deeplearning4j)에서 저희를 fork, 저희와 함께 작업할 문제를 찾으시면, 여러분이 저희와 잘 맞는 분인지를 알 수 있습니다! 함께 일 하는 것은 인터뷰 보다 더 유익하고, 조금의 행운이더라도 더 재미 있을 것 입니다.
 
