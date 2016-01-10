@@ -81,6 +81,7 @@ public class PinnedMemoryStrategy implements MemoryStrategy {
 
     @Override
     public Object alloc(DataBuffer buffer, int stride, int offset, int length, boolean initData) {
+        System.out.println("Alloc call");
         Pointer devicePointer = new Pointer();
         Pointer hostPointer = new Pointer();
         JCuda.cudaHostAlloc(

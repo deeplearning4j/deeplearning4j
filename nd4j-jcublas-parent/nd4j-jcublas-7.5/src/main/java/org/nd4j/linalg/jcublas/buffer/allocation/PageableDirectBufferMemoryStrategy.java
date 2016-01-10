@@ -117,8 +117,10 @@ public class PageableDirectBufferMemoryStrategy implements MemoryStrategy {
     @Override
     public void free(DataBuffer buffer,int offset,int length) {
         JCudaBuffer buf2 = (JCudaBuffer) buffer;
-        DevicePointerInfo devicePointerInfo = buf2.getPointersToContexts().get(Thread.currentThread().getName(),new Pair<>(offset,length));
-        JCuda.cudaFree(devicePointerInfo.getPointers().getDevicePointer());
+        DevicePointerInfo devicePointerInfo = buf2.getPointersToContexts().get(Thread.currentThread().getName(),Triple.of(offset,length, 1));
+        if (devicePointerInfo != null && !devicePointerInfo.isFreed()) {
+            JCuda.cudaFree(devicePointerInfo.getPointers().getDevicePointer());
+        }
 
     }
 

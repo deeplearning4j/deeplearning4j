@@ -368,7 +368,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             if(!pointersToContexts.contains(name,Triple.of(0,this.length,1))) {
                 devicePointerInfo = (DevicePointerInfo)
                         ContextHolder.getInstance()
-                                .getConf()
                                 .getMemoryStrategy()
                                 .alloc(this, 1, 0, this.length,true);
 

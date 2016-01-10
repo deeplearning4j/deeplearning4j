@@ -77,6 +77,8 @@ public class CublasPointerRevTests {
         // force current thread to use Pageable memory strategy
         ContextHolder.getInstance().forceMemoryStrategyForThread(new PageableDirectBufferMemoryStrategy());
 
+        assertEquals("PageableDirectBufferMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
+
         INDArray array1 = Nd4j.create(new float[]{1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
         INDArray array2 = Nd4j.create(new float[]{1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
 
@@ -117,19 +119,21 @@ public class CublasPointerRevTests {
                 result);
         ctx.syncOldStream();
 
+
         // in this test copyToHost is handled by JCublas, so there's no need for explicit copyToHost call
         ctx.finishBlasOperation();
 
 
         // check that result not equals to 0
-        assertNotEquals(0, ret[0], 0.0001d);
-
+        assertNotEquals(15.0d, ret[0], 0.0001d);
 
         // we emulate AutoCloseable by direct close() call
         // close call should fire freeDevicePointer
         // AND freeHost
         xCPointer.close();
         yCPointer.close();
+
+
 
         // here we check, if device pointer was released
         assertEquals(true, xCPointer.isClosed());
