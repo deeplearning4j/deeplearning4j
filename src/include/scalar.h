@@ -774,6 +774,19 @@ public:
 __constant__ functions::scalar::ScalarOpFactory<double> *scalarDoubleOpFactory;
 __constant__ functions::scalar::ScalarOpFactory<float> *scalarFloatOpFactory;
 
+
+extern "C"
+__host__ void setupScalarTransformFactories() {
+	printf("Setting up transform factories\n");
+	functions::scalar::ScalarOpFactory<double> *newOpFactory =  functions::scalar::ScalarOpFactory<double>();
+	functions::scalar::ScalarOpFactory<float> *newOpFactoryFloat =  functions::scalar::ScalarOpFactory<float>();
+	checkCudaErrors(cudaMemcpyToSymbol(scalarDoubleOpFactory, newOpFactory, sizeof( functions::scalar::ScalarOpFactory<double> )));
+	checkCudaErrors(cudaMemcpyToSymbol(scalarFloatOpFactory, newOpFactory, sizeof( functions::scalar::ScalarOpFactory<float>)));
+	delete(newOpFactory);
+	delete(newOpFactoryFloat);
+
+}
+
 extern "C" __global__ void scalarDouble(
 		char *name,
 		int n,
@@ -792,6 +805,8 @@ extern "C" __global__ void scalarFloat(char *name,
 	op->transform(n,idx,dx,dy,incy,params,result,blockSize);
 
 }
+
+
 
 #endif
 #endif /* SCALAR_H_ */

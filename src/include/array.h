@@ -22,8 +22,8 @@ namespace array {
 template<typename T>
 struct NDArray {
 	buffer::Buffer<T> *data;
-	int *shape, *stride;
-	int *gShape, *gStride;
+	buffer::Buffer<int> *shape;
+	buffer::Buffer<int> *stride;
 	int offset;
 	int rank;
 	char ordering;
@@ -32,8 +32,8 @@ struct NDArray {
 		if (rank != other.rank)
 			return 0;
 
-		int length = shape::prod(shape, rank);
-		int otherLength = shape::prod(other.shape, other.rank);
+		int length = shape::prod(shape->data, rank);
+		int otherLength = shape::prod(other.shape->data, other.rank);
 		if (length != otherLength)
 			return 0;
 		if (ordering != other.ordering)
@@ -41,7 +41,7 @@ struct NDArray {
 		if (offset != other.offset)
 			return 0;
 		for (int i = 0; i < rank; i++) {
-			if (shape[i] != other.shape[i] || stride[i] != other.stride[i])
+			if (shape->data[i] != other.shape->data[i] || stride->data[i] != other.stride->data[i])
 				return 0;
 		}
 		for (int i = 0; i < length; i++) {
@@ -208,7 +208,7 @@ __host__ __device__
 #endif
 
 size_t NDArrays<T>::length(NDArray<T> *arr) {
-	size_t size = shape::prod(arr->shape, arr->rank);
+	size_t size = shape::prod(arr->shape->data, arr->rank);
 	return size;
 }
 
@@ -223,7 +223,7 @@ __host__ __device__
 #endif
 
 size_t NDArrays<T>::lengthInBytes(NDArray<T> *arr) {
-	size_t size = shape::prod(arr->shape, arr->rank) * sizeof(T);
+	size_t size = shape::prod(arr->shape->data, arr->rank) * sizeof(T);
 	return size;
 }
 
@@ -243,8 +243,8 @@ NDArray<T> * NDArrays<T>::createFrom(int rank, int *shape, int *stride,
 		int offset, T defaultValue) {
 	NDArray<T> *ret = (NDArray<T> *) malloc(sizeof(NDArray<T> ));
 	ret->rank = rank;
-	ret->shape = shape;
-	ret->stride = stride;
+	ret->shape = nd4j::buffer::createBuffer(shape,rank);
+	ret->stride = nd4j::buffer::createBuffer(stride,rank);
 	ret->offset = offset;
 	size_t size = lengthInBytes(ret);
 	int length = size / sizeof(T);
@@ -271,16 +271,8 @@ void NDArrays<T>::allocateNDArrayOnGpu(NDArray <T> **arr) {
 	NDArray <T> *arrRef = *arr;
 	size_t size = lengthInBytes(arrRef);
 	nd4j::buffer::copyDataToGpu(&((*arr)->data));
-
-	size_t intRankSize = arrRef->rank * sizeof(int);
-	int *gShape = 0, *gStride = 0;
-
-	checkCudaErrors(cudaMalloc(&gShape, intRankSize));
-	checkCudaErrors(cudaMemcpy(gShape, arrRef->shape, intRankSize, cudaMemcpyHostToDevice));
-	checkCudaErrors(cudaMalloc(&gStride, intRankSize));
-	checkCudaErrors(cudaMemcpy(gStride, arrRef->stride, intRankSize, cudaMemcpyHostToDevice));
-	arrRef->gShape = gShape;
-	arrRef->gStride = gStride;
+	nd4j::buffer::copyDataToGpu(&((*arr)->shape));
+	nd4j::buffer::copyDataToGpu(&((*arr)->stride));
 }
 #endif
 /**
@@ -323,14 +315,10 @@ __host__
 void NDArrays<T>::freeNDArrayOnGpuAndCpu(NDArray<T> **arr) {
 	NDArray<T> * arrRef = *arr;
 	nd4j::buffer::Buffer<T> *dataBuf = arrRef->data;
-	nd4j::buffer::freeBuffer(&dataBuf);
-	delete[] arrRef->shape;
-	delete[] arrRef->stride;
+	nd4j::buffer::freeBuffer<T>(&dataBuf);
+	nd4j::buffer::freeBuffer(&arrRef->shape);
+	nd4j::buffer::freeBuffer(&arrRef->stride);
 
-#ifdef __CUDACC__
-	checkCudaErrors(cudaFree(arrRef->gShape));
-	checkCudaErrors(cudaFree(arrRef->gStride));
-#endif
 }
 
 /**
@@ -366,11 +354,11 @@ shape::ShapeInformation * NDArrays<T>::shapeInfoForArray(NDArray<T> * arr) {
 			sizeof(shape::ShapeInformation));
 	info->offset = arr->offset;
 	info->order = arr->ordering;
-	info->shape = arr->shape;
-	info->stride = arr->stride;
+	info->shape = arr->shape->data;
+	info->stride = arr->stride->data;
 	info->rank = arr->rank;
 	int elementWiseStride = shape::computeElementWiseStride(arr->rank,
-			arr->shape, arr->stride, arr->ordering == 'c');
+			arr->shape->data, arr->stride->data, arr->ordering == 'c');
 	info->elementWiseStride = elementWiseStride;
 	return info;
 }

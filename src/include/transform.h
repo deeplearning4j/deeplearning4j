@@ -9,6 +9,9 @@
 #define TRANSFORM_H_
 #include <templatemath.h>
 #include <op.h>
+#ifdef __CUDACC__
+#include <helper_cuda.h>
+#endif
 namespace functions {
 namespace transform {
 
@@ -1104,8 +1107,8 @@ public:
 }
 
 #ifdef __CUDACC__
-__constant__ functions::transform::TransformOpFactory<double> *doubleTransformFactory;
-__constant__ functions::transform::TransformOpFactory<float> *floatTransformFactory;
+__device__ __constant__ functions::transform::TransformOpFactory<double> *doubleTransformFactory;
+ __device__ __constant__ functions::transform::TransformOpFactory<float> *floatTransformFactory;
 
 
 extern "C" __global__ void transformDouble(
@@ -1139,12 +1142,13 @@ extern "C" __global__ void transformFloat(
 
 extern "C"
 __host__ void setupTransfromFactories() {
+	printf("Setting up transform factories\n");
 	functions::transform::TransformOpFactory<double> *newOpFactory = new functions::transform::TransformOpFactory<double>();
 	functions::transform::TransformOpFactory<float> *newOpFactoryFloat = new functions::transform::TransformOpFactory<float>();
-	cudaMemcpyToSymbol("doubleTransformFactory", newOpFactory, sizeof(newOpFactory));
-	cudaMemcpyToSymbol("floatTransformFactory", newOpFactory, sizeof(newOpFactoryFloat));
-	free(newOpFactory);
-	free(newOpFactoryFloat);
+	checkCudaErrors(cudaMemcpyToSymbol(doubleTransformFactory, newOpFactory, sizeof(functions::transform::TransformOpFactory<double> )));
+	checkCudaErrors(cudaMemcpyToSymbol(floatTransformFactory, newOpFactory, sizeof(functions::transform::TransformOpFactory<float>)));
+	delete(newOpFactory);
+	delete(newOpFactoryFloat);
 
 }
 

@@ -9,6 +9,7 @@
 #define REDUCE3_H_
 #include <op.h>
 #include <templatemath.h>
+#include <helper_cuda.h>
 namespace functions {
 namespace reduce3 {
 
@@ -565,7 +566,7 @@ public:
 
 #endif
 	inline T update(T old, T opOutput, T *extraParams) {
-		T squared = nd4j::math::nd4j_pow(opOutput, 2.0);
+		T squared = nd4j::math::nd4j_pow(opOutput, (T) 2.0);
 		return squared + old;
 	}
 
@@ -687,7 +688,7 @@ public:
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	virtual ManhattanDistance() {
+	 ManhattanDistance() {
 	}
 };
 
@@ -712,7 +713,7 @@ public:
 		if (functions::ops::strcmp(name,"manhattan_strided"))
 			return new functions::reduce3::ops::ManhattanDistance<T>();
 		else if (functions::ops::strcmp(name,"euclidean_strided"))
-			return new functions::reduce3::ops::EuclideanDistance<T ();
+			return new functions::reduce3::ops::EuclideanDistance<T>();
 		else if (functions::ops::strcmp(name,"cosinesimilarity_strided"))
 			return new functions::reduce3::ops::CosineSimilarity<T>();
 		return NULL;
@@ -725,6 +726,18 @@ public:
 #ifdef __CUDACC__
 __constant__ functions::reduce3::Reduce3OpFactory<double> *reduce3OpFactory;
 __constant__ functions::reduce3::Reduce3OpFactory<float> *reduce3OpFactoryFloat;
+
+extern "C"
+__host__ void setupReduce3Factories() {
+	printf("Setting up transform factories\n");
+	functions::reduce3::Reduce3OpFactory<double> *newOpFactory =  functions::reduce3::Reduce3OpFactory<double>();
+	functions::reduce3::Reduce3OpFactory<float> *newOpFactoryFloat =  functions::reduce3::Reduce3OpFactory<float>();
+	checkCudaErrors(cudaMemcpyToSymbol(reduce3OpFactory, newOpFactory, sizeof( functions::reduce3::Reduce3OpFactory<double> )));
+	checkCudaErrors(cudaMemcpyToSymbol(reduce3OpFactoryFloat, newOpFactory, sizeof( functions::reduce3::Reduce3OpFactory<float>)));
+	delete(newOpFactory);
+	delete(newOpFactoryFloat);
+}
+
 extern "C" __global__ void reduce3Double(
 		char *name,
 		int n, double *dx, int *xShapeInfo,

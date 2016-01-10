@@ -1062,6 +1062,18 @@ public:
 __constant__ functions::indexreduce::IndexReduceOpFactory<double> *indexReduceOpFactoryDouble;
 __constant__ functions::indexreduce::IndexReduceOpFactory<float> *indexReduceOpFactoryFloat;
 
+extern "C"
+__host__ void setupReduceFactories() {
+	printf("Setting up transform factories\n");
+	functions::indexreduce::IndexReduceOpFactory<double> *newOpFactory =  functions::indexreduce::IndexReduceOpFactory<double>();
+	functions::indexreduce::IndexReduceOpFactory<float> *newOpFactoryFloat =  functions::indexreduce::IndexReduceOpFactory<float>();
+	checkCudaErrors(cudaMemcpyToSymbol(indexReduceOpFactoryDouble, newOpFactory, sizeof( functions::indexreduce::IndexReduceOpFactory<double> )));
+	checkCudaErrors(cudaMemcpyToSymbol(indexReduceOpFactoryFloat, newOpFactory, sizeof( functions::indexreduce::IndexReduceOpFactory<float>)));
+	delete(newOpFactory);
+	delete(newOpFactoryFloat);
+}
+
+
 extern "C" __global__ void indexReduceDouble(char *name,int n, double *dx, int *xShapeInfo, double *extraParams, double *result,
 		int *resultShapeInfo, int *gpuInformation,
 		int *dimension,

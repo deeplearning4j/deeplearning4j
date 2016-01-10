@@ -9,6 +9,7 @@
 #define PAIRWISE_TRANSFORM_H_
 
 #include <op.h>
+#include <helper_cuda.h>
 namespace functions {
 namespace pairwise_transforms {
 #define MIN 1e-12
@@ -127,7 +128,7 @@ public:
 	__always_inline
 
 #endif
-	virtual PairWiseTransform() {
+	 PairWiseTransform() {
 	}
 
 };
@@ -839,6 +840,19 @@ public:
 #ifdef __CUDACC__
 __constant__ functions::pairwise_transforms::PairWiseTransformOpFactory<double> *pairWiseDoubleFactory;
 __constant__ functions::pairwise_transforms::PairWiseTransformOpFactory<float> *pairWiseFloatFactory;
+
+extern "C"
+__host__ void setupPairWiseTransformFactories() {
+	printf("Setting up transform factories\n");
+	functions::pairwise_transforms::PairWiseTransformOpFactory<double> *newOpFactory = new functions::pairwise_transforms::PairWiseTransformOpFactory<double>();
+	functions::pairwise_transforms::PairWiseTransformOpFactory<float> *newOpFactoryFloat = new functions::pairwise_transforms::PairWiseTransformOpFactory<float>();
+	checkCudaErrors(cudaMemcpyToSymbol(pairWiseDoubleFactory, newOpFactory, sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<double> )));
+	checkCudaErrors(cudaMemcpyToSymbol(pairWiseFloatFactory, newOpFactory, sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<float>)));
+	delete(newOpFactory);
+	delete(newOpFactoryFloat);
+
+}
+
 
 extern "C" __global__ void pairWiseTransformDouble(
 		char *name,

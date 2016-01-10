@@ -1517,7 +1517,16 @@ public:
 __constant__ functions::reduce::ReduceOpFactory<double> *reduceOpFactory;
 __constant__ functions::reduce::ReduceOpFactory<float> *reduceOpFactoryFloat;
 
-
+extern "C"
+__host__ void setupReduceFactories() {
+	printf("Setting up transform factories\n");
+	functions::reduce::ReduceOpFactory<double> *newOpFactory =  functions::reduce::ReduceOpFactory<double>();
+	functions::reduce::ReduceOpFactory<float> *newOpFactoryFloat =  functions::reduce::ReduceOpFactory<float>();
+	checkCudaErrors(cudaMemcpyToSymbol(reduceOpFactory, newOpFactory, sizeof( functions::reduce::ReduceOpFactory<double> )));
+	checkCudaErrors(cudaMemcpyToSymbol(reduceOpFactoryFloat, newOpFactory, sizeof( functions::reduce::ReduceOpFactory<float>)));
+	delete(newOpFactory);
+	delete(newOpFactoryFloat);
+}
 
 
 extern "C" __global__ void reduceDouble(

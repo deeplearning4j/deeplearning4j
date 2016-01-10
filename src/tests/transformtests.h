@@ -75,9 +75,7 @@ TEST(Transform,Sigmoid) {
 	double *extraParams = (double *) malloc(sizeof(double));
 
 	functions::transform::Transform<double> *log = opFactory->getOp("sigmoid_strided");
-	printf("Malloced op\n");
 	log->exec(data->data->data, 1, data->data->data, 1, extraParams, length);
-	printf("Exec\n");
 	double *comparison= (double *)malloc(4 * sizeof(double));
 	comparison[0] = 0.7310585786300049;
 	comparison[1] = 0.8807970779778823;
@@ -90,21 +88,23 @@ TEST(Transform,Sigmoid) {
 	printf("Ran cuda\n");
 	setupTransfromFactories();
 	nd4j::array::NDArrays<double>::allocateNDArrayOnGpu(&data);
-    transformDouble<<<4,64,42000>>>(
-    		"sigmoid_strided"
-    		,length,
-    		1,data->data->gData,
-    		1,data->data->gData,
-    		data->data->gData
-    		,1);
-	//transformDouble("sigmoid_strided");
+	double *extraParamsData = (double *) malloc(sizeof(double));
+	extraParams[0] = 0.0;
+	nd4j::buffer::Buffer<double> *extraParamsBuff = nd4j::buffer::createBuffer(extraParamsData,1);
+	transformDouble<<<4,64,42000>>>(
+			"sigmoid_strided"
+			,length,
+			1,data->data->gData,
+			1,extraParamsBuff->gData,
+			data->data->gData
+			,1);
+	checkCudaErrors(cudaDeviceSynchronize());
+	nd4j::buffer::freeBuffer(&extraParamsBuff);
+	nd4j::buffer::copyDataFromGpu(&data->data);
+
 #endif
+
 	nd4j::array::NDArrays<double>::freeNDArrayOnGpuAndCpu(&data);
-
-
-	free(extraParams);
-	free(shape);
-	free(stride);
 	delete log;
 
 }

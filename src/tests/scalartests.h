@@ -46,12 +46,12 @@ TEST(ScalarTransform,ScalarAdd) {
 	add->transform(data->data->data, 1, data->data->data, 1, 1.0, extraParams,
 			length);
 
-	double comparison[4] = { 2, 3, 4, 5 };
+	double *comparison = (double *) malloc(sizeof(double) * 4);
+	for(int i = 0; i < 4; i++)
+		comparison[i] = i + 2;
 	CHECK(arrsEquals(rank, comparison, data->data->data));
-	free(data);
+	nd4j::array::NDArrays<double>::freeNDArrayOnGpuAndCpu(&data);
 	free(extraParams);
-	free(shape);
-	free(stride);
 	delete add;
 
 }

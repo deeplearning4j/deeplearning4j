@@ -197,7 +197,7 @@ __host__
 
 void freeBuffer(Buffer<T> **buffer) {
 	Buffer<T> *bufferRef = *buffer;
-	delete[] bufferRef->data;
+	free(bufferRef->data);
 #ifdef __CUDACC__
 	if(bufferRef->allocatedOnGpu)
 	checkCudaErrors(cudaFree(bufferRef->gData));

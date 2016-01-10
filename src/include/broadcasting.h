@@ -12,7 +12,7 @@
 #include <shape.h>
 #include <op.h>
 #include <templatemath.h>
-
+#include <helper_cuda.h>
 namespace functions {
 namespace broadcast {
 
@@ -610,6 +610,19 @@ public:
 
 __constant__ functions::broadcast::BroadcastOpFactory<double> *broadcastDoubleFactory;
 __constant__ functions::broadcast::BroadcastOpFactory<float> *broadcastFloatFactory;
+
+
+extern "C"
+__host__ void setupBroadcastFactories() {
+	printf("Setting up transform factories\n");
+	functions::broadcast::BroadcastOpFactory<double> *newOpFactory =  functions::broadcast::BroadcastOpFactory<double>();
+	functions::broadcast::BroadcastOpFactory<float> *newOpFactoryFloat =  functions::broadcast::BroadcastOpFactory<float>();
+	checkCudaErrors(cudaMemcpyToSymbol(broadcastDoubleFactory, newOpFactory, sizeof( functions::broadcast::BroadcastOpFactory<double> )));
+	checkCudaErrors(cudaMemcpyToSymbol(broadcastFloatFactory, newOpFactory, sizeof( functions::broadcast::BroadcastOpFactory<float>)));
+	delete(newOpFactory);
+	delete(newOpFactoryFloat);
+}
+
 
 extern "C" __global__ void broadcastDouble(
 		char *name,
