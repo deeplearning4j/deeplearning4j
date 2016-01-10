@@ -80,4 +80,5 @@ Like human beings, the Q function is recursive. Just as calling the wetware meth
 
 ## Further Reading
 
+* Richard S. Sutton and Andrew G. Barto's [Reinforcement Learning: An Introduction](https://webdocs.cs.ualberta.ca/~sutton/book/the-book.html)
 * Andrej Karpathy's [ConvNetJS Deep Q Learning Demo](https://cs.stanford.edu/people/karpathy/convnetjs/demo/rldemo.html)
