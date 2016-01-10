@@ -120,12 +120,13 @@ public class PageableDirectBufferMemoryStrategy implements MemoryStrategy {
 
         DevicePointerInfo devicePointerInfo = new DevicePointerInfo(devicePointer,buffer.getElementSize() * buffer.length(),stride,offset,false);
         if (initData) {
-            JCuda.cudaMemcpyAsync(
+            // we'll have to use sync memcpy, to avoid passing CudaContext down here
+            // FIXME: make that one cudaMemcpyAsync once again after we get nice way to pass CudaContext down here
+            JCuda.cudaMemcpy(
                     devicePointerInfo.getPointers().getDevicePointer()
                     , hostPointer
                     , devicePointerInfo.getLength()
-                    , cudaMemcpyKind.cudaMemcpyHostToDevice
-                    , CudaContext.getBlasContext().getOldStream());
+                    , cudaMemcpyKind.cudaMemcpyHostToDevice);
         }
 
         return devicePointerInfo;
