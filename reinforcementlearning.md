@@ -66,9 +66,13 @@ In reinforcement learning, convolutional networks can be used to recognize an ag
 
 But convolutional networks derive different interpretations from images in reinforcement learning than in supervised learning. In supervised learning, the network applies a label to an image; that is, it matches names to pixels. 
 
+![Alt text](../img/conv_classifier.png)
+
 In fact, it will rank the labels that best fit the image in terms of their probabilities. Shown an image of a donkey, it might decide the picture is 80% likely to be a donkey, 50% likely to be a horse, and 30% likely to be a dog. 
 
 In reinforcement learning, given an image that represents a state, a convolutional net can rank the actions possible to perform in that state; for example, it might predict that running right will return 5 points, jumping 7, and running left none. 
+
+![Alt text](../img/conv_agent.png)
 
 Having assigned values to the expected rewards, the Q function simply selects the state-action pair with the highest so-called Q value. 
 
