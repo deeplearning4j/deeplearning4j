@@ -98,17 +98,17 @@ public class PageableDirectBufferMemoryStrategy implements MemoryStrategy {
         JCudaBuffer buf2 = (JCudaBuffer) copy;
         Table<String, Triple<Integer, Integer, Integer>, DevicePointerInfo> pointersToContexts = buf2.getPointersToContexts();
 
-        DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName(),Triple.of(offset,buf2.length(),1));
+        DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName(),Triple.of(offset,length,1));
         if(devicePointerInfo != null) {
             JCuda.cudaMemcpyAsync(
-                    buf2.getHostPointer()
+                    devicePointerInfo.getPointers().getHostPointer()
                     , devicePointerInfo.getPointers().getDevicePointer()
                     , devicePointerInfo.getLength()
                     , cudaMemcpyKind.cudaMemcpyDeviceToHost
                     , context.getOldStream());
-        }
+        };
 
-        return buf2.getHostPointer();
+        return devicePointerInfo.getPointers().getHostPointer();
     }
 
     @Override

@@ -672,12 +672,61 @@ public class CublasPointerRevTests {
 
     /**
      * This test makes sure that data is transferred host->device->host path properly.
+     * To check that, we use pre-calculated axpy product validation
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testPageableBlasCallValue2() throws Exception {
+        // simple way to stop test if we're not on CUDA backend here
+        assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
+
+        // reset to default MemoryStrategy, most probable is Pinned
+        ContextHolder.getInstance().forceMemoryStrategyForThread(new PageableDirectBufferMemoryStrategy());
+
+        assertEquals("PageableDirectBufferMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
+
+        CudaContext ctx = CudaContext.getBlasContext();
+
+        INDArray array1 = Nd4j.create(new float[]{1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
+        INDArray array2 = Nd4j.create(new float[]{1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
+
+        CublasPointer xAPointer = new CublasPointer(array1,ctx);
+        CublasPointer xBPointer = new CublasPointer(array2,ctx);
+
+        JCublas2.cublasSaxpy(
+                ctx.getHandle(),
+                array1.length(),
+                Pointer.to(new float[]{0.75f}),
+                xAPointer.getDevicePointer().withByteOffset(array1.offset() * array1.data().getElementSize()),
+                BlasBufferUtil.getBlasStride(array1),
+                xBPointer.getDevicePointer().withByteOffset(array2.offset() * array2.data().getElementSize()),
+                BlasBufferUtil.getBlasStride(array2));
+        ctx.syncOldStream();
+
+        xBPointer.copyToHost();
+
+        ctx.finishBlasOperation();
+
+        double result1 = array2.getDouble(0);
+        double result2 = array2.getDouble(1);
+
+        System.out.println("Value[0]: " + result1);
+        System.out.println("Value[1]: " + result2);
+
+        assertEquals(1.7574999332427979, result1, 0.00001);
+        assertEquals(1.7574999332427979, result2, 0.00001);
+    }
+
+
+    /**
+     * This test makes sure that data is transferred host->device->host path properly.
      * To check that, we use pre-calculated dot product validation
      *
      * @throws Exception
      */
     @Test
-    public void testPageableBlasCallValue() throws Exception {
+    public void testPageableBlasCallValue1() throws Exception {
         // simple way to stop test if we're not on CUDA backend here
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
 
@@ -737,7 +786,7 @@ public class CublasPointerRevTests {
      * @throws Exception
      */
     @Test
-    public void tesPinnedBlasCallValue() throws Exception {
+    public void tesPinnedBlasCallValue1() throws Exception {
         // simple way to stop test if we're not on CUDA backend here
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
 
