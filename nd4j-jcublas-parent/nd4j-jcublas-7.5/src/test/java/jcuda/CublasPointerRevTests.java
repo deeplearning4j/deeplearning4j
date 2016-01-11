@@ -1,6 +1,7 @@
 package jcuda;
 
 import jcuda.jcublas.JCublas2;
+import jcuda.runtime.JCuda;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
@@ -10,6 +11,7 @@ import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
+import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.buffer.allocation.PageableDirectBufferMemoryStrategy;
 import org.nd4j.linalg.jcublas.buffer.allocation.PinnedMemoryStrategy;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
@@ -25,15 +27,18 @@ import static org.junit.Assert.*;
 /**
  * This set of very basic tests will check for memory leaks in different allocation cases.
  *
- * 1. full array/buffer allocation
+ * 1. full array allocation
  * 2. view allocation
  * 3. nested view allocation
  * 4. allocation over the same memory space
+ * 5. allocation from buffer directly
  *
  * On later stages, sparse allocations should be tested here as well. But for cuSparse that shouldn't be an issue, due to dense underlying CSR format.
  *
  * All this tests should be executed against both Pageable and Pinned MemoryStrategies.
  * If any more strategies will be presented, it would be nice to add them here
+ *
+ * PLEASE NOTE: this test was intentionally left within jcuda package, to allow access to protected method Pointer.getNativePointer()
  *
  * @author raver119@gmail.com
  */
@@ -800,7 +805,7 @@ public class CublasPointerRevTests {
         // simple way to stop test if we're not on CUDA backend here
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
 
-        // reset to default MemoryStrategy, most probable is Pinned
+        // setting Pageable memory strategy
         ContextHolder.getInstance().forceMemoryStrategyForThread(new PageableDirectBufferMemoryStrategy());
 
         assertEquals("PageableDirectBufferMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
@@ -914,7 +919,7 @@ public class CublasPointerRevTests {
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
 
         // reset to default MemoryStrategy, most probable is Pinned
-        ContextHolder.getInstance().forceMemoryStrategyForThread(null);
+        ContextHolder.getInstance().forceMemoryStrategyForThread(new PinnedMemoryStrategy());
 
         assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
 
@@ -968,7 +973,7 @@ public class CublasPointerRevTests {
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
 
         // reset to default MemoryStrategy, most probable is Pinned
-        ContextHolder.getInstance().forceMemoryStrategyForThread(null);
+        ContextHolder.getInstance().forceMemoryStrategyForThread(new PinnedMemoryStrategy());
 
         assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
 
@@ -1007,7 +1012,7 @@ public class CublasPointerRevTests {
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
 
         // reset to default MemoryStrategy, most probable is Pinned
-        ContextHolder.getInstance().forceMemoryStrategyForThread(null);
+        ContextHolder.getInstance().forceMemoryStrategyForThread(new PinnedMemoryStrategy());
 
         assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
 
@@ -1044,7 +1049,7 @@ public class CublasPointerRevTests {
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
 
         // reset to default MemoryStrategy, most probable is Pinned
-        ContextHolder.getInstance().forceMemoryStrategyForThread(null);
+        ContextHolder.getInstance().forceMemoryStrategyForThread(new PinnedMemoryStrategy());
 
         assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
 
@@ -1087,11 +1092,104 @@ public class CublasPointerRevTests {
     }
 
     /**
-     * This test addresses memory allocation using given buffer
+     * This test addresses Pinned memory allocation using given buffer
      * @throws Exception
      */
     @Test
     public void testPinnedBufferBasedAllocation1() throws Exception {
+        // simple way to stop test if we're not on CUDA backend here
+        assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
 
+        // reset to default MemoryStrategy, most probable is Pinned
+        ContextHolder.getInstance().forceMemoryStrategyForThread(new PinnedMemoryStrategy());
+
+        assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
+
+        INDArray array = Nd4j.create(new float[]{1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
+
+        BaseCudaDataBuffer buffer = (BaseCudaDataBuffer) array.data();
+
+        CudaContext ctx = CudaContext.getBlasContext();
+
+        CublasPointer xBPointer = new CublasPointer(buffer, ctx);
+
+        // now we assume we have pointer that can't have derived pointers
+        // and now we'll just memset everything with zeroes, so actually whole array will become array of zeroes internally
+        JCuda.cudaMemset(xBPointer.getDevicePointer(), 0, buffer.length() * buffer.getElementSize());
+
+        // copyback our buffer
+        xBPointer.copyToHost();
+
+        ctx.finishBlasOperation();
+
+        xBPointer.close();
+
+        assertTrue(buffer.isFreed());
+        assertTrue(xBPointer.isClosed());
+
+        // so, we should have full array filled with zeroes now, not 1.01f's
+        assertEquals(0.0d, array.getDouble(0), 0.001);
+        assertEquals(0.0d, array.getDouble(1), 0.001);
+    }
+
+
+    /**
+     * This test addresses Pageable memory allocation using given buffer
+     *
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testPageableBufferBasedAllocation1() throws Exception {
+        // simple way to stop test if we're not on CUDA backend here
+        assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
+
+        // reset to default MemoryStrategy, most probable is Pinned
+        ContextHolder.getInstance().forceMemoryStrategyForThread(new PageableDirectBufferMemoryStrategy());
+
+        assertEquals("PageableDirectBufferMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
+
+        INDArray array = Nd4j.create(new float[]{1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
+
+        BaseCudaDataBuffer buffer = (BaseCudaDataBuffer) array.data();
+
+        //
+        CudaContext ctx = CudaContext.getBlasContext();
+
+        CublasPointer xBPointer = new CublasPointer(buffer, ctx);
+
+        // now we assume we have pointer that can't have derived pointers
+        // and now we'll just memset everything with zeroes, so actually whole array will become array of zeroes internally
+        JCuda.cudaMemset(xBPointer.getDevicePointer(), 0, buffer.length() * buffer.getElementSize());
+
+        // copyback our buffer
+        xBPointer.copyToHost();
+
+        ctx.finishBlasOperation();
+
+        xBPointer.close();
+
+        assertTrue(buffer.isFreed());
+        assertTrue(xBPointer.isClosed());
+
+        // so, we should have full array filled with zeroes now, not 1.01f's
+        assertEquals(0.0d, array.getDouble(0), 0.001);
+        assertEquals(0.0d, array.getDouble(1), 0.001);
+
+        /*
+            PLEASE NOTE: THERE SHOULD BE EXCEPTION.
+
+            This part of test should throw exception with IllegalDevicePointer description.
+            If everything is released properly, device pointer derived via CublasPointer() should be discarded and freed
+         */
+        try {
+            JCuda.cudaMemset(xBPointer.getDevicePointer(), 0, buffer.length() * buffer.getElementSize());
+
+            // if there's something wrong with buffer release, we should throw assertion exception
+            assertTrue(false);
+        } catch (jcuda.CudaException e) {
+            // everything ok, device memory were released
+            ;
+        }
     }
 }

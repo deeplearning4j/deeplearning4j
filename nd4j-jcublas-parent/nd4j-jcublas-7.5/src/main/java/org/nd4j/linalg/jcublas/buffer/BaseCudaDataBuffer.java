@@ -268,7 +268,10 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     @Override
     public Pointer getDevicePointer(int stride, int offset,int length) {
         String name = Thread.currentThread().getName();
-        DevicePointerInfo devicePointerInfo = pointersToContexts.get(name,Triple.of(offset,length,1));
+        DevicePointerInfo devicePointerInfo = pointersToContexts.get(name,Triple.of(offset,length,stride));
+
+        referenceCounter.incrementAndGet();
+
         if(devicePointerInfo == null) {
             int devicePointerLength = getElementSize() * length;
             allocated.addAndGet(devicePointerLength);
@@ -317,7 +320,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                      * for this particular offset and buffer.
                      *
                      */
-                    HostDevicePointer zero = pointersToContexts.get(name,Triple.of(0,length,1)).getPointers();
+                    HostDevicePointer zero = pointersToContexts.get(name,Triple.of(0,length,stride)).getPointers();
                     HostDevicePointer ret = new HostDevicePointer(zero.getHostPointer().withByteOffset(offset * getElementSize()),zero.getDevicePointer()
                             .withByteOffset(offset * getElementSize()));
                     devicePointerInfo = new DevicePointerInfo(ret,length,stride,offset,false);
