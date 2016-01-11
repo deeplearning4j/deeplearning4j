@@ -343,6 +343,9 @@ public class CublasPointerRevTests {
         assertFalse(xDPointer.isClosed());
         assertFalse(yDPointer.isClosed());
 
+        // right now we have neat case. buffer is NOT marked as free, but device pointer is already discarded
+        assertFalse(bufferSlice4.isFreed());
+
         // copyback, once again
         yDPointer.copyToHost();
 
@@ -611,10 +614,10 @@ public class CublasPointerRevTests {
 
         // now we should check, if host memory was released.
         // if not - freeHost() wasn't called for corresponding buffer and we have memory leak there
-        assertFalse(buffer1.isFreed());
+        assertTrue(buffer1.isFreed());
 
         // we check if result buffer is freed too.
-        assertFalse(buffer2.isFreed());
+        assertTrue(buffer2.isFreed());
 
         /*
             As you can see, this test fails here - underlying buffer of size 200000 elements hasn't got cudaFreeHost call
@@ -646,11 +649,23 @@ public class CublasPointerRevTests {
         long new_addr_buff2 = xBPointer.getDevicePointer().getNativePointer();
 
 
-        assertEquals(addr_buff1, new_addr_buff1);
-        assertEquals(addr_buff2, new_addr_buff2);
-
+        // please note, this equation is NOT leads to bug if it fails, you can have two equal addresses
+        /*
+            assertEquals(addr_buff1, new_addr_buff1);
+            assertEquals(addr_buff2, new_addr_buff2);
+        */
         xAPointer.close();
         xBPointer.close();
+
+        assertEquals(true, xAPointer.isClosed());
+        assertEquals(true, xBPointer.isClosed());
+
+        // now we should check, if host memory was released.
+        // if not - freeHost() wasn't called for corresponding buffer and we have memory leak there
+        assertTrue(buffer1.isFreed());
+
+        // we check if result buffer is freed too.
+        assertTrue(buffer2.isFreed());
 
     }
 
@@ -827,7 +842,6 @@ public class CublasPointerRevTests {
         assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
 
         INDArray baseArray1 = Nd4j.rand(new int[]{1000, 200}, -1.0, 1.0, new DefaultRandom());
-        INDArray baseArray2 = Nd4j.rand(new int[]{1000, 200}, -1.0, 1.0, new DefaultRandom());
 
         INDArray slice1 = baseArray1.slice(1);
         INDArray slice2 = baseArray1.slice(2);
@@ -850,5 +864,50 @@ public class CublasPointerRevTests {
 
         assertTrue(buffer1.isFreed());
         assertTrue(buffer2.isFreed());
+    }
+
+    @Test
+    public void testPinnedMemoryNestedAllocation3() throws Exception {
+        // simple way to stop test if we're not on CUDA backend here
+        assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
+
+        // reset to default MemoryStrategy, most probable is Pinned
+        ContextHolder.getInstance().forceMemoryStrategyForThread(null);
+
+        assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
+
+        INDArray baseArray1 = Nd4j.rand(new int[]{1000, 200}, -1.0, 1.0, new DefaultRandom());
+
+        INDArray slice1 = baseArray1.slice(1);
+        INDArray slice2 = baseArray1.slice(2);
+        INDArray slice3 = baseArray1.slice(1);
+
+        CudaContext ctx = CudaContext.getBlasContext();
+
+        CublasPointer xAPointer = new CublasPointer(slice1,ctx);
+        CublasPointer xBPointer = new CublasPointer(slice2,ctx);
+        CublasPointer xCPointer = new CublasPointer(slice3,ctx);
+
+
+        BaseCudaDataBuffer buffer1 = (BaseCudaDataBuffer) xAPointer.getBuffer();
+        BaseCudaDataBuffer buffer2 = (BaseCudaDataBuffer) xBPointer.getBuffer();
+        BaseCudaDataBuffer buffer3 = (BaseCudaDataBuffer) xCPointer.getBuffer();
+
+        xAPointer.close();
+        assertFalse(buffer1.isFreed());
+        assertFalse(buffer2.isFreed());
+        assertFalse(buffer3.isFreed());
+
+
+        xBPointer.close();
+        assertFalse(buffer1.isFreed());
+        assertFalse(buffer2.isFreed());
+        assertFalse(buffer3.isFreed());
+
+
+        xCPointer.close();
+        assertTrue(buffer1.isFreed());
+        assertTrue(buffer2.isFreed());
+        assertTrue(buffer3.isFreed());
     }
 }
