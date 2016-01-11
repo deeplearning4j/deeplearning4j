@@ -1,15 +1,15 @@
 cmake_minimum_required(VERSION 3.3)
 project(nativeoperations)
 set( CMAKE_VERBOSE_MAKEFILE on )
-option(TESTS "Compile and make tests for the code?" ON)
-option(PTX "Compile ptx")
-option(CUBIN "Compile cubin")
-option(ECLIPSE "Generate eclipse files")
-
-find_path(STDIO_INCLUDE_PATH stdio.h)
 # packages
 find_package(CUDA)
-set(CMAKE_CXX_FLAGS "-Wall -O0 -fopenmp -std=c++11 -ftree-vectorize -msse2 -ftree-vectorizer-verbose=0 -fassociative-math -funsafe-math-optimizations -march=native")
+
+find_path(STDIO_INCLUDE_PATH stdio.h)
+
+include_directories("src/include")
+include_directories("src/tests")
+LINK_LIBRARIES(CppUTest)
+set(CMAKE_CXX_FLAGS "-lCppUTest -Wall -O0 -fopenmp -std=c++11 -ftree-vectorize -msse2 -ftree-vectorizer-verbose=0 -fassociative-math -funsafe-math-optimizations -march=native")
 IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     include_directories("/usr/include")
     include_directories("/usr/local/include")
@@ -22,21 +22,14 @@ if (CUDA_FOUND)
     SET(CUDA_SEPARABLE_COMPILATION OFF)
     set(CUDA_COMPUTE_CAPABILITY "50")
     list(APPEND CUDA_NVCC_FLAGS "-DVERBOSE;-lCppUTest;-G;-g;-gencode arch=compute_50,code=sm_50")
+    cuda_add_executable(nativeoperations main.cu)
+
+else()
+    LINK_LIBRARIES(CppUTest)
+    message("CUDA not found")
+    set(SOURCE_FILES
+            src/array/shape.cu
+            main.cu src/array/templatemath.cu)
+    add_executable(nativeoperations ${SOURCE_FILES} src/array/templatemath.cu src/array/templatemath.h)
 endif()
 
-
-include_directories(include)
-
-add_subdirectory(src)
-if(ECLIPSE)
-    add_subdirectory(eclipse)
-endif()
-if(PTX)
-    add_subdirectory(ptx)
-endif()
-if(CUBIN)
-    add_subdirectory(cubin)
-endif()
-if(TESTS)
-    add_subdirectory(test)
-endif()

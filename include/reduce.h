@@ -4,7 +4,7 @@
 #include <shape.h>
 #include <op.h>
 #include <templatemath.h>
-
+#include <helper_cuda.h>
 
 
 //an op for the kernel

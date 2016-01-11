@@ -187,13 +187,6 @@ public:
 #endif
 	virtual ~Add() {
 	}
-#ifdef __CUDACC__
-	inline __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	Add() {
-	}
 };
 
 template<typename T>
@@ -248,13 +241,7 @@ public:
 #endif
 	virtual ~Copy() {
 	}
-#ifdef __CUDACC__
-	inline __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	Copy() {
-	}
+
 };
 
 template<typename T>
@@ -309,13 +296,7 @@ public:
 #endif
 	virtual ~Divide() {
 	}
-#ifdef __CUDACC__
-	inline __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	Divide() {
-	}
+
 };
 
 template<typename T>
@@ -370,13 +351,7 @@ public:
 #endif
 	virtual ~Multiply() {
 	}
-#ifdef __CUDACC__
-	inline __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	Multiply() {
-	}
+
 };
 
 template<typename T>
@@ -431,13 +406,7 @@ public:
 #endif
 	virtual ~ReverseDivide() {
 	}
-#ifdef __CUDACC__
-	inline __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	ReverseDivide() {
-	}
+
 };
 
 template<typename T>
@@ -492,13 +461,7 @@ public:
 #endif
 	virtual ~ReverseSubtract() {
 	}
-#ifdef __CUDACC__
-	inline __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	ReverseSubtract() {
-	}
+
 };
 
 template<typename T>
@@ -553,13 +516,7 @@ public:
 #endif
 	virtual ~Subtract() {
 	}
-#ifdef __CUDACC__
-	inline __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	Subtract() {
-	}
+
 };
 }
 
@@ -579,7 +536,7 @@ public:
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	Broadcast<T> * getOp(char *name) {
+	Broadcast<T> * getOp(const char *name) {
 		if (functions::ops::strcmp(name,"add_strided")) {
 			return new functions::broadcast::ops::Add<T>();
 
@@ -615,8 +572,8 @@ __constant__ functions::broadcast::BroadcastOpFactory<float> *broadcastFloatFact
 extern "C"
 __host__ void setupBroadcastFactories() {
 	printf("Setting up transform factories\n");
-	functions::broadcast::BroadcastOpFactory<double> *newOpFactory =  functions::broadcast::BroadcastOpFactory<double>();
-	functions::broadcast::BroadcastOpFactory<float> *newOpFactoryFloat =  functions::broadcast::BroadcastOpFactory<float>();
+	functions::broadcast::BroadcastOpFactory<double> *newOpFactory =  new functions::broadcast::BroadcastOpFactory<double>();
+	functions::broadcast::BroadcastOpFactory<float> *newOpFactoryFloat =  new functions::broadcast::BroadcastOpFactory<float>();
 	checkCudaErrors(cudaMemcpyToSymbol(broadcastDoubleFactory, newOpFactory, sizeof( functions::broadcast::BroadcastOpFactory<double> )));
 	checkCudaErrors(cudaMemcpyToSymbol(broadcastFloatFactory, newOpFactory, sizeof( functions::broadcast::BroadcastOpFactory<float>)));
 	delete(newOpFactory);

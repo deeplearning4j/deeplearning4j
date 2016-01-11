@@ -36,7 +36,20 @@ public:
 	~Op() {
 	}
 
+	inline
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	Op() {
+	}
+
+
+
 };
+
+
+
+
 
 template<typename T>
 class OpFactory {

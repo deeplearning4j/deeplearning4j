@@ -1063,7 +1063,7 @@ __constant__ functions::indexreduce::IndexReduceOpFactory<double> *indexReduceOp
 __constant__ functions::indexreduce::IndexReduceOpFactory<float> *indexReduceOpFactoryFloat;
 
 extern "C"
-__host__ void setupReduceFactories() {
+__host__ void setupIndexReduceFactories() {
 	printf("Setting up transform factories\n");
 	functions::indexreduce::IndexReduceOpFactory<double> *newOpFactory =  functions::indexreduce::IndexReduceOpFactory<double>();
 	functions::indexreduce::IndexReduceOpFactory<float> *newOpFactoryFloat =  functions::indexreduce::IndexReduceOpFactory<float>();

@@ -9,14 +9,25 @@ else
        rm -rf build
        echo "Deleted build"
     elif [ "$1" ==  "eclipse" ]; then
-            cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_ECLIPSE_GENERATE_SOURCE_PROJECT=TRUE .
+            cd eclipse
+            cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_ECLIPSE_GENERATE_SOURCE_PROJECT=TRUE ..
             python ./nsight-err-parse-patch.py ./project
 
-    else
+    elif [ "$1" ==  "test" ]; then
            rm -rf build
-           echo "Running CMAKE"
+          cd test 
            mkdir -p build
-           cd build && cmake ..
+           cd build && cmake ../test
+     elif [ "$1" == "cubin" ]; then
+           rm -rf cubinbuild
+           mkdir cubinbuild
+           cd cubinbuild
+           cmake ../cubin/
+      elif [ "$1" == "ptx" ]; then
+           rm -rf ptxbuild
+           mkdir ptxbuild
+           cd ptxbuild
+           cmake ../ptx/
 fi
 
 fi
