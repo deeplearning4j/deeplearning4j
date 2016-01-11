@@ -12,22 +12,27 @@ else
             cd eclipse
             cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_ECLIPSE_GENERATE_SOURCE_PROJECT=TRUE ..
             python ./nsight-err-parse-patch.py ./project
-
-    elif [ "$1" ==  "test" ]; then
+     elif [ "$1" ==  "test" ]; then
            rm -rf build
-          cd test 
+           cd test
            mkdir -p build
-           cd build && cmake ../test
+           cd build &&  cmake -DTEST=TRUE ..
      elif [ "$1" == "cubin" ]; then
-           rm -rf cubinbuild
+            rm -rf cubinbuild
            mkdir cubinbuild
            cd cubinbuild
-           cmake ../cubin/
+           cmake -DCUBIN=TRUE ..
+           make && cd ..
+           echo "FINISHING BUILD"
+           mv cubinbuild/cubin/cuda_compile_cubin_generated_all.cu.cubin all.cubin
       elif [ "$1" == "ptx" ]; then
            rm -rf ptxbuild
            mkdir ptxbuild
            cd ptxbuild
-           cmake ../ptx/
+           cmake -DPTX=TRUE ..
+           make && cd ..
+           echo "FINISHING BUILD"
+           mv ptxbuild/ptx/cuda_compile_ptx_generated_all.cu.ptx all.ptx
 fi
 
 fi

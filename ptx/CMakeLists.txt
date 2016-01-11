@@ -7,9 +7,7 @@ if (CUDA_FOUND)
     list(APPEND CUDA_NVCC_FLAGS "-DVERBOSE;-G;-g;-gencode arch=compute_50,code=sm_50")
     file (GLOB_RECURSE cufiles *.cu)
     cuda_compile_ptx (ptxfiles ${cufiles})
-    add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/cuda_compile_ptx_generated_all.cu.ptx COMMAND ${CMAKE_COMMAND}
-            -E rename ${cuda_ptx_files} ${CMAKE_BINARY_DIR}/all.ptx
-            DEPENDS ${cuda_ptx_files})
     add_custom_target (ptx ALL  DEPENDS ${ptxfiles} SOURCES ${ptxfiles})
+
 endif()
 
