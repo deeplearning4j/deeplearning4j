@@ -48,6 +48,4 @@ Deeplearning4j는 [와이어드(Wired)](http://www.wired.com/2014/06/skymind-dee
 
 # 스카이마인드의 인력 채용
 
-저희는 오픈 소스 공헌자들 중에서 채용합니다. 저희와 함께 딥러닝의 미래를 만들어 갈 업무에 지원하시는 가장 좋은 방법은 [Gitter](https://gitter.im/deeplearning4j/deeplearning4j)에서 저희의 커뮤니티에 가입, [Github](https://github.com/deeplearning4j)에서 저희를 fork, 저희와 함께 작업할 문제를 찾으시면, 여러분이 저희와 잘 맞는 분인지를 알 수 있습니다! 함께 일 하는 것은 인터뷰 보다 더 유익하고, 조금의 행운이더라도 더 재미 있을 것 입니다.
-
-Gitter 상에서 DL4J와 채팅하기
+저희는 오픈 소스 공헌자들 중에서 채용합니다. 저희와 함께 딥러닝의 미래를 만들어 갈 업무에 지원하시는 가장 좋은 방법은 [Gitter](https://gitter.im/deeplearning4j/deeplearning4j)에서 저희의 커뮤니티에 가입, [Github](https://github.com/deeplearning4j)에서 저희를 fork, 저희와 함께 작업할 문제를 찾으시면, 저희가 잘 맞는 경우인지를 확인할 수 있습니다! 함께 일 하는 것은 인터뷰 보다 더 유익하고, 운이 좋다면 또한 더욱 재미있을 것 입니다. ^^
