@@ -525,32 +525,26 @@ class BroadcastOpFactory {
 public:
 	BroadcastOpFactory() {
 	}
-#ifdef __CUDACC__
-	__host__
-#endif
-	Broadcast<T> * getOp(std::string name) {
-		return getOp(name.c_str());
 
-	}
 
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	Broadcast<T> * getOp(const char *name) {
-		if (functions::ops::strcmp(name,"add_strided")) {
+	Broadcast<T> * getOp(int op) {
+		if (op == 0) {
 			return new functions::broadcast::ops::Add<T>();
 
-		} else if (functions::ops::strcmp(name,"sub_strided")) {
+		} else if (op == 1) {
 			return new functions::broadcast::ops::Subtract<T>();
-		} else if (functions::ops::strcmp(name,"mul_strided")) {
+		} else if (op == 2) {
 			return new  functions::broadcast::ops::Multiply<T>();
-		} else if (functions::ops::strcmp(name,"div_strided")) {
+		} else if (op == 3) {
 			return new functions::broadcast::ops::Divide<T>();
-		} else if (functions::ops::strcmp(name,"rdiv_strided")) {
+		} else if (op == 4) {
 			return new functions::broadcast::ops::ReverseDivide<T>();
-		} else if (functions::ops::strcmp(name,"rsub_strided")) {
+		} else if (op == 5) {
 			return new functions::broadcast::ops::ReverseSubtract<T>();
-		} else if (functions::ops::strcmp(name,"copy_strided")) {
+		} else if (op == 6) {
 			return new functions::broadcast::ops::Copy<T>();
 		}
 
@@ -582,27 +576,27 @@ __host__ void setupBroadcastFactories() {
 
 
 extern "C" __global__ void broadcastDouble(
-		char *name,
+		int opNum,
 		double *x, int *xShapeInfo,
 		double *y, int *yShapeInfo,
 		double *result, int *resultShapeInfo,
 		int *dimension,
 		int dimensionLength,
 		int *gpuInformation) {
-	functions::broadcast::Broadcast<double> *op = broadcastDoubleFactory->getOp(name);
+	functions::broadcast::Broadcast<double> *op = broadcastDoubleFactory->getOp(opNum);
 	op->transform(x,xShapeInfo,y,yShapeInfo,result,resultShapeInfo,dimension,dimensionLength,gpuInformation);
 	free(op);
 }
 
 extern "C" __global__ void broadcastFloat(
-		char *name,
+		int opNum,
 		float *x, int *xShapeInfo,
 		float *y, int *yShapeInfo,
 		float *result, int *resultShapeInfo,
 		int *dimension,
 		int dimensionLength,
 		int *gpuInformation) {
-	functions::broadcast::Broadcast<float> *op = broadcastFloatFactory->getOp(name);
+	functions::broadcast::Broadcast<float> *op = broadcastFloatFactory->getOp(opNum);
 	op->transform(x,xShapeInfo,y,yShapeInfo,result,resultShapeInfo,dimension,dimensionLength,gpuInformation);
 	free(op);
 

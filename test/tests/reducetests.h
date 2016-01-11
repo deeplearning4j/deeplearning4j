@@ -29,8 +29,7 @@ TEST_GROUP(Reduce) {
 TEST(Reduce, Sum) {
 	functions::reduce::ReduceOpFactory<double> *opFactory5 =
 			new functions::reduce::ReduceOpFactory<double>();
-	functions::reduce::ReduceFunction<double> *sum = opFactory5->create(
-			std::string("sum"));
+	functions::reduce::ReduceFunction<double> *sum = opFactory5->create(1);
 	CHECK(sum != NULL);
 	int length = 4;
 	double *data = (double *) malloc(sizeof(double) * length);
@@ -72,8 +71,7 @@ TEST(Reduce, Sum) {
 TEST(Reduce,DimensionSum) {
 	functions::reduce::ReduceOpFactory<double> *opFactory5 =
 			new functions::reduce::ReduceOpFactory<double>();
-	functions::reduce::ReduceFunction<double> *sum = opFactory5->create(
-			std::string("sum"));
+	functions::reduce::ReduceFunction<double> *sum = opFactory5->create(1);
 	CHECK(sum != NULL);
 	int length = 4;
 	double *data = (double *) malloc(sizeof(double) * length);

@@ -29,8 +29,7 @@ TEST_GROUP(ScalarTransform) {
 };
 
 TEST(ScalarTransform,ScalarAdd) {
-	functions::scalar::ScalarTransform<double> *add = opFactory4->getOp(
-			"add_scalar");
+	functions::scalar::ScalarTransform<double> *add = opFactory4->getOp(0);
 	int rank = 2;
 	int *shape = (int *) malloc(sizeof(int) * rank);
 	shape[0] = 2;

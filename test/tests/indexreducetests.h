@@ -26,8 +26,7 @@ TEST_GROUP(IndexReduce) {
 TEST(IndexReduce, IMax) {
 	functions::indexreduce::IndexReduceOpFactory<double> *opFactory5 =
 			new functions::indexreduce::IndexReduceOpFactory<double>();
-	functions::indexreduce::IndexReduce<double> *sum = opFactory5->getOp(
-			std::string("imax"));
+	functions::indexreduce::IndexReduce<double> *sum = opFactory5->getOp(0);
 	CHECK(sum != NULL);
 	int length = 4;
 	double *data = (double *) malloc(sizeof(double) * length);
@@ -69,8 +68,7 @@ TEST(IndexReduce, IMax) {
 TEST(IndexReduce,DimensionIMax) {
 	functions::indexreduce::IndexReduceOpFactory<double> *opFactory5 =
 			new functions::indexreduce::IndexReduceOpFactory<double>();
-	functions::indexreduce::IndexReduce<double> *sum = opFactory5->getOp(
-			std::string("imax"));
+	functions::indexreduce::IndexReduce<double> *sum = opFactory5->getOp(0);
 	CHECK(sum != NULL);
 	int length = 4;
 	double *data = (double *) malloc(sizeof(double) * length);

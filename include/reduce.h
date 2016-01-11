@@ -1466,39 +1466,33 @@ public:
 	__device__ __host__
 #endif
 
-	virtual functions::reduce::ReduceFunction<T> * create(char *name) {
-		if (functions::ops::strcmp(name,"mean"))
+	virtual functions::reduce::ReduceFunction<T> * create(int op) {
+		if (op == 0)
 			return new functions::reduce::ops::Mean<T>();
-		else if (functions::ops::strcmp(name,"sum"))
+		else if (op == 1)
 			return new functions::reduce::ops::Sum<T>();
-		else if (functions::ops::strcmp(name,"bias"))
+		else if (op == 2)
 			return new functions::reduce::ops::Bias<T>();
-		else if (functions::ops::strcmp(name,"max"))
+		else if (op == 3)
 			return new functions::reduce::ops::Max<T>();
-		else if (functions::ops::strcmp(name,"min"))
+		else if (op == 4)
 			return new functions::reduce::ops::Min<T>();
-		else if (functions::ops::strcmp(name,"norm1"))
+		else if (op == 5)
 			return new functions::reduce::ops::Norm1<T>();
-		else if (functions::ops::strcmp(name,"norm2"))
+		else if (op == 6)
 			return new functions::reduce::ops::Norm2<T>();
-		else if (functions::ops::strcmp(name,"normmax"))
+		else if (op == 7)
 			return new functions::reduce::ops::NormMax<T>();
-		else if (functions::ops::strcmp(name,"prod"))
+		else if (op == 8)
 			return new functions::reduce::ops::Prod<T>();
-		else if (functions::ops::strcmp(name,"std"))
+		else if (op == 9)
 			return new functions::reduce::ops::StandardDeviation<T>();
-		else if (functions::ops::strcmp(name,"var"))
+		else if (op == 10)
 			return new functions::reduce::ops::Variance<T>();
 
 		return NULL;
 	}
 
-#ifdef __CUDACC__
-	__host__
-#endif
-	virtual functions::reduce::ReduceFunction<T> * create(std::string name) {
-		return create(name.c_str());
-	}
 
 #ifdef __CUDACC__
 	__device__ __host__
@@ -1520,8 +1514,8 @@ __constant__ functions::reduce::ReduceOpFactory<float> *reduceOpFactoryFloat;
 extern "C"
 __host__ void setupReduceFactories() {
 	printf("Setting up transform factories\n");
-	functions::reduce::ReduceOpFactory<double> *newOpFactory =  functions::reduce::ReduceOpFactory<double>();
-	functions::reduce::ReduceOpFactory<float> *newOpFactoryFloat =  functions::reduce::ReduceOpFactory<float>();
+	functions::reduce::ReduceOpFactory<double> *newOpFactory =  new functions::reduce::ReduceOpFactory<double>();
+	functions::reduce::ReduceOpFactory<float> *newOpFactoryFloat =  new functions::reduce::ReduceOpFactory<float>();
 	checkCudaErrors(cudaMemcpyToSymbol(reduceOpFactory, newOpFactory, sizeof( functions::reduce::ReduceOpFactory<double> )));
 	checkCudaErrors(cudaMemcpyToSymbol(reduceOpFactoryFloat, newOpFactory, sizeof( functions::reduce::ReduceOpFactory<float>)));
 	delete(newOpFactory);
@@ -1530,7 +1524,7 @@ __host__ void setupReduceFactories() {
 
 
 extern "C" __global__ void reduceDouble(
-		char *name,
+		int op,
 		int n,
 		double *dx,
 		int *xShapeInfo,
@@ -1541,7 +1535,7 @@ extern "C" __global__ void reduceDouble(
 		int *dimension,
 		int dimensionLength,
 		int postProcessOrNot) {
-	functions::reduce::ReduceFunction<double> *reduceFunctionToInvoke = reduceOpFactory->create(name);
+	functions::reduce::ReduceFunction<double> *reduceFunctionToInvoke = reduceOpFactory->create(op);
 	reduceFunctionToInvoke->transform(
 			n,
 			dx,
@@ -1558,7 +1552,7 @@ extern "C" __global__ void reduceDouble(
 }
 
 extern "C" __global__ void reduceFloat(
-		char *name,
+		int op,
 		int n,
 		float *dx,
 		int *xShapeInfo,
@@ -1569,7 +1563,7 @@ extern "C" __global__ void reduceFloat(
 		int *dimension,
 		int dimensionLength,
 		int postProcessOrNot) {
-	functions::reduce::ReduceFunction<float> *reduceFunctionToInvoke = reduceOpFactoryFloat->create(name);
+	functions::reduce::ReduceFunction<float> *reduceFunctionToInvoke = reduceOpFactoryFloat->create(op);
 	reduceFunctionToInvoke->transform(
 			n,
 			dx,

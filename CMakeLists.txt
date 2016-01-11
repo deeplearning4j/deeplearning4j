@@ -5,6 +5,7 @@ option(TESTS "Compile and make tests for the code?" ON)
 option(PTX "Compile ptx")
 option(CUBIN "Compile cubin")
 option(ECLIPSE "Generate eclipse files")
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 find_path(STDIO_INCLUDE_PATH stdio.h)
 # packages

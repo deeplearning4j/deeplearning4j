@@ -1032,20 +1032,15 @@ class IndexReduceOpFactory {
 public:
 	IndexReduceOpFactory() {
 	}
-#ifdef __CUDACC__
-	__host__
-#endif
-	functions::indexreduce::IndexReduce<T> * getOp(std::string name) {
-		return getOp(name.c_str());
-	}
+
 
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	functions::indexreduce::IndexReduce<T> * getOp(char * name) {
-		if (functions::ops::strcmp(name,"imax")) {
+	functions::indexreduce::IndexReduce<T> * getOp(int op) {
+		if (op == 0) {
 			return (functions::indexreduce::ops::IMax<T> *) malloc(sizeof(functions::indexreduce::ops::IMax<T>));
-		} else if (functions::ops::strcmp(name,"imin")) {
+		} else if (op == 1) {
 			return (functions::indexreduce::ops::IMin<T> *)malloc(sizeof(functions::indexreduce::ops::IMin<T>));
 
 		}
@@ -1065,8 +1060,8 @@ __constant__ functions::indexreduce::IndexReduceOpFactory<float> *indexReduceOpF
 extern "C"
 __host__ void setupIndexReduceFactories() {
 	printf("Setting up transform factories\n");
-	functions::indexreduce::IndexReduceOpFactory<double> *newOpFactory =  functions::indexreduce::IndexReduceOpFactory<double>();
-	functions::indexreduce::IndexReduceOpFactory<float> *newOpFactoryFloat =  functions::indexreduce::IndexReduceOpFactory<float>();
+	functions::indexreduce::IndexReduceOpFactory<double> *newOpFactory =  new functions::indexreduce::IndexReduceOpFactory<double>();
+	functions::indexreduce::IndexReduceOpFactory<float> *newOpFactoryFloat =  new functions::indexreduce::IndexReduceOpFactory<float>();
 	checkCudaErrors(cudaMemcpyToSymbol(indexReduceOpFactoryDouble, newOpFactory, sizeof( functions::indexreduce::IndexReduceOpFactory<double> )));
 	checkCudaErrors(cudaMemcpyToSymbol(indexReduceOpFactoryFloat, newOpFactory, sizeof( functions::indexreduce::IndexReduceOpFactory<float>)));
 	delete(newOpFactory);
@@ -1074,19 +1069,19 @@ __host__ void setupIndexReduceFactories() {
 }
 
 
-extern "C" __global__ void indexReduceDouble(char *name,int n, double *dx, int *xShapeInfo, double *extraParams, double *result,
+extern "C" __global__ void indexReduceDouble(int op,int n, double *dx, int *xShapeInfo, double *extraParams, double *result,
 		int *resultShapeInfo, int *gpuInformation,
 		int *dimension,
 		int dimensionLength, int postProcessOrNot) {
-	functions::indexreduce::IndexReduce<double> *indexReduce = indexReduceOpFactoryDouble->getOp(name);
+	functions::indexreduce::IndexReduce<double> *indexReduce = indexReduceOpFactoryDouble->getOp(op);
 	indexReduce->transform(n,dx,xShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
 
 }
-extern "C" __global__ void indexReduceFloat(char *name,int n, float *dx, int *xShapeInfo, float *extraParams, float *result,
+extern "C" __global__ void indexReduceFloat(int op,int n, float *dx, int *xShapeInfo, float *extraParams, float *result,
 		int *resultShapeInfo, int *gpuInformation,
 		int *dimension,
 		int dimensionLength, int postProcessOrNot) {
-	functions::indexreduce::IndexReduce<float> *indexReduce = indexReduceOpFactoryFloat->getOp(name);
+	functions::indexreduce::IndexReduce<float> *indexReduce = indexReduceOpFactoryFloat->getOp(op);
 	indexReduce->transform(n,dx,xShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
 
 }

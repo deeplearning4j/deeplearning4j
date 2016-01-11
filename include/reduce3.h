@@ -700,21 +700,16 @@ public:
 	Reduce3OpFactory() {
 	}
 
-#ifdef __CUDACC__
-	__host__
-#endif
-	Reduce3<T> * getOp(std::string name) {
-		return getOp(name.c_str());
-	}
+
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	Reduce3<T> * getOp(char * name) {
-		if (functions::ops::strcmp(name,"manhattan_strided"))
+	Reduce3<T> * getOp(int op) {
+		if (op == 0)
 			return new functions::reduce3::ops::ManhattanDistance<T>();
-		else if (functions::ops::strcmp(name,"euclidean_strided"))
+		else if (op == 1)
 			return new functions::reduce3::ops::EuclideanDistance<T>();
-		else if (functions::ops::strcmp(name,"cosinesimilarity_strided"))
+		else if (op == 2)
 			return new functions::reduce3::ops::CosineSimilarity<T>();
 		return NULL;
 	}
@@ -730,8 +725,8 @@ __constant__ functions::reduce3::Reduce3OpFactory<float> *reduce3OpFactoryFloat;
 extern "C"
 __host__ void setupReduce3Factories() {
 	printf("Setting up transform factories\n");
-	functions::reduce3::Reduce3OpFactory<double> *newOpFactory =  functions::reduce3::Reduce3OpFactory<double>();
-	functions::reduce3::Reduce3OpFactory<float> *newOpFactoryFloat =  functions::reduce3::Reduce3OpFactory<float>();
+	functions::reduce3::Reduce3OpFactory<double> *newOpFactory =  new functions::reduce3::Reduce3OpFactory<double>();
+	functions::reduce3::Reduce3OpFactory<float> *newOpFactoryFloat =  new functions::reduce3::Reduce3OpFactory<float>();
 	checkCudaErrors(cudaMemcpyToSymbol(reduce3OpFactory, newOpFactory, sizeof( functions::reduce3::Reduce3OpFactory<double> )));
 	checkCudaErrors(cudaMemcpyToSymbol(reduce3OpFactoryFloat, newOpFactory, sizeof( functions::reduce3::Reduce3OpFactory<float>)));
 	delete(newOpFactory);
@@ -739,20 +734,20 @@ __host__ void setupReduce3Factories() {
 }
 
 extern "C" __global__ void reduce3Double(
-		char *name,
+		int opNum,
 		int n, double *dx, int *xShapeInfo,
 		double *dy,
 		int *yShapeInfo, double *extraParams, double *result,
 		int *resultShapeInfo, int *gpuInformation,
 		int *dimension,
 		int dimensionLength, int postProcessOrNot) {
-	functions::reduce3::Reduce3<double> * op = reduce3OpFactory->getOp(name);
+	functions::reduce3::Reduce3<double> * op = reduce3OpFactory->getOp(opNum);
 	op->transform(n,dx,xShapeInfo,dy,yShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
 	free(op);
 
 }
 extern "C" __global__ void reduce3Float(
-		char *name,
+		int opNum,
 		int n, float *dx, int *xShapeInfo,
 		float *dy,
 		int *yShapeInfo, float *extraParams,
@@ -761,7 +756,7 @@ extern "C" __global__ void reduce3Float(
 		int *gpuInformation,
 		int *dimension,
 		int dimensionLength, int postProcessOrNot) {
-	functions::reduce3::Reduce3<float> * op = reduce3OpFactoryFloat->getOp(name);
+	functions::reduce3::Reduce3<float> * op = reduce3OpFactoryFloat->getOp(opNum);
 	op->transform(n,dx,xShapeInfo,dy,yShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
 	free(op);
 }

@@ -1011,7 +1011,7 @@ __device__ __constant__ functions::transform::TransformOpFactory<float> *floatTr
 
 
 extern "C" __global__ void transformDouble(
-		char *name,
+		int opNum,
 		int n,
 		int idx,
 		double *dy,
@@ -1019,7 +1019,7 @@ extern "C" __global__ void transformDouble(
 		double *params,
 		double *result, int blockSize) {
 
-	functions::transform::Transform<double> *op = doubleTransformFactory->getOp(10);
+	functions::transform::Transform<double> *op = doubleTransformFactory->getOp(opNum);
 	functions::transform::ops::Sigmoid<double> sigmoid;
 	printf("Obtained op\n");
 	sigmoid.transform(n,idx,dy,incy,params,result,blockSize);
@@ -1027,7 +1027,7 @@ extern "C" __global__ void transformDouble(
 }
 
 extern "C" __global__ void transformFloat(
-		char *name,
+		int opNum,
 		int n,
 		int idx,
 		float *dy,
@@ -1035,7 +1035,7 @@ extern "C" __global__ void transformFloat(
 		float *params,
 		float *result, int blockSize) {
 
-	functions::transform::Transform<float> *op = floatTransformFactory->getOp(10);
+	functions::transform::Transform<float> *op = floatTransformFactory->getOp(opNum);
 	op->transform(n,idx,dy,incy,params,result,blockSize);
 	free(op);
 }
