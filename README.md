@@ -44,15 +44,10 @@ Documentation is available at [deeplearning4j.org](http://deeplearning4j.org/) a
 
 ## Support
 
-We are not supporting stackoverflow right now.
-GH issues with installation issues are
-also not the place to post anything other than bug reports.
-.
-Please come in to [gitter](https:://gitter.im/deepelearning4j/deeplearning4j)
-
+We are not supporting Stackoverflow right now. Github issues should be limited to bug reports. Please join the community on [Gitter](https:://gitter.im/deepelearning4j/deeplearning4j), where we field questions about how to install the software and work with neural nets. 
 
 ## Installation
-To install Deeplearning4J, there are a couple approaches (briefly described below). More information can be found on the  [ND4J website](http://nd4j.org/getstarted.html) and [here](http://deeplearning4j.org/gettingstarted.html).
+To install Deeplearning4J, there are a couple approaches (briefly described on our [Quickstart](http://deeplearning4j.org/quickstart.html) and below). More information can be found on the [ND4J website](http://nd4j.org/getstarted.html) and [here](http://deeplearning4j.org/gettingstarted.html).
 
 #### Use Maven Central Repository
 
