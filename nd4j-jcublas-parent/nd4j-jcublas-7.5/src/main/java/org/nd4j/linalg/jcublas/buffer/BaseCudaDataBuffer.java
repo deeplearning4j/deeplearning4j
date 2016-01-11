@@ -26,6 +26,7 @@ import io.netty.buffer.Unpooled;
 import jcuda.Pointer;
 import jcuda.jcublas.JCublas2;
 import lombok.Getter;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
@@ -52,6 +53,7 @@ import java.nio.ByteOrder;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -88,6 +90,10 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     protected transient WeakReference<DataBuffer> ref;
     protected AtomicBoolean freed = new AtomicBoolean(false);
     private Map<String,Boolean> copied = new ConcurrentHashMap<>();
+
+    // FIXME: this is ugly ad-hoc fix for double allocation at the sam, and it should be removed as soon as whole memory management will be rewritten
+    // idea of this fix is simpe: keep count of referenced allocations, and do not release buffer untill all references are removed
+    protected transient AtomicInteger referenceCounter = new AtomicInteger(0);
 
     public BaseCudaDataBuffer(ByteBuf buf, int length) {
         super(buf, length);
@@ -372,6 +378,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                                 .alloc(this, 1, 0, this.length,true);
 
                 pointersToContexts.put(name, Triple.of(0,this.length,1), devicePointerInfo);
+
+                // FIXME: this is ugly hack that address double allocation over the same offset/length
+                referenceCounter.incrementAndGet();
             }
 
 
@@ -406,6 +415,10 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 Pointer ret =  retOffset.getDevicePointer();
                 devicePointerInfo = new DevicePointerInfo(retOffset,length,stride,offset,false);
                 pointersToContexts.put(name,Triple.of(offset,compareLength,stride), devicePointerInfo);
+
+                // FIXME: this is ugly hack that address double allocation over the same offset/length
+                referenceCounter.incrementAndGet();
+
                 return ret;
 
             }
@@ -426,6 +439,10 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                  * that has zero offset but does not extend all the way to the end of the buffer.
                  */
                 pointersToContexts.put(name, Triple.of(offset,compareLength2,stride), info3);
+
+                // FIXME: this is ugly hack that address double allocation over the same offset/length
+                referenceCounter.incrementAndGet();
+
                 return info3.getPointers().getDevicePointer();
             }
 
@@ -575,21 +592,28 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public boolean freeDevicePointer(int offset, int length) {
+        System.out.println("Calling freeDevicePointer for offset: ["+ offset+"], length: ["+ length+"]");
         String name = Thread.currentThread().getName();
 
         // TODO: make sure that stride is always equals 1, otherwise pass stride value down here
         DevicePointerInfo devicePointerInfo = pointersToContexts.get(name,Triple.of(offset, length,1) );
+        System.out.println("devicePointerInfo: " + devicePointerInfo);
 
         //nothing to free, there was no copy. Only the gpu pointer was reused with a different offset.
         if(offset != 0) {
             pointersToContexts.remove(name, Triple.of(offset, length, 1));
+            System.out.println("Offset pointer removed");
             // if after offset removal we have no more uses left - we should fire free call
             // if we have no more uses - the only pointer left is 0-this.length() chunk
             // FIXME: this code is ideal race condition bug, and needs to be fixed
             if (pointersToContexts.size() == 1 && !(pointersToContexts.get(name, Triple.of(0, this.length(),1)).equals(null)) ) {
-                ContextHolder.getInstance().getMemoryStrategy().free(this,0,this.length());
-                freed.set(true);
-                copied.remove(name);
+                System.out.println("Checking for nested allocations: " + referenceCounter.get());
+                if (referenceCounter.decrementAndGet() < 1) {
+                    System.out.println("No more uses left, removing");
+                    ContextHolder.getInstance().getMemoryStrategy().free(this, 0, this.length());
+                    freed.set(true);
+                    copied.remove(name);
+                }
             }
          } else if(offset == 0 && isPersist) {
             return true;
