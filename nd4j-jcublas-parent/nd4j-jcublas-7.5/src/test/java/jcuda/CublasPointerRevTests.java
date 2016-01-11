@@ -672,6 +672,117 @@ public class CublasPointerRevTests {
 
     /**
      * This test makes sure that data is transferred host->device->host path properly.
+     * To check that, we use pre-calculated dot product validation
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testPinnedBlasCallValue1() throws Exception {
+        // simple way to stop test if we're not on CUDA backend here
+        assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
+
+        // reset to default MemoryStrategy, most probable is Pinned
+        ContextHolder.getInstance().forceMemoryStrategyForThread(new PinnedMemoryStrategy());
+
+        assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
+
+        CudaContext ctx = CudaContext.getBlasContext();
+
+        INDArray array1 = Nd4j.create(new float[]{1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
+        INDArray array2 = Nd4j.create(new float[]{1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f});
+
+
+        double dotWrapped = Nd4j.getBlasWrapper().dot(array1, array2);
+
+        CublasPointer xAPointer = new CublasPointer(array1,ctx);
+        CublasPointer xBPointer = new CublasPointer(array2,ctx);
+
+        float[] ret = new float[1];
+        ret[0] = 0;
+        Pointer result = Pointer.to(ret);
+
+
+        JCublas2.cublasSdot(
+                ctx.getHandle(),
+                array1.length(),
+                xAPointer.getDevicePointer().withByteOffset(array1.offset() * array1.data().getElementSize()),
+                BlasBufferUtil.getBlasStride(array1),
+                xBPointer.getDevicePointer().withByteOffset(array2.offset() * array2.data().getElementSize()),
+                BlasBufferUtil.getBlasStride(array2),
+                result);
+        ctx.syncOldStream();
+
+
+
+        ctx.finishBlasOperation();
+
+
+        double res = ret[0]; //  / (norm1.doubleValue() * norm2.doubleValue());
+
+        System.out.println("Val before: [0], after: ["+ ret[0]+"], norm: [" + res +"], dotWrapped: [" + dotWrapped + "]");
+
+        xAPointer.close();
+        xBPointer.close();
+
+        assertEquals(dotWrapped, res, 0.001d);
+
+        // this test fails since i don't have proper answer on laptop, will add it from desktop later
+        assertEquals(16.665000915527344, res, 0.001d);
+    }
+
+
+    /**
+     * This test makes sure that data is transferred host->device->host path properly.
+     * To check that, we use pre-calculated axpy product validation
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testPinnedBlasCallValue2() throws Exception {
+        // simple way to stop test if we're not on CUDA backend here
+        assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
+
+        // reset to default MemoryStrategy, most probable is Pinned
+        ContextHolder.getInstance().forceMemoryStrategyForThread(new PinnedMemoryStrategy());
+
+        assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
+
+        CudaContext ctx = CudaContext.getBlasContext();
+
+        INDArray array1 = Nd4j.create(new float[]{1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
+        INDArray array2 = Nd4j.create(new float[]{1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
+
+        CublasPointer xAPointer = new CublasPointer(array1,ctx);
+        CublasPointer xBPointer = new CublasPointer(array2,ctx);
+
+        JCublas2.cublasSaxpy(
+                ctx.getHandle(),
+                array1.length(),
+                Pointer.to(new float[]{0.75f}),
+                xAPointer.getDevicePointer().withByteOffset(array1.offset() * array1.data().getElementSize()),
+                BlasBufferUtil.getBlasStride(array1),
+                xBPointer.getDevicePointer().withByteOffset(array2.offset() * array2.data().getElementSize()),
+                BlasBufferUtil.getBlasStride(array2));
+        ctx.syncOldStream();
+
+        xBPointer.copyToHost();
+
+        ctx.finishBlasOperation();
+
+        double result1 = array2.getDouble(0);
+        double result2 = array2.getDouble(1);
+
+        System.out.println("Value[0]: " + result1);
+        System.out.println("Value[1]: " + result2);
+
+        assertEquals(1.7574999332427979, result1, 0.00001);
+        assertEquals(1.7574999332427979, result2, 0.00001);
+    }
+
+
+
+    /**
+     * This test makes sure that data is transferred host->device->host path properly.
      * To check that, we use pre-calculated axpy product validation
      *
      * @throws Exception
@@ -958,5 +1069,14 @@ public class CublasPointerRevTests {
         assertTrue(buffer1.isFreed());
         assertTrue(buffer2.isFreed());
         assertTrue(buffer3.isFreed());
+    }
+
+    /**
+     * This test addresses memory allocation using given buffer
+     * @throws Exception
+     */
+    @Test
+    public void testPinnedBufferBasedAllocation1() throws Exception {
+
     }
 }
