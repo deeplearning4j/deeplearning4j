@@ -23,14 +23,17 @@ import java.lang.reflect.Method;
 import static org.junit.Assert.*;
 
 /**
- * This set of very vasic tests will check for memory leaks in different allocation cases.
+ * This set of very basic tests will check for memory leaks in different allocation cases.
  *
  * 1. full array/buffer allocation
  * 2. view allocation
+ * 3. nested view allocation
+ * 4. allocation over the same memory space
  *
  * On later stages, sparse allocations should be tested here as well. But for cuSparse that shouldn't be an issue, due to dense underlying CSR format.
  *
  * All this tests should be executed against both Pageable and Pinned MemoryStrategies.
+ * If any more strategies will be presented, it would be nice to add them here
  *
  * @author raver119@gmail.com
  */
@@ -434,7 +437,7 @@ public class CublasPointerRevTests {
         // if not - freeHost() wasn't called for corresponding buffer and we have memory leak there
         assertTrue(buffer.isFreed());
 
-        // Please note: we do NOT test result pointer here,since we assume it's handled by JCuda
+        // Please note: we do NOT test result pointer deallocation here,since we assume it's handled by JCuda
 
         System.out.println("Dot product: " + ret[0] + " Dot wrapped: " + dotWrapped);
     }
@@ -620,17 +623,17 @@ public class CublasPointerRevTests {
         assertTrue(buffer2.isFreed());
 
         /*
+            PLEASE IGNORE! THIS COMMENT WAS WRITTEN PRIOR TO FIX AND KEPT FOR HISTORIC PURPOSES ONLY:
             As you can see, this test fails here - underlying buffer of size 200000 elements hasn't got cudaFreeHost call
             That happens due to logical flaw in BaseCudaDataBuffer.free() method.
             And since try-with-resource is nothing more then auto-call for close() method, overall idea is flawed by this delegation.
 
             From now on, this buffer will stay allocated until application is terminated, however all subsequent view allocations will return proper pointers to this buffer + offset.
-         */
-
-
+        */
         /*
-            Now we know, that array1 and array2 backing buffers were not freed, and they are still in allocated by cudaHostAlloc().
-            And we'll try to allocate one more slice from the same buffers.
+            Now we know, that array1 and array2 backing buffers were freed, since there were no more references left.
+            And following sile calls will cause new allocation for both baseArray1 and baseArray2, that's not good from performance point of view, but still valid from allocation accuracy.
+            And this should be considered as first stop, when it comes to performance improvements over current memory model.
          */
 
         slice1 = baseArray1.slice(2);
@@ -649,7 +652,8 @@ public class CublasPointerRevTests {
         long new_addr_buff2 = xBPointer.getDevicePointer().getNativePointer();
 
 
-        // please note, this equation is NOT leads to bug if it fails, you can have two equal addresses
+        // please note, this equation is NOT means bug if it fails, in c world you can have two equal pointers that references exactly same memory address
+        // so java buffers reality should be investigated before removing comments
         /*
             assertEquals(addr_buff1, new_addr_buff1);
             assertEquals(addr_buff2, new_addr_buff2);
@@ -726,7 +730,7 @@ public class CublasPointerRevTests {
 
         assertEquals(dotWrapped, res, 0.001d);
 
-        // this test fails since i don't have proper answer on laptop, will add it from desktop later
+        // we compare result against precalculated value
         assertEquals(16.665000915527344, res, 0.001d);
     }
 
@@ -772,9 +776,13 @@ public class CublasPointerRevTests {
         double result1 = array2.getDouble(0);
         double result2 = array2.getDouble(1);
 
+        xAPointer.close();
+        xBPointer.close();
+
         System.out.println("Value[0]: " + result1);
         System.out.println("Value[1]: " + result2);
 
+        // we're checking two "random" elements of result array against precalculated values
         assertEquals(1.7574999332427979, result1, 0.00001);
         assertEquals(1.7574999332427979, result2, 0.00001);
     }
@@ -822,9 +830,13 @@ public class CublasPointerRevTests {
         double result1 = array2.getDouble(0);
         double result2 = array2.getDouble(1);
 
+        xAPointer.close();
+        xBPointer.close();
+
         System.out.println("Value[0]: " + result1);
         System.out.println("Value[1]: " + result2);
 
+        // we checking two elements of result array with precalculated value
         assertEquals(1.7574999332427979, result1, 0.00001);
         assertEquals(1.7574999332427979, result2, 0.00001);
     }
@@ -886,7 +898,7 @@ public class CublasPointerRevTests {
 
         assertEquals(dotWrapped, res, 0.001d);
 
-        // this test fails since i don't have proper answer on laptop, will add it from desktop later
+        // compare result to precalculated value
         assertEquals(16.665000915527344, res, 0.001d);
     }
 
@@ -923,8 +935,7 @@ public class CublasPointerRevTests {
         System.out.println("Offset: ["+ array1.offset()+"], stride: ["+ BlasBufferUtil.getBlasStride(array1)+"]");
         System.out.println("Offset: ["+ array2.offset()+"], stride: ["+ BlasBufferUtil.getBlasStride(array2)+"]");
 
-        try {
-            JCublas2.cublasSdot(
+        JCublas2.cublasSdot(
                     ctx.getHandle(),
                     array1.length(),
                     xAPointer.getDevicePointer().withByteOffset(array1.offset() * array1.data().getElementSize()),
@@ -932,10 +943,7 @@ public class CublasPointerRevTests {
                     xBPointer.getDevicePointer().withByteOffset(array2.offset() * array2.data().getElementSize()),
                     BlasBufferUtil.getBlasStride(array2),
                     result);
-            ctx.syncOldStream();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        ctx.syncOldStream();
 
         xAPointer.close();
         xBPointer.close();
@@ -950,7 +958,7 @@ public class CublasPointerRevTests {
         System.out.println("Val before: [0], after: ["+ ret[0]+"], norm: [" + res +"], wrapped: [" + dotWrapped + "]");
         assertEquals(dotWrapped, res, 0.001d);
 
-        // this test fails since i don't have proper answer on laptop, will add it from desktop later
+        // compare result to pre-calculated value
         assertEquals(16.665000915527344, res, 0.001d);
     }
 
@@ -965,8 +973,8 @@ public class CublasPointerRevTests {
         assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
 
         INDArray baseArray1 = Nd4j.rand(new int[]{1000, 200}, -1.0, 1.0, new DefaultRandom());
-        INDArray baseArray2 = Nd4j.rand(new int[]{1000, 200}, -1.0, 1.0, new DefaultRandom());
 
+        // this is not a typo, we test situation where we process on views allocated on the same offsets
         INDArray slice1 = baseArray1.slice(1);
         INDArray slice2 = baseArray1.slice(1);
 
@@ -979,6 +987,7 @@ public class CublasPointerRevTests {
         BaseCudaDataBuffer buffer1 = (BaseCudaDataBuffer) xAPointer.getBuffer();
         BaseCudaDataBuffer buffer2 = (BaseCudaDataBuffer) xBPointer.getBuffer();
 
+        // both buffers should NOT be freed, since second pointer to the same array still exists
         xAPointer.close();
         assertFalse(buffer1.isFreed());
         assertFalse(buffer2.isFreed());
@@ -986,6 +995,7 @@ public class CublasPointerRevTests {
 
         xBPointer.close();
 
+        // now, when second pointer was closed, both buffers should be free too
         assertTrue(buffer1.isFreed());
         assertTrue(buffer2.isFreed());
     }
@@ -1015,6 +1025,7 @@ public class CublasPointerRevTests {
         BaseCudaDataBuffer buffer1 = (BaseCudaDataBuffer) xAPointer.getBuffer();
         BaseCudaDataBuffer buffer2 = (BaseCudaDataBuffer) xBPointer.getBuffer();
 
+        // both buffers should NOT be freed, since second pointer to the same original array still exists
         xAPointer.close();
         assertFalse(buffer1.isFreed());
         assertFalse(buffer2.isFreed());
@@ -1022,6 +1033,7 @@ public class CublasPointerRevTests {
 
         xBPointer.close();
 
+        // now, both buffers should be discarded
         assertTrue(buffer1.isFreed());
         assertTrue(buffer2.isFreed());
     }
@@ -1040,6 +1052,8 @@ public class CublasPointerRevTests {
 
         INDArray slice1 = baseArray1.slice(1);
         INDArray slice2 = baseArray1.slice(2);
+
+        // please note, slice(1) is not a typo here
         INDArray slice3 = baseArray1.slice(1);
 
         CudaContext ctx = CudaContext.getBlasContext();
@@ -1053,18 +1067,19 @@ public class CublasPointerRevTests {
         BaseCudaDataBuffer buffer2 = (BaseCudaDataBuffer) xBPointer.getBuffer();
         BaseCudaDataBuffer buffer3 = (BaseCudaDataBuffer) xCPointer.getBuffer();
 
+        // all three buffers should NOT be freed, since second & third pointers to the same array still exist
         xAPointer.close();
         assertFalse(buffer1.isFreed());
         assertFalse(buffer2.isFreed());
         assertFalse(buffer3.isFreed());
 
-
+        // the same, last pointer still alive and valid
         xBPointer.close();
         assertFalse(buffer1.isFreed());
         assertFalse(buffer2.isFreed());
         assertFalse(buffer3.isFreed());
 
-
+        // now everything should be closed
         xCPointer.close();
         assertTrue(buffer1.isFreed());
         assertTrue(buffer2.isFreed());
