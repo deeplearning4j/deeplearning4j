@@ -27,6 +27,23 @@ TEST_GROUP(BroadCasting) {
 	}
 };
 
+#ifdef __CUDACC__
+__global__ void tryInstant() {
+#if __CUDA_ARCH__ >= 500
+	functions::broadcast::ops::Add<double> *op = new functions::broadcast::ops::Add<double>();
+	delete op;
+#endif
+}
+#endif
+
+TEST(BroadCasting,Kernel) {
+#ifdef __CUDACC__
+	tryInstant<<<1,1,1>>>();
+	checkCudaErrors(cudaDeviceSynchronize());
+#endif
+}
+
+/*
 TEST(BroadCasting,Addition) {
 	functions::broadcast::Broadcast<double> *add = opFactory3->getOp(
 			"add_strided");
@@ -88,5 +105,6 @@ TEST(BroadCasting,Addition) {
 	delete add;
 
 }
+ */
 
 #endif //NATIVEOPERATIONS_BROADCASTSTESTS_H

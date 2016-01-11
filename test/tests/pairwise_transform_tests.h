@@ -33,7 +33,7 @@ TEST_GROUP(PairWiseTransform) {
 
 TEST(PairWiseTransform,Addition) {
 	functions::pairwise_transforms::PairWiseTransform<double> *add =
-			opFactory2->getOp("add_strided");
+			opFactory2->getOp(0);
 	int rank = 2;
 	int *shape = (int *) malloc(sizeof(int) * rank);
 	shape[0] = 2;

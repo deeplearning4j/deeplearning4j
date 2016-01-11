@@ -724,45 +724,38 @@ public:
 	}
 
 
-#ifdef __CUDACC__
-	__host__
-#endif
-	ScalarTransform<T> * getOp(std::string name) {
-		return getOp(name.c_str());
-	}
-
 
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	ScalarTransform<T> * getOp(char *name) {
-		if (functions::ops::strcmp(name,"add_scalar"))
+	ScalarTransform<T> * getOp(int op) {
+		if (op == 0)
 			return new functions::scalar::ops::Add<T>();
-		else if (functions::ops::strcmp(name,"sub_scalar"))
+		else if (op == 1)
 			return new functions::scalar::ops::Subtract<T>();
-		else if (functions::ops::strcmp(name,"mul_scalar"))
+		else if (op == 2)
 			return  new functions::scalar::ops::Multiply<T> ();
-		else if (functions::ops::strcmp(name,"div_scalar"))
+		else if (op == 3)
 			return new functions::scalar::ops::Divide<T>();
-		else if (functions::ops::strcmp(name,"rdiv_scalar"))
+		else if (op == 4)
 			return new functions::scalar::ops::ReverseDivide<T>();
-		else if (functions::ops::strcmp(name,"rsub_scalar"))
+		else if (op == 5)
 			return new functions::scalar::ops::ReverseSubtract<T>();
-		else if (functions::ops::strcmp(name,"max_scalar"))
+		else if (op == 6)
 			return new functions::scalar::ops::Max<T> ();
-		else if (functions::ops::strcmp(name,"lt_scalar"))
+		else if (op == 7)
 			return new functions::scalar::ops::LessThan<T> ();
-		else if (functions::ops::strcmp(name,"gt_scalar"))
+		else if (op == 8)
 			return new functions::scalar::ops::GreaterThan<T>();
-		else if (functions::ops::strcmp(name,"eq_scalar"))
+		else if (op == 9)
 			return new functions::scalar::ops::Equals<T>();
-		else if (functions::ops::strcmp(name,"lessthanorequal_scalar"))
+		else if (op == 10)
 			return new functions::scalar::ops::LessThanOrEqual<T>();
-		else if (functions::ops::strcmp(name,"neq_scalar"))
+		else if (op == 11)
 			return new functions::scalar::ops::NotEquals<T>();
-		else if (functions::ops::strcmp(name,"min_scalar"))
+		else if (op == 12)
 			return new functions::scalar::ops::Min<T>();
-		else if (functions::ops::strcmp(name,"set_scalar"))
+		else if (op == 13)
 			return new functions::scalar::ops::Set<T>();
 		return NULL;
 	}
@@ -778,8 +771,8 @@ __constant__ functions::scalar::ScalarOpFactory<float> *scalarFloatOpFactory;
 extern "C"
 __host__ void setupScalarTransformFactories() {
 	printf("Setting up transform factories\n");
-	functions::scalar::ScalarOpFactory<double> *newOpFactory =  functions::scalar::ScalarOpFactory<double>();
-	functions::scalar::ScalarOpFactory<float> *newOpFactoryFloat =  functions::scalar::ScalarOpFactory<float>();
+	functions::scalar::ScalarOpFactory<double> *newOpFactory =  new functions::scalar::ScalarOpFactory<double>();
+	functions::scalar::ScalarOpFactory<float> *newOpFactoryFloat =  new functions::scalar::ScalarOpFactory<float>();
 	checkCudaErrors(cudaMemcpyToSymbol(scalarDoubleOpFactory, newOpFactory, sizeof( functions::scalar::ScalarOpFactory<double> )));
 	checkCudaErrors(cudaMemcpyToSymbol(scalarFloatOpFactory, newOpFactory, sizeof( functions::scalar::ScalarOpFactory<float>)));
 	delete(newOpFactory);
@@ -788,20 +781,20 @@ __host__ void setupScalarTransformFactories() {
 }
 
 extern "C" __global__ void scalarDouble(
-		char *name,
+		int opNum,
 		int n,
 		int idx,
 		double dx,
 		double *dy,
 		int incy, double *params,
 		double *result, int blockSize) {
-	functions::scalar::ScalarTransform<double> *op = scalarDoubleOpFactory->getOp(name);
+	functions::scalar::ScalarTransform<double> *op = scalarDoubleOpFactory->getOp(opNum);
 	op->transform(n,idx,dx,dy,incy,params,result,blockSize);
 }
 
-extern "C" __global__ void scalarFloat(char *name,
+extern "C" __global__ void scalarFloat(int opNum,
 		int n, int idx, float dx, float *dy, int incy, float *params, float *result, int blockSize) {
-	functions::scalar::ScalarTransform<float> *op = scalarFloatOpFactory->getOp(name);
+	functions::scalar::ScalarTransform<float> *op = scalarFloatOpFactory->getOp(opNum);
 	op->transform(n,idx,dx,dy,incy,params,result,blockSize);
 
 }

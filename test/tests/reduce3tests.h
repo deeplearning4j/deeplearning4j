@@ -27,8 +27,7 @@ TEST_GROUP(Reduce3) {
 TEST(Reduce3,CosineSimilarity) {
 	functions::reduce3::Reduce3OpFactory<double> *opFactory6 =
 			new functions::reduce3::Reduce3OpFactory<double>();
-	functions::reduce3::Reduce3<double> *op = opFactory6->getOp(
-			"cosinesimilarity_strided");
+	functions::reduce3::Reduce3<double> *op = opFactory6->getOp(2);
 	int vectorLength = 4;
 	shape::ShapeInformation *vecShapeInfo = (shape::ShapeInformation *) malloc(
 			sizeof(shape::ShapeInformation));
@@ -80,8 +79,7 @@ TEST(Reduce3,CosineSimilarity) {
 TEST(Reduce3,EuclideanDistance) {
 	functions::reduce3::Reduce3OpFactory<double> *opFactory6 =
 			new functions::reduce3::Reduce3OpFactory<double>();
-	functions::reduce3::Reduce3<double> *op = opFactory6->getOp(
-			"euclidean_strided");
+	functions::reduce3::Reduce3<double> *op = opFactory6->getOp(1);
 	int vectorLength = 4;
 	shape::ShapeInformation *vecShapeInfo = (shape::ShapeInformation *) malloc(
 			sizeof(shape::ShapeInformation));
@@ -130,8 +128,7 @@ TEST(Reduce3,EuclideanDistance) {
 TEST(Reduce3,EuclideanDistanceDimension) {
 	functions::reduce3::Reduce3OpFactory<double> *opFactory6 =
 			new functions::reduce3::Reduce3OpFactory<double>();
-	functions::reduce3::Reduce3<double> *op = opFactory6->getOp(
-			"euclidean_strided");
+	functions::reduce3::Reduce3<double> *op = opFactory6->getOp(1);
 	int vectorLength = 4;
 	shape::ShapeInformation *vecShapeInfo = (shape::ShapeInformation *) malloc(
 			sizeof(shape::ShapeInformation));

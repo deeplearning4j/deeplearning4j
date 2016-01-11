@@ -16,8 +16,9 @@ namespace functions {
 namespace transform {
 
 template<typename T>
-class Transform: public virtual functions::ops::Op<T> {
+class Transform: public  functions::ops::Op<T> {
 public:
+
 	/**
 	 * The op for transforms
 	 * @param d1
@@ -26,7 +27,7 @@ public:
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+	inline __device__ __host__
 
 #elif defined(__GNUC__)
 	__always_inline
@@ -47,7 +48,6 @@ public:
 	}
 #endif
 
-public:
 	virtual void exec(T *dx, int xStride, T *result, int resultStride,
 			T *extraParams, int n) {
 		if (xStride == 1 && resultStride == 1) {
@@ -74,18 +74,20 @@ public:
 	virtual ~Transform() {
 	}
 #ifdef __CUDACC__
-	inline __host__ __device__
+	__host__ __device__
 #elif defined(__GNUC__)
 	__always_inline
 #endif
 	Transform() {
 	}
 
+
+
 };
 
 namespace ops {
 template<typename T>
-class Abs: public virtual Transform<T> {
+class Abs: public  Transform<T> {
 public:
 	/**
 	 * The op for transforms
@@ -123,17 +125,11 @@ public:
 #endif
 	virtual ~Abs() {
 	}
-#ifdef __CUDACC__
-	inline __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	Abs() {
-	}
+
 };
 
 template<typename T>
-class Ceiling: public virtual Transform<T> {
+class Ceiling: public  Transform<T> {
 public:
 	/**
 	 * The op for transforms
@@ -171,17 +167,11 @@ public:
 #endif
 	virtual ~Ceiling() {
 	}
-#ifdef __CUDACC__
-	inline __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	Ceiling() {
-	}
+
 };
 
 template<typename T>
-class Cosine: public virtual Transform<T> {
+class Cosine: public  Transform<T> {
 public:
 	/**
 	 * The op for transforms
@@ -221,17 +211,11 @@ public:
 #endif
 	virtual ~Cosine() {
 	}
-#ifdef __CUDACC__
-	inline __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	Cosine() {
-	}
+
 };
 
 template<typename T>
-class Exp: public virtual Transform<T> {
+class Exp: public  Transform<T> {
 public:
 	/**
 	 * The op for transforms
@@ -272,17 +256,11 @@ public:
 #endif
 	virtual ~Exp() {
 	}
-#ifdef __CUDACC__
-	inline __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	Exp() {
-	}
+
 };
 
 template<typename T>
-class Floor: public virtual Transform<T> {
+class Floor: public  Transform<T> {
 public:
 	/**
 	 * The op for transforms
@@ -320,17 +298,11 @@ public:
 #endif
 	virtual ~Floor() {
 	}
-#ifdef __CUDACC__
-	inline __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	Floor() {
-	}
+
 };
 
 template<typename T>
-class Log: public virtual Transform<T> {
+class Log: public  Transform<T> {
 public:
 	/**
 	 * The op for transforms
@@ -371,17 +343,11 @@ public:
 #endif
 	virtual ~Log() {
 	}
-#ifdef __CUDACC__
-	inline __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	Log() {
-	}
+
 };
 
 template<typename T>
-class Neg: public virtual Transform<T> {
+class Neg: public  Transform<T> {
 public:
 	/**
 	 * The op for transforms
@@ -419,17 +385,11 @@ public:
 #endif
 	virtual ~Neg() {
 	}
-#ifdef __CUDACC__
-	inline __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	Neg() {
-	}
+
 };
 
 template<typename T>
-class Pow: public virtual Transform<T> {
+class Pow: public  Transform<T> {
 public:
 	/**
 	 * The op for transforms
@@ -477,7 +437,7 @@ public:
 };
 
 template<typename T>
-class Round: public virtual Transform<T> {
+class Round: public  Transform<T> {
 public:
 	/**
 	 * The op for transforms
@@ -515,17 +475,11 @@ public:
 #endif
 	virtual ~Round() {
 	}
-#ifdef __CUDACC__
-	inline __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	Round() {
-	}
+
 };
 
 template<typename T>
-class Sigmoid: public virtual Transform<T> {
+class Sigmoid: public  Transform<T> {
 public:
 	/**
 	 * The op for transforms
@@ -564,17 +518,10 @@ public:
 	virtual ~Sigmoid() {
 	}
 
-#ifdef __CUDACC__
-	inline __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	Sigmoid() {
-	}
 };
 
 template<typename T>
-class SetRange: public virtual Transform<T> {
+class SetRange: public  Transform<T> {
 public:
 	/**
 	 * The op for transforms
@@ -625,17 +572,11 @@ public:
 #endif
 	virtual ~SetRange() {
 	}
-#ifdef __CUDACC__
-	inline __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	SetRange() {
-	}
+
 };
 
 template<typename T>
-class Sin: public virtual Transform<T> {
+class Sin: public  Transform<T> {
 public:
 	/**
 	 * The op for transforms
@@ -673,17 +614,11 @@ public:
 #endif
 	virtual ~Sin() {
 	}
-#ifdef __CUDACC__
-	inline __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	Sin() {
-	}
+
 };
 
 template<typename T>
-class Sqrt: public virtual Transform<T> {
+class Sqrt: public  Transform<T> {
 public:
 	/**
 	 * The op for transforms
@@ -721,17 +656,11 @@ public:
 #endif
 	virtual ~Sqrt() {
 	}
-#ifdef __CUDACC__
-	inline __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	Sqrt() {
-	}
+
 };
 
 template<typename T>
-class SoftPlus: public virtual Transform<T> {
+class SoftPlus: public  Transform<T> {
 public:
 	/**
 	 * The op for transforms
@@ -770,17 +699,11 @@ public:
 	virtual ~SoftPlus() {
 	}
 
-#ifdef __CUDACC__
-	inline __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	SoftPlus() {
-	}
+
 };
 
 template<typename T>
-class Sign: public virtual Transform<T> {
+class Sign: public  Transform<T> {
 public:
 	/**
 	 * The op for transforms
@@ -818,17 +741,10 @@ public:
 #endif
 	virtual ~Sign() {
 	}
-#ifdef __CUDACC__
-	inline __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	Sign() {
-	}
 };
 
 template<typename T>
-class Tanh: public virtual Transform<T> {
+class Tanh: public  Transform<T> {
 public:
 	/**
 	 * The op for transforms
@@ -866,17 +782,11 @@ public:
 #endif
 	virtual ~Tanh() {
 	}
-#ifdef __CUDACC__
-	inline __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	Tanh() {
-	}
+
 };
 
 template<typename T>
-class ACos: public virtual Transform<T> {
+class ACos: public  Transform<T> {
 public:
 	/**
 	 * The op for transforms
@@ -917,17 +827,11 @@ public:
 #endif
 	virtual ~ACos() {
 	}
-#ifdef __CUDACC__
-	inline __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	ACos() {
-	}
+
 };
 
 template<typename T>
-class ASin: public virtual Transform<T> {
+class ASin: public  Transform<T> {
 public:
 	/**
 	 * The op for transforms
@@ -965,17 +869,11 @@ public:
 #endif
 	virtual ~ASin() {
 	}
-#ifdef __CUDACC__
-	inline __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	ASin() {
-	}
+
 };
 
 template<typename T>
-class ATan: public virtual Transform<T> {
+class ATan: public  Transform<T> {
 public:
 	/**
 	 * The op for transforms
@@ -1006,6 +904,8 @@ public:
 	std::string name() {
 		return std::string("atan_strided");
 	}
+
+
 #ifdef __CUDACC__
 	inline __host__ __device__
 #elif defined(__GNUC__)
@@ -1013,13 +913,7 @@ public:
 #endif
 	virtual ~ATan() {
 	}
-#ifdef __CUDACC__
-	inline __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	ATan() {
-	}
+
 };
 
 }
@@ -1034,71 +928,76 @@ public:
 	}
 
 
+
 #ifdef __CUDACC__
 	__device__ __host__
 #endif
-	Transform<T> * getOp(char *name) {
-		if (functions::ops::strcmp(name,"abs_strided") == 0) {
-			return new transform::ops::Abs<T>();
+	Transform<T> * getOp(int op) {
+		//gets stuck on string comparison
+		Transform<T> *ret = NULL;
+		/**
+		 * We are likely going to need constant symbols for device memory for different operations
+		 * or switch to arithmetic based approaches?
+		 */
+		if (op == 0) {
+			ret =  new transform::ops::Abs<T>();
 		}
-		if (functions::ops::strcmp(name,"ceil_strided") == 0) {
-			return new transform::ops::Ceiling<T> ();
+		else if (op == 1) {
+			ret = new transform::ops::Ceiling<T> ();
 		}
-		if (functions::ops::strcmp(name,"cos_strided") == 0) {
-			return new transform::ops::Cosine<T>();
+		if (op == 2) {
+			ret = new transform::ops::Cosine<T>();
 		}
-		if (functions::ops::strcmp(name,"exp_strided") == 0) {
-			return new transform::ops::Exp<T>();
+		else if (op == 3) {
+			ret = new transform::ops::Exp<T>();
 		}
-		if (functions::ops::strcmp(name,"floor_strided") == 0) {
-			return new transform::ops::Floor<T>();
+		else if (op == 4) {
+			ret = new transform::ops::Floor<T>();
 		}
-		if (functions::ops::strcmp(name,"log_strided") == 0) {
-			return new transform::ops::Log<T>();
+		else if (op == 5) {
+			ret = new transform::ops::Log<T>();
 		}
-		if (functions::ops::strcmp(name,"neg_strided") == 0) {
-			return new transform::ops::Neg<T>();
+		else if (op == 6) {
+			ret = new transform::ops::Neg<T>();
 		}
-		if (functions::ops::strcmp(name,"pow_strided") == 0) {
-			return new transform::ops::Pow<T>();
+		else if (op == 7) {
+			ret = new transform::ops::Pow<T>();
 		}
-		if (functions::ops::strcmp(name,"round_strided") == 0) {
-			return  new transform::ops::Round<T>();
+		else if (op == 8) {
+			ret =  new transform::ops::Round<T>();
 		}
-		if (functions::ops::strcmp(name,"setrange_strided") == 0) {
-			return new transform::ops::SetRange<T>();
+		else if (op == 9) {
+			ret = new transform::ops::SetRange<T>();
 		}
-		if (functions::ops::strcmp(name,"sigmoid_strided") == 0) {
-			return  new transform::ops::Sigmoid<T>();
+		else if (op == 10) {
+			ret =  new transform::ops::Sigmoid<T>();
 		}
-		if (functions::ops::strcmp(name,"sign_strided") == 0) {
-			return new transform::ops::Sign<T>();
+		else if (op == 11) {
+			ret = new transform::ops::Sign<T>();
 		}
-		if (functions::ops::strcmp(name,"sin_strided") == 0) {
-			return new transform::ops::Sin<T>();
+		else if (op == 12) {
+			ret = new transform::ops::Sin<T>();
 		}
-		if (functions::ops::strcmp(name,"softplus_strided") == 0) {
-			return new transform::ops::SoftPlus<T>();
+		else if (op == 13) {
+			ret = new transform::ops::SoftPlus<T>();
 		}
-		if (functions::ops::strcmp(name,"sqrt_strided") == 0) {
-			return new transform::ops::Sqrt<T>();
+		else if (op == 14) {
+			ret = new transform::ops::Sqrt<T>();
 		}
-		if (functions::ops::strcmp(name,"tanh_strided") == 0) {
-			return new transform::ops::Tanh<T>();
+		else if (op == 15) {
+			ret = new transform::ops::Tanh<T>();
 		}
-		if (functions::ops::strcmp(name,"acos_strided") == 0) {
-			return new transform::ops::ACos<T> ();
+		else if (op == 16) {
+			ret = new transform::ops::ACos<T> ();
 		}
-		if (functions::ops::strcmp(name,"asin_strided") == 0) {
-			return new transform::ops::ASin<T>();
+		else if (op == 17) {
+			ret = new transform::ops::ASin<T>();
 		}
-		if (functions::ops::strcmp(name,"atan_strided") == 0) {
-			return new transform::ops::ATan<T>();
+		else if (op == 18) {
+			ret = new transform::ops::ATan<T>();
 		}
-		return NULL;
+		return ret;
 	}
-
-
 
 };
 
@@ -1108,11 +1007,11 @@ public:
 
 #ifdef __CUDACC__
 __device__ __constant__ functions::transform::TransformOpFactory<double> *doubleTransformFactory;
- __device__ __constant__ functions::transform::TransformOpFactory<float> *floatTransformFactory;
+__device__ __constant__ functions::transform::TransformOpFactory<float> *floatTransformFactory;
 
 
 extern "C" __global__ void transformDouble(
-		char *name,
+		int opNum,
 		int n,
 		int idx,
 		double *dy,
@@ -1120,13 +1019,15 @@ extern "C" __global__ void transformDouble(
 		double *params,
 		double *result, int blockSize) {
 
-	functions::transform::Transform<double> *op = doubleTransformFactory->getOp(name);
-	op->transform(n,idx,dy,incy,params,result,blockSize);
+	functions::transform::Transform<double> *op = doubleTransformFactory->getOp(opNum);
+	functions::transform::ops::Sigmoid<double> sigmoid;
+	printf("Obtained op\n");
+	sigmoid.transform(n,idx,dy,incy,params,result,blockSize);
 	free(op);
 }
 
 extern "C" __global__ void transformFloat(
-		char *name,
+		int opNum,
 		int n,
 		int idx,
 		float *dy,
@@ -1134,7 +1035,7 @@ extern "C" __global__ void transformFloat(
 		float *params,
 		float *result, int blockSize) {
 
-	functions::transform::Transform<float> *op = floatTransformFactory->getOp(name);
+	functions::transform::Transform<float> *op = floatTransformFactory->getOp(opNum);
 	op->transform(n,idx,dy,incy,params,result,blockSize);
 	free(op);
 }

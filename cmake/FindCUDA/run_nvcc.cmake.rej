@@ -1,0 +1,19 @@
+--- run_nvcc.cmake	2012-11-06 14:41:36.000000000 -0500
++++ run_nvcc_fix.cmake	2012-11-09 12:34:33.869545694 -0500
+@@ -103,16 +103,6 @@
+ # Add the build specific configuration flags
+ list(APPEND CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS_${build_configuration}})
+ 
+-# Any -ccbin existing in CUDA_NVCC_FLAGS gets highest priority
+-list( FIND CUDA_NVCC_FLAGS "-ccbin" ccbin_found0 )
+-list( FIND CUDA_NVCC_FLAGS "--compiler-bindir" ccbin_found1 )
+-if( ccbin_found0 LESS 0 AND ccbin_found1 LESS 0 )
+-  if (CUDA_HOST_COMPILER STREQUAL "$(VCInstallDir)bin" AND DEFINED CCBIN)
+-    set(CCBIN -ccbin "${CCBIN}")
+-  else()
+-    set(CCBIN -ccbin "${CUDA_HOST_COMPILER}")
+-  endif()
+-endif()
+ 
+ # cuda_execute_process - Executes a command with optional command echo and status message.
+ #

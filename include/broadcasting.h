@@ -187,13 +187,6 @@ public:
 #endif
 	virtual ~Add() {
 	}
-#ifdef __CUDACC__
-	inline __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	Add() {
-	}
 };
 
 template<typename T>
@@ -248,13 +241,7 @@ public:
 #endif
 	virtual ~Copy() {
 	}
-#ifdef __CUDACC__
-	inline __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	Copy() {
-	}
+
 };
 
 template<typename T>
@@ -309,13 +296,7 @@ public:
 #endif
 	virtual ~Divide() {
 	}
-#ifdef __CUDACC__
-	inline __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	Divide() {
-	}
+
 };
 
 template<typename T>
@@ -370,13 +351,7 @@ public:
 #endif
 	virtual ~Multiply() {
 	}
-#ifdef __CUDACC__
-	inline __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	Multiply() {
-	}
+
 };
 
 template<typename T>
@@ -431,13 +406,7 @@ public:
 #endif
 	virtual ~ReverseDivide() {
 	}
-#ifdef __CUDACC__
-	inline __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	ReverseDivide() {
-	}
+
 };
 
 template<typename T>
@@ -492,13 +461,7 @@ public:
 #endif
 	virtual ~ReverseSubtract() {
 	}
-#ifdef __CUDACC__
-	inline __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	ReverseSubtract() {
-	}
+
 };
 
 template<typename T>
@@ -553,13 +516,7 @@ public:
 #endif
 	virtual ~Subtract() {
 	}
-#ifdef __CUDACC__
-	inline __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	Subtract() {
-	}
+
 };
 }
 
@@ -568,32 +525,26 @@ class BroadcastOpFactory {
 public:
 	BroadcastOpFactory() {
 	}
-#ifdef __CUDACC__
-	__host__
-#endif
-	Broadcast<T> * getOp(std::string name) {
-		return getOp(name.c_str());
 
-	}
 
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	Broadcast<T> * getOp(char *name) {
-		if (functions::ops::strcmp(name,"add_strided")) {
+	Broadcast<T> * getOp(int op) {
+		if (op == 0) {
 			return new functions::broadcast::ops::Add<T>();
 
-		} else if (functions::ops::strcmp(name,"sub_strided")) {
+		} else if (op == 1) {
 			return new functions::broadcast::ops::Subtract<T>();
-		} else if (functions::ops::strcmp(name,"mul_strided")) {
+		} else if (op == 2) {
 			return new  functions::broadcast::ops::Multiply<T>();
-		} else if (functions::ops::strcmp(name,"div_strided")) {
+		} else if (op == 3) {
 			return new functions::broadcast::ops::Divide<T>();
-		} else if (functions::ops::strcmp(name,"rdiv_strided")) {
+		} else if (op == 4) {
 			return new functions::broadcast::ops::ReverseDivide<T>();
-		} else if (functions::ops::strcmp(name,"rsub_strided")) {
+		} else if (op == 5) {
 			return new functions::broadcast::ops::ReverseSubtract<T>();
-		} else if (functions::ops::strcmp(name,"copy_strided")) {
+		} else if (op == 6) {
 			return new functions::broadcast::ops::Copy<T>();
 		}
 
@@ -615,8 +566,8 @@ __constant__ functions::broadcast::BroadcastOpFactory<float> *broadcastFloatFact
 extern "C"
 __host__ void setupBroadcastFactories() {
 	printf("Setting up transform factories\n");
-	functions::broadcast::BroadcastOpFactory<double> *newOpFactory =  functions::broadcast::BroadcastOpFactory<double>();
-	functions::broadcast::BroadcastOpFactory<float> *newOpFactoryFloat =  functions::broadcast::BroadcastOpFactory<float>();
+	functions::broadcast::BroadcastOpFactory<double> *newOpFactory =  new functions::broadcast::BroadcastOpFactory<double>();
+	functions::broadcast::BroadcastOpFactory<float> *newOpFactoryFloat =  new functions::broadcast::BroadcastOpFactory<float>();
 	checkCudaErrors(cudaMemcpyToSymbol(broadcastDoubleFactory, newOpFactory, sizeof( functions::broadcast::BroadcastOpFactory<double> )));
 	checkCudaErrors(cudaMemcpyToSymbol(broadcastFloatFactory, newOpFactory, sizeof( functions::broadcast::BroadcastOpFactory<float>)));
 	delete(newOpFactory);
@@ -625,27 +576,27 @@ __host__ void setupBroadcastFactories() {
 
 
 extern "C" __global__ void broadcastDouble(
-		char *name,
+		int opNum,
 		double *x, int *xShapeInfo,
 		double *y, int *yShapeInfo,
 		double *result, int *resultShapeInfo,
 		int *dimension,
 		int dimensionLength,
 		int *gpuInformation) {
-	functions::broadcast::Broadcast<double> *op = broadcastDoubleFactory->getOp(name);
+	functions::broadcast::Broadcast<double> *op = broadcastDoubleFactory->getOp(opNum);
 	op->transform(x,xShapeInfo,y,yShapeInfo,result,resultShapeInfo,dimension,dimensionLength,gpuInformation);
 	free(op);
 }
 
 extern "C" __global__ void broadcastFloat(
-		char *name,
+		int opNum,
 		float *x, int *xShapeInfo,
 		float *y, int *yShapeInfo,
 		float *result, int *resultShapeInfo,
 		int *dimension,
 		int dimensionLength,
 		int *gpuInformation) {
-	functions::broadcast::Broadcast<float> *op = broadcastFloatFactory->getOp(name);
+	functions::broadcast::Broadcast<float> *op = broadcastFloatFactory->getOp(opNum);
 	op->transform(x,xShapeInfo,y,yShapeInfo,result,resultShapeInfo,dimension,dimensionLength,gpuInformation);
 	free(op);
 

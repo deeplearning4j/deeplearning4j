@@ -1,14 +1,17 @@
-//
-// Created by agibsoncccc on 1/5/16.
-//
+/*
+ * reducetests.h
+ *
+ *  Created on: Dec 31, 2015
+ *      Author: agibsonccc
+ */
 
-#ifndef NATIVEOPERATIONS_INDEXREDUCETESTS_H_H
-#define NATIVEOPERATIONS_INDEXREDUCETESTS_H_H
+#ifndef REDUCETESTS_H_
+#define REDUCETESTS_H_
 #include <array.h>
 #include "testhelpers.h"
-#include <indexreduce.h>
+#include <reduce.h>
 
-TEST_GROUP(IndexReduce) {
+TEST_GROUP(Reduce) {
 
 	static int output_method(const char* output, ...) {
 		va_list arguments;
@@ -23,11 +26,10 @@ TEST_GROUP(IndexReduce) {
 	}
 };
 
-TEST(IndexReduce, IMax) {
-	functions::indexreduce::IndexReduceOpFactory<double> *opFactory5 =
-			new functions::indexreduce::IndexReduceOpFactory<double>();
-	functions::indexreduce::IndexReduce<double> *sum = opFactory5->getOp(
-			std::string("imax"));
+TEST(Reduce, Sum) {
+	functions::reduce::ReduceOpFactory<double> *opFactory5 =
+			new functions::reduce::ReduceOpFactory<double>();
+	functions::reduce::ReduceFunction<double> *sum = opFactory5->create(1);
 	CHECK(sum != NULL);
 	int length = 4;
 	double *data = (double *) malloc(sizeof(double) * length);
@@ -56,7 +58,7 @@ TEST(IndexReduce, IMax) {
 	result[0] = 0.0;
 	sum->exec(data, shapeBuffer, extraParams, result, resultShapeInfo);
 	double comp = result[0];
-	CHECK(3.0 == comp);
+	CHECK(10.0 == comp);
 	free(extraParams);
 	free(shapeBuffer);
 	free(shapeInfo);
@@ -66,11 +68,10 @@ TEST(IndexReduce, IMax) {
 
 }
 
-TEST(IndexReduce,DimensionIMax) {
-	functions::indexreduce::IndexReduceOpFactory<double> *opFactory5 =
-			new functions::indexreduce::IndexReduceOpFactory<double>();
-	functions::indexreduce::IndexReduce<double> *sum = opFactory5->getOp(
-			std::string("imax"));
+TEST(Reduce,DimensionSum) {
+	functions::reduce::ReduceOpFactory<double> *opFactory5 =
+			new functions::reduce::ReduceOpFactory<double>();
+	functions::reduce::ReduceFunction<double> *sum = opFactory5->create(1);
 	CHECK(sum != NULL);
 	int length = 4;
 	double *data = (double *) malloc(sizeof(double) * length);
@@ -106,13 +107,11 @@ TEST(IndexReduce,DimensionIMax) {
 	sum->exec(data, shapeBuffer, extraParams, result, resultShapeInfo,
 			dimension, dimensionLength);
 	double *comp = (double *) malloc(sizeof(double) * resultLength);
-	for (int i = 0; i < resultLength; i++) {
-		comp[i] = 1.0;
-	}
-
+	comp[0] = 3.0;
+	comp[1] = 7.0;
 	CHECK(arrsEquals(2, comp, result));
-	free(comp);
 	free(extraParams);
+	free(comp);
 	free(dimension);
 	free(shapeBuffer);
 	free(shapeInfo);
@@ -121,4 +120,4 @@ TEST(IndexReduce,DimensionIMax) {
 	delete opFactory5;
 }
 
-#endif //NATIVEOPERATIONS_INDEXREDUCETESTS_H_H
+#endif /* REDUCETESTS_H_ */

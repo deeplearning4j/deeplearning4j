@@ -798,40 +798,35 @@ public:
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	PairWiseTransform<T> *getOp(char *name) {
-		if (functions::ops::strcmp(name,"add_strided"))
+	PairWiseTransform<T> *getOp(int op) {
+		if (op == 0)
 			return new pairwise_transforms::ops::Add<T>();
-		if (functions::ops::strcmp(name,"copy_strided"))
+		else if (op == 1)
 			return new pairwise_transforms::ops::Copy<T>();
-		if (functions::ops::strcmp(name,"div_strided"))
+		else if (op == 2)
 			return new pairwise_transforms::ops::Divide<T>();
-		if (functions::ops::strcmp(name,"eps_strided"))
+		else if (op == 3)
 			return new pairwise_transforms::ops::Divide<T>();
-		if (functions::ops::strcmp(name, "eq_strided"))
+		else if (op == 4)
 			return new pairwise_transforms::ops::EqualTo<T>();
-		if (functions::ops::strcmp(name,"gt_strided"))
+		else if (op == 5)
 			return new pairwise_transforms::ops::GreaterThan<T>();
-		if (functions::ops::strcmp(name,"lt_strided"))
+		else if (op == 6)
 			return new pairwise_transforms::ops::LessThan<T>();
-		if (functions::ops::strcmp(name,"mul_strided"))
+		else if (op == 7)
 			return new pairwise_transforms::ops::Multiply<T>();
-		if (functions::ops::strcmp(name,"div_strided"))
+		if (op == 8)
 			return new pairwise_transforms::ops::Divide<T>();
-		if (functions::ops::strcmp(name,"rdiv_strided"))
+		if (op == 9)
 			return new pairwise_transforms::ops::ReverseDivide<T>();
-		if (functions::ops::strcmp(name,"rsub_strided"))
+		if (op == 10)
 			return new pairwise_transforms::ops::ReverseSubtraction<T>();
-		if (functions::ops::strcmp(name,"sub_strided"))
+		if (op == 11)
 			return new pairwise_transforms::ops::Subtract<T>();
 		return NULL;
 	}
 
-#ifdef __CUDACC__
-	__host__
-#endif
-	PairWiseTransform<T> *getOp(std::string name) {
-		return getOp(name.c_str());
-	}
+
 
 };
 }
@@ -855,7 +850,7 @@ __host__ void setupPairWiseTransformFactories() {
 
 
 extern "C" __global__ void pairWiseTransformDouble(
-		char *name,
+		int opNum,
 		int n,
 		int xOffset,
 		int yOffset,
@@ -866,7 +861,7 @@ extern "C" __global__ void pairWiseTransformDouble(
 		int incy,
 		double *params,
 		double *result, int incz, int blockSize) {
-	functions::pairwise_transforms::PairWiseTransform<double> *op = pairWiseDoubleFactory->getOp(name);
+	functions::pairwise_transforms::PairWiseTransform<double> *op = pairWiseDoubleFactory->getOp(opNum);
 	op->transform(n,xOffset,yOffset,resultOffset,dx,dy,incx,incy,params,result,incz,blockSize);
 	free(op);
 
@@ -875,7 +870,7 @@ extern "C" __global__ void pairWiseTransformDouble(
 
 
 extern "C" __global__ void pairWiseTransformFloat(
-		char *name,
+		int opNum,
 		int n,
 		int xOffset,
 		int yOffset,
@@ -886,7 +881,7 @@ extern "C" __global__ void pairWiseTransformFloat(
 		int incy,
 		float *params,
 		float *result, int incz, int blockSize) {
-	functions::pairwise_transforms::PairWiseTransform<float> *op = pairWiseFloatFactory->getOp(name);
+	functions::pairwise_transforms::PairWiseTransform<float> *op = pairWiseFloatFactory->getOp(opNum);
 	op->transform(n,xOffset,yOffset,resultOffset,dx,dy,incx,incy,params,result,incz,blockSize);
 	free(op);
 

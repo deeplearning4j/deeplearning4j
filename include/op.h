@@ -36,7 +36,20 @@ public:
 	~Op() {
 	}
 
+	inline
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	Op() {
+	}
+
+
+
 };
+
+
+
+
 
 template<typename T>
 class OpFactory {
@@ -47,9 +60,9 @@ public:
 	 * @return
 	 */
 #ifdef __CUDACC__
-	__host__
+	__host__ __device__
 #endif
-	virtual Op<T> * create(std::string name) = 0;
+	virtual Op<T> * create(int op) = 0;
 #ifdef __CUDACC__
 	__device__ __host__
 #endif
