@@ -1106,31 +1106,49 @@ public class CublasPointerRevTests {
 
         assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
 
-        INDArray array = Nd4j.create(new float[]{1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
+        INDArray array1 = Nd4j.create(new float[]{1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
+        INDArray array2 = Nd4j.create(new float[]{1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
 
-        BaseCudaDataBuffer buffer = (BaseCudaDataBuffer) array.data();
+        BaseCudaDataBuffer buffer2 = (BaseCudaDataBuffer) array2.data();
 
         CudaContext ctx = CudaContext.getBlasContext();
 
-        CublasPointer xBPointer = new CublasPointer(buffer, ctx);
+        CublasPointer xAPointer = new CublasPointer(array1, ctx);
+
+        // please note, this pointer is targeting buffer
+        CublasPointer xBPointer = new CublasPointer(buffer2, ctx);
 
         // now we assume we have pointer that can't have derived pointers
-        // and now we'll just memset everything with zeroes, so actually whole array will become array of zeroes internally
-        JCuda.cudaMemset(xBPointer.getDevicePointer(), 0, buffer.length() * buffer.getElementSize());
+        // we'll call for blas, since we can't do cudaMemset on pinned memory
+
+        JCublas2.cublasSaxpy(
+                ctx.getHandle(),
+                array1.length(),
+                Pointer.to(new float[]{0.95f}),
+                xAPointer.getDevicePointer().withByteOffset(array1.offset() * array1.data().getElementSize()),
+                BlasBufferUtil.getBlasStride(array1),
+                xBPointer.getDevicePointer().withByteOffset(array2.offset() * array2.data().getElementSize()),
+                BlasBufferUtil.getBlasStride(array2));
+        ctx.syncOldStream();
 
         // copyback our buffer
         xBPointer.copyToHost();
 
         ctx.finishBlasOperation();
 
+        xAPointer.close();
         xBPointer.close();
 
-        assertTrue(buffer.isFreed());
+        assertTrue(buffer2.isFreed());
         assertTrue(xBPointer.isClosed());
+        assertTrue(xAPointer.isClosed());
 
         // so, we should have full array filled with zeroes now, not 1.01f's
-        assertEquals(0.0d, array.getDouble(0), 0.001);
-        assertEquals(0.0d, array.getDouble(1), 0.001);
+        System.out.println("Value[0]: " + array2.getFloat(0));
+        System.out.println("Value[1]: " + array2.getFloat(1));
+
+        assertNotEquals(1.01f, array2.getFloat(0), 0.001f);
+        assertNotEquals(1.01f, array2.getFloat(1), 0.001f);
     }
 
 

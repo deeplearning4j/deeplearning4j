@@ -60,8 +60,9 @@ public class PinnedMemoryStrategy implements MemoryStrategy {
         ByteBuffer pointer = hostPointer.getByteBuffer(0, copy.getElementSize() * copy.length()).order(ByteOrder.nativeOrder());
         ByteBuffer bufferNio = copy.asNio();
         // Flip and read from the original.
-        pointer.flip();
-        bufferNio.put(pointer);
+        //pointer.flip();
+        //bufferNio.put(pointer);
+        NioUtil.copyAtStride(buf2.length(),getBufferType(copy),pointer,offset,1,bufferNio,offset,1);
         return devicePointerInfo;
     }
 
