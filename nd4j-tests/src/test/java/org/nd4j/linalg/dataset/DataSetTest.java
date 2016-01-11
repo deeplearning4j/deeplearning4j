@@ -119,7 +119,7 @@ public class DataSetTest extends BaseNd4jTest {
 
     @Test
     public void testTimeSeriesMerge(){
-
+        //Basic test for time series, all of the same length + no masking arrays
         int numExamples = 10;
         int inSize = 13;
         int labelSize = 5;
@@ -138,8 +138,8 @@ public class DataSetTest extends BaseNd4jTest {
 
         INDArray f = merged.getFeatures();
         INDArray l = merged.getLabels();
-        assertArrayEquals(new int[]{numExamples,inSize,tsLength},f.shape());
-        assertArrayEquals(new int[]{numExamples,labelSize,tsLength},l.shape());
+        assertArrayEquals(new int[]{numExamples, inSize, tsLength}, f.shape());
+        assertArrayEquals(new int[]{numExamples, labelSize, tsLength}, l.shape());
 
         for( int i=0; i<numExamples; i++ ){
             DataSet exp = list.get(i);
@@ -153,6 +153,211 @@ public class DataSetTest extends BaseNd4jTest {
             assertEquals(expL,lSubset);
         }
     }
+
+    @Test
+     public void testTimeSeriesMergeDifferentLength(){
+        //Test merging of time series with different lengths -> no masking arrays on the input DataSets
+
+        int numExamples = 10;
+        int inSize = 13;
+        int labelSize = 5;
+        int minTSLength = 10;   //Lengths 10, 11, ..., 19
+
+        Nd4j.getRandom().setSeed(12345);
+        List<DataSet> list = new ArrayList<>(numExamples);
+        for( int i=0; i<numExamples; i++ ){
+            INDArray in = Nd4j.rand(new int[]{1,inSize,minTSLength+i});
+            INDArray out = Nd4j.rand(new int[]{1,labelSize,minTSLength+i});
+            list.add(new DataSet(in,out));
+        }
+
+        DataSet merged = DataSet.merge(list);
+        assertEquals(numExamples,merged.numExamples());
+
+        INDArray f = merged.getFeatures();
+        INDArray l = merged.getLabels();
+        int expectedLength = minTSLength+numExamples-1;
+        assertArrayEquals(new int[]{numExamples,inSize,expectedLength},f.shape());
+        assertArrayEquals(new int[]{numExamples, labelSize, expectedLength}, l.shape());
+
+        assertTrue(merged.hasMaskArrays());
+        assertNotNull(merged.getFeaturesMaskArray());
+        assertNotNull(merged.getLabelsMaskArray());
+        INDArray featuresMask = merged.getFeaturesMaskArray();
+        INDArray labelsMask = merged.getLabelsMaskArray();
+        assertArrayEquals(new int[]{numExamples,expectedLength}, featuresMask.shape());
+        assertArrayEquals(new int[]{numExamples,expectedLength}, labelsMask.shape());
+
+        //Check each row individually:
+        for( int i=0; i<numExamples; i++ ){
+            DataSet exp = list.get(i);
+            INDArray expIn = exp.getFeatureMatrix();
+            INDArray expL = exp.getLabels();
+
+            int thisRowOriginalLength = minTSLength + i;
+
+            INDArray fSubset = f.get(NDArrayIndex.interval(i,i+1), NDArrayIndex.all(), NDArrayIndex.all());
+            INDArray lSubset = l.get(NDArrayIndex.interval(i,i+1), NDArrayIndex.all(),NDArrayIndex.all());
+
+            for( int j=0; j<inSize; j++ ) {
+                for (int k = 0; k < thisRowOriginalLength; k++) {
+                    double expected = expIn.getDouble(0,j,k);
+                    double act = fSubset.getDouble(0,j,k);
+                    if(Math.abs(expected-act) > 1e-3){
+                        System.out.println(expIn);
+                        System.out.println(fSubset);
+                    }
+                    assertEquals(expected, act, 1e-3f);
+                }
+
+                //Padded values: should be exactly 0.0
+                for( int k=thisRowOriginalLength; k<expectedLength; k++ ){
+                    assertEquals(0.0, fSubset.getDouble(0,j,k), 0.0);
+                }
+            }
+
+            for( int j=0; j<labelSize; j++ ) {
+                for (int k = 0; k < thisRowOriginalLength; k++) {
+                    double expected = expL.getDouble(0,j,k);
+                    double act = lSubset.getDouble(0,j,k);
+                    assertEquals(expected, act, 1e-3f);
+                }
+
+                //Padded values: should be exactly 0.0
+                for( int k=thisRowOriginalLength; k<expectedLength; k++ ){
+                    assertEquals(0.0, lSubset.getDouble(0,j,k), 0.0);
+                }
+            }
+
+            //Check mask values:
+            for( int j=0; j<expectedLength; j++){
+                double expected = (j >= thisRowOriginalLength ? 0.0 : 1.0);
+                double actFMask = featuresMask.getDouble(i,j);
+                double actLMask = labelsMask.getDouble(i,j);
+
+                if(expected != actFMask){
+                    System.out.println(featuresMask);
+                    System.out.println(j);
+                }
+
+                assertEquals(expected, actFMask, 0.0);
+                assertEquals(expected, actLMask, 0.0);
+            }
+        }
+    }
+
+
+    @Test
+    public void testTimeSeriesMergeWithMasking(){
+        //Test merging of time series with (a) different lengths, and (b) mask arrays in the input DataSets
+
+        int numExamples = 10;
+        int inSize = 13;
+        int labelSize = 5;
+        int minTSLength = 10;   //Lengths 10, 11, ..., 19
+
+        Random r = new Random(12345);
+
+        Nd4j.getRandom().setSeed(12345);
+        List<DataSet> list = new ArrayList<>(numExamples);
+        for( int i=0; i<numExamples; i++ ){
+            INDArray in = Nd4j.rand(new int[]{1,inSize,minTSLength+i});
+            INDArray out = Nd4j.rand(new int[]{1,labelSize,minTSLength+i});
+
+            INDArray inMask = Nd4j.create(1, minTSLength + i);
+            INDArray outMask = Nd4j.create(1,minTSLength + i);
+            for( int j=0; j<inMask.size(1); j++ ){
+                inMask.putScalar(j, (r.nextBoolean() ? 1.0 : 0.0) );
+                outMask.putScalar(j, (r.nextBoolean() ? 1.0 : 0.0) );
+            }
+
+            list.add(new DataSet(in,out,inMask,outMask));
+        }
+
+        DataSet merged = DataSet.merge(list);
+        assertEquals(numExamples,merged.numExamples());
+
+        INDArray f = merged.getFeatures();
+        INDArray l = merged.getLabels();
+        int expectedLength = minTSLength+numExamples-1;
+        assertArrayEquals(new int[]{numExamples,inSize,expectedLength},f.shape());
+        assertArrayEquals(new int[]{numExamples, labelSize, expectedLength}, l.shape());
+
+        assertTrue(merged.hasMaskArrays());
+        assertNotNull(merged.getFeaturesMaskArray());
+        assertNotNull(merged.getLabelsMaskArray());
+        INDArray featuresMask = merged.getFeaturesMaskArray();
+        INDArray labelsMask = merged.getLabelsMaskArray();
+        assertArrayEquals(new int[]{numExamples,expectedLength}, featuresMask.shape());
+        assertArrayEquals(new int[]{numExamples,expectedLength}, labelsMask.shape());
+
+        //Check each row individually:
+        for( int i=0; i<numExamples; i++ ){
+            DataSet original = list.get(i);
+            INDArray expIn = original.getFeatureMatrix();
+            INDArray expL = original.getLabels();
+            INDArray origMaskF = original.getFeaturesMaskArray();
+            INDArray origMaskL = original.getLabelsMaskArray();
+
+            int thisRowOriginalLength = minTSLength + i;
+
+            INDArray fSubset = f.get(NDArrayIndex.interval(i,i+1), NDArrayIndex.all(), NDArrayIndex.all());
+            INDArray lSubset = l.get(NDArrayIndex.interval(i,i+1), NDArrayIndex.all(),NDArrayIndex.all());
+
+            for( int j=0; j<inSize; j++ ) {
+                for (int k = 0; k < thisRowOriginalLength; k++) {
+                    double expected = expIn.getDouble(0,j,k);
+                    double act = fSubset.getDouble(0,j,k);
+                    if(Math.abs(expected-act) > 1e-3){
+                        System.out.println(expIn);
+                        System.out.println(fSubset);
+                    }
+                    assertEquals(expected, act, 1e-3f);
+                }
+
+                //Padded values: should be exactly 0.0
+                for( int k=thisRowOriginalLength; k<expectedLength; k++ ){
+                    assertEquals(0.0, fSubset.getDouble(0,j,k), 0.0);
+                }
+            }
+
+            for( int j=0; j<labelSize; j++ ) {
+                for (int k = 0; k < thisRowOriginalLength; k++) {
+                    double expected = expL.getDouble(0,j,k);
+                    double act = lSubset.getDouble(0,j,k);
+                    assertEquals(expected, act, 1e-3f);
+                }
+
+                //Padded values: should be exactly 0.0
+                for( int k=thisRowOriginalLength; k<expectedLength; k++ ){
+                    assertEquals(0.0, lSubset.getDouble(0,j,k), 0.0);
+                }
+            }
+
+            //Check mask values:
+            for( int j=0; j<expectedLength; j++){
+                double expectedF;
+                double expectedL;
+                if( j >= thisRowOriginalLength ){
+                    //Outside of original data bounds -> should be 0
+                    expectedF = 0.0;
+                    expectedL = 0.0;
+                } else {
+                    //Value should be same as original mask array value
+                    expectedF = origMaskF.getDouble(j);
+                    expectedL = origMaskL.getDouble(j);
+                }
+
+                double actFMask = featuresMask.getDouble(i,j);
+                double actLMask = labelsMask.getDouble(i,j);
+                assertEquals(expectedF, actFMask, 0.0);
+                assertEquals(expectedL, actLMask, 0.0);
+            }
+        }
+    }
+
+
+
 
     @Override
     public char ordering() {

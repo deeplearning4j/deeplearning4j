@@ -22,7 +22,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.nd4j</groupId>
     <artifactId>nd4j</artifactId>
-    <version> 0.4-rc3.8-SNAPSHOT</version>
+    <version> 0.4-rc3.9-SNAPSHOT</version>
 
     <parent>
         <groupId>org.sonatype.oss</groupId>
@@ -203,7 +203,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.12.4</version>
                 <configuration>
-                    <argLine>-Xmx3024m</argLine>
+                    <argLine>-Xmx1024m</argLine>
                     <environmentVariables>
                         <LD_LIBRARY_PATH>${env.LD_LIBRARY_PATH}:${user.dir}</LD_LIBRARY_PATH>
                     </environmentVariables>

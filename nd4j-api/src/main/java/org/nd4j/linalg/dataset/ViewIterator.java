@@ -3,6 +3,8 @@ package org.nd4j.linalg.dataset;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
+import java.util.List;
+
 /**
  * Iterate over a dataset
  * with views
@@ -63,6 +65,11 @@ public class ViewIterator implements DataSetIterator {
     @Override
     public void setPreProcessor(DataSetPreProcessor preProcessor) {
         this.preProcessor = preProcessor;
+    }
+
+    @Override
+    public List<String> getLabels() {
+        return null;
     }
 
     @Override

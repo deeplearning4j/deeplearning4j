@@ -2809,7 +2809,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray assign(Number value) {
-        data().assign(value,offset());
+        Nd4j.getExecutioner().exec(new ScalarSet(this,value));
         return this;
     }
 

@@ -22,7 +22,8 @@ public @Data class GemvParameters {
     private char aOrdering = 'N';
 
     public GemvParameters(INDArray a,INDArray x,INDArray y) {
-
+        a = copyIfNecessary(a);
+        x = copyIfNecessaryVector(x);
         this.a = a;
         this.x = x;
         this.y = y;
@@ -47,16 +48,9 @@ public @Data class GemvParameters {
 
 
         if(x.isColumnVector()) {
-            if(x.ordering() == 'f')
-                incx = x.stride(0);
-            else
-                incx = x.stride(1);
-        }
-        else {
-            if(x.ordering() == 'f')
-                incx = x.stride(1);
-            else
-                incx = x.stride(0);
+            incx = x.stride(0);
+        } else {
+            incx = x.stride(1);
         }
 
         this.incy = y.elementStride();
@@ -68,5 +62,19 @@ public @Data class GemvParameters {
 
     }
 
+    private INDArray copyIfNecessary(INDArray arr) {
+        //See also: Shape.toMmulCompatible - want same conditions here and there
+        //Check if matrix values are contiguous in memory. If not: dup
+        //Contiguous for c if: stride[0] == shape[1] and stride[1] = 1
+        //Contiguous for f if: stride[0] == 1 and stride[1] == shape[0]
+        if(arr.ordering() == 'c' && (arr.stride(0) != arr.size(1) || arr.stride(1) != 1) ) return arr.dup();
+        else if(arr.ordering() == 'f' && (arr.stride(0) != 1 || arr.stride(1) != arr.size(0))) return arr.dup();
+        return arr;
+    }
+
+    private INDArray copyIfNecessaryVector(INDArray vec){
+        if(vec.offset() != 0) return vec.dup();
+        return vec;
+    }
 
 }

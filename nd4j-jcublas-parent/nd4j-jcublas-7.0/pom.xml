@@ -27,7 +27,7 @@
     <parent>
         <artifactId>nd4j-jcublas-parent</artifactId>
         <groupId>org.nd4j</groupId>
-        <version> 0.4-rc3.8-SNAPSHOT</version>
+        <version> 0.4-rc3.9-SNAPSHOT</version>
     </parent>
 
     <name>nd4j-jcublas-7.0</name>
@@ -83,12 +83,6 @@
     </build>
 
     <dependencies>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-jcublas-common</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
