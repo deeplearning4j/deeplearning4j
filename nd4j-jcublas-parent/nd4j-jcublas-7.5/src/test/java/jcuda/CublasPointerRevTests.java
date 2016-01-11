@@ -32,6 +32,7 @@ import static org.junit.Assert.*;
  * 3. nested view allocation
  * 4. allocation over the same memory space
  * 5. allocation from buffer directly
+ * 6. subarrays with stride > 1
  *
  * On later stages, sparse allocations should be tested here as well. But for cuSparse that shouldn't be an issue, due to dense underlying CSR format.
  *
@@ -1191,5 +1192,43 @@ public class CublasPointerRevTests {
             // everything ok, device memory were released
             ;
         }
+
+    }
+
+    /**
+     *  This test addresses memory allocation for arrays with stride > 1, since that's important value for nd4j internal memory allocation
+     */
+    @Test
+    public void testPinnedMemoryStridedSlice() throws Exception {
+        // simple way to stop test if we're not on CUDA backend here
+        assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
+
+        // reset to default MemoryStrategy, most probable is Pinned
+        ContextHolder.getInstance().forceMemoryStrategyForThread(new PinnedMemoryStrategy());
+
+        assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
+
+        // we create 2D array, that will be used for vertically sliced arrays
+        INDArray baseArray = Nd4j.create(100, 200);
+
+        // our slice has offset 10, and stride 200
+        INDArray slice1 = baseArray.getColumn(10);
+
+        CudaContext ctx = CudaContext.getBlasContext();
+
+        CublasPointer xAPointer = new CublasPointer(slice1, ctx);
+
+        BaseCudaDataBuffer buffer = (BaseCudaDataBuffer) xAPointer.getBuffer();
+
+        // we have pointer allocated
+
+        /*
+            Now if we'll close this pointer, it won't be really released, since freeDevicePointer() call assumes stride size 0, and we have stride 200
+         */
+
+        xAPointer.close();
+
+        // buffer must be free
+        assertTrue(buffer.isFreed());
     }
 }
