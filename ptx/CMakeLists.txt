@@ -1,4 +1,4 @@
-if (CUDA_FOUND)
+if (CUDA_FOUND AND PTX)
     message("Building ptx")
     set( CUDA_ARCHITECTURE_MINIMUM "5.0" CACHE STRING "Minimum required CUDA compute capability" )
     SET(CUDA_VERBOSE_BUILD ON)

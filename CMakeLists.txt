@@ -27,8 +27,8 @@ endif()
 
 
 include_directories(include)
-
 add_subdirectory(src)
+
 if(ECLIPSE)
     message("ADDING ECLIPSE")
     add_subdirectory(eclipse)
@@ -41,7 +41,7 @@ if(CUBIN)
     message("ADDING CUBIN")
     add_subdirectory(cubin)
 endif()
-if(TESTS)
+if(RUN_TEST)
     message("ADDING TEST")
     add_subdirectory(test)
 endif()

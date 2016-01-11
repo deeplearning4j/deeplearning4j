@@ -93,14 +93,8 @@ TEST(Transform,Sigmoid) {
 	double *extraParamsData = (double *) malloc(sizeof(double));
 	extraParams[0] = 0.0;
 	nd4j::buffer::Buffer<double> *extraParamsBuff = nd4j::buffer::createBuffer(extraParamsData,1);
-	char *nameOfOp = "sigmoid_strided";
-	size_t len = strlen(nameOfOp);
-	char *gpuPointer;
-	cudaMalloc(&gpuPointer,len * sizeof(char));
-	cudaMemcpy(gpuPointer,nameOfOp,len * sizeof(char),cudaMemcpyHostToDevice);
-	printf("Copied data\n");
 	transformDouble<<<length,length,42000>>>(
-			gpuPointer
+			10
 			,length,
 			1,data->data->gData,
 			1,extraParamsBuff->gData,
@@ -110,7 +104,6 @@ TEST(Transform,Sigmoid) {
 	nd4j::buffer::freeBuffer(&extraParamsBuff);
 	nd4j::buffer::copyDataFromGpu(&data->data);
 	CHECK(arrsEquals(rank, comparison, data->data->data));
-	cudaFree(gpuPointer);
 
 #endif
 

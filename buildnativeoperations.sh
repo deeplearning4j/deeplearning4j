@@ -5,18 +5,27 @@ else
     command="$1"
     echo "Running $1"
     if [ "$1" == "clean" ]; then
+       rm -rf cmake_install.cmake
+       rm -rf cubinbuild
+       rm -rf ptxbuild
+       rm -rf CMakeFiles 
        rm -f CMakeCache.txt
-       rm -rf build
+       rm -rf testbuild
        echo "Deleted build"
     elif [ "$1" ==  "eclipse" ]; then
             cd eclipse
             cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_ECLIPSE_GENERATE_SOURCE_PROJECT=TRUE ..
             python ./nsight-err-parse-patch.py ./project
      elif [ "$1" ==  "test" ]; then
-           rm -rf build
-           cd test
-           mkdir -p build
-           cd build &&  cmake -DTEST=TRUE ..
+           rm -rf testbuild
+           mkdir testbuild
+           cd testbuild
+           cmake -DRUN_TEST=TRUE ..
+            make && cd ..
+            mv testbuild/test/libnd4jtests .
+            ./libnd4jtests
+            rm -f libnd4jtests
+           echo "FINISHING BUILD"
      elif [ "$1" == "cubin" ]; then
             rm -rf cubinbuild
            mkdir cubinbuild

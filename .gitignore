@@ -6,3 +6,6 @@ install_manifest.txt
 build
 *.ptx
 *.cubin
+cubinbuild
+pitxbuild
+testbuild
