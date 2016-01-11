@@ -9,9 +9,13 @@ Deeplearning4J is an Apache 2.0-licensed, open-source, distributed neural net li
 
 Deeplearning4J integrates with Hadoop and Spark and runs on several backends that enable use of CPUs and GPUs. The aim is to create a plug-and-play solution that is more convention than configuration, and which allows for fast prototyping. 
 
-Current version in maven central is `0.4-rc3.6`.
+Current version in maven central is `0.4-rc3.8`.
 
 ---
+## Using Deeplearning4j
+
+To get started using Deeplearning4j, please go to our [Quickstart](http://deeplearning4j.org/quickstart.html). You'll need to be familiar with a Java automated build tool such as Maven and an IDE such as IntelliJ. 
+
 ## Main Features
 - Versatile n-dimensional array class
 - GPU integration
@@ -56,34 +60,6 @@ Search for [deeplearning4j](https://search.maven.org/#search%7Cga%7C1%7Cdeeplear
 
 Add the dependency information into your `pom.xml`. **We highly recommend downloading via Maven unless you plan to help us develop DL4J.**
 
-#### Clone from the GitHub Repo
-
-Deeplearning4J is being actively developed and you can clone the repository, compile it and reference it in your project.
-
-For users who have never git cloned Deeplearning4j before, you should be able to install the framework, along with ND4J and Canova, by entering one line in your command prompt:
-
-    $ git clone https://github.com/deeplearning4j/deeplearning4j/; cd deeplearning4j; ./setup.sh
-
-This command will also get you ND4J and Canova, which you need. 
-
-To get the most recent updates from Github after an initial clone, pull the ND4J, Canova and DL4J repositories:
-
-    $ git pull git://github.com/deeplearning4j/nd4j.git
-    $ git pull git://github.com/deeplearning4j/Canova.git
-    $ git pull git://github.com/deeplearning4j/deeplearning4j.git
-
-Compile the project from within each of the three directories, starting with ND4J:
-
-    $ cd deeplearning4j && mvn clean install -DskipTests -Dmaven.javadoc.skip=true
-
-Add the local compiled file dependencies to your pom.xml file. Here's an example of what they'll look like:
-
-    <dependency>
-        <groupId>org.deeplearning4j</groupId>
-        <artifactId>deeplearning4j-cli</artifactId>
-        <version>0.4-rc0</version>
-    </dependency>
-
 #### Yum Install / Load RPM (Fedora or CentOS)
 Create a yum repo and run yum install to load the Red Hat Package Management (RPM) files. First create the repo file to setup the configuration locally.
 
@@ -107,6 +83,7 @@ Note, be sure to install the nd4j modules you need first, especially the backend
 
 ---
 ## Contribute
+
 1. Check for open issues or open a fresh one to start a discussion around a feature idea or a bug. 
 2. If you feel uncomfortable or uncertain about an issue or your changes, don't hesitate to contact us on Gitter using the link above.
 3. Fork [the repository](https://github.com/deeplearning4j/deeplearning4j.git) on GitHub to start making your changes to the **master** branch (or branch off of it).
