@@ -53,7 +53,6 @@ Deeplearning4j는 배포된 멀티 스레드 딥 러닝 프레임 워크와 일�
 질문이 있다면 [Gitter](https://gitter.im/deeplearning4j/deeplearning4j)를 통해; 고급지원을 원하시면 [Skymind](http://www.skymind.io/contact/)를 통해 연락주시기 바랍니다. [ND4J는 저희의 상위체계 연산에 동력을 지원하는 자바 기반 과학 컴퓨팅 엔진입니다](http://nd4j.org/). 큰 매트릭스들 상에서, 저희의 벤치마크는 [ND4J가 Numpy보다 대략 두 배 정도 빠르게 실행](http://nd4j.org/benchmarking) 함을 보여줍니다.
 
 ### Deeplearning4j 후기
-프랑켄슈타인을 보는 것 같았다. 그 의사..." - 스티브 D.
+프랑켄슈타인이 된 것 같았다. 그 의사..." - 스티브 D.
 
-Gitter 상에서 DL4J와 채팅하기
 ![Alt text](../img/logos_8.png)
