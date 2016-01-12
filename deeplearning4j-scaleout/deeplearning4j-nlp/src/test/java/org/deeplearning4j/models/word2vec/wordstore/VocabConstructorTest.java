@@ -1,7 +1,9 @@
 package org.deeplearning4j.models.word2vec.wordstore;
 
 import org.canova.api.util.ClassPathResource;
+import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
+import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
@@ -17,8 +19,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.*;
 
@@ -133,6 +135,98 @@ public class VocabConstructorTest {
         assertEquals("it", cache.wordAtIndex(0));
 
         assertEquals(634303, cache.totalWordOccurrences());
+    }
+
+    @Test
+    public void testCounter1() throws Exception {
+        VocabCache<VocabWord> vocabCache = new AbstractCache.Builder<VocabWord>().build();
+
+        final List<VocabWord> words = new ArrayList<>();
+
+        words.add(new VocabWord(1, "word"));
+        words.add(new VocabWord(2, "test"));
+        words.add(new VocabWord(1, "here"));
+
+        Iterable<Sequence<VocabWord>> iterable = new Iterable<Sequence<VocabWord>>() {
+            @Override
+            public Iterator<Sequence<VocabWord>> iterator() {
+
+                return new Iterator<Sequence<VocabWord>>() {
+                    private AtomicBoolean switcher = new AtomicBoolean(true);
+                    @Override
+                    public boolean hasNext() {
+                        return switcher.getAndSet(false);
+                    }
+
+                    @Override
+                    public Sequence<VocabWord> next() {
+                        Sequence<VocabWord> sequence = new Sequence<>(words);
+                        return sequence;
+                    }
+                };
+            };
+        };
+
+
+        SequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<>(iterable).build();
+
+        VocabConstructor<VocabWord> constructor = new VocabConstructor.Builder<VocabWord>()
+                .addSource(sequenceIterator, 0)
+                .useAdaGrad(false)
+                .setTargetVocabCache(vocabCache)
+                .build();
+
+        constructor.buildJointVocabulary(false, true);
+
+        assertEquals(3, vocabCache.numWords());
+
+        assertEquals(1, vocabCache.wordFrequency("test"));
+    }
+
+    @Test
+    public void testCounter2() throws Exception {
+        VocabCache<VocabWord> vocabCache = new AbstractCache.Builder<VocabWord>().build();
+
+        final List<VocabWord> words = new ArrayList<>();
+
+        words.add(new VocabWord(1, "word"));
+        words.add(new VocabWord(0, "test"));
+        words.add(new VocabWord(1, "here"));
+
+        Iterable<Sequence<VocabWord>> iterable = new Iterable<Sequence<VocabWord>>() {
+            @Override
+            public Iterator<Sequence<VocabWord>> iterator() {
+
+                return new Iterator<Sequence<VocabWord>>() {
+                    private AtomicBoolean switcher = new AtomicBoolean(true);
+                    @Override
+                    public boolean hasNext() {
+                        return switcher.getAndSet(false);
+                    }
+
+                    @Override
+                    public Sequence<VocabWord> next() {
+                        Sequence<VocabWord> sequence = new Sequence<>(words);
+                        return sequence;
+                    }
+                };
+            };
+        };
+
+
+        SequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<>(iterable).build();
+
+        VocabConstructor<VocabWord> constructor = new VocabConstructor.Builder<VocabWord>()
+                .addSource(sequenceIterator, 0)
+                .useAdaGrad(false)
+                .setTargetVocabCache(vocabCache)
+                .build();
+
+        constructor.buildJointVocabulary(false, true);
+
+        assertEquals(3, vocabCache.numWords());
+
+        assertEquals(1, vocabCache.wordFrequency("test"));
     }
 /*
     @Test
