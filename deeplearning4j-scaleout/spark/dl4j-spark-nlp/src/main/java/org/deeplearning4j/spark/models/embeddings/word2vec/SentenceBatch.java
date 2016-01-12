@@ -141,7 +141,7 @@ public class SentenceBatch implements Function<Word2VecFuncCall,Word2VecChange> 
             //score
             double f = expTable[idx];
             //gradient
-            double g = (1 - code - f) * (useAdaGrad ? w1.getGradient(i, alpha) : alpha);
+            double g = (1 - code - f) * (useAdaGrad ? w1.getGradient(i, alpha, alpha) : alpha);
 
 
             Nd4j.getBlasWrapper().level1().axpy(syn1.length(), g, syn1, neu1e);
@@ -177,11 +177,11 @@ public class SentenceBatch implements Function<Word2VecFuncCall,Word2VecChange> 
                 double f = Nd4j.getBlasWrapper().dot(l1, syn1Neg);
                 double g;
                 if (f > MAX_EXP)
-                    g = useAdaGrad ? w1.getGradient(target, (label - 1)) : (label - 1) *  alpha;
+                    g = useAdaGrad ? w1.getGradient(target, (label - 1), alpha) : (label - 1) *  alpha;
                 else if (f < -MAX_EXP)
-                    g = label * (useAdaGrad ?  w1.getGradient(target, alpha) : alpha);
+                    g = label * (useAdaGrad ?  w1.getGradient(target, alpha, alpha) : alpha);
                 else
-                    g = useAdaGrad ? w1.getGradient(target, label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) : (label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) *   alpha;
+                    g = useAdaGrad ? w1.getGradient(target, label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))], alpha) : (label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) *   alpha;
                     Nd4j.getBlasWrapper().level1().axpy(l1.length(),g,neu1e,l1);
 
                 Nd4j.getBlasWrapper().level1().axpy(l1.length(),g,syn1Neg,l1);

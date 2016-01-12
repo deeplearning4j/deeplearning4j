@@ -204,7 +204,7 @@ public class Word2VecPerformer implements WorkerPerformer {
      * @param conf the configuration
      */
     public static void configure(InMemoryLookupTable table,InvertedIndex index,Configuration conf) {
-        conf.setInt(VECTOR_LENGTH, table.getVectorLength());
+        conf.setInt(VECTOR_LENGTH, table.layerSize());
         conf.setBoolean(ADAGRAD, table.isUseAdaGrad());
         conf.setFloat(NEGATIVE, (float) table.getNegative());
         conf.setFloat(ALPHA,(float) table.getLr().get());
@@ -336,7 +336,7 @@ public class Word2VecPerformer implements WorkerPerformer {
             //score
             double f =  expTable[idx];
             //gradient
-            double g = (1 - code - f) * (useAdaGrad ?  w1.getGradient(i, alpha) : alpha);
+            double g = (1 - code - f) * (useAdaGrad ?  w1.getGradient(i, alpha, this.alpha) : alpha);
 
 
             if(neu1e.data().dataType() == DataBuffer.Type.DOUBLE) {
@@ -375,11 +375,11 @@ public class Word2VecPerformer implements WorkerPerformer {
                 double f = Nd4j.getBlasWrapper().dot(l1, syn1Neg);
                 double g;
                 if (f > MAX_EXP)
-                    g = useAdaGrad ? w1.getGradient(target, (label - 1)) : (label - 1) *  alpha;
+                    g = useAdaGrad ? w1.getGradient(target, (label - 1), this.alpha) : (label - 1) *  alpha;
                 else if (f < -MAX_EXP)
-                    g = (label - 0) * (useAdaGrad ?  w1.getGradient(target, alpha) : alpha);
+                    g = (label - 0) * (useAdaGrad ?  w1.getGradient(target, alpha, this.alpha) : alpha);
                 else
-                    g = useAdaGrad ? w1.getGradient(target, label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) : (label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) *   alpha;
+                    g = useAdaGrad ? w1.getGradient(target, label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))], this.alpha) : (label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) *   alpha;
                 if(syn1Neg.data().dataType() == DataBuffer.Type.DOUBLE)
                     Nd4j.getBlasWrapper().axpy(g,neu1e,l1);
                 else
