@@ -113,6 +113,7 @@ public class PageableDirectBufferMemoryStrategy implements MemoryStrategy {
 
     @Override
     public Object alloc(DataBuffer buffer, int stride, int offset, int length, boolean initData) {
+        JCudaBuffer buf2 = (JCudaBuffer) buffer;
         Pointer hostData = new Pointer();
         Pointer hostPointer = PointerUtil.getHostPointer(buffer);
         HostDevicePointer devicePointer = new HostDevicePointer(hostPointer,hostData);
@@ -127,6 +128,9 @@ public class PageableDirectBufferMemoryStrategy implements MemoryStrategy {
                     , devicePointerInfo.getPointers().getHostPointer()
                     , devicePointerInfo.getLength()
                     , cudaMemcpyKind.cudaMemcpyHostToDevice);
+
+            // mark content as copied
+            buf2.copied(Thread.currentThread().getName());
         }
         return devicePointerInfo;
     }

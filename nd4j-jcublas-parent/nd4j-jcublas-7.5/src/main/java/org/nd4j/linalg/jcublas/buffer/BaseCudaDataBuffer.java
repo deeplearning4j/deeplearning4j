@@ -384,7 +384,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                         ContextHolder.getInstance()
                                 .getMemoryStrategy()
                                 .alloc(this, 1, 0, this.length,true);
-
+                System.out.println("Saving stride ["+ 1 +"], with offset: [" + 0 + "]");
                 pointersToContexts.put(name, Triple.of(0,this.length,1), devicePointerInfo);
             }
 
@@ -421,6 +421,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 devicePointerInfo = new DevicePointerInfo(retOffset,length,stride,offset,false);
                 pointersToContexts.put(name,Triple.of(offset,compareLength,stride), devicePointerInfo);
 
+                System.out.println("Saving stride ["+ stride +"], with offset: [" + offset + "]");
                 referencedOffsets.put(Pair.of(name, Triple.of(offset, length, stride)), new AtomicInteger(1));
 
                 return ret;
@@ -595,7 +596,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     @Override
-    public boolean freeDevicePointer(int offset, int length) {
+    public boolean freeDevicePointer(int offset, int length, int stride) {
         String name = Thread.currentThread().getName();
 
         int off = 0;
@@ -603,7 +604,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             off = referencedOffsets.get(Pair.of(name, Triple.of(offset, length,1))).get();
         }
 
-     //   System.out.println("Calling freeDevicePointer for offset: ["+ offset+"], length: ["+ length+"], references: [" + referenceCounter.get() + "], offset references: ["+ off+"]");
+        System.out.println("Calling freeDevicePointer for offset: ["+ offset+"], length: ["+ length+"], stride: ["+ stride+"] references: [" + referenceCounter.get() + "], offset references: ["+ off+"]");
         referenceCounter.decrementAndGet();
 
         // TODO: make sure that stride is always equals 1, otherwise pass stride value down here
@@ -612,28 +613,32 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
         //nothing to free, there was no copy. Only the gpu pointer was reused with a different offset.
         if(offset != 0) {
-            if (referencedOffsets.containsKey(Pair.of(name, Triple.of(offset, length,1)))) {
+            if (referencedOffsets.containsKey(Pair.of(name, Triple.of(offset, length,stride)))) {
                 // do nothing, if the same offset pointer was referenced somewhere else
-                if (referencedOffsets.get(Pair.of(name, Triple.of(offset, length,1))).decrementAndGet() < 1) {
+                if (referencedOffsets.get(Pair.of(name, Triple.of(offset, length, stride))).decrementAndGet() < 1) {
             //        System.out.println("Offset pointer removed 1A");
-                    pointersToContexts.remove(name, Triple.of(offset, length, 1));
+                    pointersToContexts.remove(name, Triple.of(offset, length, stride));
                 }
             } else {
             //    System.out.println("Offset pointer removed 1B");
-                pointersToContexts.remove(name, Triple.of(offset, length, 1));
+                pointersToContexts.remove(name, Triple.of(offset, length, stride));
             }
 
 
             // if after offset removal we have no more uses left - we should fire free call
             // if we have no more uses - the only pointer left is 0-this.length() chunk
             // FIXME: this code is ideal race condition bug, and needs to be fixed
-            if (pointersToContexts.size() == 1 && !(pointersToContexts.get(name, Triple.of(0, this.length(),1)).equals(null)) ) {
+            if (pointersToContexts.size() == 1 && pointersToContexts.contains(name, Triple.of(0, this.length(),1)) ) {
             //    System.out.println("Checking for nested allocations: " + referenceCounter.get());
                 if (referenceCounter.get() < 1) {
                //     System.out.println("No more uses left, removing");
                     ContextHolder.getInstance().getMemoryStrategy().free(this, 0, this.length());
                     freed.set(true);
                     copied.remove(name);
+                    pointersToContexts.remove(name, Triple.of(0, this.length(),1));
+
+                    System.out.println("pointers left: " + pointersToContexts.size());
+                  //  pointersToContexts.clear();
                 }
             }
          } else if(offset == 0 && isPersist) {
@@ -646,6 +651,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             freed.set(true);
             copied.remove(name);
             pointersToContexts.remove(name,Triple.of(offset,length,devicePointerInfo.getStride()));
+
+            System.out.println("pointers left: " + pointersToContexts.size());
+            //pointersToContexts.clear();
             return true;
         }
 

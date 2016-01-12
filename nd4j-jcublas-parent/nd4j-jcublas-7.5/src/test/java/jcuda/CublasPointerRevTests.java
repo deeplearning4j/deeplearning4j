@@ -160,6 +160,9 @@ public class CublasPointerRevTests {
         assertTrue(buffer1.isFreed());
 
         assertTrue(buffer2.isFreed());
+
+        assertEquals(0, buffer1.getPointersToContexts().size());
+        assertEquals(0, buffer2.getPointersToContexts().size());
     }
 
     /**
@@ -259,6 +262,11 @@ public class CublasPointerRevTests {
         assertTrue(bufferSlice2.isFreed());
         assertTrue(bufferSlice3.isFreed());
         assertTrue(bufferSlice4.isFreed());
+
+        assertEquals(0, bufferSlice1.getPointersToContexts().size());
+        assertEquals(0, bufferSlice2.getPointersToContexts().size());
+        assertEquals(0, bufferSlice3.getPointersToContexts().size());
+        assertEquals(0, bufferSlice4.getPointersToContexts().size());
     }
 
 
@@ -372,6 +380,13 @@ public class CublasPointerRevTests {
         assertTrue(bufferSlice2.isFreed());
         assertTrue(bufferSlice3.isFreed());
         assertTrue(bufferSlice4.isFreed());
+
+
+        assertEquals(0, bufferSlice1.getPointersToContexts().size());
+        assertEquals(0, bufferSlice2.getPointersToContexts().size());
+        assertEquals(0, bufferSlice3.getPointersToContexts().size());
+        assertEquals(0, bufferSlice4.getPointersToContexts().size());
+
     }
 
     @Test
@@ -446,6 +461,8 @@ public class CublasPointerRevTests {
         // Please note: we do NOT test result pointer deallocation here,since we assume it's handled by JCuda
 
         System.out.println("Dot product: " + ret[0] + " Dot wrapped: " + dotWrapped);
+
+        assertEquals(0, buffer.getPointersToContexts().size());
     }
 
 
@@ -534,6 +551,9 @@ public class CublasPointerRevTests {
             1. Both cuBlasPointers are closed
             2. Both underlying buffers are freed
         */
+
+        assertEquals(0, buffer1.getPointersToContexts().size());
+        assertEquals(0, buffer2.getPointersToContexts().size());
     }
 
     /**
@@ -676,6 +696,9 @@ public class CublasPointerRevTests {
 
         // we check if result buffer is freed too.
         assertTrue(buffer2.isFreed());
+
+        assertEquals(0, buffer1.getPointersToContexts().size());
+        assertEquals(0, buffer2.getPointersToContexts().size());
 
     }
 
@@ -966,6 +989,7 @@ public class CublasPointerRevTests {
 
         // compare result to pre-calculated value
         assertEquals(16.665000915527344, res, 0.001d);
+
     }
 
     @Test
@@ -1004,6 +1028,9 @@ public class CublasPointerRevTests {
         // now, when second pointer was closed, both buffers should be free too
         assertTrue(buffer1.isFreed());
         assertTrue(buffer2.isFreed());
+
+        assertEquals(0, buffer1.getPointersToContexts().size());
+        assertEquals(0, buffer1.getPointersToContexts().size());
     }
 
 
@@ -1042,6 +1069,9 @@ public class CublasPointerRevTests {
         // now, both buffers should be discarded
         assertTrue(buffer1.isFreed());
         assertTrue(buffer2.isFreed());
+
+        assertEquals(0, buffer1.getPointersToContexts().size());
+        assertEquals(0, buffer2.getPointersToContexts().size());
     }
 
     @Test
@@ -1090,6 +1120,10 @@ public class CublasPointerRevTests {
         assertTrue(buffer1.isFreed());
         assertTrue(buffer2.isFreed());
         assertTrue(buffer3.isFreed());
+
+        assertEquals(0, buffer1.getPointersToContexts().size());
+        assertEquals(0, buffer2.getPointersToContexts().size());
+        assertEquals(0, buffer3.getPointersToContexts().size());
     }
 
     /**
@@ -1149,6 +1183,8 @@ public class CublasPointerRevTests {
 
         assertNotEquals(1.01f, array2.getFloat(0), 0.001f);
         assertNotEquals(1.01f, array2.getFloat(1), 0.001f);
+
+        assertEquals(0, buffer2.getPointersToContexts().size());
     }
 
 
@@ -1211,6 +1247,7 @@ public class CublasPointerRevTests {
             ;
         }
 
+        assertEquals(0, buffer.getPointersToContexts().size());
     }
 
     /**
@@ -1229,7 +1266,7 @@ public class CublasPointerRevTests {
         // we create 2D array, that will be used for vertically sliced arrays
         INDArray baseArray = Nd4j.create(100, 200);
 
-        // our slice has offset 10, and stride 200
+        // our slice has offset 10, and stride 200, length 100
         INDArray slice1 = baseArray.getColumn(10);
 
         CudaContext ctx = CudaContext.getBlasContext();
@@ -1248,5 +1285,46 @@ public class CublasPointerRevTests {
 
         // buffer must be free
         assertTrue(buffer.isFreed());
+
+        assertEquals(0, buffer.getPointersToContexts().size());
+    }
+
+    /**
+     *  This test addresses memory allocation for arrays with stride > 1, since that's important value for nd4j internal memory allocation
+     */
+    @Test
+    public void testPageableMemoryStridedSlice() throws Exception {
+        // simple way to stop test if we're not on CUDA backend here
+        assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
+
+        // reset to default MemoryStrategy, most probable is Pinned
+        ContextHolder.getInstance().forceMemoryStrategyForThread(new PageableDirectBufferMemoryStrategy());
+
+        assertEquals("PageableDirectBufferMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
+
+        // we create 2D array, that will be used for vertically sliced arrays
+        INDArray baseArray = Nd4j.create(100, 200);
+
+        // our slice has offset 10, and stride 200, length 100
+        INDArray slice1 = baseArray.getColumn(10);
+
+        CudaContext ctx = CudaContext.getBlasContext();
+
+        CublasPointer xAPointer = new CublasPointer(slice1, ctx);
+
+        BaseCudaDataBuffer buffer = (BaseCudaDataBuffer) xAPointer.getBuffer();
+
+        // we have pointer allocated
+
+        /*
+            Now if we'll close this pointer, it won't be really released, since freeDevicePointer() call assumes stride size 0, and we have stride 200
+         */
+
+        xAPointer.close();
+
+        // buffer must be free
+        assertTrue(buffer.isFreed());
+
+        assertEquals(0, buffer.getPointersToContexts().size());
     }
 }

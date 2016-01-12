@@ -103,7 +103,7 @@ public interface JCudaBuffer extends DataBuffer {
      * @return true if the pointer was freed,
      * false other wise
      */
-    boolean freeDevicePointer(int offset, int length);
+    boolean freeDevicePointer(int offset, int length, int stride);
 
 
     /**
