@@ -137,7 +137,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         //error for current word and context
         INDArray neu1e = Nd4j.create(configuration.getLayersSize());
 
-
+      //  System.out.println("--------------------------");
         for(int i = 0; i < w1.getCodeLength(); i++) {
             int code = w1.getCodes().get(i);
             int point = w1.getPoints().get(i);
@@ -162,8 +162,8 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
             double f =  expTable[idx];
             //gradient
             //double g = useAdaGrad ?  w1.getGradient(i, (1 - code - f)) : (1 - code - f) * alpha;
-
-            double g = useAdaGrad ?  lookupTable.getGradient(i, (1 - code - f)) : (1 - code - f) * alpha;
+          //  System.out.println("i: [" + w1.getIndex() + "], code: [" + code + "], point: [" + point + "], grad: [" + (1 - code - f) + "]");
+            double g = useAdaGrad ?  w1.getGradient(i, (1 - code - f), alpha) : (1 - code - f) * alpha;
 
             if(neu1e.data().dataType() == DataBuffer.Type.FLOAT) {
                 Nd4j.getBlasWrapper().level1().axpy(syn1.length(), g, syn1, neu1e);

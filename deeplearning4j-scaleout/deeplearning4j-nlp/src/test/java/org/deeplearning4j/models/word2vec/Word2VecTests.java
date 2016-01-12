@@ -116,14 +116,17 @@ public class Word2VecTests {
 
         Word2Vec vec = new Word2Vec.Builder()
                 .minWordFrequency(5)
-                .iterations(10)
+                .iterations(3)
+                .learningRate(0.025)
                 .layerSize(100)
                 .seed(42)
                 .sampling(0)
+                .negativeSample(0)
                 .windowSize(5)
                 .modelUtils(new BasicModelUtils<VocabWord>())
                 .useAdaGrad(true)
                 .iterate(iter)
+                .workers(10)
                 .tokenizerFactory(t)
                 .build();
 
