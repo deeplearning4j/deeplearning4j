@@ -193,7 +193,7 @@ public class GloveWeightLookupTable<T extends SequenceElement> extends InMemoryL
 
             if(word.isEmpty())
                 continue;
-            float[] read = read(split,glove.getVectorLength());
+            float[] read = read(split,glove.layerSize());
             if(read.length < 1)
                 continue;
 
@@ -216,10 +216,10 @@ public class GloveWeightLookupTable<T extends SequenceElement> extends InMemoryL
     }
 
     private static INDArray weights(GloveWeightLookupTable glove,Map<String,float[]> data,VocabCache vocab) {
-        INDArray ret = Nd4j.create(data.size(),glove.getVectorLength());
+        INDArray ret = Nd4j.create(data.size(),glove.layerSize());
         for(String key : data.keySet()) {
             INDArray row = Nd4j.create(Nd4j.createBuffer(data.get(key)));
-            if(row.length() != glove.getVectorLength())
+            if(row.length() != glove.layerSize())
                 continue;
             if(vocab.indexOf(key) >= data.size())
                 continue;
