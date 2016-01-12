@@ -800,7 +800,7 @@ public class WordVectorSerializer {
 
         }
 
-        log.info("Wrote " + words + " with size of " + vec.lookupTable().getVectorLength());
+        log.info("Wrote " + words + " with size of " + vec.lookupTable().layerSize());
         write.flush();
         write.close();
 
