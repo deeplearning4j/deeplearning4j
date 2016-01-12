@@ -9,7 +9,9 @@
 #define INDEXREDUCE_H_
 #include <shape.h>
 #include <op.h>
-
+#ifdef __CUDACC__
+#include <helper_cuda.h>
+#endif
 namespace functions {
 namespace indexreduce {
 template<typename T>
@@ -1039,9 +1041,9 @@ public:
 #endif
 	functions::indexreduce::IndexReduce<T> * getOp(int op) {
 		if (op == 0) {
-			return (functions::indexreduce::ops::IMax<T> *) malloc(sizeof(functions::indexreduce::ops::IMax<T>));
+			return new functions::indexreduce::ops::IMax<T>();
 		} else if (op == 1) {
-			return (functions::indexreduce::ops::IMin<T> *)malloc(sizeof(functions::indexreduce::ops::IMin<T>));
+			return new functions::indexreduce::ops::IMin<T>();
 
 		}
 		return NULL;

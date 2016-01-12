@@ -33,6 +33,9 @@ TEST(IndexReduce, IMax) {
 	for (int i = 0; i < length; i++) {
 		data[i] = i + 1;
 	}
+
+	printf("Setup data\n");
+
 	int *resultShapeInfo = shape::createScalarShapeInfo();
 
 	shape::ShapeInformation *shapeInfo = (shape::ShapeInformation *) malloc(
@@ -64,6 +67,7 @@ TEST(IndexReduce, IMax) {
 	delete opFactory5;
 
 }
+
 
 TEST(IndexReduce,DimensionIMax) {
 	functions::indexreduce::IndexReduceOpFactory<double> *opFactory5 =

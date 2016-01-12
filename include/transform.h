@@ -1021,8 +1021,7 @@ extern "C" __global__ void transformDouble(
 
 	functions::transform::Transform<double> *op = doubleTransformFactory->getOp(opNum);
 	functions::transform::ops::Sigmoid<double> sigmoid;
-	printf("Obtained op\n");
-	sigmoid.transform(n,idx,dy,incy,params,result,blockSize);
+	op->transform(n,idx,dy,incy,params,result,blockSize);
 	free(op);
 }
 

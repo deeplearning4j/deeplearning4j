@@ -1051,7 +1051,6 @@ int computeElementWiseStride(int rank, int *shape, int *stride, int isFOrder,
 			dimensionLength);
 	int ret = shape::computeElementWiseStride(shape::rank(tadInfo2),
 			shape::shapeOf(shapeBuffer), shape::stride(shapeBuffer), isFOrder);
-	free(tadInfo2);
 	free(shapeInformation);
 	free(shapeBuffer);
 	return ret;

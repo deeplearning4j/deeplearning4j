@@ -99,11 +99,14 @@ public:
 				int yOffset2 = yOffset
 						+ ((i / xElementWiseStride) % yLength)
 						* yElementWiseStride;
-				if (i < resultLength)
+				if (i < resultLength) {
 					result[i] = op(x[i], y[yOffset2]);
+				}
 
 			}
-		} else {
+		}
+
+		else {
 #pragma omp simd
 			for (int i = 0; i < xLength; i++) {
 				int yOffset2 = yOffset

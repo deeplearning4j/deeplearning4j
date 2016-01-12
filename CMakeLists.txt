@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.3)
 project(nativeoperations)
 set( CMAKE_VERBOSE_MAKEFILE on )
-option(TESTS "Compile and make tests for the code?" OFF)
+option(TESTS "Compile and make tests for the code?" ON)
 option(PTX "Compile ptx" OFF)
 option(CUBIN "Compile cubin" OFF)
 option(ECLIPSE "Generate eclipse files" OFF)

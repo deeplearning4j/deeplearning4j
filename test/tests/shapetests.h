@@ -37,7 +37,6 @@ TEST(Shape, IsVector) {
 	delete[] shape;
 
 }
-
 TEST(Shape,ShapeInformation) {
 	int rank = 4;
 	int *shape = (int *) malloc(sizeof(int) * rank);
@@ -106,7 +105,6 @@ TEST(Shape,ShapeInfoBuffer) {
 	free(info);
 	free(shapeInfoBuff);
 }
-
 TEST(Shape,Range) {
 	int *rangeArr = shape::range(0, 4);
 	int *testArr = shape::range(0, 4);
@@ -165,7 +163,6 @@ TEST(Shape,Keep) {
 	free(rangeArr);
 	free(keep);
 }
-
 TEST(Shape,TensorsAlongDimension) {
 	int rank = 4;
 	int *shape = (int *) malloc(sizeof(int) * rank);
@@ -188,6 +185,7 @@ TEST(Shape,TensorsAlongDimension) {
 
 }
 
+
 TEST(Shape,ReductionIndexForLinear) {
 	int rank = 4;
 	int *shape = (int *) malloc(sizeof(int) * rank);
@@ -209,6 +207,7 @@ TEST(Shape,ReductionIndexForLinear) {
 	shapeAssertion[0] = 1;
 	shapeAssertion[1] = 2;
 	CHECK(arrsEquals<int>(1, shape::shapeOf(tadShapeInfo), shapeAssertion));
+
 	int elementWiseStride = shape::computeElementWiseStride(
 			shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo),
 			shape::stride(tadShapeInfo), 0, dimension, dimensionLength);
@@ -223,6 +222,7 @@ TEST(Shape,ReductionIndexForLinear) {
 	CHECK(idx2 == 2);
 	free(tadShapeInfo);
 	free(shapeInfoBuffer);
+
 }
 
 TEST(Shape,PermuteSwap) {

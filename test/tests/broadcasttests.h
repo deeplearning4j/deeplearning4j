@@ -43,10 +43,8 @@ TEST(BroadCasting,Kernel) {
 #endif
 }
 
-/*
 TEST(BroadCasting,Addition) {
-	functions::broadcast::Broadcast<double> *add = opFactory3->getOp(
-			"add_strided");
+	functions::broadcast::Broadcast<double> *add = opFactory3->getOp(0);
 	int rank = 2;
 	int *shape = (int *) malloc(sizeof(int) * rank);
 	shape[0] = 2;
@@ -60,6 +58,7 @@ TEST(BroadCasting,Addition) {
 	int *shapeInfoBuffer = shape::toShapeBuffer(shapeInformation);
 	assertBufferProperties(shapeInfoBuffer);
 	int length = nd4j::array::NDArrays<double>::length(data);
+     CHECK(length == 4);
 	for (int i = 0; i < length; i++)
 		data->data->data[i] = i + 1;
 
@@ -72,8 +71,7 @@ TEST(BroadCasting,Addition) {
 					vectorStride, 0, 0.0);
 	for (int i = 0; i < 2; i++)
 		vector->data->data[i] = i + 1;
-	shape::ShapeInformation *vectorShapeInformation = nd4j::array::NDArrays<
-			double>::shapeInfoForArray(vector);
+	shape::ShapeInformation *vectorShapeInformation = nd4j::array::NDArrays<double>::shapeInfoForArray(vector);
 	int *vectorShapeInfoBuff = shape::toShapeBuffer(vectorShapeInformation);
 	assertBufferProperties(vectorShapeInfoBuff);
 	int dimensionLength = 1;
@@ -86,7 +84,14 @@ TEST(BroadCasting,Addition) {
 			vectorShapeInfoBuff, data->data->data, shapeInfoBuffer, dimension,
 			dimensionLength);
 
-	double comparison[4] = { 2, 4, 5, 6 };
+	double *comparison =(double *) malloc(sizeof(double) * 4);
+	comparison[0] = 2;
+	comparison[1] = 4;
+	comparison[2] = 5;
+	comparison[3] = 6;
+    for(int i = 0; i < 4; i++) {
+       printf("Data[%d] is %f\n",i,data->data->data[i]);
+    }
 	CHECK(arrsEquals(rank, comparison, data->data->data));
 	free(data);
 	free(extraParams);
@@ -105,6 +110,6 @@ TEST(BroadCasting,Addition) {
 	delete add;
 
 }
- */
+
 
 #endif //NATIVEOPERATIONS_BROADCASTSTESTS_H

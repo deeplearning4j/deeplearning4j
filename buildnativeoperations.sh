@@ -11,11 +11,15 @@ else
        rm -rf CMakeFiles 
        rm -f CMakeCache.txt
        rm -rf testbuild
+       rm -rf eclipse/CMakeFiles
+
        echo "Deleted build"
     elif [ "$1" ==  "eclipse" ]; then
             cd eclipse
             cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_ECLIPSE_GENERATE_SOURCE_PROJECT=TRUE ..
             python ./nsight-err-parse-patch.py ./project
+            mv eclipse/.cproject .
+            mv eclipse/.project .
      elif [ "$1" ==  "test" ]; then
            rm -rf testbuild
            mkdir testbuild
