@@ -139,7 +139,7 @@ public class FirstIterationFunction
             //score
             double f = expTable[idx];
             //gradient
-            double g = (1 - code - f) * (useAdaGrad ? currentWord.getGradient(i, currentSentenceAlpha) : currentSentenceAlpha);
+            double g = (1 - code - f) * (useAdaGrad ? currentWord.getGradient(i, currentSentenceAlpha, currentSentenceAlpha) : currentSentenceAlpha);
 
 
             Nd4j.getBlasWrapper().level1().axpy(vectorLength, g, syn1VecCurrentIndex, neu1e);

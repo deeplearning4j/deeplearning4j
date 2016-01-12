@@ -84,7 +84,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
     }
 
     protected void initAdaGrad() {
-        adaGrad = new AdaGrad(vocab.numWords(), vectorLength);
+        adaGrad = new AdaGrad(new int[] {vocab.numWords()+1, vectorLength} , lr.get());
     }
 
     public double[] getExpTable() {
@@ -98,7 +98,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
     public double getGradient(int column, double gradient) {
         if (adaGrad == null)
             initAdaGrad();
-        return  adaGrad.getGradient(gradient, column, new int[]{ vectorLength, vocab.numWords()});
+        return  adaGrad.getGradient(gradient, column, syn0.shape());
     }
 
     @Override
@@ -183,13 +183,13 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
     protected void initNegative() {
         if(negative > 0) {
             syn1Neg = Nd4j.zeros(syn0.shape());
-            makeTable(10000,0.75);
+            makeTable(expTable.length,0.75);
         }
     }
 
 
     protected void initExpTable() {
-        expTable = new double[1000];
+        expTable = new double[1000000];
         for (int i = 0; i < expTable.length; i++) {
             double tmp =   FastMath.exp((i / (double) expTable.length * 2 - 1) * MAX_EXP);
             expTable[i]  = tmp / (tmp + 1.0);
@@ -210,7 +210,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
     @Override
     @Deprecated
     public  void iterateSample(T w1, T w2,AtomicLong nextRandom,double alpha) {
-        if(w2 == null || w2.getIndex() < 0 || w1.getIndex() == w2.getIndex() || w1.getLabel().equals("STOP") || w2.getLabel().equals("STOP") || w1.getLabel().equals("UNK") || w2.getLabel().equals("UNK"))
+        /*if(w2 == null || w2.getIndex() < 0 || w1.getIndex() == w2.getIndex() || w1.getLabel().equals("STOP") || w2.getLabel().equals("STOP") || w1.getLabel().equals("UNK") || w2.getLabel().equals("UNK"))
            return;
             //current word vector
         INDArray l1 = this.syn0.slice(w2.getIndex());
@@ -243,7 +243,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
             //score
             double f =  expTable[idx];
             //gradient
-            double g = useAdaGrad ?  w1.getGradient(i, (1 - code - f)) : (1 - code - f) * alpha;
+            double g = useAdaGrad ?  w1.getGradient(i, (1 - code - f), lr.get()) : (1 - code - f) * alpha;
 
             if(neu1e.data().dataType() == DataBuffer.Type.FLOAT) {
                 Nd4j.getBlasWrapper().level1().axpy(syn1.length(), g, syn1, neu1e);
@@ -311,6 +311,8 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
 
         else
             Nd4j.getBlasWrapper().axpy(1.0f,neu1e,l1);
+
+        */
     }
 
     public boolean isUseAdaGrad() {
@@ -337,6 +339,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
      */
     @Override
     public  void iterate(T w1, T w2) {
+    /*
         if(w2.getIndex() < 0)
             return;
         //current word vector
@@ -397,8 +400,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
 
 
 
-
-
+        */
     }
 
 
