@@ -21,27 +21,38 @@ import java.util.List;
  */
 public class EvaluateFlatMapFunction implements FlatMapFunction<Iterator<DataSet>, Evaluation> {
 
-    private String json;
-    private Broadcast<INDArray> params;
-    private int examplesPerEvaluation;
-    private static Logger log = LoggerFactory.getLogger(IterativeReduceFlatMap.class);
+    protected String json;
+    protected Broadcast<INDArray> params;
+    protected int examplesPerEvaluation;
+    protected static Logger log = LoggerFactory.getLogger(IterativeReduceFlatMap.class);
+    protected static List<String> labels = new ArrayList<>();
+    protected static boolean warnNotClassified;
+
+
+    public EvaluateFlatMapFunction(String json, Broadcast<INDArray> params, int examplesPerEvaluation) {
+        this(json, params, examplesPerEvaluation, labels, false);
+    }
 
     /**
      * @param json Network configuration (json format)
      * @param params Network parameters
      * @param examplesPerEvaluation Max examples per evaluation. Do multiple separate forward passes if data exceeds
      *                              this. Used to avoid doing too many at once (and hence memory issues)
+     * @param labels list of string labels
      */
-    public EvaluateFlatMapFunction(String json, Broadcast<INDArray> params, int examplesPerEvaluation){
+    public EvaluateFlatMapFunction(String json, Broadcast<INDArray> params, int examplesPerEvaluation, List<String> labels, boolean warnNotClassified){
         this.json = json;
         this.params = params;
         this.examplesPerEvaluation = examplesPerEvaluation;
+        List<String> tmp = new ArrayList<>();
+        this.labels = labels == null ? tmp: labels;
+        this.warnNotClassified = warnNotClassified;
     }
 
     @Override
     public Iterable<Evaluation> call(Iterator<DataSet> dataSetIterator) throws Exception {
         if (!dataSetIterator.hasNext()) {
-            return Collections.singletonList(new Evaluation());
+            return Collections.singletonList(new Evaluation(labels, warnNotClassified));
         }
 
         MultiLayerNetwork network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(json));
@@ -51,7 +62,7 @@ public class EvaluateFlatMapFunction implements FlatMapFunction<Iterator<DataSet
             throw new IllegalStateException("Network did not have same number of parameters as the broadcasted set parameters");
         network.setParameters(val);
 
-        Evaluation evaluation = new Evaluation();
+        Evaluation evaluation = new Evaluation(labels, warnNotClassified);
         List<DataSet> collect = new ArrayList<>();
         while (dataSetIterator.hasNext()) {
             collect.clear();
