@@ -20,7 +20,7 @@ import java.util.List;
  */
 public abstract class SequenceElement implements Comparable<SequenceElement>, Serializable {
 
-    private static final long serialVersionUID = 2223750736522624731L;
+    private static final long serialVersionUID = 2223750736522624732L;
 
     protected AtomicDouble elementFrequency = new AtomicDouble(0);
 
