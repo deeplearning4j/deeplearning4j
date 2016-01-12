@@ -214,6 +214,18 @@ public class JointStorage<T extends SequenceElement> implements WeightLookupTabl
         return this.layerSize;
     }
 
+    /**
+     * Returns gradient for specified word
+     *
+     * @param column
+     * @param gradient
+     * @return
+     */
+    @Override
+    public double getGradient(int column, double gradient) {
+        return 0;
+    }
+
     @Override
     public void resetWeights(boolean reset) {
 
@@ -277,11 +289,6 @@ public class JointStorage<T extends SequenceElement> implements WeightLookupTabl
     @Override
     public INDArray getWeights() {
         return null;
-    }
-
-    @Override
-    public int getVectorLength() {
-        return 0;
     }
 
     @Override

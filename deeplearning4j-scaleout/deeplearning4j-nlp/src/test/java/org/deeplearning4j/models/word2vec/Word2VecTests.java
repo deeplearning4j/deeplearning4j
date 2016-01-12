@@ -107,6 +107,37 @@ public class Word2VecTests {
         assertEquals(iter.nextSentence(), "No ,  he says now .");
     }
 
+    @Test
+    public void testWord2VecAdaGrad() throws Exception {
+        SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
+
+        TokenizerFactory t = new DefaultTokenizerFactory();
+        t.setTokenPreProcessor(new CommonPreprocessor());
+
+        Word2Vec vec = new Word2Vec.Builder()
+                .minWordFrequency(5)
+                .iterations(10)
+                .layerSize(100)
+                .seed(42)
+                .sampling(0)
+                .windowSize(5)
+                .modelUtils(new BasicModelUtils<VocabWord>())
+                .useAdaGrad(true)
+                .iterate(iter)
+                .tokenizerFactory(t)
+                .build();
+
+        vec.fit();
+
+        Collection<String> lst = vec.wordsNearest("day", 10);
+        log.info(Arrays.toString(lst.toArray()));
+
+     //   assertEquals(10, lst.size());
+
+        double sim = vec.similarity("day", "night");
+        log.info("Day/night similarity: " + sim);
+    }
+
 
     @Test
     public void testRunWord2Vec() throws Exception {

@@ -204,7 +204,7 @@ public class Word2VecPerformer implements WorkerPerformer {
      * @param conf the configuration
      */
     public static void configure(InMemoryLookupTable table,InvertedIndex index,Configuration conf) {
-        conf.setInt(VECTOR_LENGTH, table.getVectorLength());
+        conf.setInt(VECTOR_LENGTH, table.layerSize());
         conf.setBoolean(ADAGRAD, table.isUseAdaGrad());
         conf.setFloat(NEGATIVE, (float) table.getNegative());
         conf.setFloat(ALPHA,(float) table.getLr().get());
