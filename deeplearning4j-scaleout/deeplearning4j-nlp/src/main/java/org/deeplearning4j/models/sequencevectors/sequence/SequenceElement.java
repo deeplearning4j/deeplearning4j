@@ -6,6 +6,7 @@ import lombok.Setter;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.AdaGrad;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -27,10 +28,13 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
     protected int index = -1;
     protected List<Integer> codes = new ArrayList<>();
 
-    @Getter @Setter protected INDArray historicalGradient;
+    protected INDArray historicalGradient;
     protected List<Integer> points = new ArrayList<>();
     protected int codeLength = 0;
     @Getter @Setter protected boolean special;
+
+
+    protected AdaGrad adaGrad;
 
     /*
             Used for Joint/Distributed vocabs mechanics
@@ -177,17 +181,24 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
     /*
         TODO: fix this. AdaGrad here should be unified with the rest of dl4j
      */
-    public double getGradient(int index, double g) {
-        if(historicalGradient == null) {
-            historicalGradient = Nd4j.zeros(getCodes().size());
-        }
+    public double getGradient(int index, double g, double lr) {
+        if (adaGrad == null)
+            adaGrad = new AdaGrad(1,getCodeLength(), lr);
 
-        double pow =  Math.pow(g,2);
-        historicalGradient.putScalar(index, historicalGradient.getDouble(index) + pow);
-        double sqrt =  FastMath.sqrt(historicalGradient.getDouble(index));
-        double abs = FastMath.abs(g) / (sqrt + 1e-6f);
-        double ret = abs * 1e-1f;
-        return ret;
+        return adaGrad.getGradient(g, index, new int[]{1, getCodeLength()});
+    }
+
+    public void setHistoricalGradient(INDArray gradient) {
+        if (adaGrad == null)
+            adaGrad = new AdaGrad(1,getCodeLength(), 0.025);
+
+        adaGrad.setHistoricalGradient(gradient);
+    }
+
+    public INDArray getHistoricalGradient() {
+        if (adaGrad == null)
+            adaGrad = new AdaGrad(1,getCodeLength(), 0.025);
+        return adaGrad.getHistoricalGradient();
     }
 
     /**
