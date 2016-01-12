@@ -192,7 +192,7 @@ public:
 				__syncthreads();
 
 				T **sPartialsRef = (T **) &sPartials;
-				aggregatePartials(sPartialsRef, tid, extraParams);
+				aggregatePartials(sPartialsRef, tid, numElements,extraParams);
 
 				// write result for this block to global mem
 				if (tid == 0) {
@@ -496,7 +496,7 @@ public:
 	 * @param tid
 	 * @param extraParams
 	 */
-	__device__ virtual void aggregatePartials(T **sPartialsRef, int tid, T *extraParams) {
+	__device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItems,T *extraParams) {
 		// start the shared memory loop on the next power of 2 less
 		// than the block size.  If block size is not a power of 2,
 		// accumulate the intermediate sums in the remainder range.
@@ -514,7 +514,7 @@ public:
 		}
 
 		for (int activeThreads = floorPow2 >> 1; activeThreads; activeThreads >>= 1) {
-			if (tid < activeThreads) {
+			if (tid < activeThreads && tid + activeThreads < numItems) {
 				sPartials[tid] = update(sPartials[tid], sPartials[tid + activeThreads], extraParams);
 			}
 			__syncthreads();

@@ -28,7 +28,6 @@ else
             make && cd ..
             mv testbuild/test/libnd4jtests .
             ./libnd4jtests
-            rm -f libnd4jtests
            echo "FINISHING BUILD"
      elif [ "$1" == "cubin" ]; then
             rm -rf cubinbuild

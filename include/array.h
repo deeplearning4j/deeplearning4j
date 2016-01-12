@@ -171,7 +171,7 @@ public:
 	 *
 	 */
 #ifdef __CUDACC__
-	__host__ __device__
+	__host__
 #endif
 
 	static NDArray<T> *createFromShapeInfo(shape::ShapeInformation *info,
@@ -372,7 +372,7 @@ shape::ShapeInformation * NDArrays<T>::shapeInfoForArray(NDArray<T> * arr) {
  */
 template<typename T>
 #ifdef __CUDACC__
-__host__ __device__
+__host__
 #endif
 
 NDArray<T> * NDArrays<T>::createFromShapeInfo(shape::ShapeInformation *info,

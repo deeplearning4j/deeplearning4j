@@ -162,7 +162,7 @@ public:
 	 * @param tid
 	 * @param extraParams
 	 */
-	virtual __device__ void aggregatePartials(IndexValue<T> **sPartialsRef,int tid,T *extraParams) {
+	virtual __device__ void aggregatePartials(IndexValue<T> **sPartialsRef,int tid,int numElements,T *extraParams) {
 		// start the shared memory loop on the next power of 2 less
 		// than the block size.  If block size is not a power of 2,
 		// accumulate the intermediate sums in the remainder range.
@@ -173,6 +173,7 @@ public:
 			while ( floorPow2 & (floorPow2 - 1) ) {
 				floorPow2 &= floorPow2 - 1;
 			}
+
 			if (tid >= floorPow2) {
 				IndexValue<T> prev = sPartials[tid - floorPow2];
 				IndexValue<T> curr = sPartials[tid];
@@ -182,7 +183,7 @@ public:
 		}
 
 		for (int activeThreads = floorPow2 >> 1;activeThreads; activeThreads >>= 1) {
-			if (tid < activeThreads) {
+			if (tid < activeThreads && tid + activeThreads < numElements) {
 				IndexValue<T> curr = sPartials[tid];
 				IndexValue<T> next = sPartials[tid + activeThreads];
 				sPartials[tid] = update(curr,next,extraParams);
@@ -215,11 +216,12 @@ public:
 			int *resultShapeInfo, int *gpuInformation,
 			int *dimension,
 			int dimensionLength, int postProcessOrNot) {
+
+
 		/**
 		 * Gpu information for the problem
 		 */
 		int tid = threadIdx.x;
-
 		__shared__ volatile int resultScalar;
 
 		__shared__ int *xShape;
@@ -227,7 +229,7 @@ public:
 		__shared__ int xElementWiseStride;
 		__shared__ int xOffset;
 
-		int numElements = gpuInformation[2] / sizeof(IndexValue < T > );
+		int numElements = gpuInformation[2] / sizeof(IndexValue <T>);
 		//shared memory space for storing intermediate results
 		IndexValue<T> *sPartials;
 		functions::indexreduce::SharedIndexValue<T> holder;
@@ -239,6 +241,7 @@ public:
 			sPartials[i] = val;
 		}
 		__syncthreads();
+
 
 		//starting index for tad
 		__shared__ volatile int currentBlockOffset;
@@ -260,8 +263,6 @@ public:
 		shape::TADPermuteInfo resultTadInfo;
 		int valueOffset;
 
-		__shared__
-		IndexValue <T> startValue;
 
 		IndexValue <T> reduction = {extraParams[0], 0};
 		if (tid == 0) {
@@ -279,6 +280,9 @@ public:
 
 		}
 		__syncthreads();
+		if(blockIdx.x >= resultLength)
+			return;
+
 
 		IndexValue <T> curr;
 		int currIdx;
@@ -286,37 +290,38 @@ public:
 		if (resultScalar) {
 			unsigned int i = blockIdx.x * xElementWiseStride + tid;
 			unsigned int gridSize = blockDim.x * gridDim.x * xElementWiseStride;
-
 			// we reduce multiple elements per thread.  The number is determined by the
 			// number of active thread blocks (via gridDim).  More blocks will result
 			// in a larger gridSize and therefore fewer elements per thread
 			while (xOffset + i < n) {
-				currIdx = xOffset + i;
+				int currIdx = xOffset + i;
 				IndexValue <T> indexVal = {dx[xOffset + i], currIdx};
-				curr = indexVal;
-				reduction = update(reduction, op(curr, extraParams), extraParams);
+				IndexValue<T> opOutput = op(indexVal,extraParams);
+				reduction = update(reduction, opOutput, extraParams);
 				i += gridSize;
 			}
-
 			// each thread puts its local sum into shared memory
 			sPartials[tid] = reduction;
 			__syncthreads();
 
-			IndexValue <T> **sPartialsRef = (IndexValue < T > **) & sPartials;
-			aggregatePartials(sPartialsRef, tid, extraParams);
+			aggregatePartials(&sPartials, tid,numElements ,extraParams);
 
 			// write result for this block to global mem
 			if (tid == 0) {
-				if (postProcessOrNot)
-					result[blockIdx.x] = (T) postProcess(sPartials[0], xLength, xOffset, dx, xElementWiseStride,
+				if (postProcessOrNot && blockIdx.x < resultLength) {
+					T postProcessed = (T) postProcess(sPartials[0], xLength, xOffset, dx, xElementWiseStride,
 							extraParams, result).index;
-				else {
-					result[blockIdx.x] = sPartials[0].index;
+					result[0] = postProcessed;
+				}
+				else if(blockIdx.x < resultLength){
+					result[0] = sPartials[0].index;
 				}
 			}
 		}
 
 		else if (!resultScalar) {
+			IndexValue <T> startValue = {extraParams[0], 0};
+
 			if (tid == 0) {
 				xTadInfo = shape::tadInfo(xShapeInfo, dimension, dimensionLength);
 				resultTadInfo = shape::tadInfo(resultShapeInfo, dimension, dimensionLength);
@@ -557,8 +562,7 @@ public:
 		if (blockIdx.x >= numTads)
 			return;
 
-		__shared__
-		shape::TADPermuteInfo xTadInfo;
+		__shared__ shape::TADPermuteInfo xTadInfo;
 		if (tid == 0) {
 			xTadInfo = shape::tadInfo(xShapeInfo, dimension, dimensionLength);
 		}
@@ -739,7 +743,7 @@ public:
 
 namespace ops {
 template<typename T>
-class IMax: public virtual functions::indexreduce::IndexReduce<T> {
+class IMax: public  functions::indexreduce::IndexReduce<T> {
 public:
 	/**
 	 * Name of the op
@@ -769,7 +773,7 @@ public:
 
 #endif
 	functions::indexreduce::IndexValue<T> op(
-			functions::indexreduce::IndexValue<T> val, T *extraParams) {
+			functions::indexreduce::IndexValue<T> val, T *extraParams) override {
 		return val;
 	}
 
@@ -791,7 +795,7 @@ public:
 #endif
 	functions::indexreduce::IndexValue<T> update(
 			functions::indexreduce::IndexValue<T> old,
-			functions::indexreduce::IndexValue<T> opOutput, T *extraParams) {
+			functions::indexreduce::IndexValue<T> opOutput, T *extraParams) override {
 		if (opOutput.value > old.value)
 			return opOutput;
 		return old;
@@ -815,7 +819,7 @@ public:
 #endif
 	functions::indexreduce::IndexValue<T> merge(
 			functions::indexreduce::IndexValue<T> f1,
-			functions::indexreduce::IndexValue<T> f2, T *extraParams) {
+			functions::indexreduce::IndexValue<T> f2, T *extraParams) override {
 		if (f1.value > f2.value)
 			return f2;
 		return f1;
@@ -843,7 +847,7 @@ public:
 #endif
 	functions::indexreduce::IndexValue<T> postProcess(
 			functions::indexreduce::IndexValue<T> reduction, int n, int xOffset,
-			T *dx, int incx, T *extraParams, T *result) {
+			T *dx, int incx, T *extraParams, T *result) override {
 		return reduction;
 	}
 
@@ -863,7 +867,7 @@ public:
 
 #endif
 	IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
-			functions::indexreduce::IndexValue<T> d2, T *extraParams) {
+			functions::indexreduce::IndexValue<T> d2, T *extraParams) override {
 		return d1;
 	}
 #ifdef __CUDACC__
@@ -884,7 +888,7 @@ public:
 };
 
 template<typename T>
-class IMin: public virtual functions::indexreduce::IndexReduce<T> {
+class IMin: public  functions::indexreduce::IndexReduce<T> {
 public:
 	/**
 	 * Name of the op
@@ -914,7 +918,7 @@ public:
 
 #endif
 	functions::indexreduce::IndexValue<T> op(
-			functions::indexreduce::IndexValue<T> val, T *extraParams) {
+			functions::indexreduce::IndexValue<T> val, T *extraParams) override {
 		return val;
 	}
 
@@ -936,7 +940,7 @@ public:
 #endif
 	functions::indexreduce::IndexValue<T> update(
 			functions::indexreduce::IndexValue<T> old,
-			functions::indexreduce::IndexValue<T> opOutput, T *extraParams) {
+			functions::indexreduce::IndexValue<T> opOutput, T *extraParams) override {
 		if (opOutput.value < old.value)
 			return opOutput;
 		return old;
@@ -960,7 +964,7 @@ public:
 #endif
 	functions::indexreduce::IndexValue<T> merge(
 			functions::indexreduce::IndexValue<T> f1,
-			functions::indexreduce::IndexValue<T> f2, T *extraParams) {
+			functions::indexreduce::IndexValue<T> f2, T *extraParams) override {
 		if (f1.value < f2.value)
 			return f2;
 		return f1;
@@ -988,7 +992,7 @@ public:
 #endif
 	functions::indexreduce::IndexValue<T> postProcess(
 			functions::indexreduce::IndexValue<T> reduction, int n, int xOffset,
-			T *dx, int incx, T *extraParams, T *result) {
+			T *dx, int incx, T *extraParams, T *result) override {
 		return reduction;
 	}
 
@@ -1008,7 +1012,7 @@ public:
 
 #endif
 	IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
-			functions::indexreduce::IndexValue<T> d2, T *extraParams) {
+			functions::indexreduce::IndexValue<T> d2, T *extraParams) override {
 		return d1;
 	}
 
@@ -1061,7 +1065,7 @@ __constant__ functions::indexreduce::IndexReduceOpFactory<float> *indexReduceOpF
 
 extern "C"
 __host__ void setupIndexReduceFactories() {
-	printf("Setting up transform factories\n");
+	printf("Setting up indexreduce factories\n");
 	functions::indexreduce::IndexReduceOpFactory<double> *newOpFactory =  new functions::indexreduce::IndexReduceOpFactory<double>();
 	functions::indexreduce::IndexReduceOpFactory<float> *newOpFactoryFloat =  new functions::indexreduce::IndexReduceOpFactory<float>();
 	checkCudaErrors(cudaMemcpyToSymbol(indexReduceOpFactoryDouble, newOpFactory, sizeof( functions::indexreduce::IndexReduceOpFactory<double> )));
@@ -1077,7 +1081,7 @@ extern "C" __global__ void indexReduceDouble(int op,int n, double *dx, int *xSha
 		int dimensionLength, int postProcessOrNot) {
 	functions::indexreduce::IndexReduce<double> *indexReduce = indexReduceOpFactoryDouble->getOp(op);
 	indexReduce->transform(n,dx,xShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
-
+	free(indexReduce);
 }
 extern "C" __global__ void indexReduceFloat(int op,int n, float *dx, int *xShapeInfo, float *extraParams, float *result,
 		int *resultShapeInfo, int *gpuInformation,
@@ -1085,7 +1089,7 @@ extern "C" __global__ void indexReduceFloat(int op,int n, float *dx, int *xShape
 		int dimensionLength, int postProcessOrNot) {
 	functions::indexreduce::IndexReduce<float> *indexReduce = indexReduceOpFactoryFloat->getOp(op);
 	indexReduce->transform(n,dx,xShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
-
+	free(indexReduce);
 }
 
 

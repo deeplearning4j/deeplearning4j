@@ -38,7 +38,7 @@ public:
 		int idx;
 	public:
 		Proxy(Buffer &a, int idx) :
-				a(a), idx(idx) {
+			a(a), idx(idx) {
 		}
 
 		T &operator=(T x) {
@@ -200,7 +200,7 @@ void freeBuffer(Buffer<T> **buffer) {
 	free(bufferRef->data);
 #ifdef __CUDACC__
 	if(bufferRef->allocatedOnGpu)
-	checkCudaErrors(cudaFree(bufferRef->gData));
+		checkCudaErrors(cudaFree(bufferRef->gData));
 #endif
 }
 

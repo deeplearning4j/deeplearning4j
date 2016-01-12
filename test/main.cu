@@ -4,13 +4,15 @@
 #include <transformtests.h>
 #include <broadcasttests.h>
 #include <shapetests.h>
-#include<reducetests.h>
+#include <reducetests.h>
 #include <reduce3tests.h>
 #include <indexreducetests.h>
 
 int main(int ac, char** av) {
 	return CommandLineTestRunner::RunAllTests(ac, av);
 }
+
+
 IMPORT_TEST_GROUP(ScalarTransform);
 IMPORT_TEST_GROUP(BroadCasting);
 IMPORT_TEST_GROUP(PairWiseTransform);

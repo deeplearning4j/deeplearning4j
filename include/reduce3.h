@@ -10,6 +10,7 @@
 #include <op.h>
 #include <templatemath.h>
 #include <helper_cuda.h>
+#include <sharedmem.h>
 namespace functions {
 namespace reduce3 {
 

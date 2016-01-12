@@ -15,18 +15,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="21dee1f8-48c6-491e-9f40-7488b577e28b" name="Default" comment="">
-      <change type="MOVED" beforePath="$PROJECT_DIR$/nsight-err-parse-patch.py" afterPath="$PROJECT_DIR$/eclipse/nsight-err-parse-patch.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.cproject" afterPath="$PROJECT_DIR$/.cproject" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/nativeoperations.iml" afterPath="$PROJECT_DIR$/.idea/nativeoperations.iml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.project" afterPath="$PROJECT_DIR$/.project" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/CMakeLists.txt" afterPath="$PROJECT_DIR$/CMakeLists.txt" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/buildnativeoperations.sh" afterPath="$PROJECT_DIR$/buildnativeoperations.sh" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/include/shape.h" afterPath="$PROJECT_DIR$/include/shape.h" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/include/transform.h" afterPath="$PROJECT_DIR$/include/transform.h" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/test/main.cu" afterPath="$PROJECT_DIR$/test/main.cu" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/test/tests/broadcasttests.h" afterPath="$PROJECT_DIR$/test/tests/broadcasttests.h" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/test/tests/shapetests.h" afterPath="$PROJECT_DIR$/test/tests/shapetests.h" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/include/array.h" afterPath="$PROJECT_DIR$/include/array.h" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/include/buffer.h" afterPath="$PROJECT_DIR$/include/buffer.h" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/include/indexreduce.h" afterPath="$PROJECT_DIR$/include/indexreduce.h" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/test/tests/indexreducetests.h" afterPath="$PROJECT_DIR$/test/tests/indexreducetests.h" />
     </list>
     <ignored path="nativeoperations.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -51,7 +44,17 @@
         <entry file="file://$PROJECT_DIR$/buildnativeoperations.sh">
           <provider selected="true" editor-type-id="text-editor">
             <state vertical-scroll-proportion="0.0">
-              <caret line="20" column="12" selection-start-line="20" selection-start-column="12" selection-end-line="20" selection-end-column="12" />
+              <caret line="30" column="33" selection-start-line="30" selection-start-column="33" selection-end-line="30" selection-end-column="33" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="indexreducetests.h" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/test/tests/indexreducetests.h">
+          <provider selected="true" editor-type-id="text-editor">
+            <state vertical-scroll-proportion="0.21105528">
+              <caret line="70" column="0" selection-start-line="70" selection-start-column="0" selection-end-line="70" selection-end-column="0" />
               <folding />
             </state>
           </provider>
@@ -61,8 +64,11 @@
         <entry file="file://$PROJECT_DIR$/test/tests/broadcasttests.h">
           <provider selected="true" editor-type-id="text-editor">
             <state vertical-scroll-proportion="0.0">
-              <caret line="94" column="5" selection-start-line="94" selection-start-column="5" selection-end-line="94" selection-end-column="5" />
-              <folding />
+              <caret line="93" column="5" selection-start-line="93" selection-start-column="5" selection-end-line="93" selection-end-column="5" />
+              <folding>
+                <marker date="1452556990226" expanded="false" signature="617:785" placeholder="..." />
+                <marker date="1452556990226" expanded="false" signature="841:908" placeholder="..." />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -71,11 +77,9 @@
         <entry file="file://$PROJECT_DIR$/test/main.cu">
           <provider selected="true" editor-type-id="text-editor">
             <state vertical-scroll-proportion="0.0">
-              <caret line="24" column="2" selection-start-line="24" selection-start-column="2" selection-end-line="24" selection-end-column="2" />
+              <caret line="8" column="2" selection-start-line="8" selection-start-column="2" selection-end-line="8" selection-end-column="2" />
               <folding>
-                <marker date="1452551719101" expanded="true" signature="44:293" placeholder="/.../" />
-                <marker date="1452551719101" expanded="true" signature="295:525" placeholder="/.../" />
-                <marker date="1452551719101" expanded="true" signature="890:982" placeholder="//..." />
+                <marker date="1452557268999" expanded="true" signature="570:601" placeholder="//..." />
               </folding>
             </state>
           </provider>
@@ -92,16 +96,6 @@
         </entry>
       </file>
       <file leaf-file-name="CMakeLists.txt" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/cubin/CMakeLists.txt">
-          <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.0">
-              <caret line="12" column="0" selection-start-line="12" selection-start-column="0" selection-end-line="12" selection-end-column="0" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="CMakeLists.txt" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/CMakeLists.txt">
           <provider selected="true" editor-type-id="text-editor">
             <state vertical-scroll-proportion="0.0">
@@ -111,10 +105,10 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="shapetests.h" pinned="false" current-in-tab="true">
+      <file leaf-file-name="shapetests.h" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/test/tests/shapetests.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.6934673">
+            <state vertical-scroll-proportion="0.0">
               <caret line="23" column="21" selection-start-line="23" selection-start-column="21" selection-end-line="23" selection-end-column="21" />
               <folding />
             </state>
@@ -207,9 +201,9 @@
         <option value="$PROJECT_DIR$/cmake/FindCUDA.cmake" />
         <option value="$PROJECT_DIR$/test/CMakeLists.txt" />
         <option value="$PROJECT_DIR$/test/main.cu" />
-        <option value="$PROJECT_DIR$/buildnativeoperations.sh" />
         <option value="$PROJECT_DIR$/test/tests/broadcasttests.h" />
         <option value="$PROJECT_DIR$/CMakeLists.txt" />
+        <option value="$PROJECT_DIR$/buildnativeoperations.sh" />
       </list>
     </option>
   </component>
@@ -297,20 +291,6 @@
             </PATH_ELEMENT>
             <PATH_ELEMENT>
               <option name="myItemId" value="tests" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-          </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="nativeoperations" />
-              <option name="myItemType" value="com.jetbrains.cidr.projectView.CidrFilesViewHelper$MyProjectTreeStructure$1" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="nativeoperations" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="eclipse" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
@@ -431,9 +411,9 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="7" y="25" width="1913" height="1030" extended-state="0" />
-    <editor active="true" />
+    <editor active="false" />
     <layout>
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.1632653" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="true" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.1632653" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="CMake" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33082706" sideWeight="0.4060701" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.32975295" sideWeight="0.6111983" order="7" side_tool="true" content_ui="tabs" />
@@ -476,7 +456,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/test/tests/broadcasttests.h</url>
-          <line>83</line>
+          <line>82</line>
           <option name="timeStamp" value="49" />
         </line-breakpoint>
       </breakpoints>
@@ -649,13 +629,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/test/tests/indexreducetests.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0">
-          <caret line="70" column="74" selection-start-line="70" selection-start-column="74" selection-end-line="70" selection-end-column="74" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/test/tests/scalartests.h">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
@@ -807,22 +780,12 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/test/CMakeLists.txt">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0">
-          <caret line="9" column="38" selection-start-line="9" selection-start-column="38" selection-end-line="9" selection-end-column="38" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/test/main.cu">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
-          <caret line="24" column="2" selection-start-line="24" selection-start-column="2" selection-end-line="24" selection-end-column="2" />
+          <caret line="8" column="2" selection-start-line="8" selection-start-column="2" selection-end-line="8" selection-end-column="2" />
           <folding>
-            <marker date="1452551719101" expanded="true" signature="44:293" placeholder="/.../" />
-            <marker date="1452551719101" expanded="true" signature="295:525" placeholder="/.../" />
-            <marker date="1452551719101" expanded="true" signature="890:982" placeholder="//..." />
+            <marker date="1452557268999" expanded="true" signature="570:601" placeholder="//..." />
           </folding>
         </state>
       </provider>
@@ -835,19 +798,14 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/buildnativeoperations.sh">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0">
-          <caret line="20" column="12" selection-start-line="20" selection-start-column="12" selection-end-line="20" selection-end-column="12" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/test/tests/broadcasttests.h">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
-          <caret line="94" column="5" selection-start-line="94" selection-start-column="5" selection-end-line="94" selection-end-column="5" />
-          <folding />
+          <caret line="93" column="5" selection-start-line="93" selection-start-column="5" selection-end-line="93" selection-end-column="5" />
+          <folding>
+            <marker date="1452556990226" expanded="false" signature="617:785" placeholder="..." />
+            <marker date="1452556990226" expanded="false" signature="841:908" placeholder="..." />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -861,8 +819,32 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/test/tests/shapetests.h">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.6934673">
+        <state vertical-scroll-proportion="0.0">
           <caret line="23" column="21" selection-start-line="23" selection-start-column="21" selection-end-line="23" selection-end-column="21" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/test/CMakeLists.txt">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0">
+          <caret line="9" column="38" selection-start-line="9" selection-start-column="38" selection-end-line="9" selection-end-column="38" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/buildnativeoperations.sh">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0">
+          <caret line="30" column="33" selection-start-line="30" selection-start-column="33" selection-end-line="30" selection-end-column="33" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/test/tests/indexreducetests.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.21105528">
+          <caret line="70" column="0" selection-start-line="70" selection-start-column="0" selection-end-line="70" selection-end-column="0" />
           <folding />
         </state>
       </provider>
