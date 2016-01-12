@@ -161,7 +161,9 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
             //score
             double f =  expTable[idx];
             //gradient
-            double g = useAdaGrad ?  w1.getGradient(i, (1 - code - f)) : (1 - code - f) * alpha;
+            //double g = useAdaGrad ?  w1.getGradient(i, (1 - code - f)) : (1 - code - f) * alpha;
+
+            double g = useAdaGrad ?  lookupTable.getGradient(i, (1 - code - f)) : (1 - code - f) * alpha;
 
             if(neu1e.data().dataType() == DataBuffer.Type.FLOAT) {
                 Nd4j.getBlasWrapper().level1().axpy(syn1.length(), g, syn1, neu1e);
@@ -204,11 +206,14 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 double f = Nd4j.getBlasWrapper().dot(l1,syn1Neg.slice(target));
                 double g;
                 if (f > MAX_EXP)
-                    g = useAdaGrad ? w1.getGradient(target, (label - 1)) : (label - 1) *  alpha;
+                    g = useAdaGrad ? lookupTable.getGradient(target, (label - 1)) : (label - 1) *  alpha;
+                // g = useAdaGrad ? w1.getGradient(target, (label - 1)) : (label - 1) *  alpha;
                 else if (f < -MAX_EXP)
-                    g = label * (useAdaGrad ?  w1.getGradient(target, alpha) : alpha);
+                    //g = label * (useAdaGrad ?  w1.getGradient(target, alpha) : alpha);
+                    g = label * (useAdaGrad ?  lookupTable.getGradient(target, alpha) : alpha);
                 else
-                    g = useAdaGrad ? w1.getGradient(target, label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) : (label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) *   alpha;
+                    //g = useAdaGrad ? w1.getGradient(target, label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) : (label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) *   alpha;
+                    g = useAdaGrad ? lookupTable.getGradient(target, label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) : (label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) *   alpha;
                 if(syn0.data().dataType() == DataBuffer.Type.DOUBLE)
                     Nd4j.getBlasWrapper().axpy(g,syn1Neg.slice(target),neu1e);
                 else

@@ -79,8 +79,12 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
         initExpTable();
 
         if (useAdaGrad) {
-
+            initAdaGrad();
         }
+    }
+
+    protected void initAdaGrad() {
+        adaGrad = new AdaGrad(vocab.numWords(), vectorLength);
     }
 
     public double[] getExpTable() {
@@ -89,6 +93,12 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
 
     public void setExpTable(double[] expTable) {
         this.expTable = expTable;
+    }
+
+    public double getGradient(int column, double gradient) {
+        if (adaGrad == null)
+            initAdaGrad();
+        return  adaGrad.getGradient(gradient, column, new int[]{ vectorLength, vocab.numWords()});
     }
 
     @Override
@@ -532,11 +542,6 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
 
     public void setSyn1(INDArray syn1) {
         this.syn1 = syn1;
-    }
-
-    @Override
-    public int getVectorLength() {
-        return vectorLength;
     }
 
     @Override

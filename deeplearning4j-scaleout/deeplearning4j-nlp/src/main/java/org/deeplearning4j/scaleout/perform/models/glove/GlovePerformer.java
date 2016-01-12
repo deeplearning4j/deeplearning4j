@@ -142,7 +142,7 @@ public class GlovePerformer implements WorkerPerformer {
     public static void configure(GloveWeightLookupTable table,InvertedIndex index,Configuration conf) {
         if(table.getSyn0() == null)
             throw new IllegalStateException("Unable to configure glove: missing look up table size. Please call table.resetWeights() first");
-        conf.setInt(VECTOR_LENGTH, table.getVectorLength());
+        conf.setInt(VECTOR_LENGTH, table.layerSize());
         conf.setFloat(ALPHA,(float) table.getLr().get());
         conf.setStrings(LOOKUPTABLE_SIZE,String.valueOf(table.getSyn0().rows()),String.valueOf(table.getSyn0().columns()));
         conf.setLong(NUM_WORDS, index.totalWords());
