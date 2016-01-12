@@ -10,7 +10,7 @@
  *  *
  *  *    Unless required by applicable law or agreed to in writing, software
  *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    WÏITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *  *    See the License for the specific language governing permissions and
  *  *    limitations under the License.
  *
@@ -409,6 +409,14 @@ public class SparkDl4jMultiLayer implements Serializable {
         return sum;
     }
 
+    public Evaluation evaluate(JavaRDD<DataSet> data, int maxExamplesPerEvaluation) {
+        return evaluate(data, maxExamplesPerEvaluation, null, false);
+    }
+
+    public Evaluation evaluate(JavaRDD<DataSet> data, int maxExamplesPerEvaluation, boolean warnNotClassified) {
+        return evaluate(data, maxExamplesPerEvaluation, null, warnNotClassified);
+    }
+
     /**Evaluate the network (classification performance) in a distributed manner.
      * @param data Data to evaluate on
      * @param maxExamplesPerEvaluation Maximum number of examples to use during each evaluation step. If an executor has
@@ -416,10 +424,10 @@ public class SparkDl4jMultiLayer implements Serializable {
      *                                 steps. Results should not depend on this number (only affects memory requirements)
      * @return Evaluation object; results of evaluation on all examples in the data set
      */
-    public Evaluation evaluate(JavaRDD<DataSet> data, int maxExamplesPerEvaluation){
+    public Evaluation evaluate(JavaRDD<DataSet> data, int maxExamplesPerEvaluation, List<String> labelsList, boolean warnNotClassified){
 
         JavaRDD<Evaluation> evaluation = data.mapPartitions(
-                new EvaluateFlatMapFunction(conf.toJson(),sc.broadcast(network.params(false)),maxExamplesPerEvaluation));
+                new EvaluateFlatMapFunction(conf.toJson(),sc.broadcast(network.params(false)),maxExamplesPerEvaluation, labelsList, warnNotClassified));
 
         //Evaluation objects are small, and merging is quick -> fine to do this locally
         List<Evaluation> evaluationList = evaluation.collect();
