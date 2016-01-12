@@ -78,7 +78,7 @@ public:
 	 * @param tid
 	 * @param extraParams
 	 */
-	virtual __device__ void aggregatePartials(T **sPartialsRef, int tid, T *extraParams) {
+	virtual __inline__ __device__ void aggregatePartials(T **sPartialsRef, int tid, T *extraParams) {
 		// start the shared memory loop on the next power of 2 less
 		// than the block size.  If block size is not a power of 2,
 		// accumulate the intermediate sums in the remainder range.
@@ -113,7 +113,7 @@ public:
 	 @param extraParams extra parameters used for calculations
 	 @param result where to store the result of the reduction
 	 */
-	virtual __device__ void transform(
+	virtual __inline__ __device__ void transform(
 			int n, T *dx, int *xShapeInfo,
 			T *dy,
 			int *yShapeInfo, T *extraParams, T *result,
@@ -698,6 +698,10 @@ public:
 template<typename T>
 class Reduce3OpFactory {
 public:
+
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
 	Reduce3OpFactory() {
 	}
 
@@ -725,13 +729,41 @@ __constant__ functions::reduce3::Reduce3OpFactory<float> *reduce3OpFactoryFloat;
 
 extern "C"
 __host__ void setupReduce3Factories() {
-	printf("Setting up transform factories\n");
+	/*printf("Setting up transform factories\n");
 	functions::reduce3::Reduce3OpFactory<double> *newOpFactory =  new functions::reduce3::Reduce3OpFactory<double>();
 	functions::reduce3::Reduce3OpFactory<float> *newOpFactoryFloat =  new functions::reduce3::Reduce3OpFactory<float>();
 	checkCudaErrors(cudaMemcpyToSymbol(reduce3OpFactory, newOpFactory, sizeof( functions::reduce3::Reduce3OpFactory<double> )));
 	checkCudaErrors(cudaMemcpyToSymbol(reduce3OpFactoryFloat, newOpFactory, sizeof( functions::reduce3::Reduce3OpFactory<float>)));
 	delete(newOpFactory);
-	delete(newOpFactoryFloat);
+	delete(newOpFactoryFloat);*/
+}
+
+
+template <typename T>
+__device__ void reduce3Generic(
+		int opNum,
+		int n, T *dx, int *xShapeInfo,
+		T *dy,
+		int *yShapeInfo, T *extraParams, T *result,
+		int *resultShapeInfo, int *gpuInformation,
+		int *dimension,
+		int dimensionLength, int postProcessOrNot) {
+	__shared__ functions::reduce3::Reduce3<T> * op;
+	__shared__ functions::reduce3::Reduce3OpFactory<T> *reduce3OpFactory;
+
+	 if(threadIdx.x == 0)
+		 reduce3OpFactory = new functions::reduce3::Reduce3OpFactory<T>();
+	__syncthreads();
+
+	if(threadIdx.x == 0)
+		op = reduce3OpFactory->getOp(opNum);
+	__syncthreads();
+	op->transform(n,dx,xShapeInfo,dy,yShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
+	if(threadIdx.x == 0) {
+		free(op);
+		free(reduce3OpFactory);
+	}
+
 }
 
 extern "C" __global__ void reduce3Double(
@@ -742,13 +774,7 @@ extern "C" __global__ void reduce3Double(
 		int *resultShapeInfo, int *gpuInformation,
 		int *dimension,
 		int dimensionLength, int postProcessOrNot) {
-	__shared__ functions::reduce3::Reduce3<double> * op;
-	if(threadIdx.x == 0)
-		op = reduce3OpFactory->getOp(opNum);
-	__syncthreads();
-	op->transform(n,dx,xShapeInfo,dy,yShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
-	if(threadIdx.x == 0)
-		free(op);
+	reduce3Generic<double>(opNum,n,dx,xShapeInfo,dy,yShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
 
 }
 extern "C" __global__ void reduce3Float(
@@ -761,13 +787,8 @@ extern "C" __global__ void reduce3Float(
 		int *gpuInformation,
 		int *dimension,
 		int dimensionLength, int postProcessOrNot) {
-	__shared__ functions::reduce3::Reduce3<float> * op;
-	if(threadIdx.x == 0)
-		op = reduce3OpFactoryFloat->getOp(opNum);
-	__syncthreads();
-	op->transform(n,dx,xShapeInfo,dy,yShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
-	if(threadIdx.x == 0)
-		free(op);
+	reduce3Generic<float>(opNum,n,dx,xShapeInfo,dy,yShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
+
 }
 
 #endif

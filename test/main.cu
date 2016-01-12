@@ -9,6 +9,9 @@
 #include <indexreducetests.h>
 
 int main(int ac, char** av) {
+#ifdef __CUDACC__
+	cudaDeviceSetLimit(cudaLimitStackSize,12928);
+#endif
 	return CommandLineTestRunner::RunAllTests(ac, av);
 }
 

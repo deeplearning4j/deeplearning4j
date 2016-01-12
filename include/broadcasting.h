@@ -51,7 +51,7 @@ public:
 	T op(T d1) = 0;
 
 #ifdef __CUDACC__
-	__device__ void transform(
+	__inline__ __device__ void transform(
 			T *x, int *xShapeInfo, T *y, int *yShapeInfo, T *result, int *resultShapeInfo,
 			int *dimension,
 			int dimensionLength,
@@ -526,6 +526,10 @@ public:
 template<typename T>
 class BroadcastOpFactory {
 public:
+
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
 	BroadcastOpFactory() {
 	}
 
@@ -569,15 +573,40 @@ __constant__ functions::broadcast::BroadcastOpFactory<float> *broadcastFloatFact
 extern "C"
 __host__ void setupBroadcastFactories() {
 	printf("Setting up transform factories\n");
-	functions::broadcast::BroadcastOpFactory<double> *newOpFactory =  new functions::broadcast::BroadcastOpFactory<double>();
+/*	functions::broadcast::BroadcastOpFactory<double> *newOpFactory =  new functions::broadcast::BroadcastOpFactory<double>();
 	functions::broadcast::BroadcastOpFactory<float> *newOpFactoryFloat =  new functions::broadcast::BroadcastOpFactory<float>();
 	checkCudaErrors(cudaMemcpyToSymbol(broadcastDoubleFactory, newOpFactory, sizeof( functions::broadcast::BroadcastOpFactory<double> )));
 	checkCudaErrors(cudaMemcpyToSymbol(broadcastFloatFactory, newOpFactory, sizeof( functions::broadcast::BroadcastOpFactory<float>)));
 	delete(newOpFactory);
-	delete(newOpFactoryFloat);
+	delete(newOpFactoryFloat);*/
 }
 
+template <typename T>
+__device__ void broadcastGeneric(
+		int opNum,
+		T *x, int *xShapeInfo,
+		T *y, int *yShapeInfo,
+		T *result, int *resultShapeInfo,
+		int *dimension,
+		int dimensionLength,
+		int *gpuInformation) {
+	__shared__ functions::broadcast::Broadcast<T> *op;
+	__shared__ functions::broadcast::BroadcastOpFactory<T> *newOpFactory;
+	if(threadIdx.x == 0)
+		newOpFactory =  new functions::broadcast::BroadcastOpFactory<T>();
+	__syncthreads();
+	if(threadIdx.x == 0) {
+		op = newOpFactory->getOp(opNum);
+	}
+	__syncthreads();
 
+
+	op->transform(x,xShapeInfo,y,yShapeInfo,result,resultShapeInfo,dimension,dimensionLength,gpuInformation);
+	if(threadIdx.x == 0) {
+		free(op);
+		free(newOpFactory);
+	}
+}
 extern "C" __global__ void broadcastDouble(
 		int opNum,
 		double *x, int *xShapeInfo,
@@ -586,16 +615,8 @@ extern "C" __global__ void broadcastDouble(
 		int *dimension,
 		int dimensionLength,
 		int *gpuInformation) {
-	__shared__ functions::broadcast::Broadcast<double> *op;
-	if(threadIdx.x == 0) {
-		op = broadcastDoubleFactory->getOp(opNum);
-	}
-	__syncthreads();
+	broadcastGeneric<double>(opNum,x,xShapeInfo,y,yShapeInfo,result,resultShapeInfo,dimension,dimensionLength,gpuInformation);
 
-
-	op->transform(x,xShapeInfo,y,yShapeInfo,result,resultShapeInfo,dimension,dimensionLength,gpuInformation);
-	if(threadIdx.x == 0)
-		free(op);
 }
 
 extern "C" __global__ void broadcastFloat(
@@ -606,13 +627,7 @@ extern "C" __global__ void broadcastFloat(
 		int *dimension,
 		int dimensionLength,
 		int *gpuInformation) {
-	__shared__ functions::broadcast::Broadcast<float> *op;
-	if(threadIdx.x == 0)
-		op = broadcastFloatFactory->getOp(opNum);
-	__syncthreads();
-	op->transform(x,xShapeInfo,y,yShapeInfo,result,resultShapeInfo,dimension,dimensionLength,gpuInformation);
-	if(threadIdx.x == 0)
-		free(op);
+	broadcastGeneric<float>(opNum,x,xShapeInfo,y,yShapeInfo,result,resultShapeInfo,dimension,dimensionLength,gpuInformation);
 
 }
 

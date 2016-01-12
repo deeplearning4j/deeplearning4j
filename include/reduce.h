@@ -86,7 +86,7 @@ public:
 	 * @param dimensionLength the length of the dimension buffer
 	 * @param postProcessOrNot whether to reduce or not
 	 */
-	__device__ virtual void transform(
+	__inline__ __device__ virtual void transform(
 			int n,
 			T *dx,
 			int *xShapeInfo,
@@ -1513,15 +1513,55 @@ __constant__ functions::reduce::ReduceOpFactory<float> *reduceOpFactoryFloat;
 
 extern "C"
 __host__ void setupReduceFactories() {
-	printf("Setting up transform factories\n");
+	/*printf("Setting up transform factories\n");
 	functions::reduce::ReduceOpFactory<double> *newOpFactory =  new functions::reduce::ReduceOpFactory<double>();
 	functions::reduce::ReduceOpFactory<float> *newOpFactoryFloat =  new functions::reduce::ReduceOpFactory<float>();
 	checkCudaErrors(cudaMemcpyToSymbol(reduceOpFactory, newOpFactory, sizeof( functions::reduce::ReduceOpFactory<double> )));
 	checkCudaErrors(cudaMemcpyToSymbol(reduceOpFactoryFloat, newOpFactory, sizeof( functions::reduce::ReduceOpFactory<float>)));
 	delete(newOpFactory);
-	delete(newOpFactoryFloat);
+	delete(newOpFactoryFloat);*/
 }
 
+template <typename T>
+__device__ void reduceGeneric(
+		int op,
+		int n,
+		T *dx,
+		int *xShapeInfo,
+		T *extraParams,
+		T *result,
+		int *resultShapeInfo,
+		int *gpuInformation,
+		int *dimension,
+		int dimensionLength,
+		int postProcessOrNot) {
+	__shared__ functions::reduce::ReduceFunction<T> *reduceFunctionToInvoke;
+	__shared__ functions::reduce::ReduceOpFactory<T> *newOpFactory;
+
+	if(threadIdx.x == 0)
+		newOpFactory =  new functions::reduce::ReduceOpFactory<T>();
+	__syncthreads();
+
+	if(threadIdx.x == 0)
+		reduceFunctionToInvoke = newOpFactory->create(op);
+	__syncthreads();
+	reduceFunctionToInvoke->transform(
+			n,
+			dx,
+			xShapeInfo
+			,extraParams,
+			result,
+			resultShapeInfo,
+			gpuInformation,
+			dimension,
+			dimensionLength,
+			postProcessOrNot);
+	if(threadIdx.x == 0) {
+		free(reduceFunctionToInvoke);
+		free(reduceOpFactory);
+	}
+
+}
 
 extern "C" __global__ void reduceDouble(
 		int op,
@@ -1535,11 +1575,8 @@ extern "C" __global__ void reduceDouble(
 		int *dimension,
 		int dimensionLength,
 		int postProcessOrNot) {
-	__shared__ functions::reduce::ReduceFunction<double> *reduceFunctionToInvoke;
-	if(threadIdx.x == 0)
-		reduceFunctionToInvoke = reduceOpFactory->create(op);
-	__syncthreads();
-	reduceFunctionToInvoke->transform(
+	reduceGeneric<double>(
+			op,
 			n,
 			dx,
 			xShapeInfo
@@ -1550,8 +1587,6 @@ extern "C" __global__ void reduceDouble(
 			dimension,
 			dimensionLength,
 			postProcessOrNot);
-	if(threadIdx.x == 0)
-		free(reduceFunctionToInvoke);
 
 }
 
@@ -1567,11 +1602,8 @@ extern "C" __global__ void reduceFloat(
 		int *dimension,
 		int dimensionLength,
 		int postProcessOrNot) {
-	__shared__ functions::reduce::ReduceFunction<float> *reduceFunctionToInvoke;
-	if(threadIdx.x == 0)
-		reduceFunctionToInvoke = reduceOpFactoryFloat->create(op);
-	__syncthreads();
-	reduceFunctionToInvoke->transform(
+	reduceGeneric<float>(
+			op,
 			n,
 			dx,
 			xShapeInfo
@@ -1582,8 +1614,6 @@ extern "C" __global__ void reduceFloat(
 			dimension,
 			dimensionLength,
 			postProcessOrNot);
-	if(threadIdx.x == 0)
-		free(reduceFunctionToInvoke);
 }
 
 

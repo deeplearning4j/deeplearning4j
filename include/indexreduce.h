@@ -211,7 +211,7 @@ public:
 	 *                          0 is the number of elements per vector
 	 *                          1 is the number of vectors
 	 */
-	__device__ void transform(
+	__inline__ __device__ void transform(
 			int n, T *dx, int *xShapeInfo, T *extraParams, T *result,
 			int *resultShapeInfo, int *gpuInformation,
 			int *dimension,
@@ -1036,6 +1036,10 @@ public:
 template<typename T>
 class IndexReduceOpFactory {
 public:
+
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
 	IndexReduceOpFactory() {
 	}
 
@@ -1065,13 +1069,40 @@ __constant__ functions::indexreduce::IndexReduceOpFactory<float> *indexReduceOpF
 
 extern "C"
 __host__ void setupIndexReduceFactories() {
-	printf("Setting up indexreduce factories\n");
+	/*printf("Setting up indexreduce factories\n");
 	functions::indexreduce::IndexReduceOpFactory<double> *newOpFactory =  new functions::indexreduce::IndexReduceOpFactory<double>();
 	functions::indexreduce::IndexReduceOpFactory<float> *newOpFactoryFloat =  new functions::indexreduce::IndexReduceOpFactory<float>();
 	checkCudaErrors(cudaMemcpyToSymbol(indexReduceOpFactoryDouble, newOpFactory, sizeof( functions::indexreduce::IndexReduceOpFactory<double> )));
 	checkCudaErrors(cudaMemcpyToSymbol(indexReduceOpFactoryFloat, newOpFactory, sizeof( functions::indexreduce::IndexReduceOpFactory<float>)));
 	delete(newOpFactory);
-	delete(newOpFactoryFloat);
+	delete(newOpFactoryFloat);*/
+}
+
+template <typename T>
+ __device__ void indexReduceGeneric(
+		int op,
+		int n,
+		T *dx,
+		int *xShapeInfo,
+		T *extraParams,
+		T *result,
+		int *resultShapeInfo,
+		int *gpuInformation,
+		int *dimension,
+		int dimensionLength, int postProcessOrNot) {
+	__shared__ functions::indexreduce::IndexReduce<T> *indexReduce;
+	__shared__ functions::indexreduce::IndexReduceOpFactory<T> *newOpFactory;
+	if(threadIdx.x == 0)
+		newOpFactory = new functions::indexreduce::IndexReduceOpFactory<T>();
+	__syncthreads();
+	if(threadIdx.x == 0)
+		indexReduce = newOpFactory->getOp(op);
+	__syncthreads();
+	indexReduce->transform(n,dx,xShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
+	if(threadIdx.x == 0) {
+		free(indexReduce);
+		free(newOpFactory);
+	}
 }
 
 
@@ -1079,24 +1110,16 @@ extern "C" __global__ void indexReduceDouble(int op,int n, double *dx, int *xSha
 		int *resultShapeInfo, int *gpuInformation,
 		int *dimension,
 		int dimensionLength, int postProcessOrNot) {
-	__shared__ functions::indexreduce::IndexReduce<double> *indexReduce;
-	if(threadIdx.x == 0)
-		indexReduce = indexReduceOpFactoryDouble->getOp(op);
-	__syncthreads();
-	indexReduce->transform(n,dx,xShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
-	if(threadIdx.x == 0)
-		free(indexReduce);
+	indexReduceGeneric<double>(op,n,dx,xShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
+
 }
 extern "C" __global__ void indexReduceFloat(int op,int n, float *dx, int *xShapeInfo, float *extraParams, float *result,
 		int *resultShapeInfo, int *gpuInformation,
 		int *dimension,
 		int dimensionLength, int postProcessOrNot) {
 	__shared__ functions::indexreduce::IndexReduce<float> *indexReduce;
-	if(threadIdx.x == 0)
-		indexReduce = indexReduceOpFactoryFloat->getOp(op);
-	indexReduce->transform(n,dx,xShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
-	if(threadIdx.x == 0)
-		free(indexReduce);
+	indexReduceGeneric<float>(op,n,dx,xShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
+
 }
 
 

@@ -49,7 +49,7 @@ public:
 	 * @param incz
 	 * @param blockSize
 	 */
-	virtual __device__ void transform(
+	virtual __inline__ __device__ void transform(
 			int n,
 			int xOffset,
 			int yOffset,
@@ -792,6 +792,9 @@ public:
 template<typename T>
 class PairWiseTransformOpFactory {
 public:
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
 	PairWiseTransformOpFactory() {
 	}
 
@@ -838,13 +841,42 @@ __constant__ functions::pairwise_transforms::PairWiseTransformOpFactory<float> *
 
 extern "C"
 __host__ void setupPairWiseTransformFactories() {
-	printf("Setting up transform factories\n");
+	/*printf("Setting up transform factories\n");
 	functions::pairwise_transforms::PairWiseTransformOpFactory<double> *newOpFactory = new functions::pairwise_transforms::PairWiseTransformOpFactory<double>();
 	functions::pairwise_transforms::PairWiseTransformOpFactory<float> *newOpFactoryFloat = new functions::pairwise_transforms::PairWiseTransformOpFactory<float>();
 	checkCudaErrors(cudaMemcpyToSymbol(pairWiseDoubleFactory, newOpFactory, sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<double> )));
 	checkCudaErrors(cudaMemcpyToSymbol(pairWiseFloatFactory, newOpFactory, sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<float>)));
 	delete(newOpFactory);
-	delete(newOpFactoryFloat);
+	delete(newOpFactoryFloat);*/
+
+}
+
+template <typename T>
+__device__ void pairWiseTransformGeneric(
+		int opNum,
+		int n,
+		int xOffset,
+		int yOffset,
+		int resultOffset,
+		T *dx,
+		T *dy,
+		int incx,
+		int incy,
+		T *params,
+		T *result, int incz, int blockSize) {
+	__shared__ functions::pairwise_transforms::PairWiseTransform<T> *op;
+	__shared__ functions::pairwise_transforms::PairWiseTransformOpFactory<T> *newOpFactory;
+	if(threadIdx.x == 0)
+		newOpFactory = new functions::pairwise_transforms::PairWiseTransformOpFactory<T>();
+	__syncthreads();
+	if(threadIdx.x == 0)
+		op = newOpFactory->getOp(opNum);
+	__syncthreads();
+	op->transform(n,xOffset,yOffset,resultOffset,dx,dy,incx,incy,params,result,incz,blockSize);
+	if(threadIdx.x == 0) {
+		free(op);
+		free(newOpFactory);
+	}
 
 }
 
@@ -861,13 +893,7 @@ extern "C" __global__ void pairWiseTransformDouble(
 		int incy,
 		double *params,
 		double *result, int incz, int blockSize) {
-	__shared__ functions::pairwise_transforms::PairWiseTransform<double> *op;
-	if(threadIdx.x == 0)
-		op = pairWiseDoubleFactory->getOp(opNum);
-	__syncthreads();
-	op->transform(n,xOffset,yOffset,resultOffset,dx,dy,incx,incy,params,result,incz,blockSize);
-	if(threadIdx.x == 0)
-		free(op);
+	pairWiseTransformGeneric<double>(opNum,n,xOffset,yOffset,resultOffset,dx,dy,incx,incy,params,result,incz,blockSize);
 
 }
 
@@ -885,13 +911,7 @@ extern "C" __global__ void pairWiseTransformFloat(
 		int incy,
 		float *params,
 		float *result, int incz, int blockSize) {
-	__shared__ functions::pairwise_transforms::PairWiseTransform<float> *op;
-	if(threadIdx.x == 0)
-		op = pairWiseFloatFactory->getOp(opNum);
-		__syncthreads();
-	op->transform(n,xOffset,yOffset,resultOffset,dx,dy,incx,incy,params,result,incz,blockSize);
-	if(threadIdx.x == 0)
-		free(op);
+	pairWiseTransformGeneric<float>(opNum,n,xOffset,yOffset,resultOffset,dx,dy,incx,incy,params,result,incz,blockSize);
 
 }
 

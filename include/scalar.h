@@ -43,7 +43,7 @@ public:
 	 * @param blockSize
 	 */
 	virtual
-	__device__ void transform(int n, int idx, T dx, T *dy, int incy, T *params, T *result, int blockSize) {
+	__inline__ __device__ void transform(int n, int idx, T dx, T *dy, int incy, T *params, T *result, int blockSize) {
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = threadIdx.x;
 		int i = blockIdx.x * blockDim.x + tid;
@@ -720,6 +720,10 @@ public:
 template<typename T>
 class ScalarOpFactory {
 public:
+
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
 	ScalarOpFactory() {
 	}
 
@@ -770,14 +774,41 @@ __constant__ functions::scalar::ScalarOpFactory<float> *scalarFloatOpFactory;
 
 extern "C"
 __host__ void setupScalarTransformFactories() {
-	printf("Setting up transform factories\n");
+/*	printf("Setting up transform factories\n");
 	functions::scalar::ScalarOpFactory<double> *newOpFactory =  new functions::scalar::ScalarOpFactory<double>();
 	functions::scalar::ScalarOpFactory<float> *newOpFactoryFloat =  new functions::scalar::ScalarOpFactory<float>();
 	checkCudaErrors(cudaMemcpyToSymbol(scalarDoubleOpFactory, newOpFactory, sizeof( functions::scalar::ScalarOpFactory<double> )));
 	checkCudaErrors(cudaMemcpyToSymbol(scalarFloatOpFactory, newOpFactory, sizeof( functions::scalar::ScalarOpFactory<float>)));
 	delete(newOpFactory);
-	delete(newOpFactoryFloat);
+	delete(newOpFactoryFloat);*/
 
+}
+
+template <typename T>
+__device__ void scalarGeneric(
+		int opNum,
+		int n,
+		int idx,
+		T dx,
+		T *dy,
+		int incy, T *params,
+		T *result, int blockSize) {
+	__shared__ functions::scalar::ScalarTransform<T> *op;
+	__shared__  functions::scalar::ScalarOpFactory<T> *scalarDoubleOpFactory;
+	if(threadIdx.x == 0)
+		scalarDoubleOpFactory = new functions::scalar::ScalarOpFactory<T>();
+
+	__syncthreads();
+	if(threadIdx.x == 0)
+		op = scalarDoubleOpFactory->getOp(opNum);
+	__syncthreads();
+
+
+
+
+	op->transform(n,idx,dx,dy,incy,params,result,blockSize);
+	if(threadIdx.x == 0)
+		free(op);
 }
 
 extern "C" __global__ void scalarDouble(
@@ -788,25 +819,12 @@ extern "C" __global__ void scalarDouble(
 		double *dy,
 		int incy, double *params,
 		double *result, int blockSize) {
-	__shared__ functions::scalar::ScalarTransform<double> *op;
-	if(threadIdx.x == 0)
-		op = scalarDoubleOpFactory->getOp(opNum);
-	__syncthreads();
-	op->transform(n,idx,dx,dy,incy,params,result,blockSize);
-	if(threadIdx.x == 0)
-		free(op);
+	scalarGeneric<double>(opNum,n,idx,dx,dy,incy,params,result,blockSize);
 }
 
 extern "C" __global__ void scalarFloat(int opNum,
 		int n, int idx, float dx, float *dy, int incy, float *params, float *result, int blockSize) {
-	__shared__ functions::scalar::ScalarTransform<float> *op;
-	if(threadIdx.x == 0)
-		op = scalarFloatOpFactory->getOp(opNum);
-	__syncthreads();
-	op->transform(n,idx,dx,dy,incy,params,result,blockSize);
-	if(threadIdx.x == 0)
-		free(op);
-
+	scalarGeneric<float>(opNum,n,idx,dx,dy,incy,params,result,blockSize);
 }
 
 

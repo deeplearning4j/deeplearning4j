@@ -36,13 +36,14 @@ public:
 	T op(T d1, T *params) = 0;
 
 #ifdef __CUDACC__
-	__device__ void transform(int n, int idx, T *dy, int incy, T *params, T *result, int blockSize) {
+	__inline__ __device__ void transform(int n, int idx, T *dy, int incy, T *params, T *result, int blockSize) {
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = threadIdx.x;
 		int i = blockIdx.x * blockDim.x + tid;
 		/* equal, positive, non-unit increments. */
 		for (; i < n; i += totalThreads) {
 			result[i * incy] = op(dy[i * incy], params);
+			printf("Result[%d] was %f\n",i,result[i * incy]);
 		}
 
 	}
@@ -1010,6 +1011,40 @@ __device__ __constant__ functions::transform::TransformOpFactory<double> *double
 __device__ __constant__ functions::transform::TransformOpFactory<float> *floatTransformFactory;
 
 
+template <typename T>
+__device__ void transformGeneric(
+		int opNum,
+		int n,
+		int idx,
+		T *dy,
+		int incy,
+		T *params,
+		T *result, int blockSize) {
+
+	__shared__ functions::transform::Transform<T> *op;
+	__shared__ functions::transform::TransformOpFactory<T> *doubleTransformFactory;
+	if(threadIdx.x == 0) {
+		doubleTransformFactory = new functions::transform::TransformOpFactory<T>();
+
+	}
+
+	__syncthreads();
+
+
+	if(threadIdx.x == 0) {
+		op = doubleTransformFactory->getOp(opNum);
+	}
+	__syncthreads();
+
+
+	op->transform(n,idx,dy,incy,params,result,blockSize);
+	if(threadIdx.x == 0) {
+		free(op);
+		free(doubleTransformFactory);
+	}
+}
+
+
 extern "C" __global__ void transformDouble(
 		int opNum,
 		int n,
@@ -1019,13 +1054,7 @@ extern "C" __global__ void transformDouble(
 		double *params,
 		double *result, int blockSize) {
 
-	__shared__ functions::transform::Transform<double> *op;
-	if(threadIdx.x == 0)
-		op = doubleTransformFactory->getOp(opNum);
-	__syncthreads();
-	op->transform(n,idx,dy,incy,params,result,blockSize);
-	if(threadIdx.x == 0)
-		free(op);
+	transformGeneric<double>(opNum,n,idx,dy,incy,params,result,blockSize);
 }
 
 extern "C" __global__ void transformFloat(
@@ -1037,25 +1066,20 @@ extern "C" __global__ void transformFloat(
 		float *params,
 		float *result, int blockSize) {
 
-	__shared__ functions::transform::Transform<float> *op;
-	if(threadIdx.x == 0)
-		op = floatTransformFactory->getOp(opNum);
-	__syncthreads();
-	op->transform(n,idx,dy,incy,params,result,blockSize);
-	if(threadIdx.x == 0)
-		free(op);
+	transformGeneric<float>(opNum,n,idx,dy,incy,params,result,blockSize);
+
 }
 
 
 extern "C"
 __host__ void setupTransfromFactories() {
-	printf("Setting up transform factories\n");
+	/*printf("Setting up transform factories\n");
 	functions::transform::TransformOpFactory<double> *newOpFactory = new functions::transform::TransformOpFactory<double>();
 	functions::transform::TransformOpFactory<float> *newOpFactoryFloat = new functions::transform::TransformOpFactory<float>();
 	checkCudaErrors(cudaMemcpyToSymbol(doubleTransformFactory, newOpFactory, sizeof(functions::transform::TransformOpFactory<double> )));
 	checkCudaErrors(cudaMemcpyToSymbol(floatTransformFactory, newOpFactory, sizeof(functions::transform::TransformOpFactory<float>)));
 	delete(newOpFactory);
-	delete(newOpFactoryFloat);
+	delete(newOpFactoryFloat);*/
 
 }
 
