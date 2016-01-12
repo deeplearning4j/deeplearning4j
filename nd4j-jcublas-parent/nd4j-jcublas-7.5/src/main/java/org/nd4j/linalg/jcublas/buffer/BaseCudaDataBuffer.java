@@ -384,7 +384,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                         ContextHolder.getInstance()
                                 .getMemoryStrategy()
                                 .alloc(this, 1, 0, this.length,true);
-                System.out.println("Saving stride ["+ 1 +"], with offset: [" + 0 + "]");
+          //      System.out.println("Saving stride ["+ 1 +"], with offset: [" + 0 + "]");
                 pointersToContexts.put(name, Triple.of(0,this.length,1), devicePointerInfo);
             }
 
@@ -421,7 +421,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 devicePointerInfo = new DevicePointerInfo(retOffset,length,stride,offset,false);
                 pointersToContexts.put(name,Triple.of(offset,compareLength,stride), devicePointerInfo);
 
-                System.out.println("Saving stride ["+ stride +"], with offset: [" + offset + "]");
+           //     System.out.println("Saving stride ["+ stride +"], with offset: [" + offset + "]");
                 referencedOffsets.put(Pair.of(name, Triple.of(offset, length, stride)), new AtomicInteger(1));
 
                 return ret;
@@ -604,7 +604,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             off = referencedOffsets.get(Pair.of(name, Triple.of(offset, length,1))).get();
         }
 
-        System.out.println("Calling freeDevicePointer for offset: ["+ offset+"], length: ["+ length+"], stride: ["+ stride+"] references: [" + referenceCounter.get() + "], offset references: ["+ off+"]");
+     //   System.out.println("Calling freeDevicePointer for offset: ["+ offset+"], length: ["+ length+"], stride: ["+ stride+"] references: [" + referenceCounter.get() + "], offset references: ["+ off+"]");
         referenceCounter.decrementAndGet();
 
         // TODO: make sure that stride is always equals 1, otherwise pass stride value down here
@@ -637,7 +637,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                     copied.remove(name);
                     pointersToContexts.remove(name, Triple.of(0, this.length(),1));
 
-                    System.out.println("pointers left: " + pointersToContexts.size());
+                    //System.out.println("pointers left: " + pointersToContexts.size());
                   //  pointersToContexts.clear();
                 }
             }
@@ -652,7 +652,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             copied.remove(name);
             pointersToContexts.remove(name,Triple.of(offset,length,devicePointerInfo.getStride()));
 
-            System.out.println("pointers left: " + pointersToContexts.size());
+            //System.out.println("pointers left: " + pointersToContexts.size());
             //pointersToContexts.clear();
             return true;
         }

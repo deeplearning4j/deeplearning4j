@@ -170,7 +170,7 @@ public class CublasPointer  implements AutoCloseable {
         int compLength = arr instanceof IComplexNDArray ? arr.length() * 2 : arr.length();
         int stride = arr instanceof IComplexNDArray ? BlasBufferUtil.getBlasStride(arr) / 2 : BlasBufferUtil.getBlasStride(arr);
         //no striding for upload if we are using the whole buffer
-        System.out.println("Allocation offset: ["+array.offset()+"], length: ["+compLength+"], stride: ["+ stride+"]");
+      //  System.out.println("Allocation offset: ["+array.offset()+"], length: ["+compLength+"], stride: ["+ stride+"]");
         this.devicePointer = buffer.getDevicePointer(
                 this.arr,
                 stride
