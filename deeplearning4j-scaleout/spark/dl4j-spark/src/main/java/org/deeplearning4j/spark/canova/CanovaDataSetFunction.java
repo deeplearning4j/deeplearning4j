@@ -27,9 +27,19 @@ public class CanovaDataSetFunction implements Function<Collection<Writable>,Data
     private final boolean regression;
     private final DataSetPreProcessor preProcessor;
     private final WritableConverter converter;
+    protected int numExamples = -1;
 
     public CanovaDataSetFunction(int labelIndex, int numPossibleLabels, boolean regression){
         this(labelIndex, numPossibleLabels, regression, null, null);
+    }
+
+    public CanovaDataSetFunction(int labelIndex, int numPossibleLabels, int numExamples){
+        this(labelIndex, numPossibleLabels, numExamples, false, null, null);
+    }
+
+    public CanovaDataSetFunction(int labelIndex, int numPossibleLabels, boolean regression,
+                                 DataSetPreProcessor preProcessor, WritableConverter converter){
+        this(labelIndex, numPossibleLabels, -1, regression, preProcessor, converter);
     }
 
     /**
@@ -38,16 +48,17 @@ public class CanovaDataSetFunction implements Function<Collection<Writable>,Data
      * @param regression False for classification, true for regression
      * @param preProcessor DataSetPreprocessor (may be null)
      * @param converter WritableConverter (may be null)
+     * @param numExamples limit the number of examples to call
      */
-    public CanovaDataSetFunction(int labelIndex, int numPossibleLabels, boolean regression,
+    public CanovaDataSetFunction(int labelIndex, int numPossibleLabels, int numExamples, boolean regression,
                                  DataSetPreProcessor preProcessor, WritableConverter converter){
         this.labelIndex = labelIndex;
         this.numPossibleLabels = numPossibleLabels;
         this.regression = regression;
         this.preProcessor = preProcessor;
         this.converter = converter;
+        this.numExamples = numExamples;
     }
-
 
     @Override
     public DataSet call(Collection<Writable> writables) throws Exception {
@@ -64,7 +75,8 @@ public class CanovaDataSetFunction implements Function<Collection<Writable>,Data
         INDArray label = null;
         INDArray featureVector = Nd4j.create(labelIndex >= 0 ? list.size() - 1 : list.size());
         int featureCount = 0;
-        for (int j = 0; j < list.size(); j++) {
+        numExamples = numExamples == -1? list.size(): numExamples;
+        for (int j = 0; j < numExamples; j++) {
             Writable current = list.get(j);
             if(converter != null) current = converter.convert(current);
             if (labelIndex >= 0 && j == labelIndex) {
