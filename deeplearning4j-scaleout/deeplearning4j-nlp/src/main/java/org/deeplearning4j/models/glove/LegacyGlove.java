@@ -263,7 +263,7 @@ public class LegacyGlove  extends WordVectorsImpl<VocabWord> {
 
             if(word.isEmpty())
                 continue;
-            float[] read = read(split,glove.lookupTable().getVectorLength());
+            float[] read = read(split,glove.lookupTable().layerSize());
             if(read.length < 1)
                 continue;
 
@@ -295,10 +295,10 @@ public class LegacyGlove  extends WordVectorsImpl<VocabWord> {
 
 
     private static INDArray weights(LegacyGlove glove,Map<String,float[]> data) {
-        INDArray ret = Nd4j.create(data.size(),glove.lookupTable().getVectorLength());
+        INDArray ret = Nd4j.create(data.size(),glove.lookupTable().layerSize());
         for(String key : data.keySet()) {
             INDArray row = Nd4j.create(Nd4j.createBuffer(data.get(key)));
-            if(row.length() != glove.lookupTable().getVectorLength())
+            if(row.length() != glove.lookupTable().layerSize())
                 continue;
             if(glove.vocab().indexOf(key) >= data.size())
                 continue;
