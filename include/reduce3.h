@@ -689,7 +689,7 @@ public:
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	 ManhattanDistance() {
+	ManhattanDistance() {
 	}
 };
 
@@ -742,9 +742,13 @@ extern "C" __global__ void reduce3Double(
 		int *resultShapeInfo, int *gpuInformation,
 		int *dimension,
 		int dimensionLength, int postProcessOrNot) {
-	functions::reduce3::Reduce3<double> * op = reduce3OpFactory->getOp(opNum);
+	__shared__ functions::reduce3::Reduce3<double> * op;
+	if(threadIdx.x == 0)
+		op = reduce3OpFactory->getOp(opNum);
+	__syncthreads();
 	op->transform(n,dx,xShapeInfo,dy,yShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
-	free(op);
+	if(threadIdx.x == 0)
+		free(op);
 
 }
 extern "C" __global__ void reduce3Float(
@@ -757,9 +761,13 @@ extern "C" __global__ void reduce3Float(
 		int *gpuInformation,
 		int *dimension,
 		int dimensionLength, int postProcessOrNot) {
-	functions::reduce3::Reduce3<float> * op = reduce3OpFactoryFloat->getOp(opNum);
+	__shared__ functions::reduce3::Reduce3<float> * op;
+	if(threadIdx.x == 0)
+		op = reduce3OpFactoryFloat->getOp(opNum);
+	__syncthreads();
 	op->transform(n,dx,xShapeInfo,dy,yShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
-	free(op);
+	if(threadIdx.x == 0)
+		free(op);
 }
 
 #endif

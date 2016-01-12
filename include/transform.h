@@ -1019,10 +1019,13 @@ extern "C" __global__ void transformDouble(
 		double *params,
 		double *result, int blockSize) {
 
-	functions::transform::Transform<double> *op = doubleTransformFactory->getOp(opNum);
-	functions::transform::ops::Sigmoid<double> sigmoid;
+	__shared__ functions::transform::Transform<double> *op;
+	if(threadIdx.x == 0)
+		op = doubleTransformFactory->getOp(opNum);
+	__syncthreads();
 	op->transform(n,idx,dy,incy,params,result,blockSize);
-	free(op);
+	if(threadIdx.x == 0)
+		free(op);
 }
 
 extern "C" __global__ void transformFloat(
@@ -1034,9 +1037,13 @@ extern "C" __global__ void transformFloat(
 		float *params,
 		float *result, int blockSize) {
 
-	functions::transform::Transform<float> *op = floatTransformFactory->getOp(opNum);
+	__shared__ functions::transform::Transform<float> *op;
+	if(threadIdx.x == 0)
+		op = floatTransformFactory->getOp(opNum);
+	__syncthreads();
 	op->transform(n,idx,dy,incy,params,result,blockSize);
-	free(op);
+	if(threadIdx.x == 0)
+		free(op);
 }
 
 

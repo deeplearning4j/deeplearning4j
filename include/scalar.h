@@ -788,14 +788,24 @@ extern "C" __global__ void scalarDouble(
 		double *dy,
 		int incy, double *params,
 		double *result, int blockSize) {
-	functions::scalar::ScalarTransform<double> *op = scalarDoubleOpFactory->getOp(opNum);
+	__shared__ functions::scalar::ScalarTransform<double> *op;
+	if(threadIdx.x == 0)
+		op = scalarDoubleOpFactory->getOp(opNum);
+	__syncthreads();
 	op->transform(n,idx,dx,dy,incy,params,result,blockSize);
+	if(threadIdx.x == 0)
+		free(op);
 }
 
 extern "C" __global__ void scalarFloat(int opNum,
 		int n, int idx, float dx, float *dy, int incy, float *params, float *result, int blockSize) {
-	functions::scalar::ScalarTransform<float> *op = scalarFloatOpFactory->getOp(opNum);
+	__shared__ functions::scalar::ScalarTransform<float> *op;
+	if(threadIdx.x == 0)
+		op = scalarFloatOpFactory->getOp(opNum);
+	__syncthreads();
 	op->transform(n,idx,dx,dy,incy,params,result,blockSize);
+	if(threadIdx.x == 0)
+		free(op);
 
 }
 

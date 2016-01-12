@@ -132,7 +132,7 @@ public:
 #elif defined(__GNUC__)
 	__always_inline
 #endif
-	 Broadcast() {
+	Broadcast() {
 	}
 
 };
@@ -586,9 +586,16 @@ extern "C" __global__ void broadcastDouble(
 		int *dimension,
 		int dimensionLength,
 		int *gpuInformation) {
-	functions::broadcast::Broadcast<double> *op = broadcastDoubleFactory->getOp(opNum);
+	__shared__ functions::broadcast::Broadcast<double> *op;
+	if(threadIdx.x == 0) {
+		op = broadcastDoubleFactory->getOp(opNum);
+	}
+	__syncthreads();
+
+
 	op->transform(x,xShapeInfo,y,yShapeInfo,result,resultShapeInfo,dimension,dimensionLength,gpuInformation);
-	free(op);
+	if(threadIdx.x == 0)
+		free(op);
 }
 
 extern "C" __global__ void broadcastFloat(
@@ -599,9 +606,13 @@ extern "C" __global__ void broadcastFloat(
 		int *dimension,
 		int dimensionLength,
 		int *gpuInformation) {
-	functions::broadcast::Broadcast<float> *op = broadcastFloatFactory->getOp(opNum);
+	__shared__ functions::broadcast::Broadcast<float> *op;
+	if(threadIdx.x == 0)
+		op = broadcastFloatFactory->getOp(opNum);
+	__syncthreads();
 	op->transform(x,xShapeInfo,y,yShapeInfo,result,resultShapeInfo,dimension,dimensionLength,gpuInformation);
-	free(op);
+	if(threadIdx.x == 0)
+		free(op);
 
 }
 

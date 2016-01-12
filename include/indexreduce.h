@@ -1079,17 +1079,24 @@ extern "C" __global__ void indexReduceDouble(int op,int n, double *dx, int *xSha
 		int *resultShapeInfo, int *gpuInformation,
 		int *dimension,
 		int dimensionLength, int postProcessOrNot) {
-	functions::indexreduce::IndexReduce<double> *indexReduce = indexReduceOpFactoryDouble->getOp(op);
+	__shared__ functions::indexreduce::IndexReduce<double> *indexReduce;
+	if(threadIdx.x == 0)
+		indexReduce = indexReduceOpFactoryDouble->getOp(op);
+	__syncthreads();
 	indexReduce->transform(n,dx,xShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
-	free(indexReduce);
+	if(threadIdx.x == 0)
+		free(indexReduce);
 }
 extern "C" __global__ void indexReduceFloat(int op,int n, float *dx, int *xShapeInfo, float *extraParams, float *result,
 		int *resultShapeInfo, int *gpuInformation,
 		int *dimension,
 		int dimensionLength, int postProcessOrNot) {
-	functions::indexreduce::IndexReduce<float> *indexReduce = indexReduceOpFactoryFloat->getOp(op);
+	__shared__ functions::indexreduce::IndexReduce<float> *indexReduce;
+	if(threadIdx.x == 0)
+		indexReduce = indexReduceOpFactoryFloat->getOp(op);
 	indexReduce->transform(n,dx,xShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
-	free(indexReduce);
+	if(threadIdx.x == 0)
+		free(indexReduce);
 }
 
 

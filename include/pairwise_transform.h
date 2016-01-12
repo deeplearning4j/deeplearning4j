@@ -128,7 +128,7 @@ public:
 	__always_inline
 
 #endif
-	 PairWiseTransform() {
+	PairWiseTransform() {
 	}
 
 };
@@ -861,9 +861,13 @@ extern "C" __global__ void pairWiseTransformDouble(
 		int incy,
 		double *params,
 		double *result, int incz, int blockSize) {
-	functions::pairwise_transforms::PairWiseTransform<double> *op = pairWiseDoubleFactory->getOp(opNum);
+	__shared__ functions::pairwise_transforms::PairWiseTransform<double> *op;
+	if(threadIdx.x == 0)
+		op = pairWiseDoubleFactory->getOp(opNum);
+	__syncthreads();
 	op->transform(n,xOffset,yOffset,resultOffset,dx,dy,incx,incy,params,result,incz,blockSize);
-	free(op);
+	if(threadIdx.x == 0)
+		free(op);
 
 }
 
@@ -881,9 +885,13 @@ extern "C" __global__ void pairWiseTransformFloat(
 		int incy,
 		float *params,
 		float *result, int incz, int blockSize) {
-	functions::pairwise_transforms::PairWiseTransform<float> *op = pairWiseFloatFactory->getOp(opNum);
+	__shared__ functions::pairwise_transforms::PairWiseTransform<float> *op;
+	if(threadIdx.x == 0)
+		op = pairWiseFloatFactory->getOp(opNum);
+		__syncthreads();
 	op->transform(n,xOffset,yOffset,resultOffset,dx,dy,incx,incy,params,result,incz,blockSize);
-	free(op);
+	if(threadIdx.x == 0)
+		free(op);
 
 }
 

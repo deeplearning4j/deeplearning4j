@@ -93,7 +93,7 @@ TEST(Transform,Sigmoid) {
 	double *extraParamsData = (double *) malloc(sizeof(double));
 	extraParams[0] = 0.0;
 	nd4j::buffer::Buffer<double> *extraParamsBuff = nd4j::buffer::createBuffer(extraParamsData,1);
-	transformDouble<<<length,length,42000>>>(
+	transformDouble<<<length,length,2000>>>(
 			10
 			,length,
 			1,data->data->gData,
