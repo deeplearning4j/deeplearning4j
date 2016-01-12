@@ -32,7 +32,9 @@ import static org.junit.Assert.*;
  * 3. nested view allocation
  * 4. allocation over the same memory space
  * 5. allocation from buffer directly
- * 6. subarrays with stride > 1
+ * 6. subarrays with stride > 1 (based on columns taken from 2D arrays)
+ *
+ * + few additional tests for data integrity check using pre-calculated comparison values
  *
  * On later stages, sparse allocations should be tested here as well. But for cuSparse that shouldn't be an issue, due to dense underlying CSR format.
  *
@@ -161,6 +163,7 @@ public class CublasPointerRevTests {
 
         assertTrue(buffer2.isFreed());
 
+        // make sure buffer got 0 references left
         assertEquals(0, buffer1.getPointersToContexts().size());
         assertEquals(0, buffer2.getPointersToContexts().size());
     }
@@ -263,6 +266,7 @@ public class CublasPointerRevTests {
         assertTrue(bufferSlice3.isFreed());
         assertTrue(bufferSlice4.isFreed());
 
+        // make sure buffer got 0 references left
         assertEquals(0, bufferSlice1.getPointersToContexts().size());
         assertEquals(0, bufferSlice2.getPointersToContexts().size());
         assertEquals(0, bufferSlice3.getPointersToContexts().size());
@@ -462,6 +466,7 @@ public class CublasPointerRevTests {
 
         System.out.println("Dot product: " + ret[0] + " Dot wrapped: " + dotWrapped);
 
+        // make sure buffer got 0 references left
         assertEquals(0, buffer.getPointersToContexts().size());
     }
 
@@ -552,6 +557,7 @@ public class CublasPointerRevTests {
             2. Both underlying buffers are freed
         */
 
+        // make sure buffers got 0 references left
         assertEquals(0, buffer1.getPointersToContexts().size());
         assertEquals(0, buffer2.getPointersToContexts().size());
     }
@@ -697,6 +703,7 @@ public class CublasPointerRevTests {
         // we check if result buffer is freed too.
         assertTrue(buffer2.isFreed());
 
+        // make sure buffer got 0 references left
         assertEquals(0, buffer1.getPointersToContexts().size());
         assertEquals(0, buffer2.getPointersToContexts().size());
 
@@ -992,6 +999,14 @@ public class CublasPointerRevTests {
 
     }
 
+    /**
+     * This test is suited for test of multiple consequent allocations over the same original buffer.
+     *
+     * Basic idea: We have large array, we get a slice (view), it receives a pointer to the original buffer + offset.
+     * After view is released, original buffer should be released ONLY if it has NO more offset references left
+     *
+     * @throws Exception
+     */
     @Test
     public void testPinnedMemoryNestedAllocation1() throws Exception {
         // simple way to stop test if we're not on CUDA backend here
@@ -1029,11 +1044,20 @@ public class CublasPointerRevTests {
         assertTrue(buffer1.isFreed());
         assertTrue(buffer2.isFreed());
 
+        // make sure buffer got 0 references left
         assertEquals(0, buffer1.getPointersToContexts().size());
         assertEquals(0, buffer1.getPointersToContexts().size());
     }
 
 
+    /**
+     * This test is suited for test of multiple consequent allocations over the same original buffer.
+     *
+     * Basic idea: We have large array, we get a slice (view), it receives a pointer to the original buffer + offset.
+     * After view is released, original buffer should be released ONLY if it has NO more offset references left
+     *
+     * @throws Exception
+     */
     @Test
     public void testPinnedMemoryNestedAllocation2() throws Exception {
         // simple way to stop test if we're not on CUDA backend here
@@ -1070,10 +1094,19 @@ public class CublasPointerRevTests {
         assertTrue(buffer1.isFreed());
         assertTrue(buffer2.isFreed());
 
+        // make sure buffer got 0 references left
         assertEquals(0, buffer1.getPointersToContexts().size());
         assertEquals(0, buffer2.getPointersToContexts().size());
     }
 
+    /**
+     * This test is suited for test of multiple consequent allocations over the same original buffer.
+     *
+     * Basic idea: We have large array, we get a slice (view), it receives a pointer to the original buffer + offset.
+     * After view is released, original buffer should be released ONLY if it has NO more offset references left
+     *
+     * @throws Exception
+     */
     @Test
     public void testPinnedMemoryNestedAllocation3() throws Exception {
         // simple way to stop test if we're not on CUDA backend here
@@ -1121,6 +1154,71 @@ public class CublasPointerRevTests {
         assertTrue(buffer2.isFreed());
         assertTrue(buffer3.isFreed());
 
+
+        // make sure buffer got 0 references left
+        assertEquals(0, buffer1.getPointersToContexts().size());
+        assertEquals(0, buffer2.getPointersToContexts().size());
+        assertEquals(0, buffer3.getPointersToContexts().size());
+    }
+
+
+    /**
+     * This test is suited for test of multiple consequent allocations over the same original buffer.
+     *
+     * Basic idea: We have large array, we get a slice (view), it receives a pointer to the original buffer + offset.
+     * After view is released, original buffer should be released ONLY if it has NO more offset references left
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testPageableMemoryNestedAllocation3() throws Exception {
+        // simple way to stop test if we're not on CUDA backend here
+        assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
+
+        // reset to default MemoryStrategy, most probable is Pinned
+        ContextHolder.getInstance().forceMemoryStrategyForThread(new PageableDirectBufferMemoryStrategy());
+
+        assertEquals("PageableDirectBufferMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
+
+        INDArray baseArray1 = Nd4j.rand(new int[]{1000, 200}, -1.0, 1.0, new DefaultRandom());
+
+        INDArray slice1 = baseArray1.slice(1);
+        INDArray slice2 = baseArray1.slice(2);
+
+        // please note, slice(1) is not a typo here
+        INDArray slice3 = baseArray1.slice(1);
+
+        CudaContext ctx = CudaContext.getBlasContext();
+
+        CublasPointer xAPointer = new CublasPointer(slice1,ctx);
+        CublasPointer xBPointer = new CublasPointer(slice2,ctx);
+        CublasPointer xCPointer = new CublasPointer(slice3,ctx);
+
+
+        BaseCudaDataBuffer buffer1 = (BaseCudaDataBuffer) xAPointer.getBuffer();
+        BaseCudaDataBuffer buffer2 = (BaseCudaDataBuffer) xBPointer.getBuffer();
+        BaseCudaDataBuffer buffer3 = (BaseCudaDataBuffer) xCPointer.getBuffer();
+
+        // all three buffers should NOT be freed, since second & third pointers to the same array still exist
+        xAPointer.close();
+        assertFalse(buffer1.isFreed());
+        assertFalse(buffer2.isFreed());
+        assertFalse(buffer3.isFreed());
+
+        // the same, last pointer still alive and valid
+        xBPointer.close();
+        assertFalse(buffer1.isFreed());
+        assertFalse(buffer2.isFreed());
+        assertFalse(buffer3.isFreed());
+
+        // now everything should be closed
+        xCPointer.close();
+        assertTrue(buffer1.isFreed());
+        assertTrue(buffer2.isFreed());
+        assertTrue(buffer3.isFreed());
+
+
+        // make sure buffer got 0 references left
         assertEquals(0, buffer1.getPointersToContexts().size());
         assertEquals(0, buffer2.getPointersToContexts().size());
         assertEquals(0, buffer3.getPointersToContexts().size());
@@ -1128,6 +1226,9 @@ public class CublasPointerRevTests {
 
     /**
      * This test addresses Pinned memory allocation using given buffer
+     *
+     * Basic idea: allocate, call axpy, copyback, free. After that original array2 should contain updated values, and buffer should be released.
+     *
      * @throws Exception
      */
     @Test
@@ -1191,6 +1292,7 @@ public class CublasPointerRevTests {
     /**
      * This test addresses Pageable memory allocation using given buffer
      *
+     * Basic idea: allocate, memset, copyback, free.At the end of day host buffer should have updated value, and buffer should be released.
      *
      * @throws Exception
      */
@@ -1247,11 +1349,16 @@ public class CublasPointerRevTests {
             ;
         }
 
+        // make sure buffer got 0 references left
         assertEquals(0, buffer.getPointersToContexts().size());
     }
 
     /**
-     *  This test addresses memory allocation for arrays with stride > 1, since that's important value for nd4j internal memory allocation
+     *  This test addresses memory allocation for arrays with stride > 1, since that's important feature for nd4j internal memory allocation.
+     *
+     *  Basic idea: allocate 2D array, get column view, and it will have stride > 1. After view is used and released, whole array should be released too, since it has no more usages left.
+     *
+     *
      */
     @Test
     public void testPinnedMemoryStridedSlice() throws Exception {
@@ -1286,6 +1393,7 @@ public class CublasPointerRevTests {
         // buffer must be free
         assertTrue(buffer.isFreed());
 
+        // make sure buffer got 0 references left
         assertEquals(0, buffer.getPointersToContexts().size());
     }
 
@@ -1325,6 +1433,7 @@ public class CublasPointerRevTests {
         // buffer must be free
         assertTrue(buffer.isFreed());
 
+        // make sure buffer got 0 references left
         assertEquals(0, buffer.getPointersToContexts().size());
     }
 }
