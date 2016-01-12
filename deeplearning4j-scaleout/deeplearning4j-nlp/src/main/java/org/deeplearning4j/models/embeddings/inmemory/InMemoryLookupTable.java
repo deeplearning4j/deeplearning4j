@@ -34,6 +34,7 @@ import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.AdaGrad;
 
 import java.io.IOException;
 import java.util.*;
@@ -62,6 +63,8 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
     protected VocabCache<T> vocab;
     protected Map<Integer,INDArray> codes = new ConcurrentHashMap<>();
 
+    protected AdaGrad adaGrad;
+
     @Getter @Setter protected Long tableId;
 
     public InMemoryLookupTable() {}
@@ -74,6 +77,10 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
         this.rng = gen;
         this.negative = negative;
         initExpTable();
+
+        if (useAdaGrad) {
+
+        }
     }
 
     public double[] getExpTable() {
