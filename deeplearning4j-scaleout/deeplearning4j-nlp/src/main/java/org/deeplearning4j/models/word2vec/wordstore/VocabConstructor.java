@@ -111,7 +111,9 @@ public class VocabConstructor<T extends SequenceElement> {
                     if (token == null || token.isEmpty()) continue;
 
                     if (!tempHolder.containsWord(token)) {
-                        tempHolder.addToken(document.getElementByLabel(token));
+                        T element = document.getElementByLabel(token);
+                        element.setElementFrequency(1);
+                        tempHolder.addToken(element);
                         elementsCounter.incrementAndGet();
                         counter++;
                         // TODO: this line should be uncommented only after AdaGrad is fixed, so the size of AdaGrad array is known
