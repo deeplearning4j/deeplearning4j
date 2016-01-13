@@ -140,8 +140,8 @@ While Word2vec refers to a family of related algorithms, this implementation use
 Create a new project in IntelliJ using Maven. If you don't know how to do that, see our [Quickstart page](../quickstart.html). Then specify these properties and dependencies in the POM.xml file in your project's root directory (You can [check Maven](https://search.maven.org/#search%7Cga%7C1%7Cnd4j) for the most recent versions -- please use those...).
 
                 <properties>
-                  <nd4j.version>0.4-rc3.4</nd4j.version> // check Maven Central for latest versions
-                  <dl4j.version>0.4-rc3.3</dl4j.version>
+                  <nd4j.version>0.4-rc3.8</nd4j.version> // check Maven Central for latest versions!
+                  <dl4j.version>0.4-rc3.8</dl4j.version>
                 </properties>
                 
                 <dependencies>
@@ -157,7 +157,7 @@ Create a new project in IntelliJ using Maven. If you don't know how to do that, 
                    </dependency>
                    <dependency>
                      <groupId>org.nd4j</groupId>
-                     <artifactId>nd4j-jblas</artifactId> //you can choose different backends
+                     <artifactId>nd4j-x86</artifactId> 
                      <version>${nd4j.version}</version>
                    </dependency>
                 </dependencies>
