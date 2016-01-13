@@ -1136,7 +1136,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             iter.reset();
             while (iter.hasNext()) {
                 DataSet next = iter.next();
-                if (next.getFeatureMatrix() == null || next.getLabels() == null)
+                if (next == null || next.getFeatureMatrix() == null || next.getLabels() == null)
                     break;
                 setInput(next.getFeatureMatrix());
                 setLabels(next.getLabels());
@@ -1145,7 +1145,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         }
         if (layerWiseConfigurations.isBackprop()) {
-            iter.reset();
             while (iter.hasNext()) {
                 DataSet next = iter.next();
                 if (next.getFeatureMatrix() == null || next.getLabels() == null)
