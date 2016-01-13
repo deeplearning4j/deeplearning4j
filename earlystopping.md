@@ -37,6 +37,7 @@ Using DL4J's early stopping functionality requires you to provide a number of co
 An example, with an epoch termination condition of maximum of 30 epochs, a maximum of 20 minutes training time, calculating the score every epoch, and saving the intermediate results to disk:
 
 ```
+
 MultiLayerConfiguration myNetworkConfiguration = ...;
 DataSetIterator myTrainData = ...;
 DataSetIterator myTestData = ...;
@@ -63,6 +64,7 @@ System.out.println("Score at best epoch: " + result.getBestModelScore());
 
 //Get the best model:
 MultiLayerNetwork bestModel = result.getBestModel();
+
 ```
 
 

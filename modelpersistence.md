@@ -18,6 +18,7 @@ Loading the network is also done in two (or three) steps.
 Please see [this code sample](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/deepbelief/DBNIrisExample.java#L127) for an example of how to save and reload a model.
 
 ```
+
 //Write the network parameters:
 OutputStream fos = Files.newOutputStream(Paths.get("coefficients.bin"));
 DataOutputStream dos = new DataOutputStream(fos);
@@ -40,6 +41,7 @@ dis.close();
 MultiLayerNetwork savedNetwork = new MultiLayerNetwork(confFromJson);
 savedNetwork.init();
 savedNetwork.setParameters(newParams);
+
 ```
 
 ## <a name="updaters">A Note on Updaters</a>
@@ -49,7 +51,9 @@ When training a network, we often use training mechanisms such as momentum, AdaG
 It is important to note here that most of these updaters contain internal state (the SGD updater does not). For example, RMSProp and AdaGrad contain a type of history of past gradients, which are used to modify the next gradients. If we continue training without this updater history, the magnitudes of the updates can be different (usually much larger) than if we had the updater history. This can adversely affect network training after reloading the network.
 
 To save an updater, you can use the following processes (in addition to the previous code above)
+
 ```
+
 //Save the updater:
 try(ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("updater.bin"))){
     oos.writeObject(model.getUpdater());
@@ -63,7 +67,9 @@ try(ObjectInputStream ois = new ObjectInputStream(new FileInputStream("updater.b
 
 //Set the updater in the network
 model.setUpdater(updater);
+
 ```
+
 
 ## Model Utils
 
