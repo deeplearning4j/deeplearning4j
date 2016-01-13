@@ -206,7 +206,9 @@ public:
 			}
 
 			else if (!resultScalar) {
-				xTadInfo = shape::tadInfo(xShapeInfo, dimension, dimensionLength);
+				if(tid == 0) {
+					xTadInfo = shape::tadInfo(xShapeInfo, dimension, dimensionLength);
+				}
 				__syncthreads();
 
 
@@ -229,7 +231,7 @@ public:
 					//note here that we compute the offset and then accumulate in shared memory
 					for (int element = 0;
 							element < elementsPerTad; element++, offsetForTad += xElementWiseStride) {
-						sPartials[tid] = update(sPartials[tid], dx[offsetForTad], extraParams);
+						sPartials[tid] = update(sPartials[tid], op(dx[offsetForTad],extraParams), extraParams);
 						__syncthreads();
 					}
 
@@ -269,7 +271,13 @@ public:
 				if (tid == 0) {
 					for (int i = 0; i < reductionIndexesPerBlock; i++) {
 						int reductionIndexToProcess = i + blockIdx.x * reductionIndexesPerBlock;
-						result[reductionIndexToProcess] = sPartials[i];
+                        if(postProcessOrNot) {
+
+                        }
+                        else {
+    						result[reductionIndexToProcess] = sPartials[i];
+
+                        }
 					}
 
 					shape::freePermuteInfo(xTadInfo);
@@ -533,8 +541,7 @@ public:
 	__always_inline
 
 #endif
-	T postProcess(T reduction, int n, int xOffset, T *dx, int incx,
-			T *extraParams, T *result)  {
+	T postProcess(T reduction, int n, T *extraParams)  {
 		return reduction;
 	}
 
@@ -580,9 +587,7 @@ public:
 				startingVal = update(startingVal, curr, extraParams);
 			}
 
-			result[0] = postProcess(startingVal, length,
-					shape::offset(xShapeInfo), x,
-					shape::elementWiseStride(xShapeInfo), extraParams, result);
+			result[0] = postProcess(startingVal, length,extraParams);
 		} else {
 #pragma omp simd
 			for (int i = 0; i < length; i++) {
@@ -591,9 +596,7 @@ public:
 						extraParams);
 			}
 
-			result[0] = postProcess(startingVal, length,
-					shape::offset(xShapeInfo), x,
-					shape::elementWiseStride(xShapeInfo), extraParams, result);
+			result[0] = postProcess(startingVal, length, extraParams);
 
 		}
 
@@ -619,9 +622,7 @@ public:
 		}
 #pragma omp simd
 		for (int i = 0; i < resultLength; i++) {
-			result[i] = postProcess(result[i], tadLength,
-					shape::offset(xShapeInfo), x,
-					shape::elementWiseStride(xShapeInfo), extraParams, result);
+			result[i] = postProcess(result[i], tadLength,extraParams);
 		}
 
 		shape::freePermuteInfo(tadPermuteInfo);

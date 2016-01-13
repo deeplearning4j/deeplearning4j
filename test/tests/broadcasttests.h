@@ -9,7 +9,6 @@
 #include <shape.h>
 #include <buffer.h>
 #include "testhelpers.h"
-#include <cuda_helpers.h>
 static functions::broadcast::BroadcastOpFactory<double> *opFactory3 = 0;
 
 TEST_GROUP(BroadCasting) {
@@ -28,21 +27,7 @@ TEST_GROUP(BroadCasting) {
 	}
 };
 
-#ifdef __CUDACC__
-__global__ void tryInstant() {
-#if __CUDA_ARCH__ >= 500
-	functions::broadcast::ops::Add<double> *op = new functions::broadcast::ops::Add<double>();
-	delete op;
-#endif
-}
-#endif
 
-TEST(BroadCasting,Kernel) {
-#ifdef __CUDACC__
-	tryInstant<<<1,1,1>>>();
-	checkCudaErrors(cudaDeviceSynchronize());
-#endif
-}
 
 TEST(BroadCasting,Addition) {
 	functions::broadcast::Broadcast<double> *add = opFactory3->getOp(0);
@@ -106,20 +91,16 @@ TEST(BroadCasting,Addition) {
 	gpuInformation[1] = gridSize;
 	gpuInformation[2] = sMemSize;
 	gpuInformation[3] = 49152;
+	nd4j::array::NDArrays<double>::allocateNDArrayOnGpu(&data);
+	nd4j::array::NDArrays<double>::allocateNDArrayOnGpu(&vector);
+	nd4j::array::NDArrays<double>::copyFromGpu(&data);
+
 	nd4j::buffer::Buffer<int> *gpuInfoBuff = nd4j::buffer::createBuffer<int>(gpuInformation,4);
-
-  /*
-   * 	int opNum,
-		double *x, int *xShapeInfo,
-		double *y, int *yShapeInfo,
-		double *result, int *resultShapeInfo,
-		int *dimension,
-		int dimensionLength,
-		int *gpuInformation
-   */
-
+	for(int i = 0; i < length; i++) {
+		printf("Data[%d] for broadcast before was %f\n",i,data->data->data[i]);
+	}
 	broadcastDouble<<<blockSize,gridSize,sMemSize>>>(
-			5,
+			0,
 			data->data->gData,
 			shapeInfoBuferBuff->gData,
 			vector->data->gData,
@@ -128,12 +109,13 @@ TEST(BroadCasting,Addition) {
 			shapeInfoBuferBuff->gData,
 			dimensionBuff->gData,
 			dimensionLength,
-			gpuInfoBuff);
+			gpuInfoBuff->gData);
 	checkCudaErrors(cudaDeviceSynchronize());
-
-
-
 	nd4j::buffer::copyDataFromGpu(&data->data);
+	for(int i = 0; i < length; i++) {
+		printf("Data[%d] for broadcast was %f\n",i,data->data->data[i]);
+	}
+	CHECK(arrsEquals(rank, comparison, data->data->data));
 #endif
 
 

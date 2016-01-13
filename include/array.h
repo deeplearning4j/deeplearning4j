@@ -304,7 +304,7 @@ __host__
 
 void NDArrays<T>::copyFromGpu(NDArray<T> **arr) {
 	NDArray<T> * arrRef = *arr;
-	checkCudaErrors(cudaMemcpy(arrRef->data, arrRef->gData, lengthInBytes(arrRef), cudaMemcpyDeviceToHost));
+	checkCudaErrors(cudaMemcpy(arrRef->data->data, arrRef->data->gData, lengthInBytes(arrRef), cudaMemcpyDeviceToHost));
 }
 
 #endif

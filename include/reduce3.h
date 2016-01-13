@@ -24,8 +24,7 @@ public:
 	__host__  __device__
 
 #endif
-	inline T postProcess(T reduction, int n, int xOffset, T *dx, int incx,
-			T *extraParams, T *result) = 0;
+	inline T postProcess(T reduction, int n,T *extraParams) = 0;
 
 	/**
 	 *
@@ -153,6 +152,8 @@ public:
 		__shared__ volatile int endingYOffset;
 		//length for the tad
 		__shared__ volatile int yLength;
+		__shared__ int reductionIndexesPerBlock;
+		__shared__ int tensorsForDimension;
 
 		//starting index for tad
 		__shared__ volatile int currentBlockOffset;
@@ -166,14 +167,12 @@ public:
 		__shared__ volatile int tadsForBlock;
 
 		__shared__ volatile int elementsPerThread;
+		__shared__ int elementsPerTad;
 
 		//only compute the tad indexes once
-		__shared__
-		shape::TADPermuteInfo xTadInfo;
-		__shared__
-		shape::TADPermuteInfo yTadInfo;
-		__shared__
-		shape::TADPermuteInfo resultTadInfo;
+		__shared__ shape::TADPermuteInfo xTadInfo;
+		__shared__ shape::TADPermuteInfo yTadInfo;
+		__shared__ shape::TADPermuteInfo resultTadInfo;
 
 		int valueOffset, valueYOffset;
 
@@ -190,12 +189,26 @@ public:
 			}
 			else
 				resultScalar = 0;
+			tensorsForDimension = shape::tensorsAlongDimension(xShapeInfo, dimension, dimensionLength);
+
+			xOffset = shape::offset(xShapeInfo);
+			xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+			xLength = shape::length(xShapeInfo);
+
+
 			resultLength = shape::prod(shape::shapeOf(resultShapeInfo), shape::rank(resultShapeInfo));
 			xOffset = shape::offset(xShapeInfo);
 			xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+			elementsPerTad = xLength / resultLength;
 
 			yElementWiseStride = shape::elementWiseStride(yShapeInfo);
 			yOffset = shape::offset(yShapeInfo);
+			if (gridDim.x >= resultLength) {
+				reductionIndexesPerBlock = 1;
+			}
+			else {
+				reductionIndexesPerBlock = resultLength / gridDim.x;
+			}
 		}
 
 		__syncthreads();
@@ -230,8 +243,7 @@ public:
 			// write result for this block to global mem
 			if (tid == 0) {
 				if (postProcessOrNot)
-					result[blockIdx.x] = postProcess(sPartials[0], xLength, xOffset, dx, xElementWiseStride,
-							extraParams, result);
+					result[blockIdx.x] = postProcess(sPartials[0], xLength,extraParams);
 				else {
 					result[blockIdx.x] = sPartials[0];
 				}
@@ -239,120 +251,86 @@ public:
 		}
 
 		else if (!resultScalar) {
-			if (tid == 0) {
+			if(tid == 0) {
 				xTadInfo = shape::tadInfo(xShapeInfo, dimension, dimensionLength);
 				yTadInfo = shape::tadInfo(yShapeInfo, dimension, dimensionLength);
-				resultTadInfo = shape::tadInfo(resultShapeInfo, dimension, dimensionLength);
+			}
+			__syncthreads();
 
-				resultScalar = shape::isScalar(resultShapeInfo);
-				currentBlockOffset = offset(blockIdx.x, xShapeInfo, dimensionLength, xTadInfo);
-				endingOffset = offset(blockIdx.x + 1, xShapeInfo, dimensionLength, xTadInfo);
-				resultLength = shape::prod(shape::shapeOf(resultShapeInfo), shape::rank(resultShapeInfo));
+			if (reductionIndexesPerBlock * blockIdx.x >= resultLength)
+				return;
 
-				//initialize x
-				xShape = shape::shapeOf(xShapeInfo);
-				xRank = shape::rank(xShapeInfo);
-				xOffset = shape::offset(xShapeInfo);
-				xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+			int tadsPerReductionIndex = tensorsForDimension / resultLength;
 
-				yOffset = shape::offset(yShapeInfo);
-				yElementWiseStride = shape::elementWiseStride(yShapeInfo);
+			//minimum number of threads needed for each reduction index
+			int tadsNeeded = reductionIndexesPerBlock * tadsPerReductionIndex;
 
-				currentYBlockOffset = offset(blockIdx.x, yShapeInfo, dimensionLength, yTadInfo);
-				endingYOffset = offset(blockIdx.x + 1, yShapeInfo, dimensionLength, yTadInfo);
+			//don't need all threads
+			if (tid >= tadsNeeded)
+				return;
+			else {
+				//process each tad
+				//tad wrt the thread
+				int currTad = tid + (blockIdx.x * reductionIndexesPerBlock);
+				int offsetForTad = shape::offset(currTad, xShapeInfo, dimensionLength, xTadInfo);
+				int yOffsetForTad = shape::offset(currTad, yShapeInfo, dimensionLength, yTadInfo);
+				printf("Processing elements per tad %d\n",elementsPerTad);
 
-				//reduction on whole buffer
-				if (resultScalar)
-					xLength = n;
+				//update the reduction for the thread for the current tad
+				//note here that we compute the offset and then accumulate in shared memory
+				for (int element = 0;
+						element < elementsPerTad; element++, offsetForTad += xElementWiseStride,yOffsetForTad += yElementWiseStride) {
+					sPartials[tid] = update(sPartials[tid], op(dx[offsetForTad],dy[yOffsetForTad],extraParams), extraParams);
+					__syncthreads();
+				}
 
-				else
-					xLength = shape::prod(xTadInfo.tensorShape, xTadInfo.tensorShapeLength);
+			}
 
-				valueOffset = shape::tadOffset(xShapeInfo, currentBlockOffset);
-				double tads = shape::tensorsAlongDimension(xRank, shape::prod(xShape, xRank), xShape, dimension,
-						dimensionLength);
-				if (gpuInformation[0] >= shape::MAX_NUM_THREADS && tads > gpuInformation[0])
-					tadsForBlock = shape::tadsPerBlock(gpuInformation[0], tads);
-				else
-					tadsForBlock = 1;
-				if (tadsForBlock < 1)
-					tadsForBlock = 1;
-				//set a constant start value
-				startValue = reduction;
-				//when the number of elements per tad is greater than grid size, we need to compute partial
-				//reductions when initializing
-				if (xLength > gpuInformation[1])
-					elementsPerThread = xLength / gpuInformation[1];
-				else
-					elementsPerThread = 1;
+			//first thread for a reduction index
+			if (tid % tadsPerReductionIndex == 0 && tadsPerReductionIndex > 1) {
+				/**
+				 * Each reduction index is handled by k tads
+				 * which need to be combined in each thread.
+				 *
+				 * Since the TADS to be combined
+				 * are to be next to each other
+				 * we can assume that
+				 * the items in shared memory
+				 * can be combined and collapsed
+				 * in to the first thread's
+				 * entry.
+				 *
+				 * This follows a similar pattern
+				 * for global block wise reduction
+				 * and computing parallel sums
+				 * in other reduction implementations.
+				 *
+				 */
+				for (int i = 1; i < tadsPerReductionIndex; i++) {
+					sPartials[tid] = update(sPartials[tid], sPartials[tid + i], extraParams);
+					__syncthreads();
+				}
 			}
 
 			__syncthreads();
 
-			//number of tads per block to process
-			for (int i = 0; i < tadsForBlock; i++) {
-				int tadIndex = shape::tadForBlockIndex(gpuInformation[0], blockIdx.x, i);
-				int blockOffset = offset(tadIndex, xShapeInfo, dimensionLength, xTadInfo);
-				int blockYOffset = offset(tadIndex, yShapeInfo, dimensionLength, yTadInfo);
-
-				//concurrently load all elements in to shared memory
-				if (elementsPerThread > 1) {
-					for (int i = 0; i < elementsPerThread; i++) {
-						if (i > 0) {
-							valueOffset = blockOffset + (tid * i * xElementWiseStride);
-							valueYOffset = blockYOffset + (tid * i * yElementWiseStride);
-							//break at the end
-							if (valueOffset >= n)
-								break;
-							T val = dx[valueOffset];
-							T yVal = dy[valueYOffset];
-							sPartials[tid] = update(sPartials[tid], op(val, yVal, extraParams), extraParams);
-						}
-
-						else {
-							valueOffset = blockOffset + (tid * i * xElementWiseStride);
-							valueYOffset = blockYOffset + (tid * i * yElementWiseStride);
-
-							//break at the end
-							if (valueOffset >= n)
-								break;
-							T val = dx[valueOffset];
-							T yVal = dy[valueYOffset];
-							printf("Comparing value x %f and y %f\n", val, yVal);
-							sPartials[tid] = val;
-							sPartials[(1 + tid) * 2] = yVal;
-						}
-
-					}
-				}
-				else {
-					int blockOffset = currentBlockOffset;
-					int yBlockOffset = currentYBlockOffset;
-					valueOffset = blockOffset + tid * xElementWiseStride;
-					valueYOffset = yBlockOffset + tid * yElementWiseStride;
-					T val = dx[valueOffset];
-					T val2 = dy[valueYOffset];
-					sPartials[tid] = val;
-					sPartials[(1 + tid) * 2] = val2;
-				}
-
-				__syncthreads();
-
-				//do reduction in shared memory only on the first thread
-				if (tid == 0) {
-					curr = startValue;
-					for (int j = 0; j < xLength; j++) {
-						curr = update(curr, op(sPartials[j], sPartials[(1 + j) * 2], extraParams), extraParams);
-					}
-
+			//after all the threads are done processing each first item in shared memory
+			//should correspond to the final value for the particular reduction index
+			//that was set for this block.
+			if (tid == 0) {
+				for (int i = 0; i < reductionIndexesPerBlock; i++) {
+					int reductionIndexToProcess = i + blockIdx.x * reductionIndexesPerBlock;
 					if (postProcessOrNot) {
-						result[tadIndex] = postProcess(curr, xLength, xOffset, dx, xElementWiseStride,
-								extraParams, result);
+						result[reductionIndexToProcess] = postProcess(sPartials[i], xLength,extraParams);
 					}
 					else {
-						result[tadIndex] = curr;
+						result[reductionIndexToProcess] = sPartials[i];
 					}
 				}
+
+				shape::freePermuteInfo(xTadInfo);
+				shape::freePermuteInfo(yTadInfo);
+
 			}
 
 		}
@@ -380,9 +358,7 @@ public:
 						extraParams);
 			}
 
-			result[0] = postProcess(startingVal, length,
-					shape::offset(xShapeInfo), x,
-					shape::elementWiseStride(xShapeInfo), extraParams, result);
+			result[0] = postProcess(startingVal, length,extraParams);
 
 		} else {
 #pragma omp simd
@@ -393,9 +369,7 @@ public:
 								extraParams), extraParams);
 			}
 
-			result[0] = postProcess(startingVal, length,
-					shape::offset(xShapeInfo), x,
-					shape::elementWiseStride(xShapeInfo), extraParams, result);
+			result[0] = postProcess(startingVal, length,extraParams);
 
 		}
 
@@ -422,9 +396,7 @@ public:
 		}
 #pragma omp simd
 		for (int i = 0; i < resultLength; i++) {
-			result[i] = postProcess(result[i], tadLength,
-					shape::offset(xShapeInfo), x,
-					shape::elementWiseStride(xShapeInfo), extraParams, result);
+			result[i] = postProcess(result[i], tadLength,extraParams);
 		}
 	}
 
@@ -449,8 +421,7 @@ public:
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	inline T postProcess(T reduction, int n, int xOffset, T *dx, int incx,
-			T *extraParams, T *result) {
+	inline T postProcess(T reduction, int n,T *extraParams) {
 		return reduction / (extraParams[1] * extraParams[2]);
 	}
 	/**
@@ -532,8 +503,7 @@ public:
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	inline T postProcess(T reduction, int n, int xOffset, T *dx, int incx,
-			T *extraParams, T *result) {
+	inline T postProcess(T reduction, int n,T *extraParams) {
 		return nd4j::math::nd4j_sqrt<T>(reduction);
 	}
 	/**
@@ -616,9 +586,8 @@ public:
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	inline T postProcess(T reduction, int n, int xOffset, T *dx, int incx,
-			T *extraParams, T *result) {
-		return reduction / extraParams[0] / extraParams[1];
+	inline T postProcess(T reduction, int n,T *extraParams) {
+		return reduction;
 	}
 	/**
 	 *
@@ -751,8 +720,8 @@ __device__ void reduce3Generic(
 	__shared__ functions::reduce3::Reduce3<T> * op;
 	__shared__ functions::reduce3::Reduce3OpFactory<T> *reduce3OpFactory;
 
-	 if(threadIdx.x == 0)
-		 reduce3OpFactory = new functions::reduce3::Reduce3OpFactory<T>();
+	if(threadIdx.x == 0)
+		reduce3OpFactory = new functions::reduce3::Reduce3OpFactory<T>();
 	__syncthreads();
 
 	if(threadIdx.x == 0)

@@ -72,8 +72,7 @@ public:
 				i < resultLength;
 				i += blockDim.x * gridDim.x) {
 			int yOffset2 = yOffset + ((i / xElementWiseStride) % yLength) * yElementWiseStride;
-			if (i < resultLength)
-				result[i] = op(x[i], y[yOffset2]);
+			result[i] = op(x[i],y[yOffset2]);
 
 		}
 
@@ -139,7 +138,7 @@ public:
 
 namespace ops {
 template<typename T>
-class Add: public virtual functions::broadcast::Broadcast<T> {
+class Add: public  functions::broadcast::Broadcast<T> {
 public:
 	virtual
 #ifdef __CUDACC__
@@ -573,7 +572,7 @@ __constant__ functions::broadcast::BroadcastOpFactory<float> *broadcastFloatFact
 extern "C"
 __host__ void setupBroadcastFactories() {
 	printf("Setting up transform factories\n");
-/*	functions::broadcast::BroadcastOpFactory<double> *newOpFactory =  new functions::broadcast::BroadcastOpFactory<double>();
+	/*	functions::broadcast::BroadcastOpFactory<double> *newOpFactory =  new functions::broadcast::BroadcastOpFactory<double>();
 	functions::broadcast::BroadcastOpFactory<float> *newOpFactoryFloat =  new functions::broadcast::BroadcastOpFactory<float>();
 	checkCudaErrors(cudaMemcpyToSymbol(broadcastDoubleFactory, newOpFactory, sizeof( functions::broadcast::BroadcastOpFactory<double> )));
 	checkCudaErrors(cudaMemcpyToSymbol(broadcastFloatFactory, newOpFactory, sizeof( functions::broadcast::BroadcastOpFactory<float>)));
@@ -601,7 +600,17 @@ __device__ void broadcastGeneric(
 	__syncthreads();
 
 
-	op->transform(x,xShapeInfo,y,yShapeInfo,result,resultShapeInfo,dimension,dimensionLength,gpuInformation);
+	op->transform(
+			x,
+			xShapeInfo,
+			y,
+			yShapeInfo,
+			result,
+			resultShapeInfo,
+			dimension,
+			dimensionLength,
+			gpuInformation);
+
 	if(threadIdx.x == 0) {
 		free(op);
 		free(newOpFactory);
