@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: com.thoughtworks.qdox:qdox:1.10.1">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/com/thoughtworks/qdox/qdox/1.10.1/qdox-1.10.1.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/com/thoughtworks/qdox/qdox/1.10.1/qdox-1.10.1-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/com/thoughtworks/qdox/qdox/1.10.1/qdox-1.10.1-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

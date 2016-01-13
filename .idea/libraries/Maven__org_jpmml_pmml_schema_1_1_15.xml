@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: org.jpmml:pmml-schema:1.1.15">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/jpmml/pmml-schema/1.1.15/pmml-schema-1.1.15.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/org/jpmml/pmml-schema/1.1.15/pmml-schema-1.1.15-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/jpmml/pmml-schema/1.1.15/pmml-schema-1.1.15-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
