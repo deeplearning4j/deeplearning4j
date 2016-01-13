@@ -14,20 +14,7 @@
     </ADDITIONAL_GENERATION_ENVIRONMENT>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="21dee1f8-48c6-491e-9f40-7488b577e28b" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/include/broadcasting.h" afterPath="$PROJECT_DIR$/include/broadcasting.h" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/include/indexreduce.h" afterPath="$PROJECT_DIR$/include/indexreduce.h" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/include/pairwise_transform.h" afterPath="$PROJECT_DIR$/include/pairwise_transform.h" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/include/reduce.h" afterPath="$PROJECT_DIR$/include/reduce.h" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/include/reduce3.h" afterPath="$PROJECT_DIR$/include/reduce3.h" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/include/scalar.h" afterPath="$PROJECT_DIR$/include/scalar.h" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/include/shape.h" afterPath="$PROJECT_DIR$/include/shape.h" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/include/transform.h" afterPath="$PROJECT_DIR$/include/transform.h" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/test/main.cu" afterPath="$PROJECT_DIR$/test/main.cu" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/test/tests/reducetests.h" afterPath="$PROJECT_DIR$/test/tests/reducetests.h" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/test/tests/shapetests.h" afterPath="$PROJECT_DIR$/test/tests/shapetests.h" />
-    </list>
+    <list default="true" id="21dee1f8-48c6-491e-9f40-7488b577e28b" name="Default" comment="" />
     <ignored path="nativeoperations.iws" />
     <ignored path=".idea/workspace.xml" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />

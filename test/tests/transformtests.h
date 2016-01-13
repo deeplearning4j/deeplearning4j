@@ -29,7 +29,7 @@ TEST_GROUP(Transform) {
 	}
 };
 
-/*TEST(Transform,Log) {
+TEST(Transform,Log) {
 	int rank = 2;
 	int *shape = (int *) malloc(sizeof(int) * rank);
 	shape[0] = 2;
@@ -44,8 +44,7 @@ TEST_GROUP(Transform) {
 
 	double *extraParams = (double *) malloc(sizeof(double));
 
-	functions::transform::Transform<double> *log = opFactory->getOp(
-			"log_strided");
+	functions::transform::Transform<double> *log = opFactory->getOp(5);
 	log->exec(data->data->data, 1, data->data->data, 1, extraParams, length);
 
 	double comparison[4] = { 0., 0.69314718, 1.09861229, 1.38629436 };
@@ -56,7 +55,7 @@ TEST_GROUP(Transform) {
 	free(stride);
 	delete log;
 
-}*/
+}
 
 TEST(Transform,Sigmoid) {
 	int rank = 2;
@@ -85,7 +84,6 @@ TEST(Transform,Sigmoid) {
 
 
 #ifdef __CUDACC__
-	printf("Ran cuda\n");
 	setupTransfromFactories();
 	for (int i = 0; i < length; i++)
 			data->data->data[i] = i + 1;
