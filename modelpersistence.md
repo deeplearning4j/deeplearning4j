@@ -17,32 +17,28 @@ Loading the network is also done in two (or three) steps.
 
 Please see [this code sample](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/deepbelief/DBNIrisExample.java#L127) for an example of how to save and reload a model.
 
-```
-
-//Write the network parameters:
-OutputStream fos = Files.newOutputStream(Paths.get("coefficients.bin"));
-DataOutputStream dos = new DataOutputStream(fos);
-Nd4j.write(model.params(), dos);
-dos.flush();
-dos.close();
-
-//Write the network configuration:
-FileUtils.write(new File("conf.json"), model.getLayerWiseConfigurations().toJson());
-
-//Load network configuration from disk:
-MultiLayerConfiguration confFromJson = MultiLayerConfiguration.fromJson(FileUtils.readFileToString(new File("conf.json")));
-
-//Load parameters from disk:
-DataInputStream dis = new DataInputStream(new FileInputStream("coefficients.bin"));
-INDArray newParams = Nd4j.read(dis);
-dis.close();
-
-//Create a MultiLayerNetwork from the saved configuration and parameters
-MultiLayerNetwork savedNetwork = new MultiLayerNetwork(confFromJson);
-savedNetwork.init();
-savedNetwork.setParameters(newParams);
-
-```
+        //Write the network parameters:
+        OutputStream fos = Files.newOutputStream(Paths.get("coefficients.bin"));
+        DataOutputStream dos = new DataOutputStream(fos);
+        Nd4j.write(model.params(), dos);
+        dos.flush();
+        dos.close();
+        
+        //Write the network configuration:
+        FileUtils.write(new File("conf.json"), model.getLayerWiseConfigurations().toJson());
+        
+        //Load network configuration from disk:
+        MultiLayerConfiguration confFromJson = MultiLayerConfiguration.fromJson(FileUtils.readFileToString(new File("conf.json")));
+        
+        //Load parameters from disk:
+        DataInputStream dis = new DataInputStream(new FileInputStream("coefficients.bin"));
+        INDArray newParams = Nd4j.read(dis);
+        dis.close();
+        
+        //Create a MultiLayerNetwork from the saved configuration and parameters
+        MultiLayerNetwork savedNetwork = new MultiLayerNetwork(confFromJson);
+        savedNetwork.init();
+        savedNetwork.setParameters(newParams);
 
 ## <a name="updaters">A Note on Updaters</a>
 If you want to continue training after loading a network, it is usually advisable to save an additional part of the network, the updater in addition to the configuration and parameters. If no further training of the network is required, you do not need to save and load the updater.
@@ -52,24 +48,19 @@ It is important to note here that most of these updaters contain internal state 
 
 To save an updater, you can use the following processes (in addition to the previous code above)
 
-```
-
-//Save the updater:
-try(ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("updater.bin"))){
-    oos.writeObject(model.getUpdater());
-}
-
-//Load the updater:
-org.deeplearning4j.nn.api.Updater updater;
-try(ObjectInputStream ois = new ObjectInputStream(new FileInputStream("updater.bin"))){
-    updater = (org.deeplearning4j.nn.api.Updater) ois.readObject();
-}
-
-//Set the updater in the network
-model.setUpdater(updater);
-
-```
-
+        //Save the updater:
+        try(ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("updater.bin"))){
+            oos.writeObject(model.getUpdater());
+        }
+        
+        //Load the updater:
+        org.deeplearning4j.nn.api.Updater updater;
+        try(ObjectInputStream ois = new ObjectInputStream(new FileInputStream("updater.bin"))){
+            updater = (org.deeplearning4j.nn.api.Updater) ois.readObject();
+        }
+        
+        //Set the updater in the network
+        model.setUpdater(updater);
 
 ## Model Utils
 
