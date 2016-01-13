@@ -183,13 +183,13 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
     protected void initNegative() {
         if(negative > 0) {
             syn1Neg = Nd4j.zeros(syn0.shape());
-            makeTable(expTable.length,0.75);
+            makeTable(Math.max(expTable.length, 100000),0.75);
         }
     }
 
 
     protected void initExpTable() {
-        expTable = new double[1000000];
+        expTable = new double[100000];
         for (int i = 0; i < expTable.length; i++) {
             double tmp =   FastMath.exp((i / (double) expTable.length * 2 - 1) * MAX_EXP);
             expTable[i]  = tmp / (tmp + 1.0);
