@@ -703,8 +703,7 @@ public:
 	__always_inline
 
 #endif
-	T postProcess(T reduction, int n, int xOffset, T *dx, int incx,
-			T *extraParams, T *result) override {
+	T postProcess(T reduction, int n,T *extraParams) override {
 		return reduction;
 	}
 
@@ -774,8 +773,7 @@ public:
 	__always_inline
 
 #endif
-	T postProcess(T reduction, int n, int xOffset, T *dx, int incx,
-			T *extraParams, T *result) override {
+	T postProcess(T reduction, int n,T *extraParams) override {
 		return reduction;
 	}
 
@@ -847,8 +845,7 @@ public:
 	__always_inline
 
 #endif
-	T postProcess(T reduction, int n, int xOffset, T *dx, int incx,
-			T *extraParams, T *result) override {
+	T postProcess(T reduction, int n,T *extraParams) override {
 		return reduction / (T) n;
 	}
 
@@ -922,8 +919,7 @@ public:
 	__always_inline
 
 #endif
-	T postProcess(T reduction, int n, int xOffset, T *dx, int incx,
-			T *extraParams, T *result) override {
+	T postProcess(T reduction, int n,T *extraParams) override {
 		return reduction;
 	}
 
@@ -995,8 +991,7 @@ public:
 	__always_inline
 
 #endif
-	T postProcess(T reduction, int n, int xOffset, T *dx, int incx,
-			T *extraParams, T *result) override {
+	T postProcess(T reduction, int n,T *extraParams) override {
 		return reduction;
 	}
 
@@ -1068,8 +1063,7 @@ public:
 	__always_inline
 
 #endif
-	T postProcess(T reduction, int n, int xOffset, T *dx, int incx,
-			T *extraParams, T *result) override {
+	T postProcess(T reduction, int n,T *extraParams) override {
 		return reduction;
 	}
 
@@ -1141,8 +1135,7 @@ public:
 	__always_inline
 
 #endif
-	T postProcess(T reduction, int n, int xOffset, T *dx, int incx,
-			T *extraParams, T *result) override {
+	T postProcess(T reduction, int n,T *extraParams) override {
 		return reduction;
 	}
 
@@ -1215,8 +1208,7 @@ public:
 	__always_inline
 
 #endif
-	T postProcess(T reduction, int n, int xOffset, T *dx, int incx,
-			T *extraParams, T *result) override {
+	T postProcess(T reduction, int n,T *extraParams) override {
 		return nd4j::math::nd4j_sqrt<T>(reduction);
 	}
 
@@ -1291,10 +1283,9 @@ public:
 	__always_inline
 
 #endif
-	T postProcess(T reduction, int n, int xOffset, T *dx, int incx,
-			T *extraParams, T *result) override {
+	T postProcess(T reduction, int n,T *extraParams) override {
 		return nd4j::math::nd4j_max<T>(nd4j::math::nd4j_abs<T>(reduction),
-				nd4j::math::nd4j_abs<T>(result[0]));
+				nd4j::math::nd4j_abs<T>(reduction));
 	}
 
 	virtual
@@ -1370,8 +1361,7 @@ public:
 	__always_inline
 
 #endif
-	T postProcess(T reduction, int n, int xOffset, T *dx, int incx,
-			T *extraParams, T *result) override {
+	T postProcess(T reduction, int n,T *extraParams) override {
 		T bias = extraParams[1];
 		return nd4j::math::nd4j_sqrt<T>(
 				(reduction - (nd4j::math::nd4j_pow<T>(bias, 2.0) / n))
@@ -1450,8 +1440,7 @@ public:
 	__always_inline
 
 #endif
-	T postProcess(T reduction, int n, int xOffset, T *dx, int incx,
-			T *extraParams, T *result) override {
+	T postProcess(T reduction, int n,T *extraParams) override {
 		T bias = extraParams[1];
 		return (reduction - (nd4j::math::nd4j_pow<T>(bias, 2.0) / n))
 				/ (T) (n - 1.0);;

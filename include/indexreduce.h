@@ -1117,7 +1117,6 @@ extern "C" __global__ void indexReduceFloat(int op,int n, float *dx, int *xShape
 		int *resultShapeInfo, int *gpuInformation,
 		int *dimension,
 		int dimensionLength, int postProcessOrNot) {
-	__shared__ functions::indexreduce::IndexReduce<float> *indexReduce;
 	indexReduceGeneric<float>(op,n,dx,xShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
 
 }
