@@ -915,8 +915,6 @@ ShapeInformation *shapeCopy(ShapeInformation *toCopy) {
 __host__ __device__
 #endif
 int computeElementWiseStride(int rank, int *shape, int *stride, int isFOrder) {
-	if (shape::isVector(shape, rank))
-		return stride[rank - 1];
 	int oldnd;
 	int *olddims = shape::copyOf(rank, shape);
 	int *oldstrides = shape::copyOf(rank, stride);
@@ -1028,6 +1026,7 @@ int computeElementWiseStride(int rank, int *shape, int *stride, int isFOrder) {
 	}
 	//returns the last element of the new stride array
 	int ret = last_stride;
+	printf("Returning %d\n",ret);
 	free(newStrides);
 	free(newShape);
 	free(oldstrides);
@@ -1040,20 +1039,10 @@ __host__ __device__
 #endif
 int computeElementWiseStride(int rank, int *shape, int *stride, int isFOrder,
 		int *dimension, int dimensionLength) {
-	ShapeInformation *shapeInformation = (ShapeInformation *) malloc(
-			sizeof(ShapeInformation));
-	shapeInformation->shape = shape;
-	shapeInformation->stride = stride;
-	shapeInformation->rank = rank;
-	shapeInformation->offset = 0;
-	int *shapeBuffer = shape::toShapeBuffer(shapeInformation);
-	int *tadInfo2 = shape::tadShapeInfo(0, shapeBuffer, dimension,
-			dimensionLength);
-	int ret = shape::computeElementWiseStride(shape::rank(tadInfo2),
-			shape::shapeOf(shapeBuffer), shape::stride(shapeBuffer), isFOrder);
-	free(shapeInformation);
-	free(shapeBuffer);
-	return ret;
+	if(dimensionLength == 1) {
+		return stride[dimension[0]];
+	}
+	return -1;
 
 }
 /**
@@ -1938,12 +1927,10 @@ TADPermuteInfo tadInfo(int *xShapeInfo, int *dimension, int dimensionLength) {
 
 	int *newPermuteDims = shape::concat(remove, removeLength, reverseDimensions,
 			dimensionLength);
-
-	int *permutedShape = shape::doPermuteSwap(shape::rank(xShapeInfo),
-			shape::shapeOf(xShapeInfo), newPermuteDims);
-	int *permutedStrides = shape::doPermuteSwap(shape::rank(xShapeInfo),
-			shape::stride(xShapeInfo), newPermuteDims);
-
+	int *permutedShape = shape::copyOf(shape::rank(xShapeInfo),shape::shapeOf(xShapeInfo));
+	int *permutedStrides = shape::copyOf(shape::rank(xShapeInfo),shape::stride(xShapeInfo));
+	shape::doPermuteSwap(shape::rank(xShapeInfo),&permutedShape,newPermuteDims);
+	shape::doPermuteSwap(shape::rank(xShapeInfo),&permutedStrides,newPermuteDims);
 	TADPermuteInfo info = { tensorShape, xRank, reverseDimensions, rangeRet,
 			removeLength, remove, zeroDimension, newPermuteDims, permutedShape,
 			permutedStrides, tensorShapeLength, tensorShapeProd };
@@ -2002,7 +1989,7 @@ int tensorsAlongDimension(int *shapeInfo, int *dimension, int dimensionLength) {
 	int *tensorShape = shape::keep(keepShape, dimension, dimensionLength,
 			rank(shapeInfo));
 	int ret = shape::length(shapeInfo)
-			/ shape::prod(tensorShape, dimensionLength);
+	/ shape::prod(tensorShape, dimensionLength);
 	free(tensorShape);
 	return ret;
 }

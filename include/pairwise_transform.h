@@ -799,7 +799,7 @@ public:
 	}
 
 #ifdef __CUDACC__
-	__host__ __device__
+	__inline__ __host__ __device__
 #endif
 	PairWiseTransform<T> *getOp(int op) {
 		if (op == 0)

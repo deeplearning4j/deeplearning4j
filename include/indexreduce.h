@@ -1045,7 +1045,7 @@ public:
 
 
 #ifdef __CUDACC__
-	__host__ __device__
+	__inline__ __host__ __device__
 #endif
 	functions::indexreduce::IndexReduce<T> * getOp(int op) {
 		if (op == 0) {

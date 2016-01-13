@@ -931,7 +931,7 @@ public:
 
 
 #ifdef __CUDACC__
-	__device__ __host__
+	__inline__ __device__ __host__
 #endif
 	Transform<T> * getOp(int op) {
 		//gets stuck on string comparison

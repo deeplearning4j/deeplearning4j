@@ -158,7 +158,6 @@ public:
 				reductionIndexesPerBlock = resultLength / gridDim.x;
 			}
 
-			xTadInfo = shape::tadInfo(xShapeInfo, dimension, dimensionLength);
 
 		}
 		__syncthreads();
@@ -207,6 +206,10 @@ public:
 			}
 
 			else if (!resultScalar) {
+				xTadInfo = shape::tadInfo(xShapeInfo, dimension, dimensionLength);
+				__syncthreads();
+
+
 				if (reductionIndexesPerBlock * blockIdx.x >= resultLength)
 					return;
 
@@ -533,6 +536,22 @@ public:
 	T postProcess(T reduction, int n, int xOffset, T *dx, int incx,
 			T *extraParams, T *result)  {
 		return reduction;
+	}
+
+#ifdef __CUDACC__
+	__inline__ __host__
+#endif
+	T aggregateBuffer(int n,T *buffer,T *extraParams) {
+
+		T ret = buffer[0];
+		printf("Starting at %f\n",ret);
+#pragma omp simd
+		for(int i = 1; i < n; i++) {
+			ret = update(ret,buffer[i],extraParams);
+		}
+		printf("Returning %f\n",ret);
+
+		return ret;
 	}
 
 	virtual
@@ -1463,7 +1482,7 @@ public:
 	}
 
 #ifdef __CUDACC__
-	__device__ __host__
+	__inline__ __device__ __host__
 #endif
 
 	virtual functions::reduce::ReduceFunction<T> * create(int op) {

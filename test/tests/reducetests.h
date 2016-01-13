@@ -37,6 +37,7 @@ TEST(Reduce, Sum) {
 		data[i] = i + 1;
 	}
 	int *resultShapeInfo = shape::createScalarShapeInfo();
+	assertBufferProperties(resultShapeInfo);
 
 	shape::ShapeInformation *shapeInfo = (shape::ShapeInformation *) malloc(
 			sizeof(shape::ShapeInformation));
@@ -51,6 +52,7 @@ TEST(Reduce, Sum) {
 	shapeInfo->elementWiseStride = 1;
 
 	int *shapeBuffer = shape::toShapeBuffer(shapeInfo);
+	assertBufferProperties(shapeBuffer);
 	double *extraParams = (double *) malloc(sizeof(double));
 	extraParams[0] = 0.0;
 
@@ -59,15 +61,81 @@ TEST(Reduce, Sum) {
 	sum->exec(data, shapeBuffer, extraParams, result, resultShapeInfo);
 	double comp = result[0];
 	CHECK(10.0 == comp);
-	free(extraParams);
-	free(shapeBuffer);
-	free(shapeInfo);
+
+
+	int dimensionLength = 1;
+	int *dimension = (int *) malloc(sizeof(int) * dimensionLength);
+	dimension[0] = shape::MAX_DIMENSION;
+
+
+	nd4j::buffer::Buffer<double> *dataBuff = nd4j::buffer::createBuffer(data,length);
+	nd4j::buffer::Buffer<int> *xShapeInfoBuff = nd4j::buffer::createBuffer(shapeBuffer,shape::shapeInfoLength(shapeInfo->rank));
+	nd4j::buffer::Buffer<double> *extraParamsBuff = nd4j::buffer::createBuffer(extraParams,1);
+	nd4j::buffer::Buffer<double> *resultBuffer = nd4j::buffer::createBuffer(result,1);
+	nd4j::buffer::Buffer<int> *dimensionBuffer = nd4j::buffer::createBuffer(dimension,dimensionLength);
+	nd4j::buffer::Buffer<int> *resultShapeBuff = nd4j::buffer::createBuffer(resultShapeInfo,shape::shapeInfoLength(2));
+
+
+#ifdef __CUDACC__
+	/*
+	 * reduceDouble(
+		int op,
+		int n,
+		double *dx,
+		int *xShapeInfo,
+		double *extraParams,
+		double *result,
+		int *resultShapeInfo,
+		int *gpuInformation,
+		int *dimension,
+		int dimensionLength,
+		int postProcessOrNot)
+	 */
+	int blockSize = 500;
+	int gridSize = 256;
+	int sMemSize = 20000;
+	nd4j::buffer::freeBuffer(&resultBuffer);
+	//realloc the buffer
+	result = (double *) malloc(sizeof(double) * blockSize);
+	resultBuffer = nd4j::buffer::createBuffer(result,blockSize);
+	int *gpuInformation = (int *) malloc(sizeof(int) * 4);
+	gpuInformation[0] = blockSize;
+	gpuInformation[1] = gridSize;
+	gpuInformation[2] = sMemSize;
+	gpuInformation[3] = 49152;
+	nd4j::buffer::Buffer<int> *gpuInfoBuff = nd4j::buffer::createBuffer<int>(gpuInformation,4);
+
+	reduceDouble<<<blockSize,gridSize,sMemSize>>>(
+			1,
+			length,
+			dataBuff->gData,
+			xShapeInfoBuff->gData,
+			extraParamsBuff->gData,
+			resultBuffer->gData,
+			resultShapeBuff->gData,
+			gpuInfoBuff->gData,
+			dimensionBuffer->gData,
+			dimensionLength,
+			1
+	);
+
+	checkCudaErrors(cudaDeviceSynchronize());
+	nd4j::buffer::copyDataFromGpu(&resultBuffer);
+    double resultFinal = sum->aggregateBuffer(length,result,extraParams);
+	CHECK(10.0 == result[0]);
+#endif
+
+
+	nd4j::buffer::freeBuffer(&resultShapeBuff);
+	nd4j::buffer::freeBuffer(&dimensionBuffer);
+	nd4j::buffer::freeBuffer(&dataBuff);
+	nd4j::buffer::freeBuffer(&xShapeInfoBuff);
+	nd4j::buffer::freeBuffer(&extraParamsBuff);
+	nd4j::buffer::freeBuffer(&resultBuffer);
 	delete sum;
-	free(data);
 	delete opFactory5;
 
 }
-
 TEST(Reduce,DimensionSum) {
 	functions::reduce::ReduceOpFactory<double> *opFactory5 =
 			new functions::reduce::ReduceOpFactory<double>();
