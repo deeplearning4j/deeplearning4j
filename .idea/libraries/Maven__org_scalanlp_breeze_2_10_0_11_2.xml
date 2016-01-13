@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: org.scalanlp:breeze_2.10:0.11.2">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/scalanlp/breeze_2.10/0.11.2/breeze_2.10-0.11.2.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/org/scalanlp/breeze_2.10/0.11.2/breeze_2.10-0.11.2-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/scalanlp/breeze_2.10/0.11.2/breeze_2.10-0.11.2-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
