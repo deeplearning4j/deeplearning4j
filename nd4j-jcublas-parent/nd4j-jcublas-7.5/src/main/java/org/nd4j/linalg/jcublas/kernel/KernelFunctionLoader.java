@@ -248,8 +248,21 @@ public class KernelFunctionLoader {
      */
     private void compileAndLoad(Properties props,int compiledAttempts) throws IOException {
 
-        // TODO: REMOVE THAT BEFORE RELEASE
+        /*
+            Since CUDA codebase was greatly changed, new kernel loader and mapper is required.
+            So, here we go.
+
+            We assume that:
+                1. We have .ptx/.cubin file.
+                2. We have predefined kernel names
+                3. We have predefined and hardcoded codes for Ops
+
+                So, we should load our distribution fille (since we have one now), and register all functions upon backend initialization.
+                Ops->code translation will be handled via hardcoded structure on the call
+         */
+
         if (1>0) return;
+        /*
         String f = props.getProperty(FUNCTION_KEY);
         String tmpDir = System.getProperty("java.io.tmpdir");
         StringBuffer dir = new StringBuffer();
@@ -302,7 +315,7 @@ public class KernelFunctionLoader {
         catch (Exception e) {
             throw new RuntimeException(e);
         }
-
+        */
     }
 
 
