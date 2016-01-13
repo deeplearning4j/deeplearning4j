@@ -93,12 +93,6 @@ Instead of the pluses, minus and equals signs, we'll give you the results in the
     love:indifference::fear:[apathy, callousness, timidity, helplessness, inaction]
     //the poetry of this single array is simply amazing...
     
-    Hillary Clinton:Rick Perry::Barack Obama:[Kinky_Friedman, David_Dewhurst, Farouk_Shami, George_W._Bush]
-    //Perry is a Republican presidential hopeful and former governor of Texas.
-    //Kinky and Farouk once ran for governor of Texas, 
-    //Dewhurst served as TX Lieutenant Gov., and Bush, you know.
-    //Not saying Rick Perry's kinky, but Word2vec thinks so.
-    
     Donald Trump:Republican::Barack Obama:[Democratic, GOP, Democrats, McCain]
     //It's interesting to note that, just as Obama and McCain were rivals,
     //so too, Word2vec thinks Trump has a rivalry with the idea Republican.
