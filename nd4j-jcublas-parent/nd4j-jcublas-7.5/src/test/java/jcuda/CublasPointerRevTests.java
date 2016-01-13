@@ -1436,4 +1436,50 @@ public class CublasPointerRevTests {
         // make sure buffer got 0 references left
         assertEquals(0, buffer.getPointersToContexts().size());
     }
+
+
+    /**
+     * This test is suited for primitive check for slices derived from N-dimensional arrays
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testPinned3DStride1() throws Exception {
+        // simple way to stop test if we're not on CUDA backend here
+        assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
+
+        // reset to default MemoryStrategy, most probable is Pinned
+        ContextHolder.getInstance().forceMemoryStrategyForThread(new PinnedMemoryStrategy());
+
+        assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
+
+        // we create 3D array, that will be used for vertically sliced arrays
+        INDArray baseArray = Nd4j.create(100, 200, 300);
+
+        INDArray slice = baseArray.slice(10,2);
+
+        System.out.println("Slice length: ["+ slice.length()+"], offset: ["+ slice.offset()+"], columns: ["+ slice.columns()+"], rows: ["+ slice.rows()+"] ");
+
+
+        CudaContext ctx = CudaContext.getBlasContext();
+
+        CublasPointer xAPointer = new CublasPointer(slice, ctx);
+
+        BaseCudaDataBuffer buffer = (BaseCudaDataBuffer) xAPointer.getBuffer();
+
+        // we should have full buffer allocated
+        assertEquals(6000000, buffer.length());
+
+        /*
+            Now if we'll close this pointer, it won't be really released, since freeDevicePointer() call assumes stride size 0, and we have stride 200
+         */
+
+        xAPointer.close();
+
+        // buffer must be free
+        assertTrue(buffer.isFreed());
+
+        // make sure buffer got 0 references left
+        assertEquals(0, buffer.getPointersToContexts().size());
+    }
 }
