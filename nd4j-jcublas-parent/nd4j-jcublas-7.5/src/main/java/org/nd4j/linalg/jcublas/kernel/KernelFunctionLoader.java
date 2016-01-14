@@ -32,6 +32,7 @@ import jcuda.utils.KernelLauncher;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
@@ -81,7 +82,9 @@ public class KernelFunctionLoader {
     private static KernelLauncher printFunction;
 
     private Table<String, DataType, String> paths = HashBasedTable.create();
-    private static Table<String,DataType,KernelLauncher> launchers = HashBasedTable.create();
+
+    // Thread, <FunctionName, DataType>, KernelLauncher
+    private static Table<String, Pair<String,DataType>,KernelLauncher> launchers = HashBasedTable.create();
 
     private KernelFunctionLoader() {}
 
@@ -118,7 +121,7 @@ public class KernelFunctionLoader {
      * @return the launcher for the given
      * function and data type
      */
-    public  static KernelLauncher launcher(String functionName,String dataType) {
+    public  static KernelLauncher launcher(String functionName,DataType dataType) {
         KernelLauncher launcher =  KernelFunctionLoader.getInstance().get(functionName,dataType);
         return launcher;
     }
@@ -131,7 +134,7 @@ public class KernelFunctionLoader {
      * false othr wise
      */
     public boolean exists(String functionName) {
-        return get(functionName,"double") != null || get(functionName,"float") != null;
+        return get(functionName, DataType.Double) != null || get(functionName, DataType.Float) != null;
     }
 
 
@@ -143,24 +146,23 @@ public class KernelFunctionLoader {
      * @return the kernel launcher for the
      * given function
      */
-    public KernelLauncher get(String functionName,String dataType) {
+    public KernelLauncher get(String functionName,DataType dataType) {
         String name = functionName + "_" + dataType;
         if(!launchers.containsRow(Thread.currentThread().getName())) {
-            throw new IllegalStateException("Kernel function ["+functionName+"] was not loaded during backend initialization.");
-            /*
+
             try {
-                loadModules(modules,kernelPath);
                 log.debug("Loading modules for " + Thread.currentThread().getName());
+                loadModules();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-            */
+
         }
 
-        KernelLauncher launcher = launchers.get(Thread.currentThread().getName(),name);
+        KernelLauncher launcher = launchers.get(Thread.currentThread().getName(), Pair.of(name, dataType));
         if(launcher == null) {
             name = functionName + "_strided" + "_" + dataType;
-            launcher = launchers.get(Thread.currentThread().getName(),name);
+            launcher = launchers.get(Thread.currentThread().getName(),Pair.of(name, dataType));
             if(launcher == null)
                 return null;
         }
@@ -289,6 +291,10 @@ public class KernelFunctionLoader {
 
         File tmpDir2 = new File(tmpDir + File.separator + "nd4j-kernels" + File.separatorChar + "output");
 
+        /*
+            TODO: actually it's a good idea to remove kernels between launches, or make them have version number as part of file-name, to avoid cross-release issues
+         */
+
         File kernelsCubin = new File(tmpDir2.getAbsolutePath() + File.separatorChar + "all.cubin");
         File kernelsPtx = new File(tmpDir2.getAbsolutePath() + File.separatorChar + "all.ptx");
 
@@ -303,11 +309,11 @@ public class KernelFunctionLoader {
             ClassPathResource cubinResource = new ClassPathResource("/all.cubin");
 
             if (ptxResource.exists()) {
-                log.info("Going for PTX distribution");
+                log.info("Going for PTX distribution...");
                 FileUtils.copyFile(ptxResource.getFile(), kernelsPtx);
                 usingPtx = true;
             } else if (cubinResource.exists()) {
-                log.info("Going for CUBIN distribution");
+                log.info("Going for CUBIN distribution...");
                 FileUtils.copyFile(cubinResource.getFile(), kernelsCubin);
             } else {
                 throw new IllegalStateException("No CUDA kernels were found!");
@@ -321,7 +327,7 @@ public class KernelFunctionLoader {
 
 
         /*
-            We're not redistributing .cu files anymore, only .ptx/.cubin
+            We're not redistributing .cu files anymore, only .ptx/.cubin, so we store all kernel names into paths map, that'll be reused on kernel invocations
          */
         for (String module : split) {
             // we have single .cubin file for all kernels
@@ -340,23 +346,17 @@ public class KernelFunctionLoader {
         /*
             now we map each kernel into cuda driver
         */
-        for(String function: paths.rowKeySet()) {
-
-            for (DataType dataType: DataType.values()) {
-                // we assume symmetric values for functions/datatypes. i.e.:path CAN'T be null
-                String path = paths.get(function, dataType);
-                log.info("Loading {}{} from {}", function, dataType.toString(), (usingPtx ? "ptx": "cubin"));
-
-
-                KernelLauncher launch = KernelLauncher.load(path, function + dataType.toString(), dataType.toString());
-                launchers.put(function, dataType, launch);
-            }
+        try {
+            loadModules();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
-
 
 
         if (1>0) return;
         /*
+        TODO: legacy code, to be removed later
+
         String f = props.getProperty(FUNCTION_KEY);
         String tmpDir = System.getProperty("java.io.tmpdir");
         StringBuffer dir = new StringBuffer();
@@ -435,6 +435,24 @@ public class KernelFunctionLoader {
         JCuda.cudaDeviceSynchronize();
     }
 
+    /**
+     * This method caches all kernels for current thread
+     * @throws Exception
+     */
+    private void loadModules() throws Exception {
+        for(String function: paths.rowKeySet()) {
+
+            for (DataType dataType: DataType.values()) {
+                // we assume symmetric values for functions/datatypes. i.e.:path CAN'T be null
+                String path = paths.get(function, dataType);
+                log.info("Loading {}{}", function, dataType.toString());
+
+
+                KernelLauncher launch = KernelLauncher.load(path, function + dataType.toString(), dataType.toString());
+                launchers.put(Thread.currentThread().getName(), Pair.of(function, dataType), launch);
+            }
+        }
+    }
 
     @Deprecated
     private void loadModules(String[] split,String kernelPath) throws Exception {
