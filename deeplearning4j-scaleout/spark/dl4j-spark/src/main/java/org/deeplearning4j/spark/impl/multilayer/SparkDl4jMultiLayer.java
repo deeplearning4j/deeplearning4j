@@ -298,20 +298,16 @@ public class SparkDl4jMultiLayer implements Serializable {
     private void runIteration(JavaRDD<DataSet> rdd) {
 
         log.info("Broadcasting initial parameters of length " + network.numParams(false));
-        INDArray valToBroadcast = network.params(false);
-        this.params = sc.broadcast(valToBroadcast);
-        Updater updater = network.getUpdater();
-        if(updater == null) {
-            network.setUpdater(UpdaterCreator.getUpdater(network));
-            log.warn("Unable to propagate null updater");
-            updater = network.getUpdater();
-        }
-        this.updater = sc.broadcast(updater);
-
+//        INDArray valToBroadcast = network.params(false);
+//        this.params = sc.broadcast(valToBroadcast);
+//        if(network.getUpdater() == null) {
+//            network.setUpdater(UpdaterCreator.getUpdater(network));
+//            log.warn("Unable to propagate null updater");
+//            updater = sc.broadcast(network.getUpdater());
+//        }
 
         int paramsLength = network.numParams(false);
         boolean accumGrad = sc.getConf().getBoolean(ACCUM_GRADIENT, false);
-
 
         if(accumGrad) {
             //Learning via averaging gradients
@@ -346,9 +342,8 @@ public class SparkDl4jMultiLayer implements Serializable {
         else {
 
             //Standard parameter averaging
-            JavaRDD<Tuple3<INDArray,Updater,Double>> results = rdd.mapPartitions(new IterativeReduceFlatMap(conf.toJson(),
-                    this.params, this.updater, this.bestScoreAcc),true).persist(org.apache.spark.storage.StorageLevel.MEMORY_ONLY_SER());
-
+            JavaRDD<Tuple2<MultiLayerNetwork, Double>> results = rdd.map(new IterativeReduceFlatMap(network,
+                    bestScoreAcc)).persist(org.apache.spark.storage.StorageLevel.MEMORY_AND_DISK_SER());
             JavaRDD<INDArray> resultsParams = results.map(new INDArrayFromTupleFunction());
             log.info("Ran iterative reduce... averaging parameters now.");
             Adder a = new Adder(paramsLength);
@@ -363,10 +358,10 @@ public class SparkDl4jMultiLayer implements Serializable {
             log.info("Processing updaters");
             JavaRDD<Updater> resultsUpdater = results.map(new UpdaterFromTupleFunction());
 
-            JavaDoubleRDD scores = results.mapToDouble(new DoubleFunction<Tuple3<INDArray,Updater,Double>>(){
+            JavaDoubleRDD scores = results.mapToDouble(new DoubleFunction<Tuple2<MultiLayerNetwork, Double>>() {
                 @Override
-                public double call(Tuple3<INDArray, Updater, Double> t3) throws Exception {
-                    return t3._3();
+                public double call(Tuple2<MultiLayerNetwork, Double> t2) throws Exception {
+                    return t2._2();
                 }
             });
             lastScore = scores.mean();
