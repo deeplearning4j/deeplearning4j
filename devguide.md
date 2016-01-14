@@ -1,4 +1,7 @@
-
+---
+title: 
+layout: default
+---
 
 # Developer Guide
 
