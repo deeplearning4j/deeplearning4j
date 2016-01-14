@@ -198,4 +198,4 @@ Next, we'll show you how to implement a [deep-belief network](../deepbeliefnetwo
 * [Neural Networks](../neuralnet-overview.html)
 * [Eigenvectors, PCA and Entropy](../eigenvector.html)
 * [Neural Networks & Regression](../linear-regression.html)
-* [Convolutional Networks](../convolutionalnetworks.html)
+* [Convolutional Networks](../convolutionalnets.html)
