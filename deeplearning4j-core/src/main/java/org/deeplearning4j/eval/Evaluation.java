@@ -70,10 +70,12 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
     }
 
     public Evaluation(List<String> labels) {
-        int i = 0;
-        for (String label : labels){
-            this.labelsMap.put(i, label);
-            i++;
+        if(labels != null && !labels.isEmpty()) {
+            int i = 0;
+            for (String label : labels) {
+                this.labelsMap.put(i, label);
+                i++;
+            }
         }
     }
 

@@ -292,7 +292,7 @@ public class TestSparkMultiLayer extends BaseSparkTest {
 
         JavaRDD<DataSet> ds = sc.parallelize(list);
 
-        Evaluation evalActual = sparkNet.evaluate(ds, 10);
+        Evaluation evalActual = sparkNet.evaluate(ds);
 
         assertEquals(evalExpected.accuracy(), evalActual.accuracy(), 1e-3);
         assertEquals(evalExpected.f1(), evalActual.f1(), 1e-3);
