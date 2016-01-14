@@ -10,7 +10,7 @@ Deeplearning4j aims to be cutting-edge plug and play, more convention than confi
 
 By following the [instructions on our Quick Start page](../quickstart.html), you can run your first examples of trained neural nets in minutes.
 
-### [Deep learning use cases](use_cases.html)
+### [Deep Learning Use Cases](../use_cases.html)
 
 * [Face/image recognition](../facial-reconstruction-tutorial.html)
 * Voice search
@@ -51,7 +51,17 @@ There are a lot of parameters to adjust when you're training a deep-learning net
 
 If you have any questions, please join [us on Gitter](https://gitter.im/deeplearning4j/deeplearning4j); for premium support, [contact us at Skymind](http://www.skymind.io/contact/). [ND4J is the Java-based scientific computing engine](http://nd4j.org/) powering our matrix operations. On large matrices, our benchmarks show [it runs roughly twice as fast as Numpy](http://nd4j.org/benchmarking).
 
-### Deeplearning4j Testimonial
+### Deeplearning4j Tutorials
+
+* [Restricted Boltzmann machines](../restrictedboltzmannmachine.html)
+* [Eigenvectors, PCA and Entropy](../eigenvector.html)
+* [Using Recurrent Nets With DL4J](../usingrnns.html)
+* [Deep-Belief Networks With MNIST](../mnist-tutorial.html)
+* [IRIS Flower Dataset Tutorial](../iris-flower-dataset-tutorial.html)
+* [Facial Reconstruction With Labeled Faces in the Wild](../facial-reconstruction-tutorial.html)
+* [Customizing Data Pipelines With Canova](../image-data-pipeline.html)
+
+### User Testimonial
 
       "I feel like Frankenstein. The doctor..." - Steve D. 
 
