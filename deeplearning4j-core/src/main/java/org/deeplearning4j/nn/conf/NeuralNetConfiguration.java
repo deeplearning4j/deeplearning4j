@@ -374,6 +374,10 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return new ListBuilder(layerMap);
         }
 
+        public ComputationGraphConfiguration.GraphBuilder graphBuilder(){
+            return new ComputationGraphConfiguration.GraphBuilder();
+        }
+
         /** Number of optimization iterations. */
         public Builder iterations(int numIterations) {
             this.numIterations = numIterations;
