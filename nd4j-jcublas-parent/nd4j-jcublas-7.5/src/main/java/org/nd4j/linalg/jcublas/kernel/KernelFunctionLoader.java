@@ -292,12 +292,26 @@ public class KernelFunctionLoader {
         File kernelsCubin = new File(tmpDir2.getAbsolutePath() + File.separatorChar + "all.cubin");
         File kernelsPtx = new File(tmpDir2.getAbsolutePath() + File.separatorChar + "all.ptx");
 
+        boolean usingPtx = false;
+
         // let's check if cubin/ptx was already extracted from jar.
         boolean shouldExtract = !tmpDir2.exists() || tmpDir2.exists() && tmpDir2.listFiles().length <= 1 || !(kernelsCubin.exists() || kernelsPtx.exists());
         if (shouldExtract) {
             // if not extracted - we'll do that now
+            log.info("Unpacking kernels...");
             ClassPathResource ptxResource = new ClassPathResource("/all.ptx");
             ClassPathResource cubinResource = new ClassPathResource("/all.cubin");
+
+            if (ptxResource.exists()) {
+                log.info("Going for PTX distribution");
+                FileUtils.copyFile(ptxResource.getFile(), kernelsPtx);
+                usingPtx = true;
+            } else if (cubinResource.exists()) {
+                log.info("Going for CUBIN distribution");
+                FileUtils.copyFile(cubinResource.getFile(), kernelsCubin);
+            } else {
+                throw new IllegalStateException("No CUDA kernels were found!");
+            }
         }
 
         String[] split = f.split(",");
@@ -309,12 +323,13 @@ public class KernelFunctionLoader {
         /*
             We're not redistributing .cu files anymore, only .ptx/.cubin
          */
-        log.info("Loading .ptx/.cubin");
         for (String module : split) {
             // we have single .cubin file for all kernels
             // the only difference is concatenated to kernel data type of the function.
             // i.e. reduce3 = reduce3Float & reduce3Double
-            String path = kernelPath + "all.cubin";
+
+            String path = kernelsPtx.exists() ? kernelsPtx.getAbsolutePath() : kernelsCubin.getAbsolutePath();
+
             String name = module;
 
             // so we're pushing both data typins pointing to the same reduce3. Concatenation will be applied on later stages
@@ -330,7 +345,7 @@ public class KernelFunctionLoader {
             for (DataType dataType: DataType.values()) {
                 // we assume symmetric values for functions/datatypes. i.e.:path CAN'T be null
                 String path = paths.get(function, dataType);
-                log.info("Loading {}/{} from {}", function, dataType.toString(), path);
+                log.info("Loading {}{} from {}", function, dataType.toString(), (usingPtx ? "ptx": "cubin"));
 
 
                 KernelLauncher launch = KernelLauncher.load(path, function + dataType.toString(), dataType.toString());
