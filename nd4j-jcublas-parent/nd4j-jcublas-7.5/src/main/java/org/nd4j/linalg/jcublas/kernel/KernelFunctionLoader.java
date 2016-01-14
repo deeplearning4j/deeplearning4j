@@ -59,12 +59,6 @@ import java.util.regex.Pattern;
  * @author Adam Gibson
  */
 public class KernelFunctionLoader {
-
-    public enum DataType {
-        Float,
-        Double,
-    }
-
     public final static String NAME_SPACE = "org.nd4j.linalg.jcuda.jcublas";
     public final static String DOUBLE = NAME_SPACE + ".double.functions";
     public final static String FLOAT = NAME_SPACE + ".float.functions";
@@ -81,10 +75,10 @@ public class KernelFunctionLoader {
     public final static String PRINT_KERNEL_NAME = "printShapeBuffer";
     private static KernelLauncher printFunction;
 
-    private Table<String, DataType, String> paths = HashBasedTable.create();
+    private Table<String, DataBuffer.Type, String> paths = HashBasedTable.create();
 
     // Thread, <FunctionName, DataType>, KernelLauncher
-    private static Table<String, Pair<String,DataType>,KernelLauncher> launchers = HashBasedTable.create();
+    private static Table<String, Pair<String, DataBuffer.Type>,KernelLauncher> launchers = HashBasedTable.create();
 
     private KernelFunctionLoader() {}
 
@@ -121,7 +115,7 @@ public class KernelFunctionLoader {
      * @return the launcher for the given
      * function and data type
      */
-    public  static KernelLauncher launcher(String functionName,DataType dataType) {
+    public  static KernelLauncher launcher(String functionName,DataBuffer.Type dataType) {
         KernelLauncher launcher =  KernelFunctionLoader.getInstance().get(functionName,dataType);
         return launcher;
     }
@@ -134,7 +128,7 @@ public class KernelFunctionLoader {
      * false othr wise
      */
     public boolean exists(String functionName) {
-        return get(functionName, DataType.Double) != null || get(functionName, DataType.Float) != null;
+        return get(functionName, DataBuffer.Type.DOUBLE) != null || get(functionName, DataBuffer.Type.FLOAT) != null;
     }
 
 
@@ -146,7 +140,7 @@ public class KernelFunctionLoader {
      * @return the kernel launcher for the
      * given function
      */
-    public KernelLauncher get(String functionName,DataType dataType) {
+    public KernelLauncher get(String functionName,DataBuffer.Type dataType) {
         String name = functionName + "_" + dataType;
         if(!launchers.containsRow(Thread.currentThread().getName())) {
 
@@ -339,8 +333,8 @@ public class KernelFunctionLoader {
             String name = module;
 
             // so we're pushing both data typins pointing to the same reduce3. Concatenation will be applied on later stages
-            paths.put(name,DataType.Double,path);
-            paths.put(name,DataType.Float, path);
+            paths.put(name,DataBuffer.Type.DOUBLE,path);
+            paths.put(name,DataBuffer.Type.FLOAT, path);
         }
 
         /*
@@ -442,7 +436,7 @@ public class KernelFunctionLoader {
     private void loadModules() throws Exception {
         for(String function: paths.rowKeySet()) {
 
-            for (DataType dataType: DataType.values()) {
+            for (DataBuffer.Type dataType: DataBuffer.Type.values()) {
                 // we assume symmetric values for functions/datatypes. i.e.:path CAN'T be null
                 String path = paths.get(function, dataType);
                 log.info("Loading {}{}", function, dataType.toString());

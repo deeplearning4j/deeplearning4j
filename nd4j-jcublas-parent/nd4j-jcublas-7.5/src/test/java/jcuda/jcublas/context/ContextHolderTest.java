@@ -24,6 +24,7 @@ import static org.junit.Assume.*;
 
 import jcuda.driver.CUcontext;
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
 
@@ -42,7 +43,7 @@ public class ContextHolderTest {
 
     @Test
     public void testLoadFunction() {
-        assumeNotNull(KernelFunctionLoader.launcher("std_strided","double"));
+        assumeNotNull(KernelFunctionLoader.launcher("std_strided", DataBuffer.Type.DOUBLE));
     }
 
 }

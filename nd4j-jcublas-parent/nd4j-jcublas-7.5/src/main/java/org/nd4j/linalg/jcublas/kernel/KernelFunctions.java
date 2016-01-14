@@ -23,6 +23,7 @@ package org.nd4j.linalg.jcublas.kernel;
 
 import jcuda.runtime.JCuda;
 import jcuda.utils.KernelLauncher;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.CudaIntDataBuffer;
@@ -88,7 +89,7 @@ public class KernelFunctions {
      * @param cudaContext
      * @param kernelParameters
      */
-    public static  void invoke(GpuMetrics metrics, boolean sync,String moduleName,String functionName,String dataType,CudaContext cudaContext,Object...kernelParameters) {
+    public static  void invoke(GpuMetrics metrics, boolean sync, String moduleName, String functionName, DataBuffer.Type dataType, CudaContext cudaContext, Object...kernelParameters) {
         // Call the kernel function.
         int sharedMemSize = metrics.getSharedMemory();
         KernelLauncher launcher = KernelFunctionLoader.launcher(moduleName, dataType);
@@ -115,7 +116,7 @@ public class KernelFunctions {
      * @param cudaContext
      * @param kernelParameters
      */
-    public static  void invoke(GpuMetrics metrics, boolean sync,String functionName,String dataType,CudaContext cudaContext,Object...kernelParameters) {
+    public static  void invoke(GpuMetrics metrics, boolean sync,String functionName,DataBuffer.Type dataType,CudaContext cudaContext,Object...kernelParameters) {
         String functionName2 = KernelLauncher.FUNCTION_NAME + "_" + dataType;
         invoke(metrics, sync, functionName, functionName2, dataType, cudaContext, kernelParameters);
     }

@@ -7,6 +7,7 @@ import jcuda.runtime.cudaDeviceProp;
 import jcuda.utils.KernelLauncher;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
 
@@ -127,10 +128,10 @@ public class GpuMetrics  {
      * @return the information used
      * for launching a kernel
      */
-    public  static GpuMetrics blockAndThreads(String dataType,int n) {
+    public  static GpuMetrics blockAndThreads(DataBuffer.Type dataType,int n) {
         //<<<numBlocks, threadsPerBlock>>>
         //<<< gridSize, blockSize >>>
-        int size = dataType.equals("double") ? Sizeof.DOUBLE : Sizeof.FLOAT;
+        int size = dataType.equals(DataBuffer.Type.DOUBLE) ? Sizeof.DOUBLE : Sizeof.FLOAT;
         int[] threadsAndBlocks = getThreadsAndBlocks(n,MAX_THREADS,MAX_BLOCKS);
         int sharedMemSize =   (threadsAndBlocks[0] <= 32) ? 2 * threadsAndBlocks[0] * size : threadsAndBlocks[0] * size;
         return new GpuMetrics(threadsAndBlocks[0],threadsAndBlocks[1],sharedMemSize);
@@ -144,7 +145,7 @@ public class GpuMetrics  {
      * @param n
      * @return
      */
-    public static GpuMetrics blocksAndThreadsOccupancy(String functionName,String dataType, int n) {
+    public static GpuMetrics blocksAndThreadsOccupancy(String functionName, DataBuffer.Type dataType, int n) {
         int[] gridSize = new int[1];
         int[] blockSize = new int[1];
         KernelLauncher launcher = KernelFunctionLoader.launcher(functionName, dataType);

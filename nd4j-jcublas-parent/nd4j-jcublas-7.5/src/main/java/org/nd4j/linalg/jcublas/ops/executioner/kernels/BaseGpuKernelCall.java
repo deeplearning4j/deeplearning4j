@@ -107,12 +107,12 @@ public abstract class BaseGpuKernelCall implements GpuKernelCall {
      * @param dataType  the data type
      * @return
      */
-    protected JCudaBuffer toArgs(Object[] extraArgs, String dataType) {
-        if (dataType.equals("double")) {
+    protected JCudaBuffer toArgs(Object[] extraArgs, DataBuffer.Type dataType) {
+        if (dataType.equals(DataBuffer.Type.DOUBLE)) {
             if (extraArgs == null || extraArgs.length < 1)
                 return dummyDouble();
             return KernelFunctions.alloc(PointerUtil.toDoubles(extraArgs));
-        } else if (dataType.equals("float")) {
+        } else if (dataType.equals(DataBuffer.Type.FLOAT)) {
             if (extraArgs == null || extraArgs.length < 1)
                 return dummyFloat();
             return KernelFunctions.alloc(PointerUtil.toFloats(extraArgs));
@@ -120,8 +120,8 @@ public abstract class BaseGpuKernelCall implements GpuKernelCall {
         throw new IllegalArgumentException("Illegal datatype");
     }
 
-    protected String getType(Op op) {
-        return op.x().data().dataType() == DataBuffer.Type.DOUBLE ? "double" : "float";
+    protected DataBuffer.Type getType(Op op) {
+        return op.x().data().dataType(); // == DataBuffer.Type.DOUBLE ? "double" : "float";
     }
 
 
