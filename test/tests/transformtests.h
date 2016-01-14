@@ -72,23 +72,20 @@ private:
 	int blockSize = 500;
 	int gridSize = 256;
 	int sMemSize = 20000;
-	nd4j::array::NDArray<T> *data;
 	nd4j::buffer::Buffer<T> *extraParamsBuff;
 	int length;
 	int opNum;
 	int extraParamsLength;
 
 public:
+
 	TransformTest() {
-		stride = shape::calcStrides(shape, rank);
 		shape = (int *) malloc(sizeof(int) * rank);
-		shape[0] = 2;
-		shape[1] = 2;
+		stride = shape::calcStrides(shape, rank);
 		data = nd4j::array::NDArrays<T>::createFrom(rank, shape, stride, 0,
 				0.0);
+		initializeData();
 		length = nd4j::array::NDArrays<T>::length(data);
-		for (int i = 0; i < length; i++)
-			data->data->data[i] = i + 1;
 		extraParams = (T *) malloc(sizeof(T) * extraParamsLength);
 		extraParamsBuff = nd4j::buffer::createBuffer(extraParams,extraParamsLength);
 		opFactory = new functions::transform::TransformOpFactory<T>();
@@ -97,31 +94,33 @@ public:
 
 	}
 
-	~TransformTest() {
-		nd4j::array::NDArrays<double>::freeNDArrayOnGpuAndCpu(&data);
+	virtual ~TransformTest() {
+		nd4j::array::NDArrays<T>::freeNDArrayOnGpuAndCpu(&data);
+		nd4j::array::NDArrays<T>::freeNDArrayOnGpuAndCpu(&extraParamsBuff);
 		delete op;
+		delete opFactory;
 		freeAssertion();
 	}
 
+
+
+
 	void run () {
-		functions::transform::Transform<double> *log = opFactory->getOp(10);
-		log->exec(data->data->data, 1, data->data->data, 1, extraParams, length);
+		op->exec(data->data->data, 1, data->data->data, 1, extraParams, length);
 		CHECK(arrsEquals(rank, assertion, data->data->data));
 
 
 #ifdef __CUDACC__
-		for (int i = 0; i < length; i++)
-			data->data->data[i] = i + 1;
+		initializeData();
 		nd4j::array::NDArrays<T>::allocateNDArrayOnGpu(&data);
-		transformDouble<<<length,length,2000>>>(
-				10
+		transformDouble<<<blockSize,gridSize,sMemSize>>>(
+				opNum
 				,length,
 				1,data->data->gData,
 				1,extraParamsBuff->gData,
 				data->data->gData
 				,1);
 		checkCudaErrors(cudaDeviceSynchronize());
-		nd4j::buffer::freeBuffer(&extraParamsBuff);
 		nd4j::buffer::copyDataFromGpu(&data->data);
 		CHECK(arrsEquals(rank, assertion, data->data->data));
 
@@ -132,8 +131,12 @@ public:
 
 
 protected:
-	T *getAssertion();
-	void freeAssertion();
+	virtual T *getAssertion() = 0;
+	virtual void freeAssertion() = 0;
+	virtual void initializeData() {
+		for (int i = 0; i < length; i++)
+			data->data->data[i] = i + 1;
+	}
 
 };
 
@@ -165,7 +168,6 @@ TEST(Transform,Sigmoid) {
 
 
 #ifdef __CUDACC__
-	setupTransfromFactories();
 	for (int i = 0; i < length; i++)
 		data->data->data[i] = i + 1;
 	nd4j::array::NDArrays<double>::allocateNDArrayOnGpu(&data);
