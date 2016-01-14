@@ -120,10 +120,12 @@ Let's start with the main packages:
 Suppose you want to add a new type of layer to DL4J. Here's what you need to know.
 
 First, network configuration and network implementation (i.e., the math) are separated. Confusingly, they are both called layer:
-- [org.deeplearning4j.nn.api.Layer](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/api/Layer.java) for the implementation, and
-- [org.deeplearning4j.nn.conf.layers.Layer](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/conf/layers/Layer.java) for the configuration
+
+* [org.deeplearning4j.nn.api.Layer](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/api/Layer.java) for the implementation, and
+* [org.deeplearning4j.nn.conf.layers.Layer](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/conf/layers/Layer.java) for the configuration
 
 Now, to implement a new layer type, you need to implement all of the following:
+
 * A Layer (configuration) class, with a Builder class. Follow the design of [these classes](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/conf/layers)
 * A Layer (implementation) class. Again, follow the design of [these classes](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers)
 * A [ParameterInitializer](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/params) for your layer (which is responsible for initializing the initial parameters, given the configuration)
@@ -132,6 +134,7 @@ Now, to implement a new layer type, you need to implement all of the following:
 In DL4J, we do not currently have symbolic automatic differentiation. This means that both the forward pass (predictions) and backward pass (backpropagation) code 
 
 Some other things you should be aware of:
+
 * DL4J has a numerical gradient checking utility [here](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/gradientcheck/GradientCheckUtil.java) with unit tests using this [here](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-core/src/test/java/org/deeplearning4j/gradientcheck).
   * The idea behind numerical gradient checks is to check that all gradients, calculated analytically (i.e., in your Layer) are approximately the same as those calculated numerically. For more info, see [this javadoc](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/gradientcheck/GradientCheckUtil.java)
   * Gradient checks are necessary for any new layer type
