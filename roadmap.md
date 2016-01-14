@@ -10,7 +10,7 @@ These priorities have been set by what the Skymind has seen demand for among cli
 High priority:
 
 * CUDA rewrite for ND4J (under way)
-* Hyperparameter optimization (For now: random search. Bayesian methods next.)
+* Hyperparameter optimization (underway: [Arbiter](https://github.com/deeplearning4j/Arbiter))
 * Parameter server
 * Computation graph
 * Sparse support for ND4J
@@ -21,10 +21,7 @@ High priority:
 Medium priority:
 
 * OpenCL for ND4J
-* RNN variable length + one-to-many/many-to-one etc
 * CTC RNN (for speech etc.)
-* Early stopping (needed for hyperparameter optimization)
-* Deepwalk/word2vec generalization/rewrite (see issue #930)
 
 Nice to have:
 
@@ -36,8 +33,8 @@ Nice to have:
 
 Low priority:
 
-* Hessian free
-* Other RNN types; bidirectional, multi-dimensional; attention models, Neural Turing Machine, etc.
+* Hessian free optimization
+* Other RNN types: multi-dimensional; attention models, Neural Turing Machine, etc.
 * 3D CNNs
 
-This is a work in progress. Last updated Dec. 9 2015.
+This is a work in progress. Last updated Jan. 14 2016.

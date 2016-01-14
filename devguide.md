@@ -30,10 +30,10 @@ There are numerous ways to contribute to to DeepLearning4J (and related projects
 There are a number of different ways to find things to work on. These include:
 
 * Looking at the issue trackers:
-  * https://github.com/deeplearning4j/deeplearning4j/issues
-  * https://github.com/deeplearning4j/nd4j/issues
-  * https://github.com/deeplearning4j/Canova/issues
-  * https://github.com/deeplearning4j/dl4j-0.4-examples/issues
+  * [https://github.com/deeplearning4j/deeplearning4j/issues](https://github.com/deeplearning4j/deeplearning4j/issues)
+  * [https://github.com/deeplearning4j/nd4j/issues](https://github.com/deeplearning4j/nd4j/issues)
+  * [https://github.com/deeplearning4j/Canova/issues](https://github.com/deeplearning4j/Canova/issues)
+  * [https://github.com/deeplearning4j/dl4j-0.4-examples/issues](https://github.com/deeplearning4j/dl4j-0.4-examples/issues)
 * Reviewing our [Roadmap](http://deeplearning4j.org/roadmap.html)
 * Talking to the developers on [Gitter](https://gitter.im/deeplearning4j/deeplearning4j)
 * Reviewing recent papers and blog posts on training features, network architectures and applications
