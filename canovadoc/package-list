@@ -44,7 +44,6 @@ org.canova.hadoop.conf
 org.canova.hadoop.formats.input
 org.canova.hadoop.records.reader
 org.canova.image.format
-org.canova.image.lfw
 org.canova.image.loader
 org.canova.image.mnist
 org.canova.image.mnist.draw
@@ -70,4 +69,9 @@ org.canova.sound.musicg.fingerprint
 org.canova.sound.musicg.processor
 org.canova.sound.musicg.properties
 org.canova.sound.recordreader
+org.canova.spark
+org.canova.spark.functions
+org.canova.spark.functions.data
+org.canova.spark.functions.pairdata
+org.canova.spark.util
 split
