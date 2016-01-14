@@ -3,7 +3,9 @@ title:
 layout: default
 ---
 
-# DBNs Are Classifiers
+# DBN Tutorial for Iris
+
+**The output of a neural net training on Iris may vary, because it is a small data set.**
 
 Deep-belief networks are multi-class classifiers. Given many inputs belonging to various classes, a DBN can first learn from a small training set, and then classify unlabeled data according to those various classes. It can take in one input and decide which label should be applied to its data record. 
 
