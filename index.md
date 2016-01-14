@@ -33,13 +33,13 @@ Deeplearning4j includes both a distributed, multi-threaded deep-learning framewo
 
 * [Restricted Boltzmann machines](../restrictedboltzmannmachine.html)
 * [Convolutional Nets](../convolutionalnets.html) (images)
-* [Recurrent Nets](../recurrentnetwork.html)/[LSTMs](../lstm.html) (time series and sensor data)
+* [Recurrent Nets](../usingrnns.html)/[LSTMs](../lstm.html) (time series and sensor data)
 * [Recursive autoencoders](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers/feedforward/autoencoder/recursive/RecursiveAutoEncoder.java)
 * [Deep-belief networks](../deepbeliefnetwork.html)
-* [Deep Autoencoders](http://deeplearning4j.org/deepautoencoder.html) (QA/data compression)
+* [Deep Autoencoders](http://deeplearning4j.org/deepautoencoder.html) (Question-Answer/data compression)
 * Recursive Neural Tensor Networks (scenes, parsing)
 * [Stacked Denoising Autoencoders](../stackeddenoisingautoencoder.html)
-* For more, see ["How to Choose a Neural Net"](neuralnetworktable.html)
+* For more, see ["How to Choose a Neural Net"](../neuralnetworktable.html)
 
 Deep neural nets are capable of [record-breaking accuracy](../accuracy.html). For a quick neural net introduction, please visit our [overview](../neuralnet-overview.html) page. In a nutshell, Deeplearning4j lets you compose deep neural nets from various shallow nets, each of which form a so-called `layer`. This flexibility lets you combine restricted Boltzmann machines, other autoencoders, convolutional nets or recurrent nets as needed in a distributed, production-grade framework that works with Spark and Hadoop on top of distributed CPUs or GPUs.
 
@@ -54,3 +54,7 @@ If you have any questions, please join [us on Gitter](https://gitter.im/deeplear
 ### Deeplearning4j Testimonial
 
       "I feel like Frankenstein. The doctor..." - Steve D. 
+
+### Contributing to Deeplearning4j
+
+Developers who would like to contribute to Deeplearning4j can get started by reading our [Developer's Guide](../devguide.html).
