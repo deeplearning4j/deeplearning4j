@@ -476,7 +476,7 @@ public class KernelLauncher {
             e.printStackTrace();
         }
 
-        kernelLauncher.initFunction(FUNCTION_NAME + "_" + type);
+        kernelLauncher.initFunction(functionName + "_" + type);
         return kernelLauncher;
     }
 

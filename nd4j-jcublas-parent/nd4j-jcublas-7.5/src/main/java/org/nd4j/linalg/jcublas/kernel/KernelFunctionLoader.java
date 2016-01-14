@@ -59,21 +59,30 @@ import java.util.regex.Pattern;
  */
 public class KernelFunctionLoader {
 
+    public enum DataType {
+        Float,
+        Double,
+    }
+
     public final static String NAME_SPACE = "org.nd4j.linalg.jcuda.jcublas";
     public final static String DOUBLE = NAME_SPACE + ".double.functions";
     public final static String FLOAT = NAME_SPACE + ".float.functions";
     public final static String CACHE_COMPILED = NAME_SPACE + ".cache_compiled";
     public final static String FUNCTION_KEY = "org.nd4j.linalg.jcuda.jcublas.functions";
-    private Map<String,String> paths = new HashMap<>();
+
     private static KernelFunctionLoader INSTANCE;
     private boolean alreadyCompiled = false;
-    private static Table<String,String,KernelLauncher> launchers = HashBasedTable.create();
+
     private boolean init = false;
     private static Logger log = LoggerFactory.getLogger(KernelFunctionLoader.class);
     private String kernelPath;
     private String[] modules;
     public final static String PRINT_KERNEL_NAME = "printShapeBuffer";
     private static KernelLauncher printFunction;
+
+    private Table<String, DataType, String> paths = HashBasedTable.create();
+    private static Table<String,DataType,KernelLauncher> launchers = HashBasedTable.create();
+
     private KernelFunctionLoader() {}
 
     /**
@@ -137,12 +146,15 @@ public class KernelFunctionLoader {
     public KernelLauncher get(String functionName,String dataType) {
         String name = functionName + "_" + dataType;
         if(!launchers.containsRow(Thread.currentThread().getName())) {
+            throw new IllegalStateException("Kernel function ["+functionName+"] was not loaded during backend initialization.");
+            /*
             try {
                 loadModules(modules,kernelPath);
                 log.debug("Loading modules for " + Thread.currentThread().getName());
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
+            */
         }
 
         KernelLauncher launcher = launchers.get(Thread.currentThread().getName(),name);
@@ -261,6 +273,73 @@ public class KernelFunctionLoader {
                 Ops->code translation will be handled via hardcoded structure on the call
          */
 
+        // we have predefined list of kernels available, each of them has Float and Double suffix
+        String f = props.getProperty(FUNCTION_KEY);
+        log.info("Kernels to be loaded: " + f);
+
+        String tmpDir = System.getProperty("java.io.tmpdir");
+        StringBuffer dir = new StringBuffer();
+        this.kernelPath = dir.append(tmpDir)
+                .append(File.separator)
+                .append("nd4j-kernels")
+                .append(File.separator)
+                .append("output")
+                .append(File.separator)
+                .toString();
+
+        File tmpDir2 = new File(tmpDir + File.separator + "nd4j-kernels" + File.separatorChar + "output");
+
+        File kernelsCubin = new File(tmpDir2.getAbsolutePath() + File.separatorChar + "all.cubin");
+        File kernelsPtx = new File(tmpDir2.getAbsolutePath() + File.separatorChar + "all.ptx");
+
+        // let's check if cubin/ptx was already extracted from jar.
+        boolean shouldExtract = !tmpDir2.exists() || tmpDir2.exists() && tmpDir2.listFiles().length <= 1 || !(kernelsCubin.exists() || kernelsPtx.exists());
+        if (shouldExtract) {
+            // if not extracted - we'll do that now
+            ClassPathResource ptxResource = new ClassPathResource("/all.ptx");
+            ClassPathResource cubinResource = new ClassPathResource("/all.cubin");
+        }
+
+        String[] split = f.split(",");
+        this.modules = split;
+
+
+
+
+        /*
+            We're not redistributing .cu files anymore, only .ptx/.cubin
+         */
+        log.info("Loading .ptx/.cubin");
+        for (String module : split) {
+            // we have single .cubin file for all kernels
+            // the only difference is concatenated to kernel data type of the function.
+            // i.e. reduce3 = reduce3Float & reduce3Double
+            String path = kernelPath + "all.cubin";
+            String name = module;
+
+            // so we're pushing both data typins pointing to the same reduce3. Concatenation will be applied on later stages
+            paths.put(name,DataType.Double,path);
+            paths.put(name,DataType.Float, path);
+        }
+
+        /*
+            now we map each kernel into cuda driver
+        */
+        for(String function: paths.rowKeySet()) {
+
+            for (DataType dataType: DataType.values()) {
+                // we assume symmetric values for functions/datatypes. i.e.:path CAN'T be null
+                String path = paths.get(function, dataType);
+                log.info("Loading {}/{} from {}", function, dataType.toString(), path);
+
+
+                KernelLauncher launch = KernelLauncher.load(path, function + dataType.toString(), dataType.toString());
+                launchers.put(function, dataType, launch);
+            }
+        }
+
+
+
         if (1>0) return;
         /*
         String f = props.getProperty(FUNCTION_KEY);
@@ -342,7 +421,9 @@ public class KernelFunctionLoader {
     }
 
 
+    @Deprecated
     private void loadModules(String[] split,String kernelPath) throws Exception {
+        /*
         ContextHolder.getInstance().setContext();
         for (String module : split) {
             log.debug("Loading " + module);
@@ -360,7 +441,7 @@ public class KernelFunctionLoader {
                 printFunction =  KernelLauncher.load(PRINT_KERNEL_NAME,launch.getModule());
             }
         }
-
+        */
     }
 
 
@@ -372,7 +453,7 @@ public class KernelFunctionLoader {
 
         File outputDir = new File(System.getProperty("java.io.tmpdir") + File.separator + "nd4j-kernels","output");
         outputDir.mkdirs();
-        log.info("Compiling cuda kernels");
+        log.info("Compiling cuda kernels into: " + outputDir.getAbsolutePath());
         String[] commands = {"bash","-c","make && /usr/bin/make install"};
         ProcessBuilder probuilder = new ProcessBuilder(commands);
         //You can set up your work directory
