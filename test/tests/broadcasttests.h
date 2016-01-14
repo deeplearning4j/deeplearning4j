@@ -132,5 +132,25 @@ TEST(BroadCasting,Addition) {
 
 }
 
+template <typename T>
+class BroadcastingTest : public PairWiseTest<T> {
+
+public:
+	virtual ~BroadcastingTest() {}
+	void freeOpAndOpFactory() override {
+		delete opFactory;
+		delete op;
+	}
+
+	virtual void createOperationAndOpFactory() override {
+		opFactory = new functions::broadcast::BroadcastOpFactory<T>();
+		op = opFactory->create(this->opNum);
+	}
+
+protected:
+	functions::broadcast::BroadcastOpFactory<T> *opFactory;
+	functions::broadcast::Broadcast<T> *op;
+};
+
 
 #endif //NATIVEOPERATIONS_BROADCASTSTESTS_H

@@ -59,70 +59,44 @@ TEST(Transform,Log) {
 
 
 template <typename T>
-class TransformTest {
+class TransformTest : public BaseTest<T> {
 private:
-	int rank;
-	int *shape;
-	int *stride;
-	nd4j::array::NDArray<T> *data;
 	functions::transform::Transform<T> *op;
 	functions::transform::TransformOpFactory<T> *opFactory;
-	T *assertion;
-	T *extraParams;
-	int blockSize = 500;
-	int gridSize = 256;
-	int sMemSize = 20000;
-	nd4j::buffer::Buffer<T> *extraParamsBuff;
-	int length;
-	int opNum;
-	int extraParamsLength;
+
 
 public:
+	virtual ~TransformTest() {}
 
-	TransformTest() {
-		shape = (int *) malloc(sizeof(int) * rank);
-		stride = shape::calcStrides(shape, rank);
-		data = nd4j::array::NDArrays<T>::createFrom(rank, shape, stride, 0,
-				0.0);
-		initializeData();
-		length = nd4j::array::NDArrays<T>::length(data);
-		extraParams = (T *) malloc(sizeof(T) * extraParamsLength);
-		extraParamsBuff = nd4j::buffer::createBuffer(extraParams,extraParamsLength);
-		opFactory = new functions::transform::TransformOpFactory<T>();
-		op = opFactory->getOp(opNum);
-		assertion = getAssertion();
 
-	}
-
-	virtual ~TransformTest() {
-		nd4j::array::NDArrays<T>::freeNDArrayOnGpuAndCpu(&data);
-		nd4j::array::NDArrays<T>::freeNDArrayOnGpuAndCpu(&extraParamsBuff);
+	virtual void freeOpAndOpFactory() {
 		delete op;
 		delete opFactory;
-		freeAssertion();
 	}
 
-
-
+	virtual void createOperationAndOpFactory() {
+		opFactory = new functions::transform::TransformOpFactory<T>();
+		op = opFactory->getOp(this->opNum);
+	}
 
 	void run () {
-		op->exec(data->data->data, 1, data->data->data, 1, extraParams, length);
-		CHECK(arrsEquals(rank, assertion, data->data->data));
+		op->exec(this->data->data->data, 1, this->data->data->data, 1, this->extraParams, this->length);
+		CHECK(arrsEquals(this->rank, this->assertion, this->data->data->data));
 
 
 #ifdef __CUDACC__
 		initializeData();
-		nd4j::array::NDArrays<T>::allocateNDArrayOnGpu(&data);
-		transformDouble<<<blockSize,gridSize,sMemSize>>>(
-				opNum
-				,length,
-				1,data->data->gData,
-				1,extraParamsBuff->gData,
-				data->data->gData
+		nd4j::array::NDArrays<T>::allocateNDArrayOnGpu(&this->data);
+		transformDouble<<<this->blockSize,this->gridSize,this->sMemSize>>>(
+				this->opNum
+				,this->length,
+				1,this->data->data->gData,
+				1,this->extraParamsBuff->gData,
+				this->data->data->gData
 				,1);
 		checkCudaErrors(cudaDeviceSynchronize());
-		nd4j::buffer::copyDataFromGpu(&data->data);
-		CHECK(arrsEquals(rank, assertion, data->data->data));
+		nd4j::buffer::copyDataFromGpu(&this->data->data);
+		CHECK(arrsEquals(this->rank, this->assertion, this->data->data->data));
 
 #endif
 
@@ -134,8 +108,8 @@ protected:
 	virtual T *getAssertion() = 0;
 	virtual void freeAssertion() = 0;
 	virtual void initializeData() {
-		for (int i = 0; i < length; i++)
-			data->data->data[i] = i + 1;
+		for (int i = 0; i < this->length; i++)
+			this->data->data->data[i] = i + 1;
 	}
 
 };

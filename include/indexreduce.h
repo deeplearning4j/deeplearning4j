@@ -285,7 +285,6 @@ public:
 
 
 		IndexValue <T> curr;
-		int currIdx;
 
 		if (resultScalar) {
 			unsigned int i = blockIdx.x * xElementWiseStride + tid;

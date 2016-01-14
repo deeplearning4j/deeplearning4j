@@ -26,6 +26,26 @@ TEST_GROUP(Reduce) {
 	}
 };
 
+template <typename T>
+class ReduceTest : public DimensionTest<T> {
+public:
+	virtual ~ReduceTest() {}
+
+	void freeOpAndOpFactory() {
+		delete opFactory;
+		delete reduce;
+	}
+	virtual void createOperationAndOpFactory() {
+		opFactory =new functions::reduce::ReduceOpFactory<T>();
+		reduce = opFactory->create(this->opNum);
+	}
+
+protected:
+	functions::reduce::ReduceOpFactory<T> *opFactory;
+	functions::reduce::ReduceFunction<T> *reduce;
+};
+
+
 TEST(Reduce, Sum) {
 	functions::reduce::ReduceOpFactory<double> *opFactory5 =
 			new functions::reduce::ReduceOpFactory<double>();
@@ -121,7 +141,7 @@ TEST(Reduce, Sum) {
 
 	checkCudaErrors(cudaDeviceSynchronize());
 	nd4j::buffer::copyDataFromGpu(&resultBuffer);
-    double resultFinal = sum->aggregateBuffer(length,result,extraParams);
+	double resultFinal = sum->aggregateBuffer(length,result,extraParams);
 	CHECK(10.0 == result[0]);
 #endif
 

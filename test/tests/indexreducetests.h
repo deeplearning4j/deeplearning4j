@@ -23,6 +23,27 @@ TEST_GROUP(IndexReduce) {
 	}
 };
 
+template <typename T>
+class IndexReduceTest : public DimensionTest<T> {
+public:
+	virtual ~IndexReduceTest() {}
+
+	void freeOpAndOpFactory() {
+		delete opFactory;
+		delete reduce;
+	}
+
+	virtual void createOperationAndOpFactory() {
+		opFactory = new functions::indexreduce::IndexReduceOpFactory<T>();
+		reduce = opFactory->create(this->opNum);
+	}
+
+protected:
+	functions::indexreduce::IndexReduceOpFactory<T> *opFactory;
+	functions::indexreduce::IndexReduce<T> *reduce;
+};
+
+
 TEST(IndexReduce, IMax) {
 	functions::indexreduce::IndexReduceOpFactory<double> *opFactory5 =
 			new functions::indexreduce::IndexReduceOpFactory<double>();

@@ -163,8 +163,6 @@ public:
 		__syncthreads();
 
 		if (!resultScalar && shape::elementWiseStride(xShapeInfo) < 0 && tid == 0) {
-			//need to decompose problem
-			shape::freePermuteInfo(xTadInfo);
 			for (int i = dimensionLength - 1; i >= 0; i--) {
 				transform(n, result, resultShapeInfo, extraParams, result, resultShapeInfo, gpuInformation,
 						dimension - 1, dimensionLength - 1, postProcessOrNot);

@@ -9,6 +9,8 @@
 #include <reduce3.h>
 #include <shape.h>
 
+
+
 TEST_GROUP(Reduce3) {
 
 	static int output_method(const char* output, ...) {
@@ -23,6 +25,29 @@ TEST_GROUP(Reduce3) {
 	void teardown() {
 	}
 };
+
+
+template <typename T>
+class Reduce3Test : public DimensionTest<T>,public PairWiseTest<T> {
+public:
+	virtual ~Reduce3Test() {}
+
+	void freeOpAndOpFactory() {
+		delete opFactory;
+		delete reduce;
+	}
+
+	virtual void createOperationAndOpFactory() {
+		opFactory = new functions::reduce3::Reduce3OpFactory<T>();
+		reduce = opFactory->create(this->opNum);
+	}
+
+protected:
+	functions::reduce3::Reduce3OpFactory<T> *opFactory;
+	functions::reduce3::Reduce3<T> *reduce;
+};
+
+
 
 TEST(Reduce3,CosineSimilarity) {
 	functions::reduce3::Reduce3OpFactory<double> *opFactory6 =
@@ -232,10 +257,10 @@ TEST(Reduce3,EuclideanDistanceDimension) {
 			1
 	);
 	checkCudaErrors(cudaDeviceSynchronize());
-    nd4j::buffer::copyDataFromGpu(&resultBuffer);
-    for(int i = 0; i < resultLength; i++) {
-    	printf("Result[%d] after was %f\n",i,resultBuffer->data[i]);
-    }
+	nd4j::buffer::copyDataFromGpu(&resultBuffer);
+	for(int i = 0; i < resultLength; i++) {
+		printf("Result[%d] after was %f\n",i,resultBuffer->data[i]);
+	}
 	CHECK(arrsEquals<double>(2, assertion, result));
 #endif
 

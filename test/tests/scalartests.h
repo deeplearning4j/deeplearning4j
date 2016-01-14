@@ -28,6 +28,29 @@ TEST_GROUP(ScalarTransform) {
 	}
 };
 
+template <typename T>
+class ScalarTest : public BaseTest<T> {
+
+public:
+	virtual ~ScalarTest() {}
+
+	virtual void freeOpAndOpFactory() {
+		delete op;
+		delete opFactory;
+	}
+
+	virtual void createOperationAndOpFactory() {
+		opFactory = new functions::scalar::ScalarOpFactory<T>();
+		op = opFactory->getOp(this->opNum);
+	}
+
+protected:
+	functions::scalar::ScalarOpFactory<T> opFactory;
+	functions::scalar::ScalarTransform<T> op;
+
+};
+
+
 TEST(ScalarTransform,ScalarAdd) {
 	functions::scalar::ScalarTransform<double> *add = opFactory4->getOp(0);
 	int rank = 2;

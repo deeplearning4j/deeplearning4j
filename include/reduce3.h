@@ -126,8 +126,6 @@ public:
 
 		__shared__ volatile int resultScalar;
 
-		__shared__ int *xShape;
-		__shared__ int xRank;
 		__shared__ int xElementWiseStride;
 		__shared__ int xOffset;
 
@@ -172,12 +170,7 @@ public:
 		//only compute the tad indexes once
 		__shared__ shape::TADPermuteInfo xTadInfo;
 		__shared__ shape::TADPermuteInfo yTadInfo;
-		__shared__ shape::TADPermuteInfo resultTadInfo;
 
-		int valueOffset, valueYOffset;
-
-		__shared__
-		T startValue;
 
 		T reduction = extraParams[0];
 		if (tid == 0) {
@@ -338,7 +331,6 @@ public:
 		if (resultScalar && tid == 0) {
 			shape::freePermuteInfo(xTadInfo);
 			shape::freePermuteInfo(yTadInfo);
-			shape::freePermuteInfo(resultTadInfo);
 		}
 
 	}

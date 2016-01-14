@@ -23,12 +23,34 @@ TEST_GROUP(PairWiseTransform) {
 	void setup() {
 		opFactory2 =
 				new functions::pairwise_transforms::PairWiseTransformOpFactory<
-						double>();
+				double>();
 
 	}
 	void teardown() {
 		delete opFactory2;
 	}
+};
+
+template <typename T>
+class PairwiseTransformTest : public PairWiseTest<T> {
+
+public:
+	virtual ~PairwiseTransformTest() {}
+
+	virtual void freeOpAndOpFactory() {
+		delete op;
+		delete opFactory;
+	}
+
+	virtual void createOperationAndOpFactory() {
+		opFactory = new functions::pairwise_transforms::PairWiseTransformOpFactory<T>();
+		op = opFactory->getOp(this->opNum);
+	}
+
+protected:
+	functions::pairwise_transforms::PairWiseTransformOpFactory<T> *opFactory;
+	functions::pairwise_transforms::PairWiseTransform<T> op;
+
 };
 
 TEST(PairWiseTransform,Addition) {
