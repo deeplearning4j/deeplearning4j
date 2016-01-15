@@ -295,18 +295,22 @@ public class SparkDl4jMultiLayer implements Serializable {
         return network;
     }
 
-    private void runIteration(JavaRDD<DataSet> rdd) {
+
+    protected void runIteration(JavaRDD<DataSet> rdd) {
 
         log.info("Broadcasting initial parameters of length " + network.numParams(false));
-//        INDArray valToBroadcast = network.params(false);
-//        this.params = sc.broadcast(valToBroadcast);
-//        if(network.getUpdater() == null) {
-//            network.setUpdater(UpdaterCreator.getUpdater(network));
-//            log.warn("Unable to propagate null updater");
-//            updater = sc.broadcast(network.getUpdater());
-//        }
+        log.info("Broadcasting initial parameters of length " + network.numParams(false));
+        INDArray valToBroadcast = network.params(false);
+        this.params = sc.broadcast(valToBroadcast);
+        Updater updater = network.getUpdater();
+        if(updater == null) {
+            network.setUpdater(UpdaterCreator.getUpdater(network));
+            log.warn("Unable to propagate null updater");
+            updater = network.getUpdater();
+        }
+        this.updater = sc.broadcast(updater);
 
-        int paramsLength = network.numParams(false);
+        int paramsLength = network.numParams(true);
         boolean accumGrad = sc.getConf().getBoolean(ACCUM_GRADIENT, false);
 
         if(accumGrad) {
@@ -340,16 +344,17 @@ public class SparkDl4jMultiLayer implements Serializable {
             log.info("Set updater");
         }
         else {
-
             //Standard parameter averaging
-            JavaRDD<Tuple2<MultiLayerNetwork, Double>> results = rdd.map(new IterativeReduceFlatMap(network,
-                    bestScoreAcc)).persist(org.apache.spark.storage.StorageLevel.MEMORY_AND_DISK_SER());
+            JavaRDD<Tuple3<INDArray,Updater,Double>> results = rdd.mapPartitions(new IterativeReduceFlatMap(conf.toJson(),
+                    this.params, this.updater, this.bestScoreAcc),true).cache();
+
             JavaRDD<INDArray> resultsParams = results.map(new INDArrayFromTupleFunction());
             log.info("Ran iterative reduce... averaging parameters now.");
             Adder a = new Adder(paramsLength);
             resultsParams.foreach(a);
             INDArray newParams = a.getAccumulator().value();
             log.info("Accumulated parameters");
+            int v = rdd.partitions().size();
             newParams.divi(rdd.partitions().size());
             log.info("Divided by partitions");
             network.setParameters(newParams);
@@ -358,12 +363,13 @@ public class SparkDl4jMultiLayer implements Serializable {
             log.info("Processing updaters");
             JavaRDD<Updater> resultsUpdater = results.map(new UpdaterFromTupleFunction());
 
-            JavaDoubleRDD scores = results.mapToDouble(new DoubleFunction<Tuple2<MultiLayerNetwork, Double>>() {
+            JavaDoubleRDD scores = results.mapToDouble(new DoubleFunction<Tuple3<INDArray,Updater,Double>>(){
                 @Override
-                public double call(Tuple2<MultiLayerNetwork, Double> t2) throws Exception {
-                    return t2._2();
+                public double call(Tuple3<INDArray, Updater, Double> t3) throws Exception {
+                    return t3._3();
                 }
             });
+
             lastScore = scores.mean();
 
             UpdaterAggregator aggregator = resultsUpdater.aggregate(
@@ -373,6 +379,7 @@ public class SparkDl4jMultiLayer implements Serializable {
             );
             Updater combinedUpdater = aggregator.getUpdater();
             network.setUpdater(combinedUpdater);
+
             log.info("Set updater");
 
         }
@@ -385,6 +392,7 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @return the fit multi layer network
      */
     public static MultiLayerNetwork train(JavaRDD<LabeledPoint> data,MultiLayerConfiguration conf) {
+
         SparkDl4jMultiLayer multiLayer = new SparkDl4jMultiLayer(data.context(),conf);
         return multiLayer.fit(new JavaSparkContext(data.context()),data);
     }
