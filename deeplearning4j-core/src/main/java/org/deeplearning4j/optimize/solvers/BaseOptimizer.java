@@ -28,7 +28,9 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
+import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.StepFunction;
@@ -61,6 +63,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     protected Model model;
     protected BackTrackLineSearch lineMaximizer;
     protected Updater updater;
+    protected ComputationGraphUpdater computationGraphUpdater;
     protected double step;
     private int batchSize;
     protected double score,oldScore;
@@ -254,10 +257,21 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
     @Override
     public void updateGradientAccordingToParams(Gradient gradient, Model model, int batchSize) {
-        if(updater == null)
-            updater = UpdaterCreator.getUpdater(model);
-        Layer layer = (Layer) model;
-        updater.update(layer, gradient, iteration, batchSize);
+        if(model instanceof ComputationGraph){
+            //TODO: find a better way of doing this...
+            ComputationGraph graph = (ComputationGraph)model;
+            if(computationGraphUpdater == null){
+                computationGraphUpdater = new ComputationGraphUpdater(graph);
+            }
+            computationGraphUpdater.update(graph, gradient, iteration, batchSize);
+
+        } else {
+
+            if (updater == null)
+                updater = UpdaterCreator.getUpdater(model);
+            Layer layer = (Layer) model;
+            updater.update(layer, gradient, iteration, batchSize);
+        }
     }
 
     /**

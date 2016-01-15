@@ -37,7 +37,10 @@ public class ComputationGraph implements Serializable, Model {
     protected double score;
 
     protected GraphVertex[] vertices;
+    protected Map<String,GraphVertex> verticesMap;
     protected int[] topologicalOrder;
+    protected int numLayers;    //Number of layers (not including GraphNode objects, etc)
+    protected Layer[] layers;
 
     private int numInputArrays;
     private int numOutputArrays;
@@ -48,6 +51,7 @@ public class ComputationGraph implements Serializable, Model {
 
     private NeuralNetConfiguration defaultConfiguration;
 
+
     public ComputationGraph(ComputationGraphConfiguration configuration){
         this.configuration = configuration;
         this.numInputArrays = configuration.getNetworkInputs().size();
@@ -56,6 +60,29 @@ public class ComputationGraph implements Serializable, Model {
         this.inputs = new INDArray[numInputArrays];
         this.labels = new INDArray[numOutputArrays];
         this.defaultConfiguration = configuration.getLayers().get(configuration.getLayers().keySet().iterator().next());    //TODO
+    }
+
+    public ComputationGraphConfiguration getConfiguration(){
+        return configuration;
+    }
+
+    public int getNumLayers(){
+        return numLayers;
+    }
+
+    /** Get the layer by the number of that layer, in range 0 to getNumLayers()-1
+     * NOTE: This is different from the interval vertex index for the layer
+     */
+    public Layer getLayer(int idx){
+        return layers[idx];
+    }
+
+    public Layer getLayer(String name){
+        return verticesMap.get(name).getLayer();    //TODO checks
+    }
+
+    public GraphVertex[] getVertices(){
+        return vertices;
     }
 
     /** The number of inputs to this network */
@@ -114,15 +141,20 @@ public class ComputationGraph implements Serializable, Model {
             vertices[i++] = gv;
         }
 
+        numLayers = 0;
+        List<Layer> tempLayerList = new ArrayList<>();
         for( Map.Entry<String,Layer> layerEntry : layerMap.entrySet() ){
             Layer l = layerEntry.getValue();
+            tempLayerList.add(l);
             InputPreProcessor preProcessor = configuration.getInputPreProcessors().get(layerEntry.getKey());
             String name = layerEntry.getKey();
             GraphVertex gv = new GraphVertex(name,i,null,null,l,preProcessor);   //Input and output vertices: set later
             allNames.put(i,name);
             allNamesReverse.put(name,i);
             vertices[i++] = gv;
+            numLayers++;
         }
+        layers = tempLayerList.toArray(new Layer[numLayers]);
 
         for( Map.Entry<String,GraphNode> nodeEntry : nodeMap.entrySet() ){
             GraphNode n = nodeEntry.getValue();
@@ -202,6 +234,11 @@ public class ComputationGraph implements Serializable, Model {
             System.out.println(gv);
         }
 
+        //Create the lookup table, so we can find vertices easily by name
+        verticesMap = new HashMap<>();
+        for(GraphVertex gv : vertices){
+            verticesMap.put(gv.getVertexName(),gv);
+        }
 
         //Given the graph structure, do a topological sort to define forward pass and flattening order:
         topologicalOrder = topologicalSortOrder();
@@ -391,10 +428,22 @@ public class ComputationGraph implements Serializable, Model {
             backprop();
         }
 //        score = ((BaseOutputLayer<?>)getOutputLayer()).computeScore(calcL1(),calcL2(), true);
-        throw new UnsupportedOperationException("Score calculation not implemented");
+
 
         //Score: sum of the scores for the various output layers...
-//        score = 0.0;
+        double l1 = calcL1();
+        double l2 = calcL2();
+
+        score = 0.0;
+        for(String s : configuration.getNetworkOutputs()){
+            GraphVertex gv = verticesMap.get(s);
+
+            score += ((BaseOutputLayer<?>)gv.getLayer()).computeScore(l1,l2,true);
+
+            //Only want to add l1/l2 once...
+            l1 = 0.0;
+            l2 = 0.0;
+        }
     }
 
     public Map<String,INDArray> feedForward(INDArray input, boolean train){
@@ -515,6 +564,26 @@ public class ComputationGraph implements Serializable, Model {
         throw new UnsupportedOperationException("Not implemented");
     }
 
+    public double calcL2() {
+        double l2 = 0.0;
+        for(GraphVertex gv : vertices){
+            if(gv.hasLayer()){
+                l2 += gv.getLayer().calcL2();
+            }
+        }
+        return l2;
+    }
+
+    public double calcL1() {
+        double l1 = 0.0;
+        for(GraphVertex gv : vertices){
+            if(gv.hasLayer()){
+                l1 += gv.getLayer().calcL1();
+            }
+        }
+        return l1;
+    }
+
     //------------------------------------------------------
     //Model methods:
 
@@ -593,7 +662,7 @@ public class ComputationGraph implements Serializable, Model {
 
     @Override
     public Gradient gradient() {
-        throw new UnsupportedOperationException("Not implemnted");
+        return gradient;
     }
 
     @Override
@@ -603,7 +672,8 @@ public class ComputationGraph implements Serializable, Model {
 
     @Override
     public int batchSize() {
-        throw new UnsupportedOperationException("Not implemnted");
+        //TODO: check this. Will this work in general, for all cases?
+        return inputs[0].size(0);
     }
 
     @Override
