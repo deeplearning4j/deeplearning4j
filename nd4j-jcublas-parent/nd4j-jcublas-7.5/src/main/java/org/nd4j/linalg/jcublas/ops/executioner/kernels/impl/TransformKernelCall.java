@@ -116,35 +116,40 @@ public class TransformKernelCall extends BaseGpuKernelCall {
             code = 1;
         } else if (name.equals("cos")) {
             code = 2;
-        } else if (name.equals("ceil")) {
-            code = 1;
-        } else if (name.equals("ceil")) {
-            code = 1;
-        } else if (name.equals("ceil")) {
-            code = 1;
-        } else if (name.equals("ceil")) {
-            code = 1;
-        } else if (name.equals("ceil")) {
-            code = 1;
-        } else if (name.equals("ceil")) {
-            code = 1;
-        } else if (name.equals("ceil")) {
-            code = 1;
-        } else if (name.equals("ceil")) {
-            code = 1;
-        } else if (name.equals("ceil")) {
-            code = 1;
-        } else if (name.equals("ceil")) {
-            code = 1;
-        } else if (name.equals("ceil")) {
-            code = 1;
-        } else if (name.equals("ceil")) {
-            code = 1;
-        } else if (name.equals("ceil")) {
-            code = 1;
-        } else if (name.equals("ceil")) {
-            code = 1;
+        } else if (name.equals("exp")) {
+            code = 3;
+        } else if (name.equals("floor")) {
+            code = 4;
+        } else if (name.equals("log")) {
+            code = 5;
+        } else if (name.equals("neg")) {
+            code = 6;
+        } else if (name.equals("pow")) {
+            code = 7;
+        } else if (name.equals("round")) {
+            code = 8;
+        } else if (name.equals("setrange")) {
+            code = 9;
+        } else if (name.equals("sigmoid")) {
+            code = 10;
+        } else if (name.equals("sign")) {
+            code = 11;
+        } else if (name.equals("sin")) {
+            code = 12;
+        } else if (name.equals("softplus")) {
+            code = 13;
+        } else if (name.equals("sqrt")) {
+            code = 14;
+        } else if (name.equals("tanh")) {
+            code = 15;
+        } else if (name.equals("acos")) {
+            code = 16;
+        } else if (name.equals("asin")) {
+            code = 17;
+        } else if (name.equals("atan")) {
+            code = 18;
         }
+
 
         System.out.println("Looking for op.name: [" + name + "] -> [" + code+"]");
         return code;
