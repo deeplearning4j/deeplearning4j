@@ -1,15 +1,20 @@
 package org.deeplearning4j.nn.graph;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.nodes.GraphNode;
 import org.deeplearning4j.nn.graph.vertex.GraphVertex;
+import org.deeplearning4j.nn.graph.vertex.VertexIndices;
+import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.optimize.Solver;
@@ -28,6 +33,8 @@ public class ComputationGraph implements Serializable, Model {
 
     protected ComputationGraphConfiguration configuration;
     protected transient Solver solver;	//Used to call optimizers during backprop
+    protected Gradient gradient;
+    protected double score;
 
     protected GraphVertex[] vertices;
     protected int[] topologicalOrder;
@@ -101,30 +108,26 @@ public class ComputationGraph implements Serializable, Model {
 
         int i=0;
         for( String name : networkInputNames){
-            int[] outVertices = null;   //TODO
-            GraphVertex gv = new GraphVertex(name,i,outVertices);
+            GraphVertex gv = new GraphVertex(name,i,null);  //Output vertices: set later
             allNames.put(i,name);
             allNamesReverse.put(name,i);
             vertices[i++] = gv;
         }
 
         for( Map.Entry<String,Layer> layerEntry : layerMap.entrySet() ){
-            int[] inputIndices = null;  //TODO
-            int[] outputIndices = null;
             Layer l = layerEntry.getValue();
+            InputPreProcessor preProcessor = configuration.getInputPreProcessors().get(layerEntry.getKey());
             String name = layerEntry.getKey();
-            GraphVertex gv = new GraphVertex(name,i,inputIndices,outputIndices,l);
+            GraphVertex gv = new GraphVertex(name,i,null,null,l,preProcessor);   //Input and output vertices: set later
             allNames.put(i,name);
             allNamesReverse.put(name,i);
             vertices[i++] = gv;
         }
 
         for( Map.Entry<String,GraphNode> nodeEntry : nodeMap.entrySet() ){
-            int[] inputIndices = null;  //TODO
-            int[] outputIndices = null;
             GraphNode n = nodeEntry.getValue();
             String name = nodeEntry.getKey();
-            GraphVertex gv = new GraphVertex(name,i,inputIndices,outputIndices,n);
+            GraphVertex gv = new GraphVertex(name,i,null,null,n);   //Input and output vertices: set later
             allNames.put(i,name);
             allNamesReverse.put(name,i);
             vertices[i++] = gv;
@@ -153,12 +156,14 @@ public class ComputationGraph implements Serializable, Model {
 
             if(vertexInputNames == null) continue;
 
-            int[] indices = new int[vertexInputNames.length];
+            VertexIndices[] inputIndices = new VertexIndices[vertexInputNames.length];
             for( int j=0; j<vertexInputNames.length; j++ ){
-                indices[j] = allNamesReverse.get(vertexInputNames[j]);
+                int inputVertexIndex = allNamesReverse.get(vertexInputNames[j]);
+                //Output of vertex 'inputVertexIndex' is the jth input to the current vertex
+                inputIndices[j] = new VertexIndices(inputVertexIndex,j);
             }
 
-            gv.setInputIndices(indices);
+            gv.setInputVertices(inputIndices);
 
             //Build reverse network structure:
             for(String s : vertexInputNames){
@@ -171,25 +176,31 @@ public class ComputationGraph implements Serializable, Model {
             }
         }
 
+        //Handle the outputs for this vertex
         for( GraphVertex gv : vertices ) {
             String vertexName = gv.getVertexName();
 
             List<String> thisVertexOutputsTo = verticesOutputTo.get(vertexName);
 
-            if(thisVertexOutputsTo == null) continue;   //Output vertex
-            int[] indices = new int[thisVertexOutputsTo.size()];
+            if(thisVertexOutputsTo == null || thisVertexOutputsTo.size() == 0 ) continue;   //Output vertex
+            VertexIndices[] outputIndices = new VertexIndices[thisVertexOutputsTo.size()];
             int j=0;
             for( String s : thisVertexOutputsTo ){
-                indices[j++] = allNamesReverse.get(s);
+                //First, we have gv -> s
+                //Which input in s does gv connect to? s may in general have multiple inputs...
+                String[] nextVertexInputNames = layerInputs.get(s); //Inputs for vertex s
+                int outputVertexInputNumber = ArrayUtils.indexOf(nextVertexInputNames, vertexName);
+
+                int outputVertexIndex = allNamesReverse.get(s);
+                outputIndices[j++] = new VertexIndices(outputVertexIndex,outputVertexInputNumber);
             }
-            gv.setOutputIndices(indices);
+            gv.setOutputVertices(outputIndices);
         }
 
         //At this point: each GraphVertex has the local connection structure, both for inputs and outputs
         for(GraphVertex gv : vertices ){
             System.out.println(gv);
         }
-
 
 
         //Given the graph structure, do a topological sort to define forward pass and flattening order:
@@ -201,19 +212,19 @@ public class ComputationGraph implements Serializable, Model {
         if(numInputArrays != 1 || numOutputArrays != 1) throw new UnsupportedOperationException("Cannot train ComputationGraph network with "
             + " multiple inputs or outputs using a DataSetIterator");
 
-        throw new UnsupportedOperationException("Not implemnted");
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /** Pretrain network with multiple inputs and/or outputs */
     public void pretrain(Object multipleInputOutputIterator){
-        throw new UnsupportedOperationException("Not implemnted");
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     public void fit(DataSet dataSet){
         if(numInputArrays != 1 || numOutputArrays != 1) throw new UnsupportedOperationException("Cannot train ComputationGraph network with "
                 + " multiple inputs or outputs using a DataSet");
 
-        throw new UnsupportedOperationException("Not implemnted");
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     public void fit(DataSetIterator dataSetIterator){
@@ -309,14 +320,16 @@ public class ComputationGraph implements Serializable, Model {
         // key represents j, set is set of i (inputs) for vertices j
         Map<Integer,Set<Integer>> inputEdges = new HashMap<>();
         for(GraphVertex gv : vertices){
-            int[] vertexInputsFrom = gv.getInputVertexIndices();
+//            int[] vertexInputsFrom = gv.getInputVertexIndices();
+            VertexIndices[] vertexInputsFrom = gv.getInputVertices();
             if(vertexInputsFrom == null || vertexInputsFrom.length == 0){
                 inputEdges.put(gv.getIndex(),null);
                 continue;
             }
             Set<Integer> set = new HashSet<>();
-            for( int i : vertexInputsFrom ){
-                set.add(i);
+//            for( int i : vertexInputsFrom ){
+            for( VertexIndices v : vertexInputsFrom ){
+                set.add(v.getVertexIndex());
             }
             inputEdges.put(gv.getVertexIndex(),set);
         }
@@ -343,14 +356,16 @@ public class ComputationGraph implements Serializable, Model {
             int next = noIncomingEdges.removeFirst();
             out[outCounter++] = next;   //Add to sorted list
 
-            int[] vertexOutputsTo = vertices[next].getOutputVertexIndices();  //Edges: next -> vertexOutpusTo[...]
+//            int[] vertexOutputsTo = vertices[next].getOutputVertexIndices();  //Edges: next -> vertexOutpusTo[...]
+            VertexIndices[] vertexOutputsTo = vertices[next].getOutputVertices();  //Edges: next -> vertexOutpusTo[...]
             //Remove edges next -> vertexOuputsTo[...] from graph;
             if(vertexOutputsTo != null ) {
-                for (int i : vertexOutputsTo) {
-                    Set<Integer> set = inputEdges.get(i);
+//                for (int i : vertexOutputsTo) {
+                for (VertexIndices v : vertexOutputsTo) {
+                    Set<Integer> set = inputEdges.get(v.getVertexIndex());
                     set.remove(next);
                     if (set.size() == 0) {
-                        noIncomingEdges.add(i); //No remaining edges for vertex i -> add to list for processing
+                        noIncomingEdges.add(v.getVertexIndex()); //No remaining edges for vertex i -> add to list for processing
                     }
                 }
             }
@@ -377,30 +392,121 @@ public class ComputationGraph implements Serializable, Model {
         }
 //        score = ((BaseOutputLayer<?>)getOutputLayer()).computeScore(calcL1(),calcL2(), true);
         throw new UnsupportedOperationException("Score calculation not implemented");
+
+        //Score: sum of the scores for the various output layers...
+//        score = 0.0;
+    }
+
+    public Map<String,INDArray> feedForward(INDArray input, boolean train){
+        if(numInputArrays != 1) throw new UnsupportedOperationException("Cannot feedForward with single input for graph network with " + numInputArrays + " expected inputs");
+        setInput(0,input);
+        return feedForward(train);
+    }
+
+    public Map<String,INDArray> feedForward(INDArray[] input, boolean train){
+        if(numInputArrays != input.length) throw new UnsupportedOperationException("Cannot feedForward with " + input.length + " inputs for graph network with " + numInputArrays + " expected inputs");
+        for( int i=0; i<input.length; i++ ) setInput(i,input[i]);
+        return feedForward(train);
     }
 
     public Map<String,INDArray> feedForward(boolean train){
+        Map<String,INDArray> layerActivations = new HashMap<>();
 
         //Do forward pass according to the topological ordering of the network
         for( int i=0; i<topologicalOrder.length; i++ ){
             GraphVertex current = vertices[topologicalOrder[i]];
             if(current.isInputVertex()){
-                int[] outIndices = current.getOutputVertexIndices();
+                VertexIndices[] inputsTo = current.getOutputVertices();
+                INDArray input = inputs[current.getIndex()];
 
-                for( int v : outIndices ){
+                layerActivations.put(current.getVertexName(),input);
 
+                for( VertexIndices v : inputsTo ){
+                    int vIdx = v.getVertexIndex();
+                    int vIdxInputNum = v.getVertexEdgeNumber();
+                    //This input: the 'vIdxInputNum'th input to vertex 'vIdx'
+                    vertices[vIdx].setInput(vIdxInputNum,input.dup());  //TODO When to dup?
                 }
 
             } else {
+                //Do forward pass:
+                INDArray out = current.doForward(train);
+
+                if(current.hasLayer()){
+                    layerActivations.put(current.getVertexName(),out);
+                }
+
+                //Now, set the inputs for the next vertices:
+                VertexIndices[] outputsTo = current.getOutputVertices();
+                if(outputsTo != null) {
+                    int j = 0;
+                    for (VertexIndices v : outputsTo) {
+                        int vIdx = v.getVertexIndex();
+                        int inputNum = v.getVertexEdgeNumber();
+                        //This (jth) connection from the output: is the 'inputNum'th input to vertex 'vIdx'
+                        vertices[vIdx].setInput(inputNum, out);
+                    }
+                }
 
             }
         }
 
+        return layerActivations;
     }
 
     protected void backprop(){
 
+        LinkedList<Pair<String,INDArray>> gradients = new LinkedList<>();
 
+        //Do backprop according to the reverse of the topological ordering of the network
+        for( int i=topologicalOrder.length-1; i>= 0; i-- ){
+            GraphVertex current = vertices[topologicalOrder[i]];
+
+            if(current.isInputVertex()) continue;   //No op
+
+            if(current.isOutputVertex()){
+                BaseOutputLayer<?> outputLayer = (BaseOutputLayer<?>)current.getLayer();
+
+                int thisOutputNumber = configuration.getNetworkOutputs().indexOf(current.getVertexName());  //TODO more efficient way
+                INDArray currLabels = labels[thisOutputNumber];
+                outputLayer.setLabels(currLabels);
+            }
+
+            Pair<Gradient,INDArray[]> pair = current.doBackward();
+            INDArray[] epsilons = pair.getSecond();
+
+            VertexIndices[] inputVertices = current.getInputVertices();
+
+            //Set epsilons for the input vertices:
+            if(inputVertices != null ){
+                int j=0;
+                for(VertexIndices v : inputVertices){
+                    GraphVertex gv = vertices[v.getVertexIndex()];
+                    gv.setError(v.getVertexEdgeNumber(),epsilons[j++]); //TODO check this
+                }
+            }
+
+            if(pair.getFirst() != null){
+                Gradient g = pair.getFirst();
+                Map<String,INDArray> map = g.gradientForVariable();
+                LinkedList<Pair<String,INDArray>> tempList = new LinkedList<>();
+                for( Map.Entry<String,INDArray> entry : map.entrySet() ){
+                    String newName = current.getVertexName() + "_" + entry.getKey();
+                    tempList.addFirst(new Pair<>(newName,entry.getValue()));
+                }
+                for(Pair<String,INDArray> p : tempList ) gradients.addFirst(p);
+            }
+
+
+        }
+
+        //Now, add the gradients in the order we need them in for flattening (same as params order)
+        Gradient gradient = new DefaultGradient();
+        for(Pair<String,INDArray> p : gradients ){
+            gradient.setGradientFor(p.getFirst(),p.getSecond());
+        }
+
+        this.gradient = gradient;
     }
 
     @Override
@@ -424,7 +530,7 @@ public class ComputationGraph implements Serializable, Model {
 
     @Override
     public double score() {
-        throw new UnsupportedOperationException("Not implemnted");
+        return score;
     }
 
     @Override

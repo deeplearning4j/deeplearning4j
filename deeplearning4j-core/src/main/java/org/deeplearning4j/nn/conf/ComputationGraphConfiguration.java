@@ -53,7 +53,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
     protected boolean pretrain = true;
     protected boolean backprop = false;
-    protected Map<Integer,InputPreProcessor> inputPreProcessors = new HashMap<>();
+    protected Map<String,InputPreProcessor> inputPreProcessors = new HashMap<>();
     protected BackpropType backpropType = BackpropType.Standard;
     protected int tbpttFwdLength = 20;
     protected int tbpttBackLength = 20;
@@ -272,6 +272,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             conf.layerNamesMap = layerNamesMap;
             conf.layerNumbersMap = layerNumbersMap;
             conf.layerInputs = layerInputs;
+            conf.inputPreProcessors = inputPreProcessors;
 
             conf.networkInputs = networkInputs;
             conf.networkOutputs = networkOutputs;

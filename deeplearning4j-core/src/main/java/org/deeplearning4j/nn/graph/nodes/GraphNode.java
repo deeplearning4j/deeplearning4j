@@ -6,7 +6,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  *  */
 public interface GraphNode {
 
-    INDArray[] forward(INDArray... activations);
+    INDArray forward(INDArray... activations);
 
 
     INDArray[] backward(INDArray... epsilons);

@@ -3,6 +3,8 @@ package org.deeplearning4j.nn.graph.vertex;
 import lombok.Data;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.nodes.GraphNode;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -24,57 +26,51 @@ public class GraphVertex {
     /** The index of this vertex */
     private int vertexIndex;
 
-    /** The indices of the vertices that are inputs to this vertex (inputs during forward pass, epsilons during backprop).
-     *  Suppose inputIndices[x] = y. This means that: vertex y is the xth input to this vertex
+    /**A representation of the vertices that are inputs to this vertex (inputs during forward pass)
+     * Specifically, if inputVertices[X].getVertexIndex() = Y, and inputVertices[X].getVertexEdgeNumber() = Z
+     * then the Zth output of vertex Y is the Xth input to this vertex
      */
-    private int[] inputIndices;
+    private VertexIndices[] inputVertices;
 
-    /**For each of the inputs to this array, which of the outputs of the input vertices are used?
-     * Suppose inputIndices[x] = y, and inputIndicesOutputNumbers[x] = z.
-     * This means that the zth output of vertex y is connected to input x of this vertex
-     * (need to know this for backprop)
+    /**A representation of the vertices that this vertex is connected to (outputs duing forward pass)
+     * Specifically, if outputVertices[X].getVertexIndex() = Y, and outputVertices[X].getVertexEdgeNumber() = Z
+     * then the output of this vertex (there is only one output) is connected to the Zth input of vertex Y
      */
-    private int[] inputIndicesOutputNumbers;
-
-    /** The indices of the output from this vertex (vertices that this vertex is connected to for forward pass, or inputs/epsilons for backprop)
-     * Suppose outputIndices[x] = y
-     * This means that the xth output of this vertex is connected to vertex y
-     */
-    private int[] outputIndices;
-
-    /** For each of the outputs from this vertex,
-     * Suppose outputIndices[x] = y, and outputIndicesInputNumbers[x] = z.
-     * This means that the xth output of this vertex is connected to the zth input of vertex y
-     * (need to know this for forward pass
-     */
-    private int[] outputIndicesInputNumbers;
+    private VertexIndices[] outputVertices;
 
     private Layer layer;
+    private InputPreProcessor layerPreProcessor;
     private GraphNode node;
 
     private INDArray[] inputs;
     private INDArray[] epsilons;
 
-    public GraphVertex(String name, int vertexIndex, int[] inputIndices, int[] inputIndicesOutputNumbers[], int[] outputIndices, Layer layer){
-        this(name, vertexIndex,inputIndices,outputIndices,layer,null);
+    public GraphVertex(String name, int vertexIndex, VertexIndices[] inputVertices, VertexIndices[] outputVertices,
+                       Layer layer, InputPreProcessor inputPreProcessor ){
+        this(name, vertexIndex,inputVertices,outputVertices,layer,inputPreProcessor,null);
     }
 
-    public GraphVertex(String name, int vertexIndex, int[] inputIndices, int[] outputIndices, GraphNode graphNode){
-        this(name, vertexIndex,inputIndices,outputIndices,null,graphNode);
+    public GraphVertex(String name, int vertexIndex, VertexIndices[] inputVertices, VertexIndices[] outputVertices, GraphNode graphNode){
+        this(name, vertexIndex,inputVertices,outputVertices,null,null,graphNode);
     }
 
     /** Create a network input vertex: */
-    public GraphVertex(String name, int vertexIndex, int[] outputIndices ){
-        this(name, vertexIndex,null,outputIndices,null,null);
+    public GraphVertex(String name, int vertexIndex, VertexIndices[] outputVertices){
+        this(name, vertexIndex,null,outputVertices,null,null,null);
     }
 
-    private GraphVertex(String name, int vertexIndex, int[] inputIndices, int[] outputIndices, Layer layer, GraphNode graphNode){
+    private GraphVertex(String name, int vertexIndex, VertexIndices[] inputVertices, VertexIndices[] outputVertices,
+                        Layer layer, InputPreProcessor layerPreProcessor, GraphNode graphNode){
         this.vertexName = name;
         this.vertexIndex = vertexIndex;
-        this.inputIndices = inputIndices;
-        this.outputIndices = outputIndices;
+        this.inputVertices = inputVertices;
+        this.outputVertices = outputVertices;
         this.layer = layer;
+        this.layerPreProcessor = layerPreProcessor;
         this.node = graphNode;
+
+        this.inputs = new INDArray[(inputVertices != null ? inputVertices.length : 0)];
+        this.epsilons = new INDArray[(outputVertices != null ? outputVertices.length : 0)];
     }
 
     public int getIndex(){
@@ -82,29 +78,37 @@ public class GraphVertex {
     }
 
     public int getNumInputArrays(){
-        return (inputIndices == null ? 0 : inputIndices.length);
+        return (inputVertices == null ? 0 : inputVertices.length);
     }
 
     public int getNumOutputArrays(){
-        return (outputIndices == null ? 0 : outputIndices.length);
+        return (outputVertices == null ? 0 : outputVertices.length);
     }
 
-    /** Index of the vertices that feed into this one */
-    public int[] getInputVertexIndices(){
-        return inputIndices;
-    }
-
-    /** For the vertices that feed into this one (according to {@link #getInputVertexIndices()},
-     * which of the outputs of that vertex are used here?
-     * For example, suppose the structure is such that A -> B, and A has 3 outputs
-     * which of A's outputs is actually connected to B?
+    /**A representation of the vertices that are inputs to this vertex (inputs duing forward pass)
+     * Specifically, if inputVertices[X].getVertexIndex() = Y, and inputVertices[X].getVertexEdgeNumber() = Z
+     * then the Zth output of vertex Y is the Xth input to this vertex
      */
-    public int[] getInputVertexOutputNumbers(){
-
+    public VertexIndices[] getInputVertices(){
+        return inputVertices;
     }
 
-    public int[] getOutputVertexIndices(){
-        return outputIndices;
+    public void setInputVertices(VertexIndices[] inputVertices){
+        this.inputVertices = inputVertices;
+        this.inputs = new INDArray[(inputVertices != null ? inputVertices.length : 0)];
+    }
+
+    /**A representation of the vertices that this vertex is connected to (outputs duing forward pass)
+     * Specifically, if outputVertices[X].getVertexIndex() = Y, and outputVertices[X].getVertexEdgeNumber() = Z
+     * then the Xth output of this vertex is connected to the Zth input of vertex Y
+     */
+    public VertexIndices[] getOutputVertices(){
+        return outputVertices;
+    }
+
+    public void setOutputVertices(VertexIndices[] outputVertices){
+        this.outputVertices = outputVertices;
+        this.epsilons = new INDArray[(outputVertices != null ? outputVertices.length : 0)];
     }
 
     public boolean hasLayer(){
@@ -113,6 +117,10 @@ public class GraphVertex {
 
     public boolean isInputVertex(){
         return layer == null && node == null;
+    }
+
+    public boolean isOutputVertex(){
+        return (layer != null && layer instanceof BaseOutputLayer);
     }
 
     public Layer getLayer(){
@@ -148,26 +156,29 @@ public class GraphVertex {
         return true;
     }
 
-    public INDArray[] doForward(boolean training){
+    public INDArray doForward(boolean training){
         if(!canDoForward()) throw new IllegalStateException("Cannot do forward pass: all inputs not set");
 
         if(layer != null){
-            INDArray activations = layer.activate(inputs[0],training);
-            INDArray[] ret = new INDArray[outputIndices.length];
-            for( int i=0; i<ret.length; i++ ) ret[i] = activations; //TODO: when to duplicate?
-            return ret;
+            if(inputs.length > 1) throw new UnsupportedOperationException("Not implemented");   //TODO
+            INDArray input = inputs[0];
+            if(layerPreProcessor != null){
+                input = layerPreProcessor.preProcess(input,-1);
+                throw new UnsupportedOperationException("Not implemented"); //How to get minibatch size??
+            }
+            return layer.activate(inputs[0],training);
         } else {
             return node.forward(inputs);
         }
     }
 
-    public Pair<Gradient,INDArray[]> doBackward(boolean training){
+    public Pair<Gradient,INDArray[]> doBackward(){
         if(!canDoBackward()) throw new IllegalStateException("Cannot do backward pass: all epsilons not set");
 
         if(layer != null){
-            INDArray epsTotal;
-            if(epsilons.length == 1 ) epsTotal = epsilons[0];
-            else {
+            INDArray epsTotal = null;
+            if(epsilons != null && epsilons.length == 1 ) epsTotal = epsilons[0];
+            else if(epsilons != null && epsilons.length > 1 ){
                 //TODO: check the math on this... I think it's correct though?
                 //This is the "output connected to multiple other layers" case
                 epsTotal = epsilons[0].dup();
@@ -175,7 +186,14 @@ public class GraphVertex {
                     epsTotal.addi(epsilons[i]);
                 }
             }
-            Pair<Gradient,INDArray> pair = layer.backpropGradient(epsTotal);
+
+            Pair<Gradient,INDArray> pair = layer.backpropGradient(epsTotal);    //epsTotal may be null for OutputLayers
+            if(layerPreProcessor != null){
+                INDArray eps = pair.getSecond();
+                eps = layerPreProcessor.backprop(eps,-1);
+                pair.setSecond(eps);
+                throw new UnsupportedOperationException("Not implemented"); //How to get minibatch size?
+            }
 
             //Layers always have single activations input -> always have single epsilon output during backprop
             return new Pair<Gradient,INDArray[]>(pair.getFirst(), new INDArray[]{pair.getSecond()});
@@ -189,7 +207,7 @@ public class GraphVertex {
     public String toString(){
         StringBuilder sb = new StringBuilder();
         sb.append("GraphVertex(id=").append(vertexIndex).append(",name=").append(vertexName)
-                .append(",inputs=").append(Arrays.toString(inputIndices)).append(",outputs=").append(Arrays.toString(outputIndices))
+                .append(",inputs=").append(Arrays.toString(inputVertices)).append(",outputs=").append(Arrays.toString(outputVertices))
                 .append(")");
         return sb.toString();
     }
