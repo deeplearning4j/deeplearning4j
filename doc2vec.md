@@ -13,7 +13,7 @@ In the ParagraphVectors builder pattern, the `labels()` method points to the lab
 
     .labels(Arrays.asList("negative", "neutral","positive"))
 
-Here's a [full working example of Doc2vec](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-scaleout/deeplearning4j-nlp/src/test/java/org/deeplearning4j/models/paragraphvectors/ParagraphVectorsTest.java#L63-63):
+Here's a full working example of [classification with paragraph vectors](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/paragraphvectors/ParagraphVectorsClassifierExample.java):
 
     public void testDifferentLabels() throws Exception {
         ClassPathResource resource = new ClassPathResource("/labeled");
