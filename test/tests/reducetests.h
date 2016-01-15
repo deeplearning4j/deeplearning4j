@@ -27,10 +27,13 @@ TEST_GROUP(Reduce) {
 };
 
 template <typename T>
-class ReduceTest : public DimensionTest<T> {
+class ReduceTest : public BaseTest<T> {
 public:
 	virtual ~ReduceTest() {}
-
+	ReduceTest(int rank,int opNum,Data<T> *data,int extraParamsLength)
+	:  BaseTest<T>(rank,opNum,data,extraParamsLength){
+		createOperationAndOpFactory();
+	}
 	void freeOpAndOpFactory() {
 		delete opFactory;
 		delete reduce;
@@ -44,6 +47,77 @@ protected:
 	functions::reduce::ReduceOpFactory<T> *opFactory;
 	functions::reduce::ReduceFunction<T> *reduce;
 };
+
+class DoubleReduceTest : public  ReduceTest<double> {
+public:
+	virtual ~DoubleReduceTest() {}
+	DoubleReduceTest() {}
+	DoubleReduceTest(int rank,int opNum,Data<double> *data,int extraParamsLength)
+	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
+	}
+	virtual void executeCudaKernel() override {
+		nd4j::buffer::Buffer<int> *gpuInfo = this->gpuInformationBuffer();
+		nd4j::buffer::Buffer<int> *dimensionBuffer = nd4j::buffer::createBuffer(this->baseData->dimension,this->baseData->dimensionLength);
+		nd4j::buffer::Buffer<int> *xShapeBuff = shapeIntBuffer(this->rank,this->shape);
+		nd4j::buffer::Buffer<int> *resultShapeBuff = shapeIntBuffer(this->result->rank,this->result->shape->data);
+
+		reduceDouble<<<this->blockSize,this->gridSize,this->sMemSize>>>(
+				this->opNum,
+				this->length,
+				this->data->data->gData,
+				xShapeBuff->gData,
+				extraParamsBuff->gData,
+				this->result->data->gData,
+				resultShapeBuff->gData,
+				gpuInfo->gData,
+				dimensionBuffer->gData,
+				this->baseData->dimensionLength,
+				1
+		);
+
+		nd4j::buffer::freeBuffer(&gpuInfo);
+		nd4j::buffer::freeBuffer(&dimensionBuffer);
+		nd4j::buffer::freeBuffer(&xShapeBuff);
+		nd4j::buffer::freeBuffer(&resultShapeBuff);
+
+
+	}
+};
+
+
+class FloatReduceTest : public ReduceTest<float> {
+public:
+	FloatReduceTest() {}
+	FloatReduceTest(int rank,int opNum,Data<float> *data,int extraParamsLength)
+	:  ReduceTest<float>(rank,opNum,data,extraParamsLength){
+	}
+	virtual void executeCudaKernel() override {
+		nd4j::buffer::Buffer<int> *gpuInfo = this->gpuInformationBuffer();
+		nd4j::buffer::Buffer<int> *dimensionBuffer = nd4j::buffer::createBuffer(this->baseData->dimension,this->baseData->dimensionLength);
+		nd4j::buffer::Buffer<int> *xShapeBuff = shapeIntBuffer(this->rank,this->shape);
+		nd4j::buffer::Buffer<int> *resultShapeBuff = shapeIntBuffer(this->result->rank,this->result->shape->data);
+
+		reduceFloat<<<this->blockSize,this->gridSize,this->sMemSize>>>(
+				this->opNum,
+				this->length,
+				this->data->data->gData,
+				xShapeBuff->gData,
+				extraParamsBuff->gData,
+				this->result->data->gData,
+				resultShapeBuff->gData,
+				gpuInfo->gData,
+				dimensionBuffer->gData,
+				this->baseData->dimensionLength,
+				1
+		);
+
+		nd4j::buffer::freeBuffer(&gpuInfo);
+		nd4j::buffer::freeBuffer(&dimensionBuffer);
+		nd4j::buffer::freeBuffer(&xShapeBuff);
+		nd4j::buffer::freeBuffer(&resultShapeBuff);
+	}
+};
+
 
 
 TEST(Reduce, Sum) {
@@ -97,8 +171,8 @@ TEST(Reduce, Sum) {
 
 
 #ifdef __CUDACC__
-	/*
-	 * reduceDouble(
+/*
+ * reduceDouble(
 		int op,
 		int n,
 		double *dx,
@@ -110,7 +184,7 @@ TEST(Reduce, Sum) {
 		int *dimension,
 		int dimensionLength,
 		int postProcessOrNot)
-	 */
+ */
 	int blockSize = 500;
 	int gridSize = 256;
 	int sMemSize = 20000;

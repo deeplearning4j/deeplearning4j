@@ -23,11 +23,16 @@ TEST_GROUP(IndexReduce) {
 	}
 };
 
+
+
 template <typename T>
-class IndexReduceTest : public DimensionTest<T> {
+class IndexReduceTest : public BaseTest<T> {
 public:
 	virtual ~IndexReduceTest() {}
-
+	IndexReduceTest(int rank,int opNum,Data<T> *data,int extraParamsLength)
+	:  BaseTest<T>(rank,opNum,data,extraParamsLength){
+		createOperationAndOpFactory();
+	}
 	void freeOpAndOpFactory() {
 		delete opFactory;
 		delete reduce;
@@ -39,9 +44,80 @@ public:
 	}
 
 protected:
-	functions::indexreduce::IndexReduceOpFactory<T> *opFactory;
-	functions::indexreduce::IndexReduce<T> *reduce;
+	functions::reduce::ReduceOpFactory<T> *opFactory;
+	functions::reduce::ReduceFunction<T> *reduce;
 };
+
+class DoubleIndexReduceTest : public  ReduceTest<double> {
+public:
+	virtual ~DoubleIndexReduceTest() {}
+	DoubleIndexReduceTest() {}
+	DoubleIndexReduceTest(int rank,int opNum,Data<double> *data,int extraParamsLength)
+	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
+	}
+	virtual void executeCudaKernel() override {
+		nd4j::buffer::Buffer<int> *gpuInfo = this->gpuInformationBuffer();
+		nd4j::buffer::Buffer<int> *dimensionBuffer = nd4j::buffer::createBuffer(this->baseData->dimension,this->baseData->dimensionLength);
+		nd4j::buffer::Buffer<int> *xShapeBuff = shapeIntBuffer(this->rank,this->shape);
+		nd4j::buffer::Buffer<int> *resultShapeBuff = shapeIntBuffer(this->result->rank,this->result->shape->data);
+
+		indexReduceDouble<<<this->blockSize,this->gridSize,this->sMemSize>>>(
+				this->opNum,
+				this->length,
+				this->data->data->gData,
+				xShapeBuff->gData,
+				extraParamsBuff->gData,
+				this->result->data->gData,
+				resultShapeBuff->gData,
+				gpuInfo->gData,
+				dimensionBuffer->gData,
+				this->baseData->dimensionLength,
+				1
+		);
+
+		nd4j::buffer::freeBuffer(&gpuInfo);
+		nd4j::buffer::freeBuffer(&dimensionBuffer);
+		nd4j::buffer::freeBuffer(&xShapeBuff);
+		nd4j::buffer::freeBuffer(&resultShapeBuff);
+
+
+	}
+};
+
+
+class FloatIndexReduceTest : public ReduceTest<float> {
+public:
+	FloatIndexReduceTest() {}
+	FloatIndexReduceTest(int rank,int opNum,Data<float> *data,int extraParamsLength)
+	:  ReduceTest<float>(rank,opNum,data,extraParamsLength){
+	}
+	virtual void executeCudaKernel() override {
+		nd4j::buffer::Buffer<int> *gpuInfo = this->gpuInformationBuffer();
+		nd4j::buffer::Buffer<int> *dimensionBuffer = nd4j::buffer::createBuffer(this->baseData->dimension,this->baseData->dimensionLength);
+		nd4j::buffer::Buffer<int> *xShapeBuff = shapeIntBuffer(this->rank,this->shape);
+		nd4j::buffer::Buffer<int> *resultShapeBuff = shapeIntBuffer(this->result->rank,this->result->shape->data);
+
+		indexReduceFloat<<<this->blockSize,this->gridSize,this->sMemSize>>>(
+				this->opNum,
+				this->length,
+				this->data->data->gData,
+				xShapeBuff->gData,
+				extraParamsBuff->gData,
+				this->result->data->gData,
+				resultShapeBuff->gData,
+				gpuInfo->gData,
+				dimensionBuffer->gData,
+				this->baseData->dimensionLength,
+				1
+		);
+
+		nd4j::buffer::freeBuffer(&gpuInfo);
+		nd4j::buffer::freeBuffer(&dimensionBuffer);
+		nd4j::buffer::freeBuffer(&xShapeBuff);
+		nd4j::buffer::freeBuffer(&resultShapeBuff);
+	}
+};
+
 
 
 TEST(IndexReduce, IMax) {

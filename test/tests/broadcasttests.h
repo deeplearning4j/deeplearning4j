@@ -153,37 +153,61 @@ protected:
 };
 
 
-class DoublePairwiseTranformTest : public BroadcastingTest<double> {
+class DoubleBroadcastTranformTest : public BroadcastingTest<double> {
 public:
-	DoublePairwiseTranformTest() {}
-	DoublePairwiseTranformTest(int rank,int opNum,Data<double> *data,int extraParamsLength)
+	DoubleBroadcastTranformTest() {}
+	DoubleBroadcastTranformTest(int rank,int opNum,Data<double> *data,int extraParamsLength)
 	:  PairwiseTransformTest<double>(rank,opNum,data,extraParamsLength){
 	}
 	virtual void executeCudaKernel() {
-		int *shapeBuff = shapeBuffer(this->rank,this->shape);
-		int *yShapeBuff = shapeBuffer(this->rank,this->yShape);
-		assertBufferProperties(shapeBuff);
-		assertBufferProperties(yShapeBuff);
-		int xOffset = shape::offset(shapeBuff);
-		int yOffset = shape::offset(yShapeBuff);
-        int xEleStride = shape::elementWiseStride(shapeBuff);
-        int yEleStride = shape::elementWiseStride(yShapeBuff);
-
-		pairWiseTransformDouble<<<this->blockSize,this->gridSize,this->sMemSize>>>(
+        nd4j::buffer::Buffer<int> *gpuInfo = this->gpuInformationBuffer();
+		nd4j::buffer::Buffer<int> *dimensionBuffer = nd4j::buffer::createBuffer(this->baseData->dimension,this->baseData->dimensionLength);
+        nd4j::buffer::Buffer<int> *xShapeBuff = shapeIntBuffer(this->rank,this->shape);
+        nd4j::buffer::Buffer<int> *yShapeBuff = shapeIntBuffer(this->rank,this->shape);
+		broadcastDouble<<<this->blockSize,this->gridSize,this->sMemSize>>>(
 				this->opNum,
-				this->length,
-				xOffset,
-				yOffset,
-				0,
 				this->data->data->gData,
+				xShapeBuff->gData,
 				this->yData->data->gData,
-				xEleStride,
-				yEleStride,
-				this->extraParamsBuff->gData,
+				yShapeBuff->gData,
 				this->data->data->gData,
-				1, this->blockSize);
-		free(shapeBuff);
-		free(yShapeBuff);
+				xShapeBuff->gData,
+				dimensionBuffer->gData,
+				this->baseData->dimensionLength,
+				gpuInfo->gData);
+		nd4j::buffer::freeBuffer(&dimensionBuffer);
+		nd4j::buffer::freeBuffer(&xShapeBuff);
+		nd4j::buffer::freeBuffer(&yShapeBuff);
+		nd4j::buffer::freeBuffer(&gpuInfo);
+	}
+};
+
+class FloatBroadcastTranformTest : public BroadcastingTest<float> {
+public:
+	FloatBroadcastTranformTest() {}
+	FloatBroadcastTranformTest(int rank,int opNum,Data<float> *data,int extraParamsLength)
+	:  PairwiseTransformTest<float>(rank,opNum,data,extraParamsLength){
+	}
+	virtual void executeCudaKernel() {
+        nd4j::buffer::Buffer<int> *gpuInfo = this->gpuInformationBuffer();
+		nd4j::buffer::Buffer<int> *dimensionBuffer = nd4j::buffer::createBuffer(this->baseData->dimension,this->baseData->dimensionLength);
+        nd4j::buffer::Buffer<int> *xShapeBuff = shapeIntBuffer(this->rank,this->shape);
+        nd4j::buffer::Buffer<int> *yShapeBuff = shapeIntBuffer(this->rank,this->shape);
+		broadcastFloat<<<this->blockSize,this->gridSize,this->sMemSize>>>(
+				this->opNum,
+				this->data->data->gData,
+				xShapeBuff->gData,
+				this->yData->data->gData,
+				yShapeBuff->gData,
+				this->data->data->gData,
+				xShapeBuff->gData,
+				dimensionBuffer->gData,
+				this->baseData->dimensionLength,
+				gpuInfo->gData);
+		nd4j::buffer::freeBuffer(&dimensionBuffer);
+		nd4j::buffer::freeBuffer(&xShapeBuff);
+		nd4j::buffer::freeBuffer(&yShapeBuff);
+		nd4j::buffer::freeBuffer(&gpuInfo);
 	}
 };
 

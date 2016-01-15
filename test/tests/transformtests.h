@@ -132,6 +132,9 @@ public:
 class FloatTransformTest : public TransformTest<float> {
 public:
 	virtual ~FloatTransformTest() {}
+	FloatTransformTest(int rank,int opNum,Data<float> *data,int extraParamsLength)
+	:  TransformTest<float>(rank,opNum,data,extraParamsLength){
+	}
 	virtual void executeCudaKernel() override {
 		transformFloat<<<this->blockSize,this->gridSize,this->sMemSize>>>(
 				this->opNum

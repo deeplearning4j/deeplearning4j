@@ -35,6 +35,8 @@ public:
 	int *yShape;
 	int *resultShape;
 	int rank;
+	int *dimension;
+	int dimensionLength;
 
 };
 
@@ -66,7 +68,21 @@ void assertBufferProperties(int *shapeBuffer) {
 }
 
 
+nd4j::buffer::Buffer<int> * shapeIntBuffer(int rank ,int*shape) {
+	int *shapeBuffRet = shapeBuffer(rank,shape);
+	nd4j::buffer::Buffer<int> *ret = nd4j::buffer::createBuffer(shapeBuffRet,shape::shapeInfoLength(rank));
+	return ret;
+}
 
+nd4j::buffer::Buffer<int> * gpuInformationBuffer(int blockSize,int gridSize,int sharedMemorySize) {
+	int *ret = (int *) malloc(sizeof(int) * 4);
+	ret[0] = blockSize;
+	ret[1] = gridSize;
+	ret[2] = sharedMemorySize;
+	ret[3] = sharedMemorySize;
+ 	nd4j::buffer::Buffer<int> *ret2 = nd4j::buffer::createBuffer(ret,4);
+	return ret2;
+}
 
 
 template <typename T>
@@ -92,6 +108,15 @@ public:
 	}
 
 
+	virtual nd4j::buffer::Buffer<int> * gpuInformationBuffer() {
+		int *ret = (int *) malloc(sizeof(int) * 4);
+			ret[0] = blockSize;
+			ret[1] = gridSize;
+			ret[2] = sMemSize;
+			ret[3] = sMemSize;
+		 	nd4j::buffer::Buffer<int> *ret2 = nd4j::buffer::createBuffer(ret,4);
+			return ret2;
+	}
 
 
 
@@ -171,35 +196,6 @@ public:
 
 
 template <typename T>
-class DimensionTest : public BaseTest<T> {
-public:
-	DimensionTest(
-			int rank,
-			int opNum,
-			Data<T> *data,
-			int extraParamsLength,
-			int dimensionLength) : BaseTest<T>(rank,opNum,data,extraParamsLength,dimensionLength) {
-		createDimension();
-		initDimension();
-	}
-
-	virtual ~DimensionTest() {}
-	void createDimension()  {
-		dimension = (int *) malloc(sizeof(dimension) * dimensionLength);
-	}
-
-protected:
-	virtual void initDimension() = 0;
-	typedef BaseTest<T> super;
-
-
-
-protected:
-	int dimensionLength = 1;
-	int *dimension;
-};
-
-template <typename T>
 class TwoByTwoTest : public BaseTest<T> {
 public:
 	virtual ~TwoByTwoTest() {}
@@ -214,24 +210,8 @@ protected:
 	typedef BaseTest<T> super;
 };
 
-template <typename T>
-class TwoByTwoDimensionTest : public DimensionTest<T> {
-public:
-	TwoByTwoDimensionTest(int rank,int opNum,Data<T> *data,int extraParamsLength,int dimensionLength) : DimensionTest<T>(rank,opNum,data,extraParamsLength,dimensionLength){
-	}
-	TwoByTwoDimensionTest(int opNum,Data<T> *data,int extraParamsLength,int dimensionLength) : DimensionTest<T>(2,opNum,data,extraParamsLength,dimensionLength){}
 
-	virtual ~TwoByTwoDimensionTest() {}
-	virtual void initShape() override {
-		for(int i = 0; i < 2; i++) {
-			this->shape[i] = 2;
-		}
-	}
 
-protected:
-	typedef BaseTest<T> super;
-
-};
 
 
 

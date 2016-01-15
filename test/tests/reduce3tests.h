@@ -27,11 +27,12 @@ TEST_GROUP(Reduce3) {
 };
 
 
+
 template <typename T>
-class Reduce3Test : public DimensionTest<T>,public PairWiseTest<T> {
+class Reduce3Test : public PairWiseTest<T> {
+
 public:
 	virtual ~Reduce3Test() {}
-
 	void freeOpAndOpFactory() {
 		delete opFactory;
 		delete reduce;
@@ -46,6 +47,115 @@ protected:
 	functions::reduce3::Reduce3OpFactory<T> *opFactory;
 	functions::reduce3::Reduce3<T> *reduce;
 };
+
+
+class DoubleReduce3Test : public BroadcastingTest<double> {
+public:
+	DoubleReduce3Test() {}
+	DoubleReduce3Test(int rank,int opNum,Data<double> *data,int extraParamsLength)
+	:  PairwiseTransformTest<double>(rank,opNum,data,extraParamsLength){
+	}
+	virtual void executeCudaKernel() {
+		nd4j::buffer::Buffer<int> *gpuInfo = this->gpuInformationBuffer();
+		nd4j::buffer::Buffer<int> *dimensionBuffer = nd4j::buffer::createBuffer(this->baseData->dimension,this->baseData->dimensionLength);
+		nd4j::buffer::Buffer<int> *xShapeBuff = shapeIntBuffer(this->rank,this->shape);
+		nd4j::buffer::Buffer<int> *yShapeBuff = shapeIntBuffer(this->rank,this->shape);
+		nd4j::buffer::Buffer<int> *resultShapeInfo = shapeIntBuffer(this->result->rank,this->result->shape->data);
+		reduce3Double<<<this->blockSize,this->gridSize,this->sMemSize>>>(
+				this->opNum,
+				this->length,
+				this->data->data->gData,
+				xShapeBuff->gData,
+				this->yData->data->gData,
+				yShapeBuff->gData,
+				this->extraParamsBuff->gData,
+				this->result->data->gData,
+				resultShapeInfo->gData,
+				gpuInfo->gData,
+				dimensionBuffer->gData,
+				this->baseData->dimensionLength,
+				1);
+		nd4j::buffer::freeBuffer(&dimensionBuffer);
+		nd4j::buffer::freeBuffer(&xShapeBuff);
+		nd4j::buffer::freeBuffer(&yShapeBuff);
+		nd4j::buffer::freeBuffer(&gpuInfo);
+		nd4j::buffer::freeBuffer(&resultShapeInfo);
+	}
+};
+
+class FloatReduce3Test : public BroadcastingTest<float> {
+public:
+	FloatReduce3Test() {}
+	FloatReduce3Test(int rank,int opNum,Data<float> *data,int extraParamsLength)
+	:  PairwiseTransformTest<float>(rank,opNum,data,extraParamsLength){
+	}
+	virtual void executeCudaKernel() {
+		nd4j::buffer::Buffer<int> *gpuInfo = this->gpuInformationBuffer();
+		nd4j::buffer::Buffer<int> *dimensionBuffer = nd4j::buffer::createBuffer(this->baseData->dimension,this->baseData->dimensionLength);
+		nd4j::buffer::Buffer<int> *xShapeBuff = shapeIntBuffer(this->rank,this->shape);
+		nd4j::buffer::Buffer<int> *yShapeBuff = shapeIntBuffer(this->rank,this->shape);
+		nd4j::buffer::Buffer<int> *resultShapeInfo = shapeIntBuffer(this->result->rank,this->result->shape->data);
+		reduce3Float<<<this->blockSize,this->gridSize,this->sMemSize>>>(
+				this->opNum,
+				this->length,
+				this->data->data->gData,
+				xShapeBuff->gData,
+				this->yData->data->gData,
+				yShapeBuff->gData,
+				this->extraParamsBuff->gData,
+				this->result->data->gData,
+				resultShapeInfo->gData,
+				gpuInfo->gData,
+				dimensionBuffer->gData,
+				this->baseData->dimensionLength,
+				1);
+		nd4j::buffer::freeBuffer(&dimensionBuffer);
+		nd4j::buffer::freeBuffer(&xShapeBuff);
+		nd4j::buffer::freeBuffer(&yShapeBuff);
+		nd4j::buffer::freeBuffer(&gpuInfo);
+		nd4j::buffer::freeBuffer(&resultShapeInfo);
+
+	}
+};
+
+
+
+class FloatPairwiseTranformTest : public BroadcastingTest<float> {
+public:
+	FloatPairwiseTranformTest() {}
+	FloatPairwiseTranformTest(int rank,int opNum,Data<double> *data,int extraParamsLength)
+	:  PairwiseTransformTest<double>(rank,opNum,data,extraParamsLength){
+	}
+	virtual void executeCudaKernel() {
+		int *shapeBuff = shapeBuffer(this->rank,this->shape);
+		int *yShapeBuff = shapeBuffer(this->rank,this->yShape);
+		assertBufferProperties(shapeBuff);
+		assertBufferProperties(yShapeBuff);
+		int xOffset = shape::offset(shapeBuff);
+		int yOffset = shape::offset(yShapeBuff);
+		int xEleStride = shape::elementWiseStride(shapeBuff);
+		int yEleStride = shape::elementWiseStride(yShapeBuff);
+
+		pairWiseTransformFloat<<<this->blockSize,this->gridSize,this->sMemSize>>>(
+				this->opNum,
+				this->length,
+				xOffset,
+				yOffset,
+				0,
+				this->data->data->gData,
+				this->yData->data->gData,
+				xEleStride,
+				yEleStride,
+				this->extraParamsBuff->gData,
+				this->data->data->gData,
+				1, this->blockSize);
+		free(shapeBuff);
+		free(yShapeBuff);
+	}
+};
+
+
+
 
 
 
