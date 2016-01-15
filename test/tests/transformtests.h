@@ -29,34 +29,6 @@ TEST_GROUP(Transform) {
 	}
 };
 
-TEST(Transform,Log) {
-	int rank = 2;
-	int *shape = (int *) malloc(sizeof(int) * rank);
-	shape[0] = 2;
-	shape[1] = 2;
-	int *stride = shape::calcStrides(shape, rank);
-	nd4j::array::NDArray<double> *data =
-			nd4j::array::NDArrays<double>::createFrom(rank, shape, stride, 0,
-					0.0);
-	int length = nd4j::array::NDArrays<double>::length(data);
-	for (int i = 0; i < length; i++)
-		data->data->data[i] = i + 1;
-
-	double *extraParams = (double *) malloc(sizeof(double));
-
-	functions::transform::Transform<double> *log = opFactory->getOp(5);
-	log->exec(data->data->data, 1, data->data->data, 1, extraParams, length);
-
-	double comparison[4] = { 0., 0.69314718, 1.09861229, 1.38629436 };
-	CHECK(arrsEquals(rank, comparison, data->data->data));
-	free(data);
-	free(extraParams);
-	free(shape);
-	free(stride);
-	delete log;
-
-}
-
 
 
 
@@ -179,7 +151,7 @@ TEST(Transform,ObjectOrientedSigmoid) {
 
 
 TEST(Transform,ObjectOrientedLog) {
-	int opNum = 10;
+	int opNum = 5;
 	int rank = 2;
 	Data<double> *data = new Data<double>();
 	data->xShape = (int *) malloc(sizeof(int) * 2);
@@ -199,56 +171,27 @@ TEST(Transform,ObjectOrientedLog) {
 	delete data;
 }
 
-
-TEST(Transform,Sigmoid) {
+TEST(Transform,ObjectOrientedTanh) {
+	int opNum = 15;
 	int rank = 2;
-	int *shape = (int *) malloc(sizeof(int) * rank);
-	shape[0] = 2;
-	shape[1] = 2;
-	int *stride = shape::calcStrides(shape, rank);
-	nd4j::array::NDArray<double> *data =
-			nd4j::array::NDArrays<double>::createFrom(rank, shape, stride, 0,
-					0.0);
+	Data<double> *data = new Data<double>();
+	data->xShape = (int *) malloc(sizeof(int) * 2);
+	for(int i = 0; i < 2; i++) {
+		data->xShape[i] = 2;
+	}
 
-	int length = nd4j::array::NDArrays<double>::length(data);
-	for (int i = 0; i < length; i++)
-		data->data->data[i] = i + 1;
-	double *extraParams = (double *) malloc(sizeof(double));
-
-	functions::transform::Transform<double> *log = opFactory->getOp(10);
-	log->exec(data->data->data, 1, data->data->data, 1, extraParams, length);
-	double *comparison= (double *)malloc(4 * sizeof(double));
-	comparison[0] = 0.7310585786300049;
-	comparison[1] = 0.8807970779778823;
-	comparison[2] = 0.9525741268224334;
-	comparison[3] = 0.9820137900379085;
-	CHECK(arrsEquals(rank, comparison, data->data->data));
-
-
-#ifdef __CUDACC__
-	for (int i = 0; i < length; i++)
-		data->data->data[i] = i + 1;
-	nd4j::array::NDArrays<double>::allocateNDArrayOnGpu(&data);
-	double *extraParamsData = (double *) malloc(sizeof(double));
-	extraParams[0] = 0.0;
-	nd4j::buffer::Buffer<double> *extraParamsBuff = nd4j::buffer::createBuffer(extraParamsData,1);
-	transformDouble<<<length,length,2000>>>(
-			10
-			,length,
-			1,data->data->gData,
-			1,extraParamsBuff->gData,
-			data->data->gData
-			,1);
-	checkCudaErrors(cudaDeviceSynchronize());
-	nd4j::buffer::freeBuffer(&extraParamsBuff);
-	nd4j::buffer::copyDataFromGpu(&data->data);
-	CHECK(arrsEquals(rank, comparison, data->data->data));
-
-#endif
-
-	nd4j::array::NDArrays<double>::freeNDArrayOnGpuAndCpu(&data);
-	delete log;
-
+	double comparison[4] = {  0.76159416,  0.96402758,  0.99505475,  0.9993293 };
+	data->assertion = (double *) malloc(sizeof(double) * 4);
+	for(int i = 0; i < 4; i++)
+		data->assertion[i] = comparison[i];
+	data->rank = rank;
+	data->extraParams = (double *) malloc(sizeof(double) * 2);
+	DoubleTwoByTwoTransformTest *sigmoidTest = new DoubleTwoByTwoTransformTest(opNum,data,rank);
+	sigmoidTest->run();
+	delete sigmoidTest;
+	delete data;
 }
+
+
 
 #endif //NATIVEOPERATIONS_TRANSFORMTESTS_H
