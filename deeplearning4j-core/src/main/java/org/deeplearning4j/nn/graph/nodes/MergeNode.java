@@ -16,12 +16,12 @@ public class MergeNode implements GraphNode {
     private int fwdPassRank;
 
     @Override
-    public INDArray[] forward(INDArray... activations) {
+    public INDArray forward(INDArray... activations) {
         if(activations.length == 1){
             //No-op case
             int[] shape = activations[0].shape();
             forwardPassShapes = new int[][]{Arrays.copyOf(shape,shape.length)};
-            return activations;
+            return activations[0];
         }
 
         forwardPassShapes = new int[activations.length][0];
@@ -71,7 +71,7 @@ public class MergeNode implements GraphNode {
             throw new UnsupportedOperationException("Cannot merge activations with rank 4 or more");
         }
 
-        return new INDArray[]{out};
+        return out;
     }
 
     @Override

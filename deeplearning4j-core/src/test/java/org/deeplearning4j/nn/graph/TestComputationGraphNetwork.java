@@ -1,32 +1,51 @@
 package org.deeplearning4j.nn.graph;
 
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.Assert.*;
 
 public class TestComputationGraphNetwork {
+
+    private static ComputationGraphConfiguration getIrisGraphConfiguration(){
+        return new NeuralNetConfiguration.Builder()
+                .graphBuilder()
+                .addInputs("input")
+                .addLayer("firstLayer", new DenseLayer.Builder().nIn(4).nOut(5).build(), "input")
+                .addLayer("outputLayer", new OutputLayer.Builder().nIn(5).nOut(3).build(), "firstLayer")
+                .setOutputs("outputLayer")
+                .pretrain(false).backprop(true)
+                .build();
+    }
+
+    private static MultiLayerConfiguration getIrisMLNConfiguration(){
+        return new NeuralNetConfiguration.Builder()
+                .list(2)
+                .layer(0, new DenseLayer.Builder().nIn(4).nOut(5).build())
+                .layer(1, new OutputLayer.Builder().nIn(5).nOut(3).build())
+                .pretrain(false).backprop(true)
+                .build();
+    }
 
     @Test
     public void testConfigurationBasic(){
 
-        ComputationGraphConfiguration configuration = new NeuralNetConfiguration.Builder()
-                .graphBuilder()
-                .addInputs("input")
-                .addLayer("firstLayer", new DenseLayer.Builder().nIn(4).nOut(5).build(),"input")
-                .addLayer("outputLayer", new OutputLayer.Builder().nIn(5).nOut(3).build(),"firstLayer")
-                .setOutputs("outputLayer")
-                .pretrain(false).backprop(true)
-                .build();
+        ComputationGraphConfiguration configuration = getIrisGraphConfiguration();
 
         ComputationGraph graph = new ComputationGraph(configuration);
         graph.init();
@@ -55,23 +74,83 @@ public class TestComputationGraphNetwork {
     }
 
     @Test
-    public void testFitBasicIris(){
+    public void testForwardBasicIris(){
 
-        ComputationGraphConfiguration configuration = new NeuralNetConfiguration.Builder()
-                .graphBuilder()
-                .addInputs("input")
-                .addLayer("firstLayer", new DenseLayer.Builder().nIn(4).nOut(5).build(),"input")
-                .addLayer("outputLayer", new OutputLayer.Builder().nIn(5).nOut(3).build(),"firstLayer")
-                .setOutputs("outputLayer")
-                .pretrain(false).backprop(true)
-                .build();
-
+        ComputationGraphConfiguration configuration = getIrisGraphConfiguration();
         ComputationGraph graph = new ComputationGraph(configuration);
         graph.init();
 
-        DataSetIterator iris = new IrisDataSetIterator(150,150);
+        MultiLayerConfiguration mlc = getIrisMLNConfiguration();
+        MultiLayerNetwork net = new MultiLayerNetwork(mlc);
+        net.init();
 
-        graph.fit(iris);
+        DataSetIterator iris = new IrisDataSetIterator(150,150);
+        DataSet ds = iris.next();
+
+        graph.setInput(0, ds.getFeatureMatrix());
+        Map<String,INDArray> activations = graph.feedForward(false);
+        assertEquals(3,activations.size()); //2 layers + 1 input node
+        assertTrue(activations.containsKey("input"));
+        assertTrue(activations.containsKey("firstLayer"));
+        assertTrue(activations.containsKey("outputLayer"));
+
+        //Now: set parameters of both networks to be identical. Then feedforward, and check we get the same outputs
+        Nd4j.getRandom().setSeed(12345);
+        int nParams = (4*5+5) + (5*3+3);
+        INDArray params = Nd4j.rand(1, nParams);
+        graph.setParams(params.dup());
+        net.setParams(params.dup());
+
+        List<INDArray> mlnAct = net.feedForward(ds.getFeatureMatrix(),false);
+        activations = graph.feedForward(ds.getFeatureMatrix(), false);
+
+        assertEquals(mlnAct.get(0),activations.get("input"));
+        assertEquals(mlnAct.get(1),activations.get("firstLayer"));
+        assertEquals(mlnAct.get(2),activations.get("outputLayer"));
+    }
+
+    @Test
+    public void testBackwardIrisBasic(){
+        ComputationGraphConfiguration configuration = getIrisGraphConfiguration();
+        ComputationGraph graph = new ComputationGraph(configuration);
+        graph.init();
+
+        MultiLayerConfiguration mlc = getIrisMLNConfiguration();
+        MultiLayerNetwork net = new MultiLayerNetwork(mlc);
+        net.init();
+
+        DataSetIterator iris = new IrisDataSetIterator(150,150);
+        DataSet ds = iris.next();
+
+        //Now: set parameters of both networks to be identical. Then feedforward, and check we get the same outputs
+        Nd4j.getRandom().setSeed(12345);
+        int nParams = (4*5+5) + (5*3+3);
+        INDArray params = Nd4j.rand(1, nParams);
+        graph.setParams(params.dup());
+        net.setParams(params.dup());
+
+        INDArray input = ds.getFeatureMatrix();
+        INDArray labels = ds.getLabels();
+        graph.setInput(0, input.dup());
+        graph.setLabel(0, labels.dup());
+
+        net.setInput(input.dup());
+        net.setLabels(labels.dup());
+
+        net.computeGradientAndScore();
+        Pair<Gradient,Double> netGradScore = net.gradientAndScore();
+
+        graph.computeGradientAndScore();
+        Pair<Gradient,Double> graphGradScore = graph.gradientAndScore();
+
+        assertEquals(netGradScore.getSecond(),graphGradScore.getSecond(),1e-2);
+
+        Gradient netGrad = netGradScore.getFirst();
+        Gradient graphGrad = graphGradScore.getFirst();
+
+        assertNotNull(graphGrad);
+
+        assertEquals(netGrad.gradientForVariable().size(), graphGrad.gradientForVariable().size());
     }
 
 }
