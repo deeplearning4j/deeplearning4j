@@ -1,4 +1,4 @@
-package jcuda;
+package jcuda.jcublas.ops;
 
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;

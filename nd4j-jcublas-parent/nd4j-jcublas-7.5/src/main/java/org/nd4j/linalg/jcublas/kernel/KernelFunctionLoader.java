@@ -40,6 +40,7 @@ import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.context.CudaContext;
+import org.nd4j.linalg.jcublas.util.CudaArgs;
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
 import org.slf4j.Logger;
@@ -124,13 +125,24 @@ public class KernelFunctionLoader {
 
 
     /**
-     * Returns whether the function has a kernel or not
-     * @param functionName the name of the function
+     * Returns whether the target Op has a kernel or not
+     *
+     * @param op Op to be checked for existance
      * @return true if the function has a kernel
      * false othr wise
      */
-    public boolean exists(String functionName) {
-        return get(functionName, DataBuffer.Type.DOUBLE) != null || get(functionName, DataBuffer.Type.FLOAT) != null;
+    public boolean exists(Op op) {
+        /**
+         * We should check for specific kernel
+         */
+        if (CudaArgs.getModuleNameFor(op) == null) return false;
+
+        /**
+         * And specific OpCode
+         */
+        if (CudaArgs.getOpCode(op) < 0) return false;
+
+        return true;
     }
 
 

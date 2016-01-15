@@ -67,6 +67,152 @@ public class CudaArgs {
         return moduleName;
     }
 
+    public static int getOpCode(Op op) {
+        int code = -1;
+
+        String name = op.name();
+
+        if (op instanceof Accumulation) {
+            if (name.equals("mean")) {
+                code = 0;
+            } else if (name.equals("sum")) {
+                code = 1;
+            } else if (name.equals("bias")) {
+                code = 2;
+            } else if (name.equals("max")) {
+                code = 3;
+            } else if (name.equals("min")) {
+                code = 4;
+            } else if (name.equals("norm1")) {
+                code = 5;
+            } else if (name.equals("norm2")) {
+                code = 6;
+            } else if (name.equals("normmax")) {
+                code = 7;
+            } else if (name.equals("prod")) {
+                code = 8;
+            } else if (name.equals("std")) {
+                code = 9;
+            } else if (name.equals("var")) {
+                code = 10;
+            }
+        } else if (op instanceof TransformOp) {
+            if (name.equals("abs")) {
+                code = 0;
+            } else if (name.equals("ceil")) {
+                code = 1;
+            } else if (name.equals("cos")) {
+                code = 2;
+            } else if (name.equals("exp")) {
+                code = 3;
+            } else if (name.equals("floor")) {
+                code = 4;
+            } else if (name.equals("log")) {
+                code = 5;
+            } else if (name.equals("neg")) {
+                code = 6;
+            } else if (name.equals("pow")) {
+                code = 7;
+            } else if (name.equals("round")) {
+                code = 8;
+            } else if (name.equals("setrange")) {
+                code = 9;
+            } else if (name.equals("sigmoid")) {
+                code = 10;
+            } else if (name.equals("sign")) {
+                code = 11;
+            } else if (name.equals("sin")) {
+                code = 12;
+            } else if (name.equals("softplus")) {
+                code = 13;
+            } else if (name.equals("sqrt")) {
+                code = 14;
+            } else if (name.equals("tanh")) {
+                code = 15;
+            } else if (name.equals("acos")) {
+                code = 16;
+            } else if (name.equals("asin")) {
+                code = 17;
+            } else if (name.equals("atan")) {
+                code = 18;
+
+                // FIXME: we need special case for pairwise transforms for now. Later we should make them separate kernel call
+            } else if (name.equals("add")) {
+                code = 0;
+            } else if (name.equals("copy")) {
+                code = 1;
+            } else if (name.equals("div")) {
+                code = 2;
+            } else if (name.equals("div")) {
+                code = 3;
+            } else if (name.equals("eq")) {
+                code = 4;
+            } else if (name.equals("gt")) {
+                code = 5;
+            } else if (name.equals("lt")) {
+                code = 6;
+            } else if (name.equals("mul")) {
+                code = 7;
+            } else if (name.equals("div")) {
+                code = 8;
+            } else if (name.equals("driv")) {
+                code = 9;
+            } else if (name.equals("rsub")) {
+                code = 10;
+            } else if (name.equals("sub")) {
+                code = 11;
+            }
+        } else if (op instanceof ScalarOp) {
+            if (name.startsWith("add")) {
+                code = 0;
+            } else if (name.startsWith("sub")) {
+                code =  1;
+            } else if (name.startsWith("mul")) {
+                code =  2;
+            } else if (name.startsWith("div")) {
+                code =  3;
+            } else if (name.startsWith("rdiv")) {
+                code =  4;
+            } else if (name.startsWith("rsub")) {
+                code =  5;
+            } else if (name.startsWith("max")) {
+                code =  6;
+            } else if (name.startsWith("lessthan")) {
+                code =  7;
+            } else if (name.startsWith("greaterthan")) {
+                code =  8;
+            } else if (name.startsWith("eq")) {
+                code =  9;
+            } else if (name.startsWith("lte")) {
+                code =  10;
+            } else if (name.startsWith("neq")) {
+                code =  11;
+            } else if (name.startsWith("min")) {
+                code =  12;
+            } else if (name.startsWith("set")) {
+                code =  13;
+            }
+        } else if (op instanceof  BroadcastOp) {
+            if (name.equals("broadcastadd")) {
+                code = 0;
+            } else if (name.equals("broadcastsub")) {
+                code = 1;
+            } else if (name.equals("broadcastmul")) {
+                code = 2;
+            } else if (name.equals("broadcastdiv")) {
+                code = 3;
+            } else if (name.equals("broadcastrdiv")) {
+                code = 4;
+            } else if (name.equals("broadcastrsub")) {
+                code = 5;
+            } else if (name.equals("broadcastcopy")) {
+                code = 6;
+            }
+        }
+
+        return code;
+    }
+
 
 
 

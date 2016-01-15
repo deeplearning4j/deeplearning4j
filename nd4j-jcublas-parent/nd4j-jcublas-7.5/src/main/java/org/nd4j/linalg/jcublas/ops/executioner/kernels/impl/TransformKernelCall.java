@@ -6,6 +6,7 @@ import org.nd4j.linalg.jcublas.gpumetrics.GpuMetrics;
 import org.nd4j.linalg.jcublas.ops.executioner.kernels.BaseGpuKernelCall;
 import org.nd4j.linalg.jcublas.ops.executioner.kernels.args.KernelCallPointerArgs;
 import org.nd4j.linalg.jcublas.ops.executioner.kernels.args.impl.TransformKernelCallPointerArgs;
+import org.nd4j.linalg.jcublas.util.CudaArgs;
 import org.nd4j.linalg.jcublas.util.KernelParamsWrapper;
 
 /**
@@ -46,10 +47,8 @@ public class TransformKernelCall extends BaseGpuKernelCall {
              * extraArgs,
              * result
              */
-            System.out.println("TKC op.y() != null");
-
             args = new Object[] {
-                    getOpCode(op),
+                    CudaArgs.getOpCode(op),
                     op.n(),
                     op.x().offset(),
                     op.y().offset(),
@@ -67,9 +66,8 @@ public class TransformKernelCall extends BaseGpuKernelCall {
 
 
         } else {
-            System.out.println("TKC op.y() == null");
             args = new Object[] {
-                    getOpCode(op),
+                    CudaArgs.getOpCode(op),
                     op.n(),
                     op.x().offset(),
                     op.x(),
@@ -106,78 +104,4 @@ public class TransformKernelCall extends BaseGpuKernelCall {
         return new TransformKernelCallPointerArgs(op,args);
     }
 
-
-    private int getOpCode(Op op) {
-        String name = op.name();
-        int code = -1;
-        if (name.equals("abs")) {
-            code = 0;
-        } else if (name.equals("ceil")) {
-            code = 1;
-        } else if (name.equals("cos")) {
-            code = 2;
-        } else if (name.equals("exp")) {
-            code = 3;
-        } else if (name.equals("floor")) {
-            code = 4;
-        } else if (name.equals("log")) {
-            code = 5;
-        } else if (name.equals("neg")) {
-            code = 6;
-        } else if (name.equals("pow")) {
-            code = 7;
-        } else if (name.equals("round")) {
-            code = 8;
-        } else if (name.equals("setrange")) {
-            code = 9;
-        } else if (name.equals("sigmoid")) {
-            code = 10;
-        } else if (name.equals("sign")) {
-            code = 11;
-        } else if (name.equals("sin")) {
-            code = 12;
-        } else if (name.equals("softplus")) {
-            code = 13;
-        } else if (name.equals("sqrt")) {
-            code = 14;
-        } else if (name.equals("tanh")) {
-            code = 15;
-        } else if (name.equals("acos")) {
-            code = 16;
-        } else if (name.equals("asin")) {
-            code = 17;
-        } else if (name.equals("atan")) {
-            code = 18;
-
-        // FIXME: we need special case for pairwise transforms for now. Later we should make them separate kernel call
-        } else if (name.equals("add")) {
-            code = 0;
-        } else if (name.equals("copy")) {
-            code = 1;
-        } else if (name.equals("div")) {
-            code = 2;
-        } else if (name.equals("div")) {
-            code = 3;
-        } else if (name.equals("eq")) {
-            code = 4;
-        } else if (name.equals("gt")) {
-            code = 5;
-        } else if (name.equals("lt")) {
-            code = 6;
-        } else if (name.equals("mul")) {
-            code = 7;
-        } else if (name.equals("div")) {
-            code = 8;
-        } else if (name.equals("driv")) {
-            code = 9;
-        } else if (name.equals("rsub")) {
-            code = 10;
-        } else if (name.equals("sub")) {
-            code = 11;
-        }
-
-
-        System.out.println("Looking for op.name: [" + name + "] -> [" + code+"]");
-        return code;
-    }
 }

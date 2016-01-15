@@ -273,11 +273,12 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private CudaContext invoke(BroadcastOp op) {
-        CudaContext ctx;
-        System.out.println("Broadcast Op PV1");
-        //if(!KernelFunctionLoader.getInstance().exists(op.name()) || executionMode() == ExecutionMode.JAVA || op.isPassThrough() || op instanceof CopyOp)
-        if(executionMode() == ExecutionMode.JAVA || op.isPassThrough() || op instanceof CopyOp)
+        if(!KernelFunctionLoader.getInstance().exists(op) || executionMode() == ExecutionMode.JAVA || op.isPassThrough() || op instanceof CopyOp) {
             super.exec(op);
+            return null;
+        }
+
+        CudaContext ctx;
 
         //total number of times to repeat each value over an element wise stride on the gpu
         int[] dimensions = op.getDimension() == null ? BroadcastDimensions.getDimensions(op.y().shape()) : op.getDimension();
@@ -289,6 +290,11 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private CudaContext invoke(IndexAccumulation op,int[] dimension,INDArray result)  {
+        if(!KernelFunctionLoader.getInstance().exists(op) || executionMode() == ExecutionMode.JAVA) {
+            super.exec(op);
+            return null;
+        }
+
         CudaContext ctx;
         GpuKernelCall accKernelCall = GpuKernelCallFactories.getFactory(op).create(op, dimension, result);
         accKernelCall.invoke();
@@ -301,7 +307,11 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private CudaContext invoke(Accumulation op,int[] dimension)  {
-        System.out.println("Invoke dim: " + dimension);
+        if(!KernelFunctionLoader.getInstance().exists(op) || executionMode() == ExecutionMode.JAVA) {
+            super.exec(op);
+            return null;
+        }
+
         CudaContext ctx;
         GpuKernelCall accKernelCall = GpuKernelCallFactories.getFactory(op).create(op,dimension);
         accKernelCall.invoke();
@@ -311,9 +321,10 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private CudaContext invoke(ScalarOp op) {
-        //if(!KernelFunctionLoader.getInstance().exists(op.name())  || executionMode() == ExecutionMode.JAVA)
-        if(executionMode() == ExecutionMode.JAVA)
+        if(!KernelFunctionLoader.getInstance().exists(op)  || executionMode() == ExecutionMode.JAVA) {
             super.exec(op);
+            return null;
+        }
 
         GpuKernelCall kernelCall = GpuKernelCallFactories.getFactory(op).create(op);
         kernelCall.invoke();
@@ -322,9 +333,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     }
 
     private CudaContext invoke(TransformOp op) {
-        //if(!KernelFunctionLoader.getInstance().exists(op.name()) || op.x() instanceof IComplexNDArray || op.isPassThrough()) {
-        System.out.println("Transform Op PV1");
-        if(op.x() instanceof IComplexNDArray || op.isPassThrough()) {
+        if(!KernelFunctionLoader.getInstance().exists(op) || op.x() instanceof IComplexNDArray || op.isPassThrough()) {
             super.exec(op);
             return null;
         }

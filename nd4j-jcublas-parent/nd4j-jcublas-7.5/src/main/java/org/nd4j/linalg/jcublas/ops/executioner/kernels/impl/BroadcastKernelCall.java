@@ -6,6 +6,7 @@ import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 import org.nd4j.linalg.jcublas.ops.executioner.kernels.BaseGpuKernelCall;
 import org.nd4j.linalg.jcublas.ops.executioner.kernels.args.KernelCallPointerArgs;
 import org.nd4j.linalg.jcublas.ops.executioner.kernels.args.impl.BroadcastKernelCallPointerArgs;
+import org.nd4j.linalg.jcublas.util.CudaArgs;
 import org.nd4j.linalg.jcublas.util.KernelParamsWrapper;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
 
@@ -26,7 +27,7 @@ public class BroadcastKernelCall extends BaseGpuKernelCall {
     @Override
     public void createArgs() {
         this.args = new Object[] {
-                getOpCode(op),
+                CudaArgs.getOpCode(op),
                 op.x(),
                 KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.x(), dimensions)),
                 op.y(),
@@ -92,26 +93,5 @@ public class BroadcastKernelCall extends BaseGpuKernelCall {
     @Override
     public KernelCallPointerArgs getPointers() {
         return new BroadcastKernelCallPointerArgs(op,args);
-    }
-
-    private int getOpCode(Op op) {
-        String name = op.name();
-        int code = -1;
-        if (name.equals("broadcastadd")) {
-            code = 0;
-        } else if (name.equals("broadcastsub")) {
-            code = 1;
-        } else if (name.equals("broadcastmul")) {
-            code = 2;
-        } else if (name.equals("broadcastdiv")) {
-            code = 3;
-        } else if (name.equals("broadcastrdiv")) {
-            code = 4;
-        } else if (name.equals("broadcastrsub")) {
-            code = 5;
-        } else if (name.equals("broadcastcopy")) {
-            code = 6;
-        }
-        return code;
     }
 }

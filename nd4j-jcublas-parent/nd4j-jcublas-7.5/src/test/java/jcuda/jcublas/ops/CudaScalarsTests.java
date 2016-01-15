@@ -1,4 +1,4 @@
-package jcuda;
+package jcuda.jcublas.ops;
 
 import org.junit.Ignore;
 import org.junit.Test;
