@@ -34,6 +34,10 @@ class ScalarTest : public BaseTest<T> {
 public:
 	virtual ~ScalarTest() {}
 
+	ScalarTest(int rank,int opNum,Data<T> *data,int extraParamsLength)
+	: BaseTest<T>(rank,opNum,data,extraParamsLength) {
+		createOperationAndOpFactory();
+	}
 	virtual void freeOpAndOpFactory() {
 		delete op;
 		delete opFactory;
@@ -48,6 +52,55 @@ protected:
 	functions::scalar::ScalarOpFactory<T> opFactory;
 	functions::scalar::ScalarTransform<T> op;
 
+};
+
+class DoubleScalarTest : public ScalarTest<double> {
+public:
+	DoubleScalarTest() {}
+	DoubleScalarTest(int rank,int opNum,Data<double> *data,int extraParamsLength)
+	:  ScalarTest<double>(rank,opNum,data,extraParamsLength){
+	}
+	virtual void executeCudaKernel() {
+		int *shapeBuff = shapeBuffer(this->rank,this->shape);
+		int eleStride = shape::elementWiseStride(shapeBuff);
+		scalarDouble<<<this->blockSize,this->gridSize,
+				this->sMemSize>>>(
+						this->opNum,
+						this->length,
+						1,
+						this->baseData->scalar,
+						this->data->data->gData,
+						eleStride,
+						this->extraParamsBuff->gData,
+						this->result->data->gData,this->blockSize
+
+				);
+
+		free(shapeBuff);
+	}
+};
+
+
+class FloatScalarTest : public ScalarTest<float> {
+public:
+	FloatScalarTest() {}
+	FloatScalarTest(int rank,int opNum,Data<float> *data,int extraParamsLength)
+	:  ScalarTest<float>(rank,opNum,data,extraParamsLength){
+	}
+	virtual void executeCudaKernel() {
+		scalarFloat<<<this->blockSize,this->gridSize,
+				this->sMemSize>>>(
+						this->opNum,
+						this->length,
+						1,
+						this->baseData->scalar,
+						this->data->data->gData,
+						1,
+						this->extraParamsBuff->gData,
+						this->result->data->gData,this->blockSize
+
+				);
+	}
 };
 
 

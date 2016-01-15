@@ -153,4 +153,76 @@ protected:
 };
 
 
+class DoublePairwiseTranformTest : public BroadcastingTest<double> {
+public:
+	DoublePairwiseTranformTest() {}
+	DoublePairwiseTranformTest(int rank,int opNum,Data<double> *data,int extraParamsLength)
+	:  PairwiseTransformTest<double>(rank,opNum,data,extraParamsLength){
+	}
+	virtual void executeCudaKernel() {
+		int *shapeBuff = shapeBuffer(this->rank,this->shape);
+		int *yShapeBuff = shapeBuffer(this->rank,this->yShape);
+		assertBufferProperties(shapeBuff);
+		assertBufferProperties(yShapeBuff);
+		int xOffset = shape::offset(shapeBuff);
+		int yOffset = shape::offset(yShapeBuff);
+        int xEleStride = shape::elementWiseStride(shapeBuff);
+        int yEleStride = shape::elementWiseStride(yShapeBuff);
+
+		pairWiseTransformDouble<<<this->blockSize,this->gridSize,this->sMemSize>>>(
+				this->opNum,
+				this->length,
+				xOffset,
+				yOffset,
+				0,
+				this->data->data->gData,
+				this->yData->data->gData,
+				xEleStride,
+				yEleStride,
+				this->extraParamsBuff->gData,
+				this->data->data->gData,
+				1, this->blockSize);
+		free(shapeBuff);
+		free(yShapeBuff);
+	}
+};
+
+
+
+class FloatPairwiseTranformTest : public BroadcastingTest<float> {
+public:
+	FloatPairwiseTranformTest() {}
+	FloatPairwiseTranformTest(int rank,int opNum,Data<double> *data,int extraParamsLength)
+	:  PairwiseTransformTest<double>(rank,opNum,data,extraParamsLength){
+	}
+	virtual void executeCudaKernel() {
+		int *shapeBuff = shapeBuffer(this->rank,this->shape);
+		int *yShapeBuff = shapeBuffer(this->rank,this->yShape);
+		assertBufferProperties(shapeBuff);
+		assertBufferProperties(yShapeBuff);
+		int xOffset = shape::offset(shapeBuff);
+		int yOffset = shape::offset(yShapeBuff);
+        int xEleStride = shape::elementWiseStride(shapeBuff);
+        int yEleStride = shape::elementWiseStride(yShapeBuff);
+
+		pairWiseTransformFloat<<<this->blockSize,this->gridSize,this->sMemSize>>>(
+				this->opNum,
+				this->length,
+				xOffset,
+				yOffset,
+				0,
+				this->data->data->gData,
+				this->yData->data->gData,
+				xEleStride,
+				yEleStride,
+				this->extraParamsBuff->gData,
+				this->data->data->gData,
+				1, this->blockSize);
+		free(shapeBuff);
+		free(yShapeBuff);
+	}
+};
+
+
+
 #endif //NATIVEOPERATIONS_BROADCASTSTESTS_H

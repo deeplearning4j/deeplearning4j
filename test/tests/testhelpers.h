@@ -25,6 +25,7 @@ int arrsEquals(int rank, T *comp1, T *comp2) {
 template <typename T>
 class Data {
 public:
+	T scalar;
 	T *data;
 	T *y;
 	T *result;
@@ -100,6 +101,7 @@ protected:
 	int *stride = NULL;
 	Data<T> *baseData;
 	nd4j::array::NDArray<T> *data = NULL;
+	nd4j::array::NDArray<T> *result = NULL;
 	T *assertion = NULL;
 	T *extraParams = NULL;
 	int blockSize = 500;
