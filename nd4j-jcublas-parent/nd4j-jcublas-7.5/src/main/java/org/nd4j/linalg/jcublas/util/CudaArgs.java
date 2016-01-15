@@ -40,7 +40,25 @@ public class CudaArgs {
         if (op instanceof Accumulation) {
             moduleName = "reduce";
         } else if (op instanceof TransformOp) {
-            moduleName = "transform";
+            // FIXME: we need special case for pairwise transforms for now. Later we should make them separate kernel call
+            if (op.name().equals("add")) {
+                moduleName = "pairWiseTransform";
+            } else if (op.name().equals("copy")) {
+                moduleName = "pairWiseTransform";
+            } else if (op.name().equals("div")) {
+                moduleName = "pairWiseTransform";
+            } else if (op.name().equals("mul")) {
+                moduleName = "pairWiseTransform";
+            } else if (op.name().equals("rdiv")) {
+                moduleName = "pairWiseTransform";
+            } else if (op.name().equals("rsub")) {
+                moduleName = "pairWiseTransform";
+            } else if (op.name().equals("sub")) {
+                moduleName = "pairWiseTransform";
+
+            } else {
+                moduleName = "transform";
+            }
         } else if (op instanceof ScalarOp) {
             moduleName = "scalar";
         } else if (op instanceof  BroadcastOp) {

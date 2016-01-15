@@ -148,6 +148,32 @@ public class TransformKernelCall extends BaseGpuKernelCall {
             code = 17;
         } else if (name.equals("atan")) {
             code = 18;
+
+        // FIXME: we need special case for pairwise transforms for now. Later we should make them separate kernel call
+        } else if (name.equals("add")) {
+            code = 0;
+        } else if (name.equals("copy")) {
+            code = 1;
+        } else if (name.equals("div")) {
+            code = 2;
+        } else if (name.equals("div")) {
+            code = 3;
+        } else if (name.equals("eq")) {
+            code = 4;
+        } else if (name.equals("gt")) {
+            code = 5;
+        } else if (name.equals("lt")) {
+            code = 6;
+        } else if (name.equals("mul")) {
+            code = 7;
+        } else if (name.equals("div")) {
+            code = 8;
+        } else if (name.equals("driv")) {
+            code = 9;
+        } else if (name.equals("rsub")) {
+            code = 10;
+        } else if (name.equals("sub")) {
+            code = 11;
         }
 
 
