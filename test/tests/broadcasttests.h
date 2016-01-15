@@ -136,6 +136,13 @@ template <typename T>
 class BroadcastingTest : public PairWiseTest<T> {
 
 public:
+	BroadcastingTest(int rank,int opNum,Data<T> *data,int extraParamsLength)
+: PairWiseTest<T>(rank,opNum,data,extraParamsLength) {
+		createOperationAndOpFactory();
+	}
+	BroadcastingTest() {
+		createOperationAndOpFactory();
+	}
 	virtual ~BroadcastingTest() {}
 	void freeOpAndOpFactory() override {
 		delete opFactory;
@@ -144,7 +151,7 @@ public:
 
 	virtual void createOperationAndOpFactory() override {
 		opFactory = new functions::broadcast::BroadcastOpFactory<T>();
-		op = opFactory->create(this->opNum);
+		op = opFactory->getOp(this->opNum);
 	}
 
 protected:
@@ -157,13 +164,13 @@ class DoubleBroadcastTranformTest : public BroadcastingTest<double> {
 public:
 	DoubleBroadcastTranformTest() {}
 	DoubleBroadcastTranformTest(int rank,int opNum,Data<double> *data,int extraParamsLength)
-	:  PairwiseTransformTest<double>(rank,opNum,data,extraParamsLength){
+	:  BroadcastingTest<double>(rank,opNum,data,extraParamsLength){
 	}
 	virtual void executeCudaKernel() {
-        nd4j::buffer::Buffer<int> *gpuInfo = this->gpuInformationBuffer();
+		nd4j::buffer::Buffer<int> *gpuInfo = this->gpuInformationBuffer();
 		nd4j::buffer::Buffer<int> *dimensionBuffer = nd4j::buffer::createBuffer(this->baseData->dimension,this->baseData->dimensionLength);
-        nd4j::buffer::Buffer<int> *xShapeBuff = shapeIntBuffer(this->rank,this->shape);
-        nd4j::buffer::Buffer<int> *yShapeBuff = shapeIntBuffer(this->rank,this->shape);
+		nd4j::buffer::Buffer<int> *xShapeBuff = shapeIntBuffer(this->rank,this->shape);
+		nd4j::buffer::Buffer<int> *yShapeBuff = shapeIntBuffer(this->rank,this->shape);
 		broadcastDouble<<<this->blockSize,this->gridSize,this->sMemSize>>>(
 				this->opNum,
 				this->data->data->gData,
@@ -186,13 +193,13 @@ class FloatBroadcastTranformTest : public BroadcastingTest<float> {
 public:
 	FloatBroadcastTranformTest() {}
 	FloatBroadcastTranformTest(int rank,int opNum,Data<float> *data,int extraParamsLength)
-	:  PairwiseTransformTest<float>(rank,opNum,data,extraParamsLength){
+	:  BroadcastingTest<float>(rank,opNum,data,extraParamsLength){
 	}
 	virtual void executeCudaKernel() {
-        nd4j::buffer::Buffer<int> *gpuInfo = this->gpuInformationBuffer();
+		nd4j::buffer::Buffer<int> *gpuInfo = this->gpuInformationBuffer();
 		nd4j::buffer::Buffer<int> *dimensionBuffer = nd4j::buffer::createBuffer(this->baseData->dimension,this->baseData->dimensionLength);
-        nd4j::buffer::Buffer<int> *xShapeBuff = shapeIntBuffer(this->rank,this->shape);
-        nd4j::buffer::Buffer<int> *yShapeBuff = shapeIntBuffer(this->rank,this->shape);
+		nd4j::buffer::Buffer<int> *xShapeBuff = shapeIntBuffer(this->rank,this->shape);
+		nd4j::buffer::Buffer<int> *yShapeBuff = shapeIntBuffer(this->rank,this->shape);
 		broadcastFloat<<<this->blockSize,this->gridSize,this->sMemSize>>>(
 				this->opNum,
 				this->data->data->gData,
@@ -213,11 +220,11 @@ public:
 
 
 
-class FloatPairwiseTranformTest : public BroadcastingTest<float> {
+class FloatPairwiseBroadcastTest : public BroadcastingTest<float> {
 public:
-	FloatPairwiseTranformTest() {}
-	FloatPairwiseTranformTest(int rank,int opNum,Data<double> *data,int extraParamsLength)
-	:  PairwiseTransformTest<double>(rank,opNum,data,extraParamsLength){
+	FloatPairwiseBroadcastTest() {}
+	FloatPairwiseBroadcastTest(int rank,int opNum,Data<float> *data,int extraParamsLength)
+	:  BroadcastingTest<float>(rank,opNum,data,extraParamsLength){
 	}
 	virtual void executeCudaKernel() {
 		int *shapeBuff = shapeBuffer(this->rank,this->shape);
@@ -226,8 +233,8 @@ public:
 		assertBufferProperties(yShapeBuff);
 		int xOffset = shape::offset(shapeBuff);
 		int yOffset = shape::offset(yShapeBuff);
-        int xEleStride = shape::elementWiseStride(shapeBuff);
-        int yEleStride = shape::elementWiseStride(yShapeBuff);
+		int xEleStride = shape::elementWiseStride(shapeBuff);
+		int yEleStride = shape::elementWiseStride(yShapeBuff);
 
 		pairWiseTransformFloat<<<this->blockSize,this->gridSize,this->sMemSize>>>(
 				this->opNum,

@@ -33,7 +33,9 @@ class ScalarTest : public BaseTest<T> {
 
 public:
 	virtual ~ScalarTest() {}
-
+	ScalarTest() {
+		createOperationAndOpFactory();
+	}
 	ScalarTest(int rank,int opNum,Data<T> *data,int extraParamsLength)
 	: BaseTest<T>(rank,opNum,data,extraParamsLength) {
 		createOperationAndOpFactory();
@@ -49,8 +51,8 @@ public:
 	}
 
 protected:
-	functions::scalar::ScalarOpFactory<T> opFactory;
-	functions::scalar::ScalarTransform<T> op;
+	functions::scalar::ScalarOpFactory<T> *opFactory;
+	functions::scalar::ScalarTransform<T> *op;
 
 };
 

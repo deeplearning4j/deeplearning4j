@@ -32,7 +32,14 @@ template <typename T>
 class Reduce3Test : public PairWiseTest<T> {
 
 public:
+	Reduce3Test() {
+		createOperationAndOpFactory();
+	}
 	virtual ~Reduce3Test() {}
+	Reduce3Test(int rank,int opNum,Data<T> *data,int extraParamsLength)
+	:  PairWiseTest<T>(rank,opNum,data,extraParamsLength) {
+		createOperationAndOpFactory();
+	}
 	void freeOpAndOpFactory() {
 		delete opFactory;
 		delete reduce;
@@ -40,7 +47,7 @@ public:
 
 	virtual void createOperationAndOpFactory() {
 		opFactory = new functions::reduce3::Reduce3OpFactory<T>();
-		reduce = opFactory->create(this->opNum);
+		reduce = opFactory->getOp(this->opNum);
 	}
 
 protected:
@@ -49,11 +56,11 @@ protected:
 };
 
 
-class DoubleReduce3Test : public BroadcastingTest<double> {
+class DoubleReduce3Test : public Reduce3Test<double> {
 public:
 	DoubleReduce3Test() {}
 	DoubleReduce3Test(int rank,int opNum,Data<double> *data,int extraParamsLength)
-	:  PairwiseTransformTest<double>(rank,opNum,data,extraParamsLength){
+	:  Reduce3Test<double>(rank,opNum,data,extraParamsLength){
 	}
 	virtual void executeCudaKernel() {
 		nd4j::buffer::Buffer<int> *gpuInfo = this->gpuInformationBuffer();
@@ -83,11 +90,11 @@ public:
 	}
 };
 
-class FloatReduce3Test : public BroadcastingTest<float> {
+class FloatReduce3Test : public Reduce3Test<float> {
 public:
 	FloatReduce3Test() {}
 	FloatReduce3Test(int rank,int opNum,Data<float> *data,int extraParamsLength)
-	:  PairwiseTransformTest<float>(rank,opNum,data,extraParamsLength){
+	:  Reduce3Test<float>(rank,opNum,data,extraParamsLength){
 	}
 	virtual void executeCudaKernel() {
 		nd4j::buffer::Buffer<int> *gpuInfo = this->gpuInformationBuffer();
@@ -115,42 +122,6 @@ public:
 		nd4j::buffer::freeBuffer(&gpuInfo);
 		nd4j::buffer::freeBuffer(&resultShapeInfo);
 
-	}
-};
-
-
-
-class FloatPairwiseTranformTest : public BroadcastingTest<float> {
-public:
-	FloatPairwiseTranformTest() {}
-	FloatPairwiseTranformTest(int rank,int opNum,Data<double> *data,int extraParamsLength)
-	:  PairwiseTransformTest<double>(rank,opNum,data,extraParamsLength){
-	}
-	virtual void executeCudaKernel() {
-		int *shapeBuff = shapeBuffer(this->rank,this->shape);
-		int *yShapeBuff = shapeBuffer(this->rank,this->yShape);
-		assertBufferProperties(shapeBuff);
-		assertBufferProperties(yShapeBuff);
-		int xOffset = shape::offset(shapeBuff);
-		int yOffset = shape::offset(yShapeBuff);
-		int xEleStride = shape::elementWiseStride(shapeBuff);
-		int yEleStride = shape::elementWiseStride(yShapeBuff);
-
-		pairWiseTransformFloat<<<this->blockSize,this->gridSize,this->sMemSize>>>(
-				this->opNum,
-				this->length,
-				xOffset,
-				yOffset,
-				0,
-				this->data->data->gData,
-				this->yData->data->gData,
-				xEleStride,
-				yEleStride,
-				this->extraParamsBuff->gData,
-				this->data->data->gData,
-				1, this->blockSize);
-		free(shapeBuff);
-		free(yShapeBuff);
 	}
 };
 

@@ -30,6 +30,7 @@ template <typename T>
 class ReduceTest : public BaseTest<T> {
 public:
 	virtual ~ReduceTest() {}
+	ReduceTest() {}
 	ReduceTest(int rank,int opNum,Data<T> *data,int extraParamsLength)
 	:  BaseTest<T>(rank,opNum,data,extraParamsLength){
 		createOperationAndOpFactory();

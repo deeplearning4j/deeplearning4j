@@ -35,6 +35,8 @@ public:
 	int *yShape;
 	int *resultShape;
 	int rank;
+	int yRank;
+	int resultRank;
 	int *dimension;
 	int dimensionLength;
 
@@ -80,7 +82,7 @@ nd4j::buffer::Buffer<int> * gpuInformationBuffer(int blockSize,int gridSize,int 
 	ret[1] = gridSize;
 	ret[2] = sharedMemorySize;
 	ret[3] = sharedMemorySize;
- 	nd4j::buffer::Buffer<int> *ret2 = nd4j::buffer::createBuffer(ret,4);
+	nd4j::buffer::Buffer<int> *ret2 = nd4j::buffer::createBuffer(ret,4);
 	return ret2;
 }
 
@@ -110,12 +112,12 @@ public:
 
 	virtual nd4j::buffer::Buffer<int> * gpuInformationBuffer() {
 		int *ret = (int *) malloc(sizeof(int) * 4);
-			ret[0] = blockSize;
-			ret[1] = gridSize;
-			ret[2] = sMemSize;
-			ret[3] = sMemSize;
-		 	nd4j::buffer::Buffer<int> *ret2 = nd4j::buffer::createBuffer(ret,4);
-			return ret2;
+		ret[0] = blockSize;
+		ret[1] = gridSize;
+		ret[2] = sMemSize;
+		ret[3] = sMemSize;
+		nd4j::buffer::Buffer<int> *ret2 = nd4j::buffer::createBuffer(ret,4);
+		return ret2;
 	}
 
 
@@ -181,9 +183,16 @@ protected:
 	nd4j::array::NDArray<T> *yData;
 
 public:
+	PairWiseTest() {
+	}
+	//BaseTest(int rank,int opNum,Data<T> *data,int extraParamsLength)
+	PairWiseTest(int rank,int opNum,Data<T> *data,int extraParamsLength)
+	:BaseTest<T>(rank,opNum,data,extraParamsLength)  {
+		init();
+	}
 	virtual ~PairWiseTest() {}
 	virtual void init() override {
-		super::init();
+		yRank = this->baseData->yRank;
 		yShape = (int *) malloc(sizeof(int) * yRank);
 		yStride = shape::calcStrides(yShape,yRank);
 		yData = nd4j::array::NDArrays<T>::createFrom(yRank, yShape, yStride, 0,

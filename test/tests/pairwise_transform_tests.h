@@ -36,8 +36,11 @@ class PairwiseTransformTest : public PairWiseTest<T> {
 
 public:
 	virtual ~PairwiseTransformTest() {}
+	PairwiseTransformTest() {
+		createOperationAndOpFactory();
+	}
 	PairwiseTransformTest(int rank,int opNum,Data<T> *data,int extraParamsLength)
-	: BaseTest<T>(rank,opNum,data,extraParamsLength) {
+	: PairWiseTest<T>(rank,opNum,data,extraParamsLength) {
 		createOperationAndOpFactory();
 	}
 	virtual void freeOpAndOpFactory() {
@@ -52,7 +55,7 @@ public:
 
 protected:
 	functions::pairwise_transforms::PairWiseTransformOpFactory<T> *opFactory;
-	functions::pairwise_transforms::PairWiseTransform<T> op;
+	functions::pairwise_transforms::PairWiseTransform<T> *op;
 
 };
 
@@ -95,8 +98,8 @@ public:
 class FloatPairwiseTranformTest : public PairwiseTransformTest<float> {
 public:
 	FloatPairwiseTranformTest() {}
-	FloatPairwiseTranformTest(int rank,int opNum,Data<double> *data,int extraParamsLength)
-	:  PairwiseTransformTest<double>(rank,opNum,data,extraParamsLength){
+	FloatPairwiseTranformTest(int rank,int opNum,Data<float> *data,int extraParamsLength)
+	:  PairwiseTransformTest<float>(rank,opNum,data,extraParamsLength) {
 	}
 	virtual void executeCudaKernel() {
 		int *shapeBuff = shapeBuffer(this->rank,this->shape);

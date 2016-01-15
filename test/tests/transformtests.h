@@ -178,6 +178,26 @@ TEST(Transform,ObjectOrientedSigmoid) {
 }
 
 
+TEST(Transform,ObjectOrientedLog) {
+	int opNum = 10;
+	int rank = 2;
+	Data<double> *data = new Data<double>();
+	data->xShape = (int *) malloc(sizeof(int) * 2);
+	for(int i = 0; i < 2; i++) {
+		data->xShape[i] = 2;
+	}
+
+	double comparison[4] = { 0., 0.69314718, 1.09861229, 1.38629436 };
+	data->assertion = (double *) malloc(sizeof(double) * 4);
+	for(int i = 0; i < 4; i++)
+		data->assertion[i] = comparison[i];
+	data->rank = rank;
+	data->extraParams = (double *) malloc(sizeof(double) * 2);
+	DoubleTwoByTwoTransformTest *sigmoidTest = new DoubleTwoByTwoTransformTest(opNum,data,rank);
+	sigmoidTest->run();
+	delete sigmoidTest;
+	delete data;
+}
 
 
 TEST(Transform,Sigmoid) {
