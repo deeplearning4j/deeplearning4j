@@ -48,7 +48,8 @@ import org.deeplearning4j.spark.impl.common.misc.UpdaterFromGradientTupleFunctio
 import org.deeplearning4j.spark.impl.common.misc.UpdaterFromTupleFunction;
 import org.deeplearning4j.spark.impl.common.updater.UpdaterAggregatorCombiner;
 import org.deeplearning4j.spark.impl.common.updater.UpdaterElementCombiner;
-import org.deeplearning4j.spark.impl.multilayer.evaluation.EvaluateFlatMapFunction;
+import org.deeplearning4j.spark.impl.multilayer.evaluation.EvaluateMapFunction;
+import org.deeplearning4j.spark.impl.multilayer.evaluation.EvaluationReduceFunction;
 import org.deeplearning4j.spark.impl.multilayer.gradientaccum.GradientAccumFlatMap;
 import org.deeplearning4j.spark.util.MLLibUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -59,7 +60,6 @@ import scala.Tuple2;
 import scala.Tuple3;
 
 import java.io.Serializable;
-import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -295,8 +295,10 @@ public class SparkDl4jMultiLayer implements Serializable {
         return network;
     }
 
-    private void runIteration(JavaRDD<DataSet> rdd) {
 
+    protected void runIteration(JavaRDD<DataSet> rdd) {
+
+        log.info("Broadcasting initial parameters of length " + network.numParams(false));
         log.info("Broadcasting initial parameters of length " + network.numParams(false));
         INDArray valToBroadcast = network.params(false);
         this.params = sc.broadcast(valToBroadcast);
@@ -308,10 +310,8 @@ public class SparkDl4jMultiLayer implements Serializable {
         }
         this.updater = sc.broadcast(updater);
 
-
-        int paramsLength = network.numParams(false);
+        int paramsLength = network.numParams(true);
         boolean accumGrad = sc.getConf().getBoolean(ACCUM_GRADIENT, false);
-
 
         if(accumGrad) {
             //Learning via averaging gradients
@@ -354,6 +354,7 @@ public class SparkDl4jMultiLayer implements Serializable {
             resultsParams.foreach(a);
             INDArray newParams = a.getAccumulator().value();
             log.info("Accumulated parameters");
+            int v = rdd.partitions().size();
             newParams.divi(rdd.partitions().size());
             log.info("Divided by partitions");
             network.setParameters(newParams);
@@ -368,6 +369,7 @@ public class SparkDl4jMultiLayer implements Serializable {
                     return t3._3();
                 }
             });
+
             lastScore = scores.mean();
 
             UpdaterAggregator aggregator = resultsUpdater.aggregate(
@@ -377,11 +379,11 @@ public class SparkDl4jMultiLayer implements Serializable {
             );
             Updater combinedUpdater = aggregator.getUpdater();
             network.setUpdater(combinedUpdater);
+
             log.info("Set updater");
 
         }
     }
-
 
     /**
      * Train a multi layer network
@@ -390,6 +392,7 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @return the fit multi layer network
      */
     public static MultiLayerNetwork train(JavaRDD<LabeledPoint> data,MultiLayerConfiguration conf) {
+
         SparkDl4jMultiLayer multiLayer = new SparkDl4jMultiLayer(data.context(),conf);
         return multiLayer.fit(new JavaSparkContext(data.context()),data);
     }
@@ -409,35 +412,28 @@ public class SparkDl4jMultiLayer implements Serializable {
         return sum;
     }
 
-    public Evaluation evaluate(JavaRDD<DataSet> data, int maxExamplesPerEvaluation) {
-        return evaluate(data, maxExamplesPerEvaluation, null, false);
+    public Evaluation evaluate(JavaRDD<DataSet> data) {
+        return evaluate(data, null, false);
     }
 
-    public Evaluation evaluate(JavaRDD<DataSet> data, int maxExamplesPerEvaluation, boolean warnNotClassified) {
-        return evaluate(data, maxExamplesPerEvaluation, null, warnNotClassified);
+    public Evaluation evaluate(JavaRDD<DataSet> data, boolean warnNotClassified) {
+        return evaluate(data, null, warnNotClassified);
     }
+
 
     /**Evaluate the network (classification performance) in a distributed manner.
      * @param data Data to evaluate on
-     * @param maxExamplesPerEvaluation Maximum number of examples to use during each evaluation step. If an executor has
-     *                                 more than maxExamplesPerEvaluation, it will split the data into multiple evaluation
-     *                                 steps. Results should not depend on this number (only affects memory requirements)
+     * @param labelsList List of labels used for evaluation
+     * @param warnNotClassified true enables printing what classes were not identified in evaluation
      * @return Evaluation object; results of evaluation on all examples in the data set
      */
-    public Evaluation evaluate(JavaRDD<DataSet> data, int maxExamplesPerEvaluation, List<String> labelsList, boolean warnNotClassified){
 
-        JavaRDD<Evaluation> evaluation = data.mapPartitions(
-                new EvaluateFlatMapFunction(conf.toJson(),sc.broadcast(network.params(false)),maxExamplesPerEvaluation, labelsList, warnNotClassified));
+    public Evaluation evaluate(JavaRDD<DataSet> data, List<String> labelsList, boolean warnNotClassified){
 
-        //Evaluation objects are small, and merging is quick -> fine to do this locally
-        List<Evaluation> evaluationList = evaluation.collect();
-        Iterator<Evaluation> evaluationIterator = evaluationList.iterator();
-        Evaluation eval = evaluationIterator.next();
+        JavaRDD<Evaluation> evaluations = data.map(new EvaluateMapFunction(network, labelsList, warnNotClassified));
+        Evaluation evaluation = evaluations.reduce(new EvaluationReduceFunction());
+        return evaluation;
 
-        while(evaluationIterator.hasNext()){
-            eval.merge(evaluationIterator.next());
-        }
-
-        return eval;
     }
+
 }
