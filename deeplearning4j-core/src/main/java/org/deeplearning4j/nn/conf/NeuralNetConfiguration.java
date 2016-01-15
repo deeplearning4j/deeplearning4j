@@ -375,7 +375,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         }
 
         public ComputationGraphConfiguration.GraphBuilder graphBuilder(){
-            return new ComputationGraphConfiguration.GraphBuilder();
+            return new ComputationGraphConfiguration.GraphBuilder(this);
         }
 
         /** Number of optimization iterations. */
