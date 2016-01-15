@@ -43,6 +43,8 @@ public class CudaArgs {
             moduleName = "transform";
         } else if (op instanceof ScalarOp) {
             moduleName = "scalar";
+        } else if (op instanceof  BroadcastOp) {
+            moduleName = "broadcast";
         }
         return moduleName;
     }

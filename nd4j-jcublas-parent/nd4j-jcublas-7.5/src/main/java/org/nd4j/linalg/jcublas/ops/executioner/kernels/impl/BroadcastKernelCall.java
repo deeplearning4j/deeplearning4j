@@ -20,11 +20,13 @@ public class BroadcastKernelCall extends BaseGpuKernelCall {
     public BroadcastKernelCall(Op op,int[] dimensions) {
         super(op);
         this.dimensions = dimensions;
+        createArgs();
     }
 
     @Override
     public void createArgs() {
         this.args = new Object[] {
+                getOpCode(op),
                 op.x(),
                 KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.x(), dimensions)),
                 op.y(),
@@ -74,7 +76,7 @@ public class BroadcastKernelCall extends BaseGpuKernelCall {
          * There will likely be times when we need to compute a dup()
          * in order to force alignment of the data.
          */
-        try(KernelParamsWrapper kParams = new KernelParamsWrapper(op,true,args).setResultArray(op.z())) {
+        try(KernelParamsWrapper kParams = new KernelParamsWrapper(true,args).setResultArray(op.z())) {
             this.args = kParams.getKernelParameters();
             this.cudaContext = kParams.getContext();
             super.invoke();
@@ -90,5 +92,26 @@ public class BroadcastKernelCall extends BaseGpuKernelCall {
     @Override
     public KernelCallPointerArgs getPointers() {
         return new BroadcastKernelCallPointerArgs(op,args);
+    }
+
+    private int getOpCode(Op op) {
+        String name = op.name();
+        int code = -1;
+        if (name.equals("broadcastadd")) {
+            code = 0;
+        } else if (name.equals("broadcastsub")) {
+            code = 1;
+        } else if (name.equals("broadcastmul")) {
+            code = 2;
+        } else if (name.equals("broadcastdiv")) {
+            code = 3;
+        } else if (name.equals("broadcastrdiv")) {
+            code = 4;
+        } else if (name.equals("broadcastrsub")) {
+            code = 5;
+        } else if (name.equals("broadcastcopy")) {
+            code = 6;
+        }
+        return code;
     }
 }

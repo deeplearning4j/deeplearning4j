@@ -236,6 +236,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 || executionMode() == ExecutionMode.JAVA || op.isPassThrough() || op instanceof CopyOp)
             return super.exec(op);
 
+        System.out.println("Firing op call: " + op.name());
+
         if (op instanceof TransformOp) {
             TransformOp t = (TransformOp) op;
             invoke(t);
@@ -245,8 +247,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         } else if (op instanceof ScalarOp) {
             ScalarOp sc = (ScalarOp) op;
             invoke(sc);
-        }
-        else if(op instanceof BroadcastOp) {
+        } else if(op instanceof BroadcastOp) {
             BroadcastOp broadcastOp = (BroadcastOp) op;
             invoke(broadcastOp);
         }
@@ -273,8 +274,9 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     private CudaContext invoke(BroadcastOp op) {
         CudaContext ctx;
-
-        if(!KernelFunctionLoader.getInstance().exists(op.name()) || executionMode() == ExecutionMode.JAVA || op.isPassThrough() || op instanceof CopyOp)
+        System.out.println("Broadcast Op PV1");
+        //if(!KernelFunctionLoader.getInstance().exists(op.name()) || executionMode() == ExecutionMode.JAVA || op.isPassThrough() || op instanceof CopyOp)
+        if(executionMode() == ExecutionMode.JAVA || op.isPassThrough() || op instanceof CopyOp)
             super.exec(op);
 
         //total number of times to repeat each value over an element wise stride on the gpu
@@ -321,6 +323,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     private CudaContext invoke(TransformOp op) {
         //if(!KernelFunctionLoader.getInstance().exists(op.name()) || op.x() instanceof IComplexNDArray || op.isPassThrough()) {
+        System.out.println("Transform Op PV1");
         if(op.x() instanceof IComplexNDArray || op.isPassThrough()) {
             super.exec(op);
             return null;

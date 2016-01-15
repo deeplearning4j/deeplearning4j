@@ -128,6 +128,7 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
             resultShapeInfoIndex = resultIndex + 1;
             //result index for the pointer to use when invoking the post process method
             args = new Object[] {
+                    getOpCode(op),
                     op.n(),
                     op.x(),
                     KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.x(), dimension)),
@@ -177,6 +178,7 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
             resultShapeInfoIndex = resultIndex + 1;
             //result index for the pointer to use when invoking the post process method
             args = new Object[] {
+                    getOpCode(op),
                     length,
                     op.x(),
                     KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.x(), dimension)),
@@ -242,10 +244,18 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
             //setup the kernel parameters such that super.invoke() will call the kernel with the given parameters
             this.args = kParams.getKernelParameters();
             this.cudaContext = kParams.getContext();
+
+
+            /*
+                FIXME: At this place we assume that multiDimension CAN be null, and at the same time there's cycle for multiDimension.length
+                temp workaround: check for null added, detailed algo investigation required
+             */
+
             boolean collapseTad = multiDimension != null;
             if(collapseTad)
                 acc.setApplyFinalTransform(false);
             KernelCallPointerArgs devicePointers = getPointers();
+
             if (multiDimension != null) for(int i = multiDimension.length - 1; i >= 0 ; i--) {
                 //invoke basic reduce
                 super.invoke();
@@ -285,4 +295,35 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
         return val ? 1 : 0;
     }
 
+
+    private int getOpCode(Op op) {
+        String name = op.name();
+        int code = -1;
+        if (name.equals("mean")) {
+            code = 0;
+        } else if (name.equals("sum")) {
+            code = 1;
+        } else if (name.equals("bias")) {
+            code = 2;
+        } else if (name.equals("max")) {
+            code = 3;
+        } else if (name.equals("min")) {
+            code = 4;
+        } else if (name.equals("norm1")) {
+            code = 5;
+        } else if (name.equals("norm2")) {
+            code = 6;
+        } else if (name.equals("normmax")) {
+            code = 7;
+        } else if (name.equals("prod")) {
+            code = 8;
+        } else if (name.equals("std")) {
+            code = 9;
+        } else if (name.equals("var")) {
+            code = 10;
+        }
+
+        System.out.println("Looking for op.name: [" + name + "] -> [" + code+"]");
+        return code;
+    }
 }

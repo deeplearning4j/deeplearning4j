@@ -61,25 +61,25 @@ public class AccumulationKernelCallPointerArgs extends BaseKernelCallPointerArgs
          */
 
         if(op.y() != null) {
-            this.x = (Pointer) extraArgs[1];
-            this.xShapeInfoPointer = (Pointer) extraArgs[2];
-            this.y = (Pointer) extraArgs[3];
-            this.yShapeInfoPointer = (Pointer) extraArgs[4];
-            this.extraArgsPointer = (Pointer) extraArgs[5];
-            this.z = (Pointer) extraArgs[6];
-            this.zShapeInfoPointer = (Pointer) extraArgs[7];
-            this.gpuInfoPointer = (Pointer) extraArgs[8];
-            this.dimensionArrPointer = (Pointer) extraArgs[9];
+            this.x = (Pointer) extraArgs[2];
+            this.xShapeInfoPointer = (Pointer) extraArgs[3];
+            this.y = (Pointer) extraArgs[4];
+            this.yShapeInfoPointer = (Pointer) extraArgs[5];
+            this.extraArgsPointer = (Pointer) extraArgs[6];
+            this.z = (Pointer) extraArgs[7];
+            this.zShapeInfoPointer = (Pointer) extraArgs[8];
+            this.gpuInfoPointer = (Pointer) extraArgs[9];
+            this.dimensionArrPointer = (Pointer) extraArgs[10];
 
         }
         else {
-            this.x = (Pointer) extraArgs[1];
-            this.xShapeInfoPointer = (Pointer) extraArgs[2];
-            this.extraArgsPointer = (Pointer) extraArgs[3];
-            this.z = (Pointer) extraArgs[4];
-            this.zShapeInfoPointer = (Pointer) extraArgs[5];
-            this.gpuInfoPointer = (Pointer) extraArgs[6];
-            this.dimensionArrPointer = (Pointer) extraArgs[7];
+            this.x = (Pointer) extraArgs[2];
+            this.xShapeInfoPointer = (Pointer) extraArgs[3];
+            this.extraArgsPointer = (Pointer) extraArgs[4];
+            this.z = (Pointer) extraArgs[5];
+            this.zShapeInfoPointer = (Pointer) extraArgs[6];
+            this.gpuInfoPointer = (Pointer) extraArgs[7];
+            this.dimensionArrPointer = (Pointer) extraArgs[8];
         }
     }
 }
