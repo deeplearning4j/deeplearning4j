@@ -22,12 +22,10 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.graph.nodes.GraphNode;
 
-import java.io.IOException;
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /** ComputationGraphConfiguration is a configuration object for neural networks with arbitrary connection structure.
  * It is analogous to {@link MultiLayerConfiguration}, but allows considerably greater flexibility for the network
@@ -41,6 +39,18 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
     /** Map between layer numbers, and layer names */
     protected Map<Integer,String> layerNamesMap;
+    protected Map<String,Integer> layerNumbersMap;
+
+    protected Map<String,NeuralNetConfiguration> layers = new HashMap<>();
+    protected Map<String,GraphNode> graphNodes = new HashMap<>();
+
+    protected Map<String,String[]> layerInputs = new HashMap<>();
+    protected Map<String,String[]> graphNodeInputs = new HashMap<>();
+
+    protected List<String> networkInputs;
+    protected List<String> networkOutputs;
+
+
     protected boolean pretrain = true;
     protected boolean backprop = false;
     protected Map<Integer,InputPreProcessor> inputPreProcessors = new HashMap<>();
@@ -97,22 +107,39 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     /** Check the configuration, make sure it is valid */
     public boolean validate(){
 
+        //Check uniqueness of names for inputs, layers, GraphNodes
+
+        //Check that all input keys/names for each layer actually exist
+
         //Check: at least one input, at least one output
 
         //Check: each layer has at least one input
 
         //Check: no graph cycles
 
+        //Check preprocessors
 
-        throw new UnsupportedOperationException("Not implemented");
+        System.out.println("WARNING: ComputationGraphConfiguration.validate() NOT YET IMPLEMENTED");
+        return true;
     }
 
     @Data
     public static class GraphBuilder {
         /** Map between layer numbers, and layer names */
         protected Map<Integer,String> layerNamesMap;
+        protected Map<String,Integer> layerNumbersMap;
 
-        protected Map<Integer,String> inputs = new HashMap<>();
+        protected Map<String,NeuralNetConfiguration.Builder> layers = new HashMap<>();
+        protected Map<String,GraphNode> graphNodes = new HashMap<>();
+
+        /** Key: layer. Values: inputs to that layer */
+        protected Map<String,String[]> layerInputs = new HashMap<>();
+
+        /** Key: graph node. Values: input to that node */
+        protected Map<String,String[]> graphNodeInputs = new HashMap<>();
+
+        protected List<String> networkInputs = new ArrayList<>();
+        protected List<String> networkOutputs = new ArrayList<>();
 
         protected boolean pretrain = true;
         protected boolean backprop = false;
@@ -120,10 +147,15 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         protected int tbpttFwdLength = 20;
         protected int tbpttBackLength = 20;
 
-        protected Map<Integer,InputPreProcessor> inputPreProcessors = new HashMap<>();
+        protected Map<String,InputPreProcessor> inputPreProcessors = new HashMap<>();
         //whether to redistribute params or not
         protected boolean redistributeParams = false;
 
+        protected NeuralNetConfiguration.Builder globalConfiguration;
+
+        public GraphBuilder(NeuralNetConfiguration.Builder globalConfiguration){
+            this.globalConfiguration = globalConfiguration;
+        }
 
         /**
          * Whether to redistribute parameters as a view or not
@@ -141,15 +173,9 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          * These are used at each layer for doing things like normalization and
          * shaping of input.
          * @param processor what to use to preProcess the data.
-         * @return builder pattern
          */
-        public GraphBuilder inputPreProcessor(Integer layer, InputPreProcessor processor) {
+        public GraphBuilder inputPreProcessor(String layer, InputPreProcessor processor) {
             inputPreProcessors.put(layer,processor);
-            return this;
-        }
-
-        public GraphBuilder inputPreProcessors(Map<Integer,InputPreProcessor> processors) {
-            this.inputPreProcessors = processors;
             return this;
         }
 
@@ -207,24 +233,28 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             return this;
         }
 
-        public GraphBuilder addLayer(int layerNumber, Layer layer, int... layerInputs ){
-
-            throw new UnsupportedOperationException("Not implemented");
-        }
-
         //TODO: code duplication? Layer has a name field...
         public GraphBuilder addLayer(String layerName, Layer layer, String... layerInputs ){
-
-            throw new UnsupportedOperationException("Not implemented");
+            NeuralNetConfiguration.Builder builder = globalConfiguration.clone();
+            builder.layer(layer);
+            layers.put(layerName,builder);
+            this.layerInputs.put(layerName,layerInputs);
+            return this;
         }
 
-        //TODO: graph networks can have multiple inputs...
-        public GraphBuilder addInput(int inputNumber) {
-            return addInput(inputNumber, "input_"+inputNumber);
+        public GraphBuilder addInputs( String... inputNames ){
+            Collections.addAll(networkInputs,inputNames);
+            return this;
         }
 
-        public GraphBuilder addInput(int inputNumber, String inputName ){
-            inputs.put(inputNumber,inputName);
+        public GraphBuilder setOutputs( String... outputNames ){
+            Collections.addAll(networkOutputs,outputNames);
+            return this;
+        }
+
+        public GraphBuilder addNode(String nodeName, GraphNode node, String... nodeInputs ){
+            graphNodes.put(nodeName,node);
+            this.graphNodeInputs.put(nodeName, nodeInputs);
             return this;
         }
 
@@ -237,6 +267,25 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             conf.backpropType = backpropType;
             conf.tbpttBackLength = tbpttBackLength;
             conf.tbpttFwdLength = tbpttFwdLength;
+
+
+            conf.layerNamesMap = layerNamesMap;
+            conf.layerNumbersMap = layerNumbersMap;
+            conf.layerInputs = layerInputs;
+
+            conf.networkInputs = networkInputs;
+            conf.networkOutputs = networkOutputs;
+
+            Map<String,NeuralNetConfiguration> layers = new HashMap<>();
+            for( Map.Entry<String,NeuralNetConfiguration.Builder> entry : this.layers.entrySet() ){
+                layers.put(entry.getKey(), entry.getValue().build());
+            }
+
+            conf.layers = layers;
+
+            conf.graphNodes = this.graphNodes;
+            conf.graphNodeInputs = this.graphNodeInputs;
+
 
 
             if(!conf.validate()){
