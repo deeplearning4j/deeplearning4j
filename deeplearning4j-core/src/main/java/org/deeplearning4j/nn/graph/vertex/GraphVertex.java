@@ -1,10 +1,13 @@
-package org.deeplearning4j.nn.graph;
+package org.deeplearning4j.nn.graph.vertex;
 
+import lombok.Data;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.nodes.GraphNode;
 import org.nd4j.linalg.api.ndarray.INDArray;
+
+import java.util.Arrays;
 
 /** A graph vertex is a vertex in the computation graph. It may contain either a Layer, or a GraphNode
  * The purpose of  the GraphVertex class is as follows:
@@ -13,17 +16,38 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * 3. To allow forward pass and backward pass to be conducted, once the intermediate results are
  *
  */
+@Data
 public class GraphVertex {
+
+    private String vertexName;
 
     /** The index of this vertex */
     private int vertexIndex;
 
-    /** The indices of the inputs to this vertex (inputs during forward pass, epsilons during backprop) */
+    /** The indices of the vertices that are inputs to this vertex (inputs during forward pass, epsilons during backprop).
+     *  Suppose inputIndices[x] = y. This means that: vertex y is the xth input to this vertex
+     */
     private int[] inputIndices;
 
+    /**For each of the inputs to this array, which of the outputs of the input vertices are used?
+     * Suppose inputIndices[x] = y, and inputIndicesOutputNumbers[x] = z.
+     * This means that the zth output of vertex y is connected to input x of this vertex
+     * (need to know this for backprop)
+     */
+    private int[] inputIndicesOutputNumbers;
+
     /** The indices of the output from this vertex (vertices that this vertex is connected to for forward pass, or inputs/epsilons for backprop)
+     * Suppose outputIndices[x] = y
+     * This means that the xth output of this vertex is connected to vertex y
      */
     private int[] outputIndices;
+
+    /** For each of the outputs from this vertex,
+     * Suppose outputIndices[x] = y, and outputIndicesInputNumbers[x] = z.
+     * This means that the xth output of this vertex is connected to the zth input of vertex y
+     * (need to know this for forward pass
+     */
+    private int[] outputIndicesInputNumbers;
 
     private Layer layer;
     private GraphNode node;
@@ -31,15 +55,21 @@ public class GraphVertex {
     private INDArray[] inputs;
     private INDArray[] epsilons;
 
-    public GraphVertex(int vertexIndex, int[] inputIndices, int[] outputIndices, Layer layer){
-        this(vertexIndex,inputIndices,outputIndices,layer,null);
+    public GraphVertex(String name, int vertexIndex, int[] inputIndices, int[] inputIndicesOutputNumbers[], int[] outputIndices, Layer layer){
+        this(name, vertexIndex,inputIndices,outputIndices,layer,null);
     }
 
-    public GraphVertex(int vertexIndex, int[] inputIndices, int[] outputIndices, GraphNode graphNode){
-        this(vertexIndex,inputIndices,outputIndices,null,graphNode);
+    public GraphVertex(String name, int vertexIndex, int[] inputIndices, int[] outputIndices, GraphNode graphNode){
+        this(name, vertexIndex,inputIndices,outputIndices,null,graphNode);
     }
 
-    private GraphVertex(int vertexIndex, int[] inputIndices, int[] outputIndices, Layer layer, GraphNode graphNode){
+    /** Create a network input vertex: */
+    public GraphVertex(String name, int vertexIndex, int[] outputIndices ){
+        this(name, vertexIndex,null,outputIndices,null,null);
+    }
+
+    private GraphVertex(String name, int vertexIndex, int[] inputIndices, int[] outputIndices, Layer layer, GraphNode graphNode){
+        this.vertexName = name;
         this.vertexIndex = vertexIndex;
         this.inputIndices = inputIndices;
         this.outputIndices = outputIndices;
@@ -47,16 +77,42 @@ public class GraphVertex {
         this.node = graphNode;
     }
 
+    public int getIndex(){
+        return vertexIndex;
+    }
+
     public int getNumInputArrays(){
-        return inputIndices.length;
+        return (inputIndices == null ? 0 : inputIndices.length);
     }
 
     public int getNumOutputArrays(){
-        return outputIndices.length;
+        return (outputIndices == null ? 0 : outputIndices.length);
+    }
+
+    /** Index of the vertices that feed into this one */
+    public int[] getInputVertexIndices(){
+        return inputIndices;
+    }
+
+    /** For the vertices that feed into this one (according to {@link #getInputVertexIndices()},
+     * which of the outputs of that vertex are used here?
+     * For example, suppose the structure is such that A -> B, and A has 3 outputs
+     * which of A's outputs is actually connected to B?
+     */
+    public int[] getInputVertexOutputNumbers(){
+
+    }
+
+    public int[] getOutputVertexIndices(){
+        return outputIndices;
     }
 
     public boolean hasLayer(){
         return layer != null;
+    }
+
+    public boolean isInputVertex(){
+        return layer == null && node == null;
     }
 
     public Layer getLayer(){
@@ -129,5 +185,13 @@ public class GraphVertex {
     }
 
 
+    @Override
+    public String toString(){
+        StringBuilder sb = new StringBuilder();
+        sb.append("GraphVertex(id=").append(vertexIndex).append(",name=").append(vertexName)
+                .append(",inputs=").append(Arrays.toString(inputIndices)).append(",outputs=").append(Arrays.toString(outputIndices))
+                .append(")");
+        return sb.toString();
+    }
 
 }
