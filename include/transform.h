@@ -43,7 +43,6 @@ public:
 		/* equal, positive, non-unit increments. */
 		for (; i < n; i += totalThreads) {
 			result[i * incy] = op(dy[i * incy], params);
-			printf("Result[%d] was %f\n",i,result[i * incy]);
 		}
 
 	}

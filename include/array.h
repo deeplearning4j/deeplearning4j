@@ -241,7 +241,7 @@ __host__
 
 NDArray<T> * NDArrays<T>::createFrom(int rank, int *shape, int *stride,
 		int offset, T defaultValue) {
-	NDArray<T> *ret = (NDArray<T> *) malloc(sizeof(NDArray<T> ));
+	NDArray<T> *ret = (NDArray<T> *) malloc(sizeof(NDArray<T>));
 	ret->rank = rank;
 	ret->shape = nd4j::buffer::createBuffer(shape,rank);
 	ret->stride = nd4j::buffer::createBuffer(stride,rank);

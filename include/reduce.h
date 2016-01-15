@@ -1157,7 +1157,7 @@ public:
 
 #endif
 	std::string name() override {
-		return std::string("norm1");
+		return std::string("norm2");
 	}
 
 	virtual
