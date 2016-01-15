@@ -19,7 +19,6 @@
 package org.deeplearning4j.nn.multilayer;
 
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.*;
@@ -963,17 +962,16 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     @Override
     public int numParams() {
-        int length = 0;
-        for (int i = 0; i < layers.length; i++)
-            length += layers[i].numParams();
-
-        return length;
-
+        return numParams(false);
     }
 
     @Override
     public int numParams(boolean backwards) {
-        return numParams();
+        int length = 0;
+        for (int i = 0; i < layers.length; i++)
+            length += layers[i].numParams(backwards);
+
+        return length;
     }
 
     /**
@@ -1145,6 +1143,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         }
         if (layerWiseConfigurations.isBackprop()) {
+            if(layerWiseConfigurations.isPretrain())
+                iter.reset();
             while (iter.hasNext()) {
                 DataSet next = iter.next();
                 if (next.getFeatureMatrix() == null || next.getLabels() == null)
@@ -1752,6 +1752,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     @Override
     public double score() {
         return score;
+    }
+
+
+    public void setScore(double score) {
+        this.score = score;
     }
 
     @Override
