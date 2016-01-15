@@ -18,7 +18,7 @@ import static org.junit.Assert.assertEquals;
 public class CudaAccumTests {
 
     /**
-     * Norm2 + cuBlas call
+     * Norm2 + cuBlas dot call
      *
      * @throws Exception
      */

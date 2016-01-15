@@ -450,11 +450,12 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
             freed.set(false);
         } else {
-            // we've got here because we've requested the same offset pointer as was allocated before, so we'll just update counters
+            // we've got here because we've requested the same pointer as was allocated before, so we'll just update counters
             if (referencedOffsets.containsKey(Pair.of(name, Triple.of(offset, length, stride)))) {
                 referencedOffsets.get(Pair.of(name, Triple.of(offset, length, stride))).incrementAndGet();
             } else {
-                log.warn("Unmanaged offset!");
+                // if reference offset wasn't been added before - add it now
+                referencedOffsets.put(Pair.of(name, Triple.of(offset, length, stride)), new AtomicInteger(1));
             }
         }
 
