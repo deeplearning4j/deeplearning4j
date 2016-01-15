@@ -210,7 +210,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
     @Override
     @Deprecated
     public  void iterateSample(T w1, T w2,AtomicLong nextRandom,double alpha) {
-        /*if(w2 == null || w2.getIndex() < 0 || w1.getIndex() == w2.getIndex() || w1.getLabel().equals("STOP") || w2.getLabel().equals("STOP") || w1.getLabel().equals("UNK") || w2.getLabel().equals("UNK"))
+        if(w2 == null || w2.getIndex() < 0 || w1.getIndex() == w2.getIndex() || w1.getLabel().equals("STOP") || w2.getLabel().equals("STOP") || w1.getLabel().equals("UNK") || w2.getLabel().equals("UNK"))
            return;
             //current word vector
         INDArray l1 = this.syn0.slice(w2.getIndex());
@@ -290,11 +290,11 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
                 double f = Nd4j.getBlasWrapper().dot(l1,syn1Neg.slice(target));
                 double g;
                 if (f > MAX_EXP)
-                    g = useAdaGrad ? w1.getGradient(target, (label - 1)) : (label - 1) *  alpha;
+                    g = useAdaGrad ? w1.getGradient(target, (label - 1), alpha) : (label - 1) *  alpha;
                 else if (f < -MAX_EXP)
-                    g = label * (useAdaGrad ?  w1.getGradient(target, alpha) : alpha);
+                    g = label * (useAdaGrad ?  w1.getGradient(target, alpha, alpha) : alpha);
                 else
-                    g = useAdaGrad ? w1.getGradient(target, label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) : (label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) *   alpha;
+                    g = useAdaGrad ? w1.getGradient(target, label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))], alpha) : (label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) *   alpha;
                 if(syn0.data().dataType() == DataBuffer.Type.DOUBLE)
                     Nd4j.getBlasWrapper().axpy(g,syn1Neg.slice(target),neu1e);
                 else
@@ -312,7 +312,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
         else
             Nd4j.getBlasWrapper().axpy(1.0f,neu1e,l1);
 
-        */
+
     }
 
     public boolean isUseAdaGrad() {
