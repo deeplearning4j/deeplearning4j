@@ -23,7 +23,9 @@ package org.nd4j.linalg.jcublas.kernel;
 
 import jcuda.runtime.JCuda;
 import jcuda.utils.KernelLauncher;
+import org.apache.commons.lang3.StringUtils;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.CudaIntDataBuffer;
@@ -117,7 +119,9 @@ public class KernelFunctions {
      * @param kernelParameters
      */
     public static  void invoke(GpuMetrics metrics, boolean sync,String functionName,DataBuffer.Type dataType,CudaContext cudaContext,Object...kernelParameters) {
-        String functionName2 = KernelLauncher.FUNCTION_NAME + "_" + dataType;
+        // FIXME: this is bad AND ugly, remove this crappy shit
+        String functionName2 = functionName + StringUtils.capitalize(dataType.toString().toLowerCase()); // KernelLauncher.FUNCTION_NAME + "_" + dataType;
+        System.out.println("Invoking now: " + functionName);
         invoke(metrics, sync, functionName, functionName2, dataType, cudaContext, kernelParameters);
     }
 

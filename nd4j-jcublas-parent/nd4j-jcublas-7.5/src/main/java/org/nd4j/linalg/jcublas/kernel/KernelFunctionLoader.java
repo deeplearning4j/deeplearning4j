@@ -34,6 +34,8 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ops.Accumulation;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
@@ -141,11 +143,12 @@ public class KernelFunctionLoader {
      * given function
      */
     public KernelLauncher get(String functionName,DataBuffer.Type dataType) {
-        String name = functionName + "_" + dataType;
+        System.out.println("KernelLauncher.get() for ["+functionName+"] as " + dataType.toString());
+        String name = functionName;// + "_" + dataType;
         if(!launchers.containsRow(Thread.currentThread().getName())) {
 
             try {
-                log.debug("Loading modules for " + Thread.currentThread().getName());
+                log.info("Loading modules for " + Thread.currentThread().getName());
                 loadModules();
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -155,10 +158,13 @@ public class KernelFunctionLoader {
 
         KernelLauncher launcher = launchers.get(Thread.currentThread().getName(), Pair.of(name, dataType));
         if(launcher == null) {
+            throw new RuntimeException("Can't get module for name: " + name);
+            /*
             name = functionName + "_strided" + "_" + dataType;
             launcher = launchers.get(Thread.currentThread().getName(),Pair.of(name, dataType));
             if(launcher == null)
                 return null;
+            */
         }
         return launcher;
     }
@@ -437,12 +443,17 @@ public class KernelFunctionLoader {
         for(String function: paths.rowKeySet()) {
 
             for (DataBuffer.Type dataType: DataBuffer.Type.values()) {
+
+                // we don't have dataType INT kernels atm, so we'll skip it
+                if (dataType.equals(DataBuffer.Type.INT)) continue;
+
                 // we assume symmetric values for functions/datatypes. i.e.:path CAN'T be null
                 String path = paths.get(function, dataType);
-                log.info("Loading {}{}", function, dataType.toString());
+                String functionName = function + StringUtils.capitalize(dataType.toString().toLowerCase());
+                log.info("Loading {}", functionName);
 
 
-                KernelLauncher launch = KernelLauncher.load(path, function + dataType.toString(), dataType.toString());
+                KernelLauncher launch = KernelLauncher.load(path, functionName, dataType.toString());
                 launchers.put(Thread.currentThread().getName(), Pair.of(function, dataType), launch);
             }
         }
@@ -552,4 +563,26 @@ public class KernelFunctionLoader {
     }
 
 
+    /**
+     * This method takes Op, and returns CUDA kernel name that contains implementation
+     *
+     * @param op Op to be discovered
+     * @return
+     */
+    public static String getKernelName(Op op) {
+        if (op instanceof Accumulation) {
+            System.out.println("Accumulation");
+        }
+        return null;
+    }
+
+    /**
+     * This method takes Op, and returns CUDA kernel op factory Id for specified op
+     *
+     * @param op
+     * @return
+     */
+    public static int getOpCode(Op op) {
+        return 0;
+    }
 }

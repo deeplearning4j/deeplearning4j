@@ -34,6 +34,8 @@ import org.nd4j.linalg.jcublas.ops.executioner.kernels.GpuKernelCall;
 import org.nd4j.linalg.jcublas.ops.executioner.kernels.GpuKernelCallFactories;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.util.Arrays;
+
 
 /**
  * JCuda executioner.
@@ -52,6 +54,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             if(dimension[i] < 0)
                 dimension[i] += op.x().rank();
         }
+        System.out.println("Exec dimension length: [" + dimension.length +"], values: " + Arrays.toString(dimension));
         //do op along all dimensions
         if(dimension.length == op.x().rank())
             dimension = new int[] {Integer.MAX_VALUE};
@@ -64,8 +67,10 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
         if(dimension[0] == Integer.MAX_VALUE) {
-            if(op.x() instanceof IComplexNDArray)
+            if(op.x() instanceof IComplexNDArray) {
                 return Nd4j.scalar(execAndReturn(op).getFinalResultComplex());
+            }
+            System.out.println("Dimensions before call 2: " + Arrays.toString(dimension));
             return Nd4j.scalar(execAndReturn(op).getFinalResult().doubleValue());
         }
 
@@ -116,6 +121,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             //nothing to reduce
             if(ArrayUtil.prod(retShape) == op.x().length())
                 return op.x();
+            System.out.println("Dimensions before call 1: " + Arrays.toString(dimension));
             invoke(op,dimension);
             if(op.z() == null)
                 throw new IllegalStateException("No result set");
@@ -293,6 +299,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private CudaContext invoke(Accumulation op,int[] dimension)  {
+        System.out.println("Invoke dim: " + dimension);
         CudaContext ctx;
         GpuKernelCall accKernelCall = GpuKernelCallFactories.getFactory(op).create(op,dimension);
         accKernelCall.invoke();
@@ -302,7 +309,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private CudaContext invoke(ScalarOp op) {
-        if(!KernelFunctionLoader.getInstance().exists(op.name())  || executionMode() == ExecutionMode.JAVA)
+        //if(!KernelFunctionLoader.getInstance().exists(op.name())  || executionMode() == ExecutionMode.JAVA)
+        if(executionMode() == ExecutionMode.JAVA)
             super.exec(op);
 
         GpuKernelCall kernelCall = GpuKernelCallFactories.getFactory(op).create(op);
@@ -312,7 +320,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     }
 
     private CudaContext invoke(TransformOp op) {
-        if(!KernelFunctionLoader.getInstance().exists(op.name()) || op.x() instanceof IComplexNDArray || op.isPassThrough()) {
+        //if(!KernelFunctionLoader.getInstance().exists(op.name()) || op.x() instanceof IComplexNDArray || op.isPassThrough()) {
+        if(op.x() instanceof IComplexNDArray || op.isPassThrough()) {
             super.exec(op);
             return null;
         }

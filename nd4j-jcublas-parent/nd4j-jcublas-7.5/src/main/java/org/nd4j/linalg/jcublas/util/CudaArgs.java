@@ -7,10 +7,7 @@ import jcuda.Pointer;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Accumulation;
-import org.nd4j.linalg.api.ops.IndexAccumulation;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.TransformOp;
+import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
@@ -38,8 +35,16 @@ public class CudaArgs {
      * @return the module name for the given op
      */
     public static String getModuleNameFor( Op op) {
-        String functionName = op instanceof TransformOp || op instanceof Accumulation || op instanceof IndexAccumulation ? op.name() + "_strided" : op.name();
-        return functionName;
+        //String functionName = op instanceof TransformOp || op instanceof Accumulation || op instanceof IndexAccumulation ? op.name() + "_strided" : op.name();
+        String moduleName = null;
+        if (op instanceof Accumulation) {
+            moduleName = "reduce";
+        } else if (op instanceof TransformOp) {
+            moduleName = "transform";
+        } else if (op instanceof ScalarOp) {
+            moduleName = "scalar";
+        }
+        return moduleName;
     }
 
 

@@ -15,18 +15,23 @@ public class GpuKernelCallFactories {
 
     public static GpuKernelCallFactory getFactory(Op op) {
         if(op instanceof TransformOp) {
+            System.out.println("Transform Op");
             return new TransformKernelCallFactory();
         }
         else if(op instanceof ScalarOp) {
+            System.out.println("Scalar Op");
             return new ScalarKernelCallFactory();
         }
         else if(op instanceof Accumulation) {
+            System.out.println("Accumulation Op");
             return new AccumulationKernelCallFactory();
         }
         else if (op instanceof IndexAccumulation) {
+            System.out.println("IndexAccumulation Op");
             return new IndexAccumulationKernelCallFactory();
         }
         else if(op instanceof BroadcastOp) {
+            System.out.println("Broadcast Op");
             return new BroadcastKernelCallFactory();
         }
 

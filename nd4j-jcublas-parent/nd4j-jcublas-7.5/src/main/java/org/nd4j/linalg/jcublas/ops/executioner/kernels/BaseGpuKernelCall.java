@@ -61,7 +61,7 @@ public abstract class BaseGpuKernelCall implements GpuKernelCall {
          * Functions that are accumulations or transforms have names that end with _strided.
          *
          */
-
+        System.out.println("BaseGpuKernelCall invoke: " + functionName);
         metrics.validate();
         //module name is the op, function name is transform
         KernelFunctions.invoke(
@@ -85,6 +85,7 @@ public abstract class BaseGpuKernelCall implements GpuKernelCall {
     @Override
     public void invoke() {
         String functionName = CudaArgs.getModuleNameFor(op);
+        System.out.println("Invoking 12: " + functionName);
         invoke(functionName);
     }
 

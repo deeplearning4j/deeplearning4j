@@ -18,12 +18,14 @@ import org.nd4j.linalg.jcublas.util.PointerUtil;
 public class ScalarKernelCall extends BaseGpuKernelCall {
     public ScalarKernelCall(Op op) {
         super(op);
+        createArgs();
     }
 
     @Override
     public void createArgs() {
         ScalarOp scalarOp = (ScalarOp) op;
         if (op.y() != null) {
+            System.out.println(" args non-null");
             metrics.setSharedMemory(metrics.getSharedMemory() * 2);
 
             int xStride = BlasBufferUtil.getBlasStride(op.x());
@@ -37,6 +39,7 @@ public class ScalarKernelCall extends BaseGpuKernelCall {
             }
 
             args = new Object[]{
+                    this.getOpCode(op),
                     op.n(),
                     op.x().offset(),
                     op.y().offset(),
@@ -53,6 +56,7 @@ public class ScalarKernelCall extends BaseGpuKernelCall {
 
 
         } else {
+            System.out.println(" args null");
             int xStride = BlasBufferUtil.getBlasStride(op.x());
             if(xStride < 0) {
                 op.setX(op.x().dup());
@@ -60,6 +64,7 @@ public class ScalarKernelCall extends BaseGpuKernelCall {
 
 
             args = new Object[]{
+                    this.getOpCode(op),
                     op.n(),
                     op.x().offset(),
                     PointerUtil.getPointer(scalarOp),
@@ -85,12 +90,13 @@ public class ScalarKernelCall extends BaseGpuKernelCall {
 
     @Override
     public void invoke() {
+        System.out.println("Args: " + args);
         try(KernelParamsWrapper kParams = new KernelParamsWrapper(true,args).setResultArray(op.z())) {
             this.args = kParams.getKernelParameters();
             cudaContext = kParams.getContext();
             super.invoke();
         } catch(Exception e) {
-            throw new RuntimeException("Could not execute kernel", e);
+            throw new RuntimeException("Could not execute kernel X", e);
         }
 
     }
@@ -98,5 +104,42 @@ public class ScalarKernelCall extends BaseGpuKernelCall {
     @Override
     public KernelCallPointerArgs getPointers() {
         return new ScalarKernelCallPointerArgs(op,args);
+    }
+
+    private int getOpCode(Op op) {
+        // TODO: remove that _scalar suffix, to get rid of startsWith()
+        String name = op.name();
+        int code = -1;
+        if (name.startsWith("add")) {
+            code = 0;
+        } else if (name.startsWith("sub")) {
+            code =  1;
+        } else if (name.startsWith("mul")) {
+            code =  2;
+        } else if (name.startsWith("div")) {
+            code =  3;
+        } else if (name.startsWith("rdiv")) {
+            code =  4;
+        } else if (name.startsWith("rsub")) {
+            code =  5;
+        } else if (name.startsWith("max")) {
+            code =  6;
+        } else if (name.startsWith("lessthan")) {
+            code =  7;
+        } else if (name.startsWith("greaterthan")) {
+            code =  8;
+        } else if (name.startsWith("eq")) {
+            code =  9;
+        } else if (name.startsWith("lte")) {
+            code =  10;
+        } else if (name.startsWith("neq")) {
+            code =  11;
+        } else if (name.startsWith("min")) {
+            code =  12;
+        } else if (name.startsWith("set")) {
+            code =  13;
+        }
+        System.out.println("Looking for op.name: [" + name + "] -> [" + code+"]");
+        return code;
     }
 }

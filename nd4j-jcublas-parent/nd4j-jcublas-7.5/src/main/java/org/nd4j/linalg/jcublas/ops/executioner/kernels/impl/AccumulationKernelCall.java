@@ -41,6 +41,7 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
      */
     public AccumulationKernelCall(Op op,int[] dimension) {
         super(op);
+        System.out.println("Accum dimensions: " + Arrays.toString(dimension));
         if(dimension == null)
             dimension = new int[] {Integer.MAX_VALUE};
         this.dimension = dimension;
@@ -79,6 +80,7 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
     @Override
     public void createMetrics() {
         String functionName = CudaArgs.getModuleNameFor(op);
+        System.out.println("Calling for function ["+ functionName+"] ");
         GpuMetrics metrics = GpuMetrics.blocksAndThreadsOccupancy(functionName, getType(op), op.n());
         if (dimension != null && dimension.length >= 1 && dimension[0] != Integer.MAX_VALUE) {
             int length = op.x().tensorssAlongDimension(dimension);
@@ -141,7 +143,6 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
                     //if the whole buffer is to be used don't do final aggregation this happens
                     //by aggregating blocks on cpu first
                     toInt((dimension == null || dimension[0] == Integer.MAX_VALUE))
-
             };
 
 
@@ -245,10 +246,11 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
             if(collapseTad)
                 acc.setApplyFinalTransform(false);
             KernelCallPointerArgs devicePointers = getPointers();
-            for(int i = multiDimension.length - 1; i >= 0 ; i--) {
+            if (multiDimension != null) for(int i = multiDimension.length - 1; i >= 0 ; i--) {
                 //invoke basic reduce
                 super.invoke();
-
+            } else {
+                super.invoke();
             }
 
             //invoke the collapse tad
