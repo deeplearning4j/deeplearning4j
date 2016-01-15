@@ -47,6 +47,7 @@ If you want to jump into deep-learning from here without Java, we recommend [The
 
 Once you have programming basics down, tackle Java, the world's most widely used programming language, and the language of Hadoop. 
 
+* [Java Resources](http://wiht.link/java-resources)
 * [Intro to Programming in Java @Princeton](http://introcs.cs.princeton.edu/java/home/)
 * [Head First Java](http://www.amazon.com/gp/product/0596009208)
 * [Java in a Nutshell](http://www.amazon.com/gp/product/1449370829)
