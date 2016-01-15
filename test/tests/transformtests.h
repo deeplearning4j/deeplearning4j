@@ -90,6 +90,7 @@ public:
 	}
 
 	void run () {
+		this->initializeData();
 		op->exec(this->data->data->data, 1, this->data->data->data, 1, this->extraParams, this->length);
 		CHECK(arrsEquals(this->rank, this->assertion, this->data->data->data));
 
