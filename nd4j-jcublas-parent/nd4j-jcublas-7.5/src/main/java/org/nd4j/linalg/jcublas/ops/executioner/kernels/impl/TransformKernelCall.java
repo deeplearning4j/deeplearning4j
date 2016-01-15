@@ -16,6 +16,7 @@ import org.nd4j.linalg.jcublas.util.KernelParamsWrapper;
 public class TransformKernelCall extends BaseGpuKernelCall {
     public TransformKernelCall(Op op) {
         super(op);
+        createArgs();
     }
 
     @Override
@@ -45,8 +46,10 @@ public class TransformKernelCall extends BaseGpuKernelCall {
              * extraArgs,
              * result
              */
+            System.out.println("TKC op.y() != null");
 
             args = new Object[] {
+                    getOpCode(op),
                     op.n(),
                     op.x().offset(),
                     op.y().offset(),
@@ -64,7 +67,9 @@ public class TransformKernelCall extends BaseGpuKernelCall {
 
 
         } else {
+            System.out.println("TKC op.y() == null");
             args = new Object[] {
+                    getOpCode(op),
                     op.n(),
                     op.x().offset(),
                     op.x(),
@@ -86,7 +91,7 @@ public class TransformKernelCall extends BaseGpuKernelCall {
 
     @Override
     public void invoke() {
-        try(KernelParamsWrapper kParams = new KernelParamsWrapper(op,true,args).setResultArray(op.z())) {
+        try(KernelParamsWrapper kParams = new KernelParamsWrapper(true,args).setResultArray(op.z())) {
             this.args = kParams.getKernelParameters();
             cudaContext = kParams.getContext();
             super.invoke();
@@ -99,5 +104,49 @@ public class TransformKernelCall extends BaseGpuKernelCall {
     @Override
     public KernelCallPointerArgs getPointers() {
         return new TransformKernelCallPointerArgs(op,args);
+    }
+
+
+    private int getOpCode(Op op) {
+        String name = op.name();
+        int code = -1;
+        if (name.equals("abs")) {
+            code = 0;
+        } else if (name.equals("ceil")) {
+            code = 1;
+        } else if (name.equals("cos")) {
+            code = 2;
+        } else if (name.equals("ceil")) {
+            code = 1;
+        } else if (name.equals("ceil")) {
+            code = 1;
+        } else if (name.equals("ceil")) {
+            code = 1;
+        } else if (name.equals("ceil")) {
+            code = 1;
+        } else if (name.equals("ceil")) {
+            code = 1;
+        } else if (name.equals("ceil")) {
+            code = 1;
+        } else if (name.equals("ceil")) {
+            code = 1;
+        } else if (name.equals("ceil")) {
+            code = 1;
+        } else if (name.equals("ceil")) {
+            code = 1;
+        } else if (name.equals("ceil")) {
+            code = 1;
+        } else if (name.equals("ceil")) {
+            code = 1;
+        } else if (name.equals("ceil")) {
+            code = 1;
+        } else if (name.equals("ceil")) {
+            code = 1;
+        } else if (name.equals("ceil")) {
+            code = 1;
+        }
+
+        System.out.println("Looking for op.name: [" + name + "] -> [" + code+"]");
+        return code;
     }
 }

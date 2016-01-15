@@ -103,7 +103,7 @@ public class KernelParamsWrapper implements AutoCloseable {
      */
     public KernelParamsWrapper setResultArray(INDArray array) {
         if(!arrayToPointer.containsKey(array)) {
-            throw new IllegalStateException("No array found: unable to set array value");
+          throw new IllegalStateException("No array found: unable to set array value");
         }
         CublasPointer resultPointer = arrayToPointer.get(array).iterator().next();
         resultPointer.setResultPointer(true);

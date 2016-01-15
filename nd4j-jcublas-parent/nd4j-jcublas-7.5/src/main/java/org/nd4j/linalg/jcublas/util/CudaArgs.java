@@ -90,8 +90,9 @@ public class CudaArgs {
                     kernelParameters[i] = pointer;
                 }
 
-            } else
+            } else {
                 kernelParameters[i] = arg;
+            }
 
         }
 
