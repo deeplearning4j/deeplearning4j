@@ -45,7 +45,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.util.*;
@@ -214,7 +213,7 @@ public class TestSparkMultiLayer extends BaseSparkTest {
                         .build())
                 .build();
 
-        DataSet dataSet = new IrisDataSetIterator(150,150).next();
+        DataSet dataSet = new IrisDataSetIterator(5,5).next();
         List<DataSet> list = dataSet.asList();
         JavaRDD<DataSet> data = sc.parallelize(list);
         JavaRDD<LabeledPoint> mllLibData = MLLibUtil.fromDataSet(sc, data);
@@ -236,7 +235,45 @@ public class TestSparkMultiLayer extends BaseSparkTest {
         network3.setParameters(params);
         INDArray params4 = network3.params(true);
         assertEquals(params, params4);
+    }
 
+    @Test
+    public void testRunIteration() {
+
+        DataSet dataSet = new IrisDataSetIterator(5,5).next();
+        List<DataSet> list = dataSet.asList();
+        JavaRDD<DataSet> data = sc.parallelize(list);
+
+        SparkDl4jMultiLayer sparkNetCopy = new SparkDl4jMultiLayer(sc, getBasicConf());
+        MultiLayerNetwork networkCopy = sparkNetCopy.fitDataSet(data);
+
+        INDArray expectedParams = networkCopy.params();
+
+        SparkDl4jMultiLayer sparkNet = getBasicNetwork();
+        MultiLayerNetwork network = sparkNet.fitDataSet(data);
+        INDArray actualParams = network.params();
+
+        assertEquals(expectedParams.size(1), actualParams.size(1));
+    }
+
+    @Test
+    public void testUpdaters() {
+        SparkDl4jMultiLayer sparkNet = getBasicNetwork();
+        MultiLayerNetwork netCopy = sparkNet.getNetwork().clone();
+
+        netCopy.fit(data);
+        Updater expectedUpdater = netCopy.conf().getLayer().getUpdater();
+        double expectedLR = netCopy.conf().getLayer().getLearningRate();
+        double expectedMomentum = netCopy.conf().getLayer().getMomentum();
+
+        Updater actualUpdater = sparkNet.getNetwork().conf().getLayer().getUpdater();
+        sparkNet.runIteration(sparkData);
+        double actualLR = sparkNet.getNetwork().conf().getLayer().getLearningRate();
+        double actualMomentum = sparkNet.getNetwork().conf().getLayer().getMomentum();
+
+        assertEquals(expectedUpdater, actualUpdater);
+        assertEquals(expectedLR, actualLR, 0.01);
+        assertEquals(expectedMomentum, actualMomentum, 0.01);
 
     }
 
@@ -244,55 +281,14 @@ public class TestSparkMultiLayer extends BaseSparkTest {
     @Test
     public void testEvaluation(){
 
-        int nIn = 4;
-        int nOut = 3;
-
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .list(2)
-                .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
-                        .nIn(nIn).nOut(3)
-                        .activation("tanh").build())
-                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .nIn(3).nOut(nOut)
-                        .activation("softmax")
-                        .build())
-                .build();
-
-        int nRows = 200;
-
-
-
-        Random r = new Random(12345);
-        INDArray labels = Nd4j.create(nRows,nOut);
-        INDArray input = Nd4j.rand(nRows,nIn);
-        INDArray rowSums = input.sum(1);
-        input.diviColumnVector(rowSums);
-
-        for( int i=0; i<nRows; i++ ){
-            int x1 = r.nextInt(nOut);
-            labels.putScalar(new int[]{i, x1}, 1.0);
-        }
-
-        SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc,conf);
-
+        SparkDl4jMultiLayer sparkNet = getBasicNetwork();
         MultiLayerNetwork netCopy = sparkNet.getNetwork().clone();
 
         Evaluation evalExpected = new Evaluation();
         INDArray outLocal = netCopy.output(input, Layer.TrainingMode.TEST);
         evalExpected.eval(labels,outLocal);
 
-        List<DataSet> list = new ArrayList<>();
-        for( int i=0; i<nRows; i++ ){
-            INDArray inRow = input.getRow(i).dup();
-            INDArray outRow = labels.getRow(i).dup();
-
-            DataSet ds = new DataSet(inRow,outRow);
-            list.add(ds);
-        }
-
-        JavaRDD<DataSet> ds = sc.parallelize(list);
-
-        Evaluation evalActual = sparkNet.evaluate(ds);
+        Evaluation evalActual = sparkNet.evaluate(sparkData);
 
         assertEquals(evalExpected.accuracy(), evalActual.accuracy(), 1e-3);
         assertEquals(evalExpected.f1(), evalActual.f1(), 1e-3);
@@ -310,9 +306,6 @@ public class TestSparkMultiLayer extends BaseSparkTest {
     public void testSmallAmountOfData(){
         //Idea: Test spark training where some executors don't get any data
         //in this case: by having fewer examples (2 DataSets) than executors (local[*])
-
-        int nIn = 4;
-        int nOut = 3;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .updater(Updater.RMSPROP)
@@ -337,7 +330,6 @@ public class TestSparkMultiLayer extends BaseSparkTest {
 
         sparkNet.fitDataSet(rddData);
 
-
-
     }
+
 }
