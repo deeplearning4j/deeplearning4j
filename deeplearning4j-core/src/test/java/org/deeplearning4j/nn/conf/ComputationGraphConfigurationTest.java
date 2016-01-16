@@ -9,6 +9,9 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
+import org.deeplearning4j.nn.graph.nodes.ElementWiseNode;
+import org.deeplearning4j.nn.graph.nodes.MergeNode;
+import org.deeplearning4j.nn.graph.nodes.SubsetNode;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -74,6 +77,25 @@ public class ComputationGraphConfigurationTest {
     @Test
     public void testJSONWithGraphNodes(){
 
-        fail("Not implemented");
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .graphBuilder()
+                .addInputs("input1", "input2")
+                .addLayer("cnn1", new ConvolutionLayer.Builder(2, 2).stride(2, 2).nIn(1).nOut(5).build(), "input1")
+                .addLayer("cnn2", new ConvolutionLayer.Builder(2,2).stride(2,2).nIn(1).nOut(5).build(), "input2")
+                .addNode("merge1", new MergeNode(), "cnn1", "cnn2")
+                .addNode("subset1", new SubsetNode(0,1), "merge1")
+                .addLayer("dense1", new DenseLayer.Builder().nIn(20).nOut(5).build(), "subset1")
+                .addLayer("dense2", new DenseLayer.Builder().nIn(20).nOut(5).build(), "subset1")
+                .addNode("add", new ElementWiseNode(ElementWiseNode.Op.Add), "dense1", "dense2")
+                .build();
+
+        String json = conf.toJson();
+        System.out.println(json);
+
+        ComputationGraphConfiguration conf2 = ComputationGraphConfiguration.fromJson(json);
+
+        assertEquals(json,conf2.toJson());
+        assertEquals(conf, conf2);
     }
 }

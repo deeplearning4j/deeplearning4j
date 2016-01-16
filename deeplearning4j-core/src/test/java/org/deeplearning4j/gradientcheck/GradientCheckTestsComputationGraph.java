@@ -7,13 +7,14 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
+import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
+import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.nodes.ElementWiseNode;
 import org.deeplearning4j.nn.graph.nodes.MergeNode;
+import org.deeplearning4j.nn.graph.nodes.SubsetNode;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Before;
@@ -191,10 +192,6 @@ public class GradientCheckTestsComputationGraph {
     @Test
     public void testCnnDepthMerge(){
 
-        Nd4j.dtype = DataBuffer.Type.DOUBLE;
-        NDArrayFactory factory = Nd4j.factory();
-        factory.setDType(DataBuffer.Type.DOUBLE);
-
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(12345)
@@ -235,6 +232,94 @@ public class GradientCheckTestsComputationGraph {
                 PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{input}, new INDArray[]{labels});
 
         String msg = "testCnnDepthMerge()";
+        assertTrue(msg, gradOK);
+    }
+
+    @Test
+    public void testLSTMWithMerging(){
+
+        Nd4j.getRandom().setSeed(12345);
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                .updater(Updater.NONE).learningRate(1.0)
+                .graphBuilder()
+                .addInputs("input")
+                .setOutputs("out")
+                .addLayer("lstm1", new GravesLSTM.Builder().nIn(3).nOut(4).activation("tanh").build(), "input")
+                .addLayer("lstm2", new GravesLSTM.Builder().nIn(4).nOut(4).activation("tanh").build(), "lstm1")
+                .addLayer("dense1", new DenseLayer.Builder().nIn(4).nOut(4).activation("sigmoid").build(), "lstm1")
+                .addLayer("lstm3", new GravesLSTM.Builder().nIn(4).nOut(4).activation("tanh").build(), "dense1")
+                .addNode("merge", new MergeNode(), "lstm2", "lstm3")
+                .addLayer("out", new RnnOutputLayer.Builder().nIn(8).nOut(3).activation("softmax").lossFunction(LossFunctions.LossFunction.MCXENT).build(), "merge")
+                .inputPreProcessor("dense1", new RnnToFeedForwardPreProcessor())
+                .inputPreProcessor("lstm3", new FeedForwardToRnnPreProcessor())
+                .pretrain(false).backprop(true).build();
+
+        ComputationGraph graph = new ComputationGraph(conf);
+        graph.init();
+
+        Random r = new Random(12345);
+        INDArray input = Nd4j.rand(new int[]{3,3,5});
+        INDArray labels = Nd4j.zeros(3,3,5);
+        for( int i=0; i<3; i++ ){
+            for( int j=0; j<5; j++ ) {
+                labels.putScalar(new int[]{i, r.nextInt(3), j}, 1.0);
+            }
+        }
+
+        if (PRINT_RESULTS) {
+            System.out.println("testLSTMWithMerging()");
+            for (int j = 0; j < graph.getNumLayers(); j++)
+                System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+        }
+
+        boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{input}, new INDArray[]{labels});
+
+        String msg = "testLSTMWithMerging()";
+        assertTrue(msg, gradOK);
+    }
+
+    @Test
+    public void testLSTMWithSubset(){
+        Nd4j.getRandom().setSeed(12345);
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                .updater(Updater.NONE).learningRate(1.0)
+                .graphBuilder()
+                .addInputs("input")
+                .setOutputs("out")
+                .addLayer("lstm1", new GravesLSTM.Builder().nIn(3).nOut(8).activation("tanh").build(), "input")
+                .addNode("subset", new SubsetNode(0,3), "lstm1")
+                .addLayer("out", new RnnOutputLayer.Builder().nIn(4).nOut(3).activation("softmax").lossFunction(LossFunctions.LossFunction.MCXENT).build(), "subset")
+                .pretrain(false).backprop(true).build();
+
+        ComputationGraph graph = new ComputationGraph(conf);
+        graph.init();
+
+        Random r = new Random(12345);
+        INDArray input = Nd4j.rand(new int[]{3,3,5});
+        INDArray labels = Nd4j.zeros(3,3,5);
+        for( int i=0; i<3; i++ ){
+            for( int j=0; j<5; j++ ) {
+                labels.putScalar(new int[]{i, r.nextInt(3), j}, 1.0);
+            }
+        }
+
+        if (PRINT_RESULTS) {
+            System.out.println("testLSTMWithSubset()");
+            for (int j = 0; j < graph.getNumLayers(); j++)
+                System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+        }
+
+        boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{input}, new INDArray[]{labels});
+
+        String msg = "testLSTMWithSubset()";
         assertTrue(msg, gradOK);
     }
 
