@@ -9,7 +9,7 @@ public interface GraphNode {
     INDArray forward(INDArray... activations);
 
 
-    INDArray[] backward(INDArray... epsilons);
+    INDArray[] backward(INDArray epsilon);
 
 
 }

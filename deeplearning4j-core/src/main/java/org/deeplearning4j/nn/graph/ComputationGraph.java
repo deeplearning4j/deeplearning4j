@@ -128,13 +128,11 @@ public class ComputationGraph implements Serializable, Model {
         this.vertices = new GraphVertex[nVertices];
 
         //All names: inputs, layers and graph nodes (index to name map)
-        Map<Integer,String> allNames = new HashMap<>();
         Map<String,Integer> allNamesReverse = new HashMap<>();
 
         int i=0;
         for( String name : networkInputNames){
-            GraphVertex gv = new GraphVertex(name,i,null);  //Output vertices: set later
-            allNames.put(i,name);
+            GraphVertex gv = new GraphVertex(this,name,i,null);  //Output vertices: set later
             allNamesReverse.put(name,i);
             vertices[i++] = gv;
         }
@@ -146,8 +144,7 @@ public class ComputationGraph implements Serializable, Model {
             tempLayerList.add(l);
             InputPreProcessor preProcessor = configuration.getInputPreProcessors().get(layerEntry.getKey());
             String name = layerEntry.getKey();
-            GraphVertex gv = new GraphVertex(name,i,null,null,l,preProcessor);   //Input and output vertices: set later
-            allNames.put(i,name);
+            GraphVertex gv = new GraphVertex(this,name,i,null,null,l,preProcessor);   //Input and output vertices: set later
             allNamesReverse.put(name,i);
             vertices[i++] = gv;
             numLayers++;
@@ -157,8 +154,7 @@ public class ComputationGraph implements Serializable, Model {
         for( Map.Entry<String,GraphNode> nodeEntry : nodeMap.entrySet() ){
             GraphNode n = nodeEntry.getValue();
             String name = nodeEntry.getKey();
-            GraphVertex gv = new GraphVertex(name,i,null,null,n);   //Input and output vertices: set later
-            allNames.put(i,name);
+            GraphVertex gv = new GraphVertex(this,name,i,null,null,n);   //Input and output vertices: set later
             allNamesReverse.put(name,i);
             vertices[i++] = gv;
         }
@@ -384,8 +380,6 @@ public class ComputationGraph implements Serializable, Model {
         //https://en.wikipedia.org/wiki/Topological_sorting#Kahn.27s_algorithm
         int[] out = new int[vertices.length];
         int outCounter = 0;
-
-        boolean[] processed = new boolean[vertices.length];
 
         //First: represent the graph more usefully as a Map<Integer,Set<Integer>>, where map represents edges i -> j
         // key represents j, set is set of i (inputs) for vertices j
