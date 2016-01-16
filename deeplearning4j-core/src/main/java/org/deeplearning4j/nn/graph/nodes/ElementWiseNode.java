@@ -1,19 +1,41 @@
 package org.deeplearning4j.nn.graph.nodes;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /** Graph node for element-wise operations on activations (such as adding, subtracting, multiplying)
  *
  */
 public class ElementWiseNode implements GraphNode {
+    public enum Op {Add, Subtract, Product};
 
-    public static enum Op {Add, Subtract, Product};
-
-    private final Op op;
+    private Op op;
     private int nInForwardPass;
 
-    public ElementWiseNode(Op op){
+    public ElementWiseNode(@JsonProperty("op") Op op){
         this.op = op;
+    }
+
+    public Op getOp() {
+        return this.op;
+    }
+
+    public void setOp(Op op) {
+        this.op = op;
+    }
+
+    public String toString() {
+        return "ElementWiseNode(" + this.op + ")";
+    }
+
+    public boolean equals(Object o) {
+        if (!(o instanceof ElementWiseNode)) return false;
+        ElementWiseNode e = (ElementWiseNode)o;
+        return op == e.op;
+    }
+
+    public int hashCode() {
+        return op.hashCode();
     }
 
     @Override

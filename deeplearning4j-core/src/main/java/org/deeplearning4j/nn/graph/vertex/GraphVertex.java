@@ -170,7 +170,7 @@ public class GraphVertex {
             if(inputs.length > 1) throw new UnsupportedOperationException("Not implemented");   //TODO
             INDArray currInput = inputs[0];
             if(layerPreProcessor != null){
-                currInput = layerPreProcessor.preProcess(currInput, currInput.size(0));
+                currInput = layerPreProcessor.preProcess(currInput, graph.batchSize());
             }
             return layer.activate(currInput,training);
         } else {
@@ -212,8 +212,8 @@ public class GraphVertex {
     @Override
     public String toString(){
         StringBuilder sb = new StringBuilder();
-        sb.append("GraphVertex(id=").append(vertexIndex).append(",name=").append(vertexName)
-                .append(",inputs=").append(Arrays.toString(inputVertices)).append(",outputs=").append(Arrays.toString(outputVertices))
+        sb.append("GraphVertex(id=").append(vertexIndex).append(",name=\"").append(vertexName)
+                .append("\",inputs=").append(Arrays.toString(inputVertices)).append(",outputs=").append(Arrays.toString(outputVertices))
                 .append(")");
         return sb.toString();
     }

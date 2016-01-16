@@ -1,5 +1,8 @@
 package org.deeplearning4j.nn.graph.nodes;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -14,13 +17,41 @@ import java.util.Arrays;
  */
 public class SubsetNode implements GraphNode {
 
-    private final int from;
-    private final int to;
+    private int from;
+    private int to;
     private int[] forwardShape;
 
-    public SubsetNode(int fromInclusive, int toInclusive) {
+    public SubsetNode(@JsonProperty("from") int fromInclusive, @JsonProperty("to") int toInclusive) {
         this.from = fromInclusive;
         this.to = toInclusive;
+    }
+
+    public int getFrom(){
+        return from;
+    }
+
+    public void setFrom(int from){
+        this.from = from;
+    }
+
+    public int getTo(){
+        return to;
+    }
+
+    public void setTo(int to){
+        this.to = to;
+    }
+
+    @Override
+    public boolean equals(Object o){
+        if(!(o instanceof SubsetNode)) return false;
+        SubsetNode s = (SubsetNode)o;
+        return from == s.from && to == s.to;
+    }
+
+    @Override
+    public int hashCode(){
+        return Integer.hashCode(from) ^ Integer.hashCode(to);
     }
 
     @Override

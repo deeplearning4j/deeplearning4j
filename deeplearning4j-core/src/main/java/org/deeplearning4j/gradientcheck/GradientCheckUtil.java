@@ -146,7 +146,7 @@ public class GradientCheckUtil {
             throw new IllegalArgumentException("Invalid maxRelativeError: " + maxRelError );
 
         if(graph.getNumInputArrays() != inputs.length) throw new IllegalArgumentException("Invalid input arrays: expect " + graph.getNumInputArrays() + " inputs");
-        if(graph.getNumOutputArrays() != labels.length) throw new IllegalArgumentException("Invalid labels arrays: expect " + graph.getNumOutputArrays() + "outputs");
+        if(graph.getNumOutputArrays() != labels.length) throw new IllegalArgumentException("Invalid labels arrays: expect " + graph.getNumOutputArrays() + " outputs");
 
         for( int i=0; i<inputs.length; i++ ) graph.setInput(i,inputs[i]);
         for( int i=0; i<labels.length; i++ ) graph.setLabel(i,labels[i]);

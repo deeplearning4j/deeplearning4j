@@ -20,6 +20,16 @@ public class MergeNode implements GraphNode {
     private int fwdPassRank;
 
     @Override
+    public boolean equals(Object o){
+        return o instanceof MergeNode;
+    }
+
+    @Override
+    public int hashCode(){
+        return 987654321;
+    }
+
+    @Override
     public INDArray forward(INDArray... activations) {
         if(activations.length == 1){
             //No-op case
@@ -112,14 +122,14 @@ public class MergeNode implements GraphNode {
                 //Standard
                 for( int i=0; i<forwardPassShapes.length; i++ ){
                     out[i].assign(epsilon.get(NDArrayIndex.all(),   //All rows
-                            NDArrayIndex.interval(cumulative,cumulative+forwardPassShapes[i][1])));     //subset of columns
+                            NDArrayIndex.interval(cumulative, cumulative + forwardPassShapes[i][1])));     //subset of columns
                     cumulative += forwardPassShapes[i][1];
                 }
                 break;
             case 3:
                 for( int i=0; i<forwardPassShapes.length; i++ ){
                     out[i].assign(epsilon.get(NDArrayIndex.all(),   //All rows
-                            NDArrayIndex.interval(cumulative,cumulative+forwardPassShapes[i][1]), //subset of columns
+                            NDArrayIndex.interval(cumulative, cumulative + forwardPassShapes[i][1]), //subset of columns
                             NDArrayIndex.all()));   //All time steps
 
                     cumulative += forwardPassShapes[i][1];
@@ -128,7 +138,7 @@ public class MergeNode implements GraphNode {
             case 4:
                 for( int i=0; i<forwardPassShapes.length; i++ ){
                     out[i].assign(epsilon.get(NDArrayIndex.all(),
-                            NDArrayIndex.interval(cumulative,cumulative+forwardPassShapes[i][1]),   //Subset of depth
+                            NDArrayIndex.interval(cumulative, cumulative + forwardPassShapes[i][1]),   //Subset of depth
                             NDArrayIndex.all(),     //Width
                             NDArrayIndex.all()));    //height
                     cumulative += forwardPassShapes[i][1];
