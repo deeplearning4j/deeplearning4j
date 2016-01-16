@@ -627,6 +627,9 @@ public:
 
 };
 
+
+
+
 template<typename T>
 class Subtract: public virtual ScalarTransform<T> {
 public:
@@ -668,6 +671,98 @@ public:
 	}
 
 };
+
+
+
+
+template<typename T>
+class Mod: public virtual ScalarTransform<T> {
+public:
+	/**
+	 *
+	 * @param d1
+	 * @param d2
+	 * @param params
+	 * @return
+	 */
+	virtual
+#ifdef __CUDACC__
+	__host__  __device__
+
+#endif
+	inline T op(T d1, T d2, T *params) {
+		return d1 % d2;
+	}
+	/** Name of the op
+	 * @return the name of the operation
+	 */
+	virtual
+#ifdef __CUDACC__
+	inline __host__
+
+#endif
+	std::string name() {
+		return std::string("mod_scalar");
+	}
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	virtual inline ~Mod() {
+	}
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	Mod() {
+	}
+
+};
+
+
+
+
+
+template<typename T>
+class RMod: public virtual ScalarTransform<T> {
+public:
+	/**
+	 *
+	 * @param d1
+	 * @param d2
+	 * @param params
+	 * @return
+	 */
+	virtual
+#ifdef __CUDACC__
+	__host__  __device__
+
+#endif
+	inline T op(T d1, T d2, T *params) {
+		return d2 % d1;
+	}
+	/** Name of the op
+	 * @return the name of the operation
+	 */
+	virtual
+#ifdef __CUDACC__
+	inline __host__
+
+#endif
+	std::string name() {
+		return std::string("rmod_scalar");
+	}
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	virtual inline ~RMod() {
+	}
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	RMod() {
+	}
+
+};
+
 
 template<typename T>
 class SetValOrLess: public virtual ScalarTransform<T> {

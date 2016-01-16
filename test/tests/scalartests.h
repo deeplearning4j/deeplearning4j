@@ -487,6 +487,63 @@ TEST(ScalarTransform,ObjectOrientedScalarSet) {
 }
 
 
+
+
+TEST(ScalarTransform,ObjectOrientedScalarMod) {
+	int rank = 2;
+	int opNum = 14;
+	Data<double> *data = new Data<double>();
+	data->scalar = 2;
+	data->rank = rank;
+	data->xShape = (int *) malloc(sizeof(int) * 2);
+	for(int i = 0; i < 2; i++) {
+		data->xShape[i] = 2;
+	}
+
+	double comparison[4] = {  1.,  0.,  1.,  0.};
+	data->assertion = (double *) malloc(sizeof(double) * 4);
+	for(int i = 0; i < 4; i++)
+		data->assertion[i] = comparison[i];
+	data->rank = rank;
+	data->extraParams = (double *) malloc(sizeof(double) * 2);
+
+
+	DoubleScalarTest *test = new DoubleScalarTest(rank,opNum,data,1);
+	test->run();
+
+	delete test;
+	delete data;
+}
+
+
+
+
+
+TEST(ScalarTransform,ObjectOrientedScalarRMod) {
+	int rank = 2;
+	int opNum = 15;
+	Data<double> *data = new Data<double>();
+	data->scalar = 2;
+	data->rank = rank;
+	data->xShape = (int *) malloc(sizeof(int) * 2);
+	for(int i = 0; i < 2; i++) {
+		data->xShape[i] = 2;
+	}
+
+	double comparison[4] = {  0.,  0.,  2.,  2.};
+	data->assertion = (double *) malloc(sizeof(double) * 4);
+	for(int i = 0; i < 4; i++)
+		data->assertion[i] = comparison[i];
+	data->rank = rank;
+	data->extraParams = (double *) malloc(sizeof(double) * 2);
+
+
+	DoubleScalarTest *test = new DoubleScalarTest(rank,opNum,data,1);
+	test->run();
+
+	delete test;
+	delete data;
+}
 TEST(ScalarTransform,ScalarAdd) {
 	functions::scalar::ScalarTransform<double> *add = opFactory4->getOp(0);
 	int rank = 2;
