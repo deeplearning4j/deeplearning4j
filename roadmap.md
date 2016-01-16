@@ -30,6 +30,8 @@ Nice to have:
 * Reinforcement learning
 * Python support/interface
 * Support for ensembles
+* Variational autoencoders
+* Generative adversarial models
 
 Low priority:
 
