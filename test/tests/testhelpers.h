@@ -120,6 +120,8 @@ public:
 		return ret2;
 	}
 
+	virtual void run() {}
+
 
 
 protected:
@@ -141,7 +143,6 @@ protected:
 	virtual void executeCudaKernel(){}
 	virtual void freeOpAndOpFactory() {};
 	virtual void createOperationAndOpFactory() {}
-	virtual void run() {}
 
 
 	virtual void init() {
