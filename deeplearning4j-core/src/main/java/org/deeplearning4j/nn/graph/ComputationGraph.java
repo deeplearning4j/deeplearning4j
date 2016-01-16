@@ -424,6 +424,15 @@ public class ComputationGraph implements Serializable, Model {
             }
         }
 
+        //If any edges remain in the graph: graph has cycles:
+        for(Map.Entry<Integer,Set<Integer>> entry : inputEdges.entrySet()){
+            Set<Integer> set = entry.getValue();
+            if(set == null) continue;
+            if(set.size() > 0) throw new IllegalStateException("Invalid configuration: cycle detected in graph. Cannot calculate topological ordering with graph cycle ("
+                + "cycle includes vertex \"" + vertices[entry.getKey()].getVertexName() + "\")");
+        }
+
+
         System.out.println("Topological sort order:");
         System.out.println(Arrays.toString(out));
 

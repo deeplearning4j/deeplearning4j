@@ -111,27 +111,69 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
     @Override
     public ComputationGraphConfiguration clone(){
-        throw new UnsupportedOperationException("Not implemnted");
+        throw new UnsupportedOperationException("Not implemented");
     }
 
 
-    /** Check the configuration, make sure it is valid */
-    public boolean validate(){
+    /** Check the configuration, make sure it is valid
+     * @throws IllegalStateException if configuration is not valid
+     * */
+    public void validate(){
+        if(networkInputs == null || networkInputs.size() < 1){
+            throw new IllegalStateException("Invalid configuration: network has no inputs");
+        }
+        if(networkOutputs == null || networkOutputs.size() < 1){
+            throw new IllegalStateException("Invalid configuration: network has no outputs");
+        }
 
         //Check uniqueness of names for inputs, layers, GraphNodes
+        for(String s : networkInputs){
+            if(layers.containsKey(s)){
+                throw new IllegalStateException("Invalid configuration: name \"" + s + "\" is present in both network inputs and layer names");
+            }
+            if(graphNodes.containsKey(s)){
+                throw new IllegalStateException("Invalid configuration: name \"" + s + "\" is present in both network inputs and graph nodes");
+            }
+        }
 
-        //Check that all input keys/names for each layer actually exist
+        //Check: each layer & node has at least one input
+        //and: check that all input keys/names for each layer actually exist
+        for(Map.Entry<String,List<String>> e : layerInputs.entrySet() ){
+            String layerName = e.getKey();
+            if(e.getValue() == null || e.getValue().size() == 0){
+                throw new IllegalStateException("Invalid configuration: layer \"" + layerName + "\" has no inputs");
+            }
+            for(String inputName : e.getValue()) {
+                if (!layers.containsKey(inputName) && !graphNodes.containsKey(inputName) && !networkInputs.contains(inputName)) {
+                    throw new IllegalStateException("Invalid configuration: layer \"" + layerName + "\" has input \"" +
+                        inputName + "\" that does not exist");
+                }
+            }
+        }
+        for(Map.Entry<String,List<String>> e : graphNodeInputs.entrySet() ){
+            String nodeName = e.getKey();
+            if(e.getValue() == null || e.getValue().size() == 0){
+                throw new IllegalStateException("Invalid configuration: graph node \"" + nodeName + "\" has no inputs");
+            }
+            for(String inputName : e.getValue()) {
+                if (!layers.containsKey(inputName) && !graphNodes.containsKey(inputName) && !networkInputs.contains(inputName)) {
+                    throw new IllegalStateException("Invalid configuration: GraphNode \"" + nodeName + "\" has input \"" +
+                            inputName + "\" that does not exist");
+                }
+            }
+        }
 
-        //Check: at least one input, at least one output
-
-        //Check: each layer has at least one input
+        //Check preprocessors
+        for( String s : inputPreProcessors.keySet() ){
+            if (!layers.containsKey(s) ) {
+                throw new IllegalStateException("Invalid configuration: InputPreProcessor listed for layer \"" + s + "\" but layer \"" +
+                        s + "\" does not exist");
+            }
+        }
 
         //Check: no graph cycles
 
-        //Check preprocessors
 
-        System.out.println("WARNING: ComputationGraphConfiguration.validate() NOT YET IMPLEMENTED");
-        return true;
     }
 
     protected boolean canEqual(Object other) {
@@ -252,8 +294,9 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         public GraphBuilder addLayer(String layerName, Layer layer, String... layerInputs ){
             NeuralNetConfiguration.Builder builder = globalConfiguration.clone();
             builder.layer(layer);
-            layers.put(layerName,builder);
+            layers.put(layerName, builder);
             this.layerInputs.put(layerName,Arrays.asList(layerInputs));
+            layer.setLayerName(layerName);
             return this;
         }
 
@@ -303,11 +346,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             conf.graphNodeInputs = this.graphNodeInputs;
 
 
+            conf.validate();    //throws exception for invalid configuration
 
-            if(!conf.validate()){
-                //TODO: provide details
-                throw new IllegalStateException("Invalid configuration");
-            }
             return conf;
         }
     }
