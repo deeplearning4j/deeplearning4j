@@ -691,7 +691,7 @@ public:
 
 #endif
 	inline T op(T d1, T d2, T *params) {
-		return d1 % d2;
+		return (int) d1 % (int) d2;
 	}
 	/** Name of the op
 	 * @return the name of the operation
@@ -737,7 +737,7 @@ public:
 
 #endif
 	inline T op(T d1, T d2, T *params) {
-		return d2 % d1;
+		return (int) d2 % (int) d1;
 	}
 	/** Name of the op
 	 * @return the name of the operation
@@ -856,6 +856,10 @@ public:
 			return new functions::scalar::ops::Min<T>();
 		else if (op == 13)
 			return new functions::scalar::ops::Set<T>();
+		else if (op == 14)
+					return new functions::scalar::ops::Mod<T>();
+		else if (op == 15)
+					return new functions::scalar::ops::RMod<T>();
 		return NULL;
 	}
 };

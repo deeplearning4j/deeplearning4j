@@ -52,6 +52,18 @@ public:
 		op = opFactory->getOp(this->opNum);
 	}
 
+
+	virtual void execCpuKernel() override {
+		int *xShapeBuff = shapeBuffer(this->baseData->xShape,this->baseData->rank);
+		int xElementWiseStride = shape::elementWiseStride(xShapeBuff);
+		int *resultShapeBuff = shapeBuffer(this->baseData->resultShape,this->baseData->resultRank);
+		int resultElementWiseStride = shape::elementWiseStride(resultShapeBuff);
+		int n = shape::length(xShapeBuff);
+		op->transform(data->data->data,xElementWiseStride,this->result->data->data,resultElementWiseStride,this->baseData->scalar,this->extraParams,n);
+	    free(xShapeBuff);
+	    free(resultShapeBuff);
+	}
+
 protected:
 	functions::scalar::ScalarOpFactory<T> *opFactory;
 	functions::scalar::ScalarTransform<T> *op;

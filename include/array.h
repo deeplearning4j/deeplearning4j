@@ -241,8 +241,15 @@ __host__
 
 NDArray<T> * NDArrays<T>::createFrom(int rank, int *shape, int *stride,
 		int offset, T defaultValue) {
+	if(!shape) {
+		printf("Shape not found\n");
+	}
+	if(!stride) {
+		printf("stride not found\n");
+	}
 	NDArray<T> *ret = (NDArray<T> *) malloc(sizeof(NDArray<T>));
 	ret->rank = rank;
+
 	ret->shape = nd4j::buffer::createBuffer(shape,rank);
 	ret->stride = nd4j::buffer::createBuffer(stride,rank);
 	ret->offset = offset;

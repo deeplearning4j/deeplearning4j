@@ -61,24 +61,11 @@ public:
 		op = opFactory->getOp(this->opNum);
 	}
 
-	void run () {
-		this->initializeData();
+
+	virtual void execCpuKernel() override {
 		op->exec(this->data->data->data, 1, this->data->data->data, 1, this->extraParams, this->length);
-		CHECK(arrsEquals(this->rank, this->assertion, this->data->data->data));
-
-
-#ifdef __CUDACC__
-		this->initializeData();
-		nd4j::array::NDArrays<T>::allocateNDArrayOnGpu(&this->data);
-		this->executeCudaKernel();
-		checkCudaErrors(cudaDeviceSynchronize());
-		nd4j::buffer::copyDataFromGpu(&this->data->data);
-		CHECK(arrsEquals(this->rank, this->assertion, this->data->data->data));
-
-#endif
-
-
 	}
+
 };
 
 class DoubleTransformTest : public  TransformTest<double> {

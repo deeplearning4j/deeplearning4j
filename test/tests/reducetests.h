@@ -29,8 +29,12 @@ TEST_GROUP(Reduce) {
 template <typename T>
 class ReduceTest : public BaseTest<T> {
 public:
-	virtual ~ReduceTest() {}
-	ReduceTest() {}
+	virtual ~ReduceTest() {
+		freeOpAndOpFactory();
+	}
+	ReduceTest() {
+		createOperationAndOpFactory();
+	}
 	ReduceTest(int rank,int opNum,Data<T> *data,int extraParamsLength)
 	:  BaseTest<T>(rank,opNum,data,extraParamsLength){
 		createOperationAndOpFactory();
@@ -40,8 +44,19 @@ public:
 		delete reduce;
 	}
 	virtual void createOperationAndOpFactory() {
-		opFactory =new functions::reduce::ReduceOpFactory<T>();
+		opFactory = new functions::reduce::ReduceOpFactory<T>();
 		reduce = opFactory->create(this->opNum);
+	}
+
+	virtual void execCpuKernel() override {
+		int *xShapeBuff = shapeBuffer(this->baseData->xShape,this->baseData->rank);
+		int *resultShapeBuff = shapeBuffer(this->baseData->resultShape,this->baseData->resultRank);
+		reduce->exec(this->data->data,xShapeBuff,
+				this->baseData->extraParams,this->result->data,
+				resultShapeInfo,this->baseData->dimension,this->baseData->dimensionLength);
+		free(xShapeBuff);
+		free(resultShapeBuff);
+
 	}
 
 protected:
@@ -172,8 +187,8 @@ TEST(Reduce, Sum) {
 
 
 #ifdef __CUDACC__
-/*
- * reduceDouble(
+	/*
+	 * reduceDouble(
 		int op,
 		int n,
 		double *dx,
@@ -185,7 +200,7 @@ TEST(Reduce, Sum) {
 		int *dimension,
 		int dimensionLength,
 		int postProcessOrNot)
- */
+	 */
 	int blockSize = 500;
 	int gridSize = 256;
 	int sMemSize = 20000;

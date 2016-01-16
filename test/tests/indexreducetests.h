@@ -28,7 +28,9 @@ TEST_GROUP(IndexReduce) {
 template <typename T>
 class IndexReduceTest : public BaseTest<T> {
 public:
-	virtual ~IndexReduceTest() {}
+	virtual ~IndexReduceTest() {
+		freeOpAndOpFactory();
+	}
 	IndexReduceTest(int rank,int opNum,Data<T> *data,int extraParamsLength)
 	:  BaseTest<T>(rank,opNum,data,extraParamsLength){
 		createOperationAndOpFactory();
@@ -41,6 +43,17 @@ public:
 	virtual void createOperationAndOpFactory() {
 		opFactory = new functions::indexreduce::IndexReduceOpFactory<T>();
 		reduce = opFactory->create(this->opNum);
+	}
+
+	virtual void execCpuKernel() override {
+		int *xShapeBuff = shapeBuffer(this->baseData->xShape,this->baseData->rank);
+		int *resultShapeBuff = shapeBuffer(this->baseData->resultShape,this->baseData->resultRank);
+		reduce->exec(this->data->data,xShapeBuff,
+				this->baseData->extraParams,this->result->data,
+				resultShapeInfo,this->baseData->dimension,this->baseData->dimensionLength);
+		free(xShapeBuff);
+		free(resultShapeBuff);
+
 	}
 
 protected:

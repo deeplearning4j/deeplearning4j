@@ -269,13 +269,13 @@ public:
 				if (tid == 0) {
 					for (int i = 0; i < reductionIndexesPerBlock; i++) {
 						int reductionIndexToProcess = i + blockIdx.x * reductionIndexesPerBlock;
-                        if(postProcessOrNot) {
+						if(postProcessOrNot) {
 
-                        }
-                        else {
-    						result[reductionIndexToProcess] = sPartials[i];
+						}
+						else {
+							result[reductionIndexToProcess] = sPartials[i];
 
-                        }
+						}
 					}
 
 					shape::freePermuteInfo(xTadInfo);
@@ -549,12 +549,10 @@ public:
 	T aggregateBuffer(int n,T *buffer,T *extraParams) {
 
 		T ret = buffer[0];
-		printf("Starting at %f\n",ret);
 #pragma omp simd
 		for(int i = 1; i < n; i++) {
 			ret = update(ret,buffer[i],extraParams);
 		}
-		printf("Returning %f\n",ret);
 
 		return ret;
 	}

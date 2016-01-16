@@ -35,7 +35,9 @@ template <typename T>
 class PairwiseTransformTest : public PairWiseTest<T> {
 
 public:
-	virtual ~PairwiseTransformTest() {}
+	virtual ~PairwiseTransformTest() {
+		freeOpAndOpFactory();
+	}
 	PairwiseTransformTest() {
 		createOperationAndOpFactory();
 	}
@@ -44,8 +46,10 @@ public:
 		createOperationAndOpFactory();
 	}
 	virtual void freeOpAndOpFactory() {
-		delete op;
-		delete opFactory;
+		if(op != NULL)
+			delete op;
+		if(opFactory != NULL)
+			delete opFactory;
 	}
 
 	virtual void createOperationAndOpFactory() {
@@ -66,14 +70,16 @@ public:
 	:  PairwiseTransformTest<double>(rank,opNum,data,extraParamsLength){
 	}
 	virtual void executeCudaKernel() {
+		printf("In execute kernel\n");
+
 		int *shapeBuff = shapeBuffer(this->rank,this->shape);
 		int *yShapeBuff = shapeBuffer(this->rank,this->yShape);
 		assertBufferProperties(shapeBuff);
 		assertBufferProperties(yShapeBuff);
 		int xOffset = shape::offset(shapeBuff);
 		int yOffset = shape::offset(yShapeBuff);
-        int xEleStride = shape::elementWiseStride(shapeBuff);
-        int yEleStride = shape::elementWiseStride(yShapeBuff);
+		int xEleStride = shape::elementWiseStride(shapeBuff);
+		int yEleStride = shape::elementWiseStride(yShapeBuff);
 
 		pairWiseTransformDouble<<<this->blockSize,this->gridSize,this->sMemSize>>>(
 				this->opNum,
@@ -108,8 +114,8 @@ public:
 		assertBufferProperties(yShapeBuff);
 		int xOffset = shape::offset(shapeBuff);
 		int yOffset = shape::offset(yShapeBuff);
-        int xEleStride = shape::elementWiseStride(shapeBuff);
-        int yEleStride = shape::elementWiseStride(yShapeBuff);
+		int xEleStride = shape::elementWiseStride(shapeBuff);
+		int yEleStride = shape::elementWiseStride(yShapeBuff);
 
 		pairWiseTransformFloat<<<this->blockSize,this->gridSize,this->sMemSize>>>(
 				this->opNum,
@@ -129,33 +135,48 @@ public:
 	}
 };
 
-
-TEST(PairWiseTransform,Addition) {
-	functions::pairwise_transforms::PairWiseTransform<double> *add =
-			opFactory2->getOp(0);
+TEST(PairWiseTransform,ObjectOrientedAddition) {
 	int rank = 2;
-	int *shape = (int *) malloc(sizeof(int) * rank);
-	shape[0] = 2;
-	shape[1] = 2;
-	int *stride = shape::calcStrides(shape, rank);
-	nd4j::array::NDArray<double> *data =
-			nd4j::array::NDArrays<double>::createFrom(rank, shape, stride, 0,
-					0.0);
-	int length = nd4j::array::NDArrays<double>::length(data);
-	for (int i = 0; i < length; i++)
-		data->data->data[i] = i + 1;
-	double *extraParams = (double *) malloc(sizeof(double));
+	int opNum = 0;
+	int yRank = 2;
+	int length = 4;
+	Data<double> *data = new Data<double>();
+	data->rank = 2;
+	data->yRank = 2;
 
-	add->exec(data->data->data, 1, data->data->data, 1, data->data->data, 1,
-			extraParams, length);
-	double comparison[4] = { 2, 4, 6, 8 };
-	CHECK(arrsEquals(rank, comparison, data->data->data));
-	free(data);
-	free(extraParams);
-	free(shape);
-	free(stride);
-	delete add;
+	data->xShape = (int *) malloc(sizeof(int) * rank);
+	data->yShape = (int *) malloc(sizeof(int) * rank);
+	for(int i = 0; i < 2; i++) {
+		data->xShape[i] = 2;
+		data->yShape[i] = 2;
+	}
+
+	double *extraParams = (double *) malloc(sizeof(double) * 2);
+	data->extraParams = extraParams;
+	printf("Alloced x and y shapes\n");
+
+	double *y = (double *) malloc(sizeof(double) * length);
+	data->y = y;
+	for(int i = 0; i < length; i++) {
+		y[i] = i + 2;
+	}
+	printf("Alloced y\n");
+
+	double comparison[4] = {3,5,7,9};
+	double *comparisionAssertion = (double *) malloc(sizeof(double) * 4);
+	for(int i = 0; i < 4; i++)
+		comparisionAssertion[i] = comparison[i];
+	data->assertion = comparisionAssertion;
+	//	:  PairwiseTransformTest<double>(rank,opNum,data,extraParamsLength){
+	DoublePairwiseTranformTest *test = new DoublePairwiseTranformTest(rank,opNum,data,1);
+	test->run();
+
+	delete data;
+	delete test;
 
 }
+
+
+
 
 #endif //NATIVEOPERATIONS_PAIRWISE_TRANSFORM_TESTS_H

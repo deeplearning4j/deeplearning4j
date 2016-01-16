@@ -105,7 +105,8 @@ public:
 
 
 	virtual ~BaseTest() {
-		nd4j::array::NDArrays<T>::freeNDArrayOnGpuAndCpu(&data);
+		if(data != NULL)
+			nd4j::array::NDArrays<T>::freeNDArrayOnGpuAndCpu(&data);
 		freeAssertion();
 	}
 
@@ -120,7 +121,24 @@ public:
 		return ret2;
 	}
 
-	virtual void run() {}
+	void run () {
+		this->initializeData();
+		execCpuKernel();
+		CHECK(arrsEquals(this->rank, this->assertion, this->data->data->data));
+
+
+#ifdef __CUDACC__
+		this->initializeData();
+		nd4j::array::NDArrays<T>::allocateNDArrayOnGpu(&this->data);
+		this->executeCudaKernel();
+		checkCudaErrors(cudaDeviceSynchronize());
+		nd4j::buffer::copyDataFromGpu(&this->data->data);
+		CHECK(arrsEquals(this->rank, this->assertion, this->data->data->data));
+
+#endif
+
+
+	}
 
 
 
@@ -141,20 +159,24 @@ protected:
 	int opNum;
 	int extraParamsLength;
 	virtual void executeCudaKernel(){}
+	virtual void execCpuKernel() {}
 	virtual void freeOpAndOpFactory() {};
 	virtual void createOperationAndOpFactory() {}
 
 
 	virtual void init() {
+		printf("Parent init\n");
 		shape = this->baseData->xShape;
 		rank = this->baseData->rank;
 		stride = shape::calcStrides(shape, rank);
+		printf("About to alloc data\n");
 		data = nd4j::array::NDArrays<T>::createFrom(rank, shape, stride, 0,
 				0.0);
 		initializeData();
 		length = nd4j::array::NDArrays<T>::length(data);
 		extraParams = this->baseData->extraParams;
 		extraParamsBuff = nd4j::buffer::createBuffer(extraParams,extraParamsLength);
+		printf("Created extra params buff\n");
 		assertion = this->baseData->assertion;
 
 	}
@@ -193,11 +215,13 @@ public:
 	}
 	virtual ~PairWiseTest() {}
 	virtual void init() override {
+		printf("Child init\n");
 		yRank = this->baseData->yRank;
-		yShape = (int *) malloc(sizeof(int) * yRank);
+		yShape = this->baseData->yShape;
 		yStride = shape::calcStrides(yShape,yRank);
 		yData = nd4j::array::NDArrays<T>::createFrom(yRank, yShape, yStride, 0,
 				0.0);
+		printf("Created y array\n");
 	}
 
 

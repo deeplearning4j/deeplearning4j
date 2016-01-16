@@ -154,6 +154,22 @@ public:
 		op = opFactory->getOp(this->opNum);
 	}
 
+	virtual void execCpuKernel() override {
+		int *shapeBuff = shapeBuffer(this->rank,this->shape);
+		int *yShapeBuff = shapeBuffer(this->yRankank,this->yShape);
+		int *resultShapeBuff = shapeBuffer(this->resultRank,this->baseData->resultShape);
+		op->exec(this->data->data->data,shapeBuff,
+				this->baseData->y,
+				yShapeBuffer,
+				this->baseData->result,
+				resultShapeBuff,
+				this->baseData->dimension,
+				this->baseData->dimensionLength);
+		free(shapeBuff);
+		free(yShapeBuff);
+		free(resultShapeBuff);
+	}
+
 protected:
 	functions::broadcast::BroadcastOpFactory<T> *opFactory;
 	functions::broadcast::Broadcast<T> *op;

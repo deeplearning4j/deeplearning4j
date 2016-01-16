@@ -35,7 +35,9 @@ public:
 	Reduce3Test() {
 		createOperationAndOpFactory();
 	}
-	virtual ~Reduce3Test() {}
+	virtual ~Reduce3Test() {
+		freeOpAndOpFactory();
+	}
 	Reduce3Test(int rank,int opNum,Data<T> *data,int extraParamsLength)
 	:  PairWiseTest<T>(rank,opNum,data,extraParamsLength) {
 		createOperationAndOpFactory();
@@ -48,6 +50,18 @@ public:
 	virtual void createOperationAndOpFactory() {
 		opFactory = new functions::reduce3::Reduce3OpFactory<T>();
 		reduce = opFactory->getOp(this->opNum);
+	}
+
+	virtual void execCpuKernel() override {
+		int *xShapeBuff = shapeBuffer(this->baseData->xShape,this->baseData->rank);
+		int *yShapeBuff = shapeBuffer(this->baseData->yShape,this->baseData->rank);
+		int *resultShapeBuff = shapeBuffer(this->baseData->resultShape,this->baseData->resultRank);
+		reduce->exec(this->data->data,xShapeBuff,
+				this->baseData->extraParams,this->baseData->y,yShapeInfo,this->result->data,
+				resultShapeInfo,this->baseData->dimension,this->baseData->dimensionLength);
+		free(xShapeBuff);
+		free(yShapeBuff);
+		free(resultShapeBuff);
 	}
 
 protected:
