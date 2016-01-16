@@ -611,9 +611,9 @@ public class ComputationGraph implements Serializable, Model {
     public INDArray params() {
         List<INDArray> list = new ArrayList<>(layerCount);
         for( int i=0; i<topologicalOrder.length; i++ ){
-            if(!vertices[i].hasLayer()) continue;
+            if(!vertices[topologicalOrder[i]].hasLayer()) continue;
 
-            Layer l = vertices[i].getLayer();
+            Layer l = vertices[topologicalOrder[i]].getLayer();
             list.add(l.params());
         }
 
@@ -634,9 +634,9 @@ public class ComputationGraph implements Serializable, Model {
     public void setParams(INDArray params) {
         int idx = 0;
         for( int i=0; i<topologicalOrder.length; i++ ){
-            if(!vertices[i].hasLayer()) continue;
+            if(!vertices[topologicalOrder[i]].hasLayer()) continue;
 
-            Layer layer = vertices[i].getLayer();
+            Layer layer = vertices[topologicalOrder[i]].getLayer();
             int range = (layer instanceof BasePretrainNetwork ?
                     ((BasePretrainNetwork<?>)layer).numParamsBackprop() : layer.numParams());
             INDArray get = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, range + idx));
