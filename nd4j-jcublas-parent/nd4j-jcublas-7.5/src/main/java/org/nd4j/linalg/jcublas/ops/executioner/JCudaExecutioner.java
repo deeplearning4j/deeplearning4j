@@ -254,6 +254,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         else if(op instanceof IndexAccumulation) {
             IndexAccumulation indexAccumulation = (IndexAccumulation) op;
             invoke(indexAccumulation,null,Nd4j.scalar(0));
+
         }
         return op;
     }
@@ -274,8 +275,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     private CudaContext invoke(BroadcastOp op) {
         if(!KernelFunctionLoader.getInstance().exists(op) || executionMode() == ExecutionMode.JAVA || op.isPassThrough() || op instanceof CopyOp) {
-            super.exec(op);
-            return null;
+         //   super.exec(op);
+         //   return null;
         }
 
         CudaContext ctx;
@@ -291,8 +292,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     private CudaContext invoke(IndexAccumulation op,int[] dimension,INDArray result)  {
         if(!KernelFunctionLoader.getInstance().exists(op) || executionMode() == ExecutionMode.JAVA) {
-            super.exec(op);
-            return null;
+          //  super.exec(op);
+        //    return null;
         }
 
         CudaContext ctx;
@@ -308,8 +309,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     private CudaContext invoke(Accumulation op,int[] dimension)  {
         if(!KernelFunctionLoader.getInstance().exists(op) || executionMode() == ExecutionMode.JAVA) {
-            super.exec(op);
-            return null;
+        //    super.exec(op);
+        //    return null;
         }
 
         CudaContext ctx;
@@ -322,8 +323,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     private CudaContext invoke(ScalarOp op) {
         if(!KernelFunctionLoader.getInstance().exists(op)  || executionMode() == ExecutionMode.JAVA) {
-            super.exec(op);
-            return null;
+         //   super.exec(op);
+         //   return null;
         }
 
         GpuKernelCall kernelCall = GpuKernelCallFactories.getFactory(op).create(op);
@@ -334,8 +335,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     private CudaContext invoke(TransformOp op) {
         if(!KernelFunctionLoader.getInstance().exists(op) || op.x() instanceof IComplexNDArray || op.isPassThrough()) {
-            super.exec(op);
-            return null;
+         //   super.exec(op);
+          //  return null;
         }
 
         GpuKernelCall kernelCall = GpuKernelCallFactories.getFactory(op).create(op);

@@ -38,7 +38,18 @@ public class CudaArgs {
         //String functionName = op instanceof TransformOp || op instanceof Accumulation || op instanceof IndexAccumulation ? op.name() + "_strided" : op.name();
         String moduleName = null;
         if (op instanceof Accumulation) {
+
             moduleName = "reduce";
+
+            // FIXME: special case for reduce3
+            if (op.name().equals("cosinesimilarity")) {
+                moduleName = "reduce3";
+            } else if (op.name().equals("euclidean")) {
+                moduleName = "reduce3";
+            } else if (op.name().equals("manhattan")) {
+                moduleName = "reduce3";
+            }
+
         } else if (op instanceof TransformOp) {
             // FIXME: we need special case for pairwise transforms for now. Later we should make them separate kernel call
             if (op.name().equals("add")) {
@@ -63,6 +74,8 @@ public class CudaArgs {
             moduleName = "scalar";
         } else if (op instanceof  BroadcastOp) {
             moduleName = "broadcast";
+        } else if (op instanceof IndexAccumulation) {
+            moduleName = "indexReduce";
         }
         return moduleName;
     }
@@ -95,6 +108,15 @@ public class CudaArgs {
                 code = 9;
             } else if (name.equals("var")) {
                 code = 10;
+
+
+                // FIXME: special case for reduce3
+            } else if (name.equals("manhattan")) {
+                code = 0;
+            } else if (name.equals("euclidean")) {
+                code = 1;
+            } else if (name.equals("cosinesimilarity")) {
+                code = 2;
             }
         } else if (op instanceof TransformOp) {
             if (name.equals("abs")) {
@@ -207,6 +229,12 @@ public class CudaArgs {
                 code = 5;
             } else if (name.equals("broadcastcopy")) {
                 code = 6;
+            }
+        } else if (op instanceof IndexAccumulation) {
+            if (name.equals("imax")) {
+                code = 0;
+            } else if (name.equals("imin")) {
+                code = 1;
             }
         }
 

@@ -12,6 +12,7 @@ import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 import org.nd4j.linalg.jcublas.ops.executioner.kernels.BaseGpuKernelCall;
 import org.nd4j.linalg.jcublas.ops.executioner.kernels.args.KernelCallPointerArgs;
 import org.nd4j.linalg.jcublas.ops.executioner.kernels.args.impl.IndexAccumulationKernelCallPointerArgs;
+import org.nd4j.linalg.jcublas.util.CudaArgs;
 import org.nd4j.linalg.jcublas.util.KernelParamsWrapper;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
 
@@ -46,6 +47,8 @@ public class IndexAccumulationKernelCall extends BaseGpuKernelCall {
             this.result = Nd4j.scalar(acc.zeroDouble());
         else
             this.result = result;
+
+        createArgs();
     }
 
     @Override
@@ -100,6 +103,7 @@ public class IndexAccumulationKernelCall extends BaseGpuKernelCall {
 
 
             args = new Object[]{
+                    CudaArgs.getOpCode(op),
                     op.n(),
                     op.x(),
                     KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.x(), dimension)),
@@ -158,6 +162,7 @@ public class IndexAccumulationKernelCall extends BaseGpuKernelCall {
                 length = op.n();
 
             args = new Object[]{
+                    CudaArgs.getOpCode(op),
                     length,
                     op.x(),
                     KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.x(), dimension)),
@@ -201,7 +206,7 @@ public class IndexAccumulationKernelCall extends BaseGpuKernelCall {
     @Override
     public void invoke() {
         IndexAccumulation acc = (IndexAccumulation) op;
-        try(KernelParamsWrapper kParams = new KernelParamsWrapper(op,true,args).setResultOp(acc, result,dimension)) {
+        try(KernelParamsWrapper kParams = new KernelParamsWrapper(true,args).setResultOp(acc, result,dimension)) {
             this.args = kParams.getKernelParameters();
             this.cudaContext = kParams.getContext();
             //setup the kernel parameters such that super.invoke() will call the kernel with the given parameters

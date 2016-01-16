@@ -121,7 +121,7 @@ public class KernelFunctions {
     public static  void invoke(GpuMetrics metrics, boolean sync,String functionName,DataBuffer.Type dataType,CudaContext cudaContext,Object...kernelParameters) {
         // FIXME: this is bad AND ugly, remove this crappy shit
         String functionName2 = functionName + StringUtils.capitalize(dataType.toString().toLowerCase()); // KernelLauncher.FUNCTION_NAME + "_" + dataType;
-        System.out.println("Invoking now: " + functionName);
+        System.out.println("Invoking now: " + functionName2);
         invoke(metrics, sync, functionName, functionName2, dataType, cudaContext, kernelParameters);
     }
 
