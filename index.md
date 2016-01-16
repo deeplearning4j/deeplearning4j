@@ -71,4 +71,4 @@ Developers who would like to contribute to Deeplearning4j can get started by rea
 
 ### Research With Deeplearning4j
 
-* STanford NLP: "[Large-Scale Language Classification](http://nlp.stanford.edu/courses/cs224n/2015/reports/24.pdf)"
+* Stanford NLP: "[Large-Scale Language Classification](http://nlp.stanford.edu/courses/cs224n/2015/reports/24.pdf)"
