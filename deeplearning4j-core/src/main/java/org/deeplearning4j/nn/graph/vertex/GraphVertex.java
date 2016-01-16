@@ -81,11 +81,11 @@ public class GraphVertex {
         return (inputVertices == null ? 0 : inputVertices.length);
     }
 
-    public int getNumOutputArrays(){
+    public int getNumOutputConnections(){
         return (outputVertices == null ? 0 : outputVertices.length);
     }
 
-    /**A representation of the vertices that are inputs to this vertex (inputs duing forward pass)
+    /**A representation of the vertices that are inputs to this vertex (inputs duing forward pass)<br>
      * Specifically, if inputVertices[X].getVertexIndex() = Y, and inputVertices[X].getVertexEdgeNumber() = Z
      * then the Zth output of vertex Y is the Xth input to this vertex
      */
@@ -137,7 +137,10 @@ public class GraphVertex {
     }
 
     public void setError(int errorNumber, INDArray error){
-        if(errorNumber >= getNumOutputArrays() ) throw new IllegalArgumentException("Invalid error number");
+        if(errorNumber >= getNumOutputConnections() ){
+            throw new IllegalArgumentException("Invalid error number: " + errorNumber
+                    + ", numOutputEdges = " + outputVertices.length );
+        }
         epsilons[errorNumber] = error;
     }
 
