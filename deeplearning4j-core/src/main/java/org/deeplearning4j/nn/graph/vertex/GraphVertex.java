@@ -4,6 +4,7 @@ import lombok.Data;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.nodes.GraphNode;
@@ -20,6 +21,8 @@ import java.util.Arrays;
  */
 @Data
 public class GraphVertex {
+
+    private ComputationGraph graph;
 
     private String vertexName;
 
@@ -45,22 +48,23 @@ public class GraphVertex {
     private INDArray[] inputs;
     private INDArray[] epsilons;
 
-    public GraphVertex(String name, int vertexIndex, VertexIndices[] inputVertices, VertexIndices[] outputVertices,
+    public GraphVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices, VertexIndices[] outputVertices,
                        Layer layer, InputPreProcessor inputPreProcessor ){
-        this(name, vertexIndex,inputVertices,outputVertices,layer,inputPreProcessor,null);
+        this(graph, name, vertexIndex,inputVertices,outputVertices,layer,inputPreProcessor,null);
     }
 
-    public GraphVertex(String name, int vertexIndex, VertexIndices[] inputVertices, VertexIndices[] outputVertices, GraphNode graphNode){
-        this(name, vertexIndex,inputVertices,outputVertices,null,null,graphNode);
+    public GraphVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices, VertexIndices[] outputVertices, GraphNode graphNode){
+        this(graph, name, vertexIndex,inputVertices,outputVertices,null,null,graphNode);
     }
 
     /** Create a network input vertex: */
-    public GraphVertex(String name, int vertexIndex, VertexIndices[] outputVertices){
-        this(name, vertexIndex,null,outputVertices,null,null,null);
+    public GraphVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] outputVertices){
+        this(graph, name, vertexIndex,null,outputVertices,null,null,null);
     }
 
-    private GraphVertex(String name, int vertexIndex, VertexIndices[] inputVertices, VertexIndices[] outputVertices,
+    private GraphVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices, VertexIndices[] outputVertices,
                         Layer layer, InputPreProcessor layerPreProcessor, GraphNode graphNode){
+        this.graph = graph;
         this.vertexName = name;
         this.vertexIndex = vertexIndex;
         this.inputVertices = inputVertices;
@@ -177,30 +181,30 @@ public class GraphVertex {
     public Pair<Gradient,INDArray[]> doBackward(){
         if(!canDoBackward()) throw new IllegalStateException("Cannot do backward pass: all epsilons not set");
 
-        if(layer != null){
-            INDArray epsTotal = null;
-            if(epsilons != null && epsilons.length == 1 ) epsTotal = epsilons[0];
-            else if(epsilons != null && epsilons.length > 1 ){
-                //TODO: check the math on this... I think it's correct though?
-                //This is the "output connected to multiple other layers" case
-                epsTotal = epsilons[0].dup();
-                for( int i=1; i<epsilons.length; i++ ){
-                    epsTotal.addi(epsilons[i]);
-                }
+        INDArray epsTotal = null;
+        if(epsilons != null && epsilons.length == 1 ) epsTotal = epsilons[0];
+        else if(epsilons != null && epsilons.length > 1 ){
+            //TODO: check the math on this... I think it's correct though
+            //This is the "output connected to multiple other layers" case
+            epsTotal = epsilons[0].dup();
+            for( int i=1; i<epsilons.length; i++ ){
+                epsTotal.addi(epsilons[i]);
             }
+        }
+
+        if(layer != null){
 
             Pair<Gradient,INDArray> pair = layer.backpropGradient(epsTotal);    //epsTotal may be null for OutputLayers
             if(layerPreProcessor != null){
                 INDArray eps = pair.getSecond();
-                eps = layerPreProcessor.backprop(eps,-1);
+                eps = layerPreProcessor.backprop(eps,graph.batchSize());
                 pair.setSecond(eps);
-                throw new UnsupportedOperationException("Not implemented"); //How to get minibatch size?
             }
 
             //Layers always have single activations input -> always have single epsilon output during backprop
-            return new Pair<Gradient,INDArray[]>(pair.getFirst(), new INDArray[]{pair.getSecond()});
+            return new Pair<>(pair.getFirst(), new INDArray[]{pair.getSecond()});
         } else {
-            return new Pair<>(null,node.backward(epsilons));    //No gradients for GraphNodes
+            return new Pair<>(null,node.backward(epsTotal));    //No gradients for GraphNodes
         }
     }
 
