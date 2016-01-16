@@ -1,6 +1,5 @@
 package org.deeplearning4j.nn.graph;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
@@ -116,15 +115,14 @@ public class ComputationGraph implements Serializable, Model {
             layerMap.put(layerName, layer);
         }
 
-        Map<String,GraphNode> nodeMap = new HashMap<>();
+        Map<String,GraphNode> nodeMap = configuration.getGraphNodes();
 
+        //Names of all of the (data) inputs to the ComputationGraph
         List<String> networkInputNames = configuration.getNetworkInputs();
 
-        //Inputs for each layer
-        Map<String,String[]> layerInputs = configuration.getLayerInputs();
-
-        //Inputs for each GraphNode
-        Map<String,String[]> graphNodeInputs = configuration.getGraphNodeInputs();
+        //Inputs for each layer and GraphNode:
+        Map<String,List<String>> layerInputs = configuration.getLayerInputs();
+        Map<String,List<String>> graphNodeInputs = configuration.getGraphNodeInputs();
 
         int nVertices = layerMap.size() + nodeMap.size() + networkInputNames.size();
         this.vertices = new GraphVertex[nVertices];
@@ -165,14 +163,18 @@ public class ComputationGraph implements Serializable, Model {
             vertices[i++] = gv;
         }
 
+        //Create the lookup table, so we can find vertices easily by name
+        verticesMap = new HashMap<>();
+        for(GraphVertex gv : vertices){
+            verticesMap.put(gv.getVertexName(),gv);
+        }
+
         //Now: do another pass to set the input and output indices...
         //To get output indices: need to essentially build the graph in reverse...
         Map<String,List<String>> verticesOutputTo = new HashMap<>();    //Key: vertex. Values: vertices that this node is an input for
-
-
         for( GraphVertex gv : vertices ){
             String vertexName = gv.getVertexName();
-            String[] vertexInputNames;
+            List<String> vertexInputNames;
 
             if(gv.getLayer() != null){
                 //vertex with layer
@@ -188,15 +190,6 @@ public class ComputationGraph implements Serializable, Model {
 
             if(vertexInputNames == null) continue;
 
-            VertexIndices[] inputIndices = new VertexIndices[vertexInputNames.length];
-            for( int j=0; j<vertexInputNames.length; j++ ){
-                int inputVertexIndex = allNamesReverse.get(vertexInputNames[j]);
-                //Output of vertex 'inputVertexIndex' is the jth input to the current vertex
-                inputIndices[j] = new VertexIndices(inputVertexIndex,j);
-            }
-
-            gv.setInputVertices(inputIndices);
-
             //Build reverse network structure:
             for(String s : vertexInputNames){
                 List<String> list = verticesOutputTo.get(s);
@@ -206,6 +199,49 @@ public class ComputationGraph implements Serializable, Model {
                 }
                 list.add(vertexName);   //Edge: s -> vertexName
             }
+        }
+
+
+        for( GraphVertex gv : vertices ){
+            String vertexName = gv.getVertexName();
+            int vertexIndex = gv.getVertexIndex();
+            List<String> vertexInputNames;
+
+            if(gv.getLayer() != null){
+                //vertex with layer
+                vertexInputNames = layerInputs.get(vertexName);
+            } else if(gv.getGraphNode() != null){
+                //Vertex with node
+                vertexInputNames = graphNodeInputs.get(vertexName);
+
+            } else {
+                //Input vertex
+                vertexInputNames = null;
+            }
+
+            if(vertexInputNames == null) continue;
+
+            VertexIndices[] inputIndices = new VertexIndices[vertexInputNames.size()];
+            for( int j=0; j<vertexInputNames.size(); j++ ){
+                String inName = vertexInputNames.get(j);
+                int inputVertexIndex = allNamesReverse.get(inName);
+
+                //Output of vertex 'inputVertexIndex' is the jth input to the current vertex
+                //For input indices, we need to know which output connection of vertex 'inputVertexIndex' this represents
+                GraphVertex inputVertex = vertices[inputVertexIndex];
+                //First: get the outputs of the input vertex...
+                List<String> inputVertexOutputsTo = verticesOutputTo.get(inName);
+                int outputNumberOfInput = inputVertexOutputsTo.indexOf(vertexName);
+
+
+                if(outputNumberOfInput == -1) throw new IllegalStateException("Could not find vertex " + vertexIndex + " in the list of outputs "
+                    + "for vertex " + inputVertex + "; error in graph structure?");
+                //Overall here: the 'outputNumberOfInput'th output of vertex 'inputVertexIndex' is the jth input to the current vertex
+
+                inputIndices[j] = new VertexIndices(inputVertexIndex,outputNumberOfInput);
+            }
+
+            gv.setInputVertices(inputIndices);
         }
 
         //Handle the outputs for this vertex
@@ -220,8 +256,12 @@ public class ComputationGraph implements Serializable, Model {
             for( String s : thisVertexOutputsTo ){
                 //First, we have gv -> s
                 //Which input in s does gv connect to? s may in general have multiple inputs...
-                String[] nextVertexInputNames = layerInputs.get(s); //Inputs for vertex s
-                int outputVertexInputNumber = ArrayUtils.indexOf(nextVertexInputNames, vertexName);
+                GraphVertex next = verticesMap.get(s);
+                List<String> nextVertexInputNames;
+                if(next.hasLayer()) nextVertexInputNames = layerInputs.get(s); //Inputs for vertex (Layer) s
+                else nextVertexInputNames = graphNodeInputs.get(s); //TODO checks
+
+                int outputVertexInputNumber = nextVertexInputNames.indexOf(vertexName);
 
                 int outputVertexIndex = allNamesReverse.get(s);
                 outputIndices[j++] = new VertexIndices(outputVertexIndex,outputVertexInputNumber);
@@ -232,12 +272,6 @@ public class ComputationGraph implements Serializable, Model {
         //At this point: each GraphVertex has the local connection structure, both for inputs and outputs
         for(GraphVertex gv : vertices ){
             System.out.println(gv);
-        }
-
-        //Create the lookup table, so we can find vertices easily by name
-        verticesMap = new HashMap<>();
-        for(GraphVertex gv : vertices){
-            verticesMap.put(gv.getVertexName(),gv);
         }
 
         //Given the graph structure, do a topological sort to define forward pass and flattening order:
@@ -357,14 +391,12 @@ public class ComputationGraph implements Serializable, Model {
         // key represents j, set is set of i (inputs) for vertices j
         Map<Integer,Set<Integer>> inputEdges = new HashMap<>();
         for(GraphVertex gv : vertices){
-//            int[] vertexInputsFrom = gv.getInputVertexIndices();
             VertexIndices[] vertexInputsFrom = gv.getInputVertices();
             if(vertexInputsFrom == null || vertexInputsFrom.length == 0){
                 inputEdges.put(gv.getIndex(),null);
                 continue;
             }
             Set<Integer> set = new HashSet<>();
-//            for( int i : vertexInputsFrom ){
             for( VertexIndices v : vertexInputsFrom ){
                 set.add(v.getVertexIndex());
             }
@@ -373,7 +405,6 @@ public class ComputationGraph implements Serializable, Model {
 
         //Now: do topological sort
         //Set of all nodes with no incoming edges: (this would be: input vertices)
-//        LinkedList<GraphVertex> noIncomingEdges = new LinkedList<>();
         LinkedList<Integer> noIncomingEdges = new LinkedList<>();
         for( Map.Entry<Integer,Set<Integer>> entry : inputEdges.entrySet() ) {
             Set<Integer> inputsFrom = entry.getValue();
@@ -382,22 +413,13 @@ public class ComputationGraph implements Serializable, Model {
             }
         }
 
-//        for( GraphVertex v : vertices){
-//            if(v.getNumInputArrays() == 0){
-//                noIncomingEdges.add(v);
-//                processed[v.getIndex()] = true;
-//            }
-//        }
-
         while(noIncomingEdges.size() > 0) {
             int next = noIncomingEdges.removeFirst();
             out[outCounter++] = next;   //Add to sorted list
 
-//            int[] vertexOutputsTo = vertices[next].getOutputVertexIndices();  //Edges: next -> vertexOutpusTo[...]
             VertexIndices[] vertexOutputsTo = vertices[next].getOutputVertices();  //Edges: next -> vertexOutpusTo[...]
             //Remove edges next -> vertexOuputsTo[...] from graph;
             if(vertexOutputsTo != null ) {
-//                for (int i : vertexOutputsTo) {
                 for (VertexIndices v : vertexOutputsTo) {
                     Set<Integer> set = inputEdges.get(v.getVertexIndex());
                     set.remove(next);
@@ -427,8 +449,6 @@ public class ComputationGraph implements Serializable, Model {
             feedForward(true);
             backprop();
         }
-//        score = ((BaseOutputLayer<?>)getOutputLayer()).computeScore(calcL1(),calcL2(), true);
-
 
         //Score: sum of the scores for the various output layers...
         double l1 = calcL1();
@@ -524,6 +544,7 @@ public class ComputationGraph implements Serializable, Model {
             Pair<Gradient,INDArray[]> pair = current.doBackward();
             INDArray[] epsilons = pair.getSecond();
 
+            //Inputs to the current GraphVertex:
             VertexIndices[] inputVertices = current.getInputVertices();
 
             //Set epsilons for the input vertices:
@@ -531,7 +552,11 @@ public class ComputationGraph implements Serializable, Model {
                 int j=0;
                 for(VertexIndices v : inputVertices){
                     GraphVertex gv = vertices[v.getVertexIndex()];
-                    gv.setError(v.getVertexEdgeNumber(),epsilons[j++]); //TODO check this
+                    int outputNumberOfInputVertex = v.getVertexEdgeNumber();
+                    if(outputNumberOfInputVertex >= gv.getNumOutputConnections() ){
+                        System.out.println(":(");
+                    }
+                    gv.setError(outputNumberOfInputVertex,epsilons[j++]); //TODO check this
                 }
             }
 

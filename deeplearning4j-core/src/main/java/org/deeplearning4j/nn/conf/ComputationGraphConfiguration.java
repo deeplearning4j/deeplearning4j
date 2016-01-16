@@ -17,13 +17,12 @@
  */
 package org.deeplearning4j.nn.conf;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.*;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.graph.nodes.GraphNode;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 
@@ -31,7 +30,7 @@ import java.util.*;
  * It is analogous to {@link MultiLayerConfiguration}, but allows considerably greater flexibility for the network
  * architecture
  */
-@Data
+@Data @EqualsAndHashCode
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor
 public class ComputationGraphConfiguration implements Serializable, Cloneable {
@@ -44,8 +43,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     protected Map<String,NeuralNetConfiguration> layers = new HashMap<>();
     protected Map<String,GraphNode> graphNodes = new HashMap<>();
 
-    protected Map<String,String[]> layerInputs = new HashMap<>();
-    protected Map<String,String[]> graphNodeInputs = new HashMap<>();
+    protected Map<String,List<String>> layerInputs = new HashMap<>();
+    protected Map<String,List<String>> graphNodeInputs = new HashMap<>();
 
     protected List<String> networkInputs;
     protected List<String> networkOutputs;
@@ -81,7 +80,13 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
      * @return  JSON representation of computation graph configuration
      */
     public String toJson() {
-        throw new UnsupportedOperationException("Not implemented");
+        //As per MultiLayerConfiguration.toJson()
+        ObjectMapper mapper = NeuralNetConfiguration.mapper();
+        try {
+            return mapper.writeValueAsString(this);
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -89,8 +94,14 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
      * @param json the neural net configuration from json
      * @return {@link org.deeplearning4j.nn.conf.MultiLayerConfiguration}
      */
-    public static MultiLayerConfiguration fromJson(String json) {
-        throw new UnsupportedOperationException("Not implemented");
+    public static ComputationGraphConfiguration fromJson(String json) {
+        //As per MultiLayerConfiguration.fromJson()
+        ObjectMapper mapper = NeuralNetConfiguration.mapper();
+        try {
+            return mapper.readValue(json, ComputationGraphConfiguration.class);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -123,6 +134,10 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         return true;
     }
 
+    protected boolean canEqual(Object other) {
+        return other instanceof ComputationGraphConfiguration;
+    }
+
     @Data
     public static class GraphBuilder {
         /** Map between layer numbers, and layer names */
@@ -133,10 +148,10 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         protected Map<String,GraphNode> graphNodes = new HashMap<>();
 
         /** Key: layer. Values: inputs to that layer */
-        protected Map<String,String[]> layerInputs = new HashMap<>();
+        protected Map<String,List<String>> layerInputs = new HashMap<>();
 
         /** Key: graph node. Values: input to that node */
-        protected Map<String,String[]> graphNodeInputs = new HashMap<>();
+        protected Map<String,List<String>> graphNodeInputs = new HashMap<>();
 
         protected List<String> networkInputs = new ArrayList<>();
         protected List<String> networkOutputs = new ArrayList<>();
@@ -238,7 +253,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             NeuralNetConfiguration.Builder builder = globalConfiguration.clone();
             builder.layer(layer);
             layers.put(layerName,builder);
-            this.layerInputs.put(layerName,layerInputs);
+            this.layerInputs.put(layerName,Arrays.asList(layerInputs));
             return this;
         }
 
@@ -254,7 +269,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
         public GraphBuilder addNode(String nodeName, GraphNode node, String... nodeInputs ){
             graphNodes.put(nodeName,node);
-            this.graphNodeInputs.put(nodeName, nodeInputs);
+            this.graphNodeInputs.put(nodeName, Arrays.asList(nodeInputs));
             return this;
         }
 
