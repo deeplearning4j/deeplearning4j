@@ -68,3 +68,7 @@ If you have any questions, please join [us on Gitter](https://gitter.im/deeplear
 ### Contributing to Deeplearning4j
 
 Developers who would like to contribute to Deeplearning4j can get started by reading our [Developer's Guide](../devguide.html).
+
+### Research With Deeplearning4j
+
+* STanford NLP: "[Large-Scale Language Classification](http://nlp.stanford.edu/courses/cs224n/2015/reports/24.pdf)"
