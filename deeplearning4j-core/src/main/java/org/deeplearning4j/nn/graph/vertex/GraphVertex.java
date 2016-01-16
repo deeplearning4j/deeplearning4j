@@ -161,12 +161,11 @@ public class GraphVertex {
 
         if(layer != null){
             if(inputs.length > 1) throw new UnsupportedOperationException("Not implemented");   //TODO
-            INDArray input = inputs[0];
+            INDArray currInput = inputs[0];
             if(layerPreProcessor != null){
-                input = layerPreProcessor.preProcess(input,-1);
-                throw new UnsupportedOperationException("Not implemented"); //How to get minibatch size??
+                currInput = layerPreProcessor.preProcess(currInput, currInput.size(0));
             }
-            return layer.activate(inputs[0],training);
+            return layer.activate(currInput,training);
         } else {
             return node.forward(inputs);
         }
