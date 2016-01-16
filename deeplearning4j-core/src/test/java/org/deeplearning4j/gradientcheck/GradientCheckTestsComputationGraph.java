@@ -10,6 +10,7 @@ import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.graph.nodes.MergeNode;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Before;
@@ -21,6 +22,7 @@ import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class GradientCheckTestsComputationGraph {
@@ -43,7 +45,7 @@ public class GradientCheckTestsComputationGraph {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(12345)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
+                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
                 .updater(Updater.NONE).learningRate(1.0)
                 .graphBuilder()
                 .addInputs("input")
@@ -76,6 +78,53 @@ public class GradientCheckTestsComputationGraph {
                 PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{input}, new INDArray[]{labels});
 
         String msg = "testBasicIris()";
+        assertTrue(msg,gradOK);
+    }
+
+    @Test
+    public void testBasicIrisWithMerging(){
+        Nd4j.getRandom().setSeed(12345);
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                .updater(Updater.NONE).learningRate(1.0)
+                .graphBuilder()
+                .addInputs("input")
+                .addLayer("l1", new DenseLayer.Builder().nIn(4).nOut(5).activation("tanh").build(), "input")
+                .addLayer("l2", new DenseLayer.Builder().nIn(4).nOut(5).activation("relu").build(), "input")
+                .addNode("merge", new MergeNode(), "l1", "l2")
+                .addLayer("outputLayer", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
+                        .activation("softmax").nIn(5+5).nOut(3).build(), "merge")
+                .setOutputs("outputLayer")
+                .pretrain(false).backprop(true)
+                .build();
+
+        ComputationGraph graph = new ComputationGraph(conf);
+        graph.init();
+
+        int numParams = (4*5+5) + (4*5+5) + (10*3+3);
+        assertEquals(numParams,graph.numParams());
+
+        Nd4j.getRandom().setSeed(12345);
+        int nParams = graph.numParams();
+        INDArray newParams = Nd4j.rand(1,nParams);
+        graph.setParams(newParams);
+
+        DataSet ds = new IrisDataSetIterator(150,150).next();
+        ds.normalizeZeroMeanZeroUnitVariance();
+        INDArray input = ds.getFeatureMatrix();
+        INDArray labels = ds.getLabels();
+
+        if( PRINT_RESULTS ){
+            System.out.println("testBasicIrisWithMerging()" );
+            for( int j=0; j<graph.getNumLayers(); j++ ) System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+        }
+
+        boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{input}, new INDArray[]{labels});
+
+        String msg = "testBasicIrisWithMerging()";
         assertTrue(msg,gradOK);
     }
 
