@@ -107,25 +107,12 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
     public void createArgs() {
         if (op.y() != null) {
 
-            // workaround for 1D arrays
-            INDArray xTad = null;
-            if (dimension != null) {
-                // for 1D array we don't need TAD
-                if (dimension.length == 1 && dimension[0] == Integer.MAX_VALUE) {
-                    xTad = op.x();
-                    dimension = null;
-                } else {
-                    xTad = op.x().tensorAlongDimension(0, dimension);
-                    if (xTad.length() == op.x().length())
-                        dimension = null;
-                }
-            }
 
             metrics.setSharedMemoryNotOverMax(metrics.getSharedMemory() * 2);
-            xStride = BlasBufferUtil.getBlasStride(dimension == null ? op.x() : xTad);
+            xStride = BlasBufferUtil.getBlasStride(dimension == null ? op.x() : op.x().tensorAlongDimension(0, dimension));
             if (xStride < 0) {
                 op.setX(op.x().dup());
-                xStride = BlasBufferUtil.getBlasStride(dimension == null ? op.x() : xTad);
+                xStride = BlasBufferUtil.getBlasStride(dimension == null ? op.x() : op.x().tensorAlongDimension(0, dimension));
                 if (xStride < 0)
                     throw new IllegalStateException("Unable to compute element wise stride");
 
