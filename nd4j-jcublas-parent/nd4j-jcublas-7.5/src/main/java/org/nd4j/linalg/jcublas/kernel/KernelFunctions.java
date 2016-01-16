@@ -98,6 +98,7 @@ public class KernelFunctions {
         if(launcher == null)
             throw new IllegalArgumentException("Launcher for function " + functionName + " and data type " + dataType + " does not exist!");
 
+        System.out.println("Launching NOW: ["+functionName+"]");
         launcher.forFunction(functionName)
                 .setBlockSize(metrics.getBlockSize(),1,1)
                 .setGridSize(metrics.getGridSize(),1,1).setStream(cudaContext.getStream())

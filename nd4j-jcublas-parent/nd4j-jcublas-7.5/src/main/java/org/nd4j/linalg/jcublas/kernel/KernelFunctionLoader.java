@@ -312,8 +312,11 @@ public class KernelFunctionLoader {
 
         boolean usingPtx = false;
 
+
+
+
         // let's check if cubin/ptx was already extracted from jar.
-        boolean shouldExtract = !tmpDir2.exists() || tmpDir2.exists() && tmpDir2.listFiles().length <= 1 || !(kernelsCubin.exists() || kernelsPtx.exists());
+        boolean shouldExtract = !(kernelsPtx.exists());
         if (shouldExtract) {
             // if not extracted - we'll do that now
             log.info("Unpacking kernels...");

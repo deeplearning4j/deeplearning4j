@@ -106,11 +106,26 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
     @Override
     public void createArgs() {
         if (op.y() != null) {
+
+            // workaround for 1D arrays
+            INDArray xTad = null;
+            if (dimension != null) {
+                // for 1D array we don't need TAD
+                if (dimension.length == 1 && dimension[0] == Integer.MAX_VALUE) {
+                    xTad = op.x();
+                    dimension = null;
+                } else {
+                    xTad = op.x().tensorAlongDimension(0, dimension);
+                    if (xTad.length() == op.x().length())
+                        dimension = null;
+                }
+            }
+
             metrics.setSharedMemoryNotOverMax(metrics.getSharedMemory() * 2);
-            xStride = BlasBufferUtil.getBlasStride(dimension == null ? op.x() : op.x().tensorAlongDimension(0, dimension));
+            xStride = BlasBufferUtil.getBlasStride(dimension == null ? op.x() : xTad);
             if (xStride < 0) {
                 op.setX(op.x().dup());
-                xStride = BlasBufferUtil.getBlasStride(dimension == null ? op.x() : op.x().tensorAlongDimension(0, dimension));
+                xStride = BlasBufferUtil.getBlasStride(dimension == null ? op.x() : xTad);
                 if (xStride < 0)
                     throw new IllegalStateException("Unable to compute element wise stride");
 
@@ -152,8 +167,9 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
             //handle case where the tad is actually the whole array
             if (!scalarResult) {
                 firstTad = op.x().tensorAlongDimension(0, dimension);
-                if (firstTad.length() == op.x().length())
+                if (firstTad.length() == op.x().length()) {
                     dimension = null;
+                }
             }
 
             xStride = BlasBufferUtil.getBlasStride(scalarResult ? op.x() : firstTad);
@@ -176,6 +192,7 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
                 length = op.n();
             resultIndex = 4;
             resultShapeInfoIndex = resultIndex + 1;
+
             //result index for the pointer to use when invoking the post process method
             args = new Object[] {
                     CudaArgs.getOpCode(op),
@@ -265,6 +282,7 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
 
             //invoke the collapse tad
             if(collapseTad) {
+                System.out.println("cTAD");
                 TadCollapseAccumulation collapseAccumulation = new TadCollapseAccumulation(this.op,multiDimension,this.dimension,false);
                 GpuKernelCall collapseKernelCall = new CollapseAccumuationKernelCall(
                         getPointers(),collapseAccumulation,metrics,cudaContext);

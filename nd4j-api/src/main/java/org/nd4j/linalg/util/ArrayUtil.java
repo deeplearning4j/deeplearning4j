@@ -601,11 +601,20 @@ public class ArrayUtil {
      * item
      */
     public static int[] removeIndex(int[] data, int...index) {
-        int[] ret = new int[data.length - index.length];
+        /*
+            workaround for non-existant indexes (such as Integer.MAX_VALUE)
+        */
+        int offset = 0;
+        for (int i = 0; i < index.length; i ++) {
+            if (index[i] >= data.length || index[i] < 0) offset++;
+        }
+
+        int[] ret = new int[data.length - index.length + offset];
         int count = 0;
         for(int i = 0; i < data.length; i++)
-            if(!Ints.contains(index,i))
+            if(!Ints.contains(index,i)) {
                 ret[count++] = data[i];
+            }
 
         return ret;
     }

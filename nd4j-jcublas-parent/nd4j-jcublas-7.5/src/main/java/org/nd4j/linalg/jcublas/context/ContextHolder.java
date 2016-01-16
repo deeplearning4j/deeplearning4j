@@ -273,6 +273,11 @@ public class ContextHolder {
             return;
         }
 
+        // we need PROPER stack initialization, like taking in account REAL number of SMs, not MPs * 48
+        long stackSize = Math.min(512*1024, deviceProperties.totalGlobalMem / (deviceProperties.multiProcessorCount * 48)/ 64 );
+        JCuda.cudaDeviceSetLimit(0,stackSize);
+
+
         //force certain ops to have a certain number of threads
         Properties threadProps = new Properties();
         try {

@@ -82,6 +82,7 @@ public class IndexAccumulationKernelCall extends BaseGpuKernelCall {
     @Override
     public void createArgs() {
         if (op.y() != null) {
+            System.out.println("ZOMG");
             metrics.setSharedMemoryNotOverMax(metrics.getSharedMemory() * 2);
             xStride = BlasBufferUtil.getBlasStride(dimension == null ? op.x() : op.x().tensorAlongDimension(0, dimension));
             if (xStride < 0) {
@@ -126,12 +127,21 @@ public class IndexAccumulationKernelCall extends BaseGpuKernelCall {
         } else {
             INDArray firstTad = null;
             //handle case where the tad is actually the whole array
+
+
             if (dimension != null) {
-                firstTad = op.x().tensorAlongDimension(0, dimension);
-                if (firstTad.length() == op.x().length())
+                // for 1D array we don't need TAD
+                if (dimension.length == 1 && dimension[0] == Integer.MAX_VALUE) {
+                    firstTad = op.x();
                     dimension = null;
+                } else {
+                    firstTad = op.x().tensorAlongDimension(0, dimension);
+                    if (firstTad.length() == op.x().length())
+                        dimension = null;
+                }
             }
 
+            System.out.println("LOL1");
             xStride = BlasBufferUtil.getBlasStride(dimension == null ? op.x() : firstTad);
             if (xStride < 0) {
                 op.setX(op.x().dup());
@@ -160,6 +170,8 @@ public class IndexAccumulationKernelCall extends BaseGpuKernelCall {
             int length = op.x().data().length();
             if (dimension == null && xStride == 1 && op.x().offset() == 0)
                 length = op.n();
+
+            System.out.println("PEW-PEW");
 
             args = new Object[]{
                     CudaArgs.getOpCode(op),
