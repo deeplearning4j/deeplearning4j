@@ -622,12 +622,16 @@ public class ComputationGraph implements Serializable, Model {
 
     @Override
     public int numParams() {
-        throw new UnsupportedOperationException("Not implemnted");
+        return numParams(false);
     }
 
     @Override
     public int numParams(boolean backwards) {
-        throw new UnsupportedOperationException("Not implemnted");
+        int nParams = 0;
+        for( int i=0; i<layers.length; i++ ){
+            nParams += layers[i].numParams(backwards);
+        }
+        return nParams;
     }
 
     @Override
