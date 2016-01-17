@@ -58,6 +58,18 @@ template<typename T>
 class NDArrays {
 public:
 	/**
+	 * Creates an ndarray
+	 * from the given rank,shape,stride,
+	 * offset and fills the array
+	 * with the given default value
+	 */
+
+#ifdef __CUDACC__
+	__host__
+#endif
+
+	static NDArray<T> * createFrom(T *data,int rank, int *shape, int *stride,	int offset);
+	/**
 	 * Returns the length of this ndarray
 	 */
 	static
@@ -227,6 +239,37 @@ size_t NDArrays<T>::lengthInBytes(NDArray<T> *arr) {
 	return size;
 }
 
+
+
+/**
+ * Creates an ndarray
+ * from the given rank,shape,stride,
+ * offset and fills the array
+ * with the given default value
+ */
+template<typename T>
+
+#ifdef __CUDACC__
+__host__
+#endif
+
+NDArray<T> * NDArrays<T>::createFrom(
+		T *data,
+		int rank,
+		int *shape,
+		int *stride,int offset) {
+	NDArray<T> *ret = (NDArray<T> *) malloc(sizeof(NDArray<T>));
+	ret->rank = rank;
+
+	ret->shape = nd4j::buffer::createBuffer(shape,rank);
+	ret->stride = nd4j::buffer::createBuffer(stride,rank);
+	ret->offset = offset;
+	size_t size = lengthInBytes(ret);
+	int length = size / sizeof(T);
+	ret->data = nd4j::buffer::createBuffer<T>(data, length);
+	return ret;
+}
+
 /**
  * Creates an ndarray
  * from the given rank,shape,stride,
@@ -241,12 +284,6 @@ __host__
 
 NDArray<T> * NDArrays<T>::createFrom(int rank, int *shape, int *stride,
 		int offset, T defaultValue) {
-	if(!shape) {
-		printf("Shape not found\n");
-	}
-	if(!stride) {
-		printf("stride not found\n");
-	}
 	NDArray<T> *ret = (NDArray<T> *) malloc(sizeof(NDArray<T>));
 	ret->rank = rank;
 

@@ -121,24 +121,7 @@ public:
 		return ret2;
 	}
 
-	void run () {
-		this->initializeData();
-		execCpuKernel();
-		CHECK(arrsEquals(this->rank, this->assertion, this->data->data->data));
 
-
-#ifdef __CUDACC__
-		this->initializeData();
-		nd4j::array::NDArrays<T>::allocateNDArrayOnGpu(&this->data);
-		this->executeCudaKernel();
-		checkCudaErrors(cudaDeviceSynchronize());
-		nd4j::buffer::copyDataFromGpu(&this->data->data);
-		CHECK(arrsEquals(this->rank, this->assertion, this->data->data->data));
-
-#endif
-
-
-	}
 
 
 
@@ -158,31 +141,40 @@ protected:
 	int length;
 	int opNum;
 	int extraParamsLength;
-	virtual void executeCudaKernel(){}
-	virtual void execCpuKernel() {}
-	virtual void freeOpAndOpFactory() {};
-	virtual void createOperationAndOpFactory() {}
-
+	virtual void executeCudaKernel() = 0;
+	virtual void execCpuKernel() = 0;
+	virtual void freeOpAndOpFactory() = 0;
+	virtual void createOperationAndOpFactory() = 0;
+	virtual void run() = 0;
 
 	virtual void init() {
-		printf("Parent init\n");
 		shape = this->baseData->xShape;
 		rank = this->baseData->rank;
 		stride = shape::calcStrides(shape, rank);
-		printf("About to alloc data\n");
 		data = nd4j::array::NDArrays<T>::createFrom(rank, shape, stride, 0,
 				0.0);
-		initializeData();
 		length = nd4j::array::NDArrays<T>::length(data);
+
 		extraParams = this->baseData->extraParams;
+
 		extraParamsBuff = nd4j::buffer::createBuffer(extraParams,extraParamsLength);
-		printf("Created extra params buff\n");
 		assertion = this->baseData->assertion;
+		int *resultStride = shape::calcStrides(this->baseData->resultShape,this->baseData->resultRank);
+		result = nd4j::array::NDArrays<T>::createFrom(
+				this->baseData->resultRank
+				, this->baseData->resultShape,
+				resultStride, 0,
+				0.0);
+		int resultLength = shape::prod(this->result->shape->data,this->result->rank);
+		for(int i = 0; i < resultLength; i++) {
+			result->data->data[i] = baseData->result[i];
+		}
+
+
 
 	}
 
 	virtual void freeAssertion() {
-		//printf("About to free assertion\n");
 		if(assertion != NULL)
 			free(assertion);
 		if(extraParamsBuff != NULL)
@@ -202,7 +194,6 @@ protected:
 	int yRank;
 	int *yShape;
 	int *yStride;
-	typedef BaseTest<T> super;
 	nd4j::array::NDArray<T> *yData;
 
 public:
@@ -215,13 +206,10 @@ public:
 	}
 	virtual ~PairWiseTest() {}
 	virtual void init() override {
-		printf("Child init\n");
 		yRank = this->baseData->yRank;
 		yShape = this->baseData->yShape;
 		yStride = shape::calcStrides(yShape,yRank);
-		yData = nd4j::array::NDArrays<T>::createFrom(yRank, yShape, yStride, 0,
-				0.0);
-		printf("Created y array\n");
+		yData = nd4j::array::NDArrays<T>::createFrom(this->baseData->y,yRank, yShape, yStride, 0);
 	}
 
 

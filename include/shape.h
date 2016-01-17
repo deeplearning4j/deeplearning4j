@@ -1026,7 +1026,6 @@ int computeElementWiseStride(int rank, int *shape, int *stride, int isFOrder) {
 	}
 	//returns the last element of the new stride array
 	int ret = last_stride;
-	printf("Returning %d\n",ret);
 	free(newStrides);
 	free(newShape);
 	free(oldstrides);

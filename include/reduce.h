@@ -572,18 +572,22 @@ public:
 
 	void exec(T *x, int *xShapeInfo, T *extraParams, T *result,
 			int *resultShapeInfo) {
+	    printf("Before starting value\n");
 		T startingVal = extraParams[0];
+		printf("Found starting value\n");
 		int length = shape::length(xShapeInfo);
 		int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 		int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
 		if (xElementWiseStride == 1 && resultElementWiseStride == 1) {
+			printf("About to simd\n");
 #pragma omp simd
 			for (int i = 0; i < length; i++) {
 				T curr = op(x[i], extraParams);
 				startingVal = update(startingVal, curr, extraParams);
 			}
-
-			result[0] = postProcess(startingVal, length,extraParams);
+			printf("About to assign final value\n");
+			T finalVal = postProcess(startingVal, length,extraParams);
+			result[0] = finalVal;
 		} else {
 #pragma omp simd
 			for (int i = 0; i < length; i++) {

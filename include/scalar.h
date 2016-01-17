@@ -47,10 +47,17 @@ public:
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = threadIdx.x;
 		int i = blockIdx.x * blockDim.x + tid;
-
-		for (; i < n; i += totalThreads) {
-			result[idx + i * incy] = op(dx, dy[idx + i * incy], params);
+		if(incy == 1) {
+			for (; i < n; i += totalThreads) {
+				result[i] = op(dy[i],dx, params);
+			}
 		}
+		else {
+			for (; i < n; i += totalThreads) {
+				result[i * incy] = op(dy[i * incy],dx, params);
+			}
+		}
+
 
 	}
 #endif
@@ -59,7 +66,6 @@ public:
 			T scalar, T *extraParams, int n) {
 		if (xStride == 1 && resultStride == 1) {
 #pragma omp simd
-
 			for (int i = 0; i < n; i++) {
 				result[i] = op(x[i], scalar, extraParams);
 			}
@@ -857,9 +863,9 @@ public:
 		else if (op == 13)
 			return new functions::scalar::ops::Set<T>();
 		else if (op == 14)
-					return new functions::scalar::ops::Mod<T>();
+			return new functions::scalar::ops::Mod<T>();
 		else if (op == 15)
-					return new functions::scalar::ops::RMod<T>();
+			return new functions::scalar::ops::RMod<T>();
 		return NULL;
 	}
 };
@@ -873,7 +879,7 @@ __constant__ functions::scalar::ScalarOpFactory<float> *scalarFloatOpFactory;
 
 extern "C"
 __host__ void setupScalarTransformFactories() {
-/*	printf("Setting up transform factories\n");
+	/*	printf("Setting up transform factories\n");
 	functions::scalar::ScalarOpFactory<double> *newOpFactory =  new functions::scalar::ScalarOpFactory<double>();
 	functions::scalar::ScalarOpFactory<float> *newOpFactoryFloat =  new functions::scalar::ScalarOpFactory<float>();
 	checkCudaErrors(cudaMemcpyToSymbol(scalarDoubleOpFactory, newOpFactory, sizeof( functions::scalar::ScalarOpFactory<double> )));

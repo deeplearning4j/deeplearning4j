@@ -62,6 +62,25 @@ public:
 	}
 
 
+	virtual void run () override {
+		this->initializeData();
+		this->execCpuKernel();
+		CHECK(arrsEquals(this->rank, this->assertion, this->data->data->data));
+
+
+#ifdef __CUDACC__
+		this->initializeData();
+		nd4j::array::NDArrays<T>::allocateNDArrayOnGpu(&this->data);
+		this->executeCudaKernel();
+		checkCudaErrors(cudaDeviceSynchronize());
+		nd4j::buffer::copyDataFromGpu(&this->data->data);
+		CHECK(arrsEquals(this->rank, this->assertion, this->data->data->data));
+
+#endif
+
+
+	}
+
 	virtual void execCpuKernel() override {
 		op->exec(this->data->data->data, 1, this->data->data->data, 1, this->extraParams, this->length);
 	}
@@ -76,6 +95,7 @@ public:
 	:  TransformTest<double>(rank,opNum,data,extraParamsLength){
 	}
 	virtual void executeCudaKernel() override {
+#ifdef __CUDACC__
 		transformDouble<<<this->blockSize,this->gridSize,this->sMemSize>>>(
 				this->opNum
 				,this->length,
@@ -85,6 +105,7 @@ public:
 				,1);
 
 	}
+#endif
 };
 
 
@@ -95,6 +116,7 @@ public:
 	:  TransformTest<float>(rank,opNum,data,extraParamsLength){
 	}
 	virtual void executeCudaKernel() override {
+#ifdef __CUDACC__
 		transformFloat<<<this->blockSize,this->gridSize,this->sMemSize>>>(
 				this->opNum
 				,this->length,
@@ -102,6 +124,7 @@ public:
 				1,this->extraParamsBuff->gData,
 				this->data->data->gData
 				,1);
+#endif
 	}
 };
 
@@ -115,21 +138,37 @@ public:
 
 };
 
+
+
+Data<double> * getData(double *assertion,int rank) {
+	Data<double> *data = new Data<double>();
+	data->xShape = (int *) malloc(sizeof(int) * 2);
+	data->resultShape = (int *) malloc(sizeof(int) * 2);
+
+	for(int i = 0; i < 2; i++) {
+		data->xShape[i] = 2;
+		data->resultShape[i] = 2;
+	}
+	data->assertion = (double *) malloc(sizeof(double) * 4);
+	for(int i = 0; i < 4; i++) {
+		data->assertion[i] = assertion[i];
+	}
+
+	data->rank = rank;
+	data->extraParams = (double *) malloc(sizeof(double) * 2);
+    data->result = (double *) malloc(sizeof(double) * 4);
+	return data;
+
+}
+
+
 TEST(Transform,ObjectOrientedSigmoid) {
 	int opNum = 10;
 	int rank = 2;
-	Data<double> *data = new Data<double>();
-	data->xShape = (int *) malloc(sizeof(int) * 2);
-	for(int i = 0; i < 2; i++) {
-		data->xShape[i] = 2;
-	}
-	data->assertion = (double *) malloc(sizeof(double) * 4);
-	data->assertion [0] = 0.7310585786300049;
-	data->assertion [1] = 0.8807970779778823;
-	data->assertion [2] = 0.9525741268224334;
-	data->assertion [3] = 0.9820137900379085;
-	data->rank = rank;
-	data->extraParams = (double *) malloc(sizeof(double) * 2);
+	double comparision[4] = {0.7310585786300049,0.8807970779778823
+			,0.9525741268224334,0.9820137900379085};
+	Data<double> *data = getData(comparision,rank);
+
 	DoubleTwoByTwoTransformTest *sigmoidTest = new DoubleTwoByTwoTransformTest(opNum,data,rank);
 	sigmoidTest->run();
 	delete sigmoidTest;
@@ -140,18 +179,9 @@ TEST(Transform,ObjectOrientedSigmoid) {
 TEST(Transform,ObjectOrientedLog) {
 	int opNum = 5;
 	int rank = 2;
-	Data<double> *data = new Data<double>();
-	data->xShape = (int *) malloc(sizeof(int) * 2);
-	for(int i = 0; i < 2; i++) {
-		data->xShape[i] = 2;
-	}
-
 	double comparison[4] = { 0., 0.69314718, 1.09861229, 1.38629436 };
-	data->assertion = (double *) malloc(sizeof(double) * 4);
-	for(int i = 0; i < 4; i++)
-		data->assertion[i] = comparison[i];
-	data->rank = rank;
-	data->extraParams = (double *) malloc(sizeof(double) * 2);
+
+	Data<double> *data = getData(comparison,rank);
 	DoubleTwoByTwoTransformTest *sigmoidTest = new DoubleTwoByTwoTransformTest(opNum,data,rank);
 	sigmoidTest->run();
 	delete sigmoidTest;
@@ -161,18 +191,9 @@ TEST(Transform,ObjectOrientedLog) {
 TEST(Transform,ObjectOrientedTanh) {
 	int opNum = 15;
 	int rank = 2;
-	Data<double> *data = new Data<double>();
-	data->xShape = (int *) malloc(sizeof(int) * 2);
-	for(int i = 0; i < 2; i++) {
-		data->xShape[i] = 2;
-	}
-
 	double comparison[4] = {  0.76159416,  0.96402758,  0.99505475,  0.9993293 };
-	data->assertion = (double *) malloc(sizeof(double) * 4);
-	for(int i = 0; i < 4; i++)
-		data->assertion[i] = comparison[i];
-	data->rank = rank;
-	data->extraParams = (double *) malloc(sizeof(double) * 2);
+
+	Data<double> *data = getData(comparison,rank);
 	DoubleTwoByTwoTransformTest *sigmoidTest = new DoubleTwoByTwoTransformTest(opNum,data,rank);
 	sigmoidTest->run();
 	delete sigmoidTest;
@@ -183,18 +204,9 @@ TEST(Transform,ObjectOrientedTanh) {
 TEST(Transform,ObjectOrientedSin) {
 	int opNum = 12;
 	int rank = 2;
-	Data<double> *data = new Data<double>();
-	data->xShape = (int *) malloc(sizeof(int) * 2);
-	for(int i = 0; i < 2; i++) {
-		data->xShape[i] = 2;
-	}
-
 	double comparison[4] = {  0.84147098,  0.90929743,  0.14112001, -0.7568025 };
-	data->assertion = (double *) malloc(sizeof(double) * 4);
-	for(int i = 0; i < 4; i++)
-		data->assertion[i] = comparison[i];
-	data->rank = rank;
-	data->extraParams = (double *) malloc(sizeof(double) * 2);
+
+	Data<double> *data = getData(comparison,rank);
 	DoubleTwoByTwoTransformTest *sigmoidTest = new DoubleTwoByTwoTransformTest(opNum,data,rank);
 	sigmoidTest->run();
 	delete sigmoidTest;
@@ -204,18 +216,8 @@ TEST(Transform,ObjectOrientedSin) {
 TEST(Transform,ObjectOrientedCoSine) {
 	int opNum = 2;
 	int rank = 2;
-	Data<double> *data = new Data<double>();
-	data->xShape = (int *) malloc(sizeof(int) * 2);
-	for(int i = 0; i < 2; i++) {
-		data->xShape[i] = 2;
-	}
-
 	double comparison[4] = { 0.54030231, -0.41614684, -0.9899925 , -0.65364362 };
-	data->assertion = (double *) malloc(sizeof(double) * 4);
-	for(int i = 0; i < 4; i++)
-		data->assertion[i] = comparison[i];
-	data->rank = rank;
-	data->extraParams = (double *) malloc(sizeof(double) * 2);
+	Data<double> *data = getData(comparison,rank);
 	DoubleTwoByTwoTransformTest *sigmoidTest = new DoubleTwoByTwoTransformTest(opNum,data,rank);
 	sigmoidTest->run();
 	delete sigmoidTest;
@@ -226,18 +228,9 @@ TEST(Transform,ObjectOrientedCoSine) {
 TEST(Transform,ObjectOrientedNeg) {
 	int opNum = 6;
 	int rank = 2;
-	Data<double> *data = new Data<double>();
-	data->xShape = (int *) malloc(sizeof(int) * 2);
-	for(int i = 0; i < 2; i++) {
-		data->xShape[i] = 2;
-	}
-
 	double comparison[4] = { -1,-2,-3,-4 };
-	data->assertion = (double *) malloc(sizeof(double) * 4);
-	for(int i = 0; i < 4; i++)
-		data->assertion[i] = comparison[i];
-	data->rank = rank;
-	data->extraParams = (double *) malloc(sizeof(double) * 2);
+
+	Data<double> *data = getData(comparison,rank);
 	DoubleTwoByTwoTransformTest *sigmoidTest = new DoubleTwoByTwoTransformTest(opNum,data,rank);
 	sigmoidTest->run();
 	delete sigmoidTest;
@@ -247,19 +240,8 @@ TEST(Transform,ObjectOrientedNeg) {
 TEST(Transform,ObjectOrientedExp) {
 	int opNum = 3;
 	int rank = 2;
-	Data<double> *data = new Data<double>();
-	data->xShape = (int *) malloc(sizeof(int) * 2);
-	for(int i = 0; i < 2; i++) {
-		data->xShape[i] = 2;
-	}
-
 	double comparison[4] = {  2.71828183,   7.3890561 ,  20.08553692,  54.59815003 };
-	data->assertion = (double *) malloc(sizeof(double) * 4);
-	data->assertion[0] = 2;
-	for(int i = 0; i < 4; i++)
-		data->assertion[i] = comparison[i];
-	data->rank = rank;
-	data->extraParams = (double *) malloc(sizeof(double) * 2);
+	Data<double> *data = getData(comparison,rank);
 	DoubleTwoByTwoTransformTest *sigmoidTest = new DoubleTwoByTwoTransformTest(opNum,data,rank);
 	sigmoidTest->run();
 	delete sigmoidTest;
@@ -269,18 +251,8 @@ TEST(Transform,ObjectOrientedExp) {
 TEST(Transform,ObjectOrientedAbs) {
 	int opNum = 0;
 	int rank = 2;
-	Data<double> *data = new Data<double>();
-	data->xShape = (int *) malloc(sizeof(int) * 2);
-	for(int i = 0; i < 2; i++) {
-		data->xShape[i] = 2;
-	}
-
 	double comparison[4] = {  1,2,3,4};
-	data->assertion = (double *) malloc(sizeof(double) * 4);
-	for(int i = 0; i < 4; i++)
-		data->assertion[i] = comparison[i];
-	data->rank = rank;
-	data->extraParams = (double *) malloc(sizeof(double) * 2);
+	Data<double> *data = getData(comparison,rank);
 	DoubleTwoByTwoTransformTest *sigmoidTest = new DoubleTwoByTwoTransformTest(opNum,data,rank);
 	sigmoidTest->run();
 	delete sigmoidTest;
@@ -295,18 +267,8 @@ TEST(Transform,ObjectOrientedAbs) {
 TEST(Transform,ObjectOrientedSqrt) {
 	int opNum = 14;
 	int rank = 2;
-	Data<double> *data = new Data<double>();
-	data->xShape = (int *) malloc(sizeof(int) * 2);
-	for(int i = 0; i < 2; i++) {
-		data->xShape[i] = 2;
-	}
-
 	double comparison[4] = {  1.        ,  1.41421356,  1.73205081,  2.};
-	data->assertion = (double *) malloc(sizeof(double) * 4);
-	for(int i = 0; i < 4; i++)
-		data->assertion[i] = comparison[i];
-	data->rank = rank;
-	data->extraParams = (double *) malloc(sizeof(double) * 2);
+	Data<double> *data = getData(comparison,rank);
 	DoubleTwoByTwoTransformTest *sigmoidTest = new DoubleTwoByTwoTransformTest(opNum,data,rank);
 	sigmoidTest->run();
 	delete sigmoidTest;
@@ -317,18 +279,8 @@ TEST(Transform,ObjectOrientedSqrt) {
 TEST(Transform,ObjectOrientedATan) {
 	int opNum = 18;
 	int rank = 2;
-	Data<double> *data = new Data<double>();
-	data->xShape = (int *) malloc(sizeof(int) * 2);
-	for(int i = 0; i < 2; i++) {
-		data->xShape[i] = 2;
-	}
-
 	double comparison[4] = {  0.78539816,  1.10714872,  1.24904577,  1.32581766};
-	data->assertion = (double *) malloc(sizeof(double) * 4);
-	for(int i = 0; i < 4; i++)
-		data->assertion[i] = comparison[i];
-	data->rank = rank;
-	data->extraParams = (double *) malloc(sizeof(double) * 2);
+	Data<double> *data = getData(comparison,rank);
 	DoubleTwoByTwoTransformTest *sigmoidTest = new DoubleTwoByTwoTransformTest(opNum,data,rank);
 	sigmoidTest->run();
 	delete sigmoidTest;
@@ -339,19 +291,9 @@ TEST(Transform,ObjectOrientedATan) {
 TEST(Transform,ObjectOrientedPow) {
 	int opNum = 7;
 	int rank = 2;
-	Data<double> *data = new Data<double>();
-	data->xShape = (int *) malloc(sizeof(int) * 2);
-	for(int i = 0; i < 2; i++) {
-		data->xShape[i] = 2;
-	}
-
 	double comparison[4] = {  1,4,9,16};
-	data->assertion = (double *) malloc(sizeof(double) * 4);
-	for(int i = 0; i < 4; i++)
-		data->assertion[i] = comparison[i];
-	data->rank = rank;
-	data->extraParams = (double *) malloc(sizeof(double) * 2);
-	data->extraParams[0] = 2;
+	Data<double> *data = getData(comparison,rank);
+	data->extraParams[0] = 2.0;
 	DoubleTwoByTwoTransformTest *sigmoidTest = new DoubleTwoByTwoTransformTest(opNum,data,rank);
 	sigmoidTest->run();
 	delete sigmoidTest;

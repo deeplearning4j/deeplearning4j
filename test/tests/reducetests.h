@@ -10,7 +10,7 @@
 #include <array.h>
 #include "testhelpers.h"
 #include <reduce.h>
-
+#include <helper_cuda.h>
 TEST_GROUP(Reduce) {
 
 	static int output_method(const char* output, ...) {
@@ -49,15 +49,41 @@ public:
 	}
 
 	virtual void execCpuKernel() override {
-		int *xShapeBuff = shapeBuffer(this->baseData->xShape,this->baseData->rank);
-		int *resultShapeBuff = shapeBuffer(this->baseData->resultShape,this->baseData->resultRank);
-		reduce->exec(this->data->data,xShapeBuff,
-				this->baseData->extraParams,this->result->data,
-				resultShapeInfo,this->baseData->dimension,this->baseData->dimensionLength);
+		int *xShapeBuff = shapeBuffer(this->baseData->rank,this->baseData->xShape);
+		int *resultShapeBuff = shapeBuffer(this->baseData->resultRank,this->baseData->resultShape);
+		printf("About to exec cpu\n");
+		reduce->exec(
+				this->data->data->data,
+				xShapeBuff,
+				this->baseData->extraParams,
+				this->result->data->data,
+				resultShapeBuff,
+				this->baseData->dimension,
+				this->baseData->dimensionLength);
+		printf("Executed cpu\n");
 		free(xShapeBuff);
 		free(resultShapeBuff);
+	}
+
+	virtual void run () override {
+		this->initializeData();
+		this->execCpuKernel();
+		CHECK(arrsEquals(this->rank, this->assertion, this->result->data->data));
+
+
+#ifdef __CUDACC__
+		this->initializeData();
+		nd4j::array::NDArrays<T>::allocateNDArrayOnGpu(&this->data);
+		this->executeCudaKernel();
+		checkCudaErrors(cudaDeviceSynchronize());
+		nd4j::buffer::copyDataFromGpu(&this->result->data);
+		CHECK(arrsEquals(this->rank, this->assertion, this->result->data->data));
+
+#endif
+
 
 	}
+
 
 protected:
 	functions::reduce::ReduceOpFactory<T> *opFactory;
@@ -72,6 +98,7 @@ public:
 	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
 	}
 	virtual void executeCudaKernel() override {
+#ifdef __CUDACC__
 		nd4j::buffer::Buffer<int> *gpuInfo = this->gpuInformationBuffer();
 		nd4j::buffer::Buffer<int> *dimensionBuffer = nd4j::buffer::createBuffer(this->baseData->dimension,this->baseData->dimensionLength);
 		nd4j::buffer::Buffer<int> *xShapeBuff = shapeIntBuffer(this->rank,this->shape);
@@ -95,6 +122,7 @@ public:
 		nd4j::buffer::freeBuffer(&dimensionBuffer);
 		nd4j::buffer::freeBuffer(&xShapeBuff);
 		nd4j::buffer::freeBuffer(&resultShapeBuff);
+#endif
 
 
 	}
@@ -108,6 +136,7 @@ public:
 	:  ReduceTest<float>(rank,opNum,data,extraParamsLength){
 	}
 	virtual void executeCudaKernel() override {
+#ifdef __CUDACC__
 		nd4j::buffer::Buffer<int> *gpuInfo = this->gpuInformationBuffer();
 		nd4j::buffer::Buffer<int> *dimensionBuffer = nd4j::buffer::createBuffer(this->baseData->dimension,this->baseData->dimensionLength);
 		nd4j::buffer::Buffer<int> *xShapeBuff = shapeIntBuffer(this->rank,this->shape);
@@ -131,11 +160,58 @@ public:
 		nd4j::buffer::freeBuffer(&dimensionBuffer);
 		nd4j::buffer::freeBuffer(&xShapeBuff);
 		nd4j::buffer::freeBuffer(&resultShapeBuff);
+#endif
 	}
 };
 
+Data<double> * getData(double *assertion,double startingVal) {
+	Data<double> *ret = new Data<double>();
 
+	int rank = 2;
+	int length = 4;
+	int *shape = (int *) malloc(sizeof(int) * rank);
+	shape[0] = 1;
+	shape[1] = length;
+	ret->xShape = shape;
+    ret->data = (double *) malloc(sizeof(double) * 4);
+	double *extraParams = (double *) malloc(sizeof(double));
+	extraParams[0] = startingVal;
+	ret->extraParams = extraParams;
 
+	ret->assertion = (double *) malloc(sizeof(double) * 4);
+	for(int i = 0; i < 4; i++) {
+		ret->assertion[i] = assertion[i];
+	}
+
+	ret->dimension = (int *) malloc(sizeof(int) * 2);
+	ret->dimension[0] = shape::MAX_DIMENSION;
+
+	ret->result = (double *) malloc(sizeof(double));
+	ret->resultRank = 2;
+	ret->resultShape = (int *) malloc(sizeof(int) * 2);
+	for(int i = 0; i < 2; i++)
+		ret->resultShape[i] = 1;
+
+	return ret;
+}
+
+Data<double> * getDataDimension() {
+	Data<double> *ret = new Data<double>();
+	return ret;
+}
+
+TEST(Reduce,ObjectOrientedSum) {
+	int opNum = 0;
+	double comparison[1] = {10};
+	Data<double> *data = getData(comparison,0);
+	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
+	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
+	test->run();
+	delete test;
+	delete data;
+}
+
+/*
 TEST(Reduce, Sum) {
 	functions::reduce::ReduceOpFactory<double> *opFactory5 =
 			new functions::reduce::ReduceOpFactory<double>();
@@ -187,7 +263,7 @@ TEST(Reduce, Sum) {
 
 
 #ifdef __CUDACC__
-	/*
+
 	 * reduceDouble(
 		int op,
 		int n,
@@ -200,7 +276,7 @@ TEST(Reduce, Sum) {
 		int *dimension,
 		int dimensionLength,
 		int postProcessOrNot)
-	 */
+
 	int blockSize = 500;
 	int gridSize = 256;
 	int sMemSize = 20000;
@@ -296,6 +372,6 @@ TEST(Reduce,DimensionSum) {
 	delete sum;
 	free(data);
 	delete opFactory5;
-}
+}*/
 
 #endif /* REDUCETESTS_H_ */

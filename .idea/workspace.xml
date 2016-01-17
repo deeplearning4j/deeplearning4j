@@ -6,17 +6,27 @@
       <config projectName="nativeoperations" targetName="test_lib" />
       <config projectName="nativeoperations" targetName="nativeoperations" />
       <config projectName="nativeoperations" targetName="driver" />
+      <config projectName="nativeoperations" targetName="libnd4jtests" />
     </generated>
   </component>
-  <component name="CMakeSettings" AUTO_RELOAD="true" GENERATION_PASS_SYSTEM_ENVIRONMENT="true">
+  <component name="CMakeSettings" AUTO_RELOAD="true" GENERATION_OPTIONS="-DRUN_TEST=ON" GENERATION_PASS_SYSTEM_ENVIRONMENT="true">
     <ADDITIONAL_GENERATION_ENVIRONMENT>
       <envs />
     </ADDITIONAL_GENERATION_ENVIRONMENT>
   </component>
   <component name="ChangeListManager">
     <list default="true" id="21dee1f8-48c6-491e-9f40-7488b577e28b" name="Default" comment="">
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/nativeoperations.iml" afterPath="$PROJECT_DIR$/.idea/nativeoperations.iml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/include/array.h" afterPath="$PROJECT_DIR$/include/array.h" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/include/pairwise_transform.h" afterPath="$PROJECT_DIR$/include/pairwise_transform.h" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/include/reduce.h" afterPath="$PROJECT_DIR$/include/reduce.h" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/include/transform.h" afterPath="$PROJECT_DIR$/include/transform.h" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/include/scalar.h" afterPath="$PROJECT_DIR$/include/scalar.h" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/include/shape.h" afterPath="$PROJECT_DIR$/include/shape.h" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/test/tests/broadcasttests.h" afterPath="$PROJECT_DIR$/test/tests/broadcasttests.h" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/test/tests/indexreducetests.h" afterPath="$PROJECT_DIR$/test/tests/indexreducetests.h" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/test/tests/pairwise_transform_tests.h" afterPath="$PROJECT_DIR$/test/tests/pairwise_transform_tests.h" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/test/tests/scalartests.h" afterPath="$PROJECT_DIR$/test/tests/scalartests.h" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/test/tests/testhelpers.h" afterPath="$PROJECT_DIR$/test/tests/testhelpers.h" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/test/tests/transformtests.h" afterPath="$PROJECT_DIR$/test/tests/transformtests.h" />
     </list>
@@ -39,21 +49,34 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="buildnativeoperations.sh" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/buildnativeoperations.sh">
+      <file leaf-file-name="indexreducetests.h" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/test/tests/indexreducetests.h">
           <provider selected="true" editor-type-id="text-editor">
             <state vertical-scroll-proportion="0.0">
-              <caret line="30" column="33" selection-start-line="30" selection-start-column="33" selection-end-line="30" selection-end-column="33" />
+              <caret line="121" column="32" selection-start-line="121" selection-start-column="32" selection-end-line="121" selection-end-column="32" />
+              <folding>
+                <element signature="e#1842#2748#0" expanded="true" />
+                <element signature="e#5984#7187#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="reducetests.h" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/test/tests/reducetests.h">
+          <provider selected="true" editor-type-id="text-editor">
+            <state vertical-scroll-proportion="0.0">
+              <caret line="66" column="23" selection-start-line="66" selection-start-column="23" selection-end-line="66" selection-end-column="23" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="indexreducetests.h" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/test/tests/indexreducetests.h">
+      <file leaf-file-name="shape.h" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/include/shape.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.0">
-              <caret line="99" column="53" selection-start-line="99" selection-start-column="53" selection-end-line="99" selection-end-column="53" />
+            <state vertical-scroll-proportion="0.63484085">
+              <caret line="1038" column="49" selection-start-line="1038" selection-start-column="49" selection-end-line="1038" selection-end-column="49" />
               <folding />
             </state>
           </provider>
@@ -63,10 +86,12 @@
         <entry file="file://$PROJECT_DIR$/test/tests/broadcasttests.h">
           <provider selected="true" editor-type-id="text-editor">
             <state vertical-scroll-proportion="0.0">
-              <caret line="117" column="5" selection-start-line="117" selection-start-column="5" selection-end-line="117" selection-end-column="5" />
+              <caret line="269" column="40" selection-start-line="269" selection-start-column="40" selection-end-line="269" selection-end-column="40" />
               <folding>
-                <marker date="1452756096910" expanded="false" signature="617:785" placeholder="..." />
-                <marker date="1452756096910" expanded="false" signature="841:908" placeholder="..." />
+                <element signature="e#6064#6924#0" expanded="true" />
+                <element signature="e#7265#8124#0" expanded="true" />
+                <marker date="1452966907132" expanded="true" signature="617:785" placeholder="..." />
+                <marker date="1452966907132" expanded="true" signature="841:908" placeholder="..." />
               </folding>
             </state>
           </provider>
@@ -76,40 +101,33 @@
         <entry file="file://$PROJECT_DIR$/test/main.cu">
           <provider selected="true" editor-type-id="text-editor">
             <state vertical-scroll-proportion="0.0">
-              <caret line="14" column="0" selection-start-line="14" selection-start-column="0" selection-end-line="14" selection-end-column="0" />
+              <caret line="23" column="15" selection-start-line="23" selection-start-column="15" selection-end-line="23" selection-end-column="15" />
               <folding>
-                <marker date="1452727804722" expanded="true" signature="644:675" placeholder="//..." />
+                <marker date="1452913257933" expanded="true" signature="672:703" placeholder="//..." />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="nsight-err-parse-patch.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/eclipse/nsight-err-parse-patch.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.0">
-              <caret line="39" column="61" selection-start-line="39" selection-start-column="61" selection-end-line="39" selection-end-column="61" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="CMakeLists.txt" pinned="false" current-in-tab="true">
+      <file leaf-file-name="CMakeLists.txt" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/CMakeLists.txt">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.30653265">
-              <caret line="30" column="0" selection-start-line="30" selection-start-column="0" selection-end-line="30" selection-end-column="0" />
+            <state vertical-scroll-proportion="0.0">
+              <caret line="31" column="11" selection-start-line="31" selection-start-column="11" selection-end-line="31" selection-end-column="11" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="shapetests.h" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/test/tests/shapetests.h">
+      <file leaf-file-name="pairwise_transform_tests.h" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/test/tests/pairwise_transform_tests.h">
           <provider selected="true" editor-type-id="text-editor">
             <state vertical-scroll-proportion="0.0">
-              <caret line="31" column="0" selection-start-line="31" selection-start-column="0" selection-end-line="31" selection-end-column="0" />
-              <folding />
+              <caret line="9" column="13" selection-start-line="9" selection-start-column="13" selection-end-line="9" selection-end-column="13" />
+              <folding>
+                <element signature="e#3270#4018#0" expanded="true" />
+                <element signature="e#4370#5118#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -152,7 +170,6 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/src/include/shape.h" />
         <option value="$PROJECT_DIR$/src/tests/reducetests.h" />
         <option value="$PROJECT_DIR$/makeeclipse.sh" />
         <option value="$PROJECT_DIR$/nsight-err-parse-patch.py" />
@@ -183,7 +200,6 @@
         <option value="$PROJECT_DIR$/test/tests/scalartests.h" />
         <option value="$PROJECT_DIR$/test/tests/reducetests.h" />
         <option value="$PROJECT_DIR$/test/tests/reduce3tests.h" />
-        <option value="$PROJECT_DIR$/test/tests/pairwise_transform_tests.h" />
         <option value="$PROJECT_DIR$/include/reduce.h" />
         <option value="$PROJECT_DIR$/include/indexreduce.h" />
         <option value="$PROJECT_DIR$/include/op.h" />
@@ -199,10 +215,12 @@
         <option value="$PROJECT_DIR$/cmake/FindCUDA.cmake" />
         <option value="$PROJECT_DIR$/test/CMakeLists.txt" />
         <option value="$PROJECT_DIR$/test/main.cu" />
-        <option value="$PROJECT_DIR$/test/tests/broadcasttests.h" />
         <option value="$PROJECT_DIR$/CMakeLists.txt" />
         <option value="$PROJECT_DIR$/buildnativeoperations.sh" />
+        <option value="$PROJECT_DIR$/test/tests/pairwise_transform_tests.h" />
+        <option value="$PROJECT_DIR$/test/tests/broadcasttests.h" />
         <option value="$PROJECT_DIR$/test/tests/indexreducetests.h" />
+        <option value="$PROJECT_DIR$/include/shape.h" />
       </list>
     </option>
   </component>
@@ -301,7 +319,7 @@
     <property name="last_opened_file_path" value="$PROJECT_DIR$/buildnativeoperations.sh" />
     <property name="js-jscs-nodeInterpreter" value="/bin/node" />
     <property name="recentsLimit" value="5" />
-    <property name="settings.editor.selected.configurable" value="CMakeSettings" />
+    <property name="settings.editor.selected.configurable" value="CPPToolchains" />
     <property name="settings.editor.splitter.proportion" value="0.2" />
   </component>
   <component name="RecentsManager">
@@ -386,13 +404,18 @@
       <envs />
       <method />
     </configuration>
-    <list size="6">
+    <configuration default="false" name="libnd4jtests" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS="FALSE" PROJECT_NAME="nativeoperations" TARGET_NAME="libnd4jtests" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="nativeoperations" RUN_TARGET_NAME="libnd4jtests">
+      <envs />
+      <method />
+    </configuration>
+    <list size="7">
       <item index="0" class="java.lang.String" itemvalue="Application.Build All" />
       <item index="1" class="java.lang.String" itemvalue="Application.CppUTest" />
       <item index="2" class="java.lang.String" itemvalue="Application.test_lib" />
       <item index="3" class="java.lang.String" itemvalue="Application.driver" />
       <item index="4" class="java.lang.String" itemvalue="Application.nativeoperations" />
       <item index="5" class="java.lang.String" itemvalue="Bash.runtestslibnd4j" />
+      <item index="6" class="java.lang.String" itemvalue="Application.libnd4jtests" />
     </list>
   </component>
   <component name="ShelveChangesManager" show_recycled="false" />
@@ -410,14 +433,15 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="7" y="25" width="1913" height="1030" extended-state="0" />
-    <editor active="false" />
+    <editor active="true" />
     <layout>
-      <window_info id="Project" active="true" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.1632653" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.1632653" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
-      <window_info id="CMake" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33082706" sideWeight="0.4060701" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.32975295" sideWeight="0.6127682" order="7" side_tool="true" content_ui="tabs" />
+      <window_info id="CMake" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33082706" sideWeight="0.40450028" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.32975295" sideWeight="0.5102041" order="7" side_tool="true" content_ui="tabs" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.32975295" sideWeight="0.48979592" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32975295" sideWeight="0.38723183" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32975295" sideWeight="0.38566196" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
@@ -430,7 +454,6 @@
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32975295" sideWeight="0.49372384" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
     </layout>
   </component>
@@ -600,13 +623,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/include/shape.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0">
-          <caret line="27" column="0" selection-start-line="27" selection-start-column="0" selection-end-line="27" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/include/buffer.h">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
@@ -635,13 +651,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/test/tests/reducetests.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0">
-          <caret line="55" column="0" selection-start-line="55" selection-start-column="0" selection-end-line="55" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/test/tests/README.md">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
@@ -656,13 +665,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="-3.2727273">
           <caret line="29" column="63" selection-start-line="29" selection-start-column="58" selection-end-line="29" selection-end-column="63" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/test/tests/pairwise_transform_tests.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0">
-          <caret line="24" column="56" selection-start-line="24" selection-start-column="56" selection-end-line="24" selection-end-column="56" />
         </state>
       </provider>
     </entry>
@@ -765,35 +767,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/test/tests/indexreducetests.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0">
-          <caret line="99" column="53" selection-start-line="99" selection-start-column="53" selection-end-line="99" selection-end-column="53" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/test/tests/broadcasttests.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0">
-          <caret line="117" column="5" selection-start-line="117" selection-start-column="5" selection-end-line="117" selection-end-column="5" />
-          <folding>
-            <marker date="1452756096910" expanded="false" signature="617:785" placeholder="..." />
-            <marker date="1452756096910" expanded="false" signature="841:908" placeholder="..." />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/test/main.cu">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0">
-          <caret line="14" column="0" selection-start-line="14" selection-start-column="0" selection-end-line="14" selection-end-column="0" />
-          <folding>
-            <marker date="1452727804722" expanded="true" signature="644:675" placeholder="//..." />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/eclipse/nsight-err-parse-patch.py">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
@@ -826,6 +799,17 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/test/tests/pairwise_transform_tests.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0">
+          <caret line="9" column="13" selection-start-line="9" selection-start-column="13" selection-end-line="9" selection-end-column="13" />
+          <folding>
+            <element signature="e#3270#4018#0" expanded="true" />
+            <element signature="e#4370#5118#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/test/CMakeLists.txt">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
@@ -834,10 +818,60 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/test/main.cu">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0">
+          <caret line="23" column="15" selection-start-line="23" selection-start-column="15" selection-end-line="23" selection-end-column="15" />
+          <folding>
+            <marker date="1452913257933" expanded="true" signature="672:703" placeholder="//..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/CMakeLists.txt">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.30653265">
-          <caret line="30" column="0" selection-start-line="30" selection-start-column="0" selection-end-line="30" selection-end-column="0" />
+        <state vertical-scroll-proportion="0.0">
+          <caret line="31" column="11" selection-start-line="31" selection-start-column="11" selection-end-line="31" selection-end-column="11" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/test/tests/broadcasttests.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0">
+          <caret line="269" column="40" selection-start-line="269" selection-start-column="40" selection-end-line="269" selection-end-column="40" />
+          <folding>
+            <element signature="e#6064#6924#0" expanded="true" />
+            <element signature="e#7265#8124#0" expanded="true" />
+            <marker date="1452966907132" expanded="true" signature="617:785" placeholder="..." />
+            <marker date="1452966907132" expanded="true" signature="841:908" placeholder="..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/test/tests/indexreducetests.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0">
+          <caret line="121" column="32" selection-start-line="121" selection-start-column="32" selection-end-line="121" selection-end-column="32" />
+          <folding>
+            <element signature="e#1842#2748#0" expanded="true" />
+            <element signature="e#5984#7187#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/test/tests/reducetests.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0">
+          <caret line="66" column="23" selection-start-line="66" selection-start-column="23" selection-end-line="66" selection-end-column="23" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/include/shape.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.63484085">
+          <caret line="1038" column="49" selection-start-line="1038" selection-start-column="49" selection-end-line="1038" selection-end-column="49" />
           <folding />
         </state>
       </provider>

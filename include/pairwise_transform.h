@@ -103,6 +103,7 @@ public:
 		if (xStride == 1 && yStride == 1 && resultStride == 1) {
 #pragma omp simd
 			for (int i = 0; i < n; i++) {
+				printf("Op on %d is %f with x %f and y %f\n",i,op(dx[i], y[i], extraParams),dx[i], y[i]);
 				result[i] = op(dx[i], y[i], extraParams);
 			}
 
@@ -379,7 +380,7 @@ public:
 	__always_inline
 #endif
 	T op(T d1, T d2, T *params) {
-		return d1 != d2;
+		return d1 == d2;
 	}
 
 	virtual
@@ -809,22 +810,18 @@ public:
 		else if (op == 2)
 			return new pairwise_transforms::ops::Divide<T>();
 		else if (op == 3)
-			return new pairwise_transforms::ops::Divide<T>();
-		else if (op == 4)
 			return new pairwise_transforms::ops::EqualTo<T>();
-		else if (op == 5)
+		else if (op == 4)
 			return new pairwise_transforms::ops::GreaterThan<T>();
-		else if (op == 6)
+		else if (op == 5)
 			return new pairwise_transforms::ops::LessThan<T>();
-		else if (op == 7)
+		else if (op == 6)
 			return new pairwise_transforms::ops::Multiply<T>();
-		if (op == 8)
-			return new pairwise_transforms::ops::Divide<T>();
-		if (op == 9)
+		if (op == 7)
 			return new pairwise_transforms::ops::ReverseDivide<T>();
-		if (op == 10)
+		if (op == 8)
 			return new pairwise_transforms::ops::ReverseSubtraction<T>();
-		if (op == 11)
+		if (op == 9)
 			return new pairwise_transforms::ops::Subtract<T>();
 		return NULL;
 	}

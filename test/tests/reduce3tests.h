@@ -77,6 +77,7 @@ public:
 	:  Reduce3Test<double>(rank,opNum,data,extraParamsLength){
 	}
 	virtual void executeCudaKernel() {
+#ifdef __CUDACC__
 		nd4j::buffer::Buffer<int> *gpuInfo = this->gpuInformationBuffer();
 		nd4j::buffer::Buffer<int> *dimensionBuffer = nd4j::buffer::createBuffer(this->baseData->dimension,this->baseData->dimensionLength);
 		nd4j::buffer::Buffer<int> *xShapeBuff = shapeIntBuffer(this->rank,this->shape);
@@ -101,6 +102,7 @@ public:
 		nd4j::buffer::freeBuffer(&yShapeBuff);
 		nd4j::buffer::freeBuffer(&gpuInfo);
 		nd4j::buffer::freeBuffer(&resultShapeInfo);
+#endif
 	}
 };
 
@@ -111,6 +113,7 @@ public:
 	:  Reduce3Test<float>(rank,opNum,data,extraParamsLength){
 	}
 	virtual void executeCudaKernel() {
+#ifdef __CUDACC__
 		nd4j::buffer::Buffer<int> *gpuInfo = this->gpuInformationBuffer();
 		nd4j::buffer::Buffer<int> *dimensionBuffer = nd4j::buffer::createBuffer(this->baseData->dimension,this->baseData->dimensionLength);
 		nd4j::buffer::Buffer<int> *xShapeBuff = shapeIntBuffer(this->rank,this->shape);
@@ -135,6 +138,7 @@ public:
 		nd4j::buffer::freeBuffer(&yShapeBuff);
 		nd4j::buffer::freeBuffer(&gpuInfo);
 		nd4j::buffer::freeBuffer(&resultShapeInfo);
+#endif
 
 	}
 };

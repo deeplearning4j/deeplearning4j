@@ -27,6 +27,36 @@ TEST_GROUP(BroadCasting) {
 	}
 };
 
+Data<double> * getData(int rank,double *comparison) {
+	Data<double> *ret = new Data<double>();
+	ret->rank = rank;
+	int *shape = (int *) malloc(sizeof(int) * rank);
+	shape[0] = 2;
+	shape[1] = 2;
+	ret->xShape = shape;
+	int *vectorShape = (int *) malloc(rank * sizeof(int));
+	vectorShape[0] = 1;
+	vectorShape[1] = 2;
+	ret->yRank = 2;
+	ret->yShape = vectorShape;
+	ret->y = (double *) malloc(sizeof(double) * 2);
+
+	int dimensionLength = 1;
+	int *dimension = (int *) malloc(sizeof(int));
+	dimension[0] = 1;
+	ret->dimension = dimension;
+	ret->dimensionLength = 1;
+	ret->assertion = (double *) malloc(sizeof(double) * 4);
+	ret->resultShape = (int *) malloc(sizeof(int) * 2);
+	for(int i = 0; i < 2; i++)
+		ret->resultShape[i] = 2;
+	ret->result = (double *) malloc(sizeof(double) * 4);
+	for(int i = 0; i < 4; i++)
+		ret->result[i] = comparison[i];
+	ret->extraParams = (double *) malloc(sizeof(double));
+	return ret;
+
+}
 
 
 TEST(BroadCasting,Addition) {
@@ -132,6 +162,9 @@ TEST(BroadCasting,Addition) {
 
 }
 
+
+
+
 template <typename T>
 class BroadcastingTest : public PairWiseTest<T> {
 
@@ -143,7 +176,9 @@ public:
 	BroadcastingTest() {
 		createOperationAndOpFactory();
 	}
-	virtual ~BroadcastingTest() {}
+	virtual ~BroadcastingTest() {
+		freeOpAndOpFactory();
+	}
 	void freeOpAndOpFactory() override {
 		delete opFactory;
 		delete op;
@@ -156,11 +191,12 @@ public:
 
 	virtual void execCpuKernel() override {
 		int *shapeBuff = shapeBuffer(this->rank,this->shape);
-		int *yShapeBuff = shapeBuffer(this->yRankank,this->yShape);
-		int *resultShapeBuff = shapeBuffer(this->resultRank,this->baseData->resultShape);
-		op->exec(this->data->data->data,shapeBuff,
+		int *yShapeBuff = shapeBuffer(this->yRank,this->yShape);
+		int *resultShapeBuff = shapeBuffer(this->baseData->resultRank,this->baseData->resultShape);
+		op->exec(this->data->data->data,
+				shapeBuff,
 				this->baseData->y,
-				yShapeBuffer,
+				yShapeBuff,
 				this->baseData->result,
 				resultShapeBuff,
 				this->baseData->dimension,
@@ -170,6 +206,26 @@ public:
 		free(resultShapeBuff);
 	}
 
+
+
+	virtual void run () override {
+		this->initializeData();
+		this->execCpuKernel();
+		CHECK(arrsEquals(this->rank, this->assertion, this->result->data->data));
+
+
+#ifdef __CUDACC__
+		this->initializeData();
+		nd4j::array::NDArrays<T>::allocateNDArrayOnGpu(&this->data);
+		this->executeCudaKernel();
+		checkCudaErrors(cudaDeviceSynchronize());
+		nd4j::buffer::copyDataFromGpu(&this->result->data);
+		CHECK(arrsEquals(this->rank, this->assertion, this->result->data->data));
+
+#endif
+
+
+	}
 protected:
 	functions::broadcast::BroadcastOpFactory<T> *opFactory;
 	functions::broadcast::Broadcast<T> *op;
@@ -183,6 +239,7 @@ public:
 	:  BroadcastingTest<double>(rank,opNum,data,extraParamsLength){
 	}
 	virtual void executeCudaKernel() {
+#ifdef __CUDACC__
 		nd4j::buffer::Buffer<int> *gpuInfo = this->gpuInformationBuffer();
 		nd4j::buffer::Buffer<int> *dimensionBuffer = nd4j::buffer::createBuffer(this->baseData->dimension,this->baseData->dimensionLength);
 		nd4j::buffer::Buffer<int> *xShapeBuff = shapeIntBuffer(this->rank,this->shape);
@@ -202,73 +259,96 @@ public:
 		nd4j::buffer::freeBuffer(&xShapeBuff);
 		nd4j::buffer::freeBuffer(&yShapeBuff);
 		nd4j::buffer::freeBuffer(&gpuInfo);
+#endif
 	}
 };
 
-class FloatBroadcastTranformTest : public BroadcastingTest<float> {
-public:
-	FloatBroadcastTranformTest() {}
-	FloatBroadcastTranformTest(int rank,int opNum,Data<float> *data,int extraParamsLength)
-	:  BroadcastingTest<float>(rank,opNum,data,extraParamsLength){
-	}
-	virtual void executeCudaKernel() {
-		nd4j::buffer::Buffer<int> *gpuInfo = this->gpuInformationBuffer();
-		nd4j::buffer::Buffer<int> *dimensionBuffer = nd4j::buffer::createBuffer(this->baseData->dimension,this->baseData->dimensionLength);
-		nd4j::buffer::Buffer<int> *xShapeBuff = shapeIntBuffer(this->rank,this->shape);
-		nd4j::buffer::Buffer<int> *yShapeBuff = shapeIntBuffer(this->rank,this->shape);
-		broadcastFloat<<<this->blockSize,this->gridSize,this->sMemSize>>>(
-				this->opNum,
-				this->data->data->gData,
-				xShapeBuff->gData,
-				this->yData->data->gData,
-				yShapeBuff->gData,
-				this->data->data->gData,
-				xShapeBuff->gData,
-				dimensionBuffer->gData,
-				this->baseData->dimensionLength,
-				gpuInfo->gData);
-		nd4j::buffer::freeBuffer(&dimensionBuffer);
-		nd4j::buffer::freeBuffer(&xShapeBuff);
-		nd4j::buffer::freeBuffer(&yShapeBuff);
-		nd4j::buffer::freeBuffer(&gpuInfo);
-	}
-};
+TEST(BroadCasting,ObjectOrientedAddition) {
+	int rank = 2;
+	int opNum = 0;
+	int extraParamsLength = 1;
+	double comparison[4] = {2,4,5,6};
+	Data<double> *data = getData(rank,comparison);
+	DoubleBroadcastTranformTest *test = new DoubleBroadcastTranformTest(rank,opNum,data,1);
+	delete data;
+	delete test;
+
+}
 
 
+TEST(BroadCasting,ObjectOrientedSubtraction) {
+	int rank = 2;
+	int opNum = 1;
+	int extraParamsLength = 1;
+	double comparison[4] = {0,0,2,2};
+	Data<double> *data = getData(rank,comparison);
+	DoubleBroadcastTranformTest *test = new DoubleBroadcastTranformTest(rank,opNum,data,1);
+	delete data;
+	delete test;
 
-class FloatPairwiseBroadcastTest : public BroadcastingTest<float> {
-public:
-	FloatPairwiseBroadcastTest() {}
-	FloatPairwiseBroadcastTest(int rank,int opNum,Data<float> *data,int extraParamsLength)
-	:  BroadcastingTest<float>(rank,opNum,data,extraParamsLength){
-	}
-	virtual void executeCudaKernel() {
-		int *shapeBuff = shapeBuffer(this->rank,this->shape);
-		int *yShapeBuff = shapeBuffer(this->rank,this->yShape);
-		assertBufferProperties(shapeBuff);
-		assertBufferProperties(yShapeBuff);
-		int xOffset = shape::offset(shapeBuff);
-		int yOffset = shape::offset(yShapeBuff);
-		int xEleStride = shape::elementWiseStride(shapeBuff);
-		int yEleStride = shape::elementWiseStride(yShapeBuff);
+}
 
-		pairWiseTransformFloat<<<this->blockSize,this->gridSize,this->sMemSize>>>(
-				this->opNum,
-				this->length,
-				xOffset,
-				yOffset,
-				0,
-				this->data->data->gData,
-				this->yData->data->gData,
-				xEleStride,
-				yEleStride,
-				this->extraParamsBuff->gData,
-				this->data->data->gData,
-				1, this->blockSize);
-		free(shapeBuff);
-		free(yShapeBuff);
-	}
-};
+TEST(BroadCasting,ObjectOrientedMultiplication) {
+	int rank = 2;
+	int opNum = 2;
+	int extraParamsLength = 1;
+	double comparison[4] = {1,4,3,8};
+	Data<double> *data = getData(rank,comparison);
+	DoubleBroadcastTranformTest *test = new DoubleBroadcastTranformTest(rank,opNum,data,1);
+	delete data;
+	delete test;
+
+}
+
+TEST(BroadCasting,ObjectOrientedDivision) {
+	int rank = 2;
+	int opNum = 3;
+	int extraParamsLength = 1;
+	double comparison[4] = {1,1,3,2};
+	Data<double> *data = getData(rank,comparison);
+	DoubleBroadcastTranformTest *test = new DoubleBroadcastTranformTest(rank,opNum,data,1);
+	delete data;
+	delete test;
+
+}
+
+TEST(BroadCasting,ObjectOrientedReverseDivision) {
+	int rank = 2;
+	int opNum = 3;
+	int extraParamsLength = 1;
+	double comparison[4] = {1,1,0.33333333,0.5};
+	Data<double> *data = getData(rank,comparison);
+	DoubleBroadcastTranformTest *test = new DoubleBroadcastTranformTest(rank,opNum,data,1);
+	delete data;
+	delete test;
+
+}
+
+
+TEST(BroadCasting,ObjectOrientedReverseSubtraction) {
+	int rank = 2;
+	int opNum = 5;
+	int extraParamsLength = 1;
+	double comparison[4] = {0,0,-2,-2};
+	Data<double> *data = getData(rank,comparison);
+	DoubleBroadcastTranformTest *test = new DoubleBroadcastTranformTest(rank,opNum,data,1);
+	delete data;
+	delete test;
+
+}
+
+TEST(BroadCasting,ObjectOrientedCopy) {
+	int rank = 2;
+	int opNum = 6;
+	int extraParamsLength = 1;
+	double comparison[4] = {1,2,1,2};
+	Data<double> *data = getData(rank,comparison);
+	DoubleBroadcastTranformTest *test = new DoubleBroadcastTranformTest(rank,opNum,data,1);
+	delete data;
+	delete test;
+
+}
+
 
 
 
