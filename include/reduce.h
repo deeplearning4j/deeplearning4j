@@ -570,23 +570,23 @@ public:
 	}
 
 
-	void exec(T *x, int *xShapeInfo, T *extraParams, T *result,
+	void exec(T *x, int *xShapeInfo,
+			T *extraParams, T *result,
 			int *resultShapeInfo) {
-	    printf("Before starting value\n");
 		T startingVal = extraParams[0];
-		printf("Found starting value\n");
 		int length = shape::length(xShapeInfo);
 		int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 		int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
 		if (xElementWiseStride == 1 && resultElementWiseStride == 1) {
-			printf("About to simd\n");
+			printf("Length is %d\n",length);
 #pragma omp simd
 			for (int i = 0; i < length; i++) {
 				T curr = op(x[i], extraParams);
+				printf("Op output is %f\n",curr);
 				startingVal = update(startingVal, curr, extraParams);
 			}
-			printf("About to assign final value\n");
 			T finalVal = postProcess(startingVal, length,extraParams);
+			printf("Final val %f\n",finalVal);
 			result[0] = finalVal;
 		} else {
 #pragma omp simd
@@ -604,6 +604,10 @@ public:
 
 	void exec(T *x, int *xShapeInfo, T *extraParams, T *result,
 			int *resultShapeInfoBuffer, int *dimension, int dimensionLength) {
+		if(shape::isScalar(resultShapeInfoBuffer)) {
+			exec(x,xShapeInfo,extraParams,result,resultShapeInfoBuffer);
+			return;
+		}
 		shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo,
 				dimension, dimensionLength);
 		int resultLength = shape::length(resultShapeInfoBuffer);

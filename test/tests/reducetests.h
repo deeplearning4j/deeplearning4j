@@ -51,16 +51,16 @@ public:
 	virtual void execCpuKernel() override {
 		int *xShapeBuff = shapeBuffer(this->baseData->rank,this->baseData->xShape);
 		int *resultShapeBuff = shapeBuffer(this->baseData->resultRank,this->baseData->resultShape);
-		printf("About to exec cpu\n");
+		assertBufferProperties(xShapeBuff);
+		assertBufferProperties(resultShapeBuff);
 		reduce->exec(
-				this->data->data->data,
+				this->baseData->data,
 				xShapeBuff,
 				this->baseData->extraParams,
-				this->result->data->data,
+				this->baseData->result,
 				resultShapeBuff,
 				this->baseData->dimension,
 				this->baseData->dimensionLength);
-		printf("Executed cpu\n");
 		free(xShapeBuff);
 		free(resultShapeBuff);
 	}
@@ -68,12 +68,13 @@ public:
 	virtual void run () override {
 		this->initializeData();
 		this->execCpuKernel();
-		CHECK(arrsEquals(this->rank, this->assertion, this->result->data->data));
+		CHECK(arrsEquals(this->rank, this->assertion, this->baseData->result));
 
 
 #ifdef __CUDACC__
 		this->initializeData();
 		nd4j::array::NDArrays<T>::allocateNDArrayOnGpu(&this->data);
+		printf("About to exec cuda kernel\n");
 		this->executeCudaKernel();
 		checkCudaErrors(cudaDeviceSynchronize());
 		nd4j::buffer::copyDataFromGpu(&this->result->data);
@@ -173,13 +174,17 @@ Data<double> * getData(double *assertion,double startingVal) {
 	shape[0] = 1;
 	shape[1] = length;
 	ret->xShape = shape;
+	ret->rank = 2;
     ret->data = (double *) malloc(sizeof(double) * 4);
-	double *extraParams = (double *) malloc(sizeof(double));
+	for(int i = 0; i < 4; i++)
+		ret->data[i] = i + 1;
+    double *extraParams = (double *) malloc(sizeof(double));
 	extraParams[0] = startingVal;
 	ret->extraParams = extraParams;
 
 	ret->assertion = (double *) malloc(sizeof(double) * 4);
-	for(int i = 0; i < 4; i++) {
+	for(int i = 0; i < 1; i++) {
+		printf("Assertion value %f\n",assertion[i]);
 		ret->assertion[i] = assertion[i];
 	}
 
@@ -201,7 +206,7 @@ Data<double> * getDataDimension() {
 }
 
 TEST(Reduce,ObjectOrientedSum) {
-	int opNum = 0;
+	int opNum = 1;
 	double comparison[1] = {10};
 	Data<double> *data = getData(comparison,0);
 	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
