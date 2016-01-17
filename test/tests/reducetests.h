@@ -72,9 +72,9 @@ public:
 		int resultLength = shape::prod(this->baseData->resultShape,this->baseData->rank);
 		if(resultLength == 1) {
 			if(this->result->data->data[0] != this->baseData->assertion[0]) {
-				printf("Compared assertion %f to result %f\n",this->baseData->assertion[0],this->baseData->result[0]);
+				printf("Compared assertion %f to result %f\n",this->baseData->assertion[0],this->result->data->data[0]);
 			}
-			CHECK(this->baseData->assertion[0] == this->result->data->data[0]);
+			DOUBLES_EQUAL(this->baseData->assertion[0],this->result->data->data[0],1e-3);
 		}
 		else
 			CHECK(arrsEquals(this->rank, this->assertion, this->result->data->data));
@@ -91,7 +91,7 @@ public:
 			if(this->result->data->data[0] != this->baseData->assertion[0]) {
 				printf("Compared assertion gpu %f to result %f\n",this->baseData->assertion[0],this->baseData->result[0]);
 			}
-			CHECK(this->baseData->assertion[0] == this->result->data->data[0]);
+			DOUBLES_EQUAL(this->baseData->assertion[0],this->result->data->data[0],1e-3);
 		}
 		else
 			CHECK(arrsEquals(this->rank, this->assertion, this->result->data->data));
@@ -221,29 +221,6 @@ Data<double> * getDataDimension() {
 	return ret;
 }
 
-/*
-
-
-
-
-
-
-TEST(Reduce,ObjectOrientedStd) {
-	//needs 3 variables one being the bias
-	int opNum = 9;
-	double comparison[1] = {1.1180339887498949};
-	Data<double> *data = getData(comparison,0);
-	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
-	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
-	test->run();
-	delete test;
-	delete data;
-}
-
-
-
-*/
-
 
 TEST(Reduce,ObjectOrientedSum) {
 	int opNum = 1;
@@ -263,6 +240,7 @@ TEST(Reduce,ObjectOrientedVar) {
 	int opNum = 10;
 	double comparison[1] = {1.6666666666666667};
 	Data<double> *data = getData(comparison,0);
+	data->extraParams[0] = 0.0;
 	data->extraParams[1] = 0.0;
 	data->extraParams[2] = 2.5;
 	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
@@ -360,6 +338,24 @@ TEST(Reduce,ObjectOrientedProd) {
 	delete test;
 	delete data;
 }
+
+
+
+TEST(Reduce,ObjectOrientedStd) {
+	//needs 3 variables one being the bias
+	int opNum = 9;
+	double comparison[1] = {1.290994};
+	Data<double> *data = getData(comparison,0);
+	data->extraParams[0] = 0.0;
+	data->extraParams[1] = 0.0;
+	data->extraParams[2] = 2.5;
+//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
+	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
+	test->run();
+	delete test;
+	delete data;
+}
+
 /*
 
 

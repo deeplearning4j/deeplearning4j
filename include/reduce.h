@@ -581,6 +581,7 @@ public:
 				startingVal = update(startingVal, curr, extraParams);
 
 			}
+
 			T finalVal = postProcess(startingVal, length,extraParams);
 			result[0] = finalVal;
 		} else {
@@ -1302,86 +1303,7 @@ public:
 };
 
 template<typename T>
-class StandardDeviation: public virtual functions::reduce::ReduceFunction<T> {
-public:
-	virtual
-#ifdef __CUDACC__
-	inline __host__
-
-#endif
-	std::string name() override {
-		return std::string("std");
-	}
-
-	virtual
-#ifdef __CUDACC__
-	inline __host__  __device__
-
-#elif defined(__GNUC__)
-	__always_inline
-
-#endif
-	T merge(T old, T opOutput, T *extraParams) override {
-		return old + opOutput;
-
-	}
-	virtual
-#ifdef __CUDACC__
-	inline __host__  __device__
-
-#elif defined(__GNUC__)
-	__always_inline
-
-#endif
-	T update(T old, T opOutput, T *extraParams) override {
-		T mean = extraParams[2];
-		T curr = nd4j::math::nd4j_pow<T>(opOutput - mean, 2.0);
-		return old + curr;
-
-	}
-
-	virtual
-#ifdef __CUDACC__
-	inline __host__  __device__
-
-#elif defined(__GNUC__)
-	__always_inline
-
-#endif
-	T op(T d1, T *extraParams) override {
-		return d1;
-	}
-
-	virtual
-#ifdef __CUDACC__
-	inline __host__  __device__
-
-#elif defined(__GNUC__)
-	__always_inline
-
-#endif
-	T postProcess(T reduction, int n,T *extraParams) override {
-		T bias = extraParams[1];
-		return nd4j::math::nd4j_sqrt<T>(
-				(reduction - (nd4j::math::nd4j_pow<T>(bias, 2.0) / n))
-				/ (T) (n - 1.0));
-	}
-
-	virtual
-#ifdef __CUDACC__
-	inline __host__ __device__
-#endif
-	~StandardDeviation() {
-	}
-#ifdef __CUDACC__
-	inline __host__ __device__
-#endif
-	StandardDeviation() {
-	}
-};
-
-template<typename T>
-class Variance: public virtual functions::reduce::ReduceFunction<T> {
+class Variance: public  functions::reduce::ReduceFunction<T> {
 public:
 	virtual
 #ifdef __CUDACC__
@@ -1412,8 +1334,7 @@ public:
 
 #endif
 	T update(T old, T opOutput, T *extraParams) override {
-		T curr = nd4j::math::nd4j_pow<T>(opOutput, 2.0);
-		return old + curr;
+		return old + opOutput;
 
 	}
 
@@ -1428,7 +1349,8 @@ public:
 #endif
 	T op(T d1, T *extraParams) override {
 		T mean = extraParams[2];
-		return d1 - mean;
+		T ret = d1 - mean;
+		return ret * ret;
 	}
 
 	virtual
@@ -1457,6 +1379,47 @@ public:
 	Variance() {
 	}
 };
+
+template<typename T>
+class StandardDeviation: public virtual Variance<T> {
+public:
+	virtual
+#ifdef __CUDACC__
+	inline __host__
+
+#endif
+	std::string name() override {
+		return std::string("std");
+	}
+
+	virtual
+#ifdef __CUDACC__
+	inline __host__  __device__
+
+#elif defined(__GNUC__)
+	__always_inline
+
+#endif
+	T postProcess(T reduction, int n,T *extraParams) override {
+		T ret = Variance<T>::postProcess(reduction,n,extraParams);
+		T sqrtRet = nd4j::math::nd4j_sqrt<T>(ret);
+		return sqrtRet;
+	}
+
+	virtual
+#ifdef __CUDACC__
+	inline __host__ __device__
+#endif
+	~StandardDeviation() {
+	}
+#ifdef __CUDACC__
+	inline __host__ __device__
+#endif
+	StandardDeviation() : Variance<T>() {
+	}
+};
+
+
 
 }
 
@@ -1493,8 +1456,9 @@ public:
 			return new functions::reduce::ops::NormMax<T>();
 		else if (op == 8)
 			return new functions::reduce::ops::Prod<T>();
-		else if (op == 9)
+		else if (op == 9) {
 			return new functions::reduce::ops::StandardDeviation<T>();
+		}
 		else if (op == 10)
 			return new functions::reduce::ops::Variance<T>();
 
