@@ -170,7 +170,7 @@ template<>
 __host__ __device__
 #endif
 inline float nd4j_max<float>(float val1, float val2) {
-	return fmaxf(val1, val2);
+	return val1 > val2 ? val1 : val2;
 }
 
 template<>
@@ -178,7 +178,7 @@ template<>
 __host__ __device__
 #endif
 inline double nd4j_max<double>(double val1, double val2) {
-	return fmax(val1, val2);
+	return val1 > val2 ? val1 : val2;
 }
 
 template<>
@@ -186,7 +186,7 @@ template<>
 __host__ __device__
 #endif
 inline int nd4j_max<int>(int val1, int val2) {
-	return fmax((float) val1, (float) val2);
+	return val1 > val2 ? val1 : val2;
 }
 
 template<>
@@ -194,7 +194,7 @@ template<>
 __host__ __device__
 #endif
 inline float nd4j_min<float>(float val1, float val2) {
-	return fminf(val1, val2);
+	return val1 < val2 ? val1 : val2;
 }
 
 template<>
@@ -202,14 +202,14 @@ template<>
 __host__ __device__
 #endif
 inline double nd4j_min<double>(double val1, double val2) {
-	return fmin(val1, val2);
+	return val1 < val2 ? val1 : val2;
 }
 template<>
 #ifdef __CUDACC__
 __host__ __device__
 #endif
 inline int nd4j_min<int>(int val1, int val2) {
-	return fmin((float) val1, (float) val2);
+	return val1 < val2 ? val1 : val2;
 }
 
 template<>

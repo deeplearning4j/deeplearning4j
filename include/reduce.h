@@ -172,9 +172,10 @@ public:
 
 			T curr;
 			if (resultScalar) {
+				if(blockIdx.x >= resultLength)
+					return;
 				unsigned int i = blockIdx.x * xElementWiseStride + tid;
 				unsigned int gridSize = blockDim.x * gridDim.x * xElementWiseStride;
-
 				// we reduce multiple elements per thread.  The number is determined by the
 				// number of active thread blocks (via gridDim).  More blocks will result
 				// in a larger gridSize and therefore fewer elements per thread
@@ -187,19 +188,15 @@ public:
 				// each thread puts its local sum into shared memory
 				sPartials[tid] = reduction;
 				__syncthreads();
-
 				T **sPartialsRef = (T **) &sPartials;
 				aggregatePartials(sPartialsRef, tid, numElements,extraParams);
 
 				// write result for this block to global mem
 				if (tid == 0) {
-					if (postProcessOrNot) {
-						result[blockIdx.x] = update(sPartials[0], result[blockIdx.x], extraParams);
-					}
-					else {
+					if(postProcessOrNot)
+						result[blockIdx.x] = this->postProcess(sPartials[0],n,extraParams);
+					else
 						result[blockIdx.x] = sPartials[0];
-
-					}
 				}
 			}
 
@@ -578,15 +575,13 @@ public:
 		int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 		int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
 		if (xElementWiseStride == 1 && resultElementWiseStride == 1) {
-			printf("Length is %d\n",length);
 #pragma omp simd
 			for (int i = 0; i < length; i++) {
 				T curr = op(x[i], extraParams);
-				printf("Op output is %f\n",curr);
 				startingVal = update(startingVal, curr, extraParams);
+
 			}
 			T finalVal = postProcess(startingVal, length,extraParams);
-			printf("Final val %f\n",finalVal);
 			result[0] = finalVal;
 		} else {
 #pragma omp simd
@@ -1417,8 +1412,7 @@ public:
 
 #endif
 	T update(T old, T opOutput, T *extraParams) override {
-		T mean = extraParams[2];
-		T curr = nd4j::math::nd4j_pow<T>(opOutput - mean, 2.0);
+		T curr = nd4j::math::nd4j_pow<T>(opOutput, 2.0);
 		return old + curr;
 
 	}
@@ -1433,7 +1427,8 @@ public:
 
 #endif
 	T op(T d1, T *extraParams) override {
-		return d1;
+		T mean = extraParams[2];
+		return d1 - mean;
 	}
 
 	virtual
@@ -1446,8 +1441,8 @@ public:
 #endif
 	T postProcess(T reduction, int n,T *extraParams) override {
 		T bias = extraParams[1];
-		return (reduction - (nd4j::math::nd4j_pow<T>(bias, 2.0) / n))
-				/ (T) (n - 1.0);;
+		return (reduction - (nd4j::math::nd4j_pow<T>(bias, 2.0) / (T) n))
+				/ (T) (n - 1.0);
 	}
 
 	virtual

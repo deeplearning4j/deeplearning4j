@@ -53,11 +53,12 @@ public:
 		int *resultShapeBuff = shapeBuffer(this->baseData->resultRank,this->baseData->resultShape);
 		assertBufferProperties(xShapeBuff);
 		assertBufferProperties(resultShapeBuff);
+		T *resultData = this->result->data->data;
 		reduce->exec(
 				this->baseData->data,
 				xShapeBuff,
 				this->baseData->extraParams,
-				this->baseData->result,
+				resultData,
 				resultShapeBuff,
 				this->baseData->dimension,
 				this->baseData->dimensionLength);
@@ -68,7 +69,15 @@ public:
 	virtual void run () override {
 		this->initializeData();
 		this->execCpuKernel();
-		CHECK(arrsEquals(this->rank, this->assertion, this->baseData->result));
+		int resultLength = shape::prod(this->baseData->resultShape,this->baseData->rank);
+		if(resultLength == 1) {
+			if(this->result->data->data[0] != this->baseData->assertion[0]) {
+				printf("Compared assertion %f to result %f\n",this->baseData->assertion[0],this->baseData->result[0]);
+			}
+			CHECK(this->baseData->assertion[0] == this->result->data->data[0]);
+		}
+		else
+			CHECK(arrsEquals(this->rank, this->assertion, this->result->data->data));
 
 
 #ifdef __CUDACC__
@@ -78,7 +87,14 @@ public:
 		this->executeCudaKernel();
 		checkCudaErrors(cudaDeviceSynchronize());
 		nd4j::buffer::copyDataFromGpu(&this->result->data);
-		CHECK(arrsEquals(this->rank, this->assertion, this->result->data->data));
+		if(resultLength == 1) {
+			if(this->result->data->data[0] != this->baseData->assertion[0]) {
+				printf("Compared assertion gpu %f to result %f\n",this->baseData->assertion[0],this->baseData->result[0]);
+			}
+			CHECK(this->baseData->assertion[0] == this->result->data->data[0]);
+		}
+		else
+			CHECK(arrsEquals(this->rank, this->assertion, this->result->data->data));
 
 #endif
 
@@ -175,10 +191,10 @@ Data<double> * getData(double *assertion,double startingVal) {
 	shape[1] = length;
 	ret->xShape = shape;
 	ret->rank = 2;
-    ret->data = (double *) malloc(sizeof(double) * 4);
+	ret->data = (double *) malloc(sizeof(double) * 4);
 	for(int i = 0; i < 4; i++)
 		ret->data[i] = i + 1;
-    double *extraParams = (double *) malloc(sizeof(double));
+	double *extraParams = (double *) malloc(sizeof(double) * 4);
 	extraParams[0] = startingVal;
 	ret->extraParams = extraParams;
 
@@ -205,9 +221,17 @@ Data<double> * getDataDimension() {
 	return ret;
 }
 
-TEST(Reduce,ObjectOrientedSum) {
-	int opNum = 1;
-	double comparison[1] = {10};
+/*
+
+
+
+
+
+
+TEST(Reduce,ObjectOrientedStd) {
+	//needs 3 variables one being the bias
+	int opNum = 9;
+	double comparison[1] = {1.1180339887498949};
 	Data<double> *data = getData(comparison,0);
 	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
 	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
@@ -216,117 +240,131 @@ TEST(Reduce,ObjectOrientedSum) {
 	delete data;
 }
 
-/*
-TEST(Reduce, Sum) {
-	functions::reduce::ReduceOpFactory<double> *opFactory5 =
-			new functions::reduce::ReduceOpFactory<double>();
-	functions::reduce::ReduceFunction<double> *sum = opFactory5->create(1);
-	CHECK(sum != NULL);
-	int length = 4;
-	double *data = (double *) malloc(sizeof(double) * length);
-	for (int i = 0; i < length; i++) {
-		data[i] = i + 1;
-	}
-	int *resultShapeInfo = shape::createScalarShapeInfo();
-	assertBufferProperties(resultShapeInfo);
-
-	shape::ShapeInformation *shapeInfo = (shape::ShapeInformation *) malloc(
-			sizeof(shape::ShapeInformation));
-	int rank = 2;
-	int *shape = (int *) malloc(sizeof(int) * rank);
-	shape[0] = 1;
-	shape[1] = length;
-	int *stride = shape::calcStrides(shape, rank);
-	shapeInfo->shape = shape;
-	shapeInfo->stride = stride;
-	shapeInfo->offset = 0;
-	shapeInfo->elementWiseStride = 1;
-
-	int *shapeBuffer = shape::toShapeBuffer(shapeInfo);
-	assertBufferProperties(shapeBuffer);
-	double *extraParams = (double *) malloc(sizeof(double));
-	extraParams[0] = 0.0;
-
-	double *result = (double *) malloc(sizeof(double));
-	result[0] = 0.0;
-	sum->exec(data, shapeBuffer, extraParams, result, resultShapeInfo);
-	double comp = result[0];
-	CHECK(10.0 == comp);
 
 
-	int dimensionLength = 1;
-	int *dimension = (int *) malloc(sizeof(int) * dimensionLength);
-	dimension[0] = shape::MAX_DIMENSION;
+*/
 
 
-	nd4j::buffer::Buffer<double> *dataBuff = nd4j::buffer::createBuffer(data,length);
-	nd4j::buffer::Buffer<int> *xShapeInfoBuff = nd4j::buffer::createBuffer(shapeBuffer,shape::shapeInfoLength(shapeInfo->rank));
-	nd4j::buffer::Buffer<double> *extraParamsBuff = nd4j::buffer::createBuffer(extraParams,1);
-	nd4j::buffer::Buffer<double> *resultBuffer = nd4j::buffer::createBuffer(result,1);
-	nd4j::buffer::Buffer<int> *dimensionBuffer = nd4j::buffer::createBuffer(dimension,dimensionLength);
-	nd4j::buffer::Buffer<int> *resultShapeBuff = nd4j::buffer::createBuffer(resultShapeInfo,shape::shapeInfoLength(2));
+TEST(Reduce,ObjectOrientedSum) {
+	int opNum = 1;
+	double comparison[1] = {10};
 
-
-#ifdef __CUDACC__
-
-	 * reduceDouble(
-		int op,
-		int n,
-		double *dx,
-		int *xShapeInfo,
-		double *extraParams,
-		double *result,
-		int *resultShapeInfo,
-		int *gpuInformation,
-		int *dimension,
-		int dimensionLength,
-		int postProcessOrNot)
-
-	int blockSize = 500;
-	int gridSize = 256;
-	int sMemSize = 20000;
-	nd4j::buffer::freeBuffer(&resultBuffer);
-	//realloc the buffer
-	result = (double *) malloc(sizeof(double) * blockSize);
-	resultBuffer = nd4j::buffer::createBuffer(result,blockSize);
-	int *gpuInformation = (int *) malloc(sizeof(int) * 4);
-	gpuInformation[0] = blockSize;
-	gpuInformation[1] = gridSize;
-	gpuInformation[2] = sMemSize;
-	gpuInformation[3] = 49152;
-	nd4j::buffer::Buffer<int> *gpuInfoBuff = nd4j::buffer::createBuffer<int>(gpuInformation,4);
-
-	reduceDouble<<<blockSize,gridSize,sMemSize>>>(
-			1,
-			length,
-			dataBuff->gData,
-			xShapeInfoBuff->gData,
-			extraParamsBuff->gData,
-			resultBuffer->gData,
-			resultShapeBuff->gData,
-			gpuInfoBuff->gData,
-			dimensionBuffer->gData,
-			dimensionLength,
-			1
-	);
-
-	checkCudaErrors(cudaDeviceSynchronize());
-	nd4j::buffer::copyDataFromGpu(&resultBuffer);
-	double resultFinal = sum->aggregateBuffer(length,result,extraParams);
-	CHECK(10.0 == result[0]);
-#endif
-
-
-	nd4j::buffer::freeBuffer(&resultShapeBuff);
-	nd4j::buffer::freeBuffer(&dimensionBuffer);
-	nd4j::buffer::freeBuffer(&dataBuff);
-	nd4j::buffer::freeBuffer(&xShapeInfoBuff);
-	nd4j::buffer::freeBuffer(&extraParamsBuff);
-	nd4j::buffer::freeBuffer(&resultBuffer);
-	delete sum;
-	delete opFactory5;
-
+	Data<double> *data = getData(comparison,0);
+	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
+	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
+	test->run();
+	delete test;
+	delete data;
 }
+
+TEST(Reduce,ObjectOrientedVar) {
+	//extra params needs 3 variables
+	//one of those is bias
+	int opNum = 10;
+	double comparison[1] = {1.6666666666666667};
+	Data<double> *data = getData(comparison,0);
+	data->extraParams[1] = 0.0;
+	data->extraParams[2] = 2.5;
+	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
+	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,4);
+	test->run();
+	delete test;
+	delete data;
+}
+
+TEST(Reduce,ObjectOrientedBias) {
+	int opNum = 2;
+	double comparison[1] = {0};
+	Data<double> *data = getData(comparison,0);
+	//needs the mean
+	data->extraParams[1] = 2.5;
+	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
+	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,4);
+	test->run();
+	delete test;
+	delete data;
+}
+
+
+TEST(Reduce,ObjectOrientedMax) {
+	int opNum = 3;
+	double comparison[1] = {4};
+	Data<double> *data = getData(comparison,0);
+	data->extraParams[0] = data->data[0];
+	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
+	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
+	test->run();
+	delete test;
+	delete data;
+}
+
+
+
+TEST(Reduce,ObjectOrientedMin) {
+	int opNum = 4;
+	double comparison[1] = {1};
+	Data<double> *data = getData(comparison,0);
+	data->extraParams[0] = data->data[0];
+	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
+	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
+	test->run();
+	delete test;
+	delete data;
+}
+
+
+TEST(Reduce,ObjectOrientedNorm1) {
+	int opNum = 5;
+	double comparison[1] = {10.0};
+	Data<double> *data = getData(comparison,0);
+	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
+	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
+	test->run();
+	delete test;
+	delete data;
+}
+
+
+TEST(Reduce,ObjectOrientedNorm2) {
+	int opNum = 6;
+	double comparison[1] = {5.4772255750516612};
+	Data<double> *data = getData(comparison,0);
+	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
+	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
+	test->run();
+	delete test;
+	delete data;
+}
+
+
+TEST(Reduce,ObjectOrientedMean) {
+	int opNum = 0;
+	double comparison[1] = {2.5};
+	Data<double> *data = getData(comparison,0);
+	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
+	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
+	test->run();
+	delete test;
+	delete data;
+}
+
+
+TEST(Reduce,ObjectOrientedProd) {
+	int opNum = 8;
+	double comparison[1] = {24};
+	Data<double> *data = getData(comparison,0);
+	data->extraParams[0] = 1.0;
+	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
+	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
+	test->run();
+	delete test;
+	delete data;
+}
+/*
+
+
+
+
 TEST(Reduce,DimensionSum) {
 	functions::reduce::ReduceOpFactory<double> *opFactory5 =
 			new functions::reduce::ReduceOpFactory<double>();
