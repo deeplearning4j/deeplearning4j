@@ -41,7 +41,7 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
      */
     public AccumulationKernelCall(Op op,int[] dimension) {
         super(op);
-        System.out.println("Accum dimensions: " + Arrays.toString(dimension));
+
         if(dimension == null)
             dimension = new int[] {Integer.MAX_VALUE};
         this.dimension = dimension;
@@ -80,7 +80,6 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
     @Override
     public void createMetrics() {
         String functionName = CudaArgs.getModuleNameFor(op);
-        System.out.println("Calling for function ["+ functionName+"] ");
         GpuMetrics metrics = GpuMetrics.blocksAndThreadsOccupancy(functionName, getType(op), op.n());
         if (dimension != null && dimension.length >= 1 && dimension[0] != Integer.MAX_VALUE) {
             int length = op.x().tensorssAlongDimension(dimension);

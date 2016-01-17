@@ -54,7 +54,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             if(dimension[i] < 0)
                 dimension[i] += op.x().rank();
         }
-        System.out.println("Exec dimension length: [" + dimension.length +"], values: " + Arrays.toString(dimension));
         //do op along all dimensions
         if(dimension.length == op.x().rank())
             dimension = new int[] {Integer.MAX_VALUE};
@@ -70,7 +69,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             if(op.x() instanceof IComplexNDArray) {
                 return Nd4j.scalar(execAndReturn(op).getFinalResultComplex());
             }
-            System.out.println("Dimensions before call 2: " + Arrays.toString(dimension));
             return Nd4j.scalar(execAndReturn(op).getFinalResult().doubleValue());
         }
 
@@ -121,7 +119,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             //nothing to reduce
             if(ArrayUtil.prod(retShape) == op.x().length())
                 return op.x();
-            System.out.println("Dimensions before call 1: " + Arrays.toString(dimension));
             invoke(op,dimension);
             if(op.z() == null)
                 throw new IllegalStateException("No result set");
@@ -235,8 +232,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         if(op.x() instanceof IComplexNDArray
                 || executionMode() == ExecutionMode.JAVA || op.isPassThrough() || op instanceof CopyOp)
             return super.exec(op);
-
-        System.out.println("Firing op call: " + op.name());
 
         if (op instanceof TransformOp) {
             TransformOp t = (TransformOp) op;

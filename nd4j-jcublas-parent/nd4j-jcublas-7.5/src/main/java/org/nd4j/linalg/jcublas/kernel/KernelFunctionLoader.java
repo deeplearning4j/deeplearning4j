@@ -41,6 +41,7 @@ import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.util.CudaArgs;
+import org.nd4j.linalg.util.JarResource;
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
 import org.slf4j.Logger;
@@ -155,7 +156,6 @@ public class KernelFunctionLoader {
      * given function
      */
     public KernelLauncher get(String functionName,DataBuffer.Type dataType) {
-        System.out.println("KernelLauncher.get() for ["+functionName+"] as " + dataType.toString());
         String name = functionName;// + "_" + dataType;
         if(!launchers.containsRow(Thread.currentThread().getName())) {
 
@@ -291,29 +291,15 @@ public class KernelFunctionLoader {
         String f = props.getProperty(FUNCTION_KEY);
         log.info("Kernels to be loaded: " + f);
 
-        String tmpDir = System.getProperty("java.io.tmpdir");
-        StringBuffer dir = new StringBuffer();
-        this.kernelPath = dir.append(tmpDir)
-                .append(File.separator)
-                .append("nd4j-kernels")
-                .append(File.separator)
-                .append("output")
-                .append(File.separator)
-                .toString();
-
-        File tmpDir2 = new File(tmpDir + File.separator + "nd4j-kernels" + File.separatorChar + "output");
 
         /*
-            TODO: actually it's a good idea to remove kernels between launches, or make them have version number as part of file-name, to avoid cross-release issues
+            We're loading PTX kernels from internal resource
          */
 
-        File kernelsCubin = new File(tmpDir2.getAbsolutePath() + File.separatorChar + "all.cubin");
-        File kernelsPtx = new File(tmpDir2.getAbsolutePath() + File.separatorChar + "all.ptx");
-
-        boolean usingPtx = false;
+        File kernelsPtx = new JarResource("/all.ptx").getFile();
 
 
-
+        /*
 
         // let's check if cubin/ptx was already extracted from jar.
         boolean shouldExtract = !(kernelsPtx.exists());
@@ -327,29 +313,26 @@ public class KernelFunctionLoader {
                 log.info("Going for PTX distribution...");
                 FileUtils.copyFile(ptxResource.getFile(), kernelsPtx);
                 usingPtx = true;
-            } else if (cubinResource.exists()) {
-                log.info("Going for CUBIN distribution...");
-                FileUtils.copyFile(cubinResource.getFile(), kernelsCubin);
             } else {
                 throw new IllegalStateException("No CUDA kernels were found!");
             }
         }
 
+        */
+
         String[] split = f.split(",");
         this.modules = split;
 
 
-
-
         /*
-            We're not redistributing .cu files anymore, only .ptx/.cubin, so we store all kernel names into paths map, that'll be reused on kernel invocations
+            We're not redistributing .cu files anymore, only .ptx (or .cubin), so we store all kernel names into paths map, that'll be reused on kernel invocations
          */
+        String path = kernelsPtx.getAbsolutePath();
+
         for (String module : split) {
             // we have single .cubin file for all kernels
             // the only difference is concatenated to kernel data type of the function.
             // i.e. reduce3 = reduce3Float & reduce3Double
-
-            String path = kernelsPtx.exists() ? kernelsPtx.getAbsolutePath() : kernelsCubin.getAbsolutePath();
 
             String name = module;
 

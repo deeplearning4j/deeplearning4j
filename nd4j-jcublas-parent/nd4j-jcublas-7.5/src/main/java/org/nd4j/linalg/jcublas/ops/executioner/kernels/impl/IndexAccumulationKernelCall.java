@@ -82,7 +82,6 @@ public class IndexAccumulationKernelCall extends BaseGpuKernelCall {
     @Override
     public void createArgs() {
         if (op.y() != null) {
-            System.out.println("ZOMG");
             metrics.setSharedMemoryNotOverMax(metrics.getSharedMemory() * 2);
             xStride = BlasBufferUtil.getBlasStride(dimension == null ? op.x() : op.x().tensorAlongDimension(0, dimension));
             if (xStride < 0) {
@@ -141,7 +140,6 @@ public class IndexAccumulationKernelCall extends BaseGpuKernelCall {
                 }
             }
 
-            System.out.println("LOL1");
             xStride = BlasBufferUtil.getBlasStride(dimension == null ? op.x() : firstTad);
             if (xStride < 0) {
                 op.setX(op.x().dup());
@@ -170,8 +168,6 @@ public class IndexAccumulationKernelCall extends BaseGpuKernelCall {
             int length = op.x().data().length();
             if (dimension == null && xStride == 1 && op.x().offset() == 0)
                 length = op.n();
-
-            System.out.println("PEW-PEW");
 
             args = new Object[]{
                     CudaArgs.getOpCode(op),

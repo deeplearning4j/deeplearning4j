@@ -98,14 +98,18 @@ public class JarResource {
                     } else throw new FileNotFoundException("Resource " + this.resourceName + " not found");
                 }
 
+                long size = entry.getSize();
+
                 InputStream stream = zipFile.getInputStream(entry);
                 FileOutputStream outputStream = new FileOutputStream(file);
                 byte[] array = new byte[1024];
                 int rd = 0;
+                long bytesRead = 0;
                 do {
                     rd = stream.read(array);
                     outputStream.write(array,0,rd);
-                } while (rd == 1024);
+                    bytesRead += rd;
+                } while (bytesRead < size);
 
                 outputStream.flush();
                 outputStream.close();

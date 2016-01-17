@@ -98,7 +98,6 @@ public class KernelFunctions {
         if(launcher == null)
             throw new IllegalArgumentException("Launcher for function " + functionName + " and data type " + dataType + " does not exist!");
 
-        System.out.println("Launching NOW: ["+functionName+"]");
         launcher.forFunction(functionName)
                 .setBlockSize(metrics.getBlockSize(),1,1)
                 .setGridSize(metrics.getGridSize(),1,1).setStream(cudaContext.getStream())
@@ -120,9 +119,8 @@ public class KernelFunctions {
      * @param kernelParameters
      */
     public static  void invoke(GpuMetrics metrics, boolean sync,String functionName,DataBuffer.Type dataType,CudaContext cudaContext,Object...kernelParameters) {
-        // FIXME: this is bad AND ugly, remove this crappy shit
+        // FIXME: this is bad AND ugly, remove this crappy shit at some point
         String functionName2 = functionName + StringUtils.capitalize(dataType.toString().toLowerCase()); // KernelLauncher.FUNCTION_NAME + "_" + dataType;
-        System.out.println("Invoking now: " + functionName2);
         invoke(metrics, sync, functionName, functionName2, dataType, cudaContext, kernelParameters);
     }
 
