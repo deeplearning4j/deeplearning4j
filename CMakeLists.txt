@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.2)
 project(nativeoperations)
 set( CMAKE_VERBOSE_MAKEFILE on )
 option(TESTS "Compile and make tests for the code?" ON)
