@@ -595,19 +595,23 @@ public class ArrayUtil {
      * Return a copy of this array with the
      * given index omitted
      *
+     * PLEASE NOTE: index to be omitted must exist in source array.
+     *
      * @param data  the data to copy
      * @param index the index of the item to remove
      * @return the new array with the omitted
      * item
      */
     public static int[] removeIndex(int[] data, int...index) {
+        int offset = 0;
         /*
             workaround for non-existant indexes (such as Integer.MAX_VALUE)
-        */
-        int offset = 0;
+
+
         for (int i = 0; i < index.length; i ++) {
             if (index[i] >= data.length || index[i] < 0) offset++;
         }
+        */
 
         int[] ret = new int[data.length - index.length + offset];
         int count = 0;
