@@ -53,12 +53,12 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
     public double similarity( String label1, String label2) {
         if (label1 == null || label2 == null) return Double.NaN;
 
-        if (label1.equals(label2)) return 1.0;
-
         INDArray vec1 = lookupTable.vector(label1);
         INDArray vec2 = lookupTable.vector(label2);
 
         if (vec1 == null || vec2 == null) return Double.NaN;
+
+        if (label1.equals(label2)) return 1.0;
 
         return Transforms.cosineSim(vec1, vec2);
     }
@@ -66,6 +66,7 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
 
     @Override
     public Collection<String> wordsNearest(String label, int n) {
+        log.info("Basic scan against '"+label+"' word...");
         Collection<String> collection = wordsNearest(Arrays.asList(label),new ArrayList<String>(),n + 1);
         if (collection.contains(label)) collection.remove(label);
         return collection;
@@ -144,16 +145,15 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
             }
         }
 
-        WeightLookupTable weightLookupTable = lookupTable;
-        INDArray words = Nd4j.create(positive.size() + negative.size(), weightLookupTable.layerSize());
+        INDArray words = Nd4j.create(positive.size() + negative.size(), lookupTable.layerSize());
         int row = 0;
         //Set<String> union = SetUtils.union(new HashSet<>(positive), new HashSet<>(negative));
         for (String s : positive) {
-            words.putRow(row++, weightLookupTable.vector(s));
+            words.putRow(row++, lookupTable.vector(s));
         }
 
         for (String s : negative) {
-            words.putRow(row++, weightLookupTable.vector(s).mul(-1));
+            words.putRow(row++, lookupTable.vector(s).mul(-1));
         }
 
         INDArray mean = words.isMatrix() ? words.mean(0) : words;
@@ -183,26 +183,28 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
     public Collection<String> wordsNearest(INDArray words, int top) {
         if(lookupTable instanceof InMemoryLookupTable) {
             InMemoryLookupTable l = (InMemoryLookupTable) lookupTable;
-
             INDArray syn0 = l.getSyn0();
-            syn0.diviRowVector(syn0.norm2(0));
-
-            INDArray similarity = Transforms.unitVec(words).mmul(syn0.transpose());
-            // We assume that syn0 is normalized.
-            // Hence, the following division is not needed anymore.
-            // distances.diviRowVector(distances.norm2(1));
-            //INDArray[] sorted = Nd4j.sortWithIndices(distances,0,false);
-            List<Double> highToLowSimList = getTopN(similarity, top);
+            INDArray weights = syn0.norm2(0).rdivi(1).muli(words);
+            INDArray distances = syn0.mulRowVector(weights).mean(1);
+            INDArray[] sorted = Nd4j.sortWithIndices(distances,0,false);
+            INDArray sort = sorted[0];
             List<String> ret = new ArrayList<>();
-
-            for (int i = 0; i < highToLowSimList.size(); i++) {
-                String word = vocabCache.wordAtIndex(highToLowSimList.get(i).intValue());
-                if (word != null && !word.equals("UNK") && !word.equals("STOP")) {
-                    ret.add(word);
-                    if (ret.size() >= top) {
+            if(top > sort.length())
+                top = sort.length();
+            //there will be a redundant word
+            int end = top;
+            for(int i = 0; i < end; i++) {
+                int s = sort.getInt(i);
+                String add = vocabCache.wordAtIndex(s);
+                if(add == null || add.equals("UNK") || add.equals("STOP")) {
+                    end++;
+                    if(end >= sort.length())
                         break;
-                    }
+                    continue;
                 }
+
+
+                ret.add(vocabCache.wordAtIndex(s));
             }
 
             return ret;
@@ -218,7 +220,7 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
 
 
         distances.keepTopNKeys(top);
-        return distances.keySet();
+        return null; //distances.keySet();
 
 
     }
