@@ -29,6 +29,7 @@ import org.apache.commons.io.LineIterator;
 import org.apache.commons.io.output.StringBuilderWriter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
+import org.deeplearning4j.models.paragraphvectors.ParagraphVectors;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
@@ -40,7 +41,9 @@ import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.VocabularyHolder;
 import org.deeplearning4j.models.word2vec.wordstore.VocabularyWord;
+import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
+import org.deeplearning4j.text.documentiterator.LabelsSource;
 import org.deeplearning4j.text.sentenceiterator.LineSentenceIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -313,6 +316,141 @@ public class WordVectorSerializer {
         }
         writer.flush();
         writer.close();
+    }
+
+    /**
+     * This method saves paragraph vectors to the given path.
+     *
+     * @param vectors
+     * @param path
+     */
+    public static void writeWordVectors(ParagraphVectors vectors, String path) {
+        try (FileOutputStream fos = new FileOutputStream(path)) {
+            writeWordVectors(vectors, fos);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
+    public static ParagraphVectors readParagraphVectorsFromText(@NonNull String path) {
+        try {
+            return readParagraphVectorsFromText(new FileInputStream(path));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static ParagraphVectors readParagraphVectorsFromText(@NonNull File file) {
+        try {
+            return readParagraphVectorsFromText(new FileInputStream(file));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
+    public static ParagraphVectors readParagraphVectorsFromText(@NonNull InputStream stream) {
+        try {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
+            ArrayList<String> labels = new ArrayList<>();
+            ArrayList<INDArray> arrays = new ArrayList<>();
+            VocabCache<VocabWord> vocabCache = new AbstractCache.Builder<VocabWord>().build();
+            String line = "";
+            while ((line = reader.readLine()) != null) {
+                String[] split = line.split(" ");
+                VocabWord word = new VocabWord(1.0, split[1]);
+                if (split[0].equals("L")) {
+                    // we have label element here
+                    word.setSpecial(true);
+                    word.markAsLabel(true);
+                } else if (split[0].equals("E")) {
+                    // we have usual element, aka word here
+                    word.setSpecial(false);
+                    word.markAsLabel(false);
+                    labels.add(word.getLabel());
+                } else throw new IllegalStateException("Source stream doesn't looks like ParagraphVectors serialized model");
+
+                vocabCache.addToken(word);
+                vocabCache.addWordToIndex(vocabCache.numWords() - 1, word.getLabel());
+
+                // backward compatibility code
+                vocabCache.putVocabWord(word.getLabel());
+
+                INDArray row = Nd4j.create(Nd4j.createBuffer(split.length - 2));
+                for (int i = 2; i < split.length; i++) {
+                    row.putScalar(i - 2, Float.parseFloat(split[i]));
+                }
+
+                arrays.add(Transforms.unitVec(row));
+            }
+
+            // now we create syn0 matrix, using previously fetched rows
+            INDArray syn = Nd4j.create(new int[]{arrays.size(), arrays.get(0).columns()});
+            for (int i = 0; i < syn.rows(); i++) {
+                syn.putRow(i, arrays.get(i));
+            }
+
+
+            InMemoryLookupTable<VocabWord> lookupTable = (InMemoryLookupTable<VocabWord>) new InMemoryLookupTable.Builder<VocabWord>()
+                    .vectorLength(arrays.get(0).columns())
+                    .useAdaGrad(false)
+                    .cache(vocabCache)
+                    .build();
+            Nd4j.clearNans(syn);
+            lookupTable.setSyn0(syn);
+
+            LabelsSource source = new LabelsSource(labels);
+            ParagraphVectors vectors = new ParagraphVectors.Builder()
+                    .labelsSource(source)
+                    .vocabCache(vocabCache)
+                    .lookupTable(lookupTable)
+                    .modelUtils(new BasicModelUtils<VocabWord>())
+                    .build();
+
+            return vectors;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
+    /**
+     * This method saves paragraph vectors to the given output stream.
+     *
+     * @param vectors
+     * @param stream
+     */
+    public static void writeWordVectors(ParagraphVectors vectors, OutputStream stream) {
+
+        try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stream))) {
+        /*
+            This method acts similary to w2v csv serialization, except of additional tag for labels
+         */
+
+            VocabCache<VocabWord> vocabCache = vectors.getVocab();
+            for (VocabWord word : vocabCache.vocabWords()) {
+                StringBuilder builder = new StringBuilder();
+
+                builder.append(word.isLabel() ? "L" : "E").append(" ");
+                builder.append(word.getLabel().replaceAll(" ", "_")).append(" ");
+
+                INDArray vector = vectors.getWordVectorMatrix(word.getLabel());
+                for (int j = 0; j < vector.length(); j++) {
+                    builder.append(vector.getDouble(j));
+                    if (j < vector.length() - 1) {
+                        builder.append(" ");
+                    }
+                }
+
+                writer.write(builder.append("\n").toString());
+            }
+
+            writer.flush();
+            writer.close();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
