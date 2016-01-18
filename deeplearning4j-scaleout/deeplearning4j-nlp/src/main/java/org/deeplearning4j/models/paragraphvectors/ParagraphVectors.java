@@ -5,6 +5,7 @@ import lombok.NonNull;
 import lombok.Setter;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.models.embeddings.reader.ModelUtils;
+import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
@@ -168,6 +169,23 @@ public class ParagraphVectors extends Word2Vec {
         protected DocumentIterator docIter;
 
 
+
+
+        /**
+         * This method allows you to use pre-built WordVectors model (Word2Vec or GloVe) for ParagraphVectors.
+         * Existing model will be transferred into new model before training starts.
+         *
+         * PLEASE NOTE: Non-normalized model is recommended to use here.
+         *
+         * @param vec existing WordVectors model
+         * @return
+         */
+        @Override
+        public Builder useExistingWordVectors(@NonNull WordVectors vec) {
+            this.existingVectors = vec;
+            return this;
+        }
+
         /**
          * This method defines, if words representations should be build together with documents representations.
          *
@@ -280,6 +298,11 @@ public class ParagraphVectors extends Word2Vec {
 
             ParagraphVectors ret = new ParagraphVectors();
 
+            if (this.existingVectors != null) {
+                this.trainElementsVectors = false;
+                this.elementsLearningAlgorithm = null;
+            }
+
             if (this.labelsSource == null) this.labelsSource = new LabelsSource();
             if (docIter != null) {
                 /*
@@ -326,6 +349,9 @@ public class ParagraphVectors extends Word2Vec {
             ret.useAdeGrad = this.useAdaGrad;
             ret.stopWords = this.stopWords;
             ret.workers = this.workers;
+
+            ret.trainElementsVectors = this.trainElementsVectors;
+            ret.trainSequenceVectors = this.trainSequenceVectors;
 
             ret.elementsLearningAlgorithm = this.elementsLearningAlgorithm;
             ret.sequenceLearningAlgorithm = this.sequenceLearningAlgorithm;
