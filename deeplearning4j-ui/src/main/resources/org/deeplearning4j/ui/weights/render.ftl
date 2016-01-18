@@ -268,8 +268,9 @@
                 var scores = json['scores'];
                 var updateMagnitudes = json['updateMagnitudes'];
                 var paramMagnitudes = json['paramMagnitudes'];
+                var layerNames = json['layerNames'];
 
-                if(!model || !gradient || !score || !scores || !updateMagnitudes || !paramMagnitudes )
+                if(!model || !gradient || !score || !scores || !updateMagnitudes || !paramMagnitudes || !layerNames )
                     return;
                 $('.score').html('' + score);
 
@@ -305,10 +306,10 @@
                     var mapUpdates = updateMagnitudes[i];
 
                     var selectorModel = '#magnitudes .charts'
-                    var div = '<div class="layer' + i + 'param"><h4>Layer ' + i + ' Parameter Mean Magnitudes</h4></div>';
+                    var div = '<div class="layer' + i + 'param"><h4>Layer "' + layerNames[i] + '" Parameter Mean Magnitudes</h4></div>';
                     $(selectorModel).append(div);
                     appendMultiLineChart(mapParams,selectorModel + ' .layer' + i + 'param');
-                    div = '<div class="layer' + i + 'grad"><h4>Layer ' + i + ' Update/Gradient Mean Magnitudes</h4></div>';
+                    div = '<div class="layer' + i + 'grad"><h4>Layer "' + layerNames[i] + '" Update/Gradient Mean Magnitudes</h4></div>';
                     $(selectorModel).append(div);
                     appendMultiLineChart(mapUpdates,selectorModel + ' .layer' + i + 'grad');
                 }
@@ -325,23 +326,23 @@
 
 <body>
 <div id="score">
-    <h4>Score</h4>
+    <h3>Score</h3>
     <div class="score"></div>
 </div>
 <div id="scores">
-    <h4>Scores vs. iteration</h4>
+    <h3>Scores vs. Iteration</h3>
     <div class="chart"></div>
 </div>
 <div id="model">
-    <h4>Model</h4>
+    <h3>Model Parameters</h3>
     <div class="charts"></div>
 </div>
 <div id="gradient">
-    <h4>Gradient</h4>
+    <h3>Parameter Updates</h3>
     <div class="charts"></div>
 </div>
 <div id="magnitudes">
-    <h4>Mean Magnitudes: Parameters and Updates</h4>
+    <h3>Mean Magnitudes: Parameters and Updates vs. Iteration</h3>
     <div class="charts"></div>
 </div>
 <div id="lastupdate">
