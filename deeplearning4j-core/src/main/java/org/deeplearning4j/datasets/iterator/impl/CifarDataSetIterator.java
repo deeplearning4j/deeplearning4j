@@ -112,7 +112,6 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
             return last;
         }
 
-        ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
         int batchNumCount = 0;
         byte[] byteFeature = new byte[numPixels];
         List<DataSet> dataSets = new ArrayList<>();
@@ -130,7 +129,6 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
                 byteFeature = new byte[numPixels];
                 featureVector = Nd4j.create(numPixels-1);
             }
-            byteStream.close();
             exampleCount += batchSize;
         } catch (IOException e) {
             e.printStackTrace();
