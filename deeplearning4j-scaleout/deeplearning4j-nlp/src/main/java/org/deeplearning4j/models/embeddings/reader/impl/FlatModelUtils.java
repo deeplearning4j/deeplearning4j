@@ -8,10 +8,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 
 /**
- * This model reader is suited for tests, and for cases where flat scan against elements is required
+ * This model reader is suited for model tests, and for cases where flat scan against elements is required.
+ *
+ * PLEASE NOTE: This reader does NOT normalize underlying weights, it stays intact
  *
  * @author raver119@gmail.com
  */
@@ -30,8 +33,9 @@ public class FlatModelUtils<T extends SequenceElement> extends BasicModelUtils<T
      */
     @Override
     public Collection<String> wordsNearest(String label, int n) {
-        log.info("Flat scan against '"+label+"' word...");
-        return wordsNearest(lookupTable.vector(label), n);
+        Collection<String> collection = wordsNearest(lookupTable.vector(label), n);
+        if (collection.contains(label)) collection.remove(label);
+        return collection;
     }
 
     /**
@@ -43,16 +47,15 @@ public class FlatModelUtils<T extends SequenceElement> extends BasicModelUtils<T
      */
     @Override
     public Collection<String> wordsNearest(INDArray words, int top) {
-        log.info("Flat scan against vector...");
         Counter<String> distances = new Counter<>();
 
         for(String s : vocabCache.words()) {
             INDArray otherVec = lookupTable.vector(s);
-            double sim = Transforms.cosineSim(words, otherVec);
+            double sim = Transforms.cosineSim(words.dup(), otherVec.dup());
             distances.incrementCount(s, sim);
         }
 
         distances.keepTopNKeys(top);
-        return distances.keySet();
+        return distances.getSortedKeys();
     }
 }

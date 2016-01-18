@@ -220,7 +220,9 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
         return lookupTable;
     }
 
-    public void setModelUtils(@NonNull ModelUtils<T> modelUtils) {
+    @Override
+    @SuppressWarnings("unchecked")
+    public void setModelUtils(@NonNull ModelUtils modelUtils) {
         if (lookupTable != null) {
             modelUtils.init(lookupTable);
             this.modelUtils = modelUtils;
