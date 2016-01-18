@@ -1,0 +1,7 @@
+In a response to US financial crisis in 2008, Sprecher formed ICE US Trust based in New York, now called ICE Clear Credit LLC, to serve as a limited-purpose bank, a clearing house for credit default swaps.
+Sprecher worked closely with the Federal Reserve to serve as its over-the-counter (OTC) derivatives clearing house.
+"US regulators were keen on the kind of clearing house for opaque over-the-counter (OTC) derivatives as a risk management device.
+In the absence of a central counterparty - which would guarantee pay-outs should a trading party be unable to do so - there was a high risk of massive market disruption(Weitzman 2008)"
+The principal backers for ICE US Trust were the same financial institutions most affected by the crisis, the top ten of the world's largest banks (Goldman Sachs, Bank of America, Citi, Credit Suisse, Deutsche Bank, JPMorgan, Merrill Lynch, Morgan Stanley and UBS). Sprecher's clearing house cleared their global credit default swaps (CDS) in exchange for sharing profits with these banks.(Weitzman 2008)(Terhune 2010).
+By 30 September 2008 the Financial Post warned that the "$54000bn credit derivatives market faced its biggest test in October 2008 as billions of dollars worth of contracts on now-defaulted derivatives would be auctioned by the International Swaps and Derivatives Association.
+In his article in the Financial Post, (Weitzman 2008) described ICE as a "US-based electronic futures exchange" which raised the stakes on October 30, 2008 in its effort to expand in the $54000 bn credit derivatives market.
