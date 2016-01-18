@@ -464,6 +464,7 @@ public class ParagraphVectorsTest {
         log.info("Day1: " + vector_day1);
         log.info("Day2: " + vector_day2);
         log.info("Cross-Day similarity: " + crossDay);
+        log.info("Cross-Day similiarity 2: " + Transforms.cosineSim(vector_day1, vector_day2));
 
         assertTrue(crossDay > 0.9d);
 
