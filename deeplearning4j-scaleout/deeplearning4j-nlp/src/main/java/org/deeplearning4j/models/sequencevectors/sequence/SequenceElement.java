@@ -35,13 +35,13 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
     // this var defines, if this token can't be truncated with minWordFrequency threshold
     @Getter @Setter protected boolean special;
 
-    // this label definition
+    // this var defines that we have label here
     @Getter @Setter protected boolean isLabel;
 
     protected AdaGrad adaGrad;
 
     /*
-            Used for Joint/Distributed vocabs mechanics
+            Reserved for Joint/Distributed vocabs mechanics
     */
     @Getter @Setter protected Long storageId;
 
@@ -182,8 +182,13 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
         }
     }
 
-    /*
-        TODO: fix this. AdaGrad here should be unified with the rest of dl4j
+
+    /**
+     * Returns gradient for this specific element, at specific position
+     * @param index
+     * @param g
+     * @param lr
+     * @return
      */
     public double getGradient(int index, double g, double lr) {
         if (adaGrad == null)
