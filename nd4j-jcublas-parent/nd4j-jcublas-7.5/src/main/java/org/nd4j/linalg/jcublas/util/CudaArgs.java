@@ -244,6 +244,30 @@ public class CudaArgs {
     }
 
 
+    /**
+     * Returns number of SMs, based on device compute capability and number of processors.
+     *
+     * @param ccMajor
+     * @param ccMinor
+     * @return
+     */
+    public static int convertMPtoCores(int ccMajor, int ccMinor, int numberOfProcessors) {
+        // Defines for GPU Architecture types (using the SM version to determine the # of cores per SM
+
+        if (ccMajor == 1)
+            return 8;
+        if (ccMajor == 2 && ccMinor == 1)
+            return 48;
+        if (ccMajor == 2)
+            return 32;
+        if (ccMajor == 3)
+            return 192;
+        if (ccMajor == 5)
+            return 128;
+
+        // return negative number if device is unknown
+        return -1;
+    }
 
 
     /**
@@ -275,6 +299,7 @@ public class CudaArgs {
 
             } else if (arg instanceof INDArray) {
                 INDArray array = (INDArray) arg;
+                array.norm2(0);
                 if (!idMap.containsKey(array)) {
                     CublasPointer pointerToFree = new CublasPointer(array, context);
                     kernelParameters[i] = pointerToFree.getDevicePointer();
@@ -309,5 +334,6 @@ public class CudaArgs {
 
 
     }
+
 
 }

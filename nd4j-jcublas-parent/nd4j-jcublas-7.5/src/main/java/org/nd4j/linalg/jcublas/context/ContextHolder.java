@@ -45,6 +45,7 @@ import org.nd4j.linalg.jcublas.context.pool.factory.OldStreamItemFactory;
 import org.nd4j.linalg.jcublas.context.pool.factory.StreamItemFactory;
 import org.nd4j.linalg.jcublas.device.conf.DeviceConfiguration;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
+import org.nd4j.linalg.jcublas.util.CudaArgs;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
 import org.nd4j.linalg.util.SynchronizedTable;
 import org.slf4j.Logger;
@@ -273,9 +274,19 @@ public class ContextHolder {
             return;
         }
 
-        // we need PROPER stack initialization, like taking in account REAL number of SMs, not MPs * 48
-        long stackSize = Math.min(512*1024, deviceProperties.totalGlobalMem / (deviceProperties.multiProcessorCount * 48)/ 64 );
+
+        /*
+        // if we'll need stack initialization, here's the code
+        int numberOfCores = CudaArgs.convertMPtoCores(deviceProperties.major, deviceProperties.minor, deviceProperties.multiProcessorCount) * deviceProperties.multiProcessorCount;
+        int maxThreadsPerCore = deviceProperties.maxThreadsPerMultiProcessor / CudaArgs.convertMPtoCores(deviceProperties.major, deviceProperties.minor, deviceProperties.multiProcessorCount);
+
+
+        long stackSize = Math.min(512*1024, deviceProperties.totalGlobalMem / numberOfCores  / (maxThreadsPerCore + 8) );
+
         JCuda.cudaDeviceSetLimit(0,stackSize);
+
+        */
+
 
 
         //force certain ops to have a certain number of threads
