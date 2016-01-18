@@ -28,6 +28,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.apache.commons.io.output.StringBuilderWriter;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
@@ -571,11 +572,15 @@ public class WordVectorSerializer {
             }
         }
 
-        return new Word2Vec.Builder(configuration)
+        Word2Vec vec = new Word2Vec.Builder(configuration)
                 .vocabCache(vocabCache)
                 .lookupTable(lookupTable)
                 .resetModel(false)
                 .build();
+
+        vec.setModelUtils(new BasicModelUtils());
+
+        return vec;
     }
 
     /**
@@ -664,6 +669,7 @@ public class WordVectorSerializer {
         WordVectorsImpl vectors = new WordVectorsImpl();
         vectors.setLookupTable(table);
         vectors.setVocab(vocab);
+        vectors.setModelUtils(new BasicModelUtils());
         return vectors;
     }
 
@@ -679,6 +685,7 @@ public class WordVectorSerializer {
         WordVectorsImpl vectors = new WordVectorsImpl();
         vectors.setLookupTable(pair.getFirst());
         vectors.setVocab(pair.getSecond());
+        vectors.setModelUtils(new BasicModelUtils());
         return vectors;
     }
 
@@ -742,7 +749,7 @@ public class WordVectorSerializer {
             for (int i = 1; i < split.length; i++) {
                 row.putScalar(i - 1, Float.parseFloat(split[i]));
             }
-            arrays.add(row);
+            arrays.add(Transforms.unitVec(row));
         }
 
         INDArray syn = Nd4j.create(new int[]{arrays.size(), arrays.get(0).columns()});
