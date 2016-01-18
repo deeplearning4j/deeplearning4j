@@ -2177,7 +2177,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     /**
      * In place addition of a column vector
      *
-     * @param rowVector the column vector to add
+     * @param rowVector the row vector to add
      * @return the result of the addition
      */
     @Override
@@ -2188,7 +2188,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     /**
      * In place addition of a column vector
      *
-     * @param rowVector the column vector to add
+     * @param rowVector the row vector to add
      * @return the result of the addition
      */
     @Override
@@ -2221,7 +2221,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     /**
      * In place addition of a column vector
      *
-     * @param rowVector the column vector to add
+     * @param rowVector the row vector to add
      * @return the result of the addition
      */
     @Override
@@ -2232,7 +2232,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     /**
      * In place addition of a column vector
      *
-     * @param rowVector the column vector to add
+     * @param rowVector the row vector to add
      * @return the result of the addition
      */
     @Override
@@ -2265,7 +2265,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     /**
      * In place addition of a column vector
      *
-     * @param rowVector the column vector to add
+     * @param rowVector the row vector to add
      * @return the result of the addition
      */
     @Override
@@ -2276,7 +2276,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     /**
      * In place addition of a column vector
      *
-     * @param rowVector the column vector to add
+     * @param rowVector the row vector to add
      * @return the result of the addition
      */
     @Override
@@ -2309,7 +2309,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     /**
      * In place addition of a column vector
      *
-     * @param rowVector the column vector to add
+     * @param rowVector the row vector to add
      * @return the result of the addition
      */
     @Override
@@ -2320,7 +2320,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     /**
      * In place addition of a column vector
      *
-     * @param rowVector the column vector to add
+     * @param rowVector the row vector to add
      * @return the result of the addition
      */
     @Override
