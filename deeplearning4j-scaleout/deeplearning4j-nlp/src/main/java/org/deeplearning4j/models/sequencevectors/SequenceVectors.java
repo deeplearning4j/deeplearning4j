@@ -16,6 +16,7 @@ import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
+import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.VocabConstructor;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
@@ -54,7 +55,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
      * Builds vocabulary from provided SequenceIterator instance
      */
     public void buildVocab() {
-        log.info("Starting vocabulary building...");
+
 
         VocabConstructor<T> constructor = new VocabConstructor.Builder<T>()
                 .addSource(iterator, minWordFrequency)
@@ -62,7 +63,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                 .fetchLabels(trainSequenceVectors)
                 .build();
 
-        if (existingModel != null) {
+        if (existingModel != null && lookupTable instanceof InMemoryLookupTable && existingModel.lookupTable() instanceof InMemoryLookupTable) {
+            log.info("Merging existing vocabulary into the current one...");
             /*
                 if we have existing model defined, we're forced to fetch labels only.
                 the rest of vocabulary & weights should be transferred from existing model
@@ -73,8 +75,9 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             /*
                 Now we have vocab transferred, and we should transfer syn0 values into lookup table
              */
-
+            ((InMemoryLookupTable<VocabWord>) lookupTable).consume((InMemoryLookupTable<VocabWord>) existingModel.lookupTable());
         } else {
+            log.info("Starting vocabulary building...");
             // if we don't have existing model defined, we just build vocabulary
             constructor.buildJointVocabulary(false, true);
         }
