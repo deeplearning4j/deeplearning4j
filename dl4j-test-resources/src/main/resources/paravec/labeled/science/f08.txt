@@ -1,0 +1,12 @@
+A core objective of a learner is to generalize from its experience.
+Generalization in this context is the ability of a learning machine to perform accurately on new, unseen examples/tasks after having experienced a learning data set.
+The training examples come from some generally unknown probability distribution (considered representative of the space of occurrences) and the learner has to build a general model about this space that enables it to produce sufficiently accurate predictions in new cases.
+The computational analysis of machine learning algorithms and their performance is a branch of theoretical computer science known as computational learning theory.
+Because training sets are finite and the future is uncertain, learning theory usually does not yield guarantees of the performance of algorithms.
+Instead, probabilistic bounds on the performance are quite common. The bias–variance decomposition is one way to quantify generalization error.
+In addition to performance bounds, computational learning theorists study the time complexity and feasibility of learning.
+In computational learning theory, a computation is considered feasible if it can be done in polynomial time.
+There are two kinds of time complexity results.
+Positive results show that a certain class of functions can be learned in polynomial time.
+Negative results show that certain classes cannot be learned in polynomial time.
+There are many similarities between machine learning theory and statistical inference, although they use different terms.
