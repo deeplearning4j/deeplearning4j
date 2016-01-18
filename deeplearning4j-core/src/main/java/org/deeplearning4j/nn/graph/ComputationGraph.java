@@ -18,6 +18,7 @@ import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -49,6 +50,7 @@ public class ComputationGraph implements Serializable, Model {
     private INDArray[] labels;
 
     private NeuralNetConfiguration defaultConfiguration;
+    private Collection<IterationListener> listeners;
 
 
     public ComputationGraph(ComputationGraphConfiguration configuration){
@@ -325,6 +327,7 @@ public class ComputationGraph implements Serializable, Model {
                     if( solver == null ){
                         solver = new Solver.Builder()
                                 .configure(defaultConfiguration)    //TODO; don't like this
+                                .listeners(listeners)
                                 .model(this).build();
                     }
                     solver.optimize();
@@ -361,7 +364,7 @@ public class ComputationGraph implements Serializable, Model {
                 if( solver == null) {
                     solver = new Solver.Builder()
                             .configure(conf())
-//                            .listeners(getListeners())
+                            .listeners(getListeners())
                             .model(this).build();
                 }
 
@@ -612,12 +615,31 @@ public class ComputationGraph implements Serializable, Model {
         return l1;
     }
 
+    public void setListeners(Collection<IterationListener> listeners){
+        this.listeners = listeners;
+        if(layers == null) init();
+
+        for( Layer l : layers){
+            l.setListeners();
+        }
+    }
+
+    public void setListeners(IterationListener... listeners){
+        List<IterationListener> list = new ArrayList<>();
+        Collections.addAll(list,listeners);
+        setListeners(list);
+    }
+
+    public Collection<IterationListener> getListeners(){
+        return listeners;
+    }
+
     //------------------------------------------------------
     //Model methods:
 
     @Override
     public void fit() {
-        throw new UnsupportedOperationException("Not implemnted");
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
@@ -745,7 +767,16 @@ public class ComputationGraph implements Serializable, Model {
 
     @Override
     public Map<String, INDArray> paramTable() {
-        throw new UnsupportedOperationException("Not implemnted");
+        //Get all parameters from all layers
+        Map<String,INDArray> allParams = new LinkedHashMap<>();
+        for( int i=0; i<layers.length; i++ ){
+            Map<String,INDArray> paramMap = layers[i].paramTable();
+            for( Map.Entry<String, INDArray> entry : paramMap.entrySet() ){
+                String newKey = layers[i].conf().getLayer().getLayerName() + "_" + entry.getKey();
+                allParams.put(newKey, entry.getValue());
+            }
+        }
+        return allParams;
     }
 
     @Override
@@ -762,6 +793,5 @@ public class ComputationGraph implements Serializable, Model {
     public void clear() {
         throw new UnsupportedOperationException("Not implemnted");
     }
-
 
 }
