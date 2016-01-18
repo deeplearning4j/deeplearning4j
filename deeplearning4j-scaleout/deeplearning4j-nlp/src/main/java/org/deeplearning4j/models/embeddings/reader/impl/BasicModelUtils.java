@@ -21,6 +21,8 @@ import java.util.*;
 /**
  * Basic implementation for ModelUtils interface, suited for standalone use.
  *
+ * PLEASE NOTE: This reader applies normalization to underlying lookup table.
+ *
  * @author Adam Gibson
  */
 public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T> {
@@ -66,7 +68,6 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
 
     @Override
     public Collection<String> wordsNearest(String label, int n) {
-        log.info("Basic scan against '"+label+"' word...");
         Collection<String> collection = wordsNearest(Arrays.asList(label),new ArrayList<String>(),n + 1);
         if (collection.contains(label)) collection.remove(label);
         return collection;
@@ -183,28 +184,26 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
     public Collection<String> wordsNearest(INDArray words, int top) {
         if(lookupTable instanceof InMemoryLookupTable) {
             InMemoryLookupTable l = (InMemoryLookupTable) lookupTable;
+
             INDArray syn0 = l.getSyn0();
-            INDArray weights = syn0.norm2(0).rdivi(1).muli(words);
-            INDArray distances = syn0.mulRowVector(weights).mean(1);
-            INDArray[] sorted = Nd4j.sortWithIndices(distances,0,false);
-            INDArray sort = sorted[0];
+            syn0.diviColumnVector(syn0.norm2(1));
+
+            INDArray similarity = Transforms.unitVec(words).mmul(syn0.transpose());
+            // We assume that syn0 is normalized.
+            // Hence, the following division is not needed anymore.
+            // distances.diviRowVector(distances.norm2(1));
+            //INDArray[] sorted = Nd4j.sortWithIndices(distances,0,false);
+            List<Double> highToLowSimList = getTopN(similarity, top + 20);
             List<String> ret = new ArrayList<>();
-            if(top > sort.length())
-                top = sort.length();
-            //there will be a redundant word
-            int end = top;
-            for(int i = 0; i < end; i++) {
-                int s = sort.getInt(i);
-                String add = vocabCache.wordAtIndex(s);
-                if(add == null || add.equals("UNK") || add.equals("STOP")) {
-                    end++;
-                    if(end >= sort.length())
+
+            for (int i = 0; i < highToLowSimList.size(); i++) {
+                String word = vocabCache.wordAtIndex(highToLowSimList.get(i).intValue());
+                if (word != null && !word.equals("UNK") && !word.equals("STOP") ) {
+                    ret.add(word);
+                    if (ret.size() >= top) {
                         break;
-                    continue;
+                    }
                 }
-
-
-                ret.add(vocabCache.wordAtIndex(s));
             }
 
             return ret;
@@ -220,7 +219,7 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
 
 
         distances.keepTopNKeys(top);
-        return null; //distances.keySet();
+        return distances.keySet();
 
 
     }
@@ -232,7 +231,7 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
      * @param N the number of elements to extract
      * @return the indices and the sorted top N elements
      */
-    private static List<Double> getTopN(INDArray vec, int N) {
+    private List<Double> getTopN(INDArray vec, int N) {
         ArrayComparator comparator = new ArrayComparator();
         PriorityQueue<Double[]> queue = new PriorityQueue<>(vec.rows(),comparator);
 
