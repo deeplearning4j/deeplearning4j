@@ -143,6 +143,37 @@ public class ConvolutionLayerSetupTest {
 
     }
 
+    @Test
+    public void testLRN() throws Exception{
+        List<String> labels = new ArrayList<>(Arrays.asList("Zico", "Ziwang_Xu"));
+        String rootDir = new ClassPathResource("lfwtest").getFile().getAbsolutePath();
+
+        RecordReader reader = new ImageRecordReader(28,28,3,true,labels);
+        reader.initialize(new FileSplit(new File(rootDir)));
+        DataSetIterator recordReader = new RecordReaderDataSetIterator(reader,28 * 28 * 3,labels.size());
+        labels.remove("lfwtest");
+        NeuralNetConfiguration.ListBuilder builder = (NeuralNetConfiguration.ListBuilder) incompleteLRN();
+        new ConvolutionLayerSetup(builder,28,28,3);
+        ConvolutionLayer layer2 = (ConvolutionLayer) builder.getLayerwise().get(3).getLayer();
+        assertEquals(6,layer2.getNIn());
+
+    }
+
+
+    public MultiLayerConfiguration.Builder incompleteLRN() {
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
+                .seed(3).optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                .list(6)
+                .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[]{5, 5}).nOut(6)
+                        .build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder( new int[]{2, 2}).build())
+                .layer(2, new LocalResponseNormalization.Builder().build())
+                .layer(3, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[]{5, 5}).nOut(6)
+                        .build())
+                .layer(4, new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder(new int[]{2, 2}).build())
+                .layer(5, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nOut(2).build());
+        return builder;
+    }
 
 
     public MultiLayerConfiguration.Builder incompleteLFW() {
@@ -256,7 +287,6 @@ public class ConvolutionLayerSetupTest {
 
         return builder;
     }
-
 
 
 
