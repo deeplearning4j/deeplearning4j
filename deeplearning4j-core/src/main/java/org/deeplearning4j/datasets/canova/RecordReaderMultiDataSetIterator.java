@@ -60,7 +60,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
         Map<String,List<Collection<Writable>>> nextRRVals = new HashMap<>();
         Map<String,List<Collection<Collection<Writable>>>> nextSeqRRVals = new HashMap<>();
 
-        int minExamples = 0;
+        int minExamples = Integer.MAX_VALUE;
         for(Map.Entry<String,RecordReader> entry : recordReaders.entrySet() ){
             RecordReader rr = entry.getValue();
             List<Collection<Writable>> writables = new ArrayList<>(num);
@@ -83,6 +83,8 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
 
             nextSeqRRVals.put(entry.getKey(), writables);
         }
+
+        if(minExamples == Integer.MAX_VALUE) throw new RuntimeException("Error occurred during data set generation: no readers?");  //Should never happen
 
         //In order to align data at the end (for each example individually), we need to know the length of the
         // longest time series for each example
@@ -126,6 +128,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
                 inputArrMasks[i] = p.getSecond();
                 if(inputArrMasks[i] != null) inputMasks = true;
             }
+            i++;
         }
         if(!inputMasks) inputArrMasks = null;
 
@@ -148,6 +151,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
                 outputArrMasks[i] = p.getSecond();
                 if(outputArrMasks[i] != null) outputMasks = true;
             }
+            i++;
         }
         if(!outputMasks) outputArrMasks = null;
 
@@ -199,9 +203,12 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
     /** Convert the writables to a sequence (3d) data set, and also return the mask array (if necessary) */
     private Pair<INDArray,INDArray> convertWritablesSequence(List<Collection<Collection<Writable>>> list, int minValues,
                                                              int maxTSLength, SubsetDetails details, int[] longestSequence ){
-        if(maxTSLength == -1) maxTSLength = list.size();
+        if(maxTSLength == -1) maxTSLength = list.get(0).size();
         INDArray arr;
-        if(details.entireReader) arr = Nd4j.create(minValues,list.get(0).size(),maxTSLength);
+        if(details.entireReader){
+            int size = list.get(0).iterator().next().size();
+            arr = Nd4j.create(minValues,size,maxTSLength);
+        }
         else if(details.oneHot) arr = Nd4j.create(minValues,details.oneHotNumClasses,maxTSLength);
         else arr = Nd4j.create(minValues,details.subsetEndInclusive-details.subsetStart+1,maxTSLength);
 
@@ -284,8 +291,6 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
                     }
                 }
             }
-
-
         }
 
 
@@ -315,27 +320,41 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
         private List<SubsetDetails> inputs = new ArrayList<>();
         private List<SubsetDetails> outputs = new ArrayList<>();
 
-
+        /**
+         * @param batchSize The batch size for the RecordReaderMultiDataSetIterator
+         */
         public Builder(int batchSize){
             this.batchSize = batchSize;
         }
 
-        public void addReader(String readerName, RecordReader recordReader){
+        /** Add a RecordReader for use in .addInput(...) or .addOutput(...)
+         * @param readerName Name of the reader (for later reference)
+         * @param recordReader RecordReader
+         */
+        public Builder addReader(String readerName, RecordReader recordReader){
             recordReaders.put(readerName,recordReader);
+            return this;
         }
 
-        public void addSequenceReader(String seqReaderName, SequenceRecordReader seqRecordReader){
+        /** Add a SequenceRecordReader for use in .addInput(...) or .addOutput(...)
+         * @param seqReaderName Name of the sequence reader (for later reference)
+         * @param seqRecordReader SequenceRecordReader
+         */
+        public Builder addSequenceReader(String seqReaderName, SequenceRecordReader seqRecordReader){
             sequenceRecordReaders.put(seqReaderName,seqRecordReader);
+            return this;
         }
 
         /** Set the sequence alignment mode for all sequences */
-        public void setSequenceAlignmentMode(AlignmentMode alignmentMode){
+        public Builder sequenceAlignmentMode(AlignmentMode alignmentMode){
             this.alignmentMode = alignmentMode;
+            return this;
         }
 
         /** Set as an input, the entire contents (all columns) of the RecordReader or SequenceRecordReader */
-        public void addInput(String readerName){
+        public Builder addInput(String readerName){
             inputs.add(new SubsetDetails(readerName,true,false,-1,-1,-1));
+            return this;
         }
 
         /** Set as an input, a subset of the specified RecordReader or SequenceRecordReader
@@ -343,33 +362,37 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
          * @param columnFirst First column index, inclusive
          * @param columnLast Last column index, inclusive
          */
-        public void addInput(String readerName, int columnFirst, int columnLast ){
+        public Builder addInput(String readerName, int columnFirst, int columnLast ){
             inputs.add(new SubsetDetails(readerName,false,false,-1,columnFirst,columnLast));
+            return this;
         }
 
         /** Add as an input a single column from the specified RecordReader / SequenceRecordReader
          * The assumption is that the specified column contains integer values in range 0..numClasses-1;
          * this integer will be converted to a one-hot representation
-         * @param readerName
-         * @param column
-         * @param numClasses
+         * @param readerName Name of the RecordReader or SequenceRecordReader
+         * @param column Column that contains the index
+         * @param numClasses Total number of classes
          */
-        public void addInputOneHot(String readerName, int column, int numClasses){
+        public Builder addInputOneHot(String readerName, int column, int numClasses){
             inputs.add(new SubsetDetails(readerName,false,true,numClasses,column,-1));
+            return this;
         }
 
         /** Set as an output, the entire contents (all columns) of the RecordReader or SequenceRecordReader */
-        public void addOutput(String readerName){
+        public Builder addOutput(String readerName){
             outputs.add(new SubsetDetails(readerName,true,false,-1,-1,-1));
+            return this;
         }
 
-        /**
+        /**Add an output, with a subset of the columns from the named RecordReader or SequenceRecordReader
          * @param readerName Name of the reader
          * @param columnFirst First column index
          * @param columnLast Last column index (inclusive)
          */
-        public void addOutput(String readerName, int columnFirst, int columnLast){
+        public Builder addOutput(String readerName, int columnFirst, int columnLast){
             outputs.add(new SubsetDetails(readerName,false,false,-1,columnFirst,columnLast));
+            return this;
         }
 
         /** An an output, where the output is taken from a single column from the specified RecordReader / SequenceRecordReader
@@ -379,11 +402,36 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
          * @param column index of the column
          * @param numClasses Number of classes
          */
-        public void addOutputOneHot(String readerName, int column, int numClasses ){
+        public Builder addOutputOneHot(String readerName, int column, int numClasses ){
             outputs.add(new SubsetDetails(readerName,false,true,numClasses,column,-1));
+            return this;
         }
 
+        /** Create the RecordReaderMultiDataSetIterator */
         public RecordReaderMultiDataSetIterator build(){
+            //Validate input:
+            if(recordReaders.size() == 0 && sequenceRecordReaders.size() == 0){
+                throw new IllegalStateException("Cannot construct RecordReaderMultiDataSetIterator with no readers");
+            }
+
+            if(batchSize <= 0) throw new IllegalStateException("Cannot construct RecordReaderMultiDataSetIterator with batch size <= 0");
+
+            if(inputs.size() == 0 && outputs.size() == 0){
+                throw new IllegalStateException("Cannot construct RecordReaderMultiDataSetIterator with no inputs/outputs");
+            }
+
+            for(SubsetDetails ssd : inputs ){
+                if(!recordReaders.containsKey(ssd.readerName) && !sequenceRecordReaders.containsKey(ssd.readerName)){
+                    throw new IllegalStateException("Invalid input name: \"" + ssd.readerName + "\" - no reader found with this name");
+                }
+            }
+
+            for(SubsetDetails ssd : outputs ){
+                if(!recordReaders.containsKey(ssd.readerName) && !sequenceRecordReaders.containsKey(ssd.readerName)){
+                    throw new IllegalStateException("Invalid output name: \"" + ssd.readerName + "\" - no reader found with this name");
+                }
+            }
+
             return new RecordReaderMultiDataSetIterator(this);
         }
     }
