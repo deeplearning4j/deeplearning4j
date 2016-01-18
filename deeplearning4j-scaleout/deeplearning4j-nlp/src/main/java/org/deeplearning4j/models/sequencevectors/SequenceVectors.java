@@ -68,7 +68,11 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                 the rest of vocabulary & weights should be transferred from existing model
              */
 
+            constructor.buildMergedVocabulary(existingModel, false);
 
+            /*
+                Now we have vocab transferred, and we should transfer syn0 values into lookup table
+             */
 
         } else {
             // if we don't have existing model defined, we just build vocabulary
