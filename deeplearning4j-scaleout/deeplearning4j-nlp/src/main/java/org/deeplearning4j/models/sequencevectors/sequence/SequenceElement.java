@@ -36,7 +36,7 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
     @Getter @Setter protected boolean special;
 
     // this var defines that we have label here
-    @Getter @Setter protected boolean isLabel;
+    protected boolean isLabel;
 
     protected AdaGrad adaGrad;
 
@@ -52,6 +52,24 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
      */
     abstract public String getLabel();
 
+
+    /**
+     * Returns whether this element was defined as label, or no
+     *
+     * @return
+     */
+    public boolean isLabel() {
+        return isLabel;
+    }
+
+    /**
+     * This method specifies, whether this element should be treated as label for some sequence/document or not.
+     *
+     * @param isLabel
+     */
+    public void markAsLabel(boolean isLabel) {
+        this.isLabel = isLabel;
+    }
 
     /**
      * This method returns SequenceElement's frequency in current training corpus.
