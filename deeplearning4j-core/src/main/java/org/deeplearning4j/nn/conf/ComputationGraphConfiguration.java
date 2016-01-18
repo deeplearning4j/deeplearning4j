@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.*;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.graph.nodes.GraphNode;
+import org.deeplearning4j.nn.graph.nodes.MergeNode;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -290,13 +291,21 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             return this;
         }
 
-        //TODO: code duplication? Layer has a name field...
         public GraphBuilder addLayer(String layerName, Layer layer, String... layerInputs ){
             NeuralNetConfiguration.Builder builder = globalConfiguration.clone();
             builder.layer(layer);
             layers.put(layerName, builder);
-            this.layerInputs.put(layerName,Arrays.asList(layerInputs));
-            layer.setLayerName(layerName);
+
+            //Automatically insert a MergeNode if layerInputs.length > 1
+            //Layers can only have 1 input
+            if(layerInputs != null && layerInputs.length > 1 ){
+                String mergeName = layerName+"-merge";
+                addNode(mergeName, new MergeNode(), layerInputs );
+                this.layerInputs.put(layerName,Collections.singletonList(mergeName));
+            } else if(layerInputs != null) {
+                this.layerInputs.put(layerName,Arrays.asList(layerInputs));
+                layer.setLayerName(layerName);
+            }
             return this;
         }
 

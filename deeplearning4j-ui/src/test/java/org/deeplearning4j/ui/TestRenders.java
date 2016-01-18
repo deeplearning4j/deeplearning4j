@@ -1,10 +1,21 @@
 package org.deeplearning4j.ui;
 
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
+import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
+import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
+import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.graph.nodes.MergeNode;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.layers.feedforward.autoencoder.AutoEncoder;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -129,6 +140,36 @@ public class TestRenders extends BaseUiServerTest {
         fetcher.fetch(100);
         DataSet d2 = fetcher.next();
         net.fit(d2);
+    }
+
+    @Test
+    public void testHistogramComputationGraph() throws Exception {
+
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .graphBuilder()
+                .addInputs("input")
+                .addLayer("cnn1", new ConvolutionLayer.Builder(2,2).stride(2, 2).nIn(1).nOut(3).build(), "input")
+                .addLayer("cnn2", new ConvolutionLayer.Builder(4,4).stride(2,2).padding(1,1).nIn(1).nOut(3).build(), "input")
+                .addLayer("max1", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(2, 2).build(), "cnn1", "cnn2")
+                .addLayer("output", new OutputLayer.Builder().nIn(7 * 7 * 6).nOut(10).build(), "max1")
+                .setOutputs("output")
+                .inputPreProcessor("cnn1", new FeedForwardToCnnPreProcessor(28, 28, 1))
+                .inputPreProcessor("cnn2", new FeedForwardToCnnPreProcessor(28, 28, 1))
+                .inputPreProcessor("output", new CnnToFeedForwardPreProcessor(7, 7, 6))
+                .pretrain(false).backprop(true)
+                .build();
+
+        ComputationGraph graph = new ComputationGraph(conf);
+        graph.init();
+
+        graph.setListeners(new HistogramIterationListener(1), new ScoreIterationListener(1));
+
+        DataSetIterator mnist = new MnistDataSetIterator(32,640,false,true,false,12345);
+
+        graph.fit(mnist);
+
     }
 
 }
