@@ -31,8 +31,12 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
     protected INDArray historicalGradient;
     protected List<Integer> points = new ArrayList<>();
     protected int codeLength = 0;
+
+    // this var defines, if this token can't be truncated with minWordFrequency threshold
     @Getter @Setter protected boolean special;
 
+    // this label definition
+    @Getter @Setter protected boolean isLabel;
 
     protected AdaGrad adaGrad;
 
