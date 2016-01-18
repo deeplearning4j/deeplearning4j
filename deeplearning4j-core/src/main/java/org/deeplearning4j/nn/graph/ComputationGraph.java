@@ -21,6 +21,8 @@ import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
+import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
@@ -50,7 +52,7 @@ public class ComputationGraph implements Serializable, Model {
     private INDArray[] labels;
 
     private NeuralNetConfiguration defaultConfiguration;
-    private Collection<IterationListener> listeners;
+    private Collection<IterationListener> listeners = new ArrayList<>();
 
 
     public ComputationGraph(ComputationGraphConfiguration configuration){
@@ -100,8 +102,22 @@ public class ComputationGraph implements Serializable, Model {
         inputs[inputNum] = input;
     }
 
+    public void setInputs(INDArray[] inputs){
+        if(inputs != null && inputs.length != this.numInputArrays){
+            throw new IllegalArgumentException("Invalid input array: network has " + numInputArrays + " inputs, but array is of length " + inputs.length);
+        }
+        this.inputs = inputs;
+    }
+
     public void setLabel(int labelNum, INDArray label){
         labels[labelNum] = label;
+    }
+
+    public void setLabels(INDArray[] labels){
+        if(labels != null && labels.length != this.numOutputArrays){
+            throw new IllegalArgumentException("Invalid output array: network has " + numOutputArrays + " outputs, but array is of length " + labels.length);
+        }
+        this.labels = labels;
     }
 
     /** Initialize the ComputationGraph network */
@@ -313,7 +329,7 @@ public class ComputationGraph implements Serializable, Model {
 
                 boolean hasMaskArrays = next.hasMaskArrays();
                 if(hasMaskArrays){
-                    throw new UnsupportedOperationException("Not yet implemented");
+                    throw new UnsupportedOperationException("Training with mask arrays: not yet implemented");
 //                    setLayerMaskArrays(next.getFeaturesMaskArray(), next.getLabelsMaskArray());
                 }
 
@@ -341,14 +357,58 @@ public class ComputationGraph implements Serializable, Model {
         }
     }
 
-    public void fit(Object multipleInputOutputIterator){
+    public void fit(MultiDataSet multiDataSet){
+        if(multiDataSet.hasMaskArrays()){
+            throw new UnsupportedOperationException("Training with masking arrays: not yet implemented");
+        }
+        fit(multiDataSet.getFeatures(),multiDataSet.getLabels());
+    }
 
-        throw new UnsupportedOperationException("Not implemented");
+    public void fit(MultiDataSetIterator multiDataSetIterator){
+        if(configuration.isPretrain()){
+
+            throw new UnsupportedOperationException("Pretraining not yet implemented");
+        }
+
+        if(configuration.isBackprop()){
+            while(multiDataSetIterator.hasNext()){
+                MultiDataSet next = multiDataSetIterator.next();
+                if (next.getFeatures() == null || next.getLabels() == null)
+                    break;
+
+                boolean hasMaskArrays = next.hasMaskArrays();
+                if(hasMaskArrays){
+                    throw new UnsupportedOperationException("Not yet implemented");
+//                    setLayerMaskArrays(next.getFeaturesMaskArray(), next.getLabelsMaskArray());
+                }
+
+                if(configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
+                    throw new UnsupportedOperationException("Truncated BPTT not yet implemented");
+//                    doTruncatedBPTT(next.getFeatureMatrix(),next.getLabels());
+                }
+                else {
+                    setInputs(next.getFeatures());
+                    setLabels(next.getLabels());
+                    if( solver == null ){
+                        solver = new Solver.Builder()
+                                .configure(defaultConfiguration)    //TODO; don't like this
+                                .listeners(listeners)
+                                .model(this).build();
+                    }
+                    solver.optimize();
+                }
+
+                if(hasMaskArrays){
+                    throw new UnsupportedOperationException();
+                    //clearLayerMaskArrays();
+                }
+            }
+        }
     }
 
     public void fit(INDArray[] inputs, INDArray[] labels ){
-//        setInputs(inputs);
-//        setLabels(labels);
+        setInputs(inputs);
+        setLabels(labels);
 
 
         if(configuration.isPretrain()){
