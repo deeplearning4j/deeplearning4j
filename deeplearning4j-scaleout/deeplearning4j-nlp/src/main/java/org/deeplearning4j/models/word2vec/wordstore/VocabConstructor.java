@@ -100,6 +100,7 @@ public class VocabConstructor<T extends SequenceElement> {
                 if (fetchLabels) {
                     T labelWord = document.getSequenceLabel();
                     labelWord.setSpecial(true);
+                    labelWord.markAsLabel(true);
                     labelWord.setElementFrequency(1);
 
                     tempHolder.addToken(labelWord);

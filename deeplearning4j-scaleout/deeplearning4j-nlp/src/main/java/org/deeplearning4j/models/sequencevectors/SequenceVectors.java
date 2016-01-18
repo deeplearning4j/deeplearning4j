@@ -64,6 +64,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
     }
 
 
+
     /**
      * Starts training over
      */

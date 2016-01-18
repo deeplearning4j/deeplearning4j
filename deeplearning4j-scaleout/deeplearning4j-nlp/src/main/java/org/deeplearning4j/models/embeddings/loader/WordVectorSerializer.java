@@ -333,6 +333,12 @@ public class WordVectorSerializer {
     }
 
 
+    /**
+     * Restores previously serialized ParagraphVectors model
+     *
+     * @param path Path to file that contains previously serialized model
+     * @return
+     */
     public static ParagraphVectors readParagraphVectorsFromText(@NonNull String path) {
         try {
             return readParagraphVectorsFromText(new FileInputStream(path));
@@ -341,6 +347,12 @@ public class WordVectorSerializer {
         }
     }
 
+    /**
+     * Restores previously serialized ParagraphVectors model
+     *
+     * @param file File that contains previously serialized model
+     * @return
+     */
     public static ParagraphVectors readParagraphVectorsFromText(@NonNull File file) {
         try {
             return readParagraphVectorsFromText(new FileInputStream(file));
@@ -350,6 +362,12 @@ public class WordVectorSerializer {
     }
 
 
+    /**
+     * Restores previously serialized ParagraphVectors model
+     *
+     * @param stream InputStream that contains previously serialized model
+     * @return
+     */
     public static ParagraphVectors readParagraphVectorsFromText(@NonNull InputStream stream) {
         try {
             BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
