@@ -43,16 +43,16 @@ public class TestCompGraphMulti {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .graphBuilder()
                 .addInputs("input")
-                .addLayer("cnn1", new ConvolutionLayer.Builder(2,2).stride(2,2).nIn(1).nOut(5).build(), "input")
-                .addLayer("cnn2", new ConvolutionLayer.Builder(2,2).stride(2,2).nIn(1).nOut(5).build(), "input")
+                .addLayer("cnn1", new ConvolutionLayer.Builder(4,4).stride(2,2).nIn(1).nOut(3).build(), "input")
+                .addLayer("cnn2", new ConvolutionLayer.Builder(4,4).stride(2,2).nIn(1).nOut(3).build(), "input")
                 .addLayer("max1", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(2, 2).build(), "cnn1", "cnn2")
-                .addLayer("dnn1", new DenseLayer.Builder().nOut(7).build(), "max1")
+                .addLayer("dnn1", new DenseLayer.Builder().nIn(15*15*3).nOut(7).build(), "max1")
                 .addLayer("max2", new SubsamplingLayer.Builder().build(), "max1")
                 .addLayer("output", new OutputLayer.Builder().nIn(7).nOut(10).build(), "dnn1", "max2")
                 .setOutputs("output")
                 .inputPreProcessor("cnn1", new FeedForwardToCnnPreProcessor(32, 32, 3))
                 .inputPreProcessor("cnn2", new FeedForwardToCnnPreProcessor(32, 32, 3))
-                .inputPreProcessor("dnn1", new CnnToFeedForwardPreProcessor(8, 8, 5))
+                .inputPreProcessor("dnn1", new CnnToFeedForwardPreProcessor(15, 15, 3))
                 .pretrain(false).backprop(true)
                 .build();
     }
@@ -62,8 +62,7 @@ public class TestCompGraphMulti {
     }
 
     protected static int getNumParams(){
-        //Number of parameters - 137 - TODO dense layer number of params is off at 7 - should be 8*7+7 and not counted in num params...
-        return (5*1*2*2+5) + (5*1*2*2+5) + (8*10+7);
+        return (3*1*4*4+3) + (3*1*4*4+3) + (7*15*15*3+7) + (7*10+10);
     }
 
     @Before
@@ -81,7 +80,7 @@ public class TestCompGraphMulti {
     public void testConfigBasic(){
 
         int[] order = graph.topologicalSortOrder();
-        int[] expOrder = new int[]{0,1,3,6,4,5,2};
+        int[] expOrder = new int[]{0,1,3,7,6,4,5,8,2};
         assertArrayEquals(expOrder,order);  //Only one valid order: 0 (input) -> 1 (firstlayer) -> 2 (outputlayer)
 
         INDArray params = graph.params();
