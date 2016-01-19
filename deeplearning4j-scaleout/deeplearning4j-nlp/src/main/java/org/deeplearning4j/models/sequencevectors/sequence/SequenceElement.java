@@ -31,13 +31,17 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
     protected INDArray historicalGradient;
     protected List<Integer> points = new ArrayList<>();
     protected int codeLength = 0;
+
+    // this var defines, if this token can't be truncated with minWordFrequency threshold
     @Getter @Setter protected boolean special;
 
+    // this var defines that we have label here
+    protected boolean isLabel;
 
     protected AdaGrad adaGrad;
 
     /*
-            Used for Joint/Distributed vocabs mechanics
+            Reserved for Joint/Distributed vocabs mechanics
     */
     @Getter @Setter protected Long storageId;
 
@@ -48,6 +52,24 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
      */
     abstract public String getLabel();
 
+
+    /**
+     * Returns whether this element was defined as label, or no
+     *
+     * @return
+     */
+    public boolean isLabel() {
+        return isLabel;
+    }
+
+    /**
+     * This method specifies, whether this element should be treated as label for some sequence/document or not.
+     *
+     * @param isLabel
+     */
+    public void markAsLabel(boolean isLabel) {
+        this.isLabel = isLabel;
+    }
 
     /**
      * This method returns SequenceElement's frequency in current training corpus.
@@ -178,8 +200,13 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
         }
     }
 
-    /*
-        TODO: fix this. AdaGrad here should be unified with the rest of dl4j
+
+    /**
+     * Returns gradient for this specific element, at specific position
+     * @param index
+     * @param g
+     * @param lr
+     * @return
      */
     public double getGradient(int index, double g, double lr) {
         if (adaGrad == null)

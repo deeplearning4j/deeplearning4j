@@ -2,6 +2,8 @@ package org.deeplearning4j.models.word2vec.wordstore;
 
 import lombok.Data;
 import lombok.NonNull;
+import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
+import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
@@ -56,6 +58,72 @@ public class VocabConstructor<T extends SequenceElement> {
     }
 
     /**
+     * This method transfers existing WordVectors model into current one
+     *
+     * @param wordVectors
+     * @return
+     */
+    @SuppressWarnings("unchecked") // method is safe, since all calls inside are using generic SequenceElement methods
+    public VocabCache<T> buildMergedVocabulary(@NonNull WordVectors wordVectors, boolean fetchLabels) {
+        return buildMergedVocabulary((VocabCache<T>) wordVectors.vocab(), fetchLabels);
+    }
+
+    /**
+     * This method transfers existing vocabulary into current one
+     *
+     * Please note: this method expects source vocabulary has Huffman tree indexes applied
+     *
+     * @param vocabCache
+     * @return
+     */
+    public VocabCache<T> buildMergedVocabulary(@NonNull VocabCache<T> vocabCache, boolean fetchLabels) {
+        if (cache == null) cache = new AbstractCache.Builder<T>().build();
+        for (int t = 0; t < vocabCache.numWords(); t++) {
+            String label = vocabCache.wordAtIndex(t);
+            if (label == null) continue;
+            T element = vocabCache.wordFor(label);
+
+            // skip this element if it's a label, and user don't want labels to be merged
+            if (!fetchLabels && element.isLabel()) continue;
+
+            cache.addToken(element);
+            cache.addWordToIndex(cache.numWords() - 1, element.getLabel());
+
+            // backward compatibility code
+            cache.putVocabWord(element.getLabel());
+        }
+
+        if (cache.numWords() == 0) throw new IllegalStateException("Source VocabCache has no indexes available, transfer is impossible");
+
+        /*
+            Now, when we have transferred vocab, we should roll over iterator, and  gather labels, if any
+         */
+        if (fetchLabels) {
+            for(VocabSource<T> source: sources) {
+                SequenceIterator<T> iterator = source.getIterator();
+                iterator.reset();
+
+                while (iterator.hasMoreSequences()) {
+                    Sequence<T> sequence = iterator.nextSequence();
+
+                    for (T label: sequence.getSequenceLabels()) {
+                        if (!cache.containsWord(label.getLabel())) {
+                            cache.addToken(label);
+                            cache.addWordToIndex(cache.numWords() - 1, label.getLabel());
+
+                            // backward compatibility code
+                            cache.putVocabWord(label.getLabel());
+                        }
+                    }
+                }
+            }
+        }
+
+        return cache;
+    }
+
+
+    /**
      * This method scans all sources passed through builder, and returns all words as vocab.
      * If TargetVocabCache was set during instance creation, it'll be filled too.
      *
@@ -65,7 +133,6 @@ public class VocabConstructor<T extends SequenceElement> {
     public VocabCache<T> buildJointVocabulary(boolean resetCounters, boolean buildHuffmanTree) {
         if (resetCounters && buildHuffmanTree) throw new IllegalStateException("You can't reset counters and build Huffman tree at the same time!");
 
-        if (cache == null) throw new IllegalStateException("Cache is null, building fresh one");
         if (cache == null) cache = new AbstractCache.Builder<T>().build();
         log.debug("Target vocab size before building: [" + cache.numWords() + "]");
         final AtomicLong sequenceCounter = new AtomicLong(0);
@@ -100,6 +167,7 @@ public class VocabConstructor<T extends SequenceElement> {
                 if (fetchLabels) {
                     T labelWord = document.getSequenceLabel();
                     labelWord.setSpecial(true);
+                    labelWord.markAsLabel(true);
                     labelWord.setElementFrequency(1);
 
                     tempHolder.addToken(labelWord);

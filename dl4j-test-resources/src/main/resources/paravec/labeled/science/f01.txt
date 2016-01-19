@@ -1,0 +1,15 @@
+Big data is a broad term for data sets so large or complex that traditional data processing applications are inadequate.
+Challenges include analysis, capture, data curation, search, sharing, storage, transfer, visualization, querying and information privacy.
+The term often refers simply to the use of predictive analytics or certain other advanced methods to extract value from data, and seldom to a particular size of data set.
+Accuracy in big data may lead to more confident decision making, and better decisions can result in greater operational efficiency, cost reduction and reduced risk.
+Analysis of data sets can find new correlations to "spot business trends, prevent diseases, combat crime and so on."
+Scientists, business executives, practitioners of medicine, advertising and governments alike regularly meet difficulties with large data sets in areas including Internet search, finance and business informatics.
+Scientists encounter limitations in e-Science work, including meteorology, genomics, connectomics, complex physics simulations, biology and environmental research.
+Data sets are growing rapidly in part because they are increasingly gathered by cheap and numerous information-sensing mobile devices, aerial (remote sensing), software logs, cameras, microphones, radio-frequency identification (RFID) readers and wireless sensor networks.
+The world's technological per-capita capacity to store information has roughly doubled every 40 months since the 1980s; as of 2012, every day 2.5 exabytes (2.5×1018) of data are created.
+One question for large enterprises is determining who should own big data initiatives that affect the entire organization.
+Relational database management systems and desktop statistics and visualization packages often have difficulty handling big data.
+The work instead requires "massively parallel software running on tens, hundreds, or even thousands of servers".
+What is considered "big data" varies depending on the capabilities of the users and their tools, and expanding capabilities make big data a moving target.
+"For some organizations, facing hundreds of gigabytes of data for the first time may trigger a need to reconsider data management options.
+For others, it may take tens or hundreds of terabytes before data size becomes a significant consideration."
