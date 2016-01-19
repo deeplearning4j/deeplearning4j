@@ -10,6 +10,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.nodes.GraphNode;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.io.Serializable;
 import java.util.Arrays;
 
 /** A graph vertex is a vertex in the computation graph. It may contain either a Layer, or a GraphNode
@@ -20,7 +21,7 @@ import java.util.Arrays;
  *
  */
 @Data
-public class GraphVertex {
+public class GraphVertex implements Serializable {
 
     private ComputationGraph graph;
 
