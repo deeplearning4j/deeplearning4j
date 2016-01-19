@@ -119,7 +119,7 @@ public abstract class Layer implements Serializable, Cloneable {
 
 
     public abstract static class Builder<T extends Builder<T>> {
-        protected String layerName = "genisys";
+        protected String layerName = null;
         protected String activationFunction = null;
         protected WeightInit weightInit = null;
         protected double biasInit = Double.NaN;
