@@ -78,8 +78,6 @@ public:
 			DOUBLES_EQUAL(this->baseData->assertion[0],this->result->data->data[0],1e-3);
 		}
 		else {
-
-
 			CHECK(arrsEquals(this->rank, this->assertion, this->result->data->data));
 		}
 
@@ -255,37 +253,6 @@ Data<double> * getDataDimension(double *assertion,double startingVal) {
 	return ret;
 }
 
-/*
-
-TEST(Reduce,ObjectOrientedVar) {
-	//extra params needs 3 variables
-	//one of those is bias
-	int opNum = 10;
-	double comparison[1] = {1.6666666666666667};
-	Data<double> *data = getData(comparison,0);
-	data->extraParams[0] = 2.5;
-	data->extraParams[1] = 0.0;
-	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
-	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,4);
-	test->run();
-	delete test;
-	delete data;
-}
-
-TEST(Reduce,ObjectOrientedBias) {
-	int opNum = 2;
-	double comparison[1] = {0};
-	Data<double> *data = getData(comparison,0);
-	//needs the mean
-	data->extraParams[0] = 2.5;
-	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
-	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,4);
-	test->run();
-	delete test;
-	delete data;
-}
-
-
 TEST(Reduce,ObjectOrientedSum) {
 	int opNum = 1;
 	double comparison[1] = {10};
@@ -377,112 +344,10 @@ TEST(Reduce,ObjectOrientedProd) {
 
 
 
-TEST(Reduce,GenerateExtraParamsVariance) {
-	int length = 4;
-	int rank = 2;
-	double *data = (double *) malloc(sizeof(double) * length);
-	for(int i = 0; i < 4; i++) {
-		data[i] = i + 1;
-	}
-
-	int *shape = (int *) malloc(sizeof(int) * 2);
-	for(int i = 0; i < rank; i++)
-		shape[i] = 2;
-
-	int *shapeInfoBuff = shapeBuffer(rank,shape);
-	functions::reduce::ops::Variance<double> *var= new functions::reduce::ops::Variance<double>();
-	double *extraParams = var->generateExtraParams(data,shapeInfoBuff);
-	double assertion[2] = {2.5,0.0};
-	CHECK(arrsEquals(2,assertion,extraParams));
-
-	delete var;
-	free(extraParams);
-	free(data);
-	free(shape);
-	free(shapeInfoBuff);
-
-
-}
-
-
-
- TEST(Reduce,GenerateExtraParamsStandardDeviation) {
- 	int length = 4;
- 	int rank = 2;
- 	double *data = (double *) malloc(sizeof(double) * length);
- 	for(int i = 0; i < 4; i++) {
- 		data[i] = i + 1;
- 	}
-
- 	int *shape = (int *) malloc(sizeof(int) * 2);
- 	for(int i = 0; i < rank; i++)
- 		shape[i] = 2;
-
- 	int *shapeInfoBuff = shapeBuffer(rank,shape);
- 	functions::reduce::ops::StandardDeviation<double> *var= new functions::reduce::ops::StandardDeviation<double>();
- 	double *extraParams = var->generateExtraParams(data,shapeInfoBuff);
- 	double assertion[1] = {2.5};
- 	CHECK(arrsEquals(1,assertion,extraParams));
-
- 	delete var;
- 	free(extraParams);
- 	free(data);
- 	free(shape);
- 	free(shapeInfoBuff);
-
-
- }
-
- TEST(Reduce,GenerateExtraParamsBias) {
- 	int length = 4;
- 	int rank = 2;
- 	double *data = (double *) malloc(sizeof(double) * length);
- 	for(int i = 0; i < 4; i++) {
- 		data[i] = i + 1;
- 	}
-
- 	int *shape = (int *) malloc(sizeof(int) * 2);
- 	for(int i = 0; i < rank; i++)
- 		shape[i] = 2;
-
- 	int *shapeInfoBuff = shapeBuffer(rank,shape);
- 	functions::reduce::ops::Bias<double> *var= new functions::reduce::ops::Bias<double>();
- 	double *extraParams = var->generateExtraParams(data,shapeInfoBuff);
- 	double assertion[1] = {2.5};
- 	CHECK(arrsEquals(1,assertion,extraParams));
-
- 	delete var;
- 	free(extraParams);
- 	free(data);
- 	free(shape);
- 	free(shapeInfoBuff);
-
-
- }
 
 
 
 
-
-
-
-
-
-*/
-
-
-TEST(Reduce,ObjectOrientedStd) {
-	//needs 3 variables one being the bias
-	int opNum = 9;
-	double comparison[1] = {1.290994};
-	Data<double> *data = getData(comparison,0);
-	data->extraParams[0] = 2.5;
-	data->extraParams[1] = 0.0;
-	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
-	test->run();
-	delete test;
-	delete data;
-}
 
 TEST(Reduce,ObjectOrientedDimensionMax) {
 	int opNum = 3;
@@ -509,59 +374,17 @@ TEST(Reduce,ObjectOrientedDimensionSum) {
 	delete data;
 }
 
- TEST(Reduce,ObjectOrientedDimensionMin) {
- 	int opNum = 4;
- 	double comparison[2] = {1.00, 3.00};
- 	Data<double> *data = getDataDimension(comparison,0);
- 	data->extraParams[0] = data->data[0];
- 	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
- 	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
- 	test->run();
- 	delete test;
- 	delete data;
- }
-
-
-/*
-
-
-
-
-
-
-
-TEST(Reduce,ObjectOrientedDimensionVar) {
-	//extra params needs 3 variables
-	//one of those is bias
-	int opNum = 10;
-	double comparison[2] = {0.50, 0.50};
+TEST(Reduce,ObjectOrientedDimensionMin) {
+	int opNum = 4;
+	double comparison[2] = {1.00, 3.00};
 	Data<double> *data = getDataDimension(comparison,0);
-	data->extraParams[0] = 0.0;
-	data->extraParams[1] = 2.5;
+	data->extraParams[0] = data->data[0];
 	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
-	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,4);
+	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
 	test->run();
 	delete test;
 	delete data;
 }
-
-
-TEST(Reduce,ObjectOrientedDimensionBias) {
-	int opNum = 2;
-	double comparison[2] = { 0.00, 0.00};
-	Data<double> *data = getDataDimension(comparison,0);
-	//needs the mean
-	data->extraParams[1] = 2.5;
-	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
-	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,4);
-	test->run();
-	delete test;
-	delete data;
-}
-
-
-
-
 
 
 
@@ -577,16 +400,7 @@ TEST(Reduce,ObjectOrientedDimensionNorm1) {
 }
 
 
-TEST(Reduce,ObjectOrientedDimensionNorm2) {
-	int opNum = 6;
-	double comparison[2] = {2.24, 5.00};
-	Data<double> *data = getDataDimension(comparison,0);
-	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
-	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
-	test->run();
-	delete test;
-	delete data;
-}
+
 
 
 TEST(Reduce,ObjectOrientedDimensionMean) {
@@ -600,36 +414,30 @@ TEST(Reduce,ObjectOrientedDimensionMean) {
 	delete data;
 }
 
-
 TEST(Reduce,ObjectOrientedDimensionProd) {
 	int opNum = 8;
 	double comparison[2] = {2.00, 12.00};
 	Data<double> *data = getDataDimension(comparison,0);
 	data->extraParams[0] = 1.0;
-	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
 	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
 	test->run();
 	delete test;
 	delete data;
 }
 
-
-
-TEST(Reduce,ObjectOrientedDimensionStd) {
-	//needs 3 variables one being the bias
-	int opNum = 9;
-	double comparison[2] = {0.71, 0.71};
+TEST(Reduce,ObjectOrientedDimensionNorm2) {
+	int opNum = 6;
+	double comparison[2] = {2.24, 5.00};
 	Data<double> *data = getDataDimension(comparison,0);
-	data->extraParams[0] = 0.0;
-	data->extraParams[1] = 0.0;
-	data->extraParams[2] = 2.5;
 	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
 	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
 	test->run();
 	delete test;
 	delete data;
 }
- */
+
+
+
 
 
 #endif /* REDUCETESTS_H_ */

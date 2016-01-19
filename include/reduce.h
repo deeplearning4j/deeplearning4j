@@ -22,7 +22,7 @@ template<typename T>
 class ReduceFunction: public functions::ops::Op<T> {
 protected:
 	int extraParamsLength = 0;
-	int indexBased = 0;
+	int indexBased = 1;
 public:
 	virtual
 #ifdef __CUDACC__
@@ -247,33 +247,47 @@ public:
 			if (resultScalar) {
 				if(blockIdx.x >= resultLength)
 					return;
-				__shared__ T *realExtraParams;
-				if(tid == 0) {
-					if(extraParamsLength >= 1) {
-						realExtraParams = this->generateExtraParamsCuda(dx,xShapeInfo);
 
-					}
-					else
-						realExtraParams = extraParams;
+
+				T *realExtraParams;
+				if(tid == 0) {
+					realExtraParams = extraParams;
 
 				}
 
 				__syncthreads();
-
+				/**
+				 * Need to look closer
+				 * at how to handle the params
+				 * wrt each offset at each tad
+				 *
+				 * An idea would be to calculate and
+				 * save the tad offset we could use
+				 * for the statistics and extra params.
+				 *
+				 * Another option would be to have a shared variable
+				 * for handling the computation of different
+				 * extra parameters wrt
+				 * the offsets of each dimension.
+				 *
+				 *
+				 */
 				unsigned int i = blockIdx.x * xElementWiseStride + tid;
 				unsigned int gridSize = blockDim.x * gridDim.x * xElementWiseStride;
 				if(xOffset == 0) {
-					if(this->indexBased)
-						while (xOffset + i < n) {
+					if(!this->indexBased) {
+						while (i < n) {
 							curr = op(dx[i],realExtraParams);
 							reduction = update(reduction,curr, realExtraParams);
 							i += gridSize;
 						}
+					}
 					else {
-						while (xOffset + i < n) {
+						while (i < n) {
 							int tadIndex = shape::tadIndexForLinear(i,elementsPerTad);
 							if(tadIndex == 0) {
 								curr = op(dx[i],realExtraParams);
+								reduction = curr;
 							}
 							else {
 								curr = op(dx[i],realExtraParams);
@@ -285,28 +299,31 @@ public:
 					}
 
 				}
-				// we reduce multiple elements per thread.  The number is determined by the
-				// number of active thread blocks (via gridDim).  More blocks will result
-				// in a larger gridSize and therefore fewer elements per thread
-				if(this->indexBased)
-					while (xOffset + i < n) {
-						curr = op(dx[xOffset + i],realExtraParams);
-						reduction = update(reduction,curr, realExtraParams);
-						i += gridSize;
-					}
 				else {
-					while (xOffset + i < n) {
-						int tadIndex = shape::tadIndexForLinear(i,elementsPerTad);
-						if(tadIndex == 0) {
-							curr = op(dx[xOffset + i],realExtraParams);
-						}
-						else {
+					// we reduce multiple elements per thread.  The number is determined by the
+					// number of active thread blocks (via gridDim).  More blocks will result
+					// in a larger gridSize and therefore fewer elements per thread
+					if(this->indexBased)
+						while (xOffset + i < n) {
 							curr = op(dx[xOffset + i],realExtraParams);
 							reduction = update(reduction,curr, realExtraParams);
+							i += gridSize;
 						}
+					else {
+						while (xOffset + i < n) {
+							int tadIndex = shape::tadIndexForLinear(i,elementsPerTad);
+							if(tadIndex == 0) {
+								curr = op(dx[xOffset + i],realExtraParams);
+							}
+							else {
+								curr = op(dx[xOffset + i],realExtraParams);
+								reduction = update(reduction,curr, realExtraParams);
+							}
 
-						i += gridSize;
+							i += gridSize;
+						}
 					}
+
 				}
 
 				// each thread puts its local sum into shared memory
@@ -317,6 +334,7 @@ public:
 
 				// write result for this block to global mem
 				if (tid == 0) {
+					printf("Setting value to %f\n",sPartials[0]);
 					if(postProcessOrNot)
 						result[blockIdx.x] = this->postProcess(sPartials[0],n,realExtraParams);
 					else
@@ -829,6 +847,8 @@ public:
 			exec(x,xShapeInfo,extraParams,result,resultShapeInfoBuffer);
 			return;
 		}
+		T startingVal = this->startingValue(x);
+
 
 		shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo,dimension, dimensionLength);
 		int resultLength = shape::length(resultShapeInfoBuffer);
@@ -849,6 +869,7 @@ public:
 			if(tadIndex == 0 && this->getIndexBased()) {
 				result[reductionIndex] = op(x[i], extraParams);
 			}
+
 			else {
 				result[reductionIndex] = update(result[reductionIndex],
 						op(x[i], extraParams), extraParams);
@@ -1979,8 +2000,8 @@ __device__ void reduceGeneric(
 			dimensionLength,
 			postProcessOrNot);
 	if(threadIdx.x == 0) {
-		free(reduceFunctionToInvoke);
-		free(reduceOpFactory);
+		delete reduceFunctionToInvoke;
+		delete reduceOpFactory;
 	}
 
 }

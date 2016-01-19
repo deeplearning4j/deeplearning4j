@@ -15,11 +15,11 @@ template<typename T>
 int arrsEquals(int rank, T *comp1, T *comp2) {
 	int ret = 1;
 	for (int i = 0; i < rank; i++) {
-		T eps = nd4j::math::nd4j_abs(comp1[i] - comp2[i]);
-		ret = ret && (eps < 1e-3);
+		printf("Value i %d\n",i);
+		DOUBLES_EQUAL(comp1[i],comp2[i],1e-1);
 	}
 
-	return ret;
+	return 1;
 }
 
 template <typename T>
