@@ -334,13 +334,29 @@ public class WordVectorSerializer {
         writer.close();
     }
 
+
+    /**
+     * This method saves paragraph vectors to the given file.
+     *
+     * @param vectors
+     * @param path
+     */
+    public static void writeWordVectors(@NonNull ParagraphVectors vectors, @NonNull File path) {
+        try (FileOutputStream fos = new FileOutputStream(path)) {
+            writeWordVectors(vectors, fos);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
     /**
      * This method saves paragraph vectors to the given path.
      *
      * @param vectors
      * @param path
      */
-    public static void writeWordVectors(ParagraphVectors vectors, String path) {
+    public static void writeWordVectors(@NonNull ParagraphVectors vectors, @NonNull String path) {
         try (FileOutputStream fos = new FileOutputStream(path)) {
             writeWordVectors(vectors, fos);
         } catch (Exception e) {
@@ -416,7 +432,7 @@ public class WordVectorSerializer {
                     row.putScalar(i - 2, Float.parseFloat(split[i]));
                 }
 
-                arrays.add(Transforms.unitVec(row));
+                arrays.add(row);
             }
 
             // now we create syn0 matrix, using previously fetched rows

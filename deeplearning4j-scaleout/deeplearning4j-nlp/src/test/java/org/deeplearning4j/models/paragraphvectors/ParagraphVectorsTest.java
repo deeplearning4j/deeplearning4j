@@ -20,6 +20,7 @@ package org.deeplearning4j.models.paragraphvectors;
 
 
 import lombok.NonNull;
+import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
@@ -241,16 +242,35 @@ public class ParagraphVectorsTest {
         File tempFile = File.createTempFile("paravec", "ser");
         tempFile.deleteOnExit();
 
-        INDArray day = vec.getWordVectorMatrix("day");
+        INDArray day = vec.getWordVectorMatrix("day").dup();
 
+        /*
+            Testing binary serialization
+         */
         SerializationUtils.saveObject(vec, tempFile);
 
+
         ParagraphVectors vec2 = (ParagraphVectors) SerializationUtils.readObject(tempFile);
-        INDArray day2 = vec2.getWordVectorMatrix("day");
+        INDArray day2 = vec2.getWordVectorMatrix("day").dup();
+
+        assertEquals(day, day2);
 
         tempFile.delete();
 
-        assertEquals(day, day2);
+
+        /*
+            Testing txt serialization
+         */
+        File tempFile2 = File.createTempFile("paravec", "ser");
+        tempFile2.deleteOnExit();
+
+        WordVectorSerializer.writeWordVectors(vec, tempFile2);
+
+        ParagraphVectors vec3 = WordVectorSerializer.readParagraphVectorsFromText(tempFile2);
+        INDArray day3 = vec3.getWordVectorMatrix("day").dup();
+
+
+        assertEquals(day, day3);
     }
 
     @Test
