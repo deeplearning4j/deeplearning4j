@@ -112,7 +112,40 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
     @Override
     public ComputationGraphConfiguration clone(){
-        throw new UnsupportedOperationException("Not implemented");
+        ComputationGraphConfiguration conf = new ComputationGraphConfiguration();
+        conf.layerNamesMap = (layerNamesMap != null ? new HashMap<>(this.layerNamesMap) : null);
+        conf.layerNumbersMap = (layerNumbersMap != null ? new HashMap<>(this.layerNumbersMap) : null);
+        conf.layers = new HashMap<>();
+        for(Map.Entry<String,NeuralNetConfiguration> entry : this.layers.entrySet()){
+            conf.layers.put(entry.getKey(),entry.getValue().clone());
+        }
+        conf.graphNodes = new HashMap<>();
+        for(Map.Entry<String,GraphNode> entry : this.graphNodes.entrySet()){
+            conf.graphNodes.put(entry.getKey(),entry.getValue().clone());
+        }
+        conf.layerInputs = new HashMap<>();
+        for( Map.Entry<String,List<String>> entry : this.layerInputs.entrySet() ){
+            conf.layerInputs.put(entry.getKey(),new ArrayList<>(entry.getValue()));
+        }
+        conf.graphNodeInputs = new HashMap<>();
+        for( Map.Entry<String,List<String>> entry : this.graphNodeInputs.entrySet() ){
+            conf.graphNodeInputs.put(entry.getKey(),new ArrayList<>(entry.getValue()));
+        }
+        conf.networkInputs = new ArrayList<>(this.networkInputs);
+        conf.networkOutputs = new ArrayList<>(this.networkOutputs);
+
+        conf.pretrain = pretrain;
+        conf.backprop = backprop;
+        conf.inputPreProcessors = new HashMap<>();
+        for(Map.Entry<String,InputPreProcessor> entry : inputPreProcessors.entrySet()){
+            conf.inputPreProcessors.put(entry.getKey(),entry.getValue().clone());
+        }
+        conf.backpropType = backpropType;
+        conf.tbpttFwdLength = tbpttFwdLength;
+        conf.tbpttBackLength = tbpttBackLength;
+        conf.redistributeParams = redistributeParams;
+
+        return conf;
     }
 
 

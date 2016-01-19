@@ -18,7 +18,7 @@ public class ScoreFlatMapFunctionCGMultiDataSet implements FlatMapFunction<Itera
 
     private String json;
     private Broadcast<INDArray> params;
-    private static Logger log = LoggerFactory.getLogger(IterativeReduceFlatMap.class);
+    private static Logger log = LoggerFactory.getLogger(IterativeReduceFlatMapCG.class);
 
     public ScoreFlatMapFunctionCGMultiDataSet(String json, Broadcast<INDArray> params){
         this.json = json;

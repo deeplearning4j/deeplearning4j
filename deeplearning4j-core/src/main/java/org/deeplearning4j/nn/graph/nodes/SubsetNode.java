@@ -91,4 +91,9 @@ public class SubsetNode implements GraphNode {
         }
         return new INDArray[]{out};
     }
+
+    @Override
+    public SubsetNode clone(){
+        return new SubsetNode(from,to);
+    }
 }
