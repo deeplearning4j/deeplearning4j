@@ -23,4 +23,9 @@ public interface MultiDataSetIterator extends Iterator<MultiDataSet>, Serializab
      */
     void setPreProcessor(MultiDataSetPreProcessor preProcessor);
 
+    /**
+     * Resets the iterator back to the beginning
+     */
+    void reset();
+
 }
