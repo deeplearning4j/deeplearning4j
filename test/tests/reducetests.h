@@ -461,45 +461,53 @@ TEST(Reduce,GenerateExtraParamsVariance) {
  }
 
 
- TEST(Reduce,ObjectOrientedStd) {
- 	//needs 3 variables one being the bias
- 	int opNum = 9;
- 	double comparison[1] = {1.290994};
- 	Data<double> *data = getData(comparison,0);
- 	data->extraParams[0] = 2.5;
- 	data->extraParams[1] = 0.0;
- 	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
- 	test->run();
- 	delete test;
- 	delete data;
- }
 
 
 
- TEST(Reduce,ObjectOrientedDimensionSum) {
- 	int opNum = 1;
- 	double comparison[2] = {3,7};
 
- 	Data<double> *data = getDataDimension(comparison,0);
- 	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
- 	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
- 	test->run();
- 	delete test;
- 	delete data;
- }
 
- TEST(Reduce,ObjectOrientedDimensionMax) {
- 	int opNum = 3;
- 	double comparison[2] = {2.00, 4.00};
- 	Data<double> *data = getDataDimension(comparison,0);
- 	data->extraParams[0] = data->data[0];
- 	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
- 	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
- 	test->run();
- 	delete test;
- 	delete data;
- }
+
+
 */
+
+
+TEST(Reduce,ObjectOrientedStd) {
+	//needs 3 variables one being the bias
+	int opNum = 9;
+	double comparison[1] = {1.290994};
+	Data<double> *data = getData(comparison,0);
+	data->extraParams[0] = 2.5;
+	data->extraParams[1] = 0.0;
+	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
+	test->run();
+	delete test;
+	delete data;
+}
+
+TEST(Reduce,ObjectOrientedDimensionMax) {
+	int opNum = 3;
+	double comparison[2] = {2.00, 4.00};
+	Data<double> *data = getDataDimension(comparison,0);
+	data->extraParams[0] = data->data[0];
+	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
+	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
+	test->run();
+	delete test;
+	delete data;
+}
+
+
+TEST(Reduce,ObjectOrientedDimensionSum) {
+	int opNum = 1;
+	double comparison[2] = {3,7};
+
+	Data<double> *data = getDataDimension(comparison,0);
+	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
+	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
+	test->run();
+	delete test;
+	delete data;
+}
 
  TEST(Reduce,ObjectOrientedDimensionMin) {
  	int opNum = 4;

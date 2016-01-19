@@ -262,13 +262,51 @@ public:
 
 				unsigned int i = blockIdx.x * xElementWiseStride + tid;
 				unsigned int gridSize = blockDim.x * gridDim.x * xElementWiseStride;
+				if(xOffset == 0) {
+					if(this->indexBased)
+						while (xOffset + i < n) {
+							curr = op(dx[i],realExtraParams);
+							reduction = update(reduction,curr, realExtraParams);
+							i += gridSize;
+						}
+					else {
+						while (xOffset + i < n) {
+							int tadIndex = shape::tadIndexForLinear(i,elementsPerTad);
+							if(tadIndex == 0) {
+								curr = op(dx[i],realExtraParams);
+							}
+							else {
+								curr = op(dx[i],realExtraParams);
+								reduction = update(reduction,curr, realExtraParams);
+							}
+
+							i += gridSize;
+						}
+					}
+
+				}
 				// we reduce multiple elements per thread.  The number is determined by the
 				// number of active thread blocks (via gridDim).  More blocks will result
 				// in a larger gridSize and therefore fewer elements per thread
-				while (xOffset + i < n) {
-					curr = op(dx[xOffset + i],realExtraParams);
-					reduction = update(reduction,curr, realExtraParams);
-					i += gridSize;
+				if(this->indexBased)
+					while (xOffset + i < n) {
+						curr = op(dx[xOffset + i],realExtraParams);
+						reduction = update(reduction,curr, realExtraParams);
+						i += gridSize;
+					}
+				else {
+					while (xOffset + i < n) {
+						int tadIndex = shape::tadIndexForLinear(i,elementsPerTad);
+						if(tadIndex == 0) {
+							curr = op(dx[xOffset + i],realExtraParams);
+						}
+						else {
+							curr = op(dx[xOffset + i],realExtraParams);
+							reduction = update(reduction,curr, realExtraParams);
+						}
+
+						i += gridSize;
+					}
 				}
 
 				// each thread puts its local sum into shared memory
@@ -328,12 +366,46 @@ public:
 					else {
 						realExtraParams = extraParams;
 					}
+					if(this->indexBased) {
+						//update the reduction for the thread for the current tad
+						//note here that we compute the offset and then accumulate in shared memory
+						if(xElementWiseStride > 1)
+							for (int element = 0; element < elementsPerTad; element++, offsetForTad += xElementWiseStride) {
+								if(element == 0) {
+									sPartials[tid] = op(dx[offsetForTad],realExtraParams);
+								}
+								else
+									sPartials[tid] = update(sPartials[tid], op(dx[offsetForTad],realExtraParams), realExtraParams);
+								__syncthreads();
+							}
+						else {
+							for (int element = 0; element < elementsPerTad; element++, offsetForTad++) {
+								if(element == 0) {
+									sPartials[tid] = op(dx[offsetForTad],realExtraParams);
+								}
 
-					//update the reduction for the thread for the current tad
-					//note here that we compute the offset and then accumulate in shared memory
-					for (int element = 0; element < elementsPerTad; element++, offsetForTad += xElementWiseStride) {
-						sPartials[tid] = update(sPartials[tid], op(dx[offsetForTad],realExtraParams), realExtraParams);
-						__syncthreads();
+								else
+									sPartials[tid] = update(sPartials[tid], op(dx[offsetForTad],realExtraParams), realExtraParams);
+								__syncthreads();
+							}
+						}
+
+					}
+					else {
+						//update the reduction for the thread for the current tad
+						//note here that we compute the offset and then accumulate in shared memory
+						if(xElementWiseStride > 1)
+							for (int element = 0; element < elementsPerTad; element++, offsetForTad += xElementWiseStride) {
+								sPartials[tid] = update(sPartials[tid], op(dx[offsetForTad],realExtraParams), realExtraParams);
+								__syncthreads();
+							}
+						else {
+							for (int element = 0; element < elementsPerTad; element++, offsetForTad++) {
+								sPartials[tid] = update(sPartials[tid], op(dx[offsetForTad],realExtraParams), realExtraParams);
+								__syncthreads();
+							}
+						}
+
 					}
 
 
