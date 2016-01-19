@@ -305,6 +305,12 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
     }
 
     @Override
+    public void reset() {
+        for(RecordReader rr : recordReaders.values()) rr.reset();
+        for(SequenceRecordReader rr: sequenceRecordReaders.values()) rr.reset();
+    }
+
+    @Override
     public boolean hasNext() {
         for(RecordReader rr : recordReaders.values()) if(!rr.hasNext()) return false;
         for(SequenceRecordReader rr : sequenceRecordReaders.values()) if(!rr.hasNext()) return false;
