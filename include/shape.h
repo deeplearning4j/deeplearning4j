@@ -59,6 +59,20 @@ typedef struct {
 	int tensorShapeProd;
 } TADPermuteInfo;
 
+
+#ifdef __CUDACC__
+__inline__ __host__ __device__
+#endif
+
+int tadIndexForLinear(int linearIndex, int tadLength);
+/**
+ * Get the shape info buffer
+ * for the given rank and shape.
+ */
+#ifdef __CUDACC__
+__host__ __device__
+#endif
+int *shapeBuffer(int rank, int *shape);
 /**
  * Computes the standard packed array strides for a given shape.
  *
@@ -1044,6 +1058,27 @@ int computeElementWiseStride(int rank, int *shape, int *stride, int isFOrder,
 	return -1;
 
 }
+
+/**
+ * Get the shape info buffer
+ * for the given rank and shape.
+ */
+int *shapeBuffer(int rank, int *shape) {
+	int *stride = shape::calcStrides(shape, rank);
+	shape::ShapeInformation * shapeInfo = (shape::ShapeInformation *) malloc(
+			sizeof(shape::ShapeInformation));
+	shapeInfo->shape = shape;
+	shapeInfo->stride = stride;
+	shapeInfo->offset = 0;
+	shapeInfo->rank = rank;
+	int elementWiseStride = shape::computeElementWiseStride(rank, shape, stride,
+			0);
+	shapeInfo->elementWiseStride = elementWiseStride;
+	int *shapeInfoBuffer = shape::toShapeBuffer(shapeInfo);
+	free(shapeInfo);
+	return shapeInfoBuffer;
+}
+
 /**
  *
  * @param length
@@ -2372,6 +2407,20 @@ int reductionIndexForTad(int tadIndexForOriginal, int tadsForReduced,
 	if (tadIndexForOriginal == 0)
 		return 0;
 	return tadIndexForOriginal / (tadsForOriginal / tadsForReduced);
+}
+
+/**
+ * Tad index for linear
+ * @param linearIndex
+ * @param tadLength
+ * @return
+ */
+#ifdef __CUDACC__
+__inline__ __host__ __device__
+#endif
+
+int tadIndexForLinear(int linearIndex, int tadLength) {
+	return linearIndex % tadLength;
 }
 
 /**

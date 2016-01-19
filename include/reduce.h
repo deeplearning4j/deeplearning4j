@@ -22,7 +22,17 @@ template<typename T>
 class ReduceFunction: public functions::ops::Op<T> {
 protected:
 	int extraParamsLength = 0;
+	int indexBased = 0;
 public:
+	virtual
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	int getIndexBased() {
+		return indexBased;
+	}
+
+
 	virtual
 #ifdef __CUDACC__
 	__host__ __device__
@@ -282,10 +292,20 @@ public:
 			}
 
 			else if (!resultScalar) {
+				__shared__ int *tadShapeBuffer;
+				T *realExtraParams;
 				if(tid == 0) {
 					xTadInfo = shape::tadInfo(xShapeInfo, dimension, dimensionLength);
 				}
 				__syncthreads();
+
+				if(tid == 0) {
+					tadShapeBuffer = shape::shapeBuffer(xTadInfo.tensorShapeLength,xTadInfo.tensorShape);
+				}
+
+				__syncthreads();
+
+
 
 
 				if (reductionIndexesPerBlock * blockIdx.x >= resultLength)
@@ -302,11 +322,17 @@ public:
 					//tad wrt the thread
 					int currTad = tid + (blockIdx.x * reductionIndexesPerBlock);
 					int offsetForTad = shape::offset(currTad, xShapeInfo, dimensionLength, xTadInfo);
+					if(extraParamsLength >= 1) {
+						realExtraParams = this->generateExtraParamsCuda(dx + offsetForTad,tadShapeBuffer);
+					}
+					else {
+						realExtraParams = extraParams;
+					}
+
 					//update the reduction for the thread for the current tad
 					//note here that we compute the offset and then accumulate in shared memory
-					for (int element = 0;
-							element < elementsPerTad; element++, offsetForTad += xElementWiseStride) {
-						sPartials[tid] = update(sPartials[tid], op(dx[offsetForTad],extraParams), extraParams);
+					for (int element = 0; element < elementsPerTad; element++, offsetForTad += xElementWiseStride) {
+						sPartials[tid] = update(sPartials[tid], op(dx[offsetForTad],realExtraParams), realExtraParams);
 						__syncthreads();
 					}
 
@@ -334,7 +360,7 @@ public:
 					 *
 					 */
 					for (int i = 1; i < tadsPerReductionIndex; i++) {
-						sPartials[tid] = update(sPartials[tid], sPartials[tid + i], extraParams);
+						sPartials[tid] = update(sPartials[tid], sPartials[tid + i], realExtraParams);
 						__syncthreads();
 					}
 				}
@@ -349,7 +375,6 @@ public:
 						int reductionIndexToProcess = i + blockIdx.x * reductionIndexesPerBlock;
 						if(postProcessOrNot) {
 							result[reductionIndexToProcess] = postProcess(sPartials[i],elementsPerTad,extraParams);
-
 						}
 						else {
 							result[reductionIndexToProcess] = sPartials[i];
@@ -357,6 +382,9 @@ public:
 						}
 					}
 
+					if(extraParamsLength >= 1)
+						free(realExtraParams);
+					free(tadShapeBuffer);
 					shape::freePermuteInfo(xTadInfo);
 
 				}
@@ -737,14 +765,23 @@ public:
 				tadPermuteInfo.permutedStrides,
 				shape::order(xShapeInfo) == 'f');
 
+
+
 		int tadLength = tadPermuteInfo.tensorShapeProd;
 #pragma omp simd
 		for (int i = 0; i < shape::length(xShapeInfo); i++) {
 			int reductionIndex = shape::reductionIndexForLinear(i,
 					tadElementWiseStride, tadLength, resultLength,
 					resultLength);
-			result[reductionIndex] = update(result[reductionIndex],
-					op(x[i], extraParams), extraParams);
+			int tadIndex = shape::tadIndexForLinear(i,tadLength);
+			if(tadIndex == 0 && this->getIndexBased()) {
+				result[reductionIndex] = op(x[i], extraParams);
+			}
+			else {
+				result[reductionIndex] = update(result[reductionIndex],
+						op(x[i], extraParams), extraParams);
+			}
+
 		}
 #pragma omp simd
 		for (int i = 0; i < resultLength; i++) {
@@ -1222,6 +1259,7 @@ public:
 	inline __host__ __device__
 #endif
 	Max() {
+		this->indexBased = 1;
 	}
 };
 
@@ -1311,6 +1349,7 @@ public:
 	inline __host__ __device__
 #endif
 	Min() {
+		this->indexBased = 1;
 	}
 };
 
