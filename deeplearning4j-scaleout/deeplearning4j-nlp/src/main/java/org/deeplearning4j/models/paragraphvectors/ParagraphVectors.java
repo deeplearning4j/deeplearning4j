@@ -5,6 +5,7 @@ import lombok.NonNull;
 import lombok.Setter;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.models.embeddings.reader.ModelUtils;
+import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
@@ -13,10 +14,7 @@ import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
-import org.deeplearning4j.text.documentiterator.DocumentIterator;
-import org.deeplearning4j.text.documentiterator.LabelAwareDocumentIterator;
-import org.deeplearning4j.text.documentiterator.LabelAwareIterator;
-import org.deeplearning4j.text.documentiterator.LabelsSource;
+import org.deeplearning4j.text.documentiterator.*;
 import org.deeplearning4j.text.documentiterator.interoperability.DocumentIteratorConverter;
 import org.deeplearning4j.text.invertedindex.InvertedIndex;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
@@ -27,6 +25,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -41,7 +40,38 @@ public class ParagraphVectors extends Word2Vec {
 
 
     /**
-     * Predict several based on the document.
+     * This method takes raw text, applies tokenizer, and returns most probable label
+     *
+     * @param rawText
+     * @return
+     */
+    public String predict(String rawText) {
+        if (tokenizerFactory == null) throw new IllegalStateException("TokenizerFactory should be defined, prior to predict() call");
+
+        List<String> tokens = tokenizerFactory.create(rawText).getTokens();
+        List<VocabWord> document = new ArrayList<>();
+        for (String token: tokens) {
+            if (vocab.containsWord(token)) {
+                document.add(vocab.wordFor(token));
+            }
+        }
+
+        return predict(document);
+    }
+
+    /**
+     * This method predicts label of the document.
+     * Computes a similarity wrt the mean of the
+     * representation of words in the document
+     * @param document the document
+     * @return the word distances for each label
+     */
+    public String predict(LabelledDocument document) {
+        return predict(document.getReferencedContent());
+    }
+
+    /**
+     * This method predicts label of the document.
      * Computes a similarity wrt the mean of the
      * representation of words in the document
      * @param document the document
@@ -51,6 +81,8 @@ public class ParagraphVectors extends Word2Vec {
         /*
             This code was transferred from original ParagraphVectors DL4j implementation, and yet to be tested
          */
+        if (document.isEmpty()) throw new IllegalStateException("Document has no words inside");
+
         INDArray arr = Nd4j.create(document.size(),this.layerSize);
         for(int i = 0; i < document.size(); i++) {
             arr.putRow(i,getWordVectorMatrix(document.get(i).getWord()));
@@ -66,21 +98,53 @@ public class ParagraphVectors extends Word2Vec {
         }
 
         return distances.argMax();
-
     }
 
+    /**
+     * Predict several labels based on the document.
+     * Computes a similarity wrt the mean of the
+     * representation of words in the document
+     * @param document raw text of the document
+     * @return possible labels in descending order
+     */
+    public Collection<String> predictSeveral(LabelledDocument document) {
+        return predictSeveral(document.getReferencedContent());
+    }
 
     /**
-     * Predict several based on the document.
+     * Predict several labels based on the document.
+     * Computes a similarity wrt the mean of the
+     * representation of words in the document
+     * @param rawText raw text of the document
+     * @return possible labels in descending order
+     */
+    public Collection<String> predictSeveral(String rawText) {
+        if (tokenizerFactory == null) throw new IllegalStateException("TokenizerFactory should be defined, prior to predict() call");
+
+        List<String> tokens = tokenizerFactory.create(rawText).getTokens();
+        List<VocabWord> document = new ArrayList<>();
+        for (String token: tokens) {
+            if (vocab.containsWord(token)) {
+                document.add(vocab.wordFor(token));
+            }
+        }
+
+        return predictSeveral(document);
+    }
+
+    /**
+     * Predict several labels based on the document.
      * Computes a similarity wrt the mean of the
      * representation of words in the document
      * @param document the document
-     * @return the word distances for each label
+     * @return possible labels in descending order
      */
-    public Counter<String> predictSeveral(List<VocabWord> document) {
+    public Collection<String> predictSeveral(List<VocabWord> document) {
         /*
             This code was transferred from original ParagraphVectors DL4j implementation, and yet to be tested
          */
+        if (document.isEmpty()) throw new IllegalStateException("Document has no words inside");
+
         INDArray arr = Nd4j.create(document.size(),this.layerSize);
         for(int i = 0; i < document.size(); i++) {
             arr.putRow(i,getWordVectorMatrix(document.get(i).getWord()));
@@ -95,8 +159,7 @@ public class ParagraphVectors extends Word2Vec {
             distances.incrementCount(s, sim);
         }
 
-        return distances;
-
+        return distances.getSortedKeys();
     }
 
 
@@ -105,6 +168,23 @@ public class ParagraphVectors extends Word2Vec {
         protected LabelsSource labelsSource;
         protected DocumentIterator docIter;
 
+
+
+
+        /**
+         * This method allows you to use pre-built WordVectors model (Word2Vec or GloVe) for ParagraphVectors.
+         * Existing model will be transferred into new model before training starts.
+         *
+         * PLEASE NOTE: Non-normalized model is recommended to use here.
+         *
+         * @param vec existing WordVectors model
+         * @return
+         */
+        @Override
+        public Builder useExistingWordVectors(@NonNull WordVectors vec) {
+            this.existingVectors = vec;
+            return this;
+        }
 
         /**
          * This method defines, if words representations should be build together with documents representations.
@@ -218,6 +298,11 @@ public class ParagraphVectors extends Word2Vec {
 
             ParagraphVectors ret = new ParagraphVectors();
 
+            if (this.existingVectors != null) {
+                this.trainElementsVectors = false;
+                this.elementsLearningAlgorithm = null;
+            }
+
             if (this.labelsSource == null) this.labelsSource = new LabelsSource();
             if (docIter != null) {
                 /*
@@ -265,8 +350,13 @@ public class ParagraphVectors extends Word2Vec {
             ret.stopWords = this.stopWords;
             ret.workers = this.workers;
 
+            ret.trainElementsVectors = this.trainElementsVectors;
+            ret.trainSequenceVectors = this.trainSequenceVectors;
+
             ret.elementsLearningAlgorithm = this.elementsLearningAlgorithm;
             ret.sequenceLearningAlgorithm = this.sequenceLearningAlgorithm;
+
+            ret.existingModel = this.existingVectors;
 
             ret.lookupTable = this.lookupTable;
             ret.modelUtils = this.modelUtils;
