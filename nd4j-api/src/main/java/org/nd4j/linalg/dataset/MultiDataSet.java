@@ -170,11 +170,15 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
      * @param toMerge Collection of MultiDataSet objects to merge
      * @return a single MultiDataSet object, containing the arrays of
      */
-    public static MultiDataSet merge(Collection<MultiDataSet> toMerge){
-        if(toMerge.size() == 1) return toMerge.iterator().next();
+    public static MultiDataSet merge(Collection<? extends org.nd4j.linalg.dataset.api.MultiDataSet> toMerge){
+        if(toMerge.size() == 1){
+            org.nd4j.linalg.dataset.api.MultiDataSet mds = toMerge.iterator().next();
+            if(mds instanceof MultiDataSet) return (MultiDataSet) mds;
+            else return new MultiDataSet(mds.getFeatures(),mds.getLabels(),mds.getFeaturesMaskArrays(),mds.getLabelsMaskArrays());
+        }
 
-        List<MultiDataSet> list;
-        if(toMerge instanceof List) list = (List<MultiDataSet>)toMerge;
+        List<org.nd4j.linalg.dataset.api.MultiDataSet> list;
+        if(toMerge instanceof List) list = (List<org.nd4j.linalg.dataset.api.MultiDataSet>)toMerge;
         else list = new ArrayList<>(toMerge);
 
         int nInArrays = list.get(0).numFeatureArrays();
@@ -186,7 +190,7 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
         INDArray[][] labelsMasks = new INDArray[list.size()][0];
 
         int i=0;
-        for( MultiDataSet mds : list ){
+        for( org.nd4j.linalg.dataset.api.MultiDataSet mds : list ){
             features[i] = mds.getFeatures();
             labels[i] = mds.getLabels();
             featuresMasks[i] = mds.getFeaturesMaskArrays();

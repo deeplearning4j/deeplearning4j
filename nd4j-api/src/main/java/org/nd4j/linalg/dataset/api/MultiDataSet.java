@@ -2,12 +2,14 @@ package org.nd4j.linalg.dataset.api;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.io.Serializable;
+
 /**MultiDataSet is an interface for representing complex data sets, that have (potentially) multiple inputs and outputs
  * For example, some complex neural network architectures may have multiple independent inputs, and multiple independent
  * outputs. These inputs and outputs need not even be the same type of data: for example, images in and sequences out, etc
  *
  */
-public interface MultiDataSet {
+public interface MultiDataSet extends Serializable {
 
     /** Number of arrays of features/input data in the MultiDataSet */
     int numFeatureArrays();
