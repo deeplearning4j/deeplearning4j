@@ -1,0 +1,10 @@
+Machine learning is a subfield of computer science that evolved from the study of pattern recognition and computational learning theory in artificial intelligence.
+Machine learning explores the study and construction of algorithms that can learn from and make predictions on data.
+Such algorithms operate by building a model from example inputs in order to make data-driven predictions or decisions, rather than following strictly static program instructions.
+Machine learning is closely related to computational statistics; a discipline that aims at the design of algorithms for implementing statistical methods on computers.
+It has strong ties to mathematical optimization, which delivers methods, theory and application domains to the field.
+Machine learning is employed in a range of computing tasks where designing and programming explicit algorithms is infeasible.
+Example applications include spam filtering, optical character recognition (OCR), search engines and computer vision.
+Machine learning is sometimes conflated with data mining, although that focuses more on exploratory data analysis.
+Machine learning and pattern recognition "can be viewed as two facets of the same field."
+When employed in industrial contexts, machine learning methods may be referred to as predictive analytics or predictive modelling.

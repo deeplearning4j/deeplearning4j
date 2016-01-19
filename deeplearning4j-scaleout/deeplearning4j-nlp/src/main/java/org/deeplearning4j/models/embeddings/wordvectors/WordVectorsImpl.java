@@ -20,6 +20,7 @@ package org.deeplearning4j.models.embeddings.wordvectors;
 
 import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import org.deeplearning4j.clustering.vptree.VPTree;
 import org.deeplearning4j.models.embeddings.reader.ModelUtils;
@@ -43,7 +44,7 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
     @Getter protected WeightLookupTable<T> lookupTable;
     @Getter protected VocabCache<T> vocab;
     @Getter protected int layerSize = 100;
-    @Getter @Setter protected transient ModelUtils<T> modelUtils;
+    @Getter protected transient ModelUtils<T> modelUtils;
 
     protected int numIterations = 1;
     protected int numEpochs = 1;
@@ -219,7 +220,16 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
         return lookupTable;
     }
 
-    public void setLookupTable(WeightLookupTable lookupTable) {
+    @Override
+    @SuppressWarnings("unchecked")
+    public void setModelUtils(@NonNull ModelUtils modelUtils) {
+        if (lookupTable != null) {
+            modelUtils.init(lookupTable);
+            this.modelUtils = modelUtils;
+        }
+    }
+
+    public void setLookupTable(@NonNull WeightLookupTable lookupTable) {
         this.lookupTable = lookupTable;
         if (modelUtils == null) this.modelUtils = new BasicModelUtils<T>();
 

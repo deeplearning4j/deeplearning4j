@@ -21,11 +21,15 @@ import java.util.*;
 /**
  * Basic implementation for ModelUtils interface, suited for standalone use.
  *
+ * PLEASE NOTE: This reader applies normalization to underlying lookup table.
+ *
  * @author Adam Gibson
  */
 public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T> {
     protected VocabCache<T> vocabCache;
     protected WeightLookupTable<T> lookupTable;
+
+    protected boolean normalized  = false;
 
     private static final Logger log = LoggerFactory.getLogger(BasicModelUtils.class);
 
@@ -53,12 +57,12 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
     public double similarity( String label1, String label2) {
         if (label1 == null || label2 == null) return Double.NaN;
 
-        if (label1.equals(label2)) return 1.0;
-
         INDArray vec1 = lookupTable.vector(label1);
         INDArray vec2 = lookupTable.vector(label2);
 
         if (vec1 == null || vec2 == null) return Double.NaN;
+
+        if (label1.equals(label2)) return 1.0;
 
         return Transforms.cosineSim(vec1, vec2);
     }
@@ -144,16 +148,15 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
             }
         }
 
-        WeightLookupTable weightLookupTable = lookupTable;
-        INDArray words = Nd4j.create(positive.size() + negative.size(), weightLookupTable.layerSize());
+        INDArray words = Nd4j.create(positive.size() + negative.size(), lookupTable.layerSize());
         int row = 0;
         //Set<String> union = SetUtils.union(new HashSet<>(positive), new HashSet<>(negative));
         for (String s : positive) {
-            words.putRow(row++, weightLookupTable.vector(s));
+            words.putRow(row++, lookupTable.vector(s));
         }
 
         for (String s : negative) {
-            words.putRow(row++, weightLookupTable.vector(s).mul(-1));
+            words.putRow(row++, lookupTable.vector(s).mul(-1));
         }
 
         INDArray mean = words.isMatrix() ? words.mean(0) : words;
@@ -185,19 +188,22 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
             InMemoryLookupTable l = (InMemoryLookupTable) lookupTable;
 
             INDArray syn0 = l.getSyn0();
-            syn0.diviRowVector(syn0.norm2(0));
+            if (!normalized) {
+                syn0.diviColumnVector(syn0.norm2(1));
+                normalized = true;
+            }
 
             INDArray similarity = Transforms.unitVec(words).mmul(syn0.transpose());
             // We assume that syn0 is normalized.
             // Hence, the following division is not needed anymore.
             // distances.diviRowVector(distances.norm2(1));
             //INDArray[] sorted = Nd4j.sortWithIndices(distances,0,false);
-            List<Double> highToLowSimList = getTopN(similarity, top);
+            List<Double> highToLowSimList = getTopN(similarity, top + 20);
             List<String> ret = new ArrayList<>();
 
             for (int i = 0; i < highToLowSimList.size(); i++) {
                 String word = vocabCache.wordAtIndex(highToLowSimList.get(i).intValue());
-                if (word != null && !word.equals("UNK") && !word.equals("STOP")) {
+                if (word != null && !word.equals("UNK") && !word.equals("STOP") ) {
                     ret.add(word);
                     if (ret.size() >= top) {
                         break;
@@ -230,7 +236,7 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
      * @param N the number of elements to extract
      * @return the indices and the sorted top N elements
      */
-    private static List<Double> getTopN(INDArray vec, int N) {
+    private List<Double> getTopN(INDArray vec, int N) {
         ArrayComparator comparator = new ArrayComparator();
         PriorityQueue<Double[]> queue = new PriorityQueue<>(vec.rows(),comparator);
 

@@ -81,9 +81,8 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
         final T word = sequence.getElements().get(i);
         List<T> sentence = sequence.getElements();
 
-        // TODO: fix this, there should be option to have few labels per sequence
         List<T> labels = new ArrayList<>(); //(List<T>) sequence.getSequenceLabel();
-        labels.add(sequence.getSequenceLabel());
+        labels.addAll(sequence.getSequenceLabels());
         //    final VocabWord word = labels.get(0);
 
         if (sequence.getSequenceLabel() == null) throw new IllegalStateException("Label is NULL");

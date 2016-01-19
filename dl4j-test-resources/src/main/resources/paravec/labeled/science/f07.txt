@@ -1,0 +1,10 @@
+Another categorization of machine learning tasks arises when one considers the desired output of a machine-learned system:
+In classification, inputs are divided into two or more classes, and the learner must produce a model that assigns unseen inputs to one (or multi-label classification) or more of these classes.
+This is typically tackled in a supervised way.
+Spam filtering is an example of classification, where the inputs are email (or other) messages and the classes are "spam" and "not spam".
+In regression, also a supervised problem, the outputs are continuous rather than discrete.
+In clustering, a set of inputs is to be divided into groups.
+Unlike in classification, the groups are not known beforehand, making this typically an unsupervised task.
+Density estimation finds the distribution of inputs in some space.
+Dimensionality reduction simplifies inputs by mapping them into a lower-dimensional space.
+Topic modeling is a related problem, where a program is given a list of human language documents and is tasked to find out which documents cover similar topics.
