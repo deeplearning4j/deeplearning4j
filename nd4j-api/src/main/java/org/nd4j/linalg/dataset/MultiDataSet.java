@@ -266,10 +266,78 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
         return out;
     }
 
-    private static Pair<INDArray,INDArray> mergeTimeSeries(INDArray[][] arrays, INDArray[][] masks, int column){
+    private static Pair<INDArray,INDArray> mergeTimeSeries(INDArray[][] arrays, INDArray[][] masks, int inOutIdx){
         //Merge time series data, and handle masking etc for different length arrays
 
-        throw new UnsupportedOperationException("Not yet implemented");
+        //Complications with time series:
+        //(a) They may have different lengths (if so: need input + output masking arrays)
+        //(b) Even if they are all the same length, they may have masking arrays (if so: merge the masking arrays too)
+
+        int firstLength = arrays[0][inOutIdx].size(2);
+        int size = arrays[0][inOutIdx].size(1);
+        int maxLength = firstLength;
+
+        boolean hasMask = false;
+        boolean lengthsDiffer = false;
+        int totalExamples = 0;
+        for(int i=0; i<arrays.length; i++ ){
+            totalExamples += arrays[i][inOutIdx].size(0);
+            int thisLength = arrays[i][inOutIdx].size(2);
+            maxLength = Math.max(maxLength,thisLength);
+            if( thisLength != firstLength ) lengthsDiffer = true;
+            if( masks != null && masks[i] != null && masks[i][inOutIdx] != null ) hasMask = true;
+
+            if(arrays[i][inOutIdx].size(1) != size){
+                throw new IllegalStateException("Cannot merge time series with different size for dimension 1 (first shape: "
+                    + Arrays.toString(arrays[0][inOutIdx].shape()) + ", " + i + "th shape: " + Arrays.toString(arrays[i][inOutIdx].shape()));
+            }
+        }
+
+        boolean needMask = hasMask || lengthsDiffer;
+        INDArray arr = Nd4j.create(totalExamples,size,maxLength);
+        INDArray mask = (needMask ? Nd4j.ones(totalExamples, maxLength) : null);
+
+        //Now, merge the time series (and if necessary, mask arrays):
+        int examplesSoFar = 0;
+        if(!lengthsDiffer && !needMask){
+            //Simplest case: same length, no mask arrays
+            for( int i=0; i<arrays.length; i++ ){
+                int thisNExamples = arrays[i][inOutIdx].size(0);
+                arr.put(new INDArrayIndex[]{NDArrayIndex.interval(examplesSoFar,examplesSoFar+thisNExamples),NDArrayIndex.all(),NDArrayIndex.all()},
+                        arrays[i][inOutIdx]);
+                examplesSoFar += thisNExamples;
+            }
+            return new Pair<>(arr,null);
+        } else {
+            //Either different length, or have mask arrays (or, both)
+            for( int i=0; i<arrays.length; i++ ){
+                INDArray a = arrays[i][inOutIdx];
+                int thisNExamples = a.size(0);
+                int thisLength = a.size(2);
+                arr.put(new INDArrayIndex[]{NDArrayIndex.interval(examplesSoFar,examplesSoFar+thisNExamples),NDArrayIndex.all(),NDArrayIndex.interval(0,thisLength)},a);
+
+                if(masks != null && masks[i] != null && masks[i][inOutIdx] != null){
+                    INDArray origMask = masks[i][inOutIdx];
+                    int maskLength = origMask.size(1);
+                    mask.put(new INDArrayIndex[]{NDArrayIndex.interval(examplesSoFar,examplesSoFar+thisNExamples), NDArrayIndex.interval(0,maskLength)},origMask);
+                    if(maskLength < maxLength){
+                        //Set end mask array to zero...
+                        mask.put(new INDArrayIndex[]{NDArrayIndex.interval(examplesSoFar,examplesSoFar+thisNExamples), NDArrayIndex.interval(maskLength,maxLength)},
+                                Nd4j.zeros(thisNExamples,maxLength-maskLength));
+                    }
+                } else {
+                    if(thisLength<maxLength){
+                        //Mask the end
+                        mask.put(new INDArrayIndex[]{NDArrayIndex.interval(examplesSoFar,examplesSoFar+thisNExamples), NDArrayIndex.interval(thisLength,maxLength)},
+                                Nd4j.zeros(thisNExamples,maxLength-thisLength));
+                    }
+                }
+
+                examplesSoFar += thisNExamples;
+            }
+        }
+
+        return new Pair<>(arr,mask);
     }
 
     private static INDArray merge4d(INDArray[][] arrays, int inOutIdx){
