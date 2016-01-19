@@ -150,4 +150,9 @@ public class MergeNode implements GraphNode {
 
         return out;
     }
+
+    @Override
+    public MergeNode clone(){
+        return new MergeNode();
+    }
 }

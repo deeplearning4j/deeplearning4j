@@ -193,7 +193,7 @@ public class SparkComputationGraph implements Serializable {
      * @return the ComputationGraph after parameter averaging
      */
     public ComputationGraph fitDataSet(JavaRDD<MultiDataSet> rdd) {
-        int iterations = conf.getLayers().get(conf.getNetworkInputs().get(0)).getNumIterations();
+        int iterations = network.getLayer(0).conf().getNumIterations();
         log.info("Running distributed training: (averaging each iteration = " + averageEachIteration + "), (iterations = " +
                 iterations + "), (num partions = " + rdd.partitions().size() + ")");
         if(!averageEachIteration) {
@@ -279,7 +279,7 @@ public class SparkComputationGraph implements Serializable {
         }
         else {
             //Standard parameter averaging
-            JavaRDD<Tuple3<INDArray,ComputationGraphUpdater,Double>> results = rdd.mapPartitions(new IterativeReduceFlatMap(conf.toJson(),
+            JavaRDD<Tuple3<INDArray,ComputationGraphUpdater,Double>> results = rdd.mapPartitions(new IterativeReduceFlatMapCG(conf.toJson(),
                     this.params, this.updater),true).cache();
 
             JavaRDD<INDArray> resultsParams = results.map(new INDArrayFromTupleFunctionCG());

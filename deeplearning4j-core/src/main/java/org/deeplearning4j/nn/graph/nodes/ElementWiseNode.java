@@ -84,4 +84,9 @@ public class ElementWiseNode implements GraphNode {
                 throw new UnsupportedOperationException("Unknown op: " + op);
         }
     }
+
+    @Override
+    public ElementWiseNode clone(){
+        return new ElementWiseNode(op);
+    }
 }
