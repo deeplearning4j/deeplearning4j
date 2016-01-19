@@ -28,6 +28,14 @@ public:
 
 #endif
 	std::string name() = 0;
+	virtual
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	int extraParamsLength() {
+		return 0;
+	}
+
 
 	virtual inline
 #ifdef __CUDACC__

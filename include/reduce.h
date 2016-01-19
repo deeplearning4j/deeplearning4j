@@ -20,7 +20,66 @@ namespace reduce {
  */
 template<typename T>
 class ReduceFunction: public functions::ops::Op<T> {
+protected:
+	int extraParamsLength = 0;
 public:
+	virtual
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	ReduceFunction<T> ** extraParamsFunctions() = 0;
+	virtual
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	int getExtraParamsLength() {
+		return extraParamsLength;
+	}
+
+	virtual
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	T * createExtraParams() {
+		T *ret = (T *) malloc(sizeof(T) * this->getExtraParamsLength());
+		return ret;
+	}
+	virtual
+#ifdef __CUDACC__
+	__host__
+#endif
+	T * generateExtraParams(T *input,int *shapeInfo) {
+		T *ret = createExtraParams();
+		ReduceFunction<T> **functions = this->extraParamsFunctions();
+		for(int i = 0; i < getExtraParamsLength(); i++) {
+			ReduceFunction<T> *r = functions[i];
+			//assume the param ordering is composed
+			//of the previous parameters
+			//the most prominent example being
+			//variance and std which requires
+			//mean followed by bias
+			T val = r->execScalar(input,shapeInfo,ret);
+			ret[i] = val;
+			delete functions[i];
+		}
+
+		return ret;
+	}
+
+#ifdef __CUDACC__
+	virtual __host__ __device__
+	T * generateExtraParamsCuda(T *input,int *shapeInfo) {
+		T *ret = createExtraParams();
+		ReduceFunction<T> **functions = this->extraParamsFunctions();
+		for(int i = 0; i < getExtraParamsLength(); i++) {
+			ReduceFunction<T> *r = functions[i];
+			T val = r->execScalar(input,shapeInfo,ret);
+			ret[i] = val;
+		}
+		delete[] functions;
+		return ret;
+	}
+#endif
 
 	/**
 	 * Merge the 2 inputs
@@ -73,6 +132,9 @@ public:
 #endif
 	T update(T old, T opOutput, T *extraParams) = 0;
 #ifdef __CUDACC__
+
+
+
 	/**
 	 * Kernel invocation for reduce
 	 * @param n the length of the buffer
@@ -112,8 +174,9 @@ public:
 		SharedMemory <T> val;
 		volatile T *sPartials = val.getPointer();
 		int numElements = gpuInformation[2] / sizeof(T);
+		T init = this->startingValue(dx);
 		for (int i = tid; i < numElements; i += blockDim.x)
-			sPartials[i] = extraParams[0];
+			sPartials[i] = init;
 		__syncthreads();
 
 		//length for the tad
@@ -131,7 +194,7 @@ public:
 
 		__shared__ int reductionIndexesPerBlock;
 
-		T reduction = extraParams[0];
+		T reduction = this->startingValue(dx);
 		if (tid == 0) {
 			tensorsForDimension = shape::tensorsAlongDimension(xShapeInfo, dimension, dimensionLength);
 			resultLength = shape::length(resultShapeInfo);
@@ -174,14 +237,27 @@ public:
 			if (resultScalar) {
 				if(blockIdx.x >= resultLength)
 					return;
+				__shared__ T *realExtraParams;
+				if(tid == 0) {
+					if(extraParamsLength >= 1) {
+						realExtraParams = this->generateExtraParamsCuda(dx,xShapeInfo);
+
+					}
+					else
+						realExtraParams = extraParams;
+
+				}
+
+				__syncthreads();
+
 				unsigned int i = blockIdx.x * xElementWiseStride + tid;
 				unsigned int gridSize = blockDim.x * gridDim.x * xElementWiseStride;
 				// we reduce multiple elements per thread.  The number is determined by the
 				// number of active thread blocks (via gridDim).  More blocks will result
 				// in a larger gridSize and therefore fewer elements per thread
 				while (xOffset + i < n) {
-					curr = op(dx[xOffset + i],extraParams);
-					reduction = update(reduction,curr, extraParams);
+					curr = op(dx[xOffset + i],realExtraParams);
+					reduction = update(reduction,curr, realExtraParams);
 					i += gridSize;
 				}
 
@@ -189,15 +265,20 @@ public:
 				sPartials[tid] = reduction;
 				__syncthreads();
 				T **sPartialsRef = (T **) &sPartials;
-				aggregatePartials(sPartialsRef, tid, numElements,extraParams);
+				aggregatePartials(sPartialsRef, tid, numElements,realExtraParams);
 
 				// write result for this block to global mem
 				if (tid == 0) {
 					if(postProcessOrNot)
-						result[blockIdx.x] = this->postProcess(sPartials[0],n,extraParams);
+						result[blockIdx.x] = this->postProcess(sPartials[0],n,realExtraParams);
 					else
 						result[blockIdx.x] = sPartials[0];
+					if(extraParamsLength >= 1)
+						delete[] realExtraParams;
 				}
+
+
+
 			}
 
 			else if (!resultScalar) {
@@ -221,7 +302,6 @@ public:
 					//tad wrt the thread
 					int currTad = tid + (blockIdx.x * reductionIndexesPerBlock);
 					int offsetForTad = shape::offset(currTad, xShapeInfo, dimensionLength, xTadInfo);
-
 					//update the reduction for the thread for the current tad
 					//note here that we compute the offset and then accumulate in shared memory
 					for (int element = 0;
@@ -229,6 +309,7 @@ public:
 						sPartials[tid] = update(sPartials[tid], op(dx[offsetForTad],extraParams), extraParams);
 						__syncthreads();
 					}
+
 
 				}
 
@@ -267,6 +348,7 @@ public:
 					for (int i = 0; i < reductionIndexesPerBlock; i++) {
 						int reductionIndexToProcess = i + blockIdx.x * reductionIndexesPerBlock;
 						if(postProcessOrNot) {
+							result[reductionIndexToProcess] = postProcess(sPartials[i],elementsPerTad,extraParams);
 
 						}
 						else {
@@ -397,10 +479,15 @@ public:
 	 *
 	 */
 	__device__ virtual void collapseTad(
-			T *data, T *result, T *extraParams,
+			T *data,
+			T *result,
+			T *extraParams,
 			int numOriginalTads,
 			int sharedMemorySize,
-			int *xShapeInfo, int *resultShapeInfo, int *dimension, int dimensionLength) {
+			int *xShapeInfo,
+			int *resultShapeInfo,
+			int *dimension,
+			int dimensionLength) {
 		SharedMemory <T> val;
 		//number of tads for the reduced solution
 		int numTads = shape::tensorsAlongDimension(xShapeInfo, dimension, dimensionLength);
@@ -409,9 +496,9 @@ public:
 		int tid = threadIdx.x;
 		//initialize the values
 		int numItems = sharedMemorySize / sizeof(T);
-
+		T initialShapredValue = this->startingValue(data);
 		for (int i = tid; i < numItems; i += blockDim.x) {
-			sPartials[i] = extraParams[0];
+			sPartials[i] = initialShapredValue;
 		}
 		__syncthreads();
 
@@ -566,11 +653,13 @@ public:
 	ReduceFunction() {
 	}
 
-
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
 	void exec(T *x, int *xShapeInfo,
 			T *extraParams, T *result,
 			int *resultShapeInfo) {
-		T startingVal = extraParams[0];
+		T startingVal = this->startingValue(x);
 		int length = shape::length(xShapeInfo);
 		int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 		int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
@@ -598,19 +687,56 @@ public:
 
 	}
 
+
+
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	T execScalar(T *x, int *xShapeInfo,T *extraParams) {
+		T startingVal = this->startingValue(x);
+		int length = shape::length(xShapeInfo);
+		int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+		if (xElementWiseStride == 1) {
+#pragma omp simd
+			for (int i = 0; i < length; i++) {
+				T curr = op(x[i], extraParams);
+				startingVal = update(startingVal, curr, extraParams);
+			}
+
+			T finalVal = postProcess(startingVal, length,extraParams);
+			return finalVal;
+		} else {
+#pragma omp simd
+			for (int i = 0; i < length; i++) {
+				startingVal = update(startingVal,
+						op(x[i * xElementWiseStride], extraParams),
+						extraParams);
+			}
+
+			return  postProcess(startingVal, length, extraParams);
+
+		}
+
+	}
+
+	virtual
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
 	void exec(T *x, int *xShapeInfo, T *extraParams, T *result,
 			int *resultShapeInfoBuffer, int *dimension, int dimensionLength) {
 		if(shape::isScalar(resultShapeInfoBuffer)) {
 			exec(x,xShapeInfo,extraParams,result,resultShapeInfoBuffer);
 			return;
 		}
-		shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo,
-				dimension, dimensionLength);
+
+		shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo,dimension, dimensionLength);
 		int resultLength = shape::length(resultShapeInfoBuffer);
 		int tadElementWiseStride = shape::computeElementWiseStride(
 				tadPermuteInfo.xRank, tadPermuteInfo.permutedShape,
 				tadPermuteInfo.permutedStrides,
 				shape::order(xShapeInfo) == 'f');
+
 		int tadLength = tadPermuteInfo.tensorShapeProd;
 #pragma omp simd
 		for (int i = 0; i < shape::length(xShapeInfo); i++) {
@@ -627,6 +753,16 @@ public:
 
 		shape::freePermuteInfo(tadPermuteInfo);
 	}
+
+
+	virtual
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	T startingValue(T *input) = 0;
+
+
+
 
 };
 
@@ -653,6 +789,20 @@ namespace ops {
 template<typename T>
 class Sum: public virtual functions::reduce::ReduceFunction<T> {
 public:
+	virtual
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	T startingValue(T *input) {
+		return 0.0;
+	}
+	virtual
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	ReduceFunction<T> ** extraParamsFunctions() {
+		return NULL;
+	}
 	virtual
 #ifdef __CUDACC__
 	inline __host__
@@ -723,6 +873,14 @@ public:
 template<typename T>
 class Prod: public virtual functions::reduce::ReduceFunction<T> {
 public:
+
+	virtual
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	ReduceFunction<T> ** extraParamsFunctions() {
+		return NULL;
+	}
 	virtual
 #ifdef __CUDACC__
 	inline __host__
@@ -781,6 +939,15 @@ public:
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
+	T startingValue(T *input) {
+		return 1.0;
+	}
+
+
+	virtual
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
 	~Prod() {
 	}
 #ifdef __CUDACC__
@@ -793,6 +960,20 @@ public:
 template<typename T>
 class Mean: public virtual functions::reduce::ReduceFunction<T> {
 public:
+	virtual
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	ReduceFunction<T> ** extraParamsFunctions() {
+		return NULL;
+	}
+	virtual
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	T startingValue(T *input) {
+		return 0.0;
+	}
 	virtual
 #ifdef __CUDACC__
 	inline __host__
@@ -867,6 +1048,22 @@ class Bias: public virtual functions::reduce::ReduceFunction<T> {
 public:
 	virtual
 #ifdef __CUDACC__
+	__host__ __device__
+#endif
+	T startingValue(T *input) {
+		return 0.0;
+	}
+	virtual
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	ReduceFunction<T> ** extraParamsFunctions() {
+		ReduceFunction<T> ** ret = (ReduceFunction<T> **) malloc(sizeof(ReduceFunction<T> **));
+		ret[0] = new Mean<T>();
+		return ret;
+	}
+	virtual
+#ifdef __CUDACC__
 	inline __host__
 
 #endif
@@ -897,6 +1094,8 @@ public:
 	T update(T old, T opOutput, T *extraParams) override {
 		return opOutput + old;
 	}
+
+
 	virtual
 #ifdef __CUDACC__
 	__host__  __device__
@@ -906,7 +1105,7 @@ public:
 
 #endif
 	T op(T d1, T *extraParams) override {
-		T mean = extraParams[1];
+		T mean = extraParams[0];
 		T curr = (d1 - mean);
 		return curr;
 	}
@@ -933,12 +1132,21 @@ public:
 	inline __host__ __device__
 #endif
 	Bias() {
+		this->extraParamsLength = 1;
 	}
 };
 
 template<typename T>
 class Max: public virtual functions::reduce::ReduceFunction<T> {
 public:
+
+	virtual
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	ReduceFunction<T> ** extraParamsFunctions() {
+		return NULL;
+	}
 	virtual
 #ifdef __CUDACC__
 	inline __host__
@@ -995,6 +1203,15 @@ public:
 		return reduction;
 	}
 
+
+	virtual
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	T startingValue(T *input) {
+		return input[0];
+	}
+
 	virtual
 #ifdef __CUDACC__
 	inline __host__ __device__
@@ -1011,6 +1228,14 @@ public:
 template<typename T>
 class Min: public virtual functions::reduce::ReduceFunction<T> {
 public:
+
+	virtual
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	ReduceFunction<T> ** extraParamsFunctions() {
+		return NULL;
+	}
 	virtual
 #ifdef __CUDACC__
 	inline __host__
@@ -1069,6 +1294,15 @@ public:
 
 	virtual
 #ifdef __CUDACC__
+	__host__ __device__
+#endif
+	T startingValue(T *input) {
+		return input[0];
+	}
+
+
+	virtual
+#ifdef __CUDACC__
 	inline __host__ __device__
 #endif
 	~Min() {
@@ -1083,6 +1317,20 @@ public:
 template<typename T>
 class Norm1: public virtual functions::reduce::ReduceFunction<T> {
 public:
+	virtual
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	ReduceFunction<T> ** extraParamsFunctions() {
+		return NULL;
+	}
+	virtual
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	T startingValue(T *input) {
+		return 0.0;
+	}
 	virtual
 #ifdef __CUDACC__
 	__host__
@@ -1153,6 +1401,20 @@ public:
 template<typename T>
 class Norm2: public virtual functions::reduce::ReduceFunction<T> {
 public:
+	virtual
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	T startingValue(T *input) {
+		return 0.0;
+	}
+	virtual
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	ReduceFunction<T> ** extraParamsFunctions() {
+		return NULL;
+	}
 	virtual
 #ifdef __CUDACC__
 	inline __host__
@@ -1228,6 +1490,20 @@ public:
 template<typename T>
 class NormMax: public virtual functions::reduce::ReduceFunction<T> {
 public:
+	virtual
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	T startingValue(T *input) {
+		return 0.0;
+	}
+	virtual
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	ReduceFunction<T> ** extraParamsFunctions() {
+		return NULL;
+	}
 	virtual
 #ifdef __CUDACC__
 	inline __host__
@@ -1307,6 +1583,25 @@ class Variance: public  functions::reduce::ReduceFunction<T> {
 public:
 	virtual
 #ifdef __CUDACC__
+	__host__ __device__
+#endif
+	T startingValue(T *input) {
+		return 0.0;
+	}
+	virtual
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+	ReduceFunction<T> ** extraParamsFunctions() {
+		ReduceFunction<T> **ret = (ReduceFunction<T> **) malloc(sizeof(ReduceFunction<T>) * 2);
+		Mean<T> *mean = new Mean<T>();
+		Bias<T> *bias = new Bias<T>();
+		ret[0] = mean;
+		ret[1] = bias;
+		return ret;
+	}
+	virtual
+#ifdef __CUDACC__
 	inline __host__
 
 #endif
@@ -1348,7 +1643,7 @@ public:
 
 #endif
 	T op(T d1, T *extraParams) override {
-		T mean = extraParams[2];
+		T mean = extraParams[0];
 		T ret = d1 - mean;
 		return ret * ret;
 	}
@@ -1377,6 +1672,7 @@ public:
 	inline __host__ __device__
 #endif
 	Variance() {
+		this->extraParamsLength = 2;
 	}
 };
 
@@ -1456,9 +1752,8 @@ public:
 			return new functions::reduce::ops::NormMax<T>();
 		else if (op == 8)
 			return new functions::reduce::ops::Prod<T>();
-		else if (op == 9) {
+		else if (op == 9)
 			return new functions::reduce::ops::StandardDeviation<T>();
-		}
 		else if (op == 10)
 			return new functions::reduce::ops::Variance<T>();
 
@@ -1492,6 +1787,50 @@ __host__ void setupReduceFactories() {
 	checkCudaErrors(cudaMemcpyToSymbol(reduceOpFactoryFloat, newOpFactory, sizeof( functions::reduce::ReduceOpFactory<float>)));
 	delete(newOpFactory);
 	delete(newOpFactoryFloat);*/
+}
+
+
+
+template <typename T>
+__global__ void reduceGenericGlobal(
+		int op,
+		int n,
+		T *dx,
+		int *xShapeInfo,
+		T *extraParams,
+		T *result,
+		int *resultShapeInfo,
+		int *gpuInformation,
+		int *dimension,
+		int dimensionLength,
+		int postProcessOrNot) {
+
+	__shared__ functions::reduce::ReduceFunction<T> *reduceFunctionToInvoke;
+	__shared__ functions::reduce::ReduceOpFactory<T> *newOpFactory;
+
+	if(threadIdx.x == 0)
+		newOpFactory =  new functions::reduce::ReduceOpFactory<T>();
+	__syncthreads();
+
+	if(threadIdx.x == 0)
+		reduceFunctionToInvoke = newOpFactory->create(op);
+	__syncthreads();
+	reduceFunctionToInvoke->transform(
+			n,
+			dx,
+			xShapeInfo
+			,extraParams,
+			result,
+			resultShapeInfo,
+			gpuInformation,
+			dimension,
+			dimensionLength,
+			postProcessOrNot);
+	if(threadIdx.x == 0) {
+		free(reduceFunctionToInvoke);
+		free(reduceOpFactory);
+	}
+
 }
 
 template <typename T>
