@@ -16,6 +16,7 @@ import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
+import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.VocabConstructor;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
@@ -47,12 +48,14 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
     protected static final Logger log = LoggerFactory.getLogger(SequenceVectors.class);
 
+    protected transient WordVectors existingModel;
+
 
     /**
      * Builds vocabulary from provided SequenceIterator instance
      */
     public void buildVocab() {
-        log.info("Starting vocabulary building...");
+
 
         VocabConstructor<T> constructor = new VocabConstructor.Builder<T>()
                 .addSource(iterator, minWordFrequency)
@@ -60,8 +63,26 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                 .fetchLabels(trainSequenceVectors)
                 .build();
 
-        constructor.buildJointVocabulary(false, true);
+        if (existingModel != null && lookupTable instanceof InMemoryLookupTable && existingModel.lookupTable() instanceof InMemoryLookupTable) {
+            log.info("Merging existing vocabulary into the current one...");
+            /*
+                if we have existing model defined, we're forced to fetch labels only.
+                the rest of vocabulary & weights should be transferred from existing model
+             */
+
+            constructor.buildMergedVocabulary(existingModel, false);
+
+            /*
+                Now we have vocab transferred, and we should transfer syn0 values into lookup table
+             */
+            ((InMemoryLookupTable<VocabWord>) lookupTable).consume((InMemoryLookupTable<VocabWord>) existingModel.lookupTable());
+        } else {
+            log.info("Starting vocabulary building...");
+            // if we don't have existing model defined, we just build vocabulary
+            constructor.buildJointVocabulary(false, true);
+        }
     }
+
 
 
     /**
@@ -79,7 +100,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         if (vocab == null || lookupTable == null || vocab.numWords() == 0) throw new IllegalStateException("You can't fit() model with empty Vocabulary or WeightLookupTable");
 
         // if model vocab and lookupTable is built externally we basically should check that lookupTable was properly initialized
-        if (!resetModel) {
+        if (!resetModel || existingModel != null) {
             lookupTable.resetWeights(false);
         } else {
             // otherwise we reset weights, independent of actual current state of lookup table
@@ -170,6 +191,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         protected SequenceIterator<T> iterator;
         protected ModelUtils<T> modelUtils = new BasicModelUtils<>();
 
+        protected WordVectors existingVectors;
+
         protected double sampling = 0;
         protected double negative = 0;
         protected double learningRate = 0.025;
@@ -226,6 +249,21 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             if (configuration.getSequenceLearningAlgorithm() != null && !configuration.getSequenceLearningAlgorithm().isEmpty()) {
                 this.sequenceLearningAlgorithm(configuration.getSequenceLearningAlgorithm());
             }
+        }
+
+        /**
+         * This method allows you to use pre-built WordVectors model (SkipGram or GloVe) for DBOW sequence learning.
+         * Existing model will be transferred into new model before training starts.
+         *
+         * PLEASE NOTE: This model has no effect for elements learning algorithms. Only sequence learning is affected.
+         * PLEASE NOTE: Non-normalized model is recommended to use here.
+         *
+         * @param vec existing WordVectors model
+         * @return
+         */
+        public Builder<T> useExistingWordVectors(@NonNull WordVectors vec) {
+            this.existingVectors = vec;
+            return this;
         }
 
         /**
@@ -575,6 +613,12 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             presetTables();
 
             SequenceVectors<T> vectors = new SequenceVectors<>();
+
+            if (this.existingVectors != null) {
+                this.trainElementsVectors = false;
+                this.elementsLearningAlgorithm = null;
+            }
+
             vectors.numEpochs = this.numEpochs;
             vectors.numIterations = this.iterations;
             vectors.vocab = this.vocabCache;
@@ -596,8 +640,14 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             vectors.lookupTable = this.lookupTable;
             vectors.modelUtils = this.modelUtils;
 
+
+            vectors.trainElementsVectors = this.trainElementsVectors;
+            vectors.trainSequenceVectors = this.trainSequenceVectors;
+
             vectors.elementsLearningAlgorithm = this.elementsLearningAlgorithm;
             vectors.sequenceLearningAlgorithm = this.sequenceLearningAlgorithm;
+
+            vectors.existingModel = this.existingVectors;
 
             this.configuration.setLearningRate(this.learningRate);
             this.configuration.setLayersSize(layerSize);

@@ -174,9 +174,11 @@ public class Word2VecTests {
 
         assertEquals(new ArrayList<String>(), vec.getStopWords());
         vec.fit();
-        WordVectorSerializer.writeWordVectors(vec, pathToWriteto);
+      //  WordVectorSerializer.writeWordVectors(vec, pathToWriteto);
+        WordVectorSerializer.writeFullModel(vec,"/ext/Temp/Models/raw_sentences.dat");
         Collection<String> lst = vec.wordsNearest("day", 10);
-        log.info(Arrays.toString(lst.toArray()));
+        //log.info(Arrays.toString(lst.toArray()));
+        printWords("day", lst, vec);
 
         assertEquals(10, lst.size());
 
@@ -194,8 +196,9 @@ public class Word2VecTests {
         assertFalse(lst.contains(null));
 
 
-        lst = vec.wordsNearestSum("day", 10);
-        log.info(Arrays.toString(lst.toArray()));
+        lst = vec.wordsNearest("day", 10);
+        //log.info(Arrays.toString(lst.toArray()));
+        printWords("day", lst, vec);
 
         assertTrue(lst.contains("week"));
         assertTrue(lst.contains("night"));
@@ -235,6 +238,14 @@ public class Word2VecTests {
         System.out.println(Arrays.toString(lst.toArray()));
     }
 
+    private static void printWords(String target, Collection<String> list, Word2Vec vec) {
+        System.out.println("Words close to ["+target+"]:");
+        for (String word: list) {
+            double sim = vec.similarity(target, word);
+            System.out.print("'"+ word+"': ["+ sim+"]");
+        }
+        System.out.print("\n");
+    }
 //
 }
 

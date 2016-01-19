@@ -7,6 +7,7 @@ import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
+import org.deeplearning4j.text.documentiterator.FileLabelAwareIterator;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
@@ -31,17 +32,18 @@ public class VocabConstructorTest {
 
     protected static final Logger log = LoggerFactory.getLogger(VocabConstructorTest.class);
 
+    TokenizerFactory t = new DefaultTokenizerFactory();
+
+
     @Before
     public void setUp() throws Exception {
-
+        t.setTokenPreProcessor(new CommonPreprocessor());
     }
 
     @Test
     public void testVocab() throws Exception {
         File inputFile = new ClassPathResource("big/raw_sentences.txt").getFile();
         SentenceIterator iter = new BasicLineIterator(inputFile);
-        TokenizerFactory t = new DefaultTokenizerFactory();
-        t.setTokenPreProcessor(new CommonPreprocessor());
 
         Set<String> set = new HashSet<>();
         int lines = 0;
@@ -68,8 +70,6 @@ public class VocabConstructorTest {
     public void testBuildJointVocabulary1() throws Exception {
         File inputFile = new ClassPathResource("big/raw_sentences.txt").getFile();
         SentenceIterator iter = new BasicLineIterator(inputFile);
-        TokenizerFactory t = new DefaultTokenizerFactory();
-        t.setTokenPreProcessor(new CommonPreprocessor());
 
         VocabCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
 
@@ -104,8 +104,6 @@ public class VocabConstructorTest {
     public void testBuildJointVocabulary2() throws Exception {
         File inputFile = new ClassPathResource("big/raw_sentences.txt").getFile();
         SentenceIterator iter = new BasicLineIterator(inputFile);
-        TokenizerFactory t = new DefaultTokenizerFactory();
-        t.setTokenPreProcessor(new CommonPreprocessor());
 
         VocabCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
 
@@ -228,103 +226,115 @@ public class VocabConstructorTest {
 
         assertEquals(1, vocabCache.wordFrequency("test"));
     }
-/*
+
+    /**
+     * Here we test basic vocab transfer, done WITHOUT labels
+     * @throws Exception
+     */
     @Test
-    public void testVocabTransfer1() throws Exception {
-
-        InMemoryLookupCache cache = new InMemoryLookupCache();
-
-        VocabularyHolder holder = new VocabularyHolder.Builder()
-                .externalCache(cache)
+    public void testMergedVocab1() throws Exception {
+        AbstractCache<VocabWord> cacheSource = new AbstractCache.Builder<VocabWord>()
                 .build();
 
-        holder.addWord("testerz");
-
-        holder.transferBackToVocabCache();
-
-        File inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
-        SentenceIterator iter = UimaSentenceIterator.createWithPath(inputFile.getAbsolutePath());
-        TokenizerFactory t = new DefaultTokenizerFactory();
-        t.setTokenPreProcessor(new CommonPreprocessor());
-
-        VocabConstructor<VocabWord> constructor = new VocabConstructor.Builder<VocabWord>()
-                .addSource(iter, 5)
-                .useAdaGrad(false)
-                .setTargetVocabCache(cache)
+        AbstractCache<VocabWord> cacheTarget = new AbstractCache.Builder<VocabWord>()
                 .build();
 
-        constructor.buildJointVocabulary(false, true);
+        ClassPathResource resource = new ClassPathResource("big/raw_sentences.txt");
 
-        assertEquals(634061, cache.totalWordOccurrences());
-        assertEquals(243, cache.numWords());
+        BasicLineIterator underlyingIterator = new BasicLineIterator(resource.getFile());
 
-        assertEquals("it", cache.wordAtIndex(0));
-        assertEquals("i", cache.wordAtIndex(1));
 
-        assertNotEquals(null, cache.wordFor("testerz"));
-        assertEquals(1, cache.wordFrequency("testerz"));
+        SentenceTransformer transformer = new SentenceTransformer.Builder()
+                .iterator(underlyingIterator)
+                .tokenizerFactory(t)
+                .build();
+
+        AbstractSequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<VocabWord>(transformer)
+                .build();
+
+        VocabConstructor<VocabWord> vocabConstructor = new VocabConstructor.Builder<VocabWord>()
+                .addSource(sequenceIterator, 1)
+                .setTargetVocabCache(cacheSource)
+                .build();
+
+        vocabConstructor.buildJointVocabulary(false, true);
+
+        int sourceSize = cacheSource.numWords();
+        log.info("Source Vocab size: " + sourceSize);
+
+
+        VocabConstructor<VocabWord> vocabTransfer = new VocabConstructor.Builder<VocabWord>()
+                .addSource(sequenceIterator, 1)
+                .setTargetVocabCache(cacheTarget)
+                .build();
+
+        vocabTransfer.buildMergedVocabulary(cacheSource, false);
+
+        assertEquals(sourceSize, cacheTarget.numWords());
     }
 
     @Test
-    public void testVocabBuildingWithLabels1() throws Exception {
-        File inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
-        SentenceIterator iter = UimaSentenceIterator.createWithPath(inputFile.getAbsolutePath());
-        TokenizerFactory t = new DefaultTokenizerFactory();
-        t.setTokenPreProcessor(new CommonPreprocessor());
-
-        LabelsSource generator = new LabelsSource("SNTX_");
-
-        VocabConstructor<VocabWord> constructor = new VocabConstructor.Builder<VocabWord>()
-                .addSource(new SentenceIteratorConverter(iter, generator), 5)
-                .useAdaGrad(false)
-                .fetchLabels(true)
+    public void testMergedVocabWithLabels1() throws Exception {
+        AbstractCache<VocabWord> cacheSource = new AbstractCache.Builder<VocabWord>()
                 .build();
 
-        VocabCache cache = constructor.buildJointVocabulary(false, true);
-
-
-        log.info("Total words in vocab: ["+ cache.numWords() + "], Total word occurencies: [" + cache.totalWordOccurrences() + "]");
-
-        assertEquals(97168, generator.getLabels().size());
-        assertEquals(97410, cache.numWords());
-        assertEquals(634061, cache.totalWordOccurrences());
-
-        assertTrue(cache.containsWord("SNTX_8"));
-        assertEquals(1, cache.wordFrequency("SNTX_8"));
-
-    }
-
-    @Test
-    public void testVocabBuildingWithLabels2() throws Exception {
-        File inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
-        SentenceIterator iter = UimaSentenceIterator.createWithPath(inputFile.getAbsolutePath());
-        TokenizerFactory t = new DefaultTokenizerFactory();
-        t.setTokenPreProcessor(new CommonPreprocessor());
-
-        InMemoryLookupCache cache = new InMemoryLookupCache();
-
-        LabelsSource generator = new LabelsSource("SNTX_");
-
-        VocabConstructor<VocabWord> constructor = new VocabConstructor.Builder<VocabWord>()
-                .addSource(new SentenceIteratorConverter(iter, generator), 5)
-                .setTargetVocabCache(cache)
-                .useAdaGrad(false)
-                .fetchLabels(true)
+        AbstractCache<VocabWord> cacheTarget = new AbstractCache.Builder<VocabWord>()
                 .build();
 
-        constructor.buildJointVocabulary(false, true);
+        ClassPathResource resource = new ClassPathResource("big/raw_sentences.txt");
+
+        BasicLineIterator underlyingIterator = new BasicLineIterator(resource.getFile());
 
 
-        log.info("Total words in vocab: ["+ cache.numWords() + "]");
+        SentenceTransformer transformer = new SentenceTransformer.Builder()
+                .iterator(underlyingIterator)
+                .tokenizerFactory(t)
+                .build();
 
+        AbstractSequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<VocabWord>(transformer)
+                .build();
 
-        assertEquals(97168, generator.getLabels().size());
-        assertEquals(97410, cache.numWords());
-        assertEquals(634061, cache.totalWordOccurrences());
+        VocabConstructor<VocabWord> vocabConstructor = new VocabConstructor.Builder<VocabWord>()
+                .addSource(sequenceIterator, 1)
+                .setTargetVocabCache(cacheSource)
+                .build();
 
-        assertTrue(cache.containsWord("SNTX_8"));
-        assertEquals(1, cache.wordFrequency("SNTX_8"));
+        vocabConstructor.buildJointVocabulary(false, true);
 
+        int sourceSize = cacheSource.numWords();
+        log.info("Source Vocab size: " + sourceSize);
+
+        FileLabelAwareIterator labelAwareIterator = new FileLabelAwareIterator.Builder()
+                .addSourceFolder(new ClassPathResource("/paravec/labeled").getFile())
+                .build();
+
+        transformer = new SentenceTransformer.Builder()
+                .iterator(labelAwareIterator)
+                .tokenizerFactory(t)
+                .build();
+
+        sequenceIterator = new AbstractSequenceIterator.Builder<VocabWord>(transformer)
+                .build();
+
+        VocabConstructor<VocabWord> vocabTransfer = new VocabConstructor.Builder<VocabWord>()
+                .addSource(sequenceIterator, 1)
+                .setTargetVocabCache(cacheTarget)
+                .build();
+
+        vocabTransfer.buildMergedVocabulary(cacheSource, true);
+
+        // those +3 go for 3 additional entries in target VocabCache: labels
+        assertEquals(sourceSize + 3, cacheTarget.numWords());
+
+        // now we check index equality for transferred elements
+        assertEquals(cacheSource.wordAtIndex(17), cacheTarget.wordAtIndex(17));
+        assertEquals(cacheSource.wordAtIndex(45), cacheTarget.wordAtIndex(45));
+        assertEquals(cacheSource.wordAtIndex(89), cacheTarget.wordAtIndex(89));
+
+        // we check that newly added labels have indexes beyond the VocabCache index space
+        // please note, we need >= since the indexes are zero-based, and sourceSize is not
+        assertTrue(cacheTarget.indexOf("finance") > sourceSize - 1);
+        assertTrue(cacheTarget.indexOf("science") > sourceSize - 1);
+        assertTrue(cacheTarget.indexOf("health") > sourceSize - 1);
     }
-    */
 }

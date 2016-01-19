@@ -3,6 +3,7 @@ package org.deeplearning4j.models.glove;
 import lombok.NonNull;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.GloVe;
 import org.deeplearning4j.models.embeddings.reader.ModelUtils;
+import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.sequencevectors.SequenceVectors;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
@@ -51,6 +52,18 @@ public class Glove extends SequenceVectors<VocabWord> {
 
         public Builder(@NonNull VectorsConfiguration configuration) {
             super(configuration);
+        }
+
+
+        /**
+         * This method has no effect for GloVe
+         *
+         * @param vec existing WordVectors model
+         * @return
+         */
+        @Override
+        public Builder useExistingWordVectors(@NonNull WordVectors vec) {
+            return this;
         }
 
         @Override
