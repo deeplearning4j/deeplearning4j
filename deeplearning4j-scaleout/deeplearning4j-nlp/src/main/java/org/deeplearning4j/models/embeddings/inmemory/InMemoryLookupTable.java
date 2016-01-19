@@ -667,4 +667,28 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
                 ", codes=" + codes +
                 '}';
     }
+
+    /**
+     * This method consumes weights of a given InMemoryLookupTable
+     *
+     * PLEASE NOTE: this method explicitly resets current weights
+     *
+     * @param srcTable
+     */
+    public void consume(InMemoryLookupTable<T> srcTable) {
+        if (srcTable.vectorLength != this.vectorLength)
+            throw new IllegalStateException("You can't consume lookupTable with different vector lengths");
+
+        if (srcTable.syn0 == null)
+            throw new IllegalStateException("Source lookupTable Syn0 is NULL");
+
+        this.resetWeights(true);
+
+        if (srcTable.syn0.rows() > this.syn0.rows())
+            throw new IllegalStateException("You can't consume lookupTable with built for larger vocabulary without updating your vocabulary first");
+
+        for (int x = 0; x < srcTable.syn0.rows(); x++) {
+            this.syn0.putRow(x, srcTable.syn0.getRow(x).dup());
+        }
+    }
 }

@@ -1,0 +1,7 @@
+The Russian Trading System (RTS) was a stock market established in 1995 in Moscow, consolidating various regional trading floors into one exchange.
+Originally RTS was modeled on NASDAQ's trading and settlement software; in 1998 the exchange went on line with its own in-house system.
+Initially created as a non-profit organisation, it was transformed into a joint-stock company.
+In 2011 MICEX merged with RTS creating Moscow Exchange.
+The RTS Index, RTSI, the official Moscow Exchange indicator, was first calculated on September 1, 1995.
+The RTS is a capitalization-weighted composite index calculated based on prices of the 50 most liquid Russian stocks listed on Moscow Exchange.
+The Index is calculated in real time and denominated in US dollars.

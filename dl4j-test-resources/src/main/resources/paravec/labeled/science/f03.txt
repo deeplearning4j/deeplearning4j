@@ -1,0 +1,14 @@
+Big data requires exceptional technologies to efficiently process large quantities of data within tolerable elapsed times.
+A 2011 McKinsey report suggests suitable technologies include A/B testing, crowdsourcing, data fusion and integration, genetic algorithms, machine learning, natural language processing, signal processing, simulation, time series analysis and visualisation.
+Multidimensional big data can also be represented as tensors, which can be more efficiently handled by tensor-based computation, such as multilinear subspace learning.
+Additional technologies being applied to big data include massively parallel-processing (MPP) databases, search-based applications, data mining, distributed file systems, distributed databases, cloud-based infrastructure (applications, storage and computing resources) and the Internet.
+Some but not all MPP relational databases have the ability to store and manage petabytes of data. Implicit is the ability to load, monitor, back up, and optimize the use of the large data tables in the RDBMS.
+DARPA's Topological Data Analysis program seeks the fundamental structure of massive data sets and in 2008 the technology went public with the launch of a company called Ayasdi.
+The practitioners of big data analytics processes are generally hostile to slower shared storage, preferring direct-attached storage (DAS) in its various forms from solid state drive (Ssd) to high capacity SATA disk buried inside parallel processing nodes.
+The perception of shared storage architectures—Storage area network (SAN) and Network-attached storage (NAS) —is that they are relatively slow, complex, and expensive.
+These qualities are not consistent with big data analytics systems that thrive on system performance, commodity infrastructure, and low cost.
+Real or near-real time information delivery is one of the defining characteristics of big data analytics.
+Latency is therefore avoided whenever and wherever possible.
+Data in memory is good—data on spinning disk at the other end of a FC SAN connection is not.
+The cost of a SAN at the scale needed for analytics applications is very much higher than other storage techniques.
+There are advantages as well as disadvantages to shared storage in big data analytics, but big data analytics practitioners as of 2011 did not favour it.[50]
