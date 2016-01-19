@@ -14,10 +14,9 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ComputationGraphUpdater {
+public class ComputationGraphUpdater implements Serializable {
 
     private final Updater[] layerUpdaters;
-//    private final Map<String,Updater> layerUpdatersMap;
     private final Map<String,Integer> layerUpdatersMap;
 
     public ComputationGraphUpdater(ComputationGraph graph){

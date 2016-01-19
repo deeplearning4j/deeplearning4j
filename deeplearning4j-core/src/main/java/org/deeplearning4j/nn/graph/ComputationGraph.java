@@ -286,9 +286,9 @@ public class ComputationGraph implements Serializable, Model {
         }
 
         //At this point: each GraphVertex has the local connection structure, both for inputs and outputs
-        for(GraphVertex gv : vertices ){
-            System.out.println(gv);
-        }
+//        for(GraphVertex gv : vertices ){
+//            System.out.println(gv);
+//        }
 
         //Given the graph structure, do a topological sort to define forward pass and flattening order:
         topologicalOrder = topologicalSortOrder();
@@ -442,6 +442,8 @@ public class ComputationGraph implements Serializable, Model {
      * (c) order to flatten parameters (and gradients)
      *  */
     public int[] topologicalSortOrder(){
+        if(topologicalOrder != null) return topologicalOrder;
+
         //https://en.wikipedia.org/wiki/Topological_sorting#Kahn.27s_algorithm
         int[] out = new int[vertices.length];
         int outCounter = 0;
@@ -496,10 +498,6 @@ public class ComputationGraph implements Serializable, Model {
             if(set.size() > 0) throw new IllegalStateException("Invalid configuration: cycle detected in graph. Cannot calculate topological ordering with graph cycle ("
                 + "cycle includes vertex \"" + vertices[entry.getKey()].getVertexName() + "\")");
         }
-
-
-        System.out.println("Topological sort order:");
-        System.out.println(Arrays.toString(out));
 
         return out;
     }
@@ -620,9 +618,6 @@ public class ComputationGraph implements Serializable, Model {
                 for(VertexIndices v : inputVertices){
                     GraphVertex gv = vertices[v.getVertexIndex()];
                     int outputNumberOfInputVertex = v.getVertexEdgeNumber();
-                    if(outputNumberOfInputVertex >= gv.getNumOutputConnections() ){
-                        System.out.println(":(");
-                    }
                     gv.setError(outputNumberOfInputVertex,epsilons[j++]); //TODO check this
                 }
             }
@@ -750,6 +745,7 @@ public class ComputationGraph implements Serializable, Model {
 
     public double score(DataSet dataSet, boolean training){
 
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     public double score(MultiDataSet dataSet){
@@ -758,6 +754,7 @@ public class ComputationGraph implements Serializable, Model {
 
     public double score(MultiDataSet dataSet, boolean training){
 
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
 

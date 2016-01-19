@@ -3,9 +3,11 @@ package org.deeplearning4j.nn.graph.vertex;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 
+import java.io.Serializable;
+
 @AllArgsConstructor
 @EqualsAndHashCode
-public class VertexIndices {
+public class VertexIndices implements Serializable {
 
     private final int vertexIndex;
     private final int vertexEdgeNumber;

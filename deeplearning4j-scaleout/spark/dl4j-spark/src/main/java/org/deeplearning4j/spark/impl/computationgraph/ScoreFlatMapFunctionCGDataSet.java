@@ -3,9 +3,7 @@ package org.deeplearning4j.spark.impl.computationgraph;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
@@ -20,7 +18,7 @@ public class ScoreFlatMapFunctionCGDataSet implements FlatMapFunction<Iterator<D
 
     private String json;
     private Broadcast<INDArray> params;
-    private static Logger log = LoggerFactory.getLogger(IterativeReduceFlatMap.class);
+    private static Logger log = LoggerFactory.getLogger(IterativeReduceFlatMapCG.class);
 
     public ScoreFlatMapFunctionCGDataSet(String json, Broadcast<INDArray> params){
         this.json = json;

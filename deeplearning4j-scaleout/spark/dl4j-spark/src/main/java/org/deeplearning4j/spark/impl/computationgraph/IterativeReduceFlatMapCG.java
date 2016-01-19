@@ -18,19 +18,13 @@
 
 package org.deeplearning4j.spark.impl.computationgraph;
 
-import org.apache.spark.Accumulator;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
-import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
-import org.deeplearning4j.spark.impl.common.BestScoreIterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
@@ -45,10 +39,8 @@ import java.util.List;
 /**
  * Iterative reduce for ComputationGraph with flat map using map partitions
  */
-
-
-public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<MultiDataSet>,Tuple3<INDArray,ComputationGraphUpdater,Double>> {
-    protected static Logger log = LoggerFactory.getLogger(IterativeReduceFlatMap.class);
+public class IterativeReduceFlatMapCG implements FlatMapFunction<Iterator<MultiDataSet>,Tuple3<INDArray,ComputationGraphUpdater,Double>> {
+    protected static Logger log = LoggerFactory.getLogger(IterativeReduceFlatMapCG.class);
 
     private String json;
     private Broadcast<INDArray> params;
@@ -60,7 +52,7 @@ public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<MultiDat
      * @param json         json configuration for the network
      * @param params       the parameters to use for the network
      */
-    public IterativeReduceFlatMap(String json, Broadcast<INDArray> params, Broadcast<ComputationGraphUpdater> updater) {
+    public IterativeReduceFlatMapCG(String json, Broadcast<INDArray> params, Broadcast<ComputationGraphUpdater> updater) {
         this.json = json;
         this.params = params;
         this.updater = updater;
