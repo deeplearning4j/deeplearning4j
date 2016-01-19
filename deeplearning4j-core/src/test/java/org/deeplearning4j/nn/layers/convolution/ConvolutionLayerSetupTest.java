@@ -94,6 +94,7 @@ public class ConvolutionLayerSetupTest {
         new ConvolutionLayerSetup(builder,numRows,numColumns,nChannels);
         DataSet d = new DataSet(Nd4j.rand(10,3,75,75).reshape(10,3 * 75 * 75), FeatureUtil.toOutcomeMatrix(new int[]{1,1,1,1,1,1,1,1,1,1},6));
         MultiLayerNetwork network = new MultiLayerNetwork(builder.build());
+        network.init();
         network.fit(d);
 
     }
@@ -104,14 +105,14 @@ public class ConvolutionLayerSetupTest {
         MultiLayerConfiguration.Builder incomplete = incompleteMnistLenet();
         ConvolutionLayerSetup setup = new ConvolutionLayerSetup(incomplete,28,28,1);
         //first convolution and subsampling
-        assertArrayEquals(new int[]{24,24},setup.getOutSizesEachLayer().get(0));
-        assertArrayEquals(new int[]{12,12},setup.getOutSizesEachLayer().get(1));
+        assertArrayEquals(new int[]{24,24,20},setup.getOutSizesEachLayer().get("0"));
+        assertArrayEquals(new int[]{12,12,20},setup.getOutSizesEachLayer().get("1"));
 
         //second convolution and subsampling
-        assertArrayEquals(new int[]{8,8},setup.getOutSizesEachLayer().get(2));
-        assertArrayEquals(new int[]{4,4},setup.getOutSizesEachLayer().get(3));
-        assertEquals(800, setup.getnInForLayer().get(4).intValue());
-        assertEquals(500, setup.getnInForLayer().get(5).intValue());
+        assertArrayEquals(new int[]{8,8,50},setup.getOutSizesEachLayer().get("2"));
+        assertArrayEquals(new int[]{4,4,50},setup.getOutSizesEachLayer().get("3"));
+        assertEquals(800, setup.getnInForLayer().get("4").intValue());
+        assertEquals(500, setup.getnInForLayer().get("5").intValue());
 
 
         MultiLayerConfiguration testConf = incomplete.build();
@@ -119,6 +120,7 @@ public class ConvolutionLayerSetupTest {
         //test instantiation
         DataSetIterator iter = new MnistDataSetIterator(10,10);
         MultiLayerNetwork network = new MultiLayerNetwork(testConf);
+        network.init();
         network.fit(iter.next());
     }
 
@@ -139,6 +141,7 @@ public class ConvolutionLayerSetupTest {
         DataSet next = recordReader.next();
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
+        network.init();
         network.fit(next);
 
     }
