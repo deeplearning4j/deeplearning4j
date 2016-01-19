@@ -16,6 +16,8 @@ import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
+import org.deeplearning4j.nn.updater.UpdaterCreator;
+import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -590,7 +592,6 @@ public class ComputationGraph implements Serializable, Model {
     }
 
     protected void backprop(){
-
         LinkedList<Pair<String,INDArray>> gradients = new LinkedList<>();
 
         //Do backprop according to the reverse of the topological ordering of the network
@@ -694,6 +695,73 @@ public class ComputationGraph implements Serializable, Model {
         return listeners;
     }
 
+    public ComputationGraphUpdater getUpdater(){
+        if(solver == null){
+            solver = new Solver.Builder()
+                    .configure(conf())
+                    .listeners(getListeners())
+                    .model(this).build();
+            solver.getOptimizer().setUpdaterComputationGraph(new ComputationGraphUpdater(this));
+        }
+        return solver.getOptimizer().getComputationGraphUpdater();
+    }
+
+    public void setUpdater(ComputationGraphUpdater updater){
+        if(solver == null){
+            solver = new Solver.Builder()
+                    .configure(conf())
+                    .listeners(getListeners())
+                    .model(this).build();
+        }
+        solver.getOptimizer().setUpdaterComputationGraph(updater);
+    }
+
+    public Layer getInputLayer( int inputLayerIdx ){
+        if(inputLayerIdx >= numInputArrays) throw new IllegalArgumentException("Invalid index: cannot get input layer "
+                + inputLayerIdx + ", total number of network inputs = " + numInputArrays);
+        return getLayer(configuration.getNetworkInputs().get(inputLayerIdx));
+    }
+
+    public Layer getOutputLayer(int outputLayerIdx ){
+        if(outputLayerIdx >= numOutputArrays ) throw new IllegalArgumentException("Invalid index: cannot get output layer "
+                + outputLayerIdx + ", total number of network outputs = " + numOutputArrays);
+        return getLayer(configuration.getNetworkOutputs().get(outputLayerIdx));
+    }
+
+    public INDArray params(boolean backwardOnly){
+        List<INDArray> list = new ArrayList<>(layerCount);
+        for( int i=0; i<topologicalOrder.length; i++ ){
+            if(!vertices[topologicalOrder[i]].hasLayer()) continue;
+
+            Layer l = vertices[topologicalOrder[i]].getLayer();
+            if(backwardOnly && l instanceof BasePretrainNetwork ){
+                list.add(((BasePretrainNetwork)l).paramsBackprop());
+            } else {
+                list.add(l.params());
+            }
+        }
+
+        return Nd4j.toFlattened('f', list);
+    }
+
+    public double score(DataSet dataSet){
+        return score(dataSet, false);
+    }
+
+    public double score(DataSet dataSet, boolean training){
+
+    }
+
+    public double score(MultiDataSet dataSet){
+        return score(dataSet,false);
+    }
+
+    public double score(MultiDataSet dataSet, boolean training){
+
+    }
+
+
+
     //------------------------------------------------------
     //Model methods:
 
@@ -719,15 +787,7 @@ public class ComputationGraph implements Serializable, Model {
 
     @Override
     public INDArray params() {
-        List<INDArray> list = new ArrayList<>(layerCount);
-        for( int i=0; i<topologicalOrder.length; i++ ){
-            if(!vertices[topologicalOrder[i]].hasLayer()) continue;
-
-            Layer l = vertices[topologicalOrder[i]].getLayer();
-            list.add(l.params());
-        }
-
-        return Nd4j.toFlattened('f',list);
+        return params(false);
     }
 
     @Override
