@@ -338,7 +338,14 @@ public class ParagraphVectorsTest {
     }
 
 
+    /**
+     * This test is not indicative.
+     * there's no need in this test within travis, use it manually only for problems detection
+     *
+     * @throws Exception
+     */
     @Test
+    @Ignore
     public void testParagraphVectorsReducedLabels1() throws Exception {
         ClassPathResource resource = new ClassPathResource("/labeled");
         File file = resource.getFile();
@@ -398,9 +405,10 @@ public class ParagraphVectorsTest {
 
     /*
         In this test we'll build w2v model, and will use it's vocab and weights for ParagraphVectors.
-        IS NOT READY YET
+        there's no need in this test within travis, use it manually only for problems detection
     */
     @Test
+    @Ignore
     public void testParagraphVectorsOverExistingWordVectorsModel() throws Exception {
 
 

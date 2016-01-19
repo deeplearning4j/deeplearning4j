@@ -53,7 +53,7 @@ public class FlatModelUtilsTest {
     @Test
     public void testWordsNearestBasic1() throws Exception {
 
-        WordVectors vec = WordVectorSerializer.loadTxtVectors(new File("/ext/Temp/Models/model.dat_trans"));
+        //WordVectors vec = WordVectorSerializer.loadTxtVectors(new File("/ext/Temp/Models/model.dat_trans"));
         vec.setModelUtils(new BasicModelUtils<VocabWord>());
 
         String target = "energy";
