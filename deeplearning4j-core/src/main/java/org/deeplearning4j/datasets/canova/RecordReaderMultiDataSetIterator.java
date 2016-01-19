@@ -155,7 +155,9 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
         }
         if(!outputMasks) outputArrMasks = null;
 
-        return new org.nd4j.linalg.dataset.MultiDataSet(inputArrs,outputArrs,inputArrMasks,outputArrMasks);
+        MultiDataSet mds = new org.nd4j.linalg.dataset.MultiDataSet(inputArrs,outputArrs,inputArrMasks,outputArrMasks);
+        if(preProcessor != null) preProcessor.preProcess(mds);
+        return mds;
     }
 
     private INDArray convertWritables(List<Collection<Writable>> list, int minValues, SubsetDetails details ){
@@ -300,6 +302,12 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
     @Override
     public void setPreProcessor(MultiDataSetPreProcessor preProcessor) {
         this.preProcessor = preProcessor;
+    }
+
+    @Override
+    public void reset() {
+        for(RecordReader rr : recordReaders.values()) rr.reset();
+        for(SequenceRecordReader rr: sequenceRecordReaders.values()) rr.reset();
     }
 
     @Override
