@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import org.deeplearning4j.models.embeddings.reader.ModelUtils;
+import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.sequencevectors.SequenceVectors;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
@@ -47,6 +48,17 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
 
         public Builder() {
 
+        }
+
+        /**
+         * This method has no effect for Word2Vec
+         *
+         * @param vec existing WordVectors model
+         * @return
+         */
+        @Override
+        public Builder useExistingWordVectors(@NonNull WordVectors vec) {
+            return this;
         }
 
         public Builder(@NonNull VectorsConfiguration configuration) {

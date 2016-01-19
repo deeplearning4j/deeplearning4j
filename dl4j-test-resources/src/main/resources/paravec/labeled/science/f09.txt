@@ -1,0 +1,4 @@
+An artificial neural network (ANN) learning algorithm, usually called "neural network" (NN), is a learning algorithm that is inspired by the structure and functional aspects of biological neural networks.
+Computations are structured in terms of an interconnected group of artificial neurons, processing information using a connectionist approach to computation.
+Modern neural networks are non-linear statistical data modeling tools.
+They are usually used to model complex relationships between inputs and outputs, to find patterns in data, or to capture the statistical structure in an unknown joint probability distribution between observed variables.
