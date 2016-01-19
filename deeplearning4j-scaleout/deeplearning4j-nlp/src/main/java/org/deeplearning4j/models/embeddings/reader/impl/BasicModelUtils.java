@@ -29,6 +29,8 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
     protected VocabCache<T> vocabCache;
     protected WeightLookupTable<T> lookupTable;
 
+    protected boolean normalized  = false;
+
     private static final Logger log = LoggerFactory.getLogger(BasicModelUtils.class);
 
     public BasicModelUtils() {
@@ -186,7 +188,10 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
             InMemoryLookupTable l = (InMemoryLookupTable) lookupTable;
 
             INDArray syn0 = l.getSyn0();
-            syn0.diviColumnVector(syn0.norm2(1));
+            if (!normalized) {
+                syn0.diviColumnVector(syn0.norm2(1));
+                normalized = true;
+            }
 
             INDArray similarity = Transforms.unitVec(words).mmul(syn0.transpose());
             // We assume that syn0 is normalized.
