@@ -100,7 +100,23 @@ public class WordVectorSerializer {
      */
     public static WordVectors loadGoogleModel(File modelFile, boolean binary, boolean lineBreaks)
             throws IOException {
-        return binary ? readBinaryModel(modelFile, lineBreaks) : WordVectorSerializer.fromPair(loadTxt(modelFile));
+        return binary ? readBinaryModel(modelFile, lineBreaks, true) : WordVectorSerializer.fromPair(loadTxt(modelFile));
+    }
+
+    /**
+     *
+     * Loads the Google model without normalization being applied.
+     *
+     * PLEASE NOTE: Use this method only if you understand why you need not-normalized model. In all other cases please use loadGoogleModel() instead.
+     *
+     * @param modelFile
+     * @param binary
+     * @param lineBreaks
+     * @return
+     * @throws IOException
+     */
+    public static WordVectors loadGoogleModelNonNormalized(File modelFile, boolean binary, boolean lineBreaks) throws IOException {
+        return binary ? readBinaryModel(modelFile, lineBreaks, false) : WordVectorSerializer.fromPair(loadTxt(modelFile));
     }
 
     /**
@@ -171,7 +187,7 @@ public class WordVectorSerializer {
      * @throws IOException
      * @throws FileNotFoundException
      */
-    private static Word2Vec readBinaryModel(File modelFile, boolean linebreaks)
+    private static Word2Vec readBinaryModel(File modelFile, boolean linebreaks, boolean normalize)
             throws NumberFormatException, IOException
     {
         InMemoryLookupTable<VocabWord> lookupTable;
@@ -204,7 +220,7 @@ public class WordVectorSerializer {
                 }
 
 
-                syn0.putRow(i, Transforms.unitVec(Nd4j.create(vector)));
+                syn0.putRow(i, normalize ? Transforms.unitVec(Nd4j.create(vector)) : Nd4j.create(vector));
 
                 cache.addToken(new VocabWord(1, word));
                 cache.addWordToIndex(cache.numWords(), word);
@@ -905,7 +921,7 @@ public class WordVectorSerializer {
             for (int i = 1; i < split.length; i++) {
                 row.putScalar(i - 1, Float.parseFloat(split[i]));
             }
-            arrays.add(Transforms.unitVec(row));
+            arrays.add(row);
         }
 
         INDArray syn = Nd4j.create(new int[]{arrays.size(), arrays.get(0).columns()});
