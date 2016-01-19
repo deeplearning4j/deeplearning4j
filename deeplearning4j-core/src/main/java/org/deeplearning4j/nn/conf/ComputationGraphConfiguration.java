@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.*;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.graph.nodes.GraphNode;
+import org.deeplearning4j.nn.graph.nodes.MergeNode;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -111,7 +112,40 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
     @Override
     public ComputationGraphConfiguration clone(){
-        throw new UnsupportedOperationException("Not implemented");
+        ComputationGraphConfiguration conf = new ComputationGraphConfiguration();
+        conf.layerNamesMap = (layerNamesMap != null ? new HashMap<>(this.layerNamesMap) : null);
+        conf.layerNumbersMap = (layerNumbersMap != null ? new HashMap<>(this.layerNumbersMap) : null);
+        conf.layers = new HashMap<>();
+        for(Map.Entry<String,NeuralNetConfiguration> entry : this.layers.entrySet()){
+            conf.layers.put(entry.getKey(),entry.getValue().clone());
+        }
+        conf.graphNodes = new HashMap<>();
+        for(Map.Entry<String,GraphNode> entry : this.graphNodes.entrySet()){
+            conf.graphNodes.put(entry.getKey(),entry.getValue().clone());
+        }
+        conf.layerInputs = new HashMap<>();
+        for( Map.Entry<String,List<String>> entry : this.layerInputs.entrySet() ){
+            conf.layerInputs.put(entry.getKey(),new ArrayList<>(entry.getValue()));
+        }
+        conf.graphNodeInputs = new HashMap<>();
+        for( Map.Entry<String,List<String>> entry : this.graphNodeInputs.entrySet() ){
+            conf.graphNodeInputs.put(entry.getKey(),new ArrayList<>(entry.getValue()));
+        }
+        conf.networkInputs = new ArrayList<>(this.networkInputs);
+        conf.networkOutputs = new ArrayList<>(this.networkOutputs);
+
+        conf.pretrain = pretrain;
+        conf.backprop = backprop;
+        conf.inputPreProcessors = new HashMap<>();
+        for(Map.Entry<String,InputPreProcessor> entry : inputPreProcessors.entrySet()){
+            conf.inputPreProcessors.put(entry.getKey(),entry.getValue().clone());
+        }
+        conf.backpropType = backpropType;
+        conf.tbpttFwdLength = tbpttFwdLength;
+        conf.tbpttBackLength = tbpttBackLength;
+        conf.redistributeParams = redistributeParams;
+
+        return conf;
     }
 
 
@@ -290,13 +324,21 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             return this;
         }
 
-        //TODO: code duplication? Layer has a name field...
         public GraphBuilder addLayer(String layerName, Layer layer, String... layerInputs ){
             NeuralNetConfiguration.Builder builder = globalConfiguration.clone();
             builder.layer(layer);
             layers.put(layerName, builder);
-            this.layerInputs.put(layerName,Arrays.asList(layerInputs));
-            layer.setLayerName(layerName);
+
+            //Automatically insert a MergeNode if layerInputs.length > 1
+            //Layers can only have 1 input
+            if(layerInputs != null && layerInputs.length > 1 ){
+                String mergeName = layerName+"-merge";
+                addNode(mergeName, new MergeNode(), layerInputs );
+                this.layerInputs.put(layerName,Collections.singletonList(mergeName));
+            } else if(layerInputs != null) {
+                this.layerInputs.put(layerName,Arrays.asList(layerInputs));
+                layer.setLayerName(layerName);
+            }
             return this;
         }
 

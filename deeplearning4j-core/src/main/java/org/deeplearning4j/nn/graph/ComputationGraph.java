@@ -16,10 +16,15 @@ import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
+import org.deeplearning4j.nn.updater.UpdaterCreator;
+import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
+import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
@@ -49,6 +54,7 @@ public class ComputationGraph implements Serializable, Model {
     private INDArray[] labels;
 
     private NeuralNetConfiguration defaultConfiguration;
+    private Collection<IterationListener> listeners = new ArrayList<>();
 
 
     public ComputationGraph(ComputationGraphConfiguration configuration){
@@ -98,8 +104,22 @@ public class ComputationGraph implements Serializable, Model {
         inputs[inputNum] = input;
     }
 
+    public void setInputs(INDArray[] inputs){
+        if(inputs != null && inputs.length != this.numInputArrays){
+            throw new IllegalArgumentException("Invalid input array: network has " + numInputArrays + " inputs, but array is of length " + inputs.length);
+        }
+        this.inputs = inputs;
+    }
+
     public void setLabel(int labelNum, INDArray label){
         labels[labelNum] = label;
+    }
+
+    public void setLabels(INDArray[] labels){
+        if(labels != null && labels.length != this.numOutputArrays){
+            throw new IllegalArgumentException("Invalid output array: network has " + numOutputArrays + " outputs, but array is of length " + labels.length);
+        }
+        this.labels = labels;
     }
 
     /** Initialize the ComputationGraph network */
@@ -266,9 +286,9 @@ public class ComputationGraph implements Serializable, Model {
         }
 
         //At this point: each GraphVertex has the local connection structure, both for inputs and outputs
-        for(GraphVertex gv : vertices ){
-            System.out.println(gv);
-        }
+//        for(GraphVertex gv : vertices ){
+//            System.out.println(gv);
+//        }
 
         //Given the graph structure, do a topological sort to define forward pass and flattening order:
         topologicalOrder = topologicalSortOrder();
@@ -311,7 +331,7 @@ public class ComputationGraph implements Serializable, Model {
 
                 boolean hasMaskArrays = next.hasMaskArrays();
                 if(hasMaskArrays){
-                    throw new UnsupportedOperationException("Not yet implemented");
+                    throw new UnsupportedOperationException("Training with mask arrays: not yet implemented");
 //                    setLayerMaskArrays(next.getFeaturesMaskArray(), next.getLabelsMaskArray());
                 }
 
@@ -325,6 +345,7 @@ public class ComputationGraph implements Serializable, Model {
                     if( solver == null ){
                         solver = new Solver.Builder()
                                 .configure(defaultConfiguration)    //TODO; don't like this
+                                .listeners(listeners)
                                 .model(this).build();
                     }
                     solver.optimize();
@@ -338,14 +359,58 @@ public class ComputationGraph implements Serializable, Model {
         }
     }
 
-    public void fit(Object multipleInputOutputIterator){
+    public void fit(MultiDataSet multiDataSet){
+        if(multiDataSet.hasMaskArrays()){
+            throw new UnsupportedOperationException("Training with masking arrays: not yet implemented");
+        }
+        fit(multiDataSet.getFeatures(),multiDataSet.getLabels());
+    }
 
-        throw new UnsupportedOperationException("Not implemented");
+    public void fit(MultiDataSetIterator multiDataSetIterator){
+        if(configuration.isPretrain()){
+
+            throw new UnsupportedOperationException("Pretraining not yet implemented");
+        }
+
+        if(configuration.isBackprop()){
+            while(multiDataSetIterator.hasNext()){
+                MultiDataSet next = multiDataSetIterator.next();
+                if (next.getFeatures() == null || next.getLabels() == null)
+                    break;
+
+                boolean hasMaskArrays = next.hasMaskArrays();
+                if(hasMaskArrays){
+                    throw new UnsupportedOperationException("Not yet implemented");
+//                    setLayerMaskArrays(next.getFeaturesMaskArray(), next.getLabelsMaskArray());
+                }
+
+                if(configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
+                    throw new UnsupportedOperationException("Truncated BPTT not yet implemented");
+//                    doTruncatedBPTT(next.getFeatureMatrix(),next.getLabels());
+                }
+                else {
+                    setInputs(next.getFeatures());
+                    setLabels(next.getLabels());
+                    if( solver == null ){
+                        solver = new Solver.Builder()
+                                .configure(defaultConfiguration)    //TODO; don't like this
+                                .listeners(listeners)
+                                .model(this).build();
+                    }
+                    solver.optimize();
+                }
+
+                if(hasMaskArrays){
+                    throw new UnsupportedOperationException();
+                    //clearLayerMaskArrays();
+                }
+            }
+        }
     }
 
     public void fit(INDArray[] inputs, INDArray[] labels ){
-//        setInputs(inputs);
-//        setLabels(labels);
+        setInputs(inputs);
+        setLabels(labels);
 
 
         if(configuration.isPretrain()){
@@ -361,7 +426,7 @@ public class ComputationGraph implements Serializable, Model {
                 if( solver == null) {
                     solver = new Solver.Builder()
                             .configure(conf())
-//                            .listeners(getListeners())
+                            .listeners(getListeners())
                             .model(this).build();
                 }
 
@@ -377,6 +442,8 @@ public class ComputationGraph implements Serializable, Model {
      * (c) order to flatten parameters (and gradients)
      *  */
     public int[] topologicalSortOrder(){
+        if(topologicalOrder != null) return topologicalOrder;
+
         //https://en.wikipedia.org/wiki/Topological_sorting#Kahn.27s_algorithm
         int[] out = new int[vertices.length];
         int outCounter = 0;
@@ -431,10 +498,6 @@ public class ComputationGraph implements Serializable, Model {
             if(set.size() > 0) throw new IllegalStateException("Invalid configuration: cycle detected in graph. Cannot calculate topological ordering with graph cycle ("
                 + "cycle includes vertex \"" + vertices[entry.getKey()].getVertexName() + "\")");
         }
-
-
-        System.out.println("Topological sort order:");
-        System.out.println(Arrays.toString(out));
 
         return out;
     }
@@ -527,7 +590,6 @@ public class ComputationGraph implements Serializable, Model {
     }
 
     protected void backprop(){
-
         LinkedList<Pair<String,INDArray>> gradients = new LinkedList<>();
 
         //Do backprop according to the reverse of the topological ordering of the network
@@ -556,9 +618,6 @@ public class ComputationGraph implements Serializable, Model {
                 for(VertexIndices v : inputVertices){
                     GraphVertex gv = vertices[v.getVertexIndex()];
                     int outputNumberOfInputVertex = v.getVertexEdgeNumber();
-                    if(outputNumberOfInputVertex >= gv.getNumOutputConnections() ){
-                        System.out.println(":(");
-                    }
                     gv.setError(outputNumberOfInputVertex,epsilons[j++]); //TODO check this
                 }
             }
@@ -612,12 +671,100 @@ public class ComputationGraph implements Serializable, Model {
         return l1;
     }
 
+    public void setListeners(Collection<IterationListener> listeners){
+        this.listeners = listeners;
+        if(layers == null) init();
+
+        for( Layer l : layers){
+            l.setListeners();
+        }
+    }
+
+    public void setListeners(IterationListener... listeners){
+        List<IterationListener> list = new ArrayList<>();
+        Collections.addAll(list,listeners);
+        setListeners(list);
+    }
+
+    public Collection<IterationListener> getListeners(){
+        return listeners;
+    }
+
+    public ComputationGraphUpdater getUpdater(){
+        if(solver == null){
+            solver = new Solver.Builder()
+                    .configure(conf())
+                    .listeners(getListeners())
+                    .model(this).build();
+            solver.getOptimizer().setUpdaterComputationGraph(new ComputationGraphUpdater(this));
+        }
+        return solver.getOptimizer().getComputationGraphUpdater();
+    }
+
+    public void setUpdater(ComputationGraphUpdater updater){
+        if(solver == null){
+            solver = new Solver.Builder()
+                    .configure(conf())
+                    .listeners(getListeners())
+                    .model(this).build();
+        }
+        solver.getOptimizer().setUpdaterComputationGraph(updater);
+    }
+
+    public Layer getInputLayer( int inputLayerIdx ){
+        if(inputLayerIdx >= numInputArrays) throw new IllegalArgumentException("Invalid index: cannot get input layer "
+                + inputLayerIdx + ", total number of network inputs = " + numInputArrays);
+        return getLayer(configuration.getNetworkInputs().get(inputLayerIdx));
+    }
+
+    public Layer getOutputLayer(int outputLayerIdx ){
+        if(outputLayerIdx >= numOutputArrays ) throw new IllegalArgumentException("Invalid index: cannot get output layer "
+                + outputLayerIdx + ", total number of network outputs = " + numOutputArrays);
+        return getLayer(configuration.getNetworkOutputs().get(outputLayerIdx));
+    }
+
+    public INDArray params(boolean backwardOnly){
+        List<INDArray> list = new ArrayList<>(layerCount);
+        for( int i=0; i<topologicalOrder.length; i++ ){
+            if(!vertices[topologicalOrder[i]].hasLayer()) continue;
+
+            Layer l = vertices[topologicalOrder[i]].getLayer();
+            if(backwardOnly && l instanceof BasePretrainNetwork ){
+                list.add(((BasePretrainNetwork)l).paramsBackprop());
+            } else {
+                list.add(l.params());
+            }
+        }
+
+        return Nd4j.toFlattened('f', list);
+    }
+
+    public double score(DataSet dataSet){
+        return score(dataSet, false);
+    }
+
+    public double score(DataSet dataSet, boolean training){
+
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    public double score(MultiDataSet dataSet){
+        return score(dataSet,false);
+    }
+
+    public double score(MultiDataSet dataSet, boolean training){
+
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+
+
     //------------------------------------------------------
     //Model methods:
 
     @Override
     public void fit() {
-        throw new UnsupportedOperationException("Not implemnted");
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
@@ -637,15 +784,7 @@ public class ComputationGraph implements Serializable, Model {
 
     @Override
     public INDArray params() {
-        List<INDArray> list = new ArrayList<>(layerCount);
-        for( int i=0; i<topologicalOrder.length; i++ ){
-            if(!vertices[topologicalOrder[i]].hasLayer()) continue;
-
-            Layer l = vertices[topologicalOrder[i]].getLayer();
-            list.add(l.params());
-        }
-
-        return Nd4j.toFlattened('f',list);
+        return params(false);
     }
 
     @Override
@@ -745,7 +884,16 @@ public class ComputationGraph implements Serializable, Model {
 
     @Override
     public Map<String, INDArray> paramTable() {
-        throw new UnsupportedOperationException("Not implemnted");
+        //Get all parameters from all layers
+        Map<String,INDArray> allParams = new LinkedHashMap<>();
+        for( int i=0; i<layers.length; i++ ){
+            Map<String,INDArray> paramMap = layers[i].paramTable();
+            for( Map.Entry<String, INDArray> entry : paramMap.entrySet() ){
+                String newKey = layers[i].conf().getLayer().getLayerName() + "_" + entry.getKey();
+                allParams.put(newKey, entry.getValue());
+            }
+        }
+        return allParams;
     }
 
     @Override
@@ -762,6 +910,5 @@ public class ComputationGraph implements Serializable, Model {
     public void clear() {
         throw new UnsupportedOperationException("Not implemnted");
     }
-
 
 }

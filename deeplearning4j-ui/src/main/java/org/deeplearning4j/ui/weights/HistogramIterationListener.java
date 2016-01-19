@@ -36,6 +36,9 @@ public class HistogramIterationListener implements IterationListener {
     private ArrayList<Double> scoreHistory = new ArrayList<>();
     private List<Map<String,List<Double>>> meanMagHistoryParams = new ArrayList<>();    //1 map per layer; keyed by new param name
     private List<Map<String,List<Double>>> meanMagHistoryUpdates = new ArrayList<>();
+    private Map<String,Integer> layerNameIndexes = new HashMap<>();
+    private List<String> layerNames = new ArrayList<>();
+    private int layerNameIndexesCount = 0;
     private boolean openBrowser;
     private boolean firstIteration = true;
     private String path;
@@ -95,7 +98,9 @@ public class HistogramIterationListener implements IterationListener {
             Map<String,INDArray> newGrad = new LinkedHashMap<>();
             for(Map.Entry<String,INDArray> entry : grad.entrySet() ){
                 String param = entry.getKey();
-                String newName = "param_" + param;
+                String newName;
+                if(Character.isDigit(param.charAt(0))) newName = "param_" + param;
+                else newName = param;
                 newGrad.put(newName,entry.getValue().dup());
                 //CSS identifier can't start with digit http://www.w3.org/TR/CSS21/syndata.html#value-def-identifier
 
@@ -115,7 +120,10 @@ public class HistogramIterationListener implements IterationListener {
             Map<String,INDArray> newParams = new LinkedHashMap<>();
             for(Map.Entry<String,INDArray> entry : params.entrySet()) {
                 String param = entry.getKey();
-                String newName = "param_" + param;
+                String newName;
+                if(Character.isDigit(param.charAt(0))) newName = "param_" + param;
+                else newName = param;
+
 
                 newParams.put(newName, entry.getValue().dup());
                 //dup() because params might be a view
@@ -141,6 +149,7 @@ public class HistogramIterationListener implements IterationListener {
             g.setPath(subPath);
             g.setUpdateMagnitudes(meanMagHistoryUpdates);
             g.setParamMagnitudes(meanMagHistoryParams);
+            g.setLayerNames(layerNames);
             g.setLastUpdateTime(System.currentTimeMillis());
 
             Response resp = target.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).post(Entity.entity(g,MediaType.APPLICATION_JSON));
@@ -153,17 +162,21 @@ public class HistogramIterationListener implements IterationListener {
         }
     }
 
-    private static int indexFromString(String str){
+    private int indexFromString(String str) {
         int underscore = str.indexOf("_");
-        if(underscore == -1)
-            return 0;
-        else {
-            String subStr = str.substring(0,underscore);
-            try{
-                return Integer.parseInt(subStr);
-            }catch( NumberFormatException e ){
-                return -1;
+        if (underscore == -1) {
+            if (!layerNameIndexes.containsKey(str)) {
+                layerNames.add(str);
+                layerNameIndexes.put(str, layerNameIndexesCount++);
             }
+            return layerNameIndexes.get(str);
+        } else {
+            String subStr = str.substring(0,underscore);
+            if(!layerNameIndexes.containsKey(subStr)){
+                layerNames.add(subStr);
+                layerNameIndexes.put(subStr,layerNameIndexesCount++);
+            }
+            return layerNameIndexes.get(subStr);
         }
     }
 }
