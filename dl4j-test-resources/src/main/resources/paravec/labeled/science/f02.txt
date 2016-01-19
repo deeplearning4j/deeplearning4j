@@ -1,0 +1,14 @@
+Big data usually includes data sets with sizes beyond the ability of commonly used software tools to capture, curate, manage, and process data within a tolerable elapsed time.
+Big data "size" is a constantly moving target, as of 2012 ranging from a few dozen terabytes to many petabytes of data.
+Big data requires a set of techniques and technologies with new forms of integration to reveal insights from datasets that are diverse, complex, and of a massive scale.
+In a 2001 research report and related lectures, META Group (now Gartner) analyst Doug Laney defined data growth challenges and opportunities as being three-dimensional, i.e. increasing volume (amount of data), velocity (speed of data in and out), and variety (range of data types and sources).
+Gartner, and now much of the industry, continue to use this "3Vs" model for describing big data.
+In 2012, Gartner updated its definition as follows: "Big data is high volume, high velocity, and/or high variety information assets that require new forms of processing to enable enhanced decision making, insight discovery and process optimization."
+Gartner's definition of the 3Vs is still widely used, and in agreement with a consensual definition that states that "Big Data represents the Information assets characterized by such a High Volume, Velocity and Variety to require specific Technology and Analytical Methods for its transformation into Value".
+Additionally, a new V "Veracity" is added by some organizations to describe it, revisionism challenged by some industry authorities.
+The 3Vs have been expanded to other complementary characteristics of big data:
+Volume: big data doesn't sample; it just observes and tracks what happens
+Velocity: big data is often available in real-time
+Variety: big data draws from text, images, audio, video; plus it completes missing pieces through data fusion
+Machine Learning: big data often doesn't ask why and simply detects patterns
+Digital footprint: big data is often a cost-free byproduct of digital interaction

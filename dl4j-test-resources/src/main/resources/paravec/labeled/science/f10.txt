@@ -1,0 +1,8 @@
+Several learning algorithms, mostly unsupervised learning algorithms, aim at discovering better representations of the inputs provided during training.
+Classical examples include principal components analysis and cluster analysis.
+Representation learning algorithms often attempt to preserve the information in their input but transform it in a way that makes it useful, often as a pre-processing step before performing classification or predictions, allowing to reconstruct the inputs coming from the unknown data generating distribution, while not being necessarily faithful for configurations that are implausible under that distribution.
+Manifold learning algorithms attempt to do so under the constraint that the learned representation is low-dimensional.
+Sparse coding algorithms attempt to do so under the constraint that the learned representation is sparse (has many zeros).
+Multilinear subspace learning algorithms aim to learn low-dimensional representations directly from tensor representations for multidimensional data, without reshaping them into (high-dimensional) vectors.
+Deep learning algorithms discover multiple levels of representation, or a hierarchy of features, with higher-level, more abstract features defined in terms of (or generating) lower-level features.
+It has been argued that an intelligent machine is one that learns a representation that disentangles the underlying factors of variation that explain the observed data.
