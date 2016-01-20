@@ -56,6 +56,21 @@ public:
 	//an op for the kernel
 	virtual
 #ifdef __CUDACC__
+	__device__
+
+
+	inline T opAtomic(T d1, T d2, T **extraParamsRef) = 0;
+#endif
+	/**
+	 *
+	 * @param d1
+	 * @param d2
+	 * @param extraParams
+	 * @return
+	 */
+	//an op for the kernel
+	virtual
+#ifdef __CUDACC__
 	__host__  __device__
 
 #endif
@@ -251,7 +266,7 @@ public:
 					 * aren't getting updated properly.
 					 *
 					 */
-					reduction = update(reduction, op(curr, currY, &extraParamsVals), &extraParamsVals);
+					reduction = update(reduction, opAtomic(curr, currY, &extraParamsVals), &extraParamsVals);
 					__syncthreads();
 					printf("First value is %f and second value is %f with d1 %f and d2 %f"
 							"\n",extraParamsVals[0],extraParamsVals[1],curr,currY);
@@ -268,7 +283,7 @@ public:
 				while (i * xElementWiseStride < n && j * yElementWiseStride < n) {
 					curr = dx[i];
 					currY = dy[j];
-					reduction = update(reduction, op(curr, currY, &extraParamsVals), &extraParamsVals);
+					reduction = update(reduction, opAtomic(curr, currY, &extraParamsVals), &extraParamsVals);
 					__syncthreads();
 					i += gridSize;
 					j += gridSizeY;
@@ -542,6 +557,26 @@ public:
 		return (d1 * d2);
 	}
 
+	/**
+	 *
+	 * @param d1
+	 * @param d2
+	 * @param extraParams
+	 * @return
+	 */
+	//an op for the kernel
+	virtual
+#ifdef __CUDACC__
+	__device__
+
+#endif
+	inline T opAtomic(T d1, T d2, T **extraParamsRef) {
+		T *extraParams = *extraParamsRef;
+		nd4j::math::atomics::nd4j_atomicAdd(&extraParams[0],d1 * d1);
+		nd4j::math::atomics::nd4j_atomicAdd(&extraParams[1],d2 * d2);
+		return (d1 * d2);
+	}
+
 	//calculate an update of the reduce operation
 	/**
 	 *
@@ -646,6 +681,24 @@ public:
 		T ret = d1 - d2;
 		return ret * ret;
 	}
+
+	/**
+	 *
+	 * @param d1
+	 * @param d2
+	 * @param extraParams
+	 * @return
+	 */
+	//an op for the kernel
+	virtual
+#ifdef __CUDACC__
+	__device__
+
+
+	inline T opAtomic(T d1, T d2, T **extraParamsRef) {
+		return op(d1,d2,extraParamsRef);
+	}
+#endif
 
 	//calculate an update of the reduce operation
 	/**
@@ -767,6 +820,24 @@ public:
 	inline T update(T old, T opOutput, T **extraParamsRef) {
 		return old + opOutput;
 	}
+
+	/**
+	 *
+	 * @param d1
+	 * @param d2
+	 * @param extraParams
+	 * @return
+	 */
+	//an op for the kernel
+	virtual
+#ifdef __CUDACC__
+	__device__
+
+
+	inline T opAtomic(T d1, T d2, T **extraParamsRef) {
+		return op(d1,d2,extraParamsRef);
+	}
+#endif
 
 	/**
 	 *
