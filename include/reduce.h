@@ -199,8 +199,7 @@ public:
 		__shared__ int tensorsForDimension;
 
 		//only compute the tad indexes once
-		__shared__
-		shape::TADPermuteInfo xTadInfo;
+		__shared__ shape::TADPermuteInfo xTadInfo;
 
 		__shared__ int reductionIndexesPerBlock;
 
@@ -334,7 +333,6 @@ public:
 
 				// write result for this block to global mem
 				if (tid == 0) {
-					printf("Setting value to %f\n",sPartials[0]);
 					if(postProcessOrNot)
 						result[blockIdx.x] = this->postProcess(sPartials[0],n,realExtraParams);
 					else
@@ -774,8 +772,10 @@ public:
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	void exec(T *x, int *xShapeInfo,
-			T *extraParams, T *result,
+	void exec(T *x,
+			int *xShapeInfo,
+			T *extraParams,
+			T *result,
 			int *resultShapeInfo) {
 		T startingVal = this->startingValue(x);
 		int length = shape::length(xShapeInfo);
@@ -847,6 +847,7 @@ public:
 			exec(x,xShapeInfo,extraParams,result,resultShapeInfoBuffer);
 			return;
 		}
+
 		T startingVal = this->startingValue(x);
 
 
