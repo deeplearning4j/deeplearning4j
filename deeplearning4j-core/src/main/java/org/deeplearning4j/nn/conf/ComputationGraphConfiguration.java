@@ -205,7 +205,14 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             }
         }
 
-        //Check: no graph cycles
+        //Check output names:
+        for(String s : networkOutputs){
+            if(!layers.containsKey(s) && !graphNodes.containsKey(s)){
+                throw new IllegalStateException("Invalid configuration: Output name \"" + s + "\" is not a Layer or GraphNode");
+            }
+        }
+
+        //Check for no graph cycles: done in ComputationGraph.init()
 
 
     }

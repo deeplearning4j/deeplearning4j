@@ -16,6 +16,8 @@ import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
+import org.deeplearning4j.nn.layers.recurrent.BaseRecurrentLayer;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.Solver;
@@ -648,7 +650,11 @@ public class ComputationGraph implements Serializable, Model {
     @Override
     public ComputationGraph clone(){
 
-        throw new UnsupportedOperationException("Not implemented");
+        ComputationGraph cg = new ComputationGraph(configuration.clone());
+        cg.init();
+        cg.setParams(params().dup());
+
+        return cg;
     }
 
     public double calcL2() {
@@ -911,4 +917,175 @@ public class ComputationGraph implements Serializable, Model {
         throw new UnsupportedOperationException("Not implemnted");
     }
 
+    //------------------------------------------------------------------------------
+    //RNN-specific functionality
+
+    /**If this ComputationGraph contains one or more RNN layers: conduct forward pass (prediction)
+     * but using previous stored state for any RNN layers. The activations for the final step are
+     * also stored in the RNN layers for use next time rnnTimeStep() is called.<br>
+     * This method can be used to generate output one or more steps at a time instead of always having to do
+     * forward pass from t=0. Example uses are for streaming data, and for generating samples from network output
+     * one step at a time (where samples are then fed back into the network as input)<br>
+     * If no previous state is present in RNN layers (i.e., initially or after calling rnnClearPreviousState()),
+     * the default initialization (usually 0) is used.<br>
+     * Supports mini-batch (i.e., multiple predictions/forward pass in parallel) as well as for single examples.<br>
+     * @param inputs Input to network. May be for one or multiple time steps. For single time step:
+     *  input has shape [miniBatchSize,inputSize] or [miniBatchSize,inputSize,1]. miniBatchSize=1 for single example.<br>
+     *  For multiple time steps: [miniBatchSize,inputSize,inputTimeSeriesLength]
+     * @return Output activations. If output is RNN layer (such as RnnOutputLayer): if all inputs have shape [miniBatchSize,inputSize]
+     * i.e., is 2d, then outputs have shape [miniBatchSize,outputSize] (i.e., also 2d) instead of [miniBatchSize,outputSize,1].<br>
+     * Otherwise output is 3d [miniBatchSize,outputSize,inputTimeSeriesLength] when using RnnOutputLayer (or unmodified otherwise).
+     */
+    public INDArray[] rnnTimeStep(INDArray... inputs){
+        //Idea: if 2d in, want 2d out
+        boolean inputIs2d = true;
+        for(INDArray i : inputs){
+            if(i.rank() != 2){
+                inputIs2d = false;
+                break;
+            }
+        }
+
+        INDArray[] outputs = new INDArray[this.numOutputArrays];
+
+        //Based on: feedForward()
+        for (int currVertexIdx : topologicalOrder) {
+            GraphVertex current = vertices[currVertexIdx];
+            if (current.isInputVertex()) {
+                VertexIndices[] inputsTo = current.getOutputVertices();
+                INDArray input = inputs[current.getIndex()];
+
+                for (VertexIndices v : inputsTo) {
+                    int vIdx = v.getVertexIndex();
+                    int vIdxInputNum = v.getVertexEdgeNumber();
+                    //This input: the 'vIdxInputNum'th input to vertex 'vIdx'
+                    vertices[vIdx].setInput(vIdxInputNum, input.dup());  //TODO When to dup?
+                }
+
+            } else {
+                INDArray out;
+                if(current.hasLayer()){
+                    //Layer
+                    Layer l = current.getLayer();
+                    if (l instanceof BaseRecurrentLayer<?>) {
+                        out = ((BaseRecurrentLayer<?>) l).rnnTimeStep(current.getInputs()[0]);
+                    } else if (l instanceof MultiLayerNetwork) {
+                        out = ((MultiLayerNetwork) l).rnnTimeStep(current.getInputs()[0]);
+                    } else {
+                        //non-recurrent layer
+                        out = current.doForward(false);
+                    }
+                } else {
+                    //GraphNode
+                    out = current.doForward(false);
+                }
+
+                if(current.isOutputVertex()){
+                    //Get the index of this output vertex...
+                    int idx = configuration.getNetworkOutputs().indexOf(current.getVertexName());
+                    outputs[idx] = out;
+                }
+
+                //Now, set the inputs for the next vertices:
+                VertexIndices[] outputsTo = current.getOutputVertices();
+                if (outputsTo != null) {
+                    int j = 0;
+                    for (VertexIndices v : outputsTo) {
+                        int vIdx = v.getVertexIndex();
+                        int inputNum = v.getVertexEdgeNumber();
+                        //This (jth) connection from the output: is the 'inputNum'th input to vertex 'vIdx'
+                        vertices[vIdx].setInput(inputNum, out);
+                    }
+                }
+            }
+        }
+
+        //As per MultiLayerNetwork.rnnTimeStep(): if inputs are all 2d, then outputs are all 2d
+        if(inputIs2d){
+            for( int i=0; i<outputs.length; i++ ){
+                if(outputs[i].rank() == 3 && outputs[i].size(2) == 1){
+                    //Return 2d output with shape [miniBatchSize,nOut]
+                    // instead of 3d output with shape [miniBatchSize,nOut,1]
+                    outputs[i] = outputs[i].tensorAlongDimension(0,1,0);
+                }
+            }
+        }
+
+        return outputs;
+    }
+
+    /**Get the state of the RNN layer, as used in {@link #rnnTimeStep(INDArray...)}.
+     * @param layer Number/index of the layer.
+     * @return Hidden state, or null if layer is not an RNN layer
+     */
+    public Map<String,INDArray> rnnGetPreviousState(int layer){
+        return rnnGetPreviousState(layers[layer].conf().getLayer().getLayerName());
+    }
+
+    /**Get the state of the RNN layer, as used in {@link #rnnTimeStep(INDArray...)}.
+     * @param layerName name of the layer
+     * @return Hidden state, or null if layer is not an RNN layer
+     */
+    public Map<String,INDArray> rnnGetPreviousState(String layerName){
+        Layer l = verticesMap.get(layerName).getLayer();
+        if(l == null || !(l instanceof BaseRecurrentLayer<?>)) return null;
+        return ((BaseRecurrentLayer<?>)l).rnnGetPreviousState();
+    }
+
+    /**Get a map of states for ALL RNN layers, as used in {@link #rnnTimeStep(INDArray...)}.
+     * Layers that are not RNN layers will not have an entry in the returned map
+     * @return Map of states (keyed by layer name) or null if layer is not an RNN layer
+     * @see #rnnSetPreviousStates(Map)
+     */
+    public Map<String,Map<String,INDArray>> rnnGetPreviousStates(){
+        Map<String,Map<String,INDArray>> states = new HashMap<>();
+        for(Layer l : layers){
+            if(l instanceof BaseRecurrentLayer<?>){
+                states.put(l.conf().getLayer().getLayerName(), ((BaseRecurrentLayer<?>)l).rnnGetPreviousState());
+            }
+        }
+        return states;
+    }
+
+    /**Set the state of the RNN layer, for use in {@link #rnnTimeStep(INDArray...)}
+     * @param layer The number/index of the layer.
+     * @param state The state to set the specified layer to
+     */
+    public void rnnSetPreviousState(int layer, Map<String,INDArray> state){
+        rnnSetPreviousState(layers[layer].conf().getLayer().getLayerName(), state);
+    }
+
+    /**Set the state of the RNN layer, for use in {@link #rnnTimeStep(INDArray...)}
+     * @param layerName The name of the layer.
+     * @param state The state to set the specified layer to
+     */
+    public void rnnSetPreviousState(String layerName, Map<String,INDArray> state){
+        Layer l = verticesMap.get(layerName).getLayer();
+        if(l == null || !(l instanceof BaseRecurrentLayer<?>)){
+            throw new UnsupportedOperationException("Layer \"" + layerName + "\" is not a recurrent layer. Cannot set state");
+        }
+        ((BaseRecurrentLayer<?>)l).rnnSetPreviousState(state);
+    }
+
+    /** Set the states for all RNN layers, for use in {@link #rnnTimeStep(INDArray...)}
+     * @param previousStates The previous time step states for all layers (key: layer name. Value: layer states)
+     * @see #rnnGetPreviousStates()
+     */
+    public void rnnSetPreviousStates(Map<String,Map<String,INDArray>> previousStates){
+        for(Map.Entry<String,Map<String,INDArray>> entry : previousStates.entrySet()){
+            rnnSetPreviousState(entry.getKey(),entry.getValue());
+        }
+    }
+
+    /** Clear the previous state of the RNN layers (if any), used in {@link #rnnTimeStep(INDArray...)}
+     */
+    public void rnnClearPreviousState(){
+        if( layers == null ) return;
+        for (Layer layer : layers) {
+            if (layer instanceof BaseRecurrentLayer) ((BaseRecurrentLayer<?>) layer).rnnClearPreviousState();
+            else if (layer instanceof MultiLayerNetwork) {
+                ((MultiLayerNetwork) layer).rnnClearPreviousState();
+            }
+        }
+    }
 }
