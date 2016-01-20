@@ -108,7 +108,7 @@ public class GloveTest {
         double simD = glove.similarity("day", "night");
         double simP = glove.similarity("best", "police");
 
-        INDArray day1 = glove.getWordVectorMatrix("day").dup();
+
 
         log.info("Day/night similarity: " + simD);
         log.info("Best/police similarity: " + simP);
@@ -128,6 +128,8 @@ public class GloveTest {
 
         File tempFile = File.createTempFile("glove", "temp");
         tempFile.deleteOnExit();
+
+        INDArray day1 = glove.getWordVectorMatrix("day").dup();
 
         WordVectorSerializer.writeWordVectors(glove, tempFile);
 
