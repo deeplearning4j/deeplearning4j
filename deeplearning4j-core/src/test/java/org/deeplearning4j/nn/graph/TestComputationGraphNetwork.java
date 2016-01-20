@@ -248,4 +248,19 @@ public class TestComputationGraphNetwork {
         }
     }
 
+    @Test
+    public void testCloning(){
+        Nd4j.getRandom().setSeed(12345);
+        ComputationGraphConfiguration conf = getIrisGraphConfiguration();
+        ComputationGraph graph = new ComputationGraph(conf);
+        graph.init();
+
+        ComputationGraph g2 = graph.clone();
+
+        DataSetIterator iris = new IrisDataSetIterator(150,150);
+        INDArray in = iris.next().getFeatureMatrix();
+        Map<String,INDArray> activations = graph.feedForward(in, false);
+        Map<String,INDArray> activations2 = g2.feedForward(in,false);
+        assertEquals(activations,activations2);
+    }
 }
