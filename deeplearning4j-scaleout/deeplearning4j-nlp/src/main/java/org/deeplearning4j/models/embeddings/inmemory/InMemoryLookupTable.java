@@ -122,6 +122,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
 
     @Override
     public void plotVocab(Tsne tsne) {
+
         try {
             List<String> plot = new ArrayList<>();
             for(String s : vocab.words()) {
