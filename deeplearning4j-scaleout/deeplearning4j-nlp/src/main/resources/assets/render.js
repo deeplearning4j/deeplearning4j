@@ -25,30 +25,88 @@ var x = [];
 
 var tx=0, ty=0;
 var ss=1;
+
+var svg;
+var xMax = 0, xMin = 0, yMax = 0, yMin = 0;
+
+var fx;
+var fy;
+
 function zoomHandler() {
   tx = d3.event.translate[0];
   ty = d3.event.translate[1];
   ss = d3.event.scale;
-  console.log('zoom called');
-  svg.selectAll('.u')
+  console.log('zoom called. Scale: ' + ss + " tX: " + tx + " tY: " + ty);
+  svg.selectAll('circle')
       .data(name3)
       .attr("transform", function(d, i) { return "translate(" +
                                             ((x[i]*20*ss + tx) + 400) + "," +
                                             ((y[i]*20*ss + ty) + 400) + ")";
-});
+                                            });
+  svg.selectAll('text')
+        .data(name3)
+        .attr("transform", function(d, i) { return "translate(" +
+                                              ((x[i]*20*ss + tx) + 400) + "," +
+                                              ((y[i]*20*ss + ty) + 400) + ")";
+                                              });
 }
 
-var svg;
+
 
 function drawEmbedding() {
     $("#embed").empty();
     var div = d3.select("#embed");
 
+    fx = d3.scale.linear()
+            .domain([xMin, xMax])
+            .range([0, 1024])
+
+    fy = d3.scale.linear()
+            .domain([yMin, yMax])
+            .range([600, 0]);
+
+
 
     svg = div.append("svg") // svg is global
-    .attr("width", 2000)
-    .attr("height", 2000);
+    .attr("width", "1024")
+    .attr("height", "600");
 
+
+    svg.selectAll("circle")
+        .data(name3)
+        .enter()
+        .append("circle")
+/*        .attr("transform", function(d, i) { return "translate(" +
+                                                  ((x[i]*20*ss + tx) + 400) + "," +
+                                                  ((y[i]*20*ss + ty) + 400) + ")"; });
+*/
+
+
+        .attr("cx", function(d, i) {
+        			   		return fx(x[i]);
+        			   })
+        			   .attr("cy", function(d, i) {
+        			   		return fy(y[i]);
+        			   })
+        			   .attr("r", 2);
+
+    svg.selectAll("text")
+    			   .data(name3)
+    			   .enter()
+    			   .append("text")
+    			   .text(function(d,i) {
+    			   		return name3[i];
+    			   })
+    			   .attr("x", function(d,i) {
+    			   		return fx(x[i]);
+    			   })
+    			   .attr("y", function(d, i) {
+    			   		return fy(y[i]);
+    			   })
+    			   .attr("font-family", "sans-serif")
+    			   .attr("font-size", "11px")
+    			   .attr("fill", "red");
+/*
     var g = svg.selectAll(".b")
       .data(name3)
       .enter().append("g")
@@ -61,18 +119,24 @@ function drawEmbedding() {
       .attr("fill", "#333")
       .text(function(d) { return d; });
 
+  */
 
+/*
     svg.selectAll('.u')
     .data(name3)
     .attr("transform", function(d, i) { return "translate(" +
                                           ((x[i]*20*ss + tx) + 400) + "," +
                                           ((y[i]*20*ss + ty) + 400) + ")"; });
+                                          */
 
     var zoomListener = d3.behavior.zoom()
-      .scaleExtent([0.1, 10])
+      .x(fx)
+      .y(fy)
+      .scaleExtent([0.000001, 1000])
       .center([0,0])
       .on("zoom", zoomHandler);
     zoomListener(svg);
+
 }
 
 
@@ -96,6 +160,16 @@ $(window).load(function() {
          name3.push(name2);
       }
 
+      x.push(10);
+      y.push(15);
+
+      xMax = d3.max(x);
+      xMin = d3.min(x);
+
+      yMax = d3.max(y);
+      yMin = d3.min(y);
+
+      name3.push("alpha");
       drawEmbedding();
     });
 

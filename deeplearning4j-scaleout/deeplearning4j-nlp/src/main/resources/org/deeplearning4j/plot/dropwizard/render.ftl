@@ -22,6 +22,8 @@
         }
         svg {
         border: 1px solid #333;
+        width: 100%;
+        height: 100%
         }
         #wrap {
         width: 800px;
@@ -48,6 +50,9 @@
         font-family: courier;
         padding-left: 20px;
         font-size: 14px;
+        }
+        .u {
+        color: #FF0000;
         }
     </style>
 
