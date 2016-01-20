@@ -423,7 +423,6 @@ public:
 				for (int i = 0; i < reductionIndexesPerBlock; i++) {
 					int reductionIndexToProcess = i + blockIdx.x * reductionIndexesPerBlock;
 					result[reductionIndexToProcess] = sPartials[i].index;
-					printf("Set reduction index to %d\n with value %f\n",reductionIndexToProcess,result[reductionIndexToProcess]);
 				}
 
 
