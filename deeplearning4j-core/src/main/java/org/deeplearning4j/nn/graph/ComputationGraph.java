@@ -20,6 +20,7 @@ import org.deeplearning4j.nn.layers.recurrent.BaseRecurrentLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -29,6 +30,8 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.*;
@@ -36,6 +39,8 @@ import java.util.*;
 /**ComputationGraph network (neural network with arbitrary connection structure)
  */
 public class ComputationGraph implements Serializable, Model {
+
+    private static final Logger log = LoggerFactory.getLogger(ComputationGraph.class);
 
     protected ComputationGraphConfiguration configuration;
     protected transient Solver solver;	//Used to call optimizers during backprop
@@ -338,10 +343,11 @@ public class ComputationGraph implements Serializable, Model {
                 }
 
                 if(configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
-                    throw new UnsupportedOperationException("Not yet implemented");
-//                    doTruncatedBPTT(next.getFeatureMatrix(),next.getLabels());
-                }
-                else {
+                    doTruncatedBPTT(new INDArray[]{next.getFeatures()},
+                            new INDArray[]{next.getLabels()},
+                            (hasMaskArrays ? new INDArray[]{next.getFeaturesMaskArray()} : null),
+                            (hasMaskArrays ? new INDArray[]{next.getLabelsMaskArray()} : null));
+                }else {
                     setInput(0,next.getFeatureMatrix());
                     setLabel(0,next.getLabels());
                     if( solver == null ){
@@ -387,10 +393,8 @@ public class ComputationGraph implements Serializable, Model {
                 }
 
                 if(configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
-                    throw new UnsupportedOperationException("Truncated BPTT not yet implemented");
-//                    doTruncatedBPTT(next.getFeatureMatrix(),next.getLabels());
-                }
-                else {
+                    doTruncatedBPTT(next.getFeatures(),next.getLabels(),next.getFeaturesMaskArrays(), next.getLabelsMaskArrays());
+                } else {
                     setInputs(next.getFeatures());
                     setLabels(next.getLabels());
                     if( solver == null ){
@@ -509,13 +513,12 @@ public class ComputationGraph implements Serializable, Model {
     public void computeGradientAndScore() {
         //Calculate activations (which are stored in each layer, and used in backprop)
         if(configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
-//            rnnActivateUsingStoredState(getInput(), true, true);
-//            truncatedBPTTGradient();
-            throw new UnsupportedOperationException();
+            rnnActivateUsingStoredState(inputs, true, true);
+            backprop(true);
         }
         else {
             feedForward(true);
-            backprop();
+            backprop(false);
         }
 
         //Score: sum of the scores for the various output layers...
@@ -591,7 +594,10 @@ public class ComputationGraph implements Serializable, Model {
         return layerActivations;
     }
 
-    protected void backprop(){
+    /**
+     * @param truncatedBPTT false: normal backprop. true: calculate gradients using truncated BPTT for RNN layers
+     */
+    protected void backprop(boolean truncatedBPTT){
         LinkedList<Pair<String,INDArray>> gradients = new LinkedList<>();
 
         //Do backprop according to the reverse of the topological ordering of the network
@@ -608,7 +614,7 @@ public class ComputationGraph implements Serializable, Model {
                 outputLayer.setLabels(currLabels);
             }
 
-            Pair<Gradient,INDArray[]> pair = current.doBackward();
+            Pair<Gradient,INDArray[]> pair = current.doBackward(truncatedBPTT,(truncatedBPTT ? configuration.getTbpttBackLength() : 0));
             INDArray[] epsilons = pair.getSecond();
 
             //Inputs to the current GraphVertex:
@@ -989,7 +995,6 @@ public class ComputationGraph implements Serializable, Model {
                 //Now, set the inputs for the next vertices:
                 VertexIndices[] outputsTo = current.getOutputVertices();
                 if (outputsTo != null) {
-                    int j = 0;
                     for (VertexIndices v : outputsTo) {
                         int vIdx = v.getVertexIndex();
                         int inputNum = v.getVertexEdgeNumber();
@@ -1088,4 +1093,164 @@ public class ComputationGraph implements Serializable, Model {
             }
         }
     }
+
+    protected void doTruncatedBPTT(INDArray[] inputs, INDArray[] labels, INDArray[] featureMasks, INDArray[] labelMasks ){
+
+        //Approach used here to implement truncated BPTT: if input is 3d, split it. Otherwise: input is unmodified
+
+        int timeSeriesLength = -1;
+        for(INDArray in : inputs){
+            if(in.rank() != 3) continue;
+            if(timeSeriesLength == -1) timeSeriesLength = in.size(2);
+            else if(timeSeriesLength != in.size(2)){
+                log.warn("Cannot do TBPTT with time series of different lengths");
+                return;
+            }
+        }
+        for(INDArray out : labels){
+            if(out.rank() != 3) continue;
+            if(timeSeriesLength == -1) timeSeriesLength = out.size(2);
+            else if(timeSeriesLength != out.size(2)){
+                log.warn("Cannot do TBPTT with time series of different lengths");
+                return;
+            }
+        }
+
+        int fwdLen = configuration.getTbpttFwdLength();
+        if(fwdLen > timeSeriesLength) {
+            log.warn("Cannot do TBPTT: Truncated BPTT forward length (" + fwdLen + ") > input time series length (" + timeSeriesLength + ")");
+            return;
+        }
+
+        int nSubsets = timeSeriesLength / fwdLen;
+
+        rnnClearPreviousState();
+
+        INDArray[] newInputs = new INDArray[inputs.length];
+        INDArray[] newLabels = new INDArray[labels.length];
+        INDArray[] newFeatureMasks = (featureMasks != null ? new INDArray[featureMasks.length] : null);
+        INDArray[] newLabelMasks = (labelMasks != null ? new INDArray[labelMasks.length] : null);
+
+        for( int i=0; i<nSubsets; i++ ){
+            int startTimeIdx = i*fwdLen;
+            int endTimeIdx = startTimeIdx + fwdLen;
+
+            for( int j=0; j< inputs.length; j++ ){
+                if(inputs[j].rank() != 3) newInputs[j] = inputs[j];
+                else {
+                    newInputs[j] = inputs[j].get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+                }
+            }
+            for( int j=0; j<labels.length; j++ ){
+                if(labels[j].rank() != 3) newLabels[j] = labels[j];
+                else {
+                    newLabels[j] = labels[j].get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+                }
+            }
+            if(featureMasks != null){
+                for( int j=0; j<featureMasks.length; j++ ){
+                    if(featureMasks[j] == null) continue;
+                    newFeatureMasks[j] = featureMasks[j].get(NDArrayIndex.all(), NDArrayIndex.interval(startTimeIdx,endTimeIdx));
+                }
+            }
+            if(labelMasks != null){
+                for( int j=0; j<labelMasks.length; j++ ){
+                    if(labelMasks[j] == null) continue;
+                    newLabelMasks[j] = labelMasks[j].get(NDArrayIndex.all(), NDArrayIndex.interval(startTimeIdx,endTimeIdx));
+                }
+            }
+
+            setInputs(newInputs);
+            setLabels(newLabels);
+            setLayerMaskArrays(newFeatureMasks,newLabelMasks);
+
+            if(solver == null) {
+                solver = new Solver.Builder()
+                        .configure(conf())
+                        .listeners(getListeners())
+                        .model(this).build();
+            }
+            solver.optimize();
+
+            //Finally, update the state of the RNN layers:
+            rnnUpdateStateWithTBPTTState();
+        }
+
+        rnnClearPreviousState();
+    }
+
+    /** Similar to rnnTimeStep and feedForward() methods. Difference here is that this method:<br>
+     * (a) like rnnTimeStep does forward pass using stored state for RNN layers, and<br>
+     * (b) unlike rnnTimeStep does not modify the RNN layer state<br>
+     * Therefore multiple calls to this method with the same input should have the same output.<br>
+     * Typically used during training only. Use rnnTimeStep for prediction/forward pass at test time.
+     * @param inputs Input to network
+     * @param training Whether training or not
+     * @param storeLastForTBPTT set to true if used as part of truncated BPTT training
+     * @return Activations for each layer (including input, as per feedforward() etc)
+     */
+    public Map<String,INDArray> rnnActivateUsingStoredState(INDArray[] inputs, boolean training, boolean storeLastForTBPTT) {
+        Map<String,INDArray> layerActivations = new HashMap<>();
+
+        //Do forward pass according to the topological ordering of the network
+        for (int currVertexIdx : topologicalOrder) {
+            GraphVertex current = vertices[currVertexIdx];
+            if (current.isInputVertex()) {
+                VertexIndices[] inputsTo = current.getOutputVertices();
+                INDArray input = inputs[current.getIndex()];
+
+                layerActivations.put(current.getVertexName(), input);
+
+                for (VertexIndices v : inputsTo) {
+                    int vIdx = v.getVertexIndex();
+                    int vIdxInputNum = v.getVertexEdgeNumber();
+                    //This input: the 'vIdxInputNum'th input to vertex 'vIdx'
+                    vertices[vIdx].setInput(vIdxInputNum, input.dup());  //TODO When to dup?
+                }
+
+            } else {
+                INDArray out;
+                if(current.hasLayer()){
+                    Layer l = current.getLayer();
+                    if (l instanceof BaseRecurrentLayer<?>) {
+                        out = ((BaseRecurrentLayer<?>) l).rnnActivateUsingStoredState(current.getInputs()[0],training,storeLastForTBPTT);
+                    } else if (l instanceof MultiLayerNetwork) {
+                        List<INDArray> temp = ((MultiLayerNetwork) l).rnnActivateUsingStoredState(current.getInputs()[0],training,storeLastForTBPTT);
+                        out = temp.get(temp.size()-1);
+                    } else {
+                        //non-recurrent layer
+                        out = current.doForward(training);
+                    }
+                    layerActivations.put(current.getVertexName(), out);
+                } else {
+                    out = current.doForward(training);
+                }
+
+                //Now, set the inputs for the next vertices:
+                VertexIndices[] outputsTo = current.getOutputVertices();
+                if (outputsTo != null) {
+                    for (VertexIndices v : outputsTo) {
+                        int vIdx = v.getVertexIndex();
+                        int inputNum = v.getVertexEdgeNumber();
+                        //This (jth) connection from the output: is the 'inputNum'th input to vertex 'vIdx'
+                        vertices[vIdx].setInput(inputNum, out);
+                    }
+                }
+            }
+        }
+
+        return layerActivations;
+    }
+
+    public void setLayerMaskArrays(INDArray[] featureMaskArrays, INDArray[] labelMaskArrays){
+
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    protected void rnnUpdateStateWithTBPTTState(){
+
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+
 }
