@@ -1,5 +1,7 @@
 package org.deeplearning4j.nn.graph;
 
+import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -8,6 +10,8 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
+import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.layers.recurrent.BaseRecurrentLayer;
 import org.deeplearning4j.nn.layers.recurrent.GravesLSTM;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -271,6 +275,118 @@ public class ComputationGraphTestRNN {
                 assertEquals(expLastActL1, lastActL1);
             }
         }
+    }
+
+
+
+    @Test
+    public void testTruncatedBPTTVsBPTT(){
+        //Under some (limited) circumstances, we expect BPTT and truncated BPTT to be identical
+        //Specifically TBPTT over entire data vector
+
+        int timeSeriesLength = 12;
+        int miniBatchSize = 7;
+        int nIn = 5;
+        int nOut = 4;
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("0",new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
+                        .nIn(nIn).nOut(7).activation("tanh").weightInit(WeightInit.DISTRIBUTION)
+                        .dist(new NormalDistribution(0,0.5)).build(),"in")
+                .addLayer("1",new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
+                        .nIn(7).nOut(8).activation("tanh").weightInit(WeightInit.DISTRIBUTION)
+                        .dist(new NormalDistribution(0,0.5)).build(),"0")
+                .addLayer("out", new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).weightInit(WeightInit.DISTRIBUTION)
+                        .nIn(8).nOut(nOut).activation("softmax").weightInit(WeightInit.DISTRIBUTION)
+                        .dist(new NormalDistribution(0,0.5)).build(),"1")
+                .setOutputs("out")
+                .backprop(true)
+                .build();
+        assertEquals(BackpropType.Standard, conf.getBackpropType());
+
+        ComputationGraphConfiguration confTBPTT = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("0", new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
+                        .nIn(nIn).nOut(7).activation("tanh").weightInit(WeightInit.DISTRIBUTION)
+                        .dist(new NormalDistribution(0, 0.5)).build(), "in")
+                .addLayer("1", new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
+                        .nIn(7).nOut(8).activation("tanh").weightInit(WeightInit.DISTRIBUTION)
+                        .dist(new NormalDistribution(0, 0.5)).build(), "0")
+                .addLayer("out", new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).weightInit(WeightInit.DISTRIBUTION)
+                        .nIn(8).nOut(nOut).activation("softmax").weightInit(WeightInit.DISTRIBUTION)
+                        .dist(new NormalDistribution(0, 0.5)).build(), "1")
+                .setOutputs("out")
+                .backprop(true)
+                .backpropType(BackpropType.TruncatedBPTT).tBPTTForwardLength(timeSeriesLength).tBPTTBackwardLength(timeSeriesLength)
+                .build();
+        assertEquals(BackpropType.TruncatedBPTT, confTBPTT.getBackpropType());
+
+        Nd4j.getRandom().setSeed(12345);
+        ComputationGraph graph = new ComputationGraph(conf);
+        graph.init();
+
+        Nd4j.getRandom().setSeed(12345);
+        ComputationGraph graphTBPTT = new ComputationGraph(confTBPTT);
+        graphTBPTT.init();
+
+        assertTrue(graphTBPTT.getConfiguration().getBackpropType() == BackpropType.TruncatedBPTT);
+        assertTrue(graphTBPTT.getConfiguration().getTbpttFwdLength() == timeSeriesLength);
+        assertTrue(graphTBPTT.getConfiguration().getTbpttBackLength() == timeSeriesLength);
+
+        INDArray inputData = Nd4j.rand(new int[]{miniBatchSize,nIn,timeSeriesLength});
+        INDArray labels = Nd4j.rand(new int[]{miniBatchSize,nOut,timeSeriesLength});
+
+        graph.setInput(0,inputData);
+        graph.setLabel(0, labels);
+
+        graphTBPTT.setInput(0,inputData);
+        graphTBPTT.setLabel(0, labels);
+
+        graph.computeGradientAndScore();
+        graphTBPTT.computeGradientAndScore();
+
+        Pair<Gradient,Double> graphPair = graph.gradientAndScore();
+        Pair<Gradient,Double> graphTbpttPair = graphTBPTT.gradientAndScore();
+
+        assertEquals(graphPair.getFirst().gradientForVariable(), graphTbpttPair.getFirst().gradientForVariable());
+        assertEquals(graphPair.getSecond(), graphTbpttPair.getSecond());
+
+        //Check states: expect stateMap to be empty but tBpttStateMap to not be
+        Map<String,INDArray> l0StateMLN = graph.rnnGetPreviousState(0);
+        Map<String,INDArray> l0StateTBPTT = graphTBPTT.rnnGetPreviousState(0);
+        Map<String,INDArray> l1StateMLN = graph.rnnGetPreviousState(0);
+        Map<String,INDArray> l1StateTBPTT = graphTBPTT.rnnGetPreviousState(0);
+
+        Map<String,INDArray> l0TBPTTState = ((BaseRecurrentLayer<?>)graph.getLayer(0)).rnnGetTBPTTState();
+        Map<String,INDArray> l0TBPTTStateTBPTT = ((BaseRecurrentLayer<?>)graphTBPTT.getLayer(0)).rnnGetTBPTTState();
+        Map<String,INDArray> l1TBPTTState = ((BaseRecurrentLayer<?>)graph.getLayer(1)).rnnGetTBPTTState();
+        Map<String,INDArray> l1TBPTTStateTBPTT = ((BaseRecurrentLayer<?>)graphTBPTT.getLayer(1)).rnnGetTBPTTState();
+
+        assertTrue(l0StateMLN.isEmpty());
+        assertTrue(l0StateTBPTT.isEmpty());
+        assertTrue(l1StateMLN.isEmpty());
+        assertTrue(l1StateTBPTT.isEmpty());
+
+        assertTrue(l0TBPTTState.isEmpty());
+        assertTrue(l0TBPTTStateTBPTT.size()==2);
+        assertTrue(l1TBPTTState.isEmpty());
+        assertTrue(l1TBPTTStateTBPTT.size() == 2);
+
+        INDArray tbpttActL0 = l0TBPTTStateTBPTT.get(GravesLSTM.STATE_KEY_PREV_ACTIVATION);
+        INDArray tbpttActL1 = l1TBPTTStateTBPTT.get(GravesLSTM.STATE_KEY_PREV_ACTIVATION);
+
+        Map<String,INDArray> activations = graph.feedForward(inputData, true);
+        INDArray l0Act = activations.get("0");
+        INDArray l1Act = activations.get("1");
+        INDArray expL0Act = l0Act.tensorAlongDimension(timeSeriesLength-1, 1,0);
+        INDArray expL1Act = l1Act.tensorAlongDimension(timeSeriesLength-1, 1,0);
+        assertEquals(tbpttActL0,expL0Act);
+        assertEquals(tbpttActL1,expL1Act);
     }
 
 }
