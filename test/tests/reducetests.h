@@ -196,7 +196,8 @@ Data<double> * getData(double *assertion,double startingVal) {
 	for(int i = 0; i < 4; i++)
 		ret->data[i] = i + 1;
 	double *extraParams = (double *) malloc(sizeof(double) * 4);
-	extraParams[0] = startingVal;
+	for(int i = 0; i < 4; i++)
+		extraParams[i] = startingVal;
 	ret->extraParams = extraParams;
 
 	ret->assertion = (double *) malloc(sizeof(double) * 4);

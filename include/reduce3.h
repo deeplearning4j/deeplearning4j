@@ -7,6 +7,9 @@
 
 #ifndef REDUCE3_H_
 #define REDUCE3_H_
+
+#define EXTRA_PARAMS_LENGTH 10
+
 #include <op.h>
 #include <templatemath.h>
 #include <helper_cuda.h>
@@ -24,7 +27,7 @@ public:
 	__host__  __device__
 
 #endif
-	inline T postProcess(T reduction, int n,T *extraParams) = 0;
+	inline T postProcess(T reduction, int n,T **extraParamsRef) = 0;
 
 	virtual
 #ifdef __CUDACC__
@@ -32,6 +35,16 @@ public:
 #endif
 	T startingValue(T *input) = 0;
 
+	virtual
+#ifdef __CUDACC__
+	__inline__ __host__ __device__
+#endif
+	T * generateExtraParams() = 0;
+	virtual
+#ifdef __CUDACC__
+	__inline__ __host__ __device__
+#endif
+	void finalizeExtraParams(T **extraParamsRef)  = 0;
 
 	/**
 	 *
@@ -46,7 +59,7 @@ public:
 	__host__  __device__
 
 #endif
-	inline T op(T d1, T d2, T *extraParams) = 0;
+	inline T op(T d1, T d2, T **extraParamsRef) = 0;
 
 	//calculate an update of the reduce operation
 	/**
@@ -61,7 +74,7 @@ public:
 	__host__  __device__
 
 #endif
-	inline T update(T old, T opOutput, T *extraParams) = 0;
+	inline T update(T old, T opOutput, T **extraParamsRef) = 0;
 
 	/**
 	 *
@@ -75,7 +88,7 @@ public:
 	__host__  __device__
 
 #endif
-	inline T merge(T old, T opOutput, T *extraParams) = 0;
+	inline T merge(T old, T opOutput, T **extraParamsRef) = 0;
 
 #ifdef __CUDACC__
 	/**
@@ -84,7 +97,7 @@ public:
 	 * @param tid
 	 * @param extraParams
 	 */
-	virtual __inline__ __device__ void aggregatePartials(T **sPartialsRef, int tid, T *extraParams) {
+	virtual __inline__ __device__ void aggregatePartials(T **sPartialsRef, int tid, T **extraParamsRef) {
 		// start the shared memory loop on the next power of 2 less
 		// than the block size.  If block size is not a power of 2,
 		// accumulate the intermediate sums in the remainder range.
@@ -96,14 +109,14 @@ public:
 				floorPow2 &= floorPow2 - 1;
 			}
 			if (tid >= floorPow2) {
-				sPartials[tid - floorPow2] = update(sPartials[tid - floorPow2], sPartials[tid], extraParams);
+				sPartials[tid - floorPow2] = update(sPartials[tid - floorPow2], sPartials[tid], extraParamsRef);
 			}
 			__syncthreads();
 		}
 
 		for (int activeThreads = floorPow2 >> 1; activeThreads; activeThreads >>= 1) {
 			if (tid < activeThreads) {
-				sPartials[tid] = update(sPartials[tid], sPartials[tid + activeThreads], extraParams);
+				sPartials[tid] = update(sPartials[tid], sPartials[tid + activeThreads], extraParamsRef);
 			}
 			__syncthreads();
 		}
@@ -144,8 +157,17 @@ public:
 		//shared memory space for storing intermediate results
 		SharedMemory <T> val;
 		volatile T *sPartials = val.getPointer();
-		int numElements = gpuInformation[2] / sizeof(T);
 		T startingVal = this->startingValue(dx);
+
+		__shared__ T *extraParamsVals;
+		if(tid == 0) {
+			extraParamsVals = (T *) malloc(sizeof(T) * EXTRA_PARAMS_LENGTH);
+			for(int i = 0; i < EXTRA_PARAMS_LENGTH; i++) {
+				extraParamsVals[i] = startingVal;
+			}
+		}
+		__syncthreads();
+		int numElements = gpuInformation[2] / sizeof(T);
 		for (int i = tid; i < numElements; i += blockDim.x)
 			sPartials[i] = startingVal;
 		__syncthreads();
@@ -219,16 +241,25 @@ public:
 			unsigned int j = yOffset + blockIdx.x * yElementWiseStride + tid;
 			unsigned int gridSize = blockDim.x * gridDim.x * xElementWiseStride;
 			unsigned int gridSizeY = blockDim.x * gridDim.x * yElementWiseStride;
-
 			if(xOffset == 0 && yOffset == 0 && xElementWiseStride == 1 && yElementWiseStride == 1) {
 				while (i  < n && j  < n) {
 					curr = dx[i];
 					currY = dy[j];
-					reduction = update(reduction, op(curr, currY, extraParams), extraParams);
+
+					/**
+					 * Find why extra params vals
+					 * aren't getting updated properly.
+					 *
+					 */
+					reduction = update(reduction, op(curr, currY, &extraParamsVals), &extraParamsVals);
+					__syncthreads();
+					printf("First value is %f and second value is %f with d1 %f and d2 %f"
+							"\n",extraParamsVals[0],extraParamsVals[1],curr,currY);
+
 					i += gridSize;
 					j += gridSizeY;
-					printf("Reduction for val x %f and y %f\n",curr,currY);
 				}
+
 			}
 			else {
 				// we reduce multiple elements per thread.  The number is determined by the
@@ -237,30 +268,38 @@ public:
 				while (i * xElementWiseStride < n && j * yElementWiseStride < n) {
 					curr = dx[i];
 					currY = dy[j];
-					reduction = update(reduction, op(curr, currY, extraParams), extraParams);
+					reduction = update(reduction, op(curr, currY, &extraParamsVals), &extraParamsVals);
+					__syncthreads();
 					i += gridSize;
 					j += gridSizeY;
 				}
 
 			}
 
+
 			// each thread puts its local sum into shared memory
 			sPartials[tid] = reduction;
 			__syncthreads();
 
 			T **sPartialsRef = (T **) &sPartials;
-			aggregatePartials(sPartialsRef, tid, extraParams);
-
+			aggregatePartials(sPartialsRef, tid, &extraParamsVals);
+			/**
+			 * Look at something that uses the extra params
+			 * and aggregates the extra values propelry.
+			 *This will be used in summary stats too.
+			 */
 			// write result for this block to global mem
 			if (tid == 0) {
 				if (postProcessOrNot) {
-					result[blockIdx.x] = postProcess(sPartials[0], xLength,extraParams);
-			        printf("Result %f\n",result[blockIdx.x]);
+					result[blockIdx.x] = postProcess(sPartials[0], xLength,&extraParamsVals);
 				}
 				else {
 					result[blockIdx.x] = sPartials[0];
 				}
+
+
 			}
+
 		}
 
 		else if (!resultScalar) {
@@ -294,7 +333,7 @@ public:
 					//note here that we compute the offset and then accumulate in shared memory
 					for (int element = 0;
 							element < elementsPerTad; element++, offsetForTad += xElementWiseStride,yOffsetForTad += yElementWiseStride) {
-						sPartials[tid] = update(sPartials[tid], op(dx[offsetForTad],dy[yOffsetForTad],extraParams), extraParams);
+						sPartials[tid] = update(sPartials[tid], op(dx[offsetForTad],dy[yOffsetForTad],&extraParamsVals), &extraParamsVals);
 						__syncthreads();
 					}
 				}
@@ -303,7 +342,7 @@ public:
 					//note here that we compute the offset and then accumulate in shared memory
 					for (int element = 0;
 							element < elementsPerTad; element++, offsetForTad += xElementWiseStride,yOffsetForTad += yElementWiseStride) {
-						sPartials[tid] = update(sPartials[tid], op(dx[offsetForTad],dy[yOffsetForTad],extraParams), extraParams);
+						sPartials[tid] = update(sPartials[tid], op(dx[offsetForTad],dy[yOffsetForTad],&extraParamsVals), &extraParamsVals);
 						__syncthreads();
 					}
 				}
@@ -332,7 +371,7 @@ public:
 				 *
 				 */
 				for (int i = 1; i < tadsPerReductionIndex; i++) {
-					sPartials[tid] = update(sPartials[tid], sPartials[tid + i], extraParams);
+					sPartials[tid] = update(sPartials[tid], sPartials[tid + i], &extraParamsVals);
 					__syncthreads();
 				}
 			}
@@ -348,7 +387,7 @@ public:
 					int reductionIndexToProcess = i + blockIdx.x * reductionIndexesPerBlock;
 					if (postProcessOrNot) {
 						printf("About to post process with x length %d\n",xLength);
-						result[reductionIndexToProcess] = postProcess(sPartials[i], xLength,extraParams);
+						result[reductionIndexToProcess] = postProcess(sPartials[i], xLength,&extraParamsVals);
 					}
 					else {
 						result[reductionIndexToProcess] = sPartials[i];
@@ -363,6 +402,8 @@ public:
 
 		}
 
+		if(tid == 0)
+			this->finalizeExtraParams(&extraParamsVals);
 
 	}
 #endif
@@ -370,12 +411,12 @@ public:
 	void exec(
 			T *x,
 			int *xShapeInfo,
-			T *extraParams,
+			T *extraParamsVals,
 			T *y, int *yShapeInfo,
 			T *result, int *resultShapeInfo) {
 
 
-		T startingVal = extraParams[0];
+		T startingVal = this->startingValue(x);
 		int length = shape::length(xShapeInfo);
 		int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 		int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
@@ -383,11 +424,11 @@ public:
 		if (xElementWiseStride == 1 && resultElementWiseStride == 1) {
 #pragma omp simd
 			for (int i = 0; i < length; i++) {
-				startingVal = update(startingVal, op(x[i], y[i], extraParams),
-						extraParams);
+				startingVal = update(startingVal, op(x[i], y[i], &extraParamsVals),
+						&extraParamsVals);
 			}
 
-			result[0] = postProcess(startingVal, length,extraParams);
+			result[0] = postProcess(startingVal, length,&extraParamsVals);
 
 		} else {
 #pragma omp simd
@@ -395,20 +436,20 @@ public:
 			for (int i = 0; i < length; i++) {
 				startingVal = update(startingVal,
 						op(x[i * xElementWiseStride], y[i * yElementWiseStride],
-								extraParams), extraParams);
+								&extraParamsVals), &extraParamsVals);
 			}
 
-			result[0] = postProcess(startingVal, length,extraParams);
+			result[0] = postProcess(startingVal, length,&extraParamsVals);
 
 		}
 
 	}
 
-	void exec(T *x, int *xShapeInfo, T *extraParams, T *y, int *yShapeInfo,
+	void exec(T *x, int *xShapeInfo, T *extraParamsVals, T *y, int *yShapeInfo,
 			T *result, int *resultShapeInfoBuffer, int *dimension,
 			int dimensionLength) {
 		if(shape::isScalar(resultShapeInfoBuffer)) {
-			exec(x,xShapeInfo,extraParams,y,yShapeInfo,result,resultShapeInfoBuffer);
+			exec(x,xShapeInfo,extraParamsVals,y,yShapeInfo,result,resultShapeInfoBuffer);
 			return;
 		}
 		shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo,
@@ -425,11 +466,11 @@ public:
 					tadElementWiseStride, tadLength, resultLength,
 					resultLength);
 			result[reductionIndex] = update(result[reductionIndex],
-					op(x[i], y[i], extraParams), extraParams);
+					op(x[i], y[i], &extraParamsVals), &extraParamsVals);
 		}
 #pragma omp simd
 		for (int i = 0; i < resultLength; i++) {
-			result[i] = postProcess(result[i], tadLength,extraParams);
+			result[i] = postProcess(result[i], tadLength,&extraParamsVals);
 		}
 	}
 
@@ -451,6 +492,22 @@ namespace ops {
 template<typename T>
 class CosineSimilarity: public virtual Reduce3<T> {
 public:
+
+	virtual
+#ifdef __CUDACC__
+	__inline__ __host__ __device__
+#endif
+	T * generateExtraParams() {
+		T *extraParams = (T *) malloc(sizeof(T) * 2);
+		return extraParams;
+	}
+	virtual
+#ifdef __CUDACC__
+	__inline__ __host__ __device__
+#endif
+	void finalizeExtraParams(T **extraParams)  {
+		free(*extraParams);
+	}
 	virtual
 #ifdef __CUDACC__
 	__inline__ __host__ __device__
@@ -461,8 +518,9 @@ public:
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	inline T postProcess(T reduction, int n,T *extraParams) {
-		return reduction / (extraParams[0] * extraParams[1]);
+	inline T postProcess(T reduction, int n,T **extraParamsRef) {
+		T *extraParams = *extraParamsRef;
+		return reduction / (nd4j::math::nd4j_sqrt<T>(extraParams[0]) * nd4j::math::nd4j_sqrt<T>(extraParams[1]));
 	}
 	/**
 	 *
@@ -477,8 +535,11 @@ public:
 	__host__  __device__
 
 #endif
-	inline T op(T d1, T d2, T *extraParams) {
-		return d1 * d2;
+	inline T op(T d1, T d2, T **extraParamsRef) {
+		T *extraParams = *extraParamsRef;
+		extraParams[0] += d1 * d1;
+		extraParams[1] += d2 * d2;
+		return (d1 * d2);
 	}
 
 	//calculate an update of the reduce operation
@@ -494,7 +555,7 @@ public:
 	__host__  __device__
 
 #endif
-	inline T update(T old, T opOutput, T *extraParams) {
+	inline T update(T old, T opOutput, T **extraParamsRef) {
 		return old + opOutput;
 	}
 
@@ -510,8 +571,8 @@ public:
 	__host__  __device__
 
 #endif
-	inline T merge(T old, T opOutput, T *extraParams) {
-		return update(old, opOutput, extraParams);
+	inline T merge(T old, T opOutput, T **extraParamsRef) {
+		return update(old, opOutput, extraParamsRef);
 	}
 
 	/** Name of the op
@@ -544,13 +605,28 @@ public:
 #ifdef __CUDACC__
 	__inline__ __host__ __device__
 #endif
+	T * generateExtraParams() {
+		return NULL;
+	}
+	virtual
+#ifdef __CUDACC__
+	__inline__ __host__ __device__
+#endif
+	void finalizeExtraParams(T **extraParamsRef)  {
+		//no-op
+		free(*extraParamsRef);
+	}
+	virtual
+#ifdef __CUDACC__
+	__inline__ __host__ __device__
+#endif
 	T startingValue(T *input) {
 		return 0.0;
 	}
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	inline T postProcess(T reduction, int n,T *extraParams) {
+	inline T postProcess(T reduction, int n,T **extraParamsRef) {
 		return nd4j::math::nd4j_sqrt<T>(reduction);
 	}
 	/**
@@ -566,7 +642,7 @@ public:
 	__host__  __device__
 
 #endif
-	inline T op(T d1, T d2, T *extraParams) {
+	inline T op(T d1, T d2, T **extraParamsRef) {
 		T ret = d1 - d2;
 		return ret * ret;
 	}
@@ -584,7 +660,7 @@ public:
 	__host__  __device__
 
 #endif
-	inline T update(T old, T opOutput, T *extraParams) {
+	inline T update(T old, T opOutput, T **extraParamsRef) {
 		return opOutput + old;
 	}
 
@@ -600,8 +676,8 @@ public:
 	__host__  __device__
 
 #endif
-	inline T merge(T old, T opOutput, T *extraParams) {
-		return update(old, opOutput, extraParams);
+	inline T merge(T old, T opOutput, T **extraParamsRef) {
+		return update(old, opOutput, extraParamsRef);
 	}
 
 	/** Name of the op
@@ -634,13 +710,28 @@ public:
 #ifdef __CUDACC__
 	__inline__ __host__ __device__
 #endif
+	T * generateExtraParams() {
+		return NULL;
+	}
+	virtual
+#ifdef __CUDACC__
+	__inline__ __host__ __device__
+#endif
+	void finalizeExtraParams(T **extraParamsRef)  {
+		//no op
+		free(*extraParamsRef);
+	}
+	virtual
+#ifdef __CUDACC__
+	__inline__ __host__ __device__
+#endif
 	T startingValue(T *input) {
 		return 0.0;
 	}
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	inline T postProcess(T reduction, int n,T *extraParams) {
+	inline T postProcess(T reduction, int n,T **extraParamsRef) {
 		return reduction;
 	}
 	/**
@@ -656,7 +747,7 @@ public:
 	__host__  __device__
 
 #endif
-	inline T op(T d1, T d2, T *extraParams) {
+	inline T op(T d1, T d2, T **extraParamsRef) {
 		return nd4j::math::nd4j_abs<T>(d1 - d2);
 	}
 
@@ -673,7 +764,7 @@ public:
 	__host__  __device__
 
 #endif
-	inline T update(T old, T opOutput, T *extraParams) {
+	inline T update(T old, T opOutput, T **extraParamsRef) {
 		return old + opOutput;
 	}
 
@@ -689,8 +780,8 @@ public:
 	__host__  __device__
 
 #endif
-	inline T merge(T old, T opOutput, T *extraParams) {
-		return update(old, opOutput, extraParams);
+	inline T merge(T old, T opOutput, T **extraParamsRef) {
+		return update(old, opOutput, extraParamsRef);
 	}
 
 	/** Name of the op

@@ -61,6 +61,16 @@ struct SharedMemory {
 		error();
 		return NULL;
 	}
+
+	// Ensure that we won't compile any un-specialized types
+	__device__ T
+	*
+
+	getPointer(int num) {
+		extern __device__ void error(void);
+		error();
+		return NULL;
+	}
 };
 
 // Following are the specializations for the following types.
@@ -71,6 +81,11 @@ template<>
 struct SharedMemory<int> {
 	__device__ int *getPointer() {
 		extern __shared__ int s_int[];
+		return s_int;
+	}
+
+	__device__ int *getPointer(int val) {
+		__shared__ int s_int[10];
 		return s_int;
 	}
 };
@@ -145,6 +160,11 @@ struct SharedMemory<float> {
 		extern __shared__ float s_float[];
 		return s_float;
 	}
+
+	__device__ float *getPointer(int val) {
+		__shared__ float s_float55[10];
+		return s_float55;
+	}
 };
 
 template<>
@@ -152,6 +172,11 @@ struct SharedMemory<double> {
 	__device__ double *getPointer() {
 		extern __shared__ double s_double[];
 		return s_double;
+	}
+
+	__device__ double *getPointer(int val) {
+		__shared__ double s_double55[10];
+		return s_double55;
 	}
 };
 

@@ -300,11 +300,11 @@ TEST(Reduce3,ObjectOrientedManhattanDistance) {
 }
 
 TEST(Reduce3,ObjectOrientedCosineSimilarity) {
-	int opNum = 0;
+	int opNum = 2;
 	int rank = 2;
 	double assertion[1] = {0.9938079488022847};
 	Data<double> *data = getData(assertion,0.0);
-	DoubleReduce3Test *test = new DoubleReduce3Test(rank,opNum,data,1);
+	DoubleReduce3Test *test = new DoubleReduce3Test(rank,opNum,data,4);
     test->run();
     delete data;
     delete test;
