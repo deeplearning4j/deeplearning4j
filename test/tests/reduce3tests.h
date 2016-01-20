@@ -7,8 +7,7 @@
 #include <array.h>
 #include "testhelpers.h"
 #include <reduce3.h>
-#include <shape.h>
-
+#include <helper_cuda.h>
 
 
 TEST_GROUP(Reduce3) {
@@ -26,6 +25,91 @@ TEST_GROUP(Reduce3) {
 	}
 };
 
+
+
+Data<double> * getData(double *assertion,double startingVal) {
+	Data<double> *ret = new Data<double>();
+
+	int rank = 2;
+	int length = 4;
+	int *shape = (int *) malloc(sizeof(int) * rank);
+	shape[0] = 1;
+	shape[1] = length;
+	ret->yShape = shape;
+	ret->xShape = shape;
+	ret->rank = 2;
+	ret->yRank = 2;
+	ret->data = (double *) malloc(sizeof(double) * 4);
+	ret->y = (double *) malloc(sizeof(double) * 4);
+
+	for(int i = 0; i < 4; i++) {
+		ret->data[i] = i + 1;
+		ret->y[i] = i + 2;
+	}
+
+	double *extraParams = (double *) malloc(sizeof(double) * 4);
+	extraParams[0] = startingVal;
+	ret->extraParams = extraParams;
+
+	ret->assertion = (double *) malloc(sizeof(double) * 4);
+	for(int i = 0; i < 1; i++) {
+		printf("Assertion value %f\n",assertion[i]);
+		ret->assertion[i] = assertion[i];
+	}
+
+	ret->dimension = (int *) malloc(sizeof(int) * 2);
+	ret->dimension[0] = shape::MAX_DIMENSION;
+    ret->dimensionLength = 1;
+	ret->result = (double *) malloc(sizeof(double));
+	ret->resultRank = 2;
+	ret->resultShape = (int *) malloc(sizeof(int) * 2);
+	for(int i = 0; i < 2; i++)
+		ret->resultShape[i] = 1;
+
+	return ret;
+}
+
+Data<double> * getDataDimension(double *assertion,double startingVal) {
+	Data<double> *ret = new Data<double>();
+
+	int rank = 2;
+	int length = 4;
+	int *shape = (int *) malloc(sizeof(int) * rank);
+	shape[0] = 2;
+	shape[1] = 2;
+	ret->xShape = shape;
+	ret->yShape = shape;
+	ret->rank = 2;
+	ret->yRank = 2;
+	ret->data = (double *) malloc(sizeof(double) * length);
+	ret->y = (double *) malloc(sizeof(double) * 4);
+
+	for(int i = 0; i < 4; i++) {
+		ret->data[i] = i + 1;
+		ret->y[i] = i + 1;
+	}
+	double *extraParams = (double *) malloc(sizeof(double) * 4);
+	extraParams[0] = startingVal;
+	ret->extraParams = extraParams;
+
+	ret->assertion = (double *) malloc(sizeof(double) * 4);
+	for(int i = 0; i < 2; i++) {
+		printf("Assertion value %f\n",assertion[i]);
+		ret->assertion[i] = assertion[i];
+	}
+
+	ret->dimension = (int *) malloc(sizeof(int) * 2);
+	ret->dimension[0] = 1;
+	ret->dimensionLength = 1;
+	ret->result = (double *) malloc(sizeof(double));
+	ret->resultRank = 2;
+	ret->resultShape = (int *) malloc(sizeof(int) * 2);
+	for(int i = 0; i < 2; i++)
+		ret->resultShape[i] = 1;
+	ret->resultShape[1] = 2;
+
+	return ret;
+}
 
 
 template <typename T>
@@ -53,16 +137,60 @@ public:
 	}
 
 	virtual void execCpuKernel() override {
-		int *xShapeBuff = shapeBuffer(this->baseData->xShape,this->baseData->rank);
-		int *yShapeBuff = shapeBuffer(this->baseData->yShape,this->baseData->rank);
-		int *resultShapeBuff = shapeBuffer(this->baseData->resultShape,this->baseData->resultRank);
-		reduce->exec(this->data->data,xShapeBuff,
-				this->baseData->extraParams,this->baseData->y,yShapeInfo,this->result->data,
-				resultShapeInfo,this->baseData->dimension,this->baseData->dimensionLength);
+		int *xShapeBuff = shapeBuffer(this->baseData->rank,this->baseData->xShape);
+		int *yShapeBuff = shapeBuffer(this->baseData->yRank,this->baseData->yShape);
+		int *resultShapeBuff = shapeBuffer(this->baseData->resultRank,this->baseData->resultShape);
+		reduce->exec(
+				this->data->data->data,
+				xShapeBuff,
+				this->baseData->extraParams,
+				this->baseData->y,yShapeBuff,
+				this->result->data->data,
+				resultShapeBuff
+				,this->baseData->dimension,
+				this->baseData->dimensionLength);
 		free(xShapeBuff);
 		free(yShapeBuff);
 		free(resultShapeBuff);
 	}
+
+	virtual void run () override {
+		printf("initializing data\n");
+		this->initializeData();
+		printf("Executing cpu\n");
+		this->execCpuKernel();
+		int resultLength = shape::prod(this->baseData->resultShape,this->baseData->rank);
+		if(resultLength == 1) {
+			if(this->result->data->data[0] != this->baseData->assertion[0]) {
+				printf("Compared assertion %f to result %f\n",this->baseData->assertion[0],this->result->data->data[0]);
+			}
+			DOUBLES_EQUAL(this->baseData->assertion[0],this->result->data->data[0],1e-3);
+		}
+		else {
+			CHECK(arrsEquals(this->rank, this->assertion, this->result->data->data));
+		}
+
+#ifdef __CUDACC__
+		this->initializeData();
+		nd4j::array::NDArrays<T>::allocateNDArrayOnGpu(&this->data);
+		printf("About to exec cuda kernel\n");
+		this->executeCudaKernel();
+		checkCudaErrors(cudaDeviceSynchronize());
+		nd4j::buffer::copyDataFromGpu(&this->result->data);
+		if(resultLength == 1) {
+			if(this->result->data->data[0] != this->baseData->assertion[0]) {
+				printf("Compared assertion gpu %f to result %f\n",this->baseData->assertion[0],this->baseData->result[0]);
+			}
+			DOUBLES_EQUAL(this->baseData->assertion[0],this->result->data->data[0],1e-3);
+		}
+		else
+			CHECK(arrsEquals(this->rank, this->assertion, this->result->data->data));
+
+#endif
+
+
+	}
+
 
 protected:
 	functions::reduce3::Reduce3OpFactory<T> *opFactory;
@@ -104,6 +232,7 @@ public:
 		nd4j::buffer::freeBuffer(&resultShapeInfo);
 #endif
 	}
+
 };
 
 class FloatReduce3Test : public Reduce3Test<float> {
@@ -146,9 +275,44 @@ public:
 
 
 
+TEST(Reduce3,ObjectOrientedEuclideanDistance) {
+	int opNum = 1;
+	int rank = 2;
+	double assertion[1] = {2.0};
+	Data<double> *data = getData(assertion,0.0);
+	DoubleReduce3Test *test = new DoubleReduce3Test(rank,opNum,data,1);
+    test->run();
+    delete data;
+    delete test;
+}
 
 
-TEST(Reduce3,CosineSimilarity) {
+
+TEST(Reduce3,ObjectOrientedManhattanDistance) {
+	int opNum = 0;
+	int rank = 2;
+	double assertion[1] = {4.0};
+	Data<double> *data = getData(assertion,0.0);
+	DoubleReduce3Test *test = new DoubleReduce3Test(rank,opNum,data,1);
+    test->run();
+    delete data;
+    delete test;
+}
+
+TEST(Reduce3,ObjectOrientedCosineSimilarity) {
+	int opNum = 0;
+	int rank = 2;
+	double assertion[1] = {0.9938079488022847};
+	Data<double> *data = getData(assertion,0.0);
+	DoubleReduce3Test *test = new DoubleReduce3Test(rank,opNum,data,1);
+    test->run();
+    delete data;
+    delete test;
+}
+
+
+
+/*TEST(Reduce3,CosineSimilarity) {
 	functions::reduce3::Reduce3OpFactory<double> *opFactory6 =
 			new functions::reduce3::Reduce3OpFactory<double>();
 	functions::reduce3::Reduce3<double> *op = opFactory6->getOp(2);
@@ -199,6 +363,7 @@ TEST(Reduce3,CosineSimilarity) {
 	delete (opFactory6);
 	delete (op);
 }
+
 
 TEST(Reduce3,EuclideanDistance) {
 	functions::reduce3::Reduce3OpFactory<double> *opFactory6 =
@@ -316,8 +481,8 @@ TEST(Reduce3,EuclideanDistanceDimension) {
 	assertion[1] = 5.6568542494923806;
 	CHECK(arrsEquals<double>(2, assertion, result));
 #ifdef __CUDACC__
-	/*
-	 * reduce3Double(
+
+ * reduce3Double(
 		int opNum,
 		int n, double *dx, int *xShapeInfo,
 		double *dy,
@@ -325,7 +490,7 @@ TEST(Reduce3,EuclideanDistanceDimension) {
 		int *resultShapeInfo, int *gpuInformation,
 		int *dimension,
 		int dimensionLength, int postProcessOrNot)
-	 */
+
 
 	int blockSize = 500;
 	int gridSize = 256;
@@ -376,5 +541,5 @@ TEST(Reduce3,EuclideanDistanceDimension) {
 	free(shapeInfo);
 	delete (opFactory6);
 	delete (op);
-}
+}*/
 #endif //NATIVEOPERATIONS_REDUCE3TESTS_H
