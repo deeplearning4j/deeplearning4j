@@ -37,11 +37,14 @@ import java.io.IOException;
 import java.util.List;
 
 /**
+ * This class handles T-SNE coords upload (in tsv format), and provides output to the browser via JSON
+ *
  * @author Adam Gibson
  */
 @Path("/api")
 @Produces(MediaType.APPLICATION_JSON)
 public class ApiResource extends FileResource {
+    // TODO: this list should be replaced with HistoryStorage
     private List<String> coords;
     private Client client = ClientBuilder.newClient().register(JacksonJsonProvider.class).register(new ObjectMapperProvider());
 
@@ -77,9 +80,14 @@ public class ApiResource extends FileResource {
     @GET
     @Path("/coords")
     public Response coords() {
+        /*
+            TODO: here we should have ad-hoc for HistoryStorage.
 
-        if(coords.isEmpty())
-            throw new IllegalStateException("Unable to get coordinates; empty");
+            For T-SNE we'll probably have no real history though, so it's going to be plain common storage for both internally originated
+            2D coordinates, and data uploaded by user
+         */
+        if(coords.isEmpty()) // TODO: actually we don't need that exception here, just show notification on page
+            throw new IllegalStateException("Unable to get coordinates; empty list");
 
         return Response.ok(coords).build();
     }
@@ -91,6 +99,9 @@ public class ApiResource extends FileResource {
 
     @Override
     public void handleUpload(File path) {
+        /*
+            TODO: this code should put new coords into HistoryStorage
+         */
         List<String> testLines = null;
         try {
             testLines = FileUtils.readLines(path);
