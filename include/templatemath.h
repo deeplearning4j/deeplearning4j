@@ -524,6 +524,98 @@ inline int nd4j_atan<int>(int val) {
 	return atanf((float) val);
 }
 
+
+namespace atomics {
+__device__ double nd4j_atomicAdd(double* address, double val)  {
+	unsigned long long int* address_as_ull =
+			(unsigned long long int*)address;
+	unsigned long long int old = *address_as_ull, assumed;
+	do {
+		assumed = old;
+		old = atomicCAS(address_as_ull, assumed,__double_as_longlong(val +
+				__longlong_as_double(assumed)));
+	} while (assumed != old);
+	return __longlong_as_double(old);
+}
+
+__device__ double nd4j_atomicSub(double* address, double val)  {
+	unsigned long long int* address_as_ull =
+			(unsigned long long int*)address;
+	unsigned long long int old = *address_as_ull, assumed;
+	do {
+		assumed = old;
+		old = atomicCAS(address_as_ull, assumed,__double_as_longlong(val -
+				__longlong_as_double(assumed)));
+	} while (assumed != old);
+	return __longlong_as_double(old);
+}
+
+__device__ double nd4j_atomicMul(double* address, double val)  {
+	unsigned long long int* address_as_ull =
+			(unsigned long long int*)address;
+	unsigned long long int old = *address_as_ull, assumed;
+	do {
+		assumed = old;
+		old = atomicCAS(address_as_ull, assumed,__double_as_longlong(val *
+				__longlong_as_double(assumed)));
+	} while (assumed != old);
+	return __longlong_as_double(old);
+}
+
+__device__ double nd4j_atomicDiv(double* address, double val)  {
+	unsigned long long int* address_as_ull =
+			(unsigned long long int*)address;
+	unsigned long long int old = *address_as_ull, assumed;
+	do {
+		assumed = old;
+		old = atomicCAS(address_as_ull, assumed,__double_as_longlong(val /
+				__longlong_as_double(assumed)));
+	} while (assumed != old);
+	return __longlong_as_double(old);
+}
+
+__device__ float nd4j_atomicAdd(float* address, float val)  {
+	return atomicAdd(address,val);
+}
+__device__ float nd4j_atomicSub(float* address, float val)
+{
+	int* address_as_ull =
+			(unsigned long long int*)address;
+	int old = *address_as_ull, assumed;
+	do {
+		assumed = old;
+		old = atomicCAS(address_as_ull, assumed, __float_as_int(val -
+				__float_as_int(assumed)));
+	} while (assumed != old);
+	return __int_as_float(old);
+}
+__device__ float nd4j_atomicMul(float* address, float val)
+{
+	int* address_as_ull =
+			(unsigned long long int*)address;
+	int old = *address_as_ull, assumed;
+	do {
+		assumed = old;
+		old = atomicCAS(address_as_ull, assumed, __float_as_int(val *
+				__float_as_int(assumed)));
+	} while (assumed != old);
+	return __int_as_float(old);
+}
+
+
+__device__ float nd4j_atomicDiv(float* address, float val)
+{
+	int* address_as_ull =
+			(unsigned long long int*)address;
+	int old = *address_as_ull, assumed;
+	do {
+		assumed = old;
+		old = atomicCAS(address_as_ull, assumed, __float_as_int(val *
+				__float_as_int(assumed)));
+	} while (assumed != old);
+	return __int_as_float(old);
+}
+}
 }
 
 }
