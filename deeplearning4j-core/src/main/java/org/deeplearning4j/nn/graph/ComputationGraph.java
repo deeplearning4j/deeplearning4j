@@ -426,8 +426,7 @@ public class ComputationGraph implements Serializable, Model {
 
         if(configuration.isBackprop()){
             if(configuration.getBackpropType() == BackpropType.TruncatedBPTT){
-
-                throw new UnsupportedOperationException("Not implemented");
+                doTruncatedBPTT(inputs,labels,null,null);
             } else {
                 if( solver == null) {
                     solver = new Solver.Builder()
@@ -1243,8 +1242,50 @@ public class ComputationGraph implements Serializable, Model {
     }
 
     public void setLayerMaskArrays(INDArray[] featureMaskArrays, INDArray[] labelMaskArrays){
+        //Complication with mask arrays: dense layers before recurrent layers: need to be masked
+
+        if(featureMaskArrays != null){
+            if(featureMaskArrays.length != numInputArrays){
+                throw new IllegalArgumentException("Invalid number of feature mask arrays");
+            }
+            for( int i=0; i<featureMaskArrays.length; i++ ){
+                String inputName = configuration.getNetworkInputs().get(i);
+
+                //feedforward layers below a RNN layer: need the input (features) mask
+                //Reason: even if the time series input is zero padded, the output from the dense layers are
+                // non-zero (i.e., activationFunction(0*weights + bias) != 0 in general)
+                //This assumes that the time series input is masked - i.e., values are 0 at the padded time steps,
+                // so we don't need to do anything for the recurrent layer
+
+                //TODO: complication. What if input masking doesn't match between input masks?
+                //Does this
+
+            }
+        }
+
+        if(labelMaskArrays != null) {
+            if(labelMaskArrays.length != numInputArrays){
+                throw new IllegalArgumentException("Invalid number of label mask arrays");
+            }
+            for( int i=0; i<labelMaskArrays.length; i++ ){
+                String outputName = configuration.getNetworkOutputs().get(i);
+                GraphVertex v = verticesMap.get(outputName);
+                Layer ol = v.getLayer();
+                ol.setMaskArray(labelMaskArrays[i]);
+            }
+        }
+
 
         throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    /** Remove the mask arrays from all layers.<br>
+     * See {@link #setLayerMaskArrays(INDArray[], INDArray[])} for details on mask arrays.
+     */
+    public void clearLayerMaskArrays(){
+        for (Layer layer : layers) {
+            layer.setMaskArray(null);
+        }
     }
 
     protected void rnnUpdateStateWithTBPTTState(){
