@@ -347,8 +347,7 @@ public class SparkDl4jMultiLayer implements Serializable {
         }
         else {
             //Standard parameter averaging
-            JavaRDD<Tuple3<INDArray,Updater,Double>> results = rdd.mapPartitions(new IterativeReduceFlatMap(conf.toJson(),
-                    this.params, this.updater, this.bestScoreAcc),true).cache();
+            JavaRDD<Tuple3<INDArray,Updater,Double>> results = rdd.mapPartitions(new IterativeReduceFlatMap(network, this.bestScoreAcc),true).cache();
 
             JavaRDD<INDArray> resultsParams = results.map(new INDArrayFromTupleFunction());
             log.info("Running iterative reduce and averaging parameters");
@@ -357,7 +356,6 @@ public class SparkDl4jMultiLayer implements Serializable {
             resultsParams.foreach(a);
             INDArray newParams = a.getAccumulator().value();
             log.info("Accumulated parameters");
-            int v = rdd.partitions().size();
             newParams.divi(rdd.partitions().size());
             log.info("Divided by partitions");
             network.setParameters(newParams);
@@ -372,6 +370,8 @@ public class SparkDl4jMultiLayer implements Serializable {
                     return t3._3();
                 }
             });
+
+            List<Double> s = scores.collect();
 
             lastScore = scores.mean();
 
