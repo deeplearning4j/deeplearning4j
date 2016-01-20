@@ -1274,7 +1274,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         int timeSeriesLength = input.size(2);
         int nSubsets = timeSeriesLength / fwdLen;
         if(fwdLen > timeSeriesLength) {
-            log.warn("Cannot do TBPTT: Truncated BPTT forward length > input time series length.");
+            log.warn("Cannot do TBPTT: Truncated BPTT forward length (" + fwdLen + ") > input time series length (" + timeSeriesLength + ")");
             return;
         }
 

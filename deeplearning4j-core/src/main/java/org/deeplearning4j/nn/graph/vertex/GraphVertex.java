@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.nodes.GraphNode;
+import org.deeplearning4j.nn.layers.recurrent.BaseRecurrentLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
@@ -179,7 +180,7 @@ public class GraphVertex implements Serializable {
         }
     }
 
-    public Pair<Gradient,INDArray[]> doBackward(){
+    public Pair<Gradient,INDArray[]> doBackward(boolean tbptt, int tbpttBackwardLength){
         if(!canDoBackward()) throw new IllegalStateException("Cannot do backward pass: all epsilons not set");
 
         INDArray epsTotal = null;
@@ -195,7 +196,15 @@ public class GraphVertex implements Serializable {
 
         if(layer != null){
 
-            Pair<Gradient,INDArray> pair = layer.backpropGradient(epsTotal);    //epsTotal may be null for OutputLayers
+            Pair<Gradient,INDArray> pair;
+            if(tbptt && layer instanceof BaseRecurrentLayer<?>){
+                //Truncated BPTT for recurrent layers
+                pair = ((BaseRecurrentLayer<?>)layer).tbpttBackpropGradient(epsTotal, tbpttBackwardLength);
+            } else {
+                //Normal backprop
+                pair = layer.backpropGradient(epsTotal);    //epsTotal may be null for OutputLayers
+            }
+
             if(layerPreProcessor != null){
                 INDArray eps = pair.getSecond();
                 eps = layerPreProcessor.backprop(eps,graph.batchSize());
