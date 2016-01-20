@@ -268,9 +268,6 @@ public:
 					 */
 					reduction = update(reduction, opAtomic(curr, currY, &extraParamsVals), &extraParamsVals);
 					__syncthreads();
-					printf("First value is %f and second value is %f with d1 %f and d2 %f"
-							"\n",extraParamsVals[0],extraParamsVals[1],curr,currY);
-
 					i += gridSize;
 					j += gridSizeY;
 				}
@@ -397,11 +394,9 @@ public:
 			//should correspond to the final value for the particular reduction index
 			//that was set for this block.
 			if (tid == 0) {
-				printf("Reduction indexes per block %d\n",reductionIndexesPerBlock);
 				for (int i = 0; i < reductionIndexesPerBlock; i++) {
 					int reductionIndexToProcess = i + blockIdx.x * reductionIndexesPerBlock;
 					if (postProcessOrNot) {
-						printf("About to post process with x length %d\n",xLength);
 						result[reductionIndexToProcess] = postProcess(sPartials[i], xLength,&extraParamsVals);
 					}
 					else {
