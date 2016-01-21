@@ -158,33 +158,45 @@ function drawTsne() {
         x = new Array();
         y = new Array();
         name3 = new Array();
-      for(var i = 0; i < data.length; i++) {
-         var split = data[i].split(',');
-         console.log(split.length);
-         var xCoord = split[0];
-         var yCoord = split[1];
-         var name2 = split[2];
-         x.push(xCoord);
-         y.push(yCoord);
-         name3.push(name2);
+        if (data.length > 0 ) {
+          for(var i = 0; i < data.length; i++) {
+             var split = data[i].split(',');
+             var xCoord = split[0];
+             var yCoord = split[1];
+             var name2 = split[2];
+             x.push(xCoord);
+             y.push(yCoord);
+             name3.push(name2);
+        }
+
+        /*
+            This values could be pushed for debug purposes
+
+            x.push(10);
+            y.push(15);
+            name3.push("alpha");
+        */
+
+        xMax = d3.max(x);
+        xMin = d3.min(x);
+
+        yMax = d3.max(y);
+        yMin = d3.min(y);
+
+
+        drawEmbedding();
+      } else {
+        $.notify({
+        	title: '<strong>No t-SNE data available!</strong>',
+        	message: 'Please upload something, or check again later.'
+        },{
+        	type: 'danger',
+        	placement: {
+            		from: "top",
+            		align: "center"
+            	},
+        });
       }
-
-      /*
-        This values could be pushed for debug purposes
-
-        x.push(10);
-        y.push(15);
-        name3.push("alpha");
-      */
-
-      xMax = d3.max(x);
-      xMin = d3.min(x);
-
-      yMax = d3.max(y);
-      yMin = d3.min(y);
-
-
-      drawEmbedding();
     });
 }
 

@@ -40,6 +40,9 @@
     <script src="/assets/renderTsne.js"></script>
 
     <script src="/assets/jquery-fileupload.js"></script>
+
+    <!-- Booststrap Notify plugin-->
+    <script src="/assets/bootstrap-notify.min.js"></script>
     <style>
         .hd {
         background-color: #000000;
