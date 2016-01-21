@@ -436,8 +436,11 @@ public class WordVectorSerializer {
                     labels.add(word.getLabel());
                 } else throw new IllegalStateException("Source stream doesn't looks like ParagraphVectors serialized model");
 
+                // this particular line is just for backward compatibility with InMemoryLookupCache
+                word.setIndex(vocabCache.numWords());
+
                 vocabCache.addToken(word);
-                vocabCache.addWordToIndex(vocabCache.numWords() - 1, word.getLabel());
+                vocabCache.addWordToIndex(word.getIndex(), word.getLabel());
 
                 // backward compatibility code
                 vocabCache.putVocabWord(word.getLabel());
@@ -627,19 +630,15 @@ public class WordVectorSerializer {
             throw new RuntimeException(e);
         }
 
-        WeightLookupTable lookupTable = vec.getLookupTable();
-        VocabCache vocabCache = vec.getVocab(); // ((InMemoryLookupTable) lookupTable).getVocab(); //vec.getVocab();
+        WeightLookupTable<VocabWord> lookupTable = vec.getLookupTable();
+        VocabCache<VocabWord> vocabCache = vec.getVocab(); // ((InMemoryLookupTable) lookupTable).getVocab(); //vec.getVocab();
 
 
         if (!(lookupTable instanceof InMemoryLookupTable)) throw new IllegalStateException("At this moment only InMemoryLookupTable is supported.");
-     //   if (!(vocabCache instanceof InMemoryLookupCache)) throw new IllegalStateException("At this moment only InMemoryLookupCache is supported.");
 
         VectorsConfiguration conf = vec.getConfiguration();
         conf.setVocabSize(vocabCache.numWords());
 
-        VocabularyHolder holder = new VocabularyHolder.Builder()
-                .externalCache(vocabCache)
-                .build();
 
         printWriter.println(conf.toJson());
         log.info("Word2Vec conf. JSON: " + conf.toJson());

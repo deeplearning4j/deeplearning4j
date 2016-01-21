@@ -77,6 +77,7 @@ public abstract class FileResource {
     public Response uploadFile(
             @FormDataParam("0") InputStream uploadedInputStream,
             @FormDataParam("0") FormDataContentDisposition fileDetail) throws  IOException {
+        if (fileDetail == null) throw new RuntimeException("fileDetails is null");
         String uploadedFileLocation = new File(filePath,fileDetail.getFileName()).getAbsolutePath();
         LOGGER.info(uploadedFileLocation);
         // save it
