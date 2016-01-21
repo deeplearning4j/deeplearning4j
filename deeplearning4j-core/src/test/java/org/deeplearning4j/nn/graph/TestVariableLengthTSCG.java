@@ -1,6 +1,7 @@
-package org.deeplearning4j.nn.multilayer;
+package org.deeplearning4j.nn.graph;
 
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
@@ -11,25 +12,24 @@ import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.cpu.NDArray;
-import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.fail;
 
-public class TestVariableLengthTS {
+public class TestVariableLengthTSCG {
 
     @Test
     public void testVariableLengthSimple(){
@@ -46,17 +46,19 @@ public class TestVariableLengthTS {
         for (int nExamples : miniBatchSizes) {
             Nd4j.getRandom().setSeed(12345);
 
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+            ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                     .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
                     .updater(Updater.SGD)
                     .learningRate(0.1)
                     .seed(12345)
-                    .list(2)
-                    .layer(0, new GravesLSTM.Builder().activation("tanh").nIn(2).nOut(2).build())
-                    .layer(1, new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(2).nOut(1).build())
+                    .graphBuilder()
+                    .addInputs("in")
+                    .addLayer("0", new GravesLSTM.Builder().activation("tanh").nIn(2).nOut(2).build(),"in")
+                    .addLayer("1", new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(2).nOut(1).build(),"0")
+                    .setOutputs("1")
                     .build();
 
-            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            ComputationGraph net = new ComputationGraph(conf);
             net.init();
 
             INDArray in1 = Nd4j.rand(new int[]{nExamples, 2, 4});
@@ -76,15 +78,15 @@ public class TestVariableLengthTS {
             }
 
 
-            net.setInput(in1);
-            net.setLabels(labels1);
+            net.setInput(0,in1);
+            net.setLabel(0, labels1);
             net.computeGradientAndScore();
             double score1 = net.score();
             Gradient g1 = net.gradient();
 
-            net.setInput(in2);
-            net.setLabels(labels2);
-            net.setLayerMaskArrays(null, labelMask);
+            net.setInput(0,in2);
+            net.setLabel(0, labels2);
+            net.setLayerMaskArrays(null, new INDArray[]{labelMask});
             net.computeGradientAndScore();
             double score2 = net.score();
             Gradient g2 = net.gradient();
@@ -101,14 +103,14 @@ public class TestVariableLengthTS {
                 assertEquals(s, g1s, g2s);
             }
 
-            //Finally: check that the values at the masked outputs don't actually make any differente to:
+            //Finally: check that the values at the masked outputs don't actually make any difference to:
             // (a) score, (b) gradients
             for( int i=0; i<nExamples; i++ ){
                 for( int j=0; j<nOut; j++ ){
                     double d = r.nextDouble();
                     labels2.putScalar(new int[]{i,j,4},d);
                 }
-                net.setLabels(labels2);
+                net.setLabel(0, labels2);
                 net.computeGradientAndScore();
                 double score2a = net.score();
                 Gradient g2a = net.gradient();
@@ -134,21 +136,23 @@ public class TestVariableLengthTS {
         for (int nExamples : miniBatchSizes) {
             Nd4j.getRandom().setSeed(12345);
 
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+            ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                     .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
                     .updater(Updater.SGD)
                     .learningRate(0.1)
                     .seed(12345)
-                    .list(4)
-                    .layer(0, new DenseLayer.Builder().activation("tanh").nIn(2).nOut(2).build())
-                    .layer(1, new DenseLayer.Builder().activation("tanh").nIn(2).nOut(2).build())
-                    .layer(2, new GravesLSTM.Builder().activation("tanh").nIn(2).nOut(2).build())
-                    .layer(3, new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(2).nOut(1).build())
-                    .inputPreProcessor(0, new RnnToFeedForwardPreProcessor())
-                    .inputPreProcessor(2, new FeedForwardToRnnPreProcessor())
+                    .graphBuilder()
+                    .addInputs("in")
+                    .addLayer("0", new DenseLayer.Builder().activation("tanh").nIn(2).nOut(2).build(), "in")
+                    .addLayer("1", new DenseLayer.Builder().activation("tanh").nIn(2).nOut(2).build(), "0")
+                    .addLayer("2", new GravesLSTM.Builder().activation("tanh").nIn(2).nOut(2).build(), "1")
+                    .addLayer("3", new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(2).nOut(1).build(),"2")
+                    .setOutputs("3")
+                    .inputPreProcessor("0", new RnnToFeedForwardPreProcessor())
+                    .inputPreProcessor("2", new FeedForwardToRnnPreProcessor())
                     .build();
 
-            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            ComputationGraph net = new ComputationGraph(conf);
             net.init();
 
             INDArray in1 = Nd4j.rand(new int[]{nExamples, 2, 4});
@@ -168,19 +172,19 @@ public class TestVariableLengthTS {
             }
 
 
-            net.setInput(in1);
-            net.setLabels(labels1);
+            net.setInput(0,in1);
+            net.setLabel(0, labels1);
             net.computeGradientAndScore();
             double score1 = net.score();
             Gradient g1 = net.gradient();
 
-            net.setInput(in2);
-            net.setLabels(labels2);
-            net.setLayerMaskArrays(inputMask,null);
+            net.setInput(0,in2);
+            net.setLabel(0, labels2);
+            net.setLayerMaskArrays(new INDArray[]{inputMask},null);
             net.computeGradientAndScore();
             double score2 = net.score();
             Gradient g2 = net.gradient();
-            List<INDArray> activations2 = net.feedForward();
+            Map<String,INDArray> activations2 = net.feedForward();
 
             //Scores should differ here: masking the input, not the output. Therefore 4 vs. 5 time step outputs
             assertNotEquals(score1, score2, 0.01);
@@ -200,7 +204,7 @@ public class TestVariableLengthTS {
                 for( int k=0; k<nIn; k++ ) {
                     in2.putScalar(new int[]{j,k,4},r.nextDouble());
                 }
-                net.setInput(in2);
+                net.setInput(0,in2);
                 net.computeGradientAndScore();
                 double score2a = net.score();
                 Gradient g2a = net.gradient();
@@ -209,16 +213,16 @@ public class TestVariableLengthTS {
                     assertEquals(g2.getGradientFor(s),g2a.getGradientFor(s));
                 }
 
-                List<INDArray> activations2a = net.feedForward();
-                for( int k=1; k<activations2.size(); k++ ){
-                    assertEquals(activations2.get(k),activations2a.get(k));
+                Map<String,INDArray> activations2a = net.feedForward();
+                for( String s : activations2.keySet() ){
+                    assertEquals(activations2.get(s),activations2a.get(s));
                 }
             }
 
             //Finally: check that the activations for the first two (dense) layers are zero at the appropriate time step
             FeedForwardToRnnPreProcessor temp = new FeedForwardToRnnPreProcessor();
-            INDArray l0Before = activations2.get(1);
-            INDArray l1Before = activations2.get(2);
+            INDArray l0Before = activations2.get("0");
+            INDArray l1Before = activations2.get("1");
             INDArray l0After = temp.preProcess(l0Before, nExamples);
             INDArray l1After = temp.preProcess(l1Before,nExamples);
 
@@ -233,7 +237,7 @@ public class TestVariableLengthTS {
 
     @Test
     public void testOutputMaskingScoreMagnitudes(){
-        //Idea: check magnitude of scores, with differeing number of values masked out
+        //Idea: check magnitude of scores, with differing number of values masked out
         //i.e., MSE with zero weight init and 1.0 labels: know what to expect in terms of score
 
         int nIn = 3;
@@ -264,28 +268,30 @@ public class TestVariableLengthTS {
                         INDArray input = Nd4j.rand(new int[]{miniBatch, nIn, tsLength});
                         INDArray labels = Nd4j.ones(miniBatch, nOut, tsLength);
 
-                        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                                 .regularization(false)
                                 .seed(12345L)
-                                .list(2)
-                                .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(5).weightInit(WeightInit.DISTRIBUTION)
-                                        .dist(new NormalDistribution(0, 1)).updater(Updater.NONE).build())
-                                .layer(1, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE).activation("identity").nIn(5).nOut(nOut)
-                                        .weightInit(WeightInit.ZERO).updater(Updater.NONE).build())
+                                .graphBuilder()
+                                .addInputs("in")
+                                .addLayer("0", new GravesLSTM.Builder().nIn(nIn).nOut(5).weightInit(WeightInit.DISTRIBUTION)
+                                        .dist(new NormalDistribution(0, 1)).updater(Updater.NONE).build(),"in")
+                                .addLayer("1", new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE).activation("identity").nIn(5).nOut(nOut)
+                                        .weightInit(WeightInit.ZERO).updater(Updater.NONE).build(),"0")
+                                .setOutputs("1")
                                 .pretrain(false).backprop(true)
                                 .build();
-                        MultiLayerNetwork mln = new MultiLayerNetwork(conf);
-                        mln.init();
+                        ComputationGraph net = new ComputationGraph(conf);
+                        net.init();
 
                         //MSE loss function: 1/2n * sum(squaredErrors)
                         double expScore = 0.5 * nOut * (tsLength-nToMask);  //Sum over minibatches, then divide by minibatch size
 
-                        mln.setLayerMaskArrays(null, labelMaskArray);
-                        mln.setInput(input);
-                        mln.setLabels(labels);
+                        net.setLayerMaskArrays(null, new INDArray[]{labelMaskArray});
+                        net.setInput(0,input);
+                        net.setLabel(0, labels);
 
-                        mln.computeGradientAndScore();
-                        double score = mln.score();
+                        net.computeGradientAndScore();
+                        double score = net.score();
 
                         assertEquals(msg,expScore,score,0.1);
                     }
@@ -323,38 +329,42 @@ public class TestVariableLengthTS {
 
                         INDArray input = Nd4j.rand(new int[]{miniBatch, nIn, tsLength});
 
-                        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                                 .regularization(false)
                                 .seed(12345L)
-                                .list(2)
-                                .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(5).weightInit(WeightInit.DISTRIBUTION)
-                                        .dist(new NormalDistribution(0, 1)).updater(Updater.NONE).build())
-                                .layer(1, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE).activation("identity").nIn(5).nOut(nOut)
-                                        .weightInit(WeightInit.XAVIER).updater(Updater.NONE).build())
+                                .graphBuilder()
+                                .addInputs("in")
+                                .addLayer("0", new GravesLSTM.Builder().nIn(nIn).nOut(5).weightInit(WeightInit.DISTRIBUTION)
+                                        .dist(new NormalDistribution(0, 1)).updater(Updater.NONE).build(),"in")
+                                .addLayer("1", new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE).activation("identity").nIn(5).nOut(nOut)
+                                        .weightInit(WeightInit.XAVIER).updater(Updater.NONE).build(),"0")
+                                .setOutputs("1")
                                 .pretrain(false).backprop(true)
                                 .build();
-                        MultiLayerNetwork mln = new MultiLayerNetwork(conf);
-                        mln.init();
+                        ComputationGraph net = new ComputationGraph(conf);
+                        net.init();
 
-                        MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                        ComputationGraphConfiguration conf2 = new NeuralNetConfiguration.Builder()
                                 .regularization(false)
                                 .seed(12345L)
-                                .list(2)
-                                .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(5).weightInit(WeightInit.DISTRIBUTION)
-                                        .dist(new NormalDistribution(0, 1)).updater(Updater.NONE).build())
-                                .layer(1, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax").nIn(5).nOut(nOut)
-                                        .weightInit(WeightInit.XAVIER).updater(Updater.NONE).build())
+                                .graphBuilder()
+                                .addInputs("in")
+                                .addLayer("0", new GravesLSTM.Builder().nIn(nIn).nOut(5).weightInit(WeightInit.DISTRIBUTION)
+                                        .dist(new NormalDistribution(0, 1)).updater(Updater.NONE).build(),"in")
+                                .addLayer("1", new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax").nIn(5).nOut(nOut)
+                                        .weightInit(WeightInit.XAVIER).updater(Updater.NONE).build(),"0")
+                                .setOutputs("1")
                                 .pretrain(false).backprop(true)
                                 .build();
-                        MultiLayerNetwork mln2 = new MultiLayerNetwork(conf2);
-                        mln2.init();
+                        ComputationGraph net2 = new ComputationGraph(conf2);
+                        net2.init();
 
-                        mln.setLayerMaskArrays(null, labelMaskArray);
-                        mln2.setLayerMaskArrays(null, labelMaskArray);
+                        net.setLayerMaskArrays(null, new INDArray[]{labelMaskArray});
+                        net2.setLayerMaskArrays(null, new INDArray[]{labelMaskArray});
 
 
-                        INDArray out = mln.output(input);
-                        INDArray out2 = mln2.output(input);
+                        INDArray out = net.output(input)[0];
+                        INDArray out2 = net2.output(input)[0];
                         for( int i=0; i<miniBatch; i++ ){
                             for( int j=0; j<tsLength; j++ ){
                                 double m = labelMaskArray.getDouble(i,j);
