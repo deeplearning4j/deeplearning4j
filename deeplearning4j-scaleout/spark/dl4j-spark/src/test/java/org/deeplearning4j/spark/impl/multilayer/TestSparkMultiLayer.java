@@ -286,7 +286,7 @@ public class TestSparkMultiLayer extends BaseSparkTest {
 
         Evaluation evalExpected = new Evaluation();
         INDArray outLocal = netCopy.output(input, Layer.TrainingMode.TEST);
-        evalExpected.eval(labels,outLocal);
+        evalExpected.eval(labels, outLocal);
 
         Evaluation evalActual = sparkNet.evaluate(sparkData);
 
