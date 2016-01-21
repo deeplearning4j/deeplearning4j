@@ -65,9 +65,6 @@
             font-weight: 300;
             font-size: 16px;
         }
-        svg {
-            border: 1px solid #333;
-        }
         #wrap {
             width: 800px;
             margin-left: auto;
@@ -93,6 +90,25 @@
             font-family: courier;
             padding-left: 20px;
             font-size: 14px;
+        }
+        .axis {
+
+        }
+        .axis path,
+        .axis line {
+            fill: none;
+            stroke: rgba(0,0,0,0.1);
+            shape-rendering: crispEdges;
+        }
+        .axis text {
+            font-family: sans-serif;
+            font-size: 11px;
+            fill: #666;
+        }
+        .label {
+            font-size:14px;
+            fill:rgba(0,0,0,0.5);
+            shape-rendering:auto;
         }
     </style>
 
