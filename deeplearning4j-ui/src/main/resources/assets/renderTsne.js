@@ -16,6 +16,10 @@
  *
  */
 
+var height=700;
+var width=1024;
+
+
 var x = [];
   var y = [];
   var name3 = [];
@@ -32,7 +36,13 @@ var xMax = 0, xMin = 0, yMax = 0, yMin = 0;
 var fx;
 var fy;
 
+var xAxis;
+var yAxis;
+
 function zoomHandler() {
+  svg.select(".x.axis").call(xAxis);
+  svg.select(".y.axis").call(yAxis);
+
   tx = d3.event.translate[0];
   ty = d3.event.translate[1];
   ss = d3.event.scale;
@@ -58,30 +68,50 @@ function drawEmbedding() {
     var div = d3.select("#embed");
 
     fx = d3.scale.linear()
-            .domain([xMin, xMax])
-            .range([0, 1024])
+        .domain([xMin, xMax])
+        .range([0, width])
 
     fy = d3.scale.linear()
-            .domain([yMin, yMax])
-            .range([600, 0]);
+        .domain([yMin, yMax])
+        .range([height, 0]);
 
+
+    //Define X axis
+	xAxis = d3.svg.axis()
+		.scale(fx)
+		.orient("bottom")
+		.tickSize(-height)
+		.tickFormat(d3.format("s"));
+
+	//Define Y axis
+	yAxis = d3.svg.axis()
+		.scale(fy)
+		.orient("left")
+		.ticks(5)
+		.tickSize(-width)
+		.tickFormat(d3.format("s"));
 
 
     svg = div.append("svg") // svg is global
-    .attr("width", "1024")
-    .attr("height", "700");
+    .attr("width", width)
+    .attr("height", height);
+
+
+    svg.append("g")
+		.attr("class", "x axis")
+		.attr("transform", "translate(0," + height + ")")
+		.call(xAxis);
+
+	svg.append("g")
+		.attr("class", "y axis")
+		.call(yAxis);
+
 
 
     svg.selectAll("circle")
         .data(name3)
         .enter()
         .append("circle")
-/*        .attr("transform", function(d, i) { return "translate(" +
-                                                  ((x[i]*20*ss + tx) + 400) + "," +
-                                                  ((y[i]*20*ss + ty) + 400) + ")"; });
-*/
-
-
         .attr("cx", function(d, i) {
         			   		return fx(x[i]);
         			   })
@@ -91,50 +121,29 @@ function drawEmbedding() {
         			   .attr("r", 2);
 
     svg.selectAll("text")
-    			   .data(name3)
-    			   .enter()
-    			   .append("text")
-    			   .text(function(d,i) {
+       .data(name3)
+       .enter()
+       .append("text")
+       .text(function(d,i) {
     			   		return name3[i];
     			   })
-    			   .attr("x", function(d,i) {
+       .attr("x", function(d,i) {
     			   		return fx(x[i]);
     			   })
-    			   .attr("y", function(d, i) {
+       .attr("y", function(d, i) {
     			   		return fy(y[i]);
     			   })
-    			   .attr("font-family", "sans-serif")
-    			   .attr("font-size", "11px")
-    			   .attr("fill", "red");
-/*
-    var g = svg.selectAll(".b")
-      .data(name3)
-      .enter().append("g")
-      .attr("class", "u");
+       .attr("font-family", "sans-serif")
+       .attr("font-size", "11px")
+       .attr("fill", "red");
 
-
-    g.append("text")
-      .attr("text-anchor", "top")
-      .attr("font-size", 12)
-      .attr("fill", "#333")
-      .text(function(d) { return d; });
-
-  */
-
-/*
-    svg.selectAll('.u')
-    .data(name3)
-    .attr("transform", function(d, i) { return "translate(" +
-                                          ((x[i]*20*ss + tx) + 400) + "," +
-                                          ((y[i]*20*ss + ty) + 400) + ")"; });
-                                          */
 
     var zoomListener = d3.behavior.zoom()
-      .x(fx)
-      .y(fy)
-      .scaleExtent([0.000001, 1000])
-      .center([0,0])
-      .on("zoom", zoomHandler);
+        .x(fx)
+        .y(fy)
+        .scaleExtent([0.000001, 1000])
+        .center([0,0])
+        .on("zoom", zoomHandler);
     zoomListener(svg);
 
 }
