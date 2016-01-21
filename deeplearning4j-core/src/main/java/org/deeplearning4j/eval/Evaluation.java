@@ -48,25 +48,15 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
     protected static Logger log = LoggerFactory.getLogger(Evaluation.class);
     //What to output from the precision/recall function when we encounter an edge case
     protected static final double DEFAULT_EDGE_VALUE = 0.0;
-    protected boolean warnNotClassified = false;
 
     // Empty constructor
     public Evaluation() {}
-
-    public Evaluation(boolean warnNotClassified) {
-        this.warnNotClassified = warnNotClassified;
-    }
 
     // Constructor that takes number of output classes
     public Evaluation(int numClasses) {
         for(int i = 0; i < numClasses; i++)
             labelsList.add(i);
         confusion = new ConfusionMatrix<>(labelsList);
-    }
-
-    public Evaluation(List<String> labels, boolean warnNotClassified) {
-        this(labels);
-        this.warnNotClassified = warnNotClassified;
     }
 
     public Evaluation(List<String> labels) {
@@ -273,11 +263,17 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
         }
     }
 
+    public String stats() {
+        return stats(true);
+    }
+
     /**
-     * Method to obtain the classification report, as a String
+     * Method to obtain the classification report as a String
+     *
+     * @param suppressWarnings whether or not to output warnings related to the evaluation results
      * @return A (multi-line) String with accuracy, precision, recall, f1 score etc
      */
-    public String stats() {
+    public String stats(boolean suppressWarnings) {
         String actual, expected;
         StringBuilder builder = new StringBuilder().append("\n");
         StringBuilder warnings = new StringBuilder();
@@ -294,7 +290,7 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
             }
 
             //Output possible warnings regarding precision/recall calculation
-            if (warnNotClassified && truePositives.getCount(clazz) == 0) {
+            if (!suppressWarnings && truePositives.getCount(clazz) == 0) {
                 if (falsePositives.getCount(clazz) == 0) {
                     warnings.append(String.format("Warning: class %s was never predicted by the model. This class was excluded from the average precision\n", actual));
                 }
