@@ -416,27 +416,16 @@ public class SparkDl4jMultiLayer implements Serializable {
     }
 
     public Evaluation evaluate(JavaRDD<DataSet> data) {
-        return evaluate(data, null, false);
+        return evaluate(data, null);
     }
-
-    public Evaluation evaluate(JavaRDD<DataSet> data, boolean warnNotClassified) {
-        return evaluate(data, null, warnNotClassified);
-    }
-
 
     /**Evaluate the network (classification performance) in a distributed manner.
      * @param data Data to evaluate on
      * @param labelsList List of labels used for evaluation
-     * @param warnNotClassified true enables printing what classes were not identified in evaluation
      * @return Evaluation object; results of evaluation on all examples in the data set
      */
-
-    public Evaluation evaluate(JavaRDD<DataSet> data, List<String> labelsList, boolean warnNotClassified){
-
-        JavaRDD<Evaluation> evaluations = data.map(new EvaluateMapFunction(network, labelsList, warnNotClassified));
-        Evaluation evaluation = evaluations.reduce(new EvaluationReduceFunction());
-        return evaluation;
-
+    public Evaluation evaluate(JavaRDD<DataSet> data, List<String> labelsList){
+        JavaRDD<Evaluation> evaluations = data.map(new EvaluateMapFunction(network, labelsList));
+        return evaluations.reduce(new EvaluationReduceFunction());
     }
-
 }
