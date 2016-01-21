@@ -3,6 +3,8 @@ package org.deeplearning4j.ui.storage;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 
+import java.util.Map;
+
 /**
  * Simple abstract in-memory storage with history option to be used across threads using UiServer
  *
@@ -34,6 +36,12 @@ public class HistoryStorage {
     }
 
     public Object get(Object key, TargetVersion version, SortOutput sort) {
+        if (version.equals(TargetVersion.LATEST)) {
+            Map<Long, Object>  map = historyTable.row(key);
+            if (map.size() == 1) {
+                return map.values().iterator().next();
+            }
+        }
         return null;
     }
 
