@@ -11,6 +11,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.nodes.GraphNode;
+import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
 import org.deeplearning4j.nn.graph.vertex.GraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
@@ -24,6 +25,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -548,6 +550,10 @@ public class ComputationGraph implements Serializable, Model {
         return feedForward(train);
     }
 
+    public Map<String,INDArray> feedForward(){
+        return feedForward(false);
+    }
+
     public Map<String,INDArray> feedForward(boolean train){
         Map<String,INDArray> layerActivations = new HashMap<>();
 
@@ -591,6 +597,21 @@ public class ComputationGraph implements Serializable, Model {
         }
 
         return layerActivations;
+    }
+
+    public INDArray[] output(INDArray... input){
+        return output(false,input);
+    }
+
+    public INDArray[] output(boolean train, INDArray... input){
+        setInputs(input);
+        Map<String,INDArray> activations = feedForward(train);
+        INDArray[] outputs = new INDArray[numOutputArrays];
+        int i=0;
+        for(String s : configuration.getNetworkOutputs()){
+            outputs[i++] = activations.get(s);
+        }
+        return outputs;
     }
 
     /**
@@ -750,22 +771,77 @@ public class ComputationGraph implements Serializable, Model {
         return Nd4j.toFlattened('f', list);
     }
 
+    /**Sets the input and labels and returns a score for the prediction with respect to the true labels<br>
+     * This is equivalent to {@link #score(DataSet, boolean)} with training==true.<br>
+     * <b>NOTE:</b> this version of the score function can only be used with ComputationGraph networks that have
+     * a single input and a single output.
+     * @param dataSet the data to score
+     * @return the score for the given input,label pairs
+     * @see #score(DataSet, boolean)
+     */
     public double score(DataSet dataSet){
         return score(dataSet, false);
     }
 
+    /**Sets the input and labels and returns a score for the prediction with respect to the true labels<br>
+     * <b>NOTE:</b> this version of the score function can only be used with ComputationGraph networks that have
+     * a single input and a single output.
+     * @param dataSet the data to score
+     * @param training whether score is being calculated at training time (true) or test time (false)
+     * @return the score for the given input,label pairs
+     * @see #score(DataSet, boolean)
+     */
     public double score(DataSet dataSet, boolean training){
-
-        throw new UnsupportedOperationException("Not yet implemented");
+        if(numInputArrays != 1 || numOutputArrays != 1) throw new UnsupportedOperationException("Cannot score ComputationGraph network with "
+                + " DataSet: network does not have 1 input and 1 output arrays");
+        return score(ComputationGraphUtil.toMultiDataSet(dataSet),training);
     }
 
     public double score(MultiDataSet dataSet){
         return score(dataSet,false);
     }
 
+    /**Sets the input and labels and returns a score for the prediction with respect to the true labels<br>
+     * @param dataSet the data to score
+     * @param training whether score is being calculated at training time (true) or test time (false)
+     * @return the score for the given input,label pairs
+     */
     public double score(MultiDataSet dataSet, boolean training){
+        boolean hasMaskArrays = dataSet.hasMaskArrays();
+        if(hasMaskArrays){
+            setLayerMaskArrays(dataSet.getFeaturesMaskArrays(),dataSet.getLabelsMaskArrays());
+        }
+        feedForward(dataSet.getFeatures(), training);
+        INDArray[] labels = dataSet.getLabels();
+        setLabels(labels);
 
-        throw new UnsupportedOperationException("Not yet implemented");
+        //Score: sum of the scores for the various output layers...
+        double l1 = calcL1();
+        double l2 = calcL2();
+
+        double score = 0.0;
+        int i=0;
+        for(String s : configuration.getNetworkOutputs()){
+            Layer outLayer = verticesMap.get(s).getLayer();
+            if(outLayer == null || !(outLayer instanceof BaseOutputLayer<?>)){
+                log.warn("Cannot calculate score: vertex \"" + s + "\" is not an output layer");
+                return 0.0;
+            }
+
+            BaseOutputLayer<?> ol = (BaseOutputLayer<?>)outLayer;
+            ol.setLabels(labels[i++]);
+
+            score += ol.computeScore(l1,l2,true);
+
+            //Only want to add l1/l2 once...
+            l1 = 0.0;
+            l2 = 0.0;
+        }
+
+
+        if(hasMaskArrays) clearLayerMaskArrays();
+
+        return score;
     }
 
 
@@ -780,7 +856,7 @@ public class ComputationGraph implements Serializable, Model {
 
     @Override
     public void update(INDArray gradient, String paramType) {
-        throw new UnsupportedOperationException("Not implemnted");
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
@@ -790,7 +866,7 @@ public class ComputationGraph implements Serializable, Model {
 
     @Override
     public void accumulateScore(double accum) {
-        throw new UnsupportedOperationException("Not implemnted");
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
@@ -1257,9 +1333,35 @@ public class ComputationGraph implements Serializable, Model {
                 //This assumes that the time series input is masked - i.e., values are 0 at the padded time steps,
                 // so we don't need to do anything for the recurrent layer
 
-                //TODO: complication. What if input masking doesn't match between input masks?
-                //Does this
+                //How this is done: do a forward pass from each input, setting masks on dense/cnn layers as we go
+                //This is basically a depth-first search starting at each input vertex
 
+                INDArray reshapedFeaturesMask = TimeSeriesUtils.reshapeTimeSeriesMaskToVector(featureMaskArrays[i]);
+                LinkedList<String> stack = new LinkedList<>();
+                GraphVertex gv = verticesMap.get(inputName);
+                VertexIndices[] outputsFromThisInput = gv.getOutputVertices();
+                for(VertexIndices v : outputsFromThisInput){
+                    stack.addLast(vertices[v.getVertexIndex()].getVertexName());
+                }
+
+                while(!stack.isEmpty()){
+                    String nextVertexName = stack.removeLast();
+                    GraphVertex nextVertex = verticesMap.get(nextVertexName);
+                    if(nextVertex.hasLayer()){
+                        Layer l = nextVertex.getLayer();
+                        if(l instanceof BaseRecurrentLayer<?>) {
+                            //terminate this part of the depth-first search
+                            continue;
+                        } else if(l.type() == Layer.Type.FEED_FORWARD || l.type() == Layer.Type.CONVOLUTIONAL ) {
+                            l.setMaskArray(reshapedFeaturesMask);
+                        }
+                    }
+
+                    outputsFromThisInput = nextVertex.getOutputVertices();
+                    for(VertexIndices v : outputsFromThisInput){
+                        stack.addLast(vertices[v.getVertexIndex()].getVertexName());
+                    }
+                }
             }
         }
 
@@ -1274,9 +1376,6 @@ public class ComputationGraph implements Serializable, Model {
                 ol.setMaskArray(labelMaskArrays[i]);
             }
         }
-
-
-        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     /** Remove the mask arrays from all layers.<br>
