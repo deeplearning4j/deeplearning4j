@@ -138,4 +138,35 @@ public class HistoryStorageTest {
 
         assertEquals(word1, xWord);
     }
+
+    @Test
+    public void testNonExistantSingle() throws Exception {
+        Object object = storage.getLatest("NOTHINGAVAILABLE");
+
+        assertEquals(null, object);
+    }
+
+    @Test
+    public void testNonExistantMultiple1() throws Exception {
+        List<Object> list =  storage.getSorted("NOTHINGAVAILABLE", HistoryStorage.SortOutput.ASCENDING);
+
+        assertNotEquals(null, list);
+        assertEquals(0, list.size());
+    }
+
+    @Test
+    public void testNonExistantMultiple2() throws Exception {
+        List<Object> list =  storage.getSorted("NOTHINGAVAILABLE", HistoryStorage.SortOutput.DESCENDING);
+
+        assertNotEquals(null, list);
+        assertEquals(0, list.size());
+    }
+
+    @Test
+    public void testNonExistantMultiple3() throws Exception {
+        List<Object> list =  storage.getSorted("NOTHINGAVAILABLE", HistoryStorage.SortOutput.NONE);
+
+        assertNotEquals(null, list);
+        assertEquals(0, list.size());
+    }
 }
