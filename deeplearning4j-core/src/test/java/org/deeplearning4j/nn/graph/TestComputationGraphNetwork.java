@@ -263,4 +263,31 @@ public class TestComputationGraphNetwork {
         Map<String,INDArray> activations2 = g2.feedForward(in,false);
         assertEquals(activations,activations2);
     }
+
+    @Test
+    public void testScoringDataSet(){
+        ComputationGraphConfiguration configuration = getIrisGraphConfiguration();
+        ComputationGraph graph = new ComputationGraph(configuration);
+        graph.init();
+
+        MultiLayerConfiguration mlc = getIrisMLNConfiguration();
+        MultiLayerNetwork net = new MultiLayerNetwork(mlc);
+        net.init();
+
+        DataSetIterator iris = new IrisDataSetIterator(150,150);
+        DataSet ds = iris.next();
+
+        //Now: set parameters of both networks to be identical. Then feedforward, and check we get the same score
+        Nd4j.getRandom().setSeed(12345);
+        int nParams = getNumParams();
+        INDArray params = Nd4j.rand(1, nParams);
+        graph.setParams(params.dup());
+        net.setParams(params.dup());
+
+        double scoreMLN = net.score(ds,false);
+        double scoreCG = graph.score(ds,false);
+
+        assertEquals(scoreMLN,scoreCG,1e-4);
+    }
+
 }
