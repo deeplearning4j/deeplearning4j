@@ -28,8 +28,7 @@ import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.plot.Tsne;
-import org.deeplearning4j.plot.dropwizard.RenderApplication;
-import org.deeplearning4j.ui.UiServer;
+//import org.deeplearning4j.ui.UiServer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -135,10 +134,10 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
         }
 
         try {
-            UiServer server = UiServer.getInstance();
+/*            UiServer server = UiServer.getInstance();
 
             System.out.println("Please open your browser and navigate to: http://localhost:" + server.getPort() + "/");
-
+*/
             /*
                 TODO: push 2D coordinates to the UIServer here, since we don't want to tie TSNE to IterationListener mechanics: it will be too much data updated
              */

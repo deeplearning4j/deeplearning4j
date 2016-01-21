@@ -47,7 +47,6 @@
 
 	<artifactId>deeplearning4j-nlp</artifactId>
 
-
 	<dependencies>
         <dependency>
             <groupId>org.deeplearning4j</groupId>
@@ -94,13 +93,6 @@
 			<artifactId>deeplearning4j-core</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-
-		<dependency>
-			<groupId>org.deeplearning4j</groupId>
-			<artifactId>deeplearning4j-ui</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-
 
 		<dependency>
 			<groupId>junit</groupId>
