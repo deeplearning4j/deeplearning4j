@@ -18,6 +18,12 @@ import java.util.*;
  * @author raver119@gmail.com
  */
 public class HistoryStorage {
+    public enum ObjectType {
+        TSNE,
+        SCORES,
+        ACTIVATIONS
+    }
+
     public enum TargetVersion {
         LATEST,
         ANY,
@@ -49,7 +55,7 @@ public class HistoryStorage {
             if (map.size() == 1) {
                 // if map has only one value, we'll go straight for it
                 return map.values().iterator().next();
-            } else {
+            } else if (map.size() > 0) {
                 List<Object> objects = getSorted(key, SortOutput.DESCENDING);
                 if (version.equals(TargetVersion.OLDEST)) return objects.get(objects.size() - 1);
                     else if (version.equals(TargetVersion.LATEST)) return objects.get(0);
