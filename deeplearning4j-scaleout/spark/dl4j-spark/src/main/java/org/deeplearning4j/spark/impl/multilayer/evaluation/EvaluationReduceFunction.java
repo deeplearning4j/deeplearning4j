@@ -18,6 +18,5 @@ public class EvaluationReduceFunction implements Function2<Evaluation, Evaluatio
     public Evaluation call(Evaluation eval1, Evaluation eval2) throws Exception {
         eval1.merge(eval2);
         return eval1;
-
     }
 }
