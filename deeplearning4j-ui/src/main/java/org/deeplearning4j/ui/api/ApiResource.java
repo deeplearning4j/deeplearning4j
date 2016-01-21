@@ -86,9 +86,12 @@ public class ApiResource extends FileResource {
             For T-SNE we'll probably have no real history though, so it's going to be plain common storage for both internally originated
             2D coordinates, and data uploaded by user
          */
-        if(coords.isEmpty()) // TODO: actually we don't need that exception here, just show notification on page
-            throw new IllegalStateException("Unable to get coordinates; empty list");
+        /*
+        // actually we don't need that exception here, just show notification on page
 
+        if(coords.isEmpty())
+            throw new IllegalStateException("Unable to get coordinates; empty list");
+        */
         return Response.ok(coords).build();
     }
 
