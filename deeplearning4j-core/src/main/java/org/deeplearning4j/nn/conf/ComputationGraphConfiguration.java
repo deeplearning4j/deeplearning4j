@@ -19,9 +19,9 @@ package org.deeplearning4j.nn.conf;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.*;
+import org.deeplearning4j.nn.conf.graph.GraphVertex;
+import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.layers.Layer;
-import org.deeplearning4j.nn.graph.nodes.GraphNode;
-import org.deeplearning4j.nn.graph.nodes.MergeNode;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -42,7 +42,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     protected Map<String,Integer> layerNumbersMap;
 
     protected Map<String,NeuralNetConfiguration> layers = new HashMap<>();
-    protected Map<String,GraphNode> graphNodes = new HashMap<>();
+    protected Map<String,GraphVertex> graphNodes = new HashMap<>();
 
     protected Map<String,List<String>> layerInputs = new HashMap<>();
     protected Map<String,List<String>> graphNodeInputs = new HashMap<>();
@@ -120,7 +120,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             conf.layers.put(entry.getKey(),entry.getValue().clone());
         }
         conf.graphNodes = new HashMap<>();
-        for(Map.Entry<String,GraphNode> entry : this.graphNodes.entrySet()){
+        for(Map.Entry<String,GraphVertex> entry : this.graphNodes.entrySet()){
             conf.graphNodes.put(entry.getKey(),entry.getValue().clone());
         }
         conf.layerInputs = new HashMap<>();
@@ -231,7 +231,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         protected Map<String,Integer> layerNumbersMap;
 
         protected Map<String,NeuralNetConfiguration.Builder> layers = new HashMap<>();
-        protected Map<String,GraphNode> graphNodes = new HashMap<>();
+        protected Map<String,GraphVertex> graphNodes = new HashMap<>();
 
         /** Key: layer. Values: inputs to that layer */
         protected Map<String,List<String>> layerInputs = new HashMap<>();
@@ -347,7 +347,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             //Layers can only have 1 input
             if(layerInputs != null && layerInputs.length > 1 ){
                 String mergeName = layerName+"-merge";
-                addNode(mergeName, new MergeNode(), layerInputs );
+                addNode(mergeName, new MergeVertex(), layerInputs );
                 this.layerInputs.put(layerName,Collections.singletonList(mergeName));
             } else if(layerInputs != null) {
                 this.layerInputs.put(layerName,Arrays.asList(layerInputs));
@@ -366,7 +366,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             return this;
         }
 
-        public GraphBuilder addNode(String nodeName, GraphNode node, String... nodeInputs ){
+        public GraphBuilder addNode(String nodeName, GraphVertex node, String... nodeInputs ){
             graphNodes.put(nodeName,node);
             this.graphNodeInputs.put(nodeName, Arrays.asList(nodeInputs));
             return this;

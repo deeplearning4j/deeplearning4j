@@ -3,19 +3,17 @@ package org.deeplearning4j.gradientcheck;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
+import org.deeplearning4j.nn.conf.graph.MergeVertex;
+import org.deeplearning4j.nn.conf.graph.SubsetVertex;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.graph.nodes.ElementWiseNode;
-import org.deeplearning4j.nn.graph.nodes.MergeNode;
-import org.deeplearning4j.nn.graph.nodes.SubsetNode;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,7 +24,6 @@ import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-import java.util.Map;
 import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
@@ -100,7 +97,7 @@ public class GradientCheckTestsComputationGraph {
                 .addInputs("input")
                 .addLayer("l1", new DenseLayer.Builder().nIn(4).nOut(5).activation("tanh").build(), "input")
                 .addLayer("l2", new DenseLayer.Builder().nIn(4).nOut(5).activation("relu").build(), "input")
-                .addNode("merge", new MergeNode(), "l1", "l2")
+                .addNode("merge", new MergeVertex(), "l1", "l2")
                 .addLayer("outputLayer", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
                         .activation("softmax").nIn(5+5).nOut(3).build(), "merge")
                 .setOutputs("outputLayer")
@@ -138,9 +135,9 @@ public class GradientCheckTestsComputationGraph {
     @Test
     public void testBasicIrisWithElementWiseNode(){
 
-        ElementWiseNode.Op[] ops = new ElementWiseNode.Op[]{ElementWiseNode.Op.Add, ElementWiseNode.Op.Subtract};
+        ElementWiseVertex.Op[] ops = new ElementWiseVertex.Op[]{ElementWiseVertex.Op.Add, ElementWiseVertex.Op.Subtract};
 
-        for( ElementWiseNode.Op op : ops ) {
+        for( ElementWiseVertex.Op op : ops ) {
 
             Nd4j.getRandom().setSeed(12345);
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -152,7 +149,7 @@ public class GradientCheckTestsComputationGraph {
                     .addInputs("input")
                     .addLayer("l1", new DenseLayer.Builder().nIn(4).nOut(5).activation("tanh").build(), "input")
                     .addLayer("l2", new DenseLayer.Builder().nIn(4).nOut(5).activation("relu").build(), "input")
-                    .addNode("elementwise", new ElementWiseNode(op), "l1", "l2")
+                    .addNode("elementwise", new ElementWiseVertex(op), "l1", "l2")
                     .addLayer("outputLayer", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
                             .activation("softmax").nIn(5).nOut(3).build(), "elementwise")
                     .setOutputs("outputLayer")
@@ -176,7 +173,7 @@ public class GradientCheckTestsComputationGraph {
             INDArray labels = ds.getLabels();
 
             if (PRINT_RESULTS) {
-                System.out.println("testBasicIrisWithElementWiseNode(op=" + op + ")");
+                System.out.println("testBasicIrisWithElementWiseVertex(op=" + op + ")");
                 for (int j = 0; j < graph.getNumLayers(); j++)
                     System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
             }
@@ -184,7 +181,7 @@ public class GradientCheckTestsComputationGraph {
             boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                     PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{input}, new INDArray[]{labels});
 
-            String msg = "testBasicIrisWithElementWiseNode(op=" + op + ")";
+            String msg = "testBasicIrisWithElementWiseVertex(op=" + op + ")";
             assertTrue(msg, gradOK);
         }
     }
@@ -206,7 +203,7 @@ public class GradientCheckTestsComputationGraph {
                 .addLayer("l2", new ConvolutionLayer.Builder()
                         .kernelSize(2, 2).stride(1, 1).padding(0,0)
                         .nIn(2).nOut(2).activation("relu").build(), "input")
-                .addNode("merge", new MergeNode(), "l1", "l2")
+                .addNode("merge", new MergeVertex(), "l1", "l2")
                 .addLayer("outputLayer", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
                         .activation("softmax").nIn(5*5*(2+2)).nOut(3).build(), "merge")
                 .setOutputs("outputLayer")
@@ -251,7 +248,7 @@ public class GradientCheckTestsComputationGraph {
                 .addLayer("lstm2", new GravesLSTM.Builder().nIn(4).nOut(4).activation("tanh").build(), "lstm1")
                 .addLayer("dense1", new DenseLayer.Builder().nIn(4).nOut(4).activation("sigmoid").build(), "lstm1")
                 .addLayer("lstm3", new GravesLSTM.Builder().nIn(4).nOut(4).activation("tanh").build(), "dense1")
-                .addNode("merge", new MergeNode(), "lstm2", "lstm3")
+                .addNode("merge", new MergeVertex(), "lstm2", "lstm3")
                 .addLayer("out", new RnnOutputLayer.Builder().nIn(8).nOut(3).activation("softmax").lossFunction(LossFunctions.LossFunction.MCXENT).build(), "merge")
                 .inputPreProcessor("dense1", new RnnToFeedForwardPreProcessor())
                 .inputPreProcessor("lstm3", new FeedForwardToRnnPreProcessor())
@@ -294,7 +291,7 @@ public class GradientCheckTestsComputationGraph {
                 .addInputs("input")
                 .setOutputs("out")
                 .addLayer("lstm1", new GravesLSTM.Builder().nIn(3).nOut(8).activation("tanh").build(), "input")
-                .addNode("subset", new SubsetNode(0,3), "lstm1")
+                .addNode("subset", new SubsetVertex(0,3), "lstm1")
                 .addLayer("out", new RnnOutputLayer.Builder().nIn(4).nOut(3).activation("softmax").lossFunction(LossFunctions.LossFunction.MCXENT).build(), "subset")
                 .pretrain(false).backprop(true).build();
 
