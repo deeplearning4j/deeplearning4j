@@ -21,6 +21,7 @@ package org.deeplearning4j.ui.api;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.ui.providers.ObjectMapperProvider;
 import org.deeplearning4j.ui.storage.HistoryStorage;
 import org.deeplearning4j.ui.uploads.FileResource;
@@ -80,7 +81,7 @@ public class ApiResource extends FileResource {
 
         List<String> testLines = IOUtils.readLines(new ByteArrayInputStream(content.getBytes()));
 
-        HistoryStorage.getInstance().put("TSNE", new Long(1), testLines);
+        HistoryStorage.getInstance().put("TSNE", Pair.makePair(1, 0), testLines);
 
         return Response.ok(testLines).build();
     }
@@ -120,7 +121,7 @@ public class ApiResource extends FileResource {
         List<String> testLines = null;
         try {
             testLines = FileUtils.readLines(path);
-            storage.put("TSNE", new Long(1), testLines);
+            storage.put("TSNE", Pair.makePair(1, 0), testLines);
         } catch (IOException e) {
             e.printStackTrace();
         }
