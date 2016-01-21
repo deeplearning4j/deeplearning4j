@@ -22,7 +22,10 @@ import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.ui.providers.ObjectMapperProvider;
+import org.deeplearning4j.ui.storage.HistoryStorage;
 import org.deeplearning4j.ui.uploads.FileResource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.*;
 import javax.ws.rs.client.Client;
@@ -45,6 +48,8 @@ import java.util.List;
 @Produces(MediaType.APPLICATION_JSON)
 public class ApiResource extends FileResource {
     // TODO: this list should be replaced with HistoryStorage
+
+    private static final Logger logger = LoggerFactory.getLogger(FileResource.class);
     private List<String> coords;
     private Client client = ClientBuilder.newClient().register(JacksonJsonProvider.class).register(new ObjectMapperProvider());
 
@@ -72,9 +77,12 @@ public class ApiResource extends FileResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response update(UrlResource resource) throws IOException {
         String content = client.target(resource.getUrl()).request(MediaType.TEXT_PLAIN_TYPE).get(String.class);
+
         List<String> testLines = IOUtils.readLines(new ByteArrayInputStream(content.getBytes()));
-        this.coords = testLines;
-        return Response.ok(coords).build();
+
+        HistoryStorage.getInstance().put("TSNE", new Long(1), testLines);
+
+        return Response.ok(testLines).build();
     }
 
     @GET
@@ -92,7 +100,9 @@ public class ApiResource extends FileResource {
         if(coords.isEmpty())
             throw new IllegalStateException("Unable to get coordinates; empty list");
         */
-        return Response.ok(coords).build();
+        HistoryStorage storage = HistoryStorage.getInstance();
+        List<String> something = (List<String>) storage.getLatest("TSNE");
+        return Response.ok(something).build();
     }
 
     public void setPath(String path) throws IOException {
@@ -105,11 +115,12 @@ public class ApiResource extends FileResource {
         /*
             TODO: this code should put new coords into HistoryStorage
          */
+        HistoryStorage storage = HistoryStorage.getInstance();
+
         List<String> testLines = null;
         try {
             testLines = FileUtils.readLines(path);
-            this.coords = testLines;
-
+            storage.put("TSNE", new Long(1), testLines);
         } catch (IOException e) {
             e.printStackTrace();
         }
