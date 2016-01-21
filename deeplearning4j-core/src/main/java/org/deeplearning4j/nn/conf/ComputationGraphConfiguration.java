@@ -145,6 +145,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         conf.tbpttBackLength = tbpttBackLength;
         conf.redistributeParams = redistributeParams;
 
+
+
         return conf;
     }
 
@@ -213,13 +215,14 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         }
 
         //Check for no graph cycles: done in ComputationGraph.init()
-
-
     }
 
-    protected boolean canEqual(Object other) {
-        return other instanceof ComputationGraphConfiguration;
+    /** Add FeedForward/RNN preprocessors automatically. */
+    public void addPreProcessors(){
+
+        System.out.println("addPreProcessors() functionality not yet implemented");
     }
+
 
     @Data
     public static class GraphBuilder {
@@ -249,7 +252,11 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         //whether to redistribute params or not
         protected boolean redistributeParams = false;
 
+        //Whether to auto-add preprocessors - FF->RNN and RNN->FF etc
+        protected boolean addPreProcessors = true;
+
         protected NeuralNetConfiguration.Builder globalConfiguration;
+
 
         public GraphBuilder(NeuralNetConfiguration.Builder globalConfiguration){
             this.globalConfiguration = globalConfiguration;
@@ -365,6 +372,19 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             return this;
         }
 
+        /** Whether to automatically add preprocessors, between feed forward and RNN layers.<br>
+         * This is enabled by default. The assumption here is that with RNN layers, the data input is a time series,
+         * and thus RNN->FF preprocesors may need to be added on the input (if input feeds into for example a DenseLayer).
+         * Any FF->RNN transitions will automatically add a {@link org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor}<br>
+         * <b>NOTE:</b> the assumptions made above may not for every network.
+         * @param addPreProcessors If true: add RNN/FF preprocessors if applicable. False: add no preprocessors.
+         * @return
+         */
+        public GraphBuilder addPreProcessors(boolean addPreProcessors){
+            this.addPreProcessors = addPreProcessors;
+            return this;
+        }
+
 
         public ComputationGraphConfiguration build(){
 
@@ -396,6 +416,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
 
             conf.validate();    //throws exception for invalid configuration
+
+            if(addPreProcessors) conf.addPreProcessors();
 
             return conf;
         }
