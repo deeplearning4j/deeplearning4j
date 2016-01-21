@@ -10,18 +10,18 @@ import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.graph.nodes.GraphNode;
 import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
+import org.deeplearning4j.nn.graph.vertex.*;
+import org.deeplearning4j.nn.graph.vertex.ElementWiseVertex;
 import org.deeplearning4j.nn.graph.vertex.GraphVertex;
-import org.deeplearning4j.nn.graph.vertex.VertexIndices;
+import org.deeplearning4j.nn.graph.vertex.MergeVertex;
+import org.deeplearning4j.nn.graph.vertex.SubsetVertex;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.layers.recurrent.BaseRecurrentLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
-import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -144,7 +144,8 @@ public class ComputationGraph implements Serializable, Model {
             layerMap.put(layerName, layer);
         }
 
-        Map<String,GraphNode> nodeMap = configuration.getGraphNodes();
+
+        Map<String,org.deeplearning4j.nn.conf.graph.GraphVertex> nodeMap = configuration.getGraphNodes();
 
         //Names of all of the (data) inputs to the ComputationGraph
         List<String> networkInputNames = configuration.getNetworkInputs();
@@ -161,7 +162,7 @@ public class ComputationGraph implements Serializable, Model {
 
         int i=0;
         for( String name : networkInputNames){
-            GraphVertex gv = new GraphVertex(this,name,i,null);  //Output vertices: set later
+            GraphVertex gv = new InputVertex(this,name,i,null);  //Output vertices: set later
             allNamesReverse.put(name,i);
             vertices[i++] = gv;
         }
@@ -173,17 +174,44 @@ public class ComputationGraph implements Serializable, Model {
             tempLayerList.add(l);
             InputPreProcessor preProcessor = configuration.getInputPreProcessors().get(layerEntry.getKey());
             String name = layerEntry.getKey();
-            GraphVertex gv = new GraphVertex(this,name,i,null,null,l,preProcessor);   //Input and output vertices: set later
+            GraphVertex gv = new LayerVertex(this,name,i,null,null,l,preProcessor);   //Input and output vertices: set later
             allNamesReverse.put(name,i);
             vertices[i++] = gv;
             numLayers++;
         }
         layers = tempLayerList.toArray(new Layer[numLayers]);
 
-        for( Map.Entry<String,GraphNode> nodeEntry : nodeMap.entrySet() ){
-            GraphNode n = nodeEntry.getValue();
+        for( Map.Entry<String,org.deeplearning4j.nn.conf.graph.GraphVertex> nodeEntry : nodeMap.entrySet() ){
+            org.deeplearning4j.nn.conf.graph.GraphVertex n = nodeEntry.getValue();
             String name = nodeEntry.getKey();
-            GraphVertex gv = new GraphVertex(this,name,i,null,null,n);   //Input and output vertices: set later
+            GraphVertex gv;// = new GraphVertex(this,name,i,null,null,n);   //Input and output vertices: set later
+
+            //TODO: DO THIS PROPERLY
+            if(n instanceof org.deeplearning4j.nn.conf.graph.ElementWiseVertex){
+                ElementWiseVertex.Op op;
+                switch(((org.deeplearning4j.nn.conf.graph.ElementWiseVertex) n).getOp()){
+                    case Add:
+                        op = ElementWiseVertex.Op.Add;
+                        break;
+                    case Subtract:
+                        op = ElementWiseVertex.Op.Subtract;
+                        break;
+                    case Product:
+                        op = ElementWiseVertex.Op.Product;
+                        break;
+                    default:
+                        throw new RuntimeException();
+                }
+                gv = new ElementWiseVertex(this,name,i,op);
+            } else if(n instanceof org.deeplearning4j.nn.conf.graph.MergeVertex){
+                gv = new MergeVertex(this,name,i);
+            } else if(n instanceof org.deeplearning4j.nn.conf.graph.SubsetVertex){
+                org.deeplearning4j.nn.conf.graph.SubsetVertex ssv = (org.deeplearning4j.nn.conf.graph.SubsetVertex) n;
+                gv = new SubsetVertex(this,name,i,ssv.getFrom(),ssv.getTo());
+            } else {
+                throw new RuntimeException(":(");
+            }
+
             allNamesReverse.put(name,i);
             vertices[i++] = gv;
         }
@@ -201,16 +229,15 @@ public class ComputationGraph implements Serializable, Model {
             String vertexName = gv.getVertexName();
             List<String> vertexInputNames;
 
-            if(gv.getLayer() != null){
+            if(gv.hasLayer()){
                 //vertex with layer
                 vertexInputNames = layerInputs.get(vertexName);
-            } else if(gv.getGraphNode() != null){
-                //Vertex with node
-                vertexInputNames = graphNodeInputs.get(vertexName);
-
-            } else {
+            } else if(gv instanceof InputVertex){
                 //Input vertex
                 vertexInputNames = null;
+            } else {
+                //Vertex like ElementWise, MergeVertex, etc
+                vertexInputNames = graphNodeInputs.get(vertexName);
             }
 
             if(vertexInputNames == null) continue;
@@ -232,16 +259,15 @@ public class ComputationGraph implements Serializable, Model {
             int vertexIndex = gv.getVertexIndex();
             List<String> vertexInputNames;
 
-            if(gv.getLayer() != null){
+            if(gv.hasLayer()){
                 //vertex with layer
                 vertexInputNames = layerInputs.get(vertexName);
-            } else if(gv.getGraphNode() != null){
-                //Vertex with node
-                vertexInputNames = graphNodeInputs.get(vertexName);
-
-            } else {
+            } else if(gv instanceof InputVertex){
                 //Input vertex
                 vertexInputNames = null;
+            } else {
+                //Vertex like ElementWise, MergeVertex, etc
+                vertexInputNames = graphNodeInputs.get(vertexName);
             }
 
             if(vertexInputNames == null) continue;
@@ -461,7 +487,7 @@ public class ComputationGraph implements Serializable, Model {
         for(GraphVertex gv : vertices){
             VertexIndices[] vertexInputsFrom = gv.getInputVertices();
             if(vertexInputsFrom == null || vertexInputsFrom.length == 0){
-                inputEdges.put(gv.getIndex(),null);
+                inputEdges.put(gv.getVertexIndex(),null);
                 continue;
             }
             Set<Integer> set = new HashSet<>();
@@ -562,7 +588,7 @@ public class ComputationGraph implements Serializable, Model {
             GraphVertex current = vertices[topologicalOrder[i]];
             if(current.isInputVertex()){
                 VertexIndices[] inputsTo = current.getOutputVertices();
-                INDArray input = inputs[current.getIndex()];
+                INDArray input = inputs[current.getVertexIndex()];
 
                 layerActivations.put(current.getVertexName(),input);
 
@@ -941,12 +967,12 @@ public class ComputationGraph implements Serializable, Model {
 
     @Override
     public void setConf(NeuralNetConfiguration conf) {
-        throw new UnsupportedOperationException("Not implemnted");
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
     public INDArray input() {
-        throw new UnsupportedOperationException("Not implemnted");
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
@@ -956,17 +982,17 @@ public class ComputationGraph implements Serializable, Model {
 
     @Override
     public ConvexOptimizer getOptimizer() {
-        throw new UnsupportedOperationException("Not implemnted");
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
     public INDArray getParam(String param) {
-        throw new UnsupportedOperationException("Not implemnted");
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
     public void initParams() {
-        throw new UnsupportedOperationException("Not implemnted");
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
@@ -1034,7 +1060,7 @@ public class ComputationGraph implements Serializable, Model {
             GraphVertex current = vertices[currVertexIdx];
             if (current.isInputVertex()) {
                 VertexIndices[] inputsTo = current.getOutputVertices();
-                INDArray input = inputs[current.getIndex()];
+                INDArray input = inputs[current.getVertexIndex()];
 
                 for (VertexIndices v : inputsTo) {
                     int vIdx = v.getVertexIndex();
@@ -1272,7 +1298,7 @@ public class ComputationGraph implements Serializable, Model {
             GraphVertex current = vertices[currVertexIdx];
             if (current.isInputVertex()) {
                 VertexIndices[] inputsTo = current.getOutputVertices();
-                INDArray input = inputs[current.getIndex()];
+                INDArray input = inputs[current.getVertexIndex()];
 
                 layerActivations.put(current.getVertexName(), input);
 

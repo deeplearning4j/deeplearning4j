@@ -3,6 +3,9 @@ package org.deeplearning4j.nn.conf;
 
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
+import org.deeplearning4j.nn.conf.graph.MergeVertex;
+import org.deeplearning4j.nn.conf.graph.SubsetVertex;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
@@ -10,9 +13,6 @@ import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.graph.nodes.ElementWiseNode;
-import org.deeplearning4j.nn.graph.nodes.MergeNode;
-import org.deeplearning4j.nn.graph.nodes.SubsetNode;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -84,11 +84,11 @@ public class ComputationGraphConfigurationTest {
                 .addInputs("input1", "input2")
                 .addLayer("cnn1", new ConvolutionLayer.Builder(2, 2).stride(2, 2).nIn(1).nOut(5).build(), "input1")
                 .addLayer("cnn2", new ConvolutionLayer.Builder(2, 2).stride(2, 2).nIn(1).nOut(5).build(), "input2")
-                .addNode("merge1", new MergeNode(), "cnn1", "cnn2")
-                .addNode("subset1", new SubsetNode(0, 1), "merge1")
+                .addNode("merge1", new MergeVertex(), "cnn1", "cnn2")
+                .addNode("subset1", new SubsetVertex(0, 1), "merge1")
                 .addLayer("dense1", new DenseLayer.Builder().nIn(20).nOut(5).build(), "subset1")
                 .addLayer("dense2", new DenseLayer.Builder().nIn(20).nOut(5).build(), "subset1")
-                .addNode("add", new ElementWiseNode(ElementWiseNode.Op.Add), "dense1", "dense2")
+                .addNode("add", new ElementWiseVertex(ElementWiseVertex.Op.Add), "dense1", "dense2")
                 .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).build(), "add")
                 .setOutputs("out")
                 .build();
