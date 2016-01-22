@@ -417,7 +417,16 @@ public:
 
 	}
 #endif
-
+    /**
+     *
+     * @param x
+     * @param xShapeInfo
+     * @param extraParamsVals
+     * @param y
+     * @param yShapeInfo
+     * @param result
+     * @param resultShapeInfo
+     */
 	void exec(
 			T *x,
 			int *xShapeInfo,
@@ -435,10 +444,10 @@ public:
 #pragma omp simd
 			for (int i = 0; i < length; i++) {
 				startingVal = update(startingVal, op(x[i], y[i], &extraParamsVals),
-						&extraParamsVals);
+						&(extraParamsVals));
 			}
 
-			result[0] = postProcess(startingVal, length,&extraParamsVals);
+			result[0] = postProcess(startingVal, length,&(extraParamsVals));
 
 		} else {
 #pragma omp simd
@@ -446,22 +455,38 @@ public:
 			for (int i = 0; i < length; i++) {
 				startingVal = update(startingVal,
 						op(x[i * xElementWiseStride], y[i * yElementWiseStride],
-								&extraParamsVals), &extraParamsVals);
+								&extraParamsVals), &(extraParamsVals));
 			}
 
-			result[0] = postProcess(startingVal, length,&extraParamsVals);
+			result[0] = postProcess(startingVal, length,&(extraParamsVals));
 
 		}
 
 	}
 
-	void exec(T *x, int *xShapeInfo, T *extraParamsVals, T *y, int *yShapeInfo,
-			T *result, int *resultShapeInfoBuffer, int *dimension,
+	/**
+	 *
+	 * @param x
+	 * @param xShapeInfo
+	 * @param extraParamsVals
+	 * @param y
+	 * @param yShapeInfo
+	 * @param result
+	 * @param resultShapeInfoBuffer
+	 * @param dimension
+	 * @param dimensionLength
+	 */
+	void exec(T *x, int *xShapeInfo,
+			T *extraParamsVals,
+			T *y, int *yShapeInfo,
+			T *result, int *resultShapeInfoBuffer,
+			int *dimension,
 			int dimensionLength) {
 		if(shape::isScalar(resultShapeInfoBuffer)) {
 			exec(x,xShapeInfo,extraParamsVals,y,yShapeInfo,result,resultShapeInfoBuffer);
 			return;
 		}
+
 		shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo,
 				dimension, dimensionLength);
 		int resultLength = shape::length(resultShapeInfoBuffer);
@@ -470,17 +495,27 @@ public:
 				tadPermuteInfo.permutedStrides,
 				shape::order(xShapeInfo) == 'f');
 		int tadLength = tadPermuteInfo.tensorShapeProd;
+
+
 #pragma omp simd
 		for (int i = 0; i < shape::length(xShapeInfo); i++) {
 			int reductionIndex = shape::reductionIndexForLinear(i,
 					tadElementWiseStride, tadLength, resultLength,
 					resultLength);
+			T *offsetPointer = extraParamsVals + (reductionIndex * EXTRA_PARAMS_LENGTH);
+			T **extraParamsAddress = &(offsetPointer);
+			T opOutput = op(x[i], y[i], extraParamsAddress);
+			printf("Mapping reduce index %d to i %d and x[i] of %f and y[i] of %f\n",reductionIndex,i,x[i],y[i]);
 			result[reductionIndex] = update(result[reductionIndex],
-					op(x[i], y[i], &extraParamsVals), &extraParamsVals);
+					opOutput, extraParamsAddress);
+			printf("Result for reduction index %d is %f and op output %f\n",reductionIndex,result[reductionIndex],opOutput);
 		}
 #pragma omp simd
 		for (int i = 0; i < resultLength; i++) {
-			result[i] = postProcess(result[i], tadLength,&extraParamsVals);
+			T *offsetPointer = extraParamsVals + (i * EXTRA_PARAMS_LENGTH);
+			T **extraParamsAddress = &(offsetPointer);
+			result[i] = postProcess(result[i], tadLength,extraParamsAddress);
+			printf("Result value %d is %f\n",i,result[i]);
 		}
 	}
 

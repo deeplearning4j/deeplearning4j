@@ -15,7 +15,7 @@ template<typename T>
 int arrsEquals(int rank, T *comp1, T *comp2) {
 	int ret = 1;
 	for (int i = 0; i < rank; i++) {
-		printf("Value i %d\n",i);
+		printf("Value i %d for comp1 %f and comp2 %f\n",i,comp1[i],comp2[i]);
 		DOUBLES_EQUAL(comp1[i],comp2[i],1e-1);
 	}
 
