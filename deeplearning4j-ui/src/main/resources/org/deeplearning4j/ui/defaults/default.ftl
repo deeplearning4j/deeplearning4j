@@ -76,7 +76,7 @@
     <div class="block">
         <!-- Activations block -->
         <b>Activations</b><br/><br/>
-        <img src="/assets/i_ladder.img" border="0" /><br/><br/>
+        <a href="/activations"><img src="/assets/i_ladder.img" border="0" /></a><br/><br/>
         <div style="text-align: left; margin: 5px;">
             &nbsp;Neural network activations retrieved from DL4j.
         </div>
@@ -85,7 +85,7 @@
     <div class="block">
         <!-- Histogram block -->
         <b>Histo</b><br/><br/>
-        <img src="/assets/i_histo.img" border="0" /><br/><br/>
+        <a href="/weights"><img src="/assets/i_histo.img" border="0" /></a><br/><br/>
         <div style="text-align: left; margin: 5px;">
             &nbsp;Neural network scores retrieved from DL4j during training.
         </div>
