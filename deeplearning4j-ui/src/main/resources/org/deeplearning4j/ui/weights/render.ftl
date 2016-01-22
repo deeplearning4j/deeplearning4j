@@ -38,6 +38,10 @@
 
 </style>
 
+<script language="JavaScript">
+
+</script>
+
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-2.2.0.min.js"></script>
 
@@ -89,6 +93,9 @@
         font-size: 14px;
         color: #FFFFFF;
         }
+        .charts {
+            font-size: 10px;
+        }
     </style>
 
 
@@ -101,7 +108,7 @@
 <table style="width: 100%; padding: 5px;" class="hd">
     <tbody>
     <tr>
-        <td style="width: 48px;"><img src="/assets/deeplearning4j.img"  border="0"/></td>
+        <td style="width: 48px;"><a href="/"><img src="/assets/deeplearning4j.img"  border="0"/></a></td>
         <td>DeepLearning4j UI</td>
         <td style="width: 128px;">&nbsp; <!-- placeholder for future use --></td>
     </tr>
@@ -114,26 +121,39 @@
             <h5>&nbsp;&nbsp;Scores vs. Iteration #</h5>
             <div class="chart"></div>
         </div>
-        <div id="model" style="background-color: #EFEFEF; display: block; float: left; width: 700px; height: 400px; border: 1px solid #CECECE; margin: 10px;">
+        <div id="model" style="position: relative; background-color: #EFEFEF; display: block; float: left; width: 700px; height: 400px; border: 1px solid #CECECE; margin: 10px;">
             <h5>&nbsp;&nbsp;Model</h5>
             <div class="charts"></div>
+            <div style="position: absolute; top: 5px; right: 5px;">
+                <select id="modelSelector" onchange="selectModel();">
+                </select>
+            </div>
         </div>
-        <div id="gradient" style="background-color: #EFEFEF; display: block; float: left; width: 700px; height: 400px; border: 1px solid #CECECE; margin: 10px;">
+        <div id="gradient" style="position: relative; background-color: #EFEFEF; display: block; float: left; width: 700px; height: 400px; border: 1px solid #CECECE; margin: 10px;">
             <h5>&nbsp;&nbsp;Gradient</h5>
             <div class="charts"></div>
+            <div style="position: absolute; top: 5px; right: 5px;">
+                <select id="gradientSelector" onchange="selectGradient();">
+                </select>
+            </div>
         </div>
-        <div id="magnitudes" style="background-color: #EFEFEF; display: block; float: left; width: 700px; height: 400px; border: 1px solid #CECECE; margin: 10px;">
+        <div id="magnitudes" style="position: relative; background-color: #EFEFEF; display: block; float: left; width: 700px; height: 400px; border: 1px solid #CECECE; margin: 10px;">
             <h5>&nbsp;&nbsp;Mean Magnitudes: Parameters and Updates</h5>
             <div class="charts"></div>
+            <div style="position: absolute; top: 5px; right: 5px;">
+                <select id="magnitudeSelector" onchange="selectMagnitude();">
+                </select>
+            </div>
         </div>
         <!--<div id="lastupdate">
             <div class="updatetime">-1</div>
         </div>-->
     </div>
 
+    <!--
     <div style="display: block;">
         nav bar
-    </div>
+    </div> -->
 </div>
 <div style="position: fixed; top: 55px; left: 5px; font-size: 11px;">
     Current score: <b><span class="score"></span></b><br />
