@@ -1,3 +1,37 @@
+    var modelSelector = new Array();
+    var magnitudesSelector = new Array();
+
+    // current visible chart, all other charts will be hidden
+    var visibleModel = "";
+    var visibleGradient = "";
+    var visibleMagnitude = "";
+
+    var contains = function(needle) {
+        // Per spec, the way to identify NaN is that it is not equal to itself
+        var findNaN = needle !== needle;
+        var indexOf;
+
+        if(!findNaN && typeof Array.prototype.indexOf === 'function') {
+            indexOf = Array.prototype.indexOf;
+        } else {
+            indexOf = function(needle) {
+                var i = -1, index = -1;
+
+                for(i = 0; i < this.length; i++) {
+                    var item = this[i];
+
+                    if((findNaN && item !== item) || item === needle) {
+                        index = i;
+                        break;
+                    }
+                }
+
+                return index;
+            };
+        }
+
+        return indexOf.call(this, needle) > -1;
+    };
 
 
     function appendHistogram(values,selector) {
@@ -6,7 +40,7 @@
 
         var margin = {top: 10, right: 30, bottom: 30, left: 30},
                 width = 650 - margin.left - margin.right,
-                height = 400 - margin.top - margin.bottom;
+                height = 350 - margin.top - margin.bottom;
         var data = values;
         var min = d3.min(data);
         var max = d3.max(data);
@@ -206,72 +240,156 @@
         }
     }
 
+var timed = function() {
+                    $.ajax({
+                        url:"${path}" + "/updated",
+                        async: false,
+                        success: function( data ) {
+                                    d3.json("${path}"+'/data',function(error,json) {
 
-setInterval(function() {
-        $.get( "${path}" + "/updated", function( data ) {
-            d3.json("${path}"+'/data',function(error,json) {
-
-                //Get last update time; do nothing if not a new update
-                var updateTime = json['lastUpdateTime'];
-                var lastUpdateTime = $('#lastupdate .updatetime').text();
-                if(updateTime == lastUpdateTime) return;
-
-
-                var model = json['parameters'];
-                var gradient = json['gradients'];
-                var score = json['score'];
-                var scores = json['scores'];
-                var updateMagnitudes = json['updateMagnitudes'];
-                var paramMagnitudes = json['paramMagnitudes'];
-
-                if(!model || !gradient || !score || !scores || !updateMagnitudes || !paramMagnitudes )
-                    return;
-                $('.score').html('' + score);
+                                        //Get last update time; do nothing if not a new update
+                                        var updateTime = json['lastUpdateTime'];
+                                        var lastUpdateTime = $('#lastupdate .updatetime').text();
+                                        if(updateTime == lastUpdateTime) return;
 
 
-                $('#scores .chart').html('');
-                var scdiv = '<div class="scorechart"></div>';
-                $('#scores .chart').append(scdiv);
-                appendLineChart(scores,'#scores .chart');
-/*
-                //clear out body of where the chart content will go
-                $('#model .charts').html('');
-                $('#gradient .charts').html('');
-                var keys = Object.keys(model);
-                for(var i = 0; i < keys.length; i++) {
-                    var key = keys[i];
-                    //model id class charts
-                    var selectorModel = '#model .charts';
-                    var selectorGradient = '#gradient .charts';
-                    //append div to each node where the chart content will
-                    //go and pass that in to the chart renderer
-                    var div = '<div class="' + key + '"><h4>' + key + '</h4></div>';
-                    $(selectorModel).append(div);
-                    $(selectorGradient).append(div);
-                    appendHistogram(model[key]['dataBuffer'],selectorModel + ' .' + key);
-                    appendHistogram(gradient[key]['dataBuffer'],selectorGradient + ' .' + key);
-                }
-                */
-/*
-                //Plot mean magnitudes: weights and params
-                $('#magnitudes .charts').html('');
-                for(var i=0; i<updateMagnitudes.length; i++ ){
-                    //Maps:
-                    var mapParams = paramMagnitudes[i];
-                    var mapUpdates = updateMagnitudes[i];
+                                        var model = json['parameters'];
+                                        var gradient = json['gradients'];
+                                        var score = json['score'];
+                                        var scores = json['scores'];
+                                        var updateMagnitudes = json['updateMagnitudes'];
+                                        var paramMagnitudes = json['paramMagnitudes'];
 
-                    var selectorModel = '#magnitudes .charts'
-                    var div = '<div class="layer' + i + 'param"><h4>Layer ' + i + ' Parameter Mean Magnitudes</h4></div>';
-                    $(selectorModel).append(div);
-                    appendMultiLineChart(mapParams,selectorModel + ' .layer' + i + 'param');
-                    div = '<div class="layer' + i + 'grad"><h4>Layer ' + i + ' Update/Gradient Mean Magnitudes</h4></div>';
-                    $(selectorModel).append(div);
-                    appendMultiLineChart(mapUpdates,selectorModel + ' .layer' + i + 'grad');
-                }
-*/
-                var time = new Date(updateTime);
-                $('#updatetime').html(time.customFormat("#DD#/#MM#/#YYYY# #hhh#:#mm#:#ss#"));
-            });
-        });
+                                        if(!model || !gradient || !score || !scores || !updateMagnitudes || !paramMagnitudes )
+                                            return;
+                                        $('.score').html('' + score);
 
-    },1000);
+
+                                        $('#scores .chart').html('');
+                                        var scdiv = '<div class="scorechart"></div>';
+                                        $('#scores .chart').append(scdiv);
+                                        appendLineChart(scores,'#scores .chart');
+
+                                        //clear out body of where the chart content will go
+                                        $('#model .charts').html('');
+                                        $('#gradient .charts').html('');
+                                        var keys = Object.keys(model);
+                                        for(var i = 0; i < keys.length; i++) {
+                                            var key = keys[i];
+                                            //model id class charts
+                                            var selectorModel = '#model .charts';
+                                            var selectorGradient = '#gradient .charts';
+                                            //append div to each node where the chart content will
+                                            //go and pass that in to the chart renderer
+                                            var divModel = '<div id="model'+ key+'" class="' + key + '" style="' +  ((visibleModel == key) ? "visibility: visible; display: block;" : "visibility: hidden; display: none;") +';"></div>';
+                                            var divGradient = '<div id="gradient'+ key+'" class="' + key + '" style="' +  ((visibleGradient == key) ? "visibility: visible; display: block;" : "visibility: hidden; display: none;") +';"></div>';
+                                            $(selectorModel).append(divModel);
+                                            $(selectorGradient).append(divGradient);
+                                            appendHistogram(model[key]['dataBuffer'],selectorModel + ' .' + key);
+                                            appendHistogram(gradient[key]['dataBuffer'],selectorGradient + ' .' + key);
+                                            /*
+                                                update selector box if needed
+                                            */
+                                            if (!contains.call(modelSelector, key)) {
+                                                console.log("Adding model selector: " + key);
+                                                modelSelector.push(key);
+
+                                                $("#modelSelector").append("<option value='"+ key+"'>" + key + "</option>");
+                                                $("#gradientSelector").append("<option value='"+ key+"'>" + key + "</option>");
+                                            }
+                                        }
+
+
+                                        //Plot mean magnitudes: weights and params
+                                        $('#magnitudes .charts').html('');
+                                        for(var i=0; i<updateMagnitudes.length; i++ ){
+                                            //Maps:
+                                            var mapParams = paramMagnitudes[i];
+                                            var mapUpdates = updateMagnitudes[i];
+
+                                            var selectorModel = '#magnitudes .charts'
+                                            var div = '<div id="layer' + i + 'param" class="layer' + i + 'param" style="' +  ((visibleMagnitude == "layer" + i + "param" ) ? "visibility: visible; display: block;" : "visibility: hidden; display: none;") +';"></div>';
+                                            $(selectorModel).append(div);
+                                            appendMultiLineChart(mapParams,selectorModel + ' .layer' + i + 'param');
+                                            div = '<div id="layer' + i + 'grad" class="layer' + i + 'grad" style="' +  ((visibleMagnitude == "layer" + i + "grad" ) ? "visibility: visible; display: block;" : "visibility: hidden; display: none;") +';"></div>';
+                                            $(selectorModel).append(div);
+                                            appendMultiLineChart(mapUpdates,selectorModel + ' .layer' + i + 'grad');
+
+                                            if (!contains.call(magnitudesSelector, key)) {
+                                                console.log("Adding magnitudes selector: " + key);
+                                                magnitudesSelector.push(key);
+
+                                                $("#magnitudeSelector").append("<option value='layer" + i + "param'>Layer " + i + " Parameter Mean Magnitudes</option>");
+                                                $("#magnitudeSelector").append("<option value='layer" + i + "grad'>Layer " + i + " Update/Gradient Mean Magnitudes</option>");
+                                            }
+                                        }
+
+                                        // this hack allows first selection of visible model histo
+                                        if (visibleModel == "") {
+                                            $("#modelSelector").val($("#modelSelector option:first").val());
+                                            selectModel();
+                                        }
+
+                                        if (visibleGradient == "") {
+                                            $("#gradientSelector").val($("#gradientSelector option:first").val());
+                                            selectGradient();
+                                        }
+
+                                        if (visibleMagnitude == "") {
+                                            $("#magnitudeSelector").val($("#magnitudeSelector option:first").val());
+                                            selectMagnitude();
+                                        }
+
+                                        var time = new Date(updateTime);
+                                        $('#updatetime').html(time.customFormat("#DD#/#MM#/#YYYY# #hhh#:#mm#:#ss#"));
+
+                                        // all subsequent refreshes are delayed by 10 seconds
+                                        setTimeout(timed, 10000)
+                                    });
+                    }
+                })
+            };
+
+// first update is fired almost immediately, 2s timeout
+setTimeout(timed,2000);
+
+
+    function selectModel() {
+        console.log("Switching off model view: " + visibleModel);
+        if (visibleModel != "") {
+            $("#model" + visibleModel).css("visibility","hidden");
+            $("#model" + visibleModel).css("display","none");
+        }
+
+        visibleModel = $("#modelSelector").val();
+        $("#model" + visibleModel).css("visibility","visible");
+        $("#model" + visibleModel).css("display","block");
+        console.log("Switching on model view:" + visibleModel);
+    }
+
+    function selectGradient() {
+            console.log("Switching off gradient view: " + visibleGradient);
+            if (visibleGradient != "") {
+                $("#gradient" + visibleGradient).css("visibility","hidden");
+                $("#gradient" + visibleGradient).css("display","none");
+            }
+
+            visibleGradient = $("#gradientSelector").val();
+            $("#gradient" + visibleGradient).css("visibility","visible");
+            $("#gradient" + visibleGradient).css("display","block");
+            console.log("Switching on gradient view:" + visibleGradient);
+    }
+
+    function selectMagnitude() {
+        console.log("Switching off magnitude view: " + visibleMagnitude);
+        if (visibleMagnitude != "") {
+            $("#" + visibleMagnitude).css("visibility","hidden");
+            $("#" + visibleMagnitude).css("display","none");
+        }
+
+        visibleMagnitude = $("#magnitudeSelector").val();
+
+        $("#" + visibleMagnitude).css("visibility","visible");
+        $("#" + visibleMagnitude).css("display","block");
+        console.log("Switching on magnitude view:" + visibleMagnitude);
+    }
