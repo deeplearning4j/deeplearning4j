@@ -1414,8 +1414,15 @@ public class ComputationGraph implements Serializable, Model {
     }
 
     protected void rnnUpdateStateWithTBPTTState(){
-
-        throw new UnsupportedOperationException("Not yet implemented");
+        for(int i=0; i<layers.length; i++){
+            if(layers[i] instanceof BaseRecurrentLayer) {
+                BaseRecurrentLayer<?> l = ((BaseRecurrentLayer<?>)layers[i]);
+                l.rnnSetPreviousState(l.rnnGetTBPTTState());
+            }
+            else if(layers[i] instanceof MultiLayerNetwork) {
+                ((MultiLayerNetwork)layers[i]).updateRnnStateWithTBPTTState();
+            }
+        }
     }
 
 

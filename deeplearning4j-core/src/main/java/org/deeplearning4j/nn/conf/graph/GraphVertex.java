@@ -13,4 +13,11 @@ public abstract class GraphVertex implements Cloneable {
 
     @Override
     public abstract GraphVertex clone();
+
+    @Override
+    public abstract boolean equals(Object o);
+
+    @Override
+    public abstract int hashCode();
+
 }
