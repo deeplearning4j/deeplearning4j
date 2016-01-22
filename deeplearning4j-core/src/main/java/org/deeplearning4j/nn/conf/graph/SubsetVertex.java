@@ -19,4 +19,16 @@ public class SubsetVertex extends GraphVertex {
     public SubsetVertex clone() {
         return new SubsetVertex(from,to);
     }
+
+    @Override
+    public boolean equals(Object o){
+        if(!(o instanceof SubsetVertex)) return false;
+        SubsetVertex s = (SubsetVertex)o;
+        return s.from == from && s.to == to;
+    }
+
+    @Override
+    public int hashCode(){
+        return Integer.hashCode(from) ^ Integer.hashCode(to);
+    }
 }

@@ -18,4 +18,15 @@ public class ElementWiseVertex extends GraphVertex {
     public ElementWiseVertex clone() {
         return new ElementWiseVertex(op);
     }
+
+    @Override
+    public boolean equals(Object o){
+        if(!(o instanceof ElementWiseVertex)) return false;
+        return ((ElementWiseVertex)o).op == op;
+    }
+
+    @Override
+    public int hashCode(){
+        return op.hashCode();
+    }
 }

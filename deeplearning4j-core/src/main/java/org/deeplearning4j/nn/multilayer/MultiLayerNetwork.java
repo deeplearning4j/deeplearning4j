@@ -1305,7 +1305,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         rnnClearPreviousState();
     }
 
-    protected void updateRnnStateWithTBPTTState() {
+    public void updateRnnStateWithTBPTTState() {
         for(int i=0; i<layers.length; i++){
             if(layers[i] instanceof BaseRecurrentLayer) {
                 BaseRecurrentLayer<?> l = ((BaseRecurrentLayer<?>)layers[i]);
