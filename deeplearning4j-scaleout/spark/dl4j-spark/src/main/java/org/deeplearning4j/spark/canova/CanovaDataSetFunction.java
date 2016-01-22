@@ -30,11 +30,7 @@ public class CanovaDataSetFunction implements Function<Collection<Writable>,Data
     protected int batchSize = -1;
 
     public CanovaDataSetFunction(int labelIndex, int numPossibleLabels, boolean regression){
-        this(labelIndex, numPossibleLabels, -1, regression, null, null);
-    }
-
-    public CanovaDataSetFunction(int labelIndex, int numPossibleLabels, int batchSize, boolean regression){
-        this(labelIndex, numPossibleLabels, batchSize, regression, null, null);
+        this(labelIndex, numPossibleLabels, regression, null, null);
     }
 
     /**
@@ -44,11 +40,10 @@ public class CanovaDataSetFunction implements Function<Collection<Writable>,Data
      * @param preProcessor DataSetPreprocessor (may be null)
      * @param converter WritableConverter (may be null)
      */
-    public CanovaDataSetFunction(int labelIndex, int numPossibleLabels, int batchSize, boolean regression,
+    public CanovaDataSetFunction(int labelIndex, int numPossibleLabels, boolean regression,
                                  DataSetPreProcessor preProcessor, WritableConverter converter){
         this.labelIndex = labelIndex;
         this.numPossibleLabels = numPossibleLabels;
-        this.batchSize = batchSize;
         this.regression = regression;
         this.preProcessor = preProcessor;
         this.converter = converter;
@@ -60,8 +55,6 @@ public class CanovaDataSetFunction implements Function<Collection<Writable>,Data
         if(writables instanceof List) list = (List<Writable>)writables;
         else list = new ArrayList<>(writables);
 
-        int numExamplesToLoad = (batchSize == -1)? list.size(): batchSize;
-
         //allow people to specify label index as -1 and infer the last possible label
         int labelIndex = this.labelIndex;
         if (numPossibleLabels >= 1 && labelIndex < 0) {
@@ -71,7 +64,7 @@ public class CanovaDataSetFunction implements Function<Collection<Writable>,Data
         INDArray label = null;
         INDArray featureVector = Nd4j.create(labelIndex >= 0 ? list.size() - 1 : list.size());
         int featureCount = 0;
-        for (int j = 0; j < numExamplesToLoad; j++) {
+        for (int j = 0; j < list.size(); j++) {
             Writable current = list.get(j);
             if(converter != null) current = converter.convert(current);
             if (labelIndex >= 0 && j == labelIndex) {
@@ -91,7 +84,8 @@ public class CanovaDataSetFunction implements Function<Collection<Writable>,Data
                 } else {
                     //Convert to one-hot vector for
                     int curr = current.toInt();
-                    if (curr >= numPossibleLabels) throw new IllegalStateException("Invalid input: class label is " + curr
+                    if (curr >= numPossibleLabels)
+                        throw new IllegalStateException("Invalid input: class label is " + curr
                             + " with numPossibleLables = " + numPossibleLabels + " (class label must be 0 <= labelIdx < numPossibleLabels)");
                     label = FeatureUtil.toOutcomeVector(curr, numPossibleLabels);
                 }
