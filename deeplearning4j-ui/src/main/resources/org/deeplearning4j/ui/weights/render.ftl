@@ -93,8 +93,9 @@
         font-size: 14px;
         color: #FFFFFF;
         }
-        .charts {
+        .charts, .chart {
             font-size: 10px;
+            margin-left: 15px;
         }
     </style>
 
