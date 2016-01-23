@@ -132,8 +132,7 @@ public class MLLibUtil {
      * in to something usable for machine learning
      * @param binaryFiles the binary files to convert
      * @param reader the reader to use
-     * @return the labeled points based on
-     * the given rdd
+     * @return the labeled points based on the given rdd
      */
     public static JavaRDD<LabeledPoint> fromBinary(JavaPairRDD<String, PortableDataStream> binaryFiles,final RecordReader reader) {
         JavaRDD<Collection<Writable>> records = binaryFiles.map(new Function<Tuple2<String, PortableDataStream>, Collection<Writable>>() {
@@ -151,6 +150,17 @@ public class MLLibUtil {
             }
         });
         return ret;
+    }
+
+    /**
+     * Convert a traditional sc.binaryFiles
+     * in to something usable for machine learning
+     * @param binaryFiles the binary files to convert
+     * @param reader the reader to use
+     * @return the labeled points based on the given rdd
+     */
+    public static JavaRDD<LabeledPoint> fromBinary(JavaRDD<Tuple2<String, PortableDataStream>> binaryFiles, final RecordReader reader) {
+        return fromBinary(JavaPairRDD.fromJavaRDD(binaryFiles), reader);
     }
 
 
