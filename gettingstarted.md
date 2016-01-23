@@ -144,6 +144,7 @@ Michael Depies has written this guide to [installing Deeplearning4j on Eclipse](
 ![Alt text](../img/jvisualvm.png)
 * Some problems encountered using DL4J may be due to a lack of familiarity with the ideas and techniques of machine learning. We strongly encourage all Deeplearning4j users to rely on resources beyond this website to understand the fundamentals. We've included a list of educational resources for machine and deep learning on [this page](../deeplearningpapers.html). While we've partially documented DL4J, parts of the code essentially remain a raw, domain-specific language for deep learning.
 * When using `deeplearning4j-nlp` from a **Clojure** application and building an uberjar with Leiningen, it is necessary to specify the following in the `project.clj` so that the akka `reference.conf` resource files are properly merged. `:uberjar-merge-with {#"\.properties$" [slurp str spit] "reference.conf" [slurp str spit]}`. Note that the first entry in the map for .properties files is the usual default). If this is not done, the following exception will be thrown when trying to run from the resulting uberjar: `Exception in thread "main" com.typesafe.config.ConfigException$Missing: No configuration setting found for key 'akka.version'`.
+* Float support is buggy on OSX. If you see NANs where you expect numbers running our examples, switch the data type to `double`.
 
 ### <a name="results">Reproducible Results</a>
 
