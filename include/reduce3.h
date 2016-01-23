@@ -14,6 +14,8 @@
 #include <templatemath.h>
 #include <helper_cuda.h>
 #include <sharedmem.h>
+
+
 namespace functions {
 namespace reduce3 {
 
@@ -505,17 +507,14 @@ public:
 			T *offsetPointer = extraParamsVals + (reductionIndex * EXTRA_PARAMS_LENGTH);
 			T **extraParamsAddress = &(offsetPointer);
 			T opOutput = op(x[i], y[i], extraParamsAddress);
-			printf("Mapping reduce index %d to i %d and x[i] of %f and y[i] of %f\n",reductionIndex,i,x[i],y[i]);
 			result[reductionIndex] = update(result[reductionIndex],
 					opOutput, extraParamsAddress);
-			printf("Result for reduction index %d is %f and op output %f\n",reductionIndex,result[reductionIndex],opOutput);
 		}
 #pragma omp simd
 		for (int i = 0; i < resultLength; i++) {
 			T *offsetPointer = extraParamsVals + (i * EXTRA_PARAMS_LENGTH);
 			T **extraParamsAddress = &(offsetPointer);
 			result[i] = postProcess(result[i], tadLength,extraParamsAddress);
-			printf("Result value %d is %f\n",i,result[i]);
 		}
 	}
 
