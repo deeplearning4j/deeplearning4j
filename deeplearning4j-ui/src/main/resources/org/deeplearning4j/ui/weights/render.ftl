@@ -11,7 +11,7 @@
     }
 
     .bar text {
-        fill: #fff;
+        fill: #EFEFEF;
     }
 
     .axis path, .axis line {
@@ -95,7 +95,7 @@
         }
         .charts, .chart {
             font-size: 10px;
-            margin-left: 15px;
+            font-color: #000000;
         }
     </style>
 
@@ -117,12 +117,12 @@
 </table>
 
 <div style="width: 100%; text-align: center;">
-    <div id="display" style="width: 1480px; height: 900px; text-align: left; background-color: #FFFFFF; display: inline-block; overflow: hidden; ">
-        <div id="scores" style="background-color: #EFEFEF; display: block; float: left; width: 700px; height: 400px; border: 1px solid #CECECE; margin: 10px;">
+    <div id="display" style="width: 1540px; height: 900px; text-align: left; background-color: #FFFFFF; display: inline-block; overflow: hidden; ">
+        <div id="scores" style="background-color: #EFEFEF; display: block; float: left; width: 750px; height: 400px; border: 1px solid #CECECE; margin: 10px;">
             <h5>&nbsp;&nbsp;Scores vs. Iteration #</h5>
             <div class="chart"></div>
         </div>
-        <div id="model" style="position: relative; background-color: #EFEFEF; display: block; float: left; width: 700px; height: 400px; border: 1px solid #CECECE; margin: 10px;">
+        <div id="model" style="position: relative; background-color: #EFEFEF; display: block; float: left; width: 750px; height: 400px; border: 1px solid #CECECE; margin: 10px;">
             <h5>&nbsp;&nbsp;Model</h5>
             <div class="charts"></div>
             <div style="position: absolute; top: 5px; right: 5px;">
@@ -130,7 +130,7 @@
                 </select>
             </div>
         </div>
-        <div id="gradient" style="position: relative; background-color: #EFEFEF; display: block; float: left; width: 700px; height: 400px; border: 1px solid #CECECE; margin: 10px;">
+        <div id="gradient" style="position: relative; background-color: #EFEFEF; display: block; float: left; width: 750px; height: 400px; border: 1px solid #CECECE; margin: 10px;">
             <h5>&nbsp;&nbsp;Gradient</h5>
             <div class="charts"></div>
             <div style="position: absolute; top: 5px; right: 5px;">
@@ -138,7 +138,7 @@
                 </select>
             </div>
         </div>
-        <div id="magnitudes" style="position: relative; background-color: #EFEFEF; display: block; float: left; width: 700px; height: 400px; border: 1px solid #CECECE; margin: 10px;">
+        <div id="magnitudes" style="position: relative; background-color: #EFEFEF; display: block; float: left; width: 750px; height: 400px; border: 1px solid #CECECE; margin: 10px;">
             <h5>&nbsp;&nbsp;Mean Magnitudes: Parameters and Updates</h5>
             <div class="charts"></div>
             <div style="position: absolute; top: 5px; right: 5px;">
