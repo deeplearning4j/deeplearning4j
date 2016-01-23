@@ -178,15 +178,30 @@
 
  function appendLineChart(values,selector, id){
         if (gSVG[id] != undefined || gSVG[id] != null) {
-            console.log("SVG for key [" + id + "] is already defined. Going to update data");
+            console.log("SVG for scores [" + id + "] is already defined. Going to update data");
 
+            var valueline = d3.svg.line()
+                           .x(function(d,i) { return gX[id](i); })
+                           .y(function(d) { return gY[id](d); });
 
+            var max = d3.max(values);
+            gX[id].domain([0,values.length]);
+            gY[id].domain([0, max]);
+
+            gSVG[id].select(".line")
+                           .attr("d", valueline(values));
+
+            gSVG[id].select(".x.axis")
+                           .call(gXAxis[id]);
+
+            gSVG[id].select(".y.axis")
+                           .call(gYAxis[id]);
             return;
         }
 
         // Set the ranges
-        var x = d3.scale.linear().range([0, width]);
-        var y = d3.scale.linear().range([height, 0]);
+        gX[id] = d3.scale.linear().range([0, width]);
+        gY[id] = d3.scale.linear().range([height, 0]);
 
 
 
@@ -202,24 +217,24 @@
 
 
         // Define the axes
-        gXAxis[id]= d3.svg.axis().scale(x)
+        gXAxis[id]= d3.svg.axis().scale(gX[id])
                .innerTickSize(-height)     //used as grid line
                .orient("bottom").ticks(5);
 
-        gYAxis[id] = d3.svg.axis().scale(y)
+        gYAxis[id] = d3.svg.axis().scale(gY[id])
                 .innerTickSize(-width)      //used as grid line
                 .orient("left").ticks(5);
 
 
         // Define the line
         var valueline = d3.svg.line()
-                .x(function(d,i) { return x(i); })
-                .y(function(d) { return y(d); });
+                .x(function(d,i) { return gX[id](i); })
+                .y(function(d) { return gY[id](d); });
 
         // Scale the range of the data
         var max = d3.max(values);
-        x.domain([0,values.length]);
-        y.domain([0, max]);
+        gX[id].domain([0,values.length]);
+        gY[id].domain([0, max]);
 
         // Add the valueline path.
         gSVG[id].append("path")
@@ -242,6 +257,39 @@
     function appendMultiLineChart(map,selector, id){
         if (gSVG[id] != undefined || gSVG[id] != null) {
                 console.log("SVG for key [" + id + "] is already defined. Going to update data");
+
+
+                var valueline = d3.svg.line()
+                                .x(function(d,i) { return gX[id](i); })
+                                .y(function(d) { return gY[id](d); });
+
+
+                var max = -Number.MAX_VALUE;
+                var size = 1;
+                for( var key in map ){
+                    var values = map[key];
+                    var thisMax = d3.max(values);
+                    if(thisMax > max) max = thisMax;
+                    size = values.length;
+                }
+                gX[id].domain([0,size]);
+                gY[id].domain([0, max]);
+
+                var color = d3.scale.category10();
+                var i=0;
+                for(var key in map ){
+                    var values = map[key];
+                    gSVG[id].select(".line.l"+i)
+                            .attr("d", valueline(values));
+                            i++;
+                }
+
+                gSVG[id].select(".x.axis")
+                        .call(gXAxis[id]);
+
+                gSVG[id].select(".y.axis")
+                        .call(gYAxis[id]);
+
                 return;
         }
 
@@ -250,22 +298,22 @@
 
 
         // Set the ranges
-        var x = d3.scale.linear().range([0, width]);
-        var y = d3.scale.linear().range([height, 0]);
+        gX[id] = d3.scale.linear().range([0, width]);
+        gY[id] = d3.scale.linear().range([height, 0]);
 
         // Define the axes
-        gXAxis[id] = d3.svg.axis().scale(x)
+        gXAxis[id] = d3.svg.axis().scale(gX[id])
                 .innerTickSize(-height)     //used as grid line
                 .orient("bottom").ticks(5);
 
-        gYAxis[id] = d3.svg.axis().scale(y)
+        gYAxis[id] = d3.svg.axis().scale(gY[id])
                 .innerTickSize(-width)      //used as grid line
                 .orient("left").ticks(5);
 
         // Define the line
         var valueline = d3.svg.line()
-                .x(function(d,i) { return x(i); })
-                .y(function(d) { return y(d); });
+                .x(function(d,i) { return gX[id](i); })
+                .y(function(d) { return gY[id](d); });
 
         // Adds the svg canvas
         gSVG[id] = d3.select(selector)
@@ -285,8 +333,8 @@
             if(thisMax > max) max = thisMax;
             size = values.length;
         }
-        x.domain([0,size]);
-        y.domain([0, max]);
+        gX[id].domain([0,size]);
+        gY[id].domain([0, max]);
 
         // Add the valueline path.
         var color = d3.scale.category10();
@@ -294,7 +342,7 @@
         for( var key in map ){
             var values = map[key];
             gSVG[id].append("path")
-                .attr("class", "line")
+                .attr("class", "line l" + i)
                 .style("stroke", color(i))
                 .attr("d", valueline(values));
             i++;
@@ -332,7 +380,7 @@
 var timed = function() {
                     $.ajax({
                         url:"${path}" + "/updated",
-                        async: false,
+                        async: true,
                         success: function( data ) {
                                     /*
                                         /weights/data should be changed to /weights/data/{time} and only delta should be passed over network
@@ -363,8 +411,8 @@ var timed = function() {
                                         if (gSVG["scorechart"] == undefined || gSVG["scorechart"] == null) {
                                             var scdiv = '<div id="scorechart" class="scorechart"></div>';
                                             $('#scores .chart').append(scdiv);
-                                            appendLineChart(scores,'#scores .chart', "scorechart");
                                         }
+                                        appendLineChart(scores,'#scores .chart', "scorechart");
 
                                         //clear out body of where the chart content will go
                                         //$('#model .charts').html('');
