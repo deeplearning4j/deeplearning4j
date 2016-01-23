@@ -15,8 +15,8 @@
 
 
     // all charts have equal size
-    var margin = {top: 10, right: 30, bottom: 30, left: 30},
-    var width = 650 - margin.left - margin.right,
+    var margin = {top: 10, right: 30, bottom: 30, left: 30};
+    var width = 650 - margin.left - margin.right;
     var height = 350 - margin.top - margin.bottom;
 
     // we''ll define every single data source as global object, and we'll them as references for D3 charts
@@ -27,6 +27,12 @@
 
     // we must ensure, that charts initialized only once
     var isInit = false;
+
+
+    // each our chart is defined as array element
+    var gSVG = new Array();
+    var gXAxis = new Array();
+    var gYAxis = new Array();
 
     var contains = function(needle) {
         // Per spec, the way to identify NaN is that it is not equal to itself
@@ -55,8 +61,22 @@
         return indexOf.call(this, needle) > -1;
     };
 
+    function buildSurface() {
+        /*
+            TODO: to be implemented
+        */
+    }
 
-    function appendHistogram(values,selector) {
+    function appendHistogram(values,selector, id) {
+        if (gSVG[id] != undefined || gSVG[id] != null) {
+            console.log("SVG for key [" + id + "] is already defined. Going to update data");
+            return;
+        }
+
+
+        console.log("SVG for key [" + id + "] is NOT defined");
+
+
         // A formatter for counts.
         var formatCount = d3.format(",.0f");
 
@@ -82,17 +102,19 @@
                 .domain([0, d3.max(data, function(d) { return d.y; })])
                 .range([height, 0]);
 
-        var xAxis = d3.svg.axis()
-                .scale(x)
-                .orient("bottom");
 
-        var svg = d3.select(selector).append("svg")
+
+        gSVG[id] = d3.select(selector).append("svg")
                 .attr("width", width + margin.left + margin.right)
                 .attr("height", height + margin.top + margin.bottom)
                 .append("g")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-        var bar = svg.selectAll(".bar")
+        gXAxis[id] = d3.svg.axis()
+                .scale(x)
+                .orient("bottom");
+
+        var bar = gSVG[id].selectAll(".bar")
                 .data(data)
                 .enter().append("g")
                 .attr("class", "bar")
@@ -110,35 +132,27 @@
                 .attr("text-anchor", "middle")
                 .text(function(d) { return formatCount(d.y); });
 
-        svg.append("g")
+        gSVG[id].append("g")
                 .attr("class", "x axis")
                 .attr("transform", "translate(0," + height + ")")
-                .call(xAxis);
+                .call(gXAxis[id]);
     }
 
- function appendLineChart(values,selector){
-        // Set the dimensions of the canvas / graph
+ function appendLineChart(values,selector, id){
+        if (gSVG[id] != undefined || gSVG[id] != null) {
+            console.log("SVG for key [" + id + "] is already defined. Going to update data");
+            return;
+        }
 
         // Set the ranges
         var x = d3.scale.linear().range([0, width]);
         var y = d3.scale.linear().range([height, 0]);
 
-        // Define the axes
-        var xAxis = d3.svg.axis().scale(x)
-                .innerTickSize(-height)     //used as grid line
-                .orient("bottom").ticks(5);
 
-        var yAxis = d3.svg.axis().scale(y)
-                .innerTickSize(-width)      //used as grid line
-                .orient("left").ticks(5);
 
-        // Define the line
-        var valueline = d3.svg.line()
-                .x(function(d,i) { return x(i); })
-                .y(function(d) { return y(d); });
 
         // Adds the svg canvas
-        var svg = d3.select(selector)
+        gSVG[id] = d3.select(selector)
                 .append("svg")
                 .attr("width", width + margin.left + margin.right)
                 .attr("height", height + margin.top + margin.bottom)
@@ -146,29 +160,51 @@
                 .attr("transform",
                 "translate(" + margin.left + "," + margin.top + ")");
 
+
+        // Define the axes
+        gXAxis[id]= d3.svg.axis().scale(x)
+               .innerTickSize(-height)     //used as grid line
+               .orient("bottom").ticks(5);
+
+        gYAxis[id] = d3.svg.axis().scale(y)
+                .innerTickSize(-width)      //used as grid line
+                .orient("left").ticks(5);
+
+
+        // Define the line
+        var valueline = d3.svg.line()
+                .x(function(d,i) { return x(i); })
+                .y(function(d) { return y(d); });
+
         // Scale the range of the data
         var max = d3.max(values);
         x.domain([0,values.length]);
         y.domain([0, max]);
 
         // Add the valueline path.
-        svg.append("path")
+        gSVG[id].append("path")
                 .attr("class", "line")
                 .attr("d", valueline(values));
 
+
         // Add the X Axis
-        svg.append("g")
+        gSVG[id].append("g")
                 .attr("class", "x axis")
                 .attr("transform", "translate(0," + height + ")")
-                .call(xAxis);
+                .call(gXAxis[id]);
 
         // Add the Y Axis
-        svg.append("g")
+        gSVG[id].append("g")
                 .attr("class", "y axis")
-                .call(yAxis);
+                .call(gYAxis[id]);
     }
 
-    function appendMultiLineChart(map,selector){
+    function appendMultiLineChart(map,selector, id){
+        if (gSVG[id] != undefined || gSVG[id] != null) {
+                console.log("SVG for key [" + id + "] is already defined. Going to update data");
+                return;
+        }
+
         var keys = Object.keys(map)
         if(keys.length == 0) return;    //nothing to plot
 
@@ -178,11 +214,11 @@
         var y = d3.scale.linear().range([height, 0]);
 
         // Define the axes
-        var xAxis = d3.svg.axis().scale(x)
+        gXAxis[id] = d3.svg.axis().scale(x)
                 .innerTickSize(-height)     //used as grid line
                 .orient("bottom").ticks(5);
 
-        var yAxis = d3.svg.axis().scale(y)
+        gYAxis[id] = d3.svg.axis().scale(y)
                 .innerTickSize(-width)      //used as grid line
                 .orient("left").ticks(5);
 
@@ -192,7 +228,7 @@
                 .y(function(d) { return y(d); });
 
         // Adds the svg canvas
-        var svg = d3.select(selector)
+        gSVG[id] = d3.select(selector)
                 .append("svg")
                 .attr("width", width + margin.left + margin.right)
                 .attr("height", height + margin.top + margin.bottom)
@@ -217,7 +253,7 @@
         var i=0;
         for( var key in map ){
             var values = map[key];
-            svg.append("path")
+            gSVG[id].append("path")
                 .attr("class", "line")
                 .style("stroke", color(i))
                 .attr("d", valueline(values));
@@ -225,15 +261,15 @@
         }
 
         // Add the X Axis
-        svg.append("g")
+        gSVG[id].append("g")
                 .attr("class", "x axis")
                 .attr("transform", "translate(0," + height + ")")
-                .call(xAxis);
+                .call(gXAxis[id]);
 
         // Add the Y Axis
-        svg.append("g")
+        gSVG[id].append("g")
                 .attr("class", "y axis")
-                .call(yAxis);
+                .call(gYAxis[id]);
 
         //Add legend
         var legendSpace = width/i;
@@ -242,7 +278,7 @@
             var values = map[key];
             var last = values[values.length-1];
             var toDisplay = key + " (" + last.toPrecision(5) + ") ";
-            svg.append("text")
+            gSVG[id].append("text")
                 .attr("x", (legendSpace/2)+i*legendSpace) // spacing
                 .attr("y", height + (margin.bottom/2)+ 5)
                 .attr("class", "legend")    // style the legend
@@ -283,14 +319,16 @@ var timed = function() {
                                         $('.score').html('' + score);
 
 
-                                        $('#scores .chart').html('');
-                                        var scdiv = '<div class="scorechart"></div>';
-                                        $('#scores .chart').append(scdiv);
-                                        appendLineChart(scores,'#scores .chart');
+                                        //$('#scores .chart').html('');
+                                        if (gSVG["scorechart"] == undefined || gSVG["scorechart"] == null) {
+                                            var scdiv = '<div id="scorechart" class="scorechart"></div>';
+                                            $('#scores .chart').append(scdiv);
+                                            appendLineChart(scores,'#scores .chart', "scorechart");
+                                        }
 
                                         //clear out body of where the chart content will go
-                                        $('#model .charts').html('');
-                                        $('#gradient .charts').html('');
+                                        //$('#model .charts').html('');
+                                        //$('#gradient .charts').html('');
                                         var keys = Object.keys(model);
                                         for(var i = 0; i < keys.length; i++) {
                                             var key = keys[i];
@@ -299,12 +337,17 @@ var timed = function() {
                                             var selectorGradient = '#gradient .charts';
                                             //append div to each node where the chart content will
                                             //go and pass that in to the chart renderer
-                                            var divModel = '<div id="model'+ key+'" class="' + key + '" style="' +  ((visibleModel == key) ? "visibility: visible; display: block;" : "visibility: hidden; display: none;") +';"></div>';
-                                            var divGradient = '<div id="gradient'+ key+'" class="' + key + '" style="' +  ((visibleGradient == key) ? "visibility: visible; display: block;" : "visibility: hidden; display: none;") +';"></div>';
-                                            $(selectorModel).append(divModel);
-                                            $(selectorGradient).append(divGradient);
-                                            appendHistogram(model[key]['dataBuffer'],selectorModel + ' .' + key);
-                                            appendHistogram(gradient[key]['dataBuffer'],selectorGradient + ' .' + key);
+
+                                            // we append divs only once
+                                            if (gSVG["model"+ key] == undefined || gSVG["model"+ key ] == null) {
+                                                var divModel = '<div id="model'+ key+'" class="' + key + '" style="' +  ((visibleModel == key) ? "visibility: visible; display: block;" : "visibility: hidden; display: none;") +';"></div>';
+                                                var divGradient = '<div id="gradient'+ key+'" class="' + key + '" style="' +  ((visibleGradient == key) ? "visibility: visible; display: block;" : "visibility: hidden; display: none;") +';"></div>';
+                                                $(selectorModel).append(divModel);
+                                                $(selectorGradient).append(divGradient);
+                                            }
+
+                                            appendHistogram(model[key]['dataBuffer'],selectorModel + ' .' + key, "model"+ key );
+                                            appendHistogram(gradient[key]['dataBuffer'],selectorGradient + ' .' + key, "gradient"+ key );
                                             /*
                                                 update selector box if needed
                                             */
@@ -319,19 +362,24 @@ var timed = function() {
 
 
                                         //Plot mean magnitudes: weights and params
-                                        $('#magnitudes .charts').html('');
+                                        //$('#magnitudes .charts').html('');
                                         for(var i=0; i<updateMagnitudes.length; i++ ){
                                             //Maps:
                                             var mapParams = paramMagnitudes[i];
                                             var mapUpdates = updateMagnitudes[i];
 
                                             var selectorModel = '#magnitudes .charts'
-                                            var div = '<div id="layer' + i + 'param" class="layer' + i + 'param" style="' +  ((visibleMagnitude == "layer" + i + "param" ) ? "visibility: visible; display: block;" : "visibility: hidden; display: none;") +';"></div>';
-                                            $(selectorModel).append(div);
-                                            appendMultiLineChart(mapParams,selectorModel + ' .layer' + i + 'param');
-                                            div = '<div id="layer' + i + 'grad" class="layer' + i + 'grad" style="' +  ((visibleMagnitude == "layer" + i + "grad" ) ? "visibility: visible; display: block;" : "visibility: hidden; display: none;") +';"></div>';
-                                            $(selectorModel).append(div);
-                                            appendMultiLineChart(mapUpdates,selectorModel + ' .layer' + i + 'grad');
+
+                                            // we create divs only once
+                                            if (gSVG["layer" + i + "param"] == undefined || gSVG["layer" + i + "param"] == null) {
+                                                var div = '<div id="layer' + i + 'param" class="layer' + i + 'param" style="' +  ((visibleMagnitude == "layer" + i + "param" ) ? "visibility: visible; display: block;" : "visibility: hidden; display: none;") +';"></div>';
+                                                $(selectorModel).append(div);
+                                                div = '<div id="layer' + i + 'grad" class="layer' + i + 'grad" style="' +  ((visibleMagnitude == "layer" + i + "grad" ) ? "visibility: visible; display: block;" : "visibility: hidden; display: none;") +';"></div>';
+                                                $(selectorModel).append(div);
+                                            }
+
+                                            appendMultiLineChart(mapParams,selectorModel + ' .layer' + i + 'param',"layer" + i + "param");
+                                            appendMultiLineChart(mapUpdates,selectorModel + ' .layer' + i + 'grad',"layer" + i + "grad");
 
                                             if (!contains.call(magnitudesSelector, key)) {
                                                 console.log("Adding magnitudes selector: " + key);

@@ -67,7 +67,7 @@
     <!-- DateTime formatter-->
     <script src="/assets/DateTimeFormat.js"></script>
 
-    <script src="/assets/renderWeights.js"></script>
+    <script src="/assets/renderWeightsProper.js"></script>
 
     <style>
         body {
