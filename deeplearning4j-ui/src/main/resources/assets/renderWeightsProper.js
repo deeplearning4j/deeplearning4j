@@ -15,8 +15,8 @@
 
 
     // all charts have equal size
-    var margin = {top: 10, right: 30, bottom: 30, left: 30};
-    var width = 650 - margin.left - margin.right;
+    var margin = {top: 10, right: 30, bottom: 20, left: 30};
+    var width = 750 - margin.left - margin.right;
     var height = 350 - margin.top - margin.bottom;
 
     // we''ll define every single data source as global object, and we'll them as references for D3 charts
@@ -33,6 +33,10 @@
     var gSVG = new Array();
     var gXAxis = new Array();
     var gYAxis = new Array();
+
+    // these two probably not needed
+    var gX = new Array();
+    var gY = new Array();
 
     var contains = function(needle) {
         // Per spec, the way to identify NaN is that it is not equal to itself
@@ -68,18 +72,46 @@
     }
 
     function appendHistogram(values,selector, id) {
+        // A formatter for counts.
+        var formatCount = d3.format(",.0f");
+
         if (gSVG[id] != undefined || gSVG[id] != null) {
             console.log("SVG for key [" + id + "] is already defined. Going to update data");
+
+            var data = d3.layout.histogram()
+                .bins(gX[id].ticks(20))
+                (values);
+
+            var min = d3.min(data);
+            var max = d3.max(data);
+
+            gY[id] = d3.scale.linear()
+                            .domain([0, d3.max(data, function(d) { return d.y; })])
+                            .range([height, 0]);
+
+
+            var bar = gSVG[id].selectAll(".bar")
+                            .data(data)
+
+            bar.attr("transform", function(d) { return "translate(" + gX[id](d.x) + "," + gY[id](d.y) + ")"; });
+
+            gSVG[id].selectAll("text")
+                .data(data)
+                .attr("y", 6)
+                .text(function(d) { return formatCount(d.y); });
+
+            gSVG[id].selectAll("rect")
+                .data(data)
+                .attr("y", function(d) {
+                    return 0;
+                })
+                .attr("height", function(d) { return height-gY[id](d.y) });
+
             return;
         }
 
 
         console.log("SVG for key [" + id + "] is NOT defined");
-
-
-        // A formatter for counts.
-        var formatCount = d3.format(",.0f");
-
 
         var data = values;
         var min = d3.min(data);
@@ -89,16 +121,16 @@
             max = 1.0;
         }
 
-        var x = d3.scale.linear()
+        gX[id] = d3.scale.linear()
                 .domain([min, max])
                 .range([0, width]);
 
         // Generate a histogram using twenty uniformly-spaced bins.
         var data = d3.layout.histogram()
-                .bins(x.ticks(20))
+                .bins(gX[id].ticks(20))
                 (values);
 
-        var y = d3.scale.linear()
+        gY[id] = d3.scale.linear()
                 .domain([0, d3.max(data, function(d) { return d.y; })])
                 .range([height, 0]);
 
@@ -111,25 +143,31 @@
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
         gXAxis[id] = d3.svg.axis()
-                .scale(x)
+                .scale(gX[id])
                 .orient("bottom");
 
         var bar = gSVG[id].selectAll(".bar")
                 .data(data)
                 .enter().append("g")
                 .attr("class", "bar")
-                .attr("transform", function(d) { return "translate(" + x(d.x) + "," + y(d.y) + ")"; });
+                .attr("transform", function(d) { return "translate(" + gX[id](d.x) + "," + gY[id](d.y) + ")"; });
 
         bar.append("rect")
                 .attr("x", 1)
-                .attr("width", x(min+data[0].dx) -1 )
-                .attr("height", function(d) { return height - y(d.y); });
+                .attr("y", 0)
+                .attr("width", gX[id](min+data[0].dx) -1 )
+                .attr("height", function(d) {
+                        console.log("Setting ["+d.y+"] to height: ["+(height - gY[id](d.y))+"]" );
+                        return height - gY[id](d.y);
+                        });
 
         bar.append("text")
                 .attr("dy", ".75em")
                 .attr("y", 6)
-                .attr("x", x(min+data[0].dx) / 2)
+                .attr("x", gX[id](min+data[0].dx) / 2)
                 .attr("text-anchor", "middle")
+                .attr("color","#000000")
+                .attr("font-size","9px")
                 .text(function(d) { return formatCount(d.y); });
 
         gSVG[id].append("g")
@@ -141,6 +179,8 @@
  function appendLineChart(values,selector, id){
         if (gSVG[id] != undefined || gSVG[id] != null) {
             console.log("SVG for key [" + id + "] is already defined. Going to update data");
+
+
             return;
         }
 
