@@ -23,7 +23,7 @@ TEST_GROUP(IndexReduce) {
 	}
 };
 
-Data<double> * getData(double *assertion,double startingVal) {
+Data<double> * getDataIndexReduce(double *assertion,double startingVal) {
 	Data<double> *ret = new Data<double>();
 
 	int rank = 2;
@@ -58,7 +58,7 @@ Data<double> * getData(double *assertion,double startingVal) {
 	return ret;
 }
 
-Data<double> * getDataDimension(double *assertion,double startingVal) {
+Data<double> * getDataIndexReduceDimension(double *assertion,double startingVal) {
 	Data<double> *ret = new Data<double>();
 
 	int rank = 2;
@@ -249,7 +249,7 @@ TEST(IndexReduce,ObjectOrientedIMax) {
 	int rank = 2;
 	int opNum = 0;
 	double assertion[1] = {3};
-	Data<double> *data = getData(assertion,0);
+	Data<double> *data = getDataIndexReduce(assertion,0);
 	DoubleIndexReduceTest *test = new DoubleIndexReduceTest(rank,opNum,data,1);
     test->run();
     delete data;
@@ -260,7 +260,7 @@ TEST(IndexReduce,ObjectOrientedIMin) {
 	int rank = 2;
 	int opNum = 1;
 	double assertion[1] = {0};
-	Data<double> *data = getData(assertion,0);
+	Data<double> *data = getDataIndexReduce(assertion,0);
 	DoubleIndexReduceTest *test = new DoubleIndexReduceTest(rank,opNum,data,1);
     test->run();
     delete data;
@@ -274,7 +274,7 @@ TEST(IndexReduce,ObjectOrientedDimensionIMax) {
 	int rank = 2;
 	int opNum = 0;
 	double assertion[2] = {1,1};
-	Data<double> *data = getDataDimension(assertion,0);
+	Data<double> *data = getDataIndexReduceDimension(assertion,0);
 	DoubleIndexReduceTest *test = new DoubleIndexReduceTest(rank,opNum,data,1);
     test->run();
     delete data;
@@ -285,7 +285,7 @@ TEST(IndexReduce,ObjectOrientedDimensionIMin) {
 	int rank = 2;
 	int opNum = 1;
 	double assertion[2] = {0,0};
-	Data<double> *data = getDataDimension(assertion,0);
+	Data<double> *data = getDataIndexReduceDimension(assertion,0);
 	DoubleIndexReduceTest *test = new DoubleIndexReduceTest(rank,opNum,data,1);
     test->run();
     delete data;

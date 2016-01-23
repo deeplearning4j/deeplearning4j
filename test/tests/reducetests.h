@@ -182,7 +182,7 @@ public:
 	}
 };
 
-Data<double> * getData(double *assertion,double startingVal) {
+Data<double> * getDataReduce(double *assertion,double startingVal) {
 	Data<double> *ret = new Data<double>();
 
 	int rank = 2;
@@ -218,7 +218,7 @@ Data<double> * getData(double *assertion,double startingVal) {
 	return ret;
 }
 
-Data<double> * getDataDimension(double *assertion,double startingVal) {
+Data<double> * getDataReduceDimension(double *assertion,double startingVal) {
 	Data<double> *ret = new Data<double>();
 
 	int rank = 2;
@@ -258,7 +258,7 @@ TEST(Reduce,ObjectOrientedSum) {
 	int opNum = 1;
 	double comparison[1] = {10};
 
-	Data<double> *data = getData(comparison,0);
+	Data<double> *data = getDataReduce(comparison,0);
 	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
 	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
 	test->run();
@@ -269,7 +269,7 @@ TEST(Reduce,ObjectOrientedSum) {
 TEST(Reduce,ObjectOrientedMax) {
 	int opNum = 3;
 	double comparison[1] = {4};
-	Data<double> *data = getData(comparison,0);
+	Data<double> *data = getDataReduce(comparison,0);
 	data->extraParams[0] = data->data[0];
 	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
 	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
@@ -283,7 +283,7 @@ TEST(Reduce,ObjectOrientedMax) {
 TEST(Reduce,ObjectOrientedMin) {
 	int opNum = 4;
 	double comparison[1] = {1};
-	Data<double> *data = getData(comparison,0);
+	Data<double> *data = getDataReduce(comparison,0);
 	data->extraParams[0] = data->data[0];
 	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
 	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
@@ -296,7 +296,7 @@ TEST(Reduce,ObjectOrientedMin) {
 TEST(Reduce,ObjectOrientedNorm1) {
 	int opNum = 5;
 	double comparison[1] = {10.0};
-	Data<double> *data = getData(comparison,0);
+	Data<double> *data = getDataReduce(comparison,0);
 	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
 	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
 	test->run();
@@ -308,7 +308,7 @@ TEST(Reduce,ObjectOrientedNorm1) {
 TEST(Reduce,ObjectOrientedNorm2) {
 	int opNum = 6;
 	double comparison[1] = {5.4772255750516612};
-	Data<double> *data = getData(comparison,0);
+	Data<double> *data = getDataReduce(comparison,0);
 	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
 	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
 	test->run();
@@ -320,7 +320,7 @@ TEST(Reduce,ObjectOrientedNorm2) {
 TEST(Reduce,ObjectOrientedMean) {
 	int opNum = 0;
 	double comparison[1] = {2.5};
-	Data<double> *data = getData(comparison,0);
+	Data<double> *data = getDataReduce(comparison,0);
 	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
 	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
 	test->run();
@@ -333,7 +333,7 @@ TEST(Reduce,ObjectOrientedMean) {
 TEST(Reduce,ObjectOrientedProd) {
 	int opNum = 8;
 	double comparison[1] = {24};
-	Data<double> *data = getData(comparison,0);
+	Data<double> *data = getDataReduce(comparison,0);
 	data->extraParams[0] = 1.0;
 	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
 	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
@@ -353,7 +353,7 @@ TEST(Reduce,ObjectOrientedProd) {
 TEST(Reduce,ObjectOrientedDimensionMax) {
 	int opNum = 3;
 	double comparison[2] = {2.00, 4.00};
-	Data<double> *data = getDataDimension(comparison,0);
+	Data<double> *data = getDataReduceDimension(comparison,0);
 	data->extraParams[0] = data->data[0];
 	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
 	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
@@ -367,7 +367,7 @@ TEST(Reduce,ObjectOrientedDimensionSum) {
 	int opNum = 1;
 	double comparison[2] = {3,7};
 
-	Data<double> *data = getDataDimension(comparison,0);
+	Data<double> *data = getDataReduceDimension(comparison,0);
 	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
 	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
 	test->run();
@@ -378,7 +378,7 @@ TEST(Reduce,ObjectOrientedDimensionSum) {
 TEST(Reduce,ObjectOrientedDimensionMin) {
 	int opNum = 4;
 	double comparison[2] = {1.00, 3.00};
-	Data<double> *data = getDataDimension(comparison,0);
+	Data<double> *data = getDataReduceDimension(comparison,0);
 	data->extraParams[0] = data->data[0];
 	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
 	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
@@ -392,7 +392,7 @@ TEST(Reduce,ObjectOrientedDimensionMin) {
 TEST(Reduce,ObjectOrientedDimensionNorm1) {
 	int opNum = 5;
 	double comparison[2] = {3.00, 7.00};
-	Data<double> *data = getDataDimension(comparison,0);
+	Data<double> *data = getDataReduceDimension(comparison,0);
 	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
 	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
 	test->run();
@@ -407,7 +407,7 @@ TEST(Reduce,ObjectOrientedDimensionNorm1) {
 TEST(Reduce,ObjectOrientedDimensionMean) {
 	int opNum = 0;
 	double comparison[2] = {1.50, 3.50};
-	Data<double> *data = getDataDimension(comparison,0);
+	Data<double> *data = getDataReduceDimension(comparison,0);
 	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
 	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
 	test->run();
@@ -418,7 +418,7 @@ TEST(Reduce,ObjectOrientedDimensionMean) {
 TEST(Reduce,ObjectOrientedDimensionProd) {
 	int opNum = 8;
 	double comparison[2] = {2.00, 12.00};
-	Data<double> *data = getDataDimension(comparison,0);
+	Data<double> *data = getDataReduceDimension(comparison,0);
 	data->extraParams[0] = 1.0;
 	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
 	test->run();
@@ -429,7 +429,7 @@ TEST(Reduce,ObjectOrientedDimensionProd) {
 TEST(Reduce,ObjectOrientedDimensionNorm2) {
 	int opNum = 6;
 	double comparison[2] = {2.24, 5.00};
-	Data<double> *data = getDataDimension(comparison,0);
+	Data<double> *data = getDataReduceDimension(comparison,0);
 	//	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
 	DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
 	test->run();

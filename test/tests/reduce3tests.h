@@ -27,7 +27,7 @@ TEST_GROUP(Reduce3) {
 
 
 
-Data<double> * getData(double *assertion,double startingVal) {
+Data<double> * getDataReduce3(double *assertion,double startingVal) {
 	Data<double> *ret = new Data<double>();
 
 	int rank = 2;
@@ -69,7 +69,7 @@ Data<double> * getData(double *assertion,double startingVal) {
 	return ret;
 }
 
-Data<double> * getDataDimension(double *assertion,double startingVal) {
+Data<double> * getDataReduce3Dimension(double *assertion,double startingVal) {
 	Data<double> *ret = new Data<double>();
 
 	int rank = 2;
@@ -284,7 +284,7 @@ TEST(Reduce3,ObjectOrientedDimensionEuclideanDistance) {
 	int opNum = 1;
 	int rank = 2;
 	double assertion[2] = {1.41, 1.41};
-	Data<double> *data = getDataDimension(assertion,0.0);
+	Data<double> *data = getDataReduce3Dimension(assertion,0.0);
 	DoubleReduce3Test *test = new DoubleReduce3Test(rank,opNum,data,1);
     test->run();
     delete data;
@@ -297,7 +297,7 @@ TEST(Reduce3,ObjectOrientedDimensionManhattanDistance) {
 	int opNum = 0;
 	int rank = 2;
 	double assertion[2] = {2.0,2.0};
-	Data<double> *data = getDataDimension(assertion,0.0);
+	Data<double> *data = getDataReduce3Dimension(assertion,0.0);
 	DoubleReduce3Test *test = new DoubleReduce3Test(rank,opNum,data,1);
     test->run();
     delete data;
@@ -309,7 +309,7 @@ TEST(Reduce3,ObjectOrientedDimensionCosineSimilarity) {
 	int opNum = 2;
 	int rank = 2;
 	double assertion[2] = {0.9938079488022847,1.0};
-	Data<double> *data = getDataDimension(assertion,0.0);
+	Data<double> *data = getDataReduce3Dimension(assertion,0.0);
 	DoubleReduce3Test *test = new DoubleReduce3Test(rank,opNum,data,4);
 	test->run();
 	delete data;
@@ -322,7 +322,7 @@ TEST(Reduce3,ObjectOrientedEuclideanDistance) {
 	int opNum = 1;
 	int rank = 2;
 	double assertion[1] = {2.0};
-	Data<double> *data = getData(assertion,0.0);
+	Data<double> *data = getDataReduce3(assertion,0.0);
 	DoubleReduce3Test *test = new DoubleReduce3Test(rank,opNum,data,1);
     test->run();
     delete data;
@@ -335,7 +335,7 @@ TEST(Reduce3,ObjectOrientedManhattanDistance) {
 	int opNum = 0;
 	int rank = 2;
 	double assertion[1] = {4.0};
-	Data<double> *data = getData(assertion,0.0);
+	Data<double> *data = getDataReduce3(assertion,0.0);
 	DoubleReduce3Test *test = new DoubleReduce3Test(rank,opNum,data,1);
     test->run();
     delete data;
@@ -346,7 +346,7 @@ TEST(Reduce3,ObjectOrientedCosineSimilarity) {
 	int opNum = 2;
 	int rank = 2;
 	double assertion[1] = {0.9938079488022847};
-	Data<double> *data = getData(assertion,0.0);
+	Data<double> *data = getDataReduce3(assertion,0.0);
 	DoubleReduce3Test *test = new DoubleReduce3Test(rank,opNum,data,4);
     test->run();
     delete data;

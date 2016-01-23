@@ -1404,7 +1404,7 @@ __constant__ functions::summarystats::SummaryStatsReduceOpFactory<double> *Summa
 __constant__ functions::summarystats::SummaryStatsReduceOpFactory<float> *SummaryStatsReduceOpFactoryFloat;
 
 extern "C"
-__host__ void setupIndexReduceFactories() {
+__host__ void setupSummaryReduceFactories() {
 	/*printf("Setting up indexreduce factories\n");
 	functions::summarystats::SummaryStatsReduceOpFactory<double> *newOpFactory =  new functions::summarystats::SummaryStatsReduceOpFactory<double>();
 	functions::summarystats::SummaryStatsReduceOpFactory<float> *newOpFactoryFloat =  new functions::summarystats::SummaryStatsReduceOpFactory<float>();

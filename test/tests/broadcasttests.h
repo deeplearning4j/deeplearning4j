@@ -27,7 +27,7 @@ TEST_GROUP(BroadCasting) {
 	}
 };
 
-Data<double> * getData(int rank,double *comparison) {
+Data<double> * getDataBroadcast(int rank,double *comparison) {
 	Data<double> *ret = new Data<double>();
 	ret->rank = rank;
 	int *shape = (int *) malloc(sizeof(int) * rank);
@@ -266,9 +266,8 @@ public:
 TEST(BroadCasting,ObjectOrientedAddition) {
 	int rank = 2;
 	int opNum = 0;
-	int extraParamsLength = 1;
 	double comparison[4] = {2,4,5,6};
-	Data<double> *data = getData(rank,comparison);
+	Data<double> *data = getDataBroadcast(rank,comparison);
 	DoubleBroadcastTranformTest *test = new DoubleBroadcastTranformTest(rank,opNum,data,1);
 	delete data;
 	delete test;
@@ -281,7 +280,7 @@ TEST(BroadCasting,ObjectOrientedSubtraction) {
 	int opNum = 1;
 	int extraParamsLength = 1;
 	double comparison[4] = {0,0,2,2};
-	Data<double> *data = getData(rank,comparison);
+	Data<double> *data = getDataBroadcast(rank,comparison);
 	DoubleBroadcastTranformTest *test = new DoubleBroadcastTranformTest(rank,opNum,data,1);
 	delete data;
 	delete test;
@@ -293,7 +292,7 @@ TEST(BroadCasting,ObjectOrientedMultiplication) {
 	int opNum = 2;
 	int extraParamsLength = 1;
 	double comparison[4] = {1,4,3,8};
-	Data<double> *data = getData(rank,comparison);
+	Data<double> *data = getDataBroadcast(rank,comparison);
 	DoubleBroadcastTranformTest *test = new DoubleBroadcastTranformTest(rank,opNum,data,1);
 	delete data;
 	delete test;
@@ -305,7 +304,7 @@ TEST(BroadCasting,ObjectOrientedDivision) {
 	int opNum = 3;
 	int extraParamsLength = 1;
 	double comparison[4] = {1,1,3,2};
-	Data<double> *data = getData(rank,comparison);
+	Data<double> *data = getDataBroadcast(rank,comparison);
 	DoubleBroadcastTranformTest *test = new DoubleBroadcastTranformTest(rank,opNum,data,1);
 	delete data;
 	delete test;
@@ -317,7 +316,7 @@ TEST(BroadCasting,ObjectOrientedReverseDivision) {
 	int opNum = 3;
 	int extraParamsLength = 1;
 	double comparison[4] = {1,1,0.33333333,0.5};
-	Data<double> *data = getData(rank,comparison);
+	Data<double> *data = getDataBroadcast(rank,comparison);
 	DoubleBroadcastTranformTest *test = new DoubleBroadcastTranformTest(rank,opNum,data,1);
 	delete data;
 	delete test;
@@ -330,7 +329,7 @@ TEST(BroadCasting,ObjectOrientedReverseSubtraction) {
 	int opNum = 5;
 	int extraParamsLength = 1;
 	double comparison[4] = {0,0,-2,-2};
-	Data<double> *data = getData(rank,comparison);
+	Data<double> *data = getDataBroadcast(rank,comparison);
 	DoubleBroadcastTranformTest *test = new DoubleBroadcastTranformTest(rank,opNum,data,1);
 	delete data;
 	delete test;
@@ -342,7 +341,7 @@ TEST(BroadCasting,ObjectOrientedCopy) {
 	int opNum = 6;
 	int extraParamsLength = 1;
 	double comparison[4] = {1,2,1,2};
-	Data<double> *data = getData(rank,comparison);
+	Data<double> *data = getDataBroadcast(rank,comparison);
 	DoubleBroadcastTranformTest *test = new DoubleBroadcastTranformTest(rank,opNum,data,1);
 	delete data;
 	delete test;
