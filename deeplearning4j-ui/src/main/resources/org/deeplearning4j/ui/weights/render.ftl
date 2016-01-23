@@ -158,7 +158,7 @@
 </div>
 <div style="position: fixed; top: 55px; left: 5px; font-size: 11px;">
     Current score: <b><span class="score"></span></b><br />
-    Updated at: <b><span id="updatetime"></span></b>
+    Updated: <b><span id="updatetime"></span></b>
 </div>
 <!--
 <div id="score" style="display: inline-block; width: 650px; height: 400px; border: 1px solid #CECECE;">
