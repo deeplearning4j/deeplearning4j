@@ -55,7 +55,11 @@ public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>
     protected final Accumulator<Double> best_score_acc;
 
     /**
-     * Pass in network and the bestScore
+     * Pass in network configuration as json, broadcast parameters, broadcast updater and the bestScore to
+     * fit mapped data set and update and return parameters, updater and best score.
+     * @param json newtork string configuration
+     * @param params broadcasted parameters to reload into network
+     * @param updater broadcasted updaters to reload into network
      * @param bestScoreAcc accumulator which tracks best score seen
      */
     public IterativeReduceFlatMap(String json, Broadcast<INDArray> params, Broadcast<Updater> updater,
@@ -83,7 +87,7 @@ public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>
             log.debug("Training on {} examples with data {}", data.numExamples(), data.labelCounts());
         }
 
-        INDArray val = this.params.getValue();
+        INDArray val = params.getValue();
         Updater upd = updater.getValue();
 
         MultiLayerNetwork network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(json));
