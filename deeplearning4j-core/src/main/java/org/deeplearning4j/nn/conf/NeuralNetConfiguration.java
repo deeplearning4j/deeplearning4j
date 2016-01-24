@@ -589,8 +589,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
          * @return
          */
         public NeuralNetConfiguration build() {
-            if (layer == null)
-                throw new IllegalStateException("No layer defined.");
 
             NeuralNetConfiguration conf = new NeuralNetConfiguration();
 
@@ -608,25 +606,28 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             conf.miniBatch = miniBatch;
 
 
-            if(Double.isNaN(layer.getLearningRate())) layer.setLearningRate(learningRate);
-            if(layer.getLearningRateAfter() == null) layer.setLearningRateAfter(learningRateAfter);
-            if(Double.isNaN(layer.getLrScoreBasedDecay())) layer.setLrScoreBasedDecay(lrScoreBasedDecay);
-            if(Double.isNaN(layer.getL1())) layer.setL1(l1);
-            if(Double.isNaN(layer.getL2())) layer.setL2(l2);
-            if(layer.getActivationFunction() == null) layer.setActivationFunction(activationFunction);
-            if(layer.getWeightInit() == null) layer.setWeightInit(weightInit);
-            if(Double.isNaN(layer.getBiasInit())) layer.setBiasInit(biasInit);
-            if(layer.getDist() == null) layer.setDist(dist);
-            if(Double.isNaN(layer.getDropOut())) layer.setDropOut(dropOut);
-            if(layer.getUpdater() == null) layer.setUpdater(updater);
-            if(Double.isNaN(layer.getMomentum())) layer.setMomentum(momentum);
-            if(layer.getMomentumAfter() == null) layer.setMomentumAfter(momentumAfter);
-            if(Double.isNaN(layer.getRho())) layer.setRho(rho);
-            if(Double.isNaN(layer.getRmsDecay())) layer.setRmsDecay(rmsDecay);
-            if(Double.isNaN(layer.getAdamMeanDecay())) layer.setAdamMeanDecay(adamMeanDecay);
-            if(Double.isNaN(layer.getAdamVarDecay())) layer.setAdamVarDecay(adamVarDecay);
-            if(layer.getGradientNormalization() == null) layer.setGradientNormalization(gradientNormalization);
-            if(Double.isNaN(layer.getGradientNormalizationThreshold())) layer.setGradientNormalizationThreshold(gradientNormalizationThreshold);
+            if(layer != null ) {
+                if (Double.isNaN(layer.getLearningRate())) layer.setLearningRate(learningRate);
+                if (layer.getLearningRateAfter() == null) layer.setLearningRateAfter(learningRateAfter);
+                if (Double.isNaN(layer.getLrScoreBasedDecay())) layer.setLrScoreBasedDecay(lrScoreBasedDecay);
+                if (Double.isNaN(layer.getL1())) layer.setL1(l1);
+                if (Double.isNaN(layer.getL2())) layer.setL2(l2);
+                if (layer.getActivationFunction() == null) layer.setActivationFunction(activationFunction);
+                if (layer.getWeightInit() == null) layer.setWeightInit(weightInit);
+                if (Double.isNaN(layer.getBiasInit())) layer.setBiasInit(biasInit);
+                if (layer.getDist() == null) layer.setDist(dist);
+                if (Double.isNaN(layer.getDropOut())) layer.setDropOut(dropOut);
+                if (layer.getUpdater() == null) layer.setUpdater(updater);
+                if (Double.isNaN(layer.getMomentum())) layer.setMomentum(momentum);
+                if (layer.getMomentumAfter() == null) layer.setMomentumAfter(momentumAfter);
+                if (Double.isNaN(layer.getRho())) layer.setRho(rho);
+                if (Double.isNaN(layer.getRmsDecay())) layer.setRmsDecay(rmsDecay);
+                if (Double.isNaN(layer.getAdamMeanDecay())) layer.setAdamMeanDecay(adamMeanDecay);
+                if (Double.isNaN(layer.getAdamVarDecay())) layer.setAdamVarDecay(adamVarDecay);
+                if (layer.getGradientNormalization() == null) layer.setGradientNormalization(gradientNormalization);
+                if (Double.isNaN(layer.getGradientNormalizationThreshold()))
+                    layer.setGradientNormalizationThreshold(gradientNormalizationThreshold);
+            }
 
             return conf;
         }

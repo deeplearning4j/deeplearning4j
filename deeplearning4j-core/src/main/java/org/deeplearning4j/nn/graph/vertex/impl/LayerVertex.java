@@ -1,4 +1,4 @@
-package org.deeplearning4j.nn.graph.vertex;
+package org.deeplearning4j.nn.graph.vertex.impl;
 
 import lombok.Data;
 import org.deeplearning4j.berkeley.Pair;
@@ -6,20 +6,14 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
+import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.layers.recurrent.BaseRecurrentLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-import java.io.Serializable;
 import java.util.Arrays;
 
-/** A graph vertex is a vertex in the computation graph. It may contain either a Layer, or a GraphNode
- * The purpose of  the GraphVertex class is as follows:
- * 1. To track the (local) network connection structure: i.e., it knows about the nodes on the input and output sides
- * 2. To store intermediate results (activations and epsilons)
- * 3. To allow forward pass and backward pass to be conducted, once the intermediate results are
- *
- */
 @Data
 public class LayerVertex extends BaseGraphVertex {
 
@@ -27,8 +21,8 @@ public class LayerVertex extends BaseGraphVertex {
     private InputPreProcessor layerPreProcessor;
 
     /** Create a network input vertex: */
-    public LayerVertex(ComputationGraph graph, String name, int vertexIndex){
-        this(graph, name, vertexIndex, null, null, null, null);
+    public LayerVertex(ComputationGraph graph, String name, int vertexIndex, Layer layer, InputPreProcessor layerPreProcessor){
+        this(graph, name, vertexIndex, null, null, layer, layerPreProcessor);
     }
 
     public LayerVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices, VertexIndices[] outputVertices,

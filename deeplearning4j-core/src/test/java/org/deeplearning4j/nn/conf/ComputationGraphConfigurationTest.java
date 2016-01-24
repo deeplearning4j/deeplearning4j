@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.graph.*;
+import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
@@ -15,6 +16,7 @@ import org.deeplearning4j.nn.conf.misc.TestGraphVertex;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.graph.vertex.*;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -82,11 +84,11 @@ public class ComputationGraphConfigurationTest {
                 .addInputs("input1", "input2")
                 .addLayer("cnn1", new ConvolutionLayer.Builder(2, 2).stride(2, 2).nIn(1).nOut(5).build(), "input1")
                 .addLayer("cnn2", new ConvolutionLayer.Builder(2, 2).stride(2, 2).nIn(1).nOut(5).build(), "input2")
-                .addNode("merge1", new MergeVertex(), "cnn1", "cnn2")
-                .addNode("subset1", new SubsetVertex(0, 1), "merge1")
+                .addVertex("merge1", new MergeVertex(), "cnn1", "cnn2")
+                .addVertex("subset1", new SubsetVertex(0, 1), "merge1")
                 .addLayer("dense1", new DenseLayer.Builder().nIn(20).nOut(5).build(), "subset1")
                 .addLayer("dense2", new DenseLayer.Builder().nIn(20).nOut(5).build(), "subset1")
-                .addNode("add", new ElementWiseVertex(ElementWiseVertex.Op.Add), "dense1", "dense2")
+                .addVertex("add", new ElementWiseVertex(ElementWiseVertex.Op.Add), "dense1", "dense2")
                 .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).build(), "add")
                 .setOutputs("out")
                 .build();
@@ -194,8 +196,8 @@ public class ComputationGraphConfigurationTest {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                 .graphBuilder()
                 .addInputs("in")
-                .addNode("test", new TestGraphVertex(3, 7), "in")
-                .addNode("test2", new StaticInnerGraphVertex(4, 5), "in")
+                .addVertex("test", new TestGraphVertex(3, 7), "in")
+                .addVertex("test2", new StaticInnerGraphVertex(4, 5), "in")
                 .setOutputs("test", "test2")
                 .build();
 
@@ -207,11 +209,11 @@ public class ComputationGraphConfigurationTest {
         assertEquals(conf,conf2);
         assertEquals(json, conf2.toJson());
 
-        TestGraphVertex tgv = (TestGraphVertex)conf2.getGraphNodes().get("test");
+        TestGraphVertex tgv = (TestGraphVertex)conf2.getVertices().get("test");
         assertEquals(3,tgv.getFirstVal());
         assertEquals(7,tgv.getSecondVal());
 
-        StaticInnerGraphVertex sigv = (StaticInnerGraphVertex)conf.getGraphNodes().get("test2");
+        StaticInnerGraphVertex sigv = (StaticInnerGraphVertex)conf.getVertices().get("test2");
         assertEquals(4,sigv.getFirstVal());
         assertEquals(5,sigv.getSecondVal());
     }
@@ -225,6 +227,11 @@ public class ComputationGraphConfigurationTest {
         @Override
         public GraphVertex clone() {
             return new TestGraphVertex(firstVal,secondVal);
+        }
+
+        @Override
+        public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx) {
+            throw new UnsupportedOperationException("Not supported");
         }
     }
 }

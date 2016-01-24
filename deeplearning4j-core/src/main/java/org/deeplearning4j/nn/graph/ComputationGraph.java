@@ -12,10 +12,8 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
 import org.deeplearning4j.nn.graph.vertex.*;
-import org.deeplearning4j.nn.graph.vertex.ElementWiseVertex;
+import org.deeplearning4j.nn.graph.vertex.impl.*;
 import org.deeplearning4j.nn.graph.vertex.GraphVertex;
-import org.deeplearning4j.nn.graph.vertex.MergeVertex;
-import org.deeplearning4j.nn.graph.vertex.SubsetVertex;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
@@ -57,7 +55,6 @@ public class ComputationGraph implements Serializable, Model {
 
     private int numInputArrays;
     private int numOutputArrays;
-    private int layerCount;
 
     private INDArray[] inputs;
     private INDArray[] labels;
@@ -70,10 +67,9 @@ public class ComputationGraph implements Serializable, Model {
         this.configuration = configuration;
         this.numInputArrays = configuration.getNetworkInputs().size();
         this.numOutputArrays = configuration.getNetworkOutputs().size();
-        this.layerCount = configuration.getLayers().size();
         this.inputs = new INDArray[numInputArrays];
         this.labels = new INDArray[numOutputArrays];
-        this.defaultConfiguration = configuration.getLayers().get(configuration.getLayers().keySet().iterator().next());    //TODO
+        this.defaultConfiguration = configuration.getDefaultConfiguration();
     }
 
     public ComputationGraphConfiguration getConfiguration(){
@@ -134,33 +130,21 @@ public class ComputationGraph implements Serializable, Model {
     /** Initialize the ComputationGraph network */
     public void init(){
         //Initialization: create the GraphVertex objects, based on configuration structure
-
-        Map<String,Layer> layerMap = new HashMap<>();
-        for( Map.Entry<String,NeuralNetConfiguration> entry : configuration.getLayers().entrySet() ){
-            String layerName = entry.getKey();
-            NeuralNetConfiguration layerConf = entry.getValue();
-
-            Layer layer = LayerFactories.getFactory(layerConf).create(layerConf, null, -1); //TODO: indices
-            layerMap.put(layerName, layer);
-        }
-
-
-        Map<String,org.deeplearning4j.nn.conf.graph.GraphVertex> nodeMap = configuration.getGraphNodes();
+        Map<String,org.deeplearning4j.nn.conf.graph.GraphVertex> nodeMap = configuration.getVertices();
 
         //Names of all of the (data) inputs to the ComputationGraph
         List<String> networkInputNames = configuration.getNetworkInputs();
 
         //Inputs for each layer and GraphNode:
-        Map<String,List<String>> layerInputs = configuration.getLayerInputs();
-        Map<String,List<String>> graphNodeInputs = configuration.getGraphNodeInputs();
-
-        int nVertices = layerMap.size() + nodeMap.size() + networkInputNames.size();
-        this.vertices = new GraphVertex[nVertices];
+        Map<String,List<String>> vertexInputs = configuration.getVertexInputs();
+        this.vertices = new GraphVertex[networkInputNames.size() + configuration.getVertices().size()];
 
         //All names: inputs, layers and graph nodes (index to name map)
         Map<String,Integer> allNamesReverse = new HashMap<>();
 
         int i=0;
+
+            //Create network input vertices:
         for( String name : networkInputNames){
             GraphVertex gv = new InputVertex(this,name,i,null);  //Output vertices: set later
             allNamesReverse.put(name,i);
@@ -169,52 +153,22 @@ public class ComputationGraph implements Serializable, Model {
 
         numLayers = 0;
         List<Layer> tempLayerList = new ArrayList<>();
-        for( Map.Entry<String,Layer> layerEntry : layerMap.entrySet() ){
-            Layer l = layerEntry.getValue();
-            tempLayerList.add(l);
-            InputPreProcessor preProcessor = configuration.getInputPreProcessors().get(layerEntry.getKey());
-            String name = layerEntry.getKey();
-            GraphVertex gv = new LayerVertex(this,name,i,null,null,l,preProcessor);   //Input and output vertices: set later
-            allNamesReverse.put(name,i);
-            vertices[i++] = gv;
-            numLayers++;
-        }
-        layers = tempLayerList.toArray(new Layer[numLayers]);
 
         for( Map.Entry<String,org.deeplearning4j.nn.conf.graph.GraphVertex> nodeEntry : nodeMap.entrySet() ){
             org.deeplearning4j.nn.conf.graph.GraphVertex n = nodeEntry.getValue();
             String name = nodeEntry.getKey();
-            GraphVertex gv;// = new GraphVertex(this,name,i,null,null,n);   //Input and output vertices: set later
+            GraphVertex gv = n.instantiate(this,name,i);
 
-            //TODO: DO THIS PROPERLY
-            if(n instanceof org.deeplearning4j.nn.conf.graph.ElementWiseVertex){
-                ElementWiseVertex.Op op;
-                switch(((org.deeplearning4j.nn.conf.graph.ElementWiseVertex) n).getOp()){
-                    case Add:
-                        op = ElementWiseVertex.Op.Add;
-                        break;
-                    case Subtract:
-                        op = ElementWiseVertex.Op.Subtract;
-                        break;
-                    case Product:
-                        op = ElementWiseVertex.Op.Product;
-                        break;
-                    default:
-                        throw new RuntimeException();
-                }
-                gv = new ElementWiseVertex(this,name,i,op);
-            } else if(n instanceof org.deeplearning4j.nn.conf.graph.MergeVertex){
-                gv = new MergeVertex(this,name,i);
-            } else if(n instanceof org.deeplearning4j.nn.conf.graph.SubsetVertex){
-                org.deeplearning4j.nn.conf.graph.SubsetVertex ssv = (org.deeplearning4j.nn.conf.graph.SubsetVertex) n;
-                gv = new SubsetVertex(this,name,i,ssv.getFrom(),ssv.getTo());
-            } else {
-                throw new RuntimeException(":(");
+            if(gv.hasLayer()){
+                numLayers++;
+                tempLayerList.add(gv.getLayer());
             }
 
             allNamesReverse.put(name,i);
             vertices[i++] = gv;
         }
+        layers = tempLayerList.toArray(new Layer[numLayers]);
+
 
         //Create the lookup table, so we can find vertices easily by name
         verticesMap = new HashMap<>();
@@ -228,17 +182,7 @@ public class ComputationGraph implements Serializable, Model {
         for( GraphVertex gv : vertices ){
             String vertexName = gv.getVertexName();
             List<String> vertexInputNames;
-
-            if(gv.hasLayer()){
-                //vertex with layer
-                vertexInputNames = layerInputs.get(vertexName);
-            } else if(gv instanceof InputVertex){
-                //Input vertex
-                vertexInputNames = null;
-            } else {
-                //Vertex like ElementWise, MergeVertex, etc
-                vertexInputNames = graphNodeInputs.get(vertexName);
-            }
+            vertexInputNames = vertexInputs.get(vertexName);
 
             if(vertexInputNames == null) continue;
 
@@ -258,17 +202,7 @@ public class ComputationGraph implements Serializable, Model {
             String vertexName = gv.getVertexName();
             int vertexIndex = gv.getVertexIndex();
             List<String> vertexInputNames;
-
-            if(gv.hasLayer()){
-                //vertex with layer
-                vertexInputNames = layerInputs.get(vertexName);
-            } else if(gv instanceof InputVertex){
-                //Input vertex
-                vertexInputNames = null;
-            } else {
-                //Vertex like ElementWise, MergeVertex, etc
-                vertexInputNames = graphNodeInputs.get(vertexName);
-            }
+            vertexInputNames = vertexInputs.get(vertexName);
 
             if(vertexInputNames == null) continue;
 
@@ -309,8 +243,7 @@ public class ComputationGraph implements Serializable, Model {
                 //Which input in s does gv connect to? s may in general have multiple inputs...
                 GraphVertex next = verticesMap.get(s);
                 List<String> nextVertexInputNames;
-                if(next.hasLayer()) nextVertexInputNames = layerInputs.get(s); //Inputs for vertex (Layer) s
-                else nextVertexInputNames = graphNodeInputs.get(s); //TODO checks
+                nextVertexInputNames = vertexInputs.get(s);
 
                 int outputVertexInputNumber = nextVertexInputNames.indexOf(vertexName);
 
@@ -319,11 +252,6 @@ public class ComputationGraph implements Serializable, Model {
             }
             gv.setOutputVertices(outputIndices);
         }
-
-        //At this point: each GraphVertex has the local connection structure, both for inputs and outputs
-//        for(GraphVertex gv : vertices ){
-//            System.out.println(gv);
-//        }
 
         //Given the graph structure, do a topological sort to define forward pass and flattening order:
         topologicalOrder = topologicalSortOrder();
@@ -366,8 +294,9 @@ public class ComputationGraph implements Serializable, Model {
 
                 boolean hasMaskArrays = next.hasMaskArrays();
                 if(hasMaskArrays){
-                    throw new UnsupportedOperationException("Training with mask arrays: not yet implemented");
-//                    setLayerMaskArrays(next.getFeaturesMaskArray(), next.getLabelsMaskArray());
+                    INDArray[] lMask = (next.getFeaturesMaskArray() != null ? new INDArray[]{next.getFeaturesMaskArray()} : null);
+                    INDArray[] fMask = (next.getLabelsMaskArray() != null ? new INDArray[]{next.getLabelsMaskArray()} : null);
+                    setLayerMaskArrays(fMask,lMask);
                 }
 
                 if(configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
@@ -414,15 +343,14 @@ public class ComputationGraph implements Serializable, Model {
                 if (next.getFeatures() == null || next.getLabels() == null)
                     break;
 
-                boolean hasMaskArrays = next.hasMaskArrays();
-                if(hasMaskArrays){
-                    throw new UnsupportedOperationException("Not yet implemented");
-//                    setLayerMaskArrays(next.getFeaturesMaskArray(), next.getLabelsMaskArray());
-                }
-
                 if(configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
                     doTruncatedBPTT(next.getFeatures(),next.getLabels(),next.getFeaturesMaskArrays(), next.getLabelsMaskArrays());
                 } else {
+                    boolean hasMaskArrays = next.hasMaskArrays();
+                    if(hasMaskArrays){
+                        setLayerMaskArrays(next.getFeaturesMaskArrays(), next.getLabelsMaskArrays());
+                    }
+
                     setInputs(next.getFeatures());
                     setLabels(next.getLabels());
                     if( solver == null ){
@@ -432,11 +360,10 @@ public class ComputationGraph implements Serializable, Model {
                                 .model(this).build();
                     }
                     solver.optimize();
-                }
 
-                if(hasMaskArrays){
-                    throw new UnsupportedOperationException();
-                    //clearLayerMaskArrays();
+                    if(hasMaskArrays){
+                        clearLayerMaskArrays();
+                    }
                 }
             }
         }
@@ -782,7 +709,7 @@ public class ComputationGraph implements Serializable, Model {
     }
 
     public INDArray params(boolean backwardOnly){
-        List<INDArray> list = new ArrayList<>(layerCount);
+        List<INDArray> list = new ArrayList<>(layers.length);
         for( int i=0; i<topologicalOrder.length; i++ ){
             if(!vertices[topologicalOrder[i]].hasLayer()) continue;
 
