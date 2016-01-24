@@ -222,7 +222,8 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
          * @return
          */
         public Builder<T> maxMemory(int gbytes) {
-            this.maxmemory = Math.max(gbytes-1, 1) * 1024 * 1024 * 1024L;
+            if (gbytes > 0) this.maxmemory = Math.max(gbytes - 1, 1) * 1024 * 1024 * 1024L;
+
             return this;
         }
 
@@ -258,7 +259,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
             ret.symmetric = this.symmetric;
             ret.workers = this.workers;
 
-            if (this.maxmemory < 1) this.maxmemory =Runtime.getRuntime().maxMemory();
+            if (this.maxmemory < 1) this.maxmemory = Runtime.getRuntime().maxMemory();
             ret.memory_threshold = this.maxmemory;
 
 
@@ -331,7 +332,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                                 int size = coOccurrenceCounts.size();
                                 lock.readLock().unlock();
                                 */
-                                if (threadId == 0) logger.debug("Memory consuimption > threshold: { size: ["+ Double.NaN+ "], footrpint: ["+ getMemoryFootprint()+"], threshold: [" + getMemoryThreshold() +"] }");
+                                if (threadId == 0) logger.debug("Memory consuimption > threshold: {footrpint: ["+ getMemoryFootprint()+"], threshold: [" + getMemoryThreshold() +"] }");
                                 Thread.sleep(10000);
                             } catch (Exception e) {
                                 throw new RuntimeException(e);
