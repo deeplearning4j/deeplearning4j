@@ -19,11 +19,20 @@
     var width = 750 - margin.left - margin.right;
     var height = 350 - margin.top - margin.bottom;
 
+    var marginFocus = {top: 10, right: 20, bottom: 100, left: 40};
+    var marginContext = {top: 270, right: 20, bottom: 20, left: 40};
+
+    var heightFocus = 350 - marginFocus.top - marginFocus.bottom;
+    var heightContext = 350 - marginContext.top - marginContext.bottom;
+
     // we''ll define every single data source as global object, and we'll them as references for D3 charts
     var gScore = new Array();
     var gModel = new Array();
     var gGradient = new Array();
     var gMagnitude = new Array();
+
+    // brush for scorechart zoom
+    var brush;
 
     // we must ensure, that charts initialized only once
     var isInit = false;
@@ -37,6 +46,13 @@
     // these two probably not needed
     var gX = new Array();
     var gY = new Array();
+
+
+    // elements of scorechart
+    var focus;
+    var context;
+    var scoreData;
+    var area2;
 
     var contains = function(needle) {
         // Per spec, the way to identify NaN is that it is not equal to itself
@@ -157,7 +173,6 @@
                 .attr("y", 0)
                 .attr("width", gX[id](min+data[0].dx) -1 )
                 .attr("height", function(d) {
-                        console.log("Setting ["+d.y+"] to height: ["+(height - gY[id](d.y))+"]" );
                         return height - gY[id](d.y);
                         });
 
@@ -176,7 +191,17 @@
                 .call(gXAxis[id]);
     }
 
+ function brushed() {
+   var valueline = d3.svg.line()
+                        .x(function(d,i) { return gX["scorechart"](i); })
+                        .y(function(d) { return gY["scorechart"](d); });
+   gX["scorechart"].domain(brush.empty() ? gX["context"].domain() : brush.extent());
+   focus.select(".line").attr("d", valueline(scoreData));
+   focus.select(".x.axis").call(gXAxis["scorechart"]);
+ }
+
  function appendLineChart(values,selector, id){
+        scoreData = values;
         if (gSVG[id] != undefined || gSVG[id] != null) {
             console.log("SVG for scores [" + id + "] is already defined. Going to update data");
 
@@ -185,26 +210,50 @@
                            .y(function(d) { return gY[id](d); });
 
             var max = d3.max(values);
+            var min = d3.min(values);
             gX[id].domain([0,values.length]);
-            gY[id].domain([0, max]);
+            gY[id].domain([min, max]);
 
-            gSVG[id].select(".line")
+            gX["context"].domain([0,values.length]);
+            gY["context"].domain([min, max]);
+
+            focus.select(".line")
                            .attr("d", valueline(values));
 
-            gSVG[id].select(".x.axis")
+            focus.select(".x.axis")
                            .call(gXAxis[id]);
 
-            gSVG[id].select(".y.axis")
+            focus.select(".y.axis")
                            .call(gYAxis[id]);
+
+            area2 = d3.svg.area()
+                        .interpolate("monotone")
+                        .x(function(d,i) { return gX["context"](i); })
+                        .y0(heightContext)
+                        .y1(function(d) { return gY["context"](d); });
+
+            context.select(".area")
+                           .datum(values)
+                           .attr("d", area2)
+
+
+            context.select(".x.axis")
+                            .attr("transform", "translate(0," + heightContext + ")")
+                            .call(gXAxis["context"]);
+
+            context.select(".y.axis")
+                            .call(gYAxis["context"]);
+
+
             return;
         }
 
         // Set the ranges
         gX[id] = d3.scale.linear().range([0, width]);
-        gY[id] = d3.scale.linear().range([height, 0]);
+        gY[id] = d3.scale.linear().range([heightFocus, 0]);
 
-
-
+        gX["context"] = d3.scale.linear().range([0, width]);
+        gY["context"] = d3.scale.linear().range([heightContext, 0]);
 
         // Adds the svg canvas
         gSVG[id] = d3.select(selector)
@@ -212,18 +261,41 @@
                 .attr("width", width + margin.left + margin.right)
                 .attr("height", height + margin.top + margin.bottom)
                 .append("g")
-                .attr("transform",
-                "translate(" + margin.left + "," + margin.top + ")");
+              //  .attr("transform", "translate(" + marginFocus.left + "," + marginFocus.top + ")");
 
+
+        focus = gSVG[id].append("g")
+            .attr("class", "focus")
+            .attr("transform", "translate(" + marginFocus.left + "," + marginFocus.top + ")");
+
+        context = gSVG[id].append("g")
+            .attr("class", "context")
+            .attr("transform", "translate(" + marginContext.left + "," + marginContext.top + ")");
+
+
+        brush = d3.svg.brush()
+            .x(gX["context"])
+            .on("brush", brushed);
+
+
+
+        area2 = d3.svg.area()
+            .interpolate("monotone")
+            .x(function(d,i) { return gX["context"](i); })
+            .y0(heightContext)
+            .y1(function(d) { return gY["context"](d); });
 
         // Define the axes
         gXAxis[id]= d3.svg.axis().scale(gX[id])
-               .innerTickSize(-height)     //used as grid line
-               .orient("bottom").ticks(5);
+//               .innerTickSize(-heightFocus)     //used as grid line
+               .orient("bottom");//.ticks(5);
 
         gYAxis[id] = d3.svg.axis().scale(gY[id])
-                .innerTickSize(-width)      //used as grid line
-                .orient("left").ticks(5);
+           //     .innerTickSize(-width)      //used as grid line
+                .orient("left"); //.ticks(5);
+
+        gYAxis["context"] = d3.svg.axis().scale(gY["context"]).orient("left").ticks(10);
+        gXAxis["context"] = d3.svg.axis().scale(gX["context"]).orient("bottom");
 
 
         // Define the line
@@ -233,25 +305,52 @@
 
         // Scale the range of the data
         var max = d3.max(values);
+        var min = d3.min(values);
         gX[id].domain([0,values.length]);
-        gY[id].domain([0, max]);
+        gY[id].domain([min, max]);
+
+        gX["context"].domain([0,values.length]);
+        gY["context"].domain([min, max]);
 
         // Add the valueline path.
-        gSVG[id].append("path")
+        focus.append("path")
                 .attr("class", "line")
-                .attr("d", valueline(values));
+                .attr("d",  valueline(values));
 
 
         // Add the X Axis
-        gSVG[id].append("g")
+        focus.append("g")
                 .attr("class", "x axis")
-                .attr("transform", "translate(0," + height + ")")
+                .attr("transform", "translate(0," + heightFocus + ")")
                 .call(gXAxis[id]);
 
         // Add the Y Axis
-        gSVG[id].append("g")
+        focus.append("g")
                 .attr("class", "y axis")
                 .call(gYAxis[id]);
+
+
+        context.append("path")
+                      .datum(values)
+                      .attr("class", "area")
+                      .attr("d", area2);
+
+        context.append("g")
+                .attr("class", "x axis")
+                .attr("transform", "translate(0," + heightContext + ")")
+                .call(gXAxis["context"]);
+
+        // Add the Y Axis
+        context.append("g")
+                .attr("class", "y axis")
+                .call(gYAxis["context"]);
+
+        context.append("g")
+              .attr("class", "x brush")
+              .call(brush)
+            .selectAll("rect")
+              .attr("y", -6)
+              .attr("height", heightContext + 7);
     }
 
     function appendMultiLineChart(map,selector, id){
