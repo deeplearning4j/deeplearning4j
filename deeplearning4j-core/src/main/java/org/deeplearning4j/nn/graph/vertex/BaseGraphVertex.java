@@ -7,12 +7,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.io.Serializable;
 import java.util.Arrays;
 
-/** A graph vertex is a vertex in the computation graph. It may contain either a Layer, or a GraphNode
- * The purpose of  the GraphVertex class is as follows:
- * 1. To track the (local) network connection structure: i.e., it knows about the nodes on the input and output sides
- * 2. To store intermediate results (activations and epsilons)
- * 3. To allow forward pass and backward pass to be conducted, once the intermediate results are
- *
+/** BaseGraphVertex defines a set of common functionality for GraphVertex instances.
  */
 @Data
 public abstract class BaseGraphVertex implements GraphVertex {

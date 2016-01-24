@@ -4,6 +4,10 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 
+/** A GraphVertex is a vertex in the computation graph. It may contain Layer, or define some arbitrary forward/backward pass
+ * behaviour based on the inputs
+ * @author Alex Black
+ */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
 @JsonSubTypes(value={
         @JsonSubTypes.Type(value = ElementWiseVertex.class, name = "ElementWiseVertex"),

@@ -8,6 +8,12 @@ import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+/** An ElementWiseVertex is used to combine the activations of two or more layer in an element-wise manner<br>
+ * For example, the activations may be combined by addition, subtraction or multiplication.
+ * Addition may use an arbitrary number of input arrays. Note that in the case of subtraction, only two inputs may be used.
+ * In all cases, the shape of the input arrays must be identical.
+ * @author Alex Black
+ */
 public class ElementWiseVertex extends BaseGraphVertex {
     public enum Op {Add, Subtract, Product};
 
@@ -65,7 +71,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt, int tbpttBackwardLength) {
+    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
         if(!canDoBackward()) throw new IllegalStateException("Cannot do backward pass: errors not set");
 
         if(nInForwardPass == 1) return new Pair<>(null,epsilons);

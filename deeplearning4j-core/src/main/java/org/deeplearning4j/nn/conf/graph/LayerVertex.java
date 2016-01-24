@@ -9,7 +9,6 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 
 /**LayerVertex is a GraphVertex with a Layer configuration (and, optionally preprocessor) in it
- *
  */
 @AllArgsConstructor @NoArgsConstructor @Data
 public class LayerVertex extends GraphVertex {
