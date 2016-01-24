@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="CMakeWorkspace" PROJECT_DIR="$PROJECT_DIR$" />
+  <component name="EclipseCodeFormatter">
+    <option name="defaultSettings" value="true" />
+    <option name="id" value="1451743968582" />
+    <option name="name" value="default" />
+  </component>
   <component name="ProjectRootManager" version="2" project-jdk-name="Python 2.7.8 (/usr/bin/python2.7)" project-jdk-type="Python SDK" />
 </project>

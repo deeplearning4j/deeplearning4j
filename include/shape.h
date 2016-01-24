@@ -9,6 +9,7 @@
 #define SHAPE_H_
 
 #include <templatemath.h>
+#include <cstring>
 namespace shape {
 const int MAX_DIMENSION = 0x7fffffff;
 const int MAX_NUM_THREADS = 1024;
@@ -1692,8 +1693,8 @@ __host__ __device__
 
 int *concat(int *arr1, int arr1Length, int *arr2, int arr2Length) {
 	int *ret = (int *) malloc((arr1Length + arr2Length) * sizeof(int));
-	memcpy(ret, arr1, arr1Length * sizeof(int));
-	memcpy(ret + arr1Length, arr2, arr2Length * sizeof(int));
+	std::memcpy(ret, arr1, arr1Length * sizeof(int));
+	std::memcpy(ret + arr1Length, arr2, arr2Length * sizeof(int));
 	return ret;
 }
 
