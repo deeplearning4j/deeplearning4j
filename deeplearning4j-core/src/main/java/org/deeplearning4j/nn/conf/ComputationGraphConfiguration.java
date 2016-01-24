@@ -18,10 +18,15 @@
 package org.deeplearning4j.nn.conf;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
+import com.fasterxml.jackson.databind.jsontype.NamedType;
 import lombok.*;
+import org.apache.commons.lang3.ClassUtils;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.layers.Layer;
+import org.nd4j.linalg.factory.Nd4j;
+import org.reflections.Reflections;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -101,6 +106,43 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         try {
             return mapper.readValue(json, ComputationGraphConfiguration.class);
         } catch (IOException e) {
+            //No op - try again after adding new subtypes
+        }
+
+        //Try: programmatically registering JSON subtypes for GraphVertex classes. This allows users to to add custom GraphVertex
+        // implementations without needing to manually register subtypes
+            //First: get all registered subtypes
+        AnnotatedClass ac = AnnotatedClass.construct(GraphVertex.class,mapper.getSerializationConfig().getAnnotationIntrospector(),null);
+        Collection<NamedType> types = mapper.getSubtypeResolver().collectAndResolveSubtypes(ac, mapper.getSerializationConfig(), mapper.getSerializationConfig().getAnnotationIntrospector());
+        Set<Class<?>> registeredSubtypes = new HashSet<>();
+        for(NamedType nt : types){
+            registeredSubtypes.add(nt.getType());
+        }
+
+            //Second: get all subtypes of GraphVertex using reflection
+        Reflections reflections = new Reflections();
+        Set<Class<? extends GraphVertex>> subTypes = reflections.getSubTypesOf(GraphVertex.class);
+
+            //Third: register all subtypes that are not already registered
+        List<NamedType> toRegister = new ArrayList<>();
+        for(Class<? extends GraphVertex> c : subTypes){
+            if(!registeredSubtypes.contains(c)){
+                String name;
+                if(ClassUtils.isInnerClass(c)){
+                    Class<?> c2 = c.getDeclaringClass();
+                    name = c2.getSimpleName() + "$" + c.getSimpleName();
+                } else {
+                    name = c.getSimpleName();
+                }
+                toRegister.add(new NamedType(c, name));
+            }
+        }
+        mapper = NeuralNetConfiguration.reinitMapperWithSubtypes(toRegister);
+
+
+        try {
+            return mapper.readValue(json, ComputationGraphConfiguration.class);
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
@@ -129,7 +171,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         }
         conf.graphNodeInputs = new HashMap<>();
         for( Map.Entry<String,List<String>> entry : this.graphNodeInputs.entrySet() ){
-            conf.graphNodeInputs.put(entry.getKey(),new ArrayList<>(entry.getValue()));
+            conf.graphNodeInputs.put(entry.getKey(), new ArrayList<>(entry.getValue()));
         }
         conf.networkInputs = new ArrayList<>(this.networkInputs);
         conf.networkOutputs = new ArrayList<>(this.networkOutputs);

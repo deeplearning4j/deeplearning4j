@@ -1,25 +1,23 @@
 package org.deeplearning4j.nn.conf;
 
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
-import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
-import org.deeplearning4j.nn.conf.graph.MergeVertex;
-import org.deeplearning4j.nn.conf.graph.SubsetVertex;
+import org.deeplearning4j.nn.conf.graph.*;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.misc.TestGraphVertex;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -182,6 +180,51 @@ public class ComputationGraphConfigurationTest {
         }catch(IllegalStateException e){
             //OK - exception is good
             //e.printStackTrace();
+        }
+    }
+
+
+    @Test
+    public void testConfigurationWithRuntimeJSONSubtypes(){
+        //Idea: suppose someone wants to use a ComputationGraph with a custom GraphVertex
+        // (i.e., one not built into DL4J). Check that this works for JSON serialization
+        // using runtime/reflection subtype mechanism in ComputationGraphConfiguration.fromJson()
+        //Check a standard GraphVertex implementation, plus a static inner graph vertex
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .graphBuilder()
+                .addInputs("in")
+                .addNode("test", new TestGraphVertex(3, 7), "in")
+                .addNode("test2", new StaticInnerGraphVertex(4, 5), "in")
+                .setOutputs("test", "test2")
+                .build();
+
+        String json = conf.toJson();
+        System.out.println(json);
+
+        ComputationGraphConfiguration conf2 = ComputationGraphConfiguration.fromJson(json);
+
+        assertEquals(conf,conf2);
+        assertEquals(json, conf2.toJson());
+
+        TestGraphVertex tgv = (TestGraphVertex)conf2.getGraphNodes().get("test");
+        assertEquals(3,tgv.getFirstVal());
+        assertEquals(7,tgv.getSecondVal());
+
+        StaticInnerGraphVertex sigv = (StaticInnerGraphVertex)conf.getGraphNodes().get("test2");
+        assertEquals(4,sigv.getFirstVal());
+        assertEquals(5,sigv.getSecondVal());
+    }
+
+    @AllArgsConstructor @NoArgsConstructor @Data
+    public static class StaticInnerGraphVertex extends GraphVertex {
+
+        private int firstVal;
+        private int secondVal;
+
+        @Override
+        public GraphVertex clone() {
+            return new TestGraphVertex(firstVal,secondVal);
         }
     }
 }
