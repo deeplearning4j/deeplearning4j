@@ -1,8 +1,8 @@
 package org.deeplearning4j.nn.graph.graphnodes;
 
 import org.deeplearning4j.nn.graph.vertex.GraphVertex;
-import org.deeplearning4j.nn.graph.vertex.MergeVertex;
-import org.deeplearning4j.nn.graph.vertex.SubsetVertex;
+import org.deeplearning4j.nn.graph.vertex.impl.MergeVertex;
+import org.deeplearning4j.nn.graph.vertex.impl.SubsetVertex;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;

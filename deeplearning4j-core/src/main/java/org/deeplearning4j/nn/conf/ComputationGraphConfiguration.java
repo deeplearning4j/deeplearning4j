@@ -23,9 +23,9 @@ import com.fasterxml.jackson.databind.jsontype.NamedType;
 import lombok.*;
 import org.apache.commons.lang3.ClassUtils;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
+import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.layers.Layer;
-import org.nd4j.linalg.factory.Nd4j;
 import org.reflections.Reflections;
 
 import java.io.IOException;
@@ -41,16 +41,9 @@ import java.util.*;
 @NoArgsConstructor
 public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
+    protected Map<String,GraphVertex> vertices = new HashMap<>();
+    protected Map<String,List<String>> vertexInputs = new HashMap<>();
 
-    /** Map between layer numbers, and layer names */
-    protected Map<Integer,String> layerNamesMap;
-    protected Map<String,Integer> layerNumbersMap;
-
-    protected Map<String,NeuralNetConfiguration> layers = new HashMap<>();
-    protected Map<String,GraphVertex> graphNodes = new HashMap<>();
-
-    protected Map<String,List<String>> layerInputs = new HashMap<>();
-    protected Map<String,List<String>> graphNodeInputs = new HashMap<>();
 
     protected List<String> networkInputs;
     protected List<String> networkOutputs;
@@ -64,6 +57,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     protected int tbpttBackLength = 20;
     //whether to redistribute params or not
     protected boolean redistributeParams = false;
+
+    protected NeuralNetConfiguration defaultConfiguration;
 
 
     /**
@@ -155,23 +150,15 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     @Override
     public ComputationGraphConfiguration clone(){
         ComputationGraphConfiguration conf = new ComputationGraphConfiguration();
-        conf.layerNamesMap = (layerNamesMap != null ? new HashMap<>(this.layerNamesMap) : null);
-        conf.layerNumbersMap = (layerNumbersMap != null ? new HashMap<>(this.layerNumbersMap) : null);
-        conf.layers = new HashMap<>();
-        for(Map.Entry<String,NeuralNetConfiguration> entry : this.layers.entrySet()){
-            conf.layers.put(entry.getKey(),entry.getValue().clone());
+
+        conf.vertices = new HashMap<>();
+        for(Map.Entry<String,GraphVertex> entry : this.vertices.entrySet()){
+            conf.vertices.put(entry.getKey(),entry.getValue().clone());
         }
-        conf.graphNodes = new HashMap<>();
-        for(Map.Entry<String,GraphVertex> entry : this.graphNodes.entrySet()){
-            conf.graphNodes.put(entry.getKey(),entry.getValue().clone());
-        }
-        conf.layerInputs = new HashMap<>();
-        for( Map.Entry<String,List<String>> entry : this.layerInputs.entrySet() ){
-            conf.layerInputs.put(entry.getKey(),new ArrayList<>(entry.getValue()));
-        }
-        conf.graphNodeInputs = new HashMap<>();
-        for( Map.Entry<String,List<String>> entry : this.graphNodeInputs.entrySet() ){
-            conf.graphNodeInputs.put(entry.getKey(), new ArrayList<>(entry.getValue()));
+
+        conf.vertexInputs = new HashMap<>();
+        for( Map.Entry<String,List<String>> entry : this.vertexInputs.entrySet() ){
+            conf.vertexInputs.put(entry.getKey(), new ArrayList<>(entry.getValue()));
         }
         conf.networkInputs = new ArrayList<>(this.networkInputs);
         conf.networkOutputs = new ArrayList<>(this.networkOutputs);
@@ -186,8 +173,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         conf.tbpttFwdLength = tbpttFwdLength;
         conf.tbpttBackLength = tbpttBackLength;
         conf.redistributeParams = redistributeParams;
-
-
 
         return conf;
     }
@@ -206,36 +191,20 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
         //Check uniqueness of names for inputs, layers, GraphNodes
         for(String s : networkInputs){
-            if(layers.containsKey(s)){
-                throw new IllegalStateException("Invalid configuration: name \"" + s + "\" is present in both network inputs and layer names");
-            }
-            if(graphNodes.containsKey(s)){
-                throw new IllegalStateException("Invalid configuration: name \"" + s + "\" is present in both network inputs and graph nodes");
+            if(vertices.containsKey(s)){
+                throw new IllegalStateException("Invalid configuration: name \"" + s + "\" is present in both network inputs and graph vertices/layers");
             }
         }
 
         //Check: each layer & node has at least one input
-        //and: check that all input keys/names for each layer actually exist
-        for(Map.Entry<String,List<String>> e : layerInputs.entrySet() ){
-            String layerName = e.getKey();
-            if(e.getValue() == null || e.getValue().size() == 0){
-                throw new IllegalStateException("Invalid configuration: layer \"" + layerName + "\" has no inputs");
-            }
-            for(String inputName : e.getValue()) {
-                if (!layers.containsKey(inputName) && !graphNodes.containsKey(inputName) && !networkInputs.contains(inputName)) {
-                    throw new IllegalStateException("Invalid configuration: layer \"" + layerName + "\" has input \"" +
-                        inputName + "\" that does not exist");
-                }
-            }
-        }
-        for(Map.Entry<String,List<String>> e : graphNodeInputs.entrySet() ){
+        for(Map.Entry<String,List<String>> e : vertexInputs.entrySet() ){
             String nodeName = e.getKey();
             if(e.getValue() == null || e.getValue().size() == 0){
-                throw new IllegalStateException("Invalid configuration: graph node \"" + nodeName + "\" has no inputs");
+                throw new IllegalStateException("Invalid configuration: vertex \"" + nodeName + "\" has no inputs");
             }
             for(String inputName : e.getValue()) {
-                if (!layers.containsKey(inputName) && !graphNodes.containsKey(inputName) && !networkInputs.contains(inputName)) {
-                    throw new IllegalStateException("Invalid configuration: GraphNode \"" + nodeName + "\" has input \"" +
+                if (!vertices.containsKey(inputName) && !networkInputs.contains(inputName)) {
+                    throw new IllegalStateException("Invalid configuration: Vertex \"" + nodeName + "\" has input \"" +
                             inputName + "\" that does not exist");
                 }
             }
@@ -243,16 +212,22 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
         //Check preprocessors
         for( String s : inputPreProcessors.keySet() ){
-            if (!layers.containsKey(s) ) {
+            if (!vertices.containsKey(s) ) {
                 throw new IllegalStateException("Invalid configuration: InputPreProcessor listed for layer \"" + s + "\" but layer \"" +
                         s + "\" does not exist");
+            } else {
+                GraphVertex gv = vertices.get(s);
+                if(!(gv instanceof LayerVertex)){
+                    throw new IllegalStateException("Invalid configuration: InputPreprocessor listed for vertex \"" + s + "\" but vertex \"" +
+                        s + "\" is not a Layer");
+                }
             }
         }
 
         //Check output names:
         for(String s : networkOutputs){
-            if(!layers.containsKey(s) && !graphNodes.containsKey(s)){
-                throw new IllegalStateException("Invalid configuration: Output name \"" + s + "\" is not a Layer or GraphNode");
+            if(!vertices.containsKey(s)){
+                throw new IllegalStateException("Invalid configuration: Output name \"" + s + "\" is not a valid vertex");
             }
         }
 
@@ -268,18 +243,10 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
     @Data
     public static class GraphBuilder {
-        /** Map between layer numbers, and layer names */
-        protected Map<Integer,String> layerNamesMap;
-        protected Map<String,Integer> layerNumbersMap;
-
-        protected Map<String,NeuralNetConfiguration.Builder> layers = new HashMap<>();
-        protected Map<String,GraphVertex> graphNodes = new HashMap<>();
-
-        /** Key: layer. Values: inputs to that layer */
-        protected Map<String,List<String>> layerInputs = new HashMap<>();
+        protected Map<String,GraphVertex> vertices = new HashMap<>();
 
         /** Key: graph node. Values: input to that node */
-        protected Map<String,List<String>> graphNodeInputs = new HashMap<>();
+        protected Map<String,List<String>> vertexInputs = new HashMap<>();
 
         protected List<String> networkInputs = new ArrayList<>();
         protected List<String> networkOutputs = new ArrayList<>();
@@ -380,19 +347,23 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             return this;
         }
 
-        public GraphBuilder addLayer(String layerName, Layer layer, String... layerInputs ){
+        public GraphBuilder addLayer(String layerName, Layer layer, String... layerInputs ) {
+            return addLayer(layerName,layer,null,layerInputs);
+        }
+
+        public GraphBuilder addLayer(String layerName, Layer layer, InputPreProcessor preProcessor, String... layerInputs ){
             NeuralNetConfiguration.Builder builder = globalConfiguration.clone();
             builder.layer(layer);
-            layers.put(layerName, builder);
+            vertices.put(layerName,new LayerVertex(builder.build(),preProcessor));
 
             //Automatically insert a MergeNode if layerInputs.length > 1
             //Layers can only have 1 input
             if(layerInputs != null && layerInputs.length > 1 ){
                 String mergeName = layerName+"-merge";
-                addNode(mergeName, new MergeVertex(), layerInputs );
-                this.layerInputs.put(layerName,Collections.singletonList(mergeName));
+                addVertex(mergeName, new MergeVertex(), layerInputs);
+                this.vertexInputs.put(layerName,Collections.singletonList(mergeName));
             } else if(layerInputs != null) {
-                this.layerInputs.put(layerName,Arrays.asList(layerInputs));
+                this.vertexInputs.put(layerName,Arrays.asList(layerInputs));
                 layer.setLayerName(layerName);
             }
             return this;
@@ -408,9 +379,9 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             return this;
         }
 
-        public GraphBuilder addNode(String nodeName, GraphVertex node, String... nodeInputs ){
-            graphNodes.put(nodeName,node);
-            this.graphNodeInputs.put(nodeName, Arrays.asList(nodeInputs));
+        public GraphBuilder addVertex(String nodeName, GraphVertex vertex, String... vertexInputs ){
+            vertices.put(nodeName, vertex);
+            this.vertexInputs.put(nodeName, Arrays.asList(vertexInputs));
             return this;
         }
 
@@ -438,24 +409,27 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             conf.tbpttFwdLength = tbpttFwdLength;
 
 
-            conf.layerNamesMap = layerNamesMap;
-            conf.layerNumbersMap = layerNumbersMap;
-            conf.layerInputs = layerInputs;
             conf.inputPreProcessors = inputPreProcessors;
 
             conf.networkInputs = networkInputs;
             conf.networkOutputs = networkOutputs;
 
-            Map<String,NeuralNetConfiguration> layers = new HashMap<>();
-            for( Map.Entry<String,NeuralNetConfiguration.Builder> entry : this.layers.entrySet() ){
-                layers.put(entry.getKey(), entry.getValue().build());
+            conf.vertices = this.vertices;
+            conf.vertexInputs = this.vertexInputs;
+
+            conf.defaultConfiguration = globalConfiguration.build();
+
+            //Add preprocessors that were defined separately to the Layers to which they belong
+            for(Map.Entry<String,InputPreProcessor> entry : inputPreProcessors.entrySet()){
+                GraphVertex gv = vertices.get(entry.getKey());
+                if(gv instanceof LayerVertex){
+                    LayerVertex lv = (LayerVertex)gv;
+                    lv.setPreProcessor(entry.getValue());
+                } else {
+                    throw new IllegalStateException("Invalid configuration: InputPreProcessor defined for GraphVertex \"" + entry.getKey()
+                        + "\", but this vertex is not a LayerVertex");
+                }
             }
-
-            conf.layers = layers;
-
-            conf.graphNodes = this.graphNodes;
-            conf.graphNodeInputs = this.graphNodeInputs;
-
 
             conf.validate();    //throws exception for invalid configuration
 
