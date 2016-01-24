@@ -14,6 +14,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Arrays;
 
+/** A LayerVertex is simply a GraphVertex that contains a neural network Layer, and optionally an InputPreProcessor
+ * @author Alex Black
+ */
 @Data
 public class LayerVertex extends BaseGraphVertex {
 
@@ -68,7 +71,7 @@ public class LayerVertex extends BaseGraphVertex {
     }
 
     @Override
-    public Pair<Gradient,INDArray[]> doBackward(boolean tbptt, int tbpttBackwardLength){
+    public Pair<Gradient,INDArray[]> doBackward(boolean tbptt){
         if(!canDoBackward()) throw new IllegalStateException("Cannot do backward pass: all epsilons not set");
 
         INDArray epsTotal = null;
@@ -85,7 +88,7 @@ public class LayerVertex extends BaseGraphVertex {
         Pair<Gradient,INDArray> pair;
         if(tbptt && layer instanceof BaseRecurrentLayer<?>){
             //Truncated BPTT for recurrent layers
-            pair = ((BaseRecurrentLayer<?>)layer).tbpttBackpropGradient(epsTotal, tbpttBackwardLength);
+            pair = ((BaseRecurrentLayer<?>)layer).tbpttBackpropGradient(epsTotal, graph.getConfiguration().getTbpttBackLength());
         } else {
             //Normal backprop
             pair = layer.backpropGradient(epsTotal);    //epsTotal may be null for OutputLayers

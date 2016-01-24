@@ -13,10 +13,16 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.Arrays;
 
+/** SubsetVertex is used to select a subset of the activations out of another GraphVertex.<br>
+ * For example, a subset of the activations out of a layer.<br>
+ * Note that this subset is specifying by means of an interval of the original activations<br>
+ * For example, to get the first 10 activations of a layer (or, first 10 features out of a CNN layer) use
+ * new SubsetVertex(0,9)
+ * @author Alex Black
+ */
 public class SubsetVertex extends BaseGraphVertex {
-
     private int from;
-    private int to;
+    private int to; //inclusive
     private int[] forwardShape;
 
     public SubsetVertex(ComputationGraph graph, String name, int vertexIndex, int from, int to){
@@ -64,7 +70,7 @@ public class SubsetVertex extends BaseGraphVertex {
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt, int tbpttBackwardLength) {
+    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
         if(!canDoBackward()) throw new IllegalStateException("Cannot do backward pass: error not set");
 
         INDArray out = Nd4j.zeros(forwardShape);
@@ -82,6 +88,5 @@ public class SubsetVertex extends BaseGraphVertex {
                 throw new RuntimeException("Invalid activation rank");  //Should never happen
         }
         return new Pair<>(null,new INDArray[]{out});
-
     }
 }

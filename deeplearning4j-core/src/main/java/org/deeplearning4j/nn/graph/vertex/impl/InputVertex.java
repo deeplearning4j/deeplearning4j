@@ -8,6 +8,9 @@ import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+/** An InputVertex simply defines the location (and connection structure) of inputs to the ComputationGraph.
+ * It does not define forward or backward methods.
+ */
 public class InputVertex extends BaseGraphVertex {
 
 
@@ -41,7 +44,7 @@ public class InputVertex extends BaseGraphVertex {
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt, int tbpttBackwardLength) {
+    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
         throw new UnsupportedOperationException("Cannot do backward pass for InputVertex");
     }
 }

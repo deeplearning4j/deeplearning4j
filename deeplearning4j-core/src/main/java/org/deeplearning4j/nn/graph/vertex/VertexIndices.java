@@ -5,6 +5,10 @@ import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
 
+/**VertexIndices defines a pair of integers: the index of a vertex, and the edge number of that vertex.
+ * This is used for example in {@link org.deeplearning4j.nn.graph.ComputationGraph} to define the connection structure
+ * between {@link GraphVertex} objects in the graph
+ */
 @AllArgsConstructor
 @EqualsAndHashCode
 public class VertexIndices implements Serializable {

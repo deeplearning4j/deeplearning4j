@@ -34,7 +34,15 @@ import java.util.*;
 
 /** ComputationGraphConfiguration is a configuration object for neural networks with arbitrary connection structure.
  * It is analogous to {@link MultiLayerConfiguration}, but allows considerably greater flexibility for the network
- * architecture
+ * architecture.<br>
+ * Specifically, the network architecture is a directed acyclic graph, where each vertex in the graph is either a Layer,
+ * or a {@link GraphVertex} object that defines arbitrary forward and backward pass functionality.<br>
+ * Note that the ComputationGraph may have an arbitrary number of inputs (multiple independent inputs, possibly of different
+ * types), and an arbitrary number of outputs (for example, multiple {@link org.deeplearning4j.nn.conf.layers.OutputLayer} instances.
+ * Typical usage:<br>
+ * {@code ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()....graphBuilder()...build();}
+ *
+ * @author Alex Black
  */
 @Data @EqualsAndHashCode
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -44,14 +52,14 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     protected Map<String,GraphVertex> vertices = new HashMap<>();
     protected Map<String,List<String>> vertexInputs = new HashMap<>();
 
-
+    /**List of inputs to the network, by name */
     protected List<String> networkInputs;
-    protected List<String> networkOutputs;
 
+    /**List of network outputs, by name */
+    protected List<String> networkOutputs;
 
     protected boolean pretrain = true;
     protected boolean backprop = false;
-    protected Map<String,InputPreProcessor> inputPreProcessors = new HashMap<>();
     protected BackpropType backpropType = BackpropType.Standard;
     protected int tbpttFwdLength = 20;
     protected int tbpttBackLength = 20;
@@ -165,10 +173,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
         conf.pretrain = pretrain;
         conf.backprop = backprop;
-        conf.inputPreProcessors = new HashMap<>();
-        for(Map.Entry<String,InputPreProcessor> entry : inputPreProcessors.entrySet()){
-            conf.inputPreProcessors.put(entry.getKey(),entry.getValue().clone());
-        }
         conf.backpropType = backpropType;
         conf.tbpttFwdLength = tbpttFwdLength;
         conf.tbpttBackLength = tbpttBackLength;
@@ -210,20 +214,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             }
         }
 
-        //Check preprocessors
-        for( String s : inputPreProcessors.keySet() ){
-            if (!vertices.containsKey(s) ) {
-                throw new IllegalStateException("Invalid configuration: InputPreProcessor listed for layer \"" + s + "\" but layer \"" +
-                        s + "\" does not exist");
-            } else {
-                GraphVertex gv = vertices.get(s);
-                if(!(gv instanceof LayerVertex)){
-                    throw new IllegalStateException("Invalid configuration: InputPreprocessor listed for vertex \"" + s + "\" but vertex \"" +
-                        s + "\" is not a Layer");
-                }
-            }
-        }
-
         //Check output names:
         for(String s : networkOutputs){
             if(!vertices.containsKey(s)){
@@ -251,8 +241,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         protected List<String> networkInputs = new ArrayList<>();
         protected List<String> networkOutputs = new ArrayList<>();
 
-        protected boolean pretrain = true;
-        protected boolean backprop = false;
+        protected boolean pretrain = false;
+        protected boolean backprop = true;
         protected BackpropType backpropType = BackpropType.Standard;
         protected int tbpttFwdLength = 20;
         protected int tbpttBackLength = 20;
@@ -273,9 +263,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
         /**
          * Whether to redistribute parameters as a view or not
-         * @param redistributeParams whether to redistribute parameters
-         *                           as a view or not
-         * @return
+         * @param redistributeParams whether to redistribute parameters as a view or not
          */
         public GraphBuilder redistributeParams(boolean redistributeParams) {
             this.redistributeParams = redistributeParams;
@@ -283,10 +271,11 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         }
 
         /**
-         * Specify the processors.
-         * These are used at each layer for doing things like normalization and
-         * shaping of input.
-         * @param processor what to use to preProcess the data.
+         * Specify the processors for a given layer
+         * These are used at each layer for doing things like normalization and shaping of input.<br>
+         * <b>Note</b>: preprocessors can also be defined using the {@link #addLayer(String, Layer, InputPreProcessor, String...)} method.
+         * @param layer the name of the layer that this preprocessor will be used with
+         * @param processor the preprocessor to use for the specified layer
          */
         public GraphBuilder inputPreProcessor(String layer, InputPreProcessor processor) {
             inputPreProcessors.put(layer,processor);
@@ -294,18 +283,16 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         }
 
         /**
-         * Whether to do back prop or not
+         * Whether to do back prop (standard supervised learning) or not
          * @param backprop whether to do back prop or not
-         * @return
          */
         public GraphBuilder backprop(boolean backprop) {
             this.backprop = backprop;
             return this;
         }
 
-        /**Whether to do pre train or not
+        /**Whether to do layerwise pre training or not
          * @param pretrain whether to do pre train or not
-         * @return builder pattern
          */
         public GraphBuilder pretrain(boolean pretrain) {
             this.pretrain = pretrain;
@@ -315,6 +302,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         /**The type of backprop. Default setting is used for most networks (MLP, CNN etc),
          * but optionally truncated BPTT can be used for training recurrent neural networks.
          * If using TruncatedBPTT make sure you set both tBPTTForwardLength() and tBPTTBackwardLength()
+         * @param type Type of backprop. Default: BackpropType.Standard
          */
         public GraphBuilder backpropType(BackpropType type){
             this.backpropType = type;
@@ -347,10 +335,24 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             return this;
         }
 
+        /** Add a layer, with no {@link InputPreProcessor}, with the specified name and specified inputs.
+         * @param layerName Name/label of the the layer to add
+         * @param layer The layer configuration
+         * @param layerInputs Inputs to this layer (must be 1 or more). Inputs may be other layers, GraphVertex objects,
+         *                    on a combination of the two.
+         * @see #addLayer(String, Layer, InputPreProcessor, String...)
+         */
         public GraphBuilder addLayer(String layerName, Layer layer, String... layerInputs ) {
             return addLayer(layerName,layer,null,layerInputs);
         }
 
+        /** Add a layer and an {@link InputPreProcessor}, with the specified name and specified inputs.
+         * @param layerName Name/label of the the layer to add
+         * @param layer The layer configuration
+         * @param preProcessor The InputPreProcessor to use with this layer.
+         * @param layerInputs Inputs to this layer (must be 1 or more). Inputs may be other layers, GraphVertex objects,
+         *                    on a combination of the two.
+         */
         public GraphBuilder addLayer(String layerName, Layer layer, InputPreProcessor preProcessor, String... layerInputs ){
             NeuralNetConfiguration.Builder builder = globalConfiguration.clone();
             builder.layer(layer);
@@ -369,19 +371,34 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             return this;
         }
 
+        /** Specify the inputs to the network, and their associated labels.
+         * @param inputNames The names of the inputs. This also defines their order
+         */
         public GraphBuilder addInputs( String... inputNames ){
             Collections.addAll(networkInputs,inputNames);
             return this;
         }
 
+        /** Set the network output labels. These should be the names of the OutputLayer instances in the network
+         * @param outputNames The names of the output layers. This also defines their order.
+         */
         public GraphBuilder setOutputs( String... outputNames ){
             Collections.addAll(networkOutputs,outputNames);
             return this;
         }
 
-        public GraphBuilder addVertex(String nodeName, GraphVertex vertex, String... vertexInputs ){
-            vertices.put(nodeName, vertex);
-            this.vertexInputs.put(nodeName, Arrays.asList(vertexInputs));
+        /** Add a {@link GraphVertex} to the network configuration. A GraphVertex defines forward and backward pass methods,
+         * and can contain a {@link LayerVertex}, a {@link org.deeplearning4j.nn.conf.graph.ElementWiseVertex} to do element-wise
+         * addition/subtraction, a {@link MergeVertex} to combine/concatenate the activations out of multiple layers or vertices,
+         * a {@link org.deeplearning4j.nn.conf.graph.SubsetVertex} to select a subset of the activations out of another layer/GraphVertex.<br>
+         * Custom GraphVertex objects (that extend the abstract {@link GraphVertex} class) may also be used.
+         * @param vertexName The name of the GraphVertex to add
+         * @param vertex The GraphVertex to add
+         * @param vertexInputs The inputs/activations to this GraphVertex
+         */
+        public GraphBuilder addVertex(String vertexName, GraphVertex vertex, String... vertexInputs ){
+            vertices.put(vertexName, vertex);
+            this.vertexInputs.put(vertexName, Arrays.asList(vertexInputs));
             return this;
         }
 
@@ -398,7 +415,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             return this;
         }
 
-
+        /** Create the ComputationGraphConfiguration from the Builder pattern */
         public ComputationGraphConfiguration build(){
 
             ComputationGraphConfiguration conf = new ComputationGraphConfiguration();
@@ -407,9 +424,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             conf.backpropType = backpropType;
             conf.tbpttBackLength = tbpttBackLength;
             conf.tbpttFwdLength = tbpttFwdLength;
-
-
-            conf.inputPreProcessors = inputPreProcessors;
 
             conf.networkInputs = networkInputs;
             conf.networkOutputs = networkOutputs;
