@@ -33,7 +33,7 @@
                     width: 250px;
                     height: 350px;
                     display: inline-block;
-                    border: 1px solid #DEDEDE;
+
                     margin-right: 64px;
             }
             .hd-small {
@@ -78,19 +78,19 @@
         <b>WordVectors</b><br/><br/>
         <a href="/word2vec"><img src="/assets/i_nearest.img" border="0" /></a><br/><br/>
         <div style="text-align: left; margin: 5px;">
-            &nbsp;Plot T-SNE data uploaded by user or retrieved from DL4j.
+            &nbsp;wordsNearest UI for WordVectors (GloVe/Word2Vec compatible)
         </div>
     </div>
-
+<!--
     <div class="block">
-        <!-- Activations block -->
+         Activations block
         <b>Activations</b><br/><br/>
         <a href="/activations"><img src="/assets/i_ladder.img" border="0" /></a><br/><br/>
         <div style="text-align: left; margin: 5px;">
             &nbsp;Neural network activations retrieved from DL4j.
         </div>
     </div>
-
+    -->
     <div class="block">
         <!-- Histogram block -->
         <b>Histo</b><br/><br/>
