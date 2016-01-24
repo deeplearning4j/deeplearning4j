@@ -304,8 +304,7 @@ public:
 				while (i < n) {
 					int currIdx = i;
 					IndexValue <T> indexVal = {dx[i], currIdx};
-					IndexValue<T> opOutput = op(indexVal,extraParams);
-					reduction = update(reduction, opOutput, extraParams);
+					reduction = update(reduction, indexVal, extraParams);
 					i += gridSize;
 				}
 			}
@@ -316,8 +315,7 @@ public:
 				while (xOffset + i < n) {
 					int currIdx = xOffset + i;
 					IndexValue <T> indexVal = {dx[xOffset + i], currIdx};
-					IndexValue<T> opOutput = op(indexVal,extraParams);
-					reduction = update(reduction, opOutput, extraParams);
+					reduction = update(reduction, indexVal, extraParams);
 					i += gridSize;
 				}
 			}
@@ -370,15 +368,13 @@ public:
 				if(xElementWiseStride > 1)
 					for (int element = 0; element < elementsPerTad; element++, offsetForTad += xElementWiseStride) {
 						IndexValue <T> indexVal = {dx[offsetForTad], element};
-						IndexValue<T> opOutput = op(indexVal,extraParams);
-						sPartials[tid] = update(sPartials[tid], opOutput, extraParams);
+						sPartials[tid] = update(sPartials[tid], indexVal, extraParams);
 						__syncthreads();
 					}
 				else {
 					for (int element = 0; element < elementsPerTad; element++, offsetForTad++) {
 						IndexValue <T> indexVal = {dx[offsetForTad], element};
-						IndexValue<T> opOutput = op(indexVal,extraParams);
-						sPartials[tid] = update(sPartials[tid], opOutput, extraParams);
+						sPartials[tid] = update(sPartials[tid], indexVal, extraParams);
 						__syncthreads();
 					}
 				}
@@ -633,7 +629,7 @@ public:
 
 		for (int i = 0; i < elementsPerTad; offsetForBlock += elementWiseStride, i++) {
 			IndexValue <T> opApply = {data[offsetForBlock], offsetForBlock};
-			sPartials[tid] = update(sPartials[tid], op(opApply, extraParams), extraParams);
+			sPartials[tid] = update(sPartials[tid],opApply, extraParams);
 			__syncthreads();
 		}
 
@@ -664,10 +660,9 @@ public:
 			T *result,
 			int *resultShapeInfo) {
 		T startingVal = this->startingValue(x);
-		IndexValue<T> *startingIndex = (IndexValue<T> *) malloc(
-				sizeof(IndexValue<T> ));
-		startingIndex->value = startingVal;
-		startingIndex->index = 0;
+		IndexValue<T> startingIndex;
+		startingIndex.value = startingVal;
+		startingIndex.index = 0;
 		int length = shape::length(xShapeInfo);
 		int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 		int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
@@ -677,15 +672,12 @@ public:
 				IndexValue<T> curr;
 				curr.value = x[i];
 				curr.index = i;
-				curr = op(curr, extraParams);
-				IndexValue<T> updated = update(*startingIndex, curr,
+				startingIndex = update(startingIndex, curr,
 						extraParams);
-				//update to the new value
-				startingIndex->value = updated.value;
-				startingIndex->index = updated.index;
+
 			}
 
-			result[0] = startingIndex->index;
+			result[0] = startingIndex.index;
 		} else {
 
 #pragma omp simd
@@ -693,19 +685,13 @@ public:
 				IndexValue<T> curr;
 				curr.value = x[i * xElementWiseStride];
 				curr.index = i;
-				curr = op(curr, extraParams);
-				IndexValue<T> computedUpdate = update(*startingIndex, curr,
+				startingIndex = update(startingIndex, curr,
 						extraParams);
-				//update to the new value
-				startingIndex->value = computedUpdate.value;
-				startingIndex->index = computedUpdate.index;
 			}
-
-			result[0] = startingIndex->index;
+			result[0] = startingIndex.index;
 
 		}
 
-		free(startingIndex);
 
 	}
 
@@ -726,6 +712,7 @@ public:
 			exec(x,xShapeInfo,extraParams,result,resultShapeInfoBuffer);
 			return;
 		}
+
 		shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo,
 				dimension, dimensionLength);
 		int resultLength = shape::length(resultShapeInfoBuffer);
@@ -740,7 +727,7 @@ public:
 				sizeof(IndexValue<T> ) * resultLength);
 #pragma omp simd
 		for (int i = 0; i < resultLength; i++) {
-			startingIndex[i].value = extraParams[0];
+			startingIndex[i].value = this->startingValue(x);
 			startingIndex[i].index = 0;
 		}
 
@@ -753,7 +740,6 @@ public:
 			IndexValue<T> comp;
 			comp.value = x[i];
 			comp.index = i % tadLength;
-			comp = op(comp, extraParams);
 			IndexValue<T> currStartingValue = startingIndex[i];
 			IndexValue<T> computedUpdate = update(currStartingValue, comp,
 					extraParams);
@@ -990,8 +976,11 @@ public:
 	functions::indexreduce::IndexValue<T> update(
 			functions::indexreduce::IndexValue<T> old,
 			functions::indexreduce::IndexValue<T> opOutput, T *extraParams) override {
-		if (opOutput.value < old.value)
+		if (opOutput.value < old.value) {
 			return opOutput;
+		}
+
+
 		return old;
 	}
 

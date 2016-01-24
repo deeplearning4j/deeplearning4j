@@ -1,14 +1,18 @@
-//
-// Created by agibsoncccc on 1/5/16.
-//
+/*
+ * summarystatsreducetest.h
+ *
+ *  Created on: Jan 23, 2016
+ *      Author: agibsonccc
+ */
 
-#ifndef NATIVEOPERATIONS_INDEXREDUCETESTS_H_H
-#define NATIVEOPERATIONS_INDEXREDUCETESTS_H_H
+#ifndef SUMMARYSTATSREDUCETEST_H_
+#define SUMMARYSTATSREDUCETEST_H_
+
 #include <array.h>
 #include "testhelpers.h"
-#include <indexreduce.h>
+#include <summarystatsreduce.h>
 #include <helper_cuda.h>
-TEST_GROUP(IndexReduce) {
+TEST_GROUP(SummaryStatsReduce) {
 
 	static int output_method(const char* output, ...) {
 		va_list arguments;
@@ -23,7 +27,7 @@ TEST_GROUP(IndexReduce) {
 	}
 };
 
-Data<double> * getDataIndexReduce(double *assertion,double startingVal) {
+Data<double> * getDataSummary(double *assertion,double startingVal) {
 	Data<double> *ret = new Data<double>();
 
 	int rank = 2;
@@ -58,7 +62,7 @@ Data<double> * getDataIndexReduce(double *assertion,double startingVal) {
 	return ret;
 }
 
-Data<double> * getDataIndexReduceDimension(double *assertion,double startingVal) {
+Data<double> * getDataSummaryDimension(double *assertion,double startingVal) {
 	Data<double> *ret = new Data<double>();
 
 	int rank = 2;
@@ -96,13 +100,13 @@ Data<double> * getDataIndexReduceDimension(double *assertion,double startingVal)
 
 
 template <typename T>
-class IndexReduceTest : public BaseTest<T> {
+class SummaryStatsReduceTest : public BaseTest<T> {
 public:
-	IndexReduceTest() {}
-	virtual ~IndexReduceTest() {
+	SummaryStatsReduceTest() {}
+	virtual ~SummaryStatsReduceTest() {
 		freeOpAndOpFactory();
 	}
-	IndexReduceTest(int rank,int opNum,Data<T> *data,int extraParamsLength)
+	SummaryStatsReduceTest(int rank,int opNum,Data<T> *data,int extraParamsLength)
 	:  BaseTest<T>(rank,opNum,data,extraParamsLength){
 		createOperationAndOpFactory();
 	}
@@ -112,14 +116,14 @@ public:
 	}
 
 	virtual void createOperationAndOpFactory() {
-		opFactory = new functions::indexreduce::IndexReduceOpFactory<T>();
+		opFactory = new functions::summarystats::SummaryStatsReduceOpFactory<T>();
 		reduce = opFactory->getOp(this->opNum);
 	}
 
 	virtual void execCpuKernel() override {
 		int *xShapeBuff = shapeBuffer(this->baseData->rank,this->baseData->xShape);
 		int *resultShapeBuff = shapeBuffer(this->baseData->resultRank,this->baseData->resultShape);
-		printf("In exec cpu index reduce \n");
+		printf("In exec cpu\n");
 		reduce->exec(
 				this->data->data->data,
 				xShapeBuff,
@@ -138,7 +142,7 @@ public:
 		int resultLength = shape::prod(this->baseData->resultShape,this->baseData->rank);
 		if(resultLength == 1) {
 			if(this->result->data->data[0] != this->baseData->assertion[0]) {
-				printf("Compared assertion index reduce %f to result %f\n",this->baseData->assertion[0],this->result->data->data[0]);
+				printf("Compared assertion %f to result %f\n",this->baseData->assertion[0],this->result->data->data[0]);
 			}
 			DOUBLES_EQUAL(this->baseData->assertion[0],this->result->data->data[0],1e-3);
 		}
@@ -153,14 +157,23 @@ public:
 		this->executeCudaKernel();
 		checkCudaErrors(cudaDeviceSynchronize());
 		nd4j::buffer::copyDataFromGpu(&this->result->data);
+
 		if(resultLength == 1) {
 			if(this->result->data->data[0] != this->baseData->assertion[0]) {
+				for(int i = 0; i < resultLength; i++) {
+					printf("Result[%d] is %f\n",i,this->result->data->data[i]);
+				}
 				printf("Compared assertion gpu %f to result %f\n",this->baseData->assertion[0],this->baseData->result[0]);
 			}
 			DOUBLES_EQUAL(this->baseData->assertion[0],this->result->data->data[0],1e-3);
 		}
-		else
+		else {
+			for(int i = 0; i < resultLength; i++) {
+				printf("Result[%d] is %f\n",i,this->result->data->data[i]);
+			}
 			CHECK(arrsEquals(this->rank, this->assertion, this->result->data->data));
+
+		}
 
 #endif
 
@@ -169,16 +182,16 @@ public:
 
 
 protected:
-	functions::indexreduce::IndexReduceOpFactory<T> *opFactory;
-	functions::indexreduce::IndexReduce<T> *reduce;
+	functions::summarystats::SummaryStatsReduceOpFactory<T> *opFactory;
+	functions::summarystats::SummaryStatsReduce<T> *reduce;
 };
 
-class DoubleIndexReduceTest : public IndexReduceTest<double> {
+class DoubleSummaryStatsReduceTest : public SummaryStatsReduceTest<double> {
 public:
-	virtual ~DoubleIndexReduceTest() {}
-	DoubleIndexReduceTest() {}
-	DoubleIndexReduceTest(int rank,int opNum,Data<double> *data,int extraParamsLength)
-	:  IndexReduceTest<double>(rank,opNum,data,extraParamsLength){
+	virtual ~DoubleSummaryStatsReduceTest() {}
+	DoubleSummaryStatsReduceTest() {}
+	DoubleSummaryStatsReduceTest(int rank,int opNum,Data<double> *data,int extraParamsLength)
+	:  SummaryStatsReduceTest<double>(rank,opNum,data,extraParamsLength){
 	}
 	virtual void executeCudaKernel() override {
 #ifdef __CUDACC__
@@ -187,7 +200,7 @@ public:
 		nd4j::buffer::Buffer<int> *xShapeBuff = shapeIntBuffer(this->rank,this->shape);
 		nd4j::buffer::Buffer<int> *resultShapeBuff = shapeIntBuffer(this->result->rank,this->result->shape->data);
 
-		indexReduceDouble<<<this->blockSize,this->gridSize,this->sMemSize>>>(
+		summaryStatsReduceDouble<<<this->blockSize,this->gridSize,this->sMemSize>>>(
 				this->opNum,
 				this->length,
 				this->data->data->gData,
@@ -211,11 +224,11 @@ public:
 };
 
 
-class FloatIndexReduceTest : public IndexReduceTest<float> {
+class FloatSummaryStatsReduceTest : public SummaryStatsReduceTest<float> {
 public:
-	FloatIndexReduceTest() {}
-	FloatIndexReduceTest(int rank,int opNum,Data<float> *data,int extraParamsLength)
-	:  IndexReduceTest<float>(rank,opNum,data,extraParamsLength){
+	FloatSummaryStatsReduceTest() {}
+	FloatSummaryStatsReduceTest(int rank,int opNum,Data<float> *data,int extraParamsLength)
+	:  SummaryStatsReduceTest<float>(rank,opNum,data,extraParamsLength){
 	}
 	virtual void executeCudaKernel() override {
 #ifdef __CUDACC__
@@ -224,7 +237,7 @@ public:
 		nd4j::buffer::Buffer<int> *xShapeBuff = shapeIntBuffer(this->rank,this->shape);
 		nd4j::buffer::Buffer<int> *resultShapeBuff = shapeIntBuffer(this->result->rank,this->result->shape->data);
 
-		indexReduceFloat<<<this->blockSize,this->gridSize,this->sMemSize>>>(
+		summaryStatsReduceFloat<<<this->blockSize,this->gridSize,this->sMemSize>>>(
 				this->opNum,
 				this->length,
 				this->data->data->gData,
@@ -245,51 +258,60 @@ public:
 #endif
 	}
 };
-/*TEST(IndexReduce,ObjectOrientedIMax) {
-	int rank = 2;
-	int opNum = 0;
-	double assertion[1] = {3};
-	Data<double> *data = getDataIndexReduce(assertion,0);
-	DoubleIndexReduceTest *test = new DoubleIndexReduceTest(rank,opNum,data,1);
-    test->run();
-    delete data;
-    delete test;
-}
 
-TEST(IndexReduce,ObjectOrientedIMin) {
+TEST(SummaryStatsReduce,ObjectOrientedStandardDeviation) {
 	int rank = 2;
 	int opNum = 1;
-	double assertion[1] = {0};
-	Data<double> *data = getDataIndexReduce(assertion,0);
-	DoubleIndexReduceTest *test = new DoubleIndexReduceTest(rank,opNum,data,1);
+	double assertion[1] = {1.29099440574646};
+	Data<double> *data = getDataSummary(assertion,0);
+	DoubleSummaryStatsReduceTest *test = new DoubleSummaryStatsReduceTest(rank,opNum,data,1);
     test->run();
     delete data;
     delete test;
 }
+/*
 
 
 
 
-TEST(IndexReduce,ObjectOrientedDimensionIMax) {
+TEST(SummaryStatsReduce,ObjectOrientedVariance) {
 	int rank = 2;
 	int opNum = 0;
-	double assertion[2] = {1,1};
-	Data<double> *data = getDataIndexReduceDimension(assertion,0);
-	DoubleIndexReduceTest *test = new DoubleIndexReduceTest(rank,opNum,data,1);
-    test->run();
-    delete data;
-    delete test;
-}*/
+	double assertion[1] = {1.66667};
+	Data<double> *data = getDataSummary(assertion,0);
+	DoubleSummaryStatsReduceTest *test = new DoubleSummaryStatsReduceTest(rank,opNum,data,1);
+	test->run();
+	delete data;
+	delete test;
+}
 
-TEST(IndexReduce,ObjectOrientedDimensionIMin) {
+
+
+
+TEST(SummaryStatsReduce,ObjectOrientedDimensionStandardDeviation) {
 	int rank = 2;
 	int opNum = 1;
-	double assertion[2] = {0,0};
-	Data<double> *data = getDataIndexReduceDimension(assertion,0);
-	DoubleIndexReduceTest *test = new DoubleIndexReduceTest(rank,opNum,data,1);
+	double assertion[2] = { 0.71, 0.71};
+	Data<double> *data = getDataSummaryDimension(assertion,0);
+	DoubleSummaryStatsReduceTest *test = new DoubleSummaryStatsReduceTest(rank,opNum,data,1);
     test->run();
     delete data;
     delete test;
 }
 
-#endif //NATIVEOPERATIONS_INDEXREDUCETESTS_H_H
+TEST(SummaryStatsReduce,ObjectOrientedDimensionVariance) {
+	int rank = 2;
+	int opNum = 0;
+	double assertion[2] = {0.50, 0.50};
+	Data<double> *data = getDataSummaryDimension(assertion,0);
+	DoubleSummaryStatsReduceTest *test = new DoubleSummaryStatsReduceTest(rank,opNum,data,1);
+    test->run();
+    delete data;
+    delete test;
+}
+*/
+
+
+
+
+#endif /* SUMMARYSTATSREDUCETEST_H_ */

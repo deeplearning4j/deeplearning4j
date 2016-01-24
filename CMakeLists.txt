@@ -10,7 +10,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 find_path(STDIO_INCLUDE_PATH stdio.h)
 # packages
 find_package(CUDA)
-set(CMAKE_CXX_FLAGS "-Wall -O0 -fopenmp -std=c++11 -ftree-vectorize -msse2 -ftree-vectorizer-verbose=0 -fassociative-math -funsafe-math-optimizations -march=native")
+set(CMAKE_CXX_FLAGS "-Wall -O0 -fopenmp -std=c++11 -x c++ -ftree-vectorize -msse2 -ftree-vectorizer-verbose=0 -fassociative-math -funsafe-math-optimizations -march=native")
 IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     include_directories("/usr/include")
     include_directories("/usr/local/include")

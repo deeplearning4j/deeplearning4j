@@ -10,10 +10,11 @@ if (CUDA_FOUND)
     cuda_add_executable(libnd4jtests ${MAIN_O})
 
 else()
+   SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -x c++" )
+   
     LINK_LIBRARIES(CppUTest)
     message("CUDA not found")
-    set(SOURCE_FILES
-            src/array/shape.cu
-            main.cu src/array/templatemath.cu)
-    add_executable(nativeoperations ${SOURCE_FILES} src/array/templatemath.cu src/array/templatemath.h)
+    add_executable(nativeoperations main.cu)
+    SET_TARGET_PROPERTIES(nativeoperations PROPERTIES LINKER_LANGUAGE CXX)
+    
 endif()
