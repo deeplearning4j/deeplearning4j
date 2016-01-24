@@ -92,7 +92,7 @@
         var formatCount = d3.format(",.0f");
 
         if (gSVG[id] != undefined || gSVG[id] != null) {
-            console.log("SVG for key [" + id + "] is already defined. Going to update data");
+         //   console.log("SVG for key [" + id + "] is already defined. Going to update data");
 
             var data = d3.layout.histogram()
                 .bins(gX[id].ticks(20))
@@ -127,7 +127,7 @@
         }
 
 
-        console.log("SVG for key [" + id + "] is NOT defined");
+    //    console.log("SVG for key [" + id + "] is NOT defined");
 
         var data = values;
         var min = d3.min(data);
@@ -203,7 +203,7 @@
  function appendLineChart(values,selector, id){
         scoreData = values;
         if (gSVG[id] != undefined || gSVG[id] != null) {
-            console.log("SVG for scores [" + id + "] is already defined. Going to update data");
+         //   console.log("SVG for scores [" + id + "] is already defined. Going to update data");
 
             var valueline = d3.svg.line()
                            .x(function(d,i) { return gX[id](i); })
@@ -355,9 +355,6 @@
 
     function appendMultiLineChart(map,selector, id){
         if (gSVG[id] != undefined || gSVG[id] != null) {
-                console.log("SVG for key [" + id + "] is already defined. Going to update data");
-
-
                 var valueline = d3.svg.line()
                                 .x(function(d,i) { return gX[id](i); })
                                 .y(function(d) { return gY[id](d); });
@@ -539,7 +536,7 @@ var timed = function() {
                                                 update selector box if needed
                                             */
                                             if (!contains.call(modelSelector, key)) {
-                                                console.log("Adding model selector: " + key);
+                                      //          console.log("Adding model selector: " + key);
                                                 modelSelector.push(key);
 
                                                 $("#modelSelector").append("<option value='"+ key+"'>" + key + "</option>");
@@ -569,7 +566,7 @@ var timed = function() {
                                             appendMultiLineChart(mapUpdates,selectorModel + ' .layer' + i + 'grad',"layer" + i + "grad");
 
                                             if (!contains.call(magnitudesSelector, key)) {
-                                                console.log("Adding magnitudes selector: " + key);
+                                           //     console.log("Adding magnitudes selector: " + key);
                                                 magnitudesSelector.push(key);
 
                                                 $("#magnitudeSelector").append("<option value='layer" + i + "param'>Layer " + i + " Parameter Mean Magnitudes</option>");
@@ -608,7 +605,7 @@ setTimeout(timed,2000);
 
 
     function selectModel() {
-        console.log("Switching off model view: " + visibleModel);
+      //  console.log("Switching off model view: " + visibleModel);
         if (visibleModel != "") {
             $("#model" + visibleModel).css("visibility","hidden");
             $("#model" + visibleModel).css("display","none");
@@ -617,11 +614,11 @@ setTimeout(timed,2000);
         visibleModel = $("#modelSelector").val();
         $("#model" + visibleModel).css("visibility","visible");
         $("#model" + visibleModel).css("display","block");
-        console.log("Switching on model view:" + visibleModel);
+     //   console.log("Switching on model view:" + visibleModel);
     }
 
     function selectGradient() {
-            console.log("Switching off gradient view: " + visibleGradient);
+       //     console.log("Switching off gradient view: " + visibleGradient);
             if (visibleGradient != "") {
                 $("#gradient" + visibleGradient).css("visibility","hidden");
                 $("#gradient" + visibleGradient).css("display","none");
@@ -630,11 +627,11 @@ setTimeout(timed,2000);
             visibleGradient = $("#gradientSelector").val();
             $("#gradient" + visibleGradient).css("visibility","visible");
             $("#gradient" + visibleGradient).css("display","block");
-            console.log("Switching on gradient view:" + visibleGradient);
+      //      console.log("Switching on gradient view:" + visibleGradient);
     }
 
     function selectMagnitude() {
-        console.log("Switching off magnitude view: " + visibleMagnitude);
+    //    console.log("Switching off magnitude view: " + visibleMagnitude);
         if (visibleMagnitude != "") {
             $("#" + visibleMagnitude).css("visibility","hidden");
             $("#" + visibleMagnitude).css("display","none");
@@ -644,5 +641,5 @@ setTimeout(timed,2000);
 
         $("#" + visibleMagnitude).css("visibility","visible");
         $("#" + visibleMagnitude).css("display","block");
-        console.log("Switching on magnitude view:" + visibleMagnitude);
+    //    console.log("Switching on magnitude view:" + visibleMagnitude);
     }
