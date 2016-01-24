@@ -27,7 +27,7 @@ TEST_GROUP(SummaryStatsReduce) {
 	}
 };
 
-Data<double> * getDataSummary(double *assertion,double startingVal) {
+static Data<double> * getDataSummary(double *assertion,double startingVal) {
 	Data<double> *ret = new Data<double>();
 
 	int rank = 2;
@@ -62,7 +62,7 @@ Data<double> * getDataSummary(double *assertion,double startingVal) {
 	return ret;
 }
 
-Data<double> * getDataSummaryDimension(double *assertion,double startingVal) {
+static Data<double> * getDataSummaryDimension(double *assertion,double startingVal) {
 	Data<double> *ret = new Data<double>();
 
 	int rank = 2;

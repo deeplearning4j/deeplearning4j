@@ -182,7 +182,7 @@ public:
 	}
 };
 
-Data<double> * getDataReduce(double *assertion,double startingVal) {
+static Data<double> * getDataReduce(double *assertion,double startingVal) {
 	Data<double> *ret = new Data<double>();
 
 	int rank = 2;
@@ -218,7 +218,7 @@ Data<double> * getDataReduce(double *assertion,double startingVal) {
 	return ret;
 }
 
-Data<double> * getDataReduceDimension(double *assertion,double startingVal) {
+static Data<double> * getDataReduceDimension(double *assertion,double startingVal) {
 	Data<double> *ret = new Data<double>();
 
 	int rank = 2;

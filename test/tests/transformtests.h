@@ -140,7 +140,7 @@ public:
 
 
 
-Data<double> * getDataTransform(double *assertion,int rank) {
+static Data<double> * getDataTransform(double *assertion,int rank) {
 	Data<double> *data = new Data<double>();
 	data->xShape = (int *) malloc(sizeof(int) * 2);
 	data->resultShape = (int *) malloc(sizeof(int) * 2);

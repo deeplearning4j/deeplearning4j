@@ -27,7 +27,7 @@ TEST_GROUP(Reduce3) {
 
 
 
-Data<double> * getDataReduce3(double *assertion,double startingVal) {
+static Data<double> * getDataReduce3(double *assertion,double startingVal) {
 	Data<double> *ret = new Data<double>();
 
 	int rank = 2;
@@ -69,7 +69,7 @@ Data<double> * getDataReduce3(double *assertion,double startingVal) {
 	return ret;
 }
 
-Data<double> * getDataReduce3Dimension(double *assertion,double startingVal) {
+static Data<double> * getDataReduce3Dimension(double *assertion,double startingVal) {
 	Data<double> *ret = new Data<double>();
 
 	int rank = 2;

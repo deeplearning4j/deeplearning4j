@@ -23,7 +23,7 @@ TEST_GROUP(IndexReduce) {
 	}
 };
 
-Data<double> * getDataIndexReduce(double *assertion,double startingVal) {
+static Data<double> * getDataIndexReduce(double *assertion,double startingVal) {
 	Data<double> *ret = new Data<double>();
 
 	int rank = 2;
@@ -58,7 +58,7 @@ Data<double> * getDataIndexReduce(double *assertion,double startingVal) {
 	return ret;
 }
 
-Data<double> * getDataIndexReduceDimension(double *assertion,double startingVal) {
+static Data<double> * getDataIndexReduceDimension(double *assertion,double startingVal) {
 	Data<double> *ret = new Data<double>();
 
 	int rank = 2;

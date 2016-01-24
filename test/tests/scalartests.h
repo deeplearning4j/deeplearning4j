@@ -149,7 +149,7 @@ public:
 };
 
 
-Data<double> * getData(double *comparison,int rank) {
+static Data<double> * getData(double *comparison,int rank) {
 	Data<double> *data = new Data<double>();
 	data->scalar = 1;
 	data->rank = rank;
@@ -172,7 +172,7 @@ Data<double> * getData(double *comparison,int rank) {
 
 }
 
-Data<double> * getData(double *comparison,double scalar,int rank) {
+static Data<double> * getData(double *comparison,double scalar,int rank) {
 	Data<double> *data = new Data<double>();
 	data->scalar = scalar;
 	data->rank = rank;
