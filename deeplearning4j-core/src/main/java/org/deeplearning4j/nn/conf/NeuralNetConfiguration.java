@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import lombok.Data;
@@ -37,10 +38,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 /**
@@ -251,7 +249,18 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         return mapper;
     }
 
-    private static final ObjectMapper mapper = initMapper();
+    /**Reinitialize and return the Jackson/json ObjectMapper with additional named types.
+     * This can be used to add additional subtypes at runtime (i.e., for JSON mapping with
+     * types defined outside of the main DL4J codebase)
+     */
+    public static ObjectMapper reinitMapperWithSubtypes(Collection<NamedType> additionalTypes){
+        mapper.registerSubtypes(additionalTypes.toArray(new NamedType[additionalTypes.size()]));
+        //Recreate the mapper (via copy), as mapper won't use registered subtypes after first use
+        mapper = mapper.copy();
+        return mapper;
+    }
+
+    private static ObjectMapper mapper = initMapper();
 
     private static ObjectMapper initMapper() {
         ObjectMapper ret = new ObjectMapper();
