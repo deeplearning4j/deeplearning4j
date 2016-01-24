@@ -56,7 +56,7 @@
 <table style="width: 100%; padding: 5px;" class="hd">
     <tbody>
     <tr>
-        <td style="width: 48px;"><img src="/assets/deeplearning4j.img"  border="0"/></td>
+        <td style="width: 48px;"><a href="/"><img src="/assets/deeplearning4j.img"  border="0"/></a></td>
         <td>DeepLearning4j UI</td>
         <td style="width: 128px;">&nbsp; <!-- placeholder for future use --></td>
     </tr>
