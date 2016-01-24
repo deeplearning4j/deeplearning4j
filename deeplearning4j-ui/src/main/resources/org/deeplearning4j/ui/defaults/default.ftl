@@ -74,6 +74,15 @@
     </div>
 
     <div class="block">
+        <!-- W2V block -->
+        <b>WordVectors</b><br/><br/>
+        <a href="/word2vec"><img src="/assets/i_nearest.img" border="0" /></a><br/><br/>
+        <div style="text-align: left; margin: 5px;">
+            &nbsp;Plot T-SNE data uploaded by user or retrieved from DL4j.
+        </div>
+    </div>
+
+    <div class="block">
         <!-- Activations block -->
         <b>Activations</b><br/><br/>
         <a href="/activations"><img src="/assets/i_ladder.img" border="0" /></a><br/><br/>
