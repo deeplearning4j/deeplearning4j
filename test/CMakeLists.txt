@@ -1,4 +1,5 @@
 include_directories("tests")
+find_package(CPPUTest)
 LINK_LIBRARIES(CppUTest)
 if (CUDA_FOUND)
     message("ADDING CUDA EXECUTABLE")
