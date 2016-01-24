@@ -11,6 +11,8 @@ Here's an example of an error visualization with D3.
 
 ![Alt text](../img/error_d3.png)
 
+And here's an excellent [web page by Andrej Karpathy](http://cs231n.github.io/neural-networks-3/#baby) about visualizing neural net training.
+
 To support visualizations that will help you monitor neural networks as they learn, and therefore debug them, you must set up an iteration listener. This is done when you instantiate and initialize any new MultiLayerNetwork.
 
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
