@@ -82,6 +82,7 @@ You'll need a file to tell the vectorization engine what to do. Create a text fi
     
     output.format=org.canova.api.formats.output.impl.SVMLightOutputFormat
 
+
 <!--## Run Canova From the Command Line
 
 Now we're going to take this [sample](https://github.com/deeplearning4j/Canova/blob/master/canova-cli/src/test/resources/csv/data/uci_iris_sample.txt) of [UCI's Iris dataset](https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data).
@@ -132,6 +133,7 @@ Deeplearning4j also works with a command-line interface. A net can be trained wi
       
 The configuration of the net itself may need to be adjusted within the file that contains its instantiation and parameters. Examples of these configurations can be seen on the pages describing [restricted Boltzmann machines](http://deeplearning4j.org/restrictedboltzmannmachine.html) as well as the [Mnist tutorial](http://deeplearning4j.org/mnist-tutorial.html). 
 -->
+
 ## <a name="record">Reading Records, Iterating Over Data</a>
 
 The following code shows how to work with one example, raw images, transforming them into a format that will work well with DL4J and ND4J:
