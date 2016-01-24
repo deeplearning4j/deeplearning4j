@@ -12,6 +12,15 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.Arrays;
 
+/** A MergeVertex is used to combine the activations of two or more layers/GraphVertex by means of concatenation/merging.<br>
+ * Exactly how this is done depends on the type of input.<br>
+ * For 2d (feed forward layer) inputs: MergeVertex([numExamples,layerSize1],[numExamples,layerSize2]) -> [numExamples,layerSize1 + layerSize2]<br>
+ * For 3d (time series) inputs: MergeVertex([numExamples,layerSize1,timeSeriesLength],[numExamples,layerSize2,timeSeriesLength])
+ *      -> [numExamples,layerSize1 + layerSize2,timeSeriesLength]<br>
+ * For 4d (convolutional) inputs: MergeVertex([numExamples,depth1,width,height],[numExamples,depth2,width,height])
+ *      -> [numExamples,depth1 + depth2,width,height]<br>
+ * @author Alex Black
+ */
 public class MergeVertex extends BaseGraphVertex {
 
     private int[][] forwardPassShapes;
@@ -119,7 +128,7 @@ public class MergeVertex extends BaseGraphVertex {
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt, int tbpttBackwardLength) {
+    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
         if(!canDoBackward()) throw new IllegalStateException("Cannot do backward pass: errors not set");
 
         if(forwardPassShapes.length == 1){

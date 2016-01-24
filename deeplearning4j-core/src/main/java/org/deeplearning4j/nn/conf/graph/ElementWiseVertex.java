@@ -4,6 +4,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 
+/** An ElementWiseVertex is used to combine the activations of two or more layer in an element-wise manner<br>
+ * For example, the activations may be combined by addition, subtraction or multiplication.
+ * Addition may use an arbitrary number of input arrays. Note that in the case of subtraction, only two inputs may be used.
+ * @author Alex Black
+ */
 @Data
 public class ElementWiseVertex extends GraphVertex {
 

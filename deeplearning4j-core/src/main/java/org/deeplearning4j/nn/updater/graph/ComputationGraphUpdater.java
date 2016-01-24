@@ -14,6 +14,9 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
+/** Gradient updater for ComputationGraph
+ * @author Alex Black
+ */
 public class ComputationGraphUpdater implements Serializable {
 
     private final Updater[] layerUpdaters;

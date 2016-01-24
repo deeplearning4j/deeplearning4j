@@ -29,7 +29,7 @@ public class TestGraphNodes {
         assertEquals(second, out.get(NDArrayIndex.all(), NDArrayIndex.interval(4, 10)));
 
         mergeNode.setErrors(out);
-        INDArray[] backward = mergeNode.doBackward(false,-1).getSecond();
+        INDArray[] backward = mergeNode.doBackward(false).getSecond();
         assertEquals(first,backward[0]);
         assertEquals(second, backward[1]);
     }
@@ -51,7 +51,7 @@ public class TestGraphNodes {
         assertEquals(second, out.get(NDArrayIndex.all(), NDArrayIndex.interval(4, 10), NDArrayIndex.all()));
 
         mergeNode.setErrors(out);
-        INDArray[] backward = mergeNode.doBackward(false,-1).getSecond();
+        INDArray[] backward = mergeNode.doBackward(false).getSecond();
         assertEquals(first,backward[0]);
         assertEquals(second, backward[1]);
     }
@@ -76,7 +76,7 @@ public class TestGraphNodes {
         }
 
         mergeNode.setErrors(out);
-        INDArray[] backward = mergeNode.doBackward(false,-1).getSecond();
+        INDArray[] backward = mergeNode.doBackward(false).getSecond();
         assertEquals(first, backward[0]);
         assertEquals(second, backward[1]);
 
@@ -100,7 +100,7 @@ public class TestGraphNodes {
         }
 
         mergeNode.setErrors(out);
-        backward = mergeNode.doBackward(false,-1).getSecond();
+        backward = mergeNode.doBackward(false).getSecond();
         assertEquals(first, backward[0]);
         assertEquals(second, backward[1]);
     }
@@ -116,7 +116,7 @@ public class TestGraphNodes {
         assertEquals(in.get(NDArrayIndex.all(),NDArrayIndex.interval(4,7,true)),out);
 
         subset.setErrors(out);
-        INDArray backward = subset.doBackward(false,-1).getSecond()[0];
+        INDArray backward = subset.doBackward(false).getSecond()[0];
         assertEquals(Nd4j.zeros(5,4),backward.get(NDArrayIndex.all(),NDArrayIndex.interval(0,3,true)));
         assertEquals(out, backward.get(NDArrayIndex.all(), NDArrayIndex.interval(4,7,true)));
         assertEquals(Nd4j.zeros(5,2), backward.get(NDArrayIndex.all(), NDArrayIndex.interval(8,9,true)));
@@ -128,7 +128,7 @@ public class TestGraphNodes {
         assertEquals(in.get(NDArrayIndex.all(),NDArrayIndex.interval(4,7,true), NDArrayIndex.all(), NDArrayIndex.all()),out);
 
         subset.setErrors(out);
-        backward = subset.doBackward(false,-1).getSecond()[0];
+        backward = subset.doBackward(false).getSecond()[0];
         assertEquals(Nd4j.zeros(5,4,3,3),backward.get(NDArrayIndex.all(),NDArrayIndex.interval(0,3,true), NDArrayIndex.all(), NDArrayIndex.all()));
         assertEquals(out, backward.get(NDArrayIndex.all(), NDArrayIndex.interval(4,7,true), NDArrayIndex.all(), NDArrayIndex.all()));
         assertEquals(Nd4j.zeros(5,2,3,3), backward.get(NDArrayIndex.all(), NDArrayIndex.interval(8,9,true), NDArrayIndex.all(), NDArrayIndex.all()));
