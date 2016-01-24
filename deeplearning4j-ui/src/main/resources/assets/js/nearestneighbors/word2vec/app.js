@@ -87,6 +87,19 @@ $(document).ready(function() {
             contentType : 'application/json',
             data: JSON.stringify({word: word, numWords: numWords}),
             cache: false,
+            error: function (query, status, error) {
+                                        $.notify({
+                                            title: '<strong>No connection!</strong>',
+                                            message: 'DeepLearning4j UiServer seems to be down!'
+                                        },{
+                                            type: 'danger',
+                                            placement: {
+                                                from: "top",
+                                                align: "center"
+                                                },
+                                        });
+                                        setTimeout(timed, 10000);
+                                    },
             success: function(data, textStatus, jqXHR)
             {
                 if(typeof data.error === 'undefined')
@@ -112,12 +125,7 @@ $(document).ready(function() {
                     console.log('ERRORS: ' + data.error);
                 }
             },
-            error: function(jqXHR, textStatus, errorThrown)
-            {
-                // Handle errors here
-                console.log('ERRORS: ' + textStatus);
-            },
-            complete: function()
+             complete: function()
             {
                 // STOP LOADING SPINNER
             }
