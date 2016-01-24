@@ -7,13 +7,14 @@ option(CUBIN "Compile cubin" OFF)
 option(ECLIPSE "Generate eclipse files" OFF)
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
-
 find_path(STDIO_INCLUDE_PATH stdio.h)
-
 # packages
 find_package(CUDA)
-set(CMAKE_CXX_FLAGS "-Wall -O0 -fopenmp -std=c++11  -ftree-vectorize -msse2 -ftree-vectorizer-verbose=0 -fassociative-math -funsafe-math-optimizations -march=native")
-
+set(CMAKE_CXX_FLAGS "-Wall -O0 -fopenmp -std=c++11 -ftree-vectorize -msse2 -ftree-vectorizer-verbose=0 -fassociative-math -funsafe-math-optimizations -march=native")
+IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    include_directories("/usr/include")
+    include_directories("/usr/local/include")
+ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 
 if (CUDA_FOUND)
     message("CUDA found!")
@@ -21,7 +22,7 @@ if (CUDA_FOUND)
     SET(CUDA_VERBOSE_BUILD ON)
     SET(CUDA_SEPARABLE_COMPILATION OFF)
     set(CUDA_COMPUTE_CAPABILITY "50")
-    list(APPEND CUDA_NVCC_FLAGS "-DVERBOSE;-G;-g;-gencode arch=compute_50,code=sm_50")
+    list(APPEND CUDA_NVCC_FLAGS "-DVERBOSE;-lCppUTest;-G;-g;-gencode arch=compute_50,code=sm_50")
 endif()
 
 

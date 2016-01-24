@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+
+export CPPUTEST_HOME=/opt/cpputest
+
 if [ "$#" -ne 1 ]; then
     echo "Please specify an argument"
 else
@@ -22,7 +25,7 @@ else
             mv eclipse/.project .
      elif [ "$1" ==  "test" ]; then
            rm -rf testbuild
-           mkdir testbuild
+          mkdir testbuild
            cd testbuild
            cmake -DRUN_TEST=TRUE ..
             make && cd ..

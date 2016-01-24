@@ -8,6 +8,7 @@
 #ifndef TESTHELPERS_H_
 #define TESTHELPERS_H_
 #include <CppUTest/TestHarness.h>
+#include <CppUTest/CommandLineTestRunner.h>
 #include <templatemath.h>
 #include <buffer.h>
 #include <array.h>

@@ -42,7 +42,7 @@ static Data<double> * getDataBroadcast(int rank,double *comparison) {
 	ret->y = (double *) malloc(sizeof(double) * 2);
 
 	int dimensionLength = 1;
-	int *dimension = (int *) malloc(sizeof(int));
+	int *dimension = (int *) malloc(sizeof(int) * dimensionLength);
 	dimension[0] = 1;
 	ret->dimension = dimension;
 	ret->dimensionLength = 1;
