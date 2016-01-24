@@ -5,9 +5,9 @@ layout: default
 
 # Canova: A Vectorization Lib for ML
 
-Canova solves one of the most important obstacles to effective machine or deep learning: getting data into a format that neural nets can understand. Nets understand vectors. Vectorization is the first problem many data scientists will have to solve to start training their algorithms on data. 
+Canova solves one of the most important obstacles to effective machine or deep learning: getting data into a format that neural nets can understand. Nets understand vectors. Vectorization is the first problem many data scientists will have to solve to start training their algorithms on data. Please read this entire page, particularly the section [Reading Records](#record) below, before working with Canova.
 
-## Key aspects
+## Key Aspects
 - [Canova](https://github.com/deeplearning4j/Canova) uses an input/output format system (similar to how Hadoop uses MapReduce)
 - Designed to support all major types of input data (text, CSV, audio, image and video) with these specific input formats
 - Uses an output format system to specify an implementation-neutral type of vector format (ARFF, SVMLight, etc.)
@@ -67,6 +67,7 @@ Then you'll want to build the stand-alone Canova jar to run the CLI from termina
       cd canova-cli/
       mvn -DskipTests=true -Dmaven.javadoc.skip=true package
 -->
+
 ## Create the Configuration File
 
 You'll need a file to tell the vectorization engine what to do. Create a text file containing the following lines in the *canova-cli* directory (you might name the file *vec_conf.txt*):
@@ -131,7 +132,7 @@ Deeplearning4j also works with a command-line interface. A net can be trained wi
       
 The configuration of the net itself may need to be adjusted within the file that contains its instantiation and parameters. Examples of these configurations can be seen on the pages describing [restricted Boltzmann machines](http://deeplearning4j.org/restrictedboltzmannmachine.html) as well as the [Mnist tutorial](http://deeplearning4j.org/mnist-tutorial.html). 
 -->
-##<a name="record">Reading Records, Iterating Over Data</a>
+## <a name="record">Reading Records, Iterating Over Data</a>
 
 The following code shows how to work with one example, raw images, transforming them into a format that will work well with DL4J and ND4J:
 
