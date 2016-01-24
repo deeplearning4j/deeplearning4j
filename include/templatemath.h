@@ -524,7 +524,7 @@ inline int nd4j_atan<int>(int val) {
 	return atanf((float) val);
 }
 
-
+#ifdef __CUDACC__
 namespace atomics {
 template <typename T>
 __device__ T nd4j_atomicAdd(T* address, T val);
@@ -631,6 +631,7 @@ __device__ float nd4j_atomicDiv<float>(float* address, float val) {
 	return __int_as_float(old);
 }
 }
+#endif
 }
 
 }
