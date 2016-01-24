@@ -477,6 +477,19 @@ var timed = function() {
                     $.ajax({
                         url:"${path}" + "/updated",
                         async: true,
+                        error: function (query, status, error) {
+                            $.notify({
+                                title: '<strong>No connection!</strong>',
+                                message: 'DeepLearning4j UiServer seems to be down!'
+                            },{
+                                type: 'danger',
+                                placement: {
+                                    from: "top",
+                                    align: "center"
+                                    },
+                            });
+                            setTimeout(timed, 10000);
+                        },
                         success: function( data ) {
                                     /*
                                         /weights/data should be changed to /weights/data/{time} and only delta should be passed over network
@@ -498,6 +511,16 @@ var timed = function() {
 
                                         if(!model || !gradient || !score || !scores || !updateMagnitudes || !paramMagnitudes ) {
                                             setTimeout(timed, 10000);
+                                            $.notify({
+                                                    	title: '<strong>No data available!</strong>',
+                                                    	message: 'Please check, if <strong>HistogramIterationListener</strong> was enabled.'
+                                                    },{
+                                                    	type: 'danger',
+                                                    	placement: {
+                                                        		from: "top",
+                                                        		align: "center"
+                                                        	},
+                                                    });
                                             return;
                                         }
                                         $('.score').html('' + score);
