@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.conf.graph;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 
 @Data
 public class SubsetVertex extends GraphVertex {
@@ -30,5 +31,10 @@ public class SubsetVertex extends GraphVertex {
     @Override
     public int hashCode(){
         return Integer.hashCode(from) ^ Integer.hashCode(to);
+    }
+
+    @Override
+    public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx) {
+        return new org.deeplearning4j.nn.graph.vertex.impl.SubsetVertex(graph,name,idx,from,to);
     }
 }

@@ -1,9 +1,11 @@
-package org.deeplearning4j.nn.graph.vertex;
+package org.deeplearning4j.nn.graph.vertex.impl;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
+import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
