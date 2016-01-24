@@ -6,20 +6,11 @@ if (CUDA_FOUND)
     SET(CUDA_VERBOSE_BUILD ON)
     set(CUDA_COMPUTE_CAPABILITY "50")
     list(APPEND CUDA_NVCC_FLAGS "-DVERBOSE;-lCppUTest;-G;-g;-gencode arch=compute_50,code=sm_50")
-    CUDA_COMPILE(MAIN_O  main.cu)
+    CUDA_COMPILE(MAIN_O  gpu/main.cu)
     cuda_add_executable(libnd4jtests ${MAIN_O})
 
 else()
    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -x c++" )
-   
-    LINK_LIBRARIES(CppUTest)
-<<<<<<< HEAD
-    message("CUDA not found")
-    add_executable(nativeoperations main.cu)
-    SET_TARGET_PROPERTIES(nativeoperations PROPERTIES LINKER_LANGUAGE CXX)
-    
-endif()
-=======
+       LINK_LIBRARIES(CppUTest)
     add_executable(libnd4jtests cpu/main.cpp)
 endif()
->>>>>>> f1b7c0150c0a40602b56b9b8c079e18f45400805
