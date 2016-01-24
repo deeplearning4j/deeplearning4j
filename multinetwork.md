@@ -17,15 +17,15 @@ A multilayer network is composed of the following kinds of layers:
 
 * A softmax regression output layer.
 
-### parameters
+### Parameters
 
 Below are the parameters what you need to think about when training a network.
 
-### learning rate 
+### Learning rate 
 
 The learning rate, or step rate, is the rate at which a function steps through the search space. The typical value of the learning rate is between 0.001 and 0.1. Smaller steps mean longer training times, but can lead to more precise results. 
 
-### momentum 
+### Momentum 
 
 Momentum is an additional factor in determining how fast an optimization algorithm converges on the optimum point. 
 
@@ -37,15 +37,13 @@ To dig deeper, momentum is a variable between zero and one that is applied as a 
 
 L2 is the lambda discussed in [this equation](http://ufldl.stanford.edu/wiki/index.php/Backpropagation_Algorithm).
 
-*pretraining step*
+*Pretraining step*
 
 For pretraining -- i.e. learning the features via reconstruction at each layer -- a layer is trained and then the output is piped to the next layer.
 
-*finetuning step*
+*Finetuning step*
 
 Finally, the [logistic regression](http://en.wikipedia.org/wiki/Multinomial_logistic_regression) output layer is trained, and then back propagation happens for each layer.
-
-If you're curious about the internals of the dl4j implementation, please see [BaseMultiLayerNetwork](../doc/org/deeplearning4j/nn/BaseMultiLayerNetwork).
 
 Below are the different kinds of multilayer networks:
 
