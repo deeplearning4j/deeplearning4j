@@ -297,7 +297,7 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
 
         protected boolean shuffle = false;
         protected boolean symmetric = false;
-        protected int maxmemory = (int) (Runtime.getRuntime().totalMemory() / 1024 /1024 /1024);
+        protected int maxmemory = 0;
 
         protected int batchSize = 1000;
 
