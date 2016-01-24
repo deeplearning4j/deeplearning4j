@@ -55,8 +55,6 @@ public:
 		assertBufferProperties(yShapeBuff);
 		assertBufferProperties(resultShapeBuff);
 
-		int xOffset = shape::offset(shapeBuff);
-		int yOffset = shape::offset(yShapeBuff);
 		int xEleStride = shape::elementWiseStride(shapeBuff);
 		int yEleStride = shape::elementWiseStride(yShapeBuff);
 		int resultEleStride = shape::elementWiseStride(resultShapeBuff);
@@ -65,7 +63,7 @@ public:
 				this->data->data->data,
 				xEleStride,
 				this->yData->data->data,
-				resultEleStride,
+				yEleStride,
 				this->result->data->data,
 				resultEleStride,
 				this->extraParams,
