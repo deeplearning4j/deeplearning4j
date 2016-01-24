@@ -17,23 +17,21 @@ Each single-layer network has the following attributes:
 * Visible Bias: The bias for the input
 * Weight Matrix: The weights for the machine 
 
-### training a single-layer network
+### Training a single-layer network
 
 Train a network by joining the input vector to the input layer. Distort the input with some Gaussian noise. This noise function will vary depending on the network. Then minimize reconstruction entropy through pretraining until the network learns the best features for reconstructing the input data.
 
-### learning rate
+### Learning rate
 
 A typical learning-rate value is between 0.001 and 0.1. The learning rate, or step rate, is the rate at which a function steps within a search space. Smaller learning rates mean higher training times, but may lead to more precise results.
 
-### momentum
+### Momentum
 
 Momentum is an extra factor in determining how fast an optimization algorithm converges.
 
 ### L2 regularization constant
 
 L2 is the lambda discussed in the equation [here](http://ufldl.stanford.edu/wiki/index.php/Backpropagation_Algorithm).
-
-If you're curious about the internal mechanisms of the DL4J implementation, please see [BaseNeuralNetwork](../doc/org/deeplearning4j/nn/BaseNeuralNetwork.html).
 
 Here are the different kinds of single-layer networks:
 
