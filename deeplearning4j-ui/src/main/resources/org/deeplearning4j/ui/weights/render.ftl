@@ -3,7 +3,7 @@
 <html>
 <head>
 <meta charset="utf-8"/>
-    <title>Title</title>
+    <title>Weights/Gradients/Score</title>
 <style>
     .bar rect {
         fill: steelblue;
@@ -12,6 +12,10 @@
 
     .bar text {
         fill: #EFEFEF;
+    }
+
+    .area {
+        fill: steelblue;
     }
 
     .axis path, .axis line {
@@ -34,6 +38,12 @@
     .legend {
         font-size: 12px;
         text-anchor: middle;
+    }
+
+    .brush .extent {
+        stroke: #fff;
+        fill-opacity: .125;
+        shape-rendering: crispEdges;
     }
 
 </style>
@@ -119,7 +129,7 @@
 <div style="width: 100%; text-align: center;">
     <div id="display" style="width: 1540px; height: 900px; text-align: left; background-color: #FFFFFF; display: inline-block; overflow: hidden; ">
         <div id="scores" style="background-color: #EFEFEF; display: block; float: left; width: 750px; height: 400px; border: 1px solid #CECECE; margin: 10px;">
-            <h5>&nbsp;&nbsp;Scores vs. Iteration #</h5>
+            <h5>&nbsp;&nbsp;Score vs. Iteration #</h5>
             <div class="chart"></div>
         </div>
         <div id="model" style="position: relative; background-color: #EFEFEF; display: block; float: left; width: 750px; height: 400px; border: 1px solid #CECECE; margin: 10px;">
