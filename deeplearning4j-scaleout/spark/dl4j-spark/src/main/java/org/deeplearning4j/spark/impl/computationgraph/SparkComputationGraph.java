@@ -27,7 +27,10 @@ import org.apache.spark.broadcast.Broadcast;
 import org.canova.api.records.reader.RecordReader;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.graph.GraphVertex;
+import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
+import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -201,8 +204,10 @@ public class SparkComputationGraph implements Serializable {
             runIteration(rdd);
         } else {
             //Temporarily set numIterations = 1. Control numIterations externally here so we can average between iterations
-            for(NeuralNetConfiguration nnc : conf.getLayers().values()) {
-                nnc.setNumIterations(1);
+            for(GraphVertex gv : conf.getVertices().values()) {
+                if(gv instanceof LayerVertex){
+                    ((LayerVertex)gv).getLayerConf().setNumIterations(1);   //TODO - do this more elegantly...
+                }
             }
 
             //Run learning, and average at each iteration
@@ -212,8 +217,10 @@ public class SparkComputationGraph implements Serializable {
 
             //Reset number of iterations in config
             if(iterations > 1 ){
-                for(NeuralNetConfiguration nnc : conf.getLayers().values()) {
-                    nnc.setNumIterations(iterations);
+                for(GraphVertex gv : conf.getVertices().values()) {
+                    if(gv instanceof LayerVertex){
+                        ((LayerVertex)gv).getLayerConf().setNumIterations(iterations);   //TODO - do this more elegantly...
+                    }
                 }
             }
         }
