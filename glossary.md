@@ -14,9 +14,11 @@ Activation algorithms are the gates that determine, at each node in the net, whe
 
 ### <a name="adadelta">Adadelta</a> 
 Adadelta is an updater, or learning algorithm, related to gradient descent. Unlike SGD, which applies the same learning rate to all parameters of the network, Adadelta adapts the learning rate per parameter. 
+* [ADADELTA: An Adaptive Learning Rate Method](http://arxiv.org/abs/1212.5701)
 
 ### <a name="adagrad">Adagrad</a>
 Adagrad, short for adaptive gradient, is an updater or learning algorithm that adjust the learning rate for each parameter in the net by monitoring the squared gradients in the course of learning. It is a substitute for SGD, and can be useful when processing sparse data.
+* [Adaptive Subgradient Methods for Online Learning and Stochastic Optimization](http://www.magicbroom.info/Papers/DuchiHaSi10.pdf)
 
 ### <a name="adam">Adam</a>
 Adam (Gibson) co-created Deeplearning4j. :) Adam is also an updater, similar to rmsprop, which uses a running average of the gradient's first and second moment plus a bias-correction term.
