@@ -205,7 +205,7 @@ public:
 	}
 
 #ifdef __CUDACC__
-	inline __host__  __device__
+	__inline__ __host__  __device__
 
 #elif defined(__GNUC__)
 	__always_inline
@@ -1007,6 +1007,7 @@ public:
 				startingIndex = update(startingIndex, curr,
 						extraParams);
 			}
+
 			T finalVal = this->getValue(startingIndex);
 			result[0] = finalVal;
 		} else {
@@ -1057,6 +1058,11 @@ public:
 
 
 		SummaryStatsData<T> *currStartingValue = (SummaryStatsData<T> *) malloc(sizeof(SummaryStatsData<T>) * resultLength);
+#pragma omp simd
+		for(int i = 0; i <  resultLength; i++) {
+        	 currStartingValue[i].initialize();
+        }
+
 
 #pragma omp simd
 		for (int i = 0; i < shape::length(xShapeInfo); i++) {
@@ -1065,11 +1071,11 @@ public:
 					resultLength);
 			SummaryStatsData<T> comp;
 			comp.initWithValue(x[i]);
-			comp = op(comp, extraParams);
-			SummaryStatsData<T> computedUpdate = update(currStartingValue[reductionIndex], comp,
+			currStartingValue[reductionIndex] = update(currStartingValue[reductionIndex], comp,
 					extraParams);
-			currStartingValue[reductionIndex] = computedUpdate;
 		}
+
+
 		for(int i = 0; i < resultLength; i++)
 			result[i] = getValue(currStartingValue[i]);
 		free(currStartingValue);
