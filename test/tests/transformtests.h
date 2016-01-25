@@ -46,7 +46,7 @@ public:
 	}
 
 	TransformTest(int rank,int opNum,Data<T> *data,int extraParamsLength)
-	: BaseTest<T>(rank,opNum,data,extraParamsLength) {
+			: BaseTest<T>(rank,opNum,data,extraParamsLength) {
 		createOperationAndOpFactory();
 	}
 	virtual void freeOpAndOpFactory() override {
@@ -92,28 +92,30 @@ public:
 	virtual ~DoubleTransformTest() {}
 	DoubleTransformTest() {}
 	DoubleTransformTest(int rank,int opNum,Data<double> *data,int extraParamsLength)
-	:  TransformTest<double>(rank,opNum,data,extraParamsLength){
+			:  TransformTest<double>(rank,opNum,data,extraParamsLength){
 	}
 	virtual void executeCudaKernel() override {
 #ifdef __CUDACC__
 		transformDouble<<<this->blockSize,this->gridSize,this->sMemSize>>>(
-				this->opNum
-				,this->length,
-				1,this->data->data->gData,
-				1,this->extraParamsBuff->gData,
-				this->data->data->gData
-				,1);
+this->opNum
+,this->length,
+1,this->data->data->gData,
+1,this->extraParamsBuff->gData,
+this->data->data->gData
+,1);
 
-	}
+
 #endif
+	}
 };
+
 
 
 class FloatTransformTest : public TransformTest<float> {
 public:
 	virtual ~FloatTransformTest() {}
 	FloatTransformTest(int rank,int opNum,Data<float> *data,int extraParamsLength)
-	:  TransformTest<float>(rank,opNum,data,extraParamsLength){
+			:  TransformTest<float>(rank,opNum,data,extraParamsLength){
 	}
 	virtual void executeCudaKernel() override {
 #ifdef __CUDACC__
@@ -128,17 +130,16 @@ public:
 	}
 };
 
+
 class DoubleTwoByTwoTransformTest : public DoubleTransformTest  {
 public:
 	DoubleTwoByTwoTransformTest() {}
 	virtual ~DoubleTwoByTwoTransformTest() {}
 	DoubleTwoByTwoTransformTest(int opNum,Data<double> *data,int extraParamsLength):
-		DoubleTransformTest(2,opNum,data,extraParamsLength) {
+			DoubleTransformTest(2,opNum,data,extraParamsLength) {
 	}
 
 };
-
-
 
 static Data<double> * getDataTransform(double *assertion,int rank) {
 	Data<double> *data = new Data<double>();
@@ -156,7 +157,7 @@ static Data<double> * getDataTransform(double *assertion,int rank) {
 
 	data->rank = rank;
 	data->extraParams = (double *) malloc(sizeof(double) * 2);
-    data->result = (double *) malloc(sizeof(double) * 4);
+	data->result = (double *) malloc(sizeof(double) * 4);
 	return data;
 
 }
@@ -299,4 +300,11 @@ TEST(Transform,ObjectOrientedPow) {
 	delete sigmoidTest;
 	delete data;
 }
+
+
+
+
+
+
+
 #endif //NATIVEOPERATIONS_TRANSFORMTESTS_H

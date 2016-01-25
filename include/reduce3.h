@@ -58,21 +58,6 @@ public:
 	//an op for the kernel
 	virtual
 #ifdef __CUDACC__
-	__device__
-
-
-	inline T opAtomic(T d1, T d2, T **extraParamsRef) = 0;
-#endif
-	/**
-	 *
-	 * @param d1
-	 * @param d2
-	 * @param extraParams
-	 * @return
-	 */
-	//an op for the kernel
-	virtual
-#ifdef __CUDACC__
 	__host__  __device__
 
 #endif
@@ -107,7 +92,21 @@ public:
 #endif
 	inline T merge(T old, T opOutput, T **extraParamsRef) = 0;
 
+/**
+	 *
+	 * @param d1
+	 * @param d2
+	 * @param extraParams
+	 * @return
+	 */
+//an op for the kernel
 #ifdef __CUDACC__
+virtual __device__
+
+	inline T opAtomic(T d1, T d2, T **extraParamsRef) = 0;
+#endif
+
+    #ifdef __CUDACC__
 	/**
 	 * Aggregate shared memory
 	 * @param sPartialsRef
@@ -268,7 +267,7 @@ public:
 					 * aren't getting updated properly.
 					 *
 					 */
-					reduction = update(reduction, opAtomic(curr, currY, &extraParamsVals), &extraParamsVals);
+					reduction = update(reduction, this->opAtomic(curr, currY, &extraParamsVals), &extraParamsVals);
 					__syncthreads();
 					i += gridSize;
 					j += gridSizeY;
@@ -282,7 +281,7 @@ public:
 				while (i * xElementWiseStride < n && j * yElementWiseStride < n) {
 					curr = dx[i];
 					currY = dy[j];
-					reduction = update(reduction, opAtomic(curr, currY, &extraParamsVals), &extraParamsVals);
+					reduction = update(reduction, this->opAtomic(curr, currY, &extraParamsVals), &extraParamsVals);
 					__syncthreads();
 					i += gridSize;
 					j += gridSizeY;
@@ -596,18 +595,17 @@ public:
 	 * @return
 	 */
 	//an op for the kernel
-	virtual
 #ifdef __CUDACC__
-	__device__
-
-#endif
+	virtual __device__
 	inline T opAtomic(T d1, T d2, T **extraParamsRef) {
 		T *extraParams = *extraParamsRef;
+
 		nd4j::math::atomics::nd4j_atomicAdd(&extraParams[0],d1 * d1);
 		nd4j::math::atomics::nd4j_atomicAdd(&extraParams[1],d2 * d2);
+
 		return (d1 * d2);
 	}
-
+#endif
 	//calculate an update of the reduce operation
 	/**
 	 *
@@ -721,8 +719,9 @@ public:
 	 * @return
 	 */
 	//an op for the kernel
-	virtual
+
 #ifdef __CUDACC__
+    virtual
 	__device__
 
 
@@ -860,9 +859,9 @@ public:
 	 * @return
 	 */
 	//an op for the kernel
-	virtual
+
 #ifdef __CUDACC__
-	__device__
+    virtual	__device__
 
 
 	inline T opAtomic(T d1, T d2, T **extraParamsRef) {
