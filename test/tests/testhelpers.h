@@ -136,9 +136,9 @@ protected:
 	nd4j::array::NDArray<T> *result = NULL;
 	T *assertion = NULL;
 	T *extraParams = NULL;
-	int blockSize = 500;
-	int gridSize = 256;
-	int sMemSize = 20000;
+	int blockSize = 32;
+	int gridSize = 64;
+	int sMemSize = 3000;
 	nd4j::buffer::Buffer<T> *extraParamsBuff = NULL;
 	int length;
 	int opNum;
