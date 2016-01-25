@@ -204,6 +204,13 @@ Gradient Clipping is one way to solve the problem of exploding gradients. Explod
 ### <a name="graphicalmodels">Graphical Models</a>
 An undirected graphical model is another name for a [Bayesian net](https://en.wikipedia.org/wiki/Bayesian_network), which represents the probabilistic relationships between the variables represented by its nodes.
 
+### <a name="graphicalmodels">Gated Recurrent Unit (GRU)</a>
+
+### <a name="lenet">LeNet</a>
+Google's LeNet architecture is a deep convolutional network. It won ILSVRC in 2014, and introduced techniques for paring the size of a CNN, thus increasing computational efficiency. 
+
+* [Going Deeper with Convolutions](http://arxiv.org/abs/1409.4842)
+
 ### <a name="loglikelihood">Log-Likelihood</a>
 Log likelihood is related to the statistical idea of the [likelihood function](https://en.wikipedia.org/wiki/Likelihood_function#Log-likelihood). Likelihood is a function of the parameters of a statistical model. "The probability of some observed outcomes given a set of parameter values is referred to as the [likelihood](https://www.princeton.edu/~achaney/tmve/wiki100k/docs/Likelihood_function.html) of the set of parameter values given the observed outcomes."
 
@@ -297,7 +304,7 @@ Two vectors can relate to one another mathematically, and similarities between t
 As you can see, these vectors differ from one another in both their length, or magnitude, and in their angle, or direction. The angle is what concerns us here. 
 
 ### <a name="vgg">VGG</a>
-VGG is a deep convolutional architecture that won the benchmark ImageNet competition in 2014. A VGG architecture is composed of 16–19 weight layers and uses small convolutional filters.
+VGG is a deep convolutional architecture that won the benchmark ImageNet competition in 2014. A VGG architecture is composed of 16–19 weight layers and uses small convolutional filters. [Deeplearning4j's implementations of two VGG architecturs are here](https://github.com/deeplearning4j/ImageNet-Example/tree/master/src/main/java/imagenet/Models).
 
 * [Very Deep Convolutional Networks for Large-Scale Image Recognition](http://arxiv.org/abs/1409.1556)
 
