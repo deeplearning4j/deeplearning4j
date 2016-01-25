@@ -270,9 +270,6 @@ TEST(PairWiseTransform,ObjectOrientedDivide) {
 TEST(PairWiseTransform,ObjectOrientedEqualTo) {
 	int rank = 2;
 	int opNum = 3;
-	int yRank = 2;
-	int resultRank = 2;
-	int length = 4;
 	double comparison[4] = {0.0,0.0,0.0,0.0};
 
 	Data<double> *data = getPairwiseData<double>(comparison,opNum);
