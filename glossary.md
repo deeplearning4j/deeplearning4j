@@ -5,8 +5,12 @@ layout: default
 
 # Deep Learning and Neural Network Glossary
 
+The intent of this glossary is to provide clear definitions of the technical terms specific to deep artificial neural networks. It is a work in progress.
+
 ### <a name="activation">Activation</a> 
-An activation for a neural network is defined as the mapping of the input to the output via a [non-linear transform function](#nonlineartransformfunction) at each "node", which is simply a locus of computation within the net. Each layer in a neural net consists of many nodes. Activation algorithms are the gates that determine, at each node in the net, whether and to what extent to transmit the signal the node has received from the previous layer. A combination of coefficients and biases work on the input data from the previous layer to determine whether that signal surpasses a given treshhold and is deemed significant. Those weights and biases are slowly altered as the neural net minimizes its error; i.e. nodes' activations change with learning. Deeplearning4j includes activation functions such as sigmoid, relu, tanh and ELU. 
+An activation, or activation function, for a neural network is defined as the mapping of the input to the output via a [non-linear transform function](#nonlineartransformfunction) at each "node", which is simply a locus of computation within the net. Each layer in a neural net consists of many nodes, and the number of nodes in a layer is known as its width. 
+
+Activation algorithms are the gates that determine, at each node in the net, whether and to what extent to transmit the signal the node has received from the previous layer. A combination of weights (coefficients) and biases work on the input data from the previous layer to determine whether that signal surpasses a given treshhold and is deemed significant. Those weights and biases are slowly updated as the neural net minimizes its error; i.e. the level of nodes' activation change in the course of learning. Deeplearning4j includes activation functions such as sigmoid, relu, tanh and ELU. 
 
 ### <a name="attention">Attention Models</a> 
 
