@@ -27,8 +27,9 @@ TEST_GROUP(SummaryStatsReduce) {
 	}
 };
 
-static Data<double> * getDataSummary(double *assertion,double startingVal) {
-	Data<double> *ret = new Data<double>();
+template <typename T>
+static Data<T> * getDataSummary(T *assertion,T startingVal) {
+	Data<T> *ret = new Data<T>();
 
 	int rank = 2;
 	int length = 4;
@@ -37,14 +38,14 @@ static Data<double> * getDataSummary(double *assertion,double startingVal) {
 	shape[1] = length;
 	ret->xShape = shape;
 	ret->rank = 2;
-	ret->data = (double *) malloc(sizeof(double) * 4);
+	ret->data = (T *) malloc(sizeof(T) * 4);
 	for(int i = 0; i < 4; i++)
 		ret->data[i] = i + 1;
-	double *extraParams = (double *) malloc(sizeof(double) * 4);
+	T *extraParams = (T *) malloc(sizeof(T) * 4);
 	extraParams[0] = startingVal;
 	ret->extraParams = extraParams;
 
-	ret->assertion = (double *) malloc(sizeof(double) * 4);
+	ret->assertion = (T *) malloc(sizeof(T) * 4);
 	for(int i = 0; i < 1; i++) {
 		printf("Assertion value %f\n",assertion[i]);
 		ret->assertion[i] = assertion[i];
@@ -53,7 +54,7 @@ static Data<double> * getDataSummary(double *assertion,double startingVal) {
 	ret->dimension = (int *) malloc(sizeof(int) * 2);
 	ret->dimension[0] = shape::MAX_DIMENSION;
 
-	ret->result = (double *) malloc(sizeof(double));
+	ret->result = (T *) malloc(sizeof(T));
 	ret->resultRank = 2;
 	ret->resultShape = (int *) malloc(sizeof(int) * 2);
 	for(int i = 0; i < 2; i++)
@@ -62,8 +63,9 @@ static Data<double> * getDataSummary(double *assertion,double startingVal) {
 	return ret;
 }
 
-static Data<double> * getDataSummaryDimension(double *assertion,double startingVal) {
-	Data<double> *ret = new Data<double>();
+template <typename T>
+static Data<T> * getDataSummaryDimension(T *assertion,T startingVal) {
+	Data<T> *ret = new Data<T>();
 
 	int rank = 2;
 	int length = 4;
@@ -72,14 +74,14 @@ static Data<double> * getDataSummaryDimension(double *assertion,double startingV
 	shape[1] = 2;
 	ret->xShape = shape;
 	ret->rank = 2;
-	ret->data = (double *) malloc(sizeof(double) * length);
+	ret->data = (T *) malloc(sizeof(T) * length);
 	for(int i = 0; i < 4; i++)
 		ret->data[i] = i + 1;
-	double *extraParams = (double *) malloc(sizeof(double) * 4);
+	T *extraParams = (T *) malloc(sizeof(T) * 4);
 	extraParams[0] = startingVal;
 	ret->extraParams = extraParams;
 
-	ret->assertion = (double *) malloc(sizeof(double) * 4);
+	ret->assertion = (T *) malloc(sizeof(T) * 4);
 	for(int i = 0; i < 2; i++) {
 		printf("Assertion value %f\n",assertion[i]);
 		ret->assertion[i] = assertion[i];
@@ -88,7 +90,7 @@ static Data<double> * getDataSummaryDimension(double *assertion,double startingV
 	ret->dimension = (int *) malloc(sizeof(int) * 2);
 	ret->dimension[0] = 1;
 	ret->dimensionLength = 1;
-	ret->result = (double *) malloc(sizeof(double));
+	ret->result = (T *) malloc(sizeof(T));
 	ret->resultRank = 2;
 	ret->resultShape = (int *) malloc(sizeof(int) * 2);
 	for(int i = 0; i < 2; i++)
@@ -263,13 +265,12 @@ TEST(SummaryStatsReduce,ObjectOrientedStandardDeviation) {
 	int rank = 2;
 	int opNum = 1;
 	double assertion[1] = {1.29099440574646};
-	Data<double> *data = getDataSummary(assertion,0);
+	Data<double> *data = getDataSummary<double>(assertion,0);
 	DoubleSummaryStatsReduceTest *test = new DoubleSummaryStatsReduceTest(rank,opNum,data,1);
     test->run();
     delete data;
     delete test;
 }
-/*
 
 
 
@@ -278,7 +279,7 @@ TEST(SummaryStatsReduce,ObjectOrientedVariance) {
 	int rank = 2;
 	int opNum = 0;
 	double assertion[1] = {1.66667};
-	Data<double> *data = getDataSummary(assertion,0);
+	Data<double> *data = getDataSummary<double>(assertion,0);
 	DoubleSummaryStatsReduceTest *test = new DoubleSummaryStatsReduceTest(rank,opNum,data,1);
 	test->run();
 	delete data;
@@ -292,7 +293,7 @@ TEST(SummaryStatsReduce,ObjectOrientedDimensionStandardDeviation) {
 	int rank = 2;
 	int opNum = 1;
 	double assertion[2] = { 0.71, 0.71};
-	Data<double> *data = getDataSummaryDimension(assertion,0);
+	Data<double> *data = getDataSummaryDimension<double>(assertion,0);
 	DoubleSummaryStatsReduceTest *test = new DoubleSummaryStatsReduceTest(rank,opNum,data,1);
     test->run();
     delete data;
@@ -303,14 +304,62 @@ TEST(SummaryStatsReduce,ObjectOrientedDimensionVariance) {
 	int rank = 2;
 	int opNum = 0;
 	double assertion[2] = {0.50, 0.50};
-	Data<double> *data = getDataSummaryDimension(assertion,0);
+	Data<double> *data = getDataSummaryDimension<double>(assertion,0);
 	DoubleSummaryStatsReduceTest *test = new DoubleSummaryStatsReduceTest(rank,opNum,data,1);
     test->run();
     delete data;
     delete test;
 }
-*/
 
+TEST(SummaryStatsReduce,ObjectOrientedFloatStandardDeviation) {
+int rank = 2;
+int opNum = 1;
+float assertion[1] = {1.29099440574646};
+Data<float> *data = getDataSummary<float>(assertion,0);
+FloatSummaryStatsReduceTest *test = new FloatSummaryStatsReduceTest(rank,opNum,data,1);
+test->run();
+delete data;
+delete test;
+}
+
+
+
+
+TEST(SummaryStatsReduce,ObjectOrientedFloatVariance) {
+int rank = 2;
+int opNum = 0;
+float assertion[1] = {1.66667};
+Data<float> *data = getDataSummary<float>(assertion,0);
+FloatSummaryStatsReduceTest *test = new FloatSummaryStatsReduceTest(rank,opNum,data,1);
+test->run();
+delete data;
+delete test;
+}
+
+
+
+
+TEST(SummaryStatsReduce,ObjectOrientedFloatDimensionStandardDeviation) {
+int rank = 2;
+int opNum = 1;
+float assertion[2] = { 0.71, 0.71};
+Data<float> *data = getDataSummaryDimension<float>(assertion,0);
+FloatSummaryStatsReduceTest *test = new FloatSummaryStatsReduceTest(rank,opNum,data,1);
+test->run();
+delete data;
+delete test;
+}
+
+TEST(SummaryStatsReduce,ObjectOrientedFloatDimensionVariance) {
+int rank = 2;
+int opNum = 0;
+float assertion[2] = {0.50, 0.50};
+Data<float> *data = getDataSummaryDimension<float>(assertion,0);
+FloatSummaryStatsReduceTest *test = new FloatSummaryStatsReduceTest(rank,opNum,data,1);
+test->run();
+delete data;
+delete test;
+}
 
 
 

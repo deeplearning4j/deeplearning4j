@@ -23,8 +23,9 @@ TEST_GROUP(IndexReduce) {
 	}
 };
 
-static Data<double> * getDataIndexReduce(double *assertion,double startingVal) {
-	Data<double> *ret = new Data<double>();
+template <typename T>
+static Data<T> * getDataIndexReduce(T *assertion,T startingVal) {
+	Data<T> *ret = new Data<T>();
 
 	int rank = 2;
 	int length = 4;
@@ -33,14 +34,14 @@ static Data<double> * getDataIndexReduce(double *assertion,double startingVal) {
 	shape[1] = length;
 	ret->xShape = shape;
 	ret->rank = 2;
-	ret->data = (double *) malloc(sizeof(double) * 4);
+	ret->data = (T *) malloc(sizeof(T) * 4);
 	for(int i = 0; i < 4; i++)
 		ret->data[i] = i + 1;
-	double *extraParams = (double *) malloc(sizeof(double) * 4);
+	T *extraParams = (T *) malloc(sizeof(T) * 4);
 	extraParams[0] = startingVal;
 	ret->extraParams = extraParams;
 
-	ret->assertion = (double *) malloc(sizeof(double) * 4);
+	ret->assertion = (T *) malloc(sizeof(T) * 4);
 	for(int i = 0; i < 1; i++) {
 		printf("Assertion value %f\n",assertion[i]);
 		ret->assertion[i] = assertion[i];
@@ -49,7 +50,7 @@ static Data<double> * getDataIndexReduce(double *assertion,double startingVal) {
 	ret->dimension = (int *) malloc(sizeof(int) * 2);
 	ret->dimension[0] = shape::MAX_DIMENSION;
 
-	ret->result = (double *) malloc(sizeof(double));
+	ret->result = (T *) malloc(sizeof(T));
 	ret->resultRank = 2;
 	ret->resultShape = (int *) malloc(sizeof(int) * 2);
 	for(int i = 0; i < 2; i++)
@@ -58,8 +59,9 @@ static Data<double> * getDataIndexReduce(double *assertion,double startingVal) {
 	return ret;
 }
 
-static Data<double> * getDataIndexReduceDimension(double *assertion,double startingVal) {
-	Data<double> *ret = new Data<double>();
+template <typename T>
+static Data<T> * getDataIndexReduceDimension(T *assertion,T startingVal) {
+	Data<T> *ret = new Data<T>();
 
 	int rank = 2;
 	int length = 4;
@@ -68,14 +70,14 @@ static Data<double> * getDataIndexReduceDimension(double *assertion,double start
 	shape[1] = 2;
 	ret->xShape = shape;
 	ret->rank = 2;
-	ret->data = (double *) malloc(sizeof(double) * length);
+	ret->data = (T *) malloc(sizeof(T) * length);
 	for(int i = 0; i < 4; i++)
 		ret->data[i] = i + 1;
-	double *extraParams = (double *) malloc(sizeof(double) * 4);
+	T *extraParams = (T *) malloc(sizeof(T) * 4);
 	extraParams[0] = startingVal;
 	ret->extraParams = extraParams;
 
-	ret->assertion = (double *) malloc(sizeof(double) * 4);
+	ret->assertion = (T *) malloc(sizeof(T) * 4);
 	for(int i = 0; i < 2; i++) {
 		printf("Assertion value %f\n",assertion[i]);
 		ret->assertion[i] = assertion[i];
@@ -84,7 +86,7 @@ static Data<double> * getDataIndexReduceDimension(double *assertion,double start
 	ret->dimension = (int *) malloc(sizeof(int) * 2);
 	ret->dimension[0] = 1;
 	ret->dimensionLength = 1;
-	ret->result = (double *) malloc(sizeof(double));
+	ret->result = (T *) malloc(sizeof(T));
 	ret->resultRank = 2;
 	ret->resultShape = (int *) malloc(sizeof(int) * 2);
 	for(int i = 0; i < 2; i++)
@@ -93,7 +95,6 @@ static Data<double> * getDataIndexReduceDimension(double *assertion,double start
 
 	return ret;
 }
-
 
 template <typename T>
 class IndexReduceTest : public BaseTest<T> {
@@ -251,7 +252,7 @@ TEST(IndexReduce,ObjectOrientedIMax) {
 	int rank = 2;
 	int opNum = 0;
 	double assertion[1] = {3};
-	Data<double> *data = getDataIndexReduce(assertion,0);
+	Data<double> *data = getDataIndexReduce<double>(assertion,0);
 	DoubleIndexReduceTest *test = new DoubleIndexReduceTest(rank,opNum,data,1);
     test->run();
     delete data;
@@ -262,7 +263,7 @@ TEST(IndexReduce,ObjectOrientedIMin) {
 	int rank = 2;
 	int opNum = 1;
 	double assertion[1] = {0};
-	Data<double> *data = getDataIndexReduce(assertion,0);
+	Data<double> *data = getDataIndexReduce<double>(assertion,0);
 	DoubleIndexReduceTest *test = new DoubleIndexReduceTest(rank,opNum,data,1);
     test->run();
     delete data;
@@ -276,7 +277,7 @@ TEST(IndexReduce,ObjectOrientedDimensionIMax) {
 	int rank = 2;
 	int opNum = 0;
 	double assertion[2] = {1,1};
-	Data<double> *data = getDataIndexReduceDimension(assertion,0);
+	Data<double> *data = getDataIndexReduceDimension<double>(assertion,0);
 	DoubleIndexReduceTest *test = new DoubleIndexReduceTest(rank,opNum,data,1);
     test->run();
     delete data;
@@ -287,11 +288,60 @@ TEST(IndexReduce,ObjectOrientedDimensionIMin) {
 	int rank = 2;
 	int opNum = 1;
 	double assertion[2] = {0,0};
-	Data<double> *data = getDataIndexReduceDimension(assertion,0);
+	Data<double> *data = getDataIndexReduceDimension<double>(assertion,0);
 	DoubleIndexReduceTest *test = new DoubleIndexReduceTest(rank,opNum,data,1);
     test->run();
     delete data;
     delete test;
 }
 
+
+
+
+TEST(IndexReduce,ObjectOrientedFloatIMax) {
+int rank = 2;
+int opNum = 0;
+float assertion[1] = {3};
+Data<float> *data = getDataIndexReduce<float>(assertion,0);
+FloatIndexReduceTest *test = new FloatIndexReduceTest(rank,opNum,data,1);
+test->run();
+delete data;
+delete test;
+}
+
+TEST(IndexReduce,ObjectOrientedFloatIMin) {
+int rank = 2;
+int opNum = 1;
+float assertion[1] = {0};
+Data<float> *data = getDataIndexReduce<float>(assertion,0);
+FloatIndexReduceTest *test = new FloatIndexReduceTest(rank,opNum,data,1);
+test->run();
+delete data;
+delete test;
+}
+
+
+
+
+TEST(IndexReduce,ObjectOrientedFloatDimensionIMax) {
+int rank = 2;
+int opNum = 0;
+float assertion[2] = {1,1};
+Data<float> *data = getDataIndexReduceDimension<float>(assertion,0);
+FloatIndexReduceTest *test = new FloatIndexReduceTest(rank,opNum,data,1);
+test->run();
+delete data;
+delete test;
+}
+
+TEST(IndexReduce,ObjectOrientedFloatDimensionIMin) {
+int rank = 2;
+int opNum = 1;
+float assertion[2] = {0,0};
+Data<float> *data = getDataIndexReduceDimension<float>(assertion,0);
+FloatIndexReduceTest *test = new FloatIndexReduceTest(rank,opNum,data,1);
+test->run();
+delete data;
+delete test;
+}
 #endif //NATIVEOPERATIONS_INDEXREDUCETESTS_H_H
