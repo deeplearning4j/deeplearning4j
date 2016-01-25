@@ -54,6 +54,10 @@ derivatives. The first step is to calculate the derivatives of the objective fun
 
 ![Alt text](../img/backprop_lecun.png)
 
+A special form of backpropagation is called backpropagation through time, or BPTT, which is specifically useful for recurrent networks analyzing text and time series. With BPTT, each time step of the RNN is the equivalent of a layer in a feed-forward network. To backpropagate over many time steps, BPTT can be truncated for the purpose of efficiency. Truncated BPTT limits the time steps over which error is propagated.
+
+* [Backpropagation Through Time: What It Does and How to Do It](http://deeplearning.cs.cmu.edu/pdfs/Werbos.backprop.pdf)
+
 ###<a name="batch">Batch Normalization</a> 
 
 Batch Normalization does what is says: it normalizes mini-batches when they're fed into a layer. Batch normalization has two potential benefits: it can accelerate learning because it allows you to employ higher learning rates, and also regularizes that learning. 
