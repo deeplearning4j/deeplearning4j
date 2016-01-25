@@ -510,6 +510,8 @@ public:
 			result[reductionIndex] = update(result[reductionIndex],
 					opOutput, extraParamsAddress);
 		}
+
+
 #pragma omp simd
 		for (int i = 0; i < resultLength; i++) {
 			T *offsetPointer = extraParamsVals + (i * EXTRA_PARAMS_LENGTH);

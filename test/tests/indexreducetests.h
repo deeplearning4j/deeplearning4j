@@ -245,7 +245,9 @@ public:
 #endif
 	}
 };
-/*TEST(IndexReduce,ObjectOrientedIMax) {
+
+
+TEST(IndexReduce,ObjectOrientedIMax) {
 	int rank = 2;
 	int opNum = 0;
 	double assertion[1] = {3};
@@ -279,7 +281,7 @@ TEST(IndexReduce,ObjectOrientedDimensionIMax) {
     test->run();
     delete data;
     delete test;
-}*/
+}
 
 TEST(IndexReduce,ObjectOrientedDimensionIMin) {
 	int rank = 2;

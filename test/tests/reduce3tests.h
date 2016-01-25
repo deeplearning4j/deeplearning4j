@@ -12,17 +12,17 @@
 
 TEST_GROUP(Reduce3) {
 
-	static int output_method(const char* output, ...) {
-		va_list arguments;
-		va_start(arguments, output);
-		va_end(arguments);
-		return 1;
-	}
-	void setup() {
+		static int output_method(const char* output, ...) {
+			va_list arguments;
+			va_start(arguments, output);
+			va_end(arguments);
+			return 1;
+		}
+		void setup() {
 
-	}
-	void teardown() {
-	}
+		}
+		void teardown() {
+		}
 };
 
 
@@ -48,7 +48,8 @@ static Data<double> * getDataReduce3(double *assertion,double startingVal) {
 	}
 
 	double *extraParams = (double *) malloc(sizeof(double) * 4);
-	extraParams[0] = startingVal;
+	for(int i = 0; i < 4; i++)
+		extraParams[i] = startingVal;
 	ret->extraParams = extraParams;
 
 	ret->assertion = (double *) malloc(sizeof(double) * 4);
@@ -126,7 +127,7 @@ public:
 		freeOpAndOpFactory();
 	}
 	Reduce3Test(int rank,int opNum,Data<T> *data,int extraParamsLength)
-	:  PairWiseTest<T>(rank,opNum,data,extraParamsLength) {
+			:  PairWiseTest<T>(rank,opNum,data,extraParamsLength) {
 		createOperationAndOpFactory();
 	}
 	void freeOpAndOpFactory() {
@@ -210,7 +211,7 @@ class DoubleReduce3Test : public Reduce3Test<double> {
 public:
 	DoubleReduce3Test() {}
 	DoubleReduce3Test(int rank,int opNum,Data<double> *data,int extraParamsLength)
-	:  Reduce3Test<double>(rank,opNum,data,extraParamsLength){
+			:  Reduce3Test<double>(rank,opNum,data,extraParamsLength){
 	}
 	virtual void executeCudaKernel() {
 #ifdef __CUDACC__
@@ -247,7 +248,7 @@ class FloatReduce3Test : public Reduce3Test<float> {
 public:
 	FloatReduce3Test() {}
 	FloatReduce3Test(int rank,int opNum,Data<float> *data,int extraParamsLength)
-	:  Reduce3Test<float>(rank,opNum,data,extraParamsLength){
+			:  Reduce3Test<float>(rank,opNum,data,extraParamsLength){
 	}
 	virtual void executeCudaKernel() {
 #ifdef __CUDACC__
@@ -281,76 +282,76 @@ public:
 };
 
 TEST(Reduce3,ObjectOrientedDimensionEuclideanDistance) {
-	int opNum = 1;
-	int rank = 2;
-	double assertion[2] = {1.41, 1.41};
-	Data<double> *data = getDataReduce3Dimension(assertion,0.0);
-	DoubleReduce3Test *test = new DoubleReduce3Test(rank,opNum,data,1);
-    test->run();
-    delete data;
-    delete test;
+int opNum = 1;
+int rank = 2;
+double assertion[2] = {1.41, 1.41};
+Data<double> *data = getDataReduce3Dimension(assertion,0.0);
+DoubleReduce3Test *test = new DoubleReduce3Test(rank,opNum,data,1);
+test->run();
+delete data;
+delete test;
 }
 
 
 
 TEST(Reduce3,ObjectOrientedDimensionManhattanDistance) {
-	int opNum = 0;
-	int rank = 2;
-	double assertion[2] = {2.0,2.0};
-	Data<double> *data = getDataReduce3Dimension(assertion,0.0);
-	DoubleReduce3Test *test = new DoubleReduce3Test(rank,opNum,data,1);
-    test->run();
-    delete data;
-    delete test;
+int opNum = 0;
+int rank = 2;
+double assertion[2] = {2.0,2.0};
+Data<double> *data = getDataReduce3Dimension(assertion,0.0);
+DoubleReduce3Test *test = new DoubleReduce3Test(rank,opNum,data,1);
+test->run();
+delete data;
+delete test;
 }
 
 
 TEST(Reduce3,ObjectOrientedDimensionCosineSimilarity) {
-	int opNum = 2;
-	int rank = 2;
-	double assertion[2] = {0.9938079488022847,1.0};
-	Data<double> *data = getDataReduce3Dimension(assertion,0.0);
-	DoubleReduce3Test *test = new DoubleReduce3Test(rank,opNum,data,4);
-	test->run();
-	delete data;
-	delete test;
+int opNum = 2;
+int rank = 2;
+double assertion[2] = {0.9938079488022847,1.0};
+Data<double> *data = getDataReduce3Dimension(assertion,0.0);
+DoubleReduce3Test *test = new DoubleReduce3Test(rank,opNum,data,4);
+test->run();
+delete data;
+delete test;
 }
 
 
 
 TEST(Reduce3,ObjectOrientedEuclideanDistance) {
-	int opNum = 1;
-	int rank = 2;
-	double assertion[1] = {2.0};
-	Data<double> *data = getDataReduce3(assertion,0.0);
-	DoubleReduce3Test *test = new DoubleReduce3Test(rank,opNum,data,1);
-    test->run();
-    delete data;
-    delete test;
+int opNum = 1;
+int rank = 2;
+double assertion[1] = {2.0};
+Data<double> *data = getDataReduce3(assertion,0.0);
+DoubleReduce3Test *test = new DoubleReduce3Test(rank,opNum,data,1);
+test->run();
+delete data;
+delete test;
 }
 
 
 
 TEST(Reduce3,ObjectOrientedManhattanDistance) {
-	int opNum = 0;
-	int rank = 2;
-	double assertion[1] = {4.0};
-	Data<double> *data = getDataReduce3(assertion,0.0);
-	DoubleReduce3Test *test = new DoubleReduce3Test(rank,opNum,data,1);
-    test->run();
-    delete data;
-    delete test;
+int opNum = 0;
+int rank = 2;
+double assertion[1] = {4.0};
+Data<double> *data = getDataReduce3(assertion,0.0);
+DoubleReduce3Test *test = new DoubleReduce3Test(rank,opNum,data,1);
+test->run();
+delete data;
+delete test;
 }
 
 TEST(Reduce3,ObjectOrientedCosineSimilarity) {
-	int opNum = 2;
-	int rank = 2;
-	double assertion[1] = {0.9938079488022847};
-	Data<double> *data = getDataReduce3(assertion,0.0);
-	DoubleReduce3Test *test = new DoubleReduce3Test(rank,opNum,data,4);
-    test->run();
-    delete data;
-    delete test;
+int opNum = 2;
+int rank = 2;
+double assertion[1] = {0.9938079488022847};
+Data<double> *data = getDataReduce3(assertion,0.0);
+DoubleReduce3Test *test = new DoubleReduce3Test(rank,opNum,data,4);
+test->run();
+delete data;
+delete test;
 }
 
 
