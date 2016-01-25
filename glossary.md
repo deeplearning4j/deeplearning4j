@@ -54,6 +54,17 @@ derivatives. The first step is to calculate the derivatives of the objective fun
 
 ![Alt text](../img/backprop_lecun.png)
 
+###<a name="batch">Batch Normalization</a> 
+
+Batch Normalization does what is says: it normalizes mini-batches when they're fed into a layer. Batch normalization has two potential benefits: it can accelerate learning because it allows you to employ higher learning rates, and also regularizes that learning. 
+
+* [Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift](http://arxiv.org/abs/1502.03167)
+
+###<a name="bidirectional">Bidirectional Recurrent Neural Networks</a> 
+A Bidirectional RNN is composed of two RNNs that process data in opposite directions. One reads a given sequence from start to finish; the other reads it from finish to start. Bidirectional RNNs are employed in NLP for translation problems, among other use cases. Deeplearning4j's implementation of [bidirectional Graves LSTMs is here](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers/recurrent/GravesBidirectionalLSTM.java).
+
+* [Bidirectional Recurrent Neural Networks](http://www.di.ufpe.br/~fnj/RNA/bibliografia/BRNN.pdf)
+
 ###<a name="binarization">Binarization</a> 
 The process of transforming data in to a set of zeros and ones. An example would be gray-scaling an image by transforming a picture from the 0-255 spectrum to a 0-1 spectrum. 
 
