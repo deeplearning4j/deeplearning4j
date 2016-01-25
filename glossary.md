@@ -47,6 +47,7 @@ Autoencoders are at the heart of representation learning. They encode input, usu
 * [Auto-Encoding Variational Bayes](http://arxiv.org/abs/1312.6114)
 * [Stacked Denoising Autoencoders: Learning Useful Representations in a Deep Network with a Local Denoising Criterion](http://www.jmlr.org/papers/volume11/vincent10a/vincent10a.pdf)
 * [Semi-supervised Sequence Learning](http://arxiv.org/abs/1511.01432)
+* [Autoencoder in Deeplearning4j](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/autoencoder/StackedAutoEncoderMnistExample.java)
 
 ### <a name="backprop">Backpropagation</a> 
 To calculate the [gradient](#gradient) the relate weights to error, we use a technique known as backpropagation, which is also referred to as the backward pass of the network. Backpropagation is a repeated application of chain rule of calculus for partial
@@ -243,6 +244,11 @@ Momentum also known as Nesterov’s momentum, influences the speed of learning. 
 
 ### <a name="mlp">Multilayer Perceptron</a>
 MLPs are perhaps the oldest form of deep neural network. They consist of multiple, fully connected feedforward layers. Examples of [Deeplearning4j's multilayer perceptrons can be seen here](https://github.com/deeplearning4j/dl4j-0.4-examples/tree/master/src/main/java/org/deeplearning4j/examples/mlp). 
+
+### <a name="nmt">Neural Machine Translation</a>
+Neural machine translation maps one language to another using neural networks. Typically, recurrent neural networks are use to ingest a sequence from the input language and output a sequence in the target language. 
+
+* [Sequence to Sequence Learning with Neural Networks](http://arxiv.org/abs/1409.3215)
 
 ### <a name="nonlineartransformfunction">Nonlinear Transform Function</a>  
 A function that maps input on a nonlinear scale such as [sigmoid](http://en.wikipedia.org/wiki/Sigmoid_function) or [tanh](http://en.wikipedia.org/wiki/Hyperbolic_function). By definition, a nonlinear function's output is not directly proportional to its input.
