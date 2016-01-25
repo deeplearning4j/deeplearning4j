@@ -56,7 +56,7 @@ public:
 	virtual void run () override {
 		this->initializeData();
 		this->execCpuKernel();
-	CHECK(arrsEquals(this->rank, this->assertion, this->result->data->data));
+		CHECK(arrsEquals(this->rank, this->assertion, this->result->data->data));
 
 
 #ifdef __CUDACC__
@@ -428,212 +428,212 @@ TEST(ScalarTransform,ObjectOrientedScalarRMod) {
 
 
 TEST(ScalarTransform,ObjectOrientedFloatScalarAdd) {
-int rank = 2;
-int opNum = 0;
-float comparison[4] = { 2,3,4,5 };
+	int rank = 2;
+	int opNum = 0;
+	float comparison[4] = { 2,3,4,5 };
 
-Data<float> *data = getData<float>(comparison,rank);
+	Data<float> *data = getData<float>(comparison,rank);
 
-FloatScalarTest *test = new FloatScalarTest(rank,opNum,data,1);
-test->run();
+	FloatScalarTest *test = new FloatScalarTest(rank,opNum,data,1);
+	test->run();
 
-delete test;
-delete data;
+	delete test;
+	delete data;
 }
 
 
 TEST(ScalarTransform,ObjectOrientedFloatScalarSub) {
-int rank = 2;
-int opNum = 1;
-float comparison[4] = { 0,1,2,3 };
-Data<float> *data = getData<float>(comparison,rank);
-FloatScalarTest *test = new FloatScalarTest(rank,opNum,data,1);
-test->run();
+	int rank = 2;
+	int opNum = 1;
+	float comparison[4] = { 0,1,2,3 };
+	Data<float> *data = getData<float>(comparison,rank);
+	FloatScalarTest *test = new FloatScalarTest(rank,opNum,data,1);
+	test->run();
 
-delete test;
-delete data;
+	delete test;
+	delete data;
 }
 
 
 
 TEST(ScalarTransform,ObjectOrientedFloatScalarMul) {
-int rank = 2;
-int opNum = 2;
-float comparison[4] = { 2,4,6,8 };
-Data<float> *data = getData<float>(comparison,2,rank);
+	int rank = 2;
+	int opNum = 2;
+	float comparison[4] = { 2,4,6,8 };
+	Data<float> *data = getData<float>(comparison,2,rank);
 
-FloatScalarTest *test = new FloatScalarTest(rank,opNum,data,1);
-test->run();
+	FloatScalarTest *test = new FloatScalarTest(rank,opNum,data,1);
+	test->run();
 
-delete test;
-delete data;
+	delete test;
+	delete data;
 }
 
 TEST(ScalarTransform,ObjectOrientedFloatScalarDiv) {
-int rank = 2;
-int opNum = 3;
-float comparison[4] = { 0.5,1,1.5,2};
+	int rank = 2;
+	int opNum = 3;
+	float comparison[4] = { 0.5,1,1.5,2};
 
 
-Data<float> *data = getData<float>(comparison,2,rank);
+	Data<float> *data = getData<float>(comparison,2,rank);
 
-FloatScalarTest *test = new FloatScalarTest(rank,opNum,data,1);
-test->run();
+	FloatScalarTest *test = new FloatScalarTest(rank,opNum,data,1);
+	test->run();
 
-delete test;
-delete data;
+	delete test;
+	delete data;
 }
 
 
 TEST(ScalarTransform,ObjectOrientedFloatScalarRDiv) {
-int rank = 2;
-int opNum = 4;
-float comparison[4] = { 2,1. ,0.66666667,0.5};
-Data<float> *data = getData<float>(comparison,2,rank);
-FloatScalarTest *test = new FloatScalarTest(rank,opNum,data,1);
-test->run();
+	int rank = 2;
+	int opNum = 4;
+	float comparison[4] = { 2,1. ,0.66666667,0.5};
+	Data<float> *data = getData<float>(comparison,2,rank);
+	FloatScalarTest *test = new FloatScalarTest(rank,opNum,data,1);
+	test->run();
 
-delete test;
-delete data;
+	delete test;
+	delete data;
 }
 
 TEST(ScalarTransform,ObjectOrientedFloatScalarRSub) {
-int rank = 2;
-int opNum = 5;
-float comparison[4] = {  1.,  0., -1., -2.};
+	int rank = 2;
+	int opNum = 5;
+	float comparison[4] = {  1.,  0., -1., -2.};
 
-Data<float> *data = getData<float>(comparison,2,rank);
+	Data<float> *data = getData<float>(comparison,2,rank);
 
-FloatScalarTest *test = new FloatScalarTest(rank,opNum,data,1);
-test->run();
+	FloatScalarTest *test = new FloatScalarTest(rank,opNum,data,1);
+	test->run();
 
-delete test;
-delete data;
+	delete test;
+	delete data;
 }
 
 
 TEST(ScalarTransform,ObjectOrientedFloatScalarMax) {
-int rank = 2;
-int opNum = 6;
-float comparison[4] = {  2,2,3,4};
+	int rank = 2;
+	int opNum = 6;
+	float comparison[4] = {  2,2,3,4};
 
-Data<float> *data = getData<float>(comparison,2,rank);
-FloatScalarTest *test = new FloatScalarTest(rank,opNum,data,1);
-test->run();
+	Data<float> *data = getData<float>(comparison,2,rank);
+	FloatScalarTest *test = new FloatScalarTest(rank,opNum,data,1);
+	test->run();
 
-delete test;
-delete data;
+	delete test;
+	delete data;
 }
 
 
 TEST(ScalarTransform,ObjectOrientedFloatScalarLessThan) {
-int rank = 2;
-int opNum = 7;
-float comparison[4] = {  1,0,0,0};
+	int rank = 2;
+	int opNum = 7;
+	float comparison[4] = {  1,0,0,0};
 
-Data<float> *data = getData<float>(comparison,2,rank);
-FloatScalarTest *test = new FloatScalarTest(rank,opNum,data,1);
-test->run();
+	Data<float> *data = getData<float>(comparison,2,rank);
+	FloatScalarTest *test = new FloatScalarTest(rank,opNum,data,1);
+	test->run();
 
-delete test;
-delete data;
+	delete test;
+	delete data;
 }
 
 
 TEST(ScalarTransform,ObjectOrientedFloatScalarGreaterThan) {
-int rank = 2;
-int opNum = 8;
-float comparison[4] = { 0,0,1,1};
-Data<float> *data =getData<float>(comparison,2,rank);
-FloatScalarTest *test = new FloatScalarTest(rank,opNum,data,1);
-test->run();
+	int rank = 2;
+	int opNum = 8;
+	float comparison[4] = { 0,0,1,1};
+	Data<float> *data =getData<float>(comparison,2,rank);
+	FloatScalarTest *test = new FloatScalarTest(rank,opNum,data,1);
+	test->run();
 
-delete test;
-delete data;
+	delete test;
+	delete data;
 }
 
 TEST(ScalarTransform,ObjectOrientedFloatScalarEquals) {
-int rank = 2;
-int opNum = 9;
-float comparison[4] = {0,1,0,0};
-Data<float> *data = getData<float>(comparison,2,rank);
+	int rank = 2;
+	int opNum = 9;
+	float comparison[4] = {0,1,0,0};
+	Data<float> *data = getData<float>(comparison,2,rank);
 
-FloatScalarTest *test = new FloatScalarTest(rank,opNum,data,1);
-test->run();
+	FloatScalarTest *test = new FloatScalarTest(rank,opNum,data,1);
+	test->run();
 
-delete test;
-delete data;
+	delete test;
+	delete data;
 }
 
 
 TEST(ScalarTransform,ObjectOrientedFloatScalarLessThanOrEqual) {
-int rank = 2;
-int opNum = 10;
-float comparison[4] = {  1,1,0,0};
-Data<float> *data = getData<float>(comparison,2,rank);
-FloatScalarTest *test = new FloatScalarTest(rank,opNum,data,1);
-test->run();
+	int rank = 2;
+	int opNum = 10;
+	float comparison[4] = {  1,1,0,0};
+	Data<float> *data = getData<float>(comparison,2,rank);
+	FloatScalarTest *test = new FloatScalarTest(rank,opNum,data,1);
+	test->run();
 
-delete test;
-delete data;
+	delete test;
+	delete data;
 }
 
 
 TEST(ScalarTransform,ObjectOrientedFloatScalarNotEqual) {
-int rank = 2;
-int opNum = 11;
-float comparison[4] = {  1,0,1,1};
+	int rank = 2;
+	int opNum = 11;
+	float comparison[4] = {  1,0,1,1};
 
-Data<float> *data = getData<float>(comparison,2,rank);
-FloatScalarTest *test = new FloatScalarTest(rank,opNum,data,1);
-test->run();
+	Data<float> *data = getData<float>(comparison,2,rank);
+	FloatScalarTest *test = new FloatScalarTest(rank,opNum,data,1);
+	test->run();
 
-delete test;
-delete data;
+	delete test;
+	delete data;
 }
 
 TEST(ScalarTransform,ObjectOrientedFloatScalarMin) {
-int rank = 2;
-int opNum = 12;
-float comparison[4] = { 1,2,2,2};
-Data<float> *data = getData<float>(comparison,2,rank);
+	int rank = 2;
+	int opNum = 12;
+	float comparison[4] = { 1,2,2,2};
+	Data<float> *data = getData<float>(comparison,2,rank);
 
-FloatScalarTest *test = new FloatScalarTest(rank,opNum,data,1);
-test->run();
+	FloatScalarTest *test = new FloatScalarTest(rank,opNum,data,1);
+	test->run();
 
-delete test;
-delete data;
+	delete test;
+	delete data;
 }
 
 
 
 TEST(ScalarTransform,ObjectOrientedFloatScalarSet) {
-int rank = 2;
-int opNum = 13;
-float comparison[4] = {  2,2,2,2};
-Data<float> *data = getData<float>(comparison,2,rank);
+	int rank = 2;
+	int opNum = 13;
+	float comparison[4] = {  2,2,2,2};
+	Data<float> *data = getData<float>(comparison,2,rank);
 
-FloatScalarTest *test = new FloatScalarTest(rank,opNum,data,1);
-test->run();
+	FloatScalarTest *test = new FloatScalarTest(rank,opNum,data,1);
+	test->run();
 
-delete test;
-delete data;
+	delete test;
+	delete data;
 }
 
 
 
 
 TEST(ScalarTransform,ObjectOrientedFloatScalarMod) {
-int rank = 2;
-int opNum = 14;
-float comparison[4] = {  1.,  0.,  1.,  0.};
-Data<float> *data = getData<float>(comparison,2,rank);
+	int rank = 2;
+	int opNum = 14;
+	float comparison[4] = {  1.,  0.,  1.,  0.};
+	Data<float> *data = getData<float>(comparison,2,rank);
 
-FloatScalarTest *test = new FloatScalarTest(rank,opNum,data,1);
-test->run();
+	FloatScalarTest *test = new FloatScalarTest(rank,opNum,data,1);
+	test->run();
 
-delete test;
-delete data;
+	delete test;
+	delete data;
 }
 
 
@@ -641,18 +641,18 @@ delete data;
 
 
 TEST(ScalarTransform,ObjectOrientedFloatScalarRMod) {
-int rank = 2;
-int opNum = 15;
-float comparison[4] = {  0.,  0.,  2.,  2.};
+	int rank = 2;
+	int opNum = 15;
+	float comparison[4] = {  0.,  0.,  2.,  2.};
 
-Data<float> *data = getData<float>(comparison,2,rank);
+	Data<float> *data = getData<float>(comparison,2,rank);
 
 
-FloatScalarTest *test = new FloatScalarTest(rank,opNum,data,1);
-test->run();
+	FloatScalarTest *test = new FloatScalarTest(rank,opNum,data,1);
+	test->run();
 
-delete test;
-delete data;
+	delete test;
+	delete data;
 }
 
 

@@ -46,7 +46,7 @@ public:
 	}
 
 	TransformTest(int rank,int opNum,Data<T> *data,int extraParamsLength)
-			: BaseTest<T>(rank,opNum,data,extraParamsLength) {
+	: BaseTest<T>(rank,opNum,data,extraParamsLength) {
 		createOperationAndOpFactory();
 	}
 	virtual void freeOpAndOpFactory() override {
@@ -92,17 +92,17 @@ public:
 	virtual ~DoubleTransformTest() {}
 	DoubleTransformTest() {}
 	DoubleTransformTest(int rank,int opNum,Data<double> *data,int extraParamsLength)
-			:  TransformTest<double>(rank,opNum,data,extraParamsLength){
+	:  TransformTest<double>(rank,opNum,data,extraParamsLength){
 	}
 	virtual void executeCudaKernel() override {
 #ifdef __CUDACC__
 		transformDouble<<<this->blockSize,this->gridSize,this->sMemSize>>>(
-this->opNum
-,this->length,
-1,this->data->data->gData,
-1,this->extraParamsBuff->gData,
-this->data->data->gData
-,1);
+				this->opNum
+				,this->length,
+				1,this->data->data->gData,
+				1,this->extraParamsBuff->gData,
+				this->data->data->gData
+				,1);
 
 
 #endif
@@ -116,7 +116,7 @@ public:
 	FloatTransformTest() {}
 	virtual ~FloatTransformTest() {}
 	FloatTransformTest(int rank,int opNum,Data<float> *data,int extraParamsLength)
-			:  TransformTest<float>(rank,opNum,data,extraParamsLength){
+	:  TransformTest<float>(rank,opNum,data,extraParamsLength){
 	}
 	virtual void executeCudaKernel() override {
 #ifdef __CUDACC__
@@ -137,7 +137,7 @@ public:
 	DoubleTwoByTwoTransformTest() {}
 	virtual ~DoubleTwoByTwoTransformTest() {}
 	DoubleTwoByTwoTransformTest(int opNum,Data<double> *data,int extraParamsLength):
-			DoubleTransformTest(2,opNum,data,extraParamsLength) {
+		DoubleTransformTest(2,opNum,data,extraParamsLength) {
 	}
 
 };
@@ -147,7 +147,7 @@ public:
 	FloatTwoByTwoTransformTest() {}
 	virtual ~FloatTwoByTwoTransformTest() {}
 	FloatTwoByTwoTransformTest(int opNum,Data<float> *data,int extraParamsLength):
-			FloatTransformTest(2,opNum,data,extraParamsLength) {
+		FloatTransformTest(2,opNum,data,extraParamsLength) {
 	}
 
 };
@@ -315,100 +315,100 @@ TEST(Transform,ObjectOrientedPow) {
 
 
 TEST(Transform,ObjectOrientedFloatSigmoid) {
-int opNum = 10;
-int rank = 2;
-float comparision[4] = {0.7310585786300049,0.8807970779778823
-		,0.9525741268224334,0.9820137900379085};
-Data<float> *data = getDataTransform<float>(comparision,rank);
+	int opNum = 10;
+	int rank = 2;
+	float comparision[4] = {0.7310585786300049,0.8807970779778823
+			,0.9525741268224334,0.9820137900379085};
+	Data<float> *data = getDataTransform<float>(comparision,rank);
 
-FloatTwoByTwoTransformTest *sigmoidTest = new FloatTwoByTwoTransformTest(opNum,data,rank);
-sigmoidTest->run();
-delete sigmoidTest;
-delete data;
+	FloatTwoByTwoTransformTest *sigmoidTest = new FloatTwoByTwoTransformTest(opNum,data,rank);
+	sigmoidTest->run();
+	delete sigmoidTest;
+	delete data;
 }
 
 
 TEST(Transform,ObjectOrientedFloatLog) {
-int opNum = 5;
-int rank = 2;
-float comparison[4] = { 0., 0.69314718, 1.09861229, 1.38629436 };
+	int opNum = 5;
+	int rank = 2;
+	float comparison[4] = { 0., 0.69314718, 1.09861229, 1.38629436 };
 
-Data<float> *data = getDataTransform<float>(comparison,rank);
-FloatTwoByTwoTransformTest *sigmoidTest = new FloatTwoByTwoTransformTest(opNum,data,rank);
-sigmoidTest->run();
-delete sigmoidTest;
-delete data;
+	Data<float> *data = getDataTransform<float>(comparison,rank);
+	FloatTwoByTwoTransformTest *sigmoidTest = new FloatTwoByTwoTransformTest(opNum,data,rank);
+	sigmoidTest->run();
+	delete sigmoidTest;
+	delete data;
 }
 
 TEST(Transform,ObjectOrientedFloatTanh) {
-int opNum = 15;
-int rank = 2;
-float comparison[4] = {  0.76159416,  0.96402758,  0.99505475,  0.9993293 };
+	int opNum = 15;
+	int rank = 2;
+	float comparison[4] = {  0.76159416,  0.96402758,  0.99505475,  0.9993293 };
 
-Data<float> *data = getDataTransform<float>(comparison,rank);
-FloatTwoByTwoTransformTest *sigmoidTest = new FloatTwoByTwoTransformTest(opNum,data,rank);
-sigmoidTest->run();
-delete sigmoidTest;
-delete data;
+	Data<float> *data = getDataTransform<float>(comparison,rank);
+	FloatTwoByTwoTransformTest *sigmoidTest = new FloatTwoByTwoTransformTest(opNum,data,rank);
+	sigmoidTest->run();
+	delete sigmoidTest;
+	delete data;
 }
 
 
 TEST(Transform,ObjectOrientedFloatSin) {
-int opNum = 12;
-int rank = 2;
-float comparison[4] = {  0.84147098,  0.90929743,  0.14112001, -0.7568025 };
+	int opNum = 12;
+	int rank = 2;
+	float comparison[4] = {  0.84147098,  0.90929743,  0.14112001, -0.7568025 };
 
-Data<float> *data = getDataTransform<float>(comparison,rank);
-FloatTwoByTwoTransformTest *sigmoidTest = new FloatTwoByTwoTransformTest(opNum,data,rank);
-sigmoidTest->run();
-delete sigmoidTest;
-delete data;
+	Data<float> *data = getDataTransform<float>(comparison,rank);
+	FloatTwoByTwoTransformTest *sigmoidTest = new FloatTwoByTwoTransformTest(opNum,data,rank);
+	sigmoidTest->run();
+	delete sigmoidTest;
+	delete data;
 }
 
 TEST(Transform,ObjectOrientedFloatCoSine) {
-int opNum = 2;
-int rank = 2;
-float comparison[4] = { 0.54030231, -0.41614684, -0.9899925 , -0.65364362 };
-Data<float> *data = getDataTransform<float>(comparison,rank);
-FloatTwoByTwoTransformTest *sigmoidTest = new FloatTwoByTwoTransformTest(opNum,data,rank);
-sigmoidTest->run();
-delete sigmoidTest;
-delete data;
+	int opNum = 2;
+	int rank = 2;
+	float comparison[4] = { 0.54030231, -0.41614684, -0.9899925 , -0.65364362 };
+	Data<float> *data = getDataTransform<float>(comparison,rank);
+	FloatTwoByTwoTransformTest *sigmoidTest = new FloatTwoByTwoTransformTest(opNum,data,rank);
+	sigmoidTest->run();
+	delete sigmoidTest;
+	delete data;
 }
 
 
 TEST(Transform,ObjectOrientedFloatNeg) {
-int opNum = 6;
-int rank = 2;
-float comparison[4] = { -1,-2,-3,-4 };
+	int opNum = 6;
+	int rank = 2;
+	float comparison[4] = { -1,-2,-3,-4 };
 
-Data<float> *data = getDataTransform<float>(comparison,rank);
-FloatTwoByTwoTransformTest *sigmoidTest = new FloatTwoByTwoTransformTest(opNum,data,rank);
-sigmoidTest->run();
-delete sigmoidTest;
-delete data;
+	Data<float> *data = getDataTransform<float>(comparison,rank);
+	FloatTwoByTwoTransformTest *sigmoidTest = new FloatTwoByTwoTransformTest(opNum,data,rank);
+	sigmoidTest->run();
+	delete sigmoidTest;
+	delete data;
 }
 
 TEST(Transform,ObjectOrientedFloatExp) {
-int opNum = 3;
-int rank = 2;
-float comparison[4] = {  2.71828183,   7.3890561 ,  20.08553692,  54.59815003 };
-Data<float> *data = getDataTransform<float>(comparison,rank);
-FloatTwoByTwoTransformTest *sigmoidTest = new FloatTwoByTwoTransformTest(opNum,data,rank);
-sigmoidTest->run();
-delete sigmoidTest;
-delete data;
+	int opNum = 3;
+	int rank = 2;
+	float comparison[4] = {  2.71828183,   7.3890561 ,  20.08553692,  54.59815003 };
+	Data<float> *data = getDataTransform<float>(comparison,rank);
+	FloatTwoByTwoTransformTest *sigmoidTest = new FloatTwoByTwoTransformTest(opNum,data,rank);
+	sigmoidTest->run();
+	delete sigmoidTest;
+	delete data;
 }
 
 TEST(Transform,ObjectOrientedFloatAbs) {
-int opNum = 0;
-int rank = 2;
-float comparison[4] = {  1,2,3,4};
-Data<float> *data = getDataTransform<float>(comparison,rank);
-FloatTwoByTwoTransformTest *sigmoidTest = new FloatTwoByTwoTransformTest(opNum,data,rank);
-sigmoidTest->run();
-delete sigmoidTest;
-delete data;
+	int opNum = 0;
+	int rank = 2;
+	float comparison[4] = {  1,2,3,4};
+	Data<float> *data = getDataTransform<float>(comparison,rank);
+	FloatTwoByTwoTransformTest *sigmoidTest = new FloatTwoByTwoTransformTest(opNum,data,rank);
+	sigmoidTest->run();
+	delete sigmoidTest;
+	delete data;
 }
 
 
@@ -417,39 +417,39 @@ delete data;
 
 
 TEST(Transform,ObjectOrientedFloatSqrt) {
-int opNum = 14;
-int rank = 2;
-float comparison[4] = {  1.        ,  1.41421356,  1.73205081,  2.};
-Data<float> *data = getDataTransform<float>(comparison,rank);
-FloatTwoByTwoTransformTest *sigmoidTest = new FloatTwoByTwoTransformTest(opNum,data,rank);
-sigmoidTest->run();
-delete sigmoidTest;
-delete data;
+	int opNum = 14;
+	int rank = 2;
+	float comparison[4] = {  1.        ,  1.41421356,  1.73205081,  2.};
+	Data<float> *data = getDataTransform<float>(comparison,rank);
+	FloatTwoByTwoTransformTest *sigmoidTest = new FloatTwoByTwoTransformTest(opNum,data,rank);
+	sigmoidTest->run();
+	delete sigmoidTest;
+	delete data;
 }
 
 
 TEST(Transform,ObjectOrientedFloatATan) {
-int opNum = 18;
-int rank = 2;
-float comparison[4] = {  0.78539816,  1.10714872,  1.24904577,  1.32581766};
-Data<float> *data = getDataTransform<float>(comparison,rank);
-FloatTwoByTwoTransformTest *sigmoidTest = new FloatTwoByTwoTransformTest(opNum,data,rank);
-sigmoidTest->run();
-delete sigmoidTest;
-delete data;
+	int opNum = 18;
+	int rank = 2;
+	float comparison[4] = {  0.78539816,  1.10714872,  1.24904577,  1.32581766};
+	Data<float> *data = getDataTransform<float>(comparison,rank);
+	FloatTwoByTwoTransformTest *sigmoidTest = new FloatTwoByTwoTransformTest(opNum,data,rank);
+	sigmoidTest->run();
+	delete sigmoidTest;
+	delete data;
 }
 
 
 TEST(Transform,ObjectOrientedFloatPow) {
-int opNum = 7;
-int rank = 2;
-float comparison[4] = {  1,4,9,16};
-Data<float> *data = getDataTransform<float>(comparison,rank);
-data->extraParams[0] = 2.0;
-FloatTwoByTwoTransformTest *sigmoidTest = new FloatTwoByTwoTransformTest(opNum,data,rank);
-sigmoidTest->run();
-delete sigmoidTest;
-delete data;
+	int opNum = 7;
+	int rank = 2;
+	float comparison[4] = {  1,4,9,16};
+	Data<float> *data = getDataTransform<float>(comparison,rank);
+	data->extraParams[0] = 2.0;
+	FloatTwoByTwoTransformTest *sigmoidTest = new FloatTwoByTwoTransformTest(opNum,data,rank);
+	sigmoidTest->run();
+	delete sigmoidTest;
+	delete data;
 }
 
 

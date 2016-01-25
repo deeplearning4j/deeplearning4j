@@ -267,9 +267,9 @@ TEST(SummaryStatsReduce,ObjectOrientedStandardDeviation) {
 	double assertion[1] = {1.29099440574646};
 	Data<double> *data = getDataSummary<double>(assertion,0);
 	DoubleSummaryStatsReduceTest *test = new DoubleSummaryStatsReduceTest(rank,opNum,data,1);
-    test->run();
-    delete data;
-    delete test;
+	test->run();
+	delete data;
+	delete test;
 }
 
 
@@ -295,9 +295,9 @@ TEST(SummaryStatsReduce,ObjectOrientedDimensionStandardDeviation) {
 	double assertion[2] = { 0.71, 0.71};
 	Data<double> *data = getDataSummaryDimension<double>(assertion,0);
 	DoubleSummaryStatsReduceTest *test = new DoubleSummaryStatsReduceTest(rank,opNum,data,1);
-    test->run();
-    delete data;
-    delete test;
+	test->run();
+	delete data;
+	delete test;
 }
 
 TEST(SummaryStatsReduce,ObjectOrientedDimensionVariance) {
@@ -306,59 +306,59 @@ TEST(SummaryStatsReduce,ObjectOrientedDimensionVariance) {
 	double assertion[2] = {0.50, 0.50};
 	Data<double> *data = getDataSummaryDimension<double>(assertion,0);
 	DoubleSummaryStatsReduceTest *test = new DoubleSummaryStatsReduceTest(rank,opNum,data,1);
-    test->run();
-    delete data;
-    delete test;
+	test->run();
+	delete data;
+	delete test;
 }
 
 TEST(SummaryStatsReduce,ObjectOrientedFloatStandardDeviation) {
-int rank = 2;
-int opNum = 1;
-float assertion[1] = {1.29099440574646};
-Data<float> *data = getDataSummary<float>(assertion,0);
-FloatSummaryStatsReduceTest *test = new FloatSummaryStatsReduceTest(rank,opNum,data,1);
-test->run();
-delete data;
-delete test;
+	int rank = 2;
+	int opNum = 1;
+	float assertion[1] = {1.29099440574646};
+	Data<float> *data = getDataSummary<float>(assertion,0);
+	FloatSummaryStatsReduceTest *test = new FloatSummaryStatsReduceTest(rank,opNum,data,1);
+	test->run();
+	delete data;
+	delete test;
 }
 
 
 
 
 TEST(SummaryStatsReduce,ObjectOrientedFloatVariance) {
-int rank = 2;
-int opNum = 0;
-float assertion[1] = {1.66667};
-Data<float> *data = getDataSummary<float>(assertion,0);
-FloatSummaryStatsReduceTest *test = new FloatSummaryStatsReduceTest(rank,opNum,data,1);
-test->run();
-delete data;
-delete test;
+	int rank = 2;
+	int opNum = 0;
+	float assertion[1] = {1.66667};
+	Data<float> *data = getDataSummary<float>(assertion,0);
+	FloatSummaryStatsReduceTest *test = new FloatSummaryStatsReduceTest(rank,opNum,data,1);
+	test->run();
+	delete data;
+	delete test;
 }
 
 
 
 
 TEST(SummaryStatsReduce,ObjectOrientedFloatDimensionStandardDeviation) {
-int rank = 2;
-int opNum = 1;
-float assertion[2] = { 0.71, 0.71};
-Data<float> *data = getDataSummaryDimension<float>(assertion,0);
-FloatSummaryStatsReduceTest *test = new FloatSummaryStatsReduceTest(rank,opNum,data,1);
-test->run();
-delete data;
-delete test;
+	int rank = 2;
+	int opNum = 1;
+	float assertion[2] = { 0.71, 0.71};
+	Data<float> *data = getDataSummaryDimension<float>(assertion,0);
+	FloatSummaryStatsReduceTest *test = new FloatSummaryStatsReduceTest(rank,opNum,data,1);
+	test->run();
+	delete data;
+	delete test;
 }
 
 TEST(SummaryStatsReduce,ObjectOrientedFloatDimensionVariance) {
-int rank = 2;
-int opNum = 0;
-float assertion[2] = {0.50, 0.50};
-Data<float> *data = getDataSummaryDimension<float>(assertion,0);
-FloatSummaryStatsReduceTest *test = new FloatSummaryStatsReduceTest(rank,opNum,data,1);
-test->run();
-delete data;
-delete test;
+	int rank = 2;
+	int opNum = 0;
+	float assertion[2] = {0.50, 0.50};
+	Data<float> *data = getDataSummaryDimension<float>(assertion,0);
+	FloatSummaryStatsReduceTest *test = new FloatSummaryStatsReduceTest(rank,opNum,data,1);
+	test->run();
+	delete data;
+	delete test;
 }
 
 

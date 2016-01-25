@@ -1007,7 +1007,7 @@ public:
 				startingIndex = update(startingIndex, curr,
 						extraParams);
 			}
-             T finalVal = this->getValue(startingIndex);
+			T finalVal = this->getValue(startingIndex);
 			result[0] = finalVal;
 		} else {
 

@@ -254,9 +254,9 @@ TEST(IndexReduce,ObjectOrientedIMax) {
 	double assertion[1] = {3};
 	Data<double> *data = getDataIndexReduce<double>(assertion,0);
 	DoubleIndexReduceTest *test = new DoubleIndexReduceTest(rank,opNum,data,1);
-    test->run();
-    delete data;
-    delete test;
+	test->run();
+	delete data;
+	delete test;
 }
 
 TEST(IndexReduce,ObjectOrientedIMin) {
@@ -265,9 +265,9 @@ TEST(IndexReduce,ObjectOrientedIMin) {
 	double assertion[1] = {0};
 	Data<double> *data = getDataIndexReduce<double>(assertion,0);
 	DoubleIndexReduceTest *test = new DoubleIndexReduceTest(rank,opNum,data,1);
-    test->run();
-    delete data;
-    delete test;
+	test->run();
+	delete data;
+	delete test;
 }
 
 
@@ -279,9 +279,9 @@ TEST(IndexReduce,ObjectOrientedDimensionIMax) {
 	double assertion[2] = {1,1};
 	Data<double> *data = getDataIndexReduceDimension<double>(assertion,0);
 	DoubleIndexReduceTest *test = new DoubleIndexReduceTest(rank,opNum,data,1);
-    test->run();
-    delete data;
-    delete test;
+	test->run();
+	delete data;
+	delete test;
 }
 
 TEST(IndexReduce,ObjectOrientedDimensionIMin) {
@@ -290,58 +290,58 @@ TEST(IndexReduce,ObjectOrientedDimensionIMin) {
 	double assertion[2] = {0,0};
 	Data<double> *data = getDataIndexReduceDimension<double>(assertion,0);
 	DoubleIndexReduceTest *test = new DoubleIndexReduceTest(rank,opNum,data,1);
-    test->run();
-    delete data;
-    delete test;
+	test->run();
+	delete data;
+	delete test;
 }
 
 
 
 
 TEST(IndexReduce,ObjectOrientedFloatIMax) {
-int rank = 2;
-int opNum = 0;
-float assertion[1] = {3};
-Data<float> *data = getDataIndexReduce<float>(assertion,0);
-FloatIndexReduceTest *test = new FloatIndexReduceTest(rank,opNum,data,1);
-test->run();
-delete data;
-delete test;
+	int rank = 2;
+	int opNum = 0;
+	float assertion[1] = {3};
+	Data<float> *data = getDataIndexReduce<float>(assertion,0);
+	FloatIndexReduceTest *test = new FloatIndexReduceTest(rank,opNum,data,1);
+	test->run();
+	delete data;
+	delete test;
 }
 
 TEST(IndexReduce,ObjectOrientedFloatIMin) {
-int rank = 2;
-int opNum = 1;
-float assertion[1] = {0};
-Data<float> *data = getDataIndexReduce<float>(assertion,0);
-FloatIndexReduceTest *test = new FloatIndexReduceTest(rank,opNum,data,1);
-test->run();
-delete data;
-delete test;
+	int rank = 2;
+	int opNum = 1;
+	float assertion[1] = {0};
+	Data<float> *data = getDataIndexReduce<float>(assertion,0);
+	FloatIndexReduceTest *test = new FloatIndexReduceTest(rank,opNum,data,1);
+	test->run();
+	delete data;
+	delete test;
 }
 
 
 
 
 TEST(IndexReduce,ObjectOrientedFloatDimensionIMax) {
-int rank = 2;
-int opNum = 0;
-float assertion[2] = {1,1};
-Data<float> *data = getDataIndexReduceDimension<float>(assertion,0);
-FloatIndexReduceTest *test = new FloatIndexReduceTest(rank,opNum,data,1);
-test->run();
-delete data;
-delete test;
+	int rank = 2;
+	int opNum = 0;
+	float assertion[2] = {1,1};
+	Data<float> *data = getDataIndexReduceDimension<float>(assertion,0);
+	FloatIndexReduceTest *test = new FloatIndexReduceTest(rank,opNum,data,1);
+	test->run();
+	delete data;
+	delete test;
 }
 
 TEST(IndexReduce,ObjectOrientedFloatDimensionIMin) {
-int rank = 2;
-int opNum = 1;
-float assertion[2] = {0,0};
-Data<float> *data = getDataIndexReduceDimension<float>(assertion,0);
-FloatIndexReduceTest *test = new FloatIndexReduceTest(rank,opNum,data,1);
-test->run();
-delete data;
-delete test;
+	int rank = 2;
+	int opNum = 1;
+	float assertion[2] = {0,0};
+	Data<float> *data = getDataIndexReduceDimension<float>(assertion,0);
+	FloatIndexReduceTest *test = new FloatIndexReduceTest(rank,opNum,data,1);
+	test->run();
+	delete data;
+	delete test;
 }
 #endif //NATIVEOPERATIONS_INDEXREDUCETESTS_H_H
