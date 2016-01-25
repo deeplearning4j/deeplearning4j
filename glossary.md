@@ -160,7 +160,7 @@ DropConnect is a generalization of Dropout for regularizing large fully-connecte
 ###<a name="embedding">Embedding</a>
 An embedding is a representation of input, or an encoding. For example, a neural word embedding is a vector that represents that word. The word is said to be embedded in vector space. Word2vec and GloVe are two techniques used to train word embeddings to predict a word's context. Because an embedding is a form of representation learning, we can "embed" any data type, including sounds, images and time series. 
 
-###<a name="epoch">Epoch vs Iteration</a>
+###<a name="epoch">Epoch vs. Iteration</a>
 
 In machine-learning parlance, an epoch is a complete pass through a given dataset. That is, by the end of one epoch, your neural network -- be it a restricted Boltzmann machine, convolutional net or deep-belief network -- will have been exposed to every record to example within the dataset once. Not to be confused with an iteration, which is simply one update of the neural net model's parameters. Many iterations can occur before an epoch is over. Epoch and iteration are only synonymous if you update your parameters once for each pass through the whole dataset; if you update using mini-batches, they mean different things. Say your data has 2 minibatches: A and B. `.numIterations(3)` performs training like AAABBB, while 3 epochs looks like ABABAB.
 
@@ -205,17 +205,44 @@ Gradient Clipping is one way to solve the problem of exploding gradients. Explod
 An undirected graphical model is another name for a [Bayesian net](https://en.wikipedia.org/wiki/Bayesian_network), which represents the probabilistic relationships between the variables represented by its nodes.
 
 ### <a name="graphicalmodels">Gated Recurrent Unit (GRU)</a>
+A GRU is a pared-down LSTM. GRUs rely on gating mechanisms to learn long-range dependencies while sidestepping the [vanishing gradient problem](#vanish). They include reset and update gates to decide when to update the GRUs memory at each time step.
+
+* [Learning Phrase Representations using RNN Encoder-Decoder for Statistical Machine Translation](http://arxiv.org/abs/1406.1078v3)
+
+### <a name="highway">Highway Networks</a>
+Highway networks are an architecture introduced by Schmidhuber et al to let information flow unhindered across several RNN layers on so-called "information highways." The architecture uses gating units that learn to regulate the flow of information through the net. Highway networks with hundreds of layers can be trained directly using SGD, which means they can support very deep architectures.
+
+* [Highway Networks](http://arxiv.org/abs/1505.00387)
+
+### <a name="icml">International Conference for Machine Learning</a>
+ICML, or the International Conference for Machine Learning, is a well-known and well attended machine-learning conference. 
+
+### <a name="ILSVRC">ImageNet Large Scale Visual Recognition Challenge  (ILSVRC)</a>
+The ImageNet Large Scale Visual Recognition Challenge is the formal name for ImageNet, a yearly contest held to solicit and evalute the best techniques in image recognition. Deep convolutional architectures have driven error rates on the ImageNet competition from 30% to less than 5%, which means they now have human-level accuracy. 
 
 ### <a name="lenet">LeNet</a>
 Google's LeNet architecture is a deep convolutional network. It won ILSVRC in 2014, and introduced techniques for paring the size of a CNN, thus increasing computational efficiency. 
 
 * [Going Deeper with Convolutions](http://arxiv.org/abs/1409.4842)
 
+### <a name="lstm">Long Short-Term Memory Units (LSTM)</a>
+LSTMs are a form of recurrent neural network invented in the 1990s by Sepp Hochreiter and Juergen Schmidhuber, and now widely used for image, sound and time series analysis, because they help solve the vanishing gradient problem by using a memory gates. Alex Graves made significant improvements to the LSTM with what is now known as the Graves LSTM, which [Deeplearning4j implements here](https://github.com/deeplearning4j/dl4j-0.4-examples/tree/master/src/main/java/org/deeplearning4j/examples/rnn). 
+
+* [LSTMs with Deeplearning4j](../lstm.html)
+* [Using RNNs with Deeplearning4j](../usingrnns.html)
+* [Original Paper: LONG SHORT-TERM MEMORY](http://deeplearning.cs.cmu.edu/pdfs/Hochreiter97_lstm.pdf)
+
 ### <a name="loglikelihood">Log-Likelihood</a>
 Log likelihood is related to the statistical idea of the [likelihood function](https://en.wikipedia.org/wiki/Likelihood_function#Log-likelihood). Likelihood is a function of the parameters of a statistical model. "The probability of some observed outcomes given a set of parameter values is referred to as the [likelihood](https://www.princeton.edu/~achaney/tmve/wiki100k/docs/Likelihood_function.html) of the set of parameter values given the observed outcomes."
 
+### <a name="mnist">MNIST</a>
+MNIST is the "hello world" of deep-learning datasets. Everyone uses MNIST to test their neural networks, just to see if the net actually works at all. MNIST contains 60,000 training examples and 10,000 test examples of the handwritten numerals 0-9. These images are 28x28 pixels, which means they require 784 nodes on the first input layer of a neural network. MNIST is [available for download here](http://yann.lecun.com/exdb/mnist/). Here is an example of [training a DBN on MNIST](http://deeplearning4j.org/mnist-tutorial.html) with Deeplearning4j. 
+
 ### <a name="momentum">Momentum</a>
 Momentum also known as Nesterov’s momentum, influences the speed of learning. It causes the model to converge faster to a point of minimal error. Momentum adjusts the size of the next step, the weight update, based on the previous step’s gradient. That is, it takes the gradient’s history and multiplies it. Before each new step, a provisional gradient is calculated by taking partial derivatives from the model, and the hyperparameters are applied to it to produce a new gradient. Momentum influences the gradient your model uses for the next step.
+
+### <a name="mlp">Multilayer Perceptron</a>
+MLPs are perhaps the oldest form of deep neural network. They consist of multiple, fully connected feedforward layers. Examples of [Deeplearning4j's multilayer perceptrons can be seen here](https://github.com/deeplearning4j/dl4j-0.4-examples/tree/master/src/main/java/org/deeplearning4j/examples/mlp). 
 
 ### <a name="nonlineartransformfunction">Nonlinear Transform Function</a>  
 A function that maps input on a nonlinear scale such as [sigmoid](http://en.wikipedia.org/wiki/Sigmoid_function) or [tanh](http://en.wikipedia.org/wiki/Hyperbolic_function). By definition, a nonlinear function's output is not directly proportional to its input.
@@ -223,8 +250,8 @@ A function that maps input on a nonlinear scale such as [sigmoid](http://en.wiki
 ###<a name="normalization">Normalization</a> 
 The process of transforming the data to span a range from 0 to 1. 
 
-###<a name="OOP">Object-Oriented Programming</a> 
-In object-oriented programming, you create so-called objects, which are generally abstract nouns representing a part in a larger symbolic machine (e.g. in Deeplearning4j, the object class DataSetIterator traverses across datasets and feeds parts of those datasets into another process, iteratively, piece by piece). 
+###<a name="OOP">Object-Oriented Programming (OOP)</a> 
+While deep learning and opject oriented programming don't necessarily go together, Deeplearning4j is written in Java following the principles of OOP. In object-oriented programming, you create so-called objects, which are generally abstract nouns representing a part in a larger symbolic machine (e.g. in Deeplearning4j, the object class DataSetIterator traverses across datasets and feeds parts of those datasets into another process, iteratively, piece by piece). 
 
 DatasetIterator is actually the name of a class of object. In any particular object-oriented program, you would create a particular instance of that general class, calling it, say, 'iter' like this: 
 
