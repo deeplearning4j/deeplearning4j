@@ -126,8 +126,21 @@ A function that maps input on a nonlinear scale such as [sigmoid](http://en.wiki
 ###<a name="normalization">Normalization</a> 
 The process of transforming the data to span a range from 0 to 1. 
 
+###<a name="OOP">Object-Oriented Programming</a> 
+In object-oriented programming, you create so-called objects, which are generally abstract nouns representing a part in a larger symbolic machine (e.g. in Deeplearning4j, the object class DataSetIterator traverses across datasets and feeds parts of those datasets into another process, iteratively, piece by piece). 
+
+DatasetIterator is actually the name of a class of object. In any particular object-oriented program, you would create a particular instance of that general class, calling it, say, 'iter' like this: 
+
+        new DataSetIterator iter;
+
+Every object is really just a data structure that combines fields containing data and methods that act on the data in those fields. 
+
+The way you talk about those fields and methods is with the dot operator `.`, and parentheses `()` that contain parameters. For example, if you wrote `iter.next(5)`, then you'd be telling the DataSetIterator to go across a dataset processing 5 instances of that data (say 5 images or records) at a time, where `next` is the method you call, and 5 is the parameter you pass into it.
+
+You can learn more about DataSetIterator and other classes in Deeplearning4j in our [Javadoc](../doc/).
+
 ###<a name="objectivefunction">Objective Function</a> 
-Also called a Loss Function. An objective function is a heuristic function for reducing prediction error in a machine-learning algorithm.
+Also called a loss function or a cost function, an objective function is a heuristic function for reducing prediction error in a machine-learning algorithm. That is, an objective function allows you to measure how wrong your neural net it when it makes a guess, by comparing that guess to the ground-truth value of the training set. Measuring that error is a precondition to updating the neural net in such a way that its guesses generate less error. The error resulting from the loss function is fed into backpropagation in order to update the weights and biases that process input in the neural network. 
 
 ###<a name="hot">One-Hot Encoding</a> 
 Used in classification and bag of words. The label for each example is all 0s, except for a 1 at the index of the actual class to which the example belongs. For BOW, the one represents the word encountered. 
