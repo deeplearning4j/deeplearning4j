@@ -18,16 +18,21 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.ui.activation.UpdateActivationIterationListener;
 import org.deeplearning4j.ui.weights.HistogramIterationListener;
-import org.deeplearning4j.ui.weights.WeightsVisualizationListener;
+import org.deeplearning4j.ui.weights.ConvolutionVisualizationListener;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -198,10 +203,10 @@ public class ManualTests {
         final int numColumns = 40;
         int nChannels = 3;
         int outputNum = LFWLoader.NUM_LABELS;
-        int numSamples = 1000; // LFWLoader.NUM_IMAGES;
+        int numSamples = LFWLoader.NUM_IMAGES;
         boolean useSubset = false;
         int batchSize = 200;// numSamples/10;
-        int iterations = 6;
+        int iterations = 5;
         int splitTrainNum = (int) (batchSize*.8);
         int seed = 123;
         int listenerFreq = iterations/5;
@@ -274,7 +279,8 @@ public class ManualTests {
         model.init();
 
         log.info("Train model....");
-        model.setListeners(Arrays.asList(new ScoreIterationListener(listenerFreq), new WeightsVisualizationListener(listenerFreq), new HistogramIterationListener(listenerFreq)));
+
+        model.setListeners(Arrays.asList(new ScoreIterationListener(listenerFreq), new ConvolutionVisualizationListener(listenerFreq)));
 
         while(lfw.hasNext()) {
             lfwNext = lfw.next();
@@ -296,6 +302,38 @@ public class ManualTests {
         eval.eval(testLabels.get(0), output);
         log.info(eval.stats());
         log.info("****************Example finished********************");
+
+    }
+
+
+    @Test
+    public void testImage() throws Exception {
+        INDArray array = Nd4j.create(11,13);
+        for (int i = 0; i < array.rows(); i++) {
+            array.putRow(i, Nd4j.create(new double[]{0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.2f, 1.3f}));
+        }
+        writeImage(array, new File("test.png"));
+    }
+
+    private void writeImage(INDArray array, File file) {
+//        BufferedImage image = ImageLoader.toImage(array);
+
+        log.info("Array.rank(): " + array.rank());
+        log.info("Size(-1): " + array.size(-1));
+        log.info("Size(-2): " + array.size(-2));
+        BufferedImage imageToRender = new BufferedImage(array.columns(),array.rows(),BufferedImage.TYPE_BYTE_GRAY);
+        for( int x = 0; x < array.columns(); x++ ){
+            for (int y = 0; y < array.rows(); y++ ) {
+                log.info("x: " + (x) + " y: " + y);
+                imageToRender.getRaster().setSample(x, y, 0, (int) (255 * array.getRow(y).getDouble(x)));
+            }
+        }
+
+        try {
+            ImageIO.write(imageToRender, "png", file);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
     }
 }
