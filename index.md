@@ -60,6 +60,7 @@ If you have any questions, please join [us on Gitter](https://gitter.im/deeplear
 * [Customizing Data Pipelines With Canova](../image-data-pipeline.html)
 * [Restricted Boltzmann machines](../restrictedboltzmannmachine.html)
 * [Eigenvectors, PCA and Entropy](../eigenvector.html)
+* [A Glossary of Deep-Learning Terms](../glossary.html)
 
 ### User Testimonial
 
