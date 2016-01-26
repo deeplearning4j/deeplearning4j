@@ -237,6 +237,9 @@ LSTMs are a form of recurrent neural network invented in the 1990s by Sepp Hochr
 ### <a name="loglikelihood">Log-Likelihood</a>
 Log likelihood is related to the statistical idea of the [likelihood function](https://en.wikipedia.org/wiki/Likelihood_function#Log-likelihood). Likelihood is a function of the parameters of a statistical model. "The probability of some observed outcomes given a set of parameter values is referred to as the [likelihood](https://www.princeton.edu/~achaney/tmve/wiki100k/docs/Likelihood_function.html) of the set of parameter values given the observed outcomes."
 
+### <a name="model">Model</a>
+In neural networks, the model is the collection of weights and biases that transform input into output. A neural network is a set of algorithms that update models such that the models guess with less error as they learn. A model is a symbolic, logical or mathematical machine whose purpose is to deduce output from input. If a model's assumptions are correct, then one must necessarily believe its conclusions. Neural networks produced trained models that can be deployed to process, classify, cluster and make predictions about data. 
+
 ### <a name="mnist">MNIST</a>
 MNIST is the "hello world" of deep-learning datasets. Everyone uses MNIST to test their neural networks, just to see if the net actually works at all. MNIST contains 60,000 training examples and 10,000 test examples of the handwritten numerals 0-9. These images are 28x28 pixels, which means they require 784 nodes on the first input layer of a neural network. MNIST is [available for download here](http://yann.lecun.com/exdb/mnist/). Here is an example of [training a DBN on MNIST](http://deeplearning4j.org/mnist-tutorial.html) with Deeplearning4j. 
 
