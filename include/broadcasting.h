@@ -13,6 +13,9 @@
 #include <op.h>
 #include <templatemath.h>
 #include <helper_cuda.h>
+#ifdef JNI
+#include <jni.h>
+#endif
 namespace functions {
 namespace broadcast {
 

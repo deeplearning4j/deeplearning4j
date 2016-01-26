@@ -14,6 +14,10 @@
 #ifdef __CUDACC__
 #include <helper_cuda.h>
 #endif
+#ifdef JNI
+#include <jni.h>
+#endif
+
 namespace functions {
 namespace summarystats {
 

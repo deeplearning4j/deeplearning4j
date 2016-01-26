@@ -16,6 +16,12 @@ IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     include_directories("/usr/local/include")
 ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 
+#used for determining if we should include jni components or not
+find_package(Java COMPONENTS Development)
+if(Java_FOUND)
+    add_definitions(-DJNI)
+endif()
+
 if (CUDA_FOUND)
     message("CUDA found!")
     set( CUDA_ARCHITECTURE_MINIMUM "3.0" CACHE STRING "Minimum required CUDA compute capability" )

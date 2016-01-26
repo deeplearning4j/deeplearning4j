@@ -14,7 +14,9 @@
 #include <templatemath.h>
 #include <helper_cuda.h>
 #include <sharedmem.h>
-
+#ifdef JNI
+#include <jni.h>
+#endif
 
 namespace functions {
 namespace reduce3 {

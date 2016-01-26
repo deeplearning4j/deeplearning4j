@@ -7,7 +7,9 @@
 
 #ifndef PAIRWISE_TRANSFORM_H_
 #define PAIRWISE_TRANSFORM_H_
-
+#ifdef JNI
+#include <jni.h>
+#endif
 #include <op.h>
 #include <helper_cuda.h>
 namespace functions {

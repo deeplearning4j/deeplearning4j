@@ -15,7 +15,9 @@
 
 #define MAX_FLOAT 1e37
 #define MIN_FLOAT 1e-37
-
+#ifdef JNI
+#include <jni.h>
+#endif
 
 
 namespace functions {

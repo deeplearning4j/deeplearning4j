@@ -7,7 +7,9 @@
 
 #ifndef SCALAR_H_
 #define SCALAR_H_
-
+#ifdef JNI
+#include <jni.h>
+#endif
 #include <op.h>
 #include <templatemath.h>
 namespace functions {
