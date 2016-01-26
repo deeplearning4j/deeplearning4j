@@ -621,7 +621,7 @@ public:
 		__syncthreads();
 
 		if (resultScalar) {
-			if(blockIdx.x >= resultLength)
+			if(blockIdx.x >= resultLength && tid < numElements)
 				return;
 
 			unsigned int i = blockIdx.x * xElementWiseStride + tid;
@@ -650,8 +650,10 @@ public:
 			}
 
 			// each thread puts its local sum into shared memory
-			sPartials[tid] = reduction;
+			if(tid < numElements && reduction.n > 0)
+				sPartials[tid] = reduction;
 			__syncthreads();
+			if(tid < numElements && reduction.n > 0)
 			aggregatePartials(&sPartials, tid,numElements ,extraParams);
 
 			// write result for this block to global mem
@@ -1060,8 +1062,8 @@ public:
 		SummaryStatsData<T> *currStartingValue = (SummaryStatsData<T> *) malloc(sizeof(SummaryStatsData<T>) * resultLength);
 #pragma omp simd
 		for(int i = 0; i <  resultLength; i++) {
-        	 currStartingValue[i].initialize();
-        }
+			currStartingValue[i].initialize();
+		}
 
 
 #pragma omp simd

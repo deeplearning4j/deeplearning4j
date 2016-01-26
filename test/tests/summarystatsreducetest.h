@@ -107,10 +107,15 @@ public:
 	SummaryStatsReduceTest() {}
 	virtual ~SummaryStatsReduceTest() {
 		freeOpAndOpFactory();
+		this->blockSize = 32;
+		this-> gridSize = 64;
+		this->sMemSize = 20000;
+
 	}
 	SummaryStatsReduceTest(int rank,int opNum,Data<T> *data,int extraParamsLength)
 	:  BaseTest<T>(rank,opNum,data,extraParamsLength){
 		createOperationAndOpFactory();
+
 	}
 	void freeOpAndOpFactory() {
 		delete opFactory;
