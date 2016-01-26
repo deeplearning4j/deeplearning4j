@@ -254,6 +254,13 @@ Neural machine translation maps one language to another using neural networks. T
 
 * [Sequence to Sequence Learning with Neural Networks](http://arxiv.org/abs/1409.3215)
 
+### <a name="nce">Noise-Contrastive Estimations (NCE)</a>  
+
+Noise-contrastive estimation offers a balance of computational and statistical efficiency. It is used to train classifiers with many classes in the output layer. It replaces the softmax probability density function, an approximation of a maximum likelihood estimator that is cheaper computationally. 
+
+* [Noise-contrastive estimation: A new estimation principle for unnormalized statistical models](http://www.jmlr.org/proceedings/papers/v9/gutmann10a/gutmann10a.pdf)
+* [Learning word embeddings efficiently with noise-contrastive estimation](http://papers.nips.cc/paper/5165-learning-word-embeddings-efficiently-with-noise-contrastive-estimation.pdf)
+
 ### <a name="nonlineartransformfunction">Nonlinear Transform Function</a>  
 A function that maps input on a nonlinear scale such as [sigmoid](http://en.wikipedia.org/wiki/Sigmoid_function) or [tanh](http://en.wikipedia.org/wiki/Hyperbolic_function). By definition, a nonlinear function's output is not directly proportional to its input.
 
