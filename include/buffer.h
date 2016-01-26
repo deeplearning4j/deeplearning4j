@@ -16,6 +16,10 @@
 
 namespace nd4j {
 namespace buffer {
+/**
+ * Represents both a cpu and gpu
+ * buffer - mainly used for testing
+ */
 template<typename T>
 struct Buffer {
 	int length;

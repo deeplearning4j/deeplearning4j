@@ -16,6 +16,11 @@
 namespace functions {
 namespace broadcast {
 
+/**
+ * Broadcast operation
+ * for broadcasting a smaller tensor
+ * along a bigger one.
+ */
 template<typename T>
 class Broadcast: public functions::ops::Op<T> {
 public:
@@ -68,6 +73,7 @@ public:
 		int xLength = shape::length(xShapeInfo);
 
 		int resultLength = shape::length(resultShapeInfo);
+#pragma unroll
 		for (int i = blockIdx.x * blockDim.x + threadIdx.x;
 				i < resultLength;
 				i += blockDim.x * gridDim.x) {
@@ -79,6 +85,17 @@ public:
 	}
 #endif
 
+	/**
+	 * CPU execution
+	 * @param x the input
+	 * @param xShapeInfo the x shape information
+	 * @param y the y data
+	 * @param yShapeInfo the y shape information
+	 * @param result the result
+	 * @param resultShapeInfo the result shape information
+	 * @param dimension the dimension to broadcast along
+	 * @param dimensionLength the length of the dimension buffer
+	 */
 	virtual void exec(T *x, int *xShapeInfo, T *y, int *yShapeInfo, T *result,
 			int *resultShapeInfo, int *dimension, int dimensionLength) {
 
@@ -92,6 +109,8 @@ public:
 		int xLength = shape::length(xShapeInfo);
 
 		int resultLength = shape::length(resultShapeInfo);
+
+		//optimized loop for vectorization
 		if (xElementWiseStride == 1 && yElementWiseStride == 1) {
 #pragma omp simd
 			for (int i = 0; i < xLength; i++) {
@@ -533,13 +552,24 @@ public:
 	}
 
 
+	/**
+	 * creates an operation
+	 * @param op the op number to create:
+	 * 0: Add
+	 * 1: Subtract
+	 * 2: Multiply
+	 * 3: Divide
+	 * 4: ReverseDivide
+	 * 5: Reverse Subtract
+	 * 6: Copy
+	 * @return the broadcast operation
+	 */
 #ifdef __CUDACC__
 	__inline__ __host__ __device__
 #endif
 	Broadcast<T> * getOp(int op) {
 		if (op == 0) {
 			return new functions::broadcast::ops::Add<T>();
-
 		} else if (op == 1) {
 			return new functions::broadcast::ops::Subtract<T>();
 		} else if (op == 2) {
@@ -565,21 +595,21 @@ public:
 
 #ifdef __CUDACC__
 
-__constant__ functions::broadcast::BroadcastOpFactory<double> *broadcastDoubleFactory;
-__constant__ functions::broadcast::BroadcastOpFactory<float> *broadcastFloatFactory;
-
-
-extern "C"
-__host__ void setupBroadcastFactories() {
-	printf("Setting up transform factories\n");
-	/*	functions::broadcast::BroadcastOpFactory<double> *newOpFactory =  new functions::broadcast::BroadcastOpFactory<double>();
-	functions::broadcast::BroadcastOpFactory<float> *newOpFactoryFloat =  new functions::broadcast::BroadcastOpFactory<float>();
-	checkCudaErrors(cudaMemcpyToSymbol(broadcastDoubleFactory, newOpFactory, sizeof( functions::broadcast::BroadcastOpFactory<double> )));
-	checkCudaErrors(cudaMemcpyToSymbol(broadcastFloatFactory, newOpFactory, sizeof( functions::broadcast::BroadcastOpFactory<float>)));
-	delete(newOpFactory);
-	delete(newOpFactoryFloat);*/
-}
-
+/**
+ * Meant to be called from an external interface
+ * and the driver api
+ * @param opNum the op number to execute
+ * @param x the input data
+ * @param xShapeInfo the x shape info for input
+ * @param y the y to broadcast
+ * @param yShapeInfo the shape information of the broadcast info
+ * @param result the result buffer
+ * @param resultShapeInfo the shape information for the result buffer
+ * @param dimension the dimension(s) to do broadcast along
+ * @param dimensionLength the length of the dimension buffer
+ * @param gpuInformation the gpu information such as blockdim,griddim and shared
+ * memory size
+ */
 template <typename T>
 __device__ void broadcastGeneric(
 		int opNum,
@@ -589,6 +619,8 @@ __device__ void broadcastGeneric(
 		int *dimension,
 		int dimensionLength,
 		int *gpuInformation) {
+
+	//TODO: Reduce object creation
 	__shared__ functions::broadcast::Broadcast<T> *op;
 	__shared__ functions::broadcast::BroadcastOpFactory<T> *newOpFactory;
 	if(threadIdx.x == 0)
@@ -616,6 +648,22 @@ __device__ void broadcastGeneric(
 		free(newOpFactory);
 	}
 }
+
+/**
+ * Meant to be called from an external interface
+ * and the driver api
+ * @param opNum the op number to execute
+ * @param x the input data
+ * @param xShapeInfo the x shape info for input
+ * @param y the y to broadcast
+ * @param yShapeInfo the shape information of the broadcast info
+ * @param result the result buffer
+ * @param resultShapeInfo the shape information for the result buffer
+ * @param dimension the dimension(s) to do broadcast along
+ * @param dimensionLength the length of the dimension buffer
+ * @param gpuInformation the gpu information such as blockdim,griddim and shared
+ * memory size
+ */
 extern "C" __global__ void broadcastDouble(
 		int opNum,
 		double *x, int *xShapeInfo,
@@ -624,10 +672,28 @@ extern "C" __global__ void broadcastDouble(
 		int *dimension,
 		int dimensionLength,
 		int *gpuInformation) {
-	broadcastGeneric<double>(opNum,x,xShapeInfo,y,yShapeInfo,result,resultShapeInfo,dimension,dimensionLength,gpuInformation);
+	broadcastGeneric<double>(
+			opNum,
+			x,xShapeInfo,y,yShapeInfo,result,resultShapeInfo,dimension,dimensionLength,gpuInformation);
 
 }
 
+
+/**
+ * Meant to be called from an external interface
+ * and the driver api
+ * @param opNum the op number to execute
+ * @param x the input data
+ * @param xShapeInfo the x shape info for input
+ * @param y the y to broadcast
+ * @param yShapeInfo the shape information of the broadcast info
+ * @param result the result buffer
+ * @param resultShapeInfo the shape information for the result buffer
+ * @param dimension the dimension(s) to do broadcast along
+ * @param dimensionLength the length of the dimension buffer
+ * @param gpuInformation the gpu information such as blockdim,griddim and shared
+ * memory size
+ */
 extern "C" __global__ void broadcastFloat(
 		int opNum,
 		float *x, int *xShapeInfo,

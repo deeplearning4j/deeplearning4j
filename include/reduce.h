@@ -235,6 +235,7 @@ public:
 		__syncthreads();
 
 		if (!resultScalar && shape::elementWiseStride(xShapeInfo) < 0 && tid == 0) {
+#pragma unroll
 			for (int i = dimensionLength - 1; i >= 0; i--) {
 				transform(n, result, resultShapeInfo, extraParams, result, resultShapeInfo, gpuInformation,
 						dimension - 1, dimensionLength - 1, postProcessOrNot);
@@ -275,6 +276,7 @@ public:
 				unsigned int gridSize = blockDim.x * gridDim.x * xElementWiseStride;
 				if(xOffset == 0) {
 					if(!this->indexBased) {
+#pragma unroll
 						while (i < n) {
 							curr = op(dx[i],realExtraParams);
 							reduction = update(reduction,curr, realExtraParams);
@@ -282,6 +284,7 @@ public:
 						}
 					}
 					else {
+#pragma unroll
 						while (i < n) {
 							int tadIndex = shape::tadIndexForLinear(i,elementsPerTad);
 							if(tadIndex == 0) {
@@ -303,12 +306,14 @@ public:
 					// number of active thread blocks (via gridDim).  More blocks will result
 					// in a larger gridSize and therefore fewer elements per thread
 					if(this->indexBased)
+#pragma unroll
 						while (xOffset + i < n) {
 							curr = op(dx[xOffset + i],realExtraParams);
 							reduction = update(reduction,curr, realExtraParams);
 							i += gridSize;
 						}
 					else {
+#pragma unroll
 						while (xOffset + i < n) {
 							int tadIndex = shape::tadIndexForLinear(i,elementsPerTad);
 							if(tadIndex == 0) {
@@ -386,6 +391,7 @@ public:
 						//update the reduction for the thread for the current tad
 						//note here that we compute the offset and then accumulate in shared memory
 						if(xElementWiseStride > 1)
+#pragma unroll
 							for (int element = 0; element < elementsPerTad; element++, offsetForTad += xElementWiseStride) {
 								if(element == 0) {
 									sPartials[tid] = op(dx[offsetForTad],realExtraParams);
@@ -395,6 +401,7 @@ public:
 								__syncthreads();
 							}
 						else {
+#pragma unroll
 							for (int element = 0; element < elementsPerTad; element++, offsetForTad++) {
 								if(element == 0) {
 									sPartials[tid] = op(dx[offsetForTad],realExtraParams);
@@ -411,11 +418,13 @@ public:
 						//update the reduction for the thread for the current tad
 						//note here that we compute the offset and then accumulate in shared memory
 						if(xElementWiseStride > 1)
+#pragma nroll
 							for (int element = 0; element < elementsPerTad; element++, offsetForTad += xElementWiseStride) {
 								sPartials[tid] = update(sPartials[tid], op(dx[offsetForTad],realExtraParams), realExtraParams);
 								__syncthreads();
 							}
 						else {
+#pragma unroll
 							for (int element = 0; element < elementsPerTad; element++, offsetForTad++) {
 								sPartials[tid] = update(sPartials[tid], op(dx[offsetForTad],realExtraParams), realExtraParams);
 								__syncthreads();
@@ -447,6 +456,7 @@ public:
 					 * in other reduction implementations.
 					 *
 					 */
+#pragma unroll
 					for (int i = 1; i < tadsPerReductionIndex; i++) {
 						sPartials[tid] = update(sPartials[tid], sPartials[tid + i], realExtraParams);
 						__syncthreads();
@@ -459,6 +469,7 @@ public:
 				//should correspond to the final value for the particular reduction index
 				//that was set for this block.
 				if (tid == 0) {
+#pragma unroll
 					for (int i = 0; i < reductionIndexesPerBlock; i++) {
 						int reductionIndexToProcess = i + blockIdx.x * reductionIndexesPerBlock;
 						if(postProcessOrNot) {
@@ -682,6 +693,7 @@ public:
 		//note here blockidx.x + tid is the tad we want
 		int tadForThread = tid + blockIdx.x * tadsPerReduceIndex2;
 		int offsetForBlock = shape::offset(tadForThread, xShapeInfo, dimensionLength, xTadInfo);
+#pragma unroll
 		for (int i = 0; i < tadsPerReduceIndex2; offsetForBlock += shape::elementWiseStride(xShapeInfo), i++) {
 			sPartials[tid] = update(sPartials[tid], op(data[offsetForBlock], extraParams), extraParams);
 			__syncthreads();
@@ -689,6 +701,7 @@ public:
 
 		if (tid == 0 && blockIdx.x < numTads) {
 			//start at 1 so we don't count the first entry twice
+#pragma unroll
 			for (int i = 1; i < numTads; i++) {
 				sPartials[0] = update(sPartials[0], sPartials[i], extraParams);
 				__syncthreads();
@@ -722,6 +735,7 @@ public:
 			__syncthreads();
 		}
 
+#pragma unroll
 		for (int activeThreads = floorPow2 >> 1; activeThreads; activeThreads >>= 1) {
 			if (tid < activeThreads && tid + activeThreads < numItems) {
 				sPartials[tid] = update(sPartials[tid], sPartials[tid + activeThreads], extraParams);
@@ -769,6 +783,15 @@ public:
 	ReduceFunction() {
 	}
 
+	/**
+	 * CPU implementation
+	 * @param x the input data
+	 * @param xShapeInfo the shape information for
+	 * the input data
+	 * @param extraParams the extra parameters for the problem
+	 * @param result the result buffer
+	 * @param resultShapeInfo the shape information
+	 */
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
@@ -807,6 +830,14 @@ public:
 
 
 
+/**
+ * Reduce down to 1 number
+ * @param x the input
+ * @param xShapeInfo the shape information
+ * for the input
+ * @param extraParams the extra params
+ * @return
+ */
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
@@ -837,6 +868,17 @@ public:
 
 	}
 
+	/**
+	 * Execute on the cpu
+	 * @param x the input data
+	 * @param xShapeInfo the shape information for x
+	 * @param extraParams the extra parameters
+	 * @param result the result buffer
+	 * @param resultShapeInfoBuffer the shape information
+	 * @param dimension the dimension to perform
+	 * the reduce along
+	 * @param dimensionLength the length of the dimension buffer
+	 */
 	virtual
 #ifdef __CUDACC__
 	__host__ __device__
@@ -916,7 +958,9 @@ __device__ void initializeShared(T *extraParams, T **sPartials, int sMemSize) {
 #endif
 
 namespace ops {
-
+/**
+ * Summation operation
+ */
 template<typename T>
 class Sum: public virtual functions::reduce::ReduceFunction<T> {
 public:
@@ -1001,6 +1045,9 @@ public:
 	}
 };
 
+/**
+ * The product operation
+ */
 template<typename T>
 class Prod: public virtual functions::reduce::ReduceFunction<T> {
 public:
@@ -1088,6 +1135,9 @@ public:
 	}
 };
 
+/**
+ * Mean operation
+ */
 template<typename T>
 class Mean: public virtual functions::reduce::ReduceFunction<T> {
 public:
@@ -1174,6 +1224,9 @@ public:
 	}
 };
 
+/**
+ * Bias operation for statistics
+ */
 template<typename T>
 class Bias: public virtual functions::reduce::ReduceFunction<T> {
 public:
@@ -1267,6 +1320,9 @@ public:
 	}
 };
 
+/**
+ * Max reduction
+ */
 template<typename T>
 class Max: public virtual functions::reduce::ReduceFunction<T> {
 public:
@@ -1357,6 +1413,9 @@ public:
 	}
 };
 
+/**
+ * Min operation
+ */
 template<typename T>
 class Min: public virtual functions::reduce::ReduceFunction<T> {
 public:
@@ -1447,6 +1506,9 @@ public:
 	}
 };
 
+/**
+ * Norm1 of a buffer
+ */
 template<typename T>
 class Norm1: public virtual functions::reduce::ReduceFunction<T> {
 public:
@@ -1531,6 +1593,9 @@ public:
 	Norm1() {}
 };
 
+/**
+ * Norm2 of an array
+ */
 template<typename T>
 class Norm2: public virtual functions::reduce::ReduceFunction<T> {
 public:
@@ -1620,6 +1685,9 @@ public:
 	}
 };
 
+/**
+ * Norm max of an array
+ */
 template<typename T>
 class NormMax: public virtual functions::reduce::ReduceFunction<T> {
 public:
@@ -1809,6 +1877,9 @@ public:
 	}
 };
 
+/**
+ * Standard deviation of a buffer
+ */
 template<typename T>
 class StandardDeviation: public virtual Variance<T> {
 public:
@@ -1862,6 +1933,22 @@ public:
 	ReduceOpFactory() {
 	}
 
+	/**
+	 * Create an operation given an op number
+	 * @param op the operation number
+	 * 0: mean
+	 * 1: sum
+	 * 2: bias
+	 * 3: max
+	 * 4: min
+	 * 5: norm1
+	 * 6: norm2
+	 * 7: normmaxc
+	 * 8: prod
+	 * 9: std
+	 * 10: variance
+	 * @return
+	 */
 #ifdef __CUDACC__
 	__inline__ __device__ __host__
 #endif
@@ -1908,22 +1995,20 @@ public:
 
 
 #ifdef __CUDACC__
-__constant__ functions::reduce::ReduceOpFactory<double> *reduceOpFactory;
-__constant__ functions::reduce::ReduceOpFactory<float> *reduceOpFactoryFloat;
-
-extern "C"
-__host__ void setupReduceFactories() {
-	/*printf("Setting up transform factories\n");
-	functions::reduce::ReduceOpFactory<double> *newOpFactory =  new functions::reduce::ReduceOpFactory<double>();
-	functions::reduce::ReduceOpFactory<float> *newOpFactoryFloat =  new functions::reduce::ReduceOpFactory<float>();
-	checkCudaErrors(cudaMemcpyToSymbol(reduceOpFactory, newOpFactory, sizeof( functions::reduce::ReduceOpFactory<double> )));
-	checkCudaErrors(cudaMemcpyToSymbol(reduceOpFactoryFloat, newOpFactory, sizeof( functions::reduce::ReduceOpFactory<float>)));
-	delete(newOpFactory);
-	delete(newOpFactoryFloat);*/
-}
-
-
-
+/**
+ * Interface for the c and driver api
+ * @param op the operation number
+ * @param n the length of the problem
+ * @param dx  the input information
+ * @param xShapeInfo the shape information
+ * @param extraParams the extra parameters
+ * @param result the result data
+ * @param resultShapeInfo the result shape information
+ * @param gpuInformation the gpu information
+ * @param dimension the dimension to do reduce along
+ * @param dimensionLength the length of the dimension buffer
+ * @param postProcessOrNot whether to pre process or not
+ */
 template <typename T>
 __global__ void reduceGenericGlobal(
 		int op,
@@ -1960,12 +2045,26 @@ __global__ void reduceGenericGlobal(
 			dimensionLength,
 			postProcessOrNot);
 	if(threadIdx.x == 0) {
-		free(reduceFunctionToInvoke);
-		free(reduceOpFactory);
+		delete  reduceFunctionToInvoke;
+		delete newOpFactory;
 	}
 
 }
 
+/**
+ * Interface for the c and driver api
+ * @param op the operation number
+ * @param n the length of the problem
+ * @param dx  the input information
+ * @param xShapeInfo the shape information
+ * @param extraParams the extra parameters
+ * @param result the result data
+ * @param resultShapeInfo the result shape information
+ * @param gpuInformation the gpu information
+ * @param dimension the dimension to do reduce along
+ * @param dimensionLength the length of the dimension buffer
+ * @param postProcessOrNot whether to pre process or not
+ */
 template <typename T>
 __device__ void reduceGeneric(
 		int op,
@@ -2002,11 +2101,25 @@ __device__ void reduceGeneric(
 			postProcessOrNot);
 	if(threadIdx.x == 0) {
 		delete reduceFunctionToInvoke;
-		delete reduceOpFactory;
+		delete newOpFactory;
 	}
 
 }
 
+/**
+ * Interface for the c and driver api
+ * @param op the operation number
+ * @param n the length of the problem
+ * @param dx  the input information
+ * @param xShapeInfo the shape information
+ * @param extraParams the extra parameters
+ * @param result the result data
+ * @param resultShapeInfo the result shape information
+ * @param gpuInformation the gpu information
+ * @param dimension the dimension to do reduce along
+ * @param dimensionLength the length of the dimension buffer
+ * @param postProcessOrNot whether to pre process or not
+ */
 extern "C" __global__ void reduceDouble(
 		int op,
 		int n,
@@ -2034,6 +2147,20 @@ extern "C" __global__ void reduceDouble(
 
 }
 
+/**
+ * Interface for the c and driver api
+ * @param op the operation number
+ * @param n the length of the problem
+ * @param dx  the input information
+ * @param xShapeInfo the shape information
+ * @param extraParams the extra parameters
+ * @param result the result data
+ * @param resultShapeInfo the result shape information
+ * @param gpuInformation the gpu information
+ * @param dimension the dimension to do reduce along
+ * @param dimensionLength the length of the dimension buffer
+ * @param postProcessOrNot whether to pre process or not
+ */
 extern "C" __global__ void reduceFloat(
 		int op,
 		int n,

@@ -12,6 +12,10 @@
 #include <templatemath.h>
 namespace functions {
 namespace scalar {
+/**
+ * Apply a scalar
+ *  operation to an array
+ */
 template<typename T>
 class ScalarTransform: public virtual functions::ops::Op<T> {
 
@@ -48,11 +52,13 @@ public:
 		int tid = threadIdx.x;
 		int i = blockIdx.x * blockDim.x + tid;
 		if(incy == 1) {
+#pragma unroll
 			for (; i < n; i += totalThreads) {
 				result[i] = op(dy[i],dx, params);
 			}
 		}
 		else {
+#pragma unroll
 			for (; i < n; i += totalThreads) {
 				result[i * incy] = op(dy[i * incy],dx, params);
 			}
@@ -62,6 +68,17 @@ public:
 	}
 #endif
 
+   /**
+    * CPU implementation of scalar operation
+    * @param x the input
+    * @param xStride the stride for the input
+    * @param result the result buffer
+    * @param resultStride the stride for the result
+    * @param scalar the scalar to apply
+    * @param extraParams the extra parameters where
+    * neccssary
+    * @param n the number of elements to loop over
+    */
 	virtual void transform(T *x, int xStride, T *result, int resultStride,
 			T scalar, T *extraParams, int n) {
 		if (xStride == 1 && resultStride == 1) {
@@ -93,6 +110,9 @@ public:
 };
 
 namespace ops {
+/**
+ * x +scalar
+ */
 template<typename T>
 class Add: public virtual ScalarTransform<T> {
 public:
@@ -136,6 +156,9 @@ public:
 
 };
 
+/**
+ * x / scalar
+ */
 template<typename T>
 class Divide: public virtual ScalarTransform<T> {
 public:
@@ -179,6 +202,9 @@ public:
 
 };
 
+/**
+ * x == scalar
+ */
 template<typename T>
 class Equals: public virtual ScalarTransform<T> {
 public:
@@ -221,6 +247,9 @@ public:
 
 };
 
+/**
+ * x > scalar
+ */
 template<typename T>
 class GreaterThan: public virtual ScalarTransform<T> {
 public:
@@ -263,6 +292,9 @@ public:
 
 };
 
+/**
+ * x < scalar
+ */
 template<typename T>
 class LessThan: public virtual ScalarTransform<T> {
 public:
@@ -304,6 +336,9 @@ public:
 	}
 };
 
+/**
+ * x <= scalar
+ */
 template<typename T>
 class LessThanOrEqual: public virtual ScalarTransform<T> {
 public:
@@ -346,6 +381,9 @@ public:
 
 };
 
+/**
+ * max(x,scalar)
+ */
 template<typename T>
 class Max: public virtual ScalarTransform<T> {
 public:
@@ -387,6 +425,9 @@ public:
 	}
 };
 
+/**
+ * min(x,scalar)
+ */
 template<typename T>
 class Min: public virtual ScalarTransform<T> {
 public:
@@ -429,6 +470,9 @@ public:
 
 };
 
+/**
+ * x * scalar
+ */
 template<typename T>
 class Multiply: public virtual ScalarTransform<T> {
 public:
@@ -512,6 +556,9 @@ public:
 	}
 };
 
+/**
+ * scalar / x
+ */
 template<typename T>
 class ReverseDivide: public virtual ScalarTransform<T> {
 public:
@@ -554,6 +601,9 @@ public:
 
 };
 
+/**
+ * scalar - x
+ */
 template<typename T>
 class ReverseSubtract: public virtual ScalarTransform<T> {
 	/**
@@ -590,6 +640,9 @@ class ReverseSubtract: public virtual ScalarTransform<T> {
 
 };
 
+/**
+ * x = scalar
+ */
 template<typename T>
 class Set: public virtual ScalarTransform<T> {
 public:
@@ -635,7 +688,9 @@ public:
 
 
 
-
+/**
+ * x - scalar
+ */
 template<typename T>
 class Subtract: public virtual ScalarTransform<T> {
 public:
@@ -680,7 +735,9 @@ public:
 
 
 
-
+/**
+ * x % scalar
+ */
 template<typename T>
 class Mod: public virtual ScalarTransform<T> {
 public:
@@ -726,7 +783,9 @@ public:
 
 
 
-
+/**
+ * scalar % x
+ */
 template<typename T>
 class RMod: public virtual ScalarTransform<T> {
 public:
@@ -769,7 +828,9 @@ public:
 
 };
 
-
+/**
+ * if x < scalar x = scalar
+ */
 template<typename T>
 class SetValOrLess: public virtual ScalarTransform<T> {
 public:
@@ -829,7 +890,27 @@ public:
 	}
 
 
-
+/**
+ * Create an op based on the number
+ * @param op the op number
+ * 0: Add
+ * 1: subtract
+ * 2: multiply
+ * 3: divide
+ * 4: reverse divide
+ * 5: reverse subtract
+ * 6: max
+ * 7: less than
+ * 8: greater than
+ * 9: equals
+ * 10: less than or equal
+ * 11: not equals
+ * 12: min
+ * 13: set
+ * 14: mod
+ * 15: rmod
+ * @return the op
+ */
 #ifdef __CUDACC__
 	__inline__ __host__ __device__
 #endif

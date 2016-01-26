@@ -188,6 +188,7 @@ public:
 			__syncthreads();
 		}
 
+#pragma unroll
 		for (int activeThreads = floorPow2 >> 1;activeThreads; activeThreads >>= 1) {
 			if (tid < activeThreads && tid + activeThreads < numElements) {
 				IndexValue<T> curr = sPartials[tid];
@@ -247,6 +248,7 @@ public:
 		sPartials = holder.getPointer();
 		T startingVal = this->startingValue(dx);
 
+#pragma unroll
 		for (int i = tid; i < numElements; i += blockDim.x) {
 			IndexValue <T> val = {startingVal, i};
 			sPartials[i] = val;
@@ -263,8 +265,7 @@ public:
 		__shared__ int elementsPerTad;
 
 		//only compute the tad indexes once
-		__shared__
-		shape::TADPermuteInfo xTadInfo;
+		__shared__ shape::TADPermuteInfo xTadInfo;
 
 		IndexValue <T> reduction = {startingVal, 0};
 		if (tid == 0) {
@@ -297,7 +298,9 @@ public:
 		}
 		__syncthreads();
 
+		//reduce to 1 result
 		if (resultScalar) {
+			//don't need any more blocks than the result length
 			if(blockIdx.x >= resultLength)
 				return;
 
@@ -307,6 +310,7 @@ public:
 				// we reduce multiple elements per thread.  The number is determined by the
 				// number of active thread blocks (via gridDim).  More blocks will result
 				// in a larger gridSize and therefore fewer elements per thread
+#pragma unroll
 				while (i < n) {
 					int currIdx = i;
 					IndexValue <T> indexVal = {dx[i], currIdx};
@@ -338,6 +342,7 @@ public:
 			}
 		}
 
+		//multi dimensional
 		else if (!resultScalar) {
 			__shared__ int *tadShapeBuffer;
 			if(tid == 0) {
@@ -372,12 +377,14 @@ public:
 				//update the reduction for the thread for the current tad
 				//note here that we compute the offset and then accumulate in shared memory
 				if(xElementWiseStride > 1)
+#pragma unroll
 					for (int element = 0; element < elementsPerTad; element++, offsetForTad += xElementWiseStride) {
 						IndexValue <T> indexVal = {dx[offsetForTad], element};
 						sPartials[tid] = update(sPartials[tid], indexVal, extraParams);
 						__syncthreads();
 					}
 				else {
+#pragma unroll
 					for (int element = 0; element < elementsPerTad; element++, offsetForTad++) {
 						IndexValue <T> indexVal = {dx[offsetForTad], element};
 						sPartials[tid] = update(sPartials[tid], indexVal, extraParams);
@@ -567,7 +574,7 @@ public:
 		int tid = threadIdx.x;
 		//intialize te values
 		int numItems = sharedMemorySize / sizeof(T);
-
+#pragma unroll
 		for (int i = tid; i < numItems; i += blockDim.x) {
 			IndexValue <T> valInit = {extraParams[0], 0};
 			sPartials[i] = valInit;
@@ -632,7 +639,7 @@ public:
 		//note here blockidx.x + tid is the tad we want
 		int tadForThread = tid + blockIdx.x * tadsPerReduceIndex2;
 		int offsetForBlock = shape::offset(tadForThread, xShapeInfo, dimensionLength, xTadInfo);
-
+#pragma unroll
 		for (int i = 0; i < elementsPerTad; offsetForBlock += elementWiseStride, i++) {
 			IndexValue <T> opApply = {data[offsetForBlock], offsetForBlock};
 			sPartials[tid] = update(sPartials[tid],opApply, extraParams);
@@ -641,6 +648,7 @@ public:
 
 		if (tid == 0 && blockIdx.x < numTads) {
 			//start at 1 so we don't count the first entry twice
+#pragma unroll
 			for (int i = 1; i < numTads; i++) {
 				sPartials[0] = update(sPartials[0], sPartials[i], extraParams);
 				__syncthreads();
@@ -653,6 +661,15 @@ public:
 
 #endif
 
+
+	/**
+	 * CPU operations
+	 * @param x the input data
+	 * @param xShapeInfo the shape information for the input data
+	 * @param extraParams the extra parameters
+	 * @param result the result data
+	 * @param resultShapeInfo the shpae information
+	 */
 	virtual
 #ifdef __CUDACC__
 	inline __host__  __device__
@@ -701,6 +718,18 @@ public:
 
 	}
 
+	/**
+	 * The dimension wise
+	 * CPU implementation
+	 * @param x the input data
+	 * @param xShapeInfo the x shape information
+	 * @param extraParams the extra parameters for the reduce
+	 * @param result the result buffer
+	 * @param resultShapeInfoBuffer the shape information
+	 * @param dimension the dimension to do reduce along
+	 * @param dimensionLength the length of the dimension
+	 * buffer
+	 */
 	virtual
 #ifdef __CUDACC__
 	inline __host__  __device__
@@ -746,14 +775,14 @@ public:
 			comp.value = x[i];
 			comp.index = i % tadLength;
 			IndexValue<T> currStartingValue = startingIndex[reductionIndex];
-            startingIndex[reductionIndex] = update(currStartingValue, comp,
+			startingIndex[reductionIndex] = update(currStartingValue, comp,
 					extraParams);
 		}
 
 
 #pragma omp simd
-        for(int i = 0; i < resultLength; i++)
-            result[i] = startingIndex[i].index;
+		for(int i = 0; i < resultLength; i++)
+			result[i] = startingIndex[i].index;
 
 
 		delete[] startingIndex;
@@ -785,6 +814,10 @@ public:
 };
 
 namespace ops {
+
+/**
+ * Find the max index
+ */
 template<typename T>
 class IMax: public  functions::indexreduce::IndexReduce<T> {
 public:
@@ -893,13 +926,13 @@ public:
 			T *dx, int incx, T *extraParams, T *result) override {
 		return reduction;
 	}
-    virtual
+	virtual
 #ifdef __CUDACC__
-    __host__ __device__
+	__host__ __device__
 #endif
-    T startingValue(T *input) {
-       return MIN_FLOAT;
-    }
+	T startingValue(T *input) {
+		return MIN_FLOAT;
+	}
 
 	/**
 	 *
@@ -937,6 +970,9 @@ public:
 
 };
 
+/**
+ * Find the min index
+ */
 template<typename T>
 class IMin: public  functions::indexreduce::IndexReduce<T> {
 public:
@@ -971,13 +1007,13 @@ public:
 			functions::indexreduce::IndexValue<T> val, T *extraParams) override {
 		return val;
 	}
-    virtual
+	virtual
 #ifdef __CUDACC__
-    __host__ __device__
+	__host__ __device__
 #endif
-    T startingValue(T *input) {
-        return MAX_FLOAT;
-    }
+	T startingValue(T *input) {
+		return MAX_FLOAT;
+	}
 	/**
 	 *
 	 * @param old
@@ -1123,20 +1159,22 @@ public:
 
 
 #ifdef __CUDACC__
-__constant__ functions::indexreduce::IndexReduceOpFactory<double> *indexReduceOpFactoryDouble;
-__constant__ functions::indexreduce::IndexReduceOpFactory<float> *indexReduceOpFactoryFloat;
 
-extern "C"
-__host__ void setupIndexReduceFactories() {
-	/*printf("Setting up indexreduce factories\n");
-	functions::indexreduce::IndexReduceOpFactory<double> *newOpFactory =  new functions::indexreduce::IndexReduceOpFactory<double>();
-	functions::indexreduce::IndexReduceOpFactory<float> *newOpFactoryFloat =  new functions::indexreduce::IndexReduceOpFactory<float>();
-	checkCudaErrors(cudaMemcpyToSymbol(indexReduceOpFactoryDouble, newOpFactory, sizeof( functions::indexreduce::IndexReduceOpFactory<double> )));
-	checkCudaErrors(cudaMemcpyToSymbol(indexReduceOpFactoryFloat, newOpFactory, sizeof( functions::indexreduce::IndexReduceOpFactory<float>)));
-	delete(newOpFactory);
-	delete(newOpFactoryFloat);*/
-}
-
+/**
+ * The external driver
+ * api interface to the cuda kernel
+ * @param op the operation number to execute
+ * @param n the length of the input
+ * @param dx the input data
+ * @param xShapeInfo the input data shape information
+ * @param extraParams  the extra parameters for the reduce
+ * @param result the result buffer
+ * @param resultShapeInfo the shape information for the result
+ * @param gpuInformation the shape information for the data
+ * @param dimension the dimension to do reduce along
+ * @param dimensionLength the length of the dimension buffer
+ * @param postProcessOrNot whether to pre process or not
+ */
 template <typename T>
 __device__ void indexReduceGeneric(
 		int op,
@@ -1164,7 +1202,21 @@ __device__ void indexReduceGeneric(
 	}
 }
 
-
+/**
+ * The external driver
+ * api interface to the cuda kernel
+ * @param op the operation number to execute
+ * @param n the length of the input
+ * @param dx the input data
+ * @param xShapeInfo the input data shape information
+ * @param extraParams  the extra parameters for the reduce
+ * @param result the result buffer
+ * @param resultShapeInfo the shape information for the result
+ * @param gpuInformation the shape information for the data
+ * @param dimension the dimension to do reduce along
+ * @param dimensionLength the length of the dimension buffer
+ * @param postProcessOrNot whether to pre process or not
+ */
 extern "C" __global__ void indexReduceDouble(int op,int n, double *dx, int *xShapeInfo, double *extraParams, double *result,
 		int *resultShapeInfo, int *gpuInformation,
 		int *dimension,
@@ -1172,6 +1224,22 @@ extern "C" __global__ void indexReduceDouble(int op,int n, double *dx, int *xSha
 	indexReduceGeneric<double>(op,n,dx,xShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
 
 }
+
+/**
+ * The external driver
+ * api interface to the cuda kernel
+ * @param op the operation number to execute
+ * @param n the length of the input
+ * @param dx the input data
+ * @param xShapeInfo the input data shape information
+ * @param extraParams  the extra parameters for the reduce
+ * @param result the result buffer
+ * @param resultShapeInfo the shape information for the result
+ * @param gpuInformation the shape information for the data
+ * @param dimension the dimension to do reduce along
+ * @param dimensionLength the length of the dimension buffer
+ * @param postProcessOrNot whether to pre process or not
+ */
 extern "C" __global__ void indexReduceFloat(int op,int n, float *dx, int *xShapeInfo, float *extraParams, float *result,
 		int *resultShapeInfo, int *gpuInformation,
 		int *dimension,

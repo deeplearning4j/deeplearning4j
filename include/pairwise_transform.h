@@ -14,6 +14,9 @@ namespace functions {
 namespace pairwise_transforms {
 #define MIN 1e-12
 
+/**
+ * Transforms involving 2 arrays
+ */
 template<typename T>
 class PairWiseTransform: public virtual functions::ops::Op<T> {
 public:
@@ -67,6 +70,7 @@ public:
 
 		if (incy == 0) {
 			if ((blockIdx.x == 0) && (tid == 0)) {
+#pragma unroll
 				for (; i < n; i++) {
 					result[resultOffset + i * incz] = op(dx[xOffset + i * incx], params);
 				}
@@ -76,12 +80,14 @@ public:
 			/* equal, positive, increments */
 			if (incx == 1) {
 				/* both increments equal to 1 */
+#pragma unroll
 				for (; i < n; i += totalThreads) {
 					result[resultOffset + i * incz] = op(dx[xOffset + i * incx], dy[yOffset + i * incy],
 							params);
 				}
 			} else {
 				/* equal, positive, non-unit increments. */
+#pragma unroll
 				for (; i < n; i += totalThreads) {
 					result[resultOffset + i * incz] = op(dx[xOffset + i * incx], dy[yOffset + i * incy],
 							params);
@@ -89,6 +95,7 @@ public:
 			}
 		} else {
 			/* unequal or nonpositive increments */
+#pragma unroll
 			for (; i < n; i += totalThreads) {
 				result[resultOffset + i * incz] = op(dx[xOffset + i * incx], dy[yOffset + i * incy],
 						params);
@@ -98,12 +105,25 @@ public:
 
 #endif
 public:
+	/**
+	 * CPU operation execution
+	 * @param dx the input data
+	 * @param xStride the stride to iterate over
+	 * the x input
+	 * @param y the y data
+	 * @param yStride the stride to iterate
+	 * over the y buffer
+	 * @param result the buffer
+	 * to store the result in
+	 * @param resultStride the stride for the buffer
+	 * @param extraParams the extra parameters for the transform
+	 * @param n the length of the input
+	 */
 	virtual void exec(T *dx, int xStride, T *y, int yStride, T *result,
 			int resultStride, T *extraParams, int n) {
 		if (xStride == 1 && yStride == 1 && resultStride == 1) {
 #pragma omp simd
 			for (int i = 0; i < n; i++) {
-				printf("Op on %d is %f with x %f and y %f\n",i,op(dx[i], y[i], extraParams),dx[i], y[i]);
 				result[i] = op(dx[i], y[i], extraParams);
 			}
 
@@ -135,6 +155,9 @@ public:
 };
 
 namespace ops {
+/**
+ * x + y
+ */
 template<typename T>
 class Add: public virtual PairWiseTransform<T> {
 public:
@@ -189,6 +212,9 @@ public:
 	}
 };
 
+/**
+ * Copy y to x
+ */
 template<typename T>
 class Copy: public virtual PairWiseTransform<T> {
 public:
@@ -243,6 +269,9 @@ public:
 	}
 };
 
+/**
+ * Divide x / y
+ */
 template<typename T>
 class Divide: public virtual PairWiseTransform<T> {
 public:
@@ -298,6 +327,10 @@ public:
 	}
 };
 
+/**
+ * Whether 2 elements in an array
+ * are epsilion equal
+ */
 template<typename T>
 class Epsilon: public virtual PairWiseTransform<T> {
 public:
@@ -356,6 +389,9 @@ public:
 	}
 };
 
+/**
+ * x == y (binary result)
+ */
 template<typename T>
 class EqualTo: public virtual PairWiseTransform<T> {
 public:
@@ -410,6 +446,9 @@ public:
 	}
 };
 
+/**
+ * Whether x > y
+ */
 template<typename T>
 class GreaterThan: public virtual PairWiseTransform<T> {
 public:
@@ -464,6 +503,9 @@ public:
 	}
 };
 
+/**
+ * Whether x < y
+ */
 template<typename T>
 class LessThan: public virtual PairWiseTransform<T> {
 public:
@@ -518,6 +560,9 @@ public:
 	}
 };
 
+/**
+ * x * y
+ */
 template<typename T>
 class Multiply: public virtual PairWiseTransform<T> {
 public:
@@ -573,6 +618,9 @@ public:
 	}
 };
 
+/**
+ * y / x
+ */
 template<typename T>
 class ReverseDivide: public virtual PairWiseTransform<T> {
 public:
@@ -627,6 +675,9 @@ public:
 	}
 };
 
+/**
+ * y - x
+ */
 template<typename T>
 class ReverseSubtraction: public virtual PairWiseTransform<T> {
 public:
@@ -681,6 +732,9 @@ public:
 	}
 };
 
+/**
+ * x - y
+ */
 template<typename T>
 class Subtract: public virtual PairWiseTransform<T> {
 public:
@@ -735,70 +789,38 @@ public:
 	}
 };
 
-template<typename T>
-class Softmax: public virtual PairWiseTransform<T> {
-public:
-
-	/**
-	 * Name of the op
-	 * @return the name of the operation
-	 */
-	virtual
-#ifdef __CUDACC__
-	__host__
-
-#endif
-	std::string name() {
-		return std::string("softmax_strided");
-	}
-
-	virtual
-#ifdef __CUDACC__
-	inline __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	T op(T d1, T d2, T *params) {
-		return d1 / d2;
-	}
-
-	virtual
-#ifdef __CUDACC__
-	inline __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	T op(T d1, T *params) {
-		return d1;
-	}
-#ifdef __CUDACC__
-	inline __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-
-#endif
-	virtual ~Softmax() {
-	}
-#ifdef __CUDACC__
-	inline __host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-
-#endif
-	Softmax() {
-	}
-};
 }
 
+/**
+ * Creates pair wise operations.
+ */
 template<typename T>
 class PairWiseTransformOpFactory {
 public:
+
+
+
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
 	PairWiseTransformOpFactory() {
 	}
 
+	/**
+	 * Create an operation
+	 * @param op the op number
+	 * 0: Add
+	 * 1: Copy
+	 * 2: Divie
+	 * 3: equal to
+	 * 4: greater than
+	 * 5: less than
+	 * 6: multiply
+	 * 7: reverse divide
+	 * 8 reverse subtract
+	 * 9: subtract
+	 * @return the operation based on the op number
+	 */
 #ifdef __CUDACC__
 	__inline__ __host__ __device__
 #endif
@@ -833,21 +855,23 @@ public:
 }
 
 #ifdef __CUDACC__
-__constant__ functions::pairwise_transforms::PairWiseTransformOpFactory<double> *pairWiseDoubleFactory;
-__constant__ functions::pairwise_transforms::PairWiseTransformOpFactory<float> *pairWiseFloatFactory;
 
-extern "C"
-__host__ void setupPairWiseTransformFactories() {
-	/*printf("Setting up transform factories\n");
-	functions::pairwise_transforms::PairWiseTransformOpFactory<double> *newOpFactory = new functions::pairwise_transforms::PairWiseTransformOpFactory<double>();
-	functions::pairwise_transforms::PairWiseTransformOpFactory<float> *newOpFactoryFloat = new functions::pairwise_transforms::PairWiseTransformOpFactory<float>();
-	checkCudaErrors(cudaMemcpyToSymbol(pairWiseDoubleFactory, newOpFactory, sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<double> )));
-	checkCudaErrors(cudaMemcpyToSymbol(pairWiseFloatFactory, newOpFactory, sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<float>)));
-	delete(newOpFactory);
-	delete(newOpFactoryFloat);*/
-
-}
-
+/**
+ * The api for the driver interface
+ * @param opNum the op number
+ * @param n the length of the problem
+ * @param xOffset the offset for x
+ * @param yOffset the offset for y
+ * @param resultOffset the offset for result
+ * @param dx the input
+ * @param dy the pair wise array
+ * @param incx the stride for x
+ * @param incy the stride for y
+ * @param params the parameters for the problem
+ * @param result the result buffer
+ * @param incz the result stride
+ * @param blockSize the block size
+ */
 template <typename T>
 __device__ void pairWiseTransformGeneric(
 		int opNum,
@@ -878,6 +902,22 @@ __device__ void pairWiseTransformGeneric(
 }
 
 
+/**
+ * The api for the driver interface
+ * @param opNum the op number
+ * @param n the length of the problem
+ * @param xOffset the offset for x
+ * @param yOffset the offset for y
+ * @param resultOffset the offset for result
+ * @param dx the input
+ * @param dy the pair wise array
+ * @param incx the stride for x
+ * @param incy the stride for y
+ * @param params the parameters for the problem
+ * @param result the result buffer
+ * @param incz the result stride
+ * @param blockSize the block size
+ */
 extern "C" __global__ void pairWiseTransformDouble(
 		int opNum,
 		int n,
@@ -896,6 +936,22 @@ extern "C" __global__ void pairWiseTransformDouble(
 
 
 
+/**
+ * The api for the driver interface
+ * @param opNum the op number
+ * @param n the length of the problem
+ * @param xOffset the offset for x
+ * @param yOffset the offset for y
+ * @param resultOffset the offset for result
+ * @param dx the input
+ * @param dy the pair wise array
+ * @param incx the stride for x
+ * @param incy the stride for y
+ * @param params the parameters for the problem
+ * @param result the result buffer
+ * @param incz the result stride
+ * @param blockSize the block size
+ */
 extern "C" __global__ void pairWiseTransformFloat(
 		int opNum,
 		int n,
