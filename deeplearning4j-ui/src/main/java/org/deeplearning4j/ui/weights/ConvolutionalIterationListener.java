@@ -29,6 +29,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 
 /**
  * @author raver119@gmail.com
@@ -42,6 +43,9 @@ public class ConvolutionalIterationListener implements IterationListener {
     private Client client = ClientBuilder.newClient();
     private WebTarget target;
     private boolean firstIteration = true;
+
+    private Color borderColor = new Color(140,140,140);
+    private Color bgColor = new Color(255,255,255);
 
 
     public ConvolutionalIterationListener(int visualizationFrequency) {
@@ -97,15 +101,16 @@ public class ConvolutionalIterationListener implements IterationListener {
 
             List<INDArray> tensors = new ArrayList<>();
             int cnt = 0;
+            Random rnd = new Random();
             MultiLayerNetwork l = (MultiLayerNetwork) model;
             for (Layer layer: l.getLayers()) {
                 if (layer.type() == Layer.Type.CONVOLUTIONAL) {
                     INDArray output = layer.activate();
 
-                    log.info("Layer output shape: " + Arrays.toString(output.shape()));
+//                    log.info("Layer output shape: " + Arrays.toString(output.shape()));
 
-                    INDArray tad = output.tensorAlongDimension(21, 3, 2, 1);
-                    log.info("TAD(3,2,1) shape: " + Arrays.toString(tad.shape()));
+                    INDArray tad = output.tensorAlongDimension(rnd.nextInt(output.shape()[0] - 1) + 1, 3, 2, 1);
+  //                  log.info("TAD(3,2,1) shape: " + Arrays.toString(tad.shape()));
 
                     tensors.add(tad);
 
@@ -174,8 +179,11 @@ public class ConvolutionalIterationListener implements IterationListener {
         // append some space for arrows
         totalWidth += padding_col  * 2;
 
-        BufferedImage output = new BufferedImage(totalWidth, maxHeight, BufferedImage.TYPE_INT_RGB);
+        BufferedImage output = new BufferedImage(totalWidth, maxHeight, BufferedImage.TYPE_BYTE_GRAY);
         Graphics2D graphics2D = output.createGraphics();
+
+        graphics2D.setPaint(bgColor);
+        graphics2D.fillRect(0, 0, output.getWidth(), output.getHeight());
 
         BufferedImage singleArrow = null;
         BufferedImage multipleArrows = null;
@@ -249,6 +257,10 @@ public class ConvolutionalIterationListener implements IterationListener {
 
         BufferedImage outputImage = new BufferedImage(width, maxHeight, BufferedImage.TYPE_BYTE_GRAY);
         Graphics2D graphics2D = outputImage.createGraphics();
+
+        graphics2D.setPaint(bgColor);
+        graphics2D.fillRect(0, 0, outputImage.getWidth(), outputImage.getHeight());
+
         int columnOffset = 0;
         int rowOffset = 0;
         int numZoomed = 0;
@@ -291,6 +303,7 @@ public class ConvolutionalIterationListener implements IterationListener {
                 draw borders around each image
             */
 
+            graphics2D.setPaint(borderColor);
             graphics2D.drawRect(columnOffset, rowOffset, tad2D.shape()[0], tad2D.shape()[1]);
 
 
