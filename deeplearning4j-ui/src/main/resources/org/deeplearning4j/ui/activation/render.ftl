@@ -64,8 +64,8 @@
 </table>
 <br /><br />
 <div style="width: 100%; text-align: center">
-    <div id="embed" style="display: inline-block;">
-        <img src="/activations/img" id="pic"/>
+    <div id="embed" style="display: inline-block;"> <!-- style="border: 1px solid #CECECE;" -->
+        <img src="/activations/img" id="pic" />
     </div>
 </div>
 </body>
