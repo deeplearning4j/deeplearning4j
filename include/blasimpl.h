@@ -7,7 +7,6 @@
 #include <stdlib.h>
 #include <jni.h>
 #include "cblas.h"
-#include "uncomplicate_neanderthal_CBLAS.h"
 
 
 JavaVM *javavm;
