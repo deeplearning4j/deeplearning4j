@@ -11,6 +11,8 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -18,6 +20,8 @@ import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.*;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -449,6 +453,48 @@ public class TestComputationGraphNetwork {
         while(iris.hasNext()){
             net.fit(iris.next());
         }
+    }
+
+    @Test
+    public void testPreTraining(){
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .iterations(100)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                .updater(Updater.SGD).learningRate(1e-6)
+                .regularization(true)
+                .l2(2e-4)
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("layer0", new RBM.Builder(RBM.HiddenUnit.GAUSSIAN, RBM.VisibleUnit.GAUSSIAN)
+                        .nIn(4).nOut(3)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0, 1))
+                        .activation("tanh")
+                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build(),"in")
+                .addLayer("layer1", new RBM.Builder(RBM.HiddenUnit.GAUSSIAN, RBM.VisibleUnit.GAUSSIAN)
+                        .nIn(4).nOut(3)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0, 1))
+                        .activation("tanh")
+                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build(),"in")
+                .addLayer("layer2", new RBM.Builder(RBM.HiddenUnit.GAUSSIAN, RBM.VisibleUnit.GAUSSIAN)
+                        .nIn(3).nOut(3)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0, 1))
+                        .activation("tanh")
+                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build(),"layer1")
+                .addLayer("out", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .nIn(3+3).nOut(3)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0, 1))
+                        .activation("softmax").build(), "layer0","layer2")
+                .setOutputs("out")
+                .pretrain(true).backprop(false)
+                .build();
+
+
+        ComputationGraph net = new ComputationGraph(conf);
+        net.init();
+        net.setListeners(new ScoreIterationListener(1));
+
+        DataSetIterator iter = new IrisDataSetIterator(10, 150);
+        net.fit(iter);
     }
 
 }
