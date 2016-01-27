@@ -53,6 +53,11 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
     }
 
     @Override
+    public void remove() {
+        throw new UnsupportedOperationException("Remove not supported");
+    }
+
+    @Override
     public MultiDataSet next(int num) {
         if(!hasNext()) throw new NoSuchElementException("No next elements");
 
