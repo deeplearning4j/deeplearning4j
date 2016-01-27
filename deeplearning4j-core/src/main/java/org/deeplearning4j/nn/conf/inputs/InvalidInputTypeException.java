@@ -2,7 +2,7 @@ package org.deeplearning4j.nn.conf.inputs;
 
 
 /** InvalidInputTypeException: Thrown if the GraphVertex cannot handle the type of input provided */
-public class InvalidInputTypeException extends Exception {
+public class InvalidInputTypeException extends RuntimeException {
 
     public InvalidInputTypeException(String message) {
         super(message);
