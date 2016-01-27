@@ -89,7 +89,7 @@ Suppose we want to train a recurrent neural network with inputs or outputs that 
 
 ![RNN Training Types](../img/rnn_masking_1.png)
 
-Without masking and padding, we are restricted to the many-to-one case (above, left): that is, (a) All examples are of the same length, and (b) Examples have both inputs and outputs at all time steps.
+Without masking and padding, we are restricted to the many-to-many case (above, left): that is, (a) All examples are of the same length, and (b) Examples have both inputs and outputs at all time steps.
 
 The idea behind padding is simple. Consider two time series of lengths 50 and 100 time steps, in the same mini-batch. The training data is a rectangular array; thus, we pad (i.e., add zeros to) the shorter time series (for both input and output), such that the input and output are both the same length (in this example: 100 time steps).
 Of course, if this was all we did, it would cause problems during training. Thus, in addition to padding, we use a masking mechanism. The idea behind masing is simple: we have two additional arrays that record whether an input or output is actually present for a given time step and example, or whether the input/output is just padding.
