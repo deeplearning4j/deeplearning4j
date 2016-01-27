@@ -9,6 +9,14 @@ ND4S is an Apache2 Licensed open-sourced Scala bindings for [ND4J](https://githu
 * NDArray slicing syntax, similar with NumPy.
 
 #Installation
+
+##Install via Maven
+ND4S is already included in official Maven repositories.
+
+With IntelliJ, incorporation of ND4S is easy: just create a new Scala project, go to "Project Settings"/Libraries, add "From Maven...", and search for nd4s.
+
+No need for git-cloning & compiling!
+
 ##Clone from the GitHub Repo
 ND4S is actively developed. You can clone the repository, compile it, and reference it in your project.
 
