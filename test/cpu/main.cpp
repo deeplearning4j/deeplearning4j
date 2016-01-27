@@ -1,4 +1,4 @@
-#include <CppUTest/CommandLineTestRunner.h>
+#include <testhelpers.h>
 #include <pairwise_transform_tests.h>
 #include <scalartests.h>
 #include <transformtests.h>

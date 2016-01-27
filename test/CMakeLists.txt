@@ -2,24 +2,7 @@ include_directories(tests)
 if(LINUX)
     link_directories(/usr/local/lib)
 endif()
-# Check for CppUTest and bail out if they don't have it
-if(DEFINED ENV{CPPUTEST_HOME})
-    message("Using CppUTest found in $ENV{CPPUTEST_HOME}")
-else()
-    message("CPPUTEST_HOME is not set; You must tell CMake where to find CppUTest")
-    return()
-endif()
 
-# include CppUTest headers
-include_directories($ENV{CPPUTEST_HOME}/include)
-
-enable_language(C)
-enable_language(CXX)
-
-# add cpputest library
-add_library(imp_cpputest STATIC IMPORTED)
-set_property(TARGET imp_cpputest PROPERTY
-        IMPORTED_LOCATION $ENV{CPPUTEST_HOME}/lib/libCppUTest.a)
 
 
 if (CUDA_FOUND)
@@ -33,6 +16,7 @@ if (CUDA_FOUND)
     target_link_libraries(libnd4jtests imp_cpputest)
 
 else()
+    message("Adding cpu exec")
     add_executable(libnd4jtests cpu/main.cpp)
-    target_link_libraries(libnd4jtests imp_cpputest)
+    target_link_libraries(libnd4jtests CppUTest)
 endif()

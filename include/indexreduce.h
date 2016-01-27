@@ -12,6 +12,12 @@
 #ifdef __CUDACC__
 #include <helper_cuda.h>
 #endif
+
+#define MAX_FLOAT 1e37
+#define MIN_FLOAT 1e-37
+
+
+
 namespace functions {
 namespace indexreduce {
 template<typename T>
@@ -723,8 +729,7 @@ public:
 
 		int tadLength = tadPermuteInfo.tensorShapeProd;
 
-		IndexValue<T> *startingIndex = (IndexValue<T> *) malloc(
-				sizeof(IndexValue<T> ) * resultLength);
+		IndexValue<T> *startingIndex = new IndexValue<T>[resultLength];
 #pragma omp simd
 		for (int i = 0; i < resultLength; i++) {
 			startingIndex[i].value = this->startingValue(x);
@@ -740,13 +745,18 @@ public:
 			IndexValue<T> comp;
 			comp.value = x[i];
 			comp.index = i % tadLength;
-			IndexValue<T> currStartingValue = startingIndex[i];
-			IndexValue<T> computedUpdate = update(currStartingValue, comp,
+			IndexValue<T> currStartingValue = startingIndex[reductionIndex];
+            startingIndex[reductionIndex] = update(currStartingValue, comp,
 					extraParams);
-			result[reductionIndex] = computedUpdate.index;
 		}
 
-		free(startingIndex);
+
+#pragma omp simd
+        for(int i = 0; i < resultLength; i++)
+            result[i] = startingIndex[i].index;
+
+
+		delete[] startingIndex;
 		shape::freePermuteInfo(tadPermuteInfo);
 	}
 
@@ -754,9 +764,7 @@ public:
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	T startingValue(T *input) {
-		return 0;
-	}
+	T startingValue(T *input) = 0;
 
 
 #ifdef __CUDACC__
@@ -885,6 +893,13 @@ public:
 			T *dx, int incx, T *extraParams, T *result) override {
 		return reduction;
 	}
+    virtual
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    T startingValue(T *input) {
+       return MIN_FLOAT;
+    }
 
 	/**
 	 *
@@ -956,7 +971,13 @@ public:
 			functions::indexreduce::IndexValue<T> val, T *extraParams) override {
 		return val;
 	}
-
+    virtual
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    T startingValue(T *input) {
+        return MAX_FLOAT;
+    }
 	/**
 	 *
 	 * @param old
