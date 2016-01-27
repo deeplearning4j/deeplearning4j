@@ -8,6 +8,8 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.graph.*;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
+import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
@@ -232,6 +234,11 @@ public class ComputationGraphConfigurationTest {
         @Override
         public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx) {
             throw new UnsupportedOperationException("Not supported");
+        }
+
+        @Override
+        public InputType getOutputType(InputType... vertexInputs) throws InvalidInputTypeException {
+            throw new UnsupportedOperationException();
         }
     }
 }

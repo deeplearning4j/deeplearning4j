@@ -2,7 +2,11 @@ package org.deeplearning4j.nn.conf.graph;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+
+import java.util.Arrays;
 
 /** SubsetVertex is used to select a subset of the activations out of another GraphVertex.<br>
  * For example, a subset of the activations out of a layer.<br>
@@ -40,11 +44,31 @@ public class SubsetVertex extends GraphVertex {
 
     @Override
     public int hashCode(){
-        return Integer.hashCode(from) ^ Integer.hashCode(to);
+        return new Integer(from).hashCode() ^ new Integer(to).hashCode();
     }
 
     @Override
     public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx) {
         return new org.deeplearning4j.nn.graph.vertex.impl.SubsetVertex(graph,name,idx,from,to);
+    }
+
+    @Override
+    public InputType getOutputType(InputType... vertexInputs) throws InvalidInputTypeException {
+        if(vertexInputs.length != 1){
+            throw new InvalidInputTypeException("SubsetVertex expects single input type. Received: " + Arrays.toString(vertexInputs));
+        }
+
+        if(vertexInputs[0].getType() == InputType.Type.CNN){
+            InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional)vertexInputs[0];
+            int depth = conv.getDepth();
+            if(to >= depth){
+                throw new InvalidInputTypeException("Invalid range: Cannot select depth subset [" + from + "," + to + "] inclusive from CNN activations with "
+                    + " [depth,width,height] = [" + depth + "," + conv.getWidth() + "," + conv.getHeight() + "]" );
+            }
+            return InputType.convolutional(from-to+1,conv.getWidth(),conv.getHeight());
+        } else {
+            //FF or RNN inputs
+            return vertexInputs[0];
+        }
     }
 }
