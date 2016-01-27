@@ -315,7 +315,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                         + "cycle includes vertex \"" + entry.getKey() + "\")");
         }
 
-        //Now, given the topological sort: do forward pass
+        //Now, given the topological sort: do equivalent of forward pass
         Map<String, InputType> vertexOutputs = new HashMap<>();
         for (String s : topologicalOrdering) {
             int inputIdx = networkInputs.indexOf(s);
@@ -351,6 +351,11 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                             break;
                         case CNN:
                             //CNN -> CNN: no preprocessor required
+                            //UNLESS: network input -> CNN layer. Input is in 2d format, not 4d format...
+                            if(networkInputs.contains(vertexInputs.get(s).get(0))){
+                                InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional) layerInput;
+                                lv.setPreProcessor(new FeedForwardToCnnPreProcessor(conv.getHeight(), conv.getWidth(), conv.getDepth()));
+                            }
                             break;
                     }
                 } else if (l instanceof BaseRecurrentLayer || l instanceof RnnOutputLayer) {

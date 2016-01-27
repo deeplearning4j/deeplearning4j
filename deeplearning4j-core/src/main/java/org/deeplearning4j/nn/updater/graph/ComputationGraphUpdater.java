@@ -47,10 +47,9 @@ public class ComputationGraphUpdater implements Serializable {
     public void update(ComputationGraph graph, Gradient gradient, int iteration, int batchSize ){
         Map<String,Gradient> layerGradients = new HashMap<>();
 
-        //TODO user may create a name with underscore character -> will mess this up (just not allowing underscore characters would be bad too)
         for(Map.Entry<String,INDArray> gradientPair : gradient.gradientForVariable().entrySet()) {
             String key = gradientPair.getKey();
-            int idx = key.indexOf("_");
+            int idx = key.lastIndexOf("_");
             if( idx == -1 ) throw new IllegalStateException("Invalid key: ComputationGraph Gradient key does not have layer separator: \""+key+"\"");
 
             String layerName = key.substring(0,idx);
