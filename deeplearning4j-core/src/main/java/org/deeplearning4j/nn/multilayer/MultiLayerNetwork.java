@@ -179,8 +179,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                         layerInput = activationFromPrevLayer(j - 1, layerInput,true);
 
                     log.info("Training on layer " + (i + 1) + " with " + layerInput.slices() + " examples");
-                    getLayers()[i].fit(layerInput);
-
+                    getLayer(i).fit(layerInput);
                 }
             }
             iter.reset();
