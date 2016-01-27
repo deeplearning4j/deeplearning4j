@@ -47,4 +47,9 @@ public class InputVertex extends BaseGraphVertex {
     public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
         throw new UnsupportedOperationException("Cannot do backward pass for InputVertex");
     }
+
+    @Override
+    public String toString(){
+        return "InputVertex(id="+vertexIndex+",name=\""+vertexName+"\")";
+    }
 }
