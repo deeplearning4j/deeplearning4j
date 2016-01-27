@@ -55,10 +55,11 @@ public class ConvolutionalIterationListener implements IterationListener {
 
 
     public ConvolutionalIterationListener(int visualizationFrequency) {
-        this(visualizationFrequency, true, "activations");
+        this(visualizationFrequency, true);
     }
 
-    public ConvolutionalIterationListener(int iterations, boolean openBrowser, String subPath){
+    public ConvolutionalIterationListener(int iterations, boolean openBrowser){
+        String subPath = "activations";
         int port = -1;
         try{
             UiServer server = UiServer.getInstance();

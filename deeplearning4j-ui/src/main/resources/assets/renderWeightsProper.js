@@ -1,7 +1,7 @@
 /*
     This is going to be proper version of WeightsRender.js
     TODO list:
-    1. Initialize charts once, and just update them with new data
+    1. Initialize charts once, and just update them with new data <-- DONE
     2. Add 3D surface as overall view for gradients and weights
 */
 
@@ -475,7 +475,7 @@
 
 var timed = function() {
                     $.ajax({
-                        url:"${path}" + "/updated",
+                        url:"/weights" + "/updated",
                         async: true,
                         error: function (query, status, error) {
                             $.notify({
@@ -494,7 +494,7 @@ var timed = function() {
                                     /*
                                         /weights/data should be changed to /weights/data/{time} and only delta should be passed over network
                                     */
-                                    d3.json("${path}"+'/data',function(error,json) {
+                                    d3.json("/weights"+'/data',function(error,json) {
 
                                         //Get last update time; do nothing if not a new update
                                         var updateTime = json['lastUpdateTime'];

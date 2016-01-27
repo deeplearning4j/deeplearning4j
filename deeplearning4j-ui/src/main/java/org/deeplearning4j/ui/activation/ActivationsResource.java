@@ -19,6 +19,9 @@
 package org.deeplearning4j.ui.activation;
 
 import org.apache.commons.compress.utils.IOUtils;
+import org.canova.api.util.ClassPathResource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.activation.MimetypesFileTypeMap;
 import javax.ws.rs.*;
@@ -37,6 +40,8 @@ import java.util.Collections;
 @Produces(MediaType.TEXT_HTML)
 public class ActivationsResource {
     private String imagePath = "activations.png";
+
+    private static Logger log = LoggerFactory.getLogger(ActivationsResource.class);
 
     @GET
     public RenderView get() {
@@ -57,14 +62,23 @@ public class ActivationsResource {
     @Produces({"image/png"})
     public Response image() {
         if(imagePath == null) {
-            throw new WebApplicationException(404);
+            imagePath = "activations.png";
         }
 
-        final File f = new File(imagePath);
+         File fx = new File(imagePath);
 
-        if (!f.exists()) {
-            throw new WebApplicationException(404);
+
+        if (!fx.exists()) {
+            try {
+                ClassPathResource resource = new ClassPathResource("/404.PNG");
+                fx = resource.getFile();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
+
+        final File f = fx;
+
 
         return Response.ok().entity(new StreamingOutput(){
             @Override

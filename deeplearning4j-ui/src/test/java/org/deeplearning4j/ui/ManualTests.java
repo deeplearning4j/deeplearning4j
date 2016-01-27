@@ -126,7 +126,7 @@ public class ManualTests {
 
 
     @Test
-    public void testActivations() throws Exception {
+    public void testRenderWeights() throws Exception {
         final int numRows = 28;
         final int numColumns = 28;
         int outputNum = 10;
@@ -198,7 +198,7 @@ public class ManualTests {
      * @throws Exception
      */
     @Test
-    public void testCNNWeightsVisualization() throws Exception {
+    public void testCNNActivationsVisualization() throws Exception {
         final int numRows = 40;
         final int numColumns = 40;
         int nChannels = 3;
