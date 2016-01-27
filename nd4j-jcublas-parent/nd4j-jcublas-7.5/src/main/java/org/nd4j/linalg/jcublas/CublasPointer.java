@@ -20,6 +20,7 @@
 package org.nd4j.linalg.jcublas;
 
 import jcuda.Pointer;
+import lombok.Getter;
 import org.apache.commons.lang3.tuple.Triple;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -48,7 +49,7 @@ public class CublasPointer  implements AutoCloseable {
     private JCudaBuffer buffer;
     private Pointer devicePointer;
     private Pointer hostPointer;
-    private boolean closed = false;
+    @Getter private boolean closed = false;
     private INDArray arr;
     private CudaContext cudaContext;
     private boolean resultPointer = false;
@@ -71,10 +72,11 @@ public class CublasPointer  implements AutoCloseable {
      */
     public void destroy() {
         if(!closed) {
-            if(arr != null)
-                buffer.freeDevicePointer(arr.offset(),arr.length());
-            else
-                buffer.freeDevicePointer(0,buffer.length());
+            if(arr != null) {
+                buffer.freeDevicePointer(arr.offset(), arr.length(), BlasBufferUtil.getBlasStride(this.arr));
+            } else {
+                buffer.freeDevicePointer(0, buffer.length(),1);
+            }
             closed = true;
         }
     }
@@ -168,6 +170,7 @@ public class CublasPointer  implements AutoCloseable {
         int compLength = arr instanceof IComplexNDArray ? arr.length() * 2 : arr.length();
         int stride = arr instanceof IComplexNDArray ? BlasBufferUtil.getBlasStride(arr) / 2 : BlasBufferUtil.getBlasStride(arr);
         //no striding for upload if we are using the whole buffer
+      //  System.out.println("Allocation offset: ["+array.offset()+"], length: ["+compLength+"], stride: ["+ stride+"]");
         this.devicePointer = buffer.getDevicePointer(
                 this.arr,
                 stride
@@ -195,7 +198,6 @@ public class CublasPointer  implements AutoCloseable {
 
         DevicePointerInfo info = buffer.getPointersToContexts().get(Thread.currentThread().getName(), Triple.of(0, buffer.length(), 1));
         hostPointer = info.getPointers().getHostPointer();
-
 
     }
 

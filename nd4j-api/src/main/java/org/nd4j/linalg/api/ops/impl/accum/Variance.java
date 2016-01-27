@@ -37,6 +37,7 @@ import org.nd4j.linalg.util.ComplexUtil;
  */
 public class Variance extends BaseAccumulation {
     protected double mean, bias;
+    protected INDArray meanArr,biasArr;
     protected boolean biasCorrected = true;
 
     public Variance() {
@@ -44,7 +45,7 @@ public class Variance extends BaseAccumulation {
 
     public Variance(INDArray x, INDArray y, INDArray z, int n) {
         super(x, y, z, n);
-        passThrough = true;
+        init(x, y, z, n);
     }
 
     public Variance(INDArray x, INDArray y, int n) {
@@ -57,35 +58,30 @@ public class Variance extends BaseAccumulation {
 
     public Variance(INDArray x, INDArray y) {
         super(x, y);
-        passThrough = true;
     }
 
     public Variance(INDArray x, INDArray y, INDArray z, int n, boolean biasCorrected) {
         super(x, y, z, n);
         this.biasCorrected = biasCorrected;
         init(x, y, z, n);
-        passThrough = true;
     }
 
     public Variance(INDArray x, INDArray y, int n, boolean biasCorrected) {
         super(x, y, n);
         this.biasCorrected = biasCorrected;
         init(x, y, z, n);
-        passThrough = true;
     }
 
     public Variance(INDArray x, boolean biasCorrected) {
         super(x);
         this.biasCorrected = biasCorrected;
         init(x, y, z, n);
-        passThrough = true;
     }
 
     public Variance(INDArray x, INDArray y, boolean biasCorrected) {
         super(x, y);
         this.biasCorrected = biasCorrected;
         init(x, y, x, x.length());
-        passThrough = true;
     }
 
     @Override
@@ -177,6 +173,11 @@ public class Variance extends BaseAccumulation {
     @Override
     public void init(INDArray x, INDArray y, INDArray z, int n) {
         super.init(x, y, z, n);
+        if (biasCorrected)
+            this.bias = Nd4j.getExecutioner().execAndReturn(new Bias(x)).getFinalResult().doubleValue();
+        this.mean = Nd4j.getExecutioner().execAndReturn(new Mean(x)).getFinalResult().doubleValue();
+
+
     }
 
     @Override
@@ -193,7 +194,7 @@ public class Variance extends BaseAccumulation {
 
     @Override
     public void exec(int... dimension){
-        if(dimension.length == 1 && dimension[0] == Integer.MAX_VALUE){
+        if(dimension.length == 1 && dimension[0] == Integer.MAX_VALUE) {
             exec();
             this.z = Nd4j.scalar(this.finalResult);
             return;
@@ -202,7 +203,7 @@ public class Variance extends BaseAccumulation {
         int[] retShape = ArrayUtil.removeIndex(x.shape(), dimension);
         int nOps = x.tensorssAlongDimension(dimension);
         z = Nd4j.create(retShape);
-        for( int i=0; i<nOps; i++ ){
+        for( int i = 0; i<nOps; i++ ){
             double d = Nd4j.getExecutioner().execAndReturn((Variance)opForDimension(i,dimension)).getFinalResult().doubleValue();
             z.putScalar(i, d);
         }
@@ -224,19 +225,19 @@ public class Variance extends BaseAccumulation {
     }
 
     @Override
-    public double getAndSetFinalResult(double accum){
+    public double getAndSetFinalResult(double accum) {
         //accumulation is sum_i (x_i-mean)^2
         double result;
         if (biasCorrected)
-                result = (accum - (FastMath.pow(bias, 2.0) / n())) / (n() - 1.0);
-            else
-                result = accum / (double) n;
+            result = (accum - (FastMath.pow(bias, 2.0) / n())) / (n() - 1.0);
+        else
+            result = accum / (double) n;
         this.finalResult = result;
         return result;
     }
 
     @Override
-    public float getAndSetFinalResult(float accum){
+    public float getAndSetFinalResult(float accum) {
         //accumulation is sum_i (x_i-mean)^2
         double result;
         if (biasCorrected)
@@ -248,22 +249,36 @@ public class Variance extends BaseAccumulation {
     }
 
     @Override
-    public IComplexNumber getAndSetFinalResult(IComplexNumber accum){
+    public IComplexNumber getAndSetFinalResult(IComplexNumber accum) {
         if (biasCorrected)
             finalResultComplex = (accum.sub(ComplexUtil.pow(Nd4j.createComplexNumber(bias, 0), 2.0).div(Nd4j.createComplexNumber(n(), 0))).div(Nd4j.createComplexNumber(n() - 1.0, 0.0)));
         else finalResultComplex = accum.divi(n - 1);
         return finalResultComplex;
     }
 
+
+
     @Override
     public double calculateFinalResult(double accum, int n) {
-        if(biasCorrected) throw new UnsupportedOperationException("Not supported for passthrough op");
-        else return accum / n;
+        //accumulation is sum_i (x_i-mean)^2
+        double result;
+        if (biasCorrected)
+            result = (accum - (FastMath.pow(bias, 2.0) / n())) / (n() - 1.0);
+        else
+            result = accum / (double) n;
+        this.finalResult = result;
+        return result;
     }
 
     @Override
     public float calculateFinalResult(float accum, int n) {
-        if(biasCorrected) throw new UnsupportedOperationException("Not supported for passthrough op");
-        else return accum / n;
+        //accumulation is sum_i (x_i-mean)^2
+        float result;
+        if (biasCorrected)
+            result = (float) ((accum - (FastMath.pow(bias, 2.0f) / n())) / (n() - 1.0f));
+        else
+            result = accum / (float) n;
+        this.finalResult = result;
+        return result;
     }
 }

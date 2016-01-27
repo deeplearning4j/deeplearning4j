@@ -21,14 +21,12 @@
 package org.nd4j.linalg.ops;
 
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Accumulation;
-import org.nd4j.linalg.api.ops.IndexAccumulation;
-import org.nd4j.linalg.api.ops.ScalarOp;
-import org.nd4j.linalg.api.ops.TransformOp;
+import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.exception.IllegalOpException;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
@@ -52,7 +50,9 @@ import org.nd4j.linalg.io.ClassPathResource;
 import java.io.DataInputStream;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -259,13 +259,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         assertEquals(0.0,biaOp.currentResult().doubleValue(),1e-1);
     }
 
-    @Test
-    public void testIamax() {
-        INDArray linspace = Nd4j.linspace(1, 4, 4);
-        assertEquals(getFailureMessage(), 3, Nd4j.getBlasWrapper().iamax(linspace));
-        int iamax = Nd4j.getExecutioner().execAndReturn(new IAMax(linspace)).getFinalResult();
-        assertEquals(3,iamax);
-    }
+
 
 
     @Test
@@ -353,24 +347,6 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         Nd4j.getExecutioner().exec(new ScalarAdd(linspace, 1));
         assertEquals(plusOne, linspace);
     }
-
-    @Test
-    public void testNegativeNumbersSoftmax() throws Exception {
-        Nd4j.MAX_ELEMENTS_PER_SLICE = Integer.MAX_VALUE;
-        Nd4j.MAX_SLICES_TO_PRINT = Integer.MAX_VALUE;
-        DataInputStream dis = new DataInputStream(new ClassPathResource("softmaxtest.nd").getInputStream());
-        INDArray read = Nd4j.read(dis);
-        dis.close();
-        INDArray max1 = read.max(1);
-        SoftMax softMax = new SoftMax(read);
-        softMax.exec(1);
-        INDArray z = softMax.z();
-        INDArray zSums = z.sum(1);
-        assertEquals(zSums.length(),zSums.sumNumber().doubleValue(),1e-1);
-    }
-
-
-
 
     @Test
     public void testDimensionMax() {
@@ -523,12 +499,61 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         INDArray arr6 = Nd4j.ones(1,1,4,4,4,4);
         INDArray arr6m = arr6.mean(2, 3);
         INDArray arr6s = arr6.sum(2,3);
-        for( int i=0; i<arr6m.length(); i++ ) assertEquals(arr6m.getDouble(i),1,0.0);
-        for( int i=0; i<arr6s.length(); i++ ) assertEquals(arr6s.getDouble(i),16,0.0);
+        for( int i = 0; i<arr6m.length(); i++ )
+            assertEquals(arr6m.getDouble(i),1,0.0);
+        for( int i = 0; i<arr6s.length(); i++ )
+            assertEquals(arr6s.getDouble(i),16,0.0);
     }
 
     @Test
-    public void testStdev(){
+    public void testTadCollapse() {
+        INDArray x = Nd4j.linspace(1,24,24).reshape(2,2,3,2);
+        Sum sum = new Sum(x);
+        TadCollapseAccumulation tadCollapseAccumulation = new TadCollapseAccumulation(sum,new int[]{2,3},new int[]{3});
+        tadCollapseAccumulation.exec();
+        INDArray normalSum = x.sum(2,3);
+        assertEquals(normalSum,tadCollapseAccumulation.getAccum().z());
+
+
+        Mean mean = new Mean(x);
+        TadCollapseAccumulation tadCollapseAccumulationMean = new TadCollapseAccumulation(mean,new int[]{2,3},new int[]{3});
+        tadCollapseAccumulationMean.exec();
+        INDArray normaMean = x.mean(2, 3);
+        assertEquals(normaMean,tadCollapseAccumulationMean.getAccum().z());
+
+    }
+
+    @Test
+    public void testReductionIndex() {
+        INDArray x = Nd4j.linspace(1,24,24).reshape(2,2,3,2);
+        Map<Integer,Integer> assertionMap = new HashMap<>();
+        assertionMap.put(0,0);
+        assertionMap.put(1,0);
+        assertionMap.put(2,0);
+        assertionMap.put(3,1);
+        assertionMap.put(4,1);
+        assertionMap.put(5,1);
+        assertionMap.put(6,2);
+        assertionMap.put(7,2);
+        assertionMap.put(8,2);
+        assertionMap.put(9,3);
+        assertionMap.put(10,3);
+        assertionMap.put(11,3);
+        assertionMap.put(12,3);
+
+        int[] smallerDimension ={3};
+        int[] biggerDImensions = new int[] {2,3};
+        assertEquals(3,TadCollapseAccumulation.tadsPerReduceIndex(4,12));
+        for(int i = 0; i < 12; i++) {
+            int val = assertionMap.get(i);
+            assertEquals(val, TadCollapseAccumulation.reductionIndexForTad(i, 4, 12));
+        }
+
+
+    }
+
+    @Test
+    public void testStdev() {
 
         INDArray arr = Nd4j.create(new float[]{0.9296161f, 0.31637555f, 0.1839188f}, new int[]{1, 3}, ordering());
         double stdev = arr.stdNumber().doubleValue();

@@ -26,26 +26,32 @@ public class JcublasLevel2 extends BaseLevel2 {
     protected void sgemv(char order, char TransA, int M, int N, float alpha, INDArray A, int lda, INDArray X, int incX, float beta, INDArray Y, int incY) {
         CudaContext ctx = CudaContext.getBlasContext();
 
-        CublasPointer cAPointer = new CublasPointer(A,ctx);
-        CublasPointer cBPointer = new CublasPointer(X,ctx);
-        CublasPointer cCPointer = new CublasPointer(Y,ctx);
+        try(CublasPointer cAPointer = new CublasPointer(A,ctx);
+            CublasPointer cBPointer = new CublasPointer(X,ctx);
+            CublasPointer cCPointer = new CublasPointer(Y,ctx)) {
+            JCublas2.cublasSgemv(
+                    ctx.getHandle(),
+                    OpUtil.getOp(TransA),
+                    M,
+                    N,
+                    Pointer.to(new float[]{alpha}),
+                    cAPointer.getDevicePointer().withByteOffset(A.offset() * A.data().getElementSize()),
+                    lda,
+                    cBPointer.getDevicePointer().withByteOffset(X.offset() * X.data().getElementSize()),
+                    incX,
+                    Pointer.to(new float[]{beta}),
+                    cCPointer.getDevicePointer().withByteOffset(Y.offset() * Y.data().getElementSize()),
+                    incY);
+            ctx.syncOldStream();
+            cCPointer.copyToHost();
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        finally {
+            ctx.finishBlasOperation();
+        }
 
-        JCublas2.cublasSgemv(
-                ctx.getHandle(),
-                OpUtil.getOp(TransA),
-                M,
-                N,
-                Pointer.to(new float[]{alpha}),
-                cAPointer.getDevicePointer(),
-                lda,
-                cBPointer.getDevicePointer(),
-                incX,
-                Pointer.to(new float[]{beta}),
-                cCPointer.getDevicePointer(),
-                incY);
-
-        cCPointer.copyToHost();
-        CublasPointer.free(cAPointer,cBPointer,cCPointer);
 
     }
 
@@ -93,30 +99,31 @@ public class JcublasLevel2 extends BaseLevel2 {
     @Override
     protected void dgemv(char order, char TransA, int M, int N, double alpha, INDArray A, int lda, INDArray X, int incX, double beta, INDArray Y, int incY) {
         CudaContext ctx = CudaContext.getBlasContext();
+        try(CublasPointer cAPointer = new CublasPointer(A,ctx);
+            CublasPointer cBPointer = new CublasPointer(X,ctx);
+            CublasPointer cCPointer = new CublasPointer(Y,ctx)) {
 
-
-        CublasPointer cAPointer = new CublasPointer(A,ctx);
-        CublasPointer cBPointer = new CublasPointer(X,ctx);
-        CublasPointer cCPointer = new CublasPointer(Y,ctx);
-
-        JCublas2.cublasDgemv(
-                ContextHolder.getInstance().getHandle(),
-                OpUtil.getOp(TransA),
-                M,
-                N,
-                Pointer.to(new double[]{alpha}),
-                cAPointer.getDevicePointer(),
-                lda,
-                cBPointer.getDevicePointer(),
-                incX,
-                Pointer.to(new double[]{beta}),
-                cCPointer.getDevicePointer(),
-                incY);
-
-        cCPointer.copyToHost();
-        ctx.finishBlasOperation();
-        CublasPointer.free(cAPointer,cBPointer,cCPointer);
-
+            JCublas2.cublasDgemv(
+                    ContextHolder.getInstance().getHandle(),
+                    OpUtil.getOp(TransA),
+                    M,
+                    N,
+                    Pointer.to(new double[]{alpha}),
+                    cAPointer.getDevicePointer().withByteOffset(A.offset() * A.data().getElementSize()),
+                    lda,
+                    cBPointer.getDevicePointer().withByteOffset(X.offset() * X.data().getElementSize()),
+                    incX,
+                    Pointer.to(new double[]{beta}),
+                    cCPointer.getDevicePointer().withByteOffset(Y.offset() * Y.data().getElementSize()),
+                    incY);
+            ctx.syncOldStream();
+            cCPointer.copyToHost();
+        }catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        finally {
+            ctx.finishBlasOperation();
+        }
     }
 
     @Override
@@ -163,34 +170,7 @@ public class JcublasLevel2 extends BaseLevel2 {
 
     @Override
     protected void cgemv(char order, char TransA, int M, int N, IComplexFloat alpha, IComplexNDArray A, int lda, IComplexNDArray X, int incX, IComplexFloat beta, IComplexNDArray Y, int incY) {
-        CudaContext ctx = CudaContext.getBlasContext();
-
-        CublasPointer cAPointer = new CublasPointer(A,ctx);
-        CublasPointer cBPointer = new CublasPointer(X,ctx);
-        CublasPointer cCPointer = new CublasPointer(Y,ctx);
-
-
-        cuComplex alpha2 = cuComplex.cuCmplx(alpha.realComponent().floatValue(), alpha.imaginaryComponent().floatValue());
-        cuComplex beta2 = cuComplex.cuCmplx(beta.realComponent().floatValue(), beta.imaginaryComponent().floatValue());
-
-        JCublas2.cublasCgemv(
-                ctx.getHandle(),
-                OpUtil.getOp(BlasBufferUtil.getCharForTranspose(A)),
-                M,  // m
-                N, // n
-                PointerUtil.getPointer(alpha2),
-                cAPointer.getDevicePointer(), // A
-                lda,  // lda
-                cBPointer.getDevicePointer(), // x
-                incX, // ldb
-                PointerUtil.getPointer(beta2),  // beta
-                cCPointer.getDevicePointer(), // y
-                incY); // ldc
-
-
-        cCPointer.copyToHost();
-        ctx.finishBlasOperation();
-        CublasPointer.free(cAPointer,cBPointer,cCPointer);
+        throw new UnsupportedOperationException();
 
 
     }
@@ -239,36 +219,7 @@ public class JcublasLevel2 extends BaseLevel2 {
 
     @Override
     protected void zgemv(char order, char TransA, int M, int N, IComplexDouble alpha, IComplexNDArray A, int lda, IComplexNDArray X, int incX, IComplexDouble beta, IComplexNDArray Y, int incY) {
-        CudaContext ctx = CudaContext.getBlasContext();
-        A = (IComplexNDArray) Shape.toOffsetZero(A);
-        X = (IComplexNDArray) Shape.toOffsetZero(X);
-
-        CublasPointer cAPointer = new CublasPointer(A,ctx);
-        CublasPointer cBPointer = new CublasPointer(X,ctx);
-        CublasPointer cCPointer = new CublasPointer(Y,ctx);
-
-
-        cuDoubleComplex alpha2 = cuDoubleComplex.cuCmplx(alpha.realComponent().doubleValue(), alpha.imaginaryComponent().doubleValue());
-        cuDoubleComplex beta2 = cuDoubleComplex.cuCmplx(beta.realComponent().doubleValue(), beta.imaginaryComponent().doubleValue());
-
-        JCublas2.cublasZgemv(
-                ContextHolder.getInstance().getHandle(),
-                OpUtil.getOp(BlasBufferUtil.getCharForTranspose(A)),
-                M,  // m
-                N, // n
-                PointerUtil.getPointer(alpha2),
-                cAPointer.getDevicePointer(), // A
-                lda,  // lda
-                cBPointer.getDevicePointer(), // x
-                incX, // ldb
-                PointerUtil.getPointer(beta2),  // beta
-                cCPointer.getDevicePointer(), // ydoin
-                incY); // ldc
-
-
-        cCPointer.copyToHost();
-        ctx.finishBlasOperation();
-        CublasPointer.free(cAPointer,cBPointer,cCPointer);
+        throw new UnsupportedOperationException();
 
 
     }
@@ -437,36 +388,7 @@ public class JcublasLevel2 extends BaseLevel2 {
 
     @Override
     protected void cgerc(char order, int M, int N, IComplexFloat alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray A, int lda) {
-
-        CudaContext ctx = CudaContext.getBlasContext();
-
-        A = (IComplexNDArray) Shape.toOffsetZero(A);
-        X = (IComplexNDArray) Shape.toOffsetZero(X);
-
-        CublasPointer xPointer = new CublasPointer(A,ctx);
-        CublasPointer yPointer = new CublasPointer(X,ctx);
-        CublasPointer aPointer = new CublasPointer(Y,ctx);
-
-
-        cuComplex alpha2 = cuComplex.cuCmplx(alpha.realComponent().floatValue(), alpha.imaginaryComponent().floatValue());
-
-
-        JCublas2.cublasCgerc(
-                ContextHolder.getInstance().getHandle(),
-                M,   // m
-                N,// n
-                PointerUtil.getPointer(alpha2),      // alpha
-                xPointer.getDevicePointer(),        // dA or x
-                incX,   // incx
-                yPointer.getDevicePointer(),        // dB or y
-                incY,   // incy
-                aPointer.getDevicePointer(),        // dC or A
-                lda    // lda
-        );
-
-        aPointer.copyToHost();
-        ctx.finishBlasOperation();
-        CublasPointer.free(xPointer,yPointer,aPointer);
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -513,72 +435,13 @@ public class JcublasLevel2 extends BaseLevel2 {
 
     @Override
     protected void zgeru(char order, int M, int N, IComplexDouble alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray A, int lda) {
-        DataTypeValidation.assertDouble(A, X, Y);
-        CudaContext ctx = CudaContext.getBlasContext();
-
-        A = (IComplexNDArray) Shape.toOffsetZero(A);
-        X = (IComplexNDArray) Shape.toOffsetZero(X);
-
-
-        CublasPointer aCPointer = new CublasPointer(A,ctx);
-        CublasPointer bCPointer = new CublasPointer(X,ctx);
-        CublasPointer cCPointer = new CublasPointer(Y,ctx);
-
-        cuDoubleComplex alpha2 = cuDoubleComplex.cuCmplx(alpha.realComponent(), alpha.imaginaryComponent());
-
-        JCublas2.cublasZgeru(
-               ctx.getHandle(),
-                M,   // m
-                N,// n
-                PointerUtil.getPointer(alpha2),      // alpha
-                aCPointer.getDevicePointer(),        // d_A or x
-                incX,   // incx
-                bCPointer.getDevicePointer(),        // d_B or y
-                incY,   // incy
-                cCPointer.getDevicePointer(),        // d_C or A
-                lda    // lda
-        );
-
-        //SimpleJCublas.sync();
-        cCPointer.copyToHost();
-
-        ctx.finishBlasOperation();
-        CublasPointer.free(aCPointer,bCPointer,cCPointer);
+        throw new UnsupportedOperationException();
 
     }
 
     @Override
     protected void zgerc(char order, int M, int N, IComplexDouble alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray A, int lda) {
-        A = (IComplexNDArray) Shape.toOffsetZero(A);
-        X = (IComplexNDArray) Shape.toOffsetZero(X);
-        CudaContext ctx = CudaContext.getBlasContext();
-
-
-        CublasPointer xPointer = new CublasPointer(A,ctx);
-        CublasPointer yPointer = new CublasPointer(X,ctx);
-        CublasPointer aPointer = new CublasPointer(Y,ctx);
-
-
-        cuComplex alpha2 = cuComplex.cuCmplx(alpha.realComponent().floatValue(), alpha.imaginaryComponent().floatValue());
-
-
-        JCublas2.cublasZgerc(
-                ContextHolder.getInstance().getHandle(),
-                M,   // m
-                N,// n
-                PointerUtil.getPointer(alpha2),      // alpha
-                xPointer.getDevicePointer(),        // dA or x
-                incX,   // incx
-                yPointer.getDevicePointer(),        // dB or y
-                incY,   // incy
-                aPointer.getDevicePointer(),        // dC or A
-                lda    // lda
-        );
-
-
-        aPointer.copyToHost();
-        ctx.finishBlasOperation();
-        CublasPointer.free(xPointer,yPointer,aPointer);
+        throw new UnsupportedOperationException();
 
     }
 

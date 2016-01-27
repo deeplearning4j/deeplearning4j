@@ -139,9 +139,6 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray slice1OffsetResult = slice1.mmul(z2);
 
         assertEquals(getFailureMessage(),noOffsetResult,slice1OffsetResult);
-
-
-
     }
 
 

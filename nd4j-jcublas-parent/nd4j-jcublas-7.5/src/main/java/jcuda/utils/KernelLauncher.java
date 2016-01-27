@@ -425,7 +425,6 @@ public class KernelLauncher {
      * or the specified function can not be obtained.
      */
     public static KernelLauncher load(String functionName,CUmodule module) {
-        ContextHolder.getInstance().setContext();
         KernelLauncher kernelLauncher = new KernelLauncher();
         kernelLauncher.setModule(module);
         kernelLauncher.initFunction(functionName);
@@ -477,7 +476,7 @@ public class KernelLauncher {
             e.printStackTrace();
         }
 
-        kernelLauncher.initFunction(FUNCTION_NAME + "_" + type);
+        kernelLauncher.initFunction(functionName);
         return kernelLauncher;
     }
 

@@ -17,7 +17,7 @@ public class TensorCalculator1d implements TensorCalculator {
     private int[] tensorStride;
     private int numTensors;
 
-    public TensorCalculator1d(INDArray arr, int tensorDim){
+    public TensorCalculator1d(INDArray arr, int tensorDim) {
         this(arr.offset(), arr.shape(), arr.stride(), tensorDim);
     }
 
@@ -44,7 +44,7 @@ public class TensorCalculator1d implements TensorCalculator {
         return numTensors;
     }
 
-    public int getOffsetForTensor(int tensorIdx){
+    public int getOffsetForTensor(int tensorIdx) {
         //Based on: Shape.getOffset()
         int[] indicesMinusTensorDim = Shape.ind2subC(shapeMinusTensorDim, tensorIdx);
 
