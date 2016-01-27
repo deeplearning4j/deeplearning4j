@@ -35,6 +35,10 @@ import java.util.Random;
  * @author raver119@gmail.com
  */
 public class ConvolutionalIterationListener implements IterationListener {
+    private enum Orientation {
+        LANDSCAPE,
+        PORTRAIT
+    }
     private int freq = 10;
     private static final Logger log = LoggerFactory.getLogger(ConvolutionalIterationListener.class);
     private int minibatchNum = 0;
@@ -165,12 +169,15 @@ public class ConvolutionalIterationListener implements IterationListener {
         int maxHeight = (height + (border * 2 ) + padding_row) * numImages;
         int totalWidth = 0;
         int iOffset = 1;
+
+        Orientation orientation = Orientation.PORTRAIT;
+
         List<BufferedImage> images = new ArrayList<>();
         for (int layer = 0; layer < tensors3D.size(); layer++) {
             INDArray tad = tensors3D.get(layer);
             int zoomed = 0;
 
-            BufferedImage image = renderMultipleImages(tad,maxHeight, width, height);
+            BufferedImage image = renderMultipleImages(tad,maxHeight, width, height, orientation);
             totalWidth += image.getWidth() + padding_col;
             images.add(image);
         }
@@ -197,8 +204,13 @@ public class ConvolutionalIterationListener implements IterationListener {
 
             singleArrow = ImageIO.read(resource.getInputStream());
             multipleArrows = ImageIO.read(resource2.getInputStream());
+            if (orientation == Orientation.PORTRAIT) {
+                // if orientation is portrait, we should rotate arrows
+                singleArrow.createGraphics().rotate(90.0);
+                multipleArrows.createGraphics().rotate(90.0);
+            }
 
-            graphics2D.drawImage(singleArrow, (padding_col / 2) - (singleArrow.getWidth() / 2), (maxHeight / 2) - (singleArrow.getHeight() / 2), null);
+                graphics2D.drawImage(singleArrow, (padding_col / 2) - (singleArrow.getWidth() / 2), (maxHeight / 2) - (singleArrow.getHeight() / 2), null);
             iOffset += padding_col;
         } catch (Exception e) {
             // if we can't load images - ignore them
@@ -214,16 +226,33 @@ public class ConvolutionalIterationListener implements IterationListener {
 
         for (int i = 0; i < images.size(); i++) {
             BufferedImage curImage = images.get(i);
-            graphics2D.drawImage(curImage, iOffset, 1, null);
-            iOffset += curImage.getWidth() + padding_col;
+            if (orientation == Orientation.LANDSCAPE) {
+                // image grows from left to right
+                graphics2D.drawImage(curImage, iOffset, 1, null);
+                iOffset += curImage.getWidth() + padding_col;
 
-            if (singleArrow != null && multipleArrows != null) {
-                if (i < images.size() - 1) {
-                    // draw multiple arrows here
-                    graphics2D.drawImage(multipleArrows, iOffset - (padding_col / 2) - (multipleArrows.getWidth() / 2), (maxHeight / 2) - (multipleArrows.getHeight() / 2), null);
-                } else {
-                    // draw single arrow
-                    graphics2D.drawImage(singleArrow, iOffset - (padding_col / 2) - (singleArrow.getWidth() / 2), (maxHeight / 2) - (singleArrow.getHeight() / 2), null);
+                if (singleArrow != null && multipleArrows != null) {
+                    if (i < images.size() - 1) {
+                        // draw multiple arrows here
+                        graphics2D.drawImage(multipleArrows, iOffset - (padding_col / 2) - (multipleArrows.getWidth() / 2), (maxHeight / 2) - (multipleArrows.getHeight() / 2), null);
+                    } else {
+                        // draw single arrow
+                        graphics2D.drawImage(singleArrow, iOffset - (padding_col / 2) - (singleArrow.getWidth() / 2), (maxHeight / 2) - (singleArrow.getHeight() / 2), null);
+                    }
+                }
+            } else if (orientation == Orientation.PORTRAIT) {
+                // image grows from top to bottom
+                graphics2D.drawImage(curImage, 1, iOffset, null);
+                iOffset += curImage.getWidth() + padding_col;
+
+                if (singleArrow != null && multipleArrows != null) {
+                    if (i < images.size() - 1) {
+                        // draw multiple arrows here
+                        graphics2D.drawImage(multipleArrows, iOffset - (padding_col / 2) - (multipleArrows.getWidth() / 2), (maxHeight / 2) - (multipleArrows.getHeight() / 2), null);
+                    } else {
+                        // draw single arrow
+                        graphics2D.drawImage(singleArrow, iOffset - (padding_col / 2) - (singleArrow.getWidth() / 2), (maxHeight / 2) - (singleArrow.getHeight() / 2), null);
+                    }
                 }
             }
         }
@@ -236,7 +265,7 @@ public class ConvolutionalIterationListener implements IterationListener {
      * @param tensor3D
      * @return
      */
-    private BufferedImage renderMultipleImages(INDArray tensor3D, int maxHeight, int zoomWidth, int zoomHeight) {
+    private BufferedImage renderMultipleImages(INDArray tensor3D, int maxHeight, int zoomWidth, int zoomHeight, Orientation orientation) {
         /*
             first we need to determine, weight of output image.
          */
