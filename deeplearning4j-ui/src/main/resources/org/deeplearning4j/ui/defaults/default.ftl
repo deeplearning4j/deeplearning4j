@@ -4,6 +4,9 @@
         <title>DeepLearning4j UI</title>
         <meta charset="utf-8" />
 
+        <!-- jQuery -->
+        <script src="https://code.jquery.com/jquery-2.2.0.min.js"></script>
+
         <link href='http://fonts.googleapis.com/css?family=Roboto:400,300' rel='stylesheet' type='text/css'>
 
         <!-- Latest compiled and minified CSS -->
@@ -15,8 +18,6 @@
         <!-- Latest compiled and minified JavaScript -->
         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
 
-        <!-- jQuery -->
-        <script src="https://code.jquery.com/jquery-2.2.0.min.js"></script>
         <style>
             body {
                 font-family: 'Roboto', sans-serif;
@@ -81,16 +82,15 @@
             &nbsp;wordsNearest UI for WordVectors (GloVe/Word2Vec compatible)
         </div>
     </div>
-<!--
+
     <div class="block">
-         Activations block
         <b>Activations</b><br/><br/>
         <a href="/activations"><img src="/assets/i_ladder.img" border="0" /></a><br/><br/>
         <div style="text-align: left; margin: 5px;">
-            &nbsp;Neural network activations retrieved from DL4j.
+            &nbsp;Activations retrieved from Convolution Neural network.
         </div>
     </div>
-    -->
+
     <div class="block">
         <!-- Histogram block -->
         <b>Histo</b><br/><br/>
