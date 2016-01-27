@@ -61,7 +61,7 @@ public class FirstIterationFunction
             Tuple2<List<VocabWord>, Long> pair = pairIter.next();
             List<VocabWord> vocabWordsList = pair._1();
             Long sentenceCumSumCount = pair._2();
-            System.out.println("Training sentence: " + vocabWordsList);
+//            System.out.println("Training sentence: " + vocabWordsList);
             double currentSentenceAlpha = Math.max(minAlpha,
                                           alpha - (alpha - minAlpha) * (sentenceCumSumCount / (double) totalWordCount));
             trainSentence(vocabWordsList, currentSentenceAlpha);

@@ -44,7 +44,7 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
     @Getter protected WeightLookupTable<T> lookupTable;
     @Getter protected VocabCache<T> vocab;
     @Getter protected int layerSize = 100;
-    @Getter protected transient ModelUtils<T> modelUtils;
+    @Getter protected transient ModelUtils<T> modelUtils = new BasicModelUtils<>();
 
     protected int numIterations = 1;
     protected int numEpochs = 1;
