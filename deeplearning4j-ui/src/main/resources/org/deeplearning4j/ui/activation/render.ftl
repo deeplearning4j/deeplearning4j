@@ -3,6 +3,9 @@
 <head>
     <meta charset="utf-8" />
     <title>Neural Network activations</title>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-2.2.0.min.js"></script>
+
     <link href='http://fonts.googleapis.com/css?family=Roboto:400,300' rel='stylesheet' type='text/css'>
 
     <!-- Latest compiled and minified CSS -->
@@ -14,8 +17,6 @@
     <!-- Latest compiled and minified JavaScript -->
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
 
-    <!-- jQuery -->
-    <script src="https://code.jquery.com/jquery-2.2.0.min.js"></script>
     <style>
         body {
         font-family: 'Roboto', sans-serif;
@@ -56,7 +57,7 @@
 <table style="width: 100%; padding: 5px;" class="hd">
     <tbody>
     <tr>
-        <td style="width: 48px;"><img src="/assets/deeplearning4j.img"  border="0"/></td>
+        <td style="width: 48px;"><a href="/"><img src="/assets/deeplearning4j.img"  border="0"/></a></td>
         <td>DeepLearning4j UI</td>
         <td style="width: 128px;">&nbsp; <!-- placeholder for future use --></td>
     </tr>

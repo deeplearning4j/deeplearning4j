@@ -1,4 +1,3 @@
-<#-- @ftlvariable name="" type="org.deeplearning4j.ui.weights.WeightView" -->
 <!DOCTYPE html>
 <html>
 <head>
