@@ -11,7 +11,8 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
-/**Function to evaluate data (classification), in a distributed manner
+/**
+ * Function to evaluate data (classification), in a distributed manner
  * @author Alex Black
  */
 
@@ -21,17 +22,15 @@ public class EvaluateMapFunction implements Function<DataSet, Evaluation> {
 
     protected MultiLayerNetwork network;
     protected List<String> labels = new ArrayList<>();
-    boolean warnNotClassified = false;
 
-    public EvaluateMapFunction(MultiLayerNetwork network, List<String> labels, boolean warnNotClassified){
+    public EvaluateMapFunction(MultiLayerNetwork network, List<String> labels) {
         this.network = network;
         this.labels = labels;
-        this.warnNotClassified = warnNotClassified;
     }
 
     @Override
     public Evaluation call(DataSet data) throws Exception {
-        Evaluation evaluation = new Evaluation<>(labels, warnNotClassified);
+        Evaluation evaluation = new Evaluation(labels);
 
         INDArray out;
         if(data.hasMaskArrays()) {
@@ -52,7 +51,4 @@ public class EvaluateMapFunction implements Function<DataSet, Evaluation> {
         return evaluation;
 
     }
-
-
-
 }
