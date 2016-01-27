@@ -19,6 +19,8 @@
 package org.deeplearning4j.models.glove;
 import static org.junit.Assert.*;
 
+import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
+import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.LineSentenceIterator;
@@ -31,6 +33,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -105,6 +108,8 @@ public class GloveTest {
         double simD = glove.similarity("day", "night");
         double simP = glove.similarity("best", "police");
 
+
+
         log.info("Day/night similarity: " + simD);
         log.info("Best/police similarity: " + simP);
 
@@ -120,5 +125,20 @@ public class GloveTest {
         assertTrue(words.contains("night"));
         assertTrue(words.contains("year"));
         assertTrue(words.contains("week"));
+
+        File tempFile = File.createTempFile("glove", "temp");
+        tempFile.deleteOnExit();
+
+        INDArray day1 = glove.getWordVectorMatrix("day").dup();
+
+        WordVectorSerializer.writeWordVectors(glove, tempFile);
+
+        WordVectors vectors = WordVectorSerializer.loadTxtVectors(tempFile);
+
+        INDArray day2 = vectors.getWordVectorMatrix("day").dup();
+
+        assertEquals(day1, day2);
+
+        tempFile.delete();
     }
 }
