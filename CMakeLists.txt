@@ -30,6 +30,10 @@ if(Java_FOUND)
     endif(EXISTS "$ENV{JAVA_HOME}")
 endif()
 
+FIND_PACKAGE(BLAS)
+FIND_PACKAGE(LAPACK)
+
+
 if (CUDA_FOUND)
     message("CUDA found!")
     set( CUDA_ARCHITECTURE_MINIMUM "3.0" CACHE STRING "Minimum required CUDA compute capability" )

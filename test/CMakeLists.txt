@@ -15,7 +15,7 @@ endif()
 
 
 # add cpputest library
-add_library(cpputest STATIC IMPORTED ../include/blasimpl.h ../include/cblas.h)
+add_library(cpputest STATIC IMPORTED)
 set_property(TARGET cpputest PROPERTY
         IMPORTED_LOCATION $ENV{CPPUTEST_HOME}/lib/libCppUTest.a)
 
@@ -32,7 +32,7 @@ if (CUDA_FOUND)
 
 else()
     SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}" )
-    add_executable(libnd4jtests cpu/main.cpp ../include/cblas.h)
+    add_executable(libnd4jtests cpu/main.cpp)
     target_link_libraries(libnd4jtests cpputest)
 endif()
 
