@@ -2,6 +2,8 @@ package org.deeplearning4j.nn.conf.graph;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 
 /** An ElementWiseVertex is used to combine the activations of two or more layer in an element-wise manner<br>
@@ -53,5 +55,45 @@ public class ElementWiseVertex extends GraphVertex {
                 throw new RuntimeException();
         }
         return new org.deeplearning4j.nn.graph.vertex.impl.ElementWiseVertex(graph,name,idx,op);
+    }
+
+    @Override
+    public InputType getOutputType(InputType... vertexInputs) throws InvalidInputTypeException {
+        if(vertexInputs.length == 1) return vertexInputs[0];
+        InputType first = vertexInputs[0];
+        if(first.getType() != InputType.Type.CNN){
+            //FF or RNN data inputs
+            for( int i=1; i<vertexInputs.length; i++ ){
+                if(vertexInputs[i].getType() != first.getType()){
+                    throw new InvalidInputTypeException("Invalid input: ElementWise vertex cannot process activations of different types:"
+                        + " first type = " + first.getType() + ", input type " + (i+1) + " = " + vertexInputs[i].getType());
+                }
+            }
+        } else {
+            //CNN inputs... also check that the depth, width and heights match:
+            InputType.InputTypeConvolutional firstConv = (InputType.InputTypeConvolutional)first;
+            int fd = firstConv.getDepth();
+            int fw = firstConv.getWidth();
+            int fh = firstConv.getHeight();
+
+            for( int i=1; i<vertexInputs.length; i++ ){
+                if(vertexInputs[i].getType() != InputType.Type.CNN){
+                    throw new InvalidInputTypeException("Invalid input: ElementWise vertex cannot process activations of different types:"
+                            + " first type = " + InputType.Type.CNN + ", input type " + (i+1) + " = " + vertexInputs[i].getType());
+                }
+
+                InputType.InputTypeConvolutional otherConv = (InputType.InputTypeConvolutional) vertexInputs[i];
+
+                int od = otherConv.getDepth();
+                int ow = otherConv.getWidth();
+                int oh = otherConv.getHeight();
+
+                if(fd != od || fw != ow || fh != oh){
+                    throw new InvalidInputTypeException("Invalid input: ElementWise vertex cannot process CNN activations of different sizes:"
+                            + "first [depth,width,height] = [" + fd + "," + fw + "," + fh + "], input " + i + " = [" + od + "," + ow + "," + oh + "]");
+                }
+            }
+        }
+        return first;
     }
 }
