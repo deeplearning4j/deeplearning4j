@@ -70,7 +70,7 @@ public class ActivationsResource {
 
         if (!fx.exists()) {
             try {
-                ClassPathResource resource = new ClassPathResource("/404.PNG");
+                ClassPathResource resource = new ClassPathResource("/404.img");
                 fx = resource.getFile();
             } catch (Exception e) {
                 throw new RuntimeException(e);
