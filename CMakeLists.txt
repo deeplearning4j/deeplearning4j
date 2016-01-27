@@ -19,7 +19,15 @@ ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 #used for determining if we should include jni components or not
 find_package(Java COMPONENTS Development)
 if(Java_FOUND)
-    add_definitions(-DJNI)
+    if(EXISTS "$ENV{JAVA_HOME}")
+        message("INCLUDING JAVA $ENV{JAVA_HOME}include")
+        include_directories("$ENV{JAVA_HOME}include" "$ENV{JAVA_HOME}include/linux")
+
+        add_definitions(-D__JNI__=true)
+
+    else()
+        message(FATAL_ERROR "Could not find JAVA_HOME environment variable")
+    endif(EXISTS "$ENV{JAVA_HOME}")
 endif()
 
 if (CUDA_FOUND)

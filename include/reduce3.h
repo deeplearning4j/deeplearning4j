@@ -14,7 +14,7 @@
 #include <templatemath.h>
 #include <helper_cuda.h>
 #include <sharedmem.h>
-#ifdef JNI
+#ifdef __JNI__
 #include <jni.h>
 #endif
 

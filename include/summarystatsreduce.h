@@ -14,7 +14,7 @@
 #ifdef __CUDACC__
 #include <helper_cuda.h>
 #endif
-#ifdef JNI
+#ifdef __JNI__
 #include <jni.h>
 #endif
 

@@ -7,7 +7,7 @@
 
 #ifndef PAIRWISE_TRANSFORM_H_
 #define PAIRWISE_TRANSFORM_H_
-#ifdef JNI
+#ifdef __JNI__
 #include <jni.h>
 #endif
 #include <op.h>

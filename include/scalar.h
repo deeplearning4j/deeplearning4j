@@ -7,7 +7,7 @@
 
 #ifndef SCALAR_H_
 #define SCALAR_H_
-#ifdef JNI
+#ifdef __JNI__
 #include <jni.h>
 #endif
 #include <op.h>
