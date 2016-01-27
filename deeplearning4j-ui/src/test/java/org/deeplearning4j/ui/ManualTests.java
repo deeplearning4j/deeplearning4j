@@ -18,7 +18,7 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.ui.activation.UpdateActivationIterationListener;
 import org.deeplearning4j.ui.weights.HistogramIterationListener;
-import org.deeplearning4j.ui.weights.ConvolutionVisualizationListener;
+import org.deeplearning4j.ui.weights.ConvolutionalIterationListener;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -280,7 +280,7 @@ public class ManualTests {
 
         log.info("Train model....");
 
-        model.setListeners(Arrays.asList(new ScoreIterationListener(listenerFreq), new ConvolutionVisualizationListener(listenerFreq)));
+        model.setListeners(Arrays.asList(new ScoreIterationListener(listenerFreq), new ConvolutionalIterationListener(listenerFreq)));
 
         while(lfw.hasNext()) {
             lfwNext = lfw.next();
