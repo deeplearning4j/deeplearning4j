@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
@@ -141,14 +142,12 @@ public class TestRenders extends BaseUiServerTest {
 
     @Test
     public void testHistogramComputationGraph() throws Exception {
-
-
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .graphBuilder()
                 .addInputs("input")
                 .addLayer("cnn1", new ConvolutionLayer.Builder(2,2).stride(2, 2).nIn(1).nOut(3).build(), "input")
-                .addLayer("cnn2", new ConvolutionLayer.Builder(4,4).stride(2,2).padding(1,1).nIn(1).nOut(3).build(), "input")
+                .addLayer("cnn2", new ConvolutionLayer.Builder(4, 4).stride(2, 2).padding(1, 1).nIn(1).nOut(3).build(), "input")
                 .addLayer("max1", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(2, 2).build(), "cnn1", "cnn2")
                 .addLayer("output", new OutputLayer.Builder().nIn(7 * 7 * 6).nOut(10).build(), "max1")
                 .setOutputs("output")
@@ -166,7 +165,31 @@ public class TestRenders extends BaseUiServerTest {
         DataSetIterator mnist = new MnistDataSetIterator(32,640,false,true,false,12345);
 
         graph.fit(mnist);
+    }
 
+    @Test
+    public void testHistogramComputationGraphUnderscoresInName() throws Exception {
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .graphBuilder()
+                .addInputs("input")
+                .setInputTypes(InputType.convolutional(1,28,28))
+                .addLayer("cnn_1", new ConvolutionLayer.Builder(2,2).stride(2, 2).nIn(1).nOut(3).build(), "input")
+                .addLayer("cnn_2", new ConvolutionLayer.Builder(4,4).stride(2,2).padding(1,1).nIn(1).nOut(3).build(), "input")
+                .addLayer("max_1", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(2, 2).build(), "cnn_1", "cnn_2")
+                .addLayer("output", new OutputLayer.Builder().nIn(7 * 7 * 6).nOut(10).build(), "max_1")
+                .setOutputs("output")
+                .pretrain(false).backprop(true)
+                .build();
+
+        ComputationGraph graph = new ComputationGraph(conf);
+        graph.init();
+
+        graph.setListeners(new HistogramIterationListener(1), new ScoreIterationListener(1));
+
+        DataSetIterator mnist = new MnistDataSetIterator(32,640,false,true,false,12345);
+
+        graph.fit(mnist);
     }
 
 }

@@ -15,9 +15,7 @@ import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
-import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
-import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
+import org.deeplearning4j.nn.conf.preprocessor.*;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
@@ -339,7 +337,11 @@ public class TestComputationGraphNetwork {
                 .build();
             //Check preprocessors:
         lv1 = (LayerVertex) conf3.getVertices().get("cnn");
-        assertNull(lv1.getPreProcessor());
+        assertNotNull(lv1.getPreProcessor());
+        FeedForwardToCnnPreProcessor ffcnn = (FeedForwardToCnnPreProcessor)lv1.getPreProcessor();
+        assertEquals(1, ffcnn.getNumChannels());
+        assertEquals(28, ffcnn.getInputHeight());
+        assertEquals(28, ffcnn.getInputWidth());
         lv2 = (LayerVertex) conf3.getVertices().get("pool");
         assertNull(lv2.getPreProcessor());
         LayerVertex lv3 = (LayerVertex) conf3.getVertices().get("dense");
@@ -368,7 +370,11 @@ public class TestComputationGraphNetwork {
                 .build();
         //Check preprocessors:
         lv1 = (LayerVertex) conf4.getVertices().get("cnn");
-        assertNull(lv1.getPreProcessor());
+        assertNotNull(lv1.getPreProcessor());
+        ffcnn = (FeedForwardToCnnPreProcessor)lv1.getPreProcessor();
+        assertEquals(1, ffcnn.getNumChannels());
+        assertEquals(28, ffcnn.getInputHeight());
+        assertEquals(28, ffcnn.getInputWidth());
         lv2 = (LayerVertex) conf4.getVertices().get("pool");
         assertNull(lv2.getPreProcessor());
         lv3 = (LayerVertex) conf4.getVertices().get("dense");
@@ -383,6 +389,66 @@ public class TestComputationGraphNetwork {
         assertTrue(lv5.getPreProcessor() instanceof FeedForwardToRnnPreProcessor);
             //Check nIns:
         assertEquals(7 * 7 * 3, ((FeedForwardLayer) lv3.getLayerConf().getLayer()).getNIn());
+
+
+        //Input to 2 CNN layers:
+        ComputationGraphConfiguration conf5 = new NeuralNetConfiguration.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .graphBuilder()
+                .addInputs("input")
+                .setInputTypes(InputType.convolutional(1,28,28))
+                .addLayer("cnn_1", new ConvolutionLayer.Builder(2,2).stride(2, 2).nIn(1).nOut(3).build(), "input")
+                .addLayer("cnn_2", new ConvolutionLayer.Builder(4,4).stride(2,2).padding(1,1).nIn(1).nOut(3).build(), "input")
+                .addLayer("max_1", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(2, 2).build(), "cnn_1", "cnn_2")
+                .addLayer("output", new OutputLayer.Builder().nOut(10).build(), "max_1")    //.nIn(7 * 7 * 6)
+                .setOutputs("output")
+                .pretrain(false).backprop(true)
+                .build();
+        lv1 = (LayerVertex) conf5.getVertices().get("cnn_1");
+        assertTrue(lv1.getPreProcessor() instanceof FeedForwardToCnnPreProcessor);
+        ffcnn = (FeedForwardToCnnPreProcessor)lv1.getPreProcessor();
+        assertEquals(1, ffcnn.getNumChannels());
+        assertEquals(28, ffcnn.getInputWidth());
+        assertEquals(28, ffcnn.getInputHeight());
+
+        lv2 = (LayerVertex) conf5.getVertices().get("cnn_2");
+        assertTrue(lv2.getPreProcessor() instanceof FeedForwardToCnnPreProcessor);
+        FeedForwardToCnnPreProcessor ffcnn2 = (FeedForwardToCnnPreProcessor)lv2.getPreProcessor();
+        assertEquals(1, ffcnn2.getNumChannels());
+        assertEquals(28, ffcnn2.getInputWidth());
+        assertEquals(28, ffcnn2.getInputHeight());
+
+        assertNull(((LayerVertex) conf5.getVertices().get("max_1")).getPreProcessor());
+
+        lv3 = (LayerVertex) conf5.getVertices().get("output");
+        assertTrue(lv3.getPreProcessor() instanceof CnnToFeedForwardPreProcessor);
+        CnnToFeedForwardPreProcessor cnnff = (CnnToFeedForwardPreProcessor)lv3.getPreProcessor();
+        assertEquals(6, cnnff.getNumChannels());
+        assertEquals(7, cnnff.getInputHeight());
+        assertEquals(7, cnnff.getInputWidth());
+    }
+
+    @Test
+    public void testCompGraphUnderscores(){
+        //Problem: underscores in names could be problematic for ComputationGraphUpdater, HistogramIterationListener
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .graphBuilder()
+                .addInputs("input")
+                .addLayer("first_layer", new DenseLayer.Builder().nIn(4).nOut(5).build(), "input")
+                .addLayer("output_layer", new OutputLayer.Builder().nIn(5).nOut(3).build(), "first_layer")
+                .setOutputs("output_layer")
+                .pretrain(false).backprop(true)
+                .build();
+
+        ComputationGraph net = new ComputationGraph(conf);
+        net.init();
+
+        DataSetIterator iris = new IrisDataSetIterator(10,150);
+        while(iris.hasNext()){
+            net.fit(iris.next());
+        }
     }
 
 }
