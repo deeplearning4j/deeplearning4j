@@ -76,7 +76,7 @@ public class PointerUtil {
      *
      */
     public static int[] toShapeInfoBuffer(INDArray arr,int...dimension) {
-        if(dimension == null)
+        if(dimension == null || dimension[0] == Integer.MAX_VALUE)
             return toShapeInfoBuffer(arr);
         int[] ret = new int[arr.rank() * 2 + 4];
         ret[0]= arr.rank();
@@ -91,7 +91,9 @@ public class PointerUtil {
         //note here we do offset of zero due to the offset
         //already being handled by the cuda device pointer
         ret[ret.length - 3] = arr.offset();
-        ret[ret.length -2] = arr.tensorAlongDimension(0,dimension).elementWiseStride();
+        ret[ret.length - 2] = arr.tensorAlongDimension(0,dimension).elementWiseStride();
+        if( ret[ret.length - 2]  < 0)
+            throw new IllegalStateException("Found illegal element wise stride of -1");
         ret[ret.length - 1] = arr.ordering();
         return ret;
     }
@@ -303,6 +305,10 @@ public class PointerUtil {
         }
 
         throw new IllegalStateException("Unable to get pointer for scalar operation " + scalarOp);
+    }
+
+    public static Pointer getPointer(int alpha) {
+        return Pointer.to(new int[]{alpha});
     }
 
     public static Pointer getPointer(double alpha) {

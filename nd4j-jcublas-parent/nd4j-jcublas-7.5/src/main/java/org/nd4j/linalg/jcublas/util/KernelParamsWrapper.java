@@ -19,7 +19,6 @@
 
 package org.nd4j.linalg.jcublas.util;
 
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import jcuda.Pointer;
 import jcuda.Sizeof;
@@ -28,14 +27,15 @@ import jcuda.runtime.cudaMemcpyKind;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
+import org.nd4j.linalg.api.ops.IndexAccumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.CublasPointer;
-import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.buffer.allocation.PinnedMemoryStrategy;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.context.CudaContext;
-import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
+import org.nd4j.linalg.jcublas.ops.executioner.kernels.impl.AccumulationKernelCall;
+import org.nd4j.linalg.jcublas.ops.executioner.kernels.impl.IndexAccumulationKernelCall;
 
 
 import java.nio.ByteBuffer;
@@ -53,7 +53,6 @@ import java.util.*;
  */
 public class KernelParamsWrapper implements AutoCloseable {
 
-    private boolean closeInvoked = false;
 
     private boolean closeContext;
 
@@ -103,6 +102,9 @@ public class KernelParamsWrapper implements AutoCloseable {
      * @return
      */
     public KernelParamsWrapper setResultArray(INDArray array) {
+        if(!arrayToPointer.containsKey(array)) {
+          throw new IllegalStateException("No array found: unable to set array value");
+        }
         CublasPointer resultPointer = arrayToPointer.get(array).iterator().next();
         resultPointer.setResultPointer(true);
         if(resultPointer == null) {
@@ -111,6 +113,19 @@ public class KernelParamsWrapper implements AutoCloseable {
 
         resultPointers.add(resultPointer);
 
+        return this;
+    }
+    /**
+     * set the Op that this result is for
+     * @param op
+     * @param result
+     * @return
+     */
+    public KernelParamsWrapper setResultOp(IndexAccumulation op, INDArray result,int...dimension) {
+        resultOp = op;
+        resultLength = result.length();
+        scalarResult = (dimension == null || dimension.length < 1 || dimension[0] == Integer.MAX_VALUE || result.length() == 1);
+        setResultArray(result);
         return this;
     }
 
@@ -123,7 +138,7 @@ public class KernelParamsWrapper implements AutoCloseable {
     public KernelParamsWrapper setResultOp(Accumulation op, INDArray result,int...dimension) {
         resultOp = op;
         resultLength = result.length();
-        scalarResult = (dimension == null || dimension.length < 1 || dimension[0] == Integer.MAX_VALUE);
+        scalarResult = (dimension == null || dimension.length < 1 || dimension[0] == Integer.MAX_VALUE || result.length() == 1);
         setResultArray(result);
         return this;
     }
@@ -136,8 +151,8 @@ public class KernelParamsWrapper implements AutoCloseable {
      * To set the array which is the result INDArray, use setResultArray()
      * @param kernelParams
      */
-    public KernelParamsWrapper(Op op,Object... kernelParams) {
-        this(op,false, kernelParams);
+    public KernelParamsWrapper(Object... kernelParams) {
+        this(false, kernelParams);
     }
     /**
      * Create a new wrapper for the kernel parameters.
@@ -148,53 +163,18 @@ public class KernelParamsWrapper implements AutoCloseable {
      * To set the array which is the result INDArray, use setResultArray()
      * @param kernelParams
      */
-    public KernelParamsWrapper(Op op,boolean closeContext,Object... kernelParams) {
-        kernelParameters = new Object[kernelParams.length];
-        arrayToPointer = ArrayListMultimap.create();
-        pointersToFree = new ArrayList<>();
+    public KernelParamsWrapper(boolean closeContext,Object... kernelParams) {
         resultPointers = new ArrayList<>();
         context = new CudaContext(closeContext);
+
+        CudaArgs.ArgsAndReferences argsAndReferences = CudaArgs.argsAndReference(context,kernelParams);
+        kernelParameters = argsAndReferences.getArgs();
+        arrayToPointer = argsAndReferences.getArrayToPointer();
+        pointersToFree = argsAndReferences.getPointersToFree();
+
         context.initOldStream();
         context.initStream();
         this.closeContext = closeContext;
-        Map<Object,Object> idMap = new IdentityHashMap<>();
-        for(int i = 0; i < kernelParams.length; i++) {
-            Object arg = kernelParams[i];
-
-            // If the instance is a JCudaBuffer we should assign it to the device
-            if(arg instanceof JCudaBuffer) {
-                JCudaBuffer buffer = (JCudaBuffer) arg;
-               if(!idMap.containsKey(buffer)) {
-                   CublasPointer pointerToFree = new CublasPointer(buffer,context);
-                   kernelParameters[i] = pointerToFree.getDevicePointer();
-                   pointersToFree.add(pointerToFree);
-                   idMap.put(buffer,pointerToFree.getDevicePointer());
-               }
-                else {
-                   Pointer pointer = (Pointer) idMap.get(buffer);
-                   kernelParameters[i] = pointer;
-               }
-
-            }
-            else if(arg instanceof INDArray) {
-                INDArray array = (INDArray) arg;
-               if(!idMap.containsKey(array)) {
-                   CublasPointer pointerToFree = new CublasPointer(array,context);
-                   kernelParameters[i] = pointerToFree.getDevicePointer();
-                   pointersToFree.add(pointerToFree);
-                   arrayToPointer.put(array, pointerToFree);
-                   idMap.put(array,pointerToFree.getDevicePointer());
-               }
-                else {
-                   Pointer pointer = (Pointer) idMap.get(array);
-                   kernelParameters[i] = pointer;
-               }
-
-            }
-            else
-                kernelParameters[i] = arg;
-
-        }
 
 
     }
@@ -204,15 +184,17 @@ public class KernelParamsWrapper implements AutoCloseable {
      */
     @Override
     public void close() throws Exception {
-        if(closeInvoked)
-            return;
+        if(context.getOldStream() != null)
+            context.syncOldStream();
+        if(context.getStream() != null)
+            context.syncStream();
 
         for(CublasPointer cublasPointer : pointersToFree) {
             if(resultPointers.contains(cublasPointer)) {
                 //sets the result for the buffer
                 //since this ends up being a scalar
                 if(closeContext) {
-                    if(scalarResult && resultOp instanceof Accumulation) {
+                    if(scalarResult && resultOp instanceof Accumulation || resultOp instanceof IndexAccumulation) {
                         setResultForOp(resultOp, cublasPointer);
                     }
                     else
@@ -225,10 +207,8 @@ public class KernelParamsWrapper implements AutoCloseable {
 
         }
 
-
         if(closeContext)
             context.destroy();
-        closeInvoked = true;
     }
 
     /**
@@ -241,11 +221,23 @@ public class KernelParamsWrapper implements AutoCloseable {
             if(ContextHolder.getInstance().getMemoryStrategy() instanceof PinnedMemoryStrategy) {
                 ByteBuffer buff = devicePointer.getHostPointer().getByteBuffer(0,acc.x().data().getElementSize() * resultLength);
                 buff.order(ByteOrder.nativeOrder());
-                buff.rewind();
                 INDArray setResult = Nd4j.create(Nd4j.createBuffer(buff, DataBuffer.Type.DOUBLE,resultLength));
+                int oldN = acc.n();
                 acc.setX(setResult);
-                JCudaExecutioner exec = (JCudaExecutioner) Nd4j.getExecutioner();
-                exec.calculateBlockResult((Accumulation) acc,setResult);
+                acc.setN(oldN);
+                if(acc instanceof IndexAccumulation && resultLength > 1)
+                    IndexAccumulationKernelCall.calculateBlockResult((IndexAccumulation) acc, setResult);
+
+                else if(acc instanceof Accumulation && resultLength > 1)
+                    AccumulationKernelCall.calculateBlockResult((Accumulation) acc, setResult);
+                else if(acc instanceof Accumulation) {
+                    Accumulation acc2 = (Accumulation) acc;
+                    acc2.setFinalResult(setResult.getDouble(0));
+                }
+                else if(acc instanceof IndexAccumulation) {
+                    IndexAccumulation acc2 = (IndexAccumulation) acc;
+                    acc2.setFinalResult(setResult.getInt(0));
+                }
             }
             else {
                 double[] data = new double[resultLength];
@@ -266,10 +258,11 @@ public class KernelParamsWrapper implements AutoCloseable {
             if(ContextHolder.getInstance().getMemoryStrategy() instanceof PinnedMemoryStrategy) {
                 ByteBuffer buff = devicePointer.getHostPointer().getByteBuffer(0,acc.x().data().getElementSize() * resultLength);
                 buff.order(ByteOrder.nativeOrder());
-                buff.rewind();
                 INDArray setResult = Nd4j.create(Nd4j.createBuffer(buff, DataBuffer.Type.FLOAT,resultLength));
-                JCudaExecutioner exec = (JCudaExecutioner) Nd4j.getExecutioner();
-                exec.calculateBlockResult((Accumulation) acc,setResult);
+                if(acc instanceof IndexAccumulation)
+                    IndexAccumulationKernelCall.calculateBlockResult((IndexAccumulation) acc,setResult);
+                else if(acc instanceof Accumulation)
+                    AccumulationKernelCall.calculateBlockResult((Accumulation) acc,setResult);
             }
             else {
                 float[] data = new float[resultLength];
@@ -283,11 +276,6 @@ public class KernelParamsWrapper implements AutoCloseable {
                 context.syncOldStream();
 
             }
-
-
-
-
-
         }
     }
 
@@ -296,12 +284,6 @@ public class KernelParamsWrapper implements AutoCloseable {
     }
 
 
-    /**
-     * Sync the streams
-     */
-    public void sync() {
-        context.syncStream();
-    }
 
 
 }

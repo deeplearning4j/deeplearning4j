@@ -553,13 +553,12 @@ public class Pointer extends NativePointerObject
         return byteBuffer.slice();
     }
 
-
     /**
      * Returns the byte offset
      *
      * @return The byte offset
      */
-    protected long getByteOffset()
+    public long getByteOffset()
     {
         return byteOffset;
     }

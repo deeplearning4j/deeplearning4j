@@ -22,20 +22,28 @@ package jcuda.jcublas.kernel;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
+import java.io.DataInputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.lang3.time.StopWatch;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.BroadcastOp;
+import org.nd4j.linalg.api.ops.IndexAccumulation;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.broadcast.*;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.transforms.Log;
 import org.nd4j.linalg.api.ops.impl.transforms.LogSoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
@@ -44,6 +52,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.executors.ExecutorServiceProvider;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -141,12 +150,7 @@ public class TestMatrixOperations {
         assertEquals(3,mean2.meanNumber().doubleValue(),1e-1);
     }
 
-    @Test
-    public void testBlasSum() {
-        INDArray arr = Nd4j.linspace(1,4,4);
-        double sum = Nd4j.getBlasWrapper().asum(arr);
-        assertEquals(10,sum,1e-1);
-    }
+
 
     @Test
     public void testSum2() {
@@ -272,8 +276,8 @@ public class TestMatrixOperations {
         Nd4j.dtype = DataBuffer.Type.DOUBLE;
         INDArray n = Nd4j.create(new double[]{1, 2, 3, 4});
         double assertion = 5.47722557505;
-       // double norm3 = n.norm2Number().doubleValue();
-       // assertEquals(assertion, norm3, 1e-1);
+        // double norm3 = n.norm2Number().doubleValue();
+        // assertEquals(assertion, norm3, 1e-1);
 
         INDArray row = Nd4j.create(new double[]{1, 2, 3, 4}, new int[]{2, 2});
         INDArray row1 = row.getRow(1);
@@ -298,6 +302,180 @@ public class TestMatrixOperations {
         float assertion2 = 5.0f;
         assertEquals(assertion2, norm2, 1e-1);
     }
+
+    @Test
+    public void testTADMMul(){
+        Nd4j.getRandom().setSeed(12345);
+        int[] shape = new int[]{4,5,7};
+        INDArray arr = Nd4j.rand(shape);
+
+        INDArray tad = arr.tensorAlongDimension(0, 1, 2);
+        assertArrayEquals(tad.shape(), new int[]{7, 5});
+
+
+        INDArray copy = Nd4j.zeros(7,5);
+        for( int i = 0; i < 7; i++ ){
+            for( int j = 0; j < 5; j++ ){
+                copy.putScalar(new int[]{i,j},tad.getDouble(i,j));
+            }
+        }
+
+//        System.out.println(tad);
+//        System.out.println("\n");
+//        System.out.println(copy);
+
+        assertTrue(tad.equals(copy));
+
+        INDArray first = Nd4j.rand(new int[]{2, 7});
+        INDArray mmul = first.mmul(tad);
+        INDArray mmulCopy = first.mmul(copy);
+
+        assertTrue(mmul.equals(mmulCopy));
+
+        INDArray mmul2 = tad.mmul(first);
+        INDArray mmul2copy = copy.mmul(first);
+        assertTrue(mmul2.equals(mmul2copy));
+    }
+
+    @Test
+    public void testMeans3() {
+        INDArray a = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray mean1 = a.mean(1);
+        assertEquals(Nd4j.create(new double[]{1.5, 3.5}), mean1);
+        assertEquals(Nd4j.create(new double[]{2, 3}), a.mean(0));
+        assertEquals(2.5, Nd4j.linspace(1, 4, 4).meanNumber().doubleValue(), 1e-1);
+        assertEquals( 2.5, a.meanNumber().doubleValue(), 1e-1);
+
+
+        INDArray multipleMeans = Nd4j.linspace(1,24,24).reshape(2,2,3,2);
+        INDArray mean = multipleMeans.mean(2,3);
+        INDArray assertion = Nd4j.create(new double[][]{
+                {3.5,9.5},
+                {15.5,  21.5}
+        });
+
+        assertEquals(assertion,mean);
+    }
+
+
+    @Test
+    public void testSums3() {
+        INDArray multipleMeans = Nd4j.linspace(1,24,24).reshape(2,2,3,2);
+        for(int i = 2; i < multipleMeans.tensorssAlongDimension(3); i++) {
+            System.out.println(multipleMeans.tensorAlongDimension(i,3).offset());
+        }
+        INDArray mean = multipleMeans.sum(2, 3);
+       /* INDArray sumAlongLast = multipleMeans.sum(3);
+        for(int i = 0; i < sumAlongLast.tensorssAlongDimension(2); i++)
+            System.out.println(sumAlongLast.tensorAlongDimension(i,2).offset());
+*/
+        INDArray assertion = Nd4j.create(new double[][]{
+                {21,57},
+                {93,  129}
+        });
+
+        assertEquals(assertion,mean);
+    }
+
+
+    @Test
+    public void testMultiThreading() throws Exception {
+        ExecutorService ex = ExecutorServiceProvider.getExecutorService();
+
+        List<Future<?>> list = new ArrayList<>(100);
+        for(int i = 0; i < 100; i++) {
+            Future<?> future = ex.submit(new Runnable() {
+                @Override
+                public void run() {
+                    INDArray dot = Nd4j.linspace(1, 8, 8);
+                    System.out.println(Transforms.sigmoid(dot));
+                }
+            });
+            list.add(future);
+        }
+        for(Future<?> future : list ){
+            future.get(1, TimeUnit.MINUTES);
+        }
+
+    }
+
+    @Test
+    public void testMeanSumSimple(){
+        System.out.println("3d");
+        INDArray arr = Nd4j.ones(1,4,4);
+        assertEquals(Nd4j.ones(1),arr.mean(1, 2));
+        assertEquals(Nd4j.ones(1).muli(16), arr.sum(1,2));
+
+        System.out.println("4d");
+        INDArray arr4 = Nd4j.ones(1, 1, 4, 4);
+        INDArray arr4m = arr4.mean(2, 3);
+        INDArray arr4s = arr4.sum(2, 3);
+        for( int i = 0; i < arr4m.length(); i++)
+            assertEquals(arr4m.getDouble(i),1,0.0);
+        for(int i = 0; i < arr4s.length(); i++)
+            assertEquals(arr4s.getDouble(i),16,0.0);
+
+        System.out.println("5d");
+        INDArray arr5 = Nd4j.ones(1,1,4,4,4);
+        INDArray arr5m = arr5.mean(2, 3);
+        INDArray arr5s = arr5.sum(2,3);
+        for(int i = 0; i < arr5s.length(); i++)
+            assertEquals(16,arr5s.getDouble(i),0.0);
+
+     /*   for( int i = 0; i < arr5m.length(); i++)
+            assertEquals(1, arr5m.getDouble(i), 0.0);
+*/
+        System.out.println("6d");
+        INDArray arr6 = Nd4j.ones(1,1,4,4,4,4);
+        //  INDArray arr6m = arr6.mean(2, 3);
+        INDArray arr6s = arr6.sum(2,3);
+       /* for( int i = 0; i < arr6m.length(); i++)
+            assertEquals(1,arr6m.getDouble(i),0.0);*/
+        for(int i = 0; i < arr6s.length(); i++)
+            assertEquals(16,arr6s.getDouble(i),0.0);
+    }
+
+
+    @Test
+    public void testElementWiseStride() {
+        int length = ArrayUtil.prod(2,2,3,2);
+        INDArray ones = Nd4j.linspace(1,length,length).reshape(2,2,3,2);
+        int[] dimensions = {3};
+        System.out.println("Tads for 2,3 " + ones.tensorssAlongDimension(2,3) + " and 3 only " + ones.tensorssAlongDimension(3));
+        for(int i = 0; i < ones.tensorssAlongDimension(dimensions); i++) {
+            System.out.println(ones.tensorAlongDimension(i,dimensions));
+        }
+        System.out.println(ones.tensorAlongDimension(0, dimensions).elementWiseStride());
+    }
+
+    @Test
+    public void testIMin() {
+        INDArray arr = Nd4j.linspace(1, 10, 10);
+        IMin imin = new IMin(arr);
+        assertEquals(0, ((IndexAccumulation) Nd4j.getExecutioner().exec(imin)).getFinalResult());
+
+        arr.muli(-1);
+        imin = new IMin(arr);
+        int minIdx = ((IndexAccumulation) Nd4j.getExecutioner().exec(imin)).getFinalResult();
+        assertEquals(9, minIdx);
+    }
+
+    @Test
+    @Ignore
+    public void testNegativeNumbersSoftmax() throws Exception {
+        Nd4j.MAX_ELEMENTS_PER_SLICE = Integer.MAX_VALUE;
+        Nd4j.MAX_SLICES_TO_PRINT = Integer.MAX_VALUE;
+        DataInputStream dis = new DataInputStream(new ClassPathResource("softmaxtest.nd").getInputStream());
+        INDArray read = Nd4j.read(dis);
+        dis.close();
+        INDArray max1 = read.max(1);
+        SoftMax softMax = new SoftMax(read);
+        softMax.exec(1);
+        INDArray z = softMax.z();
+        INDArray zSums = z.sum(1);
+        assertEquals(zSums.length(),zSums.sumNumber().doubleValue(),1e-1);
+    }
+
 
 
     @Test
@@ -692,6 +870,8 @@ public class TestMatrixOperations {
 
     }
 
+
+
     @Test
     public void testManualAddRowVector() {
         INDArray seven = Nd4j.linspace(1,7,7);
@@ -889,6 +1069,138 @@ public class TestMatrixOperations {
     }
 
     @Test
+    public void testDot2() {
+        INDArray vec1 = Nd4j.create(new float[]{1, 2, 3, 4});
+        INDArray vec2 = Nd4j.create(new float[]{1, 2, 3, 4});
+        assertEquals(30, Nd4j.getBlasWrapper().dot(vec1, vec2), 1e-1);
+
+        INDArray matrix = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray row = matrix.getRow(1);
+        assertEquals(25, Nd4j.getBlasWrapper().dot(row, row), 1e-1);
+
+    }
+
+
+    @Test
+    public void testMMul() {
+        INDArray arr = Nd4j.create(new double[][]{
+                {1, 2, 3}, {4, 5, 6}
+        });
+
+        INDArray assertion = Nd4j.create(new double[][]{
+                {14, 32}, {32, 77}
+        });
+
+        INDArray test = arr.mmul(arr.transpose());
+        assertEquals( assertion, test);
+
+    }
+
+
+    @Test
+    public void testTADMMulLeadiusngOne(){
+        Nd4j.getRandom().setSeed(12345);
+        int[] shape = new int[]{1,5,7};
+        INDArray arr = Nd4j.rand(shape);
+
+        INDArray tad = arr.tensorAlongDimension(0, 1, 2);
+        boolean order = Shape.cOrFortranOrder(tad.shape(), tad.stride(), tad.elementStride());
+        assertArrayEquals(tad.shape(),new int[]{7,5});
+
+
+        INDArray copy = Nd4j.zeros(7,5);
+        for( int i = 0; i < 7; i++ ){
+            for( int j = 0; j < 5; j++ ){
+                copy.putScalar(new int[]{i,j},tad.getDouble(i,j));
+            }
+        }
+
+        assertTrue(tad.equals(copy));
+
+        INDArray first = Nd4j.rand(new int[]{2, 7});
+        INDArray mmul = first.mmul(tad);
+        INDArray mmulCopy = first.mmul(copy);
+
+        assertTrue(mmul.equals(mmulCopy));
+
+        INDArray mmul2 = tad.mmul(first);
+        INDArray mmul2copy = copy.mmul(first);
+        assertTrue(mmul2.equals(mmul2copy));
+    }
+
+
+    @Test
+    public void testArgMax2() {
+        INDArray toArgMax = Nd4j.linspace(1,24,24).reshape(4, 3, 2);
+        for(int i = 0; i < toArgMax.tensorssAlongDimension(1); i++) {
+            System.out.println(toArgMax.tensorAlongDimension(i,1));
+        }
+        INDArray  argMax = Nd4j.argMax(toArgMax, 1);
+        INDArray argMaxZero = Nd4j.argMax(toArgMax,0);
+        INDArray argMaxTwo = Nd4j.argMax(toArgMax,2);
+        INDArray valueArray = Nd4j.valueArrayOf(new int[]{4, 2}, 2.0);
+        INDArray valueArrayTwo = Nd4j.valueArrayOf(new int[]{3,2},3.0);
+        INDArray valueArrayThree = Nd4j.valueArrayOf(new int[]{4,3},1.0);
+        assertEquals(valueArray, argMax);
+        assertEquals(valueArrayTwo, argMaxZero);
+        assertEquals(valueArrayThree,argMaxTwo);
+    }
+
+
+    @Test
+    public void testMeans2() {
+        INDArray a = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray mean1 = a.mean(1);
+        assertEquals( Nd4j.create(new double[]{1.5, 3.5}), mean1);
+        assertEquals( Nd4j.create(new double[]{2, 3}), a.mean(0));
+        assertEquals(2.5, Nd4j.linspace(1, 4, 4).meanNumber().doubleValue(), 1e-1);
+        assertEquals(2.5, a.meanNumber().doubleValue(), 1e-1);
+
+    }
+
+    @Test
+    public void testAddVectorWithOffset() throws Exception {
+        INDArray oneThroughFour = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray row1 = oneThroughFour.getRow(1);
+        row1.addi(1);
+        INDArray result = Nd4j.create(new float[]{1, 2, 4, 5}, new int[]{2, 2});
+        assertEquals(result, oneThroughFour);
+    }
+
+
+    @Test
+    public void testColumnMmul() {
+        DataBuffer data = Nd4j.linspace(1, 10, 18).data();
+        INDArray x2 = Nd4j.create(data, new int[]{2,3,3});
+        data = Nd4j.linspace(1, 12, 9).data();
+        INDArray y2 = Nd4j.create(data, new int[]{3,3});
+        INDArray z2 = Nd4j.create(3,2);
+        z2.putColumn(0, y2.getColumn(0));
+        z2.putColumn(1, y2.getColumn(1));
+        INDArray nofOffset = Nd4j.create(3,3);
+        nofOffset.assign(x2.slice(0));
+        assertEquals(nofOffset,x2.slice(0));
+
+        INDArray slice = x2.slice(0);
+        INDArray zeroOffsetResult = slice.mmul(z2);
+        INDArray offsetResult = nofOffset.mmul(z2);
+        assertEquals(zeroOffsetResult,offsetResult);
+
+
+        INDArray slice1 = x2.slice(1);
+        INDArray noOffset2 = Nd4j.create(slice1.shape());
+        noOffset2.assign(slice1);
+        assertEquals(slice1,noOffset2);
+
+        INDArray noOffsetResult = noOffset2.mmul(z2);
+        INDArray slice1OffsetResult = slice1.mmul(z2);
+
+        assertEquals(noOffsetResult,slice1OffsetResult);
+    }
+
+
+
+    @Test
     public void testSumLeadingTrailingZeros(){
         testSumHelper(1,5,5);
         testSumHelper(5,5,1);
@@ -920,45 +1232,5 @@ public class TestMatrixOperations {
 
 
 
-    @Test
-    public void testMultipleThreads() throws InterruptedException {
-        int numThreads = 10;
-        final INDArray array = Nd4j.rand(300, 300);
-        final INDArray expected = array.dup().mmul(array).mmul(array).div(array).div(array);
-        final AtomicInteger correct = new AtomicInteger();
-        final CountDownLatch latch = new CountDownLatch(numThreads);
-        System.out.println("Running on " + ContextHolder.getInstance().deviceNum());
-        ExecutorService executors = ExecutorServiceProvider.getExecutorService();
-
-        for(int x = 0; x< numThreads; x++) {
-            executors.execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        int total = 10;
-                        int right = 0;
-                        for(int x = 0; x< total; x++) {
-                            StopWatch watch = new StopWatch();
-                            watch.start();
-                            INDArray actual = array.dup().mmul(array).mmul(array).div(array).div(array);
-                            watch.stop();
-                            if(expected.equals(actual)) right++;
-                        }
-
-                        if(total == right)
-                            correct.incrementAndGet();
-                    } finally {
-                        latch.countDown();
-                    }
-
-                }
-            });
-        }
-
-        latch.await();
-
-        assertEquals(numThreads, correct.get());
-
-    }
 
 }
