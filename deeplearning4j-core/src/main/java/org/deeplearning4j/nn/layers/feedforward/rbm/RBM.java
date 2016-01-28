@@ -201,6 +201,15 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
         if(v == null)
             v = layerConf().getVisibleUnit();
 
+        r.layerConf().setHiddenUnit(h);
+        r.layerConf().setVisibleUnit(v);
+
+        //biases:
+        INDArray vb = getParam(DefaultParamInitializer.BIAS_KEY).dup();
+        INDArray b = getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY).dup();
+        r.setParam(PretrainParamInitializer.VISIBLE_BIAS_KEY,vb);
+        r.setParam(DefaultParamInitializer.BIAS_KEY,b);
+
         r.sigma = sigma;
         r.hiddenSigma = hiddenSigma;
         return r;

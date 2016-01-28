@@ -24,6 +24,7 @@
 
 $(document).ready(function() {
     $('#kform').hide();
+    $('#sidebar-wrapper').hide();
     // Add events
     $('#form').fileUpload({success : function(data, textStatus, jqXHR){
         document.getElementById('form').reset();
@@ -42,6 +43,8 @@ $(document).ready(function() {
                     console.log('SUCCESS');
                     $(document).ready(function() {
                         $('#kform').show();
+                        $('#sidebar-wrapper').show();
+                        $("#instructions").hide();
                         var html = '<ul class="sidebar-nav">';
                         var keys = Object.keys(data);
                         for (var i = 0; i < keys.length; i++) {
@@ -84,6 +87,19 @@ $(document).ready(function() {
             contentType : 'application/json',
             data: JSON.stringify({word: word, numWords: numWords}),
             cache: false,
+            error: function (query, status, error) {
+                                        $.notify({
+                                            title: '<strong>No connection!</strong>',
+                                            message: 'DeepLearning4j UiServer seems to be down!'
+                                        },{
+                                            type: 'danger',
+                                            placement: {
+                                                from: "top",
+                                                align: "center"
+                                                },
+                                        });
+                                        setTimeout(timed, 10000);
+                                    },
             success: function(data, textStatus, jqXHR)
             {
                 if(typeof data.error === 'undefined')
@@ -92,11 +108,12 @@ $(document).ready(function() {
                     console.log('SUCCESS NN');
                     var keys = Object.keys(data);
                     var k = keys.length;
-                    var html = '<h3>Your selected word: <b>' + word + '</b></h3><br><h4>The following are the ' + k +  ' nearest neighbors: </h4> \<' +
+                    var html = '<h3>Target word: <b><u>' + word + '</u></b></h3><br><h4>' + k +  ' nearest neighbors and their cosine similarity to target word: </h4> \<' +
                         'ol>';
 
                     for (var i = 0; i < k; i++) {
-                        html += '<li>' + keys[i] + '</li>';
+                        var sim = data[keys[i]];
+                        html += '<li>' + keys[i] + '&nbsp;&nbsp;&nbsp;<span style="font-size: 10px;">[ '+ (sim.toFixed(4))+' ]</span></li>';
                     }
                     html += '</ol>';
                     $('#neighbors').html(html);
@@ -108,12 +125,7 @@ $(document).ready(function() {
                     console.log('ERRORS: ' + data.error);
                 }
             },
-            error: function(jqXHR, textStatus, errorThrown)
-            {
-                // Handle errors here
-                console.log('ERRORS: ' + textStatus);
-            },
-            complete: function()
+             complete: function()
             {
                 // STOP LOADING SPINNER
             }
