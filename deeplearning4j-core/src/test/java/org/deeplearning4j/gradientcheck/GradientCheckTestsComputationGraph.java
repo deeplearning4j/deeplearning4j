@@ -10,6 +10,7 @@ import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.graph.SubsetVertex;
+import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
@@ -373,6 +374,54 @@ public class GradientCheckTestsComputationGraph {
                 PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{input}, new INDArray[]{labels});
 
         assertTrue(msg, gradOK);
+    }
+
+    @Test
+    public void testLSTMWithDuplicateToTimeSeries(){
+
+        Nd4j.getRandom().setSeed(12345);
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                .updater(Updater.NONE).learningRate(1.0)
+                .graphBuilder()
+                .addInputs("input1","input2")
+                .setOutputs("out")
+                .addLayer("lstm1", new GravesLSTM.Builder().nIn(3).nOut(4).activation("tanh").build(), "input1")
+                .addLayer("lstm2", new GravesLSTM.Builder().nIn(4).nOut(5).activation("softsign").build(), "input2")
+                .addVertex("lastTS", new LastTimeStepVertex("input2"), "lstm2")
+                .addVertex("duplicate", new DuplicateToTimeSeriesVertex("input2"), "lastTS")
+                .addLayer("out", new RnnOutputLayer.Builder().nIn(5+4).nOut(3).activation("softmax")
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "lstm1","duplicate")
+                .pretrain(false).backprop(true).build();
+
+        ComputationGraph graph = new ComputationGraph(conf);
+        graph.init();
+
+        Random r = new Random(12345);
+        INDArray input1 = Nd4j.rand(new int[]{3,3,5});
+        INDArray input2 = Nd4j.rand(new int[]{3,4,5});
+        INDArray labels = Nd4j.zeros(3,3,5);
+        for( int i=0; i<3; i++ ){
+            for( int j=0; j<5; j++ ) {
+                labels.putScalar(new int[]{i, r.nextInt(3), j}, 1.0);
+            }
+        }
+
+        if (PRINT_RESULTS) {
+            System.out.println("testLSTMWithDuplicateToTimeSeries()");
+            for (int j = 0; j < graph.getNumLayers(); j++)
+                System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+        }
+
+        boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{input1,input2}, new INDArray[]{labels});
+
+        String msg = "testLSTMWithDuplicateToTimeSeries()";
+        assertTrue(msg, gradOK);
+
+
     }
 
 }

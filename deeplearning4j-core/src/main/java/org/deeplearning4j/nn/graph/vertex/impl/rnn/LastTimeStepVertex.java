@@ -117,4 +117,9 @@ public class LastTimeStepVertex extends BaseGraphVertex {
         }
         return new Pair<>(null,new INDArray[]{epsilonsOut});
     }
+
+    @Override
+    public String toString(){
+        return "LastTimeStepVertex(inputName="+inputName+")";
+    }
 }
