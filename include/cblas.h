@@ -5,7 +5,9 @@
 #ifndef NATIVEOPERATIONS_CBLAS_H
 #define NATIVEOPERATIONS_CBLAS_H
 #ifndef CBLAS_H
-
+#ifdef __cplusplus
+extern "C" {
+#endif
 #ifndef CBLAS_ENUM_DEFINED_H
 #define CBLAS_ENUM_DEFINED_H
 enum CBLAS_ORDER {CblasRowMajor=101, CblasColMajor=102 };
@@ -598,7 +600,9 @@ void cblas_zher2k(const enum CBLAS_ORDER Order, const enum CBLAS_UPLO Uplo,
                   void *C, const int ldc);
 
 int cblas_errprn(int ierr, int info, char *form, ...);
-
+#ifdef __cplusplus
+}
+#endif
 #endif  /* end #ifdef CBLAS_ENUM_ONLY */
 #endif
 #endif //NATIVEOPERATIONS_CBLAS_H

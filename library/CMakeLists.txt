@@ -17,8 +17,10 @@ if(Java_FOUND)
     endif(EXISTS "$ENV{JAVA_HOME}")
 endif()
 
-FIND_PACKAGE(BLAS)
-FIND_PACKAGE(LAPACK)
+FIND_PACKAGE(BLAS REQUIRED)
+FIND_PACKAGE(LAPACK REQUIRED)
 
 SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}" )
-add_library(libnd4j blasimpl.cpp)
+
+add_library(libnd4j SHARED blasimpl.cpp)
+target_link_libraries(libnd4j ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
