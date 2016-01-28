@@ -32,8 +32,10 @@ import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.views.ViewBundle;
 import org.apache.commons.io.IOUtils;
+import org.canova.api.util.ClassPathResource;
 import org.deeplearning4j.ui.activation.ActivationsResource;
 import org.deeplearning4j.ui.api.ApiResource;
+import org.deeplearning4j.ui.defaults.DefaultResource;
 import org.deeplearning4j.ui.exception.GenericExceptionMapper;
 import org.deeplearning4j.ui.nearestneighbors.NearestNeighborsResource;
 import org.deeplearning4j.ui.renders.RendersResource;
@@ -47,7 +49,6 @@ import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.serde.jackson.VectorDeSerializer;
 import org.nd4j.serde.jackson.VectorSerializer;
-import org.springframework.core.io.ClassPathResource;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.FilterRegistration;
@@ -116,14 +117,17 @@ public class UiServer extends Application<UIConfiguration> {
         environment.jersey().register(new GenericExceptionMapper());
         environment.jersey().register(new JsonProcessingExceptionMapper());
 
+
         environment.jersey().register(new TsneResource(conf.getUploadPath()));
         environment.jersey().register(new NearestNeighborsResource(conf.getUploadPath()));
+        environment.jersey().register(new DefaultResource());
         environment.jersey().register(new WeightResource());
         environment.jersey().register(new ActivationsResource());
         environment.jersey().register(new RendersResource());
         environment.jersey().register(new ApiResource());
         environment.jersey().register(new GenericExceptionMapper());
         environment.jersey().register(new org.deeplearning4j.ui.nearestneighbors.word2vec.NearestNeighborsResource(conf.getUploadPath()));
+
         environment.getObjectMapper().configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         environment.getObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
@@ -162,14 +166,7 @@ public class UiServer extends Application<UIConfiguration> {
 
     public static void createServer() throws Exception {
         ClassPathResource resource = new ClassPathResource("dropwizard.yml");
-        InputStream is = resource.getInputStream();
-        File tmpConfig = new File("dropwizard-render.yml");
-        BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tmpConfig));
-        IOUtils.copy(is, bos);
-        bos.flush();
-        bos.close();
-        is.close();
-        tmpConfig.deleteOnExit();
+        File tmpConfig = resource.getFile();
         INSTANCE = new UiServer();
         INSTANCE.run("server", tmpConfig.getAbsolutePath());
     }
@@ -190,9 +187,14 @@ public class UiServer extends Application<UIConfiguration> {
     //Parse dropwizard.yml (if present on classpath) and parse the port specifications
     private int[] getApplicationPortFromYml(){
         int[] toReturn = {-1,-1};
-        InputStream in = this.getClass().getClassLoader()
-                .getResourceAsStream("dropwizard.yml");
-        if(in == null) return toReturn;   //Not found
+        ClassPathResource resource = new ClassPathResource("dropwizard.yml");
+        InputStream in = null;
+        try {
+             in = resource.getInputStream();
+            if (in == null) return toReturn;   //Not found
+        } catch (FileNotFoundException e) {
+            return toReturn;
+        }
         String s;
         try {
             s = IOUtils.toString(in);

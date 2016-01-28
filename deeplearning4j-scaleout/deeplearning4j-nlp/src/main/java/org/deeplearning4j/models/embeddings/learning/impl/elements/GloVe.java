@@ -280,7 +280,7 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
                     }
 
                     errorCounter.incrementCount(epochId, iterateSample(element1, element2, weight));
-                    if (pairsCounter.incrementAndGet() % 100000 == 0) {
+                    if (pairsCounter.incrementAndGet() % 1000000 == 0) {
                         log.info("Processed [" + pairsCounter.get() + "] word pairs so far...");
                     }
                 }
@@ -297,7 +297,7 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
 
         protected boolean shuffle = false;
         protected boolean symmetric = false;
-        protected int maxmemory = (int) (Runtime.getRuntime().totalMemory() / 1024 /1024 /1024);
+        protected int maxmemory = 0;
 
         protected int batchSize = 1000;
 
