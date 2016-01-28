@@ -28,7 +28,7 @@ import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.plot.Tsne;
-import org.deeplearning4j.plot.dropwizard.RenderApplication;
+//import org.deeplearning4j.ui.UiServer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -122,6 +122,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
 
     @Override
     public void plotVocab(Tsne tsne) {
+
         try {
             List<String> plot = new ArrayList<>();
             for(String s : vocab.words()) {
@@ -133,7 +134,17 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
         }
 
         try {
-            RenderApplication.main(null);
+/*            UiServer server = UiServer.getInstance();
+
+            System.out.println("Please open your browser and navigate to: http://localhost:" + server.getPort() + "/");
+*/
+            /*
+                TODO: push 2D coordinates to the UIServer here, since we don't want to tie TSNE to IterationListener mechanics: it will be too much data updated
+             */
+
+
+            // we don't need older render engine anymore
+            // RenderApplication.main(null);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -147,15 +158,8 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
         Tsne tsne = new Tsne.Builder()
                 .normalize(false).setFinalMomentum(0.8f)
                 .setMaxIter(1000).build();
-        try {
-            List<String> plot = new ArrayList<>();
-            for(String s : vocab.words()) {
-                plot.add(s);
-            }
-            tsne.plot(syn0, 2, plot);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+
+        plotVocab(tsne);
     }
 
 

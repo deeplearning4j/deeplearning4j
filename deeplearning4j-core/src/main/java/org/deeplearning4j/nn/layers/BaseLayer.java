@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.deeplearning4j.optimize.Solver;
@@ -285,7 +286,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
                 throw new IllegalStateException("Parameter " + s + " should have been of length " + param.length() + " but was " + get.length());
             setParam(s,get.reshape('f',param.shape()));
             idx += param.length();
-
         }
 
     }
@@ -551,20 +551,22 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         if(!(conf.getLayer() instanceof org.deeplearning4j.nn.conf.layers.FeedForwardLayer))
             throw new UnsupportedOperationException("unsupported layer type: " + conf.getLayer().getClass().getName());
 
-        INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
+        INDArray w = getParam(DefaultParamInitializer.WEIGHT_KEY);
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         Layer layer;
         try {
-            Constructor c = getClass().getConstructor(NeuralNetConfiguration.class, INDArray.class, INDArray.class, INDArray.class);
             NeuralNetConfiguration clone = conf.clone();  // assume a deep clone here
 
             org.deeplearning4j.nn.conf.layers.FeedForwardLayer clonedLayerConf =
                     (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) clone.getLayer();
-            int nIn = clonedLayerConf.getNOut(), nOut = clonedLayerConf.getNIn();
+            int nIn = clonedLayerConf.getNOut();
+            int nOut = clonedLayerConf.getNIn();
             clonedLayerConf.setNIn(nIn);
             clonedLayerConf.setNOut(nOut);
 
-            layer = (Layer) c.newInstance(conf, W.transpose(), b.transpose(), input != null ? input.transpose() : null);
+            layer = LayerFactories.getFactory(clone).create(clone, iterationListeners, this.index);
+            layer.setParam(DefaultParamInitializer.WEIGHT_KEY,w.transpose().dup());
+            layer.setParam(DefaultParamInitializer.BIAS_KEY,b.dup());
         } catch (Exception e) {
             throw new RuntimeException("unable to construct transposed layer", e);
         }

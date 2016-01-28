@@ -26,7 +26,6 @@ import lombok.NonNull;
 import org.apache.commons.compress.compressors.gzip.GzipUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
-import org.apache.commons.io.output.StringBuilderWriter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
 import org.deeplearning4j.models.paragraphvectors.ParagraphVectors;
@@ -53,7 +52,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
@@ -313,9 +311,26 @@ public class WordVectorSerializer {
      * @param <T>
      */
     public static <T extends SequenceElement> void writeWordVectors(WeightLookupTable<T> lookupTable, String path) throws IOException {
+        try {
+            writeWordVectors(lookupTable, new FileOutputStream(path));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * This mehod writes word vectors to the given OutputStream.
+     * Please note: this method doesn't load whole vocab/lookupTable into memory, so it's able to process large vocabularies served over network.
+     *
+     * @param lookupTable
+     * @param stream
+     * @param <T>
+     * @throws IOException
+     */
+    public static <T extends SequenceElement> void writeWordVectors(WeightLookupTable<T> lookupTable, OutputStream stream) throws IOException {
         VocabCache<T> vocabCache = lookupTable.getVocabCache();
 
-        PrintWriter writer = new PrintWriter(new File(path));
+        PrintWriter writer = new PrintWriter(stream);
 
         for (int x = 0; x < vocabCache.numWords(); x++) {
             T element = vocabCache.elementAtIndex(x);
@@ -421,8 +436,11 @@ public class WordVectorSerializer {
                     labels.add(word.getLabel());
                 } else throw new IllegalStateException("Source stream doesn't looks like ParagraphVectors serialized model");
 
+                // this particular line is just for backward compatibility with InMemoryLookupCache
+                word.setIndex(vocabCache.numWords());
+
                 vocabCache.addToken(word);
-                vocabCache.addWordToIndex(vocabCache.numWords() - 1, word.getLabel());
+                vocabCache.addWordToIndex(word.getIndex(), word.getLabel());
 
                 // backward compatibility code
                 vocabCache.putVocabWord(word.getLabel());
@@ -464,6 +482,47 @@ public class WordVectorSerializer {
         }
     }
 
+    /**
+     * This method saves GloVe model to the given output stream.
+     *
+     * @param vectors GloVe model to be saved
+     * @param file path where model should be saved to
+     */
+    public static void writeWordVectors(@NonNull Glove vectors, @NonNull File file) {
+        try (FileOutputStream fos = new FileOutputStream(file)) {
+            writeWordVectors(vectors, fos);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * This method saves GloVe model to the given output stream.
+     *
+     * @param vectors GloVe model to be saved
+     * @param path path where model should be saved to
+     */
+    public static void writeWordVectors(@NonNull Glove vectors, @NonNull String path) {
+        try (FileOutputStream fos = new FileOutputStream(path)) {
+            writeWordVectors(vectors, fos);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * This method saves GloVe model to the given OutputStream
+     *
+     * @param vectors GloVe model to be saved
+     * @param stream OutputStream where model should be saved to
+     */
+    public static void writeWordVectors(@NonNull Glove vectors, @NonNull OutputStream stream) {
+        try {
+            writeWordVectors(vectors.lookupTable(), stream);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     /**
      * This method saves paragraph vectors to the given output stream.
@@ -571,19 +630,15 @@ public class WordVectorSerializer {
             throw new RuntimeException(e);
         }
 
-        WeightLookupTable lookupTable = vec.getLookupTable();
-        VocabCache vocabCache = vec.getVocab(); // ((InMemoryLookupTable) lookupTable).getVocab(); //vec.getVocab();
+        WeightLookupTable<VocabWord> lookupTable = vec.getLookupTable();
+        VocabCache<VocabWord> vocabCache = vec.getVocab(); // ((InMemoryLookupTable) lookupTable).getVocab(); //vec.getVocab();
 
 
         if (!(lookupTable instanceof InMemoryLookupTable)) throw new IllegalStateException("At this moment only InMemoryLookupTable is supported.");
-     //   if (!(vocabCache instanceof InMemoryLookupCache)) throw new IllegalStateException("At this moment only InMemoryLookupCache is supported.");
 
         VectorsConfiguration conf = vec.getConfiguration();
         conf.setVocabSize(vocabCache.numWords());
 
-        VocabularyHolder holder = new VocabularyHolder.Builder()
-                .externalCache(vocabCache)
-                .build();
 
         printWriter.println(conf.toJson());
         log.info("Word2Vec conf. JSON: " + conf.toJson());
