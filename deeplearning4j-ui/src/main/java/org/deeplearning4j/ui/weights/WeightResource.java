@@ -36,7 +36,7 @@ import java.util.HashMap;
  *
  * @author Adam Gibson
  */
-@Path("/{path}")
+@Path("/weights")
 public class WeightResource {
     private ModelAndGradient current;
     String path = "weights";

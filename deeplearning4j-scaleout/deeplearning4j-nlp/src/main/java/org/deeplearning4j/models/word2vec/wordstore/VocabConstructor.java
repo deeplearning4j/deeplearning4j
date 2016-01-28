@@ -34,6 +34,7 @@ public class VocabConstructor<T extends SequenceElement> {
     private List<String> stopWords;
     private boolean useAdaGrad = false;
     private boolean fetchLabels = false;
+    private int limit;
 
     protected static final Logger log = LoggerFactory.getLogger(VocabConstructor.class);
 
@@ -206,7 +207,7 @@ public class VocabConstructor<T extends SequenceElement> {
             if (source.getMinWordFrequency() > 0) {
                 LinkedBlockingQueue<String> labelsToRemove = new LinkedBlockingQueue<>();
                 for (T element : tempHolder.vocabWords()) {
-                    if (element.getElementFrequency() < source.getMinWordFrequency() && !element.isSpecial())
+                    if (element.getElementFrequency() < source.getMinWordFrequency() && !element.isSpecial() && !element.isLabel())
                         labelsToRemove.add(element.getLabel());
                 }
 
@@ -241,6 +242,18 @@ public class VocabConstructor<T extends SequenceElement> {
             huffman.build();
             huffman.applyIndexes(cache);
             //topHolder.updateHuffmanCodes();
+
+            if (limit > 0) {
+                LinkedBlockingQueue<String> labelsToRemove = new LinkedBlockingQueue<>();
+                for (T element : cache.vocabWords()) {
+                    if (element.getIndex() > limit && !element.isSpecial() && !element.isLabel())
+                        labelsToRemove.add(element.getLabel());
+                }
+
+                for (String label: labelsToRemove) {
+                    cache.removeElement(label);
+                }
+            }
         }
 
         log.info("Sequences checked: [" + sequenceCounter.get() +"], Current vocabulary size: [" + cache.numWords() +"]");
@@ -253,9 +266,23 @@ public class VocabConstructor<T extends SequenceElement> {
         private List<String> stopWords = new ArrayList<>();
         private boolean useAdaGrad = false;
         private boolean fetchLabels = false;
+        private int limit;
 
         public Builder() {
 
+        }
+
+        /**
+         * This method sets the limit to resulting vocabulary size.
+         *
+         * PLEASE NOTE:  This method is applicable only if huffman tree is built.
+         *
+         * @param limit
+         * @return
+         */
+        public Builder<T> setEntriesLimit(int limit) {
+            this.limit = limit;
+            return this;
         }
 
         /**
@@ -332,6 +359,7 @@ public class VocabConstructor<T extends SequenceElement> {
             constructor.stopWords = this.stopWords;
             constructor.useAdaGrad = this.useAdaGrad;
             constructor.fetchLabels = this.fetchLabels;
+            constructor.limit = this.limit;
 
             return constructor;
         }
