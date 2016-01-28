@@ -198,7 +198,7 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
         inMemoryLookupTable.setVectorLength(vectorLength);
         inMemoryLookupTable.setSyn0(syn0);
         lookupTable = inMemoryLookupTable;
-        modelUtils.init(lookupTable);
+        modelUtils.init(lookupTable());
     }
 
     public int getVectorLength() {

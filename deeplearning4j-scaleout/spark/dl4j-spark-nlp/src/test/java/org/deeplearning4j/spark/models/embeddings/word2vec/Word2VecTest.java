@@ -37,7 +37,10 @@ public class Word2VecTest {
     @Test
     public void testConcepts() throws Exception {
         // These are all default values for word2vec
-        SparkConf sparkConf = new SparkConf().setMaster("local[4]").setAppName("sparktest");
+        SparkConf sparkConf = new SparkConf()
+                .setMaster("spark://192.168.1.35:7077")
+                .setAppName("sparktest");
+//        SparkConf sparkConf = new SparkConf().setMaster("local[4]").setAppName("sparktest");
 
         // Set SparkContext
         JavaSparkContext sc = new JavaSparkContext(sparkConf);
