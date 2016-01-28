@@ -65,6 +65,8 @@ If you have any questions, please join [us on Gitter](https://gitter.im/deeplear
 ### User Testimonial
 
       "I feel like Frankenstein. The doctor..." - Steve D. 
+      
+      "I am very keen on using deeplearning4j in production here. This is a massive opportunity in a market worth billions of quids." -John M.
 
 ### Contributing to Deeplearning4j
 
