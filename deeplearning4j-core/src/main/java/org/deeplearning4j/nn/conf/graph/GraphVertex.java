@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.conf.graph;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -14,7 +15,9 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 @JsonSubTypes(value={
         @JsonSubTypes.Type(value = ElementWiseVertex.class, name = "ElementWiseVertex"),
         @JsonSubTypes.Type(value = MergeVertex.class, name = "MergeVertex"),
-        @JsonSubTypes.Type(value = SubsetVertex.class, name = "SubsetVertex")
+        @JsonSubTypes.Type(value = SubsetVertex.class, name = "SubsetVertex"),
+        @JsonSubTypes.Type(value = LayerVertex.class, name = "LayerVertex"),
+        @JsonSubTypes.Type(value = LastTimeStepVertex.class, name = "LastTimeStepVertex")
 })
 public abstract class GraphVertex implements Cloneable {
 

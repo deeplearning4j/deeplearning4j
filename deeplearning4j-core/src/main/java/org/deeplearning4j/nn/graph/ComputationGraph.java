@@ -59,6 +59,8 @@ public class ComputationGraph implements Serializable, Model {
 
     private INDArray[] inputs;
     private INDArray[] labels;
+    private INDArray[] inputMaskArrays;
+    private INDArray[] labelMaskArrays;
 
     private NeuralNetConfiguration defaultConfiguration;
     private Collection<IterationListener> listeners = new ArrayList<>();
@@ -99,6 +101,11 @@ public class ComputationGraph implements Serializable, Model {
         return vertices;
     }
 
+    /** Return a given GraphVertex by name, or null if no vertex with that name exists */
+    public GraphVertex getVertex(String name){
+        return verticesMap.get(name);
+    }
+
     /** The number of inputs to this network */
     public int getNumInputArrays(){
         return numInputArrays;
@@ -120,6 +127,27 @@ public class ComputationGraph implements Serializable, Model {
             throw new IllegalArgumentException("Invalid input array: network has " + numInputArrays + " inputs, but array is of length " + inputs.length);
         }
         this.inputs = inputs;
+    }
+
+    /** Get the previously set input for the ComputationGraph */
+    public INDArray getInput(int inputNum){
+        if(inputs == null) return null;
+        return inputs[inputNum];
+    }
+
+    /** Get the previously set inputs for the ComputationGraph */
+    public INDArray[] getInputs(){
+        return inputs;
+    }
+
+    /** Get the previously set feature/input mask arrays for the ComputationGraph */
+    public INDArray[] getInputMaskArrays(){
+        return inputMaskArrays;
+    }
+
+    /** Get the previously set label/output mask arrays for the ComputationGraph */
+    public INDArray[] getLabelMaskArrays(){
+        return labelMaskArrays;
     }
 
     /** Set the specified label for the ComputationGraph */
@@ -1417,6 +1445,8 @@ public class ComputationGraph implements Serializable, Model {
      */
     public void setLayerMaskArrays(INDArray[] featureMaskArrays, INDArray[] labelMaskArrays){
         //Complication with mask arrays: dense layers before recurrent layers: need to be masked
+        this.inputMaskArrays = featureMaskArrays;
+        this.labelMaskArrays = labelMaskArrays;
 
         if(featureMaskArrays != null){
             if(featureMaskArrays.length != numInputArrays){
@@ -1456,8 +1486,10 @@ public class ComputationGraph implements Serializable, Model {
                     }
 
                     outputsFromThisInput = nextVertex.getOutputVertices();
-                    for(VertexIndices v : outputsFromThisInput){
-                        stack.addLast(vertices[v.getVertexIndex()].getVertexName());
+                    if (outputsFromThisInput != null) {
+                        for(VertexIndices v : outputsFromThisInput){
+                            stack.addLast(vertices[v.getVertexIndex()].getVertexName());
+                        }
                     }
                 }
             }
@@ -1483,6 +1515,8 @@ public class ComputationGraph implements Serializable, Model {
         for (Layer layer : layers) {
             layer.setMaskArray(null);
         }
+        this.inputMaskArrays = null;
+        this.labelMaskArrays = null;
     }
 
     /** Update the internal state of RNN layers after a truncated BPTT fit call */
