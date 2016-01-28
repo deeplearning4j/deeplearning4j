@@ -280,7 +280,7 @@ public class VocabConstructor<T extends SequenceElement> {
          * @param limit
          * @return
          */
-        protected Builder<T> setEntriesLimit(int limit) {
+        public Builder<T> setEntriesLimit(int limit) {
             this.limit = limit;
             return this;
         }
