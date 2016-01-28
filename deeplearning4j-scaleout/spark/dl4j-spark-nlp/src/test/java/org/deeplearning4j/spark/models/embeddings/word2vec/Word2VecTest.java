@@ -37,10 +37,13 @@ public class Word2VecTest {
     @Test
     public void testConcepts() throws Exception {
         // These are all default values for word2vec
-        SparkConf sparkConf = new SparkConf()
+        /*SparkConf sparkConf = new SparkConf()
                 .setMaster("spark://192.168.1.35:7077")
+                .set("spark.executor.memory", "20G")
+                .set("spark.driver.memory", "20G")
                 .setAppName("sparktest");
-//        SparkConf sparkConf = new SparkConf().setMaster("local[4]").setAppName("sparktest");
+        */
+       SparkConf sparkConf = new SparkConf().setMaster("local[*]").setAppName("sparktest");
 
         // Set SparkContext
         JavaSparkContext sc = new JavaSparkContext(sparkConf);
@@ -62,8 +65,8 @@ public class Word2VecTest {
                 .setUseAdaGrad(false)
                 .setVectorLength(100)
                 .setWindow(5)
-                .setAlpha(0.025).setMinAlpha(0.0001)
-                .setIterations(1)
+                .setAlpha(0.055).setMinAlpha(0.001)
+                .setIterations(3)
                 .setNumWords(5);
 
         word2Vec.train(corpus);
