@@ -10,6 +10,7 @@ import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.graph.SubsetVertex;
+import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
@@ -240,7 +241,7 @@ public class GradientCheckTestsComputationGraph {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(12345)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0.2,0.6))
+                .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0.2, 0.6))
                 .updater(Updater.NONE).learningRate(1.0)
                 .graphBuilder()
                 .addInputs("input")
@@ -292,7 +293,7 @@ public class GradientCheckTestsComputationGraph {
                 .addInputs("input")
                 .setOutputs("out")
                 .addLayer("lstm1", new GravesLSTM.Builder().nIn(3).nOut(8).activation("tanh").build(), "input")
-                .addVertex("subset", new SubsetVertex(0,3), "lstm1")
+                .addVertex("subset", new SubsetVertex(0, 3), "lstm1")
                 .addLayer("out", new RnnOutputLayer.Builder().nIn(4).nOut(3).activation("softmax").lossFunction(LossFunctions.LossFunction.MCXENT).build(), "subset")
                 .pretrain(false).backprop(true).build();
 
@@ -318,6 +319,59 @@ public class GradientCheckTestsComputationGraph {
                 PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{input}, new INDArray[]{labels});
 
         String msg = "testLSTMWithSubset()";
+        assertTrue(msg, gradOK);
+    }
+
+    @Test
+    public void testLSTMWithLastTimeStepVertex(){
+
+        Nd4j.getRandom().setSeed(12345);
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                .updater(Updater.NONE).learningRate(1.0)
+                .graphBuilder()
+                .addInputs("input")
+                .setOutputs("out")
+                .addLayer("lstm1", new GravesLSTM.Builder().nIn(3).nOut(4).activation("tanh").build(), "input")
+                .addVertex("lastTS", new LastTimeStepVertex("input"), "lstm1")
+                .addLayer("out", new OutputLayer.Builder().nIn(4).nOut(3).activation("softmax")
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "lastTS")
+                .pretrain(false).backprop(true).build();
+
+        ComputationGraph graph = new ComputationGraph(conf);
+        graph.init();
+
+        Random r = new Random(12345);
+        INDArray input = Nd4j.rand(new int[]{3,3,5});
+        INDArray labels = Nd4j.zeros(3,3);    //Here: labels are 2d (due to LastTimeStepVertex)
+        for( int i=0; i<3; i++ ){
+            labels.putScalar(new int[]{i, r.nextInt(3)}, 1.0);
+        }
+
+        if (PRINT_RESULTS) {
+            System.out.println("testLSTMWithLastTimeStepVertex()");
+            for (int j = 0; j < graph.getNumLayers(); j++)
+                System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+        }
+
+        //First: test with no input mask array
+        boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{input}, new INDArray[]{labels});
+
+        String msg = "testLSTMWithLastTimeStepVertex()";
+        assertTrue(msg, gradOK);
+
+        //Second: test with input mask arrays.
+        INDArray inMask = Nd4j.zeros(3,5);
+        inMask.putRow(0,Nd4j.create(new double[]{1,1,1,0,0}));
+        inMask.putRow(1,Nd4j.create(new double[]{1,1,1,1,0}));
+        inMask.putRow(2,Nd4j.create(new double[]{1,1,1,1,1}));
+        graph.setLayerMaskArrays(new INDArray[]{inMask}, null);
+        gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{input}, new INDArray[]{labels});
+
         assertTrue(msg, gradOK);
     }
 

@@ -110,7 +110,7 @@ public abstract class BaseGraphVertex implements GraphVertex {
     public void setError(int errorNumber, INDArray error){
         if(errorNumber >= getNumOutputConnections() ){
             throw new IllegalArgumentException("Invalid error number: " + errorNumber
-                    + ", numOutputEdges = " + outputVertices.length );
+                    + ", numOutputEdges = " + (outputVertices != null ? outputVertices.length : 0) );
         }
         epsilons[errorNumber] = error;
     }
