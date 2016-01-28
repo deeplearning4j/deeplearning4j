@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.graph.graphnodes;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -13,6 +14,7 @@ import org.deeplearning4j.nn.graph.vertex.impl.SubsetVertex;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -179,7 +181,7 @@ public class TestGraphNodes {
         inMask.putRow(0,Nd4j.create(new double[]{1,1,1,0,0,0}));
         inMask.putRow(1,Nd4j.create(new double[]{1,1,1,1,0,0}));
         inMask.putRow(2,Nd4j.create(new double[]{1,1,1,1,1,0}));
-        graph.setLayerMaskArrays(new INDArray[]{inMask},null);
+        graph.setLayerMaskArrays(new INDArray[]{inMask}, null);
 
         expOut = Nd4j.zeros(3,5);
         expOut.putRow(0,in.get(NDArrayIndex.point(0),NDArrayIndex.all(),NDArrayIndex.point(2)));
@@ -189,5 +191,40 @@ public class TestGraphNodes {
         gv.setInputs(in);
         outFwd = gv.doForward(true);
         assertEquals(expOut,outFwd);
+    }
+
+    @Test
+    public void testDuplicateToTimeSeriesVertex(){
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .graphBuilder()
+                .addInputs("in2d","in3d")
+                .addVertex("duplicateTS", new DuplicateToTimeSeriesVertex("in3d"), "in2d")
+                .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).build(), "duplicateTS")
+                .setOutputs("out")
+                .build();
+
+        ComputationGraph graph = new ComputationGraph(conf);
+        graph.init();
+
+        INDArray in2d = Nd4j.rand(3,5);
+        INDArray in3d = Nd4j.rand(new int[]{3,2,7});
+
+        graph.setInputs(in2d,in3d);
+
+        INDArray expOut = Nd4j.zeros(3,5,7);
+        for( int i=0; i<7; i++){
+            expOut.put(new INDArrayIndex[]{NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.point(i)},in2d);
+        }
+
+        GraphVertex gv = graph.getVertex("duplicateTS");
+        gv.setInputs(in2d);
+        INDArray outFwd = gv.doForward(true);
+        assertEquals(expOut,outFwd);
+
+        INDArray expOutBackward = expOut.sum(2);
+        gv.setError(0,expOut);
+        INDArray outBwd = gv.doBackward(false).getSecond()[0];
+        assertEquals(expOutBackward,outBwd);
     }
 }

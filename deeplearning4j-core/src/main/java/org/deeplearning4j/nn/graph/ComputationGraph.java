@@ -122,7 +122,7 @@ public class ComputationGraph implements Serializable, Model {
     }
 
     /** Set all inputs for the ComputationGraph network */
-    public void setInputs(INDArray[] inputs){
+    public void setInputs(INDArray... inputs){
         if(inputs != null && inputs.length != this.numInputArrays){
             throw new IllegalArgumentException("Invalid input array: network has " + numInputArrays + " inputs, but array is of length " + inputs.length);
         }
