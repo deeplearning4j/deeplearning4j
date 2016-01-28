@@ -128,6 +128,7 @@ JNIEXPORT jfloat JNICALL Java_org_nd4j_linalg_cpu_CBLAS_sasum
 
 	float *cX = (float *) env->GetDirectBufferAddress(X);
 	return cblas_sasum(N, cX, incX);
+
 };
 
 JNIEXPORT jdouble JNICALL Java_org_nd4j_linalg_cpu_CBLAS_dasum
