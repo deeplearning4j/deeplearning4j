@@ -19,7 +19,8 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
         @JsonSubTypes.Type(value = SubsetVertex.class, name = "SubsetVertex"),
         @JsonSubTypes.Type(value = LayerVertex.class, name = "LayerVertex"),
         @JsonSubTypes.Type(value = LastTimeStepVertex.class, name = "LastTimeStepVertex"),
-        @JsonSubTypes.Type(value = DuplicateToTimeSeriesVertex.class, name = "DuplicateToTimeSeriesVertex")
+        @JsonSubTypes.Type(value = DuplicateToTimeSeriesVertex.class, name = "DuplicateToTimeSeriesVertex"),
+        @JsonSubTypes.Type(value = PreprocessorVertex.class, name = "PreprocessorVertex")
 })
 public abstract class GraphVertex implements Cloneable {
 
