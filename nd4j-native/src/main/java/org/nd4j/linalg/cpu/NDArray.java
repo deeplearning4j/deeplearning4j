@@ -20,7 +20,6 @@
 package org.nd4j.linalg.cpu;
 
 
-import org.jblas.DoubleMatrix;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
@@ -276,11 +275,7 @@ public class NDArray extends BaseNDArray {
     }
 
 
-    public NDArray(DoubleMatrix doubleMatrix) {
-        this(new int[]{doubleMatrix.rows, doubleMatrix.columns});
-        this.data = Nd4j.createBuffer(doubleMatrix.data);
 
-    }
 
     public NDArray(double[] data, int[] shape, int[] stride, int offset) {
         this.data = Nd4j.createBuffer(data);

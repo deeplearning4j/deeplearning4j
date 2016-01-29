@@ -1,18 +1,13 @@
 package org.nd4j.linalg.cpu.blas;
 
-import com.github.fommil.netlib.BLAS;
-import org.jblas.NativeBlas;
+
 import org.nd4j.linalg.api.blas.impl.BaseLevel2;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.cpu.CBLAS;
-import org.nd4j.linalg.cpu.util.JblasComplex;
-import org.nd4j.linalg.api.shape.Shape;
 
-import static org.nd4j.linalg.api.blas.BlasBufferUtil.getBlasOffset;
-import static org.nd4j.linalg.api.blas.BlasBufferUtil.setData;
 
 /**
  * @author Adam Gibson

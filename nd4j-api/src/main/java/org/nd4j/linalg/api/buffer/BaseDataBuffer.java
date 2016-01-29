@@ -270,7 +270,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         else {
             if(length * getElementSize() < 0)
                 throw new IllegalArgumentException("Unable to create buffer of length " + length + " due to negative length specified");
-            wrappedBuffer = ByteBuffer.allocateDirect(getElementSize() * length);
+            wrappedBuffer = ByteBuffer.allocateDirect(getElementSize() * length).order(ByteOrder.nativeOrder());
         }
 
     }

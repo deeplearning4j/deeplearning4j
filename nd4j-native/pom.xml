@@ -29,33 +29,6 @@
             </testResource>
         </testResources>
         <plugins>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <version>1.7</version>
-                <executions>
-                    <execution>
-                        <phase>process-classes</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <exportAntProperties>true</exportAntProperties>
-                            <target>
-                                <property name="runtime_classpath" refid="maven.compile.classpath"/>
-                                <exec executable="javah">
-                                    <arg value="-cp"/>
-                                    <arg value="${runtime_classpath}"/>
-                                    <arg value="-d"/>
-                                    <arg value="${project.build.directory}/jni"/>
-                                    <arg value="org.nd4j.linalg.cpu.CBLAS"/>
-                                </exec>
-                            </target>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -229,17 +202,7 @@
             <artifactId>native-lib-loader</artifactId>
             <version>2.0.2</version>
         </dependency>
-        <dependency>
-            <groupId>com.github.fommil.netlib</groupId>
-            <artifactId>all</artifactId>
-            <version>1.1.2</version>
-            <type>pom</type>
-        </dependency>
-        <dependency>
-            <groupId>org.jblas</groupId>
-            <artifactId>jblas</artifactId>
-            <version>1.2.4</version>
-        </dependency>
+
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-api</artifactId>

@@ -1,11 +1,6 @@
 package org.nd4j.linalg.cpu.blas;
 
-import com.github.fommil.netlib.LAPACK;
 import org.nd4j.linalg.api.blas.impl.BaseLapack;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.cpu.CBLAS;
-import org.netlib.util.intW;
 
 /**
  * CPU lapack implementation
