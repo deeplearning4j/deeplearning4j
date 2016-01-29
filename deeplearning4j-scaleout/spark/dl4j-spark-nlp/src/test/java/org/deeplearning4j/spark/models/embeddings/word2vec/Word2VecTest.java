@@ -24,6 +24,9 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.canova.api.util.ClassPathResource;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.word2vec.VocabWord;
+import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -63,19 +66,25 @@ public class Word2VecTest {
         // Read in data
         JavaRDD<String> corpus = sc.textFile(dataPath);
 
-        Word2Vec word2Vec = new Word2Vec()
-                .setnGrams(1)
-                .setTokenizer("org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory")
-                .setTokenPreprocessor("org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor")
-                .setRemoveStop(false)
-                .setSeed(42L)
-                .setNegative(0)
-                .setUseAdaGrad(false)
-                .setVectorLength(150)
-                .setWindow(5)
-                .setAlpha(0.025).setMinAlpha(0.0001)
-                .setIterations(1)
-                .setNumWords(5);
+        TokenizerFactory t = new DefaultTokenizerFactory();
+        t.setTokenPreProcessor(new CommonPreprocessor());
+
+        Word2Vec word2Vec = new Word2Vec.Builder()
+                .setNGrams(1)
+           //     .setTokenizer("org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory")
+           //     .setTokenPreprocessor("org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor")
+           //     .setRemoveStop(false)
+                .tokenizerFactory(t)
+                .seed(42L)
+                .negative(0)
+                .useAdaGrad(false)
+                .layerSize(150)
+                .windowSize(5)
+                .learningRate(0.025)
+                .minLearningRate(0.0001)
+                .iterations(1)
+                .minWordFrequency(5)
+                .build();
 
         word2Vec.train(corpus);
 
