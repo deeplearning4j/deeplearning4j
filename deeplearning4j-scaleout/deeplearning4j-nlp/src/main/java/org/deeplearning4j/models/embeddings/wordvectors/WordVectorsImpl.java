@@ -25,6 +25,7 @@ import lombok.Setter;
 import org.deeplearning4j.clustering.vptree.VPTree;
 import org.deeplearning4j.models.embeddings.reader.ModelUtils;
 import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
+import org.deeplearning4j.models.embeddings.reader.impl.FlatModelUtils;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
@@ -44,7 +45,7 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
     @Getter protected WeightLookupTable<T> lookupTable;
     @Getter protected VocabCache<T> vocab;
     @Getter protected int layerSize = 100;
-    @Getter protected transient ModelUtils<T> modelUtils = new BasicModelUtils<>();
+    @Getter protected transient ModelUtils<T> modelUtils = new FlatModelUtils<>();
 
     protected int numIterations = 1;
     protected int numEpochs = 1;

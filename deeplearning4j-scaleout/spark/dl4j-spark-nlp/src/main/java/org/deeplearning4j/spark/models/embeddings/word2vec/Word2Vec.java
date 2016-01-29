@@ -26,6 +26,8 @@ import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
+import org.deeplearning4j.models.embeddings.reader.ModelUtils;
+import org.deeplearning4j.models.embeddings.reader.impl.FlatModelUtils;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
 import org.deeplearning4j.models.word2vec.Huffman;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -41,6 +43,7 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -155,9 +158,10 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
         //////////////////////////////////////
         log.info("Building Huffman Tree ...");
         // Building Huffman Tree would update the code and point in each of the vocabWord in vocabCache
-        Huffman huffman = new Huffman(vocabCache.vocabWords());
+/*        Huffman huffman = new Huffman(vocabCache.vocabWords());
         huffman.build();
-
+        huffman.applyIndexes(vocabCache);
+*/
         //////////////////////////////////////
         log.info("Calculating cumulative sum of sentence counts ...");
         sentenceCumSumCountRDD =  new CountCumSum(sentenceWordsCountRDD).buildCumSum();
@@ -186,12 +190,34 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
         List<Pair<Integer, INDArray>> syn0UpdateEntries = indexSyn0UpdateEntryRDD.collect();
 
         // Instantiate syn0
-        INDArray syn0 = Nd4j.create(vocabCache.numWords(), vectorLength);
+        INDArray syn0 = Nd4j.zeros(vocabCache.numWords(), vectorLength);
 
         // Updating syn0
+        int cnt = 0;
+        Map<Integer, AtomicInteger> updates = new HashMap<>();
         for (Pair<Integer, INDArray> syn0UpdateEntry : syn0UpdateEntries) {
+            if (syn0UpdateEntry.getFirst().equals(new Integer(126))) {
+                log.info("Two before transfer: " + syn0UpdateEntry.getSecond());
+            }
             syn0.getRow(syn0UpdateEntry.getFirst()).addi(syn0UpdateEntry.getSecond());
+            if (syn0UpdateEntry.getFirst().equals(new Integer(126))) {
+                log.info("Two after transfer: " + syn0.getRow(syn0UpdateEntry.getFirst()));
+            }
+            cnt++;
+            if (updates.containsKey(syn0UpdateEntry.getFirst())) {
+                updates.get(syn0UpdateEntry.getFirst()).incrementAndGet();
+            } else updates.put(syn0UpdateEntry.getFirst(), new AtomicInteger(1));
         }
+        log.info("Total entries transferred: " + cnt);
+
+        cnt = 0;
+        for (Map.Entry<Integer, AtomicInteger> entry: updates.entrySet()) {
+            if (entry.getValue().get() > 1) {
+                syn0.getRow(entry.getKey()).divi(entry.getValue().get());
+                cnt++;
+            }
+        }
+        log.info("Total entries merged: " + cnt);
 
         vocab = vocabCache;
         InMemoryLookupTable<VocabWord> inMemoryLookupTable = new InMemoryLookupTable<VocabWord>();
@@ -199,7 +225,7 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
         inMemoryLookupTable.setVectorLength(vectorLength);
         inMemoryLookupTable.setSyn0(syn0);
         lookupTable = inMemoryLookupTable;
-        modelUtils.init(lookupTable());
+        modelUtils.init(lookupTable);
     }
 
     public int getVectorLength() {

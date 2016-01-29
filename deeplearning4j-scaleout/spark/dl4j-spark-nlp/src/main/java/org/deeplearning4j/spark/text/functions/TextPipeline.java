@@ -195,7 +195,6 @@ public class TextPipeline {
         vocabWordListRDD.count();
         totalWordCount = sentenceCountRDD.reduce(new ReduceSentenceCount()).get();
 
-        System.out.println("RDD: " + vocabWordListRDD.first());
         // Release sentenceWordsCountRDD from cache
         sentenceWordsCountRDD.unpersist();
     }
