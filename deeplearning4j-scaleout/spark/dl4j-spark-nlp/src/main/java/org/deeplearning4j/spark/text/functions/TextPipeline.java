@@ -27,6 +27,7 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.word2vec.Huffman;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.spark.text.accumulators.WordFreqAccumulator;
 import org.deeplearning4j.text.stopwords.StopWords;
@@ -57,7 +58,7 @@ public class TextPipeline {
     private Broadcast<List<String>> stopWordBroadCast;
     // Return values
     private JavaRDD<Pair<List<String>, AtomicLong>> sentenceWordsCountRDD;
-    private VocabCache<VocabWord> vocabCache = new InMemoryLookupCache();
+    private VocabCache<VocabWord> vocabCache = new AbstractCache<VocabWord>();
     private Broadcast<VocabCache<VocabWord>> vocabCacheBroadcast;
     private JavaRDD<List<VocabWord>> vocabWordListRDD;
     private JavaRDD<AtomicLong> sentenceCountRDD;

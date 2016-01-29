@@ -192,32 +192,24 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
         // Instantiate syn0
         INDArray syn0 = Nd4j.zeros(vocabCache.numWords(), vectorLength);
 
-        // Updating syn0
-        int cnt = 0;
+        // Updating syn0 first pass: just add vectors obtained from different nodes
         Map<Integer, AtomicInteger> updates = new HashMap<>();
         for (Pair<Integer, INDArray> syn0UpdateEntry : syn0UpdateEntries) {
-            if (syn0UpdateEntry.getFirst().equals(new Integer(126))) {
-                log.info("Two before transfer: " + syn0UpdateEntry.getSecond());
-            }
             syn0.getRow(syn0UpdateEntry.getFirst()).addi(syn0UpdateEntry.getSecond());
-            if (syn0UpdateEntry.getFirst().equals(new Integer(126))) {
-                log.info("Two after transfer: " + syn0.getRow(syn0UpdateEntry.getFirst()));
-            }
-            cnt++;
+
+            // for proper averaging we need to divide resulting sums later, by the number of additions
             if (updates.containsKey(syn0UpdateEntry.getFirst())) {
                 updates.get(syn0UpdateEntry.getFirst()).incrementAndGet();
             } else updates.put(syn0UpdateEntry.getFirst(), new AtomicInteger(1));
         }
-        log.info("Total entries transferred: " + cnt);
 
-        cnt = 0;
+        // Updating syn0 second pass: average obtained vectors
         for (Map.Entry<Integer, AtomicInteger> entry: updates.entrySet()) {
             if (entry.getValue().get() > 1) {
                 syn0.getRow(entry.getKey()).divi(entry.getValue().get());
-                cnt++;
             }
         }
-        log.info("Total entries merged: " + cnt);
+
 
         vocab = vocabCache;
         InMemoryLookupTable<VocabWord> inMemoryLookupTable = new InMemoryLookupTable<VocabWord>();
