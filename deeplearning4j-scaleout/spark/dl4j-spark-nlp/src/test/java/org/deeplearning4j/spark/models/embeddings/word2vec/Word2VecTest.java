@@ -82,7 +82,8 @@ public class Word2VecTest {
                 .windowSize(5)
                 .learningRate(0.025)
                 .minLearningRate(0.0001)
-                .iterations(1)
+                .iterations(5)
+                .batchSize(100)
                 .minWordFrequency(5)
                 .build();
 

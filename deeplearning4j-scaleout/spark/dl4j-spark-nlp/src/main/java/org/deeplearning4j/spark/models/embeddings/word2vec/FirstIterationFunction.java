@@ -1,6 +1,7 @@
 package org.deeplearning4j.spark.models.embeddings.word2vec;
 
 import lombok.NonNull;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.FastMath;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
@@ -10,10 +11,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import scala.Tuple2;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -27,7 +25,8 @@ public class FirstIterationFunction
     private int ithIteration = 1;
     private int vectorLength;
     private boolean useAdaGrad;
-    private int negative;
+    private int batchSize = 0;
+    private double negative;
     private int window;
     private double alpha;
     private double minAlpha;
@@ -35,6 +34,7 @@ public class FirstIterationFunction
     private long seed;
     private int maxExp;
     private double[] expTable;
+    private int iterations;
     private Map<Integer, INDArray> indexSyn0VecMap;
     private Map<Integer, INDArray> pointSyn1VecMap;
     private AtomicLong nextRandom = new AtomicLong(5);
@@ -47,13 +47,15 @@ public class FirstIterationFunction
         this.expTable = expTableBroadcast.getValue();
         this.vectorLength = (int) word2vecVarMap.get("vectorLength");
         this.useAdaGrad = (boolean) word2vecVarMap.get("useAdaGrad");
-        this.negative = (int) word2vecVarMap.get("negative");
+        this.negative = (double) word2vecVarMap.get("negative");
         this.window = (int) word2vecVarMap.get("window");
         this.alpha = (double) word2vecVarMap.get("alpha");
         this.minAlpha = (double) word2vecVarMap.get("minAlpha");
         this.totalWordCount = (long) word2vecVarMap.get("totalWordCount");
         this.seed = (long) word2vecVarMap.get("seed");
         this.maxExp = (int) word2vecVarMap.get("maxExp");
+        this.iterations = (int) word2vecVarMap.get("iterations");
+        this.batchSize = (int) word2vecVarMap.get("batchSize");
         this.indexSyn0VecMap = new HashMap<>();
         this.pointSyn1VecMap = new HashMap<>();
     }
@@ -61,13 +63,24 @@ public class FirstIterationFunction
     @Override
     public Iterable<Entry<Integer, INDArray>> call(Iterator<Tuple2<List<VocabWord>, Long>> pairIter) {
         while (pairIter.hasNext()) {
-            Tuple2<List<VocabWord>, Long> pair = pairIter.next();
-            List<VocabWord> vocabWordsList = pair._1();
-            Long sentenceCumSumCount = pair._2();
-            //System.out.println("Training sentence: " + vocabWordsList);
-            double currentSentenceAlpha = Math.max(minAlpha,
-                                          alpha - (alpha - minAlpha) * (sentenceCumSumCount / (double) totalWordCount));
-            trainSentence(vocabWordsList, currentSentenceAlpha);
+            List<Pair<List<VocabWord>, Long>> batch = new ArrayList<>();
+            while (pairIter.hasNext() && batch.size() < batchSize) {
+                Tuple2<List<VocabWord>, Long> pair = pairIter.next();
+                List<VocabWord> vocabWordsList = pair._1();
+                Long sentenceCumSumCount = pair._2();
+                batch.add(Pair.of(vocabWordsList, sentenceCumSumCount));
+            }
+
+            for (int i = 0; i < iterations; i++) {
+                //System.out.println("Training sentence: " + vocabWordsList);
+                for (Pair<List<VocabWord>, Long> pair: batch) {
+                    List<VocabWord> vocabWordsList = pair.getKey();
+                    Long sentenceCumSumCount = pair.getValue();
+                    double currentSentenceAlpha = Math.max(minAlpha,
+                            alpha - (alpha - minAlpha) * (sentenceCumSumCount / (double) totalWordCount));
+                    trainSentence(vocabWordsList, currentSentenceAlpha);
+                }
+            }
         }
         return indexSyn0VecMap.entrySet();
     }
