@@ -62,7 +62,6 @@ public class LayerVertex extends BaseGraphVertex {
     public INDArray doForward(boolean training){
         if(!canDoForward()) throw new IllegalStateException("Cannot do forward pass: all inputs not set");
 
-        if(inputs.length > 1) throw new UnsupportedOperationException("Not implemented");   //TODO
         INDArray currInput = inputs[0];
         if(layerPreProcessor != null){
             currInput = layerPreProcessor.preProcess(currInput, graph.batchSize());
