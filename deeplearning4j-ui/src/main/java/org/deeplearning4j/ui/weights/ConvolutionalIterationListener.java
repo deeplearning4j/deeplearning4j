@@ -120,7 +120,7 @@ public class ConvolutionalIterationListener implements IterationListener {
 
                         try {
                             sourceImage = restoreRGBImage(inputs.tensorAlongDimension(sampleDim, 3, 2, 1));
-                            ImageIO.write( sourceImage,"png",new File("tmp/input_" + minibatchNum + ".png"));
+//                            ImageIO.write( sourceImage,"png",new File("tmp/input_" + minibatchNum + ".png"));
                         } catch (Exception e) {
                             throw new RuntimeException(e);
                         }
