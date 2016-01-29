@@ -95,7 +95,7 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
 
     public Map<String, Object> getTokenizerVarMap() {
         return new HashMap<String, Object>() {{
-          //  put("numWords", numWords);
+            put("numWords", minWordFrequency);
             put("nGrams", nGrams);
             put("tokenizer", tokenizer);
             put("tokenPreprocessor", tokenPreprocessor);
@@ -114,6 +114,7 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
             put("iterations", numIterations);
             put("seed", seed);
             put("maxExp", MAX_EXP);
+            put("batchSize", batchSize);
         }};
     }
 
