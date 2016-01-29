@@ -1496,7 +1496,7 @@ public class ComputationGraph implements Serializable, Model {
         }
 
         if(labelMaskArrays != null) {
-            if(labelMaskArrays.length != numInputArrays){
+            if(labelMaskArrays.length != numOutputArrays){
                 throw new IllegalArgumentException("Invalid number of label mask arrays");
             }
             for( int i=0; i<labelMaskArrays.length; i++ ){

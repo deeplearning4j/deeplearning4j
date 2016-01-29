@@ -561,8 +561,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                 this.vertexInputs.put(layerName, Collections.singletonList(mergeName));
             } else if (layerInputs != null) {
                 this.vertexInputs.put(layerName, Arrays.asList(layerInputs));
-                layer.setLayerName(layerName);
             }
+            layer.setLayerName(layerName);
             return this;
         }
 
