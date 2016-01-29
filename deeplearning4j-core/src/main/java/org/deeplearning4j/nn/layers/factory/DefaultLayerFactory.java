@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.layers.feedforward.embedding.EmbeddingLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -94,6 +95,8 @@ public class DefaultLayerFactory implements LayerFactory {
              return new org.deeplearning4j.nn.layers.normalization.BatchNormalization(conf);
         if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.LocalResponseNormalization)
             return new org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization(conf);
+        if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.EmbeddingLayer)
+            return new EmbeddingLayer(conf);
         throw new RuntimeException("unknown layer type: " + layerConfig);
     }
 
