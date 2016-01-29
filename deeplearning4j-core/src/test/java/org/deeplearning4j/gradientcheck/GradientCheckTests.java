@@ -205,6 +205,53 @@ public class GradientCheckTests {
     		}
     	}
     }
+
+	@Test
+	public void testEmbeddingLayerSimple(){
+		Random r = new Random(12345);
+		int nExamples = 5;
+		INDArray input = Nd4j.zeros(nExamples,1);
+		INDArray labels = Nd4j.zeros(nExamples,3);
+		for( int i=0; i<nExamples; i++ ){
+			input.putScalar(i,r.nextInt(4));
+			labels.putScalar(new int[]{i,r.nextInt(3)},1.0);
+		}
+
+		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+				.regularization(true)
+				.l2(0.2).l1(0.1)
+				.optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+				.seed(12345L)
+				.list(2)
+				.layer(0, new EmbeddingLayer.Builder()
+						.nIn(4).nOut(3)
+						.weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0, 1))
+						.updater(Updater.NONE)
+						.activation("tanh")
+						.build())
+				.layer(1, new OutputLayer.Builder(LossFunction.MCXENT)
+						.nIn(3).nOut(3)
+						.weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0, 1))
+						.updater(Updater.NONE)
+						.activation("softmax")
+						.build())
+				.pretrain(false).backprop(true)
+				.build();
+
+		MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+		mln.init();
+
+		if(PRINT_RESULTS) {
+			System.out.println("testEmbeddingLayerSimple");
+			for( int j=0; j<mln.getnLayers(); j++ ) System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+		}
+
+		boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+				PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, true);
+
+		String msg = "testEmbeddingLayerSimple";
+		assertTrue(msg,gradOK);
+	}
     
     
     @Test
