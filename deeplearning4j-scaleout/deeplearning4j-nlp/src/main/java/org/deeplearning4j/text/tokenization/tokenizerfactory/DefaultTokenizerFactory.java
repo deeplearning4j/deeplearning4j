@@ -53,5 +53,15 @@ public class DefaultTokenizerFactory implements TokenizerFactory {
         this.tokenPreProcess = preProcessor;
     }
 
+    /**
+     * Returns TokenPreProcessor set for this TokenizerFactory instance
+     *
+     * @return TokenPreProcessor instance, or null if no preprocessor was defined
+     */
+    @Override
+    public TokenPreProcess getTokenPreProcessor() {
+        return tokenPreProcess;
+    }
+
 
 }

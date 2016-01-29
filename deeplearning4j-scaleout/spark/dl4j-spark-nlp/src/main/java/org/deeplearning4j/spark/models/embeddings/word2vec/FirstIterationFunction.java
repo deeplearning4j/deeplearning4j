@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author jeffreytang
+ * @author raver119@gmail.com
  */
 public class FirstIterationFunction
         implements FlatMapFunction< Iterator<Tuple2<List<VocabWord>, Long>>, Entry<Integer, INDArray> > {
@@ -43,7 +44,7 @@ public class FirstIterationFunction
                                   Broadcast<double[]> expTableBroadcast) {
 
         Map<String, Object> word2vecVarMap = word2vecVarMapBroadcast.getValue();
-       // this.expTable = expTableBroadcast.getValue();
+        this.expTable = expTableBroadcast.getValue();
         this.vectorLength = (int) word2vecVarMap.get("vectorLength");
         this.useAdaGrad = (boolean) word2vecVarMap.get("useAdaGrad");
         this.negative = (int) word2vecVarMap.get("negative");
@@ -52,15 +53,9 @@ public class FirstIterationFunction
         this.minAlpha = (double) word2vecVarMap.get("minAlpha");
         this.totalWordCount = (long) word2vecVarMap.get("totalWordCount");
         this.seed = (long) word2vecVarMap.get("seed");
-        this.maxExp = (int) 6; // word2vecVarMap.get("maxExp");
+        this.maxExp = (int) word2vecVarMap.get("maxExp");
         this.indexSyn0VecMap = new HashMap<>();
         this.pointSyn1VecMap = new HashMap<>();
-
-        this.expTable = new double[100000];
-        for (int i = 0; i < expTable.length; i++) {
-            double tmp =   FastMath.exp((i / (double) expTable.length * 2 - 1) * maxExp);
-            expTable[i]  = tmp / (tmp + 1.0);
-        }
     }
 
     @Override
@@ -169,7 +164,10 @@ public class FirstIterationFunction
         indexSyn0VecMap.put(currentWordIndex, l1);
     }
 
-    public INDArray getRandomSyn0Vec(int vectorLength, long lseed) {
-        return Nd4j.rand(lseed, new int[]{1 ,vectorLength}).subi(0.5).divi(vectorLength);
+    private INDArray getRandomSyn0Vec(int vectorLength, long lseed) {
+        /*
+            we use wordIndex as part of seed here, to guarantee that during word syn0 initialization on dwo distinct nodes, initial weights will be the same for the same word
+         */
+        return Nd4j.rand(lseed * seed, new int[]{1 ,vectorLength}).subi(0.5).divi(vectorLength);
     }
 }
