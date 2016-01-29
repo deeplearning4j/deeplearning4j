@@ -23,7 +23,10 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.canova.api.util.ClassPathResource;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
+import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
+import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.word2vec.VocabWord;
+import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
@@ -33,6 +36,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 
+import java.io.File;
 import java.util.Collection;
 
 import static org.junit.Assert.assertEquals;
@@ -42,7 +46,6 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author jeffreytang
  */
-@Ignore
 public class Word2VecTest {
 
     @Test
@@ -82,7 +85,7 @@ public class Word2VecTest {
                 .windowSize(5)
                 .learningRate(0.025)
                 .minLearningRate(0.0001)
-                .iterations(5)
+                .iterations(1)
                 .batchSize(100)
                 .minWordFrequency(5)
                 .build();
@@ -115,46 +118,32 @@ public class Word2VecTest {
         sc.stop();
 
 
-    }
+        // test serialization
+        File tempFile = File.createTempFile("temp","tmp");
+        tempFile.deleteOnExit();
 
-    @Test
-    public void testRandom() throws Exception {
-        INDArray arr1 = Nd4j.rand(123L, 1, 20);
-        INDArray arr2 = Nd4j.rand(123L, 1, 20);
-        INDArray arr3 = Nd4j.rand(124L, 1, 20);
+        int idx1 = word2Vec.vocab().wordFor("day").getIndex();
 
-        assertEquals(arr1, arr2);
-        assertNotEquals(arr3, arr2);
-    }
+        INDArray array1 = word2Vec.getWordVectorMatrix("day").dup();
 
-    @Test
-    public void testAddi1() throws Exception {
-        INDArray arr1 = Nd4j.create(new double[] {0.0, 0.0, 0.0, 0.0});
-        INDArray arr2 = Nd4j.create(new double[] {0.5, 0.5, 0.5, 0.5});
+        VocabWord word1 = word2Vec.vocab().elementAtIndex(0);
 
-        arr1.addi(arr2);
+        WordVectorSerializer.writeWordVectors(word2Vec.getLookupTable(), "/home/raver119/temp.txt");
 
-        assertEquals(arr1, arr2);
+        WordVectors vectors = WordVectorSerializer.loadTxtVectors(new File("/home/raver119/temp.txt"));
 
-        assertEquals(0.5, arr1.getDouble(0), 0.001);
-        assertEquals(0.5, arr1.getDouble(1), 0.001);
-        assertEquals(0.5, arr1.getDouble(2), 0.001);
-        assertEquals(0.5, arr1.getDouble(3), 0.001);
-    }
+        VocabWord word2 = ((VocabCache<VocabWord>)vectors.vocab()).elementAtIndex(0);
+        VocabWord wordIT = ((VocabCache<VocabWord>)vectors.vocab()).wordFor("it");
+        int idx2 = vectors.vocab().wordFor("day").getIndex();
 
-    @Test
-    public void testAddi2() throws Exception {
-        INDArray arr1 = Nd4j.zeros(1,4);
-        INDArray arr2 = Nd4j.create(new double[] {0.5, 0.5, 0.5, 0.5});
+        INDArray array2 = vectors.getWordVectorMatrix("day").dup();
 
-        arr1.addi(arr2);
+        System.out.println("word 'i': " + word2);
+        System.out.println("word 'it': " + wordIT);
 
-        assertEquals(arr1, arr2);
-
-        assertEquals(0.5, arr1.getDouble(0), 0.001);
-        assertEquals(0.5, arr1.getDouble(1), 0.001);
-        assertEquals(0.5, arr1.getDouble(2), 0.001);
-        assertEquals(0.5, arr1.getDouble(3), 0.001);
+        assertEquals(idx1, idx2);
+        assertEquals(word1, word2);
+        assertEquals(array1, array2);
     }
 
     private static void printWords(String target, Collection<String> list, Word2Vec vec) {

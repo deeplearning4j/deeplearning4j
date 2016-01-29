@@ -319,6 +319,22 @@ public class WordVectorSerializer {
     }
 
     /**
+     * This mehod writes word vectors to the given file.
+     * Please note: this method doesn't load whole vocab/lookupTable into memory, so it's able to process large vocabularies served over network.
+     *
+     * @param lookupTable
+     * @param file
+     * @param <T>
+     */
+    public static <T extends SequenceElement> void writeWordVectors(WeightLookupTable<T> lookupTable, File file) throws IOException {
+        try {
+            writeWordVectors(lookupTable, new FileOutputStream(file));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
      * This mehod writes word vectors to the given OutputStream.
      * Please note: this method doesn't load whole vocab/lookupTable into memory, so it's able to process large vocabularies served over network.
      *
@@ -958,7 +974,7 @@ public class WordVectorSerializer {
     public static Pair<InMemoryLookupTable, VocabCache> loadTxt(File vectorsFile)
             throws FileNotFoundException {
         BufferedReader reader = new BufferedReader(new FileReader(vectorsFile));
-        VocabCache cache = new InMemoryLookupCache();
+        VocabCache cache = new AbstractCache<>();
 
         LineIterator iter = IOUtils.lineIterator(reader);
         String line = null;
@@ -966,8 +982,10 @@ public class WordVectorSerializer {
         if (iter.hasNext()) {
             line = iter.nextLine();    // skip header line
             //look for spaces
-            if(!line.contains(" "))
+            if(!line.contains(" ")) {
+                log.info("Skipping first line");
                 hasHeader = true;
+            }
 
         }
 
@@ -980,19 +998,27 @@ public class WordVectorSerializer {
 
         List<INDArray> arrays = new ArrayList<>();
         while (iter.hasNext()) {
-            line = iter.nextLine();
+            if (line.isEmpty()) line = iter.nextLine();
             String[] split = line.split(" ");
             String word = split[0];
             VocabWord word1 = new VocabWord(1.0, word);
-            cache.addToken(word1);
-            cache.addWordToIndex(cache.numWords(), word);
+
+
             word1.setIndex(cache.numWords());
+
+            cache.addToken(word1);
+
+            cache.addWordToIndex(word1.getIndex(), word);
+
             cache.putVocabWord(word);
             INDArray row = Nd4j.create(Nd4j.createBuffer(split.length - 1));
             for (int i = 1; i < split.length; i++) {
                 row.putScalar(i - 1, Float.parseFloat(split[i]));
             }
             arrays.add(row);
+
+            // workaround for skipped first row
+            line = "";
         }
 
         INDArray syn = Nd4j.create(new int[]{arrays.size(), arrays.get(0).columns()});
