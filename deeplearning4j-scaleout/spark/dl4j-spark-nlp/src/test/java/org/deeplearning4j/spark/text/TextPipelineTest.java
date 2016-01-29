@@ -70,17 +70,20 @@ public class TextPipelineTest extends BaseSparkTest {
                 .setAppName("sparktest");
 
         // All the avaliable options. These are default values
-        word2vec = new Word2Vec().setNumWords(1).setnGrams(1)
-                .setTokenizer("org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory")
-                .setTokenPreprocessor("org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor")
-                .setRemoveStop(true)
-                .setSeed(42L)
-                .setNegative(0)
-                .setUseAdaGrad(false)
-                .setVectorLength(100)
-                .setWindow(5)
-                .setAlpha(0.025).setMinAlpha(0.0001)
-                .setIterations(1);
+        word2vec = new Word2Vec.Builder()
+                .minWordFrequency(1)
+                .setNGrams(1)
+    //            .setTokenizer("org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory")
+    //            .setTokenPreprocessor("org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor")
+    //            .setRemoveStop(true)
+                .seed(42L)
+                .negative(0)
+                .useAdaGrad(false)
+                .layerSize(100)
+                .windowSize(5)
+                .learningRate(0.025).minLearningRate(0.0001)
+                .iterations(1)
+                .build();
 
         sentenceList = Arrays.asList("This is a strange strange world.", "Flowers are red.");
     }
@@ -134,7 +137,7 @@ public class TextPipelineTest extends BaseSparkTest {
     public void testWordFreqAccNotIdentifyingStopWords() throws Exception {
 
         JavaSparkContext sc = getContext();
-        word2vec.setRemoveStop(false);
+      //  word2vec.setRemoveStop(false);
         JavaRDD<String> corpusRDD = getCorpusRDD(sc);
         Broadcast<Map<String, Object>> broadcastTokenizerVarMap = sc.broadcast(word2vec.getTokenizerVarMap());
 
@@ -320,7 +323,7 @@ public class TextPipelineTest extends BaseSparkTest {
     public void testZipFunction() throws Exception {
         JavaSparkContext sc = getContext();
         JavaRDD<String> corpusRDD = getCorpusRDD(sc);
-        word2vec.setRemoveStop(false);
+      //  word2vec.setRemoveStop(false);
         Broadcast<Map<String, Object>> broadcastTokenizerVarMap = sc.broadcast(word2vec.getTokenizerVarMap());
 
         TextPipeline pipeline = new TextPipeline(corpusRDD, broadcastTokenizerVarMap);
@@ -361,7 +364,7 @@ public class TextPipelineTest extends BaseSparkTest {
     public void testFirstIteration() throws Exception {
         JavaSparkContext sc = getContext();
         JavaRDD<String> corpusRDD = getCorpusRDD(sc);
-        word2vec.setRemoveStop(false);
+       // word2vec.setRemoveStop(false);
         Broadcast<Map<String, Object>> broadcastTokenizerVarMap = sc.broadcast(word2vec.getTokenizerVarMap());
 
         TextPipeline pipeline = new TextPipeline(corpusRDD, broadcastTokenizerVarMap);
@@ -406,7 +409,7 @@ public class TextPipelineTest extends BaseSparkTest {
     public void testSyn0AfterFirstIteration() throws Exception {
         JavaSparkContext sc = getContext();
         JavaRDD<String> corpusRDD = getCorpusRDD(sc);
-        word2vec.setRemoveStop(false);
+      //  word2vec.setRemoveStop(false);
         Broadcast<Map<String, Object>> broadcastTokenizerVarMap = sc.broadcast(word2vec.getTokenizerVarMap());
 
         TextPipeline pipeline = new TextPipeline(corpusRDD, broadcastTokenizerVarMap);
