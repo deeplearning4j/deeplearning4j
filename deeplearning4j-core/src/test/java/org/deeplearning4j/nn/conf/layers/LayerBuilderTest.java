@@ -152,7 +152,7 @@ public class LayerBuilderTest {
     	checkSerialization(glstm);
 
         assertEquals(glstm.getForgetGateBiasInit(),1.5,0.0);
-    	assertEquals(glstm.nIn,numIn);
+    	assertEquals(glstm.nIn, numIn);
     	assertEquals(glstm.nOut,numOut);
     	assertEquals(glstm.activationFunction,"tanh");
     }
@@ -182,6 +182,15 @@ public class LayerBuilderTest {
     	assertEquals(gru.nIn,numIn);
     	assertEquals(gru.nOut,numOut);
     	assertEquals(gru.activationFunction,"tanh");
+    }
+
+    @Test
+    public void testEmbeddingLayer() throws Exception {
+        EmbeddingLayer el = new EmbeddingLayer.Builder().nIn(10).nOut(5).build();
+        checkSerialization(el);
+
+        assertEquals(10,el.getNIn());
+        assertEquals(5,el.getNOut());
     }
 
     private void checkSerialization(Layer layer) throws Exception {
