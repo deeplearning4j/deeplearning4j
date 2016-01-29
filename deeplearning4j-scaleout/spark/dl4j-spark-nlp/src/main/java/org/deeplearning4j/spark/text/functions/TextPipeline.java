@@ -86,6 +86,7 @@ public class TextPipeline {
         this.tokenizerPreprocessor = (String) tokenizerVarMap.get("tokenPreprocessor");
         // Remove Stop words
         if ((boolean) tokenizerVarMap.get("removeStop")) {
+            // TODO: fix this lol
             stopWords = StopWords.getStopWords();
         }
     }
@@ -133,9 +134,9 @@ public class TextPipeline {
         // Put vocabWord into vocabs in InMemoryVocabCache
         boolean vocabContainsWord = vocabCache.containsWord(stringToken);
         if (!vocabContainsWord) {
-            vocabCache.addToken(actualToken);
-
             int idx = vocabCache.numWords();
+
+            vocabCache.addToken(actualToken);
             actualToken.setIndex(idx);
             vocabCache.putVocabWord(stringToken);
         }
@@ -153,9 +154,10 @@ public class TextPipeline {
 
             // Turn words below min count to UNK
             stringToken = filterMinWord(stringToken, tokenCount);
-
-            // Turn tokens to vocab and add to vocab cache
-            addTokenToVocabCache(stringToken, tokenCount);
+            if (!stringToken.equals("UNK")) {
+                // Turn tokens to vocab and add to vocab cache
+                addTokenToVocabCache(stringToken, tokenCount);
+            }
         }
     }
 
