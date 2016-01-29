@@ -238,12 +238,15 @@ public class ConvolutionalIterationListener implements IterationListener {
         try {
 
             if (orientation == Orientation.LANDSCAPE) {
-                // if orientation is portrait, we should rotate arrows
-                ClassPathResource resource = new ClassPathResource("/arrow_sing.PNG");
-                ClassPathResource resource2 = new ClassPathResource("/arrow_mul.PNG");
+                try {
+                    ClassPathResource resource = new ClassPathResource("arrow_sing.PNG");
+                    ClassPathResource resource2 = new ClassPathResource("arrow_mul.PNG");
 
-                singleArrow = ImageIO.read(resource.getInputStream());
-                multipleArrows = ImageIO.read(resource2.getInputStream());
+                    singleArrow = ImageIO.read(resource.getInputStream());
+                    multipleArrows = ImageIO.read(resource2.getInputStream());
+                } catch (Exception e) {
+                    ;
+                }
 
                 graphics2D.drawImage(sourceImage, (padding_col / 2) - (sourceImage.getWidth() / 2),  (maxHeight / 2) - (sourceImage.getHeight() / 2), null );
 
@@ -252,13 +255,18 @@ public class ConvolutionalIterationListener implements IterationListener {
 
                 iOffset += sourceImage.getWidth();
 
-                graphics2D.drawImage(singleArrow, iOffset + (padding_col / 2) - (singleArrow.getWidth() / 2), (maxHeight / 2) - (singleArrow.getHeight() / 2), null);
+                if (singleArrow != null)
+                    graphics2D.drawImage(singleArrow, iOffset + (padding_col / 2) - (singleArrow.getWidth() / 2), (maxHeight / 2) - (singleArrow.getHeight() / 2), null);
             } else {
-                ClassPathResource resource = new ClassPathResource("/arrow_singi.PNG");
-                ClassPathResource resource2 = new ClassPathResource("/arrow_muli.PNG");
+                try {
+                    ClassPathResource resource = new ClassPathResource("arrow_singi.PNG");
+                    ClassPathResource resource2 = new ClassPathResource("arrow_muli.PNG");
 
-                singleArrow = ImageIO.read(resource.getInputStream());
-                multipleArrows = ImageIO.read(resource2.getInputStream());
+                    singleArrow = ImageIO.read(resource.getInputStream());
+                    multipleArrows = ImageIO.read(resource2.getInputStream());
+                } catch (Exception e) {
+                    ;
+                }
 
                 graphics2D.drawImage(sourceImage, (totalWidth / 2) - (sourceImage.getWidth() / 2),  (padding_col / 2) - (sourceImage.getHeight() / 2), null );
 
@@ -266,8 +274,9 @@ public class ConvolutionalIterationListener implements IterationListener {
                 graphics2D.drawRect((totalWidth / 2) - (sourceImage.getWidth() / 2), (padding_col / 2) - (sourceImage.getHeight() / 2), sourceImage.getWidth(), sourceImage.getHeight());
 
                 iOffset += sourceImage.getHeight();
+                if (singleArrow != null)
+                    graphics2D.drawImage(singleArrow,(totalWidth / 2) - (singleArrow.getWidth() / 2), iOffset + (padding_col / 2) - (singleArrow.getHeight() / 2), null);
 
-                graphics2D.drawImage(singleArrow,(totalWidth / 2) - (singleArrow.getWidth() / 2), iOffset + (padding_col / 2) - (singleArrow.getHeight() / 2), null);
             }
             iOffset += padding_col;
         } catch (Exception e) {
@@ -292,6 +301,7 @@ public class ConvolutionalIterationListener implements IterationListener {
                 if (singleArrow != null && multipleArrows != null) {
                     if (i < images.size() - 1) {
                         // draw multiple arrows here
+                        if (multipleArrows != null)
                         graphics2D.drawImage(multipleArrows, iOffset - (padding_col / 2) - (multipleArrows.getWidth() / 2), (maxHeight / 2) - (multipleArrows.getHeight() / 2), null);
                     } else {
                         // draw single arrow
@@ -306,7 +316,8 @@ public class ConvolutionalIterationListener implements IterationListener {
                 if (singleArrow != null && multipleArrows != null) {
                     if (i < images.size() - 1) {
                         // draw multiple arrows here
-                        graphics2D.drawImage(multipleArrows, (totalWidth / 2) - (multipleArrows.getWidth() / 2),  iOffset - (padding_col / 2) - (multipleArrows.getHeight() / 2) , null);
+                        if (multipleArrows != null)
+                            graphics2D.drawImage(multipleArrows, (totalWidth / 2) - (multipleArrows.getWidth() / 2),  iOffset - (padding_col / 2) - (multipleArrows.getHeight() / 2) , null);
                     } else {
                         // draw single arrow
                      //   graphics2D.drawImage(singleArrow, (totalWidth / 2) - (singleArrow.getWidth() / 2),  iOffset - (padding_col / 2) - (singleArrow.getHeight() / 2) , null);
