@@ -463,7 +463,6 @@ virtual __device__
 
 		} else {
 #pragma omp simd
-
 			for (int i = 0; i < length; i++) {
 				startingVal = update(startingVal,
 						op(x[i * xElementWiseStride], y[i * yElementWiseStride],

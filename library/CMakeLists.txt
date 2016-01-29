@@ -1,9 +1,8 @@
-include_directories(tests)
 if(LINUX)
     link_directories(/usr/local/lib)
 endif()
 
-
+include_directories(../include)
 #used for determining if we should include jni components or not
 find_package(Java COMPONENTS Development)
 if(Java_FOUND)

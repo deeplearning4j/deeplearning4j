@@ -20,6 +20,7 @@
 <storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
 <storageModule moduleId="org.eclipse.cdt.core.pathentry">
 <pathentry excluding="**/CMakeFiles/" kind="out" path=""/>
+<pathentry kind="mac" name="__JNI__" path="" value="true"/>
 <pathentry kind="mac" name="__STDC__" path="" value="1"/>
 <pathentry kind="mac" name="__STDC_HOSTED__" path="" value="1"/>
 <pathentry kind="mac" name="__GNUC__" path="" value="4"/>
@@ -273,6 +274,9 @@
 <pathentry kind="mac" name="_GNU_SOURCE" path="" value="1"/>
 <pathentry include="/usr/local/include" kind="inc" path="" system="true"/>
 <pathentry include="/home/agibsonccc/code/nativeoperations/include" kind="inc" path="" system="true"/>
+<pathentry include="/home/agibsonccc/code/nativeoperations/library/tests" kind="inc" path="" system="true"/>
+<pathentry include="/usr/java/jdk1.8.0_31/include" kind="inc" path="" system="true"/>
+<pathentry include="/usr/java/jdk1.8.0_31/include/linux" kind="inc" path="" system="true"/>
 <pathentry include="/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include" kind="inc" path="" system="true"/>
 <pathentry include="/usr/include" kind="inc" path="" system="true"/>
 <pathentry include="/usr/include/c++/4.9.2" kind="inc" path="" system="true"/>
@@ -320,6 +324,55 @@
 <buildCommand>/bin/gmake</buildCommand>
 <buildArguments>-j8</buildArguments>
 <buildTarget>clean</buildTarget>
+<stopOnError>true</stopOnError>
+<useDefaultCommand>false</useDefaultCommand>
+</target>
+<target name="[lib] libnd4j" path="library" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
+<buildCommand>/bin/gmake</buildCommand>
+<buildArguments>-j8</buildArguments>
+<buildTarget>libnd4j</buildTarget>
+<stopOnError>true</stopOnError>
+<useDefaultCommand>false</useDefaultCommand>
+</target>
+<target name="[lib] libnd4j/fast" path="library" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
+<buildCommand>/bin/gmake</buildCommand>
+<buildArguments>-j8</buildArguments>
+<buildTarget>libnd4j/fast</buildTarget>
+<stopOnError>true</stopOnError>
+<useDefaultCommand>false</useDefaultCommand>
+</target>
+<target name="Build" path="[Targets]/[lib] libnd4j" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
+<buildCommand>/bin/gmake</buildCommand>
+<buildArguments>-C "/home/agibsonccc/code/nativeoperations/eclipse" -j8</buildArguments>
+<buildTarget>libnd4j</buildTarget>
+<stopOnError>true</stopOnError>
+<useDefaultCommand>false</useDefaultCommand>
+</target>
+<target name="Clean" path="[Targets]/[lib] libnd4j" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
+<buildCommand>/usr/local/bin/cmake</buildCommand>
+<buildArguments>-E chdir "/home/agibsonccc/code/nativeoperations/eclipse/library" "/usr/local/bin/cmake" -P "CMakeFiles/libnd4j.dir/cmake_clean.cmake"</buildArguments>
+<buildTarget></buildTarget>
+<stopOnError>true</stopOnError>
+<useDefaultCommand>false</useDefaultCommand>
+</target>
+<target name=": all" path="library" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
+<buildCommand>/bin/gmake</buildCommand>
+<buildArguments>-j8</buildArguments>
+<buildTarget>all</buildTarget>
+<stopOnError>true</stopOnError>
+<useDefaultCommand>false</useDefaultCommand>
+</target>
+<target name=": clean" path="library" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
+<buildCommand>/bin/gmake</buildCommand>
+<buildArguments>-j8</buildArguments>
+<buildTarget>clean</buildTarget>
+<stopOnError>true</stopOnError>
+<useDefaultCommand>false</useDefaultCommand>
+</target>
+<target name="[obj] blasimpl.cpp.o" path="library" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
+<buildCommand>/bin/gmake</buildCommand>
+<buildArguments>-j8</buildArguments>
+<buildTarget>blasimpl.cpp.o</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>false</useDefaultCommand>
 </target>
