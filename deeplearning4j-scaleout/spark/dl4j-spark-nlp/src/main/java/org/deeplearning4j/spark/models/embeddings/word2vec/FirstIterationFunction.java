@@ -65,7 +65,6 @@ public class FirstIterationFunction
 
     @Override
     public Iterable<Entry<Integer, INDArray>> call(Iterator<Tuple2<List<VocabWord>, Long>> pairIter) {
-        int cnt = 0;
         while (pairIter.hasNext()) {
             Tuple2<List<VocabWord>, Long> pair = pairIter.next();
             List<VocabWord> vocabWordsList = pair._1();
@@ -74,11 +73,7 @@ public class FirstIterationFunction
             double currentSentenceAlpha = Math.max(minAlpha,
                                           alpha - (alpha - minAlpha) * (sentenceCumSumCount / (double) totalWordCount));
             trainSentence(vocabWordsList, currentSentenceAlpha);
-            cnt++;
         }
-        System.out.println("Blocked calls: " + cnt);
-        System.out.println("two/four internal: " + Transforms.cosineSim(indexSyn0VecMap.get(126),indexSyn0VecMap.get(173)));
-        System.out.println("Two internal: " + indexSyn0VecMap.get(126));
         return indexSyn0VecMap.entrySet();
     }
 

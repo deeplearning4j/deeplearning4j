@@ -34,6 +34,7 @@ import java.util.Collection;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author jeffreytang
@@ -50,7 +51,7 @@ public class Word2VecTest {
                 .set("spark.driver.memory", "20G")
                 .setAppName("sparktest");
         */
-       SparkConf sparkConf = new SparkConf().setMaster("local").setAppName("sparktest");
+       SparkConf sparkConf = new SparkConf().setMaster("local[4]").setAppName("sparktest");
 
         // Set SparkContext
         JavaSparkContext sc = new JavaSparkContext(sparkConf);
@@ -78,15 +79,8 @@ public class Word2VecTest {
 
         word2Vec.train(corpus);
 
-        System.out.println("two idx: " + word2Vec.getVocab().wordFor("two").getIndex());
-        System.out.println("four idx: " + word2Vec.getVocab().wordFor("four").getIndex());
-
 
         InMemoryLookupTable<VocabWord> table = (InMemoryLookupTable<VocabWord>) word2Vec.lookupTable();
-
-        System.out.println("Two by idx: " + table.getSyn0().getRow(126));
-        System.out.println("Two by lookup: " + table.vector("two"));
-        System.out.println("Two external: " + word2Vec.getWordVectorMatrix("two"));
 
         double sim = word2Vec.similarity("day", "night");
         System.out.println("day/night similarity: " + sim);
@@ -94,6 +88,9 @@ public class Word2VecTest {
         Collection<String> words = word2Vec.wordsNearest("day", 10);
         printWords("day", words, word2Vec);
 
+        assertTrue(words.contains("night"));
+        assertTrue(words.contains("week"));
+        assertTrue(words.contains("year"));
 
         sim = word2Vec.similarity("two", "four");
         System.out.println("two/four similarity: " + sim);
@@ -101,7 +98,13 @@ public class Word2VecTest {
         words = word2Vec.wordsNearest("two", 10);
         printWords("two", words, word2Vec);
 
+        assertTrue(words.contains("three"));
+        assertTrue(words.contains("five"));
+        assertTrue(words.contains("four"));
+
         sc.stop();
+
+
     }
 
     @Test
