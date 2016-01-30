@@ -1,6 +1,8 @@
 package org.deeplearning4j.ui.weights;
 
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
 
 /**
@@ -44,6 +46,10 @@ public class FlowIterationListener implements IterationListener {
                 ......
                 Later, on client side, this JSON should be parsed and rendered. So, proper object structure to be considered.
          */
+        if (model instanceof ComputationGraph) {
 
+        } else if (model instanceof MultiLayerNetwork) {
+
+        } else throw new IllegalStateException("");
     }
 }
