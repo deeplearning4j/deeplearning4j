@@ -27,8 +27,6 @@ public class ComputationGraphUpdater implements Serializable {
     public ComputationGraphUpdater(ComputationGraph graph){
         layerUpdaters = new Updater[graph.getNumLayers()];
         layerUpdatersMap = new HashMap<>();
-        //TODO make this more efficient
-        GraphVertex[] vertices = graph.getVertices();
 
         int i=0;
         for(Layer layer : graph.getLayers()){

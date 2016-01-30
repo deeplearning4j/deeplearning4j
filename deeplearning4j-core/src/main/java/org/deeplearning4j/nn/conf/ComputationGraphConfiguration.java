@@ -200,6 +200,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         conf.tbpttFwdLength = tbpttFwdLength;
         conf.tbpttBackLength = tbpttBackLength;
         conf.redistributeParams = redistributeParams;
+        conf.defaultConfiguration = defaultConfiguration.clone();
 
         return conf;
     }
