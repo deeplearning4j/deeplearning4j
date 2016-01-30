@@ -158,7 +158,7 @@ public class ConvolutionLayerSetupTest {
         NeuralNetConfiguration.ListBuilder builder = (NeuralNetConfiguration.ListBuilder) incompleteLRN();
         new ConvolutionLayerSetup(builder,28,28,3);
         ConvolutionLayer layer2 = (ConvolutionLayer) builder.getLayerwise().get(3).getLayer();
-        assertEquals(6,layer2.getNIn());
+        assertEquals(6, layer2.getNIn());
 
     }
 
@@ -285,12 +285,33 @@ public class ConvolutionLayerSetupTest {
                         .activation("softmax")
                         .build())
                 .inputPreProcessor(0, new FeedForwardToCnnPreProcessor(numRows, numColumns, 1))
-                .inputPreProcessor(2, new CnnToFeedForwardPreProcessor(5,5,6))
+                .inputPreProcessor(2, new CnnToFeedForwardPreProcessor(5, 5, 6))
                 .backprop(true).pretrain(false);
 
         return builder;
     }
 
+    @Test
+    public void testSubSamplingWithPadding(){
+
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
+                .list(3)
+                .layer(0, new ConvolutionLayer.Builder(2, 2).padding(0, 0).stride(2, 2).nIn(1).nOut(3).build())    //(28-2+0)/2+1 = 14
+                .layer(1, new SubsamplingLayer.Builder().kernelSize(2, 2).padding(1, 1).stride(2, 2).build())      //(14-2+2)/2+1 = 8 -> 8x8x3
+                .layer(2, new OutputLayer.Builder().nOut(3).build());
+        new ConvolutionLayerSetup(builder,28,28,1);
+
+        MultiLayerConfiguration conf = builder.build();
+
+        assertNotNull(conf.getInputPreProcess(2));
+        assertTrue(conf.getInputPreProcess(2) instanceof CnnToFeedForwardPreProcessor);
+        CnnToFeedForwardPreProcessor proc = (CnnToFeedForwardPreProcessor)conf.getInputPreProcess(2);
+        assertEquals(8,proc.getInputHeight());
+        assertEquals(8,proc.getInputWidth());
+        assertEquals(3,proc.getNumChannels());
+
+        assertEquals(8*8*3,((FeedForwardLayer)conf.getConf(2).getLayer()).getNIn());
+    }
 
 
 }
