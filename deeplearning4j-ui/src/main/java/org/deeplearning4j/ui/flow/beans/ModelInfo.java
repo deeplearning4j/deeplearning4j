@@ -1,5 +1,7 @@
 package org.deeplearning4j.ui.flow.beans;
 
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Table;
 import lombok.Data;
 import lombok.NonNull;
 
@@ -14,18 +16,18 @@ import java.util.List;
  */
 @Data
 public class ModelInfo implements Serializable {
-    private long time;
+    private final static long serialVersionUID = 119L;
+    private long time = System.currentTimeMillis();
 
-    // this should be table or map(pair(x,y)), but not a list
-    private List<LayerInfo> layers;
+    // PLEASE NOTE: Inverted coords here -> Y, X LayerInfo
+    private Table<Integer, Integer, LayerInfo> layers = HashBasedTable.create();
 
     /**
      * This method maps given layer into model coordinate space
      * @param layer
      */
     public void addLayer(@NonNull LayerInfo layer) {
-        // TODO: implement 2D mapping here
-        this.layers.add(layer);
+        this.layers.put(layer.getY(), layer.getX(), layer);
     }
 
     /**
@@ -34,7 +36,7 @@ public class ModelInfo implements Serializable {
      * @return
      */
     public LayerInfo getLayerInfoByName(String name) {
-        for (LayerInfo layerInfo: layers) {
+        for (LayerInfo layerInfo: layers.values()) {
             if (layerInfo.getName().equalsIgnoreCase(name)) return layerInfo;
         }
         return null;
@@ -47,6 +49,6 @@ public class ModelInfo implements Serializable {
      * @return
      */
     public LayerInfo getLayerInfoByCoords(int x, int y) {
-        return null;
+        return layers.get(y, x);
     }
 }
