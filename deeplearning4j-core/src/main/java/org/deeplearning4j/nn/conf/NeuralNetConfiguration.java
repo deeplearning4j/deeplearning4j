@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import lombok.Data;
@@ -37,10 +38,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 /**
@@ -251,7 +249,18 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         return mapper;
     }
 
-    private static final ObjectMapper mapper = initMapper();
+    /**Reinitialize and return the Jackson/json ObjectMapper with additional named types.
+     * This can be used to add additional subtypes at runtime (i.e., for JSON mapping with
+     * types defined outside of the main DL4J codebase)
+     */
+    public static ObjectMapper reinitMapperWithSubtypes(Collection<NamedType> additionalTypes){
+        mapper.registerSubtypes(additionalTypes.toArray(new NamedType[additionalTypes.size()]));
+        //Recreate the mapper (via copy), as mapper won't use registered subtypes after first use
+        mapper = mapper.copy();
+        return mapper;
+    }
+
+    private static ObjectMapper mapper = initMapper();
 
     private static ObjectMapper initMapper() {
         ObjectMapper ret = new ObjectMapper();
@@ -372,6 +381,10 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             for(int i = 0; i < size; i++)
                 layerMap.put(i, clone());
             return new ListBuilder(layerMap);
+        }
+
+        public ComputationGraphConfiguration.GraphBuilder graphBuilder(){
+            return new ComputationGraphConfiguration.GraphBuilder(this);
         }
 
         /** Number of optimization iterations. */
@@ -576,8 +589,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
          * @return
          */
         public NeuralNetConfiguration build() {
-            if (layer == null)
-                throw new IllegalStateException("No layer defined.");
 
             NeuralNetConfiguration conf = new NeuralNetConfiguration();
 
@@ -595,25 +606,28 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             conf.miniBatch = miniBatch;
 
 
-            if(Double.isNaN(layer.getLearningRate())) layer.setLearningRate(learningRate);
-            if(layer.getLearningRateAfter() == null) layer.setLearningRateAfter(learningRateAfter);
-            if(Double.isNaN(layer.getLrScoreBasedDecay())) layer.setLrScoreBasedDecay(lrScoreBasedDecay);
-            if(Double.isNaN(layer.getL1())) layer.setL1(l1);
-            if(Double.isNaN(layer.getL2())) layer.setL2(l2);
-            if(layer.getActivationFunction() == null) layer.setActivationFunction(activationFunction);
-            if(layer.getWeightInit() == null) layer.setWeightInit(weightInit);
-            if(Double.isNaN(layer.getBiasInit())) layer.setBiasInit(biasInit);
-            if(layer.getDist() == null) layer.setDist(dist);
-            if(Double.isNaN(layer.getDropOut())) layer.setDropOut(dropOut);
-            if(layer.getUpdater() == null) layer.setUpdater(updater);
-            if(Double.isNaN(layer.getMomentum())) layer.setMomentum(momentum);
-            if(layer.getMomentumAfter() == null) layer.setMomentumAfter(momentumAfter);
-            if(Double.isNaN(layer.getRho())) layer.setRho(rho);
-            if(Double.isNaN(layer.getRmsDecay())) layer.setRmsDecay(rmsDecay);
-            if(Double.isNaN(layer.getAdamMeanDecay())) layer.setAdamMeanDecay(adamMeanDecay);
-            if(Double.isNaN(layer.getAdamVarDecay())) layer.setAdamVarDecay(adamVarDecay);
-            if(layer.getGradientNormalization() == null) layer.setGradientNormalization(gradientNormalization);
-            if(Double.isNaN(layer.getGradientNormalizationThreshold())) layer.setGradientNormalizationThreshold(gradientNormalizationThreshold);
+            if(layer != null ) {
+                if (Double.isNaN(layer.getLearningRate())) layer.setLearningRate(learningRate);
+                if (layer.getLearningRateAfter() == null) layer.setLearningRateAfter(learningRateAfter);
+                if (Double.isNaN(layer.getLrScoreBasedDecay())) layer.setLrScoreBasedDecay(lrScoreBasedDecay);
+                if (Double.isNaN(layer.getL1())) layer.setL1(l1);
+                if (Double.isNaN(layer.getL2())) layer.setL2(l2);
+                if (layer.getActivationFunction() == null) layer.setActivationFunction(activationFunction);
+                if (layer.getWeightInit() == null) layer.setWeightInit(weightInit);
+                if (Double.isNaN(layer.getBiasInit())) layer.setBiasInit(biasInit);
+                if (layer.getDist() == null) layer.setDist(dist);
+                if (Double.isNaN(layer.getDropOut())) layer.setDropOut(dropOut);
+                if (layer.getUpdater() == null) layer.setUpdater(updater);
+                if (Double.isNaN(layer.getMomentum())) layer.setMomentum(momentum);
+                if (layer.getMomentumAfter() == null) layer.setMomentumAfter(momentumAfter);
+                if (Double.isNaN(layer.getRho())) layer.setRho(rho);
+                if (Double.isNaN(layer.getRmsDecay())) layer.setRmsDecay(rmsDecay);
+                if (Double.isNaN(layer.getAdamMeanDecay())) layer.setAdamMeanDecay(adamMeanDecay);
+                if (Double.isNaN(layer.getAdamVarDecay())) layer.setAdamVarDecay(adamVarDecay);
+                if (layer.getGradientNormalization() == null) layer.setGradientNormalization(gradientNormalization);
+                if (Double.isNaN(layer.getGradientNormalizationThreshold()))
+                    layer.setGradientNormalizationThreshold(gradientNormalizationThreshold);
+            }
 
             return conf;
         }
