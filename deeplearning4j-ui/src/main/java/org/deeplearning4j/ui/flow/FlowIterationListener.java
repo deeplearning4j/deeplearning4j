@@ -1,9 +1,11 @@
-package org.deeplearning4j.ui.weights;
+package org.deeplearning4j.ui.flow;
 
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.ui.flow.beans.LayerInfo;
 
 /**
  * This IterationListener is suited for general model performance/architecture overview
@@ -50,6 +52,10 @@ public class FlowIterationListener implements IterationListener {
 
         } else if (model instanceof MultiLayerNetwork) {
 
-        } else throw new IllegalStateException("");
+        } else throw new IllegalStateException("Model ["+model.getClass().getCanonicalName()+"] doesn't looks like supported one.");
+    }
+
+    private LayerInfo getLayerInfo(Layer layer) {
+        return null;
     }
 }
