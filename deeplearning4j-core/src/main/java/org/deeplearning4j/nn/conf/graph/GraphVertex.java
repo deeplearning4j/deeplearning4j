@@ -26,6 +26,8 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 
+import java.io.Serializable;
+
 /** A GraphVertex is a vertex in the computation graph. It may contain Layer, or define some arbitrary forward/backward pass
  * behaviour based on the inputs
  * @author Alex Black
@@ -40,7 +42,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
         @JsonSubTypes.Type(value = DuplicateToTimeSeriesVertex.class, name = "DuplicateToTimeSeriesVertex"),
         @JsonSubTypes.Type(value = PreprocessorVertex.class, name = "PreprocessorVertex")
 })
-public abstract class GraphVertex implements Cloneable {
+public abstract class GraphVertex implements Cloneable, Serializable {
 
     @Override
     public abstract GraphVertex clone();
