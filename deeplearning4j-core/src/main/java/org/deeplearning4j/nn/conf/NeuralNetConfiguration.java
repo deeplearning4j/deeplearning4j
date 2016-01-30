@@ -107,10 +107,16 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
      */
     public static class ListBuilder extends MultiLayerConfiguration.Builder {
         private Map<Integer, Builder> layerwise;
+        private Builder globalConfig;
 
         // Constructor
-        public ListBuilder(Map<Integer, Builder> layerMap) {
+        public ListBuilder(Builder globalConfig, Map<Integer, Builder> layerMap) {
+            this.globalConfig = globalConfig;
             this.layerwise = layerMap;
+        }
+
+        public ListBuilder(Builder globalConfig){
+            this(globalConfig,new HashMap<Integer, Builder>());
         }
 
 
@@ -125,15 +131,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         }
 
         public ListBuilder layer(int ind, Layer layer) {
-            if (layerwise.get(0) == null && ind != 0) {
-                throw new IllegalArgumentException("LayerZeroIndexError: Layer index must start from 0");
+            if(layerwise.containsKey(ind)){
+                layerwise.get(ind).layer(layer);
+            } else {
+                layerwise.put(ind,globalConfig.clone().layer(layer));
             }
-            if (layerwise.size() < ind + 1) {
-                throw new IllegalArgumentException("IndexOutOfBoundsError: Layer index exceeds listed size");
-            }
-
-            Builder builderWithLayer = layerwise.get(ind).layer(layer);
-            layerwise.put(ind, builderWithLayer);
             return this;
         }
 
@@ -149,7 +151,14 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
          */
         public MultiLayerConfiguration build() {
             List<NeuralNetConfiguration> list = new ArrayList<>();
+            if(layerwise.size() == 0) throw new IllegalStateException("Invalid configuration: no layers defined");
             for(int i = 0; i < layerwise.size(); i++) {
+                if(layerwise.get(i) == null){
+                    throw new IllegalStateException("Invalid configuration: layer number " + i + " not specified. Expect layer "
+                        + "numbers to be 0 to " + (layerwise.size()-1) + " inclusive (number of layers defined: " + layerwise.size() + ")");
+                }
+                if(layerwise.get(i).getLayer() == null) throw new IllegalStateException("Cannot construct network: Layer config for" +
+                        "layer with index " + i + " is not defined)");
                 list.add(layerwise.get(i).build());
             }
             return new MultiLayerConfiguration.Builder().backprop(backprop).inputPreProcessors(inputPreProcessors).
@@ -375,12 +384,50 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        /** Number of layers not including input. */
+        /** <b>Deprecated</b><br>
+         * Create a ListBuilder (for creating a MultiLayerConfiguration) with the specified number of layers, not including input.
+         * @param size number of layers in the network
+         * @deprecated Manually specifying number of layers in  is not necessary. Use {@link #list()} or {@link #list(Layer...)} methods.
+         * */
         public ListBuilder list(int size) {
+            return list();
+        }
+
+        /**Create a ListBuilder (for creating a MultiLayerConfiguration)<br>
+         * Usage:<br>
+         * <pre>
+         * {@code .list()
+         * .layer(0,new DenseLayer.Builder()...build())
+         * ...
+         * .layer(n,new OutputLayer.Builder()...build())
+         * }
+         * </pre>
+         * */
+        public ListBuilder list(){
+            return new ListBuilder(this);
+        }
+
+        /**Create a ListBuilder (for creating a MultiLayerConfiguration) with the specified layers<br>
+         * Usage:<br>
+         * <pre>
+         * {@code .list(
+         *      new DenseLayer.Builder()...build(),
+         *      ...,
+         *      new OutputLayer.Builder()...build())
+         * }
+         * </pre>
+         * @param layers The layer configurations for the network
+         */
+        public ListBuilder list(Layer... layers){
+            if(layers == null || layers.length == 0) throw new IllegalArgumentException("Cannot create network with no layers");
             Map<Integer, Builder> layerMap = new HashMap<>();
-            for(int i = 0; i < size; i++)
-                layerMap.put(i, clone());
-            return new ListBuilder(layerMap);
+            for(int i = 0; i < layers.length; i++) {
+                NeuralNetConfiguration.Builder b = this.clone();
+                b.layer(layers[i]);
+                layerMap.put(i, b);
+            }
+            return new ListBuilder(this,layerMap);
+
         }
 
         public ComputationGraphConfiguration.GraphBuilder graphBuilder(){
