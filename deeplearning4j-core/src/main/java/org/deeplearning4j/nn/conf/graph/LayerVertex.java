@@ -33,8 +33,8 @@ import org.deeplearning4j.nn.layers.factory.LayerFactories;
 
 import java.util.Arrays;
 
-/**
- * LayerVertex is a GraphVertex with a Layer configuration (and, optionally preprocessor) in it
+/** * LayerVertex is a GraphVertex with a neural network Layer (and, optionally an {@link InputPreProcessor}) in it
+ * @author Alex Black
  */
 @AllArgsConstructor
 @NoArgsConstructor

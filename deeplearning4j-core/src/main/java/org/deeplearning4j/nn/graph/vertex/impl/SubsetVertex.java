@@ -33,9 +33,10 @@ import java.util.Arrays;
 
 /** SubsetVertex is used to select a subset of the activations out of another GraphVertex.<br>
  * For example, a subset of the activations out of a layer.<br>
- * Note that this subset is specifying by means of an interval of the original activations<br>
+ * Note that this subset is specifying by means of an interval of the original activations.
  * For example, to get the first 10 activations of a layer (or, first 10 features out of a CNN layer) use
- * new SubsetVertex(0,9)
+ * new SubsetVertex(0,9).<br>
+ * In the case of convolutional (4d) activations, this is done along depth.
  * @author Alex Black
  */
 public class SubsetVertex extends BaseGraphVertex {

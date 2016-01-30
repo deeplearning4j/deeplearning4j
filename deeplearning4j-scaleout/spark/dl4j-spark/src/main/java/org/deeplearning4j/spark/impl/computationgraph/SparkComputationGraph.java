@@ -1,6 +1,6 @@
 /*
  *
- *  * Copyright 2015 Skymind,Inc.
+ *  * Copyright 2016 Skymind,Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
  *  *    you may not use this file except in compliance with the License.
@@ -10,7 +10,7 @@
  *  *
  *  *    Unless required by applicable law or agreed to in writing, software
  *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WÏITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *  *    See the License for the specific language governing permissions and
  *  *    limitations under the License.
  *
@@ -26,11 +26,9 @@ import org.apache.spark.api.java.function.DoubleFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.canova.api.records.reader.RecordReader;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
-import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -53,7 +51,7 @@ import scala.Tuple3;
 import java.io.Serializable;
 import java.util.List;
 
-/**Main class for training ComputationGraph using Spark
+/**Main class for training ComputationGraph networks using Spark
  *
  * @author Alex Black
  */

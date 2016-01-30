@@ -78,11 +78,9 @@ public class ElementWiseVertex extends BaseGraphVertex {
                 return sum;
             case Subtract:
                 if(inputs.length != 2) throw new IllegalArgumentException("ElementWise subtraction only supports 2 inputs");
-                //TODO: maybe specify a convention: (first - (second + third + fourth + ...) etc?)
-                //Or, maybe not. Can always build that in two steps anyway with an add and a binary subtract ops)
                 return inputs[0].sub(inputs[1]);
             case Product:
-                throw new UnsupportedOperationException("Not yet implemented");
+                throw new UnsupportedOperationException("ElementWise product: Not yet implemented");
             default:
                 throw new UnsupportedOperationException("Unknown op: " + op);
         }

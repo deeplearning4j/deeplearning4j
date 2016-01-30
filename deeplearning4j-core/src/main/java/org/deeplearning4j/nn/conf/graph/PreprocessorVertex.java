@@ -38,6 +38,11 @@ public class PreprocessorVertex extends GraphVertex {
         this(preProcessor, null);
     }
 
+    /**
+     * @param preProcessor The input preprocessor
+     * @param outputType Override for the type of output used in {@link #getOutputType(InputType...)}. This may be necessary
+     *                   for the automatic addition of other processors in the network, given a custom/non-standard InputPreProcessor
+     */
     public PreprocessorVertex(InputPreProcessor preProcessor, InputType outputType) {
         this.preProcessor = preProcessor;
         this.outputType = outputType;
