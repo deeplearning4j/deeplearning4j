@@ -52,6 +52,11 @@ public class Cos extends BaseTransformOp {
     }
 
     @Override
+    public int opNum() {
+        return 2;
+    }
+
+    @Override
     public String name() {
         return "cos";
     }

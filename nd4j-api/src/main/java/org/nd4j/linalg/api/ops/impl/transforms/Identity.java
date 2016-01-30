@@ -50,6 +50,11 @@ public class Identity extends BaseTransformOp {
     }
 
     @Override
+    public int opNum() {
+        return 27;
+    }
+
+    @Override
     public String name() {
         return "identity";
     }

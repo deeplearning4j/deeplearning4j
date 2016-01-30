@@ -18,6 +18,11 @@ public class BroadcastMulOp extends BaseBroadcastOp {
     }
 
     @Override
+    public int opNum() {
+        return 2;
+    }
+
+    @Override
     public String name() {
         return "broadcastmul";
     }

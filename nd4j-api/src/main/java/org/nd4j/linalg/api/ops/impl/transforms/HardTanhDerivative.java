@@ -51,6 +51,11 @@ public class HardTanhDerivative extends BaseTransformOp {
     }
 
     @Override
+    public int opNum() {
+        return 25;
+    }
+
+    @Override
     public String name() {
         return "hardtanhderivative";
     }
@@ -105,7 +110,7 @@ public class HardTanhDerivative extends BaseTransformOp {
     }
 
     private static double hardTanhDeriv(double num) {
-    	return ((num>=-1.0 && num<=1.0) ? 1.0 : 0.0);
+    	return ((num >= - 1.0 && num <= 1.0) ? 1.0 : 0.0);
     }
 
     @Override

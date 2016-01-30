@@ -64,6 +64,11 @@ public class Pow extends BaseTransformOp {
     }
 
     @Override
+    public int opNum() {
+        return 7;
+    }
+
+    @Override
     public String name() {
         return "pow";
     }

@@ -56,6 +56,12 @@ public class MaxOut extends BaseTransformOp {
     }
 
     @Override
+    public int opNum() {
+        throw new UnsupportedOperationException();
+    }
+
+
+    @Override
     public String name() {
         return "maxout";
     }

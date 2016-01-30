@@ -77,6 +77,11 @@ public class Step extends BaseTransformOp {
     }
 
     @Override
+    public int opNum() {
+        return 34;
+    }
+
+    @Override
     public String name() {
         return "step";
     }

@@ -62,6 +62,11 @@ public class ELUDerivative extends BaseTransformOp {
     }
 
     @Override
+    public int opNum() {
+        return 22;
+    }
+
+    @Override
     public String name() {
         return "eluderivative";
     }

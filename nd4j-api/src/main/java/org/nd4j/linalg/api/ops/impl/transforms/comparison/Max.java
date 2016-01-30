@@ -52,6 +52,11 @@ public class Max extends BaseTransformOp {
     }
 
     @Override
+    public int opNum() {
+        return 13;
+    }
+
+    @Override
     public String name() {
         return "max";
     }

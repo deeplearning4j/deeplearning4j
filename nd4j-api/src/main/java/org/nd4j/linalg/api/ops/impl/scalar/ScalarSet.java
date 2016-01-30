@@ -19,7 +19,6 @@
 
 package org.nd4j.linalg.api.ops.impl.scalar;
 
-import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
@@ -32,7 +31,7 @@ import org.nd4j.linalg.api.ops.Op;
  *
  * @author Adam Gibson
  */
-public class ScalarSet extends BaseScalarOp {
+public class  ScalarSet extends BaseScalarOp {
     public ScalarSet() {
     }
 
@@ -50,6 +49,11 @@ public class ScalarSet extends BaseScalarOp {
 
     public ScalarSet(INDArray x, IComplexNumber num) {
         super(x, num);
+    }
+
+    @Override
+    public int opNum() {
+        return 13;
     }
 
     @Override

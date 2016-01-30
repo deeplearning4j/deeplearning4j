@@ -78,6 +78,11 @@ public class LeakyReLU extends BaseTransformOp {
     }
 
     @Override
+    public int opNum() {
+        return 31;
+    }
+
+    @Override
     public String name() {
         return "leakyrelu";
     }

@@ -55,6 +55,11 @@ public class CopyOp extends BaseTransformOp {
     }
 
     @Override
+    public int opNum() {
+        return 1;
+    }
+
+    @Override
     public String name() {
         return "copy";
     }

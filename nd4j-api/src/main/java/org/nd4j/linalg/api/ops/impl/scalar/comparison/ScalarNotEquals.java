@@ -52,6 +52,11 @@ public class ScalarNotEquals extends BaseScalarOp {
     }
 
     @Override
+    public int opNum() {
+        return 11;
+    }
+
+    @Override
     public String name() {
         return "notequals_scalar";
     }

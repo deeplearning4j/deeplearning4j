@@ -113,6 +113,11 @@ public class Norm1 extends BaseAccumulation {
     }
 
     @Override
+    public int opNum() {
+        return 5;
+    }
+
+    @Override
     public String name() {
         return "norm1";
     }

@@ -54,6 +54,11 @@ public class Exp extends BaseTransformOp {
     }
 
     @Override
+    public int opNum() {
+        return 3;
+    }
+
+    @Override
     public String name() {
         return "exp";
     }

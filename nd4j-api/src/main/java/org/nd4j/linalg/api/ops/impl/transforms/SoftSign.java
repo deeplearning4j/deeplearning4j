@@ -26,7 +26,9 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.util.ComplexUtil;
 
-/**Softsign element-wise activation function. f(x) = x/(1+abs(x))<br>
+/**
+ *
+ * Softsign element-wise activation function. f(x) = x/(1+abs(x))<br>
  * Similar in shape to tanh but may outperform it due to
  * 'gentler' nonlinearity (smoother asymptotes).<br>
  * See for example: http://jmlr.org/proceedings/papers/v9/glorot10a/glorot10a.pdf
@@ -51,6 +53,11 @@ public class SoftSign extends BaseTransformOp {
 
     public SoftSign(INDArray x) {
         super(x);
+    }
+
+    @Override
+    public int opNum() {
+        return 20;
     }
 
     @Override

@@ -52,7 +52,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
         else {
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
-
             }
             else {
 
@@ -106,7 +105,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
                 }
                 else {
-                  
+
                 }
             }
         }

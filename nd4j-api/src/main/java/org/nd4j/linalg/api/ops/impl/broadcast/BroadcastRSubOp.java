@@ -18,6 +18,11 @@ public class BroadcastRSubOp extends BaseBroadcastOp {
     }
 
     @Override
+    public int opNum() {
+        return 5;
+    }
+
+    @Override
     public String name() {
         return "broadcastrsub";
     }

@@ -41,9 +41,6 @@ import org.nd4j.linalg.ops.transforms.Transforms;
  */
 
 public class SoftMax extends BaseTransformOp {
-    private Number sum;
-    private Number max;
-    private IComplexNumber maxComplex, sumComplex;
 
     public SoftMax() {
     }
@@ -66,6 +63,11 @@ public class SoftMax extends BaseTransformOp {
 
     public SoftMax(INDArray x) {
         super(x);
+    }
+
+    @Override
+    public int opNum() {
+        throw new UnsupportedOperationException();
     }
 
     @Override

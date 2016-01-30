@@ -87,6 +87,11 @@ public class IMin extends BaseIndexAccumulation {
 
 
     @Override
+    public int opNum() {
+        return 1;
+    }
+
+    @Override
     public String name() {
         return "imin";
     }

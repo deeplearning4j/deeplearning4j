@@ -42,6 +42,13 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public interface Op {
 
+
+    /**
+     * An op number
+     * @return
+     */
+    int opNum();
+
     /**
      * The name of this operation
      *

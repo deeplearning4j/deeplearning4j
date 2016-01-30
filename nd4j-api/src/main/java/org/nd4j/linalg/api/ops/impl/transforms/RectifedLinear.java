@@ -79,6 +79,11 @@ public class RectifedLinear extends BaseTransformOp {
     }
 
     @Override
+    public int opNum() {
+        return 33;
+    }
+
+    @Override
     public String name() {
         return "relu";
     }
