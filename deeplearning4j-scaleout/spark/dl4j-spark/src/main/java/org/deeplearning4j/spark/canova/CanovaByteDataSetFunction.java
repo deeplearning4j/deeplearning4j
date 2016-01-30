@@ -3,6 +3,7 @@ package org.deeplearning4j.spark.canova;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.PairFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
@@ -17,7 +18,7 @@ import java.util.List;
 /**
  * Created by nyghtowl on 1/16/16.
  */
-public class CanovaByteDataSetFunction implements Function<Tuple2<Text, BytesWritable>, DataSet> {
+public class CanovaByteDataSetFunction implements PairFunction<Tuple2<Text, BytesWritable>, Double, DataSet> {
 
     private int labelIndex = 0;
     private int numPossibleLabels;
@@ -28,31 +29,26 @@ public class CanovaByteDataSetFunction implements Function<Tuple2<Text, BytesWri
     private DataSetPreProcessor preProcessor;
 
     public CanovaByteDataSetFunction(int labelIndex, int numPossibleLabels, int batchSize, int byteFileLen ){
-        this(labelIndex, numPossibleLabels, batchSize, 10, byteFileLen, false, null);
-    }
-
-    public CanovaByteDataSetFunction(int labelIndex, int numPossibleLabels, int batchSize, int numExamples, int byteFileLen ){
-        this(labelIndex, numPossibleLabels, batchSize, numExamples, byteFileLen, false, null);
+        this(labelIndex, numPossibleLabels, batchSize, byteFileLen, false, null);
     }
 
     public CanovaByteDataSetFunction(int labelIndex, int numPossibleLabels, int batchSize, int byteFileLen, boolean regression){
-        this(labelIndex, numPossibleLabels, batchSize, 10, byteFileLen, regression, null);
+        this(labelIndex, numPossibleLabels, batchSize, byteFileLen, regression, null);
     }
 
     /**
      * @param labelIndex Index of the label column
      * @param numPossibleLabels Number of classes for classification  (not used if regression = true)
-     * @param batchSize size of examples in DataSet
+     * @param batchSize size of examples in DataSet. Pass in total examples if including all
      * @param byteFileLen number of bytes per individual file
      * @param regression False for classification, true for regression
      * @param preProcessor DataSetPreprocessor (may be null)
      */
-    public CanovaByteDataSetFunction(int labelIndex, int numPossibleLabels, int batchSize, int numExamples, int byteFileLen, boolean regression,
+    public CanovaByteDataSetFunction(int labelIndex, int numPossibleLabels, int batchSize, int byteFileLen, boolean regression,
                                  DataSetPreProcessor preProcessor){
         this.labelIndex = labelIndex;
         this.numPossibleLabels = numPossibleLabels;
         this.batchSize = batchSize;
-        this.numExamples = numExamples;
         this.byteFileLen = byteFileLen;
         this.regression = regression;
         this.preProcessor = preProcessor;
@@ -60,9 +56,8 @@ public class CanovaByteDataSetFunction implements Function<Tuple2<Text, BytesWri
     }
 
     @Override
-    public DataSet call(Tuple2<Text, BytesWritable> inputTuple) throws Exception {
+    public Tuple2<Double, DataSet> call(Tuple2<Text, BytesWritable> inputTuple) throws Exception {
         int lenFeatureVector = 0;
-        int exampleCount = 0;
 
         if (numPossibleLabels >= 1){
             lenFeatureVector = byteFileLen-1;
@@ -80,7 +75,7 @@ public class CanovaByteDataSetFunction implements Function<Tuple2<Text, BytesWri
 
         try {
             INDArray featureVector = Nd4j.create(lenFeatureVector);
-            while((inputStream.read(byteFeature)) != -1 && batchNumCount != batchSize && exampleCount < numExamples) {
+            while((inputStream.read(byteFeature)) != -1 && batchNumCount != batchSize) {
                 featureCount = 0;
                 label = FeatureUtil.toOutcomeVector(byteFeature[labelIndex], numPossibleLabels);
                 for (int j = 1; j <= featureVector.length(); j++)
@@ -90,7 +85,6 @@ public class CanovaByteDataSetFunction implements Function<Tuple2<Text, BytesWri
                 byteFeature = new byte[byteFileLen];
                 featureVector = Nd4j.create(lenFeatureVector);
             }
-            exampleCount += batchSize;
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -105,7 +99,7 @@ public class CanovaByteDataSetFunction implements Function<Tuple2<Text, BytesWri
 
         DataSet ds = new DataSet(Nd4j.vstack(inputs.toArray(new INDArray[0])), Nd4j.vstack(labels.toArray(new INDArray[0])));
         if(preProcessor != null) preProcessor.preProcess(ds);
-        return ds;
+        return new Tuple2<>((double) batchNumCount, ds);
 
     }
 
