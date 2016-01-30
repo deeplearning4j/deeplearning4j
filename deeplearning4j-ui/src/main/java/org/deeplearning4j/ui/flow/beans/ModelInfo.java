@@ -51,4 +51,13 @@ public class ModelInfo implements Serializable {
     public LayerInfo getLayerInfoByCoords(int x, int y) {
         return layers.get(y, x);
     }
+
+    /**
+     * This method returns the total number of nodes within described model
+     *
+     * @return number of elements
+     */
+    public int size() {
+        return layers.size();
+    }
 }
