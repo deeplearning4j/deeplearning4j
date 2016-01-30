@@ -1,6 +1,7 @@
 package org.deeplearning4j.ui.flow;
 
 import lombok.NonNull;
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -97,6 +98,17 @@ public class FlowIterationListener implements IterationListener {
          */
 
         // On first pass we just build list of layers. However, for MultiLayerNetwork first pass is the last pass, since we know connections in advance
+        ModelInfo info = buildModelInfo(model);
+
+        // add info about inputs
+
+
+        /*
+            as soon as model info is built, we need to define color scheme based on number of unique nodes
+         */
+    }
+
+    protected ModelInfo buildModelInfo(Model model) {
         ModelInfo modelInfo = new ModelInfo();
         if (model instanceof ComputationGraph) {
             ComputationGraph graph = (ComputationGraph) model;
@@ -108,19 +120,20 @@ public class FlowIterationListener implements IterationListener {
             MultiLayerNetwork network = (MultiLayerNetwork) model;
 
             // entry 0 is reserved for inputs
-            int cnt = 1;
+            int y = 1;
+
+            // for MLN x value is always 1
+            final int x = 1;
             for (Layer layer: network.getLayers()) {
-                modelInfo.addLayer(getLayerInfo(layer, 1, cnt, cnt));
-                cnt++;
+                LayerInfo layerInfo = getLayerInfo(layer, x, y, y);
+                // since it's MLN, we know connections in advance as curLayer + 1
+                layerInfo.addConnection(x, y+1);
+                modelInfo.addLayer(layerInfo);
+                y++;
             }
         } else throw new IllegalStateException("Model ["+model.getClass().getCanonicalName()+"] doesn't looks like supported one.");
 
-        // add info about inputs
-
-
-        /*
-            as soon as model info is built, we need to define color scheme based on number of unique nodes
-         */
+        return modelInfo;
     }
 
     private LayerInfo getLayerInfo(Layer layer, int x, int y, int order) {
