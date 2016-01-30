@@ -5,12 +5,19 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.layers.BaseOutputLayer;
+import org.deeplearning4j.nn.layers.OutputLayer;
+import org.deeplearning4j.nn.layers.convolution.ConvolutionLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.ui.UiServer;
 import org.deeplearning4j.ui.flow.beans.Description;
 import org.deeplearning4j.ui.flow.beans.LayerInfo;
 import org.deeplearning4j.ui.flow.beans.ModelInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Arrays;
 
 /**
  * This IterationListener is suited for general model performance/architecture overview
@@ -25,6 +32,14 @@ public class FlowIterationListener implements IterationListener {
     private String login;
     private String password;
 
+    private static Logger log = LoggerFactory.getLogger(FlowIterationListener.class);
+
+    /**
+     * Creates IterationListener and keeps it detached from any UiServer instances
+     */
+    protected FlowIterationListener() {
+        // please keep this constructor protected
+    }
 
     /**
      * Creates IterationListener and attaches it local UiServer instance
@@ -122,8 +137,8 @@ public class FlowIterationListener implements IterationListener {
             // entry 0 is reserved for inputs
             int y = 1;
 
-            // for MLN x value is always 1
-            final int x = 1;
+            // for MLN x value is always 0
+            final int x = 0;
             for (Layer layer: network.getLayers()) {
                 LayerInfo layerInfo = getLayerInfo(layer, x, y, y);
                 // since it's MLN, we know connections in advance as curLayer + 1
@@ -131,6 +146,10 @@ public class FlowIterationListener implements IterationListener {
                 modelInfo.addLayer(layerInfo);
                 y++;
             }
+
+            LayerInfo layerInfo = modelInfo.getLayerInfoByCoords(x, y - 1);
+            layerInfo.dropConnections();
+
         } else throw new IllegalStateException("Model ["+model.getClass().getCanonicalName()+"] doesn't looks like supported one.");
 
         return modelInfo;
@@ -155,6 +174,21 @@ public class FlowIterationListener implements IterationListener {
 
         // set layer description according to layer params
         Description description = new Description();
+
+        description.setSubLine(layer.conf().getLayer().getActivationFunction());
+
+        switch (info.getLayerType()) {
+            case CONVOLUTIONAL: {
+                org.deeplearning4j.nn.conf.layers.ConvolutionLayer layer1 = (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) layer.conf().getLayer();
+                description.setMainLine("Kernel: " + Arrays.toString(layer1.getKernelSize()) + " Stride: " + Arrays.toString(layer1.getStride()) + " Padding:" + Arrays.toString(layer1.getPadding()));
+            }
+            default: {
+                // TODO: Introduce Layer.Type.OUTPUT
+                if (layer instanceof OutputLayer) {
+                    description.setMainLine("Outputs: [" + ((org.deeplearning4j.nn.conf.layers.OutputLayer)layer.conf().getLayer()).getNOut()+ "]");
+                }
+            }
+        }
 
 
         info.setDescription(description);
