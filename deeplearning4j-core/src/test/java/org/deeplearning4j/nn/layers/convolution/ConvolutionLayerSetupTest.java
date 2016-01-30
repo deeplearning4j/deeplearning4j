@@ -133,6 +133,7 @@ public class ConvolutionLayerSetupTest {
         RecordReader reader = new ImageRecordReader(28,28,3,true,labels);
         reader.initialize(new FileSplit(new File(rootDir)));
         DataSetIterator recordReader = new RecordReaderDataSetIterator(reader,28 * 28 * 3,labels.size());
+
         labels.remove("lfwtest");
         NeuralNetConfiguration.ListBuilder builder = (NeuralNetConfiguration.ListBuilder) incompleteLFW();
         new ConvolutionLayerSetup(builder,28,28,3);

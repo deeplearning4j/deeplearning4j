@@ -161,6 +161,11 @@ public class VocabConstructorTest {
                         Sequence<VocabWord> sequence = new Sequence<>(words);
                         return sequence;
                     }
+
+                    @Override
+                    public void remove() {
+                        throw new UnsupportedOperationException();
+                    }
                 };
             };
         };
@@ -206,6 +211,11 @@ public class VocabConstructorTest {
                     public Sequence<VocabWord> next() {
                         Sequence<VocabWord> sequence = new Sequence<>(words);
                         return sequence;
+                    }
+
+                    @Override
+                    public void remove() {
+                        throw new UnsupportedOperationException();
                     }
                 };
             };

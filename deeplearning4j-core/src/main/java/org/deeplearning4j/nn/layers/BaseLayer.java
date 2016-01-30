@@ -59,6 +59,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     protected Collection<IterationListener> iterationListeners = new ArrayList<>();
     protected int index = 0;
     protected INDArray maskArray;
+    protected Solver solver;
 
     public BaseLayer(NeuralNetConfiguration conf) {
         this.conf = conf;
@@ -494,9 +495,11 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             setInput(input.dup());
             applyDropOutIfNecessary(true);
         }
-        Solver solver = new Solver.Builder()
-                .model(this).configure(conf()).listeners(getListeners())
-                .build();
+        if(solver == null){
+            solver = new Solver.Builder()
+                    .model(this).configure(conf()).listeners(getListeners())
+                    .build();
+        }
         this.optimizer = solver.getOptimizer();
         solver.optimize();
     }
