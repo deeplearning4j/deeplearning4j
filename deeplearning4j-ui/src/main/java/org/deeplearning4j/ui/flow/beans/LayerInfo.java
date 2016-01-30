@@ -33,4 +33,12 @@ public class LayerInfo implements Serializable {
     public void addConnection(int x, int y) {
         connections.add(Pair.makePair(x, y));
     }
+
+    public void dropConnection(int x, int y) {
+        connections.remove(Pair.makePair(x, y));
+    }
+
+    public void dropConnections() {
+        connections.clear();
+    }
 }
