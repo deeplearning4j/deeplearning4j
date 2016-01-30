@@ -11,6 +11,7 @@ import java.io.Serializable;
  */
 @Data
 public class Description implements Serializable {
+    private final static long serialVersionUID = 119L;
     private String mainLine;
     private String subLine;
 }
