@@ -1,6 +1,6 @@
 /*
  *
- *  * Copyright 2015 Skymind,Inc.
+ *  * Copyright 2016 Skymind,Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
  *  *    you may not use this file except in compliance with the License.
@@ -42,10 +42,7 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * Iterative reduce with
- * flat map using map partitions
- *
- * @author Adam Gibson
+ * Iterative reduce with flat map using map partitions
  */
 public class GradientAccumFlatMapCG implements FlatMapFunction<Iterator<MultiDataSet>, Tuple3<Gradient,ComputationGraphUpdater,Double>> {
 

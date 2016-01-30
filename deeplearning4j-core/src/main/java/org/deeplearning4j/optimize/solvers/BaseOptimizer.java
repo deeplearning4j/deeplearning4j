@@ -273,13 +273,11 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     @Override
     public void updateGradientAccordingToParams(Gradient gradient, Model model, int batchSize) {
         if(model instanceof ComputationGraph){
-            //TODO: find a better way of doing this...
             ComputationGraph graph = (ComputationGraph)model;
             if(computationGraphUpdater == null){
                 computationGraphUpdater = new ComputationGraphUpdater(graph);
             }
             computationGraphUpdater.update(graph, gradient, iteration, batchSize);
-
         } else {
 
             if (updater == null)

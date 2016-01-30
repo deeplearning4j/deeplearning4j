@@ -1,3 +1,21 @@
+/*
+ *
+ *  * Copyright 2016 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
+ *
+ */
+
 package org.deeplearning4j.datasets.canova;
 
 import lombok.AllArgsConstructor;
@@ -13,15 +31,21 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.*;
 
-/**RecordReaderMultiDataSetIterator: An iterator for data from multiple RecordReaders and SequenceRecordReaders
+/**RecordReaderMultiDataSetIterator: A {@link MultiDataSetIterator} for data from one or more RecordReaders and SequenceRecordReaders<br>
  * The idea: generate multiple inputs and multiple outputs from one or more Sequence/RecordReaders. Inputs and outputs
  * may be obtained from subsets of the RecordReader and SequenceRecordReaders columns (for examples, some inputs and outputs
- * as different columns in the same file); it is also possible to mix different types of data (for example, using both
- * RecordReaders and SequenceRecordReaders in the same RecordReaderMultiDataSetIterator).
+ * as different columns in the same record/sequence); it is also possible to mix different types of data (for example, using both
+ * RecordReaders and SequenceRecordReaders in the same RecordReaderMultiDataSetIterator).<br>
+ * Uses a builder pattern ({@link org.deeplearning4j.datasets.canova.RecordReaderMultiDataSetIterator.Builder} to specify the various
+ * inputs and subsets.
  * @author Alex Black
  */
 public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
 
+    /** When dealing with time series data of different lengths, how should we align the input/labels time series?
+     * For equal length: use EQUAL_LENGTH
+     * For sequence classification: use ALIGN_END
+     */
     public enum AlignmentMode {
         EQUAL_LENGTH,
         ALIGN_START,

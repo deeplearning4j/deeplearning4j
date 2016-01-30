@@ -79,7 +79,6 @@ public class Solver {
 
     public static class Builder {
         private NeuralNetConfiguration conf;
-        private StepFunction stepFunction;
         private Model model;
         private List<IterationListener> listeners = new ArrayList<>();
 
@@ -103,16 +102,9 @@ public class Solver {
             return this;
         }
 
-//        public Builder stepFunction(StepFunction stepFunction){
-//            this.stepFunction = stepFunction;
-//            return this;
-//        }
-
         public Solver build() {
             Solver solver = new Solver();
             solver.conf = conf;
-//            if(stepFunction != null) solver.stepFunction = stepFunction;
-//            else
             solver.stepFunction = StepFunctions.createStepFunction(conf.getStepFunction());
             solver.model = model;
             solver.listeners = listeners;
