@@ -87,6 +87,7 @@ public class MultiLayerUpdater implements Updater {
 					aggregators[i] = mlu.layerUpdaters[i].getAggregator(true);
 				}
 			} else {
+				if(mlu.layerUpdaters == null) return;
 				for( int i=0; i<aggregators.length; i++ ){
 					aggregators[i].aggregate(mlu.layerUpdaters[i]);
 				}
@@ -99,8 +100,7 @@ public class MultiLayerUpdater implements Updater {
 			if(aggregators == null){
 				aggregators = mlua.aggregators;
 			} else {
-				if(mlua.aggregators == null) return;
-				else {
+				if (mlua.aggregators != null) {
 					for(int i=0; i<aggregators.length; i++ ){
 						aggregators[i].merge(mlua.aggregators[i]);
 					}
