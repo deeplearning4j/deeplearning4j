@@ -23,6 +23,12 @@ public class EvaluateMapFunction implements Function<DataSet, Evaluation> {
     protected MultiLayerNetwork network;
     protected List<String> labels = new ArrayList<>();
 
+    /**
+     * Pass in network and a list of labels to evaluate results of the data.
+     * fit mapped data set and update and return parameters, updater and best score.
+     * @param network multilayernetwork to evaluate
+     * @param labels string list of labels
+     */
     public EvaluateMapFunction(MultiLayerNetwork network, List<String> labels) {
         this.network = network;
         this.labels = labels;
@@ -38,6 +44,7 @@ public class EvaluateMapFunction implements Function<DataSet, Evaluation> {
         } else {
             out = network.output(data.getFeatureMatrix(), false);
         }
+
 
         if(data.getLabels().rank() == 3){
             if(data.getLabelsMaskArray() == null){

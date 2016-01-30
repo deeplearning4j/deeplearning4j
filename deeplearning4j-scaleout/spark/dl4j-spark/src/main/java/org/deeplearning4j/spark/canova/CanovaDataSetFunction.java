@@ -27,6 +27,7 @@ public class CanovaDataSetFunction implements Function<Collection<Writable>,Data
     private final boolean regression;
     private final DataSetPreProcessor preProcessor;
     private final WritableConverter converter;
+    protected int batchSize = -1;
 
     public CanovaDataSetFunction(int labelIndex, int numPossibleLabels, boolean regression){
         this(labelIndex, numPossibleLabels, regression, null, null);
@@ -83,7 +84,8 @@ public class CanovaDataSetFunction implements Function<Collection<Writable>,Data
                 } else {
                     //Convert to one-hot vector for
                     int curr = current.toInt();
-                    if (curr >= numPossibleLabels) throw new IllegalStateException("Invalid input: class label is " + curr
+                    if (curr >= numPossibleLabels)
+                        throw new IllegalStateException("Invalid input: class label is " + curr
                             + " with numPossibleLables = " + numPossibleLabels + " (class label must be 0 <= labelIdx < numPossibleLabels)");
                     label = FeatureUtil.toOutcomeVector(curr, numPossibleLabels);
                 }

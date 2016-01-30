@@ -23,6 +23,7 @@ public class ModelAndGradient implements Serializable {
     private List<Double> scores = new ArrayList<>();
     private List<Map<String,List<Double>>> updateMagnitudes = new ArrayList<>();
     private List<Map<String,List<Double>>> paramMagnitudes = new ArrayList<>();
+    private List<String> layerNames = new ArrayList<>();
     private String path;
 
 
@@ -103,6 +104,14 @@ public class ModelAndGradient implements Serializable {
 
     public List<Map<String,List<Double>>> getParamMagnitudes(){
         return paramMagnitudes;
+    }
+
+    public void setLayerNames(List<String> layerNames){
+        this.layerNames = layerNames;
+    }
+
+    public List<String> getLayerNames(){
+        return layerNames;
     }
 
     @Override
