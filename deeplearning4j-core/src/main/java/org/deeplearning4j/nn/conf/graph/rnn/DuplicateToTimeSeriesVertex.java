@@ -37,6 +37,10 @@ public class DuplicateToTimeSeriesVertex extends GraphVertex {
 
     private String inputName;
 
+    /**
+     * @param inputName Name of the input in the ComputationGraph network to use, to determine how long the output time
+     *                  series should be. This input should (a) exist, and (b) be a time series input
+     */
     public DuplicateToTimeSeriesVertex(String inputName){
         this.inputName = inputName;
     }

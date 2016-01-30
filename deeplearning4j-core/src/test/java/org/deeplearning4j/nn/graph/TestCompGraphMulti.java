@@ -15,6 +15,7 @@ import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -31,6 +32,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by nyghtowl on 1/15/16.
  */
+@Ignore
 public class TestCompGraphMulti {
 
     protected ComputationGraphConfiguration conf;

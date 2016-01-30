@@ -36,6 +36,12 @@ public class LastTimeStepVertex extends GraphVertex {
 
     private String maskArrayInputName;
 
+    /**
+     *
+     * @param maskArrayInputName The name of the input to look at when determining the last time step. Specifically, the
+     *                           mask array of this time series input is used when determining which time step to extract
+     *                           and return.
+     */
     public LastTimeStepVertex(String maskArrayInputName){
         this.maskArrayInputName = maskArrayInputName;
     }

@@ -40,8 +40,8 @@ import java.util.*;
  * ComputationGraphConfiguration is a configuration object for neural networks with arbitrary connection structure.
  * It is analogous to {@link MultiLayerConfiguration}, but allows considerably greater flexibility for the network
  * architecture.<br>
- * Specifically, the network architecture is a directed acyclic graph, where each vertex in the graph is either a Layer,
- * or a {@link GraphVertex} object that defines arbitrary forward and backward pass functionality.<br>
+ * Specifically, the network architecture is a directed acyclic graph, where each vertex in the graph is a {@link GraphVertex},
+ * which may for example be a layer or a vertex/object that defines arbitrary forward and backward pass functionality.<br>
  * Note that the ComputationGraph may have an arbitrary number of inputs (multiple independent inputs, possibly of different
  * types), and an arbitrary number of outputs (for example, multiple {@link org.deeplearning4j.nn.conf.layers.OutputLayer} instances.
  * Typical usage:<br>
@@ -84,7 +84,12 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
      * @return JSON representation of configuration
      */
     public String toYaml() {
-        throw new UnsupportedOperationException("Not implemented");
+        ObjectMapper mapper = NeuralNetConfiguration.mapperYaml();
+        try {
+            return mapper.writeValueAsString(this);
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -94,7 +99,12 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
      * @return {@link org.deeplearning4j.nn.conf.ComputationGraphConfiguration}
      */
     public static ComputationGraphConfiguration fromYaml(String json) {
-        throw new UnsupportedOperationException("Not implemented");
+        ObjectMapper mapper = NeuralNetConfiguration.mapperYaml();
+        try {
+            return mapper.readValue(json, ComputationGraphConfiguration.class);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -114,7 +124,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
      * Create a computation graph configuration from json
      *
      * @param json the neural net configuration from json
-     * @return {@link org.deeplearning4j.nn.conf.MultiLayerConfiguration}
+     * @return {@link org.deeplearning4j.nn.conf.ComputationGraphConfiguration}
      */
     public static ComputationGraphConfiguration fromJson(String json) {
         //As per MultiLayerConfiguration.fromJson()

@@ -14,7 +14,9 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
-/** Gradient updater for ComputationGraph
+/** Gradient updater for ComputationGraph.<br>
+ * Note: ComputationGraph does not implement the Layer interface (due to multiple in/out etc), hence ComputationGraphUpdater
+ * can't be defined as an {@link Updater}.
  * @author Alex Black
  */
 public class ComputationGraphUpdater implements Serializable {
@@ -29,12 +31,10 @@ public class ComputationGraphUpdater implements Serializable {
         GraphVertex[] vertices = graph.getVertices();
 
         int i=0;
-        for (GraphVertex vertex : vertices) {
-            if (!vertex.hasLayer()) continue;
-            Layer layer = vertex.getLayer();
+        for(Layer layer : graph.getLayers()){
             Updater u = UpdaterCreator.getUpdater(layer);
             layerUpdaters[i] = u;
-            layerUpdatersMap.put(vertex.getVertexName(),i);
+            layerUpdatersMap.put(layer.conf().getLayer().getLayerName(),i);
             i++;
         }
     }
@@ -44,6 +44,7 @@ public class ComputationGraphUpdater implements Serializable {
         this.layerUpdatersMap = layerUpdatersMap;
     }
 
+    /** Update the gradients for the given ComputationGraph */
     public void update(ComputationGraph graph, Gradient gradient, int iteration, int batchSize ){
         Map<String,Gradient> layerGradients = new HashMap<>();
 
@@ -77,17 +78,20 @@ public class ComputationGraphUpdater implements Serializable {
         }
     }
 
+    /** Get an Aggregator for combining ComputationGraphUpdater instances. Typically used in distributed training. */
     public Aggregator getAggregator(boolean addThis){
         Aggregator aggregator = new Aggregator();
         if(addThis) aggregator.aggregate(this);
         return aggregator;
     }
 
+    /** Aggregator for combining ComputationGraphUpdater instances. Typically used in distributed training. */
     public static class Aggregator implements Serializable {
 
         private UpdaterAggregator[] aggregators;
         private Map<String,Integer> layerNamesMap;
 
+        /** Add another ComputationGraphUpdater to this aggregator */
         public void aggregate(ComputationGraphUpdater updater){
             if(aggregators == null){
                 aggregators = new UpdaterAggregator[updater.layerUpdaters.length];
@@ -103,6 +107,7 @@ public class ComputationGraphUpdater implements Serializable {
             }
         }
 
+        /** Merge a specified aggregator into this one */
         public void merge(Aggregator aggregator){
             if(aggregators == null){
                 aggregators = aggregator.aggregators;
@@ -115,6 +120,7 @@ public class ComputationGraphUpdater implements Serializable {
             }
         }
 
+        /** Get the final ComputationGraphUpdater given the internal (aggregated) updater state */
         public ComputationGraphUpdater getUpdater(){
             ComputationGraphUpdater updater = new ComputationGraphUpdater(aggregators.length,layerNamesMap);
             for( int i=0; i<aggregators.length; i++ ){

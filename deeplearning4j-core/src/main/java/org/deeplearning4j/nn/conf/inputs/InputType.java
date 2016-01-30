@@ -21,16 +21,21 @@ package org.deeplearning4j.nn.conf.inputs;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
+import java.io.Serializable;
+
 /** The InputType class is used to track and define the types of activations etc used in a ComputationGraph.
  * This is most useful for automatically adding preprocessors between layers.
+ * See: {@link org.deeplearning4j.nn.conf.ComputationGraphConfiguration.GraphBuilder#setInputTypes(InputType...)} and
+ * {@link org.deeplearning4j.nn.conf.ComputationGraphConfiguration#addPreProcessors(InputType...)}
  * @author Alex Black
  */
-public abstract class InputType {
+public abstract class InputType implements Serializable {
 
+    /** The type of activations in/out of a given GraphVertex. */
     public enum Type {FF, RNN, CNN};
 
-    private static InputType FFInstance = new InputTypeFeedForward();
-    private static InputType RNNInstance = new InputTypeRecurrent();
+    private static final InputType FFInstance = new InputTypeFeedForward();
+    private static final InputType RNNInstance = new InputTypeRecurrent();
 
 
     public abstract Type getType();
