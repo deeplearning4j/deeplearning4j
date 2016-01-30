@@ -679,7 +679,135 @@ public:
 
 
 /**
- * Euclidean distance between 2 arryas
+ * Dot product between 2 arrays
+ */
+    template<typename T>
+    class Dot: public virtual Reduce3<T> {
+    public:
+        virtual
+#ifdef __CUDACC__
+        __inline__ __host__ __device__
+#endif
+        T * generateExtraParams() {
+            return NULL;
+        }
+        virtual
+#ifdef __CUDACC__
+        __inline__ __host__ __device__
+#endif
+        void finalizeExtraParams(T **extraParamsRef)  {
+            //no-op
+            free(*extraParamsRef);
+        }
+        virtual
+#ifdef __CUDACC__
+        __inline__ __host__ __device__
+#endif
+        T startingValue(T *input) {
+            return 0.0;
+        }
+#ifdef __CUDACC__
+        __host__ __device__
+#endif
+        inline T postProcess(T reduction, int n,T **extraParamsRef) {
+            return reduction;
+        }
+        /**
+         *
+         * @param d1
+         * @param d2
+         * @param extraParams
+         * @return
+         */
+        //an op for the kernel
+        virtual
+#ifdef __CUDACC__
+        __host__  __device__
+
+#endif
+        inline T op(T d1, T d2, T **extraParamsRef) {
+            return d1 * d2;
+        }
+
+        /**
+         *
+         * @param d1
+         * @param d2
+         * @param extraParams
+         * @return
+         */
+        //an op for the kernel
+
+#ifdef __CUDACC__
+        virtual
+	__device__
+
+
+	inline T opAtomic(T d1, T d2, T **extraParamsRef) {
+		return op(d1,d2,extraParamsRef);
+	}
+#endif
+
+        //calculate an update of the reduce operation
+        /**
+         *
+         * @param old
+         * @param opOutput
+         * @param extraParams
+         * @return
+         */
+        virtual
+#ifdef __CUDACC__
+        __host__  __device__
+
+#endif
+        inline T update(T old, T opOutput, T **extraParamsRef) {
+            return opOutput + old;
+        }
+
+        /**
+         *
+         * @param old
+         * @param opOutput
+         * @param extraParams
+         * @return
+         */
+        virtual
+#ifdef __CUDACC__
+        __host__  __device__
+
+#endif
+        inline T merge(T old, T opOutput, T **extraParamsRef) {
+            return update(old, opOutput, extraParamsRef);
+        }
+
+        /** Name of the op
+         * @return the name of the operation
+         */
+        virtual
+#ifdef __CUDACC__
+        inline __host__
+
+#endif
+        std::string name() {
+            return std::string("euclidean_strided");
+        }
+#ifdef __CUDACC__
+        __host__ __device__
+#endif
+        virtual ~Dot() {
+        }
+#ifdef __CUDACC__
+        __host__ __device__
+#endif
+        Dot() {
+        }
+    };
+
+
+
+/**
+ * Euclidean distance between 2 arrays
  */
 template<typename T>
 class EuclideanDistance: public virtual Reduce3<T> {
@@ -962,6 +1090,8 @@ public:
 			return new functions::reduce3::ops::EuclideanDistance<T>();
 		else if (op == 2)
 			return new functions::reduce3::ops::CosineSimilarity<T>();
+        else if (op == 3)
+            return new functions::reduce3::ops::Dot<T>();
 		return NULL;
 	}
 };

@@ -449,6 +449,123 @@ public:
 };
 
 /**
+ * x == y (binary result)
+ */
+    template<typename T>
+    class NotEqualTo: public virtual PairWiseTransform<T> {
+    public:
+
+        /**
+         * Name of the op
+         * @return the name of the operation
+         */
+        virtual
+#ifdef __CUDACC__
+        inline __host__
+
+#endif
+        std::string name() {
+            return std::string("noteq_strided");
+        }
+
+        virtual
+#ifdef __CUDACC__
+        inline __host__ __device__
+#elif defined(__GNUC__)
+        __always_inline
+#endif
+        T op(T d1, T d2, T *params) {
+            return d1 != d2;
+        }
+
+        virtual
+#ifdef __CUDACC__
+        inline __host__ __device__
+#elif defined(__GNUC__)
+        __always_inline
+#endif
+        T op(T d1, T *params) {
+            return d1;
+        }
+#ifdef __CUDACC__
+        inline __host__ __device__
+#elif defined(__GNUC__)
+        __always_inline
+
+#endif
+        virtual ~EqualTo() {
+        }
+#ifdef __CUDACC__
+        inline __host__ __device__
+#elif defined(__GNUC__)
+        __always_inline
+
+#endif
+        NotEqualTo() {
+        }
+    };
+
+
+
+/**
+ * Whether x > y
+ */
+    template<typename T>
+    class GreaterThanOrEqual: public virtual PairWiseTransform<T> {
+    public:
+
+        /**
+         * Name of the op
+         * @return the name of the operation
+         */
+        virtual
+#ifdef __CUDACC__
+        inline __host__
+
+#endif
+        std::string name() {
+            return std::string("gt_strided");
+        }
+
+        virtual
+#ifdef __CUDACC__
+        inline __host__ __device__
+#elif defined(__GNUC__)
+        __always_inline
+#endif
+        T op(T d1, T d2, T *params) {
+            return d1 >= d2;
+        }
+
+        virtual
+#ifdef __CUDACC__
+        inline __host__ __device__
+#elif defined(__GNUC__)
+        __always_inline
+#endif
+        T op(T d1, T *params) {
+            return d1;
+        }
+#ifdef __CUDACC__
+        inline __host__ __device__
+#elif defined(__GNUC__)
+        __always_inline
+
+#endif
+        virtual ~GreaterThan() {
+        }
+#ifdef __CUDACC__
+        inline __host__ __device__
+#elif defined(__GNUC__)
+        __always_inline
+
+#endif
+        GreaterThan() {
+        }
+    };
+
+
+/**
  * Whether x > y
  */
 template<typename T>
@@ -561,6 +678,63 @@ public:
 	LessThan() {
 	}
 };
+
+    /**
+ * Whether x < y
+ */
+    template<typename T>
+    class LessThanOrEqual: public virtual PairWiseTransform<T> {
+    public:
+
+        /**
+         * Name of the op
+         * @return the name of the operation
+         */
+        virtual
+#ifdef __CUDACC__
+        inline __host__
+
+#endif
+        std::string name() {
+            return std::string("lteq_strided");
+        }
+
+        virtual
+#ifdef __CUDACC__
+        inline __host__ __device__
+#elif defined(__GNUC__)
+        __always_inline
+#endif
+        T op(T d1, T d2, T *params) {
+            return d1 <= d2;
+        }
+
+        virtual
+#ifdef __CUDACC__
+        inline __host__ __device__
+#elif defined(__GNUC__)
+        __always_inline
+#endif
+        T op(T d1, T *params) {
+            return d1;
+        }
+#ifdef __CUDACC__
+        inline __host__ __device__
+#elif defined(__GNUC__)
+        __always_inline
+
+#endif
+        virtual ~LessThan() {
+        }
+#ifdef __CUDACC__
+        inline __host__ __device__
+#elif defined(__GNUC__)
+        __always_inline
+
+#endif
+        LessThanOrEqual() {
+        }
+    };
 
 /**
  * x * y
@@ -791,6 +965,123 @@ public:
 	}
 };
 
+
+/**
+ * x - y
+ */
+    template<typename T>
+    class Max: public virtual PairWiseTransform<T> {
+    public:
+
+        /**
+         * Name of the op
+         * @return the name of the operation
+         */
+        virtual
+#ifdef __CUDACC__
+        inline __host__
+
+#endif
+        std::string name() {
+            return std::string("max_strided");
+        }
+
+        virtual
+#ifdef __CUDACC__
+        inline __host__ __device__
+#elif defined(__GNUC__)
+        __always_inline
+#endif
+        T op(T d1, T d2, T *params) {
+            return nd4j::math::nd4j_max(d1,d2);
+        }
+
+        virtual
+#ifdef __CUDACC__
+        inline __host__ __device__
+#elif defined(__GNUC__)
+        __always_inline
+#endif
+        T op(T d1, T *params) {
+            return d1;
+        }
+#ifdef __CUDACC__
+        inline __host__ __device__
+#elif defined(__GNUC__)
+        __always_inline
+
+#endif
+        virtual ~Max() {
+        }
+#ifdef __CUDACC__
+        inline __host__ __device__
+#elif defined(__GNUC__)
+        __always_inline
+
+#endif
+        Max() {
+        }
+    };
+
+
+
+    /**
+ * x - y
+ */
+    template<typename T>
+    class Min: public virtual PairWiseTransform<T> {
+    public:
+
+        /**
+         * Name of the op
+         * @return the name of the operation
+         */
+        virtual
+#ifdef __CUDACC__
+        inline __host__
+
+#endif
+        std::string name() {
+            return std::string("min_strided");
+        }
+
+        virtual
+#ifdef __CUDACC__
+        inline __host__ __device__
+#elif defined(__GNUC__)
+        __always_inline
+#endif
+        T op(T d1, T d2, T *params) {
+            return nd4j::math::nd4j_min(d1,d2);
+        }
+
+        virtual
+#ifdef __CUDACC__
+        inline __host__ __device__
+#elif defined(__GNUC__)
+        __always_inline
+#endif
+        T op(T d1, T *params) {
+            return d1;
+        }
+#ifdef __CUDACC__
+        inline __host__ __device__
+#elif defined(__GNUC__)
+        __always_inline
+
+#endif
+        virtual ~Max() {
+        }
+#ifdef __CUDACC__
+        inline __host__ __device__
+#elif defined(__GNUC__)
+        __always_inline
+
+#endif
+        Max() {
+        }
+    };
+
 }
 
 /**
@@ -847,6 +1138,18 @@ public:
 			return new pairwise_transforms::ops::ReverseSubtraction<T>();
 		if (op == 9)
 			return new pairwise_transforms::ops::Subtract<T>();
+		if (op == 10)
+			return new pairwise_transforms::ops::Epsilon<T>();
+        if(op == 11)
+            return new pairwise_transforms::ops::GreaterThanOrEqual<T>();
+        if(op == 12)
+            return new pairwise_transforms::ops::LessThanOrEqual<T>();
+        if(op == 13)
+            return new pairwise_transforms::ops::Max<T>();
+        if(op == 14)
+            return new pairwise_transforms::ops::Min<T>();
+        if(op == 15)
+            return new pairwise_transforms::ops::NotEqualTo<T>();
 		return NULL;
 	}
 
