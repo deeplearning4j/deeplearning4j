@@ -199,7 +199,7 @@ public class MultiLayerNeuralNetConfigurationTest {
         System.out.println(Arrays.toString(p1));
         System.out.println(Arrays.toString(p2));
 
-        org.junit.Assert.assertArrayEquals(p1,p2,0.0f);
+        org.junit.Assert.assertArrayEquals(p1, p2, 0.0f);
     }
 
     @Test
@@ -236,6 +236,110 @@ public class MultiLayerNeuralNetConfigurationTest {
                         .build())
                 .build();
         return conf;
+    }
+
+    @Test
+    public void testInvalidConfig(){
+
+        try {
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .seed(12345)
+                    .list()
+                    .pretrain(false).backprop(true)
+                    .build();
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
+            fail("No exception thrown for invalid configuration");
+        } catch(IllegalStateException e){
+            //OK
+            e.printStackTrace();
+        } catch(Throwable e){
+            e.printStackTrace();
+            fail("Unexpected exception thrown for invalid config");
+        }
+
+        try {
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .seed(12345)
+                    .list()
+                    .layer(1, new DenseLayer.Builder().nIn(3).nOut(4).build())
+                    .layer(2, new OutputLayer.Builder().nIn(4).nOut(5).build())
+                    .pretrain(false).backprop(true)
+                    .build();
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
+            fail("No exception thrown for invalid configuration");
+        } catch(IllegalStateException e){
+            //OK
+            e.printStackTrace();
+        } catch(Throwable e){
+            e.printStackTrace();
+            fail("Unexpected exception thrown for invalid config");
+        }
+
+        try {
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .seed(12345)
+                    .list()
+                    .layer(0, new DenseLayer.Builder().nIn(3).nOut(4).build())
+                    .layer(2, new OutputLayer.Builder().nIn(4).nOut(5).build())
+                    .pretrain(false).backprop(true)
+                    .build();
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
+            fail("No exception thrown for invalid configuration");
+        } catch(IllegalStateException e){
+            //OK
+            e.printStackTrace();
+        } catch(Throwable e){
+            e.printStackTrace();
+            fail("Unexpected exception thrown for invalid config");
+        }
+    }
+
+    @Test
+    public void testListOverloads(){
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .list(2)
+                .layer(0, new DenseLayer.Builder().nIn(3).nOut(4).build())
+                .layer(1, new OutputLayer.Builder().nIn(4).nOut(5).build())
+                .pretrain(false).backprop(true)
+                .build();
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        DenseLayer dl = (DenseLayer)conf.getConf(0).getLayer();
+        assertEquals(3,dl.getNIn());
+        assertEquals(4,dl.getNOut());
+        OutputLayer ol = (OutputLayer)conf.getConf(1).getLayer();
+        assertEquals(4,ol.getNIn());
+        assertEquals(5,ol.getNOut());
+
+        MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(3).nOut(4).build())
+                .layer(1, new OutputLayer.Builder().nIn(4).nOut(5).build())
+                .pretrain(false).backprop(true)
+                .build();
+        MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
+        net2.init();
+
+        MultiLayerConfiguration conf3 = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .list(
+                    new DenseLayer.Builder().nIn(3).nOut(4).build(),
+                    new OutputLayer.Builder().nIn(4).nOut(5).build())
+                .pretrain(false).backprop(true)
+                .build();
+        MultiLayerNetwork net3 = new MultiLayerNetwork(conf3);
+        net3.init();
+
+
+        assertEquals(conf, conf2);
+        assertEquals(conf, conf3);
     }
 
 }
