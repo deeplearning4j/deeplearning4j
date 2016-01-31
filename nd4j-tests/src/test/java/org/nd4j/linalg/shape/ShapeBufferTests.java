@@ -2,8 +2,11 @@ package org.nd4j.linalg.shape;
 
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.nio.IntBuffer;
 
@@ -44,6 +47,18 @@ public class ShapeBufferTests extends BaseNd4jTest {
 
     }
 
+
+    @Test
+    public void testArrCreationShape() {
+        INDArray arr = Nd4j.linspace(1,4,4).reshape(2,2);
+        for(int i = 0; i < 2; i++)
+            assertEquals(2,arr.size(i));
+        int[] stride = ArrayUtil.calcStrides(new int[]{2,2});
+        for(int i = 0; i < stride.length; i++) {
+            assertEquals(stride[i],arr.stride(i));
+        }
+    }
+
     @Test
     public void testShape() {
         int[] shape = {2,4};
@@ -55,7 +70,7 @@ public class ShapeBufferTests extends BaseNd4jTest {
         assertTrue(Shape.contentEquals(stride,strideView));
         assertEquals('c',Shape.order(buff));
         assertEquals(1,Shape.elementWiseStride(buff));
-        
+
 
     }
 

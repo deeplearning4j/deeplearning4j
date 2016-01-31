@@ -103,6 +103,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     protected int numTrailingOnes = -1;
     protected int majorStride = -1;
     protected Boolean isVector = null;
+    protected Boolean isMatrix = null;
     protected Boolean isScalar = null;
     protected boolean isWrapAround = false;
     protected int linearStride = -1;
@@ -1396,15 +1397,17 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public boolean isScalar() {
         if(isScalar != null)
             return isScalar;
-        if (Shape.rank(shapeInformation) > 2)
-            return false;
-        if (Shape.rank(shapeInformation) == 1)
-            return Shape.shapeOf(shapeInformation).get(0) == 1;
+        if (Shape.rank(shapeInfo()) > 2) {
+            isScalar = false;
+        }
+        else if (Shape.rank(shapeInformation) == 1) {
+            isScalar = Shape.shapeOf(shapeInformation).get(0) == 1;
+        }
         else if (Shape.rank(shapeInformation) == 2) {
-            return Shape.shapeOf(shapeInformation).get(0) == 1 && Shape.shapeOf(shapeInformation).get(1) == 1;
+            isScalar = Shape.shapeOf(shapeInformation).get(0) == 1 && Shape.shapeOf(shapeInformation).get(1) == 1;
         }
 
-        isScalar = true;
+        isScalar = false;
 
         return isScalar;
     }
@@ -1555,14 +1558,16 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @return true if the element is a matrix, false otherwise
      */
     public boolean isMatrix() {
-        return (shape().length == 2
+        if(isMatrix != null)
+            return isMatrix;
+        isMatrix = (Shape.rank(shapeInfo()) == 2
                 && (size(0) != 1 && size(1) != 1));
+        return isMatrix;
     }
 
 
     @Override
     public int index(int row, int column) {
-
         if (!isMatrix()) {
             if (isColumnVector()) {
                 int idx = linearIndex(row);
@@ -3982,8 +3987,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     protected int[] doPermuteSwap(IntBuffer shape, int[] rearrange) {
-        int[] ret = new int[shape.capacity()];
-        for (int i = 0; i < shape.capacity(); i++) {
+        int[] ret = new int[rearrange.length];
+        for (int i = 0; i < rearrange.length; i++) {
             ret[i] = shape.get(rearrange[i]);
         }
         return ret;

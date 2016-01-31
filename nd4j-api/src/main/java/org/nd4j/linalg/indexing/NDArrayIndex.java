@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -258,6 +259,68 @@ public class NDArrayIndex implements INDArrayIndex {
                 ret++;
         return ret;
     }
+
+    /**
+     * Given an all index and
+     * the intended indexes, return an
+     * index array containing a combination of all elements
+     * for slicing and overriding particular indexes where necessary
+     * @param shapeInfo the index containing all elements
+     * @param intendedIndexes the indexes specified by the user
+     * @return the resolved indexes (containing all where nothing is specified, and the intended index
+     * for a particular dimension otherwise)
+     */
+    public static INDArrayIndex[] resolve(IntBuffer shapeInfo, INDArrayIndex... intendedIndexes) {
+        /**
+         * If it's a vector and index asking for a scalar just return the array
+         */
+        int rank = Shape.rank(shapeInfo);
+        IntBuffer shape = Shape.shapeOf(shapeInfo);
+        if(intendedIndexes.length >= rank || Shape.isVector(shapeInfo) && intendedIndexes.length == 1) {
+            if (Shape.isRowVectorShape(shapeInfo) && intendedIndexes.length == 1) {
+                INDArrayIndex[] ret = new INDArrayIndex[2];
+                ret[0] = NDArrayIndex.point(0);
+                int size;
+                if(1 == shape.get(0) && rank == 2)
+                    size = shape.get(1);
+                else
+                    size = shape.get(0);
+                ret[1] = validate(size , intendedIndexes[0]);
+                return ret;
+            }
+            List<INDArrayIndex> retList = new ArrayList<>(intendedIndexes.length);
+            for (int i = 0; i < intendedIndexes.length; i++) {
+                if(i < rank)
+                    retList.add(validate(shape.get(i), intendedIndexes[i]));
+                else
+                    retList.add(intendedIndexes[i]);
+            }
+            return retList.toArray(new INDArrayIndex[retList.size()]);
+        }
+
+        List<INDArrayIndex> retList = new ArrayList<>(intendedIndexes.length + 1);
+        int numNewAxes = 0;
+
+        if (Shape.isMatrix(shape) && intendedIndexes.length == 1) {
+            retList.add(validate(shape.get(0), intendedIndexes[0]));
+            retList.add(NDArrayIndex.all());
+        }
+        else {
+            for (int i = 0; i < intendedIndexes.length; i++) {
+                retList.add(validate(shape.get(i), intendedIndexes[i]));
+                if (intendedIndexes[i] instanceof NewAxis)
+                    numNewAxes++;
+            }
+        }
+
+        int length = rank + numNewAxes;
+        //fill the rest with all
+        while (retList.size() < length)
+            retList.add(NDArrayIndex.all());
+
+        return retList.toArray(new INDArrayIndex[retList.size()]);
+    }
+
     /**
      * Given an all index and
      * the intended indexes, return an

@@ -521,7 +521,22 @@ public class Shape {
         }
         return ret;
     }
-
+    /**
+     * Returns whether the given shape is a vector
+     *
+     * @param shapeInfo the shapeinfo to test
+     * @return whether the given shape is a vector
+     */
+    public static boolean isVector(IntBuffer shapeInfo) {
+        int rank = Shape.rank(shapeInfo);
+        if (rank > 2 || rank < 1)
+            return false;
+        else {
+            int len = Shape.length(shapeInfo);
+            IntBuffer shape = Shape.shapeOf(shapeInfo);
+            return shape.get(0) == len || shape.get(1) == len;
+        }
+    }
 
     /**
      * Returns whether the given shape is a vector
@@ -536,6 +551,20 @@ public class Shape {
             int len = ArrayUtil.prod(shape);
             return shape[0] == len || shape[1] == len;
         }
+    }
+
+
+    /**
+     * Returns whether the passed in shape is a matrix
+     *
+     * @param shapeInfo whether the passed in shape is a matrix
+     * @return true if the shape is a matrix false otherwise
+     */
+    public static boolean isMatrix(IntBuffer shapeInfo) {
+        int rank = Shape.rank(shapeInfo);
+        if (rank != 2)
+            return false;
+        return !isVector(shapeInfo);
     }
 
     /**
@@ -659,6 +688,24 @@ public class Shape {
         }
 
         return false;
+    }
+
+
+    /**
+     * Returns true if the given shape is of length 1
+     * or provided the shape length is 2:
+     * element 0 is 1
+     * @param shapeInfo the shape info to check
+     * @return true if the above conditions hold,false otherwise
+     */
+    public static boolean isRowVectorShape(IntBuffer shapeInfo) {
+        int rank = Shape.rank(shapeInfo);
+        IntBuffer shape = Shape.shapeOf(shapeInfo);
+        return
+                (rank== 2
+                        && shape.get(0)== 1) ||
+                        rank == 1;
+
     }
 
     /**
@@ -1418,7 +1465,19 @@ public class Shape {
             throw new RuntimeException("Invalid order: not c or f (is: " + order +")");
         }
     }
-
+    /**
+     * Gets the rank given the shape info buffer
+     * @param buffer the buffer to get the rank for
+     * @return the rank for the shape buffer
+     */
+    public static int length(IntBuffer buffer) {
+        int ret = 1;
+        IntBuffer shape = Shape.shapeOf(buffer);
+        int rank = Shape.rank(buffer);
+        for(int i = 0; i < rank; i++)
+            ret *= shape.get(i);
+        return ret;
+    }
 
     /**
      * Gets the rank given the shape info buffer

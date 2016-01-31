@@ -33,6 +33,8 @@ public class NDArrayStrings {
     }
 
     private String format(INDArray arr,int rank) {
+        if(rank < 1)
+            return "";
         StringBuffer sb = new StringBuffer();
 
         if(arr.isScalar()) {
