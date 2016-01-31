@@ -1,5 +1,6 @@
 package org.deeplearning4j.ui.flow;
 
+import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import lombok.NonNull;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
@@ -11,12 +12,21 @@ import org.deeplearning4j.nn.layers.convolution.ConvolutionLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.ui.UiServer;
+import org.deeplearning4j.ui.UiUtils;
 import org.deeplearning4j.ui.flow.beans.Description;
 import org.deeplearning4j.ui.flow.beans.LayerInfo;
 import org.deeplearning4j.ui.flow.beans.ModelInfo;
+import org.deeplearning4j.ui.providers.ObjectMapperProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
 import java.util.Arrays;
 
 /**
@@ -31,6 +41,12 @@ public class FlowIterationListener implements IterationListener {
     private int remotePort;
     private String login;
     private String password;
+    private int frequency = 1;
+    private boolean firstIteration = true;
+    private String path;
+
+    private Client client = ClientBuilder.newClient().register(JacksonJsonProvider.class).register(new ObjectMapperProvider());
+    private WebTarget target;
 
     private static Logger log = LoggerFactory.getLogger(FlowIterationListener.class);
 
@@ -58,7 +74,21 @@ public class FlowIterationListener implements IterationListener {
      * @param frequency update frequency
      */
     public FlowIterationListener(@NonNull String address, int port, int frequency) {
+        this.remoteAddr = address;
+        this.remotePort = port;
+        this.frequency = frequency;
 
+        if (address.equals("localhost") || address.equals("127.0.0.1")) {
+            try {
+                this.remotePort = UiServer.getInstance().getPort();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+
+
+        setup();
     }
 
 
@@ -75,6 +105,18 @@ public class FlowIterationListener implements IterationListener {
         this(address, port, frequency);
         this.login = login;
         this.password = password;
+
+        setup();
+    }
+
+    private void setup() {
+        // TODO: add auth option
+        login = null;
+        password = null;
+        if (login == null || password == null) target = client.target("http://"+ remoteAddr + ":" + remotePort ).path("flow").path("state");
+
+        this.path = "http://" + remoteAddr + ":" + remotePort + "/flow";
+        log.info("Flow UI: " + this.path);
     }
 
     /**
@@ -101,6 +143,7 @@ public class FlowIterationListener implements IterationListener {
      */
     @Override
     public synchronized void iterationDone(Model model, int iteration) {
+        if (iteration % frequency == 0) {
         /*
             Basic plan:
                 1. We should detect, if that's CompGraph or MultilayerNetwork. However the actual difference will be limited to number of non-linear connections.
@@ -112,15 +155,29 @@ public class FlowIterationListener implements IterationListener {
                 Later, on client side, this JSON should be parsed and rendered. So, proper object structure to be considered.
          */
 
-        // On first pass we just build list of layers. However, for MultiLayerNetwork first pass is the last pass, since we know connections in advance
-        ModelInfo info = buildModelInfo(model);
+            // On first pass we just build list of layers. However, for MultiLayerNetwork first pass is the last pass, since we know connections in advance
+            ModelInfo info = buildModelInfo(model);
 
-        // add info about inputs
+            // add info about inputs
 
 
         /*
             as soon as model info is built, we need to define color scheme based on number of unique nodes
          */
+
+            // send ModelInfo to UiServer
+            Response resp = target.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).post(Entity.entity(info, MediaType.APPLICATION_JSON));
+            log.info("ModelInfo:" + Entity.entity(info, MediaType.APPLICATION_JSON));
+            log.info("Response: " + resp);
+        /*
+            TODO: it would be nice to send updates of nodes as well
+         */
+
+            if(firstIteration){
+                UiUtils.tryOpenBrowser(path,log);
+                firstIteration = false;
+            }
+        }
     }
 
     protected ModelInfo buildModelInfo(Model model) {
