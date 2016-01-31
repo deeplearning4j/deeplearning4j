@@ -17,7 +17,7 @@ public class InMemoryModelSaver<T extends Model> implements EarlyStoppingModelSa
     public void saveBestModel(T net, double score) throws IOException {
         try{
             //Necessary because close is protected :S
-            bestModel = (T)(Object.class.getMethod("clone")).invoke(net);
+            bestModel = (T)(net.getClass().getDeclaredMethod("clone")).invoke(net);
         }catch(Exception e){
             throw new RuntimeException(e);
         }
@@ -28,7 +28,7 @@ public class InMemoryModelSaver<T extends Model> implements EarlyStoppingModelSa
     public void saveLatestModel(T net, double score) throws IOException {
         try{
             //Necessary because close is protected :S
-            latestModel = (T)(Object.class.getMethod("clone")).invoke(net);
+            latestModel = (T)(net.getClass().getDeclaredMethod("clone")).invoke(net);
         }catch(Exception e){
             throw new RuntimeException(e);
         }
