@@ -44,6 +44,9 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.IntBuffer;
 import java.util.*;
 
 /**
@@ -783,43 +786,7 @@ public class Shape {
 
 
 
-    public static void assignArray(INDArray destination, INDArray source) {
-        int[] newStrides;
-        if(source.rank() > destination.rank()) {
-            int nDimTmp = source.rank();
-            int[] srcShape = Arrays.copyOf(source.shape(),source.rank());
-            int[] srcStrides = Arrays.copyOf(source.stride(),source.rank());
-            while(nDimTmp > destination.rank() && srcShape[0] == 1) {
-                nDimTmp--;
-                srcShape = Arrays.copyOfRange(srcShape,1,srcShape.length);
-                srcStrides = Arrays.copyOfRange(srcStrides,1,srcStrides.length);
-            }
 
-            //broadcast the new arrays
-            newStrides = broadcastStrides(destination.rank(), destination.shape(), source.rank(), source.shape(), source.stride());
-        }
-        else
-            newStrides = broadcastStrides(destination.rank(),destination.shape(),source.rank(),source.shape(),source.stride());
-
-
-
-
-        //prepare the arrays for raw iteration
-        RawArrayIterationInformation2 rawIter = RawArrayIterationInformation2.builder()
-                .nDim(destination.rank()).shape(destination.shape()).a(destination.data())
-                .aStrides(destination.stride()).b(source.data()).bStrides(newStrides)
-                .aOffset(destination.offset()).bOffset(source.offset()).build().computeOut();
-        int[] offsets = new int[2];
-        int[] coords = new int[rawIter.getNDim()];
-        Shape.raw2dLoop(0
-                ,rawIter.getNDim(),
-                coords
-                ,rawIter.getShape()
-                ,offsets[0]
-                ,rawIter.getAStrides()
-                ,offsets[1]
-                ,rawIter.getBStrides(),rawIter,new CopyLoopFunction());
-    }
 
 
     /**
@@ -1348,25 +1315,6 @@ public class Shape {
     }
 
 
-    /**
-     * Returns a permutation of the dimensions
-     * with all 1s moved to end
-     * @param shape the shape to permute
-     * @return the permuted axes with all moving towards
-     * end
-     */
-    public static int[] moveOnesToEnd(int[] shape) {
-        List<Integer> nonOnes = new ArrayList<>();
-        List<Integer> ones = new ArrayList<>();
-        for(int i = 0; i < shape.length; i++) {
-            if(shape[i] == 1)
-                ones.add(i);
-            else
-                nonOnes.add(i);
-        }
-
-        return Ints.concat(Ints.toArray(nonOnes), Ints.toArray(ones));
-    }
 
     /**
      * Convert the given int indexes
@@ -1471,8 +1419,160 @@ public class Shape {
         }
     }
 
+
+    /**
+     * Gets the rank given the shape info buffer
+     * @param buffer the buffer to get the rank for
+     * @return the rank for the shape buffer
+     */
+    public static int rank(IntBuffer buffer) {
+        return buffer.get(0);
+    }
+
+    /**
+     * Return the shape info length
+     * given the rank
+     * @param rank the rank to get the length for
+     * @return rank * 2 + 4
+     */
+    public static int shapeInfoLength(int rank) {
+        return rank * 2 + 4;
+    }
+
+    /**
+     * Get the stride for the given
+     * shape information buffer
+     * @param buffer
+     * @return
+     */
+    public static IntBuffer stride(IntBuffer buffer) {
+        return (IntBuffer) buffer.asReadOnlyBuffer().position(1 + rank(buffer));
+    }
+
+
+    /**
+     * Get the shape from
+     * the given int buffer
+     * @param buffer the buffer to get the shape information for
+     * @return
+     */
+    public static IntBuffer shapeOf(IntBuffer buffer) {
+        return (IntBuffer) buffer.asReadOnlyBuffer().position(1).limit(Shape.rank(buffer));
+    }
+
+    /**
+     * Get the offset for the buffer
+     * @param buffer the shape info buffer to get the offset for
+     * @return
+     */
+    public static int offset(IntBuffer buffer) {
+        int length = shapeInfoLength(rank(buffer));
+        return buffer.get(length - 3);
+    }
+
+    /**
+     * Get the element wise stride for the
+     * shape info buffer
+     * @param buffer the buffer to get the element
+     *               wise stride from
+     * @return the element wise stride for the buffer
+     */
+    public static int elementWiseStride(IntBuffer buffer) {
+        int length2 = shapeInfoLength(buffer.get(0));
+        return buffer.get(length2 - 2);
+    }
+
+
+    /**
+     * Returns the order given the shape information
+     * @param buffer the buffer
+     * @return
+     */
+    public static char order(IntBuffer buffer) {
+        int length = buffer.capacity() * 2 + 4;
+        return (char) buffer.get(length - 1);
+    }
+
+    /**
+     * Creates the shape information buffer
+     * given the shape,stride
+     * @param shape the shape for the buffer
+     * @param stride the stride for the buffer
+     * @param offset the offset for the buffer
+     * @param elementWiseStride the element wise stride for the buffer
+     * @param order the order for the buffer
+     * @return the shape information buffer given the parameters
+     */
+    public static IntBuffer createShapeInformation(int[] shape,int[] stride,int offset,int elementWiseStride,char order) {
+        ByteBuffer directAlloc = ByteBuffer.allocateDirect(4 * shapeInfoLength(shape.length)).order(ByteOrder.nativeOrder());
+        IntBuffer ret = directAlloc.asIntBuffer();
+        int count = 1;
+        ret.put(0,shape.length);
+        for (int i = 0; i < shape.length; i++) {
+            ret.put(count++,shape[i]);
+        }
+        for (int i = 0; i < shape.length; i++) {
+            ret.put(count++,stride[i]);
+        }
+
+        ret.put(count++,offset);
+        ret.put(count++,elementWiseStride);
+        ret.put(count++,order);
+
+
+        return ret;
+    }
+
+
+    /**
+     * Convert an array to a byte buffer
+     * @param arr the array
+     * @return a direct byte buffer with the array contents
+     */
+    public static IntBuffer toBuffer(int...arr) {
+        ByteBuffer directBuffer = ByteBuffer.allocateDirect(arr.length * 4).order(ByteOrder.nativeOrder());
+        IntBuffer buffer = directBuffer.asIntBuffer();
+        for(int i = 0; i < arr.length; i++)
+            buffer.put(i,arr[i]);
+
+        return buffer;
+    }
+
+    /**
+     * To String for an int buffer
+     * @param buffer
+     * @return
+     */
+    public static String toString(IntBuffer buffer) {
+        StringBuffer sb = new StringBuffer();
+        for(int i = 0; i < buffer.capacity(); i++) {
+            sb.append(buffer.get(i));
+            if(i < buffer.capacity() - 1)
+                sb.append(",");
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     *
+     * Compare the contents of a buffer and
+     * an array for equals
+     * @param arr the array
+     * @param other the buffer
+     * @return true if the content equals false otherwise
+     */
+    public static boolean contentEquals(int[] arr,IntBuffer other) {
+        if(arr.length != other.capacity())
+            return false;
+        for(int i = 0; i < arr.length; i++)
+            if(arr[i] != other.get(i))
+                return false;
+        return true;
+    }
+
     /** Are the elements in the buffer contiguous for this NDArray? */
-    public static boolean isContiguousInBuffer( INDArray in ){
+    public static boolean isContiguousInBuffer(INDArray in) {
         int length = in.length();
         int dLength = in.data().length();
         if( length == dLength ) return true;    //full buffer, can't not be contiguous

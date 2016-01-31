@@ -208,7 +208,8 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
             for (int j = 0; j < flattened.length(); j++)
                 list.add(flattened.getComplex(j));
         }
-
+        throw new UnsupportedOperationException();
+/*
 
         this.ordering = ordering;
         this.data = Nd4j.createBuffer(ArrayUtil.prod(shape) * 2);
@@ -219,7 +220,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         for (int i = 0; i < list.size(); i++) {
             putScalar(count, list.get(i));
             count++;
-        }
+        }*/
     }
 
     /**
@@ -236,10 +237,11 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     public BaseComplexNDArray(float[] data, int[] shape, int[] stride, int offset, Character order) {
         this.data = Nd4j.createBuffer(data);
-        this.stride = ArrayUtil.copy(stride);
+     /*   this.stride = ArrayUtil.copy(stride);
         this.offset = offset;
         this.ordering = order;
-        init(shape);
+        init(shape);*/
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -259,10 +261,12 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     public BaseComplexNDArray(DataBuffer data, int[] shape, int[] stride, int offset) {
         this.data = data;
-        this.stride = ArrayUtil.copy(stride);
+     /*   this.stride = ArrayUtil.copy(stride);
         this.offset = offset;
         this.ordering = Nd4j.order();
-        init(shape);
+        init(shape);*/
+        throw new UnsupportedOperationException();
+
 
     }
 
@@ -368,9 +372,11 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     public BaseComplexNDArray(IComplexNumber[] newData, int[] shape) {
         super(new float[ArrayUtil.prod(shape) * 2]);
-        init(shape);
+      /*  init(shape);
         for (int i = 0; i < length; i++)
             putScalar(i, newData[i].asDouble());
+*/
+        throw new UnsupportedOperationException();
 
     }
 
@@ -383,10 +389,12 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     public BaseComplexNDArray(IComplexNumber[] newData, int[] shape, int[] stride) {
         super(new float[ArrayUtil.prod(shape) * 2]);
-        this.stride = stride;
+    /*    this.stride = stride;
         init(shape);
         for (int i = 0; i < length; i++)
             put(i, newData[i].asDouble());
+*/
+        throw new UnsupportedOperationException();
 
     }
 
@@ -400,10 +408,11 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     public BaseComplexNDArray(IComplexNumber[] newData, int[] shape, char ordering) {
         super(new float[ArrayUtil.prod(shape) * 2]);
-        this.ordering = ordering;
-        init(shape);
+     /*   this.ordering = ordering;
+        //init(shape);
         for (int i = 0; i < length; i++)
-            put(i, newData[i]);
+            put(i, newData[i]);*/
+        throw new UnsupportedOperationException();
 
     }
 
@@ -1273,7 +1282,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     @Override
     public IComplexNDArray put(int[] indexes, double value) {
         int ix = offset;
-        if (indexes.length != shape.length)
+       /* if (indexes.length != shape.length)
             throw new IllegalArgumentException("Unable to applyTransformToDestination values: number of indices must be equal to the shape");
 
         for (int i = 0; i < shape.length; i++)
@@ -1281,7 +1290,9 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
 
         data.put(ix, value);
-        return this;
+        return this;*/
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -1454,12 +1465,14 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public IComplexNumber getComplex(int... indices) {
+//
+//        int ix = offset;
+//        for (int i = 0; i < indices.length; i++)
+//            ix += indices[i] * stride[i];
+//
+//        return data.getComplex(ix);
+        throw new UnsupportedOperationException();
 
-        int ix = offset;
-        for (int i = 0; i < indices.length; i++)
-            ix += indices[i] * stride[i];
-
-        return data.getComplex(ix);
     }
 
     /**
@@ -1467,9 +1480,11 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public INDArray real() {
-        INDArray ret = Nd4j.create(shape);
+       /* INDArray ret = Nd4j.create(shape);
         copyRealTo(ret);
-        return ret;
+        return ret;*/
+        throw new UnsupportedOperationException();
+
     }
 
     /**
@@ -1477,9 +1492,11 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public INDArray imag() {
-        INDArray ret = Nd4j.create(shape);
+      /*  INDArray ret = Nd4j.create(shape);
         copyImagTo(ret);
-        return ret;
+        return ret;*/
+        throw new UnsupportedOperationException();
+
     }
 
 
@@ -1512,11 +1529,13 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public IComplexNDArray getScalar(int... indexes) {
-        int ix = offset;
+     /*   int ix = offset;
         for (int i = 0; i < shape.length; i++) {
             ix += indexes[i] * stride[i];
         }
-        return Nd4j.scalar(Nd4j.createDouble(data.getDouble(ix), data.getDouble(ix + 1)));
+        return Nd4j.scalar(Nd4j.createDouble(data.getDouble(ix), data.getDouble(ix + 1)));*/
+        throw new UnsupportedOperationException();
+
     }
 
     /**
@@ -1560,7 +1579,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public IComplexNDArray put(int[] indices, INDArray element) {
-        if (!element.isScalar())
+      /*  if (!element.isScalar())
             throw new IllegalArgumentException("Unable to insert anything but a scalar");
 
         if(isRowVector() && indices.length == 2 && indices[0] == 0) {
@@ -1596,6 +1615,8 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
 
         return this;
+*/
+        throw new UnsupportedOperationException();
 
     }
 
@@ -1823,7 +1844,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public IComplexNDArray cumsumi(int dimension) {
-        if (isVector()) {
+        /*if (isVector()) {
             IComplexNumber s = Nd4j.createDouble(0, 0);
             for (int i = 0; i < length; i++) {
                 s.addi(getComplex(i));
@@ -1848,7 +1869,9 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         }
 
 
-        return this;
+        return this;*/
+        throw new UnsupportedOperationException();
+
     }
 
 
@@ -1907,7 +1930,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public IComplexNDArray putScalar(int[] indexes, IComplexNumber complexNumber) {
-        int ix = offset;
+       /* int ix = offset;
         for (int i = 0; i < shape.length; i++) {
             if(indexes[i] >= size(i))
                 throw new IllegalArgumentException("Illegal index " + i + " size at this index is " + size(i));
@@ -1917,7 +1940,9 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         data.put(ix, complexNumber.asFloat().realComponent().doubleValue());
         data.put(ix + 1, complexNumber.asFloat().imaginaryComponent().doubleValue());
 
-        return this;
+        return this;*/
+        throw new UnsupportedOperationException();
+
     }
 
     /**
@@ -2889,22 +2914,26 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public IComplexNDArray putReal(int[] indices, double value) {
-        int ix = offset;
+       /* int ix = offset;
         for (int i = 0; i < indices.length; i++)
             ix += indices[i] * stride[i];
 
         data.put(ix, value);
-        return this;
+        return this;*/
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
     public IComplexNDArray putImag(int[] indices, double value) {
-        int ix = offset;
+        /*int ix = offset;
         for (int i = 0; i < indices.length; i++)
             ix += indices[i] * stride[i];
 
         data.put(ix + 1, value);
-        return this;
+        return this;*/
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -3413,7 +3442,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         }
 
 
-        StringBuilder sb = new StringBuilder();
+       /* StringBuilder sb = new StringBuilder();
         int length = shape[0];
         sb.append("[");
         if (length > 0) {
@@ -3431,7 +3460,9 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
         }
         sb.append("]\n");
-        return sb.toString();
+        return sb.toString();*/
+        throw new UnsupportedOperationException();
+
     }
 
 

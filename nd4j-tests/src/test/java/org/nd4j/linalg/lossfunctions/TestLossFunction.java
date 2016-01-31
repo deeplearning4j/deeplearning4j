@@ -29,6 +29,11 @@ public class TestLossFunction extends BaseLossFunction {
     }
 
     @Override
+    public int opNum() {
+        return 0;
+    }
+
+    @Override
     public String name() {
         return "test_loss_function";
     }

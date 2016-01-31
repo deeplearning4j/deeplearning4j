@@ -1,7 +1,13 @@
 package org.nd4j.linalg.cpu.ops;
 
+import java.nio.DoubleBuffer;
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
+
 /**
- * Created by agibsonccc on 1/28/16.
+ * Native interface for 
+ * op execution on cpu
+ * @author Adam Gibson
  */
 public class NativeOps {
     /**
@@ -10,15 +16,11 @@ public class NativeOps {
      * @param x
      * @param xShapeInfo
      * @param extraParams
-     * @param result
-     * @param resultShapeInfo
      */
-    public native void   execIndexReduceScalar(int opNum,
-                                               double[] x,
-                                               int[] xShapeInfo,
-                                               double[] extraParams,
-                                               double[] result,
-                                               int[] resultShapeInfo);
+    public native double   execIndexReduceScalar(int opNum,
+                                               DoubleBuffer x,
+                                               IntBuffer xShapeInfo,
+                                               DoubleBuffer extraParams);
 
     /**
      *
@@ -32,12 +34,12 @@ public class NativeOps {
      * @param dimensionLength
      */
     public native void   execIndexReduce(int opNum,
-                                         double[] x,
-                                         int[] xShapeInfo,
-                                         double[] extraParams,
-                                         double[] result,
-                                         int[] resultShapeInfoBuffer,
-                                         int[] dimension, int dimensionLength);
+                                         DoubleBuffer x,
+                                         IntBuffer xShapeInfo,
+                                         DoubleBuffer extraParams,
+                                         DoubleBuffer result,
+                                         IntBuffer resultShapeInfoBuffer,
+                                         IntBuffer dimension, int dimensionLength);
     /**
      *
      * @param opNum
@@ -51,13 +53,13 @@ public class NativeOps {
      * @param dimensionLength
      */
     public native void   execBroadcast(int opNum,
-                                       double[] x,
-                                       int[] xShapeInfo,
-                                       double[] y,
-                                       int[] yShapeInfo,
-                                       double[] result,
-                                       int[] resultShapeInfo,
-                                       int[] dimension, int dimensionLength);
+                                       DoubleBuffer x,
+                                       IntBuffer xShapeInfo,
+                                       DoubleBuffer y,
+                                       IntBuffer yShapeInfo,
+                                       DoubleBuffer result,
+                                       IntBuffer resultShapeInfo,
+                                       IntBuffer dimension, int dimensionLength);
 
     /**
      *
@@ -72,13 +74,13 @@ public class NativeOps {
      * @param n
      */
     public native void   execPairwiseTransform(int opNum,
-                                               double[] dx,
+                                               DoubleBuffer dx,
                                                int xStride,
-                                               double[] y,
+                                               DoubleBuffer y,
                                                int yStride,
-                                               double[] result,
+                                               DoubleBuffer result,
                                                int resultStride,
-                                               double[] extraParams, int n);
+                                               DoubleBuffer extraParams, int n);
 
     /**
      *
@@ -90,11 +92,28 @@ public class NativeOps {
      * @param resultShapeInfo
      */
     public native void   execReduce(int opNum,
-                                    double[] x,
-                                    int[] xShapeInfo,
-                                    double[] extraParams,
-                                    double[] result,
-                                    int[] resultShapeInfo);
+                                    DoubleBuffer x,
+                                    IntBuffer xShapeInfo,
+                                    DoubleBuffer extraParams,
+                                    DoubleBuffer result,
+                                    IntBuffer resultShapeInfo);
+
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param extraParams
+     * @param result
+     * @param resultShapeInfo
+     */
+    public native void   execReduce(int opNum,
+                                    DoubleBuffer x,
+                                    IntBuffer xShapeInfo,
+                                    DoubleBuffer extraParams,
+                                    DoubleBuffer result,
+                                    IntBuffer resultShapeInfo,
+                                    IntBuffer dimension,int dimensionLength);
 
     /**
      *
@@ -104,10 +123,10 @@ public class NativeOps {
      * @param extraParams
      * @return
      */
-   public native double execReduceScalar(int opNum,
-                            double[] x,
-                            int[] xShapeInfo,
-                            double[] extraParams);
+    public native double execReduceScalar(int opNum,
+                                          DoubleBuffer x,
+                                          IntBuffer xShapeInfo,
+                                          DoubleBuffer extraParams);
 
     /**
      *
@@ -121,12 +140,29 @@ public class NativeOps {
      * @param resultShapeInfo
      */
     public native void   execReduce3(int opNum,
-                                     double[] x,
-                                     int[] xShapeInfo,
-                                     double[] extraParamsVals,
-                                     double[] y,
-                                     int[] yShapeInfo,
-                                     double[] result, int[] resultShapeInfo);
+                                     DoubleBuffer x,
+                                     IntBuffer xShapeInfo,
+                                     DoubleBuffer extraParamsVals,
+                                     DoubleBuffer y,
+                                     IntBuffer yShapeInfo,
+                                     DoubleBuffer result,
+                                     IntBuffer resultShapeInfo);
+
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param extraParamsVals
+     * @param y
+     * @param yShapeInfo
+     */
+    public native double   execReduce3Scalar(int opNum,
+                                             DoubleBuffer x,
+                                             IntBuffer xShapeInfo,
+                                             DoubleBuffer extraParamsVals,
+                                             DoubleBuffer y,
+                                             IntBuffer yShapeInfo);
     /**
      *
      * @param opNum
@@ -141,14 +177,14 @@ public class NativeOps {
      * @param dimensionLength
      */
     public native void   execReduce3(int opNum,
-                                     double[] x,
-                                     int[] xShapeInfo,
-                                     double[] extraParamsVals,
-                                     double[] y,
-                                     int[] yShapeInfo,
-                                     double[] result,
-                                     int[] resultShapeInfoBuffer,
-                                     int[] dimension,
+                                     DoubleBuffer x,
+                                     IntBuffer xShapeInfo,
+                                     DoubleBuffer extraParamsVals,
+                                     DoubleBuffer y,
+                                     IntBuffer yShapeInfo,
+                                     DoubleBuffer result,
+                                     IntBuffer resultShapeInfoBuffer,
+                                     IntBuffer dimension,
                                      int dimensionLength);
     /**
      *
@@ -161,14 +197,24 @@ public class NativeOps {
      * @param extraParams
      * @param n
      */
-    public native void   execScalar(int opNum,
-                                    double[] x,
-                                    int xStride,
-                                    double[] result,
-                                    int resultStride,
-                                    double scalar,
-                                    double[] extraParams,
-                                    int n);
+    public native double   execScalar(int opNum,
+                                      DoubleBuffer x,
+                                      int xStride,
+                                      DoubleBuffer result,
+                                      int resultStride,
+                                      double scalar,
+                                      DoubleBuffer extraParams,
+                                      int n);
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param extraParams
+     */
+    public native double   execSummaryStatsScalar(int opNum,DoubleBuffer x,
+                                                  IntBuffer xShapeInfo,
+                                                  DoubleBuffer extraParams);
     /**
      *
      * @param opNum
@@ -178,11 +224,11 @@ public class NativeOps {
      * @param result
      * @param resultShapeInfo
      */
-    public native void   execSummaryStats(int opNum,double[] x,
-                                          int[] xShapeInfo,
-                                          double[] extraParams,
-                                          double[] result,
-                                          int[] resultShapeInfo);
+    public native void   execSummaryStats(int opNum,DoubleBuffer x,
+                                          IntBuffer xShapeInfo,
+                                          DoubleBuffer extraParams,
+                                          DoubleBuffer result,
+                                          IntBuffer resultShapeInfo);
     /**
      *
      * @param opNum
@@ -194,12 +240,12 @@ public class NativeOps {
      * @param dimension
      * @param dimensionLength
      */
-    public native void   execSummaryStats(int opNum,double[] x,
-                                          int[] xShapeInfo,
-                                          double[] extraParams,
-                                          double[] result,
-                                          int[] resultShapeInfoBuffer,
-                                          int[] dimension, int dimensionLength);
+    public native void   execSummaryStats(int opNum,DoubleBuffer x,
+                                          IntBuffer xShapeInfo,
+                                          DoubleBuffer extraParams,
+                                          DoubleBuffer result,
+                                          IntBuffer resultShapeInfoBuffer,
+                                          IntBuffer dimension, int dimensionLength);
     /**
      *
      * @param opNum
@@ -210,8 +256,12 @@ public class NativeOps {
      * @param extraParams
      * @param n
      */
-    public native void   execTransform(int opNum,double[] dx, int xStride, double[] result, int resultStride,
-                                       double[] extraParams, int n);
+    public native void   execTransform(int opNum,
+                                       DoubleBuffer dx,
+                                       int xStride,
+                                       DoubleBuffer result,
+                                       int resultStride,
+                                       DoubleBuffer extraParams, int n);
 
     /**
      *
@@ -219,15 +269,11 @@ public class NativeOps {
      * @param x
      * @param xShapeInfo
      * @param extraParams
-     * @param result
-     * @param resultShapeInfo
      */
-    public native void   execIndexReduceScalar(int opNum,
-                                               float[] x,
-                                               int[] xShapeInfo,
-                                               float[] extraParams,
-                                               float[] result,
-                                               int[] resultShapeInfo);
+    public native float   execIndexReduceScalar(int opNum,
+                                               FloatBuffer x,
+                                               IntBuffer xShapeInfo,
+                                               FloatBuffer extraParams);
 
     /**
      *
@@ -241,12 +287,12 @@ public class NativeOps {
      * @param dimensionLength
      */
     public native void   execIndexReduce(int opNum,
-                                         float[] x,
-                                         int[] xShapeInfo,
-                                         float[] extraParams,
-                                         float[] result,
-                                         int[] resultShapeInfoBuffer,
-                                         int[] dimension, int dimensionLength);
+                                         FloatBuffer x,
+                                         IntBuffer xShapeInfo,
+                                         FloatBuffer extraParams,
+                                         FloatBuffer result,
+                                         IntBuffer resultShapeInfoBuffer,
+                                         IntBuffer dimension, int dimensionLength);
     /**
      *
      * @param opNum
@@ -260,13 +306,13 @@ public class NativeOps {
      * @param dimensionLength
      */
     public native void   execBroadcast(int opNum,
-                                       float[] x,
-                                       int[] xShapeInfo,
-                                       float[] y,
-                                       int[] yShapeInfo,
-                                       float[] result,
-                                       int[] resultShapeInfo,
-                                       int[] dimension, int dimensionLength);
+                                       FloatBuffer x,
+                                       IntBuffer xShapeInfo,
+                                       FloatBuffer y,
+                                       IntBuffer yShapeInfo,
+                                       FloatBuffer result,
+                                       IntBuffer resultShapeInfo,
+                                       IntBuffer dimension, int dimensionLength);
 
     /**
      *
@@ -281,16 +327,16 @@ public class NativeOps {
      * @param n
      */
     public native void   execPairwiseTransform(int opNum,
-                                               float[] dx,
+                                               FloatBuffer dx,
                                                int xStride,
-                                               float[] y,
+                                               FloatBuffer y,
                                                int yStride,
-                                               float[] result,
+                                               FloatBuffer result,
                                                int resultStride,
-                                               float[] extraParams, int n);
+                                               FloatBuffer extraParams, int n);
+
 
     /**
-     *
      * @param opNum
      * @param x
      * @param xShapeInfo
@@ -299,12 +345,11 @@ public class NativeOps {
      * @param resultShapeInfo
      */
     public native void   execReduce(int opNum,
-                                    float[] x,
-                                    int[] xShapeInfo,
-                                    float[] extraParams,
-                                    float[] result,
-                                    int[] resultShapeInfo);
-
+                                    FloatBuffer x,
+                                    IntBuffer xShapeInfo,
+                                    FloatBuffer extraParams,
+                                    FloatBuffer result,
+                                    IntBuffer resultShapeInfo,IntBuffer dimension,int dimensionLength);
     /**
      *
      * @param opNum
@@ -314,9 +359,9 @@ public class NativeOps {
      * @return
      */
     public native float execReduceScalar(int opNum,
-                                         float[] x,
-                                         int[] xShapeInfo,
-                                         float[] extraParams);
+                                         FloatBuffer x,
+                                         IntBuffer xShapeInfo,
+                                         FloatBuffer extraParams);
 
     /**
      *
@@ -330,12 +375,28 @@ public class NativeOps {
      * @param resultShapeInfo
      */
     public native void   execReduce3(int opNum,
-                                     float[] x,
-                                     int[] xShapeInfo,
-                                     float[] extraParamsVals,
-                                     float[] y,
-                                     int[] yShapeInfo,
-                                     float[] result, int[] resultShapeInfo);
+                                     FloatBuffer x,
+                                     IntBuffer xShapeInfo,
+                                     FloatBuffer extraParamsVals,
+                                     FloatBuffer y,
+                                     IntBuffer yShapeInfo,
+                                     FloatBuffer result, IntBuffer resultShapeInfo);
+
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param extraParamsVals
+     * @param y
+     * @param yShapeInfo
+     */
+    public native float   execReduce3Scalar(int opNum,
+                                            FloatBuffer x,
+                                            IntBuffer xShapeInfo,
+                                            FloatBuffer extraParamsVals,
+                                            FloatBuffer y,
+                                            IntBuffer yShapeInfo);
     /**
      *
      * @param opNum
@@ -350,14 +411,14 @@ public class NativeOps {
      * @param dimensionLength
      */
     public native void   execReduce3(int opNum,
-                                     float[] x,
-                                     int[] xShapeInfo,
-                                     float[] extraParamsVals,
-                                     float[] y,
-                                     int[] yShapeInfo,
-                                     float[] result,
-                                     int[] resultShapeInfoBuffer,
-                                     int[] dimension,
+                                     FloatBuffer x,
+                                     IntBuffer xShapeInfo,
+                                     FloatBuffer extraParamsVals,
+                                     FloatBuffer y,
+                                     IntBuffer yShapeInfo,
+                                     FloatBuffer result,
+                                     IntBuffer resultShapeInfoBuffer,
+                                     IntBuffer dimension,
                                      int dimensionLength);
     /**
      *
@@ -370,14 +431,24 @@ public class NativeOps {
      * @param extraParams
      * @param n
      */
-    public native void   execScalar(int opNum,
-                                    float[] x,
-                                    int xStride,
-                                    float[] result,
-                                    int resultStride,
-                                    float scalar,
-                                    float[] extraParams,
-                                    int n);
+    public native float   execScalar(int opNum,
+                                     FloatBuffer x,
+                                     int xStride,
+                                     FloatBuffer result,
+                                     int resultStride,
+                                     float scalar,
+                                     FloatBuffer extraParams,
+                                     int n);
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param extraParams
+     */
+    public native float   execSummaryStatsScalar(int opNum,FloatBuffer x,
+                                                 IntBuffer xShapeInfo,
+                                                 FloatBuffer extraParams);
     /**
      *
      * @param opNum
@@ -387,11 +458,11 @@ public class NativeOps {
      * @param result
      * @param resultShapeInfo
      */
-    public native void   execSummaryStats(int opNum,float[] x,
-                                          int[] xShapeInfo,
-                                          float[] extraParams,
-                                          float[] result,
-                                          int[] resultShapeInfo);
+    public native void   execSummaryStats(int opNum,FloatBuffer x,
+                                          IntBuffer xShapeInfo,
+                                          FloatBuffer extraParams,
+                                          FloatBuffer result,
+                                          IntBuffer resultShapeInfo);
     /**
      *
      * @param opNum
@@ -403,12 +474,12 @@ public class NativeOps {
      * @param dimension
      * @param dimensionLength
      */
-    public native void   execSummaryStats(int opNum,float[] x,
-                                          int[] xShapeInfo,
-                                          float[] extraParams,
-                                          float[] result,
-                                          int[] resultShapeInfoBuffer,
-                                          int[] dimension, int dimensionLength);
+    public native void   execSummaryStats(int opNum,FloatBuffer x,
+                                          IntBuffer xShapeInfo,
+                                          FloatBuffer extraParams,
+                                          FloatBuffer result,
+                                          IntBuffer resultShapeInfoBuffer,
+                                          IntBuffer dimension, int dimensionLength);
     /**
      *
      * @param opNum
@@ -419,6 +490,11 @@ public class NativeOps {
      * @param extraParams
      * @param n
      */
-    public native void   execTransform(int opNum,float[] dx, int xStride, float[] result, int resultStride,
-                                       float[] extraParams, int n);
+    public native void   execTransform(int opNum,
+                                       FloatBuffer dx,
+                                       int xStride,
+                                       FloatBuffer result,
+                                       int resultStride,
+                                       FloatBuffer extraParams, int n);
+
 }
