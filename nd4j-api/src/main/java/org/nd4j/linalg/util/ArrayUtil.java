@@ -214,7 +214,7 @@ public class ArrayUtil {
      *            to calculate the sum for
      * @return the product of this array
      */
-    public static int prod(int[] mult) {
+    public static int prod(int...mult) {
         if (mult.length < 1)
             return 0;
         int ret = 1;
@@ -595,17 +595,30 @@ public class ArrayUtil {
      * Return a copy of this array with the
      * given index omitted
      *
+     * PLEASE NOTE: index to be omitted must exist in source array.
+     *
      * @param data  the data to copy
      * @param index the index of the item to remove
      * @return the new array with the omitted
      * item
      */
     public static int[] removeIndex(int[] data, int...index) {
-        int[] ret = new int[data.length - index.length];
+        int offset = 0;
+        /*
+            workaround for non-existant indexes (such as Integer.MAX_VALUE)
+
+
+        for (int i = 0; i < index.length; i ++) {
+            if (index[i] >= data.length || index[i] < 0) offset++;
+        }
+        */
+
+        int[] ret = new int[data.length - index.length + offset];
         int count = 0;
         for(int i = 0; i < data.length; i++)
-            if(!Ints.contains(index,i))
+            if(!Ints.contains(index,i)) {
                 ret[count++] = data[i];
+            }
 
         return ret;
     }

@@ -134,29 +134,98 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     }
 
     private static DataSet mergeTimeSeries(List<DataSet> data){
-        DataSet first = data.get(0);
-        int numExamples = totalExamples(data);
+        if(data.size() == 1) return data.get(0);
 
+        //Complications with time series:
+        //(a) They may have different lengths (if so: need input + output masking arrays)
+        //(b) Even if they are all the same length, they may have masking arrays (if so: merge the masking arrays too)
+
+        DataSet first = data.get(0);
+        int firstLength = first.getFeatureMatrix().size(2);
+        int maxLength = firstLength;
+
+        boolean hasInputMask = false;
+        boolean hasOutputMask = false;
+        boolean lengthsDiffer = false;
+        for(DataSet ds : data){
+            int thisLength = ds.getFeatureMatrix().size(2);
+            maxLength = Math.max(maxLength,thisLength);
+            if( thisLength != firstLength ) lengthsDiffer = true;
+            if( ds.getFeaturesMaskArray() != null ) hasInputMask = true;
+            if( ds.getLabelsMaskArray() != null ) hasOutputMask = true;
+        }
+
+        boolean needInputMask = hasInputMask || lengthsDiffer;
+        boolean needOutputMask = hasOutputMask || lengthsDiffer;
+
+        int numExamples = totalExamples(data);
         int nIn = first.getFeatureMatrix().size(1);
         int nOut = first.getLabels().size(1);
-        int tsLength = first.getFeatureMatrix().size(2);
 
-        INDArray in = Nd4j.create(numExamples, nIn, tsLength);
-        INDArray out = Nd4j.create(numExamples, nOut, tsLength);
+        INDArray in = Nd4j.create(numExamples, nIn, maxLength);
+        INDArray out = Nd4j.create(numExamples, nOut, maxLength);
+
+        INDArray featuresMask = (needInputMask ? Nd4j.create(numExamples,maxLength) : null);
+        INDArray labelsMask = (needOutputMask ? Nd4j.create(numExamples,maxLength) : null);
 
         int rowCount = 0;
 
-        for(DataSet ds : data ){
-            INDArray f = ds.getFeatures();
-            INDArray l = ds.getLabels();
-            int nEx = f.size(0);
+        if(!lengthsDiffer && !needInputMask && !needOutputMask) {
+            //Simplest case: no masking arrays, all same length
+            for (DataSet ds : data) {
+                INDArray f = ds.getFeatures();
+                INDArray l = ds.getLabels();
+                int nEx = f.size(0);
 
-            in.get(NDArrayIndex.interval(rowCount,rowCount+nEx),NDArrayIndex.all(), NDArrayIndex.all()).assign(f);
-            out.get(NDArrayIndex.interval(rowCount,rowCount+nEx),NDArrayIndex.all(), NDArrayIndex.all()).assign(l);
-            rowCount += nEx;
+                in.get(NDArrayIndex.interval(rowCount, rowCount + nEx), NDArrayIndex.all(), NDArrayIndex.all()).assign(f);
+                out.get(NDArrayIndex.interval(rowCount, rowCount + nEx), NDArrayIndex.all(), NDArrayIndex.all()).assign(l);
+                rowCount += nEx;
+            }
+        } else {
+            for (DataSet ds : data) {
+                INDArray f = ds.getFeatures();
+                INDArray l = ds.getLabels();
+                int nEx = f.size(0);
+                int thisLength = f.size(2);
+
+                in.get(NDArrayIndex.interval(rowCount, rowCount + nEx), NDArrayIndex.all(), NDArrayIndex.interval(0,thisLength)).assign(f);
+                out.get(NDArrayIndex.interval(rowCount, rowCount + nEx), NDArrayIndex.all(), NDArrayIndex.interval(0, thisLength)).assign(l);
+
+                if(needInputMask){
+                    INDArray inputMask = ds.getFeaturesMaskArray();
+                    if(inputMask != null){
+                        //Combine the input mask for this dataset with the overall (merged) input mask
+                        // Not necessary to pad to give same overall length, as features mask is initialized as 0
+                        //inputMask shape: [nEx,thisLength]
+                        featuresMask.get(NDArrayIndex.interval(rowCount, rowCount + nEx), NDArrayIndex.interval(0,thisLength))
+                                .assign(inputMask);
+                    } else {
+                        //No input mask -> all feature values are present for entire length of the time series
+                        featuresMask.get(NDArrayIndex.interval(rowCount, rowCount + nEx), NDArrayIndex.interval(0,thisLength))
+                                .assign(1.0);
+                    }
+                }
+
+                if(needOutputMask){
+                    INDArray outputMask = ds.getLabelsMaskArray();
+                    if(outputMask != null){
+                        //Combine the output mask for this dataset with the overall (merged) output mask
+                        // Not necessary to pad to give same overall length, as labels mask is initialized as 0
+                        //outputMask shape: [nEx,thisLength]
+                        labelsMask.get(NDArrayIndex.interval(rowCount, rowCount + nEx), NDArrayIndex.interval(0,thisLength))
+                                .assign(outputMask);
+                    } else {
+                        //No output mask -> all feature values are present for entire length of the time series
+                        labelsMask.get(NDArrayIndex.interval(rowCount, rowCount + nEx), NDArrayIndex.interval(0,thisLength))
+                                .assign(1.0);
+                    }
+                }
+
+                rowCount += nEx;
+            }
         }
 
-        return new DataSet(in,out);
+        return new DataSet(in, out, featuresMask, labelsMask);
     }
 
     /**

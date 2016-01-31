@@ -529,7 +529,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
                         }
                     }
                 } else {
-                    if(y==null) {
+                    if(y == null) {
                         for (int i = 0; i < nTensors; i++) {
                             IComplexNDArray tx = (IComplexNDArray) cx.tensorAlongDimension(i,op.getDimension());
                             IComplexNDArray tz = (IComplexNDArray) cz.tensorAlongDimension(i,op.getDimension());

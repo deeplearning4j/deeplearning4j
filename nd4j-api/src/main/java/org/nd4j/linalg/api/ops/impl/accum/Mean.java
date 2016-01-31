@@ -57,48 +57,71 @@ public class Mean extends Sum {
     @Override
     public Op opForDimension(int index, int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-
+        Mean ret;
         if (y() != null)
-            return new Mean(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            ret = new Mean(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new Mean(x.vectorAlongDimension(index, dimension));
+            ret = new Mean(x.vectorAlongDimension(index, dimension));
+        ret.setApplyFinalTransform(applyFinalTransform());
+        return ret;
     }
 
     @Override
     public Op opForDimension(int index, int... dimension) {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
-
+        Mean ret;
 
         if (y() != null)
-            return new Mean(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            ret = new Mean(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new Mean(x.tensorAlongDimension(index, dimension));
+            ret = new Mean(x.tensorAlongDimension(index, dimension));
+        ret.setApplyFinalTransform(applyFinalTransform());
+        return ret;
     }
 
 
 
     @Override
     public double getAndSetFinalResult(double accum) {
-        double d = accum / n();
-        this.finalResult = d;
-        return d;
+        if(applyFinalTransform()) {
+            double d = accum / n();
+            this.finalResult = d;
+            return d;
+        }
+        else {
+            double d = accum;
+            this.finalResult = d;
+            return d;
+        }
+
     }
 
     @Override
-    public float getAndSetFinalResult(float accum){
-        float f = accum / n();
-        this.finalResult = f;
-        return f;
+    public float getAndSetFinalResult(float accum) {
+        if(applyFinalTransform()) {
+            float f = accum / n();
+            this.finalResult = f;
+            return f;
+        }
+        else {
+            this.finalResult = accum;
+            return accum;
+        }
+
     }
 
     @Override
     public double calculateFinalResult(double accum, int n) {
-        return accum / n;
+        if(applyFinalTransform())
+            return accum / n;
+        return accum;
     }
 
     @Override
     public float calculateFinalResult(float accum, int n) {
-        return accum / n;
+        if(applyFinalTransform())
+            return accum / n;
+        return accum;
     }
 
     @Override

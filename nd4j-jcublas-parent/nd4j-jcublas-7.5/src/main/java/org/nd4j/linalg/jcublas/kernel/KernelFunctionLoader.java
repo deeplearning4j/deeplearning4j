@@ -32,11 +32,16 @@ import jcuda.utils.KernelLauncher;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ops.Accumulation;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.context.CudaContext;
+import org.nd4j.linalg.jcublas.util.CudaArgs;
+import org.nd4j.linalg.util.JarResource;
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
 import org.slf4j.Logger;
@@ -58,22 +63,27 @@ import java.util.regex.Pattern;
  * @author Adam Gibson
  */
 public class KernelFunctionLoader {
-
     public final static String NAME_SPACE = "org.nd4j.linalg.jcuda.jcublas";
     public final static String DOUBLE = NAME_SPACE + ".double.functions";
     public final static String FLOAT = NAME_SPACE + ".float.functions";
     public final static String CACHE_COMPILED = NAME_SPACE + ".cache_compiled";
     public final static String FUNCTION_KEY = "org.nd4j.linalg.jcuda.jcublas.functions";
-    private Map<String,String> paths = new HashMap<>();
+
     private static KernelFunctionLoader INSTANCE;
     private boolean alreadyCompiled = false;
-    private static Table<String,String,KernelLauncher> launchers = HashBasedTable.create();
+
     private boolean init = false;
     private static Logger log = LoggerFactory.getLogger(KernelFunctionLoader.class);
     private String kernelPath;
     private String[] modules;
     public final static String PRINT_KERNEL_NAME = "printShapeBuffer";
     private static KernelLauncher printFunction;
+
+    private Table<String, DataBuffer.Type, String> paths = HashBasedTable.create();
+
+    // Thread, <FunctionName, DataType>, KernelLauncher
+    private static Table<String, Pair<String, DataBuffer.Type>,KernelLauncher> launchers = HashBasedTable.create();
+
     private KernelFunctionLoader() {}
 
     /**
@@ -109,20 +119,31 @@ public class KernelFunctionLoader {
      * @return the launcher for the given
      * function and data type
      */
-    public  static KernelLauncher launcher(String functionName,String dataType) {
+    public  static KernelLauncher launcher(String functionName,DataBuffer.Type dataType) {
         KernelLauncher launcher =  KernelFunctionLoader.getInstance().get(functionName,dataType);
         return launcher;
     }
 
 
     /**
-     * Returns whether the function has a kernel or not
-     * @param functionName the name of the function
+     * Returns whether the target Op has a kernel or not
+     *
+     * @param op Op to be checked for existance
      * @return true if the function has a kernel
      * false othr wise
      */
-    public boolean exists(String functionName) {
-        return get(functionName,"double") != null || get(functionName,"float") != null;
+    public boolean exists(Op op) {
+        /**
+         * We should check for specific kernel
+         */
+        if (CudaArgs.getModuleNameFor(op) == null) return false;
+
+        /**
+         * And specific OpCode
+         */
+        if (CudaArgs.getOpCode(op) < 0) return false;
+
+        return true;
     }
 
 
@@ -134,23 +155,28 @@ public class KernelFunctionLoader {
      * @return the kernel launcher for the
      * given function
      */
-    public KernelLauncher get(String functionName,String dataType) {
-        String name = functionName + "_" + dataType;
+    public KernelLauncher get(String functionName,DataBuffer.Type dataType) {
+        String name = functionName;// + "_" + dataType;
         if(!launchers.containsRow(Thread.currentThread().getName())) {
+
             try {
-                loadModules(modules,kernelPath);
-                log.debug("Loading modules for " + Thread.currentThread().getName());
+                log.info("Loading modules for " + Thread.currentThread().getName());
+                loadModules();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
+
         }
 
-        KernelLauncher launcher = launchers.get(Thread.currentThread().getName(),name);
+        KernelLauncher launcher = launchers.get(Thread.currentThread().getName(), Pair.of(name, dataType));
         if(launcher == null) {
+            throw new RuntimeException("Can't get module for name: " + name);
+            /*
             name = functionName + "_strided" + "_" + dataType;
-            launcher = launchers.get(Thread.currentThread().getName(),name);
+            launcher = launchers.get(Thread.currentThread().getName(),Pair.of(name, dataType));
             if(launcher == null)
                 return null;
+            */
         }
         return launcher;
     }
@@ -247,6 +273,88 @@ public class KernelFunctionLoader {
      * @throws IOException If an I/O error occurs
      */
     private void compileAndLoad(Properties props,int compiledAttempts) throws IOException {
+
+        /*
+            Since CUDA codebase was greatly changed, new kernel loader and mapper is required.
+            So, here we go.
+
+            We assume that:
+                1. We have .ptx/.cubin file.
+                2. We have predefined kernel names
+                3. We have predefined and hardcoded codes for Ops
+
+                So, we should load our distribution fille (since we have one now), and register all functions upon backend initialization.
+                Ops->code translation will be handled via hardcoded structure on the call
+         */
+
+        // we have predefined list of kernels available, each of them has Float and Double suffix
+        String f = props.getProperty(FUNCTION_KEY);
+        log.info("Kernels to be loaded: " + f);
+
+
+        /*
+            We're loading PTX kernels from internal resource
+         */
+
+        File kernelsPtx = new JarResource("/all.ptx").getFile();
+
+
+        /*
+
+        // let's check if cubin/ptx was already extracted from jar.
+        boolean shouldExtract = !(kernelsPtx.exists());
+        if (shouldExtract) {
+            // if not extracted - we'll do that now
+            log.info("Unpacking kernels...");
+            ClassPathResource ptxResource = new ClassPathResource("/all.ptx");
+            ClassPathResource cubinResource = new ClassPathResource("/all.cubin");
+
+            if (ptxResource.exists()) {
+                log.info("Going for PTX distribution...");
+                FileUtils.copyFile(ptxResource.getFile(), kernelsPtx);
+                usingPtx = true;
+            } else {
+                throw new IllegalStateException("No CUDA kernels were found!");
+            }
+        }
+
+        */
+
+        String[] split = f.split(",");
+        this.modules = split;
+
+
+        /*
+            We're not redistributing .cu files anymore, only .ptx (or .cubin), so we store all kernel names into paths map, that'll be reused on kernel invocations
+         */
+        String path = kernelsPtx.getAbsolutePath();
+
+        for (String module : split) {
+            // we have single .cubin file for all kernels
+            // the only difference is concatenated to kernel data type of the function.
+            // i.e. reduce3 = reduce3Float & reduce3Double
+
+            String name = module;
+
+            // so we're pushing both data typins pointing to the same reduce3. Concatenation will be applied on later stages
+            paths.put(name,DataBuffer.Type.DOUBLE,path);
+            paths.put(name,DataBuffer.Type.FLOAT, path);
+        }
+
+        /*
+            now we map each kernel into cuda driver
+        */
+        try {
+            loadModules();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+
+        if (1>0) return;
+        /*
+        TODO: legacy code, to be removed later
+
         String f = props.getProperty(FUNCTION_KEY);
         String tmpDir = System.getProperty("java.io.tmpdir");
         StringBuffer dir = new StringBuffer();
@@ -259,7 +367,10 @@ public class KernelFunctionLoader {
                 .toString();
         File tmpDir2 = new File(tmpDir + File.separator + "nd4j-kernels" + File.separatorChar + "output");
 
+        log.info("Kernels to be loaded: " + f);
+
         boolean shouldCompile = !tmpDir2.exists() || tmpDir2.exists() && tmpDir2.listFiles().length <= 1 || alreadyCompiled;
+
         String[] split = f.split(",");
         this.modules = split;
         if(shouldCompile) {
@@ -296,7 +407,7 @@ public class KernelFunctionLoader {
         catch (Exception e) {
             throw new RuntimeException(e);
         }
-
+        */
     }
 
 
@@ -322,8 +433,34 @@ public class KernelFunctionLoader {
         JCuda.cudaDeviceSynchronize();
     }
 
+    /**
+     * This method caches all kernels for current thread
+     * @throws Exception
+     */
+    private void loadModules() throws Exception {
+        for(String function: paths.rowKeySet()) {
 
+            for (DataBuffer.Type dataType: DataBuffer.Type.values()) {
+
+                // we don't have dataType INT kernels atm, so we'll skip it
+                if (dataType.equals(DataBuffer.Type.INT)) continue;
+
+                // we assume symmetric values for functions/datatypes. i.e.:path CAN'T be null
+                String path = paths.get(function, dataType);
+                String functionName = function + StringUtils.capitalize(dataType.toString().toLowerCase());
+                log.info("Loading {}", functionName);
+
+
+                KernelLauncher launch = KernelLauncher.load(path, functionName, dataType.toString());
+                launchers.put(Thread.currentThread().getName(), Pair.of(function, dataType), launch);
+            }
+        }
+    }
+
+    @Deprecated
     private void loadModules(String[] split,String kernelPath) throws Exception {
+        /*
+        ContextHolder.getInstance().setContext();
         for (String module : split) {
             log.debug("Loading " + module);
             String path = kernelPath  +  module + ".cubin";
@@ -340,7 +477,7 @@ public class KernelFunctionLoader {
                 printFunction =  KernelLauncher.load(PRINT_KERNEL_NAME,launch.getModule());
             }
         }
-
+        */
     }
 
 
@@ -352,7 +489,7 @@ public class KernelFunctionLoader {
 
         File outputDir = new File(System.getProperty("java.io.tmpdir") + File.separator + "nd4j-kernels","output");
         outputDir.mkdirs();
-        log.info("Compiling cuda kernels");
+        log.info("Compiling cuda kernels into: " + outputDir.getAbsolutePath());
         String[] commands = {"bash","-c","make && /usr/bin/make install"};
         ProcessBuilder probuilder = new ProcessBuilder(commands);
         //You can set up your work directory
@@ -424,4 +561,26 @@ public class KernelFunctionLoader {
     }
 
 
+    /**
+     * This method takes Op, and returns CUDA kernel name that contains implementation
+     *
+     * @param op Op to be discovered
+     * @return
+     */
+    public static String getKernelName(Op op) {
+        if (op instanceof Accumulation) {
+            System.out.println("Accumulation");
+        }
+        return null;
+    }
+
+    /**
+     * This method takes Op, and returns CUDA kernel op factory Id for specified op
+     *
+     * @param op
+     * @return
+     */
+    public static int getOpCode(Op op) {
+        return 0;
+    }
 }

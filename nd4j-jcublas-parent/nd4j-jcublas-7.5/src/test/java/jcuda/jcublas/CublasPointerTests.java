@@ -131,9 +131,18 @@ public class CublasPointerTests {
     @Test
     public void testHostMemory() {
         Pointer hostPointer = Pointer.to(new double[]{1});
-        JCuda.cudaHostAlloc(hostPointer,Sizeof.DOUBLE ,0);
+        JCuda.cudaHostAlloc(hostPointer,Sizeof.DOUBLE , JCuda.cudaHostAllocMapped);
         Pointer devicePointer = new Pointer();
-        JCuda.cudaHostGetDevicePointer(devicePointer,hostPointer, JCuda.cudaHostAllocMapped);
+        JCuda.cudaHostGetDevicePointer(devicePointer,hostPointer, 0);
+        JCuda.cudaFreeHost(hostPointer);
+    }
+
+    @Test
+    public void testPortableHostMemory() {
+        Pointer hostPointer = Pointer.to(new double[]{1});
+        JCuda.cudaHostAlloc(hostPointer,Sizeof.DOUBLE ,JCuda.cudaHostAllocMapped | JCuda.cudaHostAllocPortable);
+        Pointer devicePointer = new Pointer();
+        JCuda.cudaHostGetDevicePointer(devicePointer,hostPointer, 0);
         JCuda.cudaFreeHost(hostPointer);
     }
 
@@ -185,7 +194,6 @@ public class CublasPointerTests {
         DataBuffer shapeBuffer = Nd4j.createBuffer(buff);
         CudaContext ctx = new CudaContext();
         ctx.initOldStream();
-        ContextHolder.getInstance().setContext();
         KernelFunctionLoader.printBuffer((JCudaBuffer) shapeBuffer,ctx);
     }
 

@@ -42,11 +42,13 @@ public class BlasWrapper extends BaseBlasWrapper {
     public final static String FORCE_NATIVE = "org.nd4j.linalg.cpu.force_native";
     static {
         String forceNative = System.getProperty(FORCE_NATIVE,"false");
+        boolean hasSetNative = false;
         if(Boolean.parseBoolean(forceNative)) {
             try {
                 Field blasInstance = BLAS.class.getDeclaredField("INSTANCE");
                 BLAS newInstance = (BLAS) Class.forName("com.github.fommil.netlib.NativeSystemBLAS").newInstance();
                 setFinalStatic(blasInstance, newInstance);
+                hasSetNative = true;
             } catch(ClassNotFoundException e) {
                 log.warn("Native BLAS not available on classpath");
             } catch (Exception e) {
@@ -55,7 +57,7 @@ public class BlasWrapper extends BaseBlasWrapper {
         }
 
         //Check that native system blas is used:
-        if(!(BLAS.getInstance() instanceof com.github.fommil.netlib.NativeSystemBLAS)){
+        if(!hasSetNative){
             System.out.println("****************************************************************");
             System.out.println("WARNING: COULD NOT LOAD NATIVE SYSTEM BLAS");
             System.out.println("ND4J performance WILL be reduced");

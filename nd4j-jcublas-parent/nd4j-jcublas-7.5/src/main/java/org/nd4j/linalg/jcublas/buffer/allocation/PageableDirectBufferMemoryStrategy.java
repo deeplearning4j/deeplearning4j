@@ -10,8 +10,13 @@ import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.jcublas.buffer.DevicePointerInfo;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
+import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
+import org.nd4j.linalg.util.NioUtil;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 
 /**
@@ -78,14 +83,14 @@ public class PageableDirectBufferMemoryStrategy implements MemoryStrategy {
         DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName(),Triple.of(offset,buf2.length(),1));
         if(devicePointerInfo != null) {
             JCuda.cudaMemcpyAsync(
-                    buf2.getHostPointer()
+                    devicePointerInfo.getPointers().getHostPointer()
                     , devicePointerInfo.getPointers().getDevicePointer()
                     , devicePointerInfo.getLength()
                     , cudaMemcpyKind.cudaMemcpyDeviceToHost
                     , context.getOldStream());
         }
 
-        return buf2.getHostPointer();
+        return devicePointerInfo.getPointers().getHostPointer();
     }
 
     @Override
@@ -93,32 +98,59 @@ public class PageableDirectBufferMemoryStrategy implements MemoryStrategy {
         JCudaBuffer buf2 = (JCudaBuffer) copy;
         Table<String, Triple<Integer, Integer, Integer>, DevicePointerInfo> pointersToContexts = buf2.getPointersToContexts();
 
-        DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName(),Triple.of(offset,buf2.length(),1));
+        DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName(),Triple.of(offset,length,1));
         if(devicePointerInfo != null) {
             JCuda.cudaMemcpyAsync(
-                    buf2.getHostPointer()
+                    devicePointerInfo.getPointers().getHostPointer()
                     , devicePointerInfo.getPointers().getDevicePointer()
                     , devicePointerInfo.getLength()
                     , cudaMemcpyKind.cudaMemcpyDeviceToHost
                     , context.getOldStream());
-        }
+        };
 
-        return buf2.getHostPointer();
+        return devicePointerInfo.getPointers().getHostPointer();
     }
 
     @Override
     public Object alloc(DataBuffer buffer, int stride, int offset, int length, boolean initData) {
+        JCudaBuffer buf2 = (JCudaBuffer) buffer;
         Pointer hostData = new Pointer();
-        HostDevicePointer devicePointer = new HostDevicePointer(PointerUtil.getHostPointer(buffer),hostData);
+        Pointer hostPointer = PointerUtil.getHostPointer(buffer);
+        HostDevicePointer devicePointer = new HostDevicePointer(hostPointer,hostData);
         JCuda.cudaMalloc(hostData,buffer.length() * buffer.getElementSize());
-        return new DevicePointerInfo(devicePointer,buffer.getElementSize() * buffer.length(),stride,offset,false);
+
+        DevicePointerInfo devicePointerInfo = new DevicePointerInfo(devicePointer,buffer.getElementSize() * buffer.length(),stride,offset,false);
+        if (initData) {
+            // we'll have to use sync memcpy, to avoid passing CudaContext down here
+            // FIXME: make that one cudaMemcpyAsync once again after we get nice way to pass CudaContext down here
+            JCuda.cudaMemcpy(
+                    devicePointerInfo.getPointers().getDevicePointer()
+                    , devicePointerInfo.getPointers().getHostPointer()
+                    , devicePointerInfo.getLength()
+                    , cudaMemcpyKind.cudaMemcpyHostToDevice);
+
+            // mark content as copied
+            buf2.copied(Thread.currentThread().getName());
+        }
+        return devicePointerInfo;
+    }
+
+    private NioUtil.BufferType getBufferType(DataBuffer buffer) {
+        switch(buffer.dataType()) {
+            case DOUBLE: return NioUtil.BufferType.DOUBLE;
+            case INT: return NioUtil.BufferType.FLOAT;
+            case FLOAT: return NioUtil.BufferType.FLOAT;
+            default: throw new UnsupportedOperationException("Unsupported data buffer type");
+        }
     }
 
     @Override
     public void free(DataBuffer buffer,int offset,int length) {
         JCudaBuffer buf2 = (JCudaBuffer) buffer;
-        DevicePointerInfo devicePointerInfo = buf2.getPointersToContexts().get(Thread.currentThread().getName(),new Pair<>(offset,length));
-        JCuda.cudaFree(devicePointerInfo.getPointers().getDevicePointer());
+        DevicePointerInfo devicePointerInfo = buf2.getPointersToContexts().get(Thread.currentThread().getName(),Triple.of(offset,length, 1));
+        if (devicePointerInfo != null && !devicePointerInfo.isFreed()) {
+            JCuda.cudaFree(devicePointerInfo.getPointers().getDevicePointer());
+        }
 
     }
 

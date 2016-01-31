@@ -761,7 +761,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if(sliceIdx == 0 && length == NDArrayMath.lengthPerSlice(ret2))
             return ret2.slice(offset);
 
-        if(length == NDArrayMath.lengthPerSlice(ret2)) {
+        else if(length == NDArrayMath.lengthPerSlice(ret2)) {
             offset -= ret2.slices() * (offset / ret2.slices());
             ret2 = ret2.slice(offset);
             return ret2;
@@ -1341,7 +1341,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray addi(Number n, INDArray result) {
-
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
         Nd4j.getExecutioner().exec(new ScalarAdd(this, null, result, result.length(), n));
@@ -2177,7 +2176,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     /**
      * In place addition of a column vector
      *
-     * @param rowVector the column vector to add
+     * @param rowVector the row vector to add
      * @return the result of the addition
      */
     @Override
@@ -2188,7 +2187,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     /**
      * In place addition of a column vector
      *
-     * @param rowVector the column vector to add
+     * @param rowVector the row vector to add
      * @return the result of the addition
      */
     @Override
@@ -2221,7 +2220,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     /**
      * In place addition of a column vector
      *
-     * @param rowVector the column vector to add
+     * @param rowVector the row vector to add
      * @return the result of the addition
      */
     @Override
@@ -2232,7 +2231,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     /**
      * In place addition of a column vector
      *
-     * @param rowVector the column vector to add
+     * @param rowVector the row vector to add
      * @return the result of the addition
      */
     @Override
@@ -2265,7 +2264,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     /**
      * In place addition of a column vector
      *
-     * @param rowVector the column vector to add
+     * @param rowVector the row vector to add
      * @return the result of the addition
      */
     @Override
@@ -2276,7 +2275,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     /**
      * In place addition of a column vector
      *
-     * @param rowVector the column vector to add
+     * @param rowVector the row vector to add
      * @return the result of the addition
      */
     @Override
@@ -2309,7 +2308,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     /**
      * In place addition of a column vector
      *
-     * @param rowVector the column vector to add
+     * @param rowVector the row vector to add
      * @return the result of the addition
      */
     @Override
@@ -2320,7 +2319,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     /**
      * In place addition of a column vector
      *
-     * @param rowVector the column vector to add
+     * @param rowVector the row vector to add
      * @return the result of the addition
      */
     @Override
@@ -2810,7 +2809,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray assign(Number value) {
-        data().assign(value,offset());
+        Nd4j.getExecutioner().exec(new ScalarSet(this,value));
         return this;
     }
 

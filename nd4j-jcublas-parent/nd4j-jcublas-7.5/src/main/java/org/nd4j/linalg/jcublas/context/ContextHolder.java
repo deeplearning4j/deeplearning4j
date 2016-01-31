@@ -30,6 +30,7 @@ import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaDeviceProp;
 import jcuda.runtime.cudaStream_t;
 import lombok.Data;
+import lombok.NonNull;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.Op;
@@ -44,6 +45,7 @@ import org.nd4j.linalg.jcublas.context.pool.factory.OldStreamItemFactory;
 import org.nd4j.linalg.jcublas.context.pool.factory.StreamItemFactory;
 import org.nd4j.linalg.jcublas.device.conf.DeviceConfiguration;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
+import org.nd4j.linalg.jcublas.util.CudaArgs;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
 import org.nd4j.linalg.util.SynchronizedTable;
 import org.slf4j.Logger;
@@ -96,7 +98,8 @@ public class ContextHolder {
     private static Logger log = LoggerFactory.getLogger(ContextHolder.class);
     private AtomicBoolean shutdown = new AtomicBoolean(false);
 
-
+    // holder for memory strategies override
+    private Map<String, MemoryStrategy> forcedStrategies = new ConcurrentHashMap<>();
 
     /**
      * Singleton pattern
@@ -163,7 +166,17 @@ public class ContextHolder {
         return threads;
     }
 
-
+    /**
+     * This methord forces use of specific MemoryStrategy for current thread
+     *
+     * PLEASE NOTE: NEVER USE THIS METHOD IN PRODUCTION ENVIRONMENT, IT CAN LEAD TO UNPREDICTABLE RESULTS
+     *
+     * @param memoryStrategy MemoryStrategy to be used withing current thread, if null - forced strategy for current thread will be purged
+     */
+    public void forceMemoryStrategyForThread(MemoryStrategy memoryStrategy) {
+        if (memoryStrategy == null) forcedStrategies.remove(Thread.currentThread().getName());
+            else forcedStrategies.put(Thread.currentThread().getName(), memoryStrategy);
+    }
 
     /**
      * Get the number of devices
@@ -190,7 +203,9 @@ public class ContextHolder {
      * @return
      */
     public MemoryStrategy getMemoryStrategy() {
-        return getConf().getMemoryStrategy();
+        // FIXME: this ad-hoc is used to get forced strategies working for initial pass on CUDA mem allocation tests, and this could/should be removed before release
+        if (forcedStrategies.containsKey(Thread.currentThread().getName())) return forcedStrategies.get(Thread.currentThread().getName());
+            else return getConf().getMemoryStrategy();
     }
 
 
@@ -258,6 +273,21 @@ public class ContextHolder {
             System.err.println(deviceProperties.toFormattedString());
             return;
         }
+
+
+        /*
+        // if we'll need stack initialization, here's the code
+        int numberOfCores = CudaArgs.convertMPtoCores(deviceProperties.major, deviceProperties.minor, deviceProperties.multiProcessorCount) * deviceProperties.multiProcessorCount;
+        int maxThreadsPerCore = deviceProperties.maxThreadsPerMultiProcessor / CudaArgs.convertMPtoCores(deviceProperties.major, deviceProperties.minor, deviceProperties.multiProcessorCount);
+
+
+        long stackSize = Math.min(512*1024, deviceProperties.totalGlobalMem / numberOfCores  / (maxThreadsPerCore + 8) );
+
+        JCuda.cudaDeviceSetLimit(0,stackSize);
+
+        */
+
+
 
         //force certain ops to have a certain number of threads
         Properties threadProps = new Properties();
