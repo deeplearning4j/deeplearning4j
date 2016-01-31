@@ -1,9 +1,7 @@
-package org.deeplearning4j.ui.weights;
+package org.deeplearning4j.ui.weights.beans;
 
 
 import org.deeplearning4j.nn.api.Model;
-import org.nd4j.linalg.api.ndarray.INDArray;
-
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -12,13 +10,15 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * Slightly modified version of ModelAndGradient, with binned params/gradients, suitable for fast network transfers for HistogramIterationListener
+ *
  * @author Adam Gibson
  */
 
-public class ModelAndGradient implements Serializable {
+public class CompactModelAndGradient implements Serializable {
     private long lastUpdateTime = -1L;
-    private Map<String,INDArray> parameters;
-    private Map<String,INDArray> gradients;
+    private Map<String,Map> parameters;
+    private Map<String,Map> gradients;
     private double score;
     private List<Double> scores = new ArrayList<>();
     private List<Map<String,List<Double>>> updateMagnitudes = new ArrayList<>();
@@ -27,16 +27,9 @@ public class ModelAndGradient implements Serializable {
     private String path;
 
 
-    public ModelAndGradient() {
+    public CompactModelAndGradient() {
         parameters = new HashMap<>();
         gradients = new HashMap<>();
-    }
-
-    public ModelAndGradient(Model model) {
-        model.computeGradientAndScore();
-        this.gradients = model.gradient().gradientForVariable();
-        this.parameters = model.paramTable();
-        this.score = model.score();
     }
 
 
@@ -57,20 +50,20 @@ public class ModelAndGradient implements Serializable {
     }
 
 
-    public Map<String, INDArray> getParameters() {
+    public Map<String, Map> getParameters() {
         return parameters;
     }
 
-    public void setParameters(Map<String, INDArray> parameters) {
+    public void setParameters(Map<String, Map> parameters) {
         this.parameters = parameters;
     }
 
 
-    public Map<String, INDArray> getGradients() {
+    public Map<String, Map> getGradients() {
         return gradients;
     }
 
-    public void setGradients(Map<String, INDArray> gradients) {
+    public void setGradients(Map<String, Map> gradients) {
         this.gradients = gradients;
     }
 
@@ -119,7 +112,7 @@ public class ModelAndGradient implements Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        ModelAndGradient that = (ModelAndGradient) o;
+        CompactModelAndGradient that = (CompactModelAndGradient) o;
 
         if (Double.compare(that.score, score) != 0) return false;
         if (parameters != null ? !parameters.equals(that.parameters) : that.parameters != null) return false;

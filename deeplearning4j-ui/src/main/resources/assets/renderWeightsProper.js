@@ -45,9 +45,9 @@
     var gXAxis = new Array();
     var gYAxis = new Array();
 
-    // these two probably not needed
     var gX = new Array();
     var gY = new Array();
+    var gXT = new Array();
 
 
     // elements of scorechart
@@ -91,27 +91,69 @@
 
     function appendHistogram(values,selector, id) {
         // A formatter for counts.
+     //   if (id != "modelb") return;
+
+//        console.log("selector: " + selector + " id: " + id);
+
         var formatCount = d3.format(",.0f");
+        var data = [];
+        var binNum = 0;
+        var binTicks = [];
+        var min = null;
+        var max = null;
+
+        // convert json to d3 data structure
+        var keys = Object.keys(values);
+        for (var k = 0; k < keys.length; k++) {
+            var key = keys[k];
+            var fkey = parseFloat(key);
+            var value = parseInt(values[key]);
+
+            if (min == null) min = fkey;
+            if (max == null) max = fkey;
+
+            if (min > fkey) min = fkey;
+            if (max < fkey) max = fkey;
+
+
+            data.push({"x": parseFloat(key), "y": value});
+            binTicks.push(key);
+            binNum++;
+        }
+
+        var binWidth = parseFloat(width / (binNum - 1)) - 1;
 
         if (gSVG[id] != undefined || gSVG[id] != null) {
          //   console.log("SVG for key [" + id + "] is already defined. Going to update data");
-
+/*
             var data = d3.layout.histogram()
                 .bins(gX[id].ticks(20))
                 (values);
+*/
 
-            var min = d3.min(data);
-            var max = d3.max(data);
+
+
+            gX[id] = d3.scale.linear()
+                .domain([min, max])
+                .range([0, width]);
+
+            gXT[id] = d3.scale.linear()
+                .domain([min, max])
+                .range([0, width - margin.right - 5]);
 
             gY[id] = d3.scale.linear()
                             .domain([0, d3.max(data, function(d) { return d.y; })])
                             .range([height, 0]);
 
+            gXAxis[id] = d3.svg.axis()
+                            .scale(gX[id])
+                            .orient("bottom")
+                            .tickValues(binTicks);
+
 
             var bar = gSVG[id].selectAll(".bar")
                             .data(data)
-
-            bar.attr("transform", function(d) { return "translate(" + gX[id](d.x) + "," + gY[id](d.y) + ")"; });
+                            .attr("transform", function(d) { return "translate(" + gXT[id](d.x) + "," + gY[id](d.y) + ")"; });
 
             gSVG[id].selectAll("text")
                 .data(data)
@@ -125,31 +167,56 @@
                 })
                 .attr("height", function(d) { return height-gY[id](d.y) });
 
+            gSVG[id].selectAll(".x.axis")
+                            .attr("transform", "translate(0," + height + ")")
+                            .call(gXAxis[id]);
+
             return;
         }
 
 
     //    console.log("SVG for key [" + id + "] is NOT defined");
 
-        var data = values;
-        var min = d3.min(data);
-        var max = d3.max(data);
+        //var data = values;
+
+/*
         if(isNaN(min)){
             min = 0.0;
             max = 1.0;
         }
+*/
+
+
 
         gX[id] = d3.scale.linear()
                 .domain([min, max])
                 .range([0, width]);
 
+        gXT[id] = d3.scale.linear()
+                .domain([min, max])
+                .range([0, width - margin.right - 5]);
+
+
+
         // Generate a histogram using twenty uniformly-spaced bins.
-        var data = d3.layout.histogram()
+        /*var data = d3.layout.histogram()
                 .bins(gX[id].ticks(20))
                 (values);
+        */
 
-        fdata = data;
+        /*
+        console.log("---------------");
+        console.log("Min: " + min + " Max: " +max );
+        console.log("BinWidth: " + binWidth);
+        console.log("BinTicks: " + binTicks);
+        console.log("TicksNum: " + binTicks.length);
+        console.log("Data: ");
 
+        for (var i = 0; i < data.length; i++) {
+            console.log("X: " + data[i].x + " Y: " + data[i].y);
+        }
+        console.log("---------------");
+        */
         gY[id] = d3.scale.linear()
                 .domain([0, d3.max(data, function(d) { return d.y; })])
                 .range([height, 0]);
@@ -164,18 +231,20 @@
 
         gXAxis[id] = d3.svg.axis()
                 .scale(gX[id])
-                .orient("bottom");
+                .orient("bottom")
+                .tickValues(binTicks);
 
         var bar = gSVG[id].selectAll(".bar")
                 .data(data)
-                .enter().append("g")
+                .enter()
+                .append("g")
                 .attr("class", "bar")
-                .attr("transform", function(d) { return "translate(" + gX[id](d.x) + "," + gY[id](d.y) + ")"; });
+                .attr("transform", function(d) { return "translate(" + gXT[id](d.x) + "," + gY[id](d.y) + ")"; });
 
         bar.append("rect")
                 .attr("x", 1)
                 .attr("y", 0)
-                .attr("width", gX[id](min+data[0].dx) -1 )
+                .attr("width", binWidth - 3)
                 .attr("height", function(d) {
                         return height - gY[id](d.y);
                         });
@@ -183,7 +252,7 @@
         bar.append("text")
                 .attr("dy", ".75em")
                 .attr("y", 6)
-                .attr("x", gX[id](min+data[0].dx) / 2)
+                .attr("x", binWidth - (binWidth / 2))
                 .attr("text-anchor", "middle")
                 .attr("color","#000000")
                 .attr("font-size","9px")
@@ -557,8 +626,8 @@ var timed = function() {
                                                 $(selectorGradient).append(divGradient);
                                             }
 
-                                            appendHistogram(model[key]['dataBuffer'],selectorModel + ' .' + key, "model"+ key );
-                                            appendHistogram(gradient[key]['dataBuffer'],selectorGradient + ' .' + key, "gradient"+ key );
+                                            appendHistogram(model[key],selectorModel + ' .' + key, "model"+ key );
+                                            appendHistogram(gradient[key],selectorGradient + ' .' + key, "gradient"+ key );
                                             /*
                                                 update selector box if needed
                                             */
@@ -620,8 +689,9 @@ var timed = function() {
                                         var time = new Date(updateTime);
                                         $('#updatetime').html(time.customFormat("#DD#/#MM#/#YYYY# #hhh#:#mm#:#ss#"));
 
-                                        // all subsequent refreshes are delayed by 10 seconds
-                                        setTimeout(timed, 10000)
+                                        // all subsequent refreshes are delayed by 2 seconds
+                                        // TODO: make this configurable
+                                        setTimeout(timed, 2000)
                                     });
                     }
                 })
