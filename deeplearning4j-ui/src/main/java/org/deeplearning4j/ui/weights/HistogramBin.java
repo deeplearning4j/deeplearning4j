@@ -60,7 +60,7 @@ public class HistogramBin implements Serializable {
 
         for (int x = 0; x < numberOfBins; x++) {
             BigDecimal pos = new BigDecimal((min + (x * binSize))).setScale(rounds, BigDecimal.ROUND_CEILING);
-            data.put(pos, new AtomicInteger(1));
+            data.put(pos, new AtomicInteger(0));
             keys[x] = pos;
         }
 
