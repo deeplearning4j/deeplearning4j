@@ -17,7 +17,7 @@
  *
  */
 
-package org.nd4j.linalg.cpu.complex;
+package org.nd4j.linalg.cpu.nativecpu.complex;
 
 import org.nd4j.linalg.api.complex.BaseComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;

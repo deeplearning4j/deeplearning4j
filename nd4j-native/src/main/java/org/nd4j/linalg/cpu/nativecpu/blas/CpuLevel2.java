@@ -1,4 +1,4 @@
-package org.nd4j.linalg.cpu.blas;
+package org.nd4j.linalg.cpu.nativecpu.blas;
 
 
 import org.nd4j.linalg.api.blas.impl.BaseLevel2;
@@ -6,7 +6,7 @@ import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.cpu.CBLAS;
+import org.nd4j.linalg.cpu.nativecpu.CBLAS;
 
 
 /**

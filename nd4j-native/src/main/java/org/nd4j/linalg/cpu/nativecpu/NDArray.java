@@ -17,7 +17,7 @@
  *
  */
 
-package org.nd4j.linalg.cpu;
+package org.nd4j.linalg.cpu.nativecpu;
 
 
 import org.nd4j.linalg.api.buffer.DataBuffer;

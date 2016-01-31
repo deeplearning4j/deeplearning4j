@@ -1,9 +1,9 @@
-package org.nd4j.linalg.cpu.javacpp;
+package org.nd4j.linalg.cpu.nativecpu.javacpp;
 
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.cpu.CBLAS;
+import org.nd4j.linalg.cpu.nativecpu.CBLAS;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.nio.ByteBuffer;

@@ -1,7 +1,6 @@
-package org.nd4j.linalg.cpu;
+package org.nd4j.linalg.cpu.nativecpu;
 
 
-import org.scijava.nativelib.NativeLibraryUtil;
 
 import java.nio.Buffer;
 
@@ -30,9 +29,6 @@ public class CBLAS {
     public static final int SIDE_RIGHT = 142;
 
 
-    static {
-        NativeLibraryUtil.loadNativeLibrary(CBLAS.class,"nd4j");
-    }
 
     /*
      * ======================================================

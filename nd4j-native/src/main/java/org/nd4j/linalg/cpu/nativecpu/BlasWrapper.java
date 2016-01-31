@@ -17,9 +17,10 @@
  *
  */
 
-package org.nd4j.linalg.cpu;
+package org.nd4j.linalg.cpu.nativecpu;
 
 
+import org.nd4j.linalg.cpu.nativecpu.util.LibUtils;
 import org.nd4j.linalg.factory.BaseBlasWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +36,9 @@ import org.slf4j.LoggerFactory;
  */
 public class BlasWrapper extends BaseBlasWrapper {
 
-
+    static {
+        LibUtils.loadLibrary("libnd4j");
+    }
 
 
 }

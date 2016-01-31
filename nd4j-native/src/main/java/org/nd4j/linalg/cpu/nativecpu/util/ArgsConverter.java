@@ -1,4 +1,4 @@
-package org.nd4j.linalg.cpu.util;
+package org.nd4j.linalg.cpu.nativecpu.util;
 
 import org.nd4j.linalg.api.ops.Op;
 

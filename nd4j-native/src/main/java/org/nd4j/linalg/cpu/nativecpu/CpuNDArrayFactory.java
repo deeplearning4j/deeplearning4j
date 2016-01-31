@@ -17,7 +17,7 @@
  *
  */
 
-package org.nd4j.linalg.cpu;
+package org.nd4j.linalg.cpu.nativecpu;
 
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -26,15 +26,15 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.cpu.blas.CpuLapack;
+import org.nd4j.linalg.cpu.nativecpu.blas.CpuLapack;
 import org.nd4j.linalg.factory.BaseNDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.cpu.blas.CpuLevel1;
-import org.nd4j.linalg.cpu.blas.CpuLevel2;
-import org.nd4j.linalg.cpu.blas.CpuLevel3;
-import org.nd4j.linalg.cpu.complex.ComplexDouble;
-import org.nd4j.linalg.cpu.complex.ComplexFloat;
-import org.nd4j.linalg.cpu.complex.ComplexNDArray;
+import org.nd4j.linalg.cpu.nativecpu.blas.CpuLevel1;
+import org.nd4j.linalg.cpu.nativecpu.blas.CpuLevel2;
+import org.nd4j.linalg.cpu.nativecpu.blas.CpuLevel3;
+import org.nd4j.linalg.cpu.nativecpu.complex.ComplexDouble;
+import org.nd4j.linalg.cpu.nativecpu.complex.ComplexFloat;
+import org.nd4j.linalg.cpu.nativecpu.complex.ComplexNDArray;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.List;

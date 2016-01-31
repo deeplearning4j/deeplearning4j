@@ -1,4 +1,4 @@
-package org.nd4j.linalg.cpu.ops;
+package org.nd4j.linalg.cpu.nativecpu.ops;
 
 
 import org.nd4j.linalg.api.buffer.DataBuffer;

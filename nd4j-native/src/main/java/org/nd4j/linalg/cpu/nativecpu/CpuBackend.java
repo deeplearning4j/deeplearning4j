@@ -17,7 +17,7 @@
  *
  */
 
-package org.nd4j.linalg.cpu;
+package org.nd4j.linalg.cpu.nativecpu;
 
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.io.Resource;

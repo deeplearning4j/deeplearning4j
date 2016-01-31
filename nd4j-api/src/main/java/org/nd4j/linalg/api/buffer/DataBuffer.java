@@ -60,6 +60,8 @@ public interface DataBuffer extends Serializable {
     }
 
 
+
+
     /**
      * Returns the backing array
      * of this buffer (if there is one)
@@ -67,6 +69,12 @@ public interface DataBuffer extends Serializable {
      */
     Object array();
 
+    /**
+     * Returns a view of this as an
+     * nio byte buffer
+     * @return a view of this as an nio double buffer
+     */
+    java.nio.IntBuffer asNioInt();
     /**
      * Returns a view of this as an
      * nio byte buffer
@@ -413,6 +421,14 @@ public interface DataBuffer extends Serializable {
      * @return the length of the buffer
      */
     int length();
+
+    /**
+     * Returns the offset of the buffer
+     *
+     * @return the offset of the buffer
+     */
+    int offset();
+
 
     /**
      * Get the int at the specified index

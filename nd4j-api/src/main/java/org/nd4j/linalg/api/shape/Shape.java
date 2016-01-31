@@ -1457,7 +1457,8 @@ public class Shape {
      * @return
      */
     public static IntBuffer shapeOf(IntBuffer buffer) {
-        return (IntBuffer) buffer.asReadOnlyBuffer().position(1).limit(Shape.rank(buffer));
+        IntBuffer ret =  (IntBuffer) buffer.position(1);
+        return ret.slice();
     }
 
     /**
@@ -1504,8 +1505,7 @@ public class Shape {
      * @return the shape information buffer given the parameters
      */
     public static IntBuffer createShapeInformation(int[] shape,int[] stride,int offset,int elementWiseStride,char order) {
-        ByteBuffer directAlloc = ByteBuffer.allocateDirect(4 * shapeInfoLength(shape.length)).order(ByteOrder.nativeOrder());
-        IntBuffer ret = directAlloc.asIntBuffer();
+        DataBuffer ret = Nd4j.createBuffer(new int[shapeInfoLength(shape.length)]);
         int count = 1;
         ret.put(0,shape.length);
         for (int i = 0; i < shape.length; i++) {
@@ -1520,7 +1520,7 @@ public class Shape {
         ret.put(count++,order);
 
 
-        return ret;
+        return ret.asNioInt();
     }
 
 
@@ -1563,11 +1563,12 @@ public class Shape {
      * @return true if the content equals false otherwise
      */
     public static boolean contentEquals(int[] arr,IntBuffer other) {
-        if(arr.length != other.capacity())
-            return false;
-        for(int i = 0; i < arr.length; i++)
-            if(arr[i] != other.get(i))
+        for(int i = 0; i < arr.length; i++) {
+            other.position(i);
+            if (arr[i] != other.get()) {
                 return false;
+            }
+        }
         return true;
     }
 
@@ -1575,7 +1576,8 @@ public class Shape {
     public static boolean isContiguousInBuffer(INDArray in) {
         int length = in.length();
         int dLength = in.data().length();
-        if( length == dLength ) return true;    //full buffer, can't not be contiguous
+        if(length == dLength)
+            return true;    //full buffer, always contiguous
 
         char order = in.ordering();
 

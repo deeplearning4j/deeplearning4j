@@ -1,4 +1,4 @@
-package org.nd4j.linalg.cpu.blas;
+package org.nd4j.linalg.cpu.nativecpu.blas;
 
 import org.nd4j.linalg.api.blas.impl.BaseLapack;
 

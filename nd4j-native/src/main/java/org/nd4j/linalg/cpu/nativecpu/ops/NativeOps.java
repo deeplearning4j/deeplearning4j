@@ -1,4 +1,4 @@
-package org.nd4j.linalg.cpu.ops;
+package org.nd4j.linalg.cpu.nativecpu.ops;
 
 import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
