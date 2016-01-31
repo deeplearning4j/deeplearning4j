@@ -1,14 +1,10 @@
-package org.nd4j.linalg.cpu.nativecpu.javacpp;
+package org.nd4j.linalg.cpu.javacpp;
 
 import org.junit.Test;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.cpu.nativecpu.CBLAS;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.FloatBuffer;
 import static org.junit.Assert.*;
 /**
  * @author Adam Gibson

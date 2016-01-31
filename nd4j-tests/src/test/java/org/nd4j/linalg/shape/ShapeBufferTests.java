@@ -51,6 +51,11 @@ public class ShapeBufferTests extends BaseNd4jTest {
         IntBuffer buff = Shape.createShapeInformation(shape, stride, 0, 1, 'c');
         IntBuffer shapeView = Shape.shapeOf(buff);
         assertTrue(Shape.contentEquals(shape,shapeView));
+        IntBuffer strideView = Shape.stride(buff);
+        assertTrue(Shape.contentEquals(stride,strideView));
+        assertEquals('c',Shape.order(buff));
+        assertEquals(1,Shape.elementWiseStride(buff));
+        
 
     }
 

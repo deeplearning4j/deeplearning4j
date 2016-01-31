@@ -1446,7 +1446,8 @@ public class Shape {
      * @return
      */
     public static IntBuffer stride(IntBuffer buffer) {
-        return (IntBuffer) buffer.asReadOnlyBuffer().position(1 + rank(buffer));
+        IntBuffer ret =  (IntBuffer) buffer.asReadOnlyBuffer().position(1 + rank(buffer));
+        return ret.slice();
     }
 
 
@@ -1490,7 +1491,7 @@ public class Shape {
      * @return
      */
     public static char order(IntBuffer buffer) {
-        int length = buffer.capacity() * 2 + 4;
+        int length = Shape.shapeInfoLength(Shape.rank(buffer));
         return (char) buffer.get(length - 1);
     }
 
