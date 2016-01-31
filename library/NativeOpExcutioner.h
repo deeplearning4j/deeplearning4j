@@ -54,9 +54,7 @@ public:
     T execIndexReduceScalar(int opNum,
                             T *x,
                             int *xShapeInfo,
-                            T *extraParams,
-                            T *result,
-                            int *resultShapeInfo) {
+                            T *extraParams) {
         functions::indexreduce::IndexReduce<T> *op = indexReduceOpFactory->getOp(opNum);
         T ret = op->execScalar(x,xShapeInfo,extraParams);
         delete op;
