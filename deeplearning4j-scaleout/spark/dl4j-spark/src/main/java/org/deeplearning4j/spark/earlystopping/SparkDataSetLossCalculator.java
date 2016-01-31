@@ -1,8 +1,7 @@
 package org.deeplearning4j.spark.earlystopping;
 
+import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.JavaSparkContext;
-import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.earlystopping.scorecalc.ScoreCalculator;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
@@ -16,14 +15,14 @@ public class SparkDataSetLossCalculator implements ScoreCalculator<MultiLayerNet
 
     private JavaRDD<DataSet> data;
     private boolean average;
-    private JavaSparkContext sc;
+    private SparkContext sc;
 
     /**Calculate the score (loss function value) on a given data set (usually a test set)
      *
      * @param data Data set to calculate the score for
      * @param average Whether to return the average (sum of loss / N) or just (sum of loss)
      */
-    public SparkDataSetLossCalculator(JavaRDD<DataSet> data, boolean average, JavaSparkContext sc) {
+    public SparkDataSetLossCalculator(JavaRDD<DataSet> data, boolean average, SparkContext sc) {
         this.data = data;
         this.average = average;
         this.sc = sc;
@@ -33,7 +32,7 @@ public class SparkDataSetLossCalculator implements ScoreCalculator<MultiLayerNet
     public double calculateScore(MultiLayerNetwork network) {
 
         SparkDl4jMultiLayer net = new SparkDl4jMultiLayer(sc,network);
-        return net.calculateScore(data,true);
+        return net.calculateScore(data,average);
     }
 
 }
