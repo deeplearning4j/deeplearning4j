@@ -17,8 +17,8 @@ import java.util.Map;
 
 public class ModelAndGradient implements Serializable {
     private long lastUpdateTime = -1L;
-    private Map<String,INDArray> parameters;
-    private Map<String,INDArray> gradients;
+    private Map<String,Map> parameters;
+    private Map<String,Map> gradients;
     private double score;
     private List<Double> scores = new ArrayList<>();
     private List<Map<String,List<Double>>> updateMagnitudes = new ArrayList<>();
@@ -34,8 +34,8 @@ public class ModelAndGradient implements Serializable {
 
     public ModelAndGradient(Model model) {
         model.computeGradientAndScore();
-        this.gradients = model.gradient().gradientForVariable();
-        this.parameters = model.paramTable();
+    //    this.gradients = model.gradient().gradientForVariable();
+    //    this.parameters = model.paramTable();
         this.score = model.score();
     }
 
@@ -57,20 +57,20 @@ public class ModelAndGradient implements Serializable {
     }
 
 
-    public Map<String, INDArray> getParameters() {
+    public Map<String, Map> getParameters() {
         return parameters;
     }
 
-    public void setParameters(Map<String, INDArray> parameters) {
+    public void setParameters(Map<String, Map> parameters) {
         this.parameters = parameters;
     }
 
 
-    public Map<String, INDArray> getGradients() {
+    public Map<String, Map> getGradients() {
         return gradients;
     }
 
-    public void setGradients(Map<String, INDArray> gradients) {
+    public void setGradients(Map<String, Map> gradients) {
         this.gradients = gradients;
     }
 

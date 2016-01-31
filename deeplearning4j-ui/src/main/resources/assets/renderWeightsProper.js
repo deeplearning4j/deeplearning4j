@@ -5,6 +5,8 @@
     2. Add 3D surface as overall view for gradients and weights
 */
 
+    var fdata;
+
     var modelSelector = new Array();
     var magnitudesSelector = new Array();
 
@@ -145,6 +147,8 @@
         var data = d3.layout.histogram()
                 .bins(gX[id].ticks(20))
                 (values);
+
+        fdata = data;
 
         gY[id] = d3.scale.linear()
                 .domain([0, d3.max(data, function(d) { return d.y; })])

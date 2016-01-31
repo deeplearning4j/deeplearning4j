@@ -2,7 +2,6 @@ package org.deeplearning4j.ui.weights;
 
 
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
-import io.dropwizard.server.DefaultServerFactory;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.ui.UiServer;
@@ -95,13 +94,16 @@ public class HistogramIterationListener implements IterationListener {
             }
 
             //Process gradients: duplicate + calculate and store mean magnitudes
-            Map<String,INDArray> newGrad = new LinkedHashMap<>();
+            Map<String,Map> newGrad = new LinkedHashMap<>();
             for(Map.Entry<String,INDArray> entry : grad.entrySet() ){
                 String param = entry.getKey();
                 String newName;
                 if(Character.isDigit(param.charAt(0))) newName = "param_" + param;
                 else newName = param;
-                newGrad.put(newName,entry.getValue().dup());
+                HistogramBin histogram = new HistogramBin.Builder(entry.getValue().dup())
+                        .setBinCount(20)
+                        .build();
+                newGrad.put(newName,histogram.getData());
                 //CSS identifier can't start with digit http://www.w3.org/TR/CSS21/syndata.html#value-def-identifier
 
                 //Work out layer index:
@@ -117,15 +119,17 @@ public class HistogramIterationListener implements IterationListener {
 
             //Process parameters: duplicate + calculate and store mean magnitudes
             Map<String,INDArray> params = model.paramTable();
-            Map<String,INDArray> newParams = new LinkedHashMap<>();
+            Map<String,Map> newParams = new LinkedHashMap<>();
             for(Map.Entry<String,INDArray> entry : params.entrySet()) {
                 String param = entry.getKey();
                 String newName;
                 if(Character.isDigit(param.charAt(0))) newName = "param_" + param;
                 else newName = param;
 
-
-                newParams.put(newName, entry.getValue().dup());
+                HistogramBin histogram = new HistogramBin.Builder(entry.getValue().dup())
+                        .setBinCount(20)
+                        .build();
+                newParams.put(newName, histogram.getData());
                 //dup() because params might be a view
 
                 Map<String,List<Double>> map = meanMagHistoryParams.get(indexFromString(param));
@@ -151,6 +155,7 @@ public class HistogramIterationListener implements IterationListener {
             g.setParamMagnitudes(meanMagHistoryParams);
             g.setLayerNames(layerNames);
             g.setLastUpdateTime(System.currentTimeMillis());
+
 
             Response resp = target.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).post(Entity.entity(g,MediaType.APPLICATION_JSON));
             log.debug("{}",resp);
