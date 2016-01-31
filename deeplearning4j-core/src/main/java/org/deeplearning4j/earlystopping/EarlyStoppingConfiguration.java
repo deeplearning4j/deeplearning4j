@@ -23,6 +23,7 @@ import org.deeplearning4j.earlystopping.saver.InMemoryModelSaver;
 import org.deeplearning4j.earlystopping.scorecalc.ScoreCalculator;
 import org.deeplearning4j.earlystopping.termination.EpochTerminationCondition;
 import org.deeplearning4j.earlystopping.termination.IterationTerminationCondition;
+import org.deeplearning4j.nn.api.Model;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -40,16 +41,16 @@ import java.util.List;
  * @author Alex Black
  */
 @Data
-public class EarlyStoppingConfiguration implements Serializable {
+public class EarlyStoppingConfiguration<T extends Model> implements Serializable {
 
-    private EarlyStoppingModelSaver modelSaver;
+    private EarlyStoppingModelSaver<T> modelSaver;
     private List<EpochTerminationCondition> epochTerminationConditions;
     private List<IterationTerminationCondition> iterationTerminationConditions;
     private boolean saveLastModel;
     private int evaluateEveryNEpochs;
-    private ScoreCalculator scoreCalculator;
+    private ScoreCalculator<T> scoreCalculator;
 
-    private EarlyStoppingConfiguration( Builder builder ){
+    private EarlyStoppingConfiguration( Builder<T> builder ){
         this.modelSaver = builder.modelSaver;
         this.epochTerminationConditions = builder.epochTerminationConditions;
         this.iterationTerminationConditions = builder.iterationTerminationConditions;
@@ -59,36 +60,36 @@ public class EarlyStoppingConfiguration implements Serializable {
     }
 
 
-    public static class Builder {
+    public static class Builder<T extends Model> {
 
-        private EarlyStoppingModelSaver modelSaver = new InMemoryModelSaver();
+        private EarlyStoppingModelSaver<T> modelSaver = new InMemoryModelSaver<>();
         private List<EpochTerminationCondition> epochTerminationConditions = new ArrayList<>();
         private List<IterationTerminationCondition> iterationTerminationConditions = new ArrayList<>();
         private boolean saveLastModel = false;
         private int evaluateEveryNEpochs = 1;
-        private ScoreCalculator scoreCalculator;
+        private ScoreCalculator<T> scoreCalculator;
 
         /** How should models be saved? (Default: in memory)*/
-        public Builder modelSaver( EarlyStoppingModelSaver modelSaver ){
+        public Builder<T> modelSaver( EarlyStoppingModelSaver<T> modelSaver ){
             this.modelSaver = modelSaver;
             return this;
         }
 
         /** Termination conditions to be evaluated every N epochs, with N set by evaluateEveryNEpochs option */
-        public Builder epochTerminationConditions(EpochTerminationCondition... terminationConditions){
+        public Builder<T> epochTerminationConditions(EpochTerminationCondition... terminationConditions){
             epochTerminationConditions.clear();
             Collections.addAll(epochTerminationConditions, terminationConditions);
             return this;
         }
 
         /** Termination conditions to be evaluated every N epochs, with N set by evaluateEveryNEpochs option */
-        public Builder epochTerminationConditions(List<EpochTerminationCondition> terminationConditions){
+        public Builder<T> epochTerminationConditions(List<EpochTerminationCondition> terminationConditions){
             this.epochTerminationConditions = terminationConditions;
             return this;
         }
 
         /** Termination conditions to be evaluated every iteration (minibatch)*/
-        public Builder iterationTerminationConditions(IterationTerminationCondition... terminationConditions){
+        public Builder<T> iterationTerminationConditions(IterationTerminationCondition... terminationConditions){
             iterationTerminationConditions.clear();
             Collections.addAll(iterationTerminationConditions,terminationConditions);
             return this;
@@ -99,13 +100,13 @@ public class EarlyStoppingConfiguration implements Serializable {
          * Useful for example if you might want to continue training after a max-time terminatino condition
          * occurs.
          */
-        public Builder saveLastModel(boolean saveLastModel){
+        public Builder<T> saveLastModel(boolean saveLastModel){
             this.saveLastModel = saveLastModel;
             return this;
         }
 
         /** How frequently should evaluations be conducted (in terms of epochs)? Defaults to every (1) epochs. */
-        public Builder evaluateEveryNEpochs(int everyNEpochs){
+        public Builder<T> evaluateEveryNEpochs(int everyNEpochs){
             this.evaluateEveryNEpochs = everyNEpochs;
             return this;
         }
@@ -113,14 +114,14 @@ public class EarlyStoppingConfiguration implements Serializable {
         /** Score calculator. Used to calculate a score (such as loss function on a test set), every N epochs,
          * where N is set by {@link #evaluateEveryNEpochs}
          */
-        public Builder scoreCalculator(ScoreCalculator scoreCalculator){
+        public Builder<T> scoreCalculator(ScoreCalculator<T> scoreCalculator){
             this.scoreCalculator = scoreCalculator;
             return this;
         }
 
         /** Create the early stopping configuration */
-        public EarlyStoppingConfiguration build(){
-            return new EarlyStoppingConfiguration(this);
+        public EarlyStoppingConfiguration<T> build(){
+            return new EarlyStoppingConfiguration<>(this);
         }
 
     }
