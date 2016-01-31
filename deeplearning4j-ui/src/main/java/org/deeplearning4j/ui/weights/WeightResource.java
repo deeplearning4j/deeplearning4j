@@ -22,6 +22,7 @@ import com.codahale.metrics.annotation.ExceptionMetered;
 import io.dropwizard.views.View;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.ui.weights.beans.CompactModelAndGradient;
 
 
 import javax.ws.rs.*;
@@ -39,7 +40,7 @@ import java.util.HashMap;
  */
 @Path("/weights")
 public class WeightResource {
-    private ModelAndGradient current;
+    private CompactModelAndGradient current;
     String path = "weights";
     private boolean updated = true;
     @GET
@@ -78,7 +79,7 @@ public class WeightResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @ExceptionMetered
-    public Response update(ModelAndGradient modelAndGrad, @PathParam("path") String path) {
+    public Response update(CompactModelAndGradient modelAndGrad, @PathParam("path") String path) {
         this.current = modelAndGrad;
         this.path = modelAndGrad.getPath();
         updated = true;

@@ -7,6 +7,7 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.ui.UiServer;
 import org.deeplearning4j.ui.UiUtils;
 import org.deeplearning4j.ui.providers.ObjectMapperProvider;
+import org.deeplearning4j.ui.weights.beans.CompactModelAndGradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -102,6 +103,7 @@ public class HistogramIterationListener implements IterationListener {
                 else newName = param;
                 HistogramBin histogram = new HistogramBin.Builder(entry.getValue().dup())
                         .setBinCount(20)
+                        .setRounding(6)
                         .build();
                 newGrad.put(newName,histogram.getData());
                 //CSS identifier can't start with digit http://www.w3.org/TR/CSS21/syndata.html#value-def-identifier
@@ -128,6 +130,7 @@ public class HistogramIterationListener implements IterationListener {
 
                 HistogramBin histogram = new HistogramBin.Builder(entry.getValue().dup())
                         .setBinCount(20)
+                        .setRounding(6)
                         .build();
                 newParams.put(newName, histogram.getData());
                 //dup() because params might be a view
@@ -145,7 +148,7 @@ public class HistogramIterationListener implements IterationListener {
             double score = model.score();
             scoreHistory.add(score);
 
-            ModelAndGradient g = new ModelAndGradient();
+            CompactModelAndGradient g = new CompactModelAndGradient();
             g.setGradients(newGrad);
             g.setParameters(newParams);
             g.setScore(score);
