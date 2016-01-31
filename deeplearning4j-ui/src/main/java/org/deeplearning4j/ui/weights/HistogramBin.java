@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -26,6 +28,7 @@ public class HistogramBin implements Serializable {
     private double min;
     private Map<BigDecimal, AtomicInteger> data = new LinkedHashMap<>();
 
+    private static final Logger log = LoggerFactory.getLogger(HistogramBin.class);
 
     /**
      * No-Args constructor should be used only for serialization/deserialization purposes.
@@ -49,41 +52,33 @@ public class HistogramBin implements Serializable {
         min = sourceArray.minNumber().doubleValue();
 
         bins = Nd4j.create(numberOfBins);
-        final double binSize = (max - min) / numberOfBins;
+        final double binSize = (max - min) / (numberOfBins - 1);
+
+
+        data = new LinkedHashMap<>();
+        BigDecimal[] keys = new BigDecimal[numberOfBins];
+
+        for (int x = 0; x < numberOfBins; x++) {
+            BigDecimal pos = new BigDecimal((min + (x * binSize))).setScale(rounds, BigDecimal.ROUND_CEILING);
+            data.put(pos, new AtomicInteger(1));
+            keys[x] = pos;
+        }
+
         for (int x = 0; x < sourceArray.length(); x++) {
             double d = sourceArray.getDouble(x);
             int bin = (int) ((d - min) / binSize);
 
-
-
             if (bin < 0) {
                 bins.putScalar(0, bins.getDouble(0) + 1);
-                BigDecimal pos = new BigDecimal(round(min, rounds));
-
-                if (!data.containsKey(pos)) data.put(pos, new AtomicInteger(0));
-                data.get(pos).incrementAndGet();
+                data.get(keys[0]).incrementAndGet();
             } else if (bin >= numberOfBins) {
                 bins.putScalar(numberOfBins - 1, bins.getDouble(numberOfBins-1) + 1);
-                BigDecimal pos = new BigDecimal(round(max, rounds));
-
-                if (!data.containsKey(pos)) data.put(pos, new AtomicInteger(0));
-                data.get(pos).incrementAndGet();
-            } else {
-                BigDecimal pos = new BigDecimal(round((bin+1) * binSize, rounds));
+                data.get(keys[numberOfBins-1]).incrementAndGet();
+              } else {
                 bins.putScalar(bin, bins.getDouble(bin) + 1);
-
-                if (!data.containsKey(pos)) data.put(pos, new AtomicInteger(0));
-                data.get(pos).incrementAndGet();
+                data.get(keys[bin]).incrementAndGet();
             }
         }
-    }
-
-    private static double round(double value, int places) {
-        if (places < 0) throw new IllegalArgumentException();
-
-        BigDecimal bd = new BigDecimal(value);
-        bd = bd.setScale(places, RoundingMode.HALF_UP);
-        return bd.doubleValue();
     }
 
     public static class Builder {
