@@ -11,7 +11,7 @@ import org.nd4j.linalg.dataset.DataSet;
 /** Given a DataSetIterator: calculate the total loss for the model on that data set, using Spark.
  * Typically used to calculate the loss on a test set.
  */
-public class SparkDataSetLossCalculator implements ScoreCalculator {
+public class SparkDataSetLossCalculator implements ScoreCalculator<MultiLayerNetwork> {
 
 
     private JavaRDD<DataSet> data;
