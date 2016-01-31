@@ -63,6 +63,7 @@ public class TextPipeline {
     private JavaRDD<List<VocabWord>> vocabWordListRDD;
     private JavaRDD<AtomicLong> sentenceCountRDD;
     private long totalWordCount;
+    private boolean useUnk;
 
     // Empty Constructor
     public TextPipeline() {}
@@ -84,11 +85,11 @@ public class TextPipeline {
         this.nGrams = (int) tokenizerVarMap.get("nGrams");
         this.tokenizer = (String) tokenizerVarMap.get("tokenizer");
         this.tokenizerPreprocessor = (String) tokenizerVarMap.get("tokenPreprocessor");
+        this.useUnk = (boolean) tokenizerVarMap.get("useUnk");
         // Remove Stop words
-        if ((boolean) tokenizerVarMap.get("removeStop")) {
-            // TODO: fix this lol
-            stopWords = StopWords.getStopWords();
-        }
+       // if ((boolean) tokenizerVarMap.get("removeStop")) {
+            stopWords = (List<String>) tokenizerVarMap.get("stopWords");
+    //    }
     }
 
     private void setup() {
@@ -154,10 +155,9 @@ public class TextPipeline {
 
             // Turn words below min count to UNK
             stringToken = filterMinWord(stringToken, tokenCount);
-            if (!stringToken.equals("UNK")) {
+            if (!useUnk && stringToken.equals("UNK")) {
                 // Turn tokens to vocab and add to vocab cache
-                addTokenToVocabCache(stringToken, tokenCount);
-            }
+            } else addTokenToVocabCache(stringToken, tokenCount);
         }
     }
 

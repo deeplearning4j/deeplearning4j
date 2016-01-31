@@ -73,6 +73,7 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
     private String tokenPreprocessor = "org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor";
     private boolean removeStop = false;
     private long seed = 42L;
+    private boolean useUnknown = false;
 
     // Constructor to take InMemoryLookupCache table from an already trained model
     protected Word2Vec(INDArray trainedSyn1) {
@@ -100,6 +101,8 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
             put("tokenizer", tokenizer);
             put("tokenPreprocessor", tokenPreprocessor);
             put("removeStop", removeStop);
+            put("stopWords", stopWords);
+            put("useUnk", useUnknown);
         }};
     }
 
@@ -248,6 +251,7 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
         protected int layerSize;
         protected List<String> stopWords = new ArrayList<>();
         protected int batchSize = 100;
+        protected boolean useUnk = false;
 
         /**
          * Creates Builder instance with default parameters set.
@@ -454,6 +458,17 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
             return this;
         }
 
+        /**
+         * Specifies, if UNK word should be used instead of words that are absent in vocab
+         *
+         * @param reallyUse
+         * @return
+         */
+        public Builder useUnknown(boolean reallyUse) {
+            this.useUnk = reallyUse;
+            return this;
+        }
+
         public Word2Vec build() {
             Word2Vec ret = new Word2Vec();
 
@@ -484,6 +499,7 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
             ret.useAdeGrad = this.useAdaGrad;
             ret.stopWords = this.stopWords;
             ret.batchSize = this.batchSize;
+            ret.useUnknown = this.useUnk;
 
             if (this.tokenizerFactory != null) {
                 ret.tokenizer = this.tokenizerFactory.getClass().getCanonicalName();

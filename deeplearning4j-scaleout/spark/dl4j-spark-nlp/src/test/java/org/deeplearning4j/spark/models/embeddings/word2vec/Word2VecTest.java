@@ -37,11 +37,10 @@ import org.nd4j.linalg.factory.Nd4j;
 
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.Collection;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * @author jeffreytang
@@ -51,12 +50,6 @@ public class Word2VecTest {
     @Test
     public void testConcepts() throws Exception {
         // These are all default values for word2vec
-        /*SparkConf sparkConf = new SparkConf()
-                .setMaster("spark://192.168.1.35:7077")
-                .set("spark.executor.memory", "20G")
-                .set("spark.driver.memory", "20G")
-                .setAppName("sparktest");
-        */
        SparkConf sparkConf = new SparkConf().setMaster("local[4]").setAppName("sparktest");
 
         // Set SparkContext
@@ -88,10 +81,13 @@ public class Word2VecTest {
                 .iterations(1)
                 .batchSize(100)
                 .minWordFrequency(5)
+                .stopWords(Arrays.asList("three"))
+                .useUnknown(true)
                 .build();
 
         word2Vec.train(corpus);
 
+        System.out.println("UNK: " + word2Vec.getWordVectorMatrix("UNK"));
 
         InMemoryLookupTable<VocabWord> table = (InMemoryLookupTable<VocabWord>) word2Vec.lookupTable();
 
@@ -111,7 +107,9 @@ public class Word2VecTest {
         words = word2Vec.wordsNearest("two", 10);
         printWords("two", words, word2Vec);
 
-        assertTrue(words.contains("three"));
+        // three should be absent due to stopWords
+        assertFalse(words.contains("three"));
+
         assertTrue(words.contains("five"));
         assertTrue(words.contains("four"));
 
@@ -128,9 +126,9 @@ public class Word2VecTest {
 
         VocabWord word1 = word2Vec.vocab().elementAtIndex(0);
 
-        WordVectorSerializer.writeWordVectors(word2Vec.getLookupTable(), "/home/raver119/temp.txt");
+        WordVectorSerializer.writeWordVectors(word2Vec.getLookupTable(), tempFile);
 
-        WordVectors vectors = WordVectorSerializer.loadTxtVectors(new File("/home/raver119/temp.txt"));
+        WordVectors vectors = WordVectorSerializer.loadTxtVectors(tempFile);
 
         VocabWord word2 = ((VocabCache<VocabWord>)vectors.vocab()).elementAtIndex(0);
         VocabWord wordIT = ((VocabCache<VocabWord>)vectors.vocab()).wordFor("it");
