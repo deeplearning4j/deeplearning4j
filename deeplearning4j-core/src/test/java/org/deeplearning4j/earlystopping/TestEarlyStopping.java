@@ -48,17 +48,17 @@ public class TestEarlyStopping {
         net.setListeners(new ScoreIterationListener(1));
 
         DataSetIterator irisIter = new IrisDataSetIterator(150,150);
-        EarlyStoppingModelSaver saver = new InMemoryModelSaver();
-        EarlyStoppingConfiguration esConf = new EarlyStoppingConfiguration.Builder()
+        EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
+        EarlyStoppingConfiguration<MultiLayerNetwork> esConf = new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
                 .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
                 .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES))
                 .scoreCalculator(new DataSetLossCalculator(irisIter,true))
                 .modelSaver(saver)
                 .build();
 
-        IEarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConf,net,irisIter);
+        IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new EarlyStoppingTrainer(esConf,net,irisIter);
 
-        EarlyStoppingResult result = trainer.fit();
+        EarlyStoppingResult<MultiLayerNetwork> result = trainer.fit();
         System.out.println(result);
 
         assertEquals(5, result.getTotalEpochs());
@@ -96,8 +96,8 @@ public class TestEarlyStopping {
         net.setListeners(new ScoreIterationListener(1));
 
         DataSetIterator irisIter = new IrisDataSetIterator(150,150);
-        EarlyStoppingModelSaver saver = new InMemoryModelSaver();
-        EarlyStoppingConfiguration esConf = new EarlyStoppingConfiguration.Builder()
+        EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
+        EarlyStoppingConfiguration<MultiLayerNetwork> esConf = new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
                 .epochTerminationConditions(new MaxEpochsTerminationCondition(5000))
                 .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES),
                         new MaxScoreIterationTerminationCondition(7.5))  //Initial score is ~2.5
@@ -136,8 +136,8 @@ public class TestEarlyStopping {
 
         DataSetIterator irisIter = new IrisDataSetIterator(150,150);
 
-        EarlyStoppingModelSaver saver = new InMemoryModelSaver();
-        EarlyStoppingConfiguration esConf = new EarlyStoppingConfiguration.Builder()
+        EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
+        EarlyStoppingConfiguration esConf = new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
                 .epochTerminationConditions(new MaxEpochsTerminationCondition(10000))
                 .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(3, TimeUnit.SECONDS),
                         new MaxScoreIterationTerminationCondition(7.5))  //Initial score is ~2.5
@@ -179,8 +179,8 @@ public class TestEarlyStopping {
 
         DataSetIterator irisIter = new IrisDataSetIterator(150,150);
 
-        EarlyStoppingModelSaver saver = new InMemoryModelSaver();
-        EarlyStoppingConfiguration esConf = new EarlyStoppingConfiguration.Builder()
+        EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
+        EarlyStoppingConfiguration esConf = new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
                 .epochTerminationConditions(new MaxEpochsTerminationCondition(100),
                         new ScoreImprovementEpochTerminationCondition(5))
                 .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(3, TimeUnit.SECONDS),
@@ -215,8 +215,8 @@ public class TestEarlyStopping {
         net.setListeners(new ScoreIterationListener(1));
 
         DataSetIterator irisIter = new IrisDataSetIterator(150,150);
-        EarlyStoppingModelSaver saver = new InMemoryModelSaver();
-        EarlyStoppingConfiguration esConf = new EarlyStoppingConfiguration.Builder()
+        EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
+        EarlyStoppingConfiguration<MultiLayerNetwork> esConf = new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
                 .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
                 .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES))
                 .scoreCalculator(new DataSetLossCalculator(irisIter,true))
@@ -234,7 +234,7 @@ public class TestEarlyStopping {
         assertEquals(1,listener.onCompletionCallCount);
     }
 
-    private static class LoggingEarlyStoppingListener implements EarlyStoppingListener {
+    private static class LoggingEarlyStoppingListener implements EarlyStoppingListener<MultiLayerNetwork> {
 
         private static Logger log = LoggerFactory.getLogger(LoggingEarlyStoppingListener.class);
         private int onStartCallCount = 0;
@@ -255,7 +255,7 @@ public class TestEarlyStopping {
 
         @Override
         public void onCompletion(EarlyStoppingResult esResult) {
-            log.info("EorlyStopping: onCompletion called (result: {})",esResult);
+            log.info("EarlyStopping: onCompletion called (result: {})",esResult);
             onCompletionCallCount++;
         }
     }

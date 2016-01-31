@@ -7,7 +7,7 @@ import org.nd4j.linalg.dataset.DataSet;
 /** Given a DataSetIterator: calculate the total loss for the model on that data set.
  * Typically used to calculate the loss on a test set.
  */
-public class DataSetLossCalculator implements ScoreCalculator{
+public class DataSetLossCalculator implements ScoreCalculator<MultiLayerNetwork>{
 
     private DataSetIterator dataSetIterator;
     private boolean average;
