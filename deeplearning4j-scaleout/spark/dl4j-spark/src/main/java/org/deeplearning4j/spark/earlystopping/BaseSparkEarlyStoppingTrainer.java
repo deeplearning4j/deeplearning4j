@@ -16,96 +16,147 @@
  *
  */
 
-package org.deeplearning4j.earlystopping.trainer;
+package org.deeplearning4j.spark.earlystopping;
 
-import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.apache.spark.SparkContext;
+import org.apache.spark.api.java.JavaRDD;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.EarlyStoppingResult;
 import org.deeplearning4j.earlystopping.listener.EarlyStoppingListener;
 import org.deeplearning4j.earlystopping.scorecalc.ScoreCalculator;
 import org.deeplearning4j.earlystopping.termination.EpochTerminationCondition;
 import org.deeplearning4j.earlystopping.termination.IterationTerminationCondition;
+import org.deeplearning4j.earlystopping.trainer.IEarlyStoppingTrainer;
 import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.dataset.DataSet;
-
 import org.nd4j.linalg.dataset.api.MultiDataSet;
-import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Iterator;
+import java.lang.reflect.Array;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**Class for conducting early stopping training locally (single machine).<br>
- * Can be used to train a {@link MultiLayerNetwork} or a {@link ComputationGraph} via
+/**
+ * Class for conducting early
+ * stopping training via Spark
+ * @author Alex Black
  */
-public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarlyStoppingTrainer<T> {
+public abstract class BaseSparkEarlyStoppingTrainer<T extends Model> implements IEarlyStoppingTrainer<T> {
 
-    private static Logger log = LoggerFactory.getLogger(BaseEarlyStoppingTrainer.class);
+    private static Logger log = LoggerFactory.getLogger(BaseSparkEarlyStoppingTrainer.class);
 
-    protected T model;
-
-    protected final EarlyStoppingConfiguration<T> esConfig;
-    private final DataSetIterator train;
-    private final MultiDataSetIterator trainMulti;
-    private final Iterator<?> iterator;
+    private SparkContext sc;
+    private final EarlyStoppingConfiguration<T> esConfig;
+    private T net;
+    private final JavaRDD<DataSet> train;
+    private final JavaRDD<MultiDataSet> trainMulti;
+    protected final int examplesPerFit;
+    protected final int totalExamples;
+    protected final int numPartitions;
     private EarlyStoppingListener<T> listener;
 
     private double bestModelScore = Double.MAX_VALUE;
     private int bestModelEpoch = -1;
 
-    protected BaseEarlyStoppingTrainer(EarlyStoppingConfiguration<T> earlyStoppingConfiguration, T model, DataSetIterator train,
-                                       MultiDataSetIterator trainMulti, EarlyStoppingListener<T> listener){
-        this.esConfig = earlyStoppingConfiguration;
-        this.model = model;
+    protected BaseSparkEarlyStoppingTrainer(SparkContext sc, EarlyStoppingConfiguration<T> esConfig, T net, JavaRDD<DataSet> train,
+                                            JavaRDD<MultiDataSet> trainMulti, int examplesPerFit, int totalExamples, int numPartitions,
+                                            EarlyStoppingListener<T> listener) {
+        if((esConfig.getEpochTerminationConditions() == null || esConfig.getEpochTerminationConditions().size() == 0)
+                && (esConfig.getIterationTerminationConditions() == null || esConfig.getIterationTerminationConditions().size() == 0)){
+            throw new IllegalArgumentException("Cannot conduct early stopping without a termination condition (both Iteration "
+                + "and Epoch termination conditions are null/empty)");
+        }
+        this.sc = sc;
+        this.esConfig = esConfig;
+        this.net = net;
         this.train = train;
         this.trainMulti = trainMulti;
-        this.iterator = (train != null ? train : trainMulti);
+        this.examplesPerFit = examplesPerFit;
+        this.totalExamples = totalExamples;
+        this.numPartitions = numPartitions;
         this.listener = listener;
     }
 
-    protected abstract void fit(DataSet ds);
+    protected abstract void fit(JavaRDD<DataSet> data );
 
-    protected abstract void fit(MultiDataSet mds);
+    protected abstract void fitMulti(JavaRDD<MultiDataSet> data);
+
+    protected abstract double getScore();
 
     @Override
     public EarlyStoppingResult<T> fit() {
         log.info("Starting early stopping training");
-        if (esConfig.getScoreCalculator() == null)
-            log.warn("No score calculator provided for early stopping. Score will be reported as 0.0 to epoch termination conditions");
+        if(esConfig.getScoreCalculator() == null) log.warn("No score calculator provided for early stopping. Score will be reported as 0.0 to epoch termination conditions");
 
         //Initialize termination conditions:
-        if (esConfig.getIterationTerminationConditions() != null) {
-            for (IterationTerminationCondition c : esConfig.getIterationTerminationConditions()) {
+        if(esConfig.getIterationTerminationConditions() != null){
+            for( IterationTerminationCondition c : esConfig.getIterationTerminationConditions()){
                 c.initialize();
             }
         }
-        if (esConfig.getEpochTerminationConditions() != null) {
-            for (EpochTerminationCondition c : esConfig.getEpochTerminationConditions()) {
+        if(esConfig.getEpochTerminationConditions() != null){
+            for( EpochTerminationCondition c : esConfig.getEpochTerminationConditions()){
                 c.initialize();
             }
         }
 
-        if(listener != null) listener.onStart(esConfig,model);
+        if(listener != null)
+            listener.onStart(esConfig,net);
 
         Map<Integer,Double> scoreVsEpoch = new LinkedHashMap<>();
 
+//        SparkDl4jMultiLayer sparkNetwork = new SparkDl4jMultiLayer(sc, net);
+
+        if(train != null) train.cache();
+        else trainMulti.cache();
+
         int epochCount = 0;
         while (true) {
-            reset();
             double lastScore;
             boolean terminate = false;
             IterationTerminationCondition terminationReason = null;
             int iterCount = 0;
-            while (iterator.hasNext()) {
-                try {
-                    if(train != null) fit(train.next());
-                    else fit(trainMulti.next());
-                } catch(Exception e){
+
+            //Create random split of RDD:
+            int nSplits;
+            if(totalExamples%examplesPerFit==0){
+                nSplits = (totalExamples / examplesPerFit);
+            } else {
+                nSplits = (totalExamples / examplesPerFit) + 1;
+            }
+
+            JavaRDD<DataSet>[] subsets = null;
+            JavaRDD<MultiDataSet>[] subsetsMulti = null;
+            if(train != null){
+                if(nSplits == 1){
+                    subsets = (JavaRDD<DataSet>[])Array.newInstance(JavaRDD.class,1);   //new Object[]{train};
+                    subsets[0] = train;
+                } else {
+                    double[] splitWeights = new double[nSplits];
+                    for( int i=0; i<nSplits; i++ ) splitWeights[i] = 1.0 / nSplits;
+                    subsets = train.randomSplit(splitWeights);
+                }
+            } else {
+                if(nSplits == 1){
+                    subsetsMulti = (JavaRDD<MultiDataSet>[])Array.newInstance(JavaRDD.class,1);   //new Object[]{train};
+                    subsetsMulti[0] = trainMulti;
+                } else {
+                    double[] splitWeights = new double[nSplits];
+                    for( int i=0; i<nSplits; i++ ) splitWeights[i] = 1.0 / nSplits;
+                    subsetsMulti = trainMulti.randomSplit(splitWeights);
+                }
+            }
+
+            int nSubsets = (subsets != null ? subsets.length : subsetsMulti.length);
+
+            for(int i = 0; i<nSubsets; i++) {
+                log.info("Initiating distributed training of subset {} of {}",(i+1),nSubsets);
+                try{
+                    if(subsets != null) fit(subsets[i]);
+                    else fitMulti(subsetsMulti[i]);
+                }catch(Exception e){
                     log.warn("Early stopping training terminated due to exception at epoch {}, iteration {}",
                             epochCount,iterCount,e);
                     //Load best model to return
@@ -126,7 +177,7 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
                 }
 
                 //Check per-iteration termination conditions
-                lastScore = model.score();
+                lastScore = getScore();
                 for (IterationTerminationCondition c : esConfig.getIterationTerminationConditions()) {
                     if (c.terminate(lastScore)) {
                         terminate = true;
@@ -138,6 +189,7 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
 
                 iterCount++;
             }
+
             if(terminate){
                 //Handle termination condition:
                 log.info("Hit per iteration epoch termination condition at epoch {}, iteration {}. Reason: {}",
@@ -146,7 +198,7 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
                 if(esConfig.isSaveLastModel()) {
                     //Save last model:
                     try {
-                        esConfig.getModelSaver().saveLatestModel(model, 0.0);
+                        esConfig.getModelSaver().saveLatestModel(net, 0.0);
                     } catch (IOException e) {
                         throw new RuntimeException("Error saving most recent model", e);
                     }
@@ -158,8 +210,6 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
                 }catch(IOException e2){
                     throw new RuntimeException(e2);
                 }
-
-
                 EarlyStoppingResult<T> result = new EarlyStoppingResult<>(
                         EarlyStoppingResult.TerminationReason.IterationTerminationCondition,
                         terminationReason.toString(),
@@ -178,7 +228,7 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
             if( (epochCount==0 && esConfig.getEvaluateEveryNEpochs()==1) || epochCount % esConfig.getEvaluateEveryNEpochs() == 0 ){
                 //Calculate score at this epoch:
                 ScoreCalculator sc = esConfig.getScoreCalculator();
-                double score = (sc == null ? 0.0 : esConfig.getScoreCalculator().calculateScore(model));
+                double score = (sc == null ? 0.0 : esConfig.getScoreCalculator().calculateScore(net));
                 scoreVsEpoch.put(epochCount-1,score);
 
                 if (sc != null && score < bestModelScore) {
@@ -194,7 +244,7 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
                     bestModelEpoch = epochCount;
 
                     try{
-                        esConfig.getModelSaver().saveBestModel(model,score);
+                        esConfig.getModelSaver().saveBestModel(net,score);
                     }catch(IOException e){
                         throw new RuntimeException("Error saving best model",e);
                     }
@@ -203,13 +253,13 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
                 if(esConfig.isSaveLastModel()) {
                     //Save last model:
                     try {
-                        esConfig.getModelSaver().saveLatestModel(model, score);
+                        esConfig.getModelSaver().saveLatestModel(net, score);
                     } catch (IOException e) {
                         throw new RuntimeException("Error saving most recent model", e);
                     }
                 }
 
-                if(listener != null) listener.onEpoch(epochCount,score,esConfig,model);
+                if(listener != null) listener.onEpoch(epochCount,score,esConfig,net);
 
                 //Check per-epoch termination conditions:
                 boolean epochTerminate = false;
@@ -238,7 +288,6 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
                             epochCount+1,
                             bestModel);
                     if(listener != null) listener.onCompletion(result);
-
                     return result;
                 }
 
@@ -251,11 +300,4 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
     public void setListener(EarlyStoppingListener<T> listener) {
         this.listener = listener;
     }
-
-
-    protected void reset() {
-        if(train != null) train.reset();
-        if(trainMulti != null) trainMulti.reset();;
-    }
-
 }
