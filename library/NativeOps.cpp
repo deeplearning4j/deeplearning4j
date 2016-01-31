@@ -341,8 +341,8 @@ JNIEXPORT jfloat JNICALL Java_org_nd4j_linalg_cpu_ops_NativeOps_execIndexReduceS
         (JNIEnv *env, jobject obj, jint opNum, jobject x, jobject xShapeInfo, jobject extraParams) {
     int *xShapeBuff = (int *) env->GetDirectBufferAddress(xShapeInfo);
     float *extraParamsBuff = (float *) env->GetDirectBufferAddress(extraParams);
-    float *x = (float *) env->GetDirectBufferAddress(x);
-    return FloatNativeOpExecutioner::getInstance()->execIndexReduceScalar(opNum,x,xShapeBuff,extraParamsBuff);
+    float *xBuff = (float *) env->GetDirectBufferAddress(x);
+    return FloatNativeOpExecutioner::getInstance()->execIndexReduceScalar(opNum,xBuff,xShapeBuff,extraParamsBuff);
 
 }
 

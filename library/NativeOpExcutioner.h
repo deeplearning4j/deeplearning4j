@@ -199,6 +199,33 @@ public:
 
     }
 
+
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param extraParamsVals
+     * @param y
+     * @param yShapeInfo
+     * @param result
+     * @param resultShapeInfoBuffer
+     * @param dimension
+     * @param dimensionLength
+     */
+    T execReduce3Scalar(int opNum,
+                           T *x,
+                           int *xShapeInfo,
+                           T *extraParamsVals,
+                           T *y,
+                           int *yShapeInfo) {
+        functions::reduce3::Reduce3 *reduce3 = reduce3OpFactory->getOp(opNum);
+        T ret = reduce3->execScalar(x,xShapeInfo,extraParamsVals,y,yShapeInfo);
+        delete reduce3;
+        return ret;
+
+    }
+
     /**
      *
      * @param opNum
