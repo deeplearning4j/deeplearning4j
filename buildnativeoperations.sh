@@ -23,6 +23,12 @@ else
             python ./nsight-err-parse-patch.py ./project
             mv eclipse/.cproject .
             mv eclipse/.project .
+     elif [ "$1" ==  "lib" ]; then
+         rm -rf librarybuild
+         mkdir librarybuild
+         cd librarybuild
+         cmake -DLIBRARY=TRUE ..
+         make && cd ..
      elif [ "$1" ==  "test" ]; then
            rm -rf testbuild
           mkdir testbuild

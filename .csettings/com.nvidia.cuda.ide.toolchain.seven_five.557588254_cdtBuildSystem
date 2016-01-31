@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?fileVersion 5.0.0?><cproject storage_type_id="org.eclipse.cdt.core.XmlProjectDescriptionStorage2">
+	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
+		<configuration buildProperties="" id="com.nvidia.cuda.ide.toolchain.seven_five.557588254" name="Default" parent="org.eclipse.cdt.build.core.emptycfg">
+			<folderInfo id="com.nvidia.cuda.ide.toolchain.seven_five.557588254.1470237056" name="/" resourcePath="">
+				<toolChain id="com.nvidia.cuda.ide.toolchain.seven_five.1483423094" name="CUDA Toolkit 7.5" superClass="com.nvidia.cuda.ide.toolchain.seven_five">
+					<targetPlatform archList="all" binaryParser="com.nvidia.cuda.ide.elf;com.nvidia.cuda.ide.macho;com.nvidia.cuda.ide.cubin" id="com.nvidia.cuda.ide.targetPlatform.281182258" isAbstract="false" name="Debug Platform" osList="linux,macosx" superClass="com.nvidia.cuda.ide.targetPlatform"/>
+					<builder id="com.nvidia.cuda.ide.builder.373564066" managedBuildOn="false" name="CUDA Toolkit 7.5 Builder.Default" superClass="com.nvidia.cuda.ide.builder"/>
+					<tool id="nvcc.compiler.base.790037196" name="NVCC Compiler" superClass="nvcc.compiler.base">
+						<option id="nvcc.compiler.pic.517795859" superClass="nvcc.compiler.pic"/>
+						<inputType id="nvcc.compiler.input.cu.647455763" superClass="nvcc.compiler.input.cu"/>
+						<inputType id="nvcc.compiler.input.cpp.730170637" superClass="nvcc.compiler.input.cpp"/>
+						<inputType id="nvcc.compiler.input.c.311723232" superClass="nvcc.compiler.input.c"/>
+					</tool>
+					<tool id="nvcc.linker.base.1214144236" name="NVCC Linker" superClass="nvcc.linker.base">
+						<inputType id="nvcc.linker.input.1662065543" superClass="nvcc.linker.input">
+							<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
+							<additionalInput kind="additionalinput" paths="$(LIBS)"/>
+						</inputType>
+					</tool>
+					<tool id="nvcc.archiver.base.1729182528" name="NVCC Archiver" superClass="nvcc.archiver.base"/>
+					<tool id="com.nvidia.host.assembler.1460937354" name="Host Assembler" superClass="com.nvidia.host.assembler">
+						<inputType id="cdt.managedbuild.tool.gnu.assembler.input.974875352" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
+					</tool>
+				</toolChain>
+			</folderInfo>
+		</configuration>
+	</storageModule>
+</cproject>

@@ -15,7 +15,7 @@
 
 #define MAX_FLOAT 1e37
 #define MIN_FLOAT 1e-37
-#ifdef JNI
+#ifdef __JNI__
 #include <jni.h>
 #endif
 
@@ -662,6 +662,58 @@ public:
 	}
 
 #endif
+	/**
+	 * CPU operations
+	 * @param x the input data
+	 * @param xShapeInfo the shape information for the input data
+	 * @param extraParams the extra parameters
+	 * @param result the result data
+	 * @param resultShapeInfo the shpae information
+	 */
+	virtual
+#ifdef __CUDACC__
+	inline __host__  __device__
+
+#elif defined(__GNUC__)
+	__always_inline
+#endif
+	T execScalar(T *x,
+			  int *xShapeInfo,
+			  T *extraParams) {
+		T startingVal = this->startingValue(x);
+		IndexValue<T> startingIndex;
+		startingIndex.value = startingVal;
+		startingIndex.index = 0;
+		int length = shape::length(xShapeInfo);
+		int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+		if (xElementWiseStride == 1) {
+#pragma omp simd
+			for (int i = 0; i < length; i++) {
+				IndexValue<T> curr;
+				curr.value = x[i];
+				curr.index = i;
+				startingIndex = update(startingIndex, curr,
+									   extraParams);
+
+			}
+
+			return startingIndex.index;
+		} else {
+
+#pragma omp simd
+			for (int i = 0; i < length; i++) {
+				IndexValue<T> curr;
+				curr.value = x[i * xElementWiseStride];
+				curr.index = i;
+				startingIndex = update(startingIndex, curr,
+									   extraParams);
+			}
+			return  startingIndex.index;
+
+		}
+
+
+	}
 
 
 	/**

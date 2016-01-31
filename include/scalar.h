@@ -7,7 +7,7 @@
 
 #ifndef SCALAR_H_
 #define SCALAR_H_
-#ifdef JNI
+#ifdef __JNI__
 #include <jni.h>
 #endif
 #include <op.h>
@@ -383,7 +383,54 @@ public:
 
 };
 
-/**
+
+	/**
+ * x <= scalar
+ */
+	template<typename T>
+	class GreaterThanOrEqual: public virtual ScalarTransform<T> {
+	public:
+		/**
+         *
+         * @param d1
+         * @param d2
+         * @param params
+         * @return
+         */
+		virtual
+#ifdef __CUDACC__
+		__host__  __device__
+
+#endif
+		inline T op(T d1, T d2, T *params) {
+			return d1 >= d2;
+		}
+		/** Name of the op
+         * @return the name of the operation
+         */
+		virtual
+#ifdef __CUDACC__
+		inline __host__
+
+#endif
+		std::string name() {
+			return std::string("gtoreq_scalar");
+		}
+#ifdef __CUDACC__
+		__host__ __device__
+#endif
+		virtual inline ~GreaterThanOrEqual() {
+		}
+#ifdef __CUDACC__
+		__host__ __device__
+#endif
+		GreaterThanOrEqual() {
+		}
+
+	};
+
+
+	/**
  * max(x,scalar)
  */
 template<typename T>
@@ -949,6 +996,8 @@ public:
 			return new functions::scalar::ops::Mod<T>();
 		else if (op == 15)
 			return new functions::scalar::ops::RMod<T>();
+        else if (op == 16)
+            return new functions::scalar::ops::GreaterThanOrEqual<T>();
 		return NULL;
 	}
 };

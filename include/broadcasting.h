@@ -13,7 +13,7 @@
 #include <op.h>
 #include <templatemath.h>
 #include <helper_cuda.h>
-#ifdef JNI
+#ifdef __JNI__
 #include <jni.h>
 #endif
 namespace functions {
