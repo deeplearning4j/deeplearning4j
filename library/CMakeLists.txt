@@ -1,5 +1,6 @@
 if(LINUX)
     link_directories(/usr/local/lib)
+    link_directories(/usr/lib)
 endif()
 
 include_directories(../include)
@@ -15,7 +16,8 @@ if(Java_FOUND)
         message(FATAL_ERROR "Could not find JAVA_HOME environment variable")
     endif(EXISTS "$ENV{JAVA_HOME}")
 endif()
-
+SET(BLAS_LIBRARIES "/opt/OpenBLAS/lib")
+set(LAPACK_LIBRARIES "/opt/OpenBLAS/lib")
 FIND_PACKAGE(BLAS REQUIRED)
 FIND_PACKAGE(LAPACK REQUIRED)
 

@@ -24,11 +24,11 @@ private:
     functions::broadcast::BroadcastOpFactory<T> *broadcastOpFactory = new functions::broadcast::BroadcastOpFactory<T>();
     functions::indexreduce::IndexReduceOpFactory<T> *indexReduceOpFactory = new functions::indexreduce::IndexReduceOpFactory<T>();
     functions::pairwise_transforms::PairWiseTransformOpFactory<T> *pairWiseTransformOpFactory = new functions::pairwise_transforms::PairWiseTransformOpFactory<T>();
-    functions::reduce::ReduceOpFactory *reduceOpFactory = new functions::reduce::ReduceOpFactory<T>();
-    functions::reduce3::Reduce3OpFactory *reduce3OpFactory = new functions::reduce3::Reduce3OpFactory<T>();
-    functions::scalar::ScalarOpFactory *scalarOpFactory = new functions::scalar::ScalarOpFactory<T>();
-    functions::summarystats::SummaryStatsReduceOpFactory *summaryStatsReduceOpFactory = new functions::summarystats::SummaryStatsReduceOpFactory<T>();
-    functions::transform::TransformOpFactory *transformOpFactory = new functions::transform::TransformOpFactory<T>();
+    functions::reduce::ReduceOpFactory<T> *reduceOpFactory = new functions::reduce::ReduceOpFactory<T>();
+    functions::reduce3::Reduce3OpFactory<T> *reduce3OpFactory = new functions::reduce3::Reduce3OpFactory<T>();
+    functions::scalar::ScalarOpFactory<T> *scalarOpFactory = new functions::scalar::ScalarOpFactory<T>();
+    functions::summarystats::SummaryStatsReduceOpFactory<T> *summaryStatsReduceOpFactory = new functions::summarystats::SummaryStatsReduceOpFactory<T>();
+    functions::transform::TransformOpFactory<T> *transformOpFactory = new functions::transform::TransformOpFactory<T>();
 
 public:
     ~NativeOpExcutioner() {
@@ -106,7 +106,7 @@ public:
                        int *resultShapeInfo,
                        int *dimension, int dimensionLength) {
 
-        functions::broadcast::Broadcast *broadcast<T> = broadcastOpFactory->getOp(opNum);
+        functions::broadcast::Broadcast<T> *broadcast = broadcastOpFactory->getOp(opNum);
         broadcast->exec(x,xShapeInfo,y,yShapeInfo,result,resultShapeInfo,dimension,dimensionLength);
         delete broadcast;
     }
@@ -170,8 +170,8 @@ public:
                        T *x,
                        int *xShapeInfo,
                        T *extraParams) {
-        functions::reduce::ReduceFunction *reduceFunction = reduceOpFactory->create(opNum);
-        T ret = reduceFunction->exec(x,xShapeInfo,extraParams);
+        functions::reduce::ReduceFunction<T> *reduceFunction = reduceOpFactory->create(opNum);
+        T ret = reduceFunction->execScalar(x,xShapeInfo,extraParams);
         delete reduceFunction;
         return ret;
     }
@@ -193,7 +193,7 @@ public:
                      T *y,
                      int *yShapeInfo,
                      T *result, int *resultShapeInfo) {
-        functions::reduce3::Reduce3 *reduce3 = reduce3OpFactory->getOp(opNum);
+        functions::reduce3::Reduce3<T> *reduce3 = reduce3OpFactory->getOp(opNum);
         reduce3->exec(x,xShapeInfo,extraParamsVals,y,yShapeInfo,result,resultShapeInfo);
         delete reduce3;
 
@@ -219,7 +219,7 @@ public:
                            T *extraParamsVals,
                            T *y,
                            int *yShapeInfo) {
-        functions::reduce3::Reduce3 *reduce3 = reduce3OpFactory->getOp(opNum);
+        functions::reduce3::Reduce3<T> *reduce3 = reduce3OpFactory->getOp(opNum);
         T ret = reduce3->execScalar(x,xShapeInfo,extraParamsVals,y,yShapeInfo);
         delete reduce3;
         return ret;
@@ -249,8 +249,8 @@ public:
                      int *resultShapeInfoBuffer,
                      int *dimension,
                      int dimensionLength) {
-        functions::reduce3::Reduce3 *reduce3 = reduce3OpFactory->getOp(opNum);
-        reduce3->exec(x,xShapeInfo,extraParamsVals,y,yShapeInfo,result,resultShapeInfo,dimension,dimensionLength);
+        functions::reduce3::Reduce3<T> *reduce3 = reduce3OpFactory->getOp(opNum);
+        reduce3->exec(x,xShapeInfo,extraParamsVals,y,yShapeInfo,result,resultShapeInfoBuffer,dimension,dimensionLength);
         delete reduce3;
 
     }
@@ -274,8 +274,8 @@ public:
                     T scalar,
                     T *extraParams,
                     int n) {
-        functions::scalar::ScalarTransform *scalarTransform = scalarOpFactory->getOp(opNum);
-        scalarTransform->transform(x,xStride,result,resultStride,scalarTransform,extraParams,n);
+        functions::scalar::ScalarTransform<T> *scalarTransform = scalarOpFactory->getOp(opNum);
+        scalarTransform->transform(x,xStride,result,resultStride,scalar,extraParams,n);
         delete scalarTransform;
 
 
@@ -295,7 +295,7 @@ public:
                           T *extraParams,
                           T *result,
                           int *resultShapeInfo) {
-        functions::summarystats::SummaryStatsReduce *op = summaryStatsReduceOpFactory->getOp(opNum);
+        functions::summarystats::SummaryStatsReduce<T> *op = summaryStatsReduceOpFactory->getOp(opNum);
         op->exec(x,xShapeInfo,extraParams,result,resultShapeInfo);
         delete op;
     }
@@ -312,7 +312,7 @@ public:
     T execSummaryStatsScalar(int opNum,T *x,
                              int *xShapeInfo,
                              T *extraParams) {
-        functions::summarystats::SummaryStatsReduce *op = summaryStatsReduceOpFactory->getOp(opNum);
+        functions::summarystats::SummaryStatsReduce<T> *op = summaryStatsReduceOpFactory->getOp(opNum);
         T ret = op->execScalar(x,xShapeInfo,extraParams);
         delete op;
         return ret;
@@ -335,8 +335,8 @@ public:
                           T *result,
                           int *resultShapeInfoBuffer,
                           int *dimension, int dimensionLength) {
-        functions::summarystats::SummaryStatsReduce *op = summaryStatsReduceOpFactory->getOp(opNum);
-        op->exec(x,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength);
+        functions::summarystats::SummaryStatsReduce<T> *op = summaryStatsReduceOpFactory->getOp(opNum);
+        op->exec(x,xShapeInfo,extraParams,result,resultShapeInfoBuffer,dimension,dimensionLength);
         delete op;
 
     }
@@ -353,8 +353,8 @@ public:
      */
     void execTransform(int opNum,T *dx, int xStride, T *result, int resultStride,
                        T *extraParams, int n) {
-        functions::transform::Transform *transform = transformOpFactory->getOp(opNum);
-        transform->exec(x,xStride,result,resultStride,extraParams,n);
+        functions::transform::Transform<T> *transform = transformOpFactory->getOp(opNum);
+        transform->exec(dx,xStride,result,resultStride,extraParams,n);
         delete transform;
 
     }

@@ -3,8 +3,6 @@ if(LINUX)
     link_directories(/usr/local/lib)
 endif()
 
-<<<<<<< HEAD
-=======
 # include CppUTest headers
 include_directories($ENV{CPPUTEST_HOME}/include)
 # Check for CppUTest and bail out if they don't have it
@@ -20,7 +18,6 @@ endif()
 add_library(cpputest STATIC IMPORTED)
 set_property(TARGET cpputest PROPERTY
         IMPORTED_LOCATION $ENV{CPPUTEST_HOME}/lib/libCppUTest.a)
->>>>>>> cc5c30e045bc49a489ef3acb50de7d185fe79e7b
 
 
 if (CUDA_FOUND)
@@ -34,13 +31,8 @@ if (CUDA_FOUND)
     target_link_libraries(libnd4jtests cpputest)
 
 else()
-    message("Adding cpu exec")
+    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}" )
     add_executable(libnd4jtests cpu/main.cpp)
-<<<<<<< HEAD
-    target_link_libraries(libnd4jtests CppUTest)
-=======
     target_link_libraries(libnd4jtests cpputest)
->>>>>>> cc5c30e045bc49a489ef3acb50de7d185fe79e7b
 endif()
-
 

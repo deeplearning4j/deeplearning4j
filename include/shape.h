@@ -10,6 +10,7 @@
 
 #include <templatemath.h>
 #include <cstring>
+#include <stdlib.h>
 namespace shape {
 const int MAX_DIMENSION = 0x7fffffff;
 const int MAX_NUM_THREADS = 1024;
