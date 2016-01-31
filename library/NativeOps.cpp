@@ -4,31 +4,30 @@
 #include "NativeOps.h"
 #include "NativeOpExcutioner.h"
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 class DoubleNativeOpExecutioner : public NativeOpExcutioner<double> {
 private:
-    static DoubleNativeOpExecutioner *INSTANCE;
+    static DoubleNativeOpExecutioner INSTANCE;
 public:
-    static DoubleNativeOpExecutioner * getInstance() {
-        if(INSTANCE == NULL)
-            INSTANCE = new DoubleNativeOpExecutioner();
+    static DoubleNativeOpExecutioner  getInstance() {
         return INSTANCE;
     }
 };
 
 class FloatNativeOpExecutioner : public NativeOpExcutioner<float> {
 private:
-    static FloatNativeOpExecutioner *INSTANCE;
+    static FloatNativeOpExecutioner INSTANCE;
 public:
-    static FloatNativeOpExecutioner * getInstance() {
-        if(INSTANCE == NULL)
-            INSTANCE = new FloatNativeOpExecutioner();
+    static FloatNativeOpExecutioner  getInstance() {
         return INSTANCE;
     }
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /*
  * Class:     org_nd4j_linalg_cpu_ops_NativeOps
@@ -40,7 +39,7 @@ JNIEXPORT jdouble JNICALL Java_org_nd4j_linalg_cpu_ops_NativeOps_execIndexReduce
     int *xShapeBuff = (int *) env->GetDirectBufferAddress(xShapeInfo);
     double *extraParamsBuff = (double *) env->GetDirectBufferAddress(extraParams);
     double *xBuff = (double *) env->GetDirectBufferAddress(x);
-    return DoubleNativeOpExecutioner::getInstance()->execIndexReduceScalar(opNum,xBuff,xShapeBuff,extraParamsBuff);
+    return DoubleNativeOpExecutioner::getInstance().execIndexReduceScalar(opNum,xBuff,xShapeBuff,extraParamsBuff);
 }
 
 /*
@@ -56,7 +55,7 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_ops_NativeOps_execIndexReduce__I
     double *resultBuff = (double *) env->GetDirectBufferAddress(result);
     int *resultShapeBuff = (int *) env->GetDirectBufferAddress(resultShapeInfo);
     int *dimensionBuff = (int *) env->GetDirectBufferAddress(dimension);
-    DoubleNativeOpExecutioner::getInstance()->execIndexReduce(opNum,xBuff,xShapeBuff,extraParamsBuff,resultBuff,resultShapeBuff,dimensionBuff,dimensionLength);
+    DoubleNativeOpExecutioner::getInstance().execIndexReduce(opNum,xBuff,xShapeBuff,extraParamsBuff,resultBuff,resultShapeBuff,dimensionBuff,dimensionLength);
 }
 
 /*
@@ -76,7 +75,7 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_ops_NativeOps_execBroadcast__ILj
     int *resultShapeBuff = (int *) env->GetDirectBufferAddress(resultShapeInfo);
     int *dimensionBuff = (int *) env->GetDirectBufferAddress(dimension);
 
-    DoubleNativeOpExecutioner::getInstance()->execBroadcast(
+    DoubleNativeOpExecutioner::getInstance().execBroadcast(
             opNum,xBuff,xShapeBuff,yBuff,yShapeBuff,resultBuff,resultShapeBuff,dimensionBuff,dimensionLength);
 }
 
@@ -92,7 +91,7 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_ops_NativeOps_execPairwiseTransf
     double *yBuff = (double *) env->GetDirectBufferAddress(y);
     double *resultBuff = (double *) env->GetDirectBufferAddress(result);
     double *extraParamsBuff = (double *) env->GetDirectBufferAddress(extraParams);
-    DoubleNativeOpExecutioner::getInstance()->execPairwiseTransform(opNum,
+    DoubleNativeOpExecutioner::getInstance().execPairwiseTransform(opNum,
                                                                     dxBuff,
                                                                     xStride,
                                                                     yBuff,
@@ -113,15 +112,7 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_ops_NativeOps_execReduce__ILjava
         		jobject extraParams,
         		jobject result,
         		jobject resultShapeInfo) {
-    double *xBuff = (double *) env->GetDirectBufferAddress(x);
-    int *xShapeBuff = (int *) env->GetDirectBufferAddress(xShapeInfo);
-    double *extraParamsBuff = (double *) env->GetDirectBufferAddress(extraParams);
-    double *resultBuff = (double *) env->GetDirectBufferAddress(result);
-    int *resultShapeBuff = (int *) env->GetDirectBufferAddress(resultShapeInfo);
-    DoubleNativeOpExecutioner::getInstance()->execReduce(opNum,
-                                                        xBuff,
-                                                        xShapeBuff,
-                                                        extraParamsBuff,resultBuff,resultShapeBuff);
+
 }
 
 /*
@@ -143,8 +134,8 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_ops_NativeOps_execReduce__ILjava
     int *resultShapeBuff = (int *) env->GetDirectBufferAddress(resultShapeInfo);
     int *dimensionBuff = (int *) env->GetDirectBufferAddress(dimension);
 
-    DoubleNativeOpExecutioner::getInstance()->execReduce(opNum,xBuff,xShapeBuff,extraParamsBuff,
-                                                        resultBuff,resultShapeBuff);
+    DoubleNativeOpExecutioner::getInstance().execReduce(opNum,xBuff,xShapeBuff,extraParamsBuff,
+                                                        resultBuff,resultShapeBuff,dimensionBuff,dimensionLength);
 
 }
 
@@ -158,7 +149,7 @@ JNIEXPORT jdouble JNICALL Java_org_nd4j_linalg_cpu_ops_NativeOps_execReduceScala
     double *xBuff = (double *) env->GetDirectBufferAddress(x);
     int *xShapeBuff = (int *) env->GetDirectBufferAddress(xShapeInfo);
     double *extraParamsBuff = (double * ) env->GetDirectBufferAddress(extraParams);
-    return DoubleNativeOpExecutioner::getInstance()->execReduceScalar(opNum,xBuff,xShapeBuff,extraParamsBuff);
+    return DoubleNativeOpExecutioner::getInstance().execReduceScalar(opNum,xBuff,xShapeBuff,extraParamsBuff);
 
 }
 
@@ -195,7 +186,7 @@ JNIEXPORT jdouble JNICALL Java_org_nd4j_linalg_cpu_ops_NativeOps_execReduce3Scal
     double *extraParamsBuff = (double *) env->GetDirectBufferAddress(extraParams);
     double *yBuff = (double *) env->GetDirectBufferAddress(y);
     int *yShapeBuff = (int *) env->GetDirectBufferAddress(yShapeInfo);
-    return DoubleNativeOpExecutioner::getInstance()->execReduce3Scalar(opNum,xBuff,xShapeBuff,
+    return DoubleNativeOpExecutioner::getInstance().execReduce3Scalar(opNum,xBuff,xShapeBuff,
                                                                 extraParamsBuff,yBuff,yShapeBuff);
 }
 
@@ -224,7 +215,7 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_ops_NativeOps_execReduce3__ILjav
     double *resultBuff = (double *) env->GetDirectBufferAddress(result);
     int *resultShapeBuff = (int *) env->GetDirectBufferAddress(resultShapeInfo);
     int *dimensionBuff = (int *) env->GetDirectBufferAddress(dimension);
-    DoubleNativeOpExecutioner::getInstance()->execReduce3(opNum,xBuff,xShapeBuff,extraParamsBuff,yBuff,yShapeBuff,resultBuff,resultShapeBuff,dimensionBuff,dimensionLength);
+    DoubleNativeOpExecutioner::getInstance().execReduce3(opNum,xBuff,xShapeBuff,extraParamsBuff,yBuff,yShapeBuff,resultBuff,resultShapeBuff,dimensionBuff,dimensionLength);
 
 }
 
@@ -246,10 +237,11 @@ JNIEXPORT jdouble JNICALL Java_org_nd4j_linalg_cpu_ops_NativeOps_execScalar__ILj
     double *xBuff = (double *) env->GetDirectBufferAddress(x);
     double *resultBuff = (double *) env->GetDirectBufferAddress(result);
     double *extraParamsBuff = (double *) env->GetDirectBufferAddress(extraParams);
-    DoubleNativeOpExecutioner::getInstance()->execScalar(opNum,
+    DoubleNativeOpExecutioner::getInstance().execScalar(opNum,
                                                         xBuff,xStride,
                                                         resultBuff,resultStride,
                                                         scalar,extraParamsBuff,n);
+        return 0.0;
 
 }
 
@@ -266,7 +258,7 @@ JNIEXPORT jdouble JNICALL Java_org_nd4j_linalg_cpu_ops_NativeOps_execSummaryStat
     double *xBuff = (double *) env->GetDirectBufferAddress(x);
     int *xShapeBuff = (int *) env->GetDirectBufferAddress(xShapeInfo);
     double *extraParamsBuff = (double *) env->GetDirectBufferAddress(extraParams);
-    return DoubleNativeOpExecutioner::getInstance()->execSummaryStatsScalar(opNum,xBuff,xShapeBuff,extraParamsBuff);
+    return DoubleNativeOpExecutioner::getInstance().execSummaryStatsScalar(opNum,xBuff,xShapeBuff,extraParamsBuff);
 }
 
 /*
@@ -279,11 +271,7 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_ops_NativeOps_execSummaryStats__
          jobject x,
          jobject xShapeInfo, jobject extraParams,
          jobject result, jobject resultShapeInfo) {
-    double *xBuff = (double *) env->GetDirectBufferAddress(x);
-    int *xShapeBuff = (int *) env->GetDirectBufferAddress(xShapeInfo);
-    double *extraParamsBuff = (double *) env->GetDirectBufferAddress(extraParams);
-    double *resultBuff = (double *) env->GetDirectBufferAddress(result);
-    int *resultShapeBuff = (int *) env->GetDirectBufferAddress(resultShapeInfo);
+
 
 }
 
@@ -306,7 +294,7 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_ops_NativeOps_execSummaryStats__
     double *resultBuff = (double *) env->GetDirectBufferAddress(result);
     int *resultShapeBuff = (int *) env->GetDirectBufferAddress(resultShapeInfo);
     int *dimensionBuff = (int *) env->GetDirectBufferAddress(dimension);
-    DoubleNativeOpExecutioner::getInstance()->execSummaryStats(opNum,xBuff,xShapeBuff,extraParamsBuff,resultBuff,resultShapeBuff,dimensionBuff,dimensionLength);
+    DoubleNativeOpExecutioner::getInstance().execSummaryStats(opNum,xBuff,xShapeBuff,extraParamsBuff,resultBuff,resultShapeBuff,dimensionBuff,dimensionLength);
 }
 
 /*
@@ -326,7 +314,7 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_ops_NativeOps_execTransform__ILj
     double *extraParamsBuff = (double *) env->GetDirectBufferAddress(extraParams);
 
     double *resultBuff = (double *) env->GetDirectBufferAddress(result);
-    DoubleNativeOpExecutioner::getInstance()->execTransform(opNum,xBuff,xStride,resultBuff,
+    DoubleNativeOpExecutioner::getInstance().execTransform(opNum,xBuff,xStride,resultBuff,
                                                            resultStride,extraParamsBuff,n);
 
 
@@ -342,7 +330,7 @@ JNIEXPORT jfloat JNICALL Java_org_nd4j_linalg_cpu_ops_NativeOps_execIndexReduceS
     int *xShapeBuff = (int *) env->GetDirectBufferAddress(xShapeInfo);
     float *extraParamsBuff = (float *) env->GetDirectBufferAddress(extraParams);
     float *xBuff = (float *) env->GetDirectBufferAddress(x);
-    return FloatNativeOpExecutioner::getInstance()->execIndexReduceScalar(opNum,xBuff,xShapeBuff,extraParamsBuff);
+    return FloatNativeOpExecutioner::getInstance().execIndexReduceScalar(opNum,xBuff,xShapeBuff,extraParamsBuff);
 
 }
 
@@ -361,7 +349,7 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_ops_NativeOps_execIndexReduce__I
     float *resultBuff = (float *) env->GetDirectBufferAddress(result);
     int *resultShapeBuff = (int *) env->GetDirectBufferAddress(resultShapeInfo);
     int *dimensionBuff = (int *) env->GetDirectBufferAddress(dimension);
-    FloatNativeOpExecutioner::getInstance()->execIndexReduce(opNum,xBuff,xShapeBuff,extraParamsBuff,resultBuff,resultShapeBuff,dimensionBuff,dimensionLength);
+    FloatNativeOpExecutioner::getInstance().execIndexReduce(opNum,xBuff,xShapeBuff,extraParamsBuff,resultBuff,resultShapeBuff,dimensionBuff,dimensionLength);
 
 }
 
@@ -385,7 +373,7 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_ops_NativeOps_execBroadcast__ILj
     int *resultShapeBuff = (int *) env->GetDirectBufferAddress(resultShapeInfo);
     int *dimensionBuff = (int *) env->GetDirectBufferAddress(dimension);
 
-    FloatNativeOpExecutioner::getInstance()->execBroadcast(
+    FloatNativeOpExecutioner::getInstance().execBroadcast(
             opNum,xBuff,
             xShapeBuff,
             yBuff,
@@ -411,7 +399,7 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_ops_NativeOps_execPairwiseTransf
     float *yBuff = (float *) env->GetDirectBufferAddress(y);
     float *resultBuff = (float *) env->GetDirectBufferAddress(result);
     float *extraParamsBuff = (float *) env->GetDirectBufferAddress(extraParams);
-    FloatNativeOpExecutioner::getInstance()->execPairwiseTransform(opNum,
+    FloatNativeOpExecutioner::getInstance().execPairwiseTransform(opNum,
                                                                     dxBuff,
                                                                     xStride,
                                                                     yBuff,
@@ -438,10 +426,20 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_ops_NativeOps_execReduce__ILjava
     float *extraParamsBuff = (float *) env->GetDirectBufferAddress(extraParams);
     float *resultBuff = (float *) env->GetDirectBufferAddress(result);
     int *resultShapeBuff = (int *) env->GetDirectBufferAddress(resultShapeInfo);
-    FloatNativeOpExecutioner::getInstance()->execReduce(opNum,
+    int *dimensionBuff = (int *) env->GetDirectBufferAddress(dimension);
+/*
+ * int opNum,
+                    T *x,
+                    int *xShapeInfo,
+                    T *extraParams,
+                    T *result,
+                    int *resultShapeInfo,int *dimension,int dimensionLength)
+ */
+    FloatNativeOpExecutioner::getInstance().execReduce(opNum,
                                                         xBuff,
                                                         xShapeBuff,
-                                                        extraParamsBuff,resultBuff,resultShapeBuff);
+                                                        extraParamsBuff,resultBuff,
+                                                        resultShapeBuff,dimensionBuff,dimensionLength);
 
 
 }
@@ -456,7 +454,7 @@ JNIEXPORT jfloat JNICALL Java_org_nd4j_linalg_cpu_ops_NativeOps_execReduceScalar
     float *xBuff = (float *) env->GetDirectBufferAddress(x);
     int *xShapeBuff = (int *) env->GetDirectBufferAddress(xShapeInfo);
     float *extraParamsBuff = (float *) env->GetDirectBufferAddress(extraParams);
-    return FloatNativeOpExecutioner::getInstance()->execReduceScalar(opNum,xBuff,xShapeBuff,extraParamsBuff);
+    return FloatNativeOpExecutioner::getInstance().execReduceScalar(opNum,xBuff,xShapeBuff,extraParamsBuff);
 
 
 }
@@ -497,7 +495,7 @@ JNIEXPORT jfloat JNICALL Java_org_nd4j_linalg_cpu_ops_NativeOps_execReduce3Scala
     float *extraParamsBuff = (float *) env->GetDirectBufferAddress(extraParams);
     float *yBuff = (float *) env->GetDirectBufferAddress(y);
     int *yShapeBuff = (int *) env->GetDirectBufferAddress(yShapeInfo);
-    return FloatNativeOpExecutioner::getInstance()->execReduce3Scalar(opNum,xBuff,xShapeBuff,
+    return FloatNativeOpExecutioner::getInstance().execReduce3Scalar(opNum,xBuff,xShapeBuff,
                                                                 extraParamsBuff,yBuff,yShapeBuff);
 
 }
@@ -527,7 +525,7 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_ops_NativeOps_execReduce3__ILjav
     float *resultBuff = (float *) env->GetDirectBufferAddress(result);
     int *resultShapeBuff = (int *) env->GetDirectBufferAddress(resultShapeInfo);
     int *dimensionBuff = (int *) env->GetDirectBufferAddress(dimension);
-    FloatNativeOpExecutioner::getInstance()->execReduce3(opNum,xBuff,xShapeBuff,extraParamsBuff,yBuff,yShapeBuff,resultBuff,resultShapeBuff,dimensionBuff,dimensionLength);
+    FloatNativeOpExecutioner::getInstance().execReduce3(opNum,xBuff,xShapeBuff,extraParamsBuff,yBuff,yShapeBuff,resultBuff,resultShapeBuff,dimensionBuff,dimensionLength);
 
 }
 
@@ -546,8 +544,8 @@ JNIEXPORT jfloat JNICALL Java_org_nd4j_linalg_cpu_ops_NativeOps_execScalar__ILja
     float *xBuff = (float *) env->GetDirectBufferAddress(x);
     float *extraParamsBuff = (float *) env->GetDirectBufferAddress(extraParams);
     float *resultBuff = (float *) env->GetDirectBufferAddress(result);
-    FloatNativeOpExecutioner::getInstance()->execScalar(opNum,xBuff,xStride,resultBuff,resultStride,scalar,extraParamsBuff,n);
-
+    FloatNativeOpExecutioner::getInstance().execScalar(opNum,xBuff,xStride,resultBuff,resultStride,scalar,extraParamsBuff,n);
+return 0;
 }
 
 /*
@@ -560,7 +558,7 @@ JNIEXPORT jfloat JNICALL Java_org_nd4j_linalg_cpu_ops_NativeOps_execSummaryStats
     float *xBuff = (float *) env->GetDirectBufferAddress(x);
     int *xShapeBuff = (int *) env->GetDirectBufferAddress(xShapeInfo);
     float *extraParamsBuff = (float *) env->GetDirectBufferAddress(extraParams);
-    return FloatNativeOpExecutioner::getInstance()->execSummaryStatsScalar(opNum,xBuff,xShapeBuff,extraParamsBuff);
+    return FloatNativeOpExecutioner::getInstance().execSummaryStatsScalar(opNum,xBuff,xShapeBuff,extraParamsBuff);
 
 }
 
@@ -591,7 +589,7 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_ops_NativeOps_execSummaryStats__
     float *resultBuff = (float *) env->GetDirectBufferAddress(result);
     int *resultShapeBuff = (int *) env->GetDirectBufferAddress(resultShapeInfo);
     int *dimensionBuff = (int *) env->GetDirectBufferAddress(dimension);
-    FloatNativeOpExecutioner::getInstance()->execSummaryStats(opNum,xBuff,xShapeBuff,extraParamsBuff,resultBuff,resultShapeBuff,dimensionBuff,dimensionLength);
+    FloatNativeOpExecutioner::getInstance().execSummaryStats(opNum,xBuff,xShapeBuff,extraParamsBuff,resultBuff,resultShapeBuff,dimensionBuff,dimensionLength);
 
 }
 
@@ -607,7 +605,7 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_ops_NativeOps_execTransform__ILj
     float *extraParamsBuff = (float *) env->GetDirectBufferAddress(extraParams);
 
     float *resultBuff = (float *) env->GetDirectBufferAddress(result);
-    FloatNativeOpExecutioner::getInstance()->execTransform(opNum,xBuff,xStride,resultBuff,
+    FloatNativeOpExecutioner::getInstance().execTransform(opNum,xBuff,xStride,resultBuff,
                                                            resultStride,extraParamsBuff,n);
 
 

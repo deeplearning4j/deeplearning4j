@@ -895,8 +895,6 @@ namespace functions {
 					return;
 				}
 
-				T startingVal = this->startingValue(x);
-
 
 				shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo,dimension, dimensionLength);
 				int resultLength = shape::length(resultShapeInfoBuffer);

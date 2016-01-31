@@ -152,9 +152,9 @@ public:
                     int *xShapeInfo,
                     T *extraParams,
                     T *result,
-                    int *resultShapeInfo) {
+                    int *resultShapeInfo,int *dimension,int dimensionLength) {
         functions::reduce::ReduceFunction<T> *reduceFunction = reduceOpFactory->create(opNum);
-        reduceFunction->exec(x,xShapeInfo,extraParams,result,resultShapeInfo);
+        reduceFunction->exec(x,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength);
         delete reduceFunction;
     }
 

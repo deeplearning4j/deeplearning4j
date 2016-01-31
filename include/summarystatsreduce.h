@@ -1020,7 +1020,6 @@ struct SharedSummaryStatsData<double> {
 					  T *extraParams,
 					  T *result,
 					  int *resultShapeInfo) {
-				T startingVal = this->startingValue(x);
 				SummaryStatsData<T> startingIndex;
 				int length = shape::length(xShapeInfo);
 				int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
@@ -1075,7 +1074,6 @@ struct SharedSummaryStatsData<double> {
 			T execScalar(T *x,
 						 int *xShapeInfo,
 						 T *extraParams) {
-				T startingVal = this->startingValue(x);
 				SummaryStatsData<T> startingIndex;
 				int length = shape::length(xShapeInfo);
 				int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
