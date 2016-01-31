@@ -8,6 +8,9 @@
 #ifndef OP_H_
 #define OP_H_
 #include <string>
+#ifdef JNI
+#include <jni.h>
+#endif
 namespace functions {
 namespace ops {
 template<typename T>

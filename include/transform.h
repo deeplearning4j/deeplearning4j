@@ -12,6 +12,10 @@
 #ifdef __CUDACC__
 #include <helper_cuda.h>
 #endif
+
+#ifdef JNI
+#include <jni.h>
+#endif
 namespace functions {
 namespace transform {
 
@@ -41,6 +45,7 @@ public:
 		int tid = threadIdx.x;
 		int i = blockIdx.x * blockDim.x + tid;
 		/* equal, positive, non-unit increments. */
+#pragma unroll
 		for (; i < n; i += totalThreads) {
 			result[i * incy] = op(dy[i * incy], params);
 		}
@@ -48,6 +53,16 @@ public:
 	}
 #endif
 
+	/**
+	 * CPU execution
+	 * @param dx the input
+	 * @param xStride the stride to iterate for the input
+	 * @param result the result buffer
+	 * @param resultStride the stride for result
+	 * storage
+	 * @param extraParams the extra parameters
+	 * @param n the number of elements to iterate on
+	 */
 	virtual void exec(T *dx, int xStride, T *result, int resultStride,
 			T *extraParams, int n) {
 		if (xStride == 1 && resultStride == 1) {
@@ -86,6 +101,9 @@ public:
 };
 
 namespace ops {
+/**
+ * abs(x)
+ */
 template<typename T>
 class Abs: public  Transform<T> {
 public:
@@ -128,6 +146,9 @@ public:
 
 };
 
+/**
+ * cei(x)
+ */
 template<typename T>
 class Ceiling: public  Transform<T> {
 public:
@@ -170,6 +191,9 @@ public:
 
 };
 
+/**
+ * cos(x)
+ */
 template<typename T>
 class Cosine: public  Transform<T> {
 public:
@@ -214,6 +238,9 @@ public:
 
 };
 
+/**
+ * exp(x)
+ */
 template<typename T>
 class Exp: public  Transform<T> {
 public:
@@ -259,6 +286,9 @@ public:
 
 };
 
+/**
+ * floor(x)
+ */
 template<typename T>
 class Floor: public  Transform<T> {
 public:
@@ -301,6 +331,9 @@ public:
 
 };
 
+/**
+ * log(x)
+ */
 template<typename T>
 class Log: public  Transform<T> {
 public:
@@ -346,6 +379,9 @@ public:
 
 };
 
+/**
+ * -x
+ */
 template<typename T>
 class Neg: public  Transform<T> {
 public:
@@ -388,6 +424,9 @@ public:
 
 };
 
+/**
+ * pow(x,extra params [0])
+ */
 template<typename T>
 class Pow: public  Transform<T> {
 public:
@@ -436,6 +475,9 @@ public:
 	}
 };
 
+/**
+ * round(x)
+ */
 template<typename T>
 class Round: public  Transform<T> {
 public:
@@ -478,6 +520,9 @@ public:
 
 };
 
+/**
+ * sigmoid(x)
+ */
 template<typename T>
 class Sigmoid: public  Transform<T> {
 public:
@@ -520,6 +565,10 @@ public:
 
 };
 
+/**
+ * Scale to be between a
+ * min and max
+ */
 template<typename T>
 class SetRange: public  Transform<T> {
 public:
@@ -575,6 +624,9 @@ public:
 
 };
 
+/**
+ * sin(x)
+ */
 template<typename T>
 class Sin: public  Transform<T> {
 public:
@@ -617,6 +669,9 @@ public:
 
 };
 
+/**
+ * sqrt(x)
+ */
 template<typename T>
 class Sqrt: public  Transform<T> {
 public:
@@ -659,6 +714,9 @@ public:
 
 };
 
+/**
+ * softplus(x)
+ */
 template<typename T>
 class SoftPlus: public  Transform<T> {
 public:
@@ -702,6 +760,9 @@ public:
 
 };
 
+/**
+ * sign(x)
+ */
 template<typename T>
 class Sign: public  Transform<T> {
 public:
@@ -743,6 +804,9 @@ public:
 	}
 };
 
+/**
+ * tanh(x)
+ */
 template<typename T>
 class Tanh: public  Transform<T> {
 public:
@@ -785,6 +849,9 @@ public:
 
 };
 
+/**
+ * acos(x)
+ */
 template<typename T>
 class ACos: public  Transform<T> {
 public:
@@ -830,6 +897,9 @@ public:
 
 };
 
+/**
+ * asin(x)
+ */
 template<typename T>
 class ASin: public  Transform<T> {
 public:
@@ -872,6 +942,9 @@ public:
 
 };
 
+/**
+ * atan(x)
+ */
 template<typename T>
 class ATan: public  Transform<T> {
 public:
@@ -929,6 +1002,30 @@ public:
 
 
 
+/**
+ * Create an op
+ * @param op the op to create
+ * 0: abs
+ * 1: ceiling
+ * 2: cosine
+ * 3: exp
+ * 4: floor
+ * 5: log
+ * 6: neg
+ * 7: pow
+ * 8: round
+ * 9: setrange
+ * 10:sigmoid
+ * 11: sign
+ * 12: sin
+ * 13:softplus
+ * 14:sqrt
+ * 15:tanh
+ * 16:acos
+ * 17:asin
+ * 18:atan
+ * @return the op given the nnumber
+ */
 #ifdef __CUDACC__
 	__inline__ __device__ __host__
 #endif
@@ -1006,10 +1103,20 @@ public:
 }
 
 #ifdef __CUDACC__
-__device__ __constant__ functions::transform::TransformOpFactory<double> *doubleTransformFactory;
-__device__ __constant__ functions::transform::TransformOpFactory<float> *floatTransformFactory;
 
-
+/**
+ * The c and driver interface
+ *  for th kernels
+ * @param opNum the op number
+ * @param n the length of the problem
+ * @param idx
+ * the start index
+ * @param dy the vector to transform
+ * @param incy the stride for the vector
+ * @param params the extra parameters for the problem
+ * @param result the result storage
+ * @param blockSize the block size for the problem
+ */
 template <typename T>
 __device__ void transformGeneric(
 		int opNum,
@@ -1043,7 +1150,19 @@ __device__ void transformGeneric(
 	}
 }
 
-
+/**
+ * The c and driver interface
+ *  for th kernels
+ * @param opNum the op number
+ * @param n the length of the problem
+ * @param idx
+ * the start index
+ * @param dy the vector to transform
+ * @param incy the stride for the vector
+ * @param params the extra parameters for the problem
+ * @param result the result storage
+ * @param blockSize the block size for the problem
+ */
 extern "C" __global__ void transformDouble(
 		int opNum,
 		int n,
@@ -1056,6 +1175,19 @@ extern "C" __global__ void transformDouble(
 	transformGeneric<double>(opNum,n,idx,dy,incy,params,result,blockSize);
 }
 
+/**
+ * The c and driver interface
+ *  for th kernels
+ * @param opNum the op number
+ * @param n the length of the problem
+ * @param idx
+ * the start index
+ * @param dy the vector to transform
+ * @param incy the stride for the vector
+ * @param params the extra parameters for the problem
+ * @param result the result storage
+ * @param blockSize the block size for the problem
+ */
 extern "C" __global__ void transformFloat(
 		int opNum,
 		int n,
@@ -1068,20 +1200,6 @@ extern "C" __global__ void transformFloat(
 	transformGeneric<float>(opNum,n,idx,dy,incy,params,result,blockSize);
 
 }
-
-
-extern "C"
-__host__ void setupTransfromFactories() {
-	/*printf("Setting up transform factories\n");
-	functions::transform::TransformOpFactory<double> *newOpFactory = new functions::transform::TransformOpFactory<double>();
-	functions::transform::TransformOpFactory<float> *newOpFactoryFloat = new functions::transform::TransformOpFactory<float>();
-	checkCudaErrors(cudaMemcpyToSymbol(doubleTransformFactory, newOpFactory, sizeof(functions::transform::TransformOpFactory<double> )));
-	checkCudaErrors(cudaMemcpyToSymbol(floatTransformFactory, newOpFactory, sizeof(functions::transform::TransformOpFactory<float>)));
-	delete(newOpFactory);
-	delete(newOpFactoryFloat);*/
-
-}
-
 
 #endif
 

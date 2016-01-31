@@ -2,38 +2,10 @@
 <?fileVersion 5.0.0?><cproject storage_type_id="org.eclipse.cdt.core.XmlProjectDescriptionStorage2">
 	<storageModule moduleId="org.eclipse.cdt.core.settings">
 		<cconfiguration id="com.nvidia.cuda.ide.toolchain.seven_five.557588254">
-			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="com.nvidia.cuda.ide.toolchain.seven_five.557588254" moduleId="org.eclipse.cdt.core.settings" name="Default">
-				<externalSettings/>
-				<extensions>
-					<extension id="com.nvidia.cuda.ide.cubin" point="org.eclipse.cdt.core.BinaryParser"/>
-					<extension id="com.nvidia.cuda.ide.elf" point="org.eclipse.cdt.core.BinaryParser"/>
-					<extension id="com.nvidia.cuda.ide.macho" point="org.eclipse.cdt.core.BinaryParser"/>
-					<extension id="nvcc.errorParser" point="org.eclipse.cdt.core.ErrorParser"/>
-					<extension id="org.eclipse.cdt.core.VCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
-					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
-					<extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
-					<extension id="org.eclipse.cdt.core.GASErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
-					<extension id="org.eclipse.cdt.core.GLDErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
-				</extensions>
-			</storageModule>
-			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration buildProperties="" id="com.nvidia.cuda.ide.toolchain.seven_five.557588254" name="Default" parent="org.eclipse.cdt.build.core.emptycfg">
-					<folderInfo id="com.nvidia.cuda.ide.toolchain.seven_five.557588254.1470237056" name="/" resourcePath="">
-						<toolChain id="com.nvidia.cuda.ide.toolchain.seven_five.1483423094" name="CUDA Toolkit 7.5" superClass="com.nvidia.cuda.ide.toolchain.seven_five">
-							<targetPlatform archList="all" binaryParser="com.nvidia.cuda.ide.elf;com.nvidia.cuda.ide.macho;com.nvidia.cuda.ide.cubin" id="com.nvidia.cuda.ide.targetPlatform.281182258" isAbstract="false" name="Debug Platform" osList="linux,macosx" superClass="com.nvidia.cuda.ide.targetPlatform"/>
-							<builder id="com.nvidia.cuda.ide.builder.373564066" managedBuildOn="false" name="CUDA Toolkit 7.5 Builder.Default" superClass="com.nvidia.cuda.ide.builder"/>
-							<tool id="nvcc.compiler.base.790037196" name="NVCC Compiler" superClass="nvcc.compiler.base">
-								<option id="nvcc.compiler.pic.517795859" superClass="nvcc.compiler.pic"/>
-							</tool>
-							<tool id="nvcc.linker.base.1214144236" name="NVCC Linker" superClass="nvcc.linker.base"/>
-							<tool id="nvcc.archiver.base.1729182528" name="NVCC Archiver" superClass="nvcc.archiver.base"/>
-							<tool id="com.nvidia.host.assembler.1460937354" name="Host Assembler" superClass="com.nvidia.host.assembler"/>
-						</toolChain>
-					</folderInfo>
-				</configuration>
-			</storageModule>
-			<storageModule moduleId="com.nvidia.cuda.ide.build.project.ICudaProjectConfiguration"/>
-			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
+			<storageModule externalCElementFile="com.nvidia.cuda.ide.toolchain.seven_five.557588254_org.eclipse.cdt.core.settings" id="com.nvidia.cuda.ide.toolchain.seven_five.557588254" name="Default"/>
+			<storageModule externalCElementFile="com.nvidia.cuda.ide.toolchain.seven_five.557588254_cdtBuildSystem" version="4.0.0"/>
+			<storageModule externalCElementFile="com.nvidia.cuda.ide.toolchain.seven_five.557588254_com.nvidia.cuda.ide.build.project.ICudaProjectConfiguration"/>
+			<storageModule externalCElementFile="com.nvidia.cuda.ide.toolchain.seven_five.557588254_org.eclipse.cdt.core.externalSettings"/>
 		</cconfiguration>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.pathentry">

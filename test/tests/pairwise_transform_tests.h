@@ -111,6 +111,46 @@ protected:
 
 };
 
+template <typename T>
+Data<T> * getPairwiseData(T *assertion,int opNum) {
+	int rank = 2;
+	int yRank = 2;
+	int resultRank = 2;
+	int length = 4;
+	Data<T> *data = new Data<T>();
+	data->rank = rank;
+	data->yRank = yRank;
+	data->resultRank = resultRank;
+	data->xShape = (int *) malloc(sizeof(int) * rank);
+	data->yShape = (int *) malloc(sizeof(int) * yRank);
+	data->resultShape = (int *) malloc(sizeof(int) * yRank);
+
+	for(int i = 0; i < 2; i++) {
+		data->xShape[i] = 2;
+		data->yShape[i] = 2;
+		data->resultShape[i] = 2;
+	}
+
+
+	T *extraParams = (T *) malloc(sizeof(T) * 2);
+	data->extraParams = extraParams;
+	T *y = (T *) malloc(sizeof(T) * length);
+	data->y = y;
+	for(int i = 0; i < length; i++) {
+		y[i] = i + 2;
+	}
+
+	T *comparisionAssertion = (T *) malloc(sizeof(T) * 4);
+	for(int i = 0; i < 4; i++)
+		comparisionAssertion[i] = assertion[i];
+	data->assertion = comparisionAssertion;
+
+	data->result = (T *) malloc(sizeof(T) * length);
+
+	return data;
+}
+
+
 class DoublePairwiseTranformTest : public PairwiseTransformTest<double> {
 public:
 	DoublePairwiseTranformTest() {}
@@ -188,42 +228,12 @@ public:
 };
 
 TEST(PairWiseTransform,ObjectOrientedAddition) {
+	double comparison[4] = {3,5,7,9};
+
 	int rank = 2;
 	int opNum = 0;
-	int yRank = 2;
-	int resultRank = 2;
-	int length = 4;
-	Data<double> *data = new Data<double>();
-	data->rank = rank;
-	data->yRank = yRank;
-	data->resultRank = resultRank;
-	data->xShape = (int *) malloc(sizeof(int) * rank);
-	data->yShape = (int *) malloc(sizeof(int) * yRank);
-	data->resultShape = (int *) malloc(sizeof(int) * yRank);
 
-	for(int i = 0; i < 2; i++) {
-		data->xShape[i] = 2;
-		data->yShape[i] = 2;
-		data->resultShape[i] = 2;
-	}
-
-
-	double *extraParams = (double *) malloc(sizeof(double) * 2);
-	data->extraParams = extraParams;
-	double *y = (double *) malloc(sizeof(double) * length);
-	data->y = y;
-	for(int i = 0; i < length; i++) {
-		y[i] = i + 2;
-	}
-
-	double comparison[4] = {3,5,7,9};
-	double *comparisionAssertion = (double *) malloc(sizeof(double) * 4);
-	for(int i = 0; i < 4; i++)
-		comparisionAssertion[i] = comparison[i];
-	data->assertion = comparisionAssertion;
-
-	data->result = (double *) malloc(sizeof(double) * length);
-
+	Data<double> *data = getPairwiseData<double>(comparison,opNum);
 	DoublePairwiseTranformTest *test = new DoublePairwiseTranformTest(rank,opNum,data,1);
 	test->run();
 	delete data;
@@ -235,40 +245,8 @@ TEST(PairWiseTransform,ObjectOrientedAddition) {
 TEST(PairWiseTransform,ObjectOrientedCopy) {
 	int rank = 2;
 	int opNum = 1;
-	int yRank = 2;
-	int resultRank = 2;
-	int length = 4;
-	Data<double> *data = new Data<double>();
-	data->rank = rank;
-	data->yRank = yRank;
-	data->resultRank = resultRank;
-	data->xShape = (int *) malloc(sizeof(int) * rank);
-	data->yShape = (int *) malloc(sizeof(int) * yRank);
-	data->resultShape = (int *) malloc(sizeof(int) * yRank);
-
-	for(int i = 0; i < 2; i++) {
-		data->xShape[i] = 2;
-		data->yShape[i] = 2;
-		data->resultShape[i] = 2;
-	}
-
-
-	double *extraParams = (double *) malloc(sizeof(double) * 2);
-	data->extraParams = extraParams;
-	double *y = (double *) malloc(sizeof(double) * length);
-	data->y = y;
-	for(int i = 0; i < length; i++) {
-		y[i] = i + 2;
-	}
-
 	double comparison[4] = {2,3,4,5};
-	double *comparisionAssertion = (double *) malloc(sizeof(double) * 4);
-	for(int i = 0; i < 4; i++)
-		comparisionAssertion[i] = comparison[i];
-	data->assertion = comparisionAssertion;
-
-	data->result = (double *) malloc(sizeof(double) * length);
-
+	Data<double> *data = getPairwiseData<double>(comparison,opNum);
 	DoublePairwiseTranformTest *test = new DoublePairwiseTranformTest(rank,opNum,data,1);
 	test->run();
 	delete data;
@@ -279,39 +257,9 @@ TEST(PairWiseTransform,ObjectOrientedCopy) {
 TEST(PairWiseTransform,ObjectOrientedDivide) {
 	int rank = 2;
 	int opNum = 2;
-	int yRank = 2;
-	int resultRank = 2;
-	int length = 4;
-	Data<double> *data = new Data<double>();
-	data->rank = rank;
-	data->yRank = yRank;
-	data->resultRank = resultRank;
-	data->xShape = (int *) malloc(sizeof(int) * rank);
-	data->yShape = (int *) malloc(sizeof(int) * yRank);
-	data->resultShape = (int *) malloc(sizeof(int) * yRank);
-
-	for(int i = 0; i < 2; i++) {
-		data->xShape[i] = 2;
-		data->yShape[i] = 2;
-		data->resultShape[i] = 2;
-	}
-
-
-	double *extraParams = (double *) malloc(sizeof(double) * 2);
-	data->extraParams = extraParams;
-	double *y = (double *) malloc(sizeof(double) * length);
-	data->y = y;
-	for(int i = 0; i < length; i++) {
-		y[i] = i + 2;
-	}
-
 	double comparison[4] = {0.5,  0.66666667,0.75 ,0.8};
-	double *comparisionAssertion = (double *) malloc(sizeof(double) * 4);
-	for(int i = 0; i < 4; i++)
-		comparisionAssertion[i] = comparison[i];
-	data->assertion = comparisionAssertion;
-	data->result = (double *) malloc(sizeof(double) * length);
 
+	Data<double> *data = getPairwiseData(comparison,opNum);
 	DoublePairwiseTranformTest *test = new DoublePairwiseTranformTest(rank,opNum,data,1);
 	test->run();
 	delete data;
@@ -322,39 +270,9 @@ TEST(PairWiseTransform,ObjectOrientedDivide) {
 TEST(PairWiseTransform,ObjectOrientedEqualTo) {
 	int rank = 2;
 	int opNum = 3;
-	int yRank = 2;
-	int resultRank = 2;
-	int length = 4;
-	Data<double> *data = new Data<double>();
-	data->rank = rank;
-	data->yRank = yRank;
-	data->resultRank = resultRank;
-	data->xShape = (int *) malloc(sizeof(int) * rank);
-	data->yShape = (int *) malloc(sizeof(int) * yRank);
-	data->resultShape = (int *) malloc(sizeof(int) * yRank);
-
-	for(int i = 0; i < 2; i++) {
-		data->xShape[i] = 2;
-		data->yShape[i] = 2;
-		data->resultShape[i] = 2;
-	}
-
-
-	double *extraParams = (double *) malloc(sizeof(double) * 2);
-	data->extraParams = extraParams;
-	double *y = (double *) malloc(sizeof(double) * length);
-	data->y = y;
-	for(int i = 0; i < length; i++) {
-		y[i] = i + 2;
-	}
-
 	double comparison[4] = {0.0,0.0,0.0,0.0};
-	double *comparisionAssertion = (double *) malloc(sizeof(double) * 4);
-	for(int i = 0; i < 4; i++)
-		comparisionAssertion[i] = comparison[i];
-	data->assertion = comparisionAssertion;
-	data->result = (double *) malloc(sizeof(double) * length);
 
+	Data<double> *data = getPairwiseData<double>(comparison,opNum);
 	DoublePairwiseTranformTest *test = new DoublePairwiseTranformTest(rank,opNum,data,1);
 	test->run();
 	delete data;
@@ -366,39 +284,8 @@ TEST(PairWiseTransform,ObjectOrientedEqualTo) {
 TEST(PairWiseTransform,ObjectOrientedGreaterThan) {
 	int rank = 2;
 	int opNum = 4;
-	int yRank = 2;
-	int resultRank = 2;
-	int length = 4;
-	Data<double> *data = new Data<double>();
-	data->rank = rank;
-	data->yRank = yRank;
-	data->resultRank = resultRank;
-	data->xShape = (int *) malloc(sizeof(int) * rank);
-	data->yShape = (int *) malloc(sizeof(int) * yRank);
-	data->resultShape = (int *) malloc(sizeof(int) * yRank);
-
-	for(int i = 0; i < 2; i++) {
-		data->xShape[i] = 2;
-		data->yShape[i] = 2;
-		data->resultShape[i] = 2;
-	}
-
-
-	double *extraParams = (double *) malloc(sizeof(double) * 2);
-	data->extraParams = extraParams;
-	double *y = (double *) malloc(sizeof(double) * length);
-	data->y = y;
-	for(int i = 0; i < length; i++) {
-		y[i] = i + 2;
-	}
-
 	double comparison[4] = {0.0,0.0,0.0,0.0};
-	double *comparisionAssertion = (double *) malloc(sizeof(double) * 4);
-	for(int i = 0; i < 4; i++)
-		comparisionAssertion[i] = comparison[i];
-	data->assertion = comparisionAssertion;
-	data->result = (double *) malloc(sizeof(double) * length);
-
+	Data<double> *data = getPairwiseData<double>(comparison,opNum);
 	DoublePairwiseTranformTest *test = new DoublePairwiseTranformTest(rank,opNum,data,1);
 	test->run();
 	delete data;
@@ -410,39 +297,8 @@ TEST(PairWiseTransform,ObjectOrientedGreaterThan) {
 TEST(PairWiseTransform,ObjectOrientedLessThan) {
 	int rank = 2;
 	int opNum = 5;
-	int yRank = 2;
-	int resultRank = 2;
-	int length = 4;
-	Data<double> *data = new Data<double>();
-	data->rank = rank;
-	data->yRank = yRank;
-	data->resultRank = resultRank;
-	data->xShape = (int *) malloc(sizeof(int) * rank);
-	data->yShape = (int *) malloc(sizeof(int) * yRank);
-	data->resultShape = (int *) malloc(sizeof(int) * yRank);
-
-	for(int i = 0; i < 2; i++) {
-		data->xShape[i] = 2;
-		data->yShape[i] = 2;
-		data->resultShape[i] = 2;
-	}
-
-
-	double *extraParams = (double *) malloc(sizeof(double) * 2);
-	data->extraParams = extraParams;
-	double *y = (double *) malloc(sizeof(double) * length);
-	data->y = y;
-	for(int i = 0; i < length; i++) {
-		y[i] = i + 2;
-	}
-
 	double comparison[4] = {1.0,1.0,1.0,1.0};
-	double *comparisionAssertion = (double *) malloc(sizeof(double) * 4);
-	for(int i = 0; i < 4; i++)
-		comparisionAssertion[i] = comparison[i];
-	data->assertion = comparisionAssertion;
-	data->result = (double *) malloc(sizeof(double) * length);
-
+	Data<double> *data = getPairwiseData<double>(comparison,opNum);
 	DoublePairwiseTranformTest *test = new DoublePairwiseTranformTest(rank,opNum,data,1);
 	test->run();
 	delete data;
@@ -455,39 +311,8 @@ TEST(PairWiseTransform,ObjectOrientedLessThan) {
 TEST(PairWiseTransform,ObjectOrientedMultiply) {
 	int rank = 2;
 	int opNum = 6;
-	int yRank = 2;
-	int resultRank = 2;
-	int length = 4;
-	Data<double> *data = new Data<double>();
-	data->rank = rank;
-	data->yRank = yRank;
-	data->resultRank = resultRank;
-	data->xShape = (int *) malloc(sizeof(int) * rank);
-	data->yShape = (int *) malloc(sizeof(int) * yRank);
-	data->resultShape = (int *) malloc(sizeof(int) * yRank);
-
-	for(int i = 0; i < 2; i++) {
-		data->xShape[i] = 2;
-		data->yShape[i] = 2;
-		data->resultShape[i] = 2;
-	}
-
-
-	double *extraParams = (double *) malloc(sizeof(double) * 2);
-	data->extraParams = extraParams;
-	double *y = (double *) malloc(sizeof(double) * length);
-	data->y = y;
-	for(int i = 0; i < length; i++) {
-		y[i] = i + 2;
-	}
-
 	double comparison[4] = {2.,   6.,  12.,  20};
-	double *comparisionAssertion = (double *) malloc(sizeof(double) * 4);
-	for(int i = 0; i < 4; i++)
-		comparisionAssertion[i] = comparison[i];
-	data->assertion = comparisionAssertion;
-	data->result = (double *) malloc(sizeof(double) * length);
-
+	Data<double> *data = getPairwiseData<double>(comparison,opNum);
 	DoublePairwiseTranformTest *test = new DoublePairwiseTranformTest(rank,opNum,data,1);
 	test->run();
 	delete data;
@@ -498,39 +323,8 @@ TEST(PairWiseTransform,ObjectOrientedMultiply) {
 TEST(PairWiseTransform,ObjectOrientedReverseDivide) {
 	int rank = 2;
 	int opNum = 7;
-	int yRank = 2;
-	int resultRank = 2;
-	int length = 4;
-	Data<double> *data = new Data<double>();
-	data->rank = rank;
-	data->yRank = yRank;
-	data->resultRank = resultRank;
-	data->xShape = (int *) malloc(sizeof(int) * rank);
-	data->yShape = (int *) malloc(sizeof(int) * yRank);
-	data->resultShape = (int *) malloc(sizeof(int) * yRank);
-
-	for(int i = 0; i < 2; i++) {
-		data->xShape[i] = 2;
-		data->yShape[i] = 2;
-		data->resultShape[i] = 2;
-	}
-
-
-	double *extraParams = (double *) malloc(sizeof(double) * 2);
-	data->extraParams = extraParams;
-	double *y = (double *) malloc(sizeof(double) * length);
-	data->y = y;
-	for(int i = 0; i < length; i++) {
-		y[i] = i + 2;
-	}
-
 	double comparison[4] = { 2.,1.5,1.33333333,1.25};
-	double *comparisionAssertion = (double *) malloc(sizeof(double) * 4);
-	for(int i = 0; i < 4; i++)
-		comparisionAssertion[i] = comparison[i];
-	data->assertion = comparisionAssertion;
-	data->result = (double *) malloc(sizeof(double) * length);
-
+	Data<double> *data = getPairwiseData<double>(comparison,opNum);
 	DoublePairwiseTranformTest *test = new DoublePairwiseTranformTest(rank,opNum,data,1);
 	test->run();
 	delete data;
@@ -543,39 +337,8 @@ TEST(PairWiseTransform,ObjectOrientedReverseDivide) {
 TEST(PairWiseTransform,ObjectOrientedReverseSub) {
 	int rank = 2;
 	int opNum = 7;
-	int yRank = 2;
-	int resultRank = 2;
-	int length = 4;
-	Data<double> *data = new Data<double>();
-	data->rank = rank;
-	data->yRank = yRank;
-	data->resultRank = resultRank;
-	data->xShape = (int *) malloc(sizeof(int) * rank);
-	data->yShape = (int *) malloc(sizeof(int) * yRank);
-	data->resultShape = (int *) malloc(sizeof(int) * yRank);
-
-	for(int i = 0; i < 2; i++) {
-		data->xShape[i] = 2;
-		data->yShape[i] = 2;
-		data->resultShape[i] = 2;
-	}
-
-
-	double *extraParams = (double *) malloc(sizeof(double) * 2);
-	data->extraParams = extraParams;
-	double *y = (double *) malloc(sizeof(double) * length);
-	data->y = y;
-	for(int i = 0; i < length; i++) {
-		y[i] = i + 2;
-	}
-
 	double comparison[4] = { 2.,1.5,1.33333333,1.25};
-	double *comparisionAssertion = (double *) malloc(sizeof(double) * 4);
-	for(int i = 0; i < 4; i++)
-		comparisionAssertion[i] = comparison[i];
-	data->assertion = comparisionAssertion;
-	data->result = (double *) malloc(sizeof(double) * length);
-
+	Data<double> *data = getPairwiseData<double>(comparison,opNum);
 	DoublePairwiseTranformTest *test = new DoublePairwiseTranformTest(rank,opNum,data,1);
 	test->run();
 	delete data;
@@ -587,40 +350,142 @@ TEST(PairWiseTransform,ObjectOrientedReverseSub) {
 TEST(PairWiseTransform,ObjectOrientedSubtraction) {
 	int rank = 2;
 	int opNum = 9;
-	int yRank = 2;
-	int resultRank = 2;
-	int length = 4;
-	Data<double> *data = new Data<double>();
-	data->rank = rank;
-	data->yRank = yRank;
-	data->resultRank = resultRank;
-	data->xShape = (int *) malloc(sizeof(int) * rank);
-	data->yShape = (int *) malloc(sizeof(int) * yRank);
-	data->resultShape = (int *) malloc(sizeof(int) * yRank);
-
-	for(int i = 0; i < 2; i++) {
-		data->xShape[i] = 2;
-		data->yShape[i] = 2;
-		data->resultShape[i] = 2;
-	}
-
-
-	double *extraParams = (double *) malloc(sizeof(double) * 2);
-	data->extraParams = extraParams;
-	double *y = (double *) malloc(sizeof(double) * length);
-	data->y = y;
-	for(int i = 0; i < length; i++) {
-		y[i] = i + 2;
-	}
-
 	double comparison[4] = { -1., -1., -1., -1.};
-	double *comparisionAssertion = (double *) malloc(sizeof(double) * 4);
-	for(int i = 0; i < 4; i++)
-		comparisionAssertion[i] = comparison[i];
-	data->assertion = comparisionAssertion;
-	data->result = (double *) malloc(sizeof(double) * length);
 
+	Data<double> *data =  getPairwiseData<double>(comparison,opNum);
 	DoublePairwiseTranformTest *test = new DoublePairwiseTranformTest(rank,opNum,data,1);
+	test->run();
+	delete data;
+	delete test;
+
+}
+
+
+TEST(PairWiseTransform,ObjectOrientedFloatAddition) {
+	float comparison[4] = {3,5,7,9};
+
+	int rank = 2;
+	int opNum = 0;
+	Data<float> *data = getPairwiseData<float>(comparison,opNum);
+	FloatPairwiseTranformTest *test = new FloatPairwiseTranformTest(rank,opNum,data,1);
+	test->run();
+	delete data;
+	delete test;
+
+}
+
+
+TEST(PairWiseTransform,ObjectOrientedFloatCopy) {
+	int rank = 2;
+	int opNum = 1;
+	float comparison[4] = {2,3,4,5};
+	Data<float> *data = getPairwiseData<float>(comparison,opNum);
+	FloatPairwiseTranformTest *test = new FloatPairwiseTranformTest(rank,opNum,data,1);
+	test->run();
+	delete data;
+	delete test;
+
+}
+
+TEST(PairWiseTransform,ObjectOrientedFloatDivide) {
+	int rank = 2;
+	int opNum = 2;
+	float comparison[4] = {0.5,  0.66666667,0.75 ,0.8};
+
+	Data<float> *data = getPairwiseData(comparison,opNum);
+	FloatPairwiseTranformTest *test = new FloatPairwiseTranformTest(rank,opNum,data,1);
+	test->run();
+	delete data;
+	delete test;
+
+}
+
+TEST(PairWiseTransform,ObjectOrientedFloatEqualTo) {
+	int rank = 2;
+	int opNum = 3;
+	float comparison[4] = {0.0,0.0,0.0,0.0};
+
+	Data<float> *data = getPairwiseData<float>(comparison,opNum);
+	FloatPairwiseTranformTest *test = new FloatPairwiseTranformTest(rank,opNum,data,1);
+	test->run();
+	delete data;
+	delete test;
+
+}
+
+
+TEST(PairWiseTransform,ObjectOrientedFloatGreaterThan) {
+	int rank = 2;
+	int opNum = 4;
+	float comparison[4] = {0.0,0.0,0.0,0.0};
+	Data<float> *data = getPairwiseData<float>(comparison,opNum);
+	FloatPairwiseTranformTest *test = new FloatPairwiseTranformTest(rank,opNum,data,1);
+	test->run();
+	delete data;
+	delete test;
+
+}
+
+
+TEST(PairWiseTransform,ObjectOrientedFloatLessThan) {
+	int rank = 2;
+	int opNum = 5;
+	float comparison[4] = {1.0,1.0,1.0,1.0};
+	Data<float> *data = getPairwiseData<float>(comparison,opNum);
+	FloatPairwiseTranformTest *test = new FloatPairwiseTranformTest(rank,opNum,data,1);
+	test->run();
+	delete data;
+	delete test;
+
+}
+
+
+
+TEST(PairWiseTransform,ObjectOrientedFloatMultiply) {
+	int rank = 2;
+	int opNum = 6;
+	float comparison[4] = {2.,   6.,  12.,  20};
+	Data<float> *data = getPairwiseData<float>(comparison,opNum);
+	FloatPairwiseTranformTest *test = new FloatPairwiseTranformTest(rank,opNum,data,1);
+	test->run();
+	delete data;
+	delete test;
+
+}
+
+TEST(PairWiseTransform,ObjectOrientedFloatReverseDivide) {
+	int rank = 2;
+	int opNum = 7;
+	float comparison[4] = { 2.,1.5,1.33333333,1.25};
+	Data<float> *data = getPairwiseData<float>(comparison,opNum);
+	FloatPairwiseTranformTest *test = new FloatPairwiseTranformTest(rank,opNum,data,1);
+	test->run();
+	delete data;
+	delete test;
+
+}
+
+
+
+TEST(PairWiseTransform,ObjectOrientedFloatReverseSub) {
+	int rank = 2;
+	int opNum = 7;
+	float comparison[4] = { 2.,1.5,1.33333333,1.25};
+	Data<float> *data = getPairwiseData<float>(comparison,opNum);
+	FloatPairwiseTranformTest *test = new FloatPairwiseTranformTest(rank,opNum,data,1);
+	test->run();
+	delete data;
+	delete test;
+
+}
+
+
+TEST(PairWiseTransform,ObjectOrientedFloatSubtraction) {
+	int rank = 2;
+	int opNum = 9;
+	float comparison[4] = { -1., -1., -1., -1.};
+	Data<float> *data =  getPairwiseData<float>(comparison,opNum);
+	FloatPairwiseTranformTest *test = new FloatPairwiseTranformTest(rank,opNum,data,1);
 	test->run();
 	delete data;
 	delete test;

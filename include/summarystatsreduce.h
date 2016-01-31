@@ -14,6 +14,10 @@
 #ifdef __CUDACC__
 #include <helper_cuda.h>
 #endif
+#ifdef JNI
+#include <jni.h>
+#endif
+
 namespace functions {
 namespace summarystats {
 
@@ -205,7 +209,7 @@ public:
 	}
 
 #ifdef __CUDACC__
-	inline __host__  __device__
+	__inline__ __host__  __device__
 
 #elif defined(__GNUC__)
 	__always_inline
@@ -335,6 +339,9 @@ struct SharedSummaryStatsData<double> {
 };
 #endif
 
+/**
+ * Standard deviation or variance 1 pass
+ */
 template<typename T>
 class SummaryStatsReduce: public  functions::ops::Op<T> {
 
@@ -495,6 +502,7 @@ public:
 		int floorPow2 = blockDim.x;
 
 		if (floorPow2 & (floorPow2 - 1)) {
+#pragma unroll
 			while ( floorPow2 & (floorPow2 - 1) ) {
 				floorPow2 &= floorPow2 - 1;
 			}
@@ -507,6 +515,7 @@ public:
 			__syncthreads();
 		}
 
+#pragma unroll
 		for (int activeThreads = floorPow2 >> 1;activeThreads; activeThreads >>= 1) {
 			if (tid < activeThreads && tid + activeThreads < numElements) {
 				SummaryStatsData<T> curr = sPartials[tid];
@@ -565,7 +574,7 @@ public:
 
 		sPartials = holder.getPointer();
 		T startingVal = this->startingValue(dx);
-
+#pragma unroll
 		for (int i = tid; i < numElements; i += blockDim.x) {
 			SummaryStatsData<T> val;
 			val.initWithValue(startingVal);
@@ -621,7 +630,7 @@ public:
 		__syncthreads();
 
 		if (resultScalar) {
-			if(blockIdx.x >= resultLength)
+			if(blockIdx.x >= resultLength && tid < numElements)
 				return;
 
 			unsigned int i = blockIdx.x * xElementWiseStride + tid;
@@ -630,6 +639,7 @@ public:
 				// we reduce multiple elements per thread.  The number is determined by the
 				// number of active thread blocks (via gridDim).  More blocks will result
 				// in a larger gridSize and therefore fewer elements per thread
+#pragma unroll
 				while (i < n) {
 					SummaryStatsData <T> indexVal;
 					indexVal.initWithValue(dx[i]);
@@ -641,6 +651,7 @@ public:
 				// we reduce multiple elements per thread.  The number is determined by the
 				// number of active thread blocks (via gridDim).  More blocks will result
 				// in a larger gridSize and therefore fewer elements per thread
+#pragma unroll
 				while (xOffset + i < n) {
 					SummaryStatsData <T> indexVal;
 					indexVal.initWithValue(dx[xOffset + i]);
@@ -650,8 +661,10 @@ public:
 			}
 
 			// each thread puts its local sum into shared memory
-			sPartials[tid] = reduction;
+			if(tid < numElements && reduction.n > 0)
+				sPartials[tid] = reduction;
 			__syncthreads();
+			if(tid < numElements && reduction.n > 0)
 			aggregatePartials(&sPartials, tid,numElements ,extraParams);
 
 			// write result for this block to global mem
@@ -695,6 +708,7 @@ public:
 				//update the reduction for the thread for the current tad
 				//note here that we compute the offset and then accumulate in shared memory
 				if(xElementWiseStride > 1)
+#pragma unroll
 					for (int element = 0; element < elementsPerTad; element++, offsetForTad += xElementWiseStride) {
 						SummaryStatsData <T> indexVal;
 						indexVal.initWithValue(dx[offsetForTad]);
@@ -703,6 +717,7 @@ public:
 						__syncthreads();
 					}
 				else {
+#pragma unroll
 					for (int element = 0; element < elementsPerTad; element++, offsetForTad++) {
 						SummaryStatsData <T> indexVal;
 						indexVal.initWithValue(dx[offsetForTad]);
@@ -737,6 +752,7 @@ public:
 				 * in other reduction implementations.
 				 *
 				 */
+#pragma unroll
 				for (int i = 1; i < tadsPerReductionIndex; i++) {
 					sPartials[tid] = update(sPartials[tid], sPartials[tid + i], extraParams);
 					__syncthreads();
@@ -894,7 +910,7 @@ public:
 		int tid = threadIdx.x;
 		//intialize te values
 		int numItems = sharedMemorySize / sizeof(T);
-
+#pragma unroll
 		for (int i = tid; i < numItems; i += blockDim.x) {
 			SummaryStatsData <T> valInit;
 			valInit.initWithValue(0.0);
@@ -960,7 +976,7 @@ public:
 		//note here blockidx.x + tid is the tad we want
 		int tadForThread = tid + blockIdx.x * tadsPerReduceIndex2;
 		int offsetForBlock = shape::offset(tadForThread, xShapeInfo, dimensionLength, xTadInfo);
-
+#pragma unroll
 		for (int i = 0; i < elementsPerTad; offsetForBlock += elementWiseStride, i++) {
 			SummaryStatsData <T> opApply;
 			opApply.initWithValue(data[offsetForBlock]);
@@ -970,6 +986,7 @@ public:
 
 		if (tid == 0 && blockIdx.x < numTads) {
 			//start at 1 so we don't count the first entry twice
+#pragma unroll
 			for (int i = 1; i < numTads; i++) {
 				sPartials[0] = update(sPartials[0], sPartials[i], extraParams);
 				__syncthreads();
@@ -982,6 +999,15 @@ public:
 
 #endif
 
+	/**
+	 * CPU interface
+	 * @param x the input
+	 * @param xShapeInfo the shape information for input
+	 * @param extraParams the extra parameters
+	 * @param result the result buffer
+	 * @param resultShapeInfo the shape information
+	 * for result
+	 */
 	virtual
 #ifdef __CUDACC__
 	inline __host__  __device__
@@ -1007,7 +1033,8 @@ public:
 				startingIndex = update(startingIndex, curr,
 						extraParams);
 			}
-             T finalVal = this->getValue(startingIndex);
+
+			T finalVal = this->getValue(startingIndex);
 			result[0] = finalVal;
 		} else {
 
@@ -1028,6 +1055,16 @@ public:
 
 	}
 
+	/**
+	 * Dimension wise execution for CPU
+	 * @param x the input
+	 * @param xShapeInfo the shape information
+	 * @param extraParams the extra paremters
+	 * @param result the result buffer
+	 * @param resultShapeInfoBuffer the shape information
+	 * @param dimension the dimension to exeucte along
+	 * @param dimensionLength the length of the dimension
+	 */
 	virtual
 #ifdef __CUDACC__
 	inline __host__  __device__
@@ -1057,6 +1094,11 @@ public:
 
 
 		SummaryStatsData<T> *currStartingValue = (SummaryStatsData<T> *) malloc(sizeof(SummaryStatsData<T>) * resultLength);
+#pragma omp simd
+		for(int i = 0; i <  resultLength; i++) {
+			currStartingValue[i].initialize();
+		}
+
 
 #pragma omp simd
 		for (int i = 0; i < shape::length(xShapeInfo); i++) {
@@ -1065,11 +1107,11 @@ public:
 					resultLength);
 			SummaryStatsData<T> comp;
 			comp.initWithValue(x[i]);
-			comp = op(comp, extraParams);
-			SummaryStatsData<T> computedUpdate = update(currStartingValue[reductionIndex], comp,
+			currStartingValue[reductionIndex] = update(currStartingValue[reductionIndex], comp,
 					extraParams);
-			currStartingValue[reductionIndex] = computedUpdate;
 		}
+
+
 		for(int i = 0; i < resultLength; i++)
 			result[i] = getValue(currStartingValue[i]);
 		free(currStartingValue);
@@ -1103,6 +1145,9 @@ public:
 };
 
 namespace ops {
+/**
+ * var(x)
+ */
 template<typename T>
 class Variance: public  functions::summarystats::SummaryStatsReduce<T> {
 public:
@@ -1234,7 +1279,9 @@ public:
 	}
 
 };
-
+/**
+ * std(x)
+ */
 template<typename T>
 class StandardDeviation: public  functions::summarystats::SummaryStatsReduce<T> {
 public:
@@ -1400,20 +1447,20 @@ public:
 
 
 #ifdef __CUDACC__
-__constant__ functions::summarystats::SummaryStatsReduceOpFactory<double> *SummaryStatsReduceOpFactoryDouble;
-__constant__ functions::summarystats::SummaryStatsReduceOpFactory<float> *SummaryStatsReduceOpFactoryFloat;
-
-extern "C"
-__host__ void setupSummaryReduceFactories() {
-	/*printf("Setting up indexreduce factories\n");
-	functions::summarystats::SummaryStatsReduceOpFactory<double> *newOpFactory =  new functions::summarystats::SummaryStatsReduceOpFactory<double>();
-	functions::summarystats::SummaryStatsReduceOpFactory<float> *newOpFactoryFloat =  new functions::summarystats::SummaryStatsReduceOpFactory<float>();
-	checkCudaErrors(cudaMemcpyToSymbol(SummaryStatsReduceOpFactoryDouble, newOpFactory, sizeof( functions::summarystats::SummaryStatsReduceOpFactory<double> )));
-	checkCudaErrors(cudaMemcpyToSymbol(SummaryStatsReduceOpFactoryFloat, newOpFactory, sizeof( functions::summarystats::SummaryStatsReduceOpFactory<float>)));
-	delete(newOpFactory);
-	delete(newOpFactoryFloat);*/
-}
-
+/**
+ * The driver interface for summary stats
+ * @param op the op number
+ * @param n the length
+ * @param dx the input
+ * @param xShapeInfo the shape information for x
+ * @param extraParams the extra parameters
+ * @param result the result buffer
+ * @param resultShapeInfo the shape information for the result
+ * @param gpuInformation the gpu information such as block dim, grid dim and shared memory
+ * @param dimension the dimension to execute along
+ * @param dimensionLength the length of the dimension
+ * @param postProcessOrNot whether to post process or not
+ */
 template <typename T>
 __device__ void summaryStatsReduceGeneric(
 		int op,
@@ -1441,7 +1488,20 @@ __device__ void summaryStatsReduceGeneric(
 	}
 }
 
-
+/**
+ * The driver interface for summary stats
+ * @param op the op number
+ * @param n the length
+ * @param dx the input
+ * @param xShapeInfo the shape information for x
+ * @param extraParams the extra parameters
+ * @param result the result buffer
+ * @param resultShapeInfo the shape information for the result
+ * @param gpuInformation the gpu information such as block dim, grid dim and shared memory
+ * @param dimension the dimension to execute along
+ * @param dimensionLength the length of the dimension
+ * @param postProcessOrNot whether to post process or not
+ */
 extern "C" __global__ void summaryStatsReduceDouble(int op,int n, double *dx, int *xShapeInfo, double *extraParams, double *result,
 		int *resultShapeInfo, int *gpuInformation,
 		int *dimension,
@@ -1449,6 +1509,21 @@ extern "C" __global__ void summaryStatsReduceDouble(int op,int n, double *dx, in
 	summaryStatsReduceGeneric<double>(op,n,dx,xShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
 
 }
+
+/**
+ * The driver interface for summary stats
+ * @param op the op number
+ * @param n the length
+ * @param dx the input
+ * @param xShapeInfo the shape information for x
+ * @param extraParams the extra parameters
+ * @param result the result buffer
+ * @param resultShapeInfo the shape information for the result
+ * @param gpuInformation the gpu information such as block dim, grid dim and shared memory
+ * @param dimension the dimension to execute along
+ * @param dimensionLength the length of the dimension
+ * @param postProcessOrNot whether to post process or not
+ */
 extern "C" __global__ void summaryStatsReduceFloat(int op,int n, float *dx, int *xShapeInfo, float *extraParams, float *result,
 		int *resultShapeInfo, int *gpuInformation,
 		int *dimension,

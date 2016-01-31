@@ -14,11 +14,17 @@
 #include <templatemath.h>
 #include <helper_cuda.h>
 #include <sharedmem.h>
-
+#ifdef JNI
+#include <jni.h>
+#endif
 
 namespace functions {
 namespace reduce3 {
 
+/**
+ * Reduce involving
+ * 2 arrays
+ */
 template<typename T>
 class Reduce3: public virtual functions::ops::Op<T> {
 
@@ -48,21 +54,6 @@ public:
 #endif
 	void finalizeExtraParams(T **extraParamsRef)  = 0;
 
-	/**
-	 *
-	 * @param d1
-	 * @param d2
-	 * @param extraParams
-	 * @return
-	 */
-	//an op for the kernel
-	virtual
-#ifdef __CUDACC__
-	__device__
-
-
-	inline T opAtomic(T d1, T d2, T **extraParamsRef) = 0;
-#endif
 	/**
 	 *
 	 * @param d1
@@ -107,7 +98,21 @@ public:
 #endif
 	inline T merge(T old, T opOutput, T **extraParamsRef) = 0;
 
+/**
+	 *
+	 * @param d1
+	 * @param d2
+	 * @param extraParams
+	 * @return
+	 */
+//an op for the kernel
 #ifdef __CUDACC__
+virtual __device__
+
+	inline T opAtomic(T d1, T d2, T **extraParamsRef) = 0;
+#endif
+
+    #ifdef __CUDACC__
 	/**
 	 * Aggregate shared memory
 	 * @param sPartialsRef
@@ -259,6 +264,7 @@ public:
 			unsigned int gridSize = blockDim.x * gridDim.x * xElementWiseStride;
 			unsigned int gridSizeY = blockDim.x * gridDim.x * yElementWiseStride;
 			if(xOffset == 0 && yOffset == 0 && xElementWiseStride == 1 && yElementWiseStride == 1) {
+#pragma unroll
 				while (i  < n && j  < n) {
 					curr = dx[i];
 					currY = dy[j];
@@ -268,7 +274,7 @@ public:
 					 * aren't getting updated properly.
 					 *
 					 */
-					reduction = update(reduction, opAtomic(curr, currY, &extraParamsVals), &extraParamsVals);
+					reduction = update(reduction, this->opAtomic(curr, currY, &extraParamsVals), &extraParamsVals);
 					__syncthreads();
 					i += gridSize;
 					j += gridSizeY;
@@ -279,10 +285,11 @@ public:
 				// we reduce multiple elements per thread.  The number is determined by the
 				// number of active thread blocks (via gridDim).  More blocks will result
 				// in a larger gridSize and therefore fewer elements per thread
+#pragma unroll
 				while (i * xElementWiseStride < n && j * yElementWiseStride < n) {
 					curr = dx[i];
 					currY = dy[j];
-					reduction = update(reduction, opAtomic(curr, currY, &extraParamsVals), &extraParamsVals);
+					reduction = update(reduction, this->opAtomic(curr, currY, &extraParamsVals), &extraParamsVals);
 					__syncthreads();
 					i += gridSize;
 					j += gridSizeY;
@@ -345,6 +352,7 @@ public:
 				if(xElementWiseStride > 1 && yElementWiseStride > 1) {
 					//update the reduction for the thread for the current tad
 					//note here that we compute the offset and then accumulate in shared memory
+#pragma unroll
 					for (int element = 0;
 							element < elementsPerTad; element++, offsetForTad += xElementWiseStride,yOffsetForTad += yElementWiseStride) {
 						sPartials[tid] = update(sPartials[tid], op(dx[offsetForTad],dy[yOffsetForTad],&extraParamsVals), &extraParamsVals);
@@ -384,6 +392,7 @@ public:
 				 * in other reduction implementations.
 				 *
 				 */
+#pragma unroll
 				for (int i = 1; i < tadsPerReductionIndex; i++) {
 					sPartials[tid] = update(sPartials[tid], sPartials[tid + i], &extraParamsVals);
 					__syncthreads();
@@ -396,6 +405,7 @@ public:
 			//should correspond to the final value for the particular reduction index
 			//that was set for this block.
 			if (tid == 0) {
+#pragma unroll
 				for (int i = 0; i < reductionIndexesPerBlock; i++) {
 					int reductionIndexToProcess = i + blockIdx.x * reductionIndexesPerBlock;
 					if (postProcessOrNot) {
@@ -484,6 +494,7 @@ public:
 			T *result, int *resultShapeInfoBuffer,
 			int *dimension,
 			int dimensionLength) {
+		//switch to scalar
 		if(shape::isScalar(resultShapeInfoBuffer)) {
 			exec(x,xShapeInfo,extraParamsVals,y,yShapeInfo,result,resultShapeInfoBuffer);
 			return;
@@ -535,6 +546,10 @@ public:
 };
 
 namespace ops {
+/**
+ * Cosine similarity between 2
+ * arrays
+ */
 template<typename T>
 class CosineSimilarity: public virtual Reduce3<T> {
 public:
@@ -596,18 +611,17 @@ public:
 	 * @return
 	 */
 	//an op for the kernel
-	virtual
 #ifdef __CUDACC__
-	__device__
-
-#endif
+	virtual __device__
 	inline T opAtomic(T d1, T d2, T **extraParamsRef) {
 		T *extraParams = *extraParamsRef;
+
 		nd4j::math::atomics::nd4j_atomicAdd(&extraParams[0],d1 * d1);
 		nd4j::math::atomics::nd4j_atomicAdd(&extraParams[1],d2 * d2);
+
 		return (d1 * d2);
 	}
-
+#endif
 	//calculate an update of the reduce operation
 	/**
 	 *
@@ -664,6 +678,10 @@ public:
 	}
 };
 
+
+/**
+ * Euclidean distance between 2 arryas
+ */
 template<typename T>
 class EuclideanDistance: public virtual Reduce3<T> {
 public:
@@ -721,8 +739,9 @@ public:
 	 * @return
 	 */
 	//an op for the kernel
-	virtual
+
 #ifdef __CUDACC__
+    virtual
 	__device__
 
 
@@ -787,6 +806,10 @@ public:
 	}
 };
 
+
+/**
+ * Manhattan distance between 2 arrays
+ */
 template<typename T>
 class ManhattanDistance: public virtual Reduce3<T> {
 public:
@@ -860,9 +883,9 @@ public:
 	 * @return
 	 */
 	//an op for the kernel
-	virtual
+
 #ifdef __CUDACC__
-	__device__
+    virtual	__device__
 
 
 	inline T opAtomic(T d1, T d2, T **extraParamsRef) {
@@ -922,6 +945,14 @@ public:
 	}
 
 
+	/**
+	 * Create an op given an op number
+	 * @param op the op number
+	 * 0: manhattan distance
+	 * 1: euclidean distance
+	 * 2: cosine similarity
+	 * @return
+	 */
 #ifdef __CUDACC__
 	__inline__ __host__ __device__
 #endif
@@ -940,21 +971,23 @@ public:
 }
 
 #ifdef __CUDACC__
-__constant__ functions::reduce3::Reduce3OpFactory<double> *reduce3OpFactory;
-__constant__ functions::reduce3::Reduce3OpFactory<float> *reduce3OpFactoryFloat;
 
-extern "C"
-__host__ void setupReduce3Factories() {
-	/*printf("Setting up transform factories\n");
-	functions::reduce3::Reduce3OpFactory<double> *newOpFactory =  new functions::reduce3::Reduce3OpFactory<double>();
-	functions::reduce3::Reduce3OpFactory<float> *newOpFactoryFloat =  new functions::reduce3::Reduce3OpFactory<float>();
-	checkCudaErrors(cudaMemcpyToSymbol(reduce3OpFactory, newOpFactory, sizeof( functions::reduce3::Reduce3OpFactory<double> )));
-	checkCudaErrors(cudaMemcpyToSymbol(reduce3OpFactoryFloat, newOpFactory, sizeof( functions::reduce3::Reduce3OpFactory<float>)));
-	delete(newOpFactory);
-	delete(newOpFactoryFloat);*/
-}
-
-
+/**
+ * The driver api
+ * @param opNum the number
+ * @param n the length of the reduce
+ * @param dx the input data
+ * @param xShapeInfo the shape information
+ * @param dy the pair wise reduce
+ * @param yShapeInfo the shape information for y
+ * @param extraParams the extra parameters in the operation
+ * @param result where to store the result
+ * @param resultShapeInfo the shape information
+ * @param gpuInformation the gpu information
+ * @param dimension the dimension to reduce along
+ * @param dimensionLength the dimension length
+ * @param postProcessOrNot whether to post [
+ */
 template <typename T>
 __device__ void reduce3Generic(
 		int opNum,
@@ -982,6 +1015,22 @@ __device__ void reduce3Generic(
 
 }
 
+/**
+ * The driver api
+ * @param opNum the number
+ * @param n the length of the reduce
+ * @param dx the input data
+ * @param xShapeInfo the shape information
+ * @param dy the pair wise reduce
+ * @param yShapeInfo the shape information for y
+ * @param extraParams the extra parameters in the operation
+ * @param result where to store the result
+ * @param resultShapeInfo the shape information
+ * @param gpuInformation the gpu information
+ * @param dimension the dimension to reduce along
+ * @param dimensionLength the dimension length
+ * @param postProcessOrNot whether to post [
+ */
 extern "C" __global__ void reduce3Double(
 		int opNum,
 		int n, double *dx, int *xShapeInfo,
@@ -993,6 +1042,23 @@ extern "C" __global__ void reduce3Double(
 	reduce3Generic<double>(opNum,n,dx,xShapeInfo,dy,yShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
 
 }
+
+/**
+ * The driver api
+ * @param opNum the number
+ * @param n the length of the reduce
+ * @param dx the input data
+ * @param xShapeInfo the shape information
+ * @param dy the pair wise reduce
+ * @param yShapeInfo the shape information for y
+ * @param extraParams the extra parameters in the operation
+ * @param result where to store the result
+ * @param resultShapeInfo the shape information
+ * @param gpuInformation the gpu information
+ * @param dimension the dimension to reduce along
+ * @param dimensionLength the dimension length
+ * @param postProcessOrNot whether to post [
+ */
 extern "C" __global__ void reduce3Float(
 		int opNum,
 		int n, float *dx, int *xShapeInfo,
