@@ -30,17 +30,17 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
     @Override
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {
         BatchNormalization normalization = (BatchNormalization) conf.getLayer();
-        int size = ArrayUtil.prod(normalization.getShape());
-
-        params.put(AVG_MEAN, Nd4j.zeros(1,size));
-        params.put(AVG_VAR,Nd4j.zerosLike(params.get(AVG_MEAN)));
-
-
-        params.put(GAMMA,Nd4j.onesLike(params.get(AVG_MEAN)));
-        params.put(GAMMA_GRADIENT,Nd4j.zerosLike(params.get(AVG_MEAN)));
-
-        params.put(BETA,Nd4j.zerosLike(params.get(AVG_MEAN)));
-        params.put(BETA_GRADIENT,Nd4j.zerosLike(params.get(AVG_MEAN)));
+//        int size = ArrayUtil.prod(normalization.getShape());
+//
+//        params.put(AVG_MEAN, Nd4j.zeros(1,size));
+//        params.put(AVG_VAR,Nd4j.zerosLike(params.get(AVG_MEAN)));
+//
+//
+//        params.put(GAMMA,Nd4j.onesLike(params.get(AVG_MEAN)));
+//        params.put(GAMMA_GRADIENT,Nd4j.zerosLike(params.get(AVG_MEAN)));
+//
+//        params.put(BETA,Nd4j.zerosLike(params.get(AVG_MEAN)));
+//        params.put(BETA_GRADIENT,Nd4j.zerosLike(params.get(AVG_MEAN)));
 
 
     }
