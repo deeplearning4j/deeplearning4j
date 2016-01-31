@@ -11,6 +11,7 @@
 #include <jni.h>
 #endif
 #include <op.h>
+#include <templatemath.h>
 #include <helper_cuda.h>
 namespace functions {
 namespace pairwise_transforms {
@@ -493,7 +494,7 @@ public:
         __always_inline
 
 #endif
-        virtual ~EqualTo() {
+        virtual ~NotEqualTo() {
         }
 #ifdef __CUDACC__
         inline __host__ __device__
@@ -552,7 +553,7 @@ public:
         __always_inline
 
 #endif
-        virtual ~GreaterThan() {
+        virtual ~GreaterThanOrEqual() {
         }
 #ifdef __CUDACC__
         inline __host__ __device__
@@ -560,7 +561,7 @@ public:
         __always_inline
 
 #endif
-        GreaterThan() {
+        GreaterThanOrEqual() {
         }
     };
 
@@ -724,7 +725,7 @@ public:
         __always_inline
 
 #endif
-        virtual ~LessThan() {
+        virtual ~LessThanOrEqual() {
         }
 #ifdef __CUDACC__
         inline __host__ __device__
@@ -993,7 +994,7 @@ public:
         __always_inline
 #endif
         T op(T d1, T d2, T *params) {
-            return nd4j::math::nd4j_max(d1,d2);
+            return nd4j::math::nd4j_max<T>(d1,d2);
         }
 
         virtual
@@ -1070,7 +1071,7 @@ public:
         __always_inline
 
 #endif
-        virtual ~Max() {
+        virtual ~Min() {
         }
 #ifdef __CUDACC__
         inline __host__ __device__
@@ -1078,7 +1079,7 @@ public:
         __always_inline
 
 #endif
-        Max() {
+        Min() {
         }
     };
 

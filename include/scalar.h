@@ -419,7 +419,7 @@ public:
 #ifdef __CUDACC__
 		__host__ __device__
 #endif
-		virtual inline ~LessThanOrEqual() {
+		virtual inline ~GreaterThanOrEqual() {
 		}
 #ifdef __CUDACC__
 		__host__ __device__

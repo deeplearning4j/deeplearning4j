@@ -19,7 +19,7 @@
 #endif
 
 namespace functions {
-namespace summarystats {
+	namespace summarystats {
 
 // This example computes several statistical properties of a data
 // series in a single reduction.  The algorithm is described in detail here:
@@ -30,272 +30,272 @@ namespace summarystats {
 
 // structure used to accumulate the moments and other
 // statistical properties encountered so far.
-template <typename T>
-class SummaryStatsData {
+		template <typename T>
+		class SummaryStatsData {
 
-public:
-	T n;
-	T min;
-	T max;
-	T mean;
-	T M2;
-	T M3;
-	T M4;
+		public:
+			T n;
+			T min;
+			T max;
+			T mean;
+			T M2;
+			T M3;
+			T M4;
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+			__always_inline
 
 #endif
-	SummaryStatsData() {
-		initialize();
-	}
+			SummaryStatsData() {
+				initialize();
+			}
 
-	// initialize to the identity element
+			// initialize to the identity element
 
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+			__always_inline
 
 #endif
-	void initialize() {
-		n = mean = M2 = M3 = M4 = 0;
-	}
+			void initialize() {
+				n = mean = M2 = M3 = M4 = 0;
+			}
 
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+			__always_inline
 
 #endif
-	void initWithValue(T val) {
-		n = 1;
-		min = val;
-		max = val;
-		mean = val;
-		M2 = 0;
-		M3 = 0;
-		M4 = 0;
-	}
+			void initWithValue(T val) {
+				n = 1;
+				min = val;
+				max = val;
+				mean = val;
+				M2 = 0;
+				M3 = 0;
+				M4 = 0;
+			}
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+			__always_inline
 
 #endif
-	void setValues(SummaryStatsData<T> *target) {
-		n = target->n;
-		min = target->min;
-		max = target->max;
-		mean = target->mean;
-		M2 = target->M2;
-		M3 = target->M3;
-		M4 = target->M4;
-	}
+			void setValues(SummaryStatsData<T> *target) {
+				n = target->n;
+				min = target->min;
+				max = target->max;
+				mean = target->mean;
+				M2 = target->M2;
+				M3 = target->M3;
+				M4 = target->M4;
+			}
 
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+			__always_inline
 
 #endif
-	T variance()   {
-		if(n <=1)
-			return 0.0;
-		return M2 / (n - 1);
-	}
+			T variance()   {
+				if(n <=1)
+					return 0.0;
+				return M2 / (n - 1);
+			}
 
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+			__always_inline
 
 #endif
-	T variance_n() {
-		if(n <= 1)
-			return 0.0;
-		return M2 / n;
-	}
+			T variance_n() {
+				if(n <= 1)
+					return 0.0;
+				return M2 / n;
+			}
 
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+			__always_inline
 
 #endif
-	T skewness()   { return nd4j::math::nd4j_sqrt<int>(n) * M3 / nd4j::math::nd4j_pow(M2, (T) 1.5); }
+			T skewness()   { return nd4j::math::nd4j_sqrt<int>(n) * M3 / nd4j::math::nd4j_pow(M2, (T) 1.5); }
 
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+			__always_inline
 
 #endif
-	T kurtosis()   { return n * M4 / (M2 * M2); }
+			T kurtosis()   { return n * M4 / (M2 * M2); }
 
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+			__always_inline
 
 #endif
-	T getM2() const {
-		return M2;
-	}
+			T getM2() const {
+				return M2;
+			}
 
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+			__always_inline
 
 #endif
-	void setM2(T m2) {
-		M2 = m2;
-	}
+			void setM2(T m2) {
+				M2 = m2;
+			}
 
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+			__always_inline
 
 #endif
-	T getM3() const {
-		return M3;
-	}
+			T getM3() const {
+				return M3;
+			}
 
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+			__always_inline
 
 #endif
-	void setM3(T m3) {
-		M3 = m3;
-	}
+			void setM3(T m3) {
+				M3 = m3;
+			}
 
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+			__always_inline
 
 #endif
-	T getM4() const {
-		return M4;
-	}
+			T getM4() const {
+				return M4;
+			}
 
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+			__always_inline
 
 #endif
-	void setM4(T m4) {
-		M4 = m4;
-	}
+			void setM4(T m4) {
+				M4 = m4;
+			}
 
 #ifdef __CUDACC__
-	__inline__ __host__  __device__
+			__inline__ __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+			__always_inline
 
 #endif
-	T getMax() const {
-		return max;
-	}
+			T getMax() const {
+				return max;
+			}
 
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+			__always_inline
 
 #endif
-	void setMax(T max) {
-		this->max = max;
-	}
+			void setMax(T max) {
+				this->max = max;
+			}
 
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+			__always_inline
 
 #endif
-	T getMean() const {
-		return mean;
-	}
+			T getMean() const {
+				return mean;
+			}
 
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+			__always_inline
 
 #endif
-	void setMean(T mean) {
-		this->mean = mean;
-	}
+			void setMean(T mean) {
+				this->mean = mean;
+			}
 
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+			__always_inline
 
 #endif
-	T getMin() const {
-		return min;
-	}
+			T getMin() const {
+				return min;
+			}
 
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+			__always_inline
 
 #endif
-	void setMin(T min) {
-		this->min = min;
-	}
+			void setMin(T min) {
+				this->min = min;
+			}
 
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+			__always_inline
 
 #endif
-	T getN() const {
-		return n;
-	}
+			T getN() const {
+				return n;
+			}
 
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+			__always_inline
 
 #endif
-	void setN(T n) {
-		this->n = n;
-	}
-};
+			void setN(T n) {
+				this->n = n;
+			}
+		};
 
 
 
@@ -303,7 +303,7 @@ public:
 
 
 #ifdef __CUDACC__
-// This is the un-specialized struct.  Note that we prevent instantiation of this
+		// This is the un-specialized struct.  Note that we prevent instantiation of this
 // struct by putting an undefined symbol in the function body so it won't compile.
 template<typename T>
 struct SharedSummaryStatsData {
@@ -342,153 +342,153 @@ struct SharedSummaryStatsData<double> {
 /**
  * Standard deviation or variance 1 pass
  */
-template<typename T>
-class SummaryStatsReduce: public  functions::ops::Op<T> {
+		template<typename T>
+		class SummaryStatsReduce: public  functions::ops::Op<T> {
 
-public:
-	/**
-	 *
-	 * @param val
-	 * @param extraParams
-	 * @return
-	 */
-	//an op for the kernel
-	virtual
+		public:
+			/**
+             *
+             * @param val
+             * @param extraParams
+             * @return
+             */
+			//an op for the kernel
+			virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+			__always_inline
 
 #endif
-	SummaryStatsData<T> op(SummaryStatsData<T> val, T *extraParams) {
-		return val;
-	}
+			SummaryStatsData<T> op(SummaryStatsData<T> val, T *extraParams) {
+				return val;
+			}
 
-	/**
-	 *
-	 * @param old
-	 * @param opOutput
-	 * @param extraParams
-	 * @return
-	 */
-	//calculate an update of the reduce operation
-	virtual
+			/**
+             *
+             * @param old
+             * @param opOutput
+             * @param extraParams
+             * @return
+             */
+			//calculate an update of the reduce operation
+			virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+			__always_inline
 
 #endif
-	SummaryStatsData<T> update(SummaryStatsData<T> x, SummaryStatsData<T> y,
-			T *extraParams) {
-		if(x.n == 0 && y.n > 0)
-			return y;
-		else if(x.n > 0 && y.n == 0)
-			return x;
-		SummaryStatsData<T> result;
-		T n  = x.n + y.n;
-		T n2 = n  * n;
-		T n3 = n2 * n;
+			SummaryStatsData<T> update(SummaryStatsData<T> x, SummaryStatsData<T> y,
+									   T *extraParams) {
+				if(x.n == 0 && y.n > 0)
+					return y;
+				else if(x.n > 0 && y.n == 0)
+					return x;
+				SummaryStatsData<T> result;
+				T n  = x.n + y.n;
+				T n2 = n  * n;
+				T n3 = n2 * n;
 
 
-		T delta  = y.mean - x.mean;
-		T delta2 = delta  * delta;
-		T delta3 = delta2 * delta;
-		T delta4 = delta3 * delta;
+				T delta  = y.mean - x.mean;
+				T delta2 = delta  * delta;
+				T delta3 = delta2 * delta;
+				T delta4 = delta3 * delta;
 
-		//Basic number of samples (n), min, and max
-		result.n   = n;
-		result.min = nd4j::math::nd4j_min(x.min, y.min);
-		result.max = nd4j::math::nd4j_max(x.max, y.max);
+				//Basic number of samples (n), min, and max
+				result.n   = n;
+				result.min = nd4j::math::nd4j_min(x.min, y.min);
+				result.max = nd4j::math::nd4j_max(x.max, y.max);
 
-		result.mean = x.mean + delta * y.n / n;
+				result.mean = x.mean + delta * y.n / n;
 
-		result.M2  = x.M2 + y.M2;
-		result.M2 += delta2 * x.n * y.n / n;
+				result.M2  = x.M2 + y.M2;
+				result.M2 += delta2 * x.n * y.n / n;
 
-		result.M3  = x.M3 + y.M3;
-		result.M3 += delta3 * x.n * y.n * (x.n - y.n) / n2;
-		result.M3 += (T) 3.0 * delta * (x.n * y.M2 - y.n * x.M2) / n;
+				result.M3  = x.M3 + y.M3;
+				result.M3 += delta3 * x.n * y.n * (x.n - y.n) / n2;
+				result.M3 += (T) 3.0 * delta * (x.n * y.M2 - y.n * x.M2) / n;
 
-		result.M4  = x.M4 + y.M4;
-		result.M4 += delta4 * x.n * y.n * (x.n * x.n - x.n * y.n + y.n * y.n) / n3;
-		result.M4 += (T) 6.0 * delta2 * (x.n * x.n * y.M2 + y.n * y.n * x.M2) / n2;
-		result.M4 += (T) 4.0 * delta * (x.n * y.M3 - y.n * x.M3) / n;
-		return result;
-	}
+				result.M4  = x.M4 + y.M4;
+				result.M4 += delta4 * x.n * y.n * (x.n * x.n - x.n * y.n + y.n * y.n) / n3;
+				result.M4 += (T) 6.0 * delta2 * (x.n * x.n * y.M2 + y.n * y.n * x.M2) / n2;
+				result.M4 += (T) 4.0 * delta * (x.n * y.M3 - y.n * x.M3) / n;
+				return result;
+			}
 
-	/**
-	 *
-	 * @param f1
-	 * @param f2
-	 * @param extraParams
-	 * @return
-	 */
-	//invoked when combining two kernels
-	virtual
+			/**
+             *
+             * @param f1
+             * @param f2
+             * @param extraParams
+             * @return
+             */
+			//invoked when combining two kernels
+			virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+			__always_inline
 
 #endif
-	SummaryStatsData<T> merge(SummaryStatsData<T> f1, SummaryStatsData<T> f2, T *extraParams) = 0;
+			SummaryStatsData<T> merge(SummaryStatsData<T> f1, SummaryStatsData<T> f2, T *extraParams) = 0;
 
-	virtual
+			virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+			__always_inline
 
 #endif
-	T getValue(SummaryStatsData<T> val) = 0;
+			T getValue(SummaryStatsData<T> val) = 0;
 
-	/**
-	 *
-	 * @param reduction
-	 * @param n
-	 * @param xOffset
-	 * @param dx
-	 * @param incx
-	 * @param extraParams
-	 * @param result
-	 * @return
-	 */
-	//post process result (for things like means etc)
-	virtual
+			/**
+             *
+             * @param reduction
+             * @param n
+             * @param xOffset
+             * @param dx
+             * @param incx
+             * @param extraParams
+             * @param result
+             * @return
+             */
+			//post process result (for things like means etc)
+			virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+			__always_inline
 
 #endif
-	SummaryStatsData<T> postProcess(SummaryStatsData<T> reduction, int n, int xOffset,
-			T *dx, int incx, T *extraParams, T *result) = 0;
+			SummaryStatsData<T> postProcess(SummaryStatsData<T> reduction, int n, int xOffset,
+											T *dx, int incx, T *extraParams, T *result) = 0;
 
-	/**
-	 *
-	 * @param d1
-	 * @param d2
-	 * @param extraParams
-	 * @return
-	 */
-	virtual
+			/**
+             *
+             * @param d1
+             * @param d2
+             * @param extraParams
+             * @return
+             */
+			virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+			__always_inline
 
 #endif
-	SummaryStatsData<T> op(SummaryStatsData<T> d1, SummaryStatsData<T> d2, T *extraParams) = 0;
+			SummaryStatsData<T> op(SummaryStatsData<T> d1, SummaryStatsData<T> d2, T *extraParams) = 0;
 
 #ifdef __CUDACC__
-	/**
+			/**
 	 *
 	 * @param sPartialsRef
 	 * @param tid
@@ -999,63 +999,118 @@ public:
 
 #endif
 
-	/**
-	 * CPU interface
-	 * @param x the input
-	 * @param xShapeInfo the shape information for input
-	 * @param extraParams the extra parameters
-	 * @param result the result buffer
-	 * @param resultShapeInfo the shape information
-	 * for result
-	 */
-	virtual
+			/**
+             * CPU interface
+             * @param x the input
+             * @param xShapeInfo the shape information for input
+             * @param extraParams the extra parameters
+             * @param result the result buffer
+             * @param resultShapeInfo the shape information
+             * for result
+             */
+			virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+			__always_inline
 #endif
-	void exec(T *x,
-			int *xShapeInfo,
-			T *extraParams,
-			T *result,
-			int *resultShapeInfo) {
-		T startingVal = this->startingValue(x);
-		SummaryStatsData<T> startingIndex;
-		int length = shape::length(xShapeInfo);
-		int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-		int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
-		if (xElementWiseStride == 1 && resultElementWiseStride == 1) {
+			void exec(T *x,
+					  int *xShapeInfo,
+					  T *extraParams,
+					  T *result,
+					  int *resultShapeInfo) {
+				T startingVal = this->startingValue(x);
+				SummaryStatsData<T> startingIndex;
+				int length = shape::length(xShapeInfo);
+				int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+				int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
+				if (xElementWiseStride == 1 && resultElementWiseStride == 1) {
 #pragma omp simd
-			for (int i = 0; i < length; i++) {
-				SummaryStatsData<T> curr;
-				curr.initWithValue(x[i]);
-				startingIndex = update(startingIndex, curr,
-						extraParams);
+					for (int i = 0; i < length; i++) {
+						SummaryStatsData<T> curr;
+						curr.initWithValue(x[i]);
+						startingIndex = update(startingIndex, curr,
+											   extraParams);
+					}
+
+					T finalVal = this->getValue(startingIndex);
+					result[0] = finalVal;
+				} else {
+
+#pragma omp simd
+					for (int i = 0; i < length; i++) {
+						SummaryStatsData<T> curr;
+						curr.initWithValue(x[i]);
+						startingIndex = update(startingIndex, curr,
+											   extraParams);
+
+
+					}
+
+					result[0] = getValue(startingIndex);
+
+				}
+
+
 			}
 
-			T finalVal = this->getValue(startingIndex);
-			result[0] = finalVal;
-		} else {
+
+			/**
+ * CPU interface
+ * @param x the input
+ * @param xShapeInfo the shape information for input
+ * @param extraParams the extra parameters
+ * @param result the result buffer
+ * @param resultShapeInfo the shape information
+ * for result
+ */
+			virtual
+#ifdef __CUDACC__
+			inline __host__  __device__
+
+#elif defined(__GNUC__)
+			__always_inline
+#endif
+			T execScalar(T *x,
+						 int *xShapeInfo,
+						 T *extraParams) {
+				T startingVal = this->startingValue(x);
+				SummaryStatsData<T> startingIndex;
+				int length = shape::length(xShapeInfo);
+				int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+				if (xElementWiseStride == 1) {
+#pragma omp simd
+					for (int i = 0; i < length; i++) {
+						SummaryStatsData<T> curr;
+						curr.initWithValue(x[i]);
+						startingIndex = update(startingIndex, curr,
+											   extraParams);
+					}
+
+					T finalVal = this->getValue(startingIndex);
+					return finalVal;
+				} else {
 
 #pragma omp simd
-			for (int i = 0; i < length; i++) {
-				SummaryStatsData<T> curr;
-				curr.initWithValue(x[i]);
-				startingIndex = update(startingIndex, curr,
-						extraParams);
+					for (int i = 0; i < length; i++) {
+						SummaryStatsData<T> curr;
+						curr.initWithValue(x[i]);
+						startingIndex = update(startingIndex, curr,
+											   extraParams);
+
+
+					}
+
+					return getValue(startingIndex);
+
+				}
 
 
 			}
 
-			result[0] = getValue(startingIndex);
 
-		}
-
-
-	}
-
-	/**
+			/**
 	 * Dimension wise execution for CPU
 	 * @param x the input
 	 * @param xShapeInfo the shape information
@@ -1065,382 +1120,382 @@ public:
 	 * @param dimension the dimension to exeucte along
 	 * @param dimensionLength the length of the dimension
 	 */
-	virtual
+			virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+			__always_inline
 #endif
-	void exec(T *x,
-			int *xShapeInfo,
-			T *extraParams,
-			T *result,
-			int *resultShapeInfoBuffer,
-			int *dimension, int dimensionLength) {
-		if(shape::isScalar(resultShapeInfoBuffer)) {
-			exec(x,xShapeInfo,extraParams,result,resultShapeInfoBuffer);
-			return;
-		}
-		shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo,
-				dimension, dimensionLength);
-		int resultLength = shape::length(resultShapeInfoBuffer);
-		int tadElementWiseStride = shape::computeElementWiseStride(
-				tadPermuteInfo.xRank, tadPermuteInfo.permutedShape,
-				tadPermuteInfo.permutedStrides,
-				shape::order(xShapeInfo) == 'f');
+			void exec(T *x,
+					  int *xShapeInfo,
+					  T *extraParams,
+					  T *result,
+					  int *resultShapeInfoBuffer,
+					  int *dimension, int dimensionLength) {
+				if(shape::isScalar(resultShapeInfoBuffer)) {
+					exec(x,xShapeInfo,extraParams,result,resultShapeInfoBuffer);
+					return;
+				}
+				shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo,
+																	  dimension, dimensionLength);
+				int resultLength = shape::length(resultShapeInfoBuffer);
+				int tadElementWiseStride = shape::computeElementWiseStride(
+						tadPermuteInfo.xRank, tadPermuteInfo.permutedShape,
+						tadPermuteInfo.permutedStrides,
+						shape::order(xShapeInfo) == 'f');
 
-		int tadLength = tadPermuteInfo.tensorShapeProd;
+				int tadLength = tadPermuteInfo.tensorShapeProd;
 
 
-		SummaryStatsData<T> *currStartingValue = (SummaryStatsData<T> *) malloc(sizeof(SummaryStatsData<T>) * resultLength);
+				SummaryStatsData<T> *currStartingValue = (SummaryStatsData<T> *) malloc(sizeof(SummaryStatsData<T>) * resultLength);
 #pragma omp simd
-		for(int i = 0; i <  resultLength; i++) {
-			currStartingValue[i].initialize();
-		}
+				for(int i = 0; i <  resultLength; i++) {
+					currStartingValue[i].initialize();
+				}
 
 
 #pragma omp simd
-		for (int i = 0; i < shape::length(xShapeInfo); i++) {
-			int reductionIndex = shape::reductionIndexForLinear(i,
-					tadElementWiseStride, tadLength, resultLength,
-					resultLength);
-			SummaryStatsData<T> comp;
-			comp.initWithValue(x[i]);
-			currStartingValue[reductionIndex] = update(currStartingValue[reductionIndex], comp,
-					extraParams);
-		}
+				for (int i = 0; i < shape::length(xShapeInfo); i++) {
+					int reductionIndex = shape::reductionIndexForLinear(i,
+																		tadElementWiseStride, tadLength, resultLength,
+																		resultLength);
+					SummaryStatsData<T> comp;
+					comp.initWithValue(x[i]);
+					currStartingValue[reductionIndex] = update(currStartingValue[reductionIndex], comp,
+															   extraParams);
+				}
 
 
-		for(int i = 0; i < resultLength; i++)
-			result[i] = getValue(currStartingValue[i]);
-		free(currStartingValue);
-		shape::freePermuteInfo(tadPermuteInfo);
-	}
+				for(int i = 0; i < resultLength; i++)
+					result[i] = getValue(currStartingValue[i]);
+				free(currStartingValue);
+				shape::freePermuteInfo(tadPermuteInfo);
+			}
 
-	virtual
+			virtual
 #ifdef __CUDACC__
-	__host__ __device__
+			__host__ __device__
 #endif
-	T startingValue(T *input) {
-		return 0;
-	}
+			T startingValue(T *input) {
+				return 0;
+			}
 
 
 #ifdef __CUDACC__
-	__host__ __device__
+			__host__ __device__
 #elif defined(__GNUC__)
-	__always_inline
+			__always_inline
 #endif
-	virtual ~SummaryStatsReduce() {
-	}
+			virtual ~SummaryStatsReduce() {
+			}
 #ifdef __CUDACC__
-	__host__ __device__
+			__host__ __device__
 #elif defined(__GNUC__)
-	__always_inline
+			__always_inline
 #endif
-	SummaryStatsReduce() {
-	}
+			SummaryStatsReduce() {
+			}
 
-};
+		};
 
-namespace ops {
+		namespace ops {
 /**
  * var(x)
  */
-template<typename T>
-class Variance: public  functions::summarystats::SummaryStatsReduce<T> {
-public:
-	/**
-	 * Name of the op
-	 * @return the name of the operation
-	 */
-	virtual
+			template<typename T>
+			class Variance: public  functions::summarystats::SummaryStatsReduce<T> {
+			public:
+				/**
+                 * Name of the op
+                 * @return the name of the operation
+                 */
+				virtual
 #ifdef __CUDACC__
-	inline __host__
+				inline __host__
 
 #endif
-	std::string name() {
-		return std::string("variance");
-	}
-	/**
-	 *
-	 * @param val
-	 * @param extraParams
-	 * @return
-	 */
-	//an op for the kernel
-	virtual
+				std::string name() {
+					return std::string("variance");
+				}
+				/**
+                 *
+                 * @param val
+                 * @param extraParams
+                 * @return
+                 */
+				//an op for the kernel
+				virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+				inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+				__always_inline
 
 #endif
-	functions::summarystats::SummaryStatsData<T> op(
-			functions::summarystats::SummaryStatsData<T> val, T *extraParams) override {
-		return val;
-	}
+				functions::summarystats::SummaryStatsData<T> op(
+						functions::summarystats::SummaryStatsData<T> val, T *extraParams) override {
+					return val;
+				}
 
-	virtual
+				virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+				inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+				__always_inline
 
 #endif
-	T getValue(SummaryStatsData<T> val) {
-		return val.variance();
-	}
+				T getValue(SummaryStatsData<T> val) {
+					return val.variance();
+				}
 
 
-	/**
-	 *
-	 * @param f1
-	 * @param f2
-	 * @param extraParams
-	 * @return
-	 */
-	//invoked when combining two kernels
-	virtual
+				/**
+                 *
+                 * @param f1
+                 * @param f2
+                 * @param extraParams
+                 * @return
+                 */
+				//invoked when combining two kernels
+				virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+				inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+				__always_inline
 
 #endif
-	functions::summarystats::SummaryStatsData<T> merge(
-			functions::summarystats::SummaryStatsData<T> f1,
-			functions::summarystats::SummaryStatsData<T> f2, T *extraParams) override {
-		return this->update(f1,f2,extraParams);
-	}
+				functions::summarystats::SummaryStatsData<T> merge(
+						functions::summarystats::SummaryStatsData<T> f1,
+						functions::summarystats::SummaryStatsData<T> f2, T *extraParams) override {
+					return this->update(f1,f2,extraParams);
+				}
 
-	/**
-	 *
-	 * @param reduction
-	 * @param n
-	 * @param xOffset
-	 * @param dx
-	 * @param incx
-	 * @param extraParams
-	 * @param result
-	 * @return
-	 */
-	//post process result (for things like means etc)
-	virtual
+				/**
+                 *
+                 * @param reduction
+                 * @param n
+                 * @param xOffset
+                 * @param dx
+                 * @param incx
+                 * @param extraParams
+                 * @param result
+                 * @return
+                 */
+				//post process result (for things like means etc)
+				virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+				inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+				__always_inline
 
 #endif
-	functions::summarystats::SummaryStatsData<T> postProcess(
-			functions::summarystats::SummaryStatsData<T> reduction, int n, int xOffset,
-			T *dx, int incx, T *extraParams, T *result) override {
-		return reduction;
-	}
+				functions::summarystats::SummaryStatsData<T> postProcess(
+						functions::summarystats::SummaryStatsData<T> reduction, int n, int xOffset,
+						T *dx, int incx, T *extraParams, T *result) override {
+					return reduction;
+				}
 
-	/**
-	 *
-	 * @param d1
-	 * @param d2
-	 * @param extraParams
-	 * @return
-	 */
-	virtual
+				/**
+                 *
+                 * @param d1
+                 * @param d2
+                 * @param extraParams
+                 * @return
+                 */
+				virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+				inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+				__always_inline
 
 #endif
-	SummaryStatsData<T> op(functions::summarystats::SummaryStatsData<T> d1,
-			functions::summarystats::SummaryStatsData<T> d2, T *extraParams) override {
-		return d1;
-	}
+				SummaryStatsData<T> op(functions::summarystats::SummaryStatsData<T> d1,
+									   functions::summarystats::SummaryStatsData<T> d2, T *extraParams) override {
+					return d1;
+				}
 #ifdef __CUDACC__
-	__host__ __device__
+				__host__ __device__
 #elif defined(__GNUC__)
-	__always_inline
+				__always_inline
 #endif
-	virtual ~Variance() {
-	}
+				virtual ~Variance() {
+				}
 #ifdef __CUDACC__
-	__host__ __device__
+				__host__ __device__
 #elif defined(__GNUC__)
-	__always_inline
+				__always_inline
 #endif
-	Variance() {
-	}
+				Variance() {
+				}
 
-};
+			};
 /**
  * std(x)
  */
-template<typename T>
-class StandardDeviation: public  functions::summarystats::SummaryStatsReduce<T> {
-public:
-	/**
-	 * Name of the op
-	 * @return the name of the operation
-	 */
-	virtual
+			template<typename T>
+			class StandardDeviation: public  functions::summarystats::SummaryStatsReduce<T> {
+			public:
+				/**
+                 * Name of the op
+                 * @return the name of the operation
+                 */
+				virtual
 #ifdef __CUDACC__
-	inline __host__
+				inline __host__
 
 #endif
-	std::string name() {
-		return std::string("std");
-	}
+				std::string name() {
+					return std::string("std");
+				}
 
-	virtual
+				virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+				inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+				__always_inline
 
 #endif
-	T getValue(SummaryStatsData<T> val) {
-		return nd4j::math::nd4j_sqrt(val.variance());
-	}
+				T getValue(SummaryStatsData<T> val) {
+					return nd4j::math::nd4j_sqrt(val.variance());
+				}
 
-	/**
-	 *
-	 * @param val
-	 * @param extraParams
-	 * @return
-	 */
-	//an op for the kernel
-	virtual
+				/**
+                 *
+                 * @param val
+                 * @param extraParams
+                 * @return
+                 */
+				//an op for the kernel
+				virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+				inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+				__always_inline
 
 #endif
-	functions::summarystats::SummaryStatsData<T> op(
-			functions::summarystats::SummaryStatsData<T> val, T *extraParams) override {
-		return val;
-	}
+				functions::summarystats::SummaryStatsData<T> op(
+						functions::summarystats::SummaryStatsData<T> val, T *extraParams) override {
+					return val;
+				}
 
 
-	/**
-	 *
-	 * @param f1
-	 * @param f2
-	 * @param extraParams
-	 * @return
-	 */
-	//invoked when combining two kernels
-	virtual
+				/**
+                 *
+                 * @param f1
+                 * @param f2
+                 * @param extraParams
+                 * @return
+                 */
+				//invoked when combining two kernels
+				virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+				inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+				__always_inline
 
 #endif
-	functions::summarystats::SummaryStatsData<T> merge(
-			functions::summarystats::SummaryStatsData<T> f1,
-			functions::summarystats::SummaryStatsData<T> f2, T *extraParams) override {
-		return this->update(f1,f2,extraParams);
-	}
+				functions::summarystats::SummaryStatsData<T> merge(
+						functions::summarystats::SummaryStatsData<T> f1,
+						functions::summarystats::SummaryStatsData<T> f2, T *extraParams) override {
+					return this->update(f1,f2,extraParams);
+				}
 
-	/**
-	 *
-	 * @param reduction
-	 * @param n
-	 * @param xOffset
-	 * @param dx
-	 * @param incx
-	 * @param extraParams
-	 * @param result
-	 * @return
-	 */
-	//post process result (for things like means etc)
-	virtual
+				/**
+                 *
+                 * @param reduction
+                 * @param n
+                 * @param xOffset
+                 * @param dx
+                 * @param incx
+                 * @param extraParams
+                 * @param result
+                 * @return
+                 */
+				//post process result (for things like means etc)
+				virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+				inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+				__always_inline
 
 #endif
-	functions::summarystats::SummaryStatsData<T> postProcess(
-			functions::summarystats::SummaryStatsData<T> reduction, int n, int xOffset,
-			T *dx, int incx, T *extraParams, T *result) override {
-		return reduction;
-	}
+				functions::summarystats::SummaryStatsData<T> postProcess(
+						functions::summarystats::SummaryStatsData<T> reduction, int n, int xOffset,
+						T *dx, int incx, T *extraParams, T *result) override {
+					return reduction;
+				}
 
-	/**
-	 *
-	 * @param d1
-	 * @param d2
-	 * @param extraParams
-	 * @return
-	 */
-	virtual
+				/**
+                 *
+                 * @param d1
+                 * @param d2
+                 * @param extraParams
+                 * @return
+                 */
+				virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+				inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+				__always_inline
 
 #endif
-	SummaryStatsData<T> op(functions::summarystats::SummaryStatsData<T> d1,
-			functions::summarystats::SummaryStatsData<T> d2, T *extraParams) override {
-		return d1;
-	}
+				SummaryStatsData<T> op(functions::summarystats::SummaryStatsData<T> d1,
+									   functions::summarystats::SummaryStatsData<T> d2, T *extraParams) override {
+					return d1;
+				}
 
 #ifdef __CUDACC__
-	__host__ __device__
+				__host__ __device__
 #elif defined(__GNUC__)
-	__always_inline
+				__always_inline
 #endif
-	virtual ~StandardDeviation() {
-	}
+				virtual ~StandardDeviation() {
+				}
 #ifdef __CUDACC__
-	__host__ __device__
+				__host__ __device__
 #elif defined(__GNUC__)
-	__always_inline
+				__always_inline
 #endif
-	StandardDeviation() {
-	}
-};
-}
-
-template<typename T>
-class SummaryStatsReduceOpFactory {
-public:
-
-#ifdef __CUDACC__
-	__host__ __device__
-#endif
-	SummaryStatsReduceOpFactory() {
-	}
-
-
-#ifdef __CUDACC__
-	__inline__ __host__ __device__
-#endif
-	functions::summarystats::SummaryStatsReduce<T> * getOp(int op) {
-		if (op == 0) {
-			return new functions::summarystats::ops::Variance<T>();
-		} else if (op == 1) {
-			return new functions::summarystats::ops::StandardDeviation<T>();
-
+				StandardDeviation() {
+				}
+			};
 		}
-		return NULL;
+
+		template<typename T>
+		class SummaryStatsReduceOpFactory {
+		public:
+
+#ifdef __CUDACC__
+			__host__ __device__
+#endif
+			SummaryStatsReduceOpFactory() {
+			}
+
+
+#ifdef __CUDACC__
+			__inline__ __host__ __device__
+#endif
+			functions::summarystats::SummaryStatsReduce<T> * getOp(int op) {
+				if (op == 0) {
+					return new functions::summarystats::ops::Variance<T>();
+				} else if (op == 1) {
+					return new functions::summarystats::ops::StandardDeviation<T>();
+
+				}
+				return NULL;
+			}
+		};
 	}
-};
-}
 
 
 }

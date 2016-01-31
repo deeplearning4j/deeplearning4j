@@ -333,7 +333,7 @@ namespace functions {
 
                 __always_inline
 #endif
-                virtual ~HardTanh() {
+                virtual ~HardTanhDerivative() {
                 }
 
             };
@@ -1445,7 +1445,7 @@ namespace functions {
 
                 __always_inline
 #endif
-                virtual ~LeakyRELU() {
+                virtual ~RELU() {
                 }
 
             };
@@ -1786,7 +1786,7 @@ namespace functions {
 
                 __always_inline
 #endif
-                virtual ~Stabilize() {
+                virtual ~Step() {
                 }
 
             };
@@ -1841,168 +1841,170 @@ namespace functions {
 
             };
 
-            template<typename T>
-            class TransformOpFactory {
-            public:
+
+
+        }
+
+        template<typename T>
+        class TransformOpFactory {
+        public:
 #ifdef __CUDACC__
-                __device__ __host__
+            __device__ __host__
 #endif
 
-                TransformOpFactory() {
-                }
+            TransformOpFactory() {
+            }
 
 
 
 /**
- * Create an op
- * @param op the op to create
- * 0: abs
- * 1: ceiling
- * 2: cosine
- * 3: exp
- * 4: floor
- * 5: log
- * 6: neg
- * 7: pow
- * 8: round
- * 9: setrange
- * 10:sigmoid
- * 11: sign
- * 12: sin
- * 13:softplus
- * 14:sqrt
- * 15:tanh
- * 16:acos
- * 17:asin
- * 18:atan
- * @return the op given the nnumber
- */
+* Create an op
+* @param op the op to create
+* 0: abs
+* 1: ceiling
+* 2: cosine
+* 3: exp
+* 4: floor
+* 5: log
+* 6: neg
+* 7: pow
+* 8: round
+* 9: setrange
+* 10:sigmoid
+* 11: sign
+* 12: sin
+* 13:softplus
+* 14:sqrt
+* 15:tanh
+* 16:acos
+* 17:asin
+* 18:atan
+* @return the op given the nnumber
+*/
 #ifdef __CUDACC__
-                __inline__ __device__ __host__
+            __inline__ __device__ __host__
 #endif
 
-                Transform<T> *getOp(int op) {
-                    //gets stuck on string comparison
-                    Transform<T> *ret = NULL;
-                    /**
-                     * We are likely going to need constant symbols for device memory for different operations
-                     * or switch to arithmetic based approaches?
-                     */
-                    if (op == 0) {
-                        ret = new transform::ops::Abs<T>();
-                    }
-                    else if (op == 1) {
-                        ret = new transform::ops::Ceiling<T>();
-                    }
-                    if (op == 2) {
-                        ret = new transform::ops::Cosine<T>();
-                    }
-                    else if (op == 3) {
-                        ret = new transform::ops::Exp<T>();
-                    }
-                    else if (op == 4) {
-                        ret = new transform::ops::Floor<T>();
-                    }
-                    else if (op == 5) {
-                        ret = new transform::ops::Log<T>();
-                    }
-                    else if (op == 6) {
-                        ret = new transform::ops::Neg<T>();
-                    }
-                    else if (op == 7) {
-                        ret = new transform::ops::Pow<T>();
-                    }
-                    else if (op == 8) {
-                        ret = new transform::ops::Round<T>();
-                    }
-                    else if (op == 9) {
-                        ret = new transform::ops::SetRange<T>();
-                    }
-                    else if (op == 10) {
-                        ret = new transform::ops::Sigmoid<T>();
-                    }
-                    else if (op == 11) {
-                        ret = new transform::ops::Sign<T>();
-                    }
-                    else if (op == 12) {
-                        ret = new transform::ops::Sin<T>();
-                    }
-                    else if (op == 13) {
-                        ret = new transform::ops::SoftPlus<T>();
-                    }
-                    else if (op == 14) {
-                        ret = new transform::ops::Sqrt<T>();
-                    }
-                    else if (op == 15) {
-                        ret = new transform::ops::Tanh<T>();
-                    }
-                    else if (op == 16) {
-                        ret = new transform::ops::ACos<T>();
-                    }
-                    else if (op == 17) {
-                        ret = new transform::ops::ASin<T>();
-                    }
-                    else if (op == 18) {
-                        ret = new transform::ops::ATan<T>();
-                    }
-                    else if (op == 19) {
-                        ret = new transform::ops::HardTanh<T>();
-                    }
-                    else if (op == 20) {
-                        ret = new transform::ops::SoftSign<T>();
-                    }
-                    else if (op == 21) {
-                        ret = new transform::ops::ELU<T>();
-                    }
-                    else if (op == 22) {
-                        ret = new transform::ops::ELUDerivative<T>();
-                    }
-                    else if (op == 23) {
-                        return new transform::ops::TanhDerivative<T>();
-                    }
-                    else if (op == 24) {
-                        return new transform::ops::TimesOneMinus<T>();
-                    }
-                    else if(op == 25) {
-                        return new transform::ops::HardTanhDerivative<T>();
-                    }
-                    else if(op == 26) {
-                        return new transform::ops::Ones<T>();
-                    }
-                    else if(op == 27) {
-                        return new transform::ops::Identity<T>();
-                    }
-                    else if(op == 28) {
-                        return new transform::ops::Stabilize<T>();
-                    }
-                    else if(op == 29) {
-                        return new transform::ops::SigmoidDerivative<T>();
-                    }
-                    else if(op == 30) {
-                        return new transform::ops::SoftSignDerivative<T>();
-                    }
-                    else if(op == 31) {
-                        return new transform::ops::LeakyRELU<T>();
-                    }
-                    else if(op == 32) {
-                        return new transform::ops::LeakyRELUDerivative<T>();
-                    }
-                    else if(op == 33) {
-                        return new transform::ops::RELU<T>();
-                    }
-                    else if(op == 34) {
-                        return new transform::ops::Step<T>();
-                    }
-                    else if(op == 35) {
-                        return new transform::ops::OneMinus<T>();
-                    }
-
-                    return ret;
+            Transform<T> *getOp(int op) {
+                //gets stuck on string comparison
+                Transform<T> *ret = NULL;
+                /**
+                 * We are likely going to need constant symbols for device memory for different operations
+                 * or switch to arithmetic based approaches?
+                 */
+                if (op == 0) {
+                    ret = new transform::ops::Abs<T>();
+                }
+                else if (op == 1) {
+                    ret = new transform::ops::Ceiling<T>();
+                }
+                if (op == 2) {
+                    ret = new transform::ops::Cosine<T>();
+                }
+                else if (op == 3) {
+                    ret = new transform::ops::Exp<T>();
+                }
+                else if (op == 4) {
+                    ret = new transform::ops::Floor<T>();
+                }
+                else if (op == 5) {
+                    ret = new transform::ops::Log<T>();
+                }
+                else if (op == 6) {
+                    ret = new transform::ops::Neg<T>();
+                }
+                else if (op == 7) {
+                    ret = new transform::ops::Pow<T>();
+                }
+                else if (op == 8) {
+                    ret = new transform::ops::Round<T>();
+                }
+                else if (op == 9) {
+                    ret = new transform::ops::SetRange<T>();
+                }
+                else if (op == 10) {
+                    ret = new transform::ops::Sigmoid<T>();
+                }
+                else if (op == 11) {
+                    ret = new transform::ops::Sign<T>();
+                }
+                else if (op == 12) {
+                    ret = new transform::ops::Sin<T>();
+                }
+                else if (op == 13) {
+                    ret = new transform::ops::SoftPlus<T>();
+                }
+                else if (op == 14) {
+                    ret = new transform::ops::Sqrt<T>();
+                }
+                else if (op == 15) {
+                    ret = new transform::ops::Tanh<T>();
+                }
+                else if (op == 16) {
+                    ret = new transform::ops::ACos<T>();
+                }
+                else if (op == 17) {
+                    ret = new transform::ops::ASin<T>();
+                }
+                else if (op == 18) {
+                    ret = new transform::ops::ATan<T>();
+                }
+                else if (op == 19) {
+                    ret = new transform::ops::HardTanh<T>();
+                }
+                else if (op == 20) {
+                    ret = new transform::ops::SoftSign<T>();
+                }
+                else if (op == 21) {
+                    ret = new transform::ops::ELU<T>();
+                }
+                else if (op == 22) {
+                    ret = new transform::ops::ELUDerivative<T>();
+                }
+                else if (op == 23) {
+                    return new transform::ops::TanhDerivative<T>();
+                }
+                else if (op == 24) {
+                    return new transform::ops::TimesOneMinus<T>();
+                }
+                else if(op == 25) {
+                    return new transform::ops::HardTanhDerivative<T>();
+                }
+                else if(op == 26) {
+                    return new transform::ops::Ones<T>();
+                }
+                else if(op == 27) {
+                    return new transform::ops::Identity<T>();
+                }
+                else if(op == 28) {
+                    return new transform::ops::Stabilize<T>();
+                }
+                else if(op == 29) {
+                    return new transform::ops::SigmoidDerivative<T>();
+                }
+                else if(op == 30) {
+                    return new transform::ops::SoftSignDerivative<T>();
+                }
+                else if(op == 31) {
+                    return new transform::ops::LeakyRELU<T>();
+                }
+                else if(op == 32) {
+                    return new transform::ops::LeakyRELUDerivative<T>();
+                }
+                else if(op == 33) {
+                    return new transform::ops::RELU<T>();
+                }
+                else if(op == 34) {
+                    return new transform::ops::Step<T>();
+                }
+                else if(op == 35) {
+                    return new transform::ops::OneMinus<T>();
                 }
 
-            };
+                return ret;
+            }
 
-        }
+        };
     }
 }
 
@@ -2036,6 +2038,7 @@ __device__ void transformGeneric(
 
 	__shared__ functions::transform::Transform<T> *op;
 	__shared__ functions::transform::TransformOpFactory<T> *doubleTransformFactory;
+
 	if(threadIdx.x == 0) {
 		doubleTransformFactory = new functions::transform::TransformOpFactory<T>();
 

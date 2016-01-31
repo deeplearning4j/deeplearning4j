@@ -31,35 +31,36 @@ private:
     functions::transform::TransformOpFactory *transformOpFactory = new functions::transform::TransformOpFactory<T>();
 
 public:
-   ~NativeOpExcutioner() {
-       delete broadcastOpFactory;
-       delete indexReduceOpFactory;
-       delete pairWiseTransformOpFactory;
-       delete reduceOpFactory;
-       delete reduce3OpFactory;
-       delete scalarOpFactory;
-       delete summaryStatsReduceOpFactory;
-       delete transformOpFactory;
-   }
+    ~NativeOpExcutioner() {
+        delete broadcastOpFactory;
+        delete indexReduceOpFactory;
+        delete pairWiseTransformOpFactory;
+        delete reduceOpFactory;
+        delete reduce3OpFactory;
+        delete scalarOpFactory;
+        delete summaryStatsReduceOpFactory;
+        delete transformOpFactory;
+    }
 
-   /**
-    *
-    * @param opNum
-    * @param x
-    * @param xShapeInfo
-    * @param extraParams
-    * @param result
-    * @param resultShapeInfo
-    */
-    void execIndexReduceScalar(int opNum,
-                               T *x,
-                               int *xShapeInfo,
-                               T *extraParams,
-                               T *result,
-                               int *resultShapeInfo) {
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param extraParams
+     * @param result
+     * @param resultShapeInfo
+     */
+    T execIndexReduceScalar(int opNum,
+                            T *x,
+                            int *xShapeInfo,
+                            T *extraParams,
+                            T *result,
+                            int *resultShapeInfo) {
         functions::indexreduce::IndexReduce<T> *op = indexReduceOpFactory->getOp(opNum);
-        op->exec(x,xShapeInfo,extraParams,result,resultShapeInfo);
+        T ret = op->execScalar(x,xShapeInfo,extraParams);
         delete op;
+        return ret;
 
     }
 
@@ -168,9 +169,9 @@ public:
      * @return
      */
     T execReduceScalar(int opNum,
-                          T *x,
-                          int *xShapeInfo,
-                          T *extraParams) {
+                       T *x,
+                       int *xShapeInfo,
+                       T *extraParams) {
         functions::reduce::ReduceFunction *reduceFunction = reduceOpFactory->create(opNum);
         T ret = reduceFunction->exec(x,xShapeInfo,extraParams);
         delete reduceFunction;
@@ -272,6 +273,24 @@ public:
         functions::summarystats::SummaryStatsReduce *op = summaryStatsReduceOpFactory->getOp(opNum);
         op->exec(x,xShapeInfo,extraParams,result,resultShapeInfo);
         delete op;
+    }
+
+    /**
+    *
+    * @param opNum
+    * @param x
+    * @param xShapeInfo
+    * @param extraParams
+    * @param result
+    * @param resultShapeInfo
+    */
+    T execSummaryStatsScalar(int opNum,T *x,
+                             int *xShapeInfo,
+                             T *extraParams) {
+        functions::summarystats::SummaryStatsReduce *op = summaryStatsReduceOpFactory->getOp(opNum);
+        T ret = op->execScalar(x,xShapeInfo,extraParams);
+        delete op;
+        return ret;
     }
 
     /**
