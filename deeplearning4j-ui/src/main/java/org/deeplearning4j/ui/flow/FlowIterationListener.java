@@ -116,7 +116,7 @@ public class FlowIterationListener implements IterationListener {
         java.util.logging.Logger logger =  java.util.logging.Logger.getGlobal();
         login = null;
         password = null;
-        client.register(new LoggingFilter(logger, true));
+       // client.register(new LoggingFilter(logger, true));
         if (login == null || password == null) target = client.target("http://"+ remoteAddr + ":" + remotePort ).path("flow").path("state");
 
         this.path = "http://" + remoteAddr + ":" + remotePort + "/flow";
@@ -226,6 +226,7 @@ public class FlowIterationListener implements IterationListener {
 
         // if name was set, we should grab it
         info.setName(layer.conf().getLayer().getLayerName());
+        if (info.getName() == null || info.getName().isEmpty()) info.setName("unnamed");
 
         // unique layer id required here
         info.setId(order);
@@ -241,7 +242,7 @@ public class FlowIterationListener implements IterationListener {
         switch (info.getLayerType()) {
             case CONVOLUTIONAL: {
                 org.deeplearning4j.nn.conf.layers.ConvolutionLayer layer1 = (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) layer.conf().getLayer();
-                description.setMainLine("Kernel: " + Arrays.toString(layer1.getKernelSize()) + " Stride: " + Arrays.toString(layer1.getStride()) + " Padding:" + Arrays.toString(layer1.getPadding()));
+                description.setMainLine("K: " + Arrays.toString(layer1.getKernelSize()) + " S: " + Arrays.toString(layer1.getStride()) + " P: " + Arrays.toString(layer1.getPadding()));
             }
             default: {
                 // TODO: Introduce Layer.Type.OUTPUT
