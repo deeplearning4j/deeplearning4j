@@ -222,7 +222,7 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
         EarlyStoppingResult result = trainer.fit();
 
         //Expect no score change due to 0 LR -> terminate after 6 total epochs
-        assertTrue(result.getTotalEpochs()<8);  //Normally expect 6 epochs exactly; get a little more than that here due to rounding + order of operations
+        assertTrue(result.getTotalEpochs()<12);  //Normally expect 6 epochs exactly; get a little more than that here due to rounding + order of operations
         assertEquals(EarlyStoppingResult.TerminationReason.EpochTerminationCondition,result.getTerminationReason());
         String expDetails = new ScoreImprovementEpochTerminationCondition(5).toString();
         assertEquals(expDetails, result.getTerminationDetails());

@@ -19,7 +19,7 @@ import java.util.Map;
  * can't be defined as an {@link Updater}.
  * @author Alex Black
  */
-public class ComputationGraphUpdater implements Serializable {
+public class ComputationGraphUpdater implements Serializable, Cloneable {
 
     private final Updater[] layerUpdaters;
     private final Map<String,Integer> layerUpdatersMap;
@@ -40,6 +40,17 @@ public class ComputationGraphUpdater implements Serializable {
     private ComputationGraphUpdater(int size, Map<String,Integer> layerUpdatersMap){
         layerUpdaters = new Updater[size];
         this.layerUpdatersMap = layerUpdatersMap;
+    }
+
+    private ComputationGraphUpdater(ComputationGraphUpdater updater){
+        layerUpdaters = new Updater[updater.layerUpdaters.length];
+        for( int i=0; i<layerUpdaters.length; i++ ) layerUpdaters[i] = updater.layerUpdaters[i].clone();
+        layerUpdatersMap = new HashMap<>(updater.layerUpdatersMap);
+    }
+
+    @Override
+    public ComputationGraphUpdater clone(){
+        return new ComputationGraphUpdater(this);
     }
 
     /** Update the gradients for the given ComputationGraph */

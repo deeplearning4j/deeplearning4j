@@ -290,17 +290,15 @@ public class SparkComputationGraph implements Serializable {
             JavaRDD<INDArray> resultsParams = results.map(new INDArrayFromTupleFunctionCG());
             log.info("Running iterative reduce and averaging parameters");
 
-            Adder a = new Adder(paramsLength);
+            Adder a = new Adder(paramsLength,sc.accumulator(0));
             resultsParams.foreach(a);
-            INDArray newParams = a.getAccumulator().value();
-            log.info("Accumulated parameters");
-            int v = rdd.partitions().size();
-            newParams.divi(rdd.partitions().size());
-            log.info("Divided by partitions");
-            network.setParams(newParams);
-            log.info("Set parameters");
 
-            log.info("Processing updaters");
+            INDArray newParams = a.getAccumulator().value();
+            newParams.divi(a.getCounter().value());
+
+            network.setParams(newParams);
+            log.info("Accumulated and set parameters");
+
             JavaRDD<ComputationGraphUpdater> resultsUpdater = results.map(new UpdaterFromTupleFunctionCG());
             JavaDoubleRDD scores = results.mapToDouble(new DoubleFunction<Tuple3<INDArray, ComputationGraphUpdater, Double>>() {
                 @Override
@@ -319,7 +317,7 @@ public class SparkComputationGraph implements Serializable {
             ComputationGraphUpdater combinedUpdater = aggregator.getUpdater();
             network.setUpdater(combinedUpdater);
 
-            log.info("Set updater");
+            log.info("Processed and set updater");
         }
     }
 
