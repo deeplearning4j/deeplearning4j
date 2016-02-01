@@ -28,7 +28,6 @@ import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.spark.impl.common.BestScoreIterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple3;
@@ -75,7 +74,7 @@ public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>
     @Override
     public Iterable<Tuple3<INDArray, Updater, Double>> call(Iterator<DataSet> dataSetIterator) throws Exception {
         if (!dataSetIterator.hasNext()) {
-            return Collections.singletonList(new Tuple3<INDArray, Updater, Double>(Nd4j.zeros(this.params.getValue().shape()), null, 0.0));
+            return Collections.emptyList();
         }
         List<DataSet> collect = new ArrayList<>();
         while (dataSetIterator.hasNext()) {
@@ -87,8 +86,9 @@ public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>
             log.debug("Training on {} examples with data {}", data.numExamples(), data.labelCounts());
         }
 
-        INDArray val = params.getValue();
-        Updater upd = updater.getValue();
+        //Need to clone: parameters and updaters are mutable values -> .getValue() object will be shared by ALL executors on the same machine!
+        INDArray val = params.getValue().dup();
+        Updater upd = updater.getValue().clone();
 
         MultiLayerNetwork network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(json));
         network.init();
@@ -99,6 +99,5 @@ public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>
         network.setUpdater(upd);
         network.fit(data);
         return Collections.singletonList(new Tuple3<>(network.params(false), network.getUpdater(), network.score()));
-
     }
 }
