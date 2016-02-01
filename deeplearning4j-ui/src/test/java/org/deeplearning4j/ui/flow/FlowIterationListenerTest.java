@@ -2,14 +2,9 @@ package org.deeplearning4j.ui.flow;
 
 import org.canova.image.loader.LFWLoader;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.nn.conf.GradientNormalization;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.*;
+import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -27,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import static org.junit.Assert.*;
 
@@ -44,7 +40,47 @@ public class FlowIterationListenerTest {
     @Before
     public void setUp() throws Exception {
         if (graph == null) {
+            int lstmLayerSize = 200;					//Number of units in each GravesLSTM layer
+            int miniBatchSize = 32;						//Size of mini batch to use when  training
+            int examplesPerEpoch = 50 * miniBatchSize;	//i.e., how many examples to learn on between generating samples
+            int exampleLength = 100;					//Length of each training example
+            int numEpochs = 30;							//Total number of training + sample generation epochs
+            int nSamplesToGenerate = 4;					//Number of samples to generate after each training epoch
+            int nCharactersToSample = 300;				//Length of each sample to generate
+            String generationInitialization = null;		//Optional character initialization; a random character is used if null
+            // Above is Used to 'prime' the LSTM with a character sequence to continue/complete.
+            // Initialization characters must all be in CharacterIterator.getMinimalCharacterSet() by default
+            Random rng = new Random(12345);
+              int nOut = 26;
 
+            //Set up network configuration:
+            ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                    .learningRate(0.1)
+                    .rmsDecay(0.95)
+                    .seed(12345)
+                    .regularization(true)
+                    .l2(0.001)
+                    .graphBuilder()
+                    .addInputs("input")
+                    .addLayer("first", new GravesLSTM.Builder().nIn(26).nOut(lstmLayerSize)
+                            .updater(Updater.RMSPROP)
+                            .activation("tanh").weightInit(WeightInit.DISTRIBUTION)
+                            .dist(new UniformDistribution(-0.08, 0.08)).build(),"input")
+                    .addLayer("second", new GravesLSTM.Builder().nIn(lstmLayerSize).nOut(lstmLayerSize)
+                            .updater(Updater.RMSPROP)
+                            .activation("tanh").weightInit(WeightInit.DISTRIBUTION)
+                            .dist(new UniformDistribution(-0.08, 0.08)).build(),"first")
+                    .addLayer("outputLayer", new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax")        //MCXENT + softmax for classification
+                            .updater(Updater.RMSPROP)
+                            .nIn(2*lstmLayerSize).nOut(nOut).weightInit(WeightInit.DISTRIBUTION)
+                            .dist(new UniformDistribution(-0.08, 0.08)).build(),"first","second")   //Note: both layers feed into output layer -> skip connection architecture
+                    .setOutputs("outputLayer")
+                    .pretrain(false).backprop(true)
+                    .build();
+
+            graph = new ComputationGraph(conf);
+            graph.init();
         }
 
         if (network == null) {
@@ -153,5 +189,23 @@ public class FlowIterationListenerTest {
 
         // check description for cnn
         assertNotEquals(null, info.getLayerInfoByName("cnn1").getDescription().getMainLine());
+    }
+
+    @Test
+    public void testCGModelInfo1() throws Exception {
+        FlowIterationListener listener = new FlowIterationListener();
+
+        ModelInfo info = listener.buildModelInfo(graph);
+        for (LayerInfo layerInfo: info.getLayers()) {
+            log.info("Layer: " + layerInfo);
+        }
+
+        // checking total number of layers
+        assertEquals(4, info.size());
+
+        // checking, if all named layers exist
+        assertNotEquals(null, info.getLayerInfoByName("first"));
+        assertNotEquals(null, info.getLayerInfoByName("second"));
+        assertNotEquals(null, info.getLayerInfoByName("outputLayer"));
     }
 }

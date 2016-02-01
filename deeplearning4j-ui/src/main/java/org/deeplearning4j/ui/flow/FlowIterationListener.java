@@ -6,6 +6,8 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.graph.vertex.GraphVertex;
+import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.convolution.ConvolutionLayer;
@@ -28,7 +30,9 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * This IterationListener is suited for general model performance/architecture overview
@@ -184,13 +188,112 @@ public class FlowIterationListener implements IterationListener {
         }
     }
 
+    /**
+     * This method returns all Layers connected to the currentInput
+     *
+     * @param vertices
+     * @param currentInput
+     * @param currentY
+     * @return
+     */
+    protected  List<LayerInfo> flattenToY(ModelInfo model, GraphVertex[] vertices, List<String> currentInput, int currentY) {
+        List<LayerInfo> results = new ArrayList<>();
+        int x = 0;
+        for (int v = 0; v < vertices.length; v++) {
+            GraphVertex vertex = vertices[v];
+            VertexIndices[] indices = vertex.getInputVertices();
+
+            if (indices != null) for (int i = 0; i < indices.length; i++) {
+                GraphVertex cv = vertices[indices[i].getVertexIndex()];
+                String inputName = cv.getVertexName();
+
+                for (String input: currentInput) {
+                    if (inputName.equals(input)) {
+                        // we have match for Vertex
+                        log.info("Vertex: " + vertex.getVertexName() + " has Input: " + input);
+                        try {
+                            LayerInfo info = getLayerInfo(vertex.getLayer(), x, currentY, 121);
+                            info.setName(vertex.getVertexName());
+                            if (info.getName().endsWith("-merge")) info.setLayerType("MERGE");
+                            if (model.getLayerInfoByName(vertex.getVertexName()) == null) {
+                                x++;
+                                model.addLayer(info);
+                                results.add(info);
+                            }
+
+                            // now we should map connections
+                            LayerInfo connection = model.getLayerInfoByName(input);
+                            if (connection != null) {
+                                info.addConnection(connection);
+                            } else {
+                                // the only reason to have null here, is direct input connection
+                                info.addConnection(0,0);
+                            }
+                        } catch (Exception e) {
+                            ;
+                        }
+                    }
+                }
+            }
+        }
+        return results;
+    }
+
     protected ModelInfo buildModelInfo(Model model) {
         ModelInfo modelInfo = new ModelInfo();
         if (model instanceof ComputationGraph) {
             ComputationGraph graph = (ComputationGraph) model;
+            /*
+                we assume that graph starts on input. every layer connected to input - is on y1
+                every layer connected to y1, is on y2 etc.
+              */
+            List<String> inputs = graph.getConfiguration().getNetworkInputs();
+            GraphVertex[] vertices = graph.getVertices();
+            String input = inputs.get(0);
+            // filling grid in LTR/TTB direction
+            List<String> needle = new ArrayList<>();
 
-            // keep x0, y0 reserved for inputs
+            // we assume that max row can't be higher then total number of vertices
+            for (int y = 1; y < vertices.length; y++) {
+                if (needle.isEmpty()) needle.add(input);
 
+                /*
+                    for each grid row we look for nodes, that are connected to previous layer
+                */
+                List<LayerInfo> layersForGridY =  flattenToY(modelInfo, vertices, needle, y);
+
+                needle.clear();
+                for (LayerInfo layerInfo: layersForGridY) {
+                    needle.add(layerInfo.getName());
+                }
+                if (needle.isEmpty()) break;
+            }
+
+            /*
+            for (String input: inputs) {
+                log.info("Input: " + input);
+
+                // now we want to search through the graph, who's connected to this node
+                log.info("Vertices: " + graph.getConfiguration().getVertices());
+
+                for (int v = 0; v < vertices.length; v++) {
+                    GraphVertex vertex = vertices[v];
+                    // we ignore input here
+                    if (vertex.getVertexName().equals(input) || vertex.getVertexName().endsWith("-mergedd")) continue;
+
+                    log.info("VertexName: " + vertex.getVertexName());
+
+                   VertexIndices[] indices = vertex.getInputVertices();
+                    for (int x = 0; x < indices.length; x++) {
+                        // backward connections retrieved here
+
+                        log.info("Feeds from: " + vertices[indices[x].getVertexIndex()].getVertexName());
+                    }
+
+
+                }
+            }
+            */
 
         } else if (model instanceof MultiLayerNetwork) {
             MultiLayerNetwork network = (MultiLayerNetwork) model;
@@ -225,35 +328,41 @@ public class FlowIterationListener implements IterationListener {
         info.setY(y);
 
         // if name was set, we should grab it
-        info.setName(layer.conf().getLayer().getLayerName());
+        try {
+            info.setName(layer.conf().getLayer().getLayerName());
+        } catch (Exception e) {
+            ;
+        }
         if (info.getName() == null || info.getName().isEmpty()) info.setName("unnamed");
 
         // unique layer id required here
         info.setId(order);
 
-        // set layer type
-        info.setLayerType(layer.type());
-
         // set layer description according to layer params
         Description description = new Description();
+        info.setDescription(description);
 
-        description.setSubLine(layer.conf().getLayer().getActivationFunction());
-
-        switch (info.getLayerType()) {
-            case CONVOLUTIONAL: {
-                org.deeplearning4j.nn.conf.layers.ConvolutionLayer layer1 = (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) layer.conf().getLayer();
-                description.setMainLine("K: " + Arrays.toString(layer1.getKernelSize()) + " S: " + Arrays.toString(layer1.getStride()) + " P: " + Arrays.toString(layer1.getPadding()));
-            }
-            default: {
-                // TODO: Introduce Layer.Type.OUTPUT
-                if (layer instanceof OutputLayer) {
-                    description.setMainLine("Outputs: [" + ((org.deeplearning4j.nn.conf.layers.OutputLayer)layer.conf().getLayer()).getNOut()+ "]");
-                }
-            }
+        // set layer type
+        try {
+            info.setLayerType(layer.type().toString());
+        } catch (Exception e) {
+            return info;
         }
 
 
-        info.setDescription(description);
+
+        description.setSubLine(layer.conf().getLayer().getActivationFunction());
+
+        if (info.getLayerType().equals("CONVOLUTIONAL")) {
+                org.deeplearning4j.nn.conf.layers.ConvolutionLayer layer1 = (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) layer.conf().getLayer();
+                description.setMainLine("K: " + Arrays.toString(layer1.getKernelSize()) + " S: " + Arrays.toString(layer1.getStride()) + " P: " + Arrays.toString(layer1.getPadding()));
+        } else {
+                // TODO: Introduce Layer.Type.OUTPUT
+                if (layer instanceof BaseOutputLayer) {
+                    description.setMainLine("Outputs: [" + ((org.deeplearning4j.nn.conf.layers.BaseOutputLayer)layer.conf().getLayer()).getNOut()+ "]");
+                }
+        }
+
         return info;
     }
 }
