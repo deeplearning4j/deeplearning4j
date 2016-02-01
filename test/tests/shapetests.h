@@ -198,13 +198,11 @@ TEST(Shape,ReductionIndexForLinear) {
 	for(int i = 0; i < rank; i++) {
 		printf("Stride[%d] was %d\n",i,shape::stride(shapeInfoBuffer)[i]);
 	}
-	assertBufferProperties(shapeInfoBuffer);
 	int dimensionLength = 1;
 	int *dimension = (int *) malloc(sizeof(int) * dimensionLength);
 	dimension[0] = 1;
 	int *tadShapeInfo = shape::tadShapeInfo(0, shapeInfoBuffer, dimension,
 			dimensionLength);
-	assertBufferProperties(tadShapeInfo);
 	int tadLength = shape::length(tadShapeInfo);
 	CHECK(shape::rank(tadShapeInfo) == 2);
 	int *shapeAssertion = (int *) malloc(2 * sizeof(int));
