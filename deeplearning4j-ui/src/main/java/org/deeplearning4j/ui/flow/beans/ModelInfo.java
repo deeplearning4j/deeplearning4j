@@ -7,6 +7,7 @@ import lombok.NonNull;
 import org.deeplearning4j.berkeley.Pair;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,14 +25,15 @@ public class ModelInfo implements Serializable {
 
     // PLEASE NOTE: Inverted coords here -> Y, X LayerInfo
     //private Table<Integer, Integer, LayerInfo> layers = HashBasedTable.create();
-    private Map<Pair<Integer, Integer>, LayerInfo> layers = new LinkedHashMap<>();
+   // private Map<Pair<Integer, Integer>, LayerInfo> layers = new LinkedHashMap<>();
+    private List<LayerInfo> layers = new ArrayList<>();
 
     /**
      * This method maps given layer into model coordinate space
      * @param layer
      */
     public void addLayer(@NonNull LayerInfo layer) {
-        this.layers.put(Pair.makePair(layer.getY(), layer.getX()), layer);
+        this.layers.add( layer);
     }
 
     /**
@@ -40,7 +42,7 @@ public class ModelInfo implements Serializable {
      * @return
      */
     public LayerInfo getLayerInfoByName(String name) {
-        for (LayerInfo layerInfo: layers.values()) {
+        for (LayerInfo layerInfo: layers) {
             if (layerInfo.getName().equalsIgnoreCase(name)) return layerInfo;
         }
         return null;
@@ -53,7 +55,11 @@ public class ModelInfo implements Serializable {
      * @return
      */
     public LayerInfo getLayerInfoByCoords(int x, int y) {
-        return layers.get(Pair.makePair(y, x));
+        for (LayerInfo layerInfo: layers) {
+            if (layerInfo.getX() == x && layerInfo.getY() == y) return layerInfo;
+        }
+
+        return null;
     }
 
     /**
