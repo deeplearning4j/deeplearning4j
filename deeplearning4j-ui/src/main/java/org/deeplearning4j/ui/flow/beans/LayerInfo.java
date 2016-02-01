@@ -36,7 +36,6 @@ public class LayerInfo implements Serializable {
 
     public void addConnection(LayerInfo layerInfo) {
         if (!connections.contains(Coords.makeCoors(layerInfo.getX(), layerInfo.getY()))) {
-            System.out.println("Layer ["+ this.name+"] now has connection to ["+ layerInfo.getX()+"," + layerInfo.getY()+"] ("+layerInfo.getName()+")");
             connections.add(Coords.makeCoors(layerInfo.getX(), layerInfo.getY()));
         }
     }

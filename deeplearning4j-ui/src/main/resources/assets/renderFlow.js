@@ -62,9 +62,9 @@ function drawLineArrow(ctx, x1,y1,x2,y2) {
 function drawIntraLayerArrow(ctx, x1, y1, x2, y2) {
     ctx.beginPath();
     ctx.moveTo(x1,y1);
-    ctx.bezierCurveTo(x1, y1 - (offsetVertical / 2), x2, y2 - (offsetVertical / 2)  x2,y2);
+    ctx.bezierCurveTo(x1 + 10, y1 - (offsetVertical / 4), x2 - 10, y2 - (offsetVertical / 4), x2,y2);
     ctx.stroke();
-    var ang = Math.atan2(y2-y1,x2-x1);
+    var ang = 0.9;
     drawFilledPolygon(ctx, translateShape(rotateShape(arrow,ang),x2,y2));
 }
 
@@ -94,13 +94,25 @@ function renderConnections(ctx, layer) {
             drawLineArrow(ctx, cX1, cY1, cX2, cY2);
         } else if (connection.y == layer.y) {
             // this is connection withing same layer, bezier curve required
-            var cX1 = getNodeX(layer.x, layer.y, layers.getLayersForY(layer.y).length) + (nodeWidth / 2);
-            var cY1 = getNodeY(layer.x, layer.y) - 5;
+            if (layer.x < connection.x) {
+                var cX1 = getNodeX(layer.x, layer.y, layers.getLayersForY(layer.y).length) + (nodeWidth / 2) + 20;
+                var cY1 = getNodeY(layer.x, layer.y) - 5;
 
-            var cX2 = getNodeX(connection.x, connection.y, layers.getLayersForY(layer.y).length) + (nodeWidth / 2);
-            var cY2 = getNodeY(connection.x, connection.y) - 5;
+                var cX2 = getNodeX(connection.x, connection.y, layers.getLayersForY(layer.y).length) + (nodeWidth / 2) - 20;
+                var cY2 = getNodeY(connection.x, connection.y) - 5;
 
-            drawIntraLayerArrow(ctx, cX1, cY1, cX2, cY2);
+
+                drawIntraLayerArrow(ctx, cX1, cY1, cX2, cY2);
+            } else {
+                var cX1 = getNodeX(layer.x, layer.y, layers.getLayersForY(layer.y).length) + (nodeWidth / 2) - 20;
+                var cY1 = getNodeY(layer.x, layer.y) - 5;
+
+                var cX2 = getNodeX(connection.x, connection.y, layers.getLayersForY(layer.y).length) + (nodeWidth / 2) + 20;
+                var cY2 = getNodeY(connection.x, connection.y) - 5;
+
+
+                drawIntraLayerArrow(ctx, cX1, cY1, cX2, cY2);
+            }
         } else {
             // this is indirect connection, curve required
         }
@@ -154,7 +166,7 @@ function renderNode(ctx, layer, x, y, totalOnLayer) {
     ctx.fillStyle = layer.color;
     ctx.rect(cx, cy, nodeWidth, nodeHeight);
     ctx.fillRect(cx+1, cy+1, nodeWidth-2, nodeHeight-2);
-    console.log("cX: " + cx + " cY: " + cy + " width: " + nodeWidth + " height: " + nodeHeight);
+//    console.log("cX: " + cx + " cY: " + cy + " width: " + nodeWidth + " height: " + nodeHeight);
     ctx.stroke();
 
     // draw description
@@ -204,15 +216,15 @@ function timedFunction() {
                                         align: "center"
                                         },
                                 });
-                                setTimeout(timed, 5000);
+                                setTimeout(timedFunction, 5000);
                             },
                             success: function( data ) {
                                 // parse & render ModelInfo
-                                console.log("data received: " + data);
+                                //console.log("data received: " + data);
 
                                 if (typeof data.layers == 'undefined') return;
 
-
+                                layers = new Layers();
 
                                 /*
                                     At this point we're going to have array of objects, with some properties tied.
@@ -221,7 +233,6 @@ function timedFunction() {
                                 for (var i = 0; i < data.layers.length; i++) {
                                     var layer = new Layer(data.layers[i]);
                                     layers.attach(layer);
-                                    console.log("Attaching layer: " + layer.name);
                                 }
                                 renderLayers("display", layers);
                             }
