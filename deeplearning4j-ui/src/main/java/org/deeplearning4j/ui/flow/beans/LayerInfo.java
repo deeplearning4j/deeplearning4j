@@ -19,7 +19,7 @@ public class LayerInfo implements Serializable {
     private final static long serialVersionUID = 119L;
     private long id;
     private String name;
-    private Layer.Type layerType;
+    private String layerType;
 
      //   grid coordinates. row & column
     private int x = 0;
@@ -29,6 +29,10 @@ public class LayerInfo implements Serializable {
 
     // set of connections as grid coordinates
     private Set<Coords> connections = new HashSet<>();
+
+    public void addConnection(LayerInfo layerInfo) {
+        connections.add(Coords.makeCoors(layerInfo.getX(), layerInfo.getY()));
+    }
 
     public void addConnection(int x, int y) {
         connections.add(Coords.makeCoors(x, y));
