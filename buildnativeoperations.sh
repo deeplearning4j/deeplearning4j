@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-export CPPUTEST_HOME=/home/agibsonccc/code/cpputest
 
 if [ "$#" -ne 1 ]; then
     echo "Please specify an argument"
