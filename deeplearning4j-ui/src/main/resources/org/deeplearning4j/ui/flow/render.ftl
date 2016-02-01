@@ -24,7 +24,10 @@
         <!-- Booststrap Notify plugin-->
         <script src="/assets/bootstrap-notify.min.js"></script>
 
+
+        <script src="/assets/Connection.js"></script>
         <script src="/assets/Layer.js"></script>
+        <script src="/assets/Layers.js"></script>
 
         <script src="/assets/renderFlow.js"></script>
         <style>
@@ -69,7 +72,7 @@
         </table>
         <br /> <br />
         <div style="width: 100%; text-align: center;">
-            <div id="display" style="display: inline-block; width: 600px;">
+            <div id="display" style="display: inline-block; width: 900px;">
                 <!-- NN rendering pane -->
             </div>
         </div>
