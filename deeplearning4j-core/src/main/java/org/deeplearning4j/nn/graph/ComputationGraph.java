@@ -61,6 +61,7 @@ public class ComputationGraph implements Serializable, Model {
     private static final Logger log = LoggerFactory.getLogger(ComputationGraph.class);
 
     protected ComputationGraphConfiguration configuration;
+    protected boolean initCalled = false;
     protected transient Solver solver;	//Used to call optimizers during backprop
     protected Gradient gradient;
     protected double score;
@@ -201,6 +202,8 @@ public class ComputationGraph implements Serializable, Model {
 
     /** Initialize the ComputationGraph network */
     public void init(){
+        if(initCalled) return;
+
         //Initialization: create the GraphVertex objects, based on configuration structure
         Map<String,org.deeplearning4j.nn.conf.graph.GraphVertex> nodeMap = configuration.getVertices();
 
@@ -327,6 +330,8 @@ public class ComputationGraph implements Serializable, Model {
 
         //Given the graph structure, do a topological sort to define forward pass and flattening order:
         topologicalOrder = topologicalSortOrder();
+
+        initCalled = true;
     }
 
     /** Pretrain network with a single input and single output. DataSetIterators can only be used if the number of input

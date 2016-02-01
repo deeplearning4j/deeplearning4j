@@ -20,14 +20,15 @@ package org.deeplearning4j.earlystopping.trainer;
 
 import org.deeplearning4j.earlystopping.EarlyStoppingResult;
 import org.deeplearning4j.earlystopping.listener.EarlyStoppingListener;
+import org.deeplearning4j.nn.api.Model;
 
 /** Interface for early stopping trainers */
-public interface IEarlyStoppingTrainer {
+public interface IEarlyStoppingTrainer<T extends Model> {
 
     /** Conduct early stopping training */
-    EarlyStoppingResult fit();
+    EarlyStoppingResult<T> fit();
 
     /** Set the early stopping listener */
-    void setListener(EarlyStoppingListener listener);
+    void setListener(EarlyStoppingListener<T> listener);
 
 }
