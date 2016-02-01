@@ -24,6 +24,8 @@
         <!-- Booststrap Notify plugin-->
         <script src="/assets/bootstrap-notify.min.js"></script>
 
+        <script src="/assets/Layer.js"></script>
+
         <script src="/assets/renderFlow.js"></script>
         <style>
             body {

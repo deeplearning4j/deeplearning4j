@@ -131,7 +131,7 @@ public class FlowIterationListenerTest {
 
         ModelInfo info = listener.buildModelInfo(network);
 
-        for (LayerInfo layerInfo: info.getLayers().values()) {
+        for (LayerInfo layerInfo: info.getLayers()) {
             log.info("Layer: " + layerInfo);
         }
 
