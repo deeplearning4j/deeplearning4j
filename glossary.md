@@ -216,6 +216,10 @@ Highway networks are an architecture introduced by Schmidhuber et al to let info
 
 * [Highway Networks](http://arxiv.org/abs/1505.00387)
 
+### <a name="iclr">International Conference on Learning Representations</a>
+
+ICLR, pronounced "I-clear". An important conference. See [representation learning](#represent).
+
 ### <a name="icml">International Conference for Machine Learning</a>
 ICML, or the International Conference for Machine Learning, is a well-known and well attended machine-learning conference. 
 
