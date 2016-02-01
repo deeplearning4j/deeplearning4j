@@ -26,15 +26,11 @@ import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
-import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple3;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 /**
  * Iterative reduce for ComputationGraph with flat map using map partitions
@@ -64,7 +60,7 @@ public class IterativeReduceFlatMapCG implements FlatMapFunction<Iterator<MultiD
     @Override
     public Iterable<Tuple3<INDArray, ComputationGraphUpdater, Double>> call(Iterator<MultiDataSet> dataSetIterator) throws Exception {
         if (!dataSetIterator.hasNext()) {
-            return Collections.singletonList(new Tuple3<INDArray, ComputationGraphUpdater, Double>(Nd4j.zeros(params.value().shape()), null, 0.0));
+            return Collections.emptyList();
         }
         List<MultiDataSet> collect = new ArrayList<>();
         while (dataSetIterator.hasNext()) {
@@ -76,8 +72,10 @@ public class IterativeReduceFlatMapCG implements FlatMapFunction<Iterator<MultiD
         ComputationGraph network = new ComputationGraph(ComputationGraphConfiguration.fromJson(json));
         network.init();
         network.setListeners(new ScoreIterationListener(1));
-        INDArray val = params.value();
-        ComputationGraphUpdater upd = updater.getValue();
+
+        //Need to clone: parameters and updaters are mutable values -> .getValue() object will be shared by ALL executors on the same machine!
+        INDArray val = params.getValue().dup();
+        ComputationGraphUpdater upd = updater.getValue().clone();
         if (val.length() != network.numParams(false))
             throw new IllegalStateException("Network did not have same number of parameters as the broadcast parameters");
         network.setParams(val);

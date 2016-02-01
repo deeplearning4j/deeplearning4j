@@ -79,11 +79,13 @@ public class GradientAccumFlatMapCG implements FlatMapFunction<Iterator<MultiDat
 
         ComputationGraph network = new ComputationGraph(ComputationGraphConfiguration.fromJson(json));
         network.init();
-        INDArray val = params.value();
+        //Need to clone: parameters and updaters are mutable values -> .getValue() object will be shared by ALL executors on the same machine!
+        INDArray val = params.value().dup();
+        ComputationGraphUpdater upd = updater.getValue().clone();
         if(val.length() != network.numParams())
             throw new IllegalStateException("Network did not have same number of parameters as the broadcasted set parameters");
         network.setParams(val);
-        network.setUpdater(updater.getValue());
+        network.setUpdater(upd);
         network.fit(data);
 
         return Collections.singletonList(new Tuple3<>(network.gradient(),network.getUpdater(),network.score()));
