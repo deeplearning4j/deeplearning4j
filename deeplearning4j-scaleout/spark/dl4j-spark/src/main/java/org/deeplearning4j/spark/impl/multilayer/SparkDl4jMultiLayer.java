@@ -299,7 +299,7 @@ public class SparkDl4jMultiLayer implements Serializable {
 
 
     protected void runIteration(JavaRDD<DataSet> rdd) {
-        int paramsLength = network.numParams(true);
+        int paramsLength = network.numParams(false);
 
         log.info("Broadcasting initial parameters of length " + paramsLength);
 
@@ -352,14 +352,14 @@ public class SparkDl4jMultiLayer implements Serializable {
             JavaRDD<INDArray> resultsParams = results.map(new INDArrayFromTupleFunction());
             log.info("Running iterative reduce and averaging parameters");
 
-            Adder a = new Adder(paramsLength);
+            Adder a = new Adder(paramsLength,sc.accumulator(0));
             resultsParams.foreach(a);
+
             INDArray newParams = a.getAccumulator().value();
-            log.info("Accumulated parameters");
-            newParams.divi(rdd.partitions().size());
-            log.info("Divided by partitions");
+            newParams.divi(a.getCounter().value());
+
             network.setParameters(newParams);
-            log.info("Set parameters");
+            log.info("Accumulated and set parameters");
             JavaDoubleRDD scores = results.mapToDouble(new DoubleFunction<Tuple3<INDArray,Updater,Double>>(){
                 @Override
                 public double call(Tuple3<INDArray, Updater, Double> t3) throws Exception {
@@ -368,7 +368,6 @@ public class SparkDl4jMultiLayer implements Serializable {
             });
             lastScore = scores.mean();
 
-            log.info("Processing updaters");
             JavaRDD<Updater> resultsUpdater = results.map(new UpdaterFromTupleFunction());
             UpdaterAggregator aggregator = resultsUpdater.aggregate(
                     null,
@@ -378,7 +377,7 @@ public class SparkDl4jMultiLayer implements Serializable {
             Updater combinedUpdater = aggregator.getUpdater();
             network.setUpdater(combinedUpdater);
 
-            log.info("Set updater");
+            log.info("Processed and set updater");
 
         }
     }

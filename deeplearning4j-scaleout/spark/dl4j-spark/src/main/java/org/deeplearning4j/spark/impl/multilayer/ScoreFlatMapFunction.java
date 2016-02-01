@@ -42,7 +42,7 @@ public class ScoreFlatMapFunction implements FlatMapFunction<Iterator<DataSet>, 
 
         MultiLayerNetwork network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(json));
         network.init();
-        INDArray val = params.value();
+        INDArray val = params.value();  //.value() object will be shared by all executors on each machine -> OK, as params are not modified by score function
         if(val.length() != network.numParams(false))
             throw new IllegalStateException("Network did not have same number of parameters as the broadcasted set parameters");
         network.setParameters(val);
