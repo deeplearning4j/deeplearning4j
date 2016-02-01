@@ -33,12 +33,22 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 public class EarlyStoppingGraphTrainer extends BaseEarlyStoppingTrainer<ComputationGraph> {  //implements IEarlyStoppingTrainer<ComputationGraph> {
     private ComputationGraph net;
 
-
+    /**
+     * @param esConfig Configuration
+     * @param net Network to train using early stopping
+     * @param train DataSetIterator for training the network
+     */
     public EarlyStoppingGraphTrainer(EarlyStoppingConfiguration<ComputationGraph> esConfig, ComputationGraph net,
                                      DataSetIterator train) {
         this(esConfig, net, train, null);
     }
 
+    /**Constructor for training using a {@link DataSetIterator}
+     * @param esConfig Configuration
+     * @param net Network to train using early stopping
+     * @param train DataSetIterator for training the network
+     * @param listener Early stopping listener. May be null.
+     */
     public EarlyStoppingGraphTrainer(EarlyStoppingConfiguration<ComputationGraph> esConfig, ComputationGraph net,
                                      DataSetIterator train, EarlyStoppingListener<ComputationGraph> listener) {
         super(esConfig, net, train, null, listener);
@@ -47,6 +57,12 @@ public class EarlyStoppingGraphTrainer extends BaseEarlyStoppingTrainer<Computat
         this.net = net;
     }
 
+    /**Constructor for training using a {@link MultiDataSetIterator}
+     * @param esConfig Configuration
+     * @param net Network to train using early stopping
+     * @param train DataSetIterator for training the network
+     * @param listener Early stopping listener. May be null.
+     */
     public EarlyStoppingGraphTrainer(EarlyStoppingConfiguration<ComputationGraph> esConfig, ComputationGraph net,
                                      MultiDataSetIterator train, EarlyStoppingListener<ComputationGraph> listener) {
         super(esConfig, net, null, train, listener);
