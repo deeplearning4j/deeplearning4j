@@ -20,6 +20,7 @@ package org.arbiter.deeplearning4j.task;
 import lombok.AllArgsConstructor;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.arbiter.deeplearning4j.DL4JConfiguration;
+import org.arbiter.deeplearning4j.listener.BaseUIStatusReportingListener;
 import org.arbiter.deeplearning4j.listener.UIStatusReportingListener;
 import org.arbiter.optimize.api.Candidate;
 import org.arbiter.optimize.api.OptimizationResult;
@@ -29,14 +30,11 @@ import org.arbiter.optimize.api.evaluation.ModelEvaluator;
 import org.arbiter.optimize.api.score.ScoreFunction;
 import org.arbiter.optimize.runner.Status;
 import org.arbiter.optimize.runner.listener.candidate.UICandidateStatusListener;
-import org.arbiter.optimize.ui.components.RenderableComponent;
 import org.arbiter.optimize.ui.components.RenderableComponentString;
-import org.arbiter.optimize.ui.components.RenderableComponentTable;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.EarlyStoppingResult;
 import org.deeplearning4j.earlystopping.trainer.EarlyStoppingTrainer;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 
 import java.util.concurrent.Callable;
@@ -52,7 +50,7 @@ public class DL4JTaskCreator<A> implements TaskCreator<DL4JConfiguration,MultiLa
                    ScoreFunction<MultiLayerNetwork,DataSetIterator> scoreFunction,
                    UICandidateStatusListener statusListener) {
 
-        return new DL4JLearningTask(candidate,dataProvider,scoreFunction,modelEvaluator,statusListener);
+        return new DL4JLearningTask<>(candidate,dataProvider,scoreFunction,modelEvaluator,statusListener);
 
     }
 
@@ -64,7 +62,7 @@ public class DL4JTaskCreator<A> implements TaskCreator<DL4JConfiguration,MultiLa
         private ScoreFunction<MultiLayerNetwork,DataSetIterator> scoreFunction;
         private ModelEvaluator<MultiLayerNetwork,DataSetIterator,A> modelEvaluator;
 
-        private UIStatusReportingListener dl4jListener;
+        private BaseUIStatusReportingListener dl4jListener;
 
         public DL4JLearningTask(Candidate<DL4JConfiguration> candidate, DataProvider<DataSetIterator> dataProvider, ScoreFunction<MultiLayerNetwork, DataSetIterator> scoreFunction, ModelEvaluator<MultiLayerNetwork, DataSetIterator, A> modelEvaluator, UICandidateStatusListener listener) {
             this.candidate = candidate;
@@ -87,8 +85,8 @@ public class DL4JTaskCreator<A> implements TaskCreator<DL4JConfiguration,MultiLa
             DataSetIterator dataSetIterator = dataProvider.testData(candidate.getDataParameters());
 
 
-            EarlyStoppingConfiguration esConfig = candidate.getValue().getEarlyStoppingConfiguration();
-            EarlyStoppingResult esResult = null;
+            EarlyStoppingConfiguration<MultiLayerNetwork> esConfig = candidate.getValue().getEarlyStoppingConfiguration();
+            EarlyStoppingResult<MultiLayerNetwork> esResult = null;
             if(esConfig != null){
                 EarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConfig,net,dataSetIterator,dl4jListener);
                 try{
