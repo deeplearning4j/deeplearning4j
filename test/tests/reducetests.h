@@ -625,4 +625,5 @@ TEST(Reduce,ObjectOrientedFloatDimensionNorm2) {
 }
 
 
+
 #endif /* REDUCETESTS_H_ */
