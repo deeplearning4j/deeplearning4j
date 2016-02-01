@@ -1522,6 +1522,37 @@ public class Shape {
     }
 
     /**
+     * Prints the shape
+     * for this shape information
+     * @param buffer the shape information to print
+     * @return the shape information to string
+     */
+    public static String shapeToString(IntBuffer buffer) {
+        IntBuffer shapeBuff = shapeOf(buffer);
+        int rank = Shape.rank(buffer);
+        IntBuffer strideBuff = stride(buffer);
+        StringBuffer sb = new StringBuffer();
+        sb.append("Rank: " + rank + ",");
+        sb.append("shape: [");
+        for(int i = 0; i < rank; i++) {
+            sb.append(shapeBuff.get(i));
+            if(i < rank - 1)
+                sb.append(",");
+        }
+        sb.append("], ");
+
+        sb.append("stride: [");
+        for(int i = 0; i < rank; i++) {
+            sb.append(strideBuff.get(i));
+            if(i < rank - 1)
+                sb.append(",");
+        }
+        sb.append("]");
+        return sb.toString();
+    }
+
+
+    /**
      * Get the offset for the buffer
      * @param buffer the shape info buffer to get the offset for
      * @return

@@ -33,9 +33,9 @@ public class NDArrayStrings {
     }
 
     private String format(INDArray arr,int rank) {
-        if(rank < 1)
-            return "";
         StringBuffer sb = new StringBuffer();
+        if(rank <= 0)
+            return "";
 
         if(arr.isScalar()) {
             if(arr instanceof IComplexNDArray)
@@ -43,7 +43,6 @@ public class NDArrayStrings {
             return decimalFormat.format(arr.getDouble(0));
         }
         else if(arr.isVector()) {
-
             sb.append("[");
             for(int i = 0; i < arr.length(); i++) {
                 sb.append(StringUtils.repeat(" ",rank - 1));

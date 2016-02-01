@@ -50,7 +50,7 @@ public class LinearViewNDArray  extends BaseNDArray {
         this.wrapped = wrapped;
        // this.shape = new int[] {1,wrapped.length()};
         this.data = wrapped.data();
-        this.offset = wrapped.offset();
+       // this.offset = wrapped.offset();
         this.ordering = wrapped.ordering();
         this.length = wrapped.length();
         vectors = new ArrayList<>();

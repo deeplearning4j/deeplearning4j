@@ -61,17 +61,26 @@ public class ShapeBufferTests extends BaseNd4jTest {
 
     @Test
     public void testShape() {
-        int[] shape = {2,4};
-        int[] stride = {1,2};
+        int[] shape = {2, 4};
+        int[] stride = {1, 2};
         IntBuffer buff = Shape.createShapeInformation(shape, stride, 0, 1, 'c');
         IntBuffer shapeView = Shape.shapeOf(buff);
-        assertTrue(Shape.contentEquals(shape,shapeView));
+        assertTrue(Shape.contentEquals(shape, shapeView));
         IntBuffer strideView = Shape.stride(buff);
-        assertTrue(Shape.contentEquals(stride,strideView));
-        assertEquals('c',Shape.order(buff));
-        assertEquals(1,Shape.elementWiseStride(buff));
+        assertTrue(Shape.contentEquals(stride, strideView));
+        assertEquals('c', Shape.order(buff));
+        assertEquals(1, Shape.elementWiseStride(buff));
+        assertFalse(Shape.isVector(buff));
+        assertTrue(Shape.contentEquals(shape,Shape.shapeOf(buff)));
+        assertTrue(Shape.contentEquals(stride,Shape.stride(buff)));
+    }
 
-
+    @Test
+    public void testBuff() {
+        int[] shape = {1,2};
+        int[] stride = {1, 2};
+        IntBuffer buff = Shape.createShapeInformation(shape, stride, 0, 1, 'c');
+        assertTrue(Shape.isVector(buff));
     }
 
 

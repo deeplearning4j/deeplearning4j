@@ -614,9 +614,9 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
         if(isVector() || isScalar() || length() == 1)
             linearView = this;
-        else if(ordering() == NDArrayFactory.C && offset == 0 && length() == data().length()) {
+       /* else if(ordering() == NDArrayFactory.C && offset == 0 && length() == data().length()) {
             linearView = Nd4j.createComplex(data(),new int[]{1,length()},new int[]{1,elementStride()},offset);
-        }
+        }*/
         else
             linearView = new LinearViewComplexNDArray(this);
     }
@@ -1281,7 +1281,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public IComplexNDArray put(int[] indexes, double value) {
-        int ix = offset;
+        //int ix = offset;
        /* if (indexes.length != shape.length)
             throw new IllegalArgumentException("Unable to applyTransformToDestination values: number of indices must be equal to the shape");
 
@@ -1422,7 +1422,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public IComplexNDArray putReal(int rowIndex, int columnIndex, double value) {
-        data.put(2 * index(rowIndex, columnIndex) + offset, value);
+        data.put(2 * index(rowIndex, columnIndex) + offset(), value);
         return this;
     }
 
@@ -1432,7 +1432,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public IComplexNDArray putImag(int rowIndex, int columnIndex, double value) {
-        data.put(index(rowIndex, columnIndex) + 1 + offset, value);
+        data.put(index(rowIndex, columnIndex) + 1 + offset(), value);
         return this;
     }
 
@@ -1444,8 +1444,8 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public IComplexNDArray putImag(int i, float v) {
-        int offset  = this.offset + Shape.offsetFor(this, i) + 1;
-        data.put(offset,v);
+        /*int offset  = this.offset + Shape.offsetFor(this, i) + 1;
+        data.put(offset,v);*/
         return this;
     }
 
@@ -1644,7 +1644,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     }
 
     protected INDArray createScalarForIndex(int i,boolean applyOffset) {
-        return Nd4j.createComplex(data(), new int[]{1, 1}, new int[]{1, 1}, applyOffset ? offset + i : i);
+        return Nd4j.createComplex(data(), new int[]{1, 1}, new int[]{1, 1}, applyOffset ? offset() + i : i);
     }
 
     /**
