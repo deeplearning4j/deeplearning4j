@@ -28,14 +28,14 @@ public class LayerInfo implements Serializable {
     private Description description;
 
     // set of connections as grid coordinates
-    private Set<Pair<Integer, Integer>> connections = new HashSet<>();
+    private Set<Coords> connections = new HashSet<>();
 
     public void addConnection(int x, int y) {
-        connections.add(Pair.makePair(x, y));
+        connections.add(Coords.makeCoors(x, y));
     }
 
     public void dropConnection(int x, int y) {
-        connections.remove(Pair.makePair(x, y));
+        connections.remove(Coords.makeCoors(x, y));
     }
 
     public void dropConnections() {
