@@ -8,6 +8,7 @@ function Layer(object) {
     this.layerType = object.layerType;
     this.x = parseInt(object.x);
     this.y = parseInt(object.y);
+    this.color = object.color;
 
     // text properties
 

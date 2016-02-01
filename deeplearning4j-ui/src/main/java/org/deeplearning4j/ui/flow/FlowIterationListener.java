@@ -32,7 +32,9 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * This IterationListener is suited for general model performance/architecture overview
@@ -49,6 +51,8 @@ public class FlowIterationListener implements IterationListener {
     private int frequency = 1;
     private boolean firstIteration = true;
     private String path;
+
+    private static final List<String> colors = Collections.unmodifiableList(Arrays.asList("#9966ff", "#ff9933", "#ffff99", "#3366ff", "#0099cc", "#669999", "#66ffff"));
 
     private Client client = ClientBuilder.newClient().register(JacksonJsonProvider.class).register(new ObjectMapperProvider());
     private WebTarget target;
@@ -175,8 +179,8 @@ public class FlowIterationListener implements IterationListener {
 
             // send ModelInfo to UiServer
             Response resp = target.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).post(Entity.entity(info, MediaType.APPLICATION_JSON));
-            log.info("ModelInfo:" + Entity.entity(info, MediaType.APPLICATION_JSON));
-            log.info("Response: " + resp);
+        //    log.info("ModelInfo:" + Entity.entity(info, MediaType.APPLICATION_JSON));
+       //     log.info("Response: " + resp);
         /*
             TODO: it would be nice to send updates of nodes as well
          */
@@ -210,7 +214,7 @@ public class FlowIterationListener implements IterationListener {
                 for (String input: currentInput) {
                     if (inputName.equals(input)) {
                         // we have match for Vertex
-                        log.info("Vertex: " + vertex.getVertexName() + " has Input: " + input);
+                    //    log.info("Vertex: " + vertex.getVertexName() + " has Input: " + input);
                         try {
                             LayerInfo info = model.getLayerInfoByName(vertex.getVertexName());
                             if (info == null) info = getLayerInfo(vertex.getLayer(), x, currentY, 121);
@@ -226,7 +230,7 @@ public class FlowIterationListener implements IterationListener {
                             LayerInfo connection = model.getLayerInfoByName(input);
                             if (connection != null) {
                                 connection.addConnection(info);
-                                log.info("Adding connection ["+ connection.getName()+"] -> ["+ info.getName()+"]");
+                              //  log.info("Adding connection ["+ connection.getName()+"] -> ["+ info.getName()+"]");
                             } else {
                                 // the only reason to have null here, is direct input connection
                                 //connection.addConnection(0,0);
@@ -260,7 +264,7 @@ public class FlowIterationListener implements IterationListener {
                 info.setX(x);
                 info.setLayerType("INPUT");
                 info.setDescription(new Description());
-                info.getDescription().setMainLine("Input layer");
+                info.getDescription().setMainLine("Model input");
                 modelInfo.addLayer(info);
                 x++;
             }
@@ -287,34 +291,20 @@ public class FlowIterationListener implements IterationListener {
                 if (needle.isEmpty()) break;
             }
 
-            /*
-            for (String input: inputs) {
-                log.info("Input: " + input);
-
-                // now we want to search through the graph, who's connected to this node
-                log.info("Vertices: " + graph.getConfiguration().getVertices());
-
-                for (int v = 0; v < vertices.length; v++) {
-                    GraphVertex vertex = vertices[v];
-                    // we ignore input here
-                    if (vertex.getVertexName().equals(input) || vertex.getVertexName().endsWith("-mergedd")) continue;
-
-                    log.info("VertexName: " + vertex.getVertexName());
-
-                   VertexIndices[] indices = vertex.getInputVertices();
-                    for (int x = 0; x < indices.length; x++) {
-                        // backward connections retrieved here
-
-                        log.info("Feeds from: " + vertices[indices[x].getVertexIndex()].getVertexName());
-                    }
-
-
-                }
-            }
-            */
-
         } else if (model instanceof MultiLayerNetwork) {
             MultiLayerNetwork network = (MultiLayerNetwork) model;
+
+            // manually adding input layer
+            LayerInfo info = new LayerInfo();
+            info.setId(0);
+            info.setName("Input");
+            info.setY(0);
+            info.setX(0);
+            info.setLayerType("INPUT");
+            info.setDescription(new Description());
+            info.getDescription().setMainLine("Model input");
+            info.addConnection(0, 1);
+            modelInfo.addLayer(info);
 
             // entry 0 is reserved for inputs
             int y = 1;
@@ -334,6 +324,19 @@ public class FlowIterationListener implements IterationListener {
 
         } else throw new IllegalStateException("Model ["+model.getClass().getCanonicalName()+"] doesn't looks like supported one.");
 
+        // now we apply colors to distinct layer types
+        AtomicInteger cnt = new AtomicInteger(0);
+        for (String layerType: modelInfo.getLayerTypes()) {
+            String curColor = colors.get(cnt.getAndIncrement());
+            if (cnt.get() >= colors.size()) cnt.set(0);
+            for (LayerInfo layerInfo: modelInfo.getLayersByType(layerType)) {
+                if (layerType.equals("INPUT")) {
+                    layerInfo.setColor("#99ff66");
+                } else {
+                    layerInfo.setColor(curColor);
+                }
+            }
+        }
         return modelInfo;
     }
 

@@ -59,6 +59,15 @@ function drawLineArrow(ctx, x1,y1,x2,y2) {
     drawFilledPolygon(ctx, translateShape(rotateShape(arrow,ang),x2,y2));
 };
 
+function drawIntraLayerArrow(ctx, x1, y1, x2, y2) {
+    ctx.beginPath();
+    ctx.moveTo(x1,y1);
+    ctx.bezierCurveTo(x1, y1 - (offsetVertical / 2), x2, y2 - (offsetVertical / 2)  x2,y2);
+    ctx.stroke();
+    var ang = Math.atan2(y2-y1,x2-x1);
+    drawFilledPolygon(ctx, translateShape(rotateShape(arrow,ang),x2,y2));
+}
+
 /*
     This method draws connections from each node, to all nodes it's connected to
 */
@@ -83,6 +92,15 @@ function renderConnections(ctx, layer) {
             var cY2 = getNodeY(connection.x, connection.y) + nodeHeight + 5;
 
             drawLineArrow(ctx, cX1, cY1, cX2, cY2);
+        } else if (connection.y == layer.y) {
+            // this is connection withing same layer, bezier curve required
+            var cX1 = getNodeX(layer.x, layer.y, layers.getLayersForY(layer.y).length) + (nodeWidth / 2);
+            var cY1 = getNodeY(layer.x, layer.y) - 5;
+
+            var cX2 = getNodeX(connection.x, connection.y, layers.getLayersForY(layer.y).length) + (nodeWidth / 2);
+            var cY2 = getNodeY(connection.x, connection.y) - 5;
+
+            drawIntraLayerArrow(ctx, cX1, cY1, cX2, cY2);
         } else {
             // this is indirect connection, curve required
         }
@@ -133,11 +151,14 @@ function renderNode(ctx, layer, x, y, totalOnLayer) {
     // draw node rect
     ctx.beginPath();
     ctx.lineWidth = "1";
+    ctx.fillStyle = layer.color;
     ctx.rect(cx, cy, nodeWidth, nodeHeight);
+    ctx.fillRect(cx+1, cy+1, nodeWidth-2, nodeHeight-2);
     console.log("cX: " + cx + " cY: " + cy + " width: " + nodeWidth + " height: " + nodeHeight);
     ctx.stroke();
 
     // draw description
+    ctx.fillStyle = "#000000";
     ctx.font = "15px Roboto";
     ctx.textAlign="center";
     ctx.fillText(layer.name, cx + (nodeWidth / 2), cy + 20, nodeWidth - 10);
