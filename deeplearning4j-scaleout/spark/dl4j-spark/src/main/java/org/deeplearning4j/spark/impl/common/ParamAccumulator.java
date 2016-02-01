@@ -20,7 +20,6 @@ package org.deeplearning4j.spark.impl.common;
 
 import org.apache.spark.AccumulatorParam;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Accumulator for addition of parameters
@@ -29,13 +28,17 @@ import org.nd4j.linalg.factory.Nd4j;
 public class ParamAccumulator implements AccumulatorParam<INDArray> {
     @Override
     public INDArray addAccumulator(INDArray indArray, INDArray t1) {
+        if(indArray == null) return t1;
+        else if(t1 == null) return indArray;
         if(indArray.length() != t1.length())
-            throw new IllegalStateException("Wrong accumulation of matrices");
+            throw new IllegalStateException("Invalid accumulation of parameters: first length = " + indArray.length() + ", second = " + t1.length());
         return indArray.add(t1);
     }
 
     @Override
     public INDArray addInPlace(INDArray indArray, INDArray r1) {
+        if(indArray == null) return r1;
+        else if(r1 == null) return indArray;
         return indArray.addi(r1);
     }
 
