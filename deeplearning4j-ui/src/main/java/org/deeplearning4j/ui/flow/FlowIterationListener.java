@@ -324,6 +324,11 @@ public class FlowIterationListener implements IterationListener {
 
         } else throw new IllegalStateException("Model ["+model.getClass().getCanonicalName()+"] doesn't looks like supported one.");
 
+        // find layers without connections, and mark them as output layers
+        for (LayerInfo layerInfo: modelInfo.getLayers()) {
+            if (layerInfo.getConnections().size() == 0) layerInfo.setLayerType("OUTPUT");
+        }
+
         // now we apply colors to distinct layer types
         AtomicInteger cnt = new AtomicInteger(0);
         for (String layerType: modelInfo.getLayerTypes()) {
@@ -332,6 +337,8 @@ public class FlowIterationListener implements IterationListener {
             for (LayerInfo layerInfo: modelInfo.getLayersByType(layerType)) {
                 if (layerType.equals("INPUT")) {
                     layerInfo.setColor("#99ff66");
+                } else if (layerType.equals("OUTPUT")) {
+                    layerInfo.setColor("#e6e6e6");
                 } else {
                     layerInfo.setColor(curColor);
                 }
@@ -367,6 +374,7 @@ public class FlowIterationListener implements IterationListener {
         try {
             info.setLayerType(layer.type().toString());
         } catch (Exception e) {
+            info.setLayerType("n/a");
             return info;
         }
 
