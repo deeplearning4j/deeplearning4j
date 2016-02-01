@@ -6,7 +6,9 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -28,14 +30,18 @@ public class LayerInfo implements Serializable {
     private Description description;
 
     // set of connections as grid coordinates
-    private Set<Coords> connections = new HashSet<>();
+    private List<Coords> connections = new ArrayList<>();
 
     public void addConnection(LayerInfo layerInfo) {
-        connections.add(Coords.makeCoors(layerInfo.getX(), layerInfo.getY()));
+        if (!connections.contains(Coords.makeCoors(layerInfo.getX(), layerInfo.getY()))) {
+            System.out.println("Layer ["+ this.name+"] now has connection to ["+ layerInfo.getX()+"," + layerInfo.getY()+"] ("+layerInfo.getName()+")");
+            connections.add(Coords.makeCoors(layerInfo.getX(), layerInfo.getY()));
+        }
     }
 
     public void addConnection(int x, int y) {
-        connections.add(Coords.makeCoors(x, y));
+        if (!connections.contains(Coords.makeCoors(x, y)))
+            connections.add(Coords.makeCoors(x, y));
     }
 
     public void dropConnection(int x, int y) {
