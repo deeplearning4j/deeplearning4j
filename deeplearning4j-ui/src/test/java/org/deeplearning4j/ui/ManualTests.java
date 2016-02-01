@@ -39,6 +39,8 @@ import java.util.*;
 /**
  * Test environment for building/debugging UI.
  *
+ * Please, do NOT remove @Ignore annotation
+ *
  * @author raver119@gmail.com
  */
 @Ignore
@@ -411,6 +413,11 @@ public class ManualTests {
         eval.eval(testLabels.get(0), output);
         log.info(eval.stats());
         log.info("****************Example finished********************");
+
+    }
+
+    @Test
+    public void testFlowActivationsCG1() throws Exception {
 
     }
 

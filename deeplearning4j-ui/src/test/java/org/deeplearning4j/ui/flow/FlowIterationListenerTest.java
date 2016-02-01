@@ -4,8 +4,13 @@ import org.canova.image.loader.LFWLoader;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
+import org.deeplearning4j.nn.conf.graph.PreprocessorVertex;
+import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
+import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
+import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -40,46 +45,29 @@ public class FlowIterationListenerTest {
     @Before
     public void setUp() throws Exception {
         if (graph == null) {
-            int lstmLayerSize = 200;					//Number of units in each GravesLSTM layer
-            int miniBatchSize = 32;						//Size of mini batch to use when  training
-            int examplesPerEpoch = 50 * miniBatchSize;	//i.e., how many examples to learn on between generating samples
-            int exampleLength = 100;					//Length of each training example
-            int numEpochs = 30;							//Total number of training + sample generation epochs
-            int nSamplesToGenerate = 4;					//Number of samples to generate after each training epoch
-            int nCharactersToSample = 300;				//Length of each sample to generate
-            String generationInitialization = null;		//Optional character initialization; a random character is used if null
-            // Above is Used to 'prime' the LSTM with a character sequence to continue/complete.
-            // Initialization characters must all be in CharacterIterator.getMinimalCharacterSet() by default
-            Random rng = new Random(12345);
-              int nOut = 26;
-
-            //Set up network configuration:
-            ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+            int VOCAB_SIZE = 10000;
+            ComputationGraphConfiguration configuration = new NeuralNetConfiguration.Builder()
+                    .regularization(true).l2(0.0001)
+                    .weightInit(WeightInit.XAVIER)
+                    .learningRate(0.01)
+                    .updater(Updater.RMSPROP)
                     .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                    .learningRate(0.1)
-                    .rmsDecay(0.95)
-                    .seed(12345)
-                    .regularization(true)
-                    .l2(0.001)
                     .graphBuilder()
-                    .addInputs("input")
-                    .addLayer("first", new GravesLSTM.Builder().nIn(26).nOut(lstmLayerSize)
-                            .updater(Updater.RMSPROP)
-                            .activation("tanh").weightInit(WeightInit.DISTRIBUTION)
-                            .dist(new UniformDistribution(-0.08, 0.08)).build(),"input")
-                    .addLayer("second", new GravesLSTM.Builder().nIn(lstmLayerSize).nOut(lstmLayerSize)
-                            .updater(Updater.RMSPROP)
-                            .activation("tanh").weightInit(WeightInit.DISTRIBUTION)
-                            .dist(new UniformDistribution(-0.08, 0.08)).build(),"first")
-                    .addLayer("outputLayer", new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax")        //MCXENT + softmax for classification
-                            .updater(Updater.RMSPROP)
-                            .nIn(2*lstmLayerSize).nOut(nOut).weightInit(WeightInit.DISTRIBUTION)
-                            .dist(new UniformDistribution(-0.08, 0.08)).build(),"first","second")   //Note: both layers feed into output layer -> skip connection architecture
-                    .setOutputs("outputLayer")
+                    .addInputs("inEn", "inFr")
+                    .setInputTypes(InputType.recurrent(), InputType.recurrent())
+                    .addLayer("embeddingEn", new EmbeddingLayer.Builder().nIn(VOCAB_SIZE+1).nOut(128).activation("identity").build(),"inEn")
+                    .addLayer("encoder", new GravesLSTM.Builder().nIn(128).nOut(256).activation("softsign").build(),"embeddingEn")
+                    .addVertex("lastTimeStep", new LastTimeStepVertex("inEn"),"encoder")
+                    .addVertex("duplicateTimeStep", new DuplicateToTimeSeriesVertex("inFr"), "lastTimeStep")
+                    .addLayer("embeddingFr", new EmbeddingLayer.Builder().nIn(VOCAB_SIZE+1).nOut(128).activation("identity").build(),"inFr")
+                    .addVertex("embeddingFrSeq", new PreprocessorVertex(new FeedForwardToRnnPreProcessor()), "embeddingFr")
+                    .addLayer("decoder", new GravesLSTM.Builder().nIn(128 + 256).nOut(256).activation("softsign").build(), "embeddingFrSeq", "duplicateTimeStep")
+                    .addLayer("output", new RnnOutputLayer.Builder().nIn(256).nOut(VOCAB_SIZE + 1).activation("softmax").build(), "decoder")
+                    .setOutputs("output")
                     .pretrain(false).backprop(true)
                     .build();
 
-            graph = new ComputationGraph(conf);
+            graph = new ComputationGraph(configuration);
             graph.init();
         }
 
@@ -201,11 +189,18 @@ public class FlowIterationListenerTest {
         }
 
         // checking total number of layers
-        assertEquals(4, info.size());
+        assertEquals(11, info.size());
 
         // checking, if all named layers exist
-        assertNotEquals(null, info.getLayerInfoByName("first"));
-        assertNotEquals(null, info.getLayerInfoByName("second"));
-        assertNotEquals(null, info.getLayerInfoByName("outputLayer"));
+        assertNotEquals(null, info.getLayerInfoByName("inEn"));
+        assertNotEquals(null, info.getLayerInfoByName("inFr"));
+        assertNotEquals(null, info.getLayerInfoByName("embeddingEn"));
+        assertNotEquals(null, info.getLayerInfoByName("embeddingFr"));
+        assertNotEquals(null, info.getLayerInfoByName("encoder"));
+        assertNotEquals(null, info.getLayerInfoByName("embeddingFrSeq"));
+        assertNotEquals(null, info.getLayerInfoByName("lastTimeStep"));
+        assertNotEquals(null, info.getLayerInfoByName("duplicateTimeStep"));
+        assertNotEquals(null, info.getLayerInfoByName("decoder"));
+        assertNotEquals(null, info.getLayerInfoByName("output"));
     }
 }
