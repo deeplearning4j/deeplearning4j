@@ -230,7 +230,7 @@ public class FlowIterationListener implements IterationListener {
                                 info.addConnection(0,0);
                             }
                         } catch (Exception e) {
-                            ;
+                            e.printStackTrace();
                         }
                     }
                 }
@@ -248,14 +248,29 @@ public class FlowIterationListener implements IterationListener {
                 every layer connected to y1, is on y2 etc.
               */
             List<String> inputs = graph.getConfiguration().getNetworkInputs();
+            // now we need to add inputs as y0 nodes
+            int x = 0;
+            for (String input: inputs) {
+                LayerInfo info = new LayerInfo();
+                info.setId(0);
+                info.setName(input);
+                info.setY(0);
+                info.setX(x);
+                info.setLayerType("INPUT");
+                info.setDescription(new Description());
+                modelInfo.addLayer(info);
+                x++;
+            }
+
             GraphVertex[] vertices = graph.getVertices();
-            String input = inputs.get(0);
+
             // filling grid in LTR/TTB direction
             List<String> needle = new ArrayList<>();
 
+
             // we assume that max row can't be higher then total number of vertices
             for (int y = 1; y < vertices.length; y++) {
-                if (needle.isEmpty()) needle.add(input);
+                if (needle.isEmpty()) needle.addAll(inputs);
 
                 /*
                     for each grid row we look for nodes, that are connected to previous layer

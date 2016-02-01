@@ -22,6 +22,7 @@ import java.util.Map;
 public class ModelInfo implements Serializable {
     private final static long serialVersionUID = 119L;
     private long time = System.currentTimeMillis();
+    private transient int counter = 0;
 
     // PLEASE NOTE: Inverted coords here -> Y, X LayerInfo
     //private Table<Integer, Integer, LayerInfo> layers = HashBasedTable.create();
@@ -32,8 +33,12 @@ public class ModelInfo implements Serializable {
      * This method maps given layer into model coordinate space
      * @param layer
      */
-    public void addLayer(@NonNull LayerInfo layer) {
-        this.layers.add( layer);
+    public synchronized void addLayer(@NonNull LayerInfo layer) {
+        if (!layers.contains(layer)) {
+            layer.setId(counter);
+            this.layers.add(layer);
+            counter++;
+        }
     }
 
     /**
