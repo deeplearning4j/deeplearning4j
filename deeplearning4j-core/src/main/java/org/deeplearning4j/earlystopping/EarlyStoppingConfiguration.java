@@ -38,6 +38,7 @@ import java.util.List;
  *     (ii) Epoch termination conditions: calculated once per epoch. For example, maxEpochs or no improvement for N epochs<br>
  * (c) Score calculator: what score should be calculated at every epoch? (For example: test set loss or test set accuracy)<br>
  * (d) How frequently (ever N epochs) should scores be calculated? (Default: every epoch)<br>
+ * @param <T> Type of model. For example, {@link org.deeplearning4j.nn.multilayer.MultiLayerNetwork} or {@link org.deeplearning4j.nn.graph.ComputationGraph}
  * @author Alex Black
  */
 @Data

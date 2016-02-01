@@ -28,8 +28,8 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 
 /**
- * Class for conducting early stopping training locally (single machine).<br>
- * Can be used to train a {@link MultiLayerNetwork} or a {@link ComputationGraph} via
+ * Class for conducting early stopping training locally (single machine), for training a
+ * {@link MultiLayerNetwork}. To train a {@link ComputationGraph}, use {@link EarlyStoppingGraphTrainer}
  */
 public class EarlyStoppingTrainer extends BaseEarlyStoppingTrainer<MultiLayerNetwork> {
 

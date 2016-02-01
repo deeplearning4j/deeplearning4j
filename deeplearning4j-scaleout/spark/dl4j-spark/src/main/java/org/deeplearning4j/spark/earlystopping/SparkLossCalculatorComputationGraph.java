@@ -22,11 +22,15 @@ import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaRDD;
 import org.deeplearning4j.earlystopping.scorecalc.ScoreCalculator;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.spark.impl.computationgraph.SparkComputationGraph;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 
-/** Given a DataSetIterator: calculate the total loss for the model on that data set, using Spark.
- * Typically used to calculate the loss on a test set.
+/** Score calculator to calculate the total loss for the {@link ComputationGraph} on that data set (data set
+ * as a {@link JavaRDD<MultiDataSet>}), using Spark.<br>
+ * Typically used to calculate the loss on a test set.<br>
+ * Note: to test a ComputationGraph on a {@link DataSet} use {@link org.deeplearning4j.spark.impl.computationgraph.dataset.DataSetToMultiDataSetFn}
  */
 public class SparkLossCalculatorComputationGraph implements ScoreCalculator<ComputationGraph> {
 
@@ -49,7 +53,7 @@ public class SparkLossCalculatorComputationGraph implements ScoreCalculator<Comp
     @Override
     public double calculateScore(ComputationGraph network) {
         SparkComputationGraph net = new SparkComputationGraph(sc,network);
-        return net.calculateScore(data,true);
+        return net.calculateScore(data,average);
     }
 
 }

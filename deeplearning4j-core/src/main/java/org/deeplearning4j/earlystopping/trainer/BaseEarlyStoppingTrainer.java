@@ -40,8 +40,9 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**Class for conducting early stopping training locally (single machine).<br>
- * Can be used to train a {@link MultiLayerNetwork} or a {@link ComputationGraph} via
+/**Base/abstract class for conducting early stopping training locally (single machine).<br>
+ * Can be used to train a {@link MultiLayerNetwork} or a {@link ComputationGraph} via early stopping
+ * @author Alex Black
  */
 public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarlyStoppingTrainer<T> {
 

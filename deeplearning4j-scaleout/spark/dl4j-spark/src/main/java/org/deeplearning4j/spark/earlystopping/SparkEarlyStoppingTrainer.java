@@ -42,8 +42,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Class for conducting early
- * stopping training via Spark
+ * Class for conducting early stopping training via Spark on a {@link MultiLayerNetwork}
  *
  * @author Alex Black
  */
