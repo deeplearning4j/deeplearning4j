@@ -6,6 +6,7 @@ import org.deeplearning4j.ui.flow.beans.NodeReport;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.Collections;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
@@ -45,7 +46,7 @@ public class FlowResource {
         try {
             lock.writeLock().lock();
             this.modelInfo = info;
-            return Response.ok().build();
+            return Response.ok(Collections.singletonMap("status","ok")).build();
         } finally {
             lock.writeLock().unlock();
         }
