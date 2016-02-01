@@ -541,13 +541,7 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_ssyrk
  * Signature: (IIIIIDLjava/nio/Buffer;IDLjava/nio/Buffer;I)V
  */
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dsyrk
-        (JNIEnv *env, jclass clazz,
-         jint Order, jint Uplo, jint Trans,
-         jint N, jint K,
-         jdouble alpha,
-         jobject A, jint lda,
-         jfloat beta,
-         jobject C, jint ldc);
+  (JNIEnv *, jclass, jint, jint, jint, jint, jint, jdouble, jobject, jint, jdouble, jobject, jint);
 
 /*
  * Class:     org_nd4j_linalg_cpu_nativecpu_CBLAS

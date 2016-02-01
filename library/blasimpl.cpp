@@ -1053,7 +1053,7 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dsyrk
 		jint N, jint K,
 		jdouble alpha,
 		jobject A, jint lda,
-		jfloat beta,
+		jdouble beta,
 		jobject C, jint ldc) {
 
 	double *cA = (double *) env->GetDirectBufferAddress(A);
