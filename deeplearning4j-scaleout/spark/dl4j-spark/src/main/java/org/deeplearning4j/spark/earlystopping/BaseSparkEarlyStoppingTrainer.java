@@ -39,8 +39,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Class for conducting early
- * stopping training via Spark
+ * Base/abstract class for conducting early stopping training via Spark, on a {@link org.deeplearning4j.nn.multilayer.MultiLayerNetwork}
+ * or a {@link org.deeplearning4j.nn.graph.ComputationGraph}
  * @author Alex Black
  */
 public abstract class BaseSparkEarlyStoppingTrainer<T extends Model> implements IEarlyStoppingTrainer<T> {
@@ -107,13 +107,11 @@ public abstract class BaseSparkEarlyStoppingTrainer<T extends Model> implements 
 
         Map<Integer,Double> scoreVsEpoch = new LinkedHashMap<>();
 
-//        SparkDl4jMultiLayer sparkNetwork = new SparkDl4jMultiLayer(sc, net);
-
         if(train != null) train.cache();
         else trainMulti.cache();
 
         int epochCount = 0;
-        while (true) {
+        while (true) {  //Iterate (do epochs) until termination condition hit
             double lastScore;
             boolean terminate = false;
             IterationTerminationCondition terminationReason = null;

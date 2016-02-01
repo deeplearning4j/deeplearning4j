@@ -24,7 +24,10 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import java.io.IOException;
 import java.io.Serializable;
 
-/** Interface for saving MultiLayerNetworks learned during early stopping, and retrieving them again later */
+/** Interface for saving MultiLayerNetworks learned during early stopping, and retrieving them again later
+ * @param <T> Type of model to  save. For example, {@link org.deeplearning4j.nn.multilayer.MultiLayerNetwork} or {@link org.deeplearning4j.nn.graph.ComputationGraph}
+ * @author Alex Black
+ */
 public interface EarlyStoppingModelSaver<T extends Model> extends Serializable {
 
     /** Save the best model (so far) learned during early stopping training */

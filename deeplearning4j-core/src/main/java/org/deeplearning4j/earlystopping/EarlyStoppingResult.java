@@ -31,6 +31,7 @@ import java.util.Map;
  * - Epoch that the best model was found
  * - Score of the best model
  * - The best model (MultiLayerNetwork) itself
+ * @param <T> Type of model. For example, {@link org.deeplearning4j.nn.multilayer.MultiLayerNetwork} or {@link org.deeplearning4j.nn.graph.ComputationGraph}
  * @author Alex Black
  */
 @Data

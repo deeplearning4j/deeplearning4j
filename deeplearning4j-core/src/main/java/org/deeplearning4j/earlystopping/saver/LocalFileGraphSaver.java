@@ -35,11 +35,11 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-/** Save the best (and latest/most recent) ComputationGraphs learned during early stopping training to the local file system.<br>
+/** Save the best (and latest/most recent) {@link ComputationGraph}s learned during early stopping training to the local file system.<br>
  * Instances of this class will save 3 files for best (and optionally, latest) models:<br>
- * (a) The network configuration: bestModelConf.json<br>
- * (b) The network parameters: bestModelParams.bin<br>
- * (c) The network updater: bestModelUpdater.bin<br>
+ * (a) The network configuration: bestGraphConf.json<br>
+ * (b) The network parameters: bestGraphParams.bin<br>
+ * (c) The network updater: bestGraphUpdater.bin<br>
  * <br>
  * NOTE: The model updater is an object that contains the internal state for training features such as AdaGrad, Momentum
  * and RMSProp.<br>
