@@ -212,7 +212,8 @@ public class FlowIterationListener implements IterationListener {
                         // we have match for Vertex
                         log.info("Vertex: " + vertex.getVertexName() + " has Input: " + input);
                         try {
-                            LayerInfo info = getLayerInfo(vertex.getLayer(), x, currentY, 121);
+                            LayerInfo info = model.getLayerInfoByName(vertex.getVertexName());
+                            if (info == null) info = getLayerInfo(vertex.getLayer(), x, currentY, 121);
                             info.setName(vertex.getVertexName());
                             if (info.getName().endsWith("-merge")) info.setLayerType("MERGE");
                             if (model.getLayerInfoByName(vertex.getVertexName()) == null) {
@@ -224,10 +225,11 @@ public class FlowIterationListener implements IterationListener {
                             // now we should map connections
                             LayerInfo connection = model.getLayerInfoByName(input);
                             if (connection != null) {
-                                info.addConnection(connection);
+                                connection.addConnection(info);
+                                log.info("Adding connection ["+ connection.getName()+"] -> ["+ info.getName()+"]");
                             } else {
                                 // the only reason to have null here, is direct input connection
-                                info.addConnection(0,0);
+                                //connection.addConnection(0,0);
                             }
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -258,6 +260,7 @@ public class FlowIterationListener implements IterationListener {
                 info.setX(x);
                 info.setLayerType("INPUT");
                 info.setDescription(new Description());
+                info.getDescription().setMainLine("Input layer");
                 modelInfo.addLayer(info);
                 x++;
             }

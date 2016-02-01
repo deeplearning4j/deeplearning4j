@@ -14,6 +14,7 @@ import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.ui.flow.beans.Coords;
 import org.deeplearning4j.ui.flow.beans.LayerInfo;
 import org.deeplearning4j.ui.flow.beans.ModelInfo;
 import org.junit.Before;
@@ -202,5 +203,22 @@ public class FlowIterationListenerTest {
         assertNotEquals(null, info.getLayerInfoByName("duplicateTimeStep"));
         assertNotEquals(null, info.getLayerInfoByName("decoder"));
         assertNotEquals(null, info.getLayerInfoByName("output"));
+
+
+        // check that these two layers connect to the same node
+        LayerInfo info1 = info.getLayerInfoByName("duplicateTimeStep");
+        LayerInfo info2 = info.getLayerInfoByName("embeddingFrSeq");
+
+        LayerInfo decoder = info.getLayerInfoByName("decoder-merge");
+
+        assertEquals(decoder.getX(), info2.getConnections().get(0).getX());
+        assertEquals(decoder.getY(), info2.getConnections().get(0).getY());
+
+        assertEquals(decoder.getX(), info1.getConnections().get(0).getX());
+        assertEquals(decoder.getY(), info1.getConnections().get(0).getY());
+
+
+
+        assertEquals(info1.getConnections().get(0), info2.getConnections().get(0));
     }
 }
