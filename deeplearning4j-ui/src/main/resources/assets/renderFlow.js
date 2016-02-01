@@ -74,6 +74,15 @@ function renderConnections(ctx, layer) {
             var cY2 = getNodeY(connection.x, connection.y) - 5;
 
             drawLineArrow(ctx, cX1, cY1, cX2, cY2);
+        } else if (connection.y == layer.y -1 ) {
+            // this is direct connection to the previous layer, draw straight line
+            var cX1 = getNodeX(layer.x, layer.y, layers.getLayersForY(layer.y).length) + (nodeWidth / 2);
+            var cY1 = getNodeY(layer.x, layer.y) - 5;
+
+            var cX2 = getNodeX(connection.x, connection.y, layers.getLayersForY(connection.y).length)  + (nodeWidth / 2);
+            var cY2 = getNodeY(connection.x, connection.y) + nodeHeight + 5;
+
+            drawLineArrow(ctx, cX1, cY1, cX2, cY2);
         } else {
             // this is indirect connection, curve required
         }
@@ -110,7 +119,7 @@ function getNodeX(x, y, totalOnLayer) {
 }
 
 function getNodeY(x, y) {
-    return  ((nodeHeight + offsetVertical) * y);
+    return  ((nodeHeight + offsetVertical) * y) + 1;
 }
 
 /*
