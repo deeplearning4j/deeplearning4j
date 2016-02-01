@@ -23,6 +23,8 @@ public class LayerInfo implements Serializable {
     private String name;
     private String layerType;
 
+    private String color;
+
      //   grid coordinates. row & column
     private int x = 0;
     private int y = 0;

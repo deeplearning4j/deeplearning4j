@@ -7,10 +7,7 @@ import lombok.NonNull;
 import org.deeplearning4j.berkeley.Pair;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * This bean works as holder for unbounded list of layers. Each layer has it's own place in model's virtual coordinate space.
@@ -74,5 +71,28 @@ public class ModelInfo implements Serializable {
      */
     public int size() {
         return layers.size();
+    }
+
+    /**
+     * This method returns all LayerTypes used in this model
+     * @return
+     */
+    public Set<String> getLayerTypes() {
+        Set<String> set = new LinkedHashSet<>();
+
+        for (LayerInfo layerInfo: layers) {
+            set.add(layerInfo.getLayerType());
+        }
+        return set;
+    }
+
+    public Set<LayerInfo> getLayersByType(String layerType) {
+        Set<LayerInfo> set = new LinkedHashSet<>();
+
+        for (LayerInfo layerInfo: layers) {
+            if (layerInfo.getLayerType().equals(layerType)) set.add(layerInfo);
+        }
+
+        return set;
     }
 }
