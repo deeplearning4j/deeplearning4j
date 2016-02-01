@@ -3,11 +3,11 @@
 */
 
 function Layer(object) {
-    this.id = object.id;
+    this.id = parseInt(object.id);
     this.name = object.name;
     this.layerType = object.layerType;
-    this.x = object.x;
-    this.y = object.y;
+    this.x = parseInt(object.x);
+    this.y = parseInt(object.y);
 
     // text properties
 
@@ -15,4 +15,9 @@ function Layer(object) {
     this.subLine = object.description.subLine;
 
     // now we parse connections
+    this.connections = [];
+    for (var i = 0; i < object.connections.length; i++) {
+        var connection = new Connection(object.connections[i]);
+        this.connections.push(connection);
+    }
 }
