@@ -17,6 +17,7 @@ import org.deeplearning4j.ui.flow.beans.Description;
 import org.deeplearning4j.ui.flow.beans.LayerInfo;
 import org.deeplearning4j.ui.flow.beans.ModelInfo;
 import org.deeplearning4j.ui.providers.ObjectMapperProvider;
+import org.glassfish.jersey.filter.LoggingFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -111,8 +112,11 @@ public class FlowIterationListener implements IterationListener {
 
     private void setup() {
         // TODO: add auth option
+
+        java.util.logging.Logger logger =  java.util.logging.Logger.getGlobal();
         login = null;
         password = null;
+        client.register(new LoggingFilter(logger, true));
         if (login == null || password == null) target = client.target("http://"+ remoteAddr + ":" + remotePort ).path("flow").path("state");
 
         this.path = "http://" + remoteAddr + ":" + remotePort + "/flow";
