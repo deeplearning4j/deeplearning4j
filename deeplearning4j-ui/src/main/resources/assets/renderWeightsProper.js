@@ -643,6 +643,7 @@ var timed = function() {
 
                                         //Plot mean magnitudes: weights and params
                                         //$('#magnitudes .charts').html('');
+                                        console.log("Mag length: " + updateMagnitudes.length);
                                         for(var i=0; i<updateMagnitudes.length; i++ ){
                                             //Maps:
                                             var mapParams = paramMagnitudes[i];
@@ -658,6 +659,7 @@ var timed = function() {
                                                 $(selectorModel).append(div);
                                             }
 
+                                            var key = "layer" + i + "param";
                                             appendMultiLineChart(mapParams,selectorModel + ' .layer' + i + 'param',"layer" + i + "param");
                                             appendMultiLineChart(mapUpdates,selectorModel + ' .layer' + i + 'grad',"layer" + i + "grad");
 
