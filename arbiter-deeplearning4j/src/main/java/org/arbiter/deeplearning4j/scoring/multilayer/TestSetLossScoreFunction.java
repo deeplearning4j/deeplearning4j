@@ -15,7 +15,7 @@
  *  *    limitations under the License.
  *
  */
-package org.arbiter.deeplearning4j.scoring;
+package org.arbiter.deeplearning4j.scoring.multilayer;
 
 import org.arbiter.optimize.api.data.DataProvider;
 import org.arbiter.optimize.api.score.ScoreFunction;
@@ -47,7 +47,7 @@ public class TestSetLossScoreFunction implements ScoreFunction<MultiLayerNetwork
         int totalExamples = 0;
         while(testData.hasNext()){
             DataSet ds = testData.next();
-            int numExamples = testData.numExamples();
+            int numExamples = ds.numExamples();
 
             sumScore += numExamples*model.score(ds);
             totalExamples += numExamples;

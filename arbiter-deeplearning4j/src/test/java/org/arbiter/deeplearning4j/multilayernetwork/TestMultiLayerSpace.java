@@ -15,9 +15,10 @@
  *  *    limitations under the License.
  *
  */
-package org.arbiter.deeplearning4j;
+package org.arbiter.deeplearning4j.multilayernetwork;
 
 import org.apache.commons.math3.distribution.UniformIntegerDistribution;
+import org.arbiter.deeplearning4j.MultiLayerSpace;
 import org.arbiter.deeplearning4j.layers.DenseLayerSpace;
 import org.arbiter.deeplearning4j.layers.OutputLayerSpace;
 import org.arbiter.optimize.distribution.DegenerateIntegerDistribution;

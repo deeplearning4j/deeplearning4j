@@ -15,7 +15,7 @@
  *  *    limitations under the License.
  *
  */
-package org.arbiter.deeplearning4j.evaluator;
+package org.arbiter.deeplearning4j.evaluator.multilayer;
 
 import org.arbiter.optimize.api.data.DataProvider;
 import org.arbiter.optimize.api.evaluation.ModelEvaluator;
@@ -25,7 +25,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 
-public class DL4JClassificationEvaluator implements ModelEvaluator<MultiLayerNetwork,DataSetIterator,Evaluation> {
+public class ClassificationEvaluator implements ModelEvaluator<MultiLayerNetwork,DataSetIterator,Evaluation> {
     @Override
     public Evaluation evaluateModel(MultiLayerNetwork model, DataProvider<DataSetIterator> dataProvider) {
 

@@ -15,14 +15,22 @@
  *  *    limitations under the License.
  *
  */
-package org.arbiter.deeplearning4j;
+package org.arbiter.deeplearning4j.computationgraph;
 
-import org.arbiter.deeplearning4j.evaluator.DL4JClassificationEvaluator;
+import org.arbiter.deeplearning4j.ComputationGraphSpace;
+import org.arbiter.deeplearning4j.DL4JConfiguration;
+import org.arbiter.deeplearning4j.GraphConfiguration;
+import org.arbiter.deeplearning4j.MultiLayerSpace;
+import org.arbiter.deeplearning4j.evaluator.graph.GraphClassificationDataSetEvaluator;
+import org.arbiter.deeplearning4j.evaluator.multilayer.ClassificationEvaluator;
 import org.arbiter.deeplearning4j.layers.DenseLayerSpace;
 import org.arbiter.deeplearning4j.layers.OutputLayerSpace;
-import org.arbiter.deeplearning4j.saver.local.LocalMultiLayerNetworkSaver;
-import org.arbiter.deeplearning4j.scoring.TestSetLossScoreFunction;
-import org.arbiter.deeplearning4j.task.DL4JTaskCreator;
+import org.arbiter.deeplearning4j.saver.local.graph.LocalComputationGraphSaver;
+import org.arbiter.deeplearning4j.saver.local.multilayer.LocalMultiLayerNetworkSaver;
+import org.arbiter.deeplearning4j.scoring.ScoreFunctions;
+import org.arbiter.deeplearning4j.scoring.multilayer.TestSetLossScoreFunction;
+import org.arbiter.deeplearning4j.task.ComputationGraphTaskCreator;
+import org.arbiter.deeplearning4j.task.MultiLayerNetworkTaskCreator;
 import org.arbiter.optimize.api.CandidateGenerator;
 import org.arbiter.optimize.api.data.DataProvider;
 import org.arbiter.optimize.api.termination.MaxCandidatesCondition;
@@ -30,6 +38,7 @@ import org.arbiter.optimize.api.termination.MaxTimeCondition;
 import org.arbiter.optimize.config.OptimizationConfiguration;
 import org.arbiter.optimize.executor.CandidateExecutor;
 import org.arbiter.optimize.executor.local.LocalCandidateExecutor;
+import org.arbiter.optimize.parameter.FixedValue;
 import org.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
 import org.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
 import org.arbiter.optimize.parameter.integer.IntegerParameterSpace;
@@ -46,6 +55,7 @@ import org.deeplearning4j.earlystopping.scorecalc.DataSetLossCalculator;
 import org.deeplearning4j.earlystopping.termination.MaxEpochsTerminationCondition;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -57,32 +67,36 @@ import java.io.File;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-public class TestDL4JLocalExecution {
+import static org.junit.Assert.fail;
 
-    private static Logger log = LoggerFactory.getLogger(TestDL4JLocalExecution.class);
+public class TestGraphLocalExecution {
+
+    private static Logger log = LoggerFactory.getLogger(TestGraphLocalExecution.class);
 
     @Test
-    @org.junit.Ignore
+    @Ignore
     public void testLocalExecution() throws Exception {
 
         //Define: network config (hyperparameter space)
-        MultiLayerSpace mls = new MultiLayerSpace.Builder()
+        ComputationGraphSpace mls = new ComputationGraphSpace.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .learningRate(new ContinuousParameterSpace(0.0001, 0.1))
                 .regularization(true)
                 .l2(new ContinuousParameterSpace(0.0001, 0.01))
                 .iterations(100)
-                .addLayer(new DenseLayerSpace.Builder().nIn(4).nOut(new IntegerParameterSpace(2,10))
-                            .activation(new DiscreteParameterSpace<>("relu","tanh"))
-                            .build(),new IntegerParameterSpace(1,2),true)   //1-2 identical layers (except nIn)
-                .addLayer(new OutputLayerSpace.Builder().nOut(3).activation("softmax")
-                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .addInputs("in")
+                .addLayer("layer0", new DenseLayerSpace.Builder().nIn(4).nOut(5)
+                        .activation(new DiscreteParameterSpace<>("relu", "tanh"))
+                        .build(), "in")
+                .addLayer("out", new OutputLayerSpace.Builder().nIn(5).nOut(3).activation("softmax")
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "layer0")
+                .setOutputs("out")
                 .numEpochs(3)
                 .pretrain(false).backprop(true).build();
 
         //Define configuration:
 
-        CandidateGenerator<DL4JConfiguration> candidateGenerator = new RandomSearchGenerator<>(mls);
+        CandidateGenerator<GraphConfiguration> candidateGenerator = new RandomSearchGenerator<>(mls);
         DataProvider<DataSetIterator> dataProvider = new IrisDataSetProvider();
 
 
@@ -94,20 +108,20 @@ public class TestDL4JLocalExecution {
         f.mkdir();
         if(!f.exists()) throw new RuntimeException();
 
-        OptimizationConfiguration<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> configuration
-                = new OptimizationConfiguration.Builder<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation>()
+        OptimizationConfiguration<GraphConfiguration,ComputationGraph,DataSetIterator,Evaluation> configuration
+                = new OptimizationConfiguration.Builder<GraphConfiguration,ComputationGraph,DataSetIterator,Evaluation>()
                 .candidateGenerator(candidateGenerator)
                 .dataProvider(dataProvider)
-                .modelSaver(new LocalMultiLayerNetworkSaver(modelSavePath))
-                .scoreFunction(new TestSetLossScoreFunction())
+                .modelSaver(new LocalComputationGraphSaver<Evaluation>(modelSavePath))
+                .scoreFunction(ScoreFunctions.testSetLossGraphDataSet(true))
                 .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
                         new MaxCandidatesCondition(100))
                 .build();
 
-        CandidateExecutor<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> executor =
-                new LocalCandidateExecutor<>(new DL4JTaskCreator(new DL4JClassificationEvaluator()),1);
+        CandidateExecutor<GraphConfiguration,ComputationGraph,DataSetIterator,Evaluation> executor =
+                new LocalCandidateExecutor<>(new ComputationGraphTaskCreator<>(new GraphClassificationDataSetEvaluator()),1);
 
-        OptimizationRunner<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> runner
+        OptimizationRunner<GraphConfiguration,ComputationGraph,DataSetIterator,Evaluation> runner
                 = new OptimizationRunner<>(configuration, executor);
 
         ArbiterUIServer server = new ArbiterUIServer();
@@ -125,11 +139,12 @@ public class TestDL4JLocalExecution {
     @Test
     @Ignore
     public void testLocalExecutionEarlyStopping() throws Exception {
+        fail("Not implemented");    //TODO modify test below for computation graph
 
-        EarlyStoppingConfiguration esConf = new EarlyStoppingConfiguration.Builder()
+        EarlyStoppingConfiguration esConf = new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
                 .epochTerminationConditions(new MaxEpochsTerminationCondition(100))
                 .scoreCalculator(new DataSetLossCalculator(new IrisDataSetIterator(150,150),true))
-                .modelSaver(new InMemoryModelSaver())
+                .modelSaver(new InMemoryModelSaver<MultiLayerNetwork>())
                 .build();
 
         //Define: network config (hyperparameter space)
@@ -164,14 +179,14 @@ public class TestDL4JLocalExecution {
                 = new OptimizationConfiguration.Builder<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation>()
                 .candidateGenerator(candidateGenerator)
                 .dataProvider(dataProvider)
-                .modelSaver(new LocalMultiLayerNetworkSaver(modelSavePath))
+                .modelSaver(new LocalMultiLayerNetworkSaver<Evaluation>(modelSavePath))
                 .scoreFunction(new TestSetLossScoreFunction())
                 .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
                         new MaxCandidatesCondition(100))
                 .build();
 
         CandidateExecutor<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> executor =
-                new LocalCandidateExecutor<>(new DL4JTaskCreator(new DL4JClassificationEvaluator()),1);
+                new LocalCandidateExecutor<>(new MultiLayerNetworkTaskCreator<>(new ClassificationEvaluator()),1);
 
         OptimizationRunner<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> runner
                 = new OptimizationRunner<>(configuration, executor);

@@ -15,7 +15,7 @@
  *  *    limitations under the License.
  *
  */
-package org.arbiter.deeplearning4j;
+package org.arbiter.deeplearning4j.multilayernetwork;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.arbiter.deeplearning4j.layers.DenseLayerSpace;

@@ -18,13 +18,14 @@ package org.arbiter.deeplearning4j;
 
 
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 
 import java.io.Serializable;
 
-@AllArgsConstructor
+@AllArgsConstructor @Data
 public class GraphConfiguration implements Serializable {
 
     private ComputationGraphConfiguration configuration;

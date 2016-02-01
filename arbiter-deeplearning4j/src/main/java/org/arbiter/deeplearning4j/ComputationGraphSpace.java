@@ -17,6 +17,7 @@
 package org.arbiter.deeplearning4j;
 
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.arbiter.deeplearning4j.layers.LayerSpace;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.nn.conf.*;
@@ -28,7 +29,6 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 /** ComputationGraphSpace: Defines the space of valid hyperparameters for a ComputationGraph.
  * Note that this for essentially fixed graph structures only
@@ -37,6 +37,10 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
 
     private List<LayerConf> layerSpaces = new ArrayList<>();
     private List<VertexConf> vertices = new ArrayList<>();
+
+    protected String[] networkInputs;
+    protected String[] networkOutputs;
+    protected InputType[] inputTypes;
 
     //Early stopping configuration / (fixed) number of epochs:
     private EarlyStoppingConfiguration<ComputationGraph> earlyStoppingConfiguration;
@@ -47,34 +51,32 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
         this.earlyStoppingConfiguration = builder.earlyStoppingConfiguration;
         this.layerSpaces = builder.layerList;
         this.vertices = builder.vertexList;
+
+        this.networkInputs = builder.networkInputs;
+        this.networkOutputs = builder.networkOutputs;
+        this.inputTypes = builder.inputTypes;
     }
 
 
 
     @Override
     public GraphConfiguration randomCandidate() {
-
-        //First: create layer configs
-        List<org.deeplearning4j.nn.conf.layers.Layer> layers = new ArrayList<>();
-        for(LayerConf c : layerSpaces){
-            org.deeplearning4j.nn.conf.layers.Layer l = c.layerSpace.randomLayer();
-            layers.add(l.clone());
-        }
-
         //Create ComputationGraphConfiguration...
         NeuralNetConfiguration.Builder builder = randomGlobalConf();
 
-
-        //Set nIn based on nOut of previous layer.
-        //TODO This won't work for all cases (at minimum: cast is an issue)
-        int lastNOut = ((FeedForwardLayer)layers.get(0)).getNOut();
-        for( int i=1; i<layers.size(); i++ ){
-            FeedForwardLayer ffl = (FeedForwardLayer)layers.get(i);
-            ffl.setNIn(lastNOut);
-            lastNOut = ffl.getNOut();
-        }
-
         ComputationGraphConfiguration.GraphBuilder graphBuilder = builder.graphBuilder();
+        graphBuilder.addInputs(this.networkInputs);
+        graphBuilder.setOutputs(this.networkOutputs);
+        if(inputTypes != null && inputTypes.length > 0) graphBuilder.setInputTypes(inputTypes);
+
+        //Build/add our layers and vertices:
+        for(LayerConf c : layerSpaces){
+            org.deeplearning4j.nn.conf.layers.Layer l = c.layerSpace.randomLayer();
+            graphBuilder.addLayer(c.getLayerName(),l,c.getInputs());
+        }
+        for(VertexConf gv : vertices){
+            graphBuilder.addVertex(gv.getVertexName(),gv.getGraphVertex(),gv.getInputs());
+        }
         
 
         if(backprop != null) graphBuilder.backprop(backprop.randomValue());
@@ -112,14 +114,14 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
         return sb.toString();
     }
 
-    @AllArgsConstructor
+    @AllArgsConstructor @Data
     private static class LayerConf {
         private final LayerSpace<?> layerSpace;
         private final String layerName;
         private final String[] inputs;
     }
     
-    @AllArgsConstructor
+    @AllArgsConstructor @Data
     private static class VertexConf {
         private final GraphVertex graphVertex;
         private final String vertexName;
@@ -165,6 +167,11 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
 
         public Builder setOutputs(String... networkOutputs){
             this.networkOutputs = networkOutputs;
+            return this;
+        }
+
+        public Builder setInputTypes(InputType... inputTypes){
+            this.inputTypes = inputTypes;
             return this;
         }
 
