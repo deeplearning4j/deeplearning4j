@@ -47,8 +47,8 @@
                         <exclude>**/*TestCase.java</exclude>
                     </excludes>
                     <systemPropertyVariables>
-                        <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.cpu.CpuBackend</org.nd4j.linalg.defaultbackend>
-                        <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.cpu.CpuBackend</org.nd4j.linalg.tests.backendstorun>
+                        <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.cpu.nativecpu.CpuBackend</org.nd4j.linalg.defaultbackend>
+                        <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.cpu.nativecpu.CpuBackend</org.nd4j.linalg.tests.backendstorun>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -197,7 +197,6 @@
         </profile>
     </profiles>
     <dependencies>
-
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-api</artifactId>

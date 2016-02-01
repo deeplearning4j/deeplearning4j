@@ -33,9 +33,4 @@ import org.nd4j.linalg.factory.BaseBlasWrapper;
  */
 public class BlasWrapper extends BaseBlasWrapper {
 
-    static {
-        LibUtils.loadLibrary("libnd4j");
-    }
-
-
 }

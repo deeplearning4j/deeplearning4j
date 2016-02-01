@@ -17,4 +17,4 @@
 #
 #
 
-org.nd4j.linalg.cpu.CpuBackend
+org.nd4j.linalg.cpu.nativecpu.CpuBackend

@@ -264,6 +264,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         }
     }
+
     private void exec(Accumulation op) {
         if(op.x() instanceof IComplexNDArray || op.x() instanceof LinearViewNDArray || executionMode() == ExecutionMode.JAVA) {
             super.exec(op);
