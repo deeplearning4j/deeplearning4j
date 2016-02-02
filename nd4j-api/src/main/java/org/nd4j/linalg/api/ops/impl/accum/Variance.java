@@ -154,28 +154,34 @@ public class Variance extends BaseAccumulation {
     public Op opForDimension(int index, int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
+        Variance ret;
         if (y() != null)
-            return new Variance(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            ret = new Variance(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new Variance(x.vectorAlongDimension(index, dimension));
+            ret = new Variance(x.vectorAlongDimension(index, dimension));
+        ret.setApplyFinalTransform(applyFinalTransform());
+        return ret;
     }
 
     @Override
     public Op opForDimension(int index, int... dimension) {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
+        Variance ret;
         if (y() != null)
-            return new Variance(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            ret = new Variance(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new Variance(x.tensorAlongDimension(index, dimension));
+            ret = new Variance(x.tensorAlongDimension(index, dimension));
+        ret.setApplyFinalTransform(applyFinalTransform());
+        return ret;
     }
 
     @Override
     public void init(INDArray x, INDArray y, INDArray z, int n) {
         super.init(x, y, z, n);
-        if (biasCorrected)
-            this.bias = Nd4j.getExecutioner().execAndReturn(new Bias(x)).getFinalResult().doubleValue();
-        this.mean = Nd4j.getExecutioner().execAndReturn(new Mean(x)).getFinalResult().doubleValue();
+//        if (biasCorrected)
+//            this.bias = Nd4j.getExecutioner().execAndReturn(new Bias(x)).getFinalResult().doubleValue();
+//        this.mean = Nd4j.getExecutioner().execAndReturn(new Mean(x)).getFinalResult().doubleValue();
 
 
     }
@@ -185,6 +191,7 @@ public class Variance extends BaseAccumulation {
         if (biasCorrected)
             this.bias = Nd4j.getExecutioner().execAndReturn(new Bias(x)).getFinalResult().doubleValue();
         this.mean = Nd4j.getExecutioner().execAndReturn(new Mean(x)).getFinalResult().doubleValue();
+
 
         INDArray xSubMean = x.sub(mean);
         INDArray squared = xSubMean.muli(xSubMean);
@@ -207,6 +214,11 @@ public class Variance extends BaseAccumulation {
             double d = Nd4j.getExecutioner().execAndReturn((Variance)opForDimension(i,dimension)).getFinalResult().doubleValue();
             z.putScalar(i, d);
         }
+//        INDArray xSubMean = x.sub(meanArr);
+//        INDArray squared = xSubMean.muli(xSubMean);
+//        double accum = Nd4j.getExecutioner().execAndReturn(new Sum(squared)).getFinalResult().doubleValue();
+//        getAndSetFinalResult(accum);
+
     }
 
     @Override
@@ -224,48 +236,61 @@ public class Variance extends BaseAccumulation {
         return first.add(second);
     }
 
+
     @Override
     public double getAndSetFinalResult(double accum) {
         //accumulation is sum_i (x_i-mean)^2
         double result;
-        if (biasCorrected)
-            result = (accum - (FastMath.pow(bias, 2.0) / n())) / (n() - 1.0);
-        else
-            result = accum / (double) n;
+        if(applyFinalTransform()) {
+            if (biasCorrected)
+                result = (accum - (FastMath.pow(bias, 2.0) / n())) / (n() - 1.0);
+            else
+                result = accum / (double) n();
+        } else {
+            if (biasCorrected)
+                result = (accum - (FastMath.pow(bias, 2.0) / n()));
+            else
+                result = accum;
+
+        }
         this.finalResult = result;
         return result;
     }
 
     @Override
     public float getAndSetFinalResult(float accum) {
-        //accumulation is sum_i (x_i-mean)^2
-        double result;
-        if (biasCorrected)
-            result = (accum - (FastMath.pow(bias, 2.0) / n())) / (n() - 1.0);
-        else
-            result = accum / (double) n;
-        this.finalResult = result;
-        return (float)result;
+        return (float) getAndSetFinalResult((double) accum);
     }
 
     @Override
     public IComplexNumber getAndSetFinalResult(IComplexNumber accum) {
-        if (biasCorrected)
-            finalResultComplex = (accum.sub(ComplexUtil.pow(Nd4j.createComplexNumber(bias, 0), 2.0).div(Nd4j.createComplexNumber(n(), 0))).div(Nd4j.createComplexNumber(n() - 1.0, 0.0)));
-        else finalResultComplex = accum.divi(n - 1);
+        if(applyFinalTransform()) {
+            if (biasCorrected)
+                finalResultComplex = (accum.sub(ComplexUtil.pow(Nd4j.createComplexNumber(bias, 0), 2.0).div(Nd4j.createComplexNumber(n(), 0))).div(Nd4j.createComplexNumber(n() - 1.0, 0.0)));
+            else finalResultComplex = accum.divi(n - 1);
+        } else {
+            if (biasCorrected)
+                finalResultComplex = (accum.sub(ComplexUtil.pow(Nd4j.createComplexNumber(bias, 0), 2.0).div(Nd4j.createComplexNumber(n(), 0))));
+            else finalResultComplex = accum;
+        }
         return finalResultComplex;
     }
-
-
 
     @Override
     public double calculateFinalResult(double accum, int n) {
         //accumulation is sum_i (x_i-mean)^2
         double result;
-        if (biasCorrected)
-            result = (accum - (FastMath.pow(bias, 2.0) / n())) / (n() - 1.0);
-        else
-            result = accum / (double) n;
+        if(applyFinalTransform()) {
+            if (biasCorrected)
+                result = (accum - (FastMath.pow(bias, 2.0) / n)) / (n - 1.0);
+            else
+                result = accum / (double) n;
+        } else {
+            if (biasCorrected)
+                result = (accum - (FastMath.pow(bias, 2.0) / n));
+            else
+                result = accum;
+        }
         this.finalResult = result;
         return result;
     }
@@ -273,12 +298,6 @@ public class Variance extends BaseAccumulation {
     @Override
     public float calculateFinalResult(float accum, int n) {
         //accumulation is sum_i (x_i-mean)^2
-        float result;
-        if (biasCorrected)
-            result = (float) ((accum - (FastMath.pow(bias, 2.0f) / n())) / (n() - 1.0f));
-        else
-            result = accum / (float) n;
-        this.finalResult = result;
-        return result;
+        return (float) calculateFinalResult((double) accum, n);
     }
 }
