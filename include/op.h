@@ -19,7 +19,8 @@ template<typename T>
  * for all operations
  */
 class Op {
-
+protected:
+    int extraParamsLen;
 public:
 	/**
 	 * Name of the op
@@ -36,7 +37,7 @@ public:
 	__host__ __device__
 #endif
 	int extraParamsLength() {
-		return 0;
+		return extraParamsLen;
 	}
 
 

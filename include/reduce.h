@@ -257,12 +257,11 @@ namespace functions {
 			 * along which to iterate.
 			 */
 			int tadElementWiseStride = shape::stride(xShapeInfo)[dimensionLength - 1];
-			int numThreads = blockDim.x;
-			int reductionIndexesPerThread = resultLength / numThreads;
 			int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
 			int tadLength = xTadInfo.tensorShapeProd;
 			int xLength = shape::length(xShapeInfo);
 			int i = 0,j = 0;
+#pragma unroll
 			for(i = tid; i < resultLength; i++) {
 				sPartials[tid] = op(dx[i], extraParams);
 				__syncthreads();
@@ -944,13 +943,9 @@ namespace functions {
                  * along which to iterate.
                  */
                 int tadElementWiseStride = dimensionLength > 1 ? shape::stride(xShapeInfo)[dimensionLength - 1] : shape::computeElementWiseStride(shape::rank(xShapeInfo),shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),shape::order(xShapeInfo) == 'f',dimension,dimensionLength);
-                int numThreads = omp_get_num_threads();
-                int reductionIndexesPerThread = resultLength / numThreads;
                 int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
                 int tadLength = tadPermuteInfo.tensorShapeProd;
-                int xLength = shape::length(xShapeInfo);
                 int i = 0,j = 0;
-                int termination = nd4j::math::nd4j_min<int>(reductionIndexesPerThread * numThreads,resultLength);
 #pragma omp parallel private(j,i)
                 for(i = omp_get_thread_num(); i < resultLength; i++) {
                     int offset = dimensionLength > 1 ? i : tadLength * i;
