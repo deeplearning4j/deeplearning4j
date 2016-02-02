@@ -76,7 +76,7 @@ public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>
         NeuralNetConfiguration conf = NeuralNetConfiguration.fromJson(json);
         LayerFactory layerFactory = LayerFactories.getFactory(conf.getLayer());
         Layer network = layerFactory.create(conf);
-        INDArray val = params.value();
+        INDArray val = params.value().dup();
         if(val.length() != network.numParams())
             throw new IllegalStateException("Network did not have same number of parameters as the broadcasted set parameters");
         network.setParams(val);

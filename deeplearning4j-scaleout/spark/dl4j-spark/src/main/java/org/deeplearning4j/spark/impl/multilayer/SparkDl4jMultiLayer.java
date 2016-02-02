@@ -299,9 +299,10 @@ public class SparkDl4jMultiLayer implements Serializable {
 
 
     protected void runIteration(JavaRDD<DataSet> rdd) {
+        int paramsLength = network.numParams(false);
 
-        log.info("Broadcasting initial parameters of length " + network.numParams(false));
-        log.info("Broadcasting initial parameters of length " + network.numParams(false));
+        log.info("Broadcasting initial parameters of length " + paramsLength);
+
         INDArray valToBroadcast = network.params(false);
         this.params = sc.broadcast(valToBroadcast);
         Updater updater = network.getUpdater();
@@ -312,9 +313,7 @@ public class SparkDl4jMultiLayer implements Serializable {
         }
         this.updater = sc.broadcast(updater);
 
-        int paramsLength = network.numParams(true);
         boolean accumGrad = sc.getConf().getBoolean(ACCUM_GRADIENT, false);
-
         if(accumGrad) {
             //Learning via averaging gradients
             JavaRDD<Tuple2<Gradient,Updater>> results = rdd.mapPartitions(new GradientAccumFlatMap(conf.toJson(), this.params, this.updater),true).cache();
@@ -347,34 +346,29 @@ public class SparkDl4jMultiLayer implements Serializable {
         }
         else {
             //Standard parameter averaging
-            JavaRDD<Tuple3<INDArray,Updater,Double>> results = rdd.mapPartitions(new IterativeReduceFlatMap(network, this.bestScoreAcc),true).cache();
+            JavaRDD<Tuple3<INDArray,Updater,Double>> results = rdd.mapPartitions(new IterativeReduceFlatMap(
+                    conf.toJson(), this.params, this.updater, this.bestScoreAcc),true).cache();
 
             JavaRDD<INDArray> resultsParams = results.map(new INDArrayFromTupleFunction());
             log.info("Running iterative reduce and averaging parameters");
 
-            Adder a = new Adder(paramsLength);
+            Adder a = new Adder(paramsLength,sc.accumulator(0));
             resultsParams.foreach(a);
+
             INDArray newParams = a.getAccumulator().value();
-            log.info("Accumulated parameters");
-            newParams.divi(rdd.partitions().size());
-            log.info("Divided by partitions");
+            newParams.divi(a.getCounter().value());
+
             network.setParameters(newParams);
-            log.info("Set parameters");
-
-            log.info("Processing updaters");
-            JavaRDD<Updater> resultsUpdater = results.map(new UpdaterFromTupleFunction());
-
+            log.info("Accumulated and set parameters");
             JavaDoubleRDD scores = results.mapToDouble(new DoubleFunction<Tuple3<INDArray,Updater,Double>>(){
                 @Override
                 public double call(Tuple3<INDArray, Updater, Double> t3) throws Exception {
                     return t3._3();
                 }
             });
-
-            List<Double> s = scores.collect();
-
             lastScore = scores.mean();
 
+            JavaRDD<Updater> resultsUpdater = results.map(new UpdaterFromTupleFunction());
             UpdaterAggregator aggregator = resultsUpdater.aggregate(
                     null,
                     new UpdaterElementCombiner(),
@@ -383,7 +377,7 @@ public class SparkDl4jMultiLayer implements Serializable {
             Updater combinedUpdater = aggregator.getUpdater();
             network.setUpdater(combinedUpdater);
 
-            log.info("Set updater");
+            log.info("Processed and set updater");
 
         }
     }

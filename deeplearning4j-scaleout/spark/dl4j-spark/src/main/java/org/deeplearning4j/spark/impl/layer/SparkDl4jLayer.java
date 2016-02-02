@@ -142,7 +142,7 @@ public class SparkDl4jLayer implements Serializable {
                 newParams.divi(rdd.partitions().size());
             }
 
-            layer.setParams(this.params.value());
+            layer.setParams(this.params.value().dup());
             this.layer = layer;
 
 

@@ -119,7 +119,6 @@ public class TestVariableLengthTS {
                     assertEquals(s, g2s, g2sa);
                 }
             }
-
         }
     }
 
@@ -223,10 +222,12 @@ public class TestVariableLengthTS {
             INDArray l0After = temp.preProcess(l0Before, nExamples);
             INDArray l1After = temp.preProcess(l1Before,nExamples);
 
-            for( int j=0; j<nIn; j++){
-
+            for( int j=0; j<nExamples; j++ ){
+                for( int k=0; k<nIn; k++ ) {
+                    assertEquals(0.0, l0After.getDouble(j,k,4),0.0);
+                    assertEquals(0.0, l1After.getDouble(j,k,4),0.0);
+                }
             }
-
         }
     }
 
