@@ -396,6 +396,7 @@ public class FlowIterationListener implements IterationListener {
         } else if (layer.conf().getLayer() instanceof FeedForwardLayer) {
             org.deeplearning4j.nn.conf.layers.FeedForwardLayer layer1 = (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) layer.conf().getLayer();
             mainLine.append("nIn/nOut: [" + layer1.getNIn() + "/" + layer1.getNOut() + "]");
+            subLine.append(info.getLayerType());
         } else {
                 // TODO: Introduce Layer.Type.OUTPUT
                 if (layer instanceof BaseOutputLayer) {
