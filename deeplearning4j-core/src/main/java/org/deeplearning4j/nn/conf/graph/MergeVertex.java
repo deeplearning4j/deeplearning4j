@@ -60,13 +60,36 @@ public class MergeVertex extends GraphVertex {
         InputType first = vertexInputs[0];
         if(first.getType() != InputType.Type.CNN){
             //FF or RNN data inputs
+            int size = 0;
+            boolean ff = true;
             for( int i=1; i<vertexInputs.length; i++ ){
                 if(vertexInputs[i].getType() != first.getType()){
                     throw new InvalidInputTypeException("Invalid input: MergeVertex cannot merge activations of different types:"
                             + " first type = " + first.getType() + ", input type " + (i+1) + " = " + vertexInputs[i].getType());
                 }
+
+                int thisSize;
+                if(vertexInputs[i] instanceof InputType.InputTypeFeedForward) thisSize = ((InputType.InputTypeFeedForward)vertexInputs[i]).getSize();
+                else{
+                    thisSize = ((InputType.InputTypeRecurrent)vertexInputs[i]).getSize();
+                    ff = false;
+                }
+                if(thisSize <= 0){//Size is not defined
+                    size = -1;
+                } else {
+                    size += thisSize;
+                }
             }
-            return first;
+
+            if(size > 0){
+                //Size is specified
+                if(ff) return InputType.feedForward(size);
+                else return InputType.recurrent(size);
+            } else {
+                //size is unknown
+                if(ff) return InputType.feedForward(-1);
+                else return InputType.recurrent(-1);
+            }
         } else {
             //CNN inputs... also check that the depth, width and heights match:
             InputType.InputTypeConvolutional firstConv = (InputType.InputTypeConvolutional)first;
