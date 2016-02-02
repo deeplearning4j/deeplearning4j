@@ -206,7 +206,6 @@ public class StochasticHessianFree extends BaseOptimizer {
         return new Pair<>(chs.get(i),score);
     }
 
-
     @Override
     public boolean optimize() {
         if(!(model instanceof MultiLayerNetwork))

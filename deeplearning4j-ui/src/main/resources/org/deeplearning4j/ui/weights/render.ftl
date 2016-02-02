@@ -47,10 +47,6 @@
 
 </style>
 
-<script language="JavaScript">
-
-</script>
-
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-2.2.0.min.js"></script>
 
@@ -108,10 +104,6 @@
         }
     </style>
 
-
-<script language="JavaScript">
-
-</script>
 
 </head>
 <body>

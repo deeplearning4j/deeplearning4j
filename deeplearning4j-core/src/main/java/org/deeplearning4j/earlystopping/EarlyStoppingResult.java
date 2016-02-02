@@ -19,6 +19,7 @@
 package org.deeplearning4j.earlystopping;
 
 import lombok.Data;
+import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 
 import java.io.Serializable;
@@ -30,10 +31,11 @@ import java.util.Map;
  * - Epoch that the best model was found
  * - Score of the best model
  * - The best model (MultiLayerNetwork) itself
+ * @param <T> Type of model. For example, {@link org.deeplearning4j.nn.multilayer.MultiLayerNetwork} or {@link org.deeplearning4j.nn.graph.ComputationGraph}
  * @author Alex Black
  */
 @Data
-public class EarlyStoppingResult implements Serializable {
+public class EarlyStoppingResult<T extends Model> implements Serializable {
     public enum TerminationReason {Error, IterationTerminationCondition, EpochTerminationCondition};
 
     private TerminationReason terminationReason;
@@ -42,10 +44,10 @@ public class EarlyStoppingResult implements Serializable {
     private int bestModelEpoch;
     private double bestModelScore;
     private int totalEpochs;
-    private MultiLayerNetwork bestModel;
+    private T bestModel;
 
     public EarlyStoppingResult(TerminationReason terminationReason, String terminationDetails, Map<Integer,Double> scoreVsEpoch,
-                               int bestModelEpoch, double bestModelScore, int totalEpochs, MultiLayerNetwork bestModel ){
+                               int bestModelEpoch, double bestModelScore, int totalEpochs, T bestModel ){
         this.terminationReason = terminationReason;
         this.terminationDetails = terminationDetails;
         this.scoreVsEpoch = scoreVsEpoch;

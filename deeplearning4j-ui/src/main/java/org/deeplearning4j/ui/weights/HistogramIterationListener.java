@@ -2,12 +2,12 @@ package org.deeplearning4j.ui.weights;
 
 
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
-import io.dropwizard.server.DefaultServerFactory;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.ui.UiServer;
 import org.deeplearning4j.ui.UiUtils;
 import org.deeplearning4j.ui.providers.ObjectMapperProvider;
+import org.deeplearning4j.ui.weights.beans.CompactModelAndGradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +36,9 @@ public class HistogramIterationListener implements IterationListener {
     private ArrayList<Double> scoreHistory = new ArrayList<>();
     private List<Map<String,List<Double>>> meanMagHistoryParams = new ArrayList<>();    //1 map per layer; keyed by new param name
     private List<Map<String,List<Double>>> meanMagHistoryUpdates = new ArrayList<>();
+    private Map<String,Integer> layerNameIndexes = new HashMap<>();
+    private List<String> layerNames = new ArrayList<>();
+    private int layerNameIndexesCount = 0;
     private boolean openBrowser;
     private boolean firstIteration = true;
     private String path;
@@ -92,11 +95,17 @@ public class HistogramIterationListener implements IterationListener {
             }
 
             //Process gradients: duplicate + calculate and store mean magnitudes
-            Map<String,INDArray> newGrad = new LinkedHashMap<>();
+            Map<String,Map> newGrad = new LinkedHashMap<>();
             for(Map.Entry<String,INDArray> entry : grad.entrySet() ){
                 String param = entry.getKey();
-                String newName = "param_" + param;
-                newGrad.put(newName,entry.getValue().dup());
+                String newName;
+                if(Character.isDigit(param.charAt(0))) newName = "param_" + param;
+                else newName = param;
+                HistogramBin histogram = new HistogramBin.Builder(entry.getValue().dup())
+                        .setBinCount(20)
+                        .setRounding(6)
+                        .build();
+                newGrad.put(newName,histogram.getData());
                 //CSS identifier can't start with digit http://www.w3.org/TR/CSS21/syndata.html#value-def-identifier
 
                 //Work out layer index:
@@ -112,12 +121,18 @@ public class HistogramIterationListener implements IterationListener {
 
             //Process parameters: duplicate + calculate and store mean magnitudes
             Map<String,INDArray> params = model.paramTable();
-            Map<String,INDArray> newParams = new LinkedHashMap<>();
+            Map<String,Map> newParams = new LinkedHashMap<>();
             for(Map.Entry<String,INDArray> entry : params.entrySet()) {
                 String param = entry.getKey();
-                String newName = "param_" + param;
+                String newName;
+                if(Character.isDigit(param.charAt(0))) newName = "param_" + param;
+                else newName = param;
 
-                newParams.put(newName, entry.getValue().dup());
+                HistogramBin histogram = new HistogramBin.Builder(entry.getValue().dup())
+                        .setBinCount(20)
+                        .setRounding(6)
+                        .build();
+                newParams.put(newName, histogram.getData());
                 //dup() because params might be a view
 
                 Map<String,List<Double>> map = meanMagHistoryParams.get(indexFromString(param));
@@ -133,7 +148,7 @@ public class HistogramIterationListener implements IterationListener {
             double score = model.score();
             scoreHistory.add(score);
 
-            ModelAndGradient g = new ModelAndGradient();
+            CompactModelAndGradient g = new CompactModelAndGradient();
             g.setGradients(newGrad);
             g.setParameters(newParams);
             g.setScore(score);
@@ -141,7 +156,9 @@ public class HistogramIterationListener implements IterationListener {
             g.setPath(subPath);
             g.setUpdateMagnitudes(meanMagHistoryUpdates);
             g.setParamMagnitudes(meanMagHistoryParams);
+            g.setLayerNames(layerNames);
             g.setLastUpdateTime(System.currentTimeMillis());
+
 
             Response resp = target.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).post(Entity.entity(g,MediaType.APPLICATION_JSON));
             log.debug("{}",resp);
@@ -153,17 +170,21 @@ public class HistogramIterationListener implements IterationListener {
         }
     }
 
-    private static int indexFromString(String str){
+    private int indexFromString(String str) {
         int underscore = str.indexOf("_");
-        if(underscore == -1)
-            return 0;
-        else {
-            String subStr = str.substring(0,underscore);
-            try{
-                return Integer.parseInt(subStr);
-            }catch( NumberFormatException e ){
-                return -1;
+        if (underscore == -1) {
+            if (!layerNameIndexes.containsKey(str)) {
+                layerNames.add(str);
+                layerNameIndexes.put(str, layerNameIndexesCount++);
             }
+            return layerNameIndexes.get(str);
+        } else {
+            String subStr = str.substring(0,underscore);
+            if(!layerNameIndexes.containsKey(subStr)){
+                layerNames.add(subStr);
+                layerNameIndexes.put(subStr,layerNameIndexesCount++);
+            }
+            return layerNameIndexes.get(subStr);
         }
     }
 }

@@ -133,7 +133,7 @@ public class ConvolutionLayerSetup {
                 case "SubsamplingLayer":
                     if(i < lastLayerNumber){
                         SubsamplingLayer subsamplingLayer = (SubsamplingLayer) inputLayer;
-                        getSubSamplingOutputSize(new int[]{lastHeight, lastWidth}, subsamplingLayer.getKernelSize(), subsamplingLayer.getStride());
+                        getConvolutionOutputSize(new int[]{lastHeight, lastWidth}, subsamplingLayer.getKernelSize(), subsamplingLayer.getPadding(), subsamplingLayer.getStride());
                         if (i == 0) throw new UnsupportedOperationException("Unsupported path: first layer shouldn't be " + inputLayer.getClass().getSimpleName());
                         switch (outputLayer.getClass().getSimpleName()) {
                             // ccn -> ccn
@@ -214,20 +214,6 @@ public class ConvolutionLayerSetup {
             }
         } else
             throw new UnsupportedOperationException("Unsupported path: final " + inputLayer.getClass().getSimpleName() + " layer");
-    }
-
-
-    private void getSubSamplingOutputSize(int[] inputWidthAndHeight,int[] kernelWidthAndHeight,int[] stride) {
-        int[] ret = new int[inputWidthAndHeight.length];
-        for(int i = 0; i < ret.length; i++) {
-            if(kernelWidthAndHeight[i] == 1)
-                ret[i] = inputWidthAndHeight[i] / stride[i];
-            else {
-                ret[i] = (inputWidthAndHeight[i] - kernelWidthAndHeight[i]) / stride[i] + 1;
-            }
-        }
-        lastHeight = ret[0];
-        lastWidth = ret[1];
     }
 
 
