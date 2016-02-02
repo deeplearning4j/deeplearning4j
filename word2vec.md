@@ -213,19 +213,18 @@ That should give you one word per line.
 Now that the data is ready, you can configure the Word2vec neural net and feed in the tokens. 
 
         int batchSize = 1000;
-        int iterations = 30;
-        int layerSize = 300;
+        int iterations = 3;
+        int layerSize = 150;
         
         log.info("Build model....");
         Word2Vec vec = new Word2Vec.Builder()
-                .batchSize(batchSize) //# words per minibatch. 
-                .sampling(1e-5) // negative sampling. drops words out
+                .batchSize(batchSize) //# words per minibatch.
                 .minWordFrequency(5) // 
                 .useAdaGrad(false) //
                 .layerSize(layerSize) // word feature vector size
                 .iterations(iterations) // # iterations to train
                 .learningRate(0.025) // 
-                .minLearningRate(1e-2) // learning rate decays wrt # words. floor learning
+                .minLearningRate(1e-3) // learning rate decays wrt # words. floor learning
                 .negativeSample(10) // sample size 10 words
                 .iterate(iter) //
                 .tokenizerFactory(tokenizer)
@@ -313,8 +312,8 @@ You can then use Word2vec as a lookup table:
 
         WeightLookupTable weightLookupTable = wordVectors.lookupTable();
         Iterator<INDArray> vectors = weightLookupTable.vectors();
-        INDArray wordVector = vectors.getWordVectorMatrix("myword");
-        double[] wordVector = vectors.getWordVector("myword");
+        INDArray wordVector = wordVectors.getWordVectorMatrix("myword");
+        double[] wordVector = wordVectors.getWordVector("myword");
 
 If the word isn't in the vocabulary, Word2vec returns zeros.
 
