@@ -82,26 +82,30 @@ public class PreprocessorVertex extends GraphVertex {
                     FeedForwardToCnnPreProcessor ffcnn = (FeedForwardToCnnPreProcessor) preProcessor;
                     return InputType.convolutional(ffcnn.getNumChannels(), ffcnn.getInputWidth(), ffcnn.getInputHeight());
                 } else if (preProcessor instanceof FeedForwardToRnnPreProcessor) {
-                    return InputType.recurrent();
+                    return InputType.recurrent(((InputType.InputTypeFeedForward)vertexInputs[0]).getSize());
                 } else {
                     //Assume preprocessor doesn't change the type of activations
-                    return InputType.feedForward();
+                    return InputType.feedForward(((InputType.InputTypeFeedForward) vertexInputs[0]).getSize());
                 }
             case RNN:
                 if (preProcessor instanceof RnnToCnnPreProcessor) {
                     RnnToCnnPreProcessor ffcnn = (RnnToCnnPreProcessor) preProcessor;
                     return InputType.convolutional(ffcnn.getNumChannels(), ffcnn.getInputWidth(), ffcnn.getInputHeight());
                 } else if (preProcessor instanceof RnnToFeedForwardPreProcessor) {
-                    return InputType.feedForward();
+                    return InputType.feedForward(((InputType.InputTypeRecurrent) vertexInputs[0]).getSize());
                 } else {
                     //Assume preprocessor doesn't change the type of activations
-                    return InputType.recurrent();
+                    return InputType.recurrent(((InputType.InputTypeRecurrent)vertexInputs[0]).getSize());
                 }
             case CNN:
                 if (preProcessor instanceof CnnToFeedForwardPreProcessor) {
-                    return InputType.feedForward();
+                    CnnToFeedForwardPreProcessor p = (CnnToFeedForwardPreProcessor)preProcessor;
+                    int outSize = p.getInputHeight()*p.getInputWidth()*p.getNumChannels();
+                    return InputType.feedForward(outSize);
                 } else if (preProcessor instanceof CnnToRnnPreProcessor) {
-                    return InputType.recurrent();
+                    CnnToRnnPreProcessor p = (CnnToRnnPreProcessor)preProcessor;
+                    int outSize = p.getInputHeight()*p.getInputWidth()*p.getNumChannels();
+                    return InputType.recurrent(outSize);
                 } else {
                     //Assume preprocessor doesn't change the type of activations
                     return vertexInputs[0];

@@ -75,6 +75,6 @@ public class DuplicateToTimeSeriesVertex extends GraphVertex {
             throw new InvalidInputTypeException("Invalid input type: cannot duplicate to time series non feed forward input (got: " + vertexInputs[0] + ")");
         }
 
-        return InputType.recurrent();
+        return InputType.recurrent(((InputType.InputTypeFeedForward)vertexInputs[0]).getSize());
     }
 }
