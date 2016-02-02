@@ -18,15 +18,30 @@
 
 package org.deeplearning4j.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 
 public class MultiThreadUtils {
+
+	private static Logger log = LoggerFactory.getLogger(MultiThreadUtils.class);
+
+	private static ExecutorService instance;
 	
-	public static ExecutorService newExecutorService() {
-		return Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+	public static synchronized ExecutorService newExecutorService() {
+		int nThreads = Runtime.getRuntime().availableProcessors();
+		return new ThreadPoolExecutor(nThreads, nThreads, 60L, TimeUnit.SECONDS,
+				new LinkedTransferQueue<Runnable>(),
+				new ThreadFactory() {
+					@Override
+					public Thread newThread(Runnable r) {
+						Thread t = Executors.defaultThreadFactory().newThread(r);
+						t.setDaemon(true);
+						return t;
+					}
+				});
 	}
 
 	public static void parallelTasks(final List<Runnable> tasks, ExecutorService executorService) {
@@ -36,8 +51,13 @@ public class MultiThreadUtils {
 			final int taskIdx = i;
 			executorService.execute(new Runnable() {
 				public void run() {
-					tasks.get(taskIdx).run();
-					latch.countDown();
+					try {
+						tasks.get(taskIdx).run();
+					} catch(Throwable e){
+						log.info("Unchecked exception thrown by task",e);
+					} finally {
+						latch.countDown();
+					}
 				}
 			});
 		}
@@ -47,6 +67,5 @@ public class MultiThreadUtils {
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
-		
 	}
 }

@@ -40,6 +40,7 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class ClusterUtils {
 
+	/** Classify the set of points base on cluster centers. This also adds each point to the ClusterSet */
 	public static ClusterSetInfo classifyPoints(final ClusterSet clusterSet, List<Point> points,
 												ExecutorService executorService) {
 		final ClusterSetInfo clusterSetInfo = ClusterSetInfo.initialize(clusterSet, true);
@@ -71,7 +72,8 @@ public class ClusterUtils {
 	public static void refreshClustersCenters(final ClusterSet clusterSet, final ClusterSetInfo clusterSetInfo,
 											  ExecutorService executorService) {
 		List<Runnable> tasks = new ArrayList<>();
-		for (int i = 0, j = clusterSet.getClusterCount(); i < j; i++) {
+		int nClusters = clusterSet.getClusterCount();
+		for (int i = 0; i < nClusters; i++) {
 			final Cluster cluster = clusterSet.getClusters().get(i);
 			tasks.add(new Runnable() {
 				public void run() {
@@ -94,8 +96,10 @@ public class ClusterUtils {
 		if (pointsCount == 0)
 			return;
 		Point center = new Point(Nd4j.create(cluster.getPoints().get(0).getArray().length()));
-		for (Point point : cluster.getPoints())
-			center.getArray().addi(point.getArray());
+		for (Point point : cluster.getPoints()) {
+			INDArray arr = point.getArray();
+			center.getArray().addi(arr);
+		}
 		center.getArray().divi(pointsCount);
 		cluster.setCenter(center);
 	}
@@ -115,7 +119,8 @@ public class ClusterUtils {
 		info.setPointDistanceFromCenterVariance(MathUtils.variance(distances));
 	}
 
-	public static INDArray computeSquareDistancesFromNearestCluster(final ClusterSet clusterSet, final List<Point> points, INDArray previousDxs, ExecutorService executorService) {
+	public static INDArray computeSquareDistancesFromNearestCluster(final ClusterSet clusterSet, final List<Point> points,
+																	INDArray previousDxs, ExecutorService executorService) {
 		final int pointsCount = points.size();
 		final INDArray dxs = Nd4j.create(pointsCount);
 		final Cluster newCluster = clusterSet.getClusters().get(clusterSet.getClusters().size()-1);
