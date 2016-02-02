@@ -449,9 +449,9 @@ public class MultiLayerTestRNN {
 		mlnTBPTT.computeGradientAndScore();
 
 		Pair<Gradient,Double> mlnPair = mln.gradientAndScore();
-		Pair<Gradient,Double> tbpttPair = mln.gradientAndScore();
+		Pair<Gradient,Double> tbpttPair = mlnTBPTT.gradientAndScore();
 
-		assertEquals(mlnPair.getFirst(), tbpttPair.getFirst());
+		assertEquals(mlnPair.getFirst().gradientForVariable(), tbpttPair.getFirst().gradientForVariable());
 		assertEquals(mlnPair.getSecond(), tbpttPair.getSecond());
 
 		//Check states: expect stateMap to be empty but tBpttStateMap to not be

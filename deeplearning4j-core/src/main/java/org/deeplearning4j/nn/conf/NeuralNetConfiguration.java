@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import lombok.Data;
@@ -37,10 +38,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 /**
@@ -109,10 +107,16 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
      */
     public static class ListBuilder extends MultiLayerConfiguration.Builder {
         private Map<Integer, Builder> layerwise;
+        private Builder globalConfig;
 
         // Constructor
-        public ListBuilder(Map<Integer, Builder> layerMap) {
+        public ListBuilder(Builder globalConfig, Map<Integer, Builder> layerMap) {
+            this.globalConfig = globalConfig;
             this.layerwise = layerMap;
+        }
+
+        public ListBuilder(Builder globalConfig){
+            this(globalConfig,new HashMap<Integer, Builder>());
         }
 
 
@@ -127,15 +131,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         }
 
         public ListBuilder layer(int ind, Layer layer) {
-            if (layerwise.get(0) == null && ind != 0) {
-                throw new IllegalArgumentException("LayerZeroIndexError: Layer index must start from 0");
+            if(layerwise.containsKey(ind)){
+                layerwise.get(ind).layer(layer);
+            } else {
+                layerwise.put(ind,globalConfig.clone().layer(layer));
             }
-            if (layerwise.size() < ind + 1) {
-                throw new IllegalArgumentException("IndexOutOfBoundsError: Layer index exceeds listed size");
-            }
-
-            Builder builderWithLayer = layerwise.get(ind).layer(layer);
-            layerwise.put(ind, builderWithLayer);
             return this;
         }
 
@@ -151,7 +151,14 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
          */
         public MultiLayerConfiguration build() {
             List<NeuralNetConfiguration> list = new ArrayList<>();
+            if(layerwise.size() == 0) throw new IllegalStateException("Invalid configuration: no layers defined");
             for(int i = 0; i < layerwise.size(); i++) {
+                if(layerwise.get(i) == null){
+                    throw new IllegalStateException("Invalid configuration: layer number " + i + " not specified. Expect layer "
+                        + "numbers to be 0 to " + (layerwise.size()-1) + " inclusive (number of layers defined: " + layerwise.size() + ")");
+                }
+                if(layerwise.get(i).getLayer() == null) throw new IllegalStateException("Cannot construct network: Layer config for" +
+                        "layer with index " + i + " is not defined)");
                 list.add(layerwise.get(i).build());
             }
             return new MultiLayerConfiguration.Builder().backprop(backprop).inputPreProcessors(inputPreProcessors).
@@ -251,7 +258,18 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         return mapper;
     }
 
-    private static final ObjectMapper mapper = initMapper();
+    /**Reinitialize and return the Jackson/json ObjectMapper with additional named types.
+     * This can be used to add additional subtypes at runtime (i.e., for JSON mapping with
+     * types defined outside of the main DL4J codebase)
+     */
+    public static ObjectMapper reinitMapperWithSubtypes(Collection<NamedType> additionalTypes){
+        mapper.registerSubtypes(additionalTypes.toArray(new NamedType[additionalTypes.size()]));
+        //Recreate the mapper (via copy), as mapper won't use registered subtypes after first use
+        mapper = mapper.copy();
+        return mapper;
+    }
+
+    private static ObjectMapper mapper = initMapper();
 
     private static ObjectMapper initMapper() {
         ObjectMapper ret = new ObjectMapper();
@@ -366,12 +384,54 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        /** Number of layers not including input. */
+        /** <b>Deprecated</b><br>
+         * Create a ListBuilder (for creating a MultiLayerConfiguration) with the specified number of layers, not including input.
+         * @param size number of layers in the network
+         * @deprecated Manually specifying number of layers in  is not necessary. Use {@link #list()} or {@link #list(Layer...)} methods.
+         * */
         public ListBuilder list(int size) {
+            return list();
+        }
+
+        /**Create a ListBuilder (for creating a MultiLayerConfiguration)<br>
+         * Usage:<br>
+         * <pre>
+         * {@code .list()
+         * .layer(0,new DenseLayer.Builder()...build())
+         * ...
+         * .layer(n,new OutputLayer.Builder()...build())
+         * }
+         * </pre>
+         * */
+        public ListBuilder list(){
+            return new ListBuilder(this);
+        }
+
+        /**Create a ListBuilder (for creating a MultiLayerConfiguration) with the specified layers<br>
+         * Usage:<br>
+         * <pre>
+         * {@code .list(
+         *      new DenseLayer.Builder()...build(),
+         *      ...,
+         *      new OutputLayer.Builder()...build())
+         * }
+         * </pre>
+         * @param layers The layer configurations for the network
+         */
+        public ListBuilder list(Layer... layers){
+            if(layers == null || layers.length == 0) throw new IllegalArgumentException("Cannot create network with no layers");
             Map<Integer, Builder> layerMap = new HashMap<>();
-            for(int i = 0; i < size; i++)
-                layerMap.put(i, clone());
-            return new ListBuilder(layerMap);
+            for(int i = 0; i < layers.length; i++) {
+                NeuralNetConfiguration.Builder b = this.clone();
+                b.layer(layers[i]);
+                layerMap.put(i, b);
+            }
+            return new ListBuilder(this,layerMap);
+
+        }
+
+        public ComputationGraphConfiguration.GraphBuilder graphBuilder(){
+            return new ComputationGraphConfiguration.GraphBuilder(this);
         }
 
         /** Number of optimization iterations. */
@@ -576,8 +636,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
          * @return
          */
         public NeuralNetConfiguration build() {
-            if (layer == null)
-                throw new IllegalStateException("No layer defined.");
 
             NeuralNetConfiguration conf = new NeuralNetConfiguration();
 
@@ -595,25 +653,28 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             conf.miniBatch = miniBatch;
 
 
-            if(Double.isNaN(layer.getLearningRate())) layer.setLearningRate(learningRate);
-            if(layer.getLearningRateAfter() == null) layer.setLearningRateAfter(learningRateAfter);
-            if(Double.isNaN(layer.getLrScoreBasedDecay())) layer.setLrScoreBasedDecay(lrScoreBasedDecay);
-            if(Double.isNaN(layer.getL1())) layer.setL1(l1);
-            if(Double.isNaN(layer.getL2())) layer.setL2(l2);
-            if(layer.getActivationFunction() == null) layer.setActivationFunction(activationFunction);
-            if(layer.getWeightInit() == null) layer.setWeightInit(weightInit);
-            if(Double.isNaN(layer.getBiasInit())) layer.setBiasInit(biasInit);
-            if(layer.getDist() == null) layer.setDist(dist);
-            if(Double.isNaN(layer.getDropOut())) layer.setDropOut(dropOut);
-            if(layer.getUpdater() == null) layer.setUpdater(updater);
-            if(Double.isNaN(layer.getMomentum())) layer.setMomentum(momentum);
-            if(layer.getMomentumAfter() == null) layer.setMomentumAfter(momentumAfter);
-            if(Double.isNaN(layer.getRho())) layer.setRho(rho);
-            if(Double.isNaN(layer.getRmsDecay())) layer.setRmsDecay(rmsDecay);
-            if(Double.isNaN(layer.getAdamMeanDecay())) layer.setAdamMeanDecay(adamMeanDecay);
-            if(Double.isNaN(layer.getAdamVarDecay())) layer.setAdamVarDecay(adamVarDecay);
-            if(layer.getGradientNormalization() == null) layer.setGradientNormalization(gradientNormalization);
-            if(Double.isNaN(layer.getGradientNormalizationThreshold())) layer.setGradientNormalizationThreshold(gradientNormalizationThreshold);
+            if(layer != null ) {
+                if (Double.isNaN(layer.getLearningRate())) layer.setLearningRate(learningRate);
+                if (layer.getLearningRateAfter() == null) layer.setLearningRateAfter(learningRateAfter);
+                if (Double.isNaN(layer.getLrScoreBasedDecay())) layer.setLrScoreBasedDecay(lrScoreBasedDecay);
+                if (Double.isNaN(layer.getL1())) layer.setL1(l1);
+                if (Double.isNaN(layer.getL2())) layer.setL2(l2);
+                if (layer.getActivationFunction() == null) layer.setActivationFunction(activationFunction);
+                if (layer.getWeightInit() == null) layer.setWeightInit(weightInit);
+                if (Double.isNaN(layer.getBiasInit())) layer.setBiasInit(biasInit);
+                if (layer.getDist() == null) layer.setDist(dist);
+                if (Double.isNaN(layer.getDropOut())) layer.setDropOut(dropOut);
+                if (layer.getUpdater() == null) layer.setUpdater(updater);
+                if (Double.isNaN(layer.getMomentum())) layer.setMomentum(momentum);
+                if (layer.getMomentumAfter() == null) layer.setMomentumAfter(momentumAfter);
+                if (Double.isNaN(layer.getRho())) layer.setRho(rho);
+                if (Double.isNaN(layer.getRmsDecay())) layer.setRmsDecay(rmsDecay);
+                if (Double.isNaN(layer.getAdamMeanDecay())) layer.setAdamMeanDecay(adamMeanDecay);
+                if (Double.isNaN(layer.getAdamVarDecay())) layer.setAdamVarDecay(adamVarDecay);
+                if (layer.getGradientNormalization() == null) layer.setGradientNormalization(gradientNormalization);
+                if (Double.isNaN(layer.getGradientNormalizationThreshold()))
+                    layer.setGradientNormalizationThreshold(gradientNormalizationThreshold);
+            }
 
             return conf;
         }

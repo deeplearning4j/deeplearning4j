@@ -27,7 +27,6 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple2;
@@ -66,7 +65,7 @@ public class GradientAccumFlatMap implements FlatMapFunction<Iterator<DataSet>, 
     @Override
     public Iterable<Tuple2<Gradient,Updater>> call(Iterator<DataSet> dataSetIterator) throws Exception {
         if(!dataSetIterator.hasNext()) {
-            return Collections.singletonList(new Tuple2<Gradient,Updater>(new DefaultGradient(),null));
+            return Collections.emptyList();
         }
 
         List<DataSet> collect = new ArrayList<>();
@@ -80,11 +79,12 @@ public class GradientAccumFlatMap implements FlatMapFunction<Iterator<DataSet>, 
         }
         MultiLayerNetwork network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(json));
         network.init();
-        INDArray val = params.value();
+        //Clone/dup as params and updater are mutable (but: getValue() object from broadcast will be shared by all executors on same machine)
+        INDArray val = params.value().dup();
         if(val.length() != network.numParams())
             throw new IllegalStateException("Network did not have same number of parameters as the broadcasted set parameters");
         network.setParameters(val);
-        network.setUpdater(updater.getValue());
+        network.setUpdater(updater.getValue().clone());
         network.fit(data);
 
         return Collections.singletonList(new Tuple2<>(network.gradient(),network.getUpdater()));
