@@ -5,12 +5,12 @@ import lombok.NonNull;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.conf.layers.BaseOutputLayer;
+import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.GraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
-import org.deeplearning4j.nn.layers.BaseOutputLayer;
-import org.deeplearning4j.nn.layers.OutputLayer;
-import org.deeplearning4j.nn.layers.convolution.ConvolutionLayer;
+import org.deeplearning4j.nn.layers.recurrent.BaseRecurrentLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.ui.UiServer;
@@ -219,6 +219,11 @@ public class FlowIterationListener implements IterationListener {
                             LayerInfo info = model.getLayerInfoByName(vertex.getVertexName());
                             if (info == null) info = getLayerInfo(vertex.getLayer(), x, currentY, 121);
                             info.setName(vertex.getVertexName());
+
+                            // special case here: vertex isn't a layer
+                            if (vertex.getLayer() == null) {
+                                info.setLayerType(vertex.getClass().getSimpleName());
+                            }
                             if (info.getName().endsWith("-merge")) info.setLayerType("MERGE");
                             if (model.getLayerInfoByName(vertex.getVertexName()) == null) {
                                 x++;
@@ -372,25 +377,36 @@ public class FlowIterationListener implements IterationListener {
 
         // set layer type
         try {
-            info.setLayerType(layer.type().toString());
+            info.setLayerType(layer.getClass().getSimpleName());
         } catch (Exception e) {
             info.setLayerType("n/a");
             return info;
         }
 
 
+        StringBuilder mainLine = new StringBuilder();
+        StringBuilder subLine = new StringBuilder();
 
-        description.setSubLine(layer.conf().getLayer().getActivationFunction());
+        log.info("Layer: " + info.getName() + " class: " + layer.getClass().getSimpleName());
 
-        if (info.getLayerType().equals("CONVOLUTIONAL")) {
-                org.deeplearning4j.nn.conf.layers.ConvolutionLayer layer1 = (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) layer.conf().getLayer();
-                description.setMainLine("K: " + Arrays.toString(layer1.getKernelSize()) + " S: " + Arrays.toString(layer1.getStride()) + " P: " + Arrays.toString(layer1.getPadding()));
+        if (layer.type().equals(Layer.Type.CONVOLUTIONAL)) {
+            org.deeplearning4j.nn.conf.layers.ConvolutionLayer layer1 = (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) layer.conf().getLayer();
+            mainLine.append("K: " + Arrays.toString(layer1.getKernelSize()) + " S: " + Arrays.toString(layer1.getStride()) + " P: " + Arrays.toString(layer1.getPadding()));
+            subLine.append("nIn/nOut: [" + layer1.getNIn() + "/" + layer1.getNOut() + "]");
+        } else if (layer.conf().getLayer() instanceof FeedForwardLayer) {
+            org.deeplearning4j.nn.conf.layers.FeedForwardLayer layer1 = (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) layer.conf().getLayer();
+            mainLine.append("nIn/nOut: [" + layer1.getNIn() + "/" + layer1.getNOut() + "]");
         } else {
                 // TODO: Introduce Layer.Type.OUTPUT
                 if (layer instanceof BaseOutputLayer) {
-                    description.setMainLine("Outputs: [" + ((org.deeplearning4j.nn.conf.layers.BaseOutputLayer)layer.conf().getLayer()).getNOut()+ "]");
+                    mainLine.append("Outputs: [" + ((org.deeplearning4j.nn.conf.layers.BaseOutputLayer)layer.conf().getLayer()).getNOut()+ "]");
                 }
         }
+
+        subLine.append(" A: [").append(layer.conf().getLayer().getActivationFunction()).append("]");
+
+        description.setMainLine(mainLine.toString());
+        description.setSubLine(subLine.toString());
 
         return info;
     }
