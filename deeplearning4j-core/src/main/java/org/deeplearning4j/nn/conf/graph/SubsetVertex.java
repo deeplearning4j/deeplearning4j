@@ -77,17 +77,21 @@ public class SubsetVertex extends GraphVertex {
             throw new InvalidInputTypeException("SubsetVertex expects single input type. Received: " + Arrays.toString(vertexInputs));
         }
 
-        if(vertexInputs[0].getType() == InputType.Type.CNN){
-            InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional)vertexInputs[0];
-            int depth = conv.getDepth();
-            if(to >= depth){
-                throw new InvalidInputTypeException("Invalid range: Cannot select depth subset [" + from + "," + to + "] inclusive from CNN activations with "
-                    + " [depth,width,height] = [" + depth + "," + conv.getWidth() + "," + conv.getHeight() + "]" );
-            }
-            return InputType.convolutional(from-to+1,conv.getWidth(),conv.getHeight());
-        } else {
-            //FF or RNN inputs
-            return vertexInputs[0];
+        switch(vertexInputs[0].getType()){
+            case FF:
+                return InputType.feedForward(to-from+1);
+            case RNN:
+                return InputType.recurrent(to-from+1);
+            case CNN:
+                InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional)vertexInputs[0];
+                int depth = conv.getDepth();
+                if(to >= depth){
+                    throw new InvalidInputTypeException("Invalid range: Cannot select depth subset [" + from + "," + to + "] inclusive from CNN activations with "
+                            + " [depth,width,height] = [" + depth + "," + conv.getWidth() + "," + conv.getHeight() + "]" );
+                }
+                return InputType.convolutional(from-to+1,conv.getWidth(),conv.getHeight());
+            default:
+                throw new RuntimeException("Unknown input type: " + vertexInputs[0]);
         }
     }
 }
