@@ -84,36 +84,50 @@ public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializabl
 		this.initialPoints = points;
 	}
 
+	/** Run clustering iterations until a termination condition is hit.
+	 * This is done by first classifying all points, and then updating cluster centers based on those classified points
+	 */
 	private void iterations() {
+		int iterationCount = 0;
 		while (!clusteringStrategy.getTerminationCondition().isSatisfied(iterationHistory) ||
 				iterationHistory.getMostRecentIterationInfo().isStrategyApplied()) {
 			currentIteration++;
 			removePoints();
 			classifyPoints();
 			applyClusteringStrategy();
+			log.info("Completed clustering iteration {}", ++iterationCount);
 		}
 	}
 
 	protected void classifyPoints() {
+		//Classify points. This also adds each point to the ClusterSet
 		ClusterSetInfo clusterSetInfo = ClusterUtils.classifyPoints(clusterSet, initialPoints, exec);
+		//Update the cluster centers, based on the points within each cluster
 		ClusterUtils.refreshClustersCenters(clusterSet, clusterSetInfo, exec);
 		iterationHistory.getIterationsInfos().put(currentIteration, new IterationInfo(currentIteration, clusterSetInfo));
 	}
 
+	/**Initialize the cluster centers at random
+	 */
 	protected void initClusters() {
+		log.info("Generating initial clusters");
+		List<Point> points = new ArrayList<>(initialPoints);
 
-		List<Point> points = new ArrayList<Point>(initialPoints);
-
+		//Initialize the ClusterSet with a single cluster center (based on position of one of the points chosen randomly)
 		Random random = new Random();
 		clusterSet = new ClusterSet(clusteringStrategy.getDistanceFunction());
 		clusterSet.addNewClusterWithCenter(points.remove(random.nextInt(points.size())));
 		int initialClusterCount = clusteringStrategy.getInitialClusterCount();
+
+		//dxs: distances between each point and nearest cluster to that point
 		INDArray dxs = Nd4j.create(points.size());
-		dxs.addi(new Double(Double.MAX_VALUE));
-		
+		dxs.addi(Double.MAX_VALUE);
+
+		//Generate the initial cluster centers, by randomly selecting a point between 0 and max distance
+		//Thus, we are more likely to select (as a new cluster center) a point that is far from an existing cluster
 		while (clusterSet.getClusterCount() < initialClusterCount) {
 			dxs = ClusterUtils.computeSquareDistancesFromNearestCluster(clusterSet, points, dxs, exec);
-			double r = random.nextFloat() * Nd4j.max(dxs.getRow(0)).getDouble(0);
+			double r = random.nextFloat() * dxs.maxNumber().doubleValue();
 			for (int i = 0; i < dxs.length(); i++) {
 				if (dxs.getDouble(i) >= r) {
 					clusterSet.addNewClusterWithCenter(points.remove(i));
