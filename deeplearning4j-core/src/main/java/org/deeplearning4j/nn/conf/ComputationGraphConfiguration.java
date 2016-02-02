@@ -374,9 +374,12 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                         case FF:
                             //FF -> RNN
                             lv.setPreProcessor(new FeedForwardToRnnPreProcessor());
+                            //Also set nIn if possible:
+                            setNInIfNecessary(lv,layerInput);
                             break;
                         case RNN:
-                            //RNN -> RNN: no preprocessor required
+                            //RNN -> RNN: no preprocessor required. But set nIn if possible/required
+                            setNInIfNecessary(lv,layerInput);
                             break;
                         case CNN:
                             //CNN -> RNN
@@ -391,11 +394,14 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                     //Feed forward layer
                     switch (layerInput.getType()) {
                         case FF:
-                            //FF -> FF: no preprocessor required
+                            //FF -> FF: no preprocessor required. But set nIn if possible/required
+                            setNInIfNecessary(lv,layerInput);
                             break;
                         case RNN:
                             //RNN -> FF
                             lv.setPreProcessor(new RnnToFeedForwardPreProcessor());
+                            //Set nIn if possible/required
+                            setNInIfNecessary(lv,layerInput);
                             break;
                         case CNN:
                             //CNN -> FF
@@ -418,6 +424,20 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
             InputType outputFromVertex = gv.getOutputType(inputTypeList.toArray(new InputType[inputTypeList.size()]));
             vertexOutputs.put(s, outputFromVertex);
+        }
+    }
+
+    //Set nIn for the FeedForward or RNN layer, if (a) if it is possible (size>0), and (b) if user hasn't manually set nIn in config
+    private static void setNInIfNecessary(LayerVertex lv, InputType inputType){
+        FeedForwardLayer ffl = (FeedForwardLayer) lv.getLayerConf().getLayer();
+        if(ffl.getNIn() == 0){  //non-zero: allow user override
+            int size;
+            if(inputType instanceof InputType.InputTypeFeedForward){
+                size = ((InputType.InputTypeFeedForward) inputType).getSize();
+            } else if(inputType instanceof InputType.InputTypeRecurrent){
+                size = ((InputType.InputTypeRecurrent) inputType).getSize();
+            } else throw new UnsupportedOperationException("Invalid input type");
+            if(size > 0) ffl.setNIn(size);
         }
     }
 
