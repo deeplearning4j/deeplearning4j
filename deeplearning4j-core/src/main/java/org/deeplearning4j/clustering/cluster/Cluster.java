@@ -19,6 +19,7 @@
 package org.deeplearning4j.clustering.cluster;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -30,7 +31,7 @@ public class Cluster {
 	private String label;
 
 	private Point center;
-	private List<Point>	points	= new ArrayList<>();
+	private List<Point>	points	= Collections.synchronizedList(new ArrayList<Point>());
 
 	private String distanceFunction;
 

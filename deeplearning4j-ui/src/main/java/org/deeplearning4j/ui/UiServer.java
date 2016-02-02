@@ -37,6 +37,7 @@ import org.deeplearning4j.ui.activation.ActivationsResource;
 import org.deeplearning4j.ui.api.ApiResource;
 import org.deeplearning4j.ui.defaults.DefaultResource;
 import org.deeplearning4j.ui.exception.GenericExceptionMapper;
+import org.deeplearning4j.ui.flow.FlowResource;
 import org.deeplearning4j.ui.nearestneighbors.NearestNeighborsResource;
 import org.deeplearning4j.ui.renders.RendersResource;
 import org.deeplearning4j.ui.tsne.TsneResource;
@@ -126,6 +127,7 @@ public class UiServer extends Application<UIConfiguration> {
         environment.jersey().register(new RendersResource());
         environment.jersey().register(new ApiResource());
         environment.jersey().register(new GenericExceptionMapper());
+        environment.jersey().register(new FlowResource());
         environment.jersey().register(new org.deeplearning4j.ui.nearestneighbors.word2vec.NearestNeighborsResource(conf.getUploadPath()));
 
         environment.getObjectMapper().configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);

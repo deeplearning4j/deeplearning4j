@@ -53,7 +53,7 @@ public class IterativeReduce implements Function<DataSet, INDArray> {
     MultiLayerConfiguration conf = MultiLayerConfiguration.fromJson(json);
     MultiLayerNetwork network = new MultiLayerNetwork(conf);
     network.init();
-    network.setParameters(params.value());
+    network.setParameters(params.value().dup());  //Dup. as params INDArray will be shared by all executors on same machine
     network.fit(dataSet);
     return network.params();
   }
