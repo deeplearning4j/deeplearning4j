@@ -87,8 +87,8 @@ public class MergeVertex extends GraphVertex {
                 else return InputType.recurrent(size);
             } else {
                 //size is unknown
-                if(ff) return InputType.feedForward();
-                else return InputType.recurrent();
+                if(ff) return InputType.feedForward(-1);
+                else return InputType.recurrent(-1);
             }
         } else {
             //CNN inputs... also check that the depth, width and heights match:
