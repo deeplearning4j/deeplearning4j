@@ -3,13 +3,14 @@ package org.nd4j.linalg.factory;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.accum.Sum;
 import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.api.rng.Random;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import static org.junit.Assert.assertEquals;
 
 /**
- * Created by willow on 6/16/15.
  */
 public class Nd4jTest extends BaseNd4jTest {
     public Nd4jTest() {
@@ -109,8 +110,7 @@ public class Nd4jTest extends BaseNd4jTest {
                 2.,2.,2.,2.,4.,4.,4.,4.,2.,2.,2.,2.,4.,4.,4.,4.
         },new int[]{2, 2, 4, 4});
 
-
-        INDArray actualResult = data.var(0);
+        INDArray actualResult = data.var(false, 0);
         INDArray expectedResult = Nd4j.create(new double[] {
                 1.,  1.,  1.,  1.,  4.,  4.,  4.,  4.,  1.,  1.,  1.,  1.,  4.,
                 4.,  4.,  4.,  1.,  1.,  1.,  1.,  4.,  4.,  4.,  4.,  1.,  1.,
