@@ -34,8 +34,6 @@ public class LoopTest {
         }
 
         INDArray twoTwoByThree = Nd4j.linspace(1,12,12).reshape(2, 2, 3);
-        twoTwoByThree.toString();
-        INDArray tensor = twoTwoByThree.tensorAlongDimension(2, 0, 1);
         INDArray multiSum = twoTwoByThree.sum(0, 1);
         assertEquals(assertion,multiSum);
 

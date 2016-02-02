@@ -8,6 +8,8 @@ import org.nd4j.linalg.api.ndarray.LinearViewNDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.ArrayUtil;
 
 
 /**
@@ -98,6 +100,23 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(Accumulation op, int... dimension) {
+        int[] retShape = ArrayUtil.removeIndex(op.x().shape(), dimension);
+        //ensure vector is proper shape
+        if (retShape.length == 1) {
+            if (dimension[0] == 0)
+                retShape = new int[]{1, retShape[0]};
+            else
+                retShape = new int[]{retShape[0], 1};
+        } else if (retShape.length == 0) {
+            retShape = new int[]{1, 1};
+        }
+
+        INDArray ret = Nd4j.valueArrayOf(retShape,op.zeroDouble());
+        op.setZ(ret);
+        //do op along all dimensions
+        if (dimension.length == op.x().rank())
+            dimension = new int[]{Integer.MAX_VALUE};
+
         java.nio.IntBuffer dimensionBuffer = Shape.toBuffer(dimension);
         if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
             if(op.y() != null) {
