@@ -24,22 +24,21 @@ import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
-import org.deeplearning4j.nn.conf.layers.BatchNormalization;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.RBM;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.ReshapePreProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -525,7 +524,49 @@ public class MultiLayerTest {
         assertEquals(layerNameList.get(0), net.getLayer(0).conf().getLayer().getLayerName());
         assertEquals(layerNameList, net.getLayerNames());
         assertEquals("softmax", net.getLayer(layerNameList.get(2)).conf().getLayer().getActivationFunction());
+    }
+
+    @Test
+    public void testTranspose(){
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .iterations(100)
+                .momentum(0.9)
+                .regularization(true)
+                .l2(2e-4)
+                .list(2)
+                .layer(0, new RBM.Builder(RBM.HiddenUnit.GAUSSIAN, RBM.VisibleUnit.GAUSSIAN)
+                        .nIn(4).nOut(3)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0, 1))
+                        .activation("tanh")
+                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .nIn(3).nOut(3)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0, 1))
+                        .activation("softmax").build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        Layer layer = net.getLayer(0);
+        Layer transposed = layer.transpose();
+
+        assertArrayEquals(new int[]{4,3},layer.getParam(DefaultParamInitializer.WEIGHT_KEY).shape());
+        assertArrayEquals(new int[]{1,3},layer.getParam(DefaultParamInitializer.BIAS_KEY).shape());
+        assertArrayEquals(new int[]{1,4},layer.getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY).shape());
+
+        assertArrayEquals(new int[]{3,4},transposed.getParam(DefaultParamInitializer.WEIGHT_KEY).shape());
+        assertArrayEquals(new int[]{1,4},transposed.getParam(DefaultParamInitializer.BIAS_KEY).shape());
+        assertArrayEquals(new int[]{1,3},transposed.getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY).shape());
 
 
+        INDArray origWeights = layer.getParam(DefaultParamInitializer.WEIGHT_KEY);
+        INDArray transposedWeights = transposed.getParam(DefaultParamInitializer.WEIGHT_KEY);
+        assertEquals(origWeights.transpose(), transposedWeights);
+        assertEquals(layer.getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY),transposed.getParam(DefaultParamInitializer.BIAS_KEY));
+        assertEquals(layer.getParam(DefaultParamInitializer.BIAS_KEY),transposed.getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY));
+
+        assertEquals(3,((FeedForwardLayer)transposed.conf().getLayer()).getNIn());
+        assertEquals(4,((FeedForwardLayer)transposed.conf().getLayer()).getNOut());
     }
 }

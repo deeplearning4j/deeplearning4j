@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ClusterInfo {
 
@@ -34,7 +35,7 @@ public class ClusterInfo {
 	private double maxPointDistanceFromCenter;
 	private double pointDistanceFromCenterVariance;
 	private double totalPointDistanceFromCenter;
-	private Map<String, Double>	pointDistancesFromCenter = new HashMap<>();
+	private Map<String, Double>	pointDistancesFromCenter = new ConcurrentHashMap<>();
 
 	public ClusterInfo() {
 		this(false);

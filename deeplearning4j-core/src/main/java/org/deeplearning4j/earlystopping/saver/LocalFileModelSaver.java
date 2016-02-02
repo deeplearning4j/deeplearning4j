@@ -28,7 +28,7 @@ import java.nio.file.Paths;
  *
  * @author Alex Black
  */
-public class LocalFileModelSaver implements EarlyStoppingModelSaver {
+public class LocalFileModelSaver implements EarlyStoppingModelSaver<MultiLayerNetwork> {
 
     private static final String bestFileNameConf = "bestModelConf.json";
     private static final String bestFileNameParam = "bestModelParams.bin";

@@ -53,6 +53,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
         @JsonSubTypes.Type(value = RecursiveAutoEncoder.class, name = "recursiveAutoEncoder"),
         @JsonSubTypes.Type(value = SubsamplingLayer.class, name = "subsampling"),
         @JsonSubTypes.Type(value = LocalResponseNormalization.class, name = "localResponseNormalization"),
+        @JsonSubTypes.Type(value = EmbeddingLayer.class, name = "embedding")
         })
 @Data
 @NoArgsConstructor
@@ -117,7 +118,7 @@ public abstract class Layer implements Serializable, Cloneable {
         }
     }
 
-
+    @SuppressWarnings("unchecked")
     public abstract static class Builder<T extends Builder<T>> {
         protected String layerName = null;
         protected String activationFunction = null;
