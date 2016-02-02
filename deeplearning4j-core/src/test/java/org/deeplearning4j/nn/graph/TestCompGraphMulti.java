@@ -68,6 +68,7 @@ public class TestCompGraphMulti {
     }
 
     @Before
+    @Ignore
     public void beforeDo(){
         conf = getMultiInputGraphConfig();
         graph = new ComputationGraph(conf);
@@ -79,6 +80,7 @@ public class TestCompGraphMulti {
     }
 
     @Test
+    @Ignore
     public void testConfigBasic(){
 
         int[] order = graph.topologicalSortOrder();
@@ -105,6 +107,7 @@ public class TestCompGraphMulti {
     }
 
     @Test
+    @Ignore
     public void testForwardBasic(){
 
         graph.setInput(0, ds.getFeatureMatrix());
@@ -120,6 +123,7 @@ public class TestCompGraphMulti {
     }
 
     @Test
+    @Ignore
     public void testBackwardIrisBasic(){
 
         //Now: set parameters of both networks to be identical. Then feedforward, and check we get the same outputs
@@ -138,6 +142,7 @@ public class TestCompGraphMulti {
     }
 
     @Test
+    @Ignore
     public void testEvaluation(){
         Evaluation evalExpected = new Evaluation();
         // TODO setup graph output evaluation
