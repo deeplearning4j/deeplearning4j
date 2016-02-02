@@ -49,3 +49,9 @@ Without the engagement of Skymind customers and the generous backing of [Tencent
 # Jobs @Skymind
 
 We hire from our open-source contributors. The best way to apply for a job building the future of deep learning with us is to join our community on [Gitter](https://gitter.im/deeplearning4j/deeplearning4j), fork us on [Github](https://github.com/deeplearning4j), find a problem to work on with us, and we'll can see if there's a fit! Working together is more informative than interviews, and with a little luck it's also more fun. :)
+
+## Cite Deeplearning4j
+
+If you plan to publish an academic paper and wish to cite Deeplearning4j, please use this format:
+
+Deeplearning4j Development Team (<CURRENT YEAR>). Deeplearning4j: Open-source distributed deep learning for the JVM, Apache Software Foundation License 2.0. [http://deeplearning4j.org](http://deeplearning4j.org)
