@@ -175,8 +175,9 @@ function renderNode(ctx, layer, x, y, totalOnLayer) {
     ctx.textAlign="center";
     ctx.fillText(layer.name, cx + (nodeWidth / 2), cy + 20, nodeWidth - 10);
 
-    ctx.font = "13px Roboto";
+    ctx.font = "12px Roboto";
     ctx.fillText(layer.mainLine, cx + (nodeWidth / 2), cy + 45, (nodeWidth - 10));
+    ctx.font = "11px Roboto";
     ctx.fillText(layer.subLine, cx + (nodeWidth / 2), cy + 70, (nodeWidth - 10));
 }
 
