@@ -219,7 +219,7 @@ public class CPUAccumulationTask extends BaseCPUAccumulationTask {
                     float accum = op.zeroFloat();
                     if (incrX == 1) {
                         for (int i = 0; i < n; i++) {
-                            accum = op.update(accum, op.op(xf[offsetX + i]));
+                             accum = op.update(accum, op.op(xf[offsetX + i]));
                         }
                     } else {
                         for (int i = 0; i < n; i++) {

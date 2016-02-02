@@ -1443,6 +1443,15 @@ public interface INDArray extends Serializable  {
      */
     INDArray var(int...dimension);
 
+    /**
+     * Returns the overall variance of this ndarray
+     *
+     * @param biasCorrected boolean on whether to apply corrected bias
+     * @param dimension the dimension to getScalar the mean along
+     * @return the mean along the specified dimension of this ndarray
+     */
+    INDArray var(boolean biasCorrected, int...dimension);
+
     Number varNumber();
 
     IComplexNumber varComplex();

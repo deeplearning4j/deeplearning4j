@@ -3261,6 +3261,18 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     /**
+     * Returns the overall variance of this ndarray
+     *
+     * @param biasCorrected boolean on whether to apply corrected bias
+     * @param dimension the dimension to getScalar the mean along
+     * @return the mean along the specified dimension of this ndarray
+     */
+    @Override
+    public INDArray var(boolean biasCorrected, int...dimension) {
+        return Nd4j.getExecutioner().exec(new Variance(this, biasCorrected),dimension);
+    }
+
+    /**
      * Returns the overall max of this ndarray
      *
      * @param dimension the dimension to getScalar the mean along
