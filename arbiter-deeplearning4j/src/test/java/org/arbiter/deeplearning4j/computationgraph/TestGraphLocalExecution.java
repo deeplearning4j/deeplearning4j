@@ -25,6 +25,7 @@ import org.arbiter.deeplearning4j.evaluator.graph.GraphClassificationDataSetEval
 import org.arbiter.deeplearning4j.evaluator.multilayer.ClassificationEvaluator;
 import org.arbiter.deeplearning4j.layers.DenseLayerSpace;
 import org.arbiter.deeplearning4j.layers.OutputLayerSpace;
+import org.arbiter.deeplearning4j.multilayernetwork.TestDL4JLocalExecution;
 import org.arbiter.deeplearning4j.saver.local.graph.LocalComputationGraphSaver;
 import org.arbiter.deeplearning4j.saver.local.multilayer.LocalMultiLayerNetworkSaver;
 import org.arbiter.deeplearning4j.scoring.ScoreFunctions;
@@ -52,9 +53,11 @@ import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.saver.InMemoryModelSaver;
 import org.deeplearning4j.earlystopping.scorecalc.DataSetLossCalculator;
+import org.deeplearning4j.earlystopping.scorecalc.DataSetLossCalculatorCG;
 import org.deeplearning4j.earlystopping.termination.MaxEpochsTerminationCondition;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Ignore;
@@ -84,20 +87,19 @@ public class TestGraphLocalExecution {
                 .regularization(true)
                 .l2(new ContinuousParameterSpace(0.0001, 0.01))
                 .iterations(100)
-                .addInputs("in")
-                .addLayer("layer0", new DenseLayerSpace.Builder().nIn(4).nOut(5)
+                .addInputs("in").setInputTypes(InputType.feedForward(4))
+                .addLayer("layer0", new DenseLayerSpace.Builder().nIn(4).nOut(new IntegerParameterSpace(2,10))
                         .activation(new DiscreteParameterSpace<>("relu", "tanh"))
                         .build(), "in")
-                .addLayer("out", new OutputLayerSpace.Builder().nIn(5).nOut(3).activation("softmax")
+                .addLayer("out", new OutputLayerSpace.Builder().nOut(3).activation("softmax")
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "layer0")
                 .setOutputs("out")
                 .numEpochs(3)
                 .pretrain(false).backprop(true).build();
 
         //Define configuration:
-
         CandidateGenerator<GraphConfiguration> candidateGenerator = new RandomSearchGenerator<>(mls);
-        DataProvider<DataSetIterator> dataProvider = new IrisDataSetProvider();
+        DataProvider<DataSetIterator> dataProvider = new TestDL4JLocalExecution.IrisDataSetProvider();
 
 
 //        String modelSavePath = FilenameUtils.concat(System.getProperty("java.io.tmpdir"),"ArbiterDL4JTest/");
@@ -106,6 +108,7 @@ public class TestGraphLocalExecution {
         File f = new File(modelSavePath);
         if(f.exists()) f.delete();
         f.mkdir();
+        f.deleteOnExit();
         if(!f.exists()) throw new RuntimeException();
 
         OptimizationConfiguration<GraphConfiguration,ComputationGraph,DataSetIterator,Evaluation> configuration
@@ -139,92 +142,70 @@ public class TestGraphLocalExecution {
     @Test
     @Ignore
     public void testLocalExecutionEarlyStopping() throws Exception {
-        fail("Not implemented");    //TODO modify test below for computation graph
 
-        EarlyStoppingConfiguration esConf = new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
+        EarlyStoppingConfiguration<ComputationGraph> esConf = new EarlyStoppingConfiguration.Builder<ComputationGraph>()
                 .epochTerminationConditions(new MaxEpochsTerminationCondition(100))
-                .scoreCalculator(new DataSetLossCalculator(new IrisDataSetIterator(150,150),true))
-                .modelSaver(new InMemoryModelSaver<MultiLayerNetwork>())
+                .scoreCalculator(new DataSetLossCalculatorCG(new IrisDataSetIterator(150,150),true))
+                .modelSaver(new InMemoryModelSaver<ComputationGraph>())
                 .build();
 
         //Define: network config (hyperparameter space)
-        MultiLayerSpace mls = new MultiLayerSpace.Builder()
+        ComputationGraphSpace cgs = new ComputationGraphSpace.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .learningRate(new ContinuousParameterSpace(0.0001, 0.1))
                 .regularization(true)
                 .l2(new ContinuousParameterSpace(0.0001, 0.01))
                 .iterations(1)
-                .addLayer(new DenseLayerSpace.Builder().nIn(4).nOut(new IntegerParameterSpace(2, 10))
+                .addInputs("in").setInputTypes(InputType.feedForward(4))
+                .addLayer("first", new DenseLayerSpace.Builder().nIn(4).nOut(new IntegerParameterSpace(2, 10))
                         .activation(new DiscreteParameterSpace<String>("relu", "tanh"))
-                        .build(), new IntegerParameterSpace(1, 2), true)   //1-2 identical layers (except nIn)
-                .addLayer(new OutputLayerSpace.Builder().nOut(3).activation("softmax")
-                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                        .build(), "in")   //1-2 identical layers (except nIn)
+                .addLayer("out", new OutputLayerSpace.Builder().nOut(3).activation("softmax")
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "first")
+                .setOutputs("out")
                 .earlyStoppingConfiguration(esConf)
                 .pretrain(false).backprop(true).build();
 
         //Define configuration:
 
-        CandidateGenerator<DL4JConfiguration> candidateGenerator = new RandomSearchGenerator<>(mls);
-        DataProvider<DataSetIterator> dataProvider = new IrisDataSetProvider();
+        CandidateGenerator<GraphConfiguration> candidateGenerator = new RandomSearchGenerator<>(cgs);
+        DataProvider<DataSetIterator> dataProvider = new TestDL4JLocalExecution.IrisDataSetProvider();
 
 
-        String modelSavePath = new File(System.getProperty("java.io.tmpdir"),"ArbiterDL4JTest2\\").getAbsolutePath();
+        String modelSavePath = new File(System.getProperty("java.io.tmpdir"),"ArbiterDL4JTest2CG\\").getAbsolutePath();
 
         File f = new File(modelSavePath);
         if(f.exists()) f.delete();
         f.mkdir();
+        f.deleteOnExit();
         if(!f.exists()) throw new RuntimeException();
 
-        OptimizationConfiguration<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> configuration
-                = new OptimizationConfiguration.Builder<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation>()
+        OptimizationConfiguration<GraphConfiguration,ComputationGraph,DataSetIterator,Evaluation> configuration
+                = new OptimizationConfiguration.Builder<GraphConfiguration,ComputationGraph,DataSetIterator,Evaluation>()
                 .candidateGenerator(candidateGenerator)
                 .dataProvider(dataProvider)
-                .modelSaver(new LocalMultiLayerNetworkSaver<Evaluation>(modelSavePath))
-                .scoreFunction(new TestSetLossScoreFunction())
+                .modelSaver(new LocalComputationGraphSaver<Evaluation>(modelSavePath))
+                .scoreFunction(ScoreFunctions.testSetLossGraphDataSet(true))
                 .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
                         new MaxCandidatesCondition(100))
                 .build();
 
-        CandidateExecutor<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> executor =
-                new LocalCandidateExecutor<>(new MultiLayerNetworkTaskCreator<>(new ClassificationEvaluator()),1);
+        CandidateExecutor<GraphConfiguration,ComputationGraph,DataSetIterator,Evaluation> executor =
+                new LocalCandidateExecutor<>(new ComputationGraphTaskCreator<>(new GraphClassificationDataSetEvaluator()),1);
 
-        OptimizationRunner<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> runner
+        OptimizationRunner<GraphConfiguration,ComputationGraph,DataSetIterator,Evaluation> runner
                 = new OptimizationRunner<>(configuration, executor);
 
-       /* ArbiterUIServer server = new ArbiterUIServer();
+        ArbiterUIServer server = new ArbiterUIServer();
         String[] str = new String[]{"server", "dropwizard.yml"};
         server.run(str);
         WebUtils.tryOpenBrowser("http://localhost:8080/arbiter", log);    //TODO don't hardcode
         runner.addListeners(new UIOptimizationRunnerStatusListener(server));
 
-       */ runner.execute();
+        runner.execute();
 
 
         System.out.println("----- COMPLETE -----");
 
-    }
-
-
-    private static class IrisDataSetProvider implements DataProvider<DataSetIterator>{
-
-        @Override
-        public DataSetIterator trainData(Map<String, Object> dataParameters) {
-            if(dataParameters == null || dataParameters.isEmpty()) return new IrisDataSetIterator(150,150);
-            if(dataParameters.containsKey("batchsize")){
-                int b = (Integer)dataParameters.get("batchsize");
-                return new IrisDataSetIterator(b,150);
-            }
-            return new IrisDataSetIterator(150,150);
-        }
-
-        @Override
-        public DataSetIterator testData(Map<String, Object> dataParameters) {
-            return trainData(dataParameters);
-        }
-
-        @Override
-        public String toString(){
-            return "IrisDataSetProvider()";
-        }
     }
 }

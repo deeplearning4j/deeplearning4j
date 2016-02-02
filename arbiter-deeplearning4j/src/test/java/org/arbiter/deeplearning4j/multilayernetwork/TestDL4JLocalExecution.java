@@ -94,6 +94,7 @@ public class TestDL4JLocalExecution {
         File f = new File(modelSavePath);
         if(f.exists()) f.delete();
         f.mkdir();
+        f.deleteOnExit();
         if(!f.exists()) throw new RuntimeException();
 
         OptimizationConfiguration<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> configuration
@@ -160,6 +161,7 @@ public class TestDL4JLocalExecution {
         File f = new File(modelSavePath);
         if(f.exists()) f.delete();
         f.mkdir();
+        f.deleteOnExit();
         if(!f.exists()) throw new RuntimeException();
 
         OptimizationConfiguration<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> configuration
@@ -192,7 +194,7 @@ public class TestDL4JLocalExecution {
     }
 
 
-    private static class IrisDataSetProvider implements DataProvider<DataSetIterator>{
+    public static class IrisDataSetProvider implements DataProvider<DataSetIterator>{
 
         @Override
         public DataSetIterator trainData(Map<String, Object> dataParameters) {
