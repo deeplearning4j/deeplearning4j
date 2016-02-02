@@ -15,15 +15,17 @@
  *  *    limitations under the License.
  *
  */
-package org.arbiter.deeplearning4j;
+package org.arbiter.deeplearning4j.multilayernetwork;
 
-import org.arbiter.deeplearning4j.evaluator.DL4JClassificationEvaluator;
+import org.arbiter.deeplearning4j.DL4JConfiguration;
+import org.arbiter.deeplearning4j.MultiLayerSpace;
+import org.arbiter.deeplearning4j.evaluator.multilayer.ClassificationEvaluator;
 import org.arbiter.deeplearning4j.layers.ConvolutionLayerSpace;
 import org.arbiter.deeplearning4j.layers.DenseLayerSpace;
 import org.arbiter.deeplearning4j.layers.OutputLayerSpace;
-import org.arbiter.deeplearning4j.saver.local.LocalMultiLayerNetworkSaver;
-import org.arbiter.deeplearning4j.scoring.TestSetLossScoreFunction;
-import org.arbiter.deeplearning4j.task.DL4JTaskCreator;
+import org.arbiter.deeplearning4j.saver.local.multilayer.LocalMultiLayerNetworkSaver;
+import org.arbiter.deeplearning4j.scoring.multilayer.TestSetLossScoreFunction;
+import org.arbiter.deeplearning4j.task.MultiLayerNetworkTaskCreator;
 import org.arbiter.optimize.api.CandidateGenerator;
 import org.arbiter.optimize.api.data.DataProvider;
 import org.arbiter.optimize.api.termination.MaxCandidatesCondition;
@@ -40,7 +42,6 @@ import org.arbiter.optimize.ui.ArbiterUIServer;
 import org.arbiter.optimize.ui.listener.UIOptimizationRunnerStatusListener;
 import org.arbiter.util.WebUtils;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.saver.InMemoryModelSaver;
@@ -51,8 +52,6 @@ import org.deeplearning4j.earlystopping.termination.MaxTimeIterationTerminationC
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.junit.Ignore;
-import org.junit.Test;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +67,7 @@ public class MNISTOptimizationTest {
 
     public static void main(String[] args) throws Exception {
 
-        EarlyStoppingConfiguration esConf = new EarlyStoppingConfiguration.Builder()
+        EarlyStoppingConfiguration<MultiLayerNetwork> esConf = new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
                 .epochTerminationConditions(new MaxEpochsTerminationCondition(3))
                 .iterationTerminationConditions(
                         new MaxTimeIterationTerminationCondition(5, TimeUnit.MINUTES),
@@ -76,7 +75,7 @@ public class MNISTOptimizationTest {
                         )
                 .scoreCalculator(new DataSetLossCalculator(
                         new MnistDataSetIterator(64, 2000, false, false, true, 123), true))
-                .modelSaver(new InMemoryModelSaver())
+                .modelSaver(new InMemoryModelSaver<MultiLayerNetwork>())
                 .build();
 
         //Define: network config (hyperparameter space)
@@ -125,7 +124,7 @@ public class MNISTOptimizationTest {
                 .build();
 
         CandidateExecutor<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> executor =
-                new LocalCandidateExecutor<>(new DL4JTaskCreator(new DL4JClassificationEvaluator()),1);
+                new LocalCandidateExecutor<>(new MultiLayerNetworkTaskCreator(new ClassificationEvaluator()),1);
 
         OptimizationRunner<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> runner
                 = new OptimizationRunner<>(configuration, executor);

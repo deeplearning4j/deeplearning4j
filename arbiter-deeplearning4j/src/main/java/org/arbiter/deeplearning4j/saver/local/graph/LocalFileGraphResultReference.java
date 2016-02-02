@@ -15,16 +15,19 @@
  *  *    limitations under the License.
  *
  */
-package org.arbiter.deeplearning4j.saver.local;
+package org.arbiter.deeplearning4j.saver.local.graph;
 
 import lombok.AllArgsConstructor;
 import org.apache.commons.io.FileUtils;
 import org.arbiter.deeplearning4j.DL4JConfiguration;
+import org.arbiter.deeplearning4j.GraphConfiguration;
 import org.arbiter.optimize.api.Candidate;
 import org.arbiter.optimize.api.OptimizationResult;
 import org.arbiter.optimize.api.saving.ResultReference;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
+import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -32,7 +35,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.io.*;
 
 @AllArgsConstructor
-public class LocalFileMultiLayerNetworkResultReference<A> implements ResultReference<DL4JConfiguration,MultiLayerNetwork,A> {
+public class LocalFileGraphResultReference<A> implements ResultReference<GraphConfiguration,ComputationGraph,A> {
 
     private int index;
     private String dir;
@@ -42,18 +45,18 @@ public class LocalFileMultiLayerNetworkResultReference<A> implements ResultRefer
     private File additionalResultsFile;
     private File esConfigFile;
     private File numEpochsFile;
-    private Candidate<DL4JConfiguration> candidate;
+    private Candidate<GraphConfiguration> candidate;
 
     @Override
-    public OptimizationResult<DL4JConfiguration, MultiLayerNetwork,A> getResult() throws IOException {
+    public OptimizationResult<GraphConfiguration,ComputationGraph,A> getResult() throws IOException {
         String jsonConfig = FileUtils.readFileToString(configFile);
         INDArray params;
         try( DataInputStream dis = new DataInputStream(new FileInputStream(networkParamsFile)) ){
             params = Nd4j.read(dis);
         }
 
-        MultiLayerConfiguration conf = MultiLayerConfiguration.fromJson(jsonConfig);
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        ComputationGraphConfiguration conf = ComputationGraphConfiguration.fromJson(jsonConfig);
+        ComputationGraph net = new ComputationGraph(conf);
         net.init();
         net.setParams(params);
 
@@ -61,10 +64,10 @@ public class LocalFileMultiLayerNetworkResultReference<A> implements ResultRefer
         //TODO: properly parsing. Probably want to store additional info other than just score...
         double d = Double.parseDouble(scoreStr);
 
-        EarlyStoppingConfiguration earlyStoppingConfiguration = null;
+        EarlyStoppingConfiguration<ComputationGraph> earlyStoppingConfiguration = null;
         if(esConfigFile != null && esConfigFile.exists()){
             try(ObjectInputStream ois = new ObjectInputStream(new FileInputStream(esConfigFile))){
-                earlyStoppingConfiguration = (EarlyStoppingConfiguration)ois.readObject();
+                earlyStoppingConfiguration = (EarlyStoppingConfiguration<ComputationGraph>)ois.readObject();
             } catch( ClassNotFoundException e){
                 throw new RuntimeException("Error loading early stopping configuration",e);
             }
@@ -75,7 +78,7 @@ public class LocalFileMultiLayerNetworkResultReference<A> implements ResultRefer
             nEpochs = Integer.parseInt(numEpochs);
         }
 
-        DL4JConfiguration dl4JConfiguration = new DL4JConfiguration(conf,earlyStoppingConfiguration,nEpochs);
+        GraphConfiguration dl4JConfiguration = new GraphConfiguration(conf,earlyStoppingConfiguration,nEpochs);
 
 
 
@@ -95,6 +98,6 @@ public class LocalFileMultiLayerNetworkResultReference<A> implements ResultRefer
 
     @Override
     public String toString(){
-        return "LocalFileMultiLayerNetworkResultReference(" + dir + ")";
+        return "LocalFileGraphResultReference(" + dir + ")";
     }
 }

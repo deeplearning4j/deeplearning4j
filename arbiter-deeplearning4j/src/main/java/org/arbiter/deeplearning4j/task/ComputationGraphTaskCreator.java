@@ -19,8 +19,8 @@ package org.arbiter.deeplearning4j.task;
 
 import lombok.AllArgsConstructor;
 import org.apache.commons.lang.exception.ExceptionUtils;
-import org.arbiter.deeplearning4j.DL4JConfiguration;
-import org.arbiter.deeplearning4j.listener.UIStatusReportingListener;
+import org.arbiter.deeplearning4j.GraphConfiguration;
+import org.arbiter.deeplearning4j.listener.UIGraphStatusReportingListener;
 import org.arbiter.optimize.api.Candidate;
 import org.arbiter.optimize.api.OptimizationResult;
 import org.arbiter.optimize.api.TaskCreator;
@@ -29,57 +29,55 @@ import org.arbiter.optimize.api.evaluation.ModelEvaluator;
 import org.arbiter.optimize.api.score.ScoreFunction;
 import org.arbiter.optimize.runner.Status;
 import org.arbiter.optimize.runner.listener.candidate.UICandidateStatusListener;
-import org.arbiter.optimize.ui.components.RenderableComponent;
 import org.arbiter.optimize.ui.components.RenderableComponentString;
-import org.arbiter.optimize.ui.components.RenderableComponentTable;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.EarlyStoppingResult;
-import org.deeplearning4j.earlystopping.trainer.EarlyStoppingTrainer;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.earlystopping.trainer.EarlyStoppingGraphTrainer;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 
 import java.util.concurrent.Callable;
 
 @AllArgsConstructor
-public class DL4JTaskCreator<A> implements TaskCreator<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,A>{
+public class ComputationGraphTaskCreator<A> implements TaskCreator<GraphConfiguration,ComputationGraph,DataSetIterator,A>{
 
-    private ModelEvaluator<MultiLayerNetwork,DataSetIterator,A> modelEvaluator;
+    private ModelEvaluator<ComputationGraph,DataSetIterator,A> modelEvaluator;
 
     @Override
-    public Callable<OptimizationResult<DL4JConfiguration, MultiLayerNetwork, A>> create(
-                Candidate<DL4JConfiguration> candidate, DataProvider<DataSetIterator> dataProvider,
-                   ScoreFunction<MultiLayerNetwork,DataSetIterator> scoreFunction,
+    public Callable<OptimizationResult<GraphConfiguration, ComputationGraph, A>> create(
+                Candidate<GraphConfiguration> candidate, DataProvider<DataSetIterator> dataProvider,
+                   ScoreFunction<ComputationGraph,DataSetIterator> scoreFunction,
                    UICandidateStatusListener statusListener) {
 
-        return new DL4JLearningTask(candidate,dataProvider,scoreFunction,modelEvaluator,statusListener);
-
+        return new GraphLearningTask<>(candidate,dataProvider,scoreFunction,modelEvaluator,statusListener);
     }
 
 
-    private static class DL4JLearningTask<A> implements Callable<OptimizationResult<DL4JConfiguration,MultiLayerNetwork,A>> {
+    private static class GraphLearningTask<A> implements Callable<OptimizationResult<GraphConfiguration,ComputationGraph,A>> {
 
-        private Candidate<DL4JConfiguration> candidate;
+        private Candidate<GraphConfiguration> candidate;
         private DataProvider<DataSetIterator> dataProvider;
-        private ScoreFunction<MultiLayerNetwork,DataSetIterator> scoreFunction;
-        private ModelEvaluator<MultiLayerNetwork,DataSetIterator,A> modelEvaluator;
+        private ScoreFunction<ComputationGraph,DataSetIterator> scoreFunction;
+        private ModelEvaluator<ComputationGraph,DataSetIterator,A> modelEvaluator;
 
-        private UIStatusReportingListener dl4jListener;
+        private UIGraphStatusReportingListener dl4jListener;
 
-        public DL4JLearningTask(Candidate<DL4JConfiguration> candidate, DataProvider<DataSetIterator> dataProvider, ScoreFunction<MultiLayerNetwork, DataSetIterator> scoreFunction, ModelEvaluator<MultiLayerNetwork, DataSetIterator, A> modelEvaluator, UICandidateStatusListener listener) {
+        public GraphLearningTask(Candidate<GraphConfiguration> candidate, DataProvider<DataSetIterator> dataProvider,
+                                 ScoreFunction<ComputationGraph, DataSetIterator> scoreFunction,
+                                 ModelEvaluator<ComputationGraph, DataSetIterator, A> modelEvaluator, UICandidateStatusListener listener) {
             this.candidate = candidate;
             this.dataProvider = dataProvider;
             this.scoreFunction = scoreFunction;
             this.modelEvaluator = modelEvaluator;
 
-            dl4jListener = new UIStatusReportingListener(listener);
+            dl4jListener = new UIGraphStatusReportingListener(listener);
         }
 
 
         @Override
-        public OptimizationResult<DL4JConfiguration, MultiLayerNetwork,A> call() throws Exception {
+        public OptimizationResult<GraphConfiguration,ComputationGraph,A> call() throws Exception {
             //Create network
-            MultiLayerNetwork net = new MultiLayerNetwork(candidate.getValue().getMultiLayerConfiguration());
+            ComputationGraph net = new ComputationGraph(candidate.getValue().getConfiguration());
             net.init();
             net.setListeners(dl4jListener);
 
@@ -87,10 +85,10 @@ public class DL4JTaskCreator<A> implements TaskCreator<DL4JConfiguration,MultiLa
             DataSetIterator dataSetIterator = dataProvider.testData(candidate.getDataParameters());
 
 
-            EarlyStoppingConfiguration esConfig = candidate.getValue().getEarlyStoppingConfiguration();
-            EarlyStoppingResult esResult = null;
+            EarlyStoppingConfiguration<ComputationGraph> esConfig = candidate.getValue().getEarlyStoppingConfiguration();
+            EarlyStoppingResult<ComputationGraph> esResult = null;
             if(esConfig != null){
-                EarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConfig,net,dataSetIterator,dl4jListener);
+                EarlyStoppingGraphTrainer trainer = new EarlyStoppingGraphTrainer(esConfig,net,dataSetIterator,dl4jListener);
                 try{
                     esResult = trainer.fit();
                     net = esResult.getBestModel();  //Can return null if failed OR if

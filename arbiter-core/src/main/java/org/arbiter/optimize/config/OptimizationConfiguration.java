@@ -59,32 +59,32 @@ public class OptimizationConfiguration<T,M,D,A> {
         private ScoreFunction<M,D> scoreFunction;
         private List<TerminationCondition> terminationConditions;
 
-        public Builder dataProvider(DataProvider<D> dataProvider){
+        public Builder<T,M,D,A> dataProvider(DataProvider<D> dataProvider){
             this.dataProvider = dataProvider;
             return this;
         }
 
-        public Builder candidateGenerator(CandidateGenerator<T> candidateGenerator){
+        public Builder<T,M,D,A> candidateGenerator(CandidateGenerator<T> candidateGenerator){
             this.candidateGenerator = candidateGenerator;
             return this;
         }
 
-        public Builder modelSaver(ResultSaver<T,M,A> resultSaver){
+        public Builder<T,M,D,A> modelSaver(ResultSaver<T,M,A> resultSaver){
             this.resultSaver = resultSaver;
             return this;
         }
 
-        public Builder scoreFunction(ScoreFunction<M,D> scoreFunction){
+        public Builder<T,M,D,A> scoreFunction(ScoreFunction<M,D> scoreFunction){
             this.scoreFunction = scoreFunction;
             return this;
         }
 
-        public Builder terminationConditions(TerminationCondition... conditions){
+        public Builder<T,M,D,A> terminationConditions(TerminationCondition... conditions){
             terminationConditions = Arrays.asList(conditions);
             return this;
         }
 
-        public Builder terminationConditions(List<TerminationCondition> terminationConditions ){
+        public Builder<T,M,D,A> terminationConditions(List<TerminationCondition> terminationConditions ){
             this.terminationConditions = terminationConditions;
             return this;
         }

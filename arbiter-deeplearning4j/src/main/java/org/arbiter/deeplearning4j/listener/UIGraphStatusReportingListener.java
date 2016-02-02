@@ -18,21 +18,22 @@
 package org.arbiter.deeplearning4j.listener;
 
 import org.arbiter.optimize.runner.listener.candidate.UICandidateStatusListener;
-import org.arbiter.optimize.ui.components.*;
+import org.arbiter.optimize.ui.components.RenderableComponentString;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 
 /**Listener designed to report status to Arbiter UI
  * Combines listener functionality for both early stopping AND iteration listeners
  */
-public class UIStatusReportingListener extends BaseUIStatusReportingListener<MultiLayerNetwork>{
+public class UIGraphStatusReportingListener extends BaseUIStatusReportingListener<ComputationGraph>{
 
 
-    public UIStatusReportingListener(UICandidateStatusListener listener) {
+    public UIGraphStatusReportingListener(UICandidateStatusListener listener) {
         super(listener);
     }
 
     @Override
-    protected void createConfigComponent(MultiLayerNetwork network){
-        config = new RenderableComponentString(network.getLayerWiseConfigurations().toString());
+    protected void createConfigComponent(ComputationGraph network){
+        config = new RenderableComponentString(network.getConfiguration().toString());
     }
 }
