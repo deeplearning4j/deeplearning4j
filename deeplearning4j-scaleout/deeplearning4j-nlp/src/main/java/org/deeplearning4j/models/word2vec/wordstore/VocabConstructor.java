@@ -35,6 +35,7 @@ public class VocabConstructor<T extends SequenceElement> {
     private boolean useAdaGrad = false;
     private boolean fetchLabels = false;
     private int limit;
+    private AtomicLong seqCount = new AtomicLong(0);
 
     protected static final Logger log = LoggerFactory.getLogger(VocabConstructor.class);
 
@@ -67,6 +68,16 @@ public class VocabConstructor<T extends SequenceElement> {
     @SuppressWarnings("unchecked") // method is safe, since all calls inside are using generic SequenceElement methods
     public VocabCache<T> buildMergedVocabulary(@NonNull WordVectors wordVectors, boolean fetchLabels) {
         return buildMergedVocabulary((VocabCache<T>) wordVectors.vocab(), fetchLabels);
+    }
+
+
+    /**
+     * This method returns total number of sequences passed through VocabConstructor
+     *
+     * @return
+     */
+    public long getNumberOfSequences() {
+        return seqCount.get();
     }
 
     /**
@@ -106,6 +117,7 @@ public class VocabConstructor<T extends SequenceElement> {
 
                 while (iterator.hasMoreSequences()) {
                     Sequence<T> sequence = iterator.nextSequence();
+                    seqCount.incrementAndGet();
 
                     for (T label: sequence.getSequenceLabels()) {
                         if (!cache.containsWord(label.getLabel())) {
@@ -136,7 +148,6 @@ public class VocabConstructor<T extends SequenceElement> {
 
         if (cache == null) cache = new AbstractCache.Builder<T>().build();
         log.debug("Target vocab size before building: [" + cache.numWords() + "]");
-        final AtomicLong sequenceCounter = new AtomicLong(0);
         final AtomicLong elementsCounter = new AtomicLong(0);
 
         AbstractCache<T> topHolder = new AbstractCache.Builder<T>()
@@ -158,7 +169,7 @@ public class VocabConstructor<T extends SequenceElement> {
             long counter = 0;
             while (iterator.hasMoreSequences()) {
                 Sequence<T> document = iterator.nextSequence();
-                sequenceCounter.incrementAndGet();
+                seqCount.incrementAndGet();
               //  log.info("Sequence length: ["+ document.getElements().size()+"]");
              //   Tokenizer tokenizer = tokenizerFactory.create(document.getContent());
 
@@ -200,7 +211,7 @@ public class VocabConstructor<T extends SequenceElement> {
                 }
 
                 sequences++;
-                if (sequenceCounter.get() % 100000 == 0) log.info("Sequences checked: [" + sequenceCounter.get() +"], Current vocabulary size: [" + elementsCounter.get() +"]");
+                if (seqCount.get() % 100000 == 0) log.info("Sequences checked: [" + seqCount.get() +"], Current vocabulary size: [" + elementsCounter.get() +"]");
             }
             // apply minWordFrequency set for this source
             log.debug("Vocab size before truncation: [" + tempHolder.numWords() + "],  NumWords: [" + tempHolder.totalWordOccurrences()+ "], sequences parsed: [" + sequences+ "], counter: ["+counter+"]");
@@ -256,7 +267,7 @@ public class VocabConstructor<T extends SequenceElement> {
             }
         }
 
-        log.info("Sequences checked: [" + sequenceCounter.get() +"], Current vocabulary size: [" + cache.numWords() +"]");
+        log.info("Sequences checked: [" + seqCount.get() +"], Current vocabulary size: [" + cache.numWords() +"]");
         return cache;
     }
 
