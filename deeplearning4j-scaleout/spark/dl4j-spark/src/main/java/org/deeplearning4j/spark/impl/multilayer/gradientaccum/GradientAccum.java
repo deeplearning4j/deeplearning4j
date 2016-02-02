@@ -54,7 +54,7 @@ public class GradientAccum implements Function<DataSet, Gradient> {
     MultiLayerConfiguration conf = MultiLayerConfiguration.fromJson(json);
     MultiLayerNetwork network = new MultiLayerNetwork(conf);
     network.init();
-    network.setParameters(params.value());
+    network.setParameters(params.value().dup());
     network.fit(dataSet);
     return network.gradient();
   }
