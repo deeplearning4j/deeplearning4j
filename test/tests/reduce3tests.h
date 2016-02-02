@@ -118,6 +118,46 @@ static Data<T> * getDataReduce3Dimension(T *assertion,T startingVal) {
 
 
 template <typename T>
+static Data<T> * getDataReduce3DimensionMulti(T *assertion,T startingVal) {
+	Data<T> *ret = new Data<T>();
+
+	int rank = 3;
+	int resultRank = 2;
+	int length = 12;
+	int resultLength = 3;
+	int *shape = (int *) malloc(sizeof(int) * rank);
+	shape[0] = 2;
+	shape[1] = 2;
+	shape[2] = 3;
+	ret->xShape = shape;
+	ret->rank = rank;
+	ret->data = (T *) malloc(sizeof(T) * length);
+	for(int i = 0; i < length; i++)
+		ret->data[i] = i + 1;
+	T *extraParams = (T *) malloc(sizeof(T) * 4);
+	extraParams[0] = startingVal;
+	ret->extraParams = extraParams;
+
+	ret->assertion = (T *) malloc(sizeof(T) * resultLength);
+	for(int i = 0; i < resultLength; i++) {
+		printf("Assertion value %f\n",assertion[i]);
+		ret->assertion[i] = assertion[i];
+	}
+
+	ret->dimension = (int *) malloc(sizeof(int) * 2);
+	ret->dimension[0] = 0;
+	ret->dimension[1] = 1;
+	ret->dimensionLength = 2;
+	ret->result = (T *) malloc(sizeof(T) * resultLength);
+	ret->resultRank = 2;
+	ret->resultShape = (int *) malloc(sizeof(int) * resultRank);
+	ret->resultShape[0] = 1;
+	ret->resultShape[1] = 3;
+
+	return ret;
+}
+
+template <typename T>
 class Reduce3Test : public PairWiseTest<T> {
 
 public:

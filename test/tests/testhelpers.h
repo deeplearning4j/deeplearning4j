@@ -59,6 +59,8 @@ int *shapeBuffer(int rank, int *shape) {
 	shapeInfo->rank = rank;
 	int elementWiseStride = shape::computeElementWiseStride(rank, shape, stride,
 			0);
+	if(elementWiseStride < 1)
+		elementWiseStride = 1;
 	shapeInfo->elementWiseStride = elementWiseStride;
 	int *shapeInfoBuffer = shape::toShapeBuffer(shapeInfo);
 	free(shapeInfo);

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
+export OMP_NUM_THREADS=1
 
-if [ "$#" -ne 1 ]; then
+if [ "$#" -lt 1 ]; then
     echo "Please specify an argument"
 else
     command="$1"
@@ -29,13 +30,25 @@ else
          cmake -DLIBRARY=TRUE ..
          make && cd ..
      elif [ "$1" ==  "test" ]; then
-           rm -rf testbuild
-          mkdir testbuild
-           cd testbuild
-           cmake -DRUN_TEST=TRUE ..
-            make && cd ..
-            mv testbuild/test/libnd4jtests .
-            ./libnd4jtests
+           numargs="$#"
+           if [ "$#" -gt "1" ]; then
+                rm -rf testbuild
+                mkdir testbuild
+                cd testbuild
+                cmake -DRUN_TEST=TRUE ..
+                make && cd ..
+                mv testbuild/test/libnd4jtests .
+               ./libnd4jtests -n "$2"
+           else
+               rm -rf testbuild
+               mkdir testbuild
+               cd testbuild
+               cmake -DRUN_TEST=TRUE ..
+               make && cd ..
+               mv testbuild/test/libnd4jtests .
+               ./libnd4jtests
+           fi
+
            echo "FINISHING BUILD"
      elif [ "$1" == "cubin" ]; then
             rm -rf cubinbuild
