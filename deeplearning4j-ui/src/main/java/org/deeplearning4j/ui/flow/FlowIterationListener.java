@@ -128,7 +128,7 @@ public class FlowIterationListener implements IterationListener {
         if (login == null || password == null) target = client.target("http://"+ remoteAddr + ":" + remotePort ).path("flow").path("state");
 
         this.path = "http://" + remoteAddr + ":" + remotePort + "/flow";
-        log.info("Flow UI: " + this.path);
+        log.info("Flow UI address: " + this.path);
     }
 
     /**
@@ -387,7 +387,7 @@ public class FlowIterationListener implements IterationListener {
         StringBuilder mainLine = new StringBuilder();
         StringBuilder subLine = new StringBuilder();
 
-        log.info("Layer: " + info.getName() + " class: " + layer.getClass().getSimpleName());
+    //    log.info("Layer: " + info.getName() + " class: " + layer.getClass().getSimpleName());
 
         if (layer.type().equals(Layer.Type.CONVOLUTIONAL)) {
             org.deeplearning4j.nn.conf.layers.ConvolutionLayer layer1 = (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) layer.conf().getLayer();
