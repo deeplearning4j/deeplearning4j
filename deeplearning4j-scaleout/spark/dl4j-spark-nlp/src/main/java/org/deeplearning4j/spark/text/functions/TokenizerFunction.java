@@ -54,12 +54,16 @@ public class TokenizerFunction implements Function<String,List<String>> {
 
     private TokenizerFactory getTokenizerFactory() {
         try {
-            Class<? extends TokenPreProcess> clazz = (Class<? extends TokenPreProcess>) Class.forName(tokenizerPreprocessorClazz);
-            TokenPreProcess tokenPreProcessInst = clazz.newInstance();
+            TokenPreProcess tokenPreProcessInst = null;
+            // token preprocess CAN be undefined
+            if (tokenizerPreprocessorClazz != null && !tokenizerPreprocessorClazz.isEmpty()) {
+                Class<? extends TokenPreProcess> clazz = (Class<? extends TokenPreProcess>) Class.forName(tokenizerPreprocessorClazz);
+                tokenPreProcessInst = clazz.newInstance();
+            }
 
             Class<? extends TokenizerFactory> clazz2 = (Class<? extends TokenizerFactory>) Class.forName(tokenizerFactoryClazz);
             tokenizerFactory = clazz2.newInstance();
-            tokenizerFactory.setTokenPreProcessor(tokenPreProcessInst);
+            if (tokenPreProcessInst != null) tokenizerFactory.setTokenPreProcessor(tokenPreProcessInst);
             if(nGrams > 1) {
                 tokenizerFactory = new NGramTokenizerFactory(tokenizerFactory, nGrams, nGrams);
             }

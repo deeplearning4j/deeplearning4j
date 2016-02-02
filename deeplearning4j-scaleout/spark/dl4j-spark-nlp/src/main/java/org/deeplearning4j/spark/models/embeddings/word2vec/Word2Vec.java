@@ -252,6 +252,8 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
         protected List<String> stopWords = new ArrayList<>();
         protected int batchSize = 100;
         protected boolean useUnk = false;
+        private String tokenizer = "";
+        private String tokenPreprocessor = "";
 
         /**
          * Creates Builder instance with default parameters set.
@@ -408,7 +410,36 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
          * @return
          */
         public Builder tokenizerFactory(@NonNull TokenizerFactory factory) {
-            this.tokenizerFactory = factory;
+            this.tokenizer = this.tokenizerFactory.getClass().getCanonicalName();
+
+            if (tokenizerFactory.getTokenPreProcessor() != null) {
+                this.tokenPreprocessor = this.tokenizerFactory.getTokenPreProcessor().getClass().getCanonicalName();
+            } else this.tokenPreprocessor = "";
+
+            return this;
+        }
+
+        /**
+         * Specifies TokenizerFactory class to be used for tokenization
+         *
+         *
+         * @param tokenizer class name for tokenizerFactory
+         * @return
+         */
+        public Builder tokenizerFactory(@NonNull String tokenizer) {
+            this.tokenizer = tokenizer;
+            return this;
+        }
+
+        /**
+         * Specifies TokenPreProcessor class to be used during tokenization
+         *
+         *
+         * @param tokenPreprocessor class name for tokenPreProcessor
+         * @return
+         */
+        public Builder tokenPreprocessor(@NonNull String tokenPreprocessor) {
+            this.tokenPreprocessor = tokenPreprocessor;
             return this;
         }
 
@@ -501,13 +532,8 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
             ret.batchSize = this.batchSize;
             ret.useUnknown = this.useUnk;
 
-            if (this.tokenizerFactory != null) {
-                ret.tokenizer = this.tokenizerFactory.getClass().getCanonicalName();
-
-                if (tokenizerFactory.getTokenPreProcessor() != null) {
-                    ret.tokenPreprocessor = this.tokenizerFactory.getTokenPreProcessor().getClass().getCanonicalName();
-                } else ret.tokenPreprocessor = "";
-            }
+            ret.tokenizer = this.tokenizer;
+            ret.tokenPreprocessor = this.tokenPreprocessor;
 
             return ret;
         }

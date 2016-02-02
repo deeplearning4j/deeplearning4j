@@ -26,6 +26,7 @@ import lombok.NonNull;
 import org.apache.commons.compress.compressors.gzip.GzipUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
+import org.apache.commons.lang.StringUtils;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
 import org.deeplearning4j.models.paragraphvectors.ParagraphVectors;
@@ -52,6 +53,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
@@ -985,13 +987,27 @@ public class WordVectorSerializer {
             if(!line.contains(" ")) {
                 log.info("Skipping first line");
                 hasHeader = true;
+            } else {
+                // we should check for something that looks like proper word vectors here. i.e: 1 word at the 0 position, and bunch of floats further
+                String[] split = line.split(" ");
+                try {
+                    for (int x = 1; x < split.length; x++) {
+                        double val = Double.parseDouble(split[x]);
+                    }
+                    if (split.length < 4) hasHeader = true;
+                } catch (Exception e) {
+                    // if any conversion exception hits - that'll be considered header
+                    hasHeader = true;
+                }
             }
 
         }
 
         //reposition buffer to be one line ahead
         if(hasHeader) {
+            line = "";
             iter.close();
+            reader = new BufferedReader(new FileReader(vectorsFile));
             iter = IOUtils.lineIterator(reader);
             iter.nextLine();
         }
@@ -1023,7 +1039,7 @@ public class WordVectorSerializer {
 
         INDArray syn = Nd4j.create(new int[]{arrays.size(), arrays.get(0).columns()});
         for (int i = 0; i < syn.rows(); i++) {
-            syn.putRow(i, arrays.get(i));
+            syn.putRow(i,arrays.get(i));
         }
 
         InMemoryLookupTable lookupTable = (InMemoryLookupTable) new InMemoryLookupTable.Builder()
