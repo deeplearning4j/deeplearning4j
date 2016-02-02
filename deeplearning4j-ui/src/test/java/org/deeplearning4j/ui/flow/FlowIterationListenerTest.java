@@ -55,7 +55,7 @@ public class FlowIterationListenerTest {
                     .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
                     .graphBuilder()
                     .addInputs("inEn", "inFr")
-                    .setInputTypes(InputType.recurrent(), InputType.recurrent())
+                    .setInputTypes(InputType.recurrent(VOCAB_SIZE+1), InputType.recurrent(VOCAB_SIZE+1))
                     .addLayer("embeddingEn", new EmbeddingLayer.Builder().nIn(VOCAB_SIZE+1).nOut(128).activation("identity").build(),"inEn")
                     .addLayer("encoder", new GravesLSTM.Builder().nIn(128).nOut(256).activation("softsign").build(),"embeddingEn")
                     .addVertex("lastTimeStep", new LastTimeStepVertex("inEn"),"encoder")
