@@ -62,7 +62,6 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
     protected boolean trainSequenceVectors = false;
     protected boolean trainElementsVectors = true;
 
-    protected transient VPTree vpTree;
 
     public final static String UNK = "UNK";
     @Getter protected List<String> stopWords = new ArrayList<>(); //StopWords.getStopWords();
