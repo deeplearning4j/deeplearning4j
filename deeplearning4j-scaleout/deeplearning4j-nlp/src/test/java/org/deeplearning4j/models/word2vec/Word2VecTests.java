@@ -175,7 +175,10 @@ public class Word2VecTests {
         assertEquals(new ArrayList<String>(), vec.getStopWords());
         vec.fit();
       //  WordVectorSerializer.writeWordVectors(vec, pathToWriteto);
-        WordVectorSerializer.writeFullModel(vec,"/ext/Temp/Models/raw_sentences.dat");
+        File tempFile = File.createTempFile("temp", "temp");
+        tempFile.deleteOnExit();
+
+        WordVectorSerializer.writeFullModel(vec, tempFile.getAbsolutePath());
         Collection<String> lst = vec.wordsNearest("day", 10);
         //log.info(Arrays.toString(lst.toArray()));
         printWords("day", lst, vec);
