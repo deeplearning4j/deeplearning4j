@@ -81,6 +81,15 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             // if we don't have existing model defined, we just build vocabulary
             constructor.buildJointVocabulary(false, true);
         }
+
+        // check for malformed inputs. if numWords/numSentences ratio is huge, then user is passing something weird
+        if (vocab.numWords() / constructor.getNumberOfSequences() > 1000) {
+            log.warn("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+            log.warn("!                                                                                      !");
+            log.warn("! Your input looks malformed: number of sentences is too low, model accuracy may suffer!");
+            log.warn("!                                                                                      !");
+            log.warn("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        }
     }
 
 
