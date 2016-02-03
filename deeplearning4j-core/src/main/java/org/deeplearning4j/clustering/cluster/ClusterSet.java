@@ -30,7 +30,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.factory.Nd4j;
 
-public class ClusterSet {
+import java.io.Serializable;
+
+public class ClusterSet implements Serializable {
 
 	private String	distanceFunction;
 	private List<Cluster> clusters;
