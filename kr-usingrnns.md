@@ -8,14 +8,14 @@ layout: kr-default
 이 문서는 구체적인 교육 특징들과 그들을 DeepLearning4J에서 사​​용하는 방법의 실용성을 설명합니다. 이 문서는 순환 신경망과 그의 사용에 익숙함을 가정합니다 - 이는 순환 신경망을 소개하는 곳이 아니며, 그 사용과 용어 모두에 어느 정도 익숙함을 가정합니다. 만약 여러분께서 RNNs을 처음 사용하신다면, 이 페이지를 진행하기 전에 [순환 신경망 및 LSTMs로의 초보자 가이드를 참조](http://deeplearning4j.org/lstm.html)하십시오.
 
 **내용**
-[기본 사항 : 데이터 및 네트워크 구성](http://deeplearning4j.org/usingrnns.html#basics)
-[RNN 교육 특징](http://deeplearning4j.org/usingrnns.html#trainingfeatures)
-[Truncated Back Propagation Through Time](http://deeplearning4j.org/usingrnns.html#tbptt)
-[마스킹: 일-대-다, 다-대-일, 및 시퀀스 분류](http://deeplearning4j.org/usingrnns.html#masking)
-[RNN 레이어를 다른 레이어 유형들과 결합](http://deeplearning4j.org/usingrnns.html#otherlayertypes)
-[테스트 시간: 한 번에 예측 한 단계](http://deeplearning4j.org/usingrnns.html#rnntimestep)
-[시계열 데이터 가져 오기](http://deeplearning4j.org/usingrnns.html#data)
-[예제들](http://deeplearning4j.org/usingrnns.html#examples)
+* [기본 사항 : 데이터 및 네트워크 구성](#basics)
+* [RNN 교육 특징](#trainingfeatures)
+* [Truncated Back Propagation Through Time](#tbptt)
+* [마스킹: 일-대-다, 다-대-일, 및 시퀀스 분류](#masking)
+* [RNN 레이어를 다른 레이어 유형들과 결합](#otherlayertypes)
+* [테스트 시간: 한 번에 예측 한 단계](http://deeplearning4j.org/usingrnns.html#rnntimestep)
+* [시계열 데이터 가져 오기](http://deeplearning4j.org/usingrnns.html#data)
+* [예제들](http://deeplearning4j.org/usingrnns.html#examples)
 
 ## <a name="basics">기본 사항: 데이터 및 네트워크 구성</a>
 DL4J는 현재 순환 신경망의 한 주요 유형인 LSTM (긴 단기 메모리) 모델 (클래스 이름: GravesLSTM)을 지원합니다. 더 많은 유형들이 미래에 계획되어 있습니다.
@@ -31,43 +31,70 @@ DL4J는 현재 순환 신경망의 한 주요 유형인 LSTM (긴 단기 메모�
 RnnOutputLayer는 다양한 순환 신경망 시스템과 최종 레이어로서 사용되는 (회귀 및 분류 작업을 위한) 레이어의 한 유형 입니다. RnnOutputLayer는 점수 계산, 손실 함수를 발생하는 오차 계산 (예측 대 실제) 같은 것들을 처리합니다. 기능적으로, 이는 ‘표준' OutputLayer 클래스 (피드-포워드 네트워크와 사용되는)와 아주 유사합니다; 그러나 그 둘 모두는 3D 시계열 데이터 세트를 출력(및 레이블/타겟으로서 예측)합니다.
 
 RnnOutputLayer를 위한 구성은 같은 디자인 다른 레이어들을 따릅니다: 예를 들어, 분류를 위해 MultiLayerNetwork에 있는 세번째 레이어를 RnnOutputLayer로 설정합니다:
+```
 .layer(2, new RnnOutputLayer.Builder(LossFunction.MCXENT).activation("softmax") .weightInit(WeightInit.XAVIER).nIn(prevLayerSize).nOut(nOut).build())
-
+```
 
 실제로 RnnOutputLayer의 사용은 이 문서의 마지막에 링크된 예제들에서 보실 수 있습니다.
 
+## <a name="trainingfeatures">RNN 교육 특징</a>
+
+### <a name="tbptt">Truncated Back Propagation Through Time</a>
+
 RNN 교육 특징  Truncated Back Propagation Through Time  신경망을 훈련하는 것은 (RNNs을 포함하여) 연산적으로 상당한 노력을 요구할 수 있습니다. 순환 신경망의 경우, 이는 특히 저희가 긴 시퀀스를, 다시 말해 많은 단계들을 가진 학습 데이터, 처리하는 경우 입니다.  Truncated Backpropagation through time (BPTT)은 순환 신경망의 각 파라미터 업데이트의 연산적인 복잡성을 줄이기 위해 개발 되었습니다. 요약하면, 이는 저희가 네트워크를, 연산 능력의 주어진 양에 비해 더 빨리 (보다 빈번한 파라미터 업데이트를 수행함으로써) 훈련시킬 수 있게 합니다. 여러분의 입력 시퀀스가 긴 경우 (일반적으로, 더 수백번 단계 이상의 경우), truncated BPTT의 사용이 권장 됩니다.  12번 단계의 시계열을 가진 순환 신경망을 훈련할 때 어떻게 될지 생각해 보십시오. 저희는 12번 단계의 포워드 패스를 수행한 후, 오류를 계산하고 (예측 대 실제에 기준하여), 12번 단계의 백워드 패스를 수행합니다:
+
+![Standard Backprop Training](../img/rnn_tbptt_1.png)
 
 위 이미지에서, 12번 단계는 문제가 되지 않습니다. 그 대신, 입력 시계열이 10,000 혹은 그 이상 이라고 생각해 보십시오. 이 경우, 표준 backpropagation through time은 각각의 포워드와 백워드 패스 마다, 그 각각의 모든 파라미터 업데이트가 발생할 때 마다 10,000번 단계를 요구할 것입니다. 이것은 당연히 연산적으로 엄청난 노력을 요구합니다.  실제로, truncated BPTT는 포워드와 백워드 패스들을 더 작은 포워드/백워드 패스 작업의 세트로 분할 합니다. 이 포워드/백워드 패스 세그먼트들의 특정한 길이는 그 사용자의 파라미터 세트 입니다. 예를 들어, 만약 저희가 4번 단계의 truncated BPTT를 사용한다면, 학습은 다음과 같을 것입니다:
 
+![Truncated BPTT](../img/rnn_tbptt_2.png)
 
 Truncated BPTT 및 표준 BPTT의 전체적인 복잡성은 대략 동일합니다 – 둘 모두 포워드/백워드 패스 동안 동일한 수의 시간 스텝을 수행합니다. 그러나 이 방식을 사용하여 저희는 대략 같은 양의 노력으로 한 개 대신 세 개의 파라미터 업데이트를 얻습니다. 그러나 파라미터 업데이트 당 소량의 오버헤드가 있으므로 비용은 정확히 동일하지는 않습니다.
 Truncated BPTT의 단점은 truncated BPTT에서 학습된 디펜던시의 길이가 전체 BPTT보다 짧을 수 있다는 것 입니다. 쉽게 확인하실 수 있습니다: 4의 TBPTT 길이로 위의 이미지들을 생각해 보십시오. 시간 단계 10에서, 네트워크는 정확한 예측을 위해 시간 단계 0에서 몇 가지 정보를 저장해야 합니다. 표준 BPTT에서는 이것은 괜찮습니다: 그 기울기는 시간 10에서 0으로 풀린(unrolled) 네트워크를 따라 거꾸로 흐를 수 있습니다. Truncated BPTT에서 이것은 문제 입니다: 시간 단계 10에서의 기울기는 단순히 다시 멀리 충분히 요구되는 정보를 저장할 필수 파라미터 업데이트를 할 만큼 충분히 거꾸로 흐르지 않습니다. 이 거래는 일반적으로 가치가 있고, (truncated BPTT 길이가 적절하게 설정되는 한) truncated BPTT는 실제로 잘 작동 합니다.
 DL4J에서 truncated BPTT를 사용하는 것은 매우 간단합니다: 다음의 코드를 여러분의 네트워크 구성에 (마지막에, 여러분의 네트워크 구성의 최종 .build() 앞에) 추가하시기만 하면 됩니다.
-.backpropType(BackpropType.TruncatedBPTT) .tBPTTForwardLength(100) .tBPTTBackwardLength(100)
+```
+.backpropType(BackpropType.TruncatedBPTT) 
+.tBPTTForwardLength(100) 
+.tBPTTBackwardLength(100)
+```
 
 위의 코드 조각은 어떤 네트워크 학습이든 (즉, MultiLayerNetwork.fit() 방식으로 호출) 동등한 길이의 포워드 및 백워드 패스들을 길이 100으로 truncated BPTT를 사용하게 합니다.
+
 몇 가지 주의사항은:
 • 기본사항으로 (만약 backprop 형식이 수동으로 지정되지 않는 경우), DL4J는 BackpropType.Standard을 사용합니다 (즉, 전체 BPTT)
 •tBPTTForwardLength 및 tBPTTBackwardLength 선택 사항들이 truncated BPTT 패스들의 길이를 설정합니다. 일반적으로, 이것은 50 에서 200 까지의 시간 단계들의 순서 상의 어딘가에 있습니다. 응용 프로그램에 따라 다르겠지만. 일반적으로 포워드 패스 및 백워드 패스는 같은 길이일 것 입니다 (tBPTTBackwardLength는 짧을 수는 있습니다, 하지만 더 길지는 않습니다). 
 •truncated BPTT 길이들은 전체 시계열 길이 보다 짧거나 같아야 합니다.
 
-마스킹: 일-대-다, 다-대-일, 및 시퀀스 분류
+### <a name="masking">마스킹: 일-대-다, 다-대-일, 및 시퀀스 분류</a>
+
 DL4J는 RNNs을 위한 패딩 및 마스킹의 아이디어에 기반한 다양한 관련된 학습 기능들을 지원합니다. 패딩 및 마스킹은 일-대-다, 다-대-일을 포함한 학습 상황들을 지원하게 합니다. 또한 다양한 시계열 시리즈를 지원합니다 (같은 미니-배치 작업에서).
 저희는 매번 시간 단계마다 발생하지는 않는 입력 혹은 출력으로 순환 신경망을 학습하고자 합니다. 이의 예제들은 (하나의 예를 들어) 아래 이미지에 표시 됩니다. DL4J는 모든 이러한 상황을 위한 학습 네트워크를 지원합니다:
+
+![RNN Training Types](../img/rnn_masking_1.png)
 
 마스킹 및 패딩 없이는 저희는 다-대-일로 제한됩니다 (위, 왼쪽): 즉, (a) 모든 예제들은 같은 길이 이며, (b) 예제들은 모든 시간 단계에서 입력 및 출력을 모두 가집니다.  패딩의 배후 아이디어는 간단 합니다. 같은 미니-배치 작업에서 길이 50 및 100 시간 단계의 두 시계열을 고려하십시오. 학습 데이터는 직사각형 어레이 입니다; 따라서, 저희는 (입력 및 출력 모두를 위한) 더 짧은 시계열을 패드 해 (다시 말해, 0들을 추가해), 입력 및 출력이 모두 같은 길이가 되도록 합니다 (이 예 에서는, 100 시간 단계). 물론, 이것이 저희가 한 전부라면, 그것은 학습 도중 문제를 일으킬 것입니다. 따라서, 패딩에 추가해 마스킹 매커니즘을 사용합니다. 마스킹의 배후 아이디어는 간단합니다: 저희는 입력 또는 출력이 실제로 주어진 시간 단계 및 예제를 위해 존재하는지, 혹은 그 입력/출력이 단지 패딩을 하는지를 기록하는 추가적인 두개의 어레이를 가지고 있습니다.
 RNNs과 함께, 저희의 minibatch 데이터는 형태 [miniBatchSize,inputSize,timeSeriesLength]와 각각 입력 및 출력을 위한 [miniBatchSize,outputSize,timeSeriesLength]의 3차원을 가지고 있슴을 기억하십시오. 패딩 어레이는 입력 및 출력을 위한 형태 [miniBatchSize,timeSeriesLength]와 각각의 시계열과 예제를 위한 0 (‘부재’) 혹은 1(‘현재’)의 값들로 2차원 입니다. 그 입력 및 출력을 위한 마스킹 어레이들은 개별적인 어레이에 저장됩니다.  하나의 예제로, 입력 및 출력 마스킹 어레이들은 아래와 같이 보여집니다:
 
+![RNN Training Types](../img/rnn_masking_2.png)
 
 "Masking not required"의 경우, 저희는 마스크 어레이들을 사용하지 않을 때와 동일한 결과를 제공할 모두 1 만을 사용해 균등하게 마스킹 배열을 사용할 수 있습니다. 또한 RNNs 학습 시 0, 1 또는 2 개의 마스크 어레이들을 사용하는 것이 가능하다는 것을 기억하십시오 - 예를 들어, 다-대-일의 경우, 출력 만을 위한 마스킹 어레이들을 가질 수 있습니다.
 실제로: 이러한 패딩 어레이들은 일반적으로 데이터 import 단계에서 생성되고 (예를 들어, SequenceRecordReaderDatasetIterator에 의해 - 나중에 설명하겠습니다), DataSet 개체 내에 포함되어 있습니다. 만약 DataSet이 마스킹 어레이들을 포함하고 있다면, MultiLayerNetwork 핏은 자동으로 그것들을 학습 시 사용할 것 입니다. 만약 마스킹 어레이들이 존재하지 않는다면, 마스킹 기능은 사용되지 않습니다.
 
-마스킹으로 평가 및 점수 매기기
+#### 마스킹으로 평가 및 점수 매기기
 
 마스크 어레이들은 또한 점수를 매기거나 평가를 할 때 중요합니다 (즉, RNN 분류기의 정밀도를 평가할 때). 예를 들어, 다-대-일의 경우를 고려해 보십시오: 각 예제들에 오직 하나의 출력이 있고, 어떤 평가 시에도 이 사실을 고려해야 합니다.
-(출력) 마스크 어레이들을 사용하여 평가하는 것은 다음의 방식으로 이를 전달함으로써 평가시에 사용될 수 있습니다: Evaluation.evalTimeSeries(INDArray labels, INDArray predicted, INDArray outputMask) labels은 그 실제 출력(3차원 시계열)인 반면, predicted는 네트워크 예측들은 (3차원 시계열, 레이블과 동일한 형태), outputMask는 그 출력을 위한  2차원 마스크 어레이 입니다. 입력 마스크 어레이는 평가를 위해 필요하지 않습니다.  점수 계산 역시 MultiLayerNetwork.score (DataSet) 방식을 통해 마스크 어레이를 활용할 것 입니다. 역시, DataSet도 출력 마스킹 어레이를 포함한다면, 점수 계산도 MultiLayerNetwork.score (데이터 세트) 방식을 통해 마스크 배열을 활용할 것 입니다. 데이터 집합은 출력 마스킹 배열을 포함하는 경우, 점수 (손실 함수 – 평균 제곱 오류, 음수 로그 가능도) 계산시 네트워크를 위해 자동으로 사용될 것 입니다. 
- 다른 레이어 유형들과 RNN 레이어들을 결합하기  DL4J에서 RNN 레이어는 다른 레이어 유형들과 결합 될 수 있습니다. 예를 들어, 동일한 네트워크에서 DenseLayer와 GravesLSTM 레이어들은 결합이 가능합니다; 또는 비디오를 위해 합성곱 (CNN) 레이어들과 GravesLSTM 레이어들은 결합할 수 있습니다. 
+
+(출력) 마스크 어레이들을 사용하여 평가하는 것은 다음의 방식으로 이를 전달함으로써 평가시에 사용될 수 있습니다:
+```
+Evaluation.evalTimeSeries(INDArray labels, INDArray predicted, INDArray outputMask) 
+```
+
+labels은 그 실제 출력(3차원 시계열)인 반면, predicted는 네트워크 예측들은 (3차원 시계열, 레이블과 동일한 형태), outputMask는 그 출력을 위한  2차원 마스크 어레이 입니다. 입력 마스크 어레이는 평가를 위해 필요하지 않습니다.  점수 계산 역시 MultiLayerNetwork.score (DataSet) 방식을 통해 마스크 어레이를 활용할 것 입니다. 역시, DataSet도 출력 마스킹 어레이를 포함한다면, 점수 계산도 MultiLayerNetwork.score (데이터 세트) 방식을 통해 마스크 배열을 활용할 것 입니다. 데이터 집합은 출력 마스킹 배열을 포함하는 경우, 점수 (손실 함수 – 평균 제곱 오류, 음수 로그 가능도) 계산시 네트워크를 위해 자동으로 사용될 것 입니다. 
+
+
+### <a name="otherlayertypes">다른 레이어 유형들과 RNN 레이어들을 결합하기</a>
+ 
+ DL4J에서 RNN 레이어는 다른 레이어 유형들과 결합 될 수 있습니다. 예를 들어, 동일한 네트워크에서 DenseLayer와 GravesLSTM 레이어들은 결합이 가능합니다; 또는 비디오를 위해 합성곱 (CNN) 레이어들과 GravesLSTM 레이어들은 결합할 수 있습니다. 
 물론, DenseLayer 및 합성곱 레이어들은 시계열 데이터를 처리하지 않습니다 - 그들은 다른 유형의 입력을 예측합니다. 이를 위해, 저희는 레이어 전처리기 기능을 사용해야 합니다: 예를 들어, CnnToRnnPreProcessor ​​와 FeedForwardToRnnPreprocessor ​​클래스들 입니다. 모든 전처리기들을 보시려면 [여기](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/conf/preprocessor)를 참조하십시오. 다행히 대부분의 경우, DL4J 구성 시스템이 자동으로 이 전처리기들을 필요에 따라 추가할 것 입니다. 그러나, 전처리기들은 수동으로 추가될 수 있습니다 (각 레이어마다 전처리기들의 자동 추가를 무시하면서).  예를 들어, 레이어 1과 2 사이에 전처리기를 수동으로 추가하려면, 여러분의 네트워크 구성에 다음을 추가하십시오: .inputPreProcessor(2, new RnnToFeedForwardPreProcessor()). 
  테스트 시간: 한 번에 예측 한 단계  신경망의 다른 형태들과 마찬가지로, 예측들은 MultiLayerNetwork.output()와 MultiLayerNetwork.feedForward() 방식들을 사용하여 RNNs을 위해 생성될 수 있습니다. 이러한 방식들은 많은 상황에서 유용 할 수 있습니다; 그러나 이 방식들은 각각, 매번마다 처음부터 시작해 시계열을 위한 예측을 생성할 수 있다는 한계를 갖습니다.
 저희가 실시간 시스템에서 예측들을 생성하기를 원하고, 이러한 예측들은 매우 많은 양의 기록을 기반으로 한다고 예를 들어 보십시오. 이 경우, output/feedForward 방식을 사용하는 것은 매번 요청 시 전체 데이터 기록에 총 포워드 패스를 실행하기 때문에 비실용적 입니다. 만약 저희가 매번 시간 단계에서 하나의 시간 단계를 위한 예측을 하고자 한다면, 이러한 방식들은 모두 (a) 매우 비용이 많이 들고, (b) 낭비일 수 있습니다. 그들은 반복해서 같은 계산을 하기 때문입니다.  이러한 상황들을 위해, MultiLayerNetwork는 4가지 방식들을 제공합니다:
