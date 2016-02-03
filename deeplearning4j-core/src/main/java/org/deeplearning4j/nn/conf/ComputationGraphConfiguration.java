@@ -374,9 +374,12 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                         case FF:
                             //FF -> RNN
                             lv.setPreProcessor(new FeedForwardToRnnPreProcessor());
+                            //Also set nIn if possible:
+                            setNInIfNecessary(lv,layerInput);
                             break;
                         case RNN:
-                            //RNN -> RNN: no preprocessor required
+                            //RNN -> RNN: no preprocessor required. But set nIn if possible/required
+                            setNInIfNecessary(lv,layerInput);
                             break;
                         case CNN:
                             //CNN -> RNN
@@ -391,11 +394,14 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                     //Feed forward layer
                     switch (layerInput.getType()) {
                         case FF:
-                            //FF -> FF: no preprocessor required
+                            //FF -> FF: no preprocessor required. But set nIn if possible/required
+                            setNInIfNecessary(lv,layerInput);
                             break;
                         case RNN:
                             //RNN -> FF
                             lv.setPreProcessor(new RnnToFeedForwardPreProcessor());
+                            //Set nIn if possible/required
+                            setNInIfNecessary(lv,layerInput);
                             break;
                         case CNN:
                             //CNN -> FF
@@ -418,6 +424,20 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
             InputType outputFromVertex = gv.getOutputType(inputTypeList.toArray(new InputType[inputTypeList.size()]));
             vertexOutputs.put(s, outputFromVertex);
+        }
+    }
+
+    //Set nIn for the FeedForward or RNN layer, if (a) if it is possible (size>0), and (b) if user hasn't manually set nIn in config
+    private static void setNInIfNecessary(LayerVertex lv, InputType inputType){
+        FeedForwardLayer ffl = (FeedForwardLayer) lv.getLayerConf().getLayer();
+        if(ffl.getNIn() == 0){  //non-zero: allow user override
+            int size;
+            if(inputType instanceof InputType.InputTypeFeedForward){
+                size = ((InputType.InputTypeFeedForward) inputType).getSize();
+            } else if(inputType instanceof InputType.InputTypeRecurrent){
+                size = ((InputType.InputTypeRecurrent) inputType).getSize();
+            } else throw new UnsupportedOperationException("Invalid input type");
+            if(size > 0) ffl.setNIn(size);
         }
     }
 
@@ -587,9 +607,9 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             return this;
         }
 
-        /**
-         * Specify the types of inputs to the network, so that preprocessors can be automatically added, and the nIns
-         * for transitions such as CNN -> DenseLayer can be automatically calculated.<br>
+        /**Specify the types of inputs to the network, so that:<br>
+         * (a) preprocessors can be automatically added, and<br>
+         * (b) the nIns (input size) for each layer can be automatically calculated and set<br>
          * The order here is the same order as .addInputs(). Thus, if you do .addInputs("a","b") and .setInputTypes(InputType.feedForward(),
          * InputType.convolutional(1,28,28)) then the input labelled "a" is a feed forward input, whereas the input labelled "b" in a CNN
          * input, with 28x28x1 images as input.<br>
@@ -597,9 +617,10 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          * the calculations on input/ouput sizes (width, height, depth, etc) don't need to be done manually.<br>
          * <b>Note 2</b>: If a preprocessor is manually added for a given layer, it will not be overridden by the automatic
          * addition of preprocessors.
+         * <b>Note 3</b>: If a layer has an nIn set manually, this will not be overridden
          */
         public GraphBuilder setInputTypes(InputType... inputTypes) {
-            Collections.addAll(networkInputTypes, inputTypes);
+            if(inputTypes != null && inputTypes.length > 0) Collections.addAll(networkInputTypes, inputTypes);
             return this;
         }
 

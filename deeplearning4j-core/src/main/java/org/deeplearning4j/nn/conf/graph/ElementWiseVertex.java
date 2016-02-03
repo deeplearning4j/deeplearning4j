@@ -81,6 +81,7 @@ public class ElementWiseVertex extends GraphVertex {
         InputType first = vertexInputs[0];
         if(first.getType() != InputType.Type.CNN){
             //FF or RNN data inputs
+            int size = 0;
             for( int i=1; i<vertexInputs.length; i++ ){
                 if(vertexInputs[i].getType() != first.getType()){
                     throw new InvalidInputTypeException("Invalid input: ElementWise vertex cannot process activations of different types:"
@@ -112,6 +113,6 @@ public class ElementWiseVertex extends GraphVertex {
                 }
             }
         }
-        return first;
+        return first;   //Same output shape/size as
     }
 }
