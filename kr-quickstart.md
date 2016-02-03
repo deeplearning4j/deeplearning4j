@@ -1,6 +1,6 @@
 ---
 title:
-layout: default
+layout: kr-default
 ---
 
 # 퀵 스타트 가이드(Quick Start Guide)
