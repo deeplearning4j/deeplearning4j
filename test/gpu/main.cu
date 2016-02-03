@@ -11,7 +11,7 @@
 
 int main(int ac, char** av) {
 #ifdef __CUDACC__
-	cudaDeviceSetLimit(cudaLimitStackSize,20000);
+	cudaDeviceSetLimit(cudaLimitStackSize,40000);
 #endif
 	return CommandLineTestRunner::RunAllTests(ac, av);
 }

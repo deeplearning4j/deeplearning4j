@@ -20,7 +20,7 @@ template<typename T>
  */
 class Op {
 protected:
-    int extraParamsLen;
+    int extraParamsLen = 0;
 public:
 	/**
 	 * Name of the op
