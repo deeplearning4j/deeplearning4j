@@ -1,5 +1,5 @@
 ---
-layout: default
+layout: kr-default
 ---
 
 # 시작 하기
