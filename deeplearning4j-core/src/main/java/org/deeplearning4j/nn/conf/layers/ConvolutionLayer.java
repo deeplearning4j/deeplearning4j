@@ -40,7 +40,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
     @AllArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
         private Convolution.Type convolutionType = Convolution.Type.VALID;
-        private int[] kernelSize = new int[] {5, 5};
+        private int[] kernelSize = new int[] {5,5};
         private int[] stride = new int[] {1,1};
         private int[] padding = new int[] {0, 0};
 
