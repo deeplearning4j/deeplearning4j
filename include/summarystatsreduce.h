@@ -1175,6 +1175,7 @@ public:
 			exec(x,xShapeInfo,extraParams,result,resultShapeInfoBuffer);
 			return;
 		}
+
 		shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo,
 				dimension, dimensionLength);
 		int resultLength = shape::length(resultShapeInfoBuffer);
