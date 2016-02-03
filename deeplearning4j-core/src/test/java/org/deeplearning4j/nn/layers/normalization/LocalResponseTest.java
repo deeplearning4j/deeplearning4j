@@ -1,22 +1,32 @@
 package org.deeplearning4j.nn.layers.normalization;
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.GradientNormalization;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.LocalResponseNormalization;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import static org.junit.Assert.*;
 
 /**
- * Created by nyghtowl on 10/30/15.
+ *
  */
 public class LocalResponseTest {
 
@@ -40,7 +50,7 @@ public class LocalResponseTest {
             0.64796048, -0.99037546,  0.67919868,  0.43810204
     }, new int[] {2,7,3,2});
 
-    private INDArray yExpected = Nd4j.create(new double[]{
+    private INDArray activationsExpected = Nd4j.create(new double[]{
             0.52397668, -0.57476264, -0.3676528 ,  0.15707894,  0.03385943,
             0.17542371,  0.58992499,  0.14591768,  0.25090647,  0.57335907,
             0.11475233, -0.03958985, -0.16411273,  0.14398433,  0.12981956,
@@ -100,7 +110,7 @@ public class LocalResponseTest {
             -0.5269345 , -0.46732581,  0.16344811,  0.37857518
     }, new int[] {2,7,3,2});
 
-    private INDArray yActual;
+    private INDArray activationsActual;
     private Layer layer;
 
     @Before
@@ -114,15 +124,14 @@ public class LocalResponseTest {
                 .build();
 
         layer = LayerFactories.getFactory(new LocalResponseNormalization()).create(conf);
-        yActual = layer.activate(x);
-
+        activationsActual = layer.activate(x);
     }
 
     @Test
     public void testActivate(){
         // Precision is off from the expected results because expected results generated in numpy
-        assertEquals(yExpected, yActual);
-        assertArrayEquals(yExpected.shape(), yActual.shape());
+        assertEquals(activationsExpected, activationsActual);
+        assertArrayEquals(activationsExpected.shape(), activationsActual.shape());
         }
 
     @Test
@@ -149,9 +158,35 @@ public class LocalResponseTest {
                         .k(2).n(5).alpha(1e-4).beta(0.75)
                         .build())
                 .build();
-
     }
 
+    @Test
+    public void testMultiCNNLayer() throws Exception {
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
+                .iterations(1)
+                .seed(123)
+                .list()
+                .layer(0, new ConvolutionLayer.Builder().nIn(1).nOut(6).weightInit(WeightInit.XAVIER).activation("relu").build())
+                .layer(1, new LocalResponseNormalization.Builder().build())
+                .layer(2, new DenseLayer.Builder().nOut(2).build())
+                .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .weightInit(WeightInit.XAVIER)
+                        .activation("softmax")
+                        .nIn(2).nOut(10).build())
+                .backprop(true).pretrain(false)
+                .cnnInputSize(28,28,1)
+                .build();
+
+        MultiLayerNetwork network = new MultiLayerNetwork(conf);
+        network.init();
+        DataSetIterator iter = new MnistDataSetIterator(2, 2);
+        DataSet next = iter.next();
+
+        network.fit(next);
+
+
+    }
 
 
 }
