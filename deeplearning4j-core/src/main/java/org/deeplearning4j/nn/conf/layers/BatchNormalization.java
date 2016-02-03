@@ -12,7 +12,7 @@ import org.nd4j.linalg.factory.Nd4j;
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 @Builder
-public class BatchNormalization extends FeedForwardLayer {
+public class BatchNormalization extends Layer {
     protected int[] shape; // shape of input
     protected double decay;
     protected double eps = Nd4j.EPS_THRESHOLD;

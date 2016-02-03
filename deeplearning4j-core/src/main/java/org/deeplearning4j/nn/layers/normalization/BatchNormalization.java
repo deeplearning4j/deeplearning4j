@@ -159,9 +159,9 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         INDArray beta = this.beta == null? Nd4j.zerosLike(mean): this.beta;
 
         INDArray tmp;
-        INDArray shiftedScaledX = x.dup();
+        INDArray activations = x.dup();
         for(int i=0; i < x.size(0); i++) {
-            tmp = shiftedScaledX.get(NDArrayIndex.interval(i, i + 1));
+            tmp = activations.get(NDArrayIndex.interval(i, i + 1));
             // xHat = x-xmean / sqrt(var + epsilon & BN(xk) = γkxˆk + βk
             xHat = tmp.subi(mean).divi(std);
             tmp.muli(gamma).addi(beta);
@@ -191,7 +191,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             this.beta = beta;
         }
 
-        return shiftedScaledX;
+        return activations;
     }
 
     @Override
