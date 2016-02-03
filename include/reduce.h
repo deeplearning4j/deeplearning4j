@@ -923,8 +923,12 @@ namespace functions {
 #ifdef __CUDACC__
             __host__
 #endif
-            void exec(T *x, int *xShapeInfo, T *extraParams, T *result,
-                      int *resultShapeInfoBuffer, int *dimension, int dimensionLength) {
+            void exec(T *x, int *xShapeInfo,
+                      T *extraParams,
+                      T *result,
+                      int *resultShapeInfoBuffer,
+                      int *dimension,
+                      int dimensionLength) {
                 if(shape::isScalar(resultShapeInfoBuffer)) {
                     exec(x,xShapeInfo,extraParams,result,resultShapeInfoBuffer);
                     return;
