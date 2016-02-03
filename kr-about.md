@@ -1,6 +1,6 @@
 ---
 title: 
-layout: default
+layout: kr-default
 ---
 
 # 회사 소개
