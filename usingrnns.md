@@ -7,7 +7,6 @@ layout: default
 
 This document outlines the specifics training features and the practicalities of how to use them in DeepLearning4J. This document assumes some familiarity with recurrent neural networks and their use - it is not an introduction to recurrent neural networks, and assumes some familiarity with their both their use and terminology. If you are new to RNNs, read [A Beginner's Guide to Recurrent Networks and LSTMs](/lstm.html) before proceeding with this page.
 
-
 **Contents**
 
 * [The Basics: Data and Network Configuration](#basics)
@@ -30,24 +29,22 @@ Conversely, data for RNNs are time series. Thus, they have 3 dimensions: one add
 ![Data: Feed Forward vs. RNN](../img/rnn_data.png)
 
 #### RnnOutputLayer
+
 RnnOutputLayer is a type of layer used as the final layer with many recurrent neural network systems (for both regression and classification tasks). RnnOutputLayer handles things like score calculation, and error calculation (of prediction vs. actual) given a loss function etc. Functionally, is is very similar to the 'standard' OutputLayer class (which is used with feed-forward networks); however it both outputs (and expects as labels/targets) 3d time series data sets.
 
 Configuration for the RnnOutputLayer follows the same design other layers: for example, to set the third layer in a MultiLayerNetwork to a RnnOutputLayer for classification:
-```
-.layer(2, new RnnOutputLayer.Builder(LossFunction.MCXENT).activation("softmax") .weightInit(WeightInit.XAVIER).nIn(prevLayerSize).nOut(nOut).build())
-```
+
+   .layer(2, new RnnOutputLayer.Builder(LossFunction.MCXENT).activation("softmax")
+   .weightInit(WeightInit.XAVIER).nIn(prevLayerSize).nOut(nOut).build())
 
 Use of RnnOutputLayer in practice can be seen in the examples, linked at the end of this document.
-
 
 ## <a name="trainingfeatures">RNN Training Features</a>
 
 ### <a name="tbptt">Truncated Back Propagation Through Time</a>
 Training neural networks (including RNNs) can be quite computationally demanding. For recurrent neural networks, this is especially the case when we are dealing with long sequences - i.e., training data with many time steps.
 
-
 Truncated backpropagation through time (BPTT) was developed in order to reduce the computational complexity of each parameter update in a recurrent neural network. In summary, it allows us to train networks faster (by performing more frequent parameter updates), for a given amount of computational power. It is recommended to use truncated BPTT when your input sequences are long (typically, more than a few hundred time steps).
-
 
 Consider what happens when training a recurrent neural network with a time series of length 12 time steps. Here, we need to do a forward pass of 12 steps, calculate the error (based on predicted vs. actual), and do a backward pass of 12 time steps:
 
@@ -65,11 +62,9 @@ The downside of truncated BPTT is that the length of the dependencies learned in
 
 Using truncated BPTT in DL4J is quite simple: just add the following code to your network configuration (at the end, before the final .build() in your network configuration)
 
-```
-.backpropType(BackpropType.TruncatedBPTT)
-.tBPTTForwardLength(100)
-.tBPTTBackwardLength(100)
-```
+   .backpropType(BackpropType.TruncatedBPTT)
+   .tBPTTForwardLength(100)
+   .tBPTTBackwardLength(100)
 
 The above code snippet will cause any network training (i.e., calls to MultiLayerNetwork.fit() methods) to use truncated BPTT with equal length forward and backward passes, of length 100.
 
@@ -78,8 +73,6 @@ Some things of note:
 * By default (if a backprop type is not manually specified), DL4J will use BackpropType.Standard (i.e., full BPTT).
 * The tBPTTForwardLength and tBPTTBackwardLength options set the length of the truncated BPTT passes. Typically, this is somewhere on the order of 50 to 200 time steps, though depends on the application. Typically both forward pass and backward pass will be the same length (though tBPTTBackwardLength may be shorter, but not longer)
 * The truncated  BPTT lengths must be shorter than or equal to the total time series length
-
-
 
 ### <a name="masking">Masking: One-to-Many, Many-to-One, and Sequence Classification</a>
 
@@ -92,6 +85,7 @@ Suppose we want to train a recurrent neural network with inputs or outputs that 
 Without masking and padding, we are restricted to the many-to-many case (above, left): that is, (a) All examples are of the same length, and (b) Examples have both inputs and outputs at all time steps.
 
 The idea behind padding is simple. Consider two time series of lengths 50 and 100 time steps, in the same mini-batch. The training data is a rectangular array; thus, we pad (i.e., add zeros to) the shorter time series (for both input and output), such that the input and output are both the same length (in this example: 100 time steps).
+
 Of course, if this was all we did, it would cause problems during training. Thus, in addition to padding, we use a masking mechanism. The idea behind masing is simple: we have two additional arrays that record whether an input or output is actually present for a given time step and example, or whether the input/output is just padding.
 
 Recall that with RNNs, our minibatch data has 3 dimensions, with shape [miniBatchSize,inputSize,timeSeriesLength] and [miniBatchSize,outputSize,timeSeriesLength] for the input and output respectively. The padding arrays are then 2 dimensional, with shape [miniBatchSize,timeSeriesLength] for both the input and output, with values of 0 ('absent') or 1 ('present') for each time series and example. The masking arrays for the input and output are stored in separate arrays.
@@ -104,19 +98,17 @@ For the “Masking not required” cases, we could equivalently use a masking ar
 
 In practice: these padding arrays are generally created during the data import stage (for example, by the SequenceRecordReaderDatasetIterator – discussed later), and are contained within the DataSet object. If a DataSet contains masking arrays, the MultiLayerNetwork fit will automatically use them during training. If they are absent, no masking functionality is used.
 
-
-
 #### Evaluation and Scoring with Masking
+
 Mask arrays are also important when doing scoring and evaluation (i.e., when evaluating the accuracy of a RNN classifier). Consider for example the many-to-one case: there is only a single output for each example, and any evaluation should take this into account.
 
 Evaluation using the (output) mask arrays can be used during evaluation by passing it to the following method:
-```
-Evaluation.evalTimeSeries(INDArray labels, INDArray predicted, INDArray outputMask)
-```
+
+  Evaluation.evalTimeSeries(INDArray labels, INDArray predicted, INDArray outputMask)
+
 where labels are the actual output (3d time series), predicted is the network predictions (3d time series, same shape as labels), and outputMask is the 2d mask array for the output. Note that the input mask array is not required for evaluation.
 
 Score calculation will also make use of the mask arrays, via the MultiLayerNetwork.score(DataSet) method. Again, if the DataSet contains an output masking array, it will automatically be used when calculating the score (loss function - mean squared error, negative log likelihood etc) for the network.
-
 
 ### <a name="otherlayertypes">Combining RNN Layers with Other Layer Types</a>
 
@@ -124,22 +116,19 @@ RNN layers in DL4J can be combined with other layer types. For example, it is po
 
 Of course, the DenseLayer and Convolutional layers do not handle time series data - they expect a different  type of input. To deal with this, we need to use the layer preprocessor functionality: for example, the CnnToRnnPreProcessor and FeedForwardToRnnPreprocessor classes. See [here](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/conf/preprocessor) for all preprocessors. Fortunately, in most situations, the DL4J configuration system will automatically add these preprocessors as required. However, the preprocessors can be added manually (overriding the automatic addition of preprocessors, for each layer).
 
-For example, to manually add a preprocessor between layers 1 and 2, add the following to your network configuration: ```.inputPreProcessor(2, new RnnToFeedForwardPreProcessor())```.
-
-
-
+For example, to manually add a preprocessor between layers 1 and 2, add the following to your network configuration: `.inputPreProcessor(2, new RnnToFeedForwardPreProcessor())`.
 
 ## <a name="rnntimestep">Test Time: Predictions One Step at a Time</a>
-As with other types of neural networks, predictions can be generated for RNNs using the MultiLayerNetwork.output() and MultiLayerNetwork.feedForward() methods. These methods can be useful in many circumstances; however, they have the limitation that we can only generate predictions for time series, starting from scratch each and every time.
+As with other types of neural networks, predictions can be generated for RNNs using the `MultiLayerNetwork.output()` and `MultiLayerNetwork.feedForward()` methods. These methods can be useful in many circumstances; however, they have the limitation that we can only generate predictions for time series, starting from scratch each and every time.
 
 Consider for example the case where we want to generate predictions in a real-time system, where these predictions are based on a very large amount of history. It this case, it is impractical to use the output/feedForward methods, as they conduct the full forward pass over the entire data history, each time they are called. If we wish to make a prediction for a single time step, at every time step, these methods can be both (a) very costly, and (b) wasteful, as they do the same calculations over and over.
 
-For these situations, MultiLayerNetwork provides 4 methods of note:
+For these situations, MultiLayerNetwork provides four methods of note:
 
-* ```rnnTimeStep(INDArray)```
-* ```rnnClearPreviousState()```
-* ```rnnGetPreviousState(int layer)```
-* ```rnnSetPreviousState(int layer, Map<String,INDArray> state)```
+* `rnnTimeStep(INDArray)`
+* `rnnClearPreviousState()`
+* `rnnGetPreviousState(int layer)`
+* `rnnSetPreviousState(int layer, Map<String,INDArray> state)`
 
 The rnnTimeStep() method is designed to allow forward pass (predictions) to be conducted efficiently, one or more steps at a time. Unlike the output/feedForward methods, the rnnTimeStep method keeps track of the internal state of the RNN layers when it is called. It is important to note that output for the rnnTimeStep and the output/feedForward methods should be identical (for each time step), whether we make these predictions all at once (output/feedForward) or whether these predictions are generated one or more steps at a time (rnnTimeStep). Thus, the only difference should be the computational cost.
 
@@ -165,7 +154,7 @@ There are a number of important differences here:
 2. The forward pass is thus a single time step (as compared to the hundreds – or more)
 3. After the rnnTimeStep method returns, the internal state will automatically be updated. Thus, predictions for time 103 could be made in the same way as for time 102. And so on.
 
-However, if you want to start making predictions for a new (entirely separate) time series: it is necessary (and important) to manually clear the stored state, using the ```MultiLayerNetwork.rnnClearPreviousState()``` method. This will reset the internal state of all recurrent layers in the network.
+However, if you want to start making predictions for a new (entirely separate) time series: it is necessary (and important) to manually clear the stored state, using the `MultiLayerNetwork.rnnClearPreviousState()` method. This will reset the internal state of all recurrent layers in the network.
 
 If you need to store or set the internal state of the RNN for use in predictions, you can use the rnnGetPreviousState and rnnSetPreviousState methods, for each layer individually. This can be useful for example during serialization (network saving/loading), as the internal network state from the rnnTimeStep method is *not* saved by default, and must be saved and loaded separately. Note that these get/set state methods return and accept a map, keyed by the type of activation. For example, in the LSTM model, it is necessary to store both the output activations, and the memory cell state.
 
@@ -180,9 +169,6 @@ Some other points of note:
 - The rnnTimeStep method makes no changes to the parameters; it is used after training the network has been completed only.
 - The rnnTimeStep method works with networks containing single and stacked/multiple RNN layers, as well as with networks that combine other layer types (such as Convolutional or Dense layers).
 - The RnnOutputLayer layer type does not have any internal state, as it does not have any recurrent connections.
-
-
-
 
 ## <a name="data">Importing Time Series Data</a>
 
@@ -205,29 +191,25 @@ Note that in all cases, each line in the data files represents one time step.
 Suppose we have 10 time series in our training data, represented by 20 files: 10 files for the input of each time series, and 10 files for the output/labels. For now, assume these 20 files all contain the same number of time steps (i.e., same number of rows).
 
 To use the [SequenceRecordReaderDataSetIterator](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/datasets/canova/SequenceRecordReaderDataSetIterator.java) and [CSVSequenceRecordReader](https://github.com/deeplearning4j/Canova/blob/master/canova-api/src/main/java/org/canova/api/records/reader/impl/CSVSequenceRecordReader.java) approaches, we first create two CSVSequenceRecordReader objects, one for input and one for labels:
-```
-SequenceRecordReader featureReader = new CSVSequenceRecordReader(1, ",");
-SequenceRecordReader labelReader = new CSVSequenceRecordReader(1, ",");
-```
+
+   SequenceRecordReader featureReader = new CSVSequenceRecordReader(1, ",");
+   SequenceRecordReader labelReader = new CSVSequenceRecordReader(1, ",");
 
 This particular constructor takes the number of lines to skip (1 row skipped here), and the delimiter (comma character used here).
 
 Second, we need to initialize these two readers, by telling them where to get the data from. We do this with an InputSplit object.
 Suppose that our time series are numbered, with file names "myInput_0.csv", "myInput_1.csv", ..., "myLabels_0.csv", etc. One approach is to use the [NumberedFileInputSplit](https://github.com/deeplearning4j/Canova/blob/master/canova-api/src/main/java/org/canova/api/split/NumberedFileInputSplit.java):
-```
-featureReader.initialize(new NumberedFileInputSplit("/path/to/data/myInput_%d.csv", 0, 9));
-labelReader.initialize(new NumberedFileInputSplit(/path/to/data/myLabels_%d.csv", 0, 9));
-```
+
+   featureReader.initialize(new NumberedFileInputSplit("/path/to/data/myInput_%d.csv", 0, 9));
+   labelReader.initialize(new NumberedFileInputSplit(/path/to/data/myLabels_%d.csv", 0, 9));
+
 In this particular approach, the "%d" is replaced by the corresponding number, and the numbers 0 to 9 (both inclusive) are used.
 
 Finally, we can create our SequenceRecordReaderdataSetIterator:
 
-```
-DataSetIterator iter = new SequenceRecordReaderDataSetIterator(featureReader, labelReader, miniBatchSize, numPossibleLabels, regression);
-```
+   DataSetIterator iter = new SequenceRecordReaderDataSetIterator(featureReader, labelReader, miniBatchSize, numPossibleLabels, regression);
 
 This DataSetIterator can then be passed to MultiLayerNetwork.fit() to train the network.
-
 
 The miniBatchSize argument specifies the number of examples (time series) in each minibatch. For example, with 10 files total, miniBatchSize of 5 would give us two data sets with 2 minibatches (DataSet objects) with 5 time series in each.
 
@@ -240,55 +222,44 @@ Note that:
   * The number of values in the input and labels can be anything (unlike classification: can have an arbitrary number of outputs)
   * No processing of the labels is done when regression = true
 
-
-
-
-
 #### Example 2: Time Series of Same Length, Input and Labels in Same File
 
 Following on from the last example, suppose that instead of a separate files for our input data and labels, we have both in the same file. However, each time series is still in a separate file.
+
 As of DL4J 0.4-rc3.8, this approach has the restriction of a single column for the output (either a class index, or a single real-valued regression output)
 
 In this case, we create and initialize a single reader. Again, we are skipping one header row, and specifying the format as comma delimited, and assuming our data files are named "myData_0.csv", ..., "myData_9.csv":
 
-```
-SequenceRecordReader reader = new CSVSequenceRecordReader(1, ",");
-reader.initialize(new NumberedFileInputSplit("/path/to/data/myData_%d.csv", 0, 9));
-DataSetIterator iterClassification = new SequenceRecordReaderDataSetIterator(reader, miniBatchSize, numPossibleLabels, labelIndex, false);
-```
+   SequenceRecordReader reader = new CSVSequenceRecordReader(1, ",");
+   reader.initialize(new NumberedFileInputSplit("/path/to/data/myData_%d.csv", 0, 9));
+   DataSetIterator iterClassification = new SequenceRecordReaderDataSetIterator(reader, miniBatchSize, numPossibleLabels, labelIndex, false);
 
-miniBatchSize and numPossibleLabels are the same as the previous example.
-Here, labelIndex specifies which column the labels are in. For example, if the labels are in the fifth column, use labelIndex = 4 (i.e., columns are indexed 0 to numColumns-1).
+`miniBatchSize` and `numPossibleLabels` are the same as the previous example. Here, `labelIndex` specifies which column the labels are in. For example, if the labels are in the fifth column, use labelIndex = 4 (i.e., columns are indexed 0 to numColumns-1).
 
 For regression on a single output value, we use:
 
-```
-DataSetIterator iterRegression = new SequenceRecordReaderDataSetIterator(reader, miniBatchSize, -1, labelIndex, true);
-```
+  DataSetIterator iterRegression = new SequenceRecordReaderDataSetIterator(reader, miniBatchSize, -1, labelIndex, true);
 
 Again, the numPossibleLabels argument is not used for regression.
-
 
 #### Example 3: Time Series of Different Lengths (Many-to-Many)
 
 Following on from the previous two examples, suppose that for each example individually, the input and labels are of the same length, but these lengths differ between time series.
 
 We can use the same approach (CSVSequenceRecordReader and SequenceRecordReaderDataSetIterator), though with a different constructor:
-```
-DataSetIterator variableLengthIter = new SequenceRecordReaderDataSetIterator(featureReader, labelReader, miniBatchSize, numPossibleLabels, regression, SequenceRecordReaderDataSetIterator.AlignmentMode.ALIGN_END);
-```
+
+   DataSetIterator variableLengthIter = new SequenceRecordReaderDataSetIterator(featureReader, labelReader, miniBatchSize, numPossibleLabels, regression, SequenceRecordReaderDataSetIterator.AlignmentMode.ALIGN_END);
+
 The argument here are the same as in the previous example, with the exception of the AlignmentMode.ALIGN_END addition. This alignment mode input tells the SequenceRecordReaderDataSetIterator to expect two things:
 
-1. that the time series may be of different lengths
-2. to align the input and labels - for each example individually - such that their last values occur at the same time step.
+1. That the time series may be of different lengths
+2. To align the input and labels - for each example individually - such that their last values occur at the same time step.
 
 Note that if the features and labels are always of the same length (as is the assumption in example 3), then the two alignment modes (AlignmentMode.ALIGN_END and AlignmentMode.ALIGN_START) will give identical outputs. The alignment mode option is explained in the next section.
 
 Also note: that variable length time series always start at time zero in the data arrays: padding, if required, will be added after the time series has ended.
 
 Unlike examples 1 and 2 above, the DataSet objects produced by the above variableLengthIter instance will also include input and masking arrays, as described earlier in this document.
-
-
 
 #### Example 4: Many-to-One and One-to-Many Data
 We can also use the AlignmentMode functionality in example 3 to implement a many-to-one RNN sequence classifier. Here, let us assume:
@@ -298,9 +269,8 @@ We can also use the AlignmentMode functionality in example 3 to implement a many
 * The input lengths may (optionally) differ between examples
 
 In fact, the same approach as in example 3 can do this:
-```
-DataSetIterator variableLengthIter = new SequenceRecordReaderDataSetIterator(featureReader, labelReader, miniBatchSize, numPossibleLabels, regression, SequenceRecordReaderDataSetIterator.AlignmentMode.ALIGN_END);
-```
+
+   DataSetIterator variableLengthIter = new SequenceRecordReaderDataSetIterator(featureReader, labelReader, miniBatchSize, numPossibleLabels, regression, SequenceRecordReaderDataSetIterator.AlignmentMode.ALIGN_END);
 
 Alignment modes are relatively straightforward. They specify whether to pad the start or the end of the shorter time series. The diagram below shows how this works, along with the masking arrays (as discussed earlier in this document):
 
@@ -312,16 +282,12 @@ Note that in the case of training data that contains time series of different le
 
 ![Sequence Alignment](../img/rnn_seq_alignment_2.png)
 
-
-
-
 #### Alternative: Implementing a custom DataSetIterator
 In some cases, you will have to do something that doesn't fit into a typical data import scenario. One option for this scenario is to implement a custom [DataSetIterator](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-api/src/main/java/org/nd4j/linalg/dataset/api/iterator/DataSetIterator.java). DataSetIterator is mererly an interface for iterating over DataSet objects - objects that encapsulate the input and target INDArrays, plus (optionally) the input and labels mask arrays.
 
 Note however that this approach is quite low level: implementing a DataSetIterator requires you to manually create the required INDArrays for the input and the labels, as well as (if required) the input and labels mask arrays. However, this approach gives you a great degree of flexibility over exactly how data is loaded.
 
 For example of this approach in practice, see the the iterator for the [tex/character example](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/rnn/CharacterIterator.java) and for the [Word2Vec movie review sentiment example](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/word2vec/sentiment/SentimentExampleIterator.java).
-
 
 ## <a name="examples">Examples</a>
 
