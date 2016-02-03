@@ -25,6 +25,6 @@ public interface EarlyStoppingListener<T extends Model> {
     /**Method that is called at the end of early stopping training
      * @param esResult The early stopping result. Provides details of why early stopping training was terminated, etc
      */
-    void onCompletion(EarlyStoppingResult esResult);
+    void onCompletion(EarlyStoppingResult<T> esResult);
 
 }

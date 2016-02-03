@@ -138,10 +138,10 @@ public class LayerVertex extends GraphVertex {
 
             return InputType.convolutional(channelsOut,outWidth,outHeight);
         } else if (layer instanceof BaseRecurrentLayer) {
-            return InputType.recurrent();
+            return InputType.recurrent(((BaseRecurrentLayer) layer).getNOut());
         } else if (layer instanceof FeedForwardLayer) {
             //Dense, autoencoder, etc
-            return InputType.feedForward();
+            return InputType.feedForward(((FeedForwardLayer) layer).getNOut());
         } else {
             //Unknown... probably same as input??
             return vertexInputs[0];

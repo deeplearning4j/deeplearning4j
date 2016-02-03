@@ -20,6 +20,8 @@ package org.deeplearning4j.nn.conf.inputs;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 
@@ -34,20 +36,22 @@ public abstract class InputType implements Serializable {
     /** The type of activations in/out of a given GraphVertex. */
     public enum Type {FF, RNN, CNN};
 
-    private static final InputType FFInstance = new InputTypeFeedForward();
-    private static final InputType RNNInstance = new InputTypeRecurrent();
-
 
     public abstract Type getType();
 
-    /** InputType for feed forward network inputs */
-    public static InputType feedForward(){
-        return FFInstance;
+    /** InputType for feed forward network data
+     * @param size The size of the activations
+     */
+    public static InputType feedForward(int size){
+        return new InputTypeFeedForward(size);
     }
 
-    /** InputType for recurrent neural network (time series) data */
-    public static InputType recurrent(){
-        return RNNInstance;
+    /** InputType for recurrent neural network (time series) data
+     * @param size The size of the activations
+     * @return
+     */
+    public static InputType recurrent(int size){
+        return new InputTypeRecurrent(size);
     }
 
     /**Input type for convolutional (CNN) data
@@ -61,14 +65,20 @@ public abstract class InputType implements Serializable {
     }
 
 
+    @AllArgsConstructor @Getter
     public static class InputTypeFeedForward extends InputType{
+        private int size;
+
         @Override
         public Type getType() {
             return Type.FF;
         }
     }
 
+    @AllArgsConstructor @Getter
     public static class InputTypeRecurrent extends InputType{
+        private int size;
+
         @Override
         public Type getType() {
             return Type.RNN;
