@@ -1,6 +1,6 @@
 ---
 title: 
-layout: default
+layout: kr-default
 ---
 
 # Deeplearning4j란 무엇인가요?
