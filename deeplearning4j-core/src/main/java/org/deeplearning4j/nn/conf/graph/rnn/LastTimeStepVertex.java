@@ -76,7 +76,7 @@ public class LastTimeStepVertex extends GraphVertex {
             throw new InvalidInputTypeException("Invalid input type: cannot get subset of non RNN input (got: " + vertexInputs[0] + ")");
         }
 
-        return InputType.feedForward();
+        return InputType.feedForward(((InputType.InputTypeRecurrent)vertexInputs[0]).getSize());
     }
 
     @Override
