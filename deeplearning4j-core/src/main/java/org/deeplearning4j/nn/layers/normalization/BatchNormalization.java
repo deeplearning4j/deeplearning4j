@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers.normalization;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.deeplearning4j.berkeley.Iterators;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
@@ -18,6 +19,7 @@ import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -40,9 +42,10 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     protected INDArray var;
     protected INDArray gamma;
     protected INDArray beta;
-    protected INDArray gBeta;
-    protected INDArray gammaGradient;
-
+    protected INDArray xHat;
+    protected INDArray gGamma;
+    protected TrainingMode trainingMode;
+    protected boolean setMeanVar = true;
 
     public BatchNormalization(NeuralNetConfiguration conf) {
         super(conf);
@@ -75,34 +78,31 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-        epsilon = epsilon.reshape(shape);
-        int m = shape[0] * shape[2];
+
+        int m = epsilon.size(0); // number examples in batch
         org.deeplearning4j.nn.conf.layers.BatchNormalization layerConf = layerConf();
 
-        INDArray gBeta = epsilon.sum(0); // sum over examples in batch
+        INDArray gBeta = epsilon.sum(0).reshape(shape); // sum over examples in batch
 
-//        Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(gammaGradient, gBeta, gammaGradient, 0));
-
-        // TODO broadcast mult mean to epsilon and then sum across examples OR do a loop for now
-        INDArray gammaGradient;
-        if(training == TrainingMode.TRAIN && layerConf.isUseBatchMean())
-            gammaGradient = epsilon.mul(mean).sum(0);
-        else
-            gammaGradient = this.gammaGradient == null? Nd4j.zerosLike(gBeta): this.gammaGradient;
-
-//        Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(gammaGradient,newGamma,gammaGradient,1));
+        INDArray tmp;
+        if (trainingMode == TrainingMode.TRAIN && layerConf.isUseBatchMean()){
+            for(int i=0; i < epsilon.size(0); i++) {
+                tmp = epsilon.get(NDArrayIndex.interval(i, i + 1)).mul(xHat);
+                gGamma.add(tmp);
+            }
+        }
 
         INDArray coefficients = gamma.div(std);
-        // TODO epsilon needs to be broadcast OR loop for now
-        INDArray ret = coefficients.mul(epsilon.sub(mean.mul(gammaGradient).add(gBeta.divi(m))));
+        INDArray gXHat = (xHat.mul(gGamma).add(gBeta)).divi(m);
+        INDArray nextEpsilon = Nd4j.zerosLike(epsilon);
+        for(int i=0; i < epsilon.size(0); i++) {
+            nextEpsilon.putRow(i, coefficients.mul(epsilon.get(NDArrayIndex.interval(i, i + 1)).sub(gXHat)));
+        }
 
-        // Track gammaGradient
-        this.gammaGradient = ?;
-
-        ret = ret.reshape(shape);
         Gradient g = new DefaultGradient();
         this.gradient = g;
-        return new Pair<>(g,ret);
+
+        return new Pair<>(g,nextEpsilon);
     }
 
     @Override
@@ -112,7 +112,6 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
     @Override
     public void fit(INDArray data) {
-
     }
 
     @Override
@@ -120,12 +119,10 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         return preOutput(input, training == true? TrainingMode.TRAIN: TrainingMode.TEST);
     }
 
-
     @Override
     public Gradient gradient() {
         return gradient;
     }
-
 
     @Override
     public INDArray preOutput(INDArray x) {
@@ -135,31 +132,39 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     @Override
     public INDArray preOutput(INDArray x, TrainingMode training) {
         shape = getShape(x);
-        INDArray xFlat = x;
+        trainingMode = training;
         org.deeplearning4j.nn.conf.layers.BatchNormalization layerConf = layerConf();
+        if (setMeanVar){
+            this.mean = this.mean == null? Nd4j.zeros(shape): this.mean;
+            this.var = this.var == null? Nd4j.valueArrayOf(shape, layerConf.getEps()): this.var;
+            gGamma = gGamma == null ? Nd4j.zeros(shape) : gGamma;
+            setMeanVar = false;
+        }
+
 
         INDArray mean,var;
-        if(training == TrainingMode.TRAIN && layerConf.isUseBatchMean()) {
+        if(trainingMode == TrainingMode.TRAIN && layerConf.isUseBatchMean()) {
             // mean and var over samples in batch
             mean = x.mean(0).reshape(shape);
-            var = x.var(0).reshape(shape); // TODO - this is broken and not giving correct value
+            var = x.var(false, 0).reshape(shape);
             var.addi(layerConf.getEps());
         } else {
             // cumulative mean and var - primarily used after training
-            mean = this.mean == null? Nd4j.zeros(1, ArrayUtil.prod(shape)): this.mean;
-            var = this.var == null? Nd4j.valueArrayOf(shape, layerConf.getEps()): this.var;
+            mean = this.mean;
+            var = this.var;
         }
 
         std = Transforms.sqrt(var);
         INDArray gamma = this.gamma == null? Nd4j.onesLike(mean): this.gamma;
         INDArray beta = this.beta == null? Nd4j.zerosLike(mean): this.beta;
 
-        INDArray out = x.dup();
-
+        INDArray tmp;
+        INDArray shiftedScaledX = x.dup();
         for(int i=0; i < x.size(0); i++) {
-            INDArray tmp = out.get(NDArrayIndex.interval(i, i + 1));
+            tmp = shiftedScaledX.get(NDArrayIndex.interval(i, i + 1));
             // xHat = x-xmean / sqrt(var + epsilon & BN(xk) = γkxˆk + βk
-            tmp.subi(mean).divi(std).muli(gamma).addi(beta);
+            xHat = tmp.subi(mean).divi(std);
+            tmp.muli(gamma).addi(beta);
         }
 
         // TODO below was using broadcast but issue being able to pass in index on 0 - need to add back when fixed for performance improvement
@@ -171,25 +176,22 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         // update mean and var if using batch mean
         double decay;
         if(training == TrainingMode.TRAIN && layerConf.isUseBatchMean()) {
-            // should take average of all batches at the end - confirm this works
             if(layerConf.isFinetune()) {
                 layerConf.setN(layerConf.getN() + 1);
                 decay =  1. / layerConf.getN();
             } else
                 decay = layerConf.getDecay();
-            int m  = shape[0] * shape[2];
+            int m  = x.size(0); // number examples in batch
             double  adjust = m / Math.max(m - 1., 1.);
-            mean.muli(decay);
-            this.mean = mean.addi(mean.mul(1-decay));
-            var.mul(decay);
-            this.var = var.addi(var.mul((1-decay)*adjust));
+            this.mean = mean.mul(decay).add(this.mean.mul(1-decay));
+            this.var = var.mul(decay).add(this.var.mul((1-decay)*adjust));
+
+            // TODO update with a schedule
+            this.gamma = gamma;
+            this.beta = beta;
         }
 
-        // TODO update gamma and beta
-        this.gamma = ?;
-        this.beta = ?;
-
-        return out.reshape(shape);
+        return shiftedScaledX;
     }
 
     @Override
