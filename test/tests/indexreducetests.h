@@ -65,14 +65,13 @@ static Data<T> * getDataIndexReduceDimension(T *assertion,T startingVal) {
 
     int rank = 2;
     int length = 4;
-    int *shape = (int *) malloc(sizeof(int) * rank);
-    shape[0] = 2;
-    shape[1] = 2;
     int resultLength = 2;
-    ret->xShape = shape;
+    ret->xShape = (int *) malloc(sizeof(int) * rank);
+    ret->xShape[0] = 2;
+    ret->xShape [1] = 2;
     ret->rank = 2;
     ret->data = (T *) malloc(sizeof(T) * length);
-    for(int i = 0; i < 4; i++)
+    for(int i = 0; i < length; i++)
         ret->data[i] = i + 1;
     T *extraParams = (T *) malloc(sizeof(T) * 4);
     extraParams[0] = startingVal;
@@ -229,7 +228,7 @@ public:
 #ifdef __CUDACC__
         nd4j::buffer::Buffer<int> *gpuInfo = this->gpuInformationBuffer();
 		nd4j::buffer::Buffer<int> *dimensionBuffer = nd4j::buffer::createBuffer(this->baseData->dimension,this->baseData->dimensionLength);
-		nd4j::buffer::Buffer<int> *xShapeBuff = shapeIntBuffer(this->rank,this->shape);
+		nd4j::buffer::Buffer<int> *xShapeBuff = shapeIntBuffer(this->rank,this->baseData->xShape);
 		nd4j::buffer::Buffer<int> *resultShapeBuff = shapeIntBuffer(this->baseData->resultRank,this->baseData->resultShape);
         indexReduceFloat<<<this->blockSize,this->gridSize,this->sMemSize>>>(
 				this->opNum,
@@ -346,6 +345,8 @@ TEST(IndexReduce,ObjectOrientedFloatIMin) {
 
 
 
+
+
 TEST(IndexReduce,ObjectOrientedFloatDimensionIMax) {
     printf("Running dimension imax\n");
     int rank = 2;
@@ -354,7 +355,7 @@ TEST(IndexReduce,ObjectOrientedFloatDimensionIMax) {
     Data<float> *data = getDataIndexReduceDimension<float>(assertion,0);
     FloatIndexReduceTest *test = new FloatIndexReduceTest(rank,opNum,data,1);
     test->run();
-    delete data;
+    freeData(&data);
     delete test;
     printf("Ran dimension imax\n");
 }

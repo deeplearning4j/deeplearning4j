@@ -46,20 +46,21 @@ namespace shape {
  *
  *
  */
-    typedef struct {
-        int *tensorShape;
-        int xRank;
-        int *reverseDimensions;
-        int *rangeRet;
+    class TADPermuteInfo {
+    public:
+        int *tensorShape = NULL;
+        int xRank = 0;
+        int *reverseDimensions = NULL;
+        int *rangeRet = NULL;
         int removeLength;
-        int *remove;
-        int *zeroDimension;
-        int *newPermuteDims;
-        int *permutedShape;
-        int *permutedStrides;
-        int tensorShapeLength;
-        int tensorShapeProd;
-    } TADPermuteInfo;
+        int *remove = NULL;
+        int *zeroDimension = NULL;
+        int *newPermuteDims = NULL;
+        int *permutedShape = NULL;
+        int *permutedStrides = NULL;
+        int tensorShapeLength = 0;
+        int tensorShapeProd = 0;
+    };
 
 
 #ifdef __CUDACC__
@@ -1850,9 +1851,20 @@ __device__ int tadOffset(int *xInfo, int offset) {
         int *permutedStrides = shape::copyOf(shape::rank(xShapeInfo),shape::stride(xShapeInfo));
         shape::doPermuteSwap(shape::rank(xShapeInfo),&permutedShape,newPermuteDims);
         shape::doPermuteSwap(shape::rank(xShapeInfo),&permutedStrides,newPermuteDims);
-        TADPermuteInfo info = { tensorShape, xRank, reverseDimensions, rangeRet,
-                                removeLength, remove, zeroDimension, newPermuteDims, permutedShape,
-                                permutedStrides, tensorShapeLength, tensorShapeProd };
+        TADPermuteInfo info;
+        info.tensorShape = tensorShape;
+        info.xRank = xRank;
+        info.reverseDimensions = reverseDimensions;
+        info.rangeRet = rangeRet;
+        info.removeLength = removeLength;
+        info.remove = remove;
+        info.zeroDimension = zeroDimension;
+        info.newPermuteDims =  newPermuteDims;
+        info.permutedShape = permutedShape;
+        info.permutedStrides = permutedStrides;
+        info.tensorShapeLength = tensorShapeLength;
+        info.tensorShapeProd = tensorShapeProd;
+
 
         return info;
     }
@@ -1866,14 +1878,22 @@ __device__ int tadOffset(int *xInfo, int offset) {
 #endif
 
     void freePermuteInfo(TADPermuteInfo info) {
-        free(info.tensorShape);
-        free(info.reverseDimensions);
-        free(info.rangeRet);
-        free(info.remove);
-        free(info.zeroDimension);
-        free(info.newPermuteDims);
-        free(info.permutedShape);
-        free(info.permutedStrides);
+        if(info.tensorShape != NULL)
+            free(info.tensorShape);
+        if(info.reverseDimensions != NULL)
+            free(info.reverseDimensions);
+        if(info.rangeRet != NULL)
+            free(info.rangeRet);
+        if(info.remove != NULL)
+            free(info.remove);
+        if(info.zeroDimension != NULL)
+            free(info.zeroDimension);
+        if(info.newPermuteDims != NULL)
+            free(info.newPermuteDims);
+        if(info.permutedShape != NULL)
+            free(info.permutedShape);
+        if(info.permutedStrides != NULL)
+            free(info.permutedStrides);
 
     }
 

@@ -28,21 +28,25 @@ template <typename T>
 class Data {
 public:
     T scalar;
-    T *data;
-    T *y;
-    T *result;
-    T *extraParams;
-    T *assertion;
-    int *xShape;
-    int *yShape;
-    int *resultShape;
+    T *data = NULL;
+    T *y = NULL;
+    T *result = NULL;
+    T *extraParams = NULL;
+    T *assertion = NULL;
+    int *xShape = NULL;
+    int *yShape = NULL;
+    int *resultShape = NULL;
     int rank;
     int yRank;
     int resultRank;
-    int *dimension;
+    int *dimension = NULL;
     int dimensionLength;
 
 };
+
+template <typename T>
+void freeData(Data<T> *data);
+
 
 
 /**
@@ -68,9 +72,53 @@ int *shapeBuffer(int rank, int *shape) {
         elementWiseStride = 1;
     shapeInfo->elementWiseStride = elementWiseStride;
     int *shapeInfoBuffer = shape::toShapeBuffer(shapeInfo);
-    free(shapeInfo);
     return shapeInfoBuffer;
 }
+
+/**
+ * Properly frees the
+ * given data
+ */
+template <typename T>
+void freeData(Data<T> **dataRef) {
+    Data<T> *data = *dataRef;
+    if(data->xShape != NULL) {
+        free(data->xShape);
+        data->xShape = NULL;
+    }
+    if(data->resultShape != NULL) {
+        free(data->resultShape);
+        data->resultShape = NULL;
+    }
+    if(data->data != NULL) {
+        free(data->data);
+        data->data = NULL;
+    }
+    if(data->dimension != NULL) {
+        free(data->dimension);
+        data->dimension = NULL;
+    }
+    if(data->assertion != NULL) {
+        free(data->assertion);
+        data->assertion = NULL;
+    }
+    if(data->y != NULL) {
+        free(data->y);
+        data->y = NULL;
+    }
+    if(data->result != NULL) {
+        free(data->result);
+        data->result = NULL;
+    }
+    if(data->extraParams != NULL) {
+        free(data->extraParams);
+        data->extraParams = NULL;
+    }
+
+    delete data;
+
+}
+
 
 void assertBufferProperties(int *shapeBuffer) {
     CHECK(shape::rank(shapeBuffer) >= 2);
@@ -136,8 +184,6 @@ public:
 
 protected:
     int rank;
-    int *shape = NULL;
-    int *stride = NULL;
     Data<T> *baseData;
     nd4j::array::NDArray<T> *data = NULL;
     nd4j::array::NDArray<T> *result = NULL;
@@ -157,11 +203,10 @@ protected:
     virtual void run() = 0;
 
     virtual void init() {
-        shape = this->baseData->xShape;
         rank = this->baseData->rank;
-        stride = shape::calcStrides(shape, rank);
+        int *stride = shape::calcStrides(this->baseData->xShape, rank);
         printf("About to create array of rank %d\n",rank);
-        data = nd4j::array::NDArrays<T>::createFrom(rank, shape, stride, 0,
+        data = nd4j::array::NDArrays<T>::createFrom(rank, this->baseData->xShape, stride, 0,
                                                     0.0);
         printf("Created array\n");
 
@@ -199,8 +244,6 @@ protected:
     }
 
     virtual void freeAssertion() {
-        if(assertion != NULL)
-            free(assertion);
         if(extraParamsBuff != NULL)
             nd4j::buffer::freeBuffer(&extraParamsBuff);
     }

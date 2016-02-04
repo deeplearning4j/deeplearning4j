@@ -99,7 +99,7 @@ public:
 	}
 	virtual void executeCudaKernel() {
 #ifdef __CUDACC__
-		int *shapeBuff = shapeBuffer(this->rank,this->shape);
+		int *shapeBuff = shapeBuffer(this->rank,this->baseData->xShape);
 		int eleStride = shape::elementWiseStride(shapeBuff);
 		scalarDouble<<<this->blockSize,this->gridSize,
 				this->sMemSize>>>(
@@ -128,7 +128,7 @@ public:
 	}
 	virtual void executeCudaKernel() {
 #ifdef __CUDACC__
-		int *shapeBuff = shapeBuffer(this->rank,this->shape);
+		int *shapeBuff = shapeBuffer(this->rank,this->baseData->xShape);
 		int eleStride = shape::elementWiseStride(shapeBuff);
 		scalarFloat<<<this->blockSize,this->gridSize,
 				this->sMemSize>>>(

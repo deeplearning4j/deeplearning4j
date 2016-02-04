@@ -872,8 +872,10 @@ public:
 
 #pragma omp simd
 		for (int i = 0; i < resultLength; i++) {
-			startingIndex[i].value = this->startingValue(x);
-			startingIndex[i].index = 0;
+			IndexValue<T> val;
+			val.value = this->startingValue(x);
+			val.index = 0;
+			startingIndex[i] = val;
 		}
 
 		int i = 0,j = 0;
@@ -882,7 +884,6 @@ public:
 			int offset = dimensionLength > 1 ? i : tadLength * i;
 			startingIndex[i].value = x[offset];
 			startingIndex[i].index = offset % tadLength;
-            printf("Reduction index %d starting with %f\n",i,startingIndex[i].index);
 			for(j = 1; j < elementsPerReductionIndex; j++) {
 				IndexValue<T> comp2;
 				comp2.value = x[offset + tadElementWiseStride * j];
@@ -891,17 +892,11 @@ public:
 				result[i] = startingIndex[i].index;
 			}
 
-			printf("Reduction index %d ending with %f\n",i,startingIndex[i].index);
 
 		}
 
 		shape::freePermuteInfo(tadPermuteInfo);
-
-
-
-
-		delete[] startingIndex;
-		shape::freePermuteInfo(tadPermuteInfo);
+        delete[] startingIndex;
 	}
 
 	virtual
