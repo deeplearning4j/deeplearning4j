@@ -23,9 +23,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
+import java.io.Serializable;
+
 import org.nd4j.linalg.factory.Nd4j;
 
-public class Cluster {
+public class Cluster implements Serializable {
 
 	private String id = UUID.randomUUID().toString();
 	private String label;
