@@ -381,6 +381,10 @@ You can shut down your Word2vec application and try to delete them.
         Word2Vec vec = new Word2Vec.Builder().layerSize(300).windowSize(5)
                 .layerSize(300).iterate(iter).tokenizerFactory(t).build();
 
+*Q: How do I load my data? Why does training take forever?*
+
+*A:* If all of your sentences have been loaded as *one* sentence, Word2vec training could take a very long time. That's because Word2vec is a sentence-level algorithm, so sentence boundaries are very important, because co-occurrence statistics are gathered sentence by sentence. (For GloVe, sentence boundaries don't matter, because it's looking at corpus-wide co-occurrence. For many corpora, average sentence length is six words. That means that with a window size of 5 you have, say, 30 (random number here) rounds of skip-gram calculations. If you forget to specify your sentence boundaries, you may load a "sentence" that's 10,000 words long. In that case, Word2vec would attempt a full skip-gram cycle for the whole 10,000-word "sentence". In DL4J's implementation, a line is assumed to be a sentence. You need plug in your own SentenceIterator and Tokenizer. By asking you to specify how your sentences end, DL4J remains language-agnostic. UimaSentenceIterator is one way to do that. It uses OpenNLP for sentence boundary detection.
+
 *Q: I did everything you said and the results still don't look right.*
 
 *A:* If you are using Ubuntu, the serialized data may not be getting loaded properly. This is a problem with Ubuntu. We recommend testing this version of Wordvec on another version of Linux.
