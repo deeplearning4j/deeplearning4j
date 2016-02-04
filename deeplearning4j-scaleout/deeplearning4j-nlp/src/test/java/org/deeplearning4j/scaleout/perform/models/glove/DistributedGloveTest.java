@@ -35,6 +35,7 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import org.springframework.core.io.ClassPathResource;
@@ -42,8 +43,12 @@ import org.springframework.core.io.ClassPathResource;
 import java.io.File;
 
 /**
+ *
+ * This unit is meaningless and malfunctioning
+ *
  * Created by agibsonccc on 11/29/14.
  */
+@Ignore
 public class DistributedGloveTest extends BaseTestDistributed {
     private GloveWeightLookupTable table;
     private TextVectorizer vectorizer;
