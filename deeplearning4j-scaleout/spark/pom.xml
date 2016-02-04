@@ -97,7 +97,7 @@
         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-scaleout-api</artifactId>
-            <version>0.4-rc3.9-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
 
     </dependencies>

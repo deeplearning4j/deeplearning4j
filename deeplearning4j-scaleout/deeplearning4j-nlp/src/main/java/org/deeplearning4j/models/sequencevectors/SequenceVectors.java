@@ -129,11 +129,12 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         }
 
         log.info("Starting learning process...");
+        if (this.stopWords == null) this.stopWords = new ArrayList<>();
         for (int currentEpoch = 1; currentEpoch <= numEpochs; currentEpoch++) {
             final AtomicLong linesCounter = new AtomicLong(0);
             final AtomicLong wordsCounter = new AtomicLong(0);
 
-            AsyncSequencer sequencer = new AsyncSequencer(this.iterator);
+            AsyncSequencer sequencer = new AsyncSequencer(this.iterator, this.stopWords);
             sequencer.start();
 
 
@@ -695,14 +696,16 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         private final int limitLower = 5000;
         private AtomicBoolean isRunning = new AtomicBoolean(false);
         private AtomicLong nextRandom;
+        private List<String> stopList;
 
-        public AsyncSequencer(SequenceIterator<T> iterator) {
+        public AsyncSequencer(SequenceIterator<T> iterator, @NonNull List<String> stopList) {
             this.iterator = iterator;
             this.buffer = new LinkedBlockingQueue<>();
 //            this.linesCounter = linesCounter;
             this.setName("AsyncSequencer thread");
             this.nextRandom = new AtomicLong(workers + 1);
             this.iterator.reset();
+            this.stopList = stopList;
         }
 
         @Override
@@ -728,6 +731,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                         }
 
                         for (T element: document.getElements()) {
+                            if (stopList.contains(element.getLabel())) continue;
                             T realElement = vocab.wordFor(element.getLabel());
 
                             // please note: this serquence element CAN be absent in vocab, due to minFreq or stopWord or whatever else
