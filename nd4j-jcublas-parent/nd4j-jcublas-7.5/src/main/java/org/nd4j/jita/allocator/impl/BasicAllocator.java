@@ -374,4 +374,16 @@ public final class BasicAllocator implements Allocator {
         return balancer.makePromoteDecision(1, point, point.getShape());
         //return null;
     }
+
+    /**
+     * This method checks, if specific memory region could be moved from device to host
+     *
+     * @param objectId
+     * @return
+     */
+    protected AllocationStatus makeDemoteDecision(@NonNull Long objectId) {
+        AllocationPoint point = getAllocationPoint(objectId);
+
+        return balancer.makeDemoteDecision(1, point, point.getShape());
+    }
 }

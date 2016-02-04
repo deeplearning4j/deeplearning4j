@@ -29,4 +29,14 @@ public interface Balancer {
      * @return
      */
     AllocationStatus makePromoteDecision(Integer deviceId, AllocationPoint point, AllocationShape shape);
+
+    /**
+     * This method checks, if it's worth moving some memory region to host
+     *
+     * @param deviceId
+     * @param point
+     * @param shape
+     * @return
+     */
+    AllocationStatus makeDemoteDecision(Integer deviceId, AllocationPoint point, AllocationShape shape);
 }

@@ -54,4 +54,5 @@ public class Configuration implements Serializable {
      * List of forbidden devices that can't be used for allocation and calculation
      */
     private List<Integer> forbiddenDevices = new ArrayList<>();
+
 }

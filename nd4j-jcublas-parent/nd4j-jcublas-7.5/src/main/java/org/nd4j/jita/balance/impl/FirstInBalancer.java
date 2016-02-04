@@ -72,4 +72,48 @@ public class FirstInBalancer implements Balancer {
             return AllocationStatus.ZERO;
         }
     }
+
+    /**
+     * This method checks, if it's worth moving some memory region to host.
+     * For FirstInBalancer answer YES is constant answer, if memory usage is close to allocation threshold
+     *
+     * @param deviceId
+     * @param point
+     * @param shape
+     * @return
+     */
+    @Override
+    public AllocationStatus makeDemoteDecision(Integer deviceId, AllocationPoint point, AllocationShape shape) {
+        if (!point.getAllocationStatus().equals(AllocationStatus.DEVICE))
+            throw new IllegalStateException("You can't demote memory staged at ["+ point.getAllocationStatus()+"]");
+
+        long maximumMemory = configuration.getMaximumAllocation();
+        long allocatedMemory = environment.getAllocatedMemoryForDevice(deviceId);
+        long currentLength = AllocationUtils.getRequiredMemory(shape);
+
+        int singleDivider = 1;
+        int allocDivider = 1;
+        switch (configuration.getDeallocAggressiveness()) {
+            case PEACEFUL:
+                allocDivider = 3;
+                singleDivider = 3;
+                break;
+            case REASONABLE:
+                allocDivider = 4;
+                singleDivider = 4;
+                break;
+            case URGENT:
+                allocDivider = 10;
+                singleDivider = 10;
+                break;
+            case IMMEDIATE:
+                return AllocationStatus.ZERO;
+            default:
+                break;
+        }
+
+        if (currentLength > (maximumMemory / singleDivider) || allocatedMemory > (maximumMemory / allocDivider) ) {
+            return AllocationStatus.ZERO;
+        } else return AllocationStatus.DEVICE;
+    }
 }

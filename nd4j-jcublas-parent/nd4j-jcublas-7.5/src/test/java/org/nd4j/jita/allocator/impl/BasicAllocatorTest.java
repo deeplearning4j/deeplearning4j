@@ -572,7 +572,7 @@ public class BasicAllocatorTest {
      * @throws Exception
      */
     @Test
-    public void testSingleAllocationDecision1() throws Exception {
+    public void testSinglePromoteDecision1() throws Exception {
         BasicAllocator allocator = new BasicAllocator();
         allocator.setEnvironment(singleDevice4GBcc52);
         allocator.setBalancer(new FirstInBalancer());
@@ -609,7 +609,7 @@ public class BasicAllocatorTest {
      * @throws Exception
      */
     @Test
-    public void testSingleAllocationDecision2() throws Exception {
+    public void testSinglePromoteDecision2() throws Exception {
         BasicAllocator allocator = new BasicAllocator();
         allocator.setEnvironment(singleDevice4GBcc52);
         allocator.setBalancer(new FirstInBalancer());
@@ -648,7 +648,7 @@ public class BasicAllocatorTest {
      * @throws Exception
      */
     @Test
-    public void testSingleAllocationDecision3() throws Exception {
+    public void testSinglePromoteDecision3() throws Exception {
         BasicAllocator allocator = new BasicAllocator();
         allocator.setEnvironment(singleDevice4GBcc52);
         allocator.setBalancer(new FirstInBalancer());
@@ -703,5 +703,69 @@ public class BasicAllocatorTest {
 
         long allocatedMemory = singleDevice4GBcc52.getAllocatedMemoryForDevice(1);
         assertEquals(AllocationUtils.getRequiredMemory(shape1), allocatedMemory);
+    }
+
+    @Test
+    public void testSingleDemoteDecision1() throws Exception {
+        BasicAllocator allocator = new BasicAllocator();
+        allocator.setEnvironment(singleDevice4GBcc52);
+        allocator.setBalancer(new FirstInBalancer());
+        allocator.setMover(new DummyMover());
+
+        assertEquals(0, singleDevice4GBcc52.getAllocatedMemoryForDevice(1));
+
+        Long objectId1 = 22L;
+
+        AllocationShape shape1 = new AllocationShape();
+        shape1.setDataType(DataBuffer.Type.FLOAT);
+        shape1.setLength(63 * 1024 * 1024L);
+        shape1.setOffset(0);
+        shape1.setStride(1);
+
+        allocator.registerSpan(objectId1, shape1);
+
+        AllocationPoint point = allocator.getAllocationPoint(objectId1);
+        allocator.getDevicePointer(objectId1);
+        allocator.relocateMemory(objectId1, AllocationStatus.DEVICE);
+
+        assertEquals(AllocationStatus.DEVICE, point.getAllocationStatus());
+
+        long allocatedMemory = singleDevice4GBcc52.getAllocatedMemoryForDevice(1);
+        assertEquals(AllocationUtils.getRequiredMemory(shape1), allocatedMemory);
+
+        AllocationStatus targetStatus = allocator.makeDemoteDecision(objectId1);
+        assertEquals(AllocationStatus.ZERO, targetStatus);
+    }
+
+    @Test
+    public void testSingleDemoteDecision2() throws Exception {
+        BasicAllocator allocator = new BasicAllocator();
+        allocator.setEnvironment(singleDevice4GBcc52);
+        allocator.setBalancer(new FirstInBalancer());
+        allocator.setMover(new DummyMover());
+
+        assertEquals(0, singleDevice4GBcc52.getAllocatedMemoryForDevice(1));
+
+        Long objectId1 = 22L;
+
+        AllocationShape shape1 = new AllocationShape();
+        shape1.setDataType(DataBuffer.Type.FLOAT);
+        shape1.setLength(1 * 1024 * 1024L);
+        shape1.setOffset(0);
+        shape1.setStride(1);
+
+        allocator.registerSpan(objectId1, shape1);
+
+        AllocationPoint point = allocator.getAllocationPoint(objectId1);
+        allocator.getDevicePointer(objectId1);
+        allocator.relocateMemory(objectId1, AllocationStatus.DEVICE);
+
+        assertEquals(AllocationStatus.DEVICE, point.getAllocationStatus());
+
+        long allocatedMemory = singleDevice4GBcc52.getAllocatedMemoryForDevice(1);
+        assertEquals(AllocationUtils.getRequiredMemory(shape1), allocatedMemory);
+
+        AllocationStatus targetStatus = allocator.makeDemoteDecision(objectId1);
+        assertEquals(AllocationStatus.DEVICE, targetStatus);
     }
 }
