@@ -70,7 +70,7 @@ public class StandardDeviation extends Variance {
     }
 
     @Override
-    public Op opForDimension(int index, int... dimension) {
+    public Variance opForDimension(int index, int... dimension) {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)

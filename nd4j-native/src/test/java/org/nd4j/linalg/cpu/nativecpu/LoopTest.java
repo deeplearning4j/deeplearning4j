@@ -27,7 +27,7 @@ public class LoopTest {
 
     @Test
     public void testMultiDimSum() {
-        double[] data = new double[]{10, 26, 42};
+        double[] data = new double[]{22.,  26.,  30};
         INDArray assertion = Nd4j.create(data);
         for(int i = 0; i < data.length; i++) {
             assertEquals(data[i],assertion.getDouble(i),1e-1);

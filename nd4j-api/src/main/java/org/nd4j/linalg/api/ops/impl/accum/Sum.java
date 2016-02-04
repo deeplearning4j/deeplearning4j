@@ -98,7 +98,7 @@ public class Sum extends BaseAccumulation {
 
     @Override
     public int opNum() {
-        return 0;
+        return 1;
     }
 
     @Override
