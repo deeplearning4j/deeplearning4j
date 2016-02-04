@@ -9,6 +9,7 @@ layout: kr-default
 
 **내용**
 
+
 * [기본 사항 : 데이터 및 네트워크 구성](#basics)
 * [RNN 교육 특징](#trainingfeatures)
 * [Truncated Back Propagation Through Time](#tbptt)
