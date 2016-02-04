@@ -3,6 +3,8 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.*;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.Map;
+
 /**
  * Batch normalization configuration
  *
@@ -12,46 +14,71 @@ import org.nd4j.linalg.factory.Nd4j;
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 @Builder
-public class BatchNormalization extends Layer {
-    protected int[] shape; // shape of input
+public class BatchNormalization extends FeedForwardLayer {
     protected double decay;
     protected double eps = Nd4j.EPS_THRESHOLD;
     protected boolean useBatchMean;
-    private boolean finetune;
-    protected int N;
+    protected double gamma;
+    protected double beta;
+    protected boolean lockGammaBeta;
 
     private BatchNormalization(Builder builder){
         super(builder);
-        if(builder.shape.length != 2)
-            throw new IllegalArgumentException("Kernel size of should be rows x columns (a 2d array)");
         this.decay = builder.decay;
-        this.finetune = builder.finetune;
         this.useBatchMean = builder.useBatchMean;
-        this.N = builder.N;
+        this.gamma = builder.gamma;
+        this.beta = builder.beta;
+        this.lockGammaBeta = builder.lockGammaBeta;
     }
 
     @Override
     public BatchNormalization clone() {
         BatchNormalization clone = (BatchNormalization) super.clone();
-        if(clone.shape != null) clone.shape = clone.shape.clone();
         return clone;
     }
 
     @AllArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
-        protected int[] shape = new int[] {0,0};
         protected double decay = 0.9;
-        protected boolean useBatchMean = true; // TODO set this if layer conf is batch
-        protected boolean finetune;
-        protected int N;
+        protected boolean useBatchMean = true; // TODO auto set this if layer conf is batch
+        protected boolean lockGammaBeta = false;
+        protected double gamma = 1;
+        protected double beta = 0;
 
-        public Builder(int[] shape, double decay, boolean useBatchMean) {
-            this.shape = shape;
+        public Builder(double decay, boolean useBatchMean) {
             this.decay = decay;
             this.useBatchMean = useBatchMean;
         }
 
+        public Builder(double gamma, double beta) {
+            this.gamma = gamma;
+            this.beta = beta;
+        }
+
+        public Builder(double gamma, double beta, boolean lockGammaBeta) {
+            this.gamma = gamma;
+            this.beta = beta;
+            this.lockGammaBeta = lockGammaBeta;
+        }
+
+        public Builder(boolean lockGammaBeta) {
+            this.lockGammaBeta = lockGammaBeta;
+        }
+
         public Builder(){}
+
+        public void gamma(double gamma){
+            this.gamma = gamma;
+        }
+
+        public void beta(double beta){
+            this.beta = beta;
+        }
+
+        public void lockGammaBeta(boolean lockGammaBeta){
+            this.lockGammaBeta = lockGammaBeta;
+        }
+
         @Override
         public BatchNormalization build() {
             return new BatchNormalization(this);
