@@ -837,7 +837,7 @@ public:
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+	inline __host__
 
 #elif defined(__GNUC__)
 	__always_inline
@@ -880,19 +880,18 @@ public:
 #pragma omp parallel private(j,i)
 		for(i = omp_get_thread_num(); i < resultLength; i++) {
 			int offset = dimensionLength > 1 ? i : tadLength * i;
-			IndexValue<T> comp;
-			comp.value = x[offset];
-			comp.index = offset % tadLength;
-			IndexValue<T> currStartingValue = startingIndex[i];
-			startingIndex[i] = op(comp, extraParams);
-
+			startingIndex[i].value = x[offset];
+			startingIndex[i].index = offset % tadLength;
+            printf("Reduction index %d starting with %f\n",i,startingIndex[i].index);
 			for(j = 1; j < elementsPerReductionIndex; j++) {
 				IndexValue<T> comp2;
-				comp.value = x[offset + tadElementWiseStride * j];
-				comp.index = (offset + tadElementWiseStride * j) % tadLength;
-				startingIndex[i] = update(startingIndex[i],op(comp2, extraParams), extraParams);
+				comp2.value = x[offset + tadElementWiseStride * j];
+				comp2.index = (offset + tadElementWiseStride * j) % tadLength;
+				startingIndex[i] = update(startingIndex[i],comp2, extraParams);
 				result[i] = startingIndex[i].index;
 			}
+
+			printf("Reduction index %d ending with %f\n",i,startingIndex[i].index);
 
 		}
 
