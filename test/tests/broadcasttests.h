@@ -90,8 +90,8 @@ public:
 	}
 
 	virtual void execCpuKernel() override {
-		int *shapeBuff = shapeBuffer(this->rank,this->shape);
-		int *yShapeBuff = shapeBuffer(this->yRank,this->yShape);
+		int *shapeBuff = shapeBuffer(this->rank,this->baseData->xShape);
+		int *yShapeBuff = shapeBuffer(this->yRank,this->baseData->yShape);
 		int *resultShapeBuff = shapeBuffer(this->baseData->resultRank,this->baseData->resultShape);
 		op->exec(this->data->data->data,
 				shapeBuff,
@@ -142,8 +142,8 @@ public:
 #ifdef __CUDACC__
 		nd4j::buffer::Buffer<int> *gpuInfo = this->gpuInformationBuffer();
 		nd4j::buffer::Buffer<int> *dimensionBuffer = nd4j::buffer::createBuffer(this->baseData->dimension,this->baseData->dimensionLength);
-		nd4j::buffer::Buffer<int> *xShapeBuff = shapeIntBuffer(this->rank,this->shape);
-		nd4j::buffer::Buffer<int> *yShapeBuff = shapeIntBuffer(this->rank,this->shape);
+		nd4j::buffer::Buffer<int> *xShapeBuff = shapeIntBuffer(this->rank,this->baseData->xShape);
+		nd4j::buffer::Buffer<int> *yShapeBuff = shapeIntBuffer(this->rank,this->baseData->xShape);
 		broadcastFloat<<<this->blockSize,this->gridSize,this->sMemSize>>>(
 				this->opNum,
 				this->data->data->gData,
@@ -175,8 +175,8 @@ public:
 #ifdef __CUDACC__
 		nd4j::buffer::Buffer<int> *gpuInfo = this->gpuInformationBuffer();
 		nd4j::buffer::Buffer<int> *dimensionBuffer = nd4j::buffer::createBuffer(this->baseData->dimension,this->baseData->dimensionLength);
-		nd4j::buffer::Buffer<int> *xShapeBuff = shapeIntBuffer(this->rank,this->shape);
-		nd4j::buffer::Buffer<int> *yShapeBuff = shapeIntBuffer(this->rank,this->shape);
+		nd4j::buffer::Buffer<int> *xShapeBuff = shapeIntBuffer(this->rank,this->baseData->xShape);
+		nd4j::buffer::Buffer<int> *yShapeBuff = shapeIntBuffer(this->rank,this->baseData->xShape);
 		broadcastDouble<<<this->blockSize,this->gridSize,this->sMemSize>>>(
 				this->opNum,
 				this->data->data->gData,

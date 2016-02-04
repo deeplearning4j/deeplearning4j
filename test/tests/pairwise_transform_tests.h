@@ -161,8 +161,8 @@ public:
 
 	virtual void executeCudaKernel() {
 #ifdef __CUDACC__
-		int *shapeBuff = shapeBuffer(this->rank,this->shape);
-		int *yShapeBuff = shapeBuffer(this->rank,this->yShape);
+		int *shapeBuff = shapeBuffer(this->rank,this->baseData->xShape);
+		int *yShapeBuff = shapeBuffer(this->rank,this->baseData->yShape);
 		assertBufferProperties(shapeBuff);
 		assertBufferProperties(yShapeBuff);
 		int xOffset = shape::offset(shapeBuff);
@@ -199,8 +199,8 @@ public:
 	}
 	virtual void executeCudaKernel() {
 #ifdef __CUDACC__
-		int *shapeBuff = shapeBuffer(this->rank,this->shape);
-		int *yShapeBuff = shapeBuffer(this->rank,this->yShape);
+		int *shapeBuff = shapeBuffer(this->rank,this->baseData->xShape);
+		int *yShapeBuff = shapeBuffer(this->rank,this->baseData->yShape);
 		assertBufferProperties(shapeBuff);
 		assertBufferProperties(yShapeBuff);
 		int xOffset = shape::offset(shapeBuff);

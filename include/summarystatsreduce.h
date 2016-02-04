@@ -1160,7 +1160,7 @@ public:
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+	inline __host__
 
 #elif defined(__GNUC__)
 	__always_inline

@@ -879,7 +879,7 @@ namespace functions {
              * @return
              */
 #ifdef __CUDACC__
-            __host__ __device__
+            __host__
 #endif
             T execScalar(T *x, int *xShapeInfo,T *extraParams) {
                 T startingVal = this->startingValue(x);
