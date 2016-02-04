@@ -1,28 +1,18 @@
 package org.deeplearning4j.nn.layers.normalization;
 
-import com.google.common.annotations.VisibleForTesting;
-import org.deeplearning4j.berkeley.Iterators;
+import com.google.common.primitives.Ints;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
-import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.TransformOp;
-import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
-import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
-import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
-import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.*;
 
@@ -30,18 +20,16 @@ import java.util.*;
  * Batch normalization layer.
  * http://arxiv.org/pdf/1410.7455v8.pdf
  *
- * @author Adam Gibson
- */
+ * ideal to apply this between linear and non-linear transformations in layers it follows
+ **/
+
 public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.layers.BatchNormalization> {
     protected INDArray std;
     protected int index = 0;
     protected List<IterationListener> listeners = new ArrayList<>();
     protected int[] shape;
-    protected Gradient gradient;
     protected INDArray mean;
     protected INDArray var;
-    protected INDArray gamma;
-    protected INDArray beta;
     protected INDArray xHat;
     protected INDArray gGamma;
     protected TrainingMode trainingMode;
@@ -78,31 +66,32 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+        int numExamples = epsilon.size(0); // number examples in batch
 
-        int m = epsilon.size(0); // number examples in batch
         org.deeplearning4j.nn.conf.layers.BatchNormalization layerConf = layerConf();
-
         INDArray gBeta = epsilon.sum(0).reshape(shape); // sum over examples in batch
 
         INDArray tmp;
         if (trainingMode == TrainingMode.TRAIN && layerConf.isUseBatchMean()){
             for(int i=0; i < epsilon.size(0); i++) {
-                tmp = epsilon.get(NDArrayIndex.interval(i, i + 1)).mul(xHat);
-                gGamma.add(tmp);
+                tmp = epsilon.get(NDArrayIndex.interval(i, i + 1)).reshape(shape).mul(xHat);
+                gGamma.addi(tmp);
             }
         }
 
+        INDArray gamma = (layerConf.isLockGammaBeta())? Nd4j.onesLike(gBeta) : getParam(BatchNormalizationParamInitializer.GAMMA);
         INDArray coefficients = gamma.div(std);
-        INDArray gXHat = (xHat.mul(gGamma).add(gBeta)).divi(m);
+        INDArray gXHat = (xHat.mul(gGamma).add(gBeta)).divi(numExamples);
         INDArray nextEpsilon = Nd4j.zerosLike(epsilon);
         for(int i=0; i < epsilon.size(0); i++) {
-            nextEpsilon.putRow(i, coefficients.mul(epsilon.get(NDArrayIndex.interval(i, i + 1)).sub(gXHat)));
+            nextEpsilon.putRow(i, coefficients.mul(epsilon.get(NDArrayIndex.interval(i, i + 1)).reshape(shape)).sub(gXHat));
         }
 
-        Gradient g = new DefaultGradient();
-        this.gradient = g;
+        Gradient retGradient = new DefaultGradient();
+        retGradient.setGradientFor(BatchNormalizationParamInitializer.GAMMA, gGamma);
+        retGradient.setGradientFor(BatchNormalizationParamInitializer.BETA, gBeta);
 
-        return new Pair<>(g,nextEpsilon);
+        return new Pair<>(retGradient,nextEpsilon);
     }
 
     @Override
@@ -126,12 +115,20 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
     @Override
     public INDArray preOutput(INDArray x) {
-        return preOutput(x,TrainingMode.TRAIN);
+        shape = getShape(x);
+        return preOutput(x,TrainingMode.TRAIN, shape);
     }
 
     @Override
     public INDArray preOutput(INDArray x, TrainingMode training) {
         shape = getShape(x);
+        return preOutput(x, training, shape);
+    }
+
+    public INDArray preOutput(INDArray x, TrainingMode training, int[] shape){
+        this.shape = shape; //new int[]{1, x.size(1), x.size(3), x.size(3)};
+        INDArray gamma, beta;
+        int numExamples  = x.size(0); // number examples in batch
         trainingMode = training;
         org.deeplearning4j.nn.conf.layers.BatchNormalization layerConf = layerConf();
         if (setMeanVar){
@@ -140,7 +137,6 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             gGamma = gGamma == null ? Nd4j.zeros(shape) : gGamma;
             setMeanVar = false;
         }
-
 
         INDArray mean,var;
         if(trainingMode == TrainingMode.TRAIN && layerConf.isUseBatchMean()) {
@@ -155,13 +151,18 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         }
 
         std = Transforms.sqrt(var);
-        INDArray gamma = this.gamma == null? Nd4j.onesLike(mean): this.gamma;
-        INDArray beta = this.beta == null? Nd4j.zerosLike(mean): this.beta;
+        if(layerConf.isLockGammaBeta()){
+            gamma = Nd4j.onesLike(mean);
+            beta = Nd4j.zerosLike(mean);
+        } else{
+            gamma = getParam(BatchNormalizationParamInitializer.GAMMA);
+            beta = getParam(BatchNormalizationParamInitializer.BETA);
+        }
 
         INDArray tmp;
         INDArray activations = x.dup();
         for(int i=0; i < x.size(0); i++) {
-            tmp = activations.get(NDArrayIndex.interval(i, i + 1));
+            tmp = activations.get(NDArrayIndex.interval(i, i + 1)).reshape(shape);
             // xHat = x-xmean / sqrt(var + epsilon & BN(xk) = γkxˆk + βk
             xHat = tmp.subi(mean).divi(std);
             tmp.muli(gamma).addi(beta);
@@ -173,24 +174,18 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 //        INDArray out = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(xHat,gamma,xHat.dup(),-1));
 //        out = Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(out,beta,out,-1));
 
-        // update mean and var if using batch mean
+        // update mean and var if using batch mean while training
         double decay;
         if(training == TrainingMode.TRAIN && layerConf.isUseBatchMean()) {
-            if(layerConf.isFinetune()) {
-                layerConf.setN(layerConf.getN() + 1);
-                decay =  1. / layerConf.getN();
-            } else
-                decay = layerConf.getDecay();
-            int m  = x.size(0); // number examples in batch
-            double  adjust = m / Math.max(m - 1., 1.);
+            // TODO figure out how to track finetune phase here to update decay for finetune
+//          layerConf.setN(layerConf.getN() + 1);
+//          decay =  1. / layerConf.getN();
+
+            decay = layerConf.getDecay();
+            double adjust = numExamples / Math.max(numExamples - 1., 1.);
             this.mean = mean.mul(decay).add(this.mean.mul(1-decay));
             this.var = var.mul(decay).add(this.var.mul((1-decay)*adjust));
-
-            // TODO update with a schedule
-            this.gamma = gamma;
-            this.beta = beta;
         }
-
         return activations;
     }
 
@@ -248,6 +243,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     }
 
     public int[] getShape(INDArray x) {
+        if(x.rank() == 2)
+            return new int[] {1, x.size(1)};
         if(x.rank() == 3) {
             int leadDim = x.size(0);
 //            int cDim = getParam(BatchNormalizationParamInitializer.GAMMA).length();
@@ -257,7 +254,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 rdim = 1;
             if(leadDim * cDim * rdim != x.length())
                 throw new IllegalArgumentException("Illegal input for batch size");
-            return new int[] {leadDim,cDim,rdim};
+            return new int[] {1, leadDim*cDim*rdim};
         }
         else if(x.rank() == 4) {
             int leadDim = x.size(0);
@@ -268,7 +265,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 rdim = 1;
             if(cDim * wDim * rdim == x.length())
                 throw new IllegalArgumentException("Illegal input for batch size");
-            return new int[] {1, cDim,wDim,rdim};
+            return new int[] {1, cDim*wDim*rdim};
         }
 
         else throw new IllegalStateException("Unable to process input of rank " + x.rank());
