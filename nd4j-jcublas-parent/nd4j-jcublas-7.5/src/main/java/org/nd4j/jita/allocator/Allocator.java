@@ -1,6 +1,8 @@
 package org.nd4j.jita.allocator;
 
 import jcuda.Pointer;
+import org.nd4j.jita.allocator.enums.SyncState;
+import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -36,7 +38,7 @@ public interface Allocator {
 
     /**
      * This method registers array's buffer within allocator instance
-     * @param array
+     * @param array INDArray object to be picked
      */
     void pickupSpan(INDArray array);
 
@@ -61,5 +63,36 @@ public interface Allocator {
      *
      * @param objectId
      */
-    void getDevicePointer(Long objectId);
+    Object getDevicePointer(Long objectId);
+
+    /**
+     * This method returns actual device pointer valid for specified shape of current object
+     *
+     * @param objectId
+     * @param shape
+     */
+    Object getDevicePointer(Long objectId, AllocationShape shape);
+
+    /**
+     * This method should be called to make sure that data on host size is actualized
+     *
+     * @param objectId
+     */
+    void validateHostData(Long objectId);
+
+    /**
+     * This method returns current host memory state
+     *
+     * @param objectId
+     * @return
+     */
+    SyncState getHostMemoryState(Long objectId);
+
+    /**
+     * This method returns the number of top-level memory allocation.
+     * No descendants are included in this result.
+     *
+     * @return number of allocated top-level memory chunks
+     */
+    int tableSize();
 }

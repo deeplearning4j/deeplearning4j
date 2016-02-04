@@ -1,6 +1,7 @@
 package org.nd4j.jita.conf;
 
 import lombok.Data;
+import org.nd4j.jita.allocator.enums.Aggressiveness;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -11,12 +12,7 @@ import java.util.List;
  */
 @Data
 public class Configuration implements Serializable {
-    public enum Aggressiveness {
-        PEACEFUL,
-        REASONABLE,
-        URGENT,
-        IMMEDIATE
-    }
+
 
     /**
      * How long allocated chunk have right to exist
@@ -32,6 +28,11 @@ public class Configuration implements Serializable {
      * Deallocation aggressiveness
      */
     private Aggressiveness deallocAggressiveness = Aggressiveness.REASONABLE;
+
+    /**
+     * Allocation aggressiveness
+     */
+    private Aggressiveness allocAggressiveness = Aggressiveness.REASONABLE;
 
     /**
      * Maximum allocated ram, in bytes
