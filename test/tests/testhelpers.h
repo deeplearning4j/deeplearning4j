@@ -171,13 +171,14 @@ protected:
 
         extraParamsBuff = nd4j::buffer::createBuffer(extraParams,extraParamsLength);
         assertion = this->baseData->assertion;
+        int resultLength = shape::prod(this->baseData->resultShape,this->baseData->resultRank);
+
         for(int i = 0; i < this->baseData->resultRank; i++)
             printf("result shape [%d] before stride  was %d\n",i,this->baseData->resultShape[i]);
 
         int *resultStride = shape::calcStrides(this->baseData->resultShape,this->baseData->resultRank);
         for(int i = 0; i < this->baseData->resultRank; i++)
             printf("result shape [%d] was %d\n",i,this->baseData->resultShape[i]);
-        int resultLength = shape::prod(this->baseData->resultShape,this->baseData->resultRank);
 
         printf("About to create result array with result length %d with result rank %d\n",resultLength,this->baseData->resultRank);
         result = nd4j::array::NDArrays<T>::createFrom(

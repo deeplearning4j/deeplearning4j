@@ -301,6 +301,8 @@ namespace nd4j {
             int length = size / sizeof(T);
             printf("Mallocing data of size %d\n",size);
             int realSize = shape::prod(shape,rank);
+            if(realSize < 2)
+                realSize = 2;
             printf("length of array is %d\n",realSize);
             T * data = (T *) malloc(realSize * sizeof(T));
             printf("Malloced data for array\n");

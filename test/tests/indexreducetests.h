@@ -190,7 +190,7 @@ public:
 		nd4j::buffer::Buffer<int> *dimensionBuffer = nd4j::buffer::createBuffer(this->baseData->dimension,this->baseData->dimensionLength);
 		printf("Created dimension buffer\n");
 		printf("Creating shape buffer for x\n");
-		nd4j::buffer::Buffer<int> *xShapeBuff = shapeIntBuffer(this->rank,this->shape);
+		nd4j::buffer::Buffer<int> *xShapeBuff = shapeIntBuffer(this->rank,this->baseData->xShape);
 		printf("Created shape buffer for x\n");
         printf("Creating result shape buffer\n");
 		nd4j::buffer::Buffer<int> *resultShapeBuff = shapeIntBuffer(this->result->rank,this->result->shape->data);
@@ -227,17 +227,10 @@ public:
     }
     virtual void executeCudaKernel() override {
 #ifdef __CUDACC__
-        printf("Creating gpu information buffer\n");
         nd4j::buffer::Buffer<int> *gpuInfo = this->gpuInformationBuffer();
-        printf("Created gpu information buffer\n");
 		nd4j::buffer::Buffer<int> *dimensionBuffer = nd4j::buffer::createBuffer(this->baseData->dimension,this->baseData->dimensionLength);
-		printf("Created dimension buffer\n");
-		printf("Creating shape buffer for x\n");
 		nd4j::buffer::Buffer<int> *xShapeBuff = shapeIntBuffer(this->rank,this->shape);
-		printf("Created shape buffer for x\n");
-        printf("Creating result shape buffer\n");
 		nd4j::buffer::Buffer<int> *resultShapeBuff = shapeIntBuffer(this->baseData->resultRank,this->baseData->resultShape);
-        printf("Created result shape buffer\n");
         indexReduceFloat<<<this->blockSize,this->gridSize,this->sMemSize>>>(
 				this->opNum,
 				this->length,
@@ -252,10 +245,15 @@ public:
 				1
 		);
 
+        printf("Ran cuda kernel\n");
 		nd4j::buffer::freeBuffer(&gpuInfo);
+		printf("Freed gpu info\n");
 		nd4j::buffer::freeBuffer(&dimensionBuffer);
+		printf("Freed dimension buffer\n");
 		nd4j::buffer::freeBuffer(&xShapeBuff);
+		printf("Freed x shape buffer\n");
 		nd4j::buffer::freeBuffer(&resultShapeBuff);
+        printf("Freed result shape buffer\n");
 #endif
     }
 };
