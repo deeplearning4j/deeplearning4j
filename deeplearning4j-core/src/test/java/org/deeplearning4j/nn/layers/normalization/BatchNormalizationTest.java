@@ -14,6 +14,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Before;
 import org.junit.Test;
@@ -24,6 +25,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  */
@@ -48,7 +50,7 @@ public class BatchNormalizationTest {
 
     @Before
     public void doBefore() {
-        BatchNormalization bN = new BatchNormalization.Builder().build();
+        BatchNormalization bN = new BatchNormalization.Builder().nIn(2).nOut(32).build();
         NeuralNetConfiguration layerConf = new NeuralNetConfiguration.Builder()
                 .iterations(1).layer(bN).build();
         layer = LayerFactories.getFactory(layerConf).create(layerConf);
@@ -74,8 +76,22 @@ public class BatchNormalizationTest {
                 -1.,-1.,-1.,-1.,-.5,-.5,-.5,-.5,-1.,-1.,-1.,-1.,-.5,-.5,-.5,-.5,
         },new int[]{2, 2, 4, 4});
 
+        INDArray expectedGamma = Nd4j.create(new double[]
+                {
+                  0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,
+                  0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,
+                  0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,
+                }, new int[] {1, 32});
+
+        INDArray expectedBeta = Nd4j.create(new double[]
+                { 0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,
+                        0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,
+                        0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,
+                }, new int[] {1, 32});
+
         assertEquals(expectedEpsilon, actualOut.getSecond());
-        assertEquals(null, actualOut.getFirst().getGradientFor("W"));
+        assertEquals(expectedGamma, actualOut.getFirst().getGradientFor("gamma"));
+        assertEquals(expectedGamma, actualOut.getFirst().getGradientFor("beta"));
     }
 
     @Test
@@ -100,7 +116,16 @@ public class BatchNormalizationTest {
         DataSetIterator iter = new MnistDataSetIterator(2, 2);
         DataSet next = iter.next();
 
+        network.setInput(next.getFeatureMatrix());
+        INDArray activationsActual = network.preOutput(next.getFeatureMatrix());
+        assertEquals(10, activationsActual.shape()[1], 1e-2);
+
         network.fit(next);
+        INDArray actualGammaParam = network.getLayer(1).getParam(BatchNormalizationParamInitializer.GAMMA);
+        INDArray actualBetaParam = network.getLayer(1).getParam(BatchNormalizationParamInitializer.BETA);
+        assertTrue(actualGammaParam != null);
+        assertTrue(actualBetaParam != null);
+
 
     }
 
