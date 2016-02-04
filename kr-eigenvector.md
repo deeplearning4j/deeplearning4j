@@ -1,0 +1,5 @@
+---
+title:
+layout: kr-default
+---
+
