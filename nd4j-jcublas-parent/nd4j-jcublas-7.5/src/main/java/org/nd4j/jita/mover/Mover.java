@@ -38,4 +38,11 @@ public interface Mover {
      * @param point
      */
     void copyback(AllocationPoint point);
+
+    /**
+     * This method frees memory chunk specified by allocation point
+     *
+     * @param point
+     */
+    void free(AllocationPoint point);
 }

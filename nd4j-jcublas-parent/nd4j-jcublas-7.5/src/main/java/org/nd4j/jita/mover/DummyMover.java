@@ -41,7 +41,10 @@ public class DummyMover implements Mover {
         switch (currentStatus) {
             case HOST:
             case ZERO: {
-                    point.setAllocationStatus(targetStatus);
+                    if (targetStatus.equals(AllocationStatus.DEVICE)) {
+                        point.setAllocationStatus(targetStatus);
+                        point.setDevicePointer(new Object());
+                    } else throw new UnsupportedOperationException("HostMemory relocation in this direction isn't supported: [" + currentStatus + "] -> [" + targetStatus +"]");
                 }
                 break;
             default:
@@ -62,6 +65,23 @@ public class DummyMover implements Mover {
             point.setHostMemoryState(SyncState.SYNC);
         } else {
             throw new UnsupportedOperationException("Copyback is impossible for direction: ["+point.getAllocationStatus()+"] -> [HOST]");
+        }
+    }
+
+    /**
+     * This method frees memory chunk specified by allocation point
+     *
+     * @param point
+     */
+    @Override
+    public void free(AllocationPoint point) {
+        if (point.getAllocationStatus().equals(AllocationStatus.DEVICE) || point.getAllocationStatus().equals(AllocationStatus.ZERO)) {
+            point.setAccessHost(point.getAccessDevice());
+            point.setHostMemoryState(SyncState.UNDEFINED);
+            point.setDevicePointer(null);
+            point.setAllocationStatus(AllocationStatus.DEALLOCATED);
+        } else {
+            throw new UnsupportedOperationException("free() is impossible for : ["+point.getAllocationStatus()+"] allocation");
         }
     }
 }

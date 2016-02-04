@@ -8,6 +8,7 @@ import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.mover.Mover;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.Log;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -224,7 +225,7 @@ public final class BasicAllocator implements Allocator {
      * @param objectId
      */
     @Override
-    public void validateHostData(Long objectId) {
+    public void synchronizeHostData(Long objectId) {
         AllocationPoint point = allocationPoints.get(objectId);
 
 
@@ -293,6 +294,25 @@ public final class BasicAllocator implements Allocator {
         AllocationPoint point = allocationPoints.get(objectId);
 
         mover.relocate(point.getAllocationStatus(), targetStatus, point);
+    }
+
+    /**
+     * This method releases memory targeted by specific shape
+     *
+     * @param objectId
+     */
+    protected void releaseMemory(@NonNull Long objectId, @NonNull AllocationShape shape) {
+        AllocationPoint point = allocationPoints.get(objectId);
+
+        if (shape.equals(point.getShape())) {
+            if (point.getNumberOfDescendants() == 1 && point.getDescendantTicks(point.getShape()) >= 0) {
+                mover.free(point);
+                allocationPoints.remove(objectId);
+            }
+        } else {
+            // this is sub-allocation event. we could just remove one of descendants and forget that
+            point.dropShape(shape);
+        }
     }
 
     /**

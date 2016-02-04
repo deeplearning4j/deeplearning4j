@@ -143,12 +143,47 @@ public class BasicAllocatorTest {
         // we emulate that memory is allocated on device and was used there
         allocator.getDevicePointer(objectId);
 
-        allocator.validateHostData(objectId);
+        allocator.synchronizeHostData(objectId);
         assertNotEquals(0, point.getAccessHost());
         assertEquals(point.getAccessDevice(), point.getAccessHost());
         assertEquals(SyncState.SYNC, point.getHostMemoryState());
 
         assertEquals(1, point.getNumberOfDescendants());
+    }
+
+    @Test
+    public void testSingleDeallocation() throws Exception {
+        BasicAllocator allocator = new BasicAllocator();
+        allocator.setMover(new DummyMover());
+
+        Long objectId = 19L;
+
+        AllocationShape shape = new AllocationShape();
+        shape.setDataType(DataBuffer.Type.FLOAT);
+        shape.setLength(100);
+        shape.setOffset(0);
+        shape.setStride(1);
+
+        allocator.registerSpan(objectId, shape);
+
+        /*
+            We check that allocation point was created for our object
+        */
+        AllocationPoint point = allocator.getAllocationPoint(objectId);
+        assertNotEquals(null, point);
+        assertNotEquals(0, point.getAccessHost());
+        assertEquals(0, point.getAccessDevice());
+        assertEquals(AllocationStatus.UNDEFINED, point.getAllocationStatus());
+
+        // we emulate that memory is allocated on device and was used there
+        allocator.getDevicePointer(objectId);
+
+        assertEquals(AllocationStatus.ZERO, point.getAllocationStatus());
+
+        // now we call for release
+        allocator.releaseMemory(objectId, point.getShape());
+
+        assertEquals(AllocationStatus.DEALLOCATED, point.getAllocationStatus());
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -230,6 +265,7 @@ public class BasicAllocatorTest {
 
         AllocationPoint point = allocator.getAllocationPoint(objectId);
 
+        // we request pointer for original shape
         allocator.getDevicePointer(objectId);
 
         assertEquals(1, point.getDescendantTicks(shape));
@@ -242,11 +278,213 @@ public class BasicAllocatorTest {
 
         allocator.registerSpan(objectId, shape2);
 
+        // we request pointer for subarray
         allocator.getDevicePointer(objectId, shape2);
 
         assertEquals(2, point.getNumberOfDescendants());
 
         assertEquals(1, point.getDescendantTicks(shape));
         assertEquals(1, point.getDescendantTicks(shape2));
+    }
+
+    @Test
+    public void testNestedDeallocationPrimaryFirst1() throws Exception {
+        BasicAllocator allocator = new BasicAllocator();
+        allocator.setMover(new DummyMover());
+
+        Long objectId = 19L;
+
+        AllocationShape shape = new AllocationShape();
+        shape.setDataType(DataBuffer.Type.FLOAT);
+        shape.setLength(100);
+        shape.setOffset(0);
+        shape.setStride(1);
+
+        allocator.registerSpan(objectId, shape);
+
+        AllocationPoint point = allocator.getAllocationPoint(objectId);
+
+        // we request pointer for original shape
+        allocator.getDevicePointer(objectId);
+
+        assertEquals(1, point.getDescendantTicks(shape));
+
+        AllocationShape shape2 = new AllocationShape();
+        shape2.setDataType(DataBuffer.Type.FLOAT);
+        shape2.setLength(50);
+        shape2.setOffset(10);
+        shape2.setStride(1);
+
+        allocator.registerSpan(objectId, shape2);
+
+        // we request pointer for subarray
+        allocator.getDevicePointer(objectId, shape2);
+
+        assertEquals(2, point.getNumberOfDescendants());
+
+        assertEquals(1, point.getDescendantTicks(shape));
+        assertEquals(1, point.getDescendantTicks(shape2));
+
+        /*
+         now we call dealloc for primary array.
+
+         it should be skipped, because we still have nested allocation,
+        */
+
+        allocator.releaseMemory(objectId, shape);
+
+
+        assertEquals(AllocationStatus.ZERO, point.getAllocationStatus());
+
+    }
+
+    @Test
+    public void testNestedDeallocationSecondaryFirst1() throws Exception {
+        BasicAllocator allocator = new BasicAllocator();
+        allocator.setMover(new DummyMover());
+
+        Long objectId = 19L;
+
+        AllocationShape shape = new AllocationShape();
+        shape.setDataType(DataBuffer.Type.FLOAT);
+        shape.setLength(100);
+        shape.setOffset(0);
+        shape.setStride(1);
+
+        allocator.registerSpan(objectId, shape);
+
+        AllocationPoint point = allocator.getAllocationPoint(objectId);
+
+        // we request pointer for original shape
+        allocator.getDevicePointer(objectId);
+
+        assertEquals(1, point.getDescendantTicks(shape));
+
+        AllocationShape shape2 = new AllocationShape();
+        shape2.setDataType(DataBuffer.Type.FLOAT);
+        shape2.setLength(50);
+        shape2.setOffset(10);
+        shape2.setStride(1);
+
+        allocator.registerSpan(objectId, shape2);
+
+        // we request pointer for subarray
+        allocator.getDevicePointer(objectId, shape2);
+
+        assertEquals(2, point.getNumberOfDescendants());
+
+        assertEquals(1, point.getDescendantTicks(shape));
+        assertEquals(1, point.getDescendantTicks(shape2));
+
+        /*
+         now we call dealloc for secondary shape.
+
+         it should remove that shape from suballocations list
+        */
+
+        allocator.releaseMemory(objectId, shape2);
+
+        assertEquals(AllocationStatus.ZERO, point.getAllocationStatus());
+
+        assertEquals(1, point.getNumberOfDescendants());
+        assertEquals(1, point.getDescendantTicks(shape));
+        assertEquals(-1, point.getDescendantTicks(shape2));
+    }
+
+    @Test
+    public void testNestedDeallocationSecondaryThenPrimary1() throws Exception {
+        BasicAllocator allocator = new BasicAllocator();
+        allocator.setMover(new DummyMover());
+
+        Long objectId = 19L;
+
+        AllocationShape shape = new AllocationShape();
+        shape.setDataType(DataBuffer.Type.FLOAT);
+        shape.setLength(100);
+        shape.setOffset(0);
+        shape.setStride(1);
+
+        allocator.registerSpan(objectId, shape);
+
+        AllocationPoint point = allocator.getAllocationPoint(objectId);
+
+        // we request pointer for original shape
+        allocator.getDevicePointer(objectId);
+
+        assertEquals(1, point.getDescendantTicks(shape));
+
+        AllocationShape shape2 = new AllocationShape();
+        shape2.setDataType(DataBuffer.Type.FLOAT);
+        shape2.setLength(50);
+        shape2.setOffset(10);
+        shape2.setStride(1);
+
+        allocator.registerSpan(objectId, shape2);
+
+        // we request pointer for subarray
+        allocator.getDevicePointer(objectId, shape2);
+
+        assertEquals(2, point.getNumberOfDescendants());
+
+        assertEquals(1, point.getDescendantTicks(shape));
+        assertEquals(1, point.getDescendantTicks(shape2));
+
+        /*
+         now we call dealloc for secondary shape.
+
+         it should remove that shape from suballocations list
+        */
+
+        allocator.releaseMemory(objectId, shape2);
+
+        /*
+            Now, since we have no nested allocations - initial allocation can be released
+         */
+        allocator.releaseMemory(objectId, shape);
+
+        assertEquals(AllocationStatus.DEALLOCATED, point.getAllocationStatus());
+        assertEquals(null, allocator.getAllocationPoint(objectId));
+    }
+
+    /**
+     * This test addresses nested memory relocation from ZeroCopy memory to device memory
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testNestedRelocationToDevice1() throws Exception {
+        BasicAllocator allocator = new BasicAllocator();
+        allocator.setMover(new DummyMover());
+
+        Long objectId = 19L;
+
+        AllocationShape shape = new AllocationShape();
+        shape.setDataType(DataBuffer.Type.FLOAT);
+        shape.setLength(100);
+        shape.setOffset(0);
+        shape.setStride(1);
+
+        allocator.registerSpan(objectId, shape);
+
+        AllocationPoint point = allocator.getAllocationPoint(objectId);
+
+        // we request pointer for original shape
+        Object dPtr = allocator.getDevicePointer(objectId);
+
+        assertEquals(1, point.getDescendantTicks(shape));
+
+        AllocationShape shape2 = new AllocationShape();
+        shape2.setDataType(DataBuffer.Type.FLOAT);
+        shape2.setLength(50);
+        shape2.setOffset(10);
+        shape2.setStride(1);
+
+        allocator.registerSpan(objectId, shape2);
+
+        assertEquals(AllocationStatus.ZERO, point.getAllocationStatus());
+
+        allocator.relocateMemory(objectId, AllocationStatus.DEVICE);
+
+        assertNotEquals(dPtr, point.getDevicePointer());
     }
 }

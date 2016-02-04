@@ -65,7 +65,8 @@ public class AllocationPoint {
             return usedChunks.get(shape).get();
         } else {
             // FIXME: remove this in production use
-            throw new IllegalStateException("Descendant shape not found: " + shape);
+            //throw new IllegalStateException("Descendant shape not found: " + shape);
+            return -1;
         }
     }
 
@@ -82,9 +83,26 @@ public class AllocationPoint {
         return usedChunks.size();
     };
 
+    /**
+     * Adds suballocation shape to tracking list
+     *
+     * @param shape
+     */
     public void addShape(@NonNull AllocationShape shape) {
         if (!usedChunks.containsKey(shape)) {
             this.usedChunks.put(shape, new AtomicLong(0));
         }
+    }
+
+    /**
+     * Removes suballocation shape from tracking list
+     *
+     * @param shape
+     */
+    public void dropShape(@NonNull AllocationShape shape) {
+        if (!usedChunks.containsKey(shape))
+            throw new IllegalStateException("Shape [" + shape + "] was NOT found on dropShape() call");
+
+        usedChunks.remove(shape);
     }
 }

@@ -78,7 +78,7 @@ public interface Allocator {
      *
      * @param objectId
      */
-    void validateHostData(Long objectId);
+    void synchronizeHostData(Long objectId);
 
     /**
      * This method returns current host memory state
