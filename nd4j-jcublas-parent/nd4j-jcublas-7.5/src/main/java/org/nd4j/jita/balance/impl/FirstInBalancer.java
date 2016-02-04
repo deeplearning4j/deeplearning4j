@@ -1,0 +1,75 @@
+package org.nd4j.jita.balance.impl;
+
+import lombok.NonNull;
+import org.nd4j.jita.allocator.enums.AllocationStatus;
+import org.nd4j.jita.allocator.impl.AllocationPoint;
+import org.nd4j.jita.allocator.impl.AllocationShape;
+import org.nd4j.jita.allocator.utils.AllocationUtils;
+import org.nd4j.jita.balance.Balancer;
+import org.nd4j.jita.conf.Configuration;
+import org.nd4j.jita.conf.CudaEnvironment;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * This is primitive balancer implementation, it accepts the first matching request without taking in account better candidates.
+ * However, in exchange it's the fastest balancer, and suits workloads with many small memory regions.
+ *
+ * @author raver119@gmail.com
+ */
+public class FirstInBalancer implements Balancer {
+    private Configuration configuration;
+    private CudaEnvironment environment;
+
+
+    private static Logger log = LoggerFactory.getLogger(FirstInBalancer.class);
+
+    /**
+     * This method initializes this Balancer instance
+     *
+     * @param configuration
+     * @param environment
+     */
+    @Override
+    public void init(@NonNull Configuration configuration, @NonNull CudaEnvironment environment) {
+        this.configuration = configuration;
+        this.environment = environment;
+    }
+
+    /**
+     * This method checks, if it's worth moving some memory region to device
+     *
+     * @param deviceId
+     * @param point
+     * @param shape
+     * @return
+     */
+    @Override
+    public AllocationStatus makePromoteDecision(Integer deviceId, AllocationPoint point, AllocationShape shape) {
+        // TODO: to be decided on status here
+        if (point.getAllocationStatus().equals(AllocationStatus.DEVICE)) return AllocationStatus.DEVICE;
+
+        // first, we check if memory is enough
+        long requiredMemory = AllocationUtils.getRequiredMemory(point.getShape());
+
+        // TODO: balancer & affinity should be considered here
+        long availableMemory = environment.getAvailableMemoryForDevice(1);
+
+        long allocatedMemory =  environment.getAllocatedMemoryForDevice(1);
+
+
+        log.info("Req memory: " + requiredMemory);
+        log.info("Available memory:" + availableMemory);
+        log.info("Allocated memory: " + allocatedMemory);
+        log.info("Maxumum allocation: " + configuration.getMaximumAllocation());
+
+
+        if (availableMemory > requiredMemory && requiredMemory + allocatedMemory < configuration.getMaximumAllocation()) {
+            // we have available memory, let's consider allocation allowed
+            return AllocationStatus.DEVICE;
+        } else {
+            // we don't have available memory
+            return AllocationStatus.ZERO;
+        }
+    }
+}

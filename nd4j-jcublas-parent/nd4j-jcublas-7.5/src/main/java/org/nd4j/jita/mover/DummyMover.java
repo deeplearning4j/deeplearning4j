@@ -1,9 +1,15 @@
 package org.nd4j.jita.mover;
 
+import lombok.NonNull;
 import org.nd4j.jita.allocator.enums.SyncState;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
+import org.nd4j.jita.allocator.utils.AllocationUtils;
+import org.nd4j.jita.conf.Configuration;
+import org.nd4j.jita.conf.CudaEnvironment;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This is dummy Mover implementation, suitable for tests. It does not handles any allocations, but provides proper responses :)
@@ -13,6 +19,17 @@ import org.nd4j.jita.allocator.enums.AllocationStatus;
  * @author raver119@gmail.com
  */
 public class DummyMover implements Mover {
+    private Configuration configuration;
+    private CudaEnvironment environment;
+
+    private static Logger log = LoggerFactory.getLogger(DummyMover.class);
+
+    @Override
+    public void init(@NonNull Configuration configuration, @NonNull CudaEnvironment environment) {
+        this.configuration = configuration;
+        this.environment = environment;
+    }
+
     /**
      * Allocate specified memory chunk on specified device/host
      *
@@ -42,6 +59,8 @@ public class DummyMover implements Mover {
             case HOST:
             case ZERO: {
                     if (targetStatus.equals(AllocationStatus.DEVICE)) {
+                        log.info("Adding memory to alloc table: [" +AllocationUtils.getRequiredMemory(point.getShape()) + "]");
+                        environment.trackAllocatedMemory(1, AllocationUtils.getRequiredMemory(point.getShape()));
                         point.setAllocationStatus(targetStatus);
                         point.setDevicePointer(new Object());
                     } else throw new UnsupportedOperationException("HostMemory relocation in this direction isn't supported: [" + currentStatus + "] -> [" + targetStatus +"]");

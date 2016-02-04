@@ -3,6 +3,8 @@ package org.nd4j.jita.mover;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
+import org.nd4j.jita.conf.Configuration;
+import org.nd4j.jita.conf.CudaEnvironment;
 
 /**
  * Mover interface describes methods for data transfers between host and devices
@@ -11,6 +13,7 @@ import org.nd4j.jita.allocator.enums.AllocationStatus;
  */
 public interface Mover {
 
+    void init(Configuration configuration, CudaEnvironment environment);
 
     /**
      * Allocate specified memory chunk on specified device/host

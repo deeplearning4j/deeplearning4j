@@ -4,7 +4,10 @@ import lombok.NonNull;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.SyncState;
+import org.nd4j.jita.allocator.utils.AllocationUtils;
+import org.nd4j.jita.balance.Balancer;
 import org.nd4j.jita.conf.Configuration;
+import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.mover.Mover;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -24,9 +27,12 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class BasicAllocator implements Allocator {
     private static final BasicAllocator INSTANCE = new BasicAllocator();
+
     private Configuration configuration = new Configuration();
+    private CudaEnvironment environment = new CudaEnvironment();
 
     private transient Mover mover;
+    private transient Balancer balancer;
 
     private Map<Long, AllocationPoint> allocationPoints = new ConcurrentHashMap<>();
 
@@ -316,10 +322,56 @@ public final class BasicAllocator implements Allocator {
     }
 
     /**
+     * Specifies balancer instance for memory management
+     *
+     * @param balancer
+     */
+    protected void setBalancer(@NonNull Balancer balancer) {
+        this.balancer = balancer;
+        this.balancer.init(configuration, environment);
+    }
+
+    /**
+     * Specifies Mover implementation to be used for data transfers
      *
      * @param mover Mover implementation to be used for data transfers
      */
     protected void setMover(@NonNull Mover mover) {
         this.mover = mover;
+        this.mover.init(configuration, environment);
+    }
+
+    /**
+     * This method sets CUDA environment
+     *
+     * @param environment
+     */
+    protected void setEnvironment(@NonNull CudaEnvironment environment) {
+        this.environment = environment;
+    }
+
+    /**
+     * This method checks, if specific memory region could be moved to device
+     *
+     * @param objectId
+     * @return
+     */
+    protected AllocationStatus makePromoteDecision(@NonNull Long objectId) {
+        /*
+            There's few possible reasons to promote memory region:
+                1. Memory chunk is accessed often
+                2. There's enough device memory
+                3. There's no more better candidates for device memory.
+
+            There's also few possible reasons to decline promotion:
+                1. There's not enough device memory.
+                2. Memory was already relocated somehow
+                3. Memory is enough, but there's better candidates for the same device memory chunk
+        */
+
+        AllocationPoint point = getAllocationPoint(objectId);
+
+        return balancer.makePromoteDecision(1, point, point.getShape());
+        //return null;
     }
 }

@@ -5,6 +5,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.SyncState;
+import org.nd4j.jita.allocator.utils.AllocationUtils;
+import org.nd4j.jita.balance.impl.FirstInBalancer;
+import org.nd4j.jita.conf.CudaEnvironment;
+import org.nd4j.jita.conf.DeviceInformation;
 import org.nd4j.jita.mover.DummyMover;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.slf4j.Logger;
@@ -23,11 +27,78 @@ import static org.junit.Assert.*;
  */
 public class BasicAllocatorTest {
 
+    private CudaEnvironment singleDevice4GBcc52;
+    private CudaEnvironment doubleDevices4GBcc52;
+    private CudaEnvironment fourDevices4GBcc52;
+
     private static Logger log = LoggerFactory.getLogger(BasicAllocatorTest.class);
 
     @Before
     public void setUp() throws Exception {
+        singleDevice4GBcc52 = new CudaEnvironment();
+        doubleDevices4GBcc52 = new CudaEnvironment();
+        fourDevices4GBcc52 = new CudaEnvironment();
 
+        DeviceInformation device1 = new DeviceInformation();
+        device1.setDeviceId(1);
+        device1.setCcMajor(5);
+        device1.setCcMinor(2);
+        device1.setTotalMemory(4 * 1024 * 1024 * 1024L);
+        device1.setAvailableMemory(4 * 1024 * 1024 * 1024L);
+
+        singleDevice4GBcc52.addDevice(device1);
+
+
+        DeviceInformation device21 = new DeviceInformation();
+        device21.setDeviceId(1);
+        device21.setCcMajor(5);
+        device21.setCcMinor(2);
+        device21.setTotalMemory(4 * 1024 * 1024 * 1024L);
+        device21.setAvailableMemory(4 * 1024 * 1024 * 1024L);
+
+        DeviceInformation device22 = new DeviceInformation();
+        device22.setDeviceId(1);
+        device22.setCcMajor(5);
+        device22.setCcMinor(2);
+        device22.setTotalMemory(4 * 1024 * 1024 * 1024L);
+        device22.setAvailableMemory(4 * 1024 * 1024 * 1024L);
+
+        doubleDevices4GBcc52.addDevice(device21);
+        doubleDevices4GBcc52.addDevice(device22);
+
+
+        DeviceInformation device41 = new DeviceInformation();
+        device41.setDeviceId(1);
+        device41.setCcMajor(5);
+        device41.setCcMinor(2);
+        device41.setTotalMemory(4 * 1024 * 1024 * 1024L);
+        device41.setAvailableMemory(4 * 1024 * 1024 * 1024L);
+
+        DeviceInformation device42 = new DeviceInformation();
+        device42.setDeviceId(1);
+        device42.setCcMajor(5);
+        device42.setCcMinor(2);
+        device42.setTotalMemory(4 * 1024 * 1024 * 1024L);
+        device42.setAvailableMemory(4 * 1024 * 1024 * 1024L);
+
+        DeviceInformation device43 = new DeviceInformation();
+        device43.setDeviceId(1);
+        device43.setCcMajor(5);
+        device43.setCcMinor(2);
+        device43.setTotalMemory(4 * 1024 * 1024 * 1024L);
+        device43.setAvailableMemory(4 * 1024 * 1024 * 1024L);
+
+        DeviceInformation device44 = new DeviceInformation();
+        device44.setDeviceId(1);
+        device44.setCcMajor(5);
+        device44.setCcMinor(2);
+        device44.setTotalMemory(4 * 1024 * 1024 * 1024L);
+        device44.setAvailableMemory(4 * 1024 * 1024 * 1024L);
+
+        fourDevices4GBcc52.addDevice(device41);
+        fourDevices4GBcc52.addDevice(device42);
+        fourDevices4GBcc52.addDevice(device43);
+        fourDevices4GBcc52.addDevice(device44);
     }
 
     @After
@@ -61,6 +132,7 @@ public class BasicAllocatorTest {
     @Test
     public void testHostToDeviceMovement() throws Exception {
         BasicAllocator allocator = new BasicAllocator();
+        allocator.setEnvironment(singleDevice4GBcc52);
         allocator.setMover(new DummyMover());
         /*
             Lets assume we have some INDArray backed by some DataBuffer, internally identified by Long id
@@ -454,6 +526,7 @@ public class BasicAllocatorTest {
     @Test
     public void testNestedRelocationToDevice1() throws Exception {
         BasicAllocator allocator = new BasicAllocator();
+        allocator.setEnvironment(singleDevice4GBcc52);
         allocator.setMover(new DummyMover());
 
         Long objectId = 19L;
@@ -486,5 +559,149 @@ public class BasicAllocatorTest {
         allocator.relocateMemory(objectId, AllocationStatus.DEVICE);
 
         assertNotEquals(dPtr, point.getDevicePointer());
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////                DECISION MAKING ON ALLOCATION TESTS, SINGLE DEVICE
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+     *
+     * This test should agree on relocation
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testSingleAllocationDecision1() throws Exception {
+        BasicAllocator allocator = new BasicAllocator();
+        allocator.setEnvironment(singleDevice4GBcc52);
+        allocator.setBalancer(new FirstInBalancer());
+        allocator.setMover(new DummyMover());
+
+        Long objectId = 19L;
+
+        AllocationShape shape = new AllocationShape();
+        shape.setDataType(DataBuffer.Type.FLOAT);
+        shape.setLength(100);
+        shape.setOffset(0);
+        shape.setStride(1);
+
+        allocator.registerSpan(objectId, shape);
+
+        AllocationPoint point = allocator.getAllocationPoint(objectId);
+
+        // we request pointer for original shape
+        Object dPtr = allocator.getDevicePointer(objectId);
+        Object dPtr2 = allocator.getDevicePointer(objectId);
+
+        // data wasn't changed inbetween calls, and it's still in ZERO space
+        assertEquals(dPtr, dPtr2);
+        assertEquals(AllocationStatus.ZERO, point.getAllocationStatus());
+
+        // data could be moved to device
+        assertEquals(AllocationStatus.DEVICE, allocator.makePromoteDecision(objectId));
+    }
+
+    /**
+     *
+     * This tests checks allocation declined if device memory is not enough
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testSingleAllocationDecision2() throws Exception {
+        BasicAllocator allocator = new BasicAllocator();
+        allocator.setEnvironment(singleDevice4GBcc52);
+        allocator.setBalancer(new FirstInBalancer());
+        allocator.setMover(new DummyMover());
+
+
+        Long objectId = 22L;
+
+        AllocationShape shape = new AllocationShape();
+        shape.setDataType(DataBuffer.Type.FLOAT);
+        shape.setLength(10 * 1024 * 1024 * 1024L);
+        shape.setOffset(0);
+        shape.setStride(1);
+
+        allocator.registerSpan(objectId, shape);
+
+        AllocationPoint point = allocator.getAllocationPoint(objectId);
+
+        // we request pointer for original shape
+        Object dPtr = allocator.getDevicePointer(objectId);
+        Object dPtr2 = allocator.getDevicePointer(objectId);
+
+        // data wasn't changed inbetween calls, and it's still in ZERO space
+        assertEquals(dPtr, dPtr2);
+        assertEquals(AllocationStatus.ZERO, point.getAllocationStatus());
+
+        // data CAN'T be moved to device, since there's not enough device memory to hold 10GB
+        assertEquals(AllocationStatus.ZERO, allocator.makePromoteDecision(objectId));
+    }
+
+    /**
+     *
+     * This test covers situation, when we have multiple promotion candidates
+     * First will gets allocated, second will be declined
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testSingleAllocationDecision3() throws Exception {
+        BasicAllocator allocator = new BasicAllocator();
+        allocator.setEnvironment(singleDevice4GBcc52);
+        allocator.setBalancer(new FirstInBalancer());
+        allocator.setMover(new DummyMover());
+
+        assertEquals(0, singleDevice4GBcc52.getAllocatedMemoryForDevice(1));
+
+        Long objectId1 = 22L;
+
+        AllocationShape shape1 = new AllocationShape();
+        shape1.setDataType(DataBuffer.Type.FLOAT);
+        shape1.setLength(63 * 1024 * 1024L);
+        shape1.setOffset(0);
+        shape1.setStride(1);
+
+        allocator.registerSpan(objectId1, shape1);
+
+        assertEquals(0, singleDevice4GBcc52.getAllocatedMemoryForDevice(1));
+
+        Long objectId2 = 44L;
+
+        AllocationShape shape2 = new AllocationShape();
+        shape2.setDataType(DataBuffer.Type.FLOAT);
+        shape2.setLength(10 * 1024 * 1024L);
+        shape2.setOffset(0);
+        shape2.setStride(1);
+
+        allocator.registerSpan(objectId2, shape2);
+
+        assertEquals(0, singleDevice4GBcc52.getAllocatedMemoryForDevice(1));
+
+        /*
+            At this point we have two memory chunks, that can be moved to device.
+            So, we emulate few accesses to them, and checking for decision
+        */
+
+        allocator.getDevicePointer(objectId1);
+
+        assertEquals(0, singleDevice4GBcc52.getAllocatedMemoryForDevice(1));
+
+        allocator.getDevicePointer(objectId2);
+        allocator.getDevicePointer(objectId2);
+        allocator.getDevicePointer(objectId2);
+
+        assertEquals(0, singleDevice4GBcc52.getAllocatedMemoryForDevice(1));
+
+        AllocationStatus target = allocator.makePromoteDecision(objectId1);
+        assertEquals(AllocationStatus.DEVICE, target);
+        allocator.relocateMemory(objectId1, target);
+
+        assertEquals(AllocationStatus.ZERO, allocator.makePromoteDecision(objectId2));
+
+        long allocatedMemory = singleDevice4GBcc52.getAllocatedMemoryForDevice(1);
+        assertEquals(AllocationUtils.getRequiredMemory(shape1), allocatedMemory);
     }
 }

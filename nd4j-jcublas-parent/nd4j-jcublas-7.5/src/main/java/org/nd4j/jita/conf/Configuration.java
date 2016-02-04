@@ -37,7 +37,7 @@ public class Configuration implements Serializable {
     /**
      * Maximum allocated ram, in bytes
      */
-    private long maximumAllocation = 256 * 1024 * 1024;
+    private long maximumAllocation = 256 * 1024 * 1024L;
 
 
     /**
