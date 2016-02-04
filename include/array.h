@@ -284,30 +284,18 @@ namespace nd4j {
 
         NDArray<T> * NDArrays<T>::createFrom(int rank, int *shape, int *stride,
                                              int offset, T defaultValue) {
-            printf("Mallocing array\n");
             NDArray<T> *ret = (NDArray<T> *) malloc(sizeof(NDArray<T>) * 2);
-            printf("Malloced array\n");
             ret->rank = rank;
-            printf("About to create shape buffer of rank %d\n",rank);
             ret->shape = nd4j::buffer::createBuffer(shape,rank);
-            printf("Created shape buffer of rank %d\n",rank);
-            printf("About to create stride buffer of rank %d\n",rank);
             ret->stride = nd4j::buffer::createBuffer(stride,rank);
-            printf("Created stride buffer of rank %d\n",rank);
             ret->offset = offset;
-            printf("About to compute size of bytes\n");
             size_t size = lengthInBytes(ret);
-            printf("Computed size in bytes\n");
             int length = size / sizeof(T);
-            printf("Mallocing data of size %d\n",size);
             int realSize = shape::prod(shape,rank);
             if(realSize < 2)
                 realSize = 2;
-            printf("length of array is %d\n",realSize);
             T * data = (T *) malloc(realSize * sizeof(T));
-            printf("Malloced data for array\n");
             ret->data = nd4j::buffer::createBuffer<T>(data, length);
-            printf("Assigning data\n");
             ret->data->assign(data);
             return ret;
         }

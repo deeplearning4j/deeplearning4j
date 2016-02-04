@@ -54,18 +54,13 @@ void freeData(Data<T> *data);
  * for the given rank and shape.
  */
 int *shapeBuffer(int rank, int *shape) {
-    printf("Computing stride in shape buffer\n");
     int *stride = shape::calcStrides(shape, rank);
-    printf("Computed stride in shape buffer\n");
     shape::ShapeInformation * shapeInfo = (shape::ShapeInformation *) malloc(
             sizeof(shape::ShapeInformation));
-    printf("Created shape information\n");
     shapeInfo->shape = shape;
     shapeInfo->stride = stride;
     shapeInfo->offset = 0;
     shapeInfo->rank = rank;
-
-    printf("About to compute element wise stride\n");
     int elementWiseStride = shape::computeElementWiseStride(rank, shape, stride,
                                                             0);
     if(elementWiseStride < 1)
@@ -205,42 +200,26 @@ protected:
     virtual void init() {
         rank = this->baseData->rank;
         int *stride = shape::calcStrides(this->baseData->xShape, rank);
-        printf("About to create array of rank %d\n",rank);
         data = nd4j::array::NDArrays<T>::createFrom(rank, this->baseData->xShape, stride, 0,
                                                     0.0);
-        printf("Created array\n");
-
         length = nd4j::array::NDArrays<T>::length(data);
-        printf("Array length is %d\n",length);
         extraParams = this->baseData->extraParams;
 
         extraParamsBuff = nd4j::buffer::createBuffer(extraParams,extraParamsLength);
         assertion = this->baseData->assertion;
         int resultLength = shape::prod(this->baseData->resultShape,this->baseData->resultRank);
 
-        for(int i = 0; i < this->baseData->resultRank; i++)
-            printf("result shape [%d] before stride  was %d\n",i,this->baseData->resultShape[i]);
 
         int *resultStride = shape::calcStrides(this->baseData->resultShape,this->baseData->resultRank);
-        for(int i = 0; i < this->baseData->resultRank; i++)
-            printf("result shape [%d] was %d\n",i,this->baseData->resultShape[i]);
-
-        printf("About to create result array with result length %d with result rank %d\n",resultLength,this->baseData->resultRank);
         result = nd4j::array::NDArrays<T>::createFrom(
                 this->baseData->resultRank
                 , this->baseData->resultShape,
                 resultStride, 0,
                 0.0);
 
-        printf("Result length for array was %d with rank of %d\n",resultLength,result->rank);
         for(int i = 0; i < resultLength; i++) {
             result->data->data[i] = baseData->result[i];
         }
-
-
-        printf("Initialized array\n");
-
-
     }
 
     virtual void freeAssertion() {

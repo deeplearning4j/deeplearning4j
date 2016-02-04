@@ -82,15 +82,7 @@ namespace functions {
 #ifdef __CUDACC__
             virtual __host__ __device__
 	T * generateExtraParamsCuda(T *input,int *shapeInfo) {
-		T *ret = createExtraParams();
-		ReduceFunction<T> **functions = this->extraParamsFunctions();
-		for(int i = 0; i < getExtraParamsLength(); i++) {
-			ReduceFunction<T> *r = functions[i];
-			T val = r->execScalar(input,shapeInfo,ret);
-			ret[i] = val;
-		}
-		delete[] functions;
-		return ret;
+       	return NULL;
 	}
 #endif
 

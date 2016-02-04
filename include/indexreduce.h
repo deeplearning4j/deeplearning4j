@@ -320,27 +320,33 @@ public:
 			 * we can use arr.stride(1) as a representation
 			 * along which to iterate.
 			 */
-			int tadElementWiseStride = shape::stride(xShapeInfo)[dimensionLength - 1];
+			int tadElementWiseStride = dimensionLength > 1 ? shape::stride(xShapeInfo)[dimensionLength - 1] : shape::computeElementWiseStride(shape::rank(xShapeInfo),shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),shape::order(xShapeInfo) == 'f',dimension,dimensionLength);
 			int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
 			int tadLength = xTadInfo.tensorShapeProd;
 			int xLength = shape::length(xShapeInfo);
 			int i = 0,j = 0;
 #pragma unroll
 			for(i = tid; i < resultLength; i++) {
+				int offset = dimensionLength > 1 ? i : tadLength * i;
 				IndexValue<T> comp2;
-				comp2.value = dx[i];
-				comp2.index = i % tadLength;
-				sPartials[tid] = op(comp2, extraParams);
+				comp2.value = dx[offset];
+				comp2.index = 0;
+				printf("Value %d starting at %f and index %d\n",i,comp2.value,i);
+				sPartials[tid] = comp2;
 				__syncthreads();
 				for(j = 1; j < elementsPerReductionIndex; j++) {
 					IndexValue<T> comp;
-					comp.value = dx[i + tadElementWiseStride * j];
-					comp.index =  i + tadElementWiseStride * j % tadLength;
-					sPartials[tid] =  update(sPartials[tid],op(comp, extraParams), extraParams);
+					comp.value = dx[offset + tadElementWiseStride * j];
+					comp.index =  j;
+					printf("Comparing current value %f at index %d with new value %f and %d\n",
+							sPartials[tid].value,sPartials[tid].index,comp.value,comp.index);
+					sPartials[tid] =  update(sPartials[tid],comp, extraParams);
 					__syncthreads();
+				     result[i] = sPartials[tid].index;
+				     printf("Setting value %d to index %f\n",i,result[i]);
+
 				}
 
-				result[i] = sPartials[tid].index;
 			}
 
 
@@ -883,11 +889,11 @@ public:
 		for(i = omp_get_thread_num(); i < resultLength; i++) {
 			int offset = dimensionLength > 1 ? i : tadLength * i;
 			startingIndex[i].value = x[offset];
-			startingIndex[i].index = offset % tadLength;
+			startingIndex[i].index = 0;
 			for(j = 1; j < elementsPerReductionIndex; j++) {
 				IndexValue<T> comp2;
 				comp2.value = x[offset + tadElementWiseStride * j];
-				comp2.index = (offset + tadElementWiseStride * j) % tadLength;
+				comp2.index = j;
 				startingIndex[i] = update(startingIndex[i],comp2, extraParams);
 				result[i] = startingIndex[i].index;
 			}

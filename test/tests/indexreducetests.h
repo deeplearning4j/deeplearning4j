@@ -370,7 +370,6 @@ TEST(IndexReduce,ObjectOrientedFloatIMax) {
 }
 
 TEST(IndexReduce,ObjectOrientedFloatIMin) {
-    printf("Running float imin\n");
     int rank = 2;
     int opNum = 1;
     float assertion[1] = {0};
@@ -379,7 +378,6 @@ TEST(IndexReduce,ObjectOrientedFloatIMin) {
     test->run();
     delete data;
     delete test;
-    printf("Ran float imin\n");
 
 }
 
@@ -389,7 +387,6 @@ TEST(IndexReduce,ObjectOrientedFloatIMin) {
 
 
 TEST(IndexReduce,ObjectOrientedFloatDimensionIMax) {
-    printf("Running dimension imax\n");
     int rank = 2;
     int opNum = 0;
     float assertion[2] = {1,1};
@@ -398,11 +395,9 @@ TEST(IndexReduce,ObjectOrientedFloatDimensionIMax) {
     test->run();
     freeData(&data);
     delete test;
-    printf("Ran dimension imax\n");
 }
 
 TEST(IndexReduce,ObjectOrientedFloatDimensionIMin) {
-    printf("Running dimension float imin\n");
     int rank = 2;
     int opNum = 1;
     float assertion[2] = {0,0};
@@ -411,20 +406,29 @@ TEST(IndexReduce,ObjectOrientedFloatDimensionIMin) {
     test->run();
     delete data;
     delete test;
-    printf("Ran dimension float imin\n");
 }
 
 
 TEST(IndexReduce,ObjectOrientedFloatDimensionIMinMulti) {
-    printf("Running dimension float imin\n");
     int rank = 2;
     int opNum = 1;
-    float assertion[2] = {0,0};
+    float assertion[3] = {0,0,0};
     Data<float> *data = getDataIndexReduceDimensionMulti<float>(assertion,0);
     FloatIndexReduceTest *test = new FloatIndexReduceTest(rank,opNum,data,1);
     test->run();
     delete data;
     delete test;
-    printf("Ran dimension float imin\n");
+}
+
+
+TEST(IndexReduce,ObjectOrientedFloatDimensionIMaxMulti) {
+    int rank = 2;
+    int opNum = 0;
+    float assertion[3] = {3,3,3};
+    Data<float> *data = getDataIndexReduceDimensionMulti<float>(assertion,0);
+    FloatIndexReduceTest *test = new FloatIndexReduceTest(rank,opNum,data,1);
+    test->run();
+    delete data;
+    delete test;
 }
 #endif //NATIVEOPERATIONS_INDEXREDUCETESTS_H_H
