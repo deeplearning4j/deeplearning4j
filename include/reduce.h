@@ -944,7 +944,7 @@ namespace functions {
                 int i = 0,j = 0;
 #pragma omp parallel private(j,i)
                 for(i = omp_get_thread_num(); i < resultLength; i++) {
-                    int offset = dimensionLength > 1 ? i : tadLength * i;
+                    int offset =  dimensionLength > 1 ? i : tadLength * i;
                     result[i] = op(x[offset], extraParams);
                     for(j = 1; j < elementsPerReductionIndex; j++) {
                         result[i] =  update(result[i],op(x[offset + tadElementWiseStride * j], extraParams), extraParams);

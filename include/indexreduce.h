@@ -331,19 +331,15 @@ public:
 				IndexValue<T> comp2;
 				comp2.value = dx[offset];
 				comp2.index = 0;
-				printf("Value %d starting at %f and index %d\n",i,comp2.value,i);
 				sPartials[tid] = comp2;
 				__syncthreads();
 				for(j = 1; j < elementsPerReductionIndex; j++) {
 					IndexValue<T> comp;
 					comp.value = dx[offset + tadElementWiseStride * j];
 					comp.index =  j;
-					printf("Comparing current value %f at index %d with new value %f and %d\n",
-							sPartials[tid].value,sPartials[tid].index,comp.value,comp.index);
 					sPartials[tid] =  update(sPartials[tid],comp, extraParams);
 					__syncthreads();
 				     result[i] = sPartials[tid].index;
-				     printf("Setting value %d to index %f\n",i,result[i]);
 
 				}
 
