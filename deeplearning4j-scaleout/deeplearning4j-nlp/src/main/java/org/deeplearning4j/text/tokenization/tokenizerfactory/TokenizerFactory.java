@@ -50,7 +50,11 @@ public interface TokenizerFactory {
      * @param preProcessor the token pre processor to use
      */
 	void setTokenPreProcessor(TokenPreProcess preProcessor);
-	
-	
-	
+
+	/**
+	 * Returns TokenPreProcessor set for this TokenizerFactory instance
+	 *
+	 * @return TokenPreProcessor instance, or null if no preprocessor was defined
+     */
+	TokenPreProcess getTokenPreProcessor();
 }
