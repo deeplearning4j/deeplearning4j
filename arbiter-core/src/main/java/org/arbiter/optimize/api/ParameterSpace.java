@@ -23,14 +23,6 @@ import java.util.List;
  */
 public interface ParameterSpace<P> {
 
-//    P randomValue();
-
-//    /**Map an input value (0 to 1) to an output value. Can be used to generate random values, for example.
-//     * @param input Input value, in range [0,1].
-//     * @return An output value
-//     */
-//    P getValue(double input);
-
     /** Generate a candidate given a set of values. These values are then mapped to a specific candidate, using some
      * mapping function (such as the prior probability distribution)
      * @param parameterValues A set of values, each in the range [0,1], of length {@link #numParameters()}

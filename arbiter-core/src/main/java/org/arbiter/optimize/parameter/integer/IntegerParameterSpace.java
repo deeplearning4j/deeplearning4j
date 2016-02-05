@@ -42,6 +42,14 @@ public class IntegerParameterSpace implements ParameterSpace<Integer> {
         this.distribution = distribution;
     }
 
+    public int getMin(){
+        return distribution.getSupportLowerBound();
+    }
+
+    public int getMax(){
+        return distribution.getSupportUpperBound();
+    }
+
     @Override
     public Integer getValue(double[] input) {
         if(index == -1) throw new IllegalStateException("Cannot get value: ParameterSpace index has not been set");
@@ -77,4 +85,5 @@ public class IntegerParameterSpace implements ParameterSpace<Integer> {
             return "IntegerParameterSpace("+distribution+")";
         }
     }
+
 }

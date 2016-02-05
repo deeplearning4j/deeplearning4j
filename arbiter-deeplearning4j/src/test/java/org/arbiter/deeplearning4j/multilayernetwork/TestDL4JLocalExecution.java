@@ -35,7 +35,7 @@ import org.arbiter.optimize.executor.local.LocalCandidateExecutor;
 import org.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
 import org.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
 import org.arbiter.optimize.parameter.integer.IntegerParameterSpace;
-import org.arbiter.optimize.randomsearch.RandomSearchGenerator;
+import org.arbiter.optimize.candidategenerator.RandomSearchGenerator;
 import org.arbiter.optimize.runner.OptimizationRunner;
 import org.arbiter.optimize.ui.ArbiterUIServer;
 import org.arbiter.optimize.ui.listener.UIOptimizationRunnerStatusListener;

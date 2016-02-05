@@ -35,6 +35,9 @@ public class DiscreteParameterSpace<P> implements ParameterSpace<P> {
         this.values = new ArrayList<>(values);
     }
 
+    public int numValues(){
+        return values.size();
+    }
 
     @Override
     public P getValue(double[] input){

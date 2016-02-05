@@ -26,7 +26,7 @@ import org.arbiter.optimize.api.termination.MaxCandidatesCondition;
 import org.arbiter.optimize.config.OptimizationConfiguration;
 import org.arbiter.optimize.executor.CandidateExecutor;
 import org.arbiter.optimize.executor.local.LocalCandidateExecutor;
-import org.arbiter.optimize.randomsearch.RandomSearchGenerator;
+import org.arbiter.optimize.candidategenerator.RandomSearchGenerator;
 import org.arbiter.optimize.runner.OptimizationRunner;
 import org.arbiter.optimize.runner.Status;
 import org.arbiter.optimize.runner.listener.candidate.UICandidateStatusListener;
@@ -43,7 +43,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.Callable;
 
 /**
