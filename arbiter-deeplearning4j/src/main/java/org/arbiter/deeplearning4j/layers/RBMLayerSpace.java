@@ -21,6 +21,8 @@ import org.arbiter.optimize.parameter.FixedValue;
 import org.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.nn.conf.layers.RBM;
 
+import java.util.List;
+
 public class RBMLayerSpace extends BasePretrainNetworkLayerSpace<RBM> {
 
     private ParameterSpace<RBM.HiddenUnit> hiddenUnit;
@@ -35,20 +37,30 @@ public class RBMLayerSpace extends BasePretrainNetworkLayerSpace<RBM> {
         this.k = builder.k;
         this.sparsity = builder.sparsity;
     }
+    
+    @Override
+    public List<ParameterSpace> collectLeaves(){
+        List<ParameterSpace> list = super.collectLeaves();
+        if(hiddenUnit != null) list.addAll(hiddenUnit.collectLeaves());
+        if(visibleUnit != null) list.addAll(visibleUnit.collectLeaves());
+        if(k != null) list.addAll(k.collectLeaves());
+        if(sparsity != null) list.addAll(sparsity.collectLeaves());
+        return list;
+    }
 
     @Override
-    public RBM randomLayer() {
+    public RBM getValue(double[] values) {
         RBM.Builder b = new RBM.Builder();
-        setLayerOptionsBuilder(b);
+        setLayerOptionsBuilder(b,values);
         return b.build();
     }
 
-    protected void setLayerOptionsBuilder(RBM.Builder builder){
-        super.setLayerOptionsBuilder(builder);
-        if(hiddenUnit != null) builder.hiddenUnit(hiddenUnit.randomValue());
-        if(visibleUnit != null) builder.visibleUnit(visibleUnit.randomValue());
-        if(k != null) builder.k(k.randomValue());
-        if(sparsity != null) builder.sparsity(sparsity.randomValue());
+    protected void setLayerOptionsBuilder(RBM.Builder builder,double[] values){
+        super.setLayerOptionsBuilder(builder,values);
+        if(hiddenUnit != null) builder.hiddenUnit(hiddenUnit.getValue(values));
+        if(visibleUnit != null) builder.visibleUnit(visibleUnit.getValue(values));
+        if(k != null) builder.k(k.getValue(values));
+        if(sparsity != null) builder.sparsity(sparsity.getValue(values));
     }
 
     @Override

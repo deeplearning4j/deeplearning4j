@@ -44,8 +44,8 @@ public abstract class FeedForwardLayerSpace<L extends FeedForwardLayer> extends 
     @Override
     public List<ParameterSpace> collectLeaves(){
         List<ParameterSpace> list = super.collectLeaves();
-        list.addAll(nIn.collectLeaves());
-        list.addAll(nOut.collectLeaves());
+        if(nIn != null) list.addAll(nIn.collectLeaves());
+        if(nOut != null) list.addAll(nOut.collectLeaves());
         return list;
     }
 

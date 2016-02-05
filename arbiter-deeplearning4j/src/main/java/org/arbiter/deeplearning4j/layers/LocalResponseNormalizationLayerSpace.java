@@ -21,6 +21,8 @@ import org.arbiter.optimize.parameter.FixedValue;
 import org.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.nn.conf.layers.LocalResponseNormalization;
 
+import java.util.List;
+
 public class LocalResponseNormalizationLayerSpace extends LayerSpace<LocalResponseNormalization> {
 
     private ParameterSpace<Double> n;
@@ -36,20 +38,30 @@ public class LocalResponseNormalizationLayerSpace extends LayerSpace<LocalRespon
         this.alpha = builder.alpha;
         this.beta = builder.beta;
     }
+    
+    @Override
+    public List<ParameterSpace> collectLeaves(){
+        List<ParameterSpace> list = super.collectLeaves();
+        if(n != null) list.addAll(n.collectLeaves());
+        if(k != null) list.addAll(k.collectLeaves());
+        if(alpha != null) list.addAll(alpha.collectLeaves());
+        if(beta != null) list.addAll(beta.collectLeaves());
+        return list;
+    }
 
     @Override
-    public LocalResponseNormalization randomLayer() {
+    public LocalResponseNormalization getValue(double[] values) {
         LocalResponseNormalization.Builder b = new LocalResponseNormalization.Builder();
-        setLayerOptionsBuilder(b);
+        setLayerOptionsBuilder(b,values);
         return b.build();
     }
 
-    protected void setLayerOptionsBuilder(LocalResponseNormalization.Builder builder){
-        super.setLayerOptionsBuilder(builder);
-        if(n != null) builder.n(n.randomValue());
-        if(k != null) builder.k(k.randomValue());
-        if(alpha != null) builder.alpha(alpha.randomValue());
-        if(beta != null) builder.beta(beta.randomValue());
+    protected void setLayerOptionsBuilder(LocalResponseNormalization.Builder builder, double[] values){
+        super.setLayerOptionsBuilder(builder,values);
+        if(n != null) builder.n(n.getValue(values));
+        if(k != null) builder.k(k.getValue(values));
+        if(alpha != null) builder.alpha(alpha.getValue(values));
+        if(beta != null) builder.beta(beta.getValue(values));
     }
 
 

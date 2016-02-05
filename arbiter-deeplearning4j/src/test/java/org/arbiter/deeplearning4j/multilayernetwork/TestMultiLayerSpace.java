@@ -34,6 +34,7 @@ import org.junit.Test;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 import java.util.Arrays;
+import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -61,7 +62,10 @@ public class TestMultiLayerSpace {
                 .backprop(true).pretrain(false)
                 .build();
 
-        MultiLayerConfiguration conf = mls.randomCandidate().getMultiLayerConfiguration();
+        int nParams = mls.numParameters();
+        assertEquals(0,nParams);
+
+        MultiLayerConfiguration conf = mls.getValue(new double[0]).getMultiLayerConfiguration();
 
         assertEquals(expected, conf);
     }
@@ -81,12 +85,22 @@ public class TestMultiLayerSpace {
                         .activation("softmax").build())
                 .pretrain(false).backprop(true).build();
 
+        int nParams = mls.numParameters();
+        assertEquals(3,nParams);
+
         int[] nLayerCounts = new int[3];
         int reluCount = 0;
         int tanhCount = 0;
+
+        Random r = new Random(12345);
+
         for( int i=0; i<50; i++ ){
 
-            MultiLayerConfiguration conf = mls.randomCandidate().getMultiLayerConfiguration();
+            double[] rvs = new double[nParams];
+            for( int j=0; j<rvs.length; j++ ) rvs[j] = r.nextDouble();
+
+
+            MultiLayerConfiguration conf = mls.getValue(rvs).getMultiLayerConfiguration();
             assertEquals(false, conf.isPretrain());
             assertEquals(true, conf.isBackprop());
 

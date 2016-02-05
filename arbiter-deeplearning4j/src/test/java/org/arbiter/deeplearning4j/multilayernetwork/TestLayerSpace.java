@@ -42,7 +42,9 @@ public class TestLayerSpace {
         DenseLayerSpace space = new DenseLayerSpace.Builder()
                 .nOut(13).activation("relu").build();
 
-        DenseLayer actual = space.randomLayer();
+        int nParam = space.numParameters();
+        assertEquals(0,nParam);
+        DenseLayer actual = space.getValue(new double[nParam]);
 
         assertEquals(expected,actual);
     }
@@ -63,7 +65,10 @@ public class TestLayerSpace {
                     .activation(new DiscreteParameterSpace<>(actFns))
                     .build();
 
-            DenseLayer l = ls.randomLayer();
+            int nParam = ls.numParameters();
+            assertEquals(3,nParam);
+
+            DenseLayer l = ls.getValue(new double[nParam]);
 
             assertEquals(20, l.getNOut());
             double lr = l.getLearningRate();

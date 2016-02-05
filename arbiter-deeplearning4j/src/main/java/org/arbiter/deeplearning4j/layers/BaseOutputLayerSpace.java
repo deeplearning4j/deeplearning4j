@@ -22,6 +22,8 @@ import org.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.nn.conf.layers.BaseOutputLayer;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
+import java.util.List;
+
 
 public abstract class BaseOutputLayerSpace<L extends BaseOutputLayer> extends FeedForwardLayerSpace<L>{
 
@@ -32,11 +34,19 @@ public abstract class BaseOutputLayerSpace<L extends BaseOutputLayer> extends Fe
         this.lossFunction = builder.lossFunction;
     }
 
-    protected void setLayerOptionsBuilder(BaseOutputLayer.Builder builder){
-        super.setLayerOptionsBuilder(builder);
-        if(lossFunction != null) builder.lossFunction(lossFunction.randomValue());
+    protected void setLayerOptionsBuilder(BaseOutputLayer.Builder builder, double[] values){
+        super.setLayerOptionsBuilder(builder,values);
+        if(lossFunction != null) builder.lossFunction(lossFunction.getValue(values));
     }
 
+    @Override
+    public List<ParameterSpace> collectLeaves(){
+        List<ParameterSpace> list = super.collectLeaves();
+        if(lossFunction != null) list.addAll(lossFunction.collectLeaves());
+        return list;
+    }
+
+    @SuppressWarnings("unchecked")
     public static abstract class Builder<T> extends FeedForwardLayerSpace.Builder<T>{
 
         protected ParameterSpace<LossFunction> lossFunction;

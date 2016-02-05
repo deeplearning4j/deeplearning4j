@@ -450,7 +450,7 @@ public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
         }
 
         public T tbpttFwdLength(ParameterSpace<Integer> tbpttFwdLength){
-            this.tbpttBwdLength = tbpttFwdLength;
+            this.tbpttFwdLength = tbpttFwdLength;
             return (T)this;
         }
 

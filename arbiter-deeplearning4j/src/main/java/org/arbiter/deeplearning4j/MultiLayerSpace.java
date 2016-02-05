@@ -2,9 +2,9 @@ package org.arbiter.deeplearning4j;
 
 import lombok.AllArgsConstructor;
 import org.arbiter.deeplearning4j.layers.LayerSpace;
-import org.arbiter.optimize.api.ModelParameterSpace;
 import org.arbiter.optimize.parameter.FixedValue;
 import org.arbiter.optimize.api.ParameterSpace;
+import org.arbiter.util.CollectionUtils;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
@@ -33,38 +33,34 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
         this.layerSpaces = builder.layerSpaces;
 
         //Determine total number of parameters:
-        numParameters = 0;
-        for(LayerConf lc : layerSpaces){
-            if(!(lc.numLayers instanceof FixedValue)) numParameters++;
-            numParameters += lc.layerSpace.numParameters();
-        }
+        numParameters = CollectionUtils.countUnique(collectLeaves());
         //TODO inputs
     }
 
-
     @Override
-    public DL4JConfiguration randomCandidate() {
+    public DL4JConfiguration getValue(double[] values) {
 
         //First: create layer configs
         List<org.deeplearning4j.nn.conf.layers.Layer> layers = new ArrayList<>();
         for(LayerConf c : layerSpaces){
-            int n = c.numLayers.randomValue();
+            int n = c.numLayers.getValue(values);
             if(c.duplicateConfig){
                 //Generate N identical configs
-                org.deeplearning4j.nn.conf.layers.Layer l = c.layerSpace.randomLayer();
+                org.deeplearning4j.nn.conf.layers.Layer l = c.layerSpace.getValue(values);
                 for( int i=0; i<n; i++ ){
                     layers.add(l.clone());
                 }
             } else {
-                //Generate N indepedent configs
-                for( int i=0; i<n; i++ ){
-                    layers.add(c.layerSpace.randomLayer());
-                }
+                throw new UnsupportedOperationException("Not yet implemented");
+//                //Generate N indepedent configs
+//                for( int i=0; i<n; i++ ){
+//                    layers.add(c.layerSpace.randomLayer());
+//                }
             }
         }
 
         //Create MultiLayerConfiguration...
-        NeuralNetConfiguration.Builder builder = randomGlobalConf();
+        NeuralNetConfiguration.Builder builder = randomGlobalConf(values);
 
 
         //Set nIn based on nOut of previous layer.
@@ -81,16 +77,42 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
             listBuilder.layer(i,layers.get(i));
         }
 
-        if(backprop != null) listBuilder.backprop(backprop.randomValue());
-        if(pretrain != null) listBuilder.pretrain(pretrain.randomValue());
-        if(backpropType != null) listBuilder.backpropType(backpropType.randomValue());
-        if(tbpttFwdLength != null) listBuilder.tBPTTForwardLength(tbpttFwdLength.randomValue());
-        if(tbpttBwdLength != null) listBuilder.tBPTTBackwardLength(tbpttBwdLength.randomValue());
-        if(cnnInputSize != null) listBuilder.cnnInputSize(cnnInputSize.randomValue());
+        if(backprop != null) listBuilder.backprop(backprop.getValue(values));
+        if(pretrain != null) listBuilder.pretrain(pretrain.getValue(values));
+        if(backpropType != null) listBuilder.backpropType(backpropType.getValue(values));
+        if(tbpttFwdLength != null) listBuilder.tBPTTForwardLength(tbpttFwdLength.getValue(values));
+        if(tbpttBwdLength != null) listBuilder.tBPTTBackwardLength(tbpttBwdLength.getValue(values));
+        if(cnnInputSize != null) listBuilder.cnnInputSize(cnnInputSize.getValue(values));
 
         MultiLayerConfiguration configuration = listBuilder.build();
         return new DL4JConfiguration(configuration,earlyStoppingConfiguration,numEpochs);
     }
+
+    @Override
+    public int numParameters() {
+        return numParameters;
+    }
+
+    @Override
+    public List<ParameterSpace> collectLeaves() {
+        List<ParameterSpace> list = new ArrayList<>();
+        for(LayerConf lc : layerSpaces){
+            list.addAll(lc.layerSpace.collectLeaves());
+        }
+        if(cnnInputSize != null) list.addAll(cnnInputSize.collectLeaves());
+        return list;
+    }
+
+    @Override
+    public boolean isLeaf() {
+        return false;
+    }
+
+    @Override
+    public void setIndices(int... indices) {
+        throw new UnsupportedOperationException("Cannot set indices for non leaf");
+    }
+
 
     @Override
     public String toString(){
@@ -111,20 +133,6 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
         }
 
         return sb.toString();
-    }
-
-    @Override
-    public DL4JConfiguration generateCandidate(double[] parameterValues) {
-        if(parameterValues == null || parameterValues.length != numParameters) throw new IllegalArgumentException("Invalid input: expect " + numParameters
-                + "parameters. Got: " + (parameterValues != null ? parameterValues.length : null));
-
-
-
-    }
-
-    @Override
-    public int numParameters() {
-        return numParameters;
     }
 
     @AllArgsConstructor
