@@ -54,9 +54,12 @@ public interface Allocator {
      * This methods hints allocator, that specific object was accessed on device side.
      *
      * @param objectId unique object ID
-     * @param deviceId device ID
+     * @param shape shape
      */
-    void tickDevice(Long objectId, Integer deviceId);
+    void tickDevice(Long objectId, AllocationShape shape);
+
+
+    void tackDevice(Long objectId, AllocationShape shape);
 
     /**
      * This method returns actual device pointer valid for current object

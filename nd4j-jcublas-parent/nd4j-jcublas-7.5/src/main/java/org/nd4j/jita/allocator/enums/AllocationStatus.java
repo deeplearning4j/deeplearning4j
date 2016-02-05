@@ -8,5 +8,6 @@ public enum AllocationStatus {
     HOST,
     DEVICE,
     ZERO,
-    DEALLOCATED
+    DEALLOCATED,
+    NESTED
 }

@@ -167,7 +167,8 @@ public class BasicAllocatorTest {
         allocator.getDevicePointer(objectId);
 
         // tickDevice should be private and iternal call
-        //allocator.tickDevice(objectId, 1);
+        //allocator.tickDevice(objectId, shape);
+        allocator.tackDevice(objectId, shape);
 
         assertEquals(1, point.getDeviceTicks());
         assertTrue(point.getAccessDevice() > point.getAccessHost());
@@ -179,7 +180,7 @@ public class BasicAllocatorTest {
 
         assertEquals(AllocationStatus.DEVICE, point.getAllocationStatus());
 
-        assertEquals(1, point.getNumberOfDescendants());
+        assertEquals(0, point.getNumberOfDescendants());
         // we will not deallocate object in this test
     }
 
@@ -214,13 +215,18 @@ public class BasicAllocatorTest {
 
         // we emulate that memory is allocated on device and was used there
         allocator.getDevicePointer(objectId);
+        allocator.tickDevice(objectId, shape);
+        allocator.tackDevice(objectId, shape);
 
         allocator.synchronizeHostData(objectId);
+
+
+
         assertNotEquals(0, point.getAccessHost());
         assertEquals(point.getAccessDevice(), point.getAccessHost());
         assertEquals(SyncState.SYNC, point.getHostMemoryState());
 
-        assertEquals(1, point.getNumberOfDescendants());
+        assertEquals(0, point.getNumberOfDescendants());
     }
 
     @Test
@@ -300,20 +306,17 @@ public class BasicAllocatorTest {
         /*
          now we should check that both shapes were registered within allocation point
         */
-        assertEquals(2, point.getNumberOfDescendants());
+        assertEquals(1, point.getNumberOfDescendants());
 
         assertEquals(0, point.getDescendantTicks(shape2));
-        assertEquals(0, point.getDescendantTicks(shape));
 
         allocator.getDevicePointer(objectId, shape2);
 
         assertEquals(1, point.getDescendantTicks(shape2));
-        assertEquals(0, point.getDescendantTicks(shape));
 
         allocator.getDevicePointer(objectId, shape2);
 
         assertEquals(2, point.getDescendantTicks(shape2));
-        assertEquals(0, point.getDescendantTicks(shape));
     }
 
     /**
@@ -340,7 +343,7 @@ public class BasicAllocatorTest {
         // we request pointer for original shape
         allocator.getDevicePointer(objectId);
 
-        assertEquals(1, point.getDescendantTicks(shape));
+        assertEquals(-1, point.getDescendantTicks(shape));
 
         AllocationShape shape2 = new AllocationShape();
         shape2.setDataType(DataBuffer.Type.FLOAT);
@@ -353,9 +356,9 @@ public class BasicAllocatorTest {
         // we request pointer for subarray
         allocator.getDevicePointer(objectId, shape2);
 
-        assertEquals(2, point.getNumberOfDescendants());
+        assertEquals(1, point.getNumberOfDescendants());
 
-        assertEquals(1, point.getDescendantTicks(shape));
+        assertEquals(-1, point.getDescendantTicks(shape));
         assertEquals(1, point.getDescendantTicks(shape2));
     }
 
@@ -379,7 +382,7 @@ public class BasicAllocatorTest {
         // we request pointer for original shape
         allocator.getDevicePointer(objectId);
 
-        assertEquals(1, point.getDescendantTicks(shape));
+        assertEquals(-1, point.getDescendantTicks(shape));
 
         AllocationShape shape2 = new AllocationShape();
         shape2.setDataType(DataBuffer.Type.FLOAT);
@@ -392,9 +395,9 @@ public class BasicAllocatorTest {
         // we request pointer for subarray
         allocator.getDevicePointer(objectId, shape2);
 
-        assertEquals(2, point.getNumberOfDescendants());
+        assertEquals(1, point.getNumberOfDescendants());
 
-        assertEquals(1, point.getDescendantTicks(shape));
+        assertEquals(-1, point.getDescendantTicks(shape));
         assertEquals(1, point.getDescendantTicks(shape2));
 
         /*
@@ -430,7 +433,7 @@ public class BasicAllocatorTest {
         // we request pointer for original shape
         allocator.getDevicePointer(objectId);
 
-        assertEquals(1, point.getDescendantTicks(shape));
+        assertEquals(-1, point.getDescendantTicks(shape));
 
         AllocationShape shape2 = new AllocationShape();
         shape2.setDataType(DataBuffer.Type.FLOAT);
@@ -443,9 +446,9 @@ public class BasicAllocatorTest {
         // we request pointer for subarray
         allocator.getDevicePointer(objectId, shape2);
 
-        assertEquals(2, point.getNumberOfDescendants());
+        assertEquals(1, point.getNumberOfDescendants());
 
-        assertEquals(1, point.getDescendantTicks(shape));
+        assertEquals(-1, point.getDescendantTicks(shape));
         assertEquals(1, point.getDescendantTicks(shape2));
 
         /*
@@ -458,8 +461,8 @@ public class BasicAllocatorTest {
 
         assertEquals(AllocationStatus.ZERO, point.getAllocationStatus());
 
-        assertEquals(1, point.getNumberOfDescendants());
-        assertEquals(1, point.getDescendantTicks(shape));
+        assertEquals(0, point.getNumberOfDescendants());
+        assertEquals(-1, point.getDescendantTicks(shape));
         assertEquals(-1, point.getDescendantTicks(shape2));
     }
 
@@ -483,7 +486,7 @@ public class BasicAllocatorTest {
         // we request pointer for original shape
         allocator.getDevicePointer(objectId);
 
-        assertEquals(1, point.getDescendantTicks(shape));
+        assertEquals(-1, point.getDescendantTicks(shape));
 
         AllocationShape shape2 = new AllocationShape();
         shape2.setDataType(DataBuffer.Type.FLOAT);
@@ -496,9 +499,9 @@ public class BasicAllocatorTest {
         // we request pointer for subarray
         allocator.getDevicePointer(objectId, shape2);
 
-        assertEquals(2, point.getNumberOfDescendants());
+        assertEquals(1, point.getNumberOfDescendants());
 
-        assertEquals(1, point.getDescendantTicks(shape));
+        assertEquals(-1, point.getDescendantTicks(shape));
         assertEquals(1, point.getDescendantTicks(shape2));
 
         /*
@@ -543,8 +546,6 @@ public class BasicAllocatorTest {
 
         // we request pointer for original shape
         Object dPtr = allocator.getDevicePointer(objectId);
-
-        assertEquals(1, point.getDescendantTicks(shape));
 
         AllocationShape shape2 = new AllocationShape();
         shape2.setDataType(DataBuffer.Type.FLOAT);
@@ -599,7 +600,7 @@ public class BasicAllocatorTest {
         assertEquals(AllocationStatus.ZERO, point.getAllocationStatus());
 
         // data could be moved to device
-        assertEquals(AllocationStatus.DEVICE, allocator.makePromoteDecision(objectId));
+        assertEquals(AllocationStatus.DEVICE, allocator.makePromoteDecision(objectId, shape));
     }
 
     /**
@@ -637,7 +638,7 @@ public class BasicAllocatorTest {
         assertEquals(AllocationStatus.ZERO, point.getAllocationStatus());
 
         // data CAN'T be moved to device, since there's not enough device memory to hold 10GB
-        assertEquals(AllocationStatus.ZERO, allocator.makePromoteDecision(objectId));
+        assertEquals(AllocationStatus.ZERO, allocator.makePromoteDecision(objectId, shape));
     }
 
     /**
@@ -695,11 +696,11 @@ public class BasicAllocatorTest {
 
         assertEquals(0, singleDevice4GBcc52.getAllocatedMemoryForDevice(1));
 
-        AllocationStatus target = allocator.makePromoteDecision(objectId1);
+        AllocationStatus target = allocator.makePromoteDecision(objectId1, shape1);
         assertEquals(AllocationStatus.DEVICE, target);
         allocator.relocateMemory(objectId1, target);
 
-        assertEquals(AllocationStatus.ZERO, allocator.makePromoteDecision(objectId2));
+        assertEquals(AllocationStatus.ZERO, allocator.makePromoteDecision(objectId2, shape2));
 
         long allocatedMemory = singleDevice4GBcc52.getAllocatedMemoryForDevice(1);
         assertEquals(AllocationUtils.getRequiredMemory(shape1), allocatedMemory);
@@ -726,6 +727,7 @@ public class BasicAllocatorTest {
 
         AllocationPoint point = allocator.getAllocationPoint(objectId1);
         allocator.getDevicePointer(objectId1);
+        allocator.tackDevice(objectId1, shape1);
         allocator.relocateMemory(objectId1, AllocationStatus.DEVICE);
 
         assertEquals(AllocationStatus.DEVICE, point.getAllocationStatus());
@@ -733,7 +735,10 @@ public class BasicAllocatorTest {
         long allocatedMemory = singleDevice4GBcc52.getAllocatedMemoryForDevice(1);
         assertEquals(AllocationUtils.getRequiredMemory(shape1), allocatedMemory);
 
-        AllocationStatus targetStatus = allocator.makeDemoteDecision(objectId1);
+        AllocationStatus targetStatus = allocator.makeDemoteDecision(objectId1, shape1);
+
+        log.info("Ticks: " + point.getDescendantsTicks() + " Tacks: " + point.getDescendantsTacks());
+
         assertEquals(AllocationStatus.ZERO, targetStatus);
     }
 
@@ -765,7 +770,176 @@ public class BasicAllocatorTest {
         long allocatedMemory = singleDevice4GBcc52.getAllocatedMemoryForDevice(1);
         assertEquals(AllocationUtils.getRequiredMemory(shape1), allocatedMemory);
 
-        AllocationStatus targetStatus = allocator.makeDemoteDecision(objectId1);
+        AllocationStatus targetStatus = allocator.makeDemoteDecision(objectId1, shape1);
         assertEquals(AllocationStatus.DEVICE, targetStatus);
+    }
+
+    /**
+     * This test should decline demote, since:
+     *  1.  Memory is in use
+     *  2.  Nested memory can't be demoted
+     * @throws Exception
+     */
+    @Test
+    public void testNestedDemoteDecision1() throws Exception {
+        BasicAllocator allocator = new BasicAllocator();
+        allocator.setEnvironment(singleDevice4GBcc52);
+        allocator.setBalancer(new FirstInBalancer());
+        allocator.setMover(new DummyMover());
+
+        assertEquals(0, singleDevice4GBcc52.getAllocatedMemoryForDevice(1));
+
+        Long objectId1 = 22L;
+
+        AllocationShape shape1 = new AllocationShape();
+        shape1.setDataType(DataBuffer.Type.FLOAT);
+        shape1.setLength(63 * 1024 * 1024L);
+        shape1.setOffset(0);
+        shape1.setStride(1);
+
+        allocator.registerSpan(objectId1, shape1);
+
+        AllocationShape shape2 = new AllocationShape();
+        shape2.setDataType(DataBuffer.Type.FLOAT);
+        shape2.setLength(512 * 1024L);
+        shape2.setOffset(100);
+        shape2.setStride(1);
+
+        AllocationPoint point = allocator.getAllocationPoint(objectId1);
+        Object pointer1 = allocator.getDevicePointer(objectId1);
+        allocator.relocateMemory(objectId1, AllocationStatus.DEVICE);
+
+        // We are checking, that old pointer does not equal to new one, since memory was relocated
+        assertNotEquals(pointer1, allocator.getAllocationPoint(objectId1));
+
+        pointer1 = allocator.getDevicePointer(objectId1);
+
+        allocator.registerSpan(objectId1, shape2);
+
+        Object pointer2 = allocator.getDevicePointer(objectId1, shape2);
+        assertNotEquals(pointer1, pointer2);
+
+        assertNotEquals(pointer2, point.getDevicePointer());
+        assertEquals(pointer1, point.getDevicePointer());
+        assertEquals(AllocationStatus.DEVICE, point.getAllocationStatus());
+
+        AllocationStatus decision1 = allocator.makeDemoteDecision(objectId1, shape1);
+        assertEquals(AllocationStatus.DEVICE, decision1);
+
+
+        // this method SHOULD fail for now, since it calls on demote for NESTED memory chunk
+        try {
+            AllocationStatus decision2 = allocator.makeDemoteDecision(objectId1, shape2);
+            assertTrue(false);
+        } catch (Exception e) {
+            assertTrue(true);
+        }
+    }
+
+    /**
+     * This test should decline demote, since:
+     *  1.  Nested memory is in use
+     * @throws Exception
+     */
+    @Test
+    public void testNestedDemoteDecision2() throws Exception {
+        BasicAllocator allocator = new BasicAllocator();
+        allocator.setEnvironment(singleDevice4GBcc52);
+        allocator.setBalancer(new FirstInBalancer());
+        allocator.setMover(new DummyMover());
+
+        assertEquals(0, singleDevice4GBcc52.getAllocatedMemoryForDevice(1));
+
+        Long objectId1 = 22L;
+
+        AllocationShape shape1 = new AllocationShape();
+        shape1.setDataType(DataBuffer.Type.FLOAT);
+        shape1.setLength(63 * 1024 * 1024L);
+        shape1.setOffset(0);
+        shape1.setStride(1);
+
+        allocator.registerSpan(objectId1, shape1);
+
+        AllocationShape shape2 = new AllocationShape();
+        shape2.setDataType(DataBuffer.Type.FLOAT);
+        shape2.setLength(512 * 1024L);
+        shape2.setOffset(100);
+        shape2.setStride(1);
+
+        AllocationPoint point = allocator.getAllocationPoint(objectId1);
+        Object pointer1 = allocator.getDevicePointer(objectId1);
+        allocator.relocateMemory(objectId1, AllocationStatus.DEVICE);
+
+        // We are checking, that old pointer does not equal to new one, since memory was relocated
+        assertNotEquals(pointer1, allocator.getAllocationPoint(objectId1));
+
+        pointer1 = allocator.getDevicePointer(objectId1);
+        allocator.tackDevice(objectId1, shape1);
+
+        allocator.registerSpan(objectId1, shape2);
+
+        Object pointer2 = allocator.getDevicePointer(objectId1, shape2);
+        assertNotEquals(pointer1, pointer2);
+
+        assertNotEquals(pointer2, point.getDevicePointer());
+        assertEquals(pointer1, point.getDevicePointer());
+        assertEquals(AllocationStatus.DEVICE, point.getAllocationStatus());
+
+        AllocationStatus decision1 = allocator.makeDemoteDecision(objectId1, shape1);
+        assertEquals(AllocationStatus.DEVICE, decision1);
+    }
+
+    /**
+     * This test should accept demote, since memory space isn't used at this moment, as well as no used descendants
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testNestedDemoteDecision3() throws Exception {
+        BasicAllocator allocator = new BasicAllocator();
+        allocator.setEnvironment(singleDevice4GBcc52);
+        allocator.setBalancer(new FirstInBalancer());
+        allocator.setMover(new DummyMover());
+
+        assertEquals(0, singleDevice4GBcc52.getAllocatedMemoryForDevice(1));
+
+        Long objectId1 = 22L;
+
+        AllocationShape shape1 = new AllocationShape();
+        shape1.setDataType(DataBuffer.Type.FLOAT);
+        shape1.setLength(63 * 1024 * 1024L);
+        shape1.setOffset(0);
+        shape1.setStride(1);
+
+        allocator.registerSpan(objectId1, shape1);
+
+        AllocationShape shape2 = new AllocationShape();
+        shape2.setDataType(DataBuffer.Type.FLOAT);
+        shape2.setLength(512 * 1024L);
+        shape2.setOffset(100);
+        shape2.setStride(1);
+
+        AllocationPoint point = allocator.getAllocationPoint(objectId1);
+        Object pointer1 = allocator.getDevicePointer(objectId1);
+        allocator.relocateMemory(objectId1, AllocationStatus.DEVICE);
+
+        // We are checking, that old pointer does not equal to new one, since memory was relocated
+        assertNotEquals(pointer1, allocator.getAllocationPoint(objectId1));
+
+        pointer1 = allocator.getDevicePointer(objectId1);
+        allocator.tackDevice(objectId1, shape1);
+
+        allocator.registerSpan(objectId1, shape2);
+
+        Object pointer2 = allocator.getDevicePointer(objectId1, shape2);
+        allocator.tackDevice(objectId1, shape2);
+        assertNotEquals(pointer1, pointer2);
+
+        assertNotEquals(pointer2, point.getDevicePointer());
+        assertEquals(pointer1, point.getDevicePointer());
+        assertEquals(AllocationStatus.DEVICE, point.getAllocationStatus());
+
+        AllocationStatus decision1 = allocator.makeDemoteDecision(objectId1, shape1);
+        assertEquals(AllocationStatus.ZERO, decision1);
     }
 }

@@ -2,6 +2,7 @@ package org.nd4j.jita.allocator.impl;
 
 import lombok.NonNull;
 import org.nd4j.jita.allocator.Allocator;
+import org.nd4j.jita.allocator.enums.AccessState;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.SyncState;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
@@ -98,7 +99,7 @@ public final class BasicAllocator implements Allocator {
             allocationPoint.setAllocationStatus(AllocationStatus.UNDEFINED);
             allocationPoint.setShape(shape);
 
-            allocationPoint.addShape(shape);
+            //allocationPoint.addShape(shape);
 
             allocationPoints.put(objectId, allocationPoint);
         } else {
@@ -108,7 +109,9 @@ public final class BasicAllocator implements Allocator {
                 throw new IllegalStateException("Double register called on the same id and same shape");
             } else {
                 // just suballocation. check for buffer overflow and attach new shape
-                allocationPoint.addShape(shape);
+                //allocationPoint.addShape(shape);
+                NestedPoint nestedPoint = new NestedPoint(shape);
+                allocationPoint.addShape(nestedPoint);
             }
         }
     }
@@ -137,17 +140,51 @@ public final class BasicAllocator implements Allocator {
     }
 
     /**
-     * This methods hints allocator, that specific object was accessed on device side.
+     * This methods hints allocator, that specific object started access on device side.
      *
      * @param objectId unique object ID
-     * @param deviceId device ID
+     * @param shape shape
      */
     @Override
-    public void tickDevice(Long objectId, Integer deviceId) {
+    public void tickDevice(Long objectId, @NonNull AllocationShape shape) {
         // TODO: provide object-level lock here
         AllocationPoint point = allocationPoints.get(objectId);
-        point.setAccessDevice(System.nanoTime());
-        point.tickDevice();
+        if (shape.equals(point.getShape())) {
+            point.setAccessDevice(System.nanoTime());
+            point.tickDevice();
+            point.setAccessState(AccessState.TICK);
+        } else {
+            point.tickDescendant(shape);
+            if (point.containsShape(shape)) {
+                NestedPoint nestedPoint = point.getNestedPoint(shape);
+                nestedPoint.setAccessState(AccessState.TICK);
+                //nestedPoint.tick();
+            } else throw new IllegalStateException("Shape [" + shape + "] wasn't found at tickDevice()");
+        }
+    }
+
+    /**
+     * This method hints allocator, that specific object finished access on device side
+     *
+     * @param objectId
+     * @param shape
+     */
+    @Override
+    public void tackDevice(Long objectId, @NonNull AllocationShape shape) {
+        // TODO: provide object-level lock here
+        AllocationPoint point = allocationPoints.get(objectId);
+        if (shape.equals(point.getShape())) {
+            point.setAccessDevice(System.nanoTime());
+            point.tackDevice();
+            point.setAccessState(AccessState.TACK);
+        } else {
+            point.tackDescendant(shape);
+            if (point.containsShape(shape)) {
+                NestedPoint nestedPoint = point.getNestedPoint(shape);
+                nestedPoint.setAccessState(AccessState.TACK);
+              //  nestedPoint.tack();
+            } else throw new IllegalStateException("Shape [" + shape + "] wasn't found at tickDevice()");
+        }
     }
 
     /**
@@ -186,40 +223,30 @@ public final class BasicAllocator implements Allocator {
 
         Object pointer = point.getDevicePointer();
 
-        if (pointer == null) {
-            // we don't have actual pointer, so we can assume initial allocation here
-            if (point.getShape().equals(shape)) {
-                // we're allocating the whole original buffer
-
+        if (point.getShape().equals(shape)) {
+            // this is the same alloc shape
+            if (pointer == null) {
                 pointer = mover.alloc(AllocationStatus.ZERO, point.getShape(), 0);
                 point.setDevicePointer(pointer);
                 point.setAllocationStatus(AllocationStatus.ZERO);
-                point.tickDescendant(point.getShape());
-            } else {
-                // we're allocating the part of original array
-                // we have to decide here, if we can allocate full buffer
-                // for now we hardcode FALSE, restricting allocation to specific chunk
-                if (1 > 0) {
-                    pointer = mover.alloc(AllocationStatus.ZERO, shape, 0);
-                    point.setDevicePointer(pointer);
-                    point.setAllocationStatus(AllocationStatus.ZERO);
-                    point.tickDescendant(shape);
-                }
             }
         } else {
-            // TODO: we have pointer, and we should check it for synchronization
-            // we should check, if it's offest requested or it matches original shape
-            if (!point.getShape().equals(shape)) {
-                // we assume that it's suballocation
-                // actually all we need to do, is shift original pointer by offset  * elementSize
-                // like pointer += (shape.getOffset * (shape.getDataType() == DOUBLE) ? 8 : 4;
-                point.addShape(shape);
-                point.tickDescendant(shape);
-            }
+            // this is suballocation
+            if (point.containsShape(shape)) {
+                pointer = point.getNestedPoint(shape).getDevicePointer();
+                if (pointer == null) {
+                    pointer = new Object();
+                    NestedPoint nestedPoint = new NestedPoint(shape);
+                    nestedPoint.setDevicePointer(pointer);
+
+                    point.addShape(nestedPoint);
+                    //point.tickDescendant(shape);
+                }
+            } else throw new IllegalStateException("Shape isn't existant");
         }
 
         // p.3
-        this.tickDevice(objectId, 1);
+        this.tickDevice(objectId, shape);
 
         // p.4
         return pointer;
@@ -311,7 +338,7 @@ public final class BasicAllocator implements Allocator {
         AllocationPoint point = allocationPoints.get(objectId);
 
         if (shape.equals(point.getShape())) {
-            if (point.getNumberOfDescendants() == 1 && point.getDescendantTicks(point.getShape()) >= 0) {
+            if (point.getNumberOfDescendants() == 0) {
                 mover.free(point);
                 allocationPoints.remove(objectId);
             }
@@ -356,7 +383,7 @@ public final class BasicAllocator implements Allocator {
      * @param objectId
      * @return
      */
-    protected AllocationStatus makePromoteDecision(@NonNull Long objectId) {
+    protected AllocationStatus makePromoteDecision(@NonNull Long objectId, @NonNull AllocationShape shape) {
         /*
             There's few possible reasons to promote memory region:
                 1. Memory chunk is accessed often
@@ -371,7 +398,7 @@ public final class BasicAllocator implements Allocator {
 
         AllocationPoint point = getAllocationPoint(objectId);
 
-        return balancer.makePromoteDecision(1, point, point.getShape());
+        return balancer.makePromoteDecision(1, point, shape);
         //return null;
     }
 
@@ -381,9 +408,29 @@ public final class BasicAllocator implements Allocator {
      * @param objectId
      * @return
      */
-    protected AllocationStatus makeDemoteDecision(@NonNull Long objectId) {
+    protected AllocationStatus makeDemoteDecision(@NonNull Long objectId, @NonNull AllocationShape shape) {
         AllocationPoint point = getAllocationPoint(objectId);
 
-        return balancer.makeDemoteDecision(1, point, point.getShape());
+        if (shape.equals(point.getShape())) {
+            if (point.getAccessState().equals(AccessState.TICK)) {
+                log.info("Not a tick");
+                return point.getAllocationStatus();
+            }
+
+            // number of ticks should be equal to tacks
+            // NOTE: this should be done in single atomic comparison to avoid concurrent breakouts
+            if (!point.confirmNoActiveDescendants()) {
+                log.info("There's active descendants");
+                return point.getAllocationStatus();
+            }
+        } else {
+            NestedPoint nestedPoint = point.getNestedPoint(shape);
+            if (nestedPoint.getNestedStatus().equals(AllocationStatus.NESTED))
+                throw new IllegalStateException("Can't release [NESTED] shape: [" + shape + "]");
+
+            if (nestedPoint.getAccessState().equals(AccessState.TICK)) return nestedPoint.getNestedStatus();
+        }
+
+        return balancer.makeDemoteDecision(1, point, shape);
     }
 }

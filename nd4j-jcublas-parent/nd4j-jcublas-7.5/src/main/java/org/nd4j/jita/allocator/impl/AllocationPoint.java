@@ -2,6 +2,7 @@ package org.nd4j.jita.allocator.impl;
 
 import lombok.Data;
 import lombok.NonNull;
+import org.nd4j.jita.allocator.enums.AccessState;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.SyncState;
 import org.slf4j.Logger;
@@ -49,8 +50,11 @@ public class AllocationPoint {
 
     private AtomicLong deviceTicks = new AtomicLong(0);
     private AtomicLong descendantsTicks = new AtomicLong(0);
+    private AtomicLong descendantsTacks = new AtomicLong(0);
 
-    private Map<AllocationShape, AtomicLong> usedChunks = new ConcurrentHashMap<>();
+    private Map<AllocationShape, NestedPoint> usedChunks = new ConcurrentHashMap<>();
+
+    private AccessState accessState = AccessState.TOE;
 
     public long getDeviceTicks() {
         return deviceTicks.get();
@@ -60,9 +64,13 @@ public class AllocationPoint {
         return descendantsTicks.get();
     }
 
+    public long getDescendantsTacks() {
+        return descendantsTacks.get();
+    }
+
     public long getDescendantTicks(@NonNull AllocationShape shape) {
         if (usedChunks.containsKey(shape)) {
-            return usedChunks.get(shape).get();
+            return usedChunks.get(shape).getTicks();
         } else {
             // FIXME: remove this in production use
             //throw new IllegalStateException("Descendant shape not found: " + shape);
@@ -74,9 +82,23 @@ public class AllocationPoint {
         this.deviceTicks.incrementAndGet();
     }
 
+    public void tackDevice() {
+        //this.deviceTicks.incrementAndGet();
+    }
+
     public void tickDescendant(AllocationShape shape) {
         this.descendantsTicks.incrementAndGet();
-        this.usedChunks.get(shape).incrementAndGet();
+        this.usedChunks.get(shape).tick();
+    }
+
+    public void tackDescendant(AllocationShape shape) {
+        this.descendantsTacks.incrementAndGet();
+        this.usedChunks.get(shape).tack();
+    }
+
+    public boolean confirmNoActiveDescendants() {
+        // TODO: point-wise lock should be assumed here
+        return descendantsTicks.get() == descendantsTacks.get();
     }
 
     public int getNumberOfDescendants() {
@@ -86,11 +108,11 @@ public class AllocationPoint {
     /**
      * Adds suballocation shape to tracking list
      *
-     * @param shape
+     * @param point
      */
-    public void addShape(@NonNull AllocationShape shape) {
-        if (!usedChunks.containsKey(shape)) {
-            this.usedChunks.put(shape, new AtomicLong(0));
+    public void addShape(@NonNull NestedPoint point) {
+        if (!usedChunks.containsKey(point.getShape())) {
+            this.usedChunks.put(point.getShape(), point);
         }
     }
 
@@ -104,5 +126,22 @@ public class AllocationPoint {
             throw new IllegalStateException("Shape [" + shape + "] was NOT found on dropShape() call");
 
         usedChunks.remove(shape);
+    }
+
+    public void dropShape(@NonNull NestedPoint point) {
+        if (!usedChunks.containsKey(point.getShape()))
+            throw new IllegalStateException("Shape [" + shape + "] was NOT found on dropShape() call");
+
+        usedChunks.remove(point.getShape());
+    }
+
+    public boolean containsShape(@NonNull AllocationShape shape) {
+        return usedChunks.containsKey(shape);
+    }
+
+    public NestedPoint getNestedPoint(@NonNull AllocationShape shape) {
+        if (containsShape(shape))
+            return usedChunks.get(shape);
+        else  throw new IllegalStateException("Shape [" + shape + "] was NOT found on getNestedPoint() call");
     }
 }
