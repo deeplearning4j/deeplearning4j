@@ -35,7 +35,7 @@ import java.util.List;
  * @author raver119@gmail.com
  */
 public class ParagraphVectors extends Word2Vec {
-    @Getter protected transient LabelsSource labelsSource;
+    @Getter protected LabelsSource labelsSource;
     @Getter @Setter protected transient LabelAwareIterator labelAwareIterator;
 
 
