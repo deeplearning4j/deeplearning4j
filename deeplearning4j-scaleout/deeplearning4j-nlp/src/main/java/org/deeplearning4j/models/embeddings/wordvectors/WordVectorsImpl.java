@@ -61,6 +61,7 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
     protected int workers = Runtime.getRuntime().availableProcessors();
     protected boolean trainSequenceVectors = false;
     protected boolean trainElementsVectors = true;
+    protected long seed;
 
 
     public final static String UNK = "UNK";

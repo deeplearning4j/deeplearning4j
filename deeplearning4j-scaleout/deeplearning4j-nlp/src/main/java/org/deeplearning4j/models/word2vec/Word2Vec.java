@@ -413,6 +413,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             ret.stopWords = this.stopWords;
             ret.workers = this.workers;
 
+
             ret.iterator = this.iterator;
             ret.lookupTable = this.lookupTable;
             ret.tokenizerFactory = this.tokenizerFactory;
