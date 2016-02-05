@@ -28,7 +28,7 @@ import java.util.List;
 public class IntegerParameterSpace implements ParameterSpace<Integer> {
 
     private IntegerDistribution distribution;
-    private int index;
+    private int index = -1;
 
     /**
      * @param min Min value, inclusive
@@ -44,9 +44,8 @@ public class IntegerParameterSpace implements ParameterSpace<Integer> {
 
     @Override
     public Integer getValue(double[] input) {
-        if(input == null || input.length != 1)  throw new IllegalArgumentException("Invalid input: must be length 1");
-        if(input[0] < 0.0 || input[0] > 1.0) throw new IllegalArgumentException("Invalid input: input must be in range 0 to 1 inclusive");
-        return distribution.inverseCumulativeProbability(input[0]);
+        if(index == -1) throw new IllegalStateException("Cannot get value: ParameterSpace index has not been set");
+        return distribution.inverseCumulativeProbability(input[index]);
     }
 
     @Override

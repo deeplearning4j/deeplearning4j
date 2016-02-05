@@ -15,60 +15,61 @@
  *  *    limitations under the License.
  *
  */
-package org.arbiter.deeplearning4j.multilayernetwork;
+package org.arbiter.deeplearning4j.computationgraph;
 
-import org.apache.commons.math3.distribution.UniformIntegerDistribution;
-import org.arbiter.deeplearning4j.MultiLayerSpace;
+import org.arbiter.deeplearning4j.ComputationGraphSpace;
 import org.arbiter.deeplearning4j.layers.DenseLayerSpace;
 import org.arbiter.deeplearning4j.layers.OutputLayerSpace;
 import org.arbiter.optimize.api.ParameterSpace;
-import org.arbiter.optimize.distribution.DegenerateIntegerDistribution;
-import org.arbiter.optimize.parameter.FixedValue;
 import org.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
 import org.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
-import org.arbiter.optimize.parameter.integer.IntegerParameterSpace;
 import org.arbiter.util.CollectionUtils;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.junit.Test;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class TestMultiLayerSpace {
+public class TestComputationGraphSpace {
 
     @Test
     public void testBasic(){
 
-        MultiLayerConfiguration expected = new NeuralNetConfiguration.Builder()
+        ComputationGraphConfiguration expected = new NeuralNetConfiguration.Builder()
                 .learningRate(0.005)
                 .seed(12345)
-                .list()
-                .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
-                .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).build())
-                .layer(2, new OutputLayer.Builder().lossFunction(LossFunction.MCXENT).nIn(10).nOut(5).build())
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("0", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in")
+                .addLayer("1", new DenseLayer.Builder().nIn(10).nOut(10).build(), "0")
+                .addLayer("2", new OutputLayer.Builder().lossFunction(LossFunction.MCXENT).nIn(10).nOut(5).build(), "1")
+                .setOutputs("2")
                 .backprop(true).pretrain(false)
                 .build();
 
-        MultiLayerSpace mls = new MultiLayerSpace.Builder()
+        ComputationGraphSpace cgs = new ComputationGraphSpace.Builder()
                 .learningRate(0.005)
                 .seed(12345)
-                .addLayer(new DenseLayerSpace.Builder().nIn(10).nOut(10).build(), new FixedValue<>(2), true) //2 identical layers
-                .addLayer(new OutputLayerSpace.Builder().lossFunction(LossFunction.MCXENT).nIn(10).nOut(5).build())
+                .addInputs("in")
+                .addLayer("0", new DenseLayerSpace.Builder().nIn(10).nOut(10).build(), "in")
+                .addLayer("1",new DenseLayerSpace.Builder().nIn(10).nOut(10).build(), "0")
+                .addLayer("2", new OutputLayerSpace.Builder().lossFunction(LossFunction.MCXENT).nIn(10).nOut(5).build(), "1")
+                .setOutputs("2")
                 .backprop(true).pretrain(false)
                 .build();
 
-        int nParams = mls.numParameters();
+        int nParams = cgs.numParameters();
         assertEquals(0,nParams);
 
-        MultiLayerConfiguration conf = mls.getValue(new double[0]).getMultiLayerConfiguration();
+        ComputationGraphConfiguration conf = cgs.getValue(new double[0]).getConfiguration();
 
         assertEquals(expected, conf);
     }
@@ -76,20 +77,21 @@ public class TestMultiLayerSpace {
     @Test
     public void testBasic2(){
 
-        MultiLayerSpace mls = new MultiLayerSpace.Builder()
+        ComputationGraphSpace mls = new ComputationGraphSpace.Builder()
                 .learningRate(new ContinuousParameterSpace(0.0001,0.1))
                 .regularization(true)
                 .l2(new ContinuousParameterSpace(0.2,0.5))
-                .addLayer(new DenseLayerSpace.Builder().nIn(10).nOut(10)
+                .addInputs("in")
+                .addLayer("0",new DenseLayerSpace.Builder().nIn(10).nOut(10)
                         .activation(new DiscreteParameterSpace<>("relu","tanh"))
-                        .build(),
-                        new IntegerParameterSpace(1,3),true)    //1-3 identical layers
-                .addLayer(new OutputLayerSpace.Builder().nIn(10).nOut(10)
-                        .activation("softmax").build())
+                        .build(),"in")
+                .addLayer("1",new OutputLayerSpace.Builder().nIn(10).nOut(10)
+                        .activation("softmax").build(),"0")
+                .setOutputs("1")
                 .pretrain(false).backprop(true).build();
 
         int nParams = mls.numParameters();
-        assertEquals(4,nParams);
+        assertEquals(3,nParams);
 
         //Assign numbers to each leaf ParameterSpace object (normally done by candidate generator)
         List<ParameterSpace> noDuplicatesList = CollectionUtils.getUnique(mls.collectLeaves());
@@ -107,8 +109,6 @@ public class TestMultiLayerSpace {
             }
         }
 
-
-        int[] nLayerCounts = new int[3];
         int reluCount = 0;
         int tanhCount = 0;
 
@@ -120,18 +120,15 @@ public class TestMultiLayerSpace {
             for( int j=0; j<rvs.length; j++ ) rvs[j] = r.nextDouble();
 
 
-            MultiLayerConfiguration conf = mls.getValue(rvs).getMultiLayerConfiguration();
+            ComputationGraphConfiguration conf = mls.getValue(rvs).getConfiguration();
             assertEquals(false, conf.isPretrain());
             assertEquals(true, conf.isBackprop());
 
-            int nLayers = conf.getConfs().size();
-            assertTrue(nLayers >= 2 && nLayers <= 4);   //1-3 dense layers + 1 output layer: 2 to 4
-
-            int nLayersExOutputLayer = nLayers - 1;
-            nLayerCounts[nLayersExOutputLayer-1]++;
+            int nLayers = conf.getVertexInputs().size();
+            assertEquals(2,nLayers);
 
             for( int j=0; j<nLayers; j++ ){
-                NeuralNetConfiguration layerConf = conf.getConf(j);
+                NeuralNetConfiguration layerConf = ((LayerVertex)conf.getVertices().get(String.valueOf(j))).getLayerConf();
 
                 double lr = layerConf.getLayer().getLearningRate();
                 assertTrue(lr >= 0.0001 && lr <= 0.1);
@@ -150,12 +147,9 @@ public class TestMultiLayerSpace {
             }
         }
 
-        for( int i=0; i<3; i++ ){
-            assertTrue(nLayerCounts[i] >= 5);    //Expect approx equal (50/3 each), but some variation randomly
-        }
-
-        System.out.println("Number of layers: " + Arrays.toString(nLayerCounts));
         System.out.println("ReLU vs. Tanh: " + reluCount + "\t" + tanhCount);
+        assertTrue(reluCount > 0);
+        assertTrue(tanhCount > 0);
 
     }
 

@@ -77,12 +77,11 @@ public class TestRandomSearch {
                 = new OptimizationRunner<>(configuration, executor);
 //        runner.addListeners(new LoggingOptimizationRunnerStatusListener());
 
-       /* ArbiterUIServer server = new ArbiterUIServer();
+        ArbiterUIServer server = new ArbiterUIServer();
         String[] str = new String[]{"server", new ClassPathResource("dropwizard.yml").getFile().getAbsolutePath()};
         server.run(str);
         WebUtils.tryOpenBrowser("http://localhost:8080/arbiter", log);    //TODO don't hardcode
         runner.addListeners(new UIOptimizationRunnerStatusListener(server));
-*/
         runner.execute();
 
 
@@ -90,15 +89,12 @@ public class TestRandomSearch {
     }
 
     private static class BraninSpace implements ParameterSpace<BraninConfig>{
-//        @Override
-//        public BraninConfig generateCandidate() {
-//            return new BraninConfig(15.0*r.nextDouble()-5, 15*r.nextDouble());    //-5 to +10 and 0 to 15
-//        }
+        private int[] indices;
 
         @Override
         public BraninConfig getValue(double[] parameterValues) {
             if(parameterValues == null || parameterValues.length != 2) throw new IllegalArgumentException("Invalid input: expect parameters of length 2");
-            return new BraninConfig(15.0*parameterValues[0]-5, 15*parameterValues[1]);    //-5 to +10 and 0 to 15
+            return new BraninConfig(15.0*parameterValues[indices[0]]-5, 15*parameterValues[indices[1]]);    //-5 to +10 and 0 to 15
         }
 
         @Override
@@ -118,7 +114,7 @@ public class TestRandomSearch {
 
         @Override
         public void setIndices(int... indices) {
-            throw new UnsupportedOperationException("Not implemented");
+            this.indices = indices;
         }
     }
 
@@ -168,7 +164,7 @@ public class TestRandomSearch {
                     double score = scoreFunction.score(candidate.getValue(),null,null);
                     System.out.println(candidate.getValue().getX1() + "\t" + candidate.getValue().getX2() + "\t" + score);
 
-                    Thread.sleep(5000);
+                    Thread.sleep(500);
                     if(statusListener != null) {
                         statusListener.reportStatus(Status.Complete,
                                 new RenderableComponentString("Config: " + candidate.toString()),

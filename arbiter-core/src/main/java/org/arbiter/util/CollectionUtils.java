@@ -16,8 +16,10 @@
 
 package org.arbiter.util;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 
 public class CollectionUtils {
 
@@ -25,6 +27,19 @@ public class CollectionUtils {
     public static int countUnique(Collection<?> collection){
         HashSet<Object> set = new HashSet<>(collection);
         return set.size();
+    }
+
+    /** Returns a list containing only unique values in a collection */
+    public static <T> List<T> getUnique(Collection<T> collection){
+        HashSet<T> set = new HashSet<>();
+        List<T> out = new ArrayList<>();
+        for(T t : collection){
+            if(!set.contains(t)){
+                out.add(t);
+                set.add(t);
+            }
+        }
+        return out;
     }
 
 }

@@ -20,8 +20,13 @@ package org.arbiter.optimize.randomsearch;
 import org.arbiter.optimize.api.Candidate;
 import org.arbiter.optimize.api.CandidateGenerator;
 import org.arbiter.optimize.api.ParameterSpace;
+import org.arbiter.util.CollectionUtils;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class RandomSearchGenerator<T> implements CandidateGenerator<T> {
@@ -31,6 +36,26 @@ public class RandomSearchGenerator<T> implements CandidateGenerator<T> {
 
     public RandomSearchGenerator( ParameterSpace<T> parameterSpace ){
         this.parameterSpace = parameterSpace;
+
+        initialize();
+    }
+
+    private void initialize(){
+        //First: collect leaf parameter spaces objects and remove duplicates
+        List<ParameterSpace> noDuplicatesList = CollectionUtils.getUnique(parameterSpace.collectLeaves());
+
+        //Second: assign each a number
+        int i=0;
+        for( ParameterSpace ps : noDuplicatesList){
+            int np = ps.numParameters();
+            if(np == 1){
+                ps.setIndices(i++);
+            } else {
+                int[] values = new int[np];
+                for( int j=0; j<np; j++ ) values[i++] = j;
+                ps.setIndices(values);
+            }
+        }
     }
 
     @Override

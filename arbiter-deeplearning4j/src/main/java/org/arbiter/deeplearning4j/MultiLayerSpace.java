@@ -33,7 +33,9 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
         this.layerSpaces = builder.layerSpaces;
 
         //Determine total number of parameters:
-        numParameters = CollectionUtils.countUnique(collectLeaves());
+        List<ParameterSpace> list = CollectionUtils.getUnique(collectLeaves());
+        for(ParameterSpace ps : list) numParameters += ps.numParameters();
+
         //TODO inputs
     }
 
@@ -95,23 +97,15 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
 
     @Override
     public List<ParameterSpace> collectLeaves() {
-        List<ParameterSpace> list = new ArrayList<>();
+        List<ParameterSpace> list = super.collectLeaves();
         for(LayerConf lc : layerSpaces){
+            list.addAll(lc.numLayers.collectLeaves());
             list.addAll(lc.layerSpace.collectLeaves());
         }
         if(cnnInputSize != null) list.addAll(cnnInputSize.collectLeaves());
         return list;
     }
 
-    @Override
-    public boolean isLeaf() {
-        return false;
-    }
-
-    @Override
-    public void setIndices(int... indices) {
-        throw new UnsupportedOperationException("Cannot set indices for non leaf");
-    }
 
 
     @Override

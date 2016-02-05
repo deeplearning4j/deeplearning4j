@@ -27,7 +27,7 @@ import java.util.List;
 public class ContinuousParameterSpace implements ParameterSpace<Double> {
 
     private RealDistribution distribution;
-    private int index;
+    private int index = -1;
 
     public ContinuousParameterSpace(double min, double max){
         this(new UniformRealDistribution(min,max));
@@ -40,9 +40,8 @@ public class ContinuousParameterSpace implements ParameterSpace<Double> {
 
     @Override
     public Double getValue(double[] input) {
-        if(input == null || input.length != 1)  throw new IllegalArgumentException("Invalid input: must be length 1");
-        if(input[0] < 0.0 || input[0] > 1.0) throw new IllegalArgumentException("Invalid input: input must be in range 0 to 1 inclusive");
-        return distribution.inverseCumulativeProbability(input[0]);
+        if(index == -1) throw new IllegalStateException("Cannot get value: ParameterSpace index has not been set");
+        return distribution.inverseCumulativeProbability(input[index]);
     }
 
     @Override

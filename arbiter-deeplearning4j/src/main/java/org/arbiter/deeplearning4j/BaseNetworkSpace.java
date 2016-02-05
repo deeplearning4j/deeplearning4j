@@ -134,6 +134,45 @@ public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
     }
 
     @Override
+    public List<ParameterSpace> collectLeaves(){
+        List<ParameterSpace> list = new ArrayList<>();
+        if(useDropConnect != null) list.addAll(useDropConnect.collectLeaves());
+        if(iterations != null) list.addAll(iterations.collectLeaves());
+        if(optimizationAlgo != null) list.addAll(optimizationAlgo.collectLeaves());
+        if(regularization != null) list.addAll(regularization.collectLeaves());
+        if(schedules != null) list.addAll(schedules.collectLeaves());
+        if(activationFunction != null) list.addAll(activationFunction.collectLeaves());
+        if(weightInit != null) list.addAll(weightInit.collectLeaves());
+        if(dist != null) list.addAll(dist.collectLeaves());
+        if(learningRate != null) list.addAll(learningRate.collectLeaves());
+        if(learningRateAfter != null) list.addAll(learningRateAfter.collectLeaves());
+        if(lrScoreBasedDecay != null) list.addAll(lrScoreBasedDecay.collectLeaves());
+        if(l1 != null) list.addAll(l1.collectLeaves());
+        if(l2 != null) list.addAll(l2.collectLeaves());
+        if(dropOut != null) list.addAll(dropOut.collectLeaves());
+        if(momentum != null) list.addAll(momentum.collectLeaves());
+        if(momentumAfter != null) list.addAll(momentumAfter.collectLeaves());
+        if(updater != null) list.addAll(updater.collectLeaves());
+        if(rho != null) list.addAll(rho.collectLeaves());
+        if(rmsDecay != null) list.addAll(rmsDecay.collectLeaves());
+        if(gradientNormalization != null) list.addAll(gradientNormalization.collectLeaves());
+        if(gradientNormalizationThreshold != null) list.addAll(gradientNormalizationThreshold.collectLeaves());
+        if(cnnInputSize != null) list.addAll(cnnInputSize.collectLeaves());
+        return list;
+    }
+
+
+    @Override
+    public boolean isLeaf() {
+        return false;
+    }
+
+    @Override
+    public void setIndices(int... indices) {
+        throw new UnsupportedOperationException("Cannot set indices for non leaf");
+    }
+
+    @Override
     public String toString(){
         StringBuilder sb = new StringBuilder();
         if(useDropConnect != null) sb.append("useDropConnect: ").append(useDropConnect).append("\n");

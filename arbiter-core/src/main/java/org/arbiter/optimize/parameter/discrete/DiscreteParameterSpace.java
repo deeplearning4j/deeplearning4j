@@ -25,7 +25,7 @@ public class DiscreteParameterSpace<P> implements ParameterSpace<P> {
 
     //TODO add distribution
     private List<P> values;
-    private int index;
+    private int index = -1;
 
     public DiscreteParameterSpace(P... values){
         this.values = Arrays.asList(values);
@@ -35,23 +35,17 @@ public class DiscreteParameterSpace<P> implements ParameterSpace<P> {
         this.values = new ArrayList<>(values);
     }
 
-//    @Override
-//    public P randomValue() {
-//        int randomIdx = random.nextInt(values.size());
-//        return values.get(randomIdx);
-//    }
 
     @Override
     public P getValue(double[] input){
-        if(input == null || input.length != 1)  throw new IllegalArgumentException("Invalid input: must be length 1");
-        if(input[0] < 0.0 || input[0] > 1.0) throw new IllegalArgumentException("Invalid input: input must be in range 0 to 1 inclusive");
+        if(index == -1) throw new IllegalStateException("Cannot get value: ParameterSpace index has not been set");
         //Map a value in range [0,1] to one of the list of values
-        //First value: [0,width], second: [width,2*width], third: [3*width,4*width]
+        //First value: [0,width], second: (width,2*width], third: (3*width,4*width] etc
         int size = values.size();
         if(size == 1) return values.get(0);
         double width = 1.0 / size;
-        int val = (int)(input[0] / width);
-        return values.get(Math.max(val,size-1));
+        int val = (int)(input[index] / width);
+        return values.get(Math.min(val,size-1));
     }
 
     @Override

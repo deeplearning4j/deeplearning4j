@@ -61,7 +61,9 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
         this.networkOutputs = builder.networkOutputs;
         this.inputTypes = builder.inputTypes;
 
-        numParameters = CollectionUtils.countUnique(collectLeaves());
+        //Determine total number of parameters:
+        List<ParameterSpace> list = CollectionUtils.getUnique(collectLeaves());
+        for(ParameterSpace ps : list) numParameters += ps.numParameters();
     }
 
 
@@ -102,7 +104,7 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
 
     @Override
     public List<ParameterSpace> collectLeaves() {
-        List<ParameterSpace> list = new ArrayList<>();
+        List<ParameterSpace> list = super.collectLeaves();
         for(LayerConf lc : layerSpaces){
             list.addAll(lc.layerSpace.collectLeaves());
         }
@@ -110,15 +112,6 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
         return list;
     }
 
-    @Override
-    public boolean isLeaf() {
-        return false;
-    }
-
-    @Override
-    public void setIndices(int... indices) {
-        throw new UnsupportedOperationException("Cannot set indices for non leaf");
-    }
 
     @Override
     public String toString(){
