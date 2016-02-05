@@ -1,67 +1,106 @@
 ---
-title: 
+title:
 layout: zh-default
 ---
 
-# 快速入门
+快速入门指南
+=========================================
 
-本网站正在更新中，如想要获得最新的信息，[请参考](../quickstart.html) 
+## 必备项
 
-本快速入门指南假设您已经安装以下软件：
+本快速入门指南假设您已将下述各项安装就绪：
 
-1. Java 7
-2. 如IntelliJ 的集成开发环境（ IDE ）
-3. [Maven](../maven.html) (Java 的自动构建工具）
-4. Github (可选)
+1.Java 7或以上
+2.IntelliJ（或其他IDE）
+3.Maven（自动化生成工具）
+4.Github
 
-如果您需要安装上述任何一个软件，[请阅读这入门指南](http://nd4j.org/getstarted.html)。
+若您需要安装上述任意一项，请阅读[ND4J入门指南](http://nd4j.org/getstarted.html)。（ND4J是我们用于深度学习的科学计算引擎，其入门指南中的内容对两个项目均适用。）本页中的样例只需安装上面列出的四项，无需安装“ND4J入门指南”中的所有软件。
 
-5个简单步骤使用 DL4J 
+建议您加入我们的[Gitter线上交流群](https://gitter.im/deeplearning4j/deeplearning4j)以便提问或反馈。即使您加入后无意发言，也可默默潜水学习。此外，如果您对深度学习刚刚入门，我们还准备了一份[上手时需要学习的清单](../deeplearningforbeginners.html)。
 
-安装上述后，如果您可以按照并实行以下五个步骤，您就可以运行DL4J：
+Deeplearning4j是开源项目，意在吸引熟悉应用程序部署、IntelliJ等IDE，以及Maven等生成工具的专业Java开发者。如果您已熟悉上述工具，则更能对我们提供的工具驾轻就熟。
 
-1. "git clone" 克隆 这[例子](https://github.com/deeplearning4j/dl4j-0.0.3.3-examples) (我们目前的版本是0.0.3.3.x.), [ND4J](https://github.com/deeplearning4j/nd4j), [Canova](https://github.com/deeplearning4j/Canova) (机器学习矢量化库), [Deeplearning4j](https://github.com/deeplearning4j/deeplearning4j)。
-2. 使用Maven将示例作为一个项目导入IntelliJ
-3. 选择一个Blas[后端](http://nd4j.org/dependencies.html)，然后导入您的POM（应该是nd4j - jblas ）
-4. 从左侧的文件树中选择示例（先从DBNSmallMnistExample.java开始 ）
-5. 点击实行！（这会是一个绿色按钮）
+## 几步部署DL4J
 
-一旦您完成了，您可以尝试其他的例子，看看结果如何。
+必备项安装完成后，只需根据下面的步骤即可（Windows系统用户请见下面[流程](#walk)部分）：
 
-* 首先，测试您的Java版本（也测试您是否拥有Java） ，通过键入以下文本到命令行：
+* 在命令行中输入`git clone https://github.com/deeplearning4j/dl4j-0.4-examples.git`。（目前样例版本为0.0.4.x。）
+* 在IntelliJ中使用Maven创建新项目，并指向上述样例的根目录。
+* 复制、粘贴下列代码，确保您的POM.xml文件与[此文件](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml)一致。
+* 附加的[Windows系统说明可通过此链接访问](../gettingstarted.html#windows)。
+* 从左侧文件列表中选择`DBNIrisExample.java`。
+* 单击运行！（也即右键单击源文件时出现的绿色按钮……）
 
-		java -version
+### 提示
 
-* 如果您的计算机（电脑）上没有安装Java 7，请到这里下载 [Java开发工具包](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html)（ JDK ）。Java的下载方法将因不同的操作系统而异。对于较新的苹果操作系统，您会看到在在第一行的文件提及Mac OS X（每一次的更新的，jdk -7U后的数字将增加）。您讲会看到类似以下的文本：
+* 请确保您未将其他存储库克隆至本地。鉴于对Deeplearning4j主存储库的改进持续进行，最新版可能尚未对样例进行充分测试。
+* 请确保样例的所有依赖项均从Maven下载得到，而非本地文件。`(rm -rf  ls ~/.m2/repository/org/deeplearning4j)`
+* 在dl4j-0.4-examples目录运行`mvn clean install -DskipTests=true -Dmaven.javadoc.skip=true`，确保正确安装。
+* 运行TSNE或其他样例请输入`mvn exec:java -Dexec.mainClass="org.deeplearning4j.examples.tsne.TSNEStandardExample" -Dexec.cleanupDaemonThreads=false`。如果执行失败，或Maven在退出时无法终止守护进程，则可能需要上述参数。
+* 1000次迭代后，`tsne-standard-coords.csv`应被置于`dl4j-0.4-examples/target/archive-tmp/`目录。
 
-		Mac OS X x64 185.94 MB -  jdk-7u67-macosx-x64.dmg
+您应获得0.66上下、对Iris这类小型数据组来说较好的F1值。样例的逐行解释请见[Iris DBN教程](../iris-flower-dataset-tutorial.html)。
 
-* 由于我们依赖Jblas（Java线性代数库）的处理器 ，原生绑定的BLA是必需的。
+如发生问题，应首先检查POM.xml文件。该文件应与[此文件](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml)一致。
 
-		OSX
-		Already Installed
-		
-		Fedora/RHEL
-		yum -y install blas
-		
-		Ubuntu Linux
-		apt-get install libblas* (credit to @sujitpal)
-		
-		Windows
-		See http://icl.cs.utk.edu/lapack-for-windows/lapack/
+## 依赖项和后端
 
-* 接下来，git 复制（git clone）DL4J的例子：
+后端用于驱动DL4J神经网络背后的线性代数运算。后端根据芯片而不同。就CPU而言，x86速度最快；对GPU而言则是Jcublas。可在[Maven中心](https://search.maven.org)找到所有后端。点击“最新版本”下的版本号；复制下一页左侧的依赖项代码；将之粘贴至IntelliJ中项目根目录下的POM.xml中。
 
-		git clone https://github.com/deeplearning4j/dl4j-0.4-examples
+nd4j-x86后端应如下所示：
 
-接下来，您可以手动导入[Maven](https://maven.apache.org/download.cgi)项目到[Eclipse](http://books.sonatype.com/m2eclipse-book/reference/creating-sect-importing-projects.html)、 /[IntelliJ](https://www.jetbrains.com/idea/help/importing-project-from-maven-model.html)或[Netbeans](http://wiki.netbeans.org/MavenBestPractices) 平台中。
+     <dependency>
+       <groupId>org.nd4j</groupId>
+       <artifactId>nd4j-x86</artifactId>
+       <version>${nd4j.version}</version>
+     </dependency>
 
-* 终于到了探索真相的时刻。您现在应该会在您的您的终端/ CMD看到神经网络已经开始被训练。迭代开始时，您会看到终端/ CMD窗口画面会往下滑（在某些情况下，该程序可能需要一分钟的时间来查找资源。）。接下来，请看看右下角第二个的行数，这个行数在每个新的迭代都会减少。这是测量当神经网络重组数字图像时的错误。神经网络正在学习时，您会看到产生的错误会逐渐减少。
+*nd4j-x86*可用于所有样例。OpenBlas、Windows和Linux用户如欲安装附加依赖项，请参见[Deepelearining4j入门页](../gettingstarted.html#open)。
 
-![Alt text](../img/learning.png)
+## 高级：在AWS上使用命令行
 
-如果想要判断您的神经网络是否成功了解到MNIST数据集，其方法就是要看可视化。它们应该逐渐变成类似于手写的数字。当他们变成类似于手写的数字时，您的神经网络已经成功受训，这就是为什么您需要深度学习，您也能了解深度学习的强大。
+如果Linux操作系统的在AWS服务器上安装Deeplearning4j，可能需要使用命令行而非IDE来运行样例。在此情况下，请根据上述说明运行*git clone*和*mvn clean install*。安装完成后，可在命令行中使用一行代码运行实际样例。该行代码因存储库和所选的特定样例而各不相同。
 
-至此，您应该拥有有一个能产生相对准确高的神经网络。恭喜您。 （如果您还没有得到结果，[请马上告知我们](mailto:chris@skymind.io)！ ）
+以下为样板：
 
-一旦您已经探索了我们所有的例子，您可以按照在我们的入门页面里的指示来运行整个代码库。
+    java -cp target/nameofjar.jar fully.qualified.class.name
+
+以下为展示命令大致形态的实例：
+
+    java -cp target/dl4j-0.4-examples.jar org.deeplearning4j.MLPBackpropIrisExample
+
+也就是说，根据版本和所选样例，存在两个通配符：
+
+    java -cp target/*.jar org.deeplearning4j.*
+
+若需从命令行更改并运行样例，可以对*src/main/java/org/deeplearning4j/multilayer*下的*MLPBackpropIrisExample*进行修改，而后再次通过Maven生成样例。
+
+## Scala
+
+样例的Scala版本可[在此获取](https://github.com/kogecoo/dl4j-0.4-examples-scala)。
+
+## 后续步骤
+
+运行样例后，请访问[完整安装页面](../gettingstarted.html)进行进一步的了解。
+
+## <a name="walk">逐步说明</a>
+
+* 在命令行中输入下列代码，检查是否已经安装Git。
+
+		git --version
+
+* 若无，则[点此安装Git](https://git-scm.herokuapp.com/book/en/v2/Getting-Started-Installing-Git)。
+* 此外，还可创建[Github账户](https://github.com/join)、下载[Mac版](https://mac.github.com/)或[Windows版](https://windows.github.com/)Github。
+* Windows用户请在开始菜单中找到并打开“Git Bash”。Git Bash终端应与cmd.exe类似。
+* 在需要安装DL4J样例的目录输入`cd`。可通过`mkdir dl4j-examples`创建新目录，而后输入`cd`。然后运行：
+
+    `git clone https://github.com/deeplearning4j/dl4j-0.4-examples`
+* 输入`ls`，检查以确保文件已完整下载。
+* 现在可打开IntelliJ。
+* 点击“文件”菜单，然后点击“导入项目”或“通过已有来源创建新项目”。如此便会显示本地文件菜单。
+* 选择包含DL4J样例的目录。
+* 在下一个窗口中，将可以选择生成工具。选择Maven。
+* 勾选“递归搜索项目”和“自动导入Maven项目”框，点击“下一步”。
+* 确保JDK/SDK已得到部署。若无，请点击SDK窗口底部加号进行添加。
+* 继续单击下一步，直至出现项目命名的提示。使用缺省项目名称即可。点击“完成”。
