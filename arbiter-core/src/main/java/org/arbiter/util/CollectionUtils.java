@@ -1,5 +1,4 @@
 /*
- *
  *  * Copyright 2016 Skymind,Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,12 +12,19 @@
  *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *  *    See the License for the specific language governing permissions and
  *  *    limitations under the License.
- *
  */
-package org.arbiter.optimize.api;
 
-public interface ParamSpace<T> {
+package org.arbiter.util;
 
-    Candidate<T> randomCandidate();
+import java.util.Collection;
+import java.util.HashSet;
+
+public class CollectionUtils {
+
+    /** Count the number of unique values in a collection */
+    public static int countUnique(Collection<?> collection){
+        HashSet<Object> set = new HashSet<>(collection);
+        return set.size();
+    }
 
 }

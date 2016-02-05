@@ -40,6 +40,8 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Callable;
@@ -87,11 +89,36 @@ public class TestRandomSearch {
         System.out.println("----- Complete -----");
     }
 
-    private static class BraninSpace implements ModelParameterSpace<BraninConfig>{
-        private Random r = new Random(12345);
+    private static class BraninSpace implements ParameterSpace<BraninConfig>{
+//        @Override
+//        public BraninConfig generateCandidate() {
+//            return new BraninConfig(15.0*r.nextDouble()-5, 15*r.nextDouble());    //-5 to +10 and 0 to 15
+//        }
+
         @Override
-        public BraninConfig randomCandidate() {
-            return new BraninConfig(15.0*r.nextDouble()-5, 15*r.nextDouble());    //-5 to +10 and 0 to 15
+        public BraninConfig getValue(double[] parameterValues) {
+            if(parameterValues == null || parameterValues.length != 2) throw new IllegalArgumentException("Invalid input: expect parameters of length 2");
+            return new BraninConfig(15.0*parameterValues[0]-5, 15*parameterValues[1]);    //-5 to +10 and 0 to 15
+        }
+
+        @Override
+        public int numParameters() {
+            return 2;
+        }
+
+        @Override
+        public List<ParameterSpace> collectLeaves() {
+            return Collections.singletonList((ParameterSpace)this);
+        }
+
+        @Override
+        public boolean isLeaf() {
+            return true;
+        }
+
+        @Override
+        public void setIndices(int... indices) {
+            throw new UnsupportedOperationException("Not implemented");
         }
     }
 

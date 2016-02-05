@@ -18,8 +18,10 @@
 package org.arbiter.deeplearning4j.layers;
 
 import org.arbiter.optimize.parameter.FixedValue;
-import org.arbiter.optimize.parameter.ParameterSpace;
+import org.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
+
+import java.util.List;
 
 public abstract class FeedForwardLayerSpace<L extends FeedForwardLayer> extends LayerSpace<L> {
 
@@ -33,10 +35,18 @@ public abstract class FeedForwardLayerSpace<L extends FeedForwardLayer> extends 
         nOut = builder.nOut;
     }
 
-    protected void setLayerOptionsBuilder(FeedForwardLayer.Builder builder){
-        super.setLayerOptionsBuilder(builder);
-        if(nIn != null) builder.nIn(nIn.randomValue());
-        if(nOut != null) builder.nOut(nOut.randomValue());
+    protected void setLayerOptionsBuilder(FeedForwardLayer.Builder builder, double[] values){
+        super.setLayerOptionsBuilder(builder, values);
+        if(nIn != null) builder.nIn(nIn.getValue(values));
+        if(nOut != null) builder.nOut(nOut.getValue(values));
+    }
+
+    @Override
+    public List<ParameterSpace> collectLeaves(){
+        List<ParameterSpace> list = super.collectLeaves();
+        list.addAll(nIn.collectLeaves());
+        list.addAll(nOut.collectLeaves());
+        return list;
     }
 
 

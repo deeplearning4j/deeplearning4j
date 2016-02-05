@@ -23,6 +23,6 @@ public interface CandidateGenerator<T> {
 
     void reportResults(Object result);  //TODO method signature
 
-    ModelParameterSpace<T> getParameterSpace();
+    ParameterSpace<T> getParameterSpace();
 
 }

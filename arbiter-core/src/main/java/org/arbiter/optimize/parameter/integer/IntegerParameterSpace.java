@@ -19,11 +19,16 @@ package org.arbiter.optimize.parameter.integer;
 
 import org.apache.commons.math3.distribution.IntegerDistribution;
 import org.apache.commons.math3.distribution.UniformIntegerDistribution;
-import org.arbiter.optimize.parameter.ParameterSpace;
+import org.arbiter.optimize.api.ParameterSpace;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 public class IntegerParameterSpace implements ParameterSpace<Integer> {
 
     private IntegerDistribution distribution;
+    private int index;
 
     /**
      * @param min Min value, inclusive
@@ -37,10 +42,32 @@ public class IntegerParameterSpace implements ParameterSpace<Integer> {
         this.distribution = distribution;
     }
 
+    @Override
+    public Integer getValue(double[] input) {
+        if(input == null || input.length != 1)  throw new IllegalArgumentException("Invalid input: must be length 1");
+        if(input[0] < 0.0 || input[0] > 1.0) throw new IllegalArgumentException("Invalid input: input must be in range 0 to 1 inclusive");
+        return distribution.inverseCumulativeProbability(input[0]);
+    }
 
     @Override
-    public Integer randomValue() {
-        return distribution.sample();
+    public int numParameters() {
+        return 1;
+    }
+
+    @Override
+    public List<ParameterSpace> collectLeaves() {
+        return Collections.singletonList((ParameterSpace) this);
+    }
+
+    @Override
+    public boolean isLeaf() {
+        return true;
+    }
+
+    @Override
+    public void setIndices(int... indices) {
+        if(indices == null || indices.length != 1) throw new IllegalArgumentException("Invalid index");
+        this.index = indices[0];
     }
 
     @Override

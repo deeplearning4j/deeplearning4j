@@ -18,14 +18,12 @@ package org.arbiter.deeplearning4j;
 
 import lombok.AllArgsConstructor;
 import org.arbiter.deeplearning4j.layers.LayerSpace;
-import org.arbiter.optimize.api.ModelParameterSpace;
 import org.arbiter.optimize.parameter.FixedValue;
-import org.arbiter.optimize.parameter.ParameterSpace;
+import org.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
-import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.weights.WeightInit;
 
 import java.util.ArrayList;
@@ -33,7 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 //public class MultiLayerSpace implements ModelParameterSpace<MultiLayerConfiguration> {
-public abstract class BaseNetworkSpace<T> implements ModelParameterSpace<T> {
+public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
 
     protected ParameterSpace<Boolean> useDropConnect;
     protected ParameterSpace<Integer> iterations;
@@ -70,6 +68,7 @@ public abstract class BaseNetworkSpace<T> implements ModelParameterSpace<T> {
 
     protected int numEpochs = 1;
 
+    @SuppressWarnings("unchecked")
     protected BaseNetworkSpace(Builder builder){
         this.useDropConnect = builder.useDropConnect;
         this.iterations = builder.iterations;
@@ -105,31 +104,31 @@ public abstract class BaseNetworkSpace<T> implements ModelParameterSpace<T> {
     }
 
 
-    protected NeuralNetConfiguration.Builder randomGlobalConf(){
+    protected NeuralNetConfiguration.Builder randomGlobalConf(double[] values){
         //Create MultiLayerConfiguration...
         NeuralNetConfiguration.Builder builder = new NeuralNetConfiguration.Builder();
-        if(useDropConnect != null) builder.useDropConnect(useDropConnect.randomValue());
-        if(iterations != null) builder.iterations(iterations.randomValue());
+        if(useDropConnect != null) builder.useDropConnect(useDropConnect.getValue(values));
+        if(iterations != null) builder.iterations(iterations.getValue(values));
         if(seed != null) builder.seed(seed);
-        if(optimizationAlgo != null) builder.optimizationAlgo(optimizationAlgo.randomValue());
-        if(regularization != null) builder.regularization(regularization.randomValue());
-        if(schedules != null) builder.schedules(schedules.randomValue());
-        if(activationFunction != null) builder.activation(activationFunction.randomValue());
-        if(weightInit != null) builder.weightInit(weightInit.randomValue());
-        if(dist != null) builder.dist(dist.randomValue());
-        if(learningRate != null) builder.learningRate(learningRate.randomValue());
-        if(learningRateAfter != null) builder.learningRateAfter(learningRateAfter.randomValue());
-        if(lrScoreBasedDecay != null) builder.learningRateScoreBasedDecayRate(lrScoreBasedDecay.randomValue());
-        if(l1 != null) builder.l1(l1.randomValue());
-        if(l2 != null) builder.l2(l2.randomValue());
-        if(dropOut != null) builder.dropOut(dropOut.randomValue());
-        if(momentum != null) builder.momentum(momentum.randomValue());
-        if(momentumAfter != null) builder.momentumAfter(momentumAfter.randomValue());
-        if(updater != null) builder.updater(updater.randomValue());
-        if(rho != null) builder.rho(rho.randomValue());
-        if(rmsDecay != null) builder.rmsDecay(rmsDecay.randomValue());
-        if(gradientNormalization != null) builder.gradientNormalization(gradientNormalization.randomValue());
-        if(gradientNormalizationThreshold != null) builder.gradientNormalizationThreshold(gradientNormalizationThreshold.randomValue());
+        if(optimizationAlgo != null) builder.optimizationAlgo(optimizationAlgo.getValue(values));
+        if(regularization != null) builder.regularization(regularization.getValue(values));
+        if(schedules != null) builder.schedules(schedules.getValue(values));
+        if(activationFunction != null) builder.activation(activationFunction.getValue(values));
+        if(weightInit != null) builder.weightInit(weightInit.getValue(values));
+        if(dist != null) builder.dist(dist.getValue(values));
+        if(learningRate != null) builder.learningRate(learningRate.getValue(values));
+        if(learningRateAfter != null) builder.learningRateAfter(learningRateAfter.getValue(values));
+        if(lrScoreBasedDecay != null) builder.learningRateScoreBasedDecayRate(lrScoreBasedDecay.getValue(values));
+        if(l1 != null) builder.l1(l1.getValue(values));
+        if(l2 != null) builder.l2(l2.getValue(values));
+        if(dropOut != null) builder.dropOut(dropOut.getValue(values));
+        if(momentum != null) builder.momentum(momentum.getValue(values));
+        if(momentumAfter != null) builder.momentumAfter(momentumAfter.getValue(values));
+        if(updater != null) builder.updater(updater.getValue(values));
+        if(rho != null) builder.rho(rho.getValue(values));
+        if(rmsDecay != null) builder.rmsDecay(rmsDecay.getValue(values));
+        if(gradientNormalization != null) builder.gradientNormalization(gradientNormalization.getValue(values));
+        if(gradientNormalizationThreshold != null) builder.gradientNormalizationThreshold(gradientNormalizationThreshold.getValue(values));
 
         return builder;
     }

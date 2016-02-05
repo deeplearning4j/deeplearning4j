@@ -18,7 +18,7 @@
 package org.arbiter.deeplearning4j.layers;
 
 import org.arbiter.optimize.parameter.FixedValue;
-import org.arbiter.optimize.parameter.ParameterSpace;
+import org.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.nn.conf.layers.RBM;
 
 public class RBMLayerSpace extends BasePretrainNetworkLayerSpace<RBM> {

@@ -18,19 +18,22 @@
 package org.arbiter.deeplearning4j.layers;
 
 import org.arbiter.optimize.parameter.FixedValue;
-import org.arbiter.optimize.parameter.ParameterSpace;
+import org.arbiter.optimize.api.ParameterSpace;
+import org.arbiter.util.CollectionUtils;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.weights.WeightInit;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
  * Created by Alex on 26/12/2015.
  */
-public abstract class LayerSpace<L extends Layer> {
+public abstract class LayerSpace<L extends Layer> implements ParameterSpace<L> {
 
     protected ParameterSpace<String> activationFunction;
     protected ParameterSpace<WeightInit> weightInit;
@@ -49,6 +52,8 @@ public abstract class LayerSpace<L extends Layer> {
     protected ParameterSpace<Double> rmsDecay;
     protected ParameterSpace<GradientNormalization> gradientNormalization;
     protected ParameterSpace<Double> gradientNormalizationThreshold;
+
+    private int numParameters;
 
     @SuppressWarnings("unchecked")
     protected LayerSpace(Builder builder){
@@ -69,28 +74,68 @@ public abstract class LayerSpace<L extends Layer> {
         this.rmsDecay = builder.rmsDecay;
         this.gradientNormalization = builder.gradientNormalization;
         this.gradientNormalizationThreshold = builder.gradientNormalizationThreshold;
+
+        numParameters = CollectionUtils.countUnique(collectLeaves());
     }
 
-    public abstract L randomLayer();
+//    public abstract L randomLayer();
+    
+    public List<ParameterSpace> collectLeaves(){
+        List<ParameterSpace> list = new ArrayList<>();
+        if(activationFunction != null ) list.addAll(activationFunction.collectLeaves());
+        if(weightInit != null ) list.addAll(weightInit.collectLeaves());
+        if(biasInit != null ) list.addAll(biasInit.collectLeaves());
+        if(dist != null ) list.addAll(dist.collectLeaves());
+        if(learningRate != null ) list.addAll(learningRate.collectLeaves());
+        if(learningRateAfter != null ) list.addAll(learningRateAfter.collectLeaves());
+        if(lrScoreBasedDecay != null ) list.addAll(lrScoreBasedDecay.collectLeaves());
+        if(l1 != null ) list.addAll(l1.collectLeaves());
+        if(l2 != null ) list.addAll(l2.collectLeaves());
+        if(dropOut != null ) list.addAll(dropOut.collectLeaves());
+        if(momentum != null ) list.addAll(momentum.collectLeaves());
+        if(momentumAfter != null ) list.addAll(momentumAfter.collectLeaves());
+        if(updater != null ) list.addAll(updater.collectLeaves());
+        if(rho != null ) list.addAll(rho.collectLeaves());
+        if(rmsDecay != null ) list.addAll(rmsDecay.collectLeaves());
+        if(gradientNormalization != null ) list.addAll(gradientNormalization.collectLeaves());
+        if(gradientNormalizationThreshold != null ) list.addAll(gradientNormalizationThreshold.collectLeaves());
+        return list;
+    }
 
-    protected void setLayerOptionsBuilder(Layer.Builder builder){
-        if(activationFunction != null) builder.activation(activationFunction.randomValue());
-        if(weightInit != null) builder.weightInit(weightInit.randomValue());
-        if(biasInit != null) builder.biasInit(biasInit.randomValue());
-        if(dist != null) builder.dist(dist.randomValue());
-        if(learningRate != null) builder.learningRate(learningRate.randomValue());
-        if(learningRateAfter != null) builder.learningRateAfter(learningRateAfter.randomValue());
-        if(lrScoreBasedDecay != null) builder.learningRateScoreBasedDecayRate(lrScoreBasedDecay.randomValue());
-        if(l1 != null) builder.l1(l1.randomValue());
-        if(l2 != null) builder.l2(l2.randomValue());
-        if(dropOut != null) builder.dropOut(dropOut.randomValue());
-        if(momentum != null) builder.momentum(momentum.randomValue());
-        if(momentumAfter != null) builder.momentumAfter(momentumAfter.randomValue());
-        if(updater != null) builder.updater(updater.randomValue());
-        if(rho != null) builder.rho(rho.randomValue());
-        if(rmsDecay != null) builder.rmsDecay(rmsDecay.randomValue());
-        if(gradientNormalization != null) builder.gradientNormalization(gradientNormalization.randomValue());
-        if(gradientNormalizationThreshold != null) builder.gradientNormalizationThreshold(gradientNormalizationThreshold.randomValue());
+    @Override
+    public int numParameters() {
+        return numParameters;
+    }
+
+    @Override
+    public boolean isLeaf() {
+        return false;
+    }
+
+    @Override
+    public void setIndices(int... indices) {
+        throw new UnsupportedOperationException("Cannot set indices for non-leaf parameter space");
+    }
+    
+
+    protected void setLayerOptionsBuilder(Layer.Builder builder, double[] values){
+        if(activationFunction != null) builder.activation(activationFunction.getValue(values));
+        if(weightInit != null) builder.weightInit(weightInit.getValue(values));
+        if(biasInit != null) builder.biasInit(biasInit.getValue(values));
+        if(dist != null) builder.dist(dist.getValue(values));
+        if(learningRate != null) builder.learningRate(learningRate.getValue(values));
+        if(learningRateAfter != null) builder.learningRateAfter(learningRateAfter.getValue(values));
+        if(lrScoreBasedDecay != null) builder.learningRateScoreBasedDecayRate(lrScoreBasedDecay.getValue(values));
+        if(l1 != null) builder.l1(l1.getValue(values));
+        if(l2 != null) builder.l2(l2.getValue(values));
+        if(dropOut != null) builder.dropOut(dropOut.getValue(values));
+        if(momentum != null) builder.momentum(momentum.getValue(values));
+        if(momentumAfter != null) builder.momentumAfter(momentumAfter.getValue(values));
+        if(updater != null) builder.updater(updater.getValue(values));
+        if(rho != null) builder.rho(rho.getValue(values));
+        if(rmsDecay != null) builder.rmsDecay(rmsDecay.getValue(values));
+        if(gradientNormalization != null) builder.gradientNormalization(gradientNormalization.getValue(values));
+        if(gradientNormalizationThreshold != null) builder.gradientNormalizationThreshold(gradientNormalizationThreshold.getValue(values));
     }
 
 

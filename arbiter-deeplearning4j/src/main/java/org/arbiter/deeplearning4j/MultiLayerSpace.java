@@ -4,18 +4,14 @@ import lombok.AllArgsConstructor;
 import org.arbiter.deeplearning4j.layers.LayerSpace;
 import org.arbiter.optimize.api.ModelParameterSpace;
 import org.arbiter.optimize.parameter.FixedValue;
-import org.arbiter.optimize.parameter.ParameterSpace;
+import org.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
-import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
-import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.weights.WeightInit;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 //public class MultiLayerSpace implements ModelParameterSpace<MultiLayerConfiguration> {
 public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
@@ -26,6 +22,8 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
     //Early stopping configuration / (fixed) number of epochs:
     private EarlyStoppingConfiguration<MultiLayerNetwork> earlyStoppingConfiguration;
 
+    private int numParameters;
+
     private MultiLayerSpace(Builder builder){
         super(builder);
         this.cnnInputSize = builder.cnnInputSize;
@@ -33,6 +31,14 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
         this.earlyStoppingConfiguration = builder.earlyStoppingConfiguration;
 
         this.layerSpaces = builder.layerSpaces;
+
+        //Determine total number of parameters:
+        numParameters = 0;
+        for(LayerConf lc : layerSpaces){
+            if(!(lc.numLayers instanceof FixedValue)) numParameters++;
+            numParameters += lc.layerSpace.numParameters();
+        }
+        //TODO inputs
     }
 
 
@@ -105,6 +111,20 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
         }
 
         return sb.toString();
+    }
+
+    @Override
+    public DL4JConfiguration generateCandidate(double[] parameterValues) {
+        if(parameterValues == null || parameterValues.length != numParameters) throw new IllegalArgumentException("Invalid input: expect " + numParameters
+                + "parameters. Got: " + (parameterValues != null ? parameterValues.length : null));
+
+
+
+    }
+
+    @Override
+    public int numParameters() {
+        return numParameters;
     }
 
     @AllArgsConstructor
