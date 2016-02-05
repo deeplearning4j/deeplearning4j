@@ -65,18 +65,22 @@ namespace functions {
             virtual void exec(T *dx, int *xShapeInfo, T *result, int *resultShapeInfo,
                               T *extraParams, int n) {
 
-                if (xStride == 1 && resultStride == 1) {
-#pragma omp simd
-                    for (int i = 0; i < n; i++) {
-                        result[i] = op(dx[i], extraParams);
-                    }
 
-                } else {
+                int *xShape = shape::shapeOf(xShapeInfo);
+                int *resultShape = shape::shapeOf(resultShapeInfo);
+
+                int *xStride = shape::stride(xShapeInfo);
+                int *resultStride = shape::stride(resultShapeInfo);
+                int xRank = shape::rank(xShapeInfo);
+                int resultRank = shape::rank(resultShapeInfo);
+
 #pragma omp simd
-                    for (int i = 0; i < n; i++) {
-                        result[i * resultStride] = op(dx[i * resultStride],
-                                                      extraParams);
-                    }
+                for (int i = 0; i < n; i++) {
+                    int *xIdx = shape::ind2sub(xRank, xShape, i);
+                    int *resultIdx = shape::ind2sub(resultRank, resultShape, i);
+                    int xOffset = shape::getOffset(0, xShape, xStride, xIdx, xRank);
+                    int resultOffset = shape::getOffset(0, resultShape, resultStride, resultIdx, resultRank);
+                    result[resultOffset] = op(dx[xOffset], extraParams);
                 }
 
             }

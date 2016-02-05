@@ -13,6 +13,7 @@
 #include <op.h>
 #include <templatemath.h>
 #include <helper_cuda.h>
+#include <shape.h>
 namespace functions {
     namespace pairwise_transforms {
 #define MIN 1e-12
@@ -138,28 +139,22 @@ namespace functions {
                 int *yStride = shape::stride(yShapeBuffer);
                 int *resultStride = shape::stride(resultShapeBuffer);
 
+                int xRank = shape::rank(xShapeBuffer);
+                int yRank = shape::rank(yShapeBuffer);
+                int resultRank = shape::rank(resultShapeBuffer);
+
 #pragma omp simd
-                for(int i = 0; i < n; i++) {
-                         
+                for (int i = 0; i < n; i++) {
+                    int *xIdx = shape::ind2sub(xRank, xShape, i);
+                    int *yIdx = shape::ind2sub(yRank, yShape, i);
+                    int *resultIdx = shape::ind2sub(resultRank, resultShape, i);
+
+                    int xOffset = shape::getOffset(0, xShape, xStride, xIdx, xRank);
+                    int yOffset = shape::getOffset(0, yShape, yStride, yIdx, yRank);
+                    int resultOffset = shape::getOffset(0, resultShape, resultStride, resultIdx, resultRank);
+                    result[resultOffset] = op(dx[xOffset],y[yOffset], extraParams);
                 }
 
-                /**
-                 * Change to indexing based methods
-                 */
-
-                if (xStride == 1 && yStride == 1 && resultStride == 1) {
-#pragma omp simd
-                    for (int i = 0; i < n; i++) {
-                        result[i] = op(dx[i], y[i], extraParams);
-                    }
-
-                } else {
-#pragma omp simd
-                    for (int i = 0; i < n; i++) {
-                        result[i * resultStride] = op(dx[i * xStride],
-                                                      y[i * yStride], extraParams);
-                    }
-                }
             }
             /**
              * CPU operation execution
