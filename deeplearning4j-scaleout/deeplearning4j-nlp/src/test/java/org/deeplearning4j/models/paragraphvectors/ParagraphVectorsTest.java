@@ -50,6 +50,7 @@ import org.springframework.core.io.ClassPathResource;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -213,6 +214,9 @@ public class ParagraphVectorsTest {
             log.info("Night: " + Arrays.toString(vec.getWordVectorMatrix("night").dup().data().asDouble()));
         }
 
+
+        List<String> labelsOriginal = vec.labelsSource.getLabels();
+
         double similarityW = vec.similarity("way", "work");
         log.info("way/work similarity: " + similarityW);
 
@@ -253,6 +257,8 @@ public class ParagraphVectorsTest {
         ParagraphVectors vec2 = (ParagraphVectors) SerializationUtils.readObject(tempFile);
         INDArray day2 = vec2.getWordVectorMatrix("day").dup();
 
+        List<String> labelsBinary = vec2.labelsSource.getLabels();
+
         assertEquals(day, day2);
 
         tempFile.delete();
@@ -267,10 +273,15 @@ public class ParagraphVectorsTest {
         WordVectorSerializer.writeWordVectors(vec, tempFile2);
 
         ParagraphVectors vec3 = WordVectorSerializer.readParagraphVectorsFromText(tempFile2);
+
         INDArray day3 = vec3.getWordVectorMatrix("day").dup();
 
+        List<String> labelsRestored = vec3.labelsSource.getLabels();
 
         assertEquals(day, day3);
+
+        assertEquals(labelsOriginal.size(), labelsRestored.size());
+        assertEquals(labelsOriginal.size(), labelsBinary.size());
     }
 
     @Test
