@@ -122,8 +122,14 @@ namespace functions {
 	 * @param extraParams the extra parameters for the transform
 	 * @param n the length of the input
 	 */
-            virtual void exec(T *dx, int *xShapeBuffer, T *y, int *yShapeBuffer, T *result,
-                              int *resultShapeBuffer, T *extraParams, int n) {
+            virtual void exec(T *dx,
+                              int *xShapeBuffer,
+                              T *y,
+                              int *yShapeBuffer,
+                              T *result,
+                              int *resultShapeBuffer,
+                              T *extraParams, int n) {
+
                 int *xShape = shape::shapeOf(xShapeBuffer);
                 int *yShape = shape::shapeOf(yShapeBuffer);
                 int *resultShape = shape::shapeOf(resultShapeBuffer);
@@ -132,10 +138,15 @@ namespace functions {
                 int *yStride = shape::stride(yShapeBuffer);
                 int *resultStride = shape::stride(resultShapeBuffer);
 
+#pragma omp simd
+                for(int i = 0; i < n; i++) {
+                         
+                }
+
                 /**
                  * Change to indexing based methods
                  */
-                
+
                 if (xStride == 1 && yStride == 1 && resultStride == 1) {
 #pragma omp simd
                     for (int i = 0; i < n; i++) {
