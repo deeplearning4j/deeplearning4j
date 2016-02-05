@@ -127,8 +127,6 @@ JNIEXPORT jfloat JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_sasum
 (JNIEnv *env, jclass clazz, jint N, jobject X, jint incX) {
 
 	float *cX = (float *) env->GetDirectBufferAddress(X);
-    for(int i = 0; i < N; i++)
-        printf("Data %d is %f\n",i,cX[i]);
 	return cblas_sasum(N, cX, incX);
 
 };

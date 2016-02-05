@@ -654,7 +654,7 @@ public:
 				for(int i = 0; i < this->extraParamsLength(); i++)
 					extraParamsVals[i] = startingValue(x);
 			}
-			int offset = dimensionLength > 1 ? i : tadLength * i;
+			int offset = dimensionLength > 1 ? i : shape::offset(i,xShapeInfo,dimensionLength,tadPermuteInfo);
 			result[i] = op(x[offset], y[offset],&extraParamsVals);
 			for(j = 1; j < elementsPerReductionIndex; j++) {
 				result[i] =  update(result[i],op(x[offset + tadElementWiseStride * j],y[offset + tadElementWiseStride * j], &extraParamsVals), &extraParamsVals);

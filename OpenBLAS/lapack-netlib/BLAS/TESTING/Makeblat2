@@ -1,0 +1,74 @@
+include ../../make.inc
+ 
+#######################################################################
+#  This makefile creates the test programs for the BLAS 2 routines.
+#  The test files are grouped as follows:
+#       SBLAT2 -- Single precision real test routines
+#       CBLAT2 -- Single precision complex test routines
+#       DBLAT2 -- Double precision real test routines
+#       ZBLAT2 -- Double precision complex test routines
+#
+#  Test programs can be generated for all or some of the four different
+#  precisions.  To create the test programs, enter make followed by one
+#  or more of the precisions desired.  Some examples:
+#       make single
+#       make single complex
+#       make single double complex complex16
+#  Alternatively, the command
+#       make
+#  without any arguments creates all four test programs.
+#  The executable files which are created are called
+#       ../xblat2s, ../xblat2d, ../xblat2c, and ../xblat2z
+#
+#  To remove the object files after the executable files have been
+#  created, enter
+#       make clean
+#  To force the source files to be recompiled, enter, for example,
+#       make single FRC=FRC
+#
+#######################################################################
+
+SBLAT2 = sblat2.o 
+
+CBLAT2 = cblat2.o 
+
+DBLAT2 = dblat2.o 
+
+ZBLAT2 = zblat2.o
+
+all:  single double complex complex16
+
+single: ../xblat2s
+double: ../xblat2d
+complex: ../xblat2c
+complex16: ../xblat2z
+
+../xblat2s: $(SBLAT2)
+	$(LOADER) $(LOADOPTS) $(SBLAT2) \
+        $(BLASLIB)  -o ../xblat2s
+
+../xblat2c: $(CBLAT2) 
+	$(LOADER) $(LOADOPTS) $(CBLAT2) \
+        $(BLASLIB)  -o ../xblat2c
+ 
+../xblat2d: $(DBLAT2) 
+	$(LOADER) $(LOADOPTS) $(DBLAT2) \
+        $(BLASLIB)  -o ../xblat2d
+ 
+../xblat2z: $(ZBLAT2) 
+	$(LOADER) $(LOADOPTS) $(ZBLAT2) \
+        $(BLASLIB)  -o ../xblat2z
+ 
+$(SBLAT2): $(FRC)
+$(CBLAT2): $(FRC)
+$(DBLAT2): $(FRC)
+$(ZBLAT2): $(FRC)
+ 
+FRC:
+	@FRC=$(FRC)
+ 
+clean:
+	rm -f *.o
+ 
+.f.o: 
+	$(FORTRAN) $(OPTS) -c $< -o $@

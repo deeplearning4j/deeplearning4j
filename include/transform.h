@@ -52,7 +52,34 @@ namespace functions {
 
             }
 #endif
+            /**
+             * CPU execution
+             * @param dx the input
+             * @param xStride the stride to iterate for the input
+             * @param result the result buffer
+             * @param resultStride the stride for result
+             * storage
+             * @param extraParams the extra parameters
+             * @param n the number of elements to iterate on
+             */
+            virtual void exec(T *dx, int *xShapeInfo, T *result, int *resultShapeInfo,
+                              T *extraParams, int n) {
 
+                if (xStride == 1 && resultStride == 1) {
+#pragma omp simd
+                    for (int i = 0; i < n; i++) {
+                        result[i] = op(dx[i], extraParams);
+                    }
+
+                } else {
+#pragma omp simd
+                    for (int i = 0; i < n; i++) {
+                        result[i * resultStride] = op(dx[i * resultStride],
+                                                      extraParams);
+                    }
+                }
+
+            }
             /**
              * CPU execution
              * @param dx the input
@@ -2000,6 +2027,7 @@ namespace functions {
                 else if(op == 35) {
                     return new transform::ops::OneMinus<T>();
                 }
+
 
                 return ret;
             }

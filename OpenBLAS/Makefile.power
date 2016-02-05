@@ -1,0 +1,82 @@
+# CCOMMON_OPT	+= -DALLOC_SHM
+
+FLAMEPATH	= $(HOME)/flame/lib
+
+#ifeq ($(CORE), CELL)
+#CELL_SDK_ROOT = /opt/IBM/cell-sdk-1.1/sysroot/usr
+#SPU_CC	         = spu-gcc
+#EXTRALIB	+= -lspe
+#endif
+
+ifeq ($(OSNAME), Linux)
+ifdef BINARY64
+# COMPILER_PREFIX = powerpc64-linux-
+else
+# COMPILER_PREFIX = powerpc-linux-
+endif
+endif
+
+ifdef BINARY64
+
+
+ifeq ($(OSNAME), AIX)
+CCOMMON_OPT	+= -mpowerpc64 -maix64
+ifeq ($(COMPILER_F77), g77)
+FCOMMON_OPT	+= -mpowerpc64 -maix64
+endif
+ifeq ($(COMPILER_F77), xlf)
+FCOMMON_OPT	+= -q64
+endif
+ARFLAGS		= -X 64
+ASFLAGS		= -a64
+endif
+else
+ifeq ($(OSNAME), AIX)
+CCOMMON_OPT	+= -Wa,-a32
+ARFLAGS		= -X 32
+ASFLAGS		= -a32
+endif
+endif
+
+# CCOMMON_OPT	+= -maltivec -mabi=altivec
+
+LIBFLAME	= -L$(FLAMEPATH) -llapack2flame -lflame-lapack -lflame-base $(LIBS)
+
+ifeq ($(OSNAME), Darwin)
+CCOMMON_OPT	+= -force_cpusubtype_ALL
+endif
+
+
+ifndef BINARY64
+ifeq ($(OSNAME), Linux)
+ESSLPATH = -L/opt/ibmcmp/lib -L/opt/ibmcmp/xlf/11.1/lib -Wl,-rpath,/opt/ibmcmp/lib -Wl,-rpath,/opt/ibmcmp/xlf/11.1/lib -lxlf90_r -lxlomp_ser -lxlfmath -lxl -lpthread
+else
+ESSLPATH = -lxlf90_r
+endif
+
+
+LIBVECLIB	= -framework VecLib
+ifndef SMP
+LIBATLAS	= -L/usr/lib/atlas3.7.11 -lf77blas -latlas -lg2c -lm
+LIBESSL		= -lessl $(ESSLPATH) ../../level1/others/libmisc.a -lm
+else
+LIBATLAS	= -L/usr/lib/atlas3.7.11p -lptf77blas -latlas -lm -lpthread
+LIBESSL		= -lesslsmp $(ESSLPATH)  ../../level1/others/libmisc.a -lm
+endif
+else
+ifeq ($(OSNAME), Linux)
+ESSLPATH = -L/opt/ibmcmp/lib64 -Wl,-rpath,/opt/ibmcmp/lib64 -L/opt/ibmcmp/xlf/11.1/lib64 -Wl,-rpath,/opt/ibmcmp/xlf/11.1/lib64 -lxlf90_r -lxlomp_ser
+else
+ESSLPATH = -lxlf90_r
+endif
+
+LIBVECLIB	= /System/Library/Frameworks/vecLib.framework/Versions/Current/vecLib
+
+ifndef SMP
+LIBATLAS	= -L/usr/lib64/atlas3.7.11  -lf77blas -latlas -lg2c -lm
+LIBESSL		= -lessl $(ESSLPATH) -lm
+else
+LIBATLAS	= -L/usr/lib64/atlas3.7.11p -lptf77blas -latlas -lm -lpthread
+LIBESSL		= -lesslsmp $(ESSLPATH) -lxlsmp -lm
+endif
+endif

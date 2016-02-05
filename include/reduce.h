@@ -944,7 +944,16 @@ namespace functions {
                 int i = 0,j = 0;
 #pragma omp parallel private(j,i)
                 for(i = omp_get_thread_num(); i < resultLength; i++) {
-                    int offset =  i;
+                    int offset = shape::offset(i,xShapeInfo,dimensionLength,tadPermuteInfo);
+                    if(dimensionLength > 1) {
+                        offset = i;
+                    }
+                    else if(dimensionLength == 1) {
+                        if(tadElementWiseStride == 1)
+                            offset = i * tadLength;
+                        else
+                            offset = i;
+                    }
                     result[i] = op(x[offset], extraParams);
                     for(j = 1; j < elementsPerReductionIndex; j++) {
                         result[i] =  update(result[i],op(x[offset + tadElementWiseStride * j], extraParams), extraParams);
