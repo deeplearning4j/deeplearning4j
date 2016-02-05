@@ -10,10 +10,10 @@ layout: zh-default
 
 本快速入门指南假设您已将下述各项安装就绪：
 
-1.Java 7或以上
-2.IntelliJ（或其他IDE）
-3.Maven（自动化生成工具）
-4.Github
+1. Java 7或以上
+2. IntelliJ（或其他IDE）
+3. Maven（自动化生成工具）
+4. Github
 
 若您需要安装上述任意一项，请阅读[ND4J入门指南](http://nd4j.org/getstarted.html)。（ND4J是我们用于深度学习的科学计算引擎，其入门指南中的内容对两个项目均适用。）本页中的样例只需安装上面列出的四项，无需安装“ND4J入门指南”中的所有软件。
 
