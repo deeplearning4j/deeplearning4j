@@ -1,6 +1,5 @@
 package org.nd4j.linalg.api.parallel.tasks.cpu.transform;
 
-import io.netty.buffer.ByteBuf;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.parallel.tasks.Task;
@@ -216,12 +215,12 @@ public class CPUTransformOpAction extends BaseCPUTransformOpAction {
                         }
                     } else {
                         if (x == z) {
-                            for (int i = 0; i < 8*n; i += 8) {
+                            for (int i = 0; i < n; i ++) {
                                 int xbOffset = byteOffsetX + i * incrX;
                                 doubleBufferX.put(xbOffset, op.op(doubleBufferX.get(xbOffset), doubleBufferY.get(byteOffsetY + i * incrY)));
                             }
                         } else {
-                            for (int i = 0; i < 8*n; i += 8) {
+                            for (int i = 0; i < n; i++) {
                                 doubleBufferZ.put(byteOffsetZ + i * incrZ, op.op(doubleBufferX.get(byteOffsetX + i * incrX), doubleBufferY.get(byteOffsetY + i * incrY)));
                             }
                         }

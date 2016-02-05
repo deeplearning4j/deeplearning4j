@@ -19,25 +19,14 @@
 
 package org.nd4j.linalg.api.shape;
 
-import com.google.common.primitives.Ints;
 
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.DataBuffer.AllocationMode;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
-import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.CopyOp;
 import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
-import org.nd4j.linalg.api.shape.loop.four.LoopFunction4;
-import org.nd4j.linalg.api.shape.loop.four.RawArrayIterationInformation4;
 import org.nd4j.linalg.api.shape.loop.one.RawArrayIterationInformation1;
-import org.nd4j.linalg.api.shape.loop.three.LoopFunction3;
-import org.nd4j.linalg.api.shape.loop.three.RawArrayIterationInformation3;
-import org.nd4j.linalg.api.shape.loop.two.CopyLoopFunction;
-import org.nd4j.linalg.api.shape.loop.two.LoopFunction2;
-import org.nd4j.linalg.api.shape.loop.two.RawArrayIterationInformation2;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -102,14 +91,7 @@ public class Shape {
     }
 
 
-    /**
-     * Copy the whole buffer whole sale
-     * @param arr
-     * @return
-     */
-    public static INDArray copyArrayWithWholeBuffer(INDArray arr) {
-        return Nd4j.create(arr.data().dup(), arr.shape(), arr.stride(), arr.offset(), arr.ordering());
-    }
+
 
     /**
      * Create a copy of the ndarray where the new offset is zero
@@ -140,7 +122,7 @@ public class Shape {
      * @param arr NDArray to duplicate
      * @return Copy with offset 0, but order might be c, or might be f
      */
-    public static INDArray toOffsetZeroCopyAnyOrder(INDArray arr){
+    public static INDArray toOffsetZeroCopyAnyOrder(INDArray arr)  {
         return toOffsetZeroCopyHelper(arr, Nd4j.order(), true);
     }
 
@@ -163,33 +145,12 @@ public class Shape {
             if(outOrder == 'a')
                 outOrder = Nd4j.order();
             INDArray z = Nd4j.create(arr.shape(),outOrder);
-            CopyOp op = new CopyOp(arr,z);
+            CopyOp op = new CopyOp(z,arr,z);
             Nd4j.getExecutioner().exec(op);
             return z;
         }
     }
 
-    /**
-     *
-     * Idea: make an matrix compatible for mmul without needing to be copied first<br>
-     * A matrix is compatible for mmul if its values are contiguous in memory. Offset is OK.
-     * Returns the input array if input can be used in mmul without additional copy overhead
-     * Otherwise returns a copy of the input ndarray that can be used in mmul without additional copy overhead<br>
-     * This is useful for example if a matrix is going to be used in multiple mmul operations, so that we only
-     * have the overhead of copying at most once (rather than in every mmul operation)
-     * @param input Input ndarray
-     * @return ndarray that can be used in mmul without copy overhead
-     */
-    public static INDArray toMmulCompatible(INDArray input){
-        if(input.rank() != 2) throw new IllegalArgumentException("Input must be rank 2 (matrix)");
-        //Same conditions as GemmParams.copyIfNecessary()
-        boolean doCopy = false;
-        if(input.ordering() == 'c' && (input.stride(0) != input.size(1) || input.stride(1) != 1) ) doCopy = true;
-        else if(input.ordering() == 'f' && (input.stride(0) != 1 || input.stride(1) != input.size(0))) doCopy = true;
-
-        if(doCopy) return Shape.toOffsetZeroCopyAnyOrder(input);
-        else return input;
-    }
 
     /**
      * Get a double based on the array and given indices
@@ -288,38 +249,6 @@ public class Shape {
         }
     }
 
-    /**
-     * Iterates over
-     * each possible
-     * offset of an ndarray
-     * @param arr
-     * @param coordinateFunction
-     */
-    public static void forEachOffset(INDArray[] arr,CoordinateFunction coordinateFunction) {
-        int[] offset = new int[arr.length];
-        int length = arr[0].length();
-        for(int i = 0; i < length; i++)  {
-            for(int j = 0; j < offset.length; j++) {
-                offset[j] = arr[j].offset() + i * arr[j].elementWiseStride();
-            }
-            coordinateFunction.process(offset);
-        }
-    }
-
-    /**
-     * Iterates over each possible offset of an ndarray
-     * @param arr
-     * @param coordinateFunction
-     */
-    public static void forEachOffset(INDArray arr,CoordinateFunction coordinateFunction) {
-        int[] offset = new int[1];
-        INDArray reshape = arr.reshape(1,arr.length());
-        for(int i = 0; i < reshape.length(); i++)  {
-            offset[0] = reshape.offset() + i * reshape.stride(-1);
-            coordinateFunction.process(offset);
-        }
-    }
-
 
     /**
      * Iterate over a pair of coordinates
@@ -338,146 +267,6 @@ public class Shape {
         }
     }
 
-
-    /**
-     * Counts the number of items
-     * equal to 1 in an int array
-     * @param shape the shape to count
-     * @return the number of ones in the shape
-     */
-    public static int numOnes(int...shape) {
-        int ret = 0;
-        for(int i : shape)
-            if(i == 1)
-                ret++;
-        return ret;
-    }
-
-    /**
-     * Raw 2 dimensional loop
-     * over a data buffer given some strides.
-     * Credit to:
-     * https://github.com/numpy/numpy/blob/master/numpy/core/src/private/lowlevel_strided_loops.h#L548
-     * @param idim the current dimension
-     * @param ndim the number of dimensions
-     * @param coord the current coordinate
-     * @param shape  the oerall shape of the array
-     * @param dataA the offset for data a
-     * @param stridesA the strides for a
-     * @param dataB the offset for data b
-     * @param stridesB the strides for b
-     */
-    public static int[] raw2dLoop(int idim, int  ndim, int[] coord, int[] shape,
-                                  int dataA, int[] stridesA, int dataB, int[] stridesB,RawArrayIterationInformation2 info,LoopFunction2 loopFunction2) {
-
-        idim = 1;
-        do {
-            loopFunction2.perform(idim, info, info.getA(), dataA, info.getB(), dataB);
-            for (; idim < ndim; idim--) {
-                if (++coord[idim] == shape[idim]) {
-                    coord[idim] = 0;
-                    dataA -= (shape[idim] - 1) * stridesA[idim];
-                    dataB -= (shape[idim] - 1) * stridesB[idim];
-                } else {
-                    dataA += stridesA[idim];
-                    dataB += stridesB[idim];
-                    break;
-                }
-            }
-        } while (idim < ndim);
-
-
-        return new int[]{dataA, dataB};
-    }
-
-    /**
-     * 3 dimensional loop
-     * Credit to:
-     * https://github.com/numpy/numpy/blob/master/numpy/core/src/private/lowlevel_strided_loops.h#L548
-     * @param idim
-     * @param ndim
-     * @param coord
-     * @param shape
-     * @param dataA
-     * @param stridesA
-     * @param dataB
-     * @param stridesB
-     * @param dataC
-     * @param stridesC
-     */
-    public static int[] raw3dLoop(int idim, int ndim, int[] coord, int[] shape,
-                                  int dataA, int[] stridesA,
-                                  int dataB, int[] stridesB,
-                                  int dataC, int[] stridesC,RawArrayIterationInformation3 info,LoopFunction3 loopFunction3)  {
-        do {
-            loopFunction3.perform(idim,info,info.getA(),info.getAOffset(),info.getB(),info.getBOffset(),info.getC(),info.getCOffset());
-
-
-            for (idim = 1; (idim) < ndim; idim++) {
-                if (++(coord)[idim] == (shape)[idim]) {
-                    coord[idim] = 0;
-                    dataA -= (shape[idim] - 1) * stridesA[idim];
-                    dataB -= (shape[idim] - 1) * stridesB[idim];
-                    dataC -= (shape[idim] - 1) * stridesC[idim];
-                }
-                else {
-                    dataA += stridesA[idim];
-                    dataB += stridesB[idim];
-                    dataC += stridesC[idim];
-                    break;
-                }
-            }
-        } while (idim < (ndim));
-
-        return new int[]{dataA,dataB,dataC};
-    }
-
-
-    /**
-     * 4 dimensional loop
-     * Credit to:
-     * https://github.com/numpy/numpy/blob/master/numpy/core/src/private/lowlevel_strided_loops.h#L548
-     * @param idim
-     * @param ndim
-     * @param coord
-     * @param shape
-     * @param dataA
-     * @param stridesA
-     * @param dataB
-     * @param stridesB
-     * @param dataC
-     * @param stridesC
-     * @param dataD
-     * @param stridesD
-     */
-    public static int[] raw4DLoop(int idim, int ndim, int[] coord, int[] shape,
-                                  int dataA, int[] stridesA,
-                                  int dataB, int[] stridesB,
-                                  int dataC, int[] stridesC,
-                                  int dataD, int[] stridesD,RawArrayIterationInformation4 info,LoopFunction4 loopFunction4) {
-        do {
-            loopFunction4.perform(idim,info,info.getA(),info.getAOffset(),info.getB(),info.getBOffset(),info.getC(),info.getCOffset(),info.getD(),info.getDOffset());
-
-            for ((idim) = 1; idim < ndim; idim++) {
-                if (coord[idim]++ == shape[idim]) {
-                    coord[idim] = 0;
-                    dataA -= (shape[idim] - 1) * stridesA[idim];
-                    dataB -= (shape[idim] - 1) * stridesB[idim];
-                    dataC -= (shape[idim] - 1) * stridesC[idim];
-                    dataD -= (shape[idim] - 1) * stridesD[idim];
-                }
-                else {
-                    dataA += stridesA[idim];
-                    dataB += stridesB[idim];
-                    dataC += stridesC[idim];
-                    dataD += stridesD[idim];
-                    break;
-                }
-            }
-        } while (idim < ndim);
-
-        return new int[] {dataA,dataB,dataC,dataD};
-    }
 
 
     /**
@@ -599,45 +388,6 @@ public class Shape {
         return ArrayUtil.toArray(ret);
     }
 
-    /**
-     * Keep all the non one dimensions
-     * @param dimensions the dimensions to start with
-     * @param shape the shapes to inspect
-     * @return the non one dimensions of the given input
-     */
-    public static int[] nonOneDimensions(int[] dimensions,int[] shape) {
-        if(dimensions.length != shape.length)
-            throw new IllegalArgumentException("Dimensions and shape must be the same length");
-
-        List<Integer> list = new ArrayList<>();
-        for(int i = 0; i < dimensions.length; i++) {
-            if(shape[i] != 1) {
-                list.add(i);
-            }
-        }
-
-        return Ints.toArray(list);
-    }
-
-    /**
-     * Get rid ones in the shape when
-     * its not a vector
-     * @param original the original shape
-     *                 to prune
-     * @return the pruned array
-     */
-    public static int[] leadingAndTrailingOnes(int[] original) {
-        List<Integer> ints = new ArrayList<>();
-        if (!Shape.isVector(original)) {
-            for (int i = 0; i < original.length; i++) {
-                if(original[i] != 1)
-                    ints.add(original[i]);
-            }
-
-            return Ints.toArray(ints);
-        }
-        return original;
-    }
 
 
     /**
@@ -737,139 +487,6 @@ public class Shape {
 
     }
 
-
-    /**
-     * A port of numpy's stride resolution algorithm
-     * for multiple arrays
-     * @param arrays the arrays to get concat strides for
-     * @return the resolved strides for concat
-     */
-    public static int[] createConcatStrides(INDArray...arrays) {
-        int rank = arrays[0].rank();
-        for(INDArray arr : arrays) {
-            if(arr.rank() != rank)
-                throw new IllegalArgumentException("All arrays must have same rank");
-        }
-
-        int[] ret = new int[rank];
-
-        int i0, i1, ipos, ax_j0, ax_j1, iarrays;
-
-         /* Initialize the strideperm values to the identity. */
-        for (i0 = 0; i0 < rank; i0++) {
-            ret[i0] = i0;
-        }
-
-    /*
-     * This is the same as the custom stable insertion sort in
-     * the NpyIter object, but sorting in the reverse order as
-     * in the iterator. The iterator sorts from smallest stride
-     * to biggest stride (Fortran order), whereas here we sort
-     * from biggest stride to smallest stride (C order).
-     */
-        for (i0 = 1; i0 < rank; i0++) {
-
-            ipos = i0;
-            ax_j0 = ret[i0];
-
-            for (i1 = i0 - 1; i1 >= 0; i1--) {
-                boolean ambig = true, shouldSwap = false;
-
-                ax_j1 = ret[i1];
-
-                for (iarrays = 0; iarrays < arrays.length; ++iarrays) {
-                    if (arrays[iarrays].size(ax_j0) != 1 &&
-                            arrays[iarrays].size(ax_j1) != 1) {
-                        if (Math.abs(arrays[iarrays].stride(ax_j0)) <=
-                                Math.abs(arrays[iarrays].size(ax_j1))) {
-                        /*
-                         * Set swap even if it's not ambiguous already,
-                         * because in the case of conflicts between
-                         * different operands, C-order wins.
-                         */
-                            shouldSwap = false;
-                        }
-                        else {
-                        /* Only set swap if it's still ambiguous */
-                            if (ambig) {
-                                shouldSwap = true;
-                            }
-                        }
-
-                    /*
-                     * A comparison has been done, so it's
-                     * no longer ambiguous
-                     */
-                        ambig = false;
-                    }
-                }
-            /*
-             * If the comparison was unambiguous, either shift
-             * 'ipos' to 'i1' or stop looking for an insertion point
-             */
-                if (!ambig) {
-                    if (shouldSwap) {
-                        ipos = i1;
-                    }
-                    else {
-                        break;
-                    }
-                }
-            }
-
-        /* Insert out_strideperm[i0] into the right place */
-            if (ipos != i0) {
-                for (i1 = i0; i1 > ipos; i1--) {
-                    ret[i1] = ret[i1 - 1];
-                }
-
-                ret[ipos] = ax_j0;
-            }
-        }
-
-        return ret;
-
-    }
-
-
-
-
-
-
-    /**
-     *  Broadcasts strides to match the given dimensions.
-     * Used for setting up a raw iteration
-     * @param nDim the number of dimensions to iterate through
-     * @param shape the shape to compare broadcasting strides against
-     * @param numStrideDimensions the number of stride dimensions to broadcast
-     * @param strideShape the shape of the stride to broadcast
-     * @param strides the strides to broadcast
-     * @return the new strides
-     */
-    public static int[] broadcastStrides(int nDim ,int[] shape,int numStrideDimensions,int[] strideShape,int[] strides) {
-        int iDimStart = nDim - numStrideDimensions;
-        if(iDimStart < 0)
-            throw new IllegalStateException("Can't broadcast to fewer dimensions");
-
-        int[] newStrides = new int[numStrideDimensions];
-        for(int iDim = nDim - 1; iDim >= iDimStart; iDim--) {
-            int currShape = strideShape[iDim - iDimStart];
-            //if it doesn't have dimension one, it must match
-            if(currShape == 1)
-                newStrides[iDim] = 0;
-            else if(currShape != shape[iDim] && !Shape.isVector(strideShape) && !Shape.isVector(shape)) {
-                throw new IllegalStateException("Current shape and shape i must match");
-            }
-            else
-                newStrides[iDim] = strides[iDim - iDimStart];
-        }
-
-
-
-        return newStrides;
-    }
-
-
     /**
      * Prepares two arrays for
      * raw iteration linearly through the data.
@@ -883,18 +500,6 @@ public class Shape {
     }
 
 
-    /**
-     * Prepares two arrays for
-     * raw iteration linearly through the data.
-     * It uses the same data for allocation
-     * @param dst the first array
-     * @param src the second array
-     */
-    public static RawArrayIterationInformation2 prepareTwoRawArrayIter(INDArray dst,INDArray src) {
-        return RawArrayIterationInformation2.builder().aOffset(dst.offset()).a(dst.data()).b(src.data())
-                .bOffset(src.offset()).aStrides(dst.stride()).bStrides(src.stride())
-                .nDim(dst.rank()).shape(dst.shape()).build().computeOut();
-    }
 
 
     /**
@@ -1243,55 +848,7 @@ public class Shape {
     }
 
 
-    /**
-     * Checks the following:
-     * each x,y,z is offset zero
-     * op.n() is == data buffer.length()
-     * all strides are equal
-     * @param op the op to check
-     * @return true if the above conditions are met
-     */
-    public static boolean opIsWholeBufferWithMatchingStrides(Op op) {
-        if(op.y() != null) {
-            return op.x().offset() == 0 && op.n() == op.x().data().length()
-                    && op.y().offset() == 0 && op.y().data().length() == op.n()
-                    &&
-                    op.z().offset() == 0 && op.z().offset() == 0 && op.z().data().length() == op.n()
-                    && Arrays.equals(op.x().stride(),op.y().stride()) && Arrays.equals(op.x().stride(),op.z().stride()) && !(op.x() instanceof IComplexNDArray || op.y() instanceof IComplexNDArray);
 
-        }
-        else {
-            return op.x().offset() == 0 && op.n() == op.x().data().length()
-                    &&
-                    op.z().offset() == 0 && op.z().offset() == 0 && op.z().data().length() == op.n() &&
-                    Arrays.equals(op.x().stride(),op.z().stride()) && !(op.x() instanceof IComplexNDArray || op.y() instanceof IComplexNDArray);
-        }
-    }
-
-    /**
-     * Checks the following:
-     * each x,y,z is offset zero
-     * op.n() is == data buffer.length()
-     * all strides are equal
-     * @param op the op to check
-     * @return true if the above conditions are met
-     */
-    public static boolean opIsWithMatchingStrides(Op op) {
-        if(op.y() != null) {
-            return op.x().offset() == 0 && op.n() == op.x().data().length()
-                    && op.y().offset() == 0
-                    &&
-                    op.z().offset() == 0 && op.z().offset() == 0
-                    && Arrays.equals(op.x().stride(),op.y().stride()) && Arrays.equals(op.x().stride(),op.z().stride()) && !(op.x() instanceof IComplexNDArray || op.y() instanceof IComplexNDArray);
-
-        }
-        else {
-            return op.x().offset() == 0
-                    &&
-                    op.z().offset() == 0 && op.z().offset() == 0 &&
-                    Arrays.equals(op.x().stride(),op.z().stride()) && !(op.x() instanceof IComplexNDArray || op.y() instanceof IComplexNDArray);
-        }
-    }
 
     /**
      * Convert a linear index to
@@ -1333,16 +890,6 @@ public class Shape {
         return resolution.getOffset();
     }
 
-    /**
-     * Compute the offset for a given index
-     * @param arr the array to compute the offset for
-     * @param index the linear index to compute the offset for
-     * @return the offset for the given linear index
-     */
-    public static int offsetFor(INDArray arr,int index) {
-        int[] indexes = arr.ordering() == 'c' ? Shape.ind2subC(arr,index) : Shape.ind2sub(arr, index);
-        return offsetFor(arr, indexes);
-    }
 
 
     /**
@@ -1389,58 +936,11 @@ public class Shape {
         return strides;
     }
 
-    public static int[] newOffsets(int[] offsets,int newLength,INDArrayIndex[] indexes) {
-        if(offsets.length > newLength) {
-            int[] newOffsets = new int[offsets.length - 1];
-            for(int i = 0; i < newOffsets.length; i++) {
-                newOffsets[i] = offsets[i + 1];
-
-
-            }
-
-            offsets = newOffsets;
-        }
-
-        return offsets;
-    }
-
-
-    public static int[] squeezeOffsets(int[] shape,int[] offsets) {
-        //bump offsets
-        List<Integer> squeezeIndices = new ArrayList<>();
-        for(int i = 0; i < shape.length; i++)
-            if(offsets[i] == 0)
-                squeezeIndices.add(i);
-        int[] ret = ArrayUtil.removeIndex(offsets, Ints.toArray(squeezeIndices));
-        int delta = Math.abs(ret.length - shape.length);
-        if(delta == 0)
-            return ret;
-        else {
-            if(ret.length > shape.length)
-                throw new IllegalStateException("Unable to squeeze offsets");
-            int[] retOffsets = new int[shape.length];
-            System.arraycopy(ret,0,retOffsets,0,ret.length);
-            return retOffsets;
-        }
-    }
 
 
 
 
-    /**
-     * Returns true for the case where
-     * singleton dimensions are being compared
-     *
-     * @param test1 the first to test
-     * @param test2 the second to test
-     * @return true if the arrays
-     * are equal with the singleton dimension omitted
-     */
-    public static boolean squeezeEquals(int[] test1, int[] test2) {
-        int[] s1 = squeeze(test1);
-        int[] s2 = squeeze(test2);
-        return scalarEquals(s1, s2) || Arrays.equals(s1, s2);
-    }
+
 
     /** Check if strides are in order suitable for non-strided mmul etc.
      * Returns true if c order and strides are descending [100,10,1] etc
@@ -1448,7 +948,7 @@ public class Shape {
      * False otherwise.
      * @return true if c+descending, f+ascending, false otherwise
      */
-    public static boolean strideDescendingCAscendingF(INDArray array){
+    public static boolean strideDescendingCAscendingF(INDArray array) {
         int[] strides = array.stride();
         if(array.isVector() && strides[0]==1 && strides[1]==1) return true;
         char order = array.ordering();
@@ -1645,6 +1145,17 @@ public class Shape {
         return sb.toString();
     }
 
+
+    /**
+     * Returns true if the given array
+     * is meant for the whole dimension
+     * @param arr the array to test
+     * @return true if arr.length == 1 && arr[0] is Integer.MAX_VALUE
+     */
+    public static boolean wholeArrayDimension(int...arr) {
+        return arr.length == 1 && arr[0] == Integer.MAX_VALUE;
+    }
+
     /**
      *
      * Compare the contents of a buffer and
@@ -1654,6 +1165,8 @@ public class Shape {
      * @return true if the content equals false otherwise
      */
     public static boolean contentEquals(int[] arr,IntBuffer other) {
+        if(arr.length != Shape.rank(other))
+            return false;
         for(int i = 0; i < arr.length; i++) {
             other.position(i);
             if (arr[i] != other.get()) {

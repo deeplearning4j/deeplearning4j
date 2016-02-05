@@ -1508,7 +1508,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             for (int i = 0; i < put.length(); i++)
                 view.putScalar(i, put.getDouble(i));
         else {
-
             assert Shape.shapeEquals(view.shape(),put.shape());
             INDArray linear = view.linearView();
             INDArray putLinearView = put.linearView();
@@ -1827,9 +1826,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             this.ordering = Nd4j.order();
 
         this.length = ArrayUtil.prod(shape);
-        if (stride == null) {
-            setStride(getStrides(shape,ordering()));
-        }
 
     }
 
@@ -3167,7 +3163,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
 
-        INDArray reshapeAttempt = Shape.newShapeNoCopy(this, ArrayUtil.copy(shape), order == 'f');
+        INDArray reshapeAttempt = Shape.newShapeNoCopy(this, shape, order == 'f');
         if(reshapeAttempt != null) {
             reshapeAttempt.setOrder(Shape.getOrder(reshapeAttempt));
             return reshapeAttempt;

@@ -2,6 +2,8 @@ package org.nd4j.linalg.cpu.nativecpu;
 
 
 
+import org.nd4j.linalg.cpu.nativecpu.util.LibUtils;
+
 import java.nio.Buffer;
 
 /**
@@ -14,6 +16,9 @@ import java.nio.Buffer;
  */
 
 public class CBLAS {
+    static {
+        LibUtils.loadLibrary("libnd4j");
+    }
 
     public static final int ORDER_ROW_MAJOR = 101;
     public static final int ORDER_COLUMN_MAJOR = 102;

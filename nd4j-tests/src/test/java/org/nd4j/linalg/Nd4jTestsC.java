@@ -1398,6 +1398,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
         assertTrue(mmul1.equals(mmul2));
     }
+
+
     @Test
     public void testMMulRowColVectorMixedOrder(){
         INDArray colVec = Nd4j.ones(5,1);

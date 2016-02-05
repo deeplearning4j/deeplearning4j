@@ -147,7 +147,7 @@ public final class LibUtils
         if (inputStream == null)
         {
             throw new NullPointerException(
-                    "No resource found with name '"+resourceName+"'");
+                    "No resource found with name '" + resourceName + "'");
         }
         File tempFile = File.createTempFile(fullName, "."+libExtension);
         tempFile.deleteOnExit();

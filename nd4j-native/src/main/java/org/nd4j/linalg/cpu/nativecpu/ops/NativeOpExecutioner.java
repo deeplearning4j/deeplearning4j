@@ -41,7 +41,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             exec(ac);
         }
         else if(op instanceof IndexAccumulation){
-            IndexAccumulation iac = (IndexAccumulation)op;
+            IndexAccumulation iac = (IndexAccumulation) op;
             exec(iac);  //Currently using DefaultOpExecutioner
         }
 
@@ -100,7 +100,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(Accumulation op, int... dimension) {
-        int[] retShape = ArrayUtil.removeIndex(op.x().shape(), dimension);
+        int[] retShape = Shape.wholeArrayDimension(dimension) ? new int[] {1,1} : ArrayUtil.removeIndex(op.x().shape(), dimension);
         //ensure vector is proper shape
         if (retShape.length == 1) {
             if (dimension[0] == 0)
@@ -197,6 +197,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             super.exec(op);
         }
         else {
+
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 if(op.y() != null) {
                     loop.execPairwiseTransform(op.opNum(),
@@ -231,9 +232,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 }
                 else {
                     loop.execTransform(op.opNum(),
-                            op.x().data().asNioDouble(),
+                            op.x().data().asNioFloat(),
                             op.x().elementWiseStride(),
-                            op.z().data().asNioDouble(),
+                            op.z().data().asNioFloat(),
                             op.z().elementWiseStride(),
                             null,op.n());
                 }
