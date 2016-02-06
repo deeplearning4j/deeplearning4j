@@ -367,7 +367,7 @@
            //     .innerTickSize(-width)      //used as grid line
                 .orient("left"); //.ticks(5);
 
-        gYAxis["context"] = d3.svg.axis().scale(gY["context"]).orient("left").ticks(10);
+        gYAxis["context"] = d3.svg.axis().scale(gY["context"]).orient("left").ticks(4);
         gXAxis["context"] = d3.svg.axis().scale(gX["context"]).orient("bottom");
 
 
@@ -596,11 +596,16 @@ var timed = function() {
                                                     });
                                             return;
                                         }
-                                        $('.score').html('' + score);
+                                        $('#score').html('' + parseFloat(score).toFixed(3));
 
-
+                                        /*
+                                        <div style="">
+                                            Current score: <b><span class="score" id="score"></span></b><br />
+                                        </div>
+                                        */
                                         //$('#scores .chart').html('');
                                         if (gSVG["scorechart"] == undefined || gSVG["scorechart"] == null) {
+                                            $("#schart").html('<div class="scoreboard">Current score:<br/><b><span class="score" id="score">0.0</span></b></div>');
                                             var scdiv = '<div id="scorechart" class="scorechart"></div>';
                                             $('#scores .chart').append(scdiv);
                                         }
