@@ -2,17 +2,25 @@ package org.nd4j.jita.allocator.impl;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.jita.allocator.enums.Aggressiveness;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.SyncState;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.balance.impl.FirstInBalancer;
+import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.conf.DeviceInformation;
 import org.nd4j.jita.mover.DummyMover;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.*;
 
 import static org.junit.Assert.*;
 
@@ -1006,5 +1014,126 @@ public class BasicAllocatorTest {
 
         AllocationStatus target2 = allocator.makePromoteDecision(objectId1, shape2);
         assertEquals(AllocationStatus.ZERO, target2);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////                AUTO-PROMOTION TESTS
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    @Test
+    public void testAutoPromoteSingle1() throws Exception {
+        Configuration configuration = new Configuration();
+        configuration.setAllocAggressiveness(Aggressiveness.IMMEDIATE);
+        configuration.setZeroCopyFallbackAllowed(true);
+        configuration.setMinimumRelocationThreshold(4);
+
+        BasicAllocator allocator = new BasicAllocator();
+        allocator.applyConfiguration(configuration);
+        allocator.setEnvironment(singleDevice4GBcc52);
+        allocator.setBalancer(new FirstInBalancer());
+        allocator.setMover(new DummyMover());
+
+        assertEquals(0, singleDevice4GBcc52.getAllocatedMemoryForDevice(1));
+
+        Long objectId1 = 22L;
+
+        AllocationShape shape1 = new AllocationShape();
+        shape1.setDataType(DataBuffer.Type.FLOAT);
+        shape1.setLength(1 * 1024 * 1024L);
+        shape1.setOffset(0);
+        shape1.setStride(1);
+
+        allocator.registerSpan(objectId1, shape1);
+
+        AllocationPoint point = allocator.getAllocationPoint(objectId1);
+
+        for (int x = 0; x < 6; x++) {
+            allocator.getDevicePointer(objectId1);
+            allocator.tackDevice(objectId1, shape1);
+        }
+
+        assertEquals(AllocationStatus.DEVICE, point.getAllocationStatus());
+
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////                                                    MULTITHREADED TESTS
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    @Test
+    @Ignore
+    public void testMultithreadedRoundAccess1() throws Exception {
+        Configuration configuration = new Configuration();
+
+        final BasicAllocator allocator = new BasicAllocator();
+        allocator.applyConfiguration(configuration);
+        allocator.setEnvironment(singleDevice4GBcc52);
+        allocator.setBalancer(new FirstInBalancer());
+        allocator.setMover(new DummyMover());
+
+        // create some objects with specific shapes
+        final List<Long> objects = new ArrayList<>();
+        for (int x = 0; x < 1000; x++) {
+            Long objectId1 = new Long(x);
+
+            AllocationShape shape = new AllocationShape();
+            shape.setDataType(DataBuffer.Type.FLOAT);
+            shape.setLength(1 * 1024 * 1024L);
+            shape.setOffset(0);
+            shape.setStride(1);
+
+            allocator.registerSpan(objectId1, shape);
+            objects.add(objectId1);
+        }
+
+        ThreadPoolExecutor service = new ThreadPoolExecutor(50, 150, 10, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
+
+        Runnable runnable = new Runnable() {
+            @Override
+            public void run() {
+                Random rand = new Random();
+
+                for (int x = 0; x< 2000; x++) {
+                    int rnd = rand.nextInt(objects.size());
+                    Long cObject = objects.get(rnd);
+                    AllocationPoint point = allocator.getAllocationPoint(cObject);
+                    Object pointer = allocator.getDevicePointer(cObject);
+
+                    // emulate usage
+                    try {
+                    //    Thread.sleep(rand.nextInt(50));
+                    } catch (Exception e) {
+                        //
+                    }
+                    allocator.tackDevice(cObject, point.getShape());
+                }
+            }
+        };
+
+        for (int x = 0; x< 10000; x++) {
+            service.execute(runnable);
+        }
+
+        while (service.getActiveCount() != 0) {
+            Thread.sleep(500);
+        }
+
+        // At this point we had a number of accesses being done
+        long allocatedMemory = singleDevice4GBcc52.getAllocatedMemoryForDevice(1);
+        log.info("Allocated memory: " + allocatedMemory);
+        assertNotEquals(0, allocatedMemory);
+        assertTrue(allocatedMemory <= configuration.getMaximumAllocation());
+
+        /*
+            This sleep emulates global no-use for most of memory.
+            During this sleep, memory should be released
+         */
+        Thread.sleep(5000);
+        Thread.sleep(5000);
+
+        allocatedMemory = singleDevice4GBcc52.getAllocatedMemoryForDevice(1);
+        log.info("Allocated memory after sleep: " + allocatedMemory);
+        assertEquals(0, allocatedMemory);
     }
 }

@@ -304,6 +304,26 @@ public final class BasicAllocator implements Allocator {
                 } finally {
                     locker.objectWriteUnlock(objectId);
                 }
+
+                locker.globalReadLock();
+                int minThreshold = configuration.getMinimumRelocationThreshold();
+                locker.globalReadUnlock();
+
+                if (point.getDeviceTicks() > minThreshold && point.getTimer().getFrequencyOfEvents() > 0 && point.getAccessState() == AccessState.TACK) {
+                    // try relocation
+                    try {
+                        locker.objectWriteLock(objectId);
+                        if (point.getAccessState() == AccessState.TACK) {
+                            AllocationStatus target = makePromoteDecision(objectId, point.getShape());
+                            if (target == AllocationStatus.DEVICE) {
+                                relocateMemory(objectId, target);
+                                pointer = point.getDevicePointer();
+                            }
+                        }
+                    } finally {
+                        locker.objectWriteUnlock(objectId);
+                    }
+                }
             } else {
                 // this is suballocation
                 if (point.containsShape(shape)) {
@@ -567,6 +587,13 @@ public final class BasicAllocator implements Allocator {
             return balancer.makeDemoteDecision(1, point, shape);
         } finally {
             locker.globalReadUnlock();
+        }
+    }
+
+
+    private static class Observer {
+        public Observer(long delay) {
+
         }
     }
 }

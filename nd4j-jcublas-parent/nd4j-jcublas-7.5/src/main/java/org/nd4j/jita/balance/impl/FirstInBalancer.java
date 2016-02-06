@@ -57,12 +57,12 @@ public class FirstInBalancer implements Balancer {
 
         long allocatedMemory =  environment.getAllocatedMemoryForDevice(1);
 
-
+/*
         log.info("Req memory: " + requiredMemory);
         log.info("Available memory:" + availableMemory);
         log.info("Allocated memory: " + allocatedMemory);
         log.info("Maxumum allocation: " + configuration.getMaximumAllocation());
-
+*/
 
         if (availableMemory > requiredMemory && requiredMemory + allocatedMemory < configuration.getMaximumAllocation()) {
             // we have available memory, let's consider allocation allowed

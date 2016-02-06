@@ -3,7 +3,10 @@ package org.nd4j.jita.allocator.impl;
 import lombok.*;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.AccessState;
+import org.nd4j.jita.allocator.time.DecayingTimer;
+import org.nd4j.jita.allocator.time.impl.BlindTimer;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -15,6 +18,7 @@ public class NestedPoint {
     @Getter @Setter @NonNull private AllocationShape shape;
     @Getter @Setter @NonNull private AccessState accessState;
     @Getter @Setter private long accessTime;
+    @Getter private DecayingTimer timer = new BlindTimer(5, TimeUnit.SECONDS);
 
     // by default memory is UNDEFINED, and depends on parent memory chunk for now
     @Getter @Setter private AllocationStatus nestedStatus = AllocationStatus.NESTED;

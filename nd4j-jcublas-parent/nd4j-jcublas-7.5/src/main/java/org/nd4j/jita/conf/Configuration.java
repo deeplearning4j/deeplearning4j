@@ -13,6 +13,10 @@ import java.util.List;
 @Data
 public class Configuration implements Serializable {
 
+    /**
+     * Minimal number of activations for relocation threshold
+     */
+    private int minimumRelocationThreshold = 10;
 
     /**
      * How long allocated chunk have right to exist

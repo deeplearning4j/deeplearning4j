@@ -5,6 +5,8 @@ import lombok.NonNull;
 import org.nd4j.jita.allocator.enums.AccessState;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.SyncState;
+import org.nd4j.jita.allocator.time.DecayingTimer;
+import org.nd4j.jita.allocator.time.impl.BlindTimer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -36,6 +39,9 @@ public class AllocationPoint {
     // corresponding access time in nanoseconds
     private long accessHost = 0;
     private long accessDevice = 0;
+
+    // TODO: timer should be instantiated externally
+    private DecayingTimer timer = new BlindTimer(5, TimeUnit.SECONDS);
 
     /*
      device, where memory was allocated.
@@ -80,6 +86,7 @@ public class AllocationPoint {
 
     public void tickDevice() {
         this.deviceTicks.incrementAndGet();
+        this.timer.triggerEvent();
     }
 
     public void tackDevice() {
