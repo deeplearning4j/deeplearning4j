@@ -5,6 +5,8 @@ import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.enums.AccessState;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.SyncState;
+import org.nd4j.jita.allocator.locks.Lock;
+import org.nd4j.jita.allocator.locks.RRWLock;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.balance.Balancer;
 import org.nd4j.jita.conf.Configuration;
@@ -18,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * This is going to be basic JITA implementation.
@@ -34,6 +37,7 @@ public final class BasicAllocator implements Allocator {
 
     private transient Mover mover;
     private transient Balancer balancer;
+    private transient Lock locker = new RRWLock();
 
     private Map<Long, AllocationPoint> allocationPoints = new ConcurrentHashMap<>();
 
@@ -56,8 +60,12 @@ public final class BasicAllocator implements Allocator {
      */
     @Override
     public void applyConfiguration(Configuration configuration) {
-        // TODO: global lock to be implemented
-        this.configuration = configuration;
+        try {
+            locker.globalWriteLock();
+            this.configuration = configuration;
+        } finally {
+            locker.globalWriteUnlock();
+        }
     }
 
     /**
@@ -68,7 +76,12 @@ public final class BasicAllocator implements Allocator {
     @Override
     public Configuration getConfiguration() {
         // TODO: global lock to be implemented
-        return configuration;
+        try {
+            locker.globalReadLock();
+            return configuration;
+        } finally {
+            locker.globalReadUnlock();
+        }
     }
 
     /**
@@ -93,26 +106,45 @@ public final class BasicAllocator implements Allocator {
 
     protected void registerSpan(Long objectId, @NonNull AllocationShape shape) {
         // TODO: object-level lock is HIGHLY required here, for multithreaded safety
-        if (!allocationPoints.containsKey(objectId)) {
-            AllocationPoint allocationPoint = new AllocationPoint();
-            allocationPoint.setAccessHost(System.nanoTime());
-            allocationPoint.setAllocationStatus(AllocationStatus.UNDEFINED);
-            allocationPoint.setShape(shape);
+        try {
+            locker.globalReadLock();
 
-            //allocationPoint.addShape(shape);
+            if (!allocationPoints.containsKey(objectId)) {
+                locker.attachObject(objectId);
+                try {
+                    locker.objectWriteLock(objectId);
 
-            allocationPoints.put(objectId, allocationPoint);
-        } else {
-            AllocationPoint allocationPoint = allocationPoints.get(objectId);
-            if (shape.equals(allocationPoint.getShape())) {
-                // that's temporary exception, since such scenario is theoretically possible
-                throw new IllegalStateException("Double register called on the same id and same shape");
+                    AllocationPoint allocationPoint = new AllocationPoint();
+                    allocationPoint.setAccessHost(System.nanoTime());
+                    allocationPoint.setAllocationStatus(AllocationStatus.UNDEFINED);
+                    allocationPoint.setShape(shape);
+
+                    //allocationPoint.addShape(shape);
+
+                    allocationPoints.put(objectId, allocationPoint);
+                } finally {
+                    locker.objectWriteUnlock(objectId);
+                }
             } else {
-                // just suballocation. check for buffer overflow and attach new shape
-                //allocationPoint.addShape(shape);
-                NestedPoint nestedPoint = new NestedPoint(shape);
-                allocationPoint.addShape(nestedPoint);
+                try {
+                    locker.objectWriteLock(objectId);
+
+                    AllocationPoint allocationPoint = allocationPoints.get(objectId);
+                    if (shape.equals(allocationPoint.getShape())) {
+                        // that's temporary exception, since such scenario is theoretically possible
+                        throw new IllegalStateException("Double register called on the same id and same shape");
+                    } else {
+                        // just suballocation. check for buffer overflow and attach new shape
+                        //allocationPoint.addShape(shape);
+                        NestedPoint nestedPoint = new NestedPoint(shape);
+                        allocationPoint.addShape(nestedPoint);
+                    }
+                } finally {
+                    locker.objectWriteUnlock(objectId);
+                }
             }
+        } finally {
+            locker.globalReadUnlock();
         }
     }
 
@@ -123,7 +155,7 @@ public final class BasicAllocator implements Allocator {
      * @return
      */
     protected AllocationPoint getAllocationPoint(Long objectId) {
-        return allocationPoints.get(objectId);
+            return allocationPoints.get(objectId);
     }
 
     /**
@@ -135,8 +167,14 @@ public final class BasicAllocator implements Allocator {
     @Override
     public void tickHost(Long objectId) {
         // TODO: provide object-level lock here
-        AllocationPoint point = allocationPoints.get(objectId);
-        point.setAccessHost(System.nanoTime());
+        try {
+            locker.globalReadLock();
+
+            AllocationPoint point = allocationPoints.get(objectId);
+            point.setAccessHost(System.nanoTime());
+        } finally {
+            locker.globalReadUnlock();
+        }
     }
 
     /**
@@ -148,19 +186,35 @@ public final class BasicAllocator implements Allocator {
     @Override
     public void tickDevice(Long objectId, @NonNull AllocationShape shape) {
         // TODO: provide object-level lock here
-        AllocationPoint point = allocationPoints.get(objectId);
-        if (shape.equals(point.getShape())) {
-            point.setAccessDevice(System.nanoTime());
-            point.tickDevice();
-            point.setAccessState(AccessState.TICK);
-        } else {
-            point.tickDescendant(shape);
-            if (point.containsShape(shape)) {
-                NestedPoint nestedPoint = point.getNestedPoint(shape);
-                nestedPoint.setAccessState(AccessState.TICK);
-                //nestedPoint.tick();
-            } else throw new IllegalStateException("Shape [" + shape + "] wasn't found at tickDevice()");
-        }
+
+            AllocationPoint point = getAllocationPoint(objectId);
+            if (shape.equals(point.getShape())) {
+                try {
+                    locker.objectWriteLock(objectId);
+
+                    point.setAccessDevice(System.nanoTime());
+                    point.tickDevice();
+                    point.setAccessState(AccessState.TICK);
+                } finally {
+                    locker.objectWriteUnlock(objectId);
+                }
+            } else {
+
+                // TODO: decide on lock here
+                point.tickDescendant(shape);
+
+                if (point.containsShape(shape)) {
+                    try {
+                        locker.shapeWriteLock(objectId, shape);
+
+                        NestedPoint nestedPoint = point.getNestedPoint(shape);
+                        nestedPoint.setAccessState(AccessState.TICK);
+                    } finally {
+                        locker.shapeWriteUnlock(objectId, shape);
+                    }
+                    //nestedPoint.tick();
+                } else throw new IllegalStateException("Shape [" + shape + "] wasn't found at tickDevice()");
+            }
     }
 
     /**
@@ -171,20 +225,32 @@ public final class BasicAllocator implements Allocator {
      */
     @Override
     public void tackDevice(Long objectId, @NonNull AllocationShape shape) {
-        // TODO: provide object-level lock here
-        AllocationPoint point = allocationPoints.get(objectId);
-        if (shape.equals(point.getShape())) {
-            point.setAccessDevice(System.nanoTime());
-            point.tackDevice();
-            point.setAccessState(AccessState.TACK);
-        } else {
-            point.tackDescendant(shape);
-            if (point.containsShape(shape)) {
-                NestedPoint nestedPoint = point.getNestedPoint(shape);
-                nestedPoint.setAccessState(AccessState.TACK);
-              //  nestedPoint.tack();
-            } else throw new IllegalStateException("Shape [" + shape + "] wasn't found at tickDevice()");
-        }
+            AllocationPoint point = getAllocationPoint(objectId);
+            if (shape.equals(point.getShape())) {
+                try {
+                    locker.objectWriteLock(objectId);
+
+                    point.setAccessDevice(System.nanoTime());
+                    point.tackDevice();
+                    point.setAccessState(AccessState.TACK);
+                } finally {
+                    locker.objectWriteUnlock(objectId);
+                }
+            } else {
+                // TODO: to be decided on lock here
+                point.tackDescendant(shape);
+                if (point.containsShape(shape)) {
+                    try {
+                        locker.shapeWriteLock(objectId, shape);
+
+                        NestedPoint nestedPoint = point.getNestedPoint(shape);
+                        nestedPoint.setAccessState(AccessState.TACK);
+                    } finally {
+                        locker.shapeWriteUnlock(objectId, shape);
+                    }
+                    //  nestedPoint.tack();
+                } else throw new IllegalStateException("Shape [" + shape + "] wasn't found at tickDevice()");
+            }
     }
 
     /**
@@ -196,9 +262,9 @@ public final class BasicAllocator implements Allocator {
     public Object getDevicePointer(Long objectId) {
         // TODO: this method should return pointer at some point later
         // TODO: provide object-level lock here
-        AllocationPoint point = allocationPoints.get(objectId);
+            AllocationPoint point = getAllocationPoint(objectId);
 
-        return getDevicePointer(objectId, point.getShape());
+            return getDevicePointer(objectId, point.getShape());
     }
 
     /**
@@ -219,37 +285,50 @@ public final class BasicAllocator implements Allocator {
             3. update access information, to reflect current state
             4. return devicePointer
          */
-        AllocationPoint point = allocationPoints.get(objectId);
+            AllocationPoint point = getAllocationPoint(objectId);
 
-        Object pointer = point.getDevicePointer();
+            Object pointer = null; //point.getDevicePointer();
 
-        if (point.getShape().equals(shape)) {
-            // this is the same alloc shape
-            if (pointer == null) {
-                pointer = mover.alloc(AllocationStatus.ZERO, point.getShape(), 0);
-                point.setDevicePointer(pointer);
-                point.setAllocationStatus(AllocationStatus.ZERO);
-            }
-        } else {
-            // this is suballocation
-            if (point.containsShape(shape)) {
-                pointer = point.getNestedPoint(shape).getDevicePointer();
-                if (pointer == null) {
-                    pointer = new Object();
-                    NestedPoint nestedPoint = new NestedPoint(shape);
-                    nestedPoint.setDevicePointer(pointer);
+            if (point.getShape().equals(shape)) {
+                // this is the same alloc shape
+                try {
+                    // FIXME: wrong lock here, consider something better like j8 stampedLock
+                    locker.objectWriteLock(objectId);
+                    pointer = point.getDevicePointer();
 
-                    point.addShape(nestedPoint);
-                    //point.tickDescendant(shape);
+                    if (pointer == null) {
+                        pointer = mover.alloc(AllocationStatus.ZERO, point.getShape(), 0);
+                        point.setDevicePointer(pointer);
+                        point.setAllocationStatus(AllocationStatus.ZERO);
+                    }
+                } finally {
+                    locker.objectWriteUnlock(objectId);
                 }
-            } else throw new IllegalStateException("Shape isn't existant");
-        }
+            } else {
+                // this is suballocation
+                if (point.containsShape(shape)) {
+                    try {
+                        locker.shapeWriteLock(objectId, shape);
+                        pointer = point.getNestedPoint(shape).getDevicePointer();
+                        if (pointer == null) {
+                            pointer = new Object();
+                            NestedPoint nestedPoint = new NestedPoint(shape);
+                            nestedPoint.setDevicePointer(pointer);
 
-        // p.3
-        this.tickDevice(objectId, shape);
+                            point.addShape(nestedPoint);
+                            //point.tickDescendant(shape);
+                        }
+                    } finally {
+                        locker.shapeWriteUnlock(objectId, shape);
+                    }
+                } else throw new IllegalStateException("Shape isn't existant");
+            }
 
-        // p.4
-        return pointer;
+            // p.3
+            this.tickDevice(objectId, shape);
+
+            // p.4
+            return pointer;
     }
 
     /**
@@ -259,17 +338,22 @@ public final class BasicAllocator implements Allocator {
      */
     @Override
     public void synchronizeHostData(Long objectId) {
-        AllocationPoint point = allocationPoints.get(objectId);
+            AllocationPoint point = getAllocationPoint(objectId);
 
+            if (!getHostMemoryState(objectId).equals(SyncState.SYNC)) {
+                // if data was accessed by device, it could be changed somehow
+                try {
+                    locker.objectWriteLock(objectId);
 
-        if (!getHostMemoryState(objectId).equals(SyncState.SYNC)) {
-            // if data was accessed by device, it could be changed somehow
-            mover.copyback(point);
-        } else {
-            // if data wasn't accessed on device side, we don't have to do anything for validation
-            // i.e: multiple putRow calls, or putScalar, or whatever else
-            ;
-        }
+                    mover.copyback(point);
+                } finally {
+                    locker.objectWriteUnlock(objectId);
+                }
+            } else {
+                // if data wasn't accessed on device side, we don't have to do anything for validation
+                // i.e: multiple putRow calls, or putScalar, or whatever else
+                ;
+            }
     }
 
     /**
@@ -280,13 +364,20 @@ public final class BasicAllocator implements Allocator {
      */
     @Override
     public SyncState getHostMemoryState(Long objectId) {
-        AllocationPoint point = allocationPoints.get(objectId);
-        if (point.getAccessHost() >= point.getAccessDevice()) {
-            point.setHostMemoryState(SyncState.SYNC);
-        } else {
-            point.setHostMemoryState(SyncState.DESYNC);
+        try {
+            // FIXME: wrong sync here, consider something better
+            locker.objectReadLock(objectId);
+
+            AllocationPoint point = getAllocationPoint(objectId);
+            if (point.getAccessHost() >= point.getAccessDevice()) {
+                point.setHostMemoryState(SyncState.SYNC);
+            } else {
+                point.setHostMemoryState(SyncState.DESYNC);
+            }
+            return point.getHostMemoryState();
+        } finally {
+            locker.objectReadUnlock(objectId);
         }
-        return point.getHostMemoryState();
     }
 
     /**
@@ -323,10 +414,15 @@ public final class BasicAllocator implements Allocator {
      * @param targetStatus
      */
     protected void relocateMemory(@NonNull Long objectId, @NonNull AllocationStatus targetStatus) {
-        // TODO: implement object-level lock here
-        AllocationPoint point = allocationPoints.get(objectId);
+        try {
+            AllocationPoint point = getAllocationPoint(objectId);
 
-        mover.relocate(point.getAllocationStatus(), targetStatus, point);
+            locker.objectWriteLock(objectId);
+
+            mover.relocate(point.getAllocationStatus(), targetStatus, point);
+        } finally {
+            locker.objectWriteUnlock(objectId);
+        }
     }
 
     /**
@@ -335,16 +431,28 @@ public final class BasicAllocator implements Allocator {
      * @param objectId
      */
     protected void releaseMemory(@NonNull Long objectId, @NonNull AllocationShape shape) {
-        AllocationPoint point = allocationPoints.get(objectId);
+        try {
+            locker.globalReadLock();
 
-        if (shape.equals(point.getShape())) {
-            if (point.getNumberOfDescendants() == 0) {
-                mover.free(point);
-                allocationPoints.remove(objectId);
+            AllocationPoint point = allocationPoints.get(objectId);
+
+            if (!point.confirmNoActiveDescendants())
+                throw new IllegalStateException("There's still some mode descendantds");
+
+            if (point.getAccessState().equals(AccessState.TICK))
+                throw new IllegalStateException("Memory is still in use");
+
+            if (shape.equals(point.getShape())) {
+                if (point.getNumberOfDescendants() == 0) {
+                    mover.free(point);
+                    allocationPoints.remove(objectId);
+                }
+            } else {
+                // this is sub-allocation event. we could just remove one of descendants and forget that
+                point.dropShape(shape);
             }
-        } else {
-            // this is sub-allocation event. we could just remove one of descendants and forget that
-            point.dropShape(shape);
+        } finally {
+            locker.globalReadUnlock();
         }
     }
 
@@ -354,8 +462,14 @@ public final class BasicAllocator implements Allocator {
      * @param balancer
      */
     protected void setBalancer(@NonNull Balancer balancer) {
-        this.balancer = balancer;
-        this.balancer.init(configuration, environment);
+        try {
+            locker.globalWriteLock();
+
+            this.balancer = balancer;
+            this.balancer.init(configuration, environment);
+        } finally {
+            locker.globalWriteUnlock();
+        }
     }
 
     /**
@@ -364,8 +478,14 @@ public final class BasicAllocator implements Allocator {
      * @param mover Mover implementation to be used for data transfers
      */
     protected void setMover(@NonNull Mover mover) {
-        this.mover = mover;
-        this.mover.init(configuration, environment);
+        try {
+            locker.globalWriteLock();
+
+            this.mover = mover;
+            this.mover.init(configuration, environment);
+        } finally {
+            locker.globalWriteUnlock();
+        }
     }
 
     /**
@@ -374,7 +494,12 @@ public final class BasicAllocator implements Allocator {
      * @param environment
      */
     protected void setEnvironment(@NonNull CudaEnvironment environment) {
-        this.environment = environment;
+        try {
+            locker.globalWriteLock();
+            this.environment = environment;
+        } finally {
+            locker.globalWriteUnlock();
+        }
     }
 
     /**
@@ -395,11 +520,16 @@ public final class BasicAllocator implements Allocator {
                 2. Memory was already relocated somehow
                 3. Memory is enough, but there's better candidates for the same device memory chunk
         */
+        try {
+            locker.globalReadLock();
 
-        AllocationPoint point = getAllocationPoint(objectId);
+            AllocationPoint point = getAllocationPoint(objectId);
 
-        return balancer.makePromoteDecision(1, point, shape);
-        //return null;
+            return balancer.makePromoteDecision(1, point, shape);
+            //return null;
+        } finally {
+            locker.globalReadUnlock();
+        }
     }
 
     /**
@@ -409,28 +539,34 @@ public final class BasicAllocator implements Allocator {
      * @return
      */
     protected AllocationStatus makeDemoteDecision(@NonNull Long objectId, @NonNull AllocationShape shape) {
-        AllocationPoint point = getAllocationPoint(objectId);
+        try {
+            locker.globalReadLock();
 
-        if (shape.equals(point.getShape())) {
-            if (point.getAccessState().equals(AccessState.TICK)) {
-                log.info("Not a tick");
-                return point.getAllocationStatus();
+            AllocationPoint point = getAllocationPoint(objectId);
+
+            if (shape.equals(point.getShape())) {
+                if (point.getAccessState().equals(AccessState.TICK)) {
+                    log.info("Not a tick");
+                    return point.getAllocationStatus();
+                }
+
+                // number of ticks should be equal to tacks
+                // NOTE: this should be done in single atomic comparison to avoid concurrent breakouts
+                if (!point.confirmNoActiveDescendants()) {
+                    log.info("There's active descendants");
+                    return point.getAllocationStatus();
+                }
+            } else {
+                NestedPoint nestedPoint = point.getNestedPoint(shape);
+                if (nestedPoint.getNestedStatus().equals(AllocationStatus.NESTED))
+                    throw new IllegalStateException("Can't release [NESTED] shape: [" + shape + "]");
+
+                if (nestedPoint.getAccessState().equals(AccessState.TICK)) return nestedPoint.getNestedStatus();
             }
 
-            // number of ticks should be equal to tacks
-            // NOTE: this should be done in single atomic comparison to avoid concurrent breakouts
-            if (!point.confirmNoActiveDescendants()) {
-                log.info("There's active descendants");
-                return point.getAllocationStatus();
-            }
-        } else {
-            NestedPoint nestedPoint = point.getNestedPoint(shape);
-            if (nestedPoint.getNestedStatus().equals(AllocationStatus.NESTED))
-                throw new IllegalStateException("Can't release [NESTED] shape: [" + shape + "]");
-
-            if (nestedPoint.getAccessState().equals(AccessState.TICK)) return nestedPoint.getNestedStatus();
+            return balancer.makeDemoteDecision(1, point, shape);
+        } finally {
+            locker.globalReadUnlock();
         }
-
-        return balancer.makeDemoteDecision(1, point, shape);
     }
 }

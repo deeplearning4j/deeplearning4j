@@ -230,7 +230,7 @@ public class BasicAllocatorTest {
     }
 
     @Test
-    public void testSingleDeallocation() throws Exception {
+    public void testSingleDeallocation1() throws Exception {
         BasicAllocator allocator = new BasicAllocator();
         allocator.setMover(new DummyMover());
 
@@ -255,6 +255,7 @@ public class BasicAllocatorTest {
 
         // we emulate that memory is allocated on device and was used there
         allocator.getDevicePointer(objectId);
+        allocator.tackDevice(objectId, point.getShape());
 
         assertEquals(AllocationStatus.ZERO, point.getAllocationStatus());
 
@@ -381,6 +382,7 @@ public class BasicAllocatorTest {
 
         // we request pointer for original shape
         allocator.getDevicePointer(objectId);
+        allocator.tackDevice(objectId, point.getShape());
 
         assertEquals(-1, point.getDescendantTicks(shape));
 
@@ -394,7 +396,7 @@ public class BasicAllocatorTest {
 
         // we request pointer for subarray
         allocator.getDevicePointer(objectId, shape2);
-
+        allocator.tackDevice(objectId, shape2);
         assertEquals(1, point.getNumberOfDescendants());
 
         assertEquals(-1, point.getDescendantTicks(shape));
@@ -432,6 +434,7 @@ public class BasicAllocatorTest {
 
         // we request pointer for original shape
         allocator.getDevicePointer(objectId);
+        allocator.tackDevice(objectId, point.getShape());
 
         assertEquals(-1, point.getDescendantTicks(shape));
 
@@ -446,6 +449,7 @@ public class BasicAllocatorTest {
         // we request pointer for subarray
         allocator.getDevicePointer(objectId, shape2);
 
+
         assertEquals(1, point.getNumberOfDescendants());
 
         assertEquals(-1, point.getDescendantTicks(shape));
@@ -457,6 +461,7 @@ public class BasicAllocatorTest {
          it should remove that shape from suballocations list
         */
 
+        allocator.tackDevice(objectId, shape2);
         allocator.releaseMemory(objectId, shape2);
 
         assertEquals(AllocationStatus.ZERO, point.getAllocationStatus());
@@ -485,6 +490,7 @@ public class BasicAllocatorTest {
 
         // we request pointer for original shape
         allocator.getDevicePointer(objectId);
+        allocator.tackDevice(objectId, point.getShape());
 
         assertEquals(-1, point.getDescendantTicks(shape));
 
@@ -498,11 +504,18 @@ public class BasicAllocatorTest {
 
         // we request pointer for subarray
         allocator.getDevicePointer(objectId, shape2);
+        allocator.tackDevice(objectId, shape2);
 
         assertEquals(1, point.getNumberOfDescendants());
 
         assertEquals(-1, point.getDescendantTicks(shape));
         assertEquals(1, point.getDescendantTicks(shape2));
+
+
+        // we request pointer for subarray one more time
+        allocator.getDevicePointer(objectId, shape2);
+        allocator.tackDevice(objectId, shape2);
+        assertEquals(1, point.getNumberOfDescendants());
 
         /*
          now we call dealloc for secondary shape.
@@ -519,6 +532,8 @@ public class BasicAllocatorTest {
 
         assertEquals(AllocationStatus.DEALLOCATED, point.getAllocationStatus());
         assertEquals(null, allocator.getAllocationPoint(objectId));
+
+
     }
 
     /**
@@ -941,5 +956,55 @@ public class BasicAllocatorTest {
 
         AllocationStatus decision1 = allocator.makeDemoteDecision(objectId1, shape1);
         assertEquals(AllocationStatus.ZERO, decision1);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////                DECISION MAKING ON PARTIAL ALLOCATION (TOE) TESTS, SINGLE DEVICE
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /*
+        This set of tests addresses situation, where whole underlying array/buffer can't be allocated on device.
+        But parts of this array are accessed separately, though they could be partially allocated on device
+     */
+
+
+    /**
+     * This test should decline partial promotion, since it's not implemented now
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testSingleDeviceToe1() throws Exception {
+        BasicAllocator allocator = new BasicAllocator();
+        allocator.setEnvironment(singleDevice4GBcc52);
+        allocator.setBalancer(new FirstInBalancer());
+        allocator.setMover(new DummyMover());
+
+        assertEquals(0, singleDevice4GBcc52.getAllocatedMemoryForDevice(1));
+
+        Long objectId1 = 22L;
+
+        AllocationShape shape1 = new AllocationShape();
+        shape1.setDataType(DataBuffer.Type.FLOAT);
+        shape1.setLength(128 * 1024 * 1024L);
+        shape1.setOffset(0);
+        shape1.setStride(1);
+
+        allocator.registerSpan(objectId1, shape1);
+
+
+        AllocationShape shape2 = new AllocationShape();
+        shape2.setDataType(DataBuffer.Type.FLOAT);
+        shape2.setLength(1 * 1024 * 1024L);
+        shape2.setOffset(1);
+        shape2.setStride(1);
+
+
+        AllocationStatus target = allocator.makePromoteDecision(objectId1, shape1);
+        assertEquals(AllocationStatus.ZERO, target);
+
+        allocator.registerSpan(objectId1, shape2);
+
+        AllocationStatus target2 = allocator.makePromoteDecision(objectId1, shape2);
+        assertEquals(AllocationStatus.ZERO, target2);
     }
 }
