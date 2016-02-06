@@ -105,12 +105,11 @@ public:
 				this->sMemSize>>>(
 						this->opNum,
 						this->length,
-						0,
 						this->baseData->scalar,
 						this->data->data->gData,
 						eleStride,
 						this->extraParamsBuff->gData,
-						this->result->data->gData,this->blockSize
+						this->result->data->gData
 
 				);
 
@@ -134,12 +133,11 @@ public:
 				this->sMemSize>>>(
 						this->opNum,
 						this->length,
-						1,
 						this->baseData->scalar,
 						this->data->data->gData,
 						eleStride,
 						this->extraParamsBuff->gData,
-						this->result->data->gData,this->blockSize
+						this->result->data->gData
 
 				);
 

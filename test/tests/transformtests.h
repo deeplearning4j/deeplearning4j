@@ -453,7 +453,7 @@ TEST(Transform,ObjectOrientedFloatATan) {
 TEST(Transform,ObjectOrientedFloatPow) {
     int opNum = 7;
     int rank = 2;
-    float comparison[4] = {  1,4,9,16};
+    float comparison[4] = { 1,4,9,16};
     Data<float> *data = getDataTransform<float>(comparison,rank);
     data->extraParams[0] = 2.0;
     FloatTwoByTwoTransformTest *sigmoidTest = new FloatTwoByTwoTransformTest(opNum,data,rank);
@@ -461,6 +461,8 @@ TEST(Transform,ObjectOrientedFloatPow) {
     delete sigmoidTest;
     delete data;
 }
+
+
 
 
 

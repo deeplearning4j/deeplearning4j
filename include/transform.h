@@ -55,6 +55,7 @@ namespace functions {
                 char xOrder = shape::order(shapeInfo);
                 int n = shape::length(shapeInfo);
                 int xRank = shape::rank(shapeInfo);
+                int xOffset = shape::offset(shapeInfo);
 
                 int xElementWiseStride = shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
 
@@ -72,9 +73,12 @@ namespace functions {
                 else {
                          /* equal, positive, non-unit increments. */
 #pragma unroll
-                for (; i < n; i += totalThreads) {
-                    result[i * xElementWiseStride] = op(dy[i * xElementWiseStride], params);
-                }
+                    for (; i < n; i+= totalThreads) {
+                        int *xIdx = shape::ind2sub(xRank, xShape, i);
+                        int xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
+                        result[xOffset2] = op(dy[xOffset2], params);
+                        free(xIdx);
+                    }
                }
 
 
@@ -148,6 +152,8 @@ namespace functions {
                         int xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
                         int resultOffset2 = shape::getOffset(resultOffset, resultShape, resultStride, resultIdx, resultRank);
                         result[resultOffset] = op(dx[xOffset], extraParams);
+                        free(xIdx);
+                        free(resultIdx);
                     }
 
                 }

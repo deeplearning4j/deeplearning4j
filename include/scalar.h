@@ -37,7 +37,52 @@ public:
 	inline T op(T d1, T d2, T *params) = 0;
 
 #ifdef __CUDACC__
-	/**
+
+        /**
+             * Cuda implementation of transform
+             * @param dx
+             * @param xShapeInfo
+             * @param result
+             * @param resultShapeInfo
+             * @param extraParams
+             * @param n
+             */
+           virtual __inline__ __device__ void transform(int n,T scalar,T *dy, int *shapeInfo, T *params, T *result) {
+                int *xShape = shape::shapeOf(shapeInfo);
+                int *xStride = shape::stride(shapeInfo);
+                char xOrder = shape::order(shapeInfo);
+                int xRank = shape::rank(shapeInfo);
+                int xOffset = shape::offset(shapeInfo);
+                int xElementWiseStride = shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
+
+                int totalThreads = gridDim.x * blockDim.x;
+                int tid = threadIdx.x;
+                int i = blockIdx.x * blockDim.x + tid;
+                __shared__ int length;
+                if(tid == 0)
+                    length = shape::length(shapeInfo);
+                __syncthreads();
+
+                if(xElementWiseStride >= 1) {
+                   transform(length,scalar,dy,xElementWiseStride,params,result);
+                }
+                else {
+                          /* equal, positive, non-unit increments. */
+#pragma unroll
+                    for (; i < n; i+= totalThreads) {
+                        int *xIdx = shape::ind2sub(xRank, xShape, i);
+                        int xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
+                        result[xOffset2] = op(dy[xOffset2],scalar, params);
+                        free(xIdx);
+                    }
+               }
+
+
+
+            }
+
+
+        /**
 	 *
 	 * @param n
 	 * @param idx
@@ -49,7 +94,7 @@ public:
 	 * @param blockSize
 	 */
 	virtual
-	__inline__ __device__ void transform(int n, int idx, T dx, T *dy, int incy, T *params, T *result, int blockSize) {
+	__inline__ __device__ void transform(int n, T dx, T *dy, int incy, T *params, T *result) {
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = threadIdx.x;
 		int i = blockIdx.x * blockDim.x + tid;
@@ -69,7 +114,53 @@ public:
 
 	}
 #endif
+		/**
+         * CPU implementation of scalar operation
+         * @param x the input
+         * @param xStride the stride for the input
+         * @param result the result buffer
+         * @param resultStride the stride for the result
+         * @param scalar the scalar to apply
+         * @param extraParams the extra parameters where
+         * neccssary
+         * @param n the number of elements to loop over
+         */
+		virtual void transform(T *x, int *xShapeInfo, T *result, int *resultShapeInfo,
+							   T scalar, T *extraParams, int n) {
 
+			int *xShape = shape::shapeOf(xShapeInfo);
+			int *resultShape = shape::shapeOf(resultShapeInfo);
+
+			int *xStride = shape::stride(xShapeInfo);
+			int *resultStride = shape::stride(resultShapeInfo);
+			int xRank = shape::rank(xShapeInfo);
+			int resultRank = shape::rank(resultShapeInfo);
+
+			int xOffset = shape::offset(xShapeInfo);
+			int resultOffset = shape::offset(resultShapeInfo);
+
+			char xOrder = shape::order(xShapeInfo);
+			char resultOrder = shape::order(xShapeInfo);
+			int xElementWiseStride = shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
+			int resultElementWiseStride = shape::computeElementWiseStride(resultRank,resultShape,resultStride,resultOrder == 'f');
+
+
+			if(xElementWiseStride >= 1 && resultElementWiseStride >= 1) {
+				transform(x,xElementWiseStride,result,resultElementWiseStride,scalar,extraParams,n);
+			}
+			else {
+
+#pragma omp simd
+                for (int i = 0; i < n; i++) {
+                    int *xIdx = shape::ind2sub(xRank, xShape, i);
+                    int *resultIdx = shape::ind2sub(resultRank, resultShape, i);
+                    int xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
+                    int resultOffset2 = shape::getOffset(resultOffset, resultShape, resultStride, resultIdx, resultRank);
+                    result[resultOffset2] = op(x[xOffset2], scalar,extraParams);
+                }
+			}
+
+		}
    /**
     * CPU implementation of scalar operation
     * @param x the input
@@ -1025,11 +1116,10 @@ template <typename T>
 __device__ void scalarGeneric(
 		int opNum,
 		int n,
-		int idx,
 		T dx,
 		T *dy,
 		int incy, T *params,
-		T *result, int blockSize) {
+		T *result) {
 	__shared__ functions::scalar::ScalarTransform<T> *op;
 	__shared__  functions::scalar::ScalarOpFactory<T> *scalarDoubleOpFactory;
 	if(threadIdx.x == 0)
@@ -1043,7 +1133,7 @@ __device__ void scalarGeneric(
 
 
 
-	op->transform(n,idx,dx,dy,incy,params,result,blockSize);
+	op->transform(n,dx,dy,incy,params,result);
 	if(threadIdx.x == 0)
 		free(op);
 }
@@ -1051,17 +1141,16 @@ __device__ void scalarGeneric(
 extern "C" __global__ void scalarDouble(
 		int opNum,
 		int n,
-		int idx,
 		double dx,
 		double *dy,
 		int incy, double *params,
-		double *result, int blockSize) {
-	scalarGeneric<double>(opNum,n,idx,dx,dy,incy,params,result,blockSize);
+		double *result) {
+	scalarGeneric<double>(opNum,n,dx,dy,incy,params,result);
 }
 
 extern "C" __global__ void scalarFloat(int opNum,
-		int n, int idx, float dx, float *dy, int incy, float *params, float *result, int blockSize) {
-	scalarGeneric<float>(opNum,n,idx,dx,dy,incy,params,result,blockSize);
+		int n,float dx, float *dy, int incy, float *params, float *result) {
+	scalarGeneric<float>(opNum,n,dx,dy,incy,params,result);
 }
 
 
