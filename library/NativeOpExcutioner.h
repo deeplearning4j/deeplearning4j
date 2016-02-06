@@ -133,9 +133,88 @@ public:
                                int resultStride,
                                T *extraParams, int n) {
         functions::pairwise_transforms::PairWiseTransform<T> *op = pairWiseTransformOpFactory->getOp(opNum);
-        op->exec(dx,xStride,y,yStride,result,resultStride,extraParams,n);
+        op->exec(
+                dx,
+                xStride,
+                y,
+                yStride,
+                result,
+                resultStride,
+                extraParams,
+                n);
         delete op;
     }
+
+    /**
+  *
+  * @param opNum
+  * @param dx
+  * @param xStride
+  * @param y
+  * @param yStride
+  * @param result
+  * @param resultStride
+  * @param extraParams
+  * @param n
+  */
+    void execPairwiseTransform(int opNum,
+                               T *dx,
+                               int *xShapeInfo,
+                               T *y,
+                               int *yShapeInfo,
+                               T *result,
+                               int *resultShapeInfo,
+                               T *extraParams, int n) {
+        functions::pairwise_transforms::PairWiseTransform<T> *op = pairWiseTransformOpFactory->getOp(opNum);
+        op->exec(dx,
+                 xShapeInfo,
+                 y,
+                 yShapeInfo,
+                 result,
+                 resultShapeInfo,
+                 extraParams,
+                 n);
+        delete op;
+    }
+
+    /**
+*
+* @param opNum
+* @param dx
+* @param xStride
+* @param y
+* @param yStride
+* @param result
+* @param resultStride
+* @param extraParams
+* @param n
+*/
+    void execPairwiseTransform(int opNum,
+                               T *dx,
+                               int *xShapeInfo,
+                               T *y,
+                               int *yShapeInfo,
+                               T *result,
+                               int *resultShapeInfo,
+                               T *extraParams, int n,
+                               int *xIndexes,
+                               int *yIndexes,
+                               int *resultIndexes) {
+        functions::pairwise_transforms::PairWiseTransform<T> *op = pairWiseTransformOpFactory->getOp(opNum);
+        op->exec(dx,
+                 xShapeInfo,
+                 y,
+                 yShapeInfo,
+                 result,
+                 resultShapeInfo,
+                 extraParams,
+                 n,
+                 xIndexes,
+                 yIndexes,
+                 resultIndexes);
+        delete op;
+    }
+
 
 
     /**
@@ -214,11 +293,11 @@ public:
      * @param dimensionLength
      */
     T execReduce3Scalar(int opNum,
-                           T *x,
-                           int *xShapeInfo,
-                           T *extraParamsVals,
-                           T *y,
-                           int *yShapeInfo) {
+                        T *x,
+                        int *xShapeInfo,
+                        T *extraParamsVals,
+                        T *y,
+                        int *yShapeInfo) {
         functions::reduce3::Reduce3<T> *reduce3 = reduce3OpFactory->getOp(opNum);
         T ret = reduce3->execScalar(x,xShapeInfo,extraParamsVals,y,yShapeInfo);
         delete reduce3;
@@ -281,6 +360,74 @@ public:
 
     }
 
+
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xStride
+     * @param result
+     * @param resultStride
+     * @param scalar
+     * @param extraParams
+     * @param n
+     */
+    void execScalar(int opNum,
+                    T *x,
+                    int *xShapeInfo,
+                    T *result,
+                    int *resultShapeInfo,
+                    T scalar,
+                    T *extraParams,
+                    int n) {
+        functions::scalar::ScalarTransform<T> *scalarTransform = scalarOpFactory->getOp(opNum);
+        scalarTransform->transform(x,
+                                   xShapeInfo,
+                                   result,
+                                   resultShapeInfo,
+                                   scalarTransform,
+                                   extraParams,
+                                   n);
+        delete scalarTransform;
+
+
+    }
+
+    /**
+ *
+ * @param opNum
+ * @param x
+ * @param xStride
+ * @param result
+ * @param resultStride
+ * @param scalar
+ * @param extraParams
+ * @param n
+ */
+    void execScalar(int opNum,
+                    T *x,
+                    int *xShapeInfo,
+                    T *result,
+                    int *resultShapeInfo,
+                    T scalar,
+                    T *extraParams,
+                    int n,
+                    int *xIndexes,
+                    int *resultIndexes) {
+        functions::scalar::ScalarTransform<T> *scalarTransform = scalarOpFactory->getOp(opNum);
+        scalarTransform->transform(x,
+                                   xShapeInfo,
+                                   result,
+                                   resultShapeInfo,
+                                   scalarTransform,
+                                   extraParams,n,
+                                   xIndexes,
+                                   resultIndexes);
+        delete scalarTransform;
+
+
+    }
+
     /**
      *
      * @param opNum
@@ -290,7 +437,8 @@ public:
      * @param result
      * @param resultShapeInfo
      */
-    void execSummaryStats(int opNum,T *x,
+    void execSummaryStats(int opNum,
+                          T *x,
                           int *xShapeInfo,
                           T *extraParams,
                           T *result,
@@ -309,7 +457,8 @@ public:
     * @param result
     * @param resultShapeInfo
     */
-    T execSummaryStatsScalar(int opNum,T *x,
+    T execSummaryStatsScalar(int opNum,
+                             T *x,
                              int *xShapeInfo,
                              T *extraParams) {
         functions::summarystats::SummaryStatsReduce<T> *op = summaryStatsReduceOpFactory->getOp(opNum);
@@ -351,13 +500,65 @@ public:
      * @param extraParams
      * @param n
      */
-    void execTransform(int opNum,T *dx, int xStride, T *result, int resultStride,
-                       T *extraParams, int n) {
+    void execTransform(int opNum,
+                       T *dx,
+                       int xStride,
+                       T *result,
+                       int resultStride,
+                       T *extraParams,
+                       int n) {
         functions::transform::Transform<T> *transform = transformOpFactory->getOp(opNum);
         transform->exec(dx,xStride,result,resultStride,extraParams,n);
         delete transform;
 
     }
+
+    /**
+ *
+ * @param opNum
+ * @param dx
+ * @param xStride
+ * @param result
+ * @param resultStride
+ * @param extraParams
+ * @param n
+ */
+    void execTransform(int opNum,
+                       T *dx,
+                       int *xShapeInfo,
+                       T *result,
+                       int *resultShapeInfo,
+                       T *extraParams, int n) {
+        functions::transform::Transform<T> *transform = transformOpFactory->getOp(opNum);
+        transform->exec(dx,xShapeInfo,result,resultShapeInfo,extraParams,n);
+        delete transform;
+
+    }
+
+    /**
+*
+* @param opNum
+* @param dx
+* @param xStride
+* @param result
+* @param resultStride
+* @param extraParams
+* @param n
+*/
+    void execTransform(int opNum,
+                       T *dx,
+                       int *xShapeInfo,
+                       T *result,
+                       int *resultShapeInfo,
+                       T *extraParams, int n,
+                       int *xIndexes,
+                       int *resultIndexes) {
+        functions::transform::Transform<T> *transform = transformOpFactory->getOp(opNum);
+        transform->exec(dx,xShapeInfo,result,resultShapeInfo,extraParams,n,xIndexes,resultIndexes);
+        delete transform;
+
+    }
+
 
 };
 
