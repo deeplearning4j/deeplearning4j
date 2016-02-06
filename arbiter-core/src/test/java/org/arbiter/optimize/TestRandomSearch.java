@@ -26,7 +26,8 @@ import org.arbiter.optimize.api.termination.MaxCandidatesCondition;
 import org.arbiter.optimize.config.OptimizationConfiguration;
 import org.arbiter.optimize.executor.CandidateExecutor;
 import org.arbiter.optimize.executor.local.LocalCandidateExecutor;
-import org.arbiter.optimize.randomsearch.RandomSearchGenerator;
+import org.arbiter.optimize.candidategenerator.RandomSearchGenerator;
+import org.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
 import org.arbiter.optimize.runner.OptimizationRunner;
 import org.arbiter.optimize.runner.Status;
 import org.arbiter.optimize.runner.listener.candidate.UICandidateStatusListener;
@@ -40,8 +41,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.Callable;
 
 /**
@@ -55,11 +55,7 @@ public class TestRandomSearch {
     @Ignore
     public void test() throws Exception {
 
-        //Define hyperparameter space:
-
-
         //Define configuration:
-
         CandidateGenerator<BraninConfig> candidateGenerator = new RandomSearchGenerator<>(new BraninSpace());
         OptimizationConfiguration<BraninConfig, BraninConfig, Void, Void> configuration =
                 new OptimizationConfiguration.Builder<BraninConfig, BraninConfig, Void, Void >()
@@ -75,33 +71,60 @@ public class TestRandomSearch {
                 = new OptimizationRunner<>(configuration, executor);
 //        runner.addListeners(new LoggingOptimizationRunnerStatusListener());
 
-       /* ArbiterUIServer server = new ArbiterUIServer();
+        ArbiterUIServer server = new ArbiterUIServer();
         String[] str = new String[]{"server", new ClassPathResource("dropwizard.yml").getFile().getAbsolutePath()};
         server.run(str);
         WebUtils.tryOpenBrowser("http://localhost:8080/arbiter", log);    //TODO don't hardcode
         runner.addListeners(new UIOptimizationRunnerStatusListener(server));
-*/
         runner.execute();
 
 
         System.out.println("----- Complete -----");
     }
 
-    private static class BraninSpace implements ModelParameterSpace<BraninConfig>{
-        private Random r = new Random(12345);
+    public static class BraninSpace implements ParameterSpace<BraninConfig>{
+        private int[] indices;
+        private ParameterSpace<Double> first = new ContinuousParameterSpace(-5,10);
+        private ParameterSpace<Double> second = new ContinuousParameterSpace(0,15);
+
         @Override
-        public BraninConfig randomCandidate() {
-            return new BraninConfig(15.0*r.nextDouble()-5, 15*r.nextDouble());    //-5 to +10 and 0 to 15
+        public BraninConfig getValue(double[] parameterValues) {
+            double f = first.getValue(parameterValues);
+            double s = second.getValue(parameterValues);
+            return new BraninConfig(f,s);   //-5 to +10 and 0 to 15
+        }
+
+        @Override
+        public int numParameters() {
+            return 2;
+        }
+
+        @Override
+        public List<ParameterSpace> collectLeaves() {
+            List<ParameterSpace> list = new ArrayList<>();
+            list.addAll(first.collectLeaves());
+            list.addAll(second.collectLeaves());
+            return list;
+        }
+
+        @Override
+        public boolean isLeaf() {
+            return false;
+        }
+
+        @Override
+        public void setIndices(int... indices) {
+            throw new UnsupportedOperationException();
         }
     }
 
     @AllArgsConstructor @Data
-    private static class BraninConfig {
+    public static class BraninConfig {
         private double x1;
         private double x2;
     }
 
-    private static class BraninScoreFunction implements ScoreFunction<BraninConfig,Void>{
+    public static class BraninScoreFunction implements ScoreFunction<BraninConfig,Void>{
         private static final double a = 1.0;
         private static final double b = 5.1 / (4.0 * Math.PI * Math.PI );
         private static final double c = 5.0 / Math.PI;
@@ -118,7 +141,7 @@ public class TestRandomSearch {
         }
     }
 
-    private static class BraninTaskCreator implements TaskCreator<BraninConfig,BraninConfig,Void,Void>{
+    public static class BraninTaskCreator implements TaskCreator<BraninConfig,BraninConfig,Void,Void>{
         @Override
         public Callable<OptimizationResult<BraninConfig, BraninConfig,Void>> create(final Candidate<BraninConfig> candidate,
                                                                                     DataProvider<Void> dataProvider, final ScoreFunction<BraninConfig,Void> scoreFunction,
@@ -141,7 +164,7 @@ public class TestRandomSearch {
                     double score = scoreFunction.score(candidate.getValue(),null,null);
                     System.out.println(candidate.getValue().getX1() + "\t" + candidate.getValue().getX2() + "\t" + score);
 
-                    Thread.sleep(5000);
+                    Thread.sleep(500);
                     if(statusListener != null) {
                         statusListener.reportStatus(Status.Complete,
                                 new RenderableComponentString("Config: " + candidate.toString()),

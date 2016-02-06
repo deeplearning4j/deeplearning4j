@@ -26,14 +26,14 @@ public class OutputLayerSpace extends BaseOutputLayerSpace<OutputLayer> {
     }
 
     @Override
-    public OutputLayer randomLayer() {
+    public OutputLayer getValue(double[] values) {
         OutputLayer.Builder o = new OutputLayer.Builder();
-        setLayerOptionsBuilder(o);
+        setLayerOptionsBuilder(o,values);
         return o.build();
     }
 
-    protected void setLayerOptionsBuilder(OutputLayer.Builder builder){
-        super.setLayerOptionsBuilder(builder);
+    protected void setLayerOptionsBuilder(OutputLayer.Builder builder, double[] values){
+        super.setLayerOptionsBuilder(builder,values);
     }
 
     public static class Builder extends BaseOutputLayerSpace.Builder<Builder>{

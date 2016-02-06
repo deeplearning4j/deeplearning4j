@@ -26,15 +26,15 @@ public class DenseLayerSpace extends FeedForwardLayerSpace<DenseLayer> {
     }
 
     @Override
-    public DenseLayer randomLayer() {
+    public DenseLayer getValue(double[] values) {
         //Using the builder here, to get default options
         DenseLayer.Builder b = new DenseLayer.Builder();
-        setLayerOptionsBuilder(b);
+        setLayerOptionsBuilder(b,values);
         return b.build();
     }
 
-    protected void setLayerOptionsBuilder(DenseLayer.Builder builder){
-        super.setLayerOptionsBuilder(builder);
+    protected void setLayerOptionsBuilder(DenseLayer.Builder builder, double[] values){
+        super.setLayerOptionsBuilder(builder,values);
     }
 
     public static class Builder extends FeedForwardLayerSpace.Builder<Builder>{

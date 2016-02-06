@@ -2,20 +2,16 @@ package org.arbiter.deeplearning4j;
 
 import lombok.AllArgsConstructor;
 import org.arbiter.deeplearning4j.layers.LayerSpace;
-import org.arbiter.optimize.api.ModelParameterSpace;
 import org.arbiter.optimize.parameter.FixedValue;
-import org.arbiter.optimize.parameter.ParameterSpace;
+import org.arbiter.optimize.api.ParameterSpace;
+import org.arbiter.util.CollectionUtils;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
-import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
-import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.weights.WeightInit;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 //public class MultiLayerSpace implements ModelParameterSpace<MultiLayerConfiguration> {
 public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
@@ -26,6 +22,8 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
     //Early stopping configuration / (fixed) number of epochs:
     private EarlyStoppingConfiguration<MultiLayerNetwork> earlyStoppingConfiguration;
 
+    private int numParameters;
+
     private MultiLayerSpace(Builder builder){
         super(builder);
         this.cnnInputSize = builder.cnnInputSize;
@@ -33,32 +31,38 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
         this.earlyStoppingConfiguration = builder.earlyStoppingConfiguration;
 
         this.layerSpaces = builder.layerSpaces;
+
+        //Determine total number of parameters:
+        List<ParameterSpace> list = CollectionUtils.getUnique(collectLeaves());
+        for(ParameterSpace ps : list) numParameters += ps.numParameters();
+
+        //TODO inputs
     }
 
-
     @Override
-    public DL4JConfiguration randomCandidate() {
+    public DL4JConfiguration getValue(double[] values) {
 
         //First: create layer configs
         List<org.deeplearning4j.nn.conf.layers.Layer> layers = new ArrayList<>();
         for(LayerConf c : layerSpaces){
-            int n = c.numLayers.randomValue();
+            int n = c.numLayers.getValue(values);
             if(c.duplicateConfig){
                 //Generate N identical configs
-                org.deeplearning4j.nn.conf.layers.Layer l = c.layerSpace.randomLayer();
+                org.deeplearning4j.nn.conf.layers.Layer l = c.layerSpace.getValue(values);
                 for( int i=0; i<n; i++ ){
                     layers.add(l.clone());
                 }
             } else {
-                //Generate N indepedent configs
-                for( int i=0; i<n; i++ ){
-                    layers.add(c.layerSpace.randomLayer());
-                }
+                throw new UnsupportedOperationException("Not yet implemented");
+//                //Generate N indepedent configs
+//                for( int i=0; i<n; i++ ){
+//                    layers.add(c.layerSpace.randomLayer());
+//                }
             }
         }
 
         //Create MultiLayerConfiguration...
-        NeuralNetConfiguration.Builder builder = randomGlobalConf();
+        NeuralNetConfiguration.Builder builder = randomGlobalConf(values);
 
 
         //Set nIn based on nOut of previous layer.
@@ -75,16 +79,34 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
             listBuilder.layer(i,layers.get(i));
         }
 
-        if(backprop != null) listBuilder.backprop(backprop.randomValue());
-        if(pretrain != null) listBuilder.pretrain(pretrain.randomValue());
-        if(backpropType != null) listBuilder.backpropType(backpropType.randomValue());
-        if(tbpttFwdLength != null) listBuilder.tBPTTForwardLength(tbpttFwdLength.randomValue());
-        if(tbpttBwdLength != null) listBuilder.tBPTTBackwardLength(tbpttBwdLength.randomValue());
-        if(cnnInputSize != null) listBuilder.cnnInputSize(cnnInputSize.randomValue());
+        if(backprop != null) listBuilder.backprop(backprop.getValue(values));
+        if(pretrain != null) listBuilder.pretrain(pretrain.getValue(values));
+        if(backpropType != null) listBuilder.backpropType(backpropType.getValue(values));
+        if(tbpttFwdLength != null) listBuilder.tBPTTForwardLength(tbpttFwdLength.getValue(values));
+        if(tbpttBwdLength != null) listBuilder.tBPTTBackwardLength(tbpttBwdLength.getValue(values));
+        if(cnnInputSize != null) listBuilder.cnnInputSize(cnnInputSize.getValue(values));
 
         MultiLayerConfiguration configuration = listBuilder.build();
         return new DL4JConfiguration(configuration,earlyStoppingConfiguration,numEpochs);
     }
+
+    @Override
+    public int numParameters() {
+        return numParameters;
+    }
+
+    @Override
+    public List<ParameterSpace> collectLeaves() {
+        List<ParameterSpace> list = super.collectLeaves();
+        for(LayerConf lc : layerSpaces){
+            list.addAll(lc.numLayers.collectLeaves());
+            list.addAll(lc.layerSpace.collectLeaves());
+        }
+        if(cnnInputSize != null) list.addAll(cnnInputSize.collectLeaves());
+        return list;
+    }
+
+
 
     @Override
     public String toString(){

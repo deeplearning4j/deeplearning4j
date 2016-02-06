@@ -19,6 +19,9 @@ package org.arbiter.deeplearning4j;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.arbiter.deeplearning4j.layers.LayerSpace;
+import org.arbiter.optimize.api.ParameterSpace;
+import org.arbiter.optimize.parameter.FixedValue;
+import org.arbiter.util.CollectionUtils;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
@@ -38,9 +41,11 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
     private List<LayerConf> layerSpaces = new ArrayList<>();
     private List<VertexConf> vertices = new ArrayList<>();
 
-    protected String[] networkInputs;
-    protected String[] networkOutputs;
-    protected InputType[] inputTypes;
+    private String[] networkInputs;
+    private String[] networkOutputs;
+    private InputType[] inputTypes;
+
+    private int numParameters;
 
     //Early stopping configuration / (fixed) number of epochs:
     private EarlyStoppingConfiguration<ComputationGraph> earlyStoppingConfiguration;
@@ -55,14 +60,17 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
         this.networkInputs = builder.networkInputs;
         this.networkOutputs = builder.networkOutputs;
         this.inputTypes = builder.inputTypes;
+
+        //Determine total number of parameters:
+        List<ParameterSpace> list = CollectionUtils.getUnique(collectLeaves());
+        for(ParameterSpace ps : list) numParameters += ps.numParameters();
     }
 
 
-
     @Override
-    public GraphConfiguration randomCandidate() {
+    public GraphConfiguration getValue(double[] values) {
         //Create ComputationGraphConfiguration...
-        NeuralNetConfiguration.Builder builder = randomGlobalConf();
+        NeuralNetConfiguration.Builder builder = randomGlobalConf(values);
 
         ComputationGraphConfiguration.GraphBuilder graphBuilder = builder.graphBuilder();
         graphBuilder.addInputs(this.networkInputs);
@@ -71,7 +79,7 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
 
         //Build/add our layers and vertices:
         for(LayerConf c : layerSpaces){
-            org.deeplearning4j.nn.conf.layers.Layer l = c.layerSpace.randomLayer();
+            org.deeplearning4j.nn.conf.layers.Layer l = c.layerSpace.getValue(values);
             graphBuilder.addLayer(c.getLayerName(),l,c.getInputs());
         }
         for(VertexConf gv : vertices){
@@ -79,15 +87,31 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
         }
         
 
-        if(backprop != null) graphBuilder.backprop(backprop.randomValue());
-        if(pretrain != null) graphBuilder.pretrain(pretrain.randomValue());
-        if(backpropType != null) graphBuilder.backpropType(backpropType.randomValue());
-        if(tbpttFwdLength != null) graphBuilder.tBPTTForwardLength(tbpttFwdLength.randomValue());
-        if(tbpttBwdLength != null) graphBuilder.tBPTTBackwardLength(tbpttBwdLength.randomValue());
+        if(backprop != null) graphBuilder.backprop(backprop.getValue(values));
+        if(pretrain != null) graphBuilder.pretrain(pretrain.getValue(values));
+        if(backpropType != null) graphBuilder.backpropType(backpropType.getValue(values));
+        if(tbpttFwdLength != null) graphBuilder.tBPTTForwardLength(tbpttFwdLength.getValue(values));
+        if(tbpttBwdLength != null) graphBuilder.tBPTTBackwardLength(tbpttBwdLength.getValue(values));
 
         ComputationGraphConfiguration configuration = graphBuilder.build();
         return new GraphConfiguration(configuration,earlyStoppingConfiguration,numEpochs);
     }
+
+    @Override
+    public int numParameters() {
+        return numParameters;
+    }
+
+    @Override
+    public List<ParameterSpace> collectLeaves() {
+        List<ParameterSpace> list = super.collectLeaves();
+        for(LayerConf lc : layerSpaces){
+            list.addAll(lc.layerSpace.collectLeaves());
+        }
+        if(cnnInputSize != null) list.addAll(cnnInputSize.collectLeaves());
+        return list;
+    }
+
 
     @Override
     public String toString(){

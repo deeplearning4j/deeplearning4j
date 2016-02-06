@@ -26,14 +26,14 @@ public class RnnOutputLayerSpace extends BaseOutputLayerSpace<RnnOutputLayer> {
     }
 
     @Override
-    public RnnOutputLayer randomLayer() {
+    public RnnOutputLayer getValue(double[] values) {
         RnnOutputLayer.Builder b = new RnnOutputLayer.Builder();
-        setLayerOptionsBuilder(b);
+        setLayerOptionsBuilder(b,values);
         return b.build();
     }
 
-    protected void setLayerOptionsBuilder(RnnOutputLayer.Builder builder){
-        super.setLayerOptionsBuilder(builder);
+    protected void setLayerOptionsBuilder(RnnOutputLayer.Builder builder, double[] values){
+        super.setLayerOptionsBuilder(builder,values);
     }
 
     @Override

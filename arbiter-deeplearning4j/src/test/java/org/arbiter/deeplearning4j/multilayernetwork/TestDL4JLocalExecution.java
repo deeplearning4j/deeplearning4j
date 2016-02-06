@@ -29,13 +29,14 @@ import org.arbiter.optimize.api.CandidateGenerator;
 import org.arbiter.optimize.api.data.DataProvider;
 import org.arbiter.optimize.api.termination.MaxCandidatesCondition;
 import org.arbiter.optimize.api.termination.MaxTimeCondition;
+import org.arbiter.optimize.candidategenerator.GridSearchCandidateGenerator;
 import org.arbiter.optimize.config.OptimizationConfiguration;
 import org.arbiter.optimize.executor.CandidateExecutor;
 import org.arbiter.optimize.executor.local.LocalCandidateExecutor;
 import org.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
 import org.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
 import org.arbiter.optimize.parameter.integer.IntegerParameterSpace;
-import org.arbiter.optimize.randomsearch.RandomSearchGenerator;
+import org.arbiter.optimize.candidategenerator.RandomSearchGenerator;
 import org.arbiter.optimize.runner.OptimizationRunner;
 import org.arbiter.optimize.ui.ArbiterUIServer;
 import org.arbiter.optimize.ui.listener.UIOptimizationRunnerStatusListener;
@@ -89,7 +90,65 @@ public class TestDL4JLocalExecution {
 
 
 //        String modelSavePath = FilenameUtils.concat(System.getProperty("java.io.tmpdir"),"ArbiterDL4JTest/");
-        String modelSavePath = new File(System.getProperty("java.io.tmpdir"),"ArbiterDL4JTest\\").getAbsolutePath();
+        String modelSavePath = new File(System.getProperty("java.io.tmpdir"),"ArbiterDL4JTest/").getAbsolutePath();
+
+        File f = new File(modelSavePath);
+        if(f.exists()) f.delete();
+        f.mkdir();
+        f.deleteOnExit();
+        if(!f.exists()) throw new RuntimeException();
+
+        OptimizationConfiguration<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> configuration
+                = new OptimizationConfiguration.Builder<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation>()
+                .candidateGenerator(candidateGenerator)
+                .dataProvider(dataProvider)
+                .modelSaver(new LocalMultiLayerNetworkSaver<Evaluation>(modelSavePath))
+                .scoreFunction(new TestSetLossScoreFunction())
+                .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
+                        new MaxCandidatesCondition(100))
+                .build();
+
+        CandidateExecutor<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> executor =
+                new LocalCandidateExecutor<>(new MultiLayerNetworkTaskCreator<>(new ClassificationEvaluator()),1);
+
+        OptimizationRunner<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> runner
+                = new OptimizationRunner<>(configuration, executor);
+
+        ArbiterUIServer server = new ArbiterUIServer();
+        String[] str = new String[]{"server", "dropwizard.yml"};
+        server.run(str);
+        WebUtils.tryOpenBrowser("http://localhost:8080/arbiter", log);    //TODO don't hardcode
+        runner.addListeners(new UIOptimizationRunnerStatusListener(server));
+
+        runner.execute();
+
+
+        System.out.println("----- COMPLETE -----");
+    }
+
+    @Test
+    @org.junit.Ignore
+    public void testLocalExecutionGridSearch() throws Exception {
+
+        //Define: network config (hyperparameter space)
+        MultiLayerSpace mls = new MultiLayerSpace.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .learningRate(new ContinuousParameterSpace(0.0001, 0.1))
+                .regularization(true)
+                .l2(new ContinuousParameterSpace(0.0001, 0.01))
+                .iterations(100)
+                .addLayer(new DenseLayerSpace.Builder().nIn(4).nOut(new IntegerParameterSpace(2,10))
+                        .activation(new DiscreteParameterSpace<>("relu","tanh"))
+                        .build(),new IntegerParameterSpace(1,2),true)   //1-2 identical layers (except nIn)
+                .addLayer(new OutputLayerSpace.Builder().nOut(3).activation("softmax")
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .numEpochs(3)
+                .pretrain(false).backprop(true).build();
+
+        CandidateGenerator<DL4JConfiguration> candidateGenerator = new GridSearchCandidateGenerator<>(mls,5, GridSearchCandidateGenerator.Mode.Sequential);
+        DataProvider<DataSetIterator> dataProvider = new IrisDataSetProvider();
+
+        String modelSavePath = new File(System.getProperty("java.io.tmpdir"),"ArbiterDL4JTest/").getAbsolutePath();
 
         File f = new File(modelSavePath);
         if(f.exists()) f.delete();

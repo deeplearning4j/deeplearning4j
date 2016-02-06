@@ -18,8 +18,10 @@
 package org.arbiter.deeplearning4j.layers;
 
 import org.arbiter.optimize.parameter.FixedValue;
-import org.arbiter.optimize.parameter.ParameterSpace;
+import org.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+
+import java.util.List;
 
 public class SubsamplingLayerSpace extends LayerSpace<SubsamplingLayer> {
 
@@ -35,20 +37,30 @@ public class SubsamplingLayerSpace extends LayerSpace<SubsamplingLayer> {
         this.stride = builder.stride;
         this.padding = builder.padding;
     }
+    
+    @Override
+    public List<ParameterSpace> collectLeaves(){
+        List<ParameterSpace> list = super.collectLeaves();
+        if(poolingType != null) list.addAll(poolingType.collectLeaves());
+        if(kernelSize != null) list.addAll(kernelSize.collectLeaves());
+        if(stride != null) list.addAll(stride.collectLeaves());
+        if(padding != null) list.addAll(padding.collectLeaves());
+        return list;
+    }
 
     @Override
-    public SubsamplingLayer randomLayer() {
+    public SubsamplingLayer getValue(double[] values) {
         SubsamplingLayer.Builder b = new SubsamplingLayer.Builder();
-        setLayerOptionsBuilder(b);
+        setLayerOptionsBuilder(b,values);
         return b.build();
     }
 
-    protected void setLayerOptionsBuilder(SubsamplingLayer.Builder builder){
-        super.setLayerOptionsBuilder(builder);
-        if(poolingType != null) builder.poolingType(poolingType.randomValue());
-        if(kernelSize != null) builder.kernelSize(kernelSize.randomValue());
-        if(stride != null) builder.stride(stride.randomValue());
-        if(padding != null) builder.padding(padding.randomValue());
+    protected void setLayerOptionsBuilder(SubsamplingLayer.Builder builder, double[] values){
+        super.setLayerOptionsBuilder(builder,values);
+        if(poolingType != null) builder.poolingType(poolingType.getValue(values));
+        if(kernelSize != null) builder.kernelSize(kernelSize.getValue(values));
+        if(stride != null) builder.stride(stride.getValue(values));
+        if(padding != null) builder.padding(padding.getValue(values));
     }
 
     @Override

@@ -18,8 +18,10 @@
 package org.arbiter.deeplearning4j.layers;
 
 import org.arbiter.optimize.parameter.FixedValue;
-import org.arbiter.optimize.parameter.ParameterSpace;
+import org.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.nn.conf.layers.AutoEncoder;
+
+import java.util.List;
 
 public class AutoEncoderLayerSpace extends BasePretrainNetworkLayerSpace<AutoEncoder> {
 
@@ -33,16 +35,24 @@ public class AutoEncoderLayerSpace extends BasePretrainNetworkLayerSpace<AutoEnc
     }
 
     @Override
-    public AutoEncoder randomLayer() {
+    public AutoEncoder getValue(double[] values) {
         AutoEncoder.Builder b = new AutoEncoder.Builder();
-        setLayerOptionsBuilder(b);
+        setLayerOptionsBuilder(b,values);
         return b.build();
     }
 
-    protected void setLayerOptionsBuilder(AutoEncoder.Builder builder){
-        super.setLayerOptionsBuilder(builder);
-        if(corruptionLevel != null) builder.corruptionLevel(corruptionLevel.randomValue());
-        if(sparsity != null) builder.sparsity(sparsity.randomValue());
+    @Override
+    public List<ParameterSpace> collectLeaves(){
+        List<ParameterSpace> list = super.collectLeaves();
+        if(corruptionLevel != null) list.addAll(corruptionLevel.collectLeaves());
+        if(sparsity != null) list.addAll(sparsity.collectLeaves());
+        return list;
+    }
+
+    protected void setLayerOptionsBuilder(AutoEncoder.Builder builder, double[] values){
+        super.setLayerOptionsBuilder(builder,values);
+        if(corruptionLevel != null) builder.corruptionLevel(corruptionLevel.getValue(values));
+        if(sparsity != null) builder.sparsity(sparsity.getValue(values));
     }
 
     @Override

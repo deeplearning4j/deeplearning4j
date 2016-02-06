@@ -18,8 +18,10 @@
 package org.arbiter.deeplearning4j.layers;
 
 import org.arbiter.optimize.parameter.FixedValue;
-import org.arbiter.optimize.parameter.ParameterSpace;
+import org.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.nn.conf.layers.GravesLSTM;
+
+import java.util.List;
 
 public class GravesLSTMLayerSpace extends FeedForwardLayerSpace<GravesLSTM> {
 
@@ -32,15 +34,22 @@ public class GravesLSTMLayerSpace extends FeedForwardLayerSpace<GravesLSTM> {
 
 
     @Override
-    public GravesLSTM randomLayer() {
+    public GravesLSTM getValue(double[] values) {
         GravesLSTM.Builder b = new GravesLSTM.Builder();
-        setLayerOptionsBuilder(b);
+        setLayerOptionsBuilder(b,values);
         return b.build();
     }
 
-    protected void setLayerOptionsBuilder(GravesLSTM.Builder builder){
-        super.setLayerOptionsBuilder(builder);
-        if(forgetGateBiasInit != null) builder.forgetGateBiasInit(forgetGateBiasInit.randomValue());
+    protected void setLayerOptionsBuilder(GravesLSTM.Builder builder, double[] values){
+        super.setLayerOptionsBuilder(builder, values);
+        if(forgetGateBiasInit != null) builder.forgetGateBiasInit(forgetGateBiasInit.getValue(values));
+    }
+
+    @Override
+    public List<ParameterSpace> collectLeaves(){
+        List<ParameterSpace> list = super.collectLeaves();
+        if(forgetGateBiasInit != null) list.addAll(forgetGateBiasInit.collectLeaves());
+        return list;
     }
 
     @Override

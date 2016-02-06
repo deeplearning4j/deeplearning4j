@@ -19,11 +19,15 @@ package org.arbiter.optimize.parameter.continuous;
 
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.distribution.UniformRealDistribution;
-import org.arbiter.optimize.parameter.ParameterSpace;
+import org.arbiter.optimize.api.ParameterSpace;
+
+import java.util.Collections;
+import java.util.List;
 
 public class ContinuousParameterSpace implements ParameterSpace<Double> {
 
     private RealDistribution distribution;
+    private int index = -1;
 
     public ContinuousParameterSpace(double min, double max){
         this(new UniformRealDistribution(min,max));
@@ -33,10 +37,34 @@ public class ContinuousParameterSpace implements ParameterSpace<Double> {
         this.distribution = distribution;
     }
 
+
     @Override
-    public Double randomValue() {
-        return distribution.sample();
+    public Double getValue(double[] input) {
+        if(index == -1) throw new IllegalStateException("Cannot get value: ParameterSpace index has not been set");
+        return distribution.inverseCumulativeProbability(input[index]);
     }
+
+    @Override
+    public int numParameters() {
+        return 1;
+    }
+
+    @Override
+    public List<ParameterSpace> collectLeaves() {
+        return Collections.singletonList((ParameterSpace) this);
+    }
+
+    @Override
+    public boolean isLeaf() {
+        return true;
+    }
+
+    @Override
+    public void setIndices(int... indices) {
+        if(indices == null || indices.length != 1) throw new IllegalArgumentException("Invalid index");
+        this.index = indices[0];
+    }
+
 
     @Override
     public String toString(){
