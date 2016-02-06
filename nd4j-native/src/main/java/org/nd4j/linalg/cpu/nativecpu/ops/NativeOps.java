@@ -24,9 +24,9 @@ public class NativeOps {
      * @param extraParams
      */
     public native double   execIndexReduceScalar(int opNum,
-                                               DoubleBuffer x,
-                                               IntBuffer xShapeInfo,
-                                               DoubleBuffer extraParams);
+                                                 DoubleBuffer x,
+                                                 IntBuffer xShapeInfo,
+                                                 DoubleBuffer extraParams);
 
     /**
      *
@@ -67,6 +67,8 @@ public class NativeOps {
                                        IntBuffer resultShapeInfo,
                                        IntBuffer dimension, int dimensionLength);
 
+
+
     /**
      *
      * @param opNum
@@ -87,6 +89,55 @@ public class NativeOps {
                                                DoubleBuffer result,
                                                int resultStride,
                                                DoubleBuffer extraParams, int n);
+
+    /**
+     *
+     * @param opNum
+     * @param dx
+     * @param xShapeInfo
+     * @param y
+     * @param yShapeInfo
+     * @param result
+     * @param resultShapeInfo
+     * @param extraParams
+     * @param n
+     * @param xIndexes
+     * @param yIndexes
+     * @param resultIndexes
+     */
+    public native void execPairwiseTransform(int opNum,
+                                             DoubleBuffer dx,
+                                             IntBuffer xShapeInfo,
+                                             DoubleBuffer y,
+                                             IntBuffer yShapeInfo,
+                                             DoubleBuffer result,
+                                             DoubleBuffer resultShapeInfo,
+                                             DoubleBuffer extraParams,
+                                             int n,
+                                             IntBuffer xIndexes,
+                                             IntBuffer yIndexes,
+                                             IntBuffer resultIndexes);
+
+    /**
+     *
+     * @param opNum
+     * @param dx
+     * @param xShapeInfo
+     * @param y
+     * @param yShapeInfo
+     * @param result
+     * @param resultShapeInfo
+     * @param extraParams
+     * @param n
+     */
+    public native void execPairwiseTransform(int opNum,
+                                             DoubleBuffer dx,
+                                             IntBuffer  xShapeInfo,
+                                             DoubleBuffer y,
+                                             IntBuffer  yShapeInfo,
+                                             DoubleBuffer result,
+                                             IntBuffer  resultShapeInfo,
+                                             DoubleBuffer extraParams, int n);
 
     /**
      *
@@ -203,7 +254,7 @@ public class NativeOps {
      * @param extraParams
      * @param n
      */
-    public native double   execScalar(int opNum,
+    public native void   execScalar(int opNum,
                                       DoubleBuffer x,
                                       int xStride,
                                       DoubleBuffer result,
@@ -211,6 +262,50 @@ public class NativeOps {
                                       double scalar,
                                       DoubleBuffer extraParams,
                                       int n);
+
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param result
+     * @param resultShapeInfo
+     * @param scalar
+     * @param extraParams
+     * @param n
+     */
+    public native void execScalar(int opNum,
+                                  DoubleBuffer x,
+                                  IntBuffer xShapeInfo,
+                                  DoubleBuffer result,
+                                  IntBuffer resultShapeInfo,
+                                  double scalar,
+                                  DoubleBuffer extraParams,
+                                  int n);
+
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param result
+     * @param resultShapeInfo
+     * @param scalar
+     * @param extraParams
+     * @param n
+     * @param xIndexes
+     * @param resultIndexes
+     */
+    public native void execScalar(int opNum,
+                                  DoubleBuffer x,
+                                  IntBuffer xShapeInfo,
+                                  DoubleBuffer result,
+                                  IntBuffer resultShapeInfo,
+                                  double scalar,
+                                  DoubleBuffer extraParams,
+                                  int n,
+                                  IntBuffer xIndexes,
+                                  IntBuffer resultIndexes);
     /**
      *
      * @param opNum
@@ -272,14 +367,51 @@ public class NativeOps {
     /**
      *
      * @param opNum
+     * @param dx
+     * @param xShapeInfo
+     * @param result
+     * @param resultShapeInfo
+     * @param extraParams
+     * @param n
+     */
+    public native void   execTransform(int opNum,
+                                       DoubleBuffer dx,
+                                       IntBuffer xShapeInfo,
+                                       DoubleBuffer result,
+                                       IntBuffer resultShapeInfo,
+                                       DoubleBuffer extraParams, int n);
+
+    /**
+     *
+     * @param opNum
+     * @param dx
+     * @param xShapeInfo
+     * @param result
+     * @param resultShapeInfo
+     * @param extraParams
+     * @param n
+     */
+    public native void   execTransform(int opNum,
+                                       DoubleBuffer dx,
+                                       IntBuffer xShapeInfo,
+                                       DoubleBuffer result,
+                                       IntBuffer resultShapeInfo,
+                                       DoubleBuffer extraParams,
+                                       int n,
+                                       IntBuffer xIndexes,
+                                       IntBuffer resultIndexes);
+
+    /**
+     *
+     * @param opNum
      * @param x
      * @param xShapeInfo
      * @param extraParams
      */
     public native float   execIndexReduceScalar(int opNum,
-                                               FloatBuffer x,
-                                               IntBuffer xShapeInfo,
-                                               FloatBuffer extraParams);
+                                                FloatBuffer x,
+                                                IntBuffer xShapeInfo,
+                                                FloatBuffer extraParams);
 
     /**
      *
@@ -340,6 +472,110 @@ public class NativeOps {
                                                FloatBuffer result,
                                                int resultStride,
                                                FloatBuffer extraParams, int n);
+
+
+    /**
+     *
+     * @param opNum
+     * @param dx
+     * @param xShapeInfo
+     * @param y
+     * @param yShapeInfo
+     * @param result
+     * @param resultShapeInfo
+     * @param extraParams
+     * @param n
+     * @param xIndexes
+     * @param yIndexes
+     * @param resultIndexes
+     */
+    public native void execPairwiseTransform(int opNum,
+                                             FloatBuffer dx,
+                                             IntBuffer xShapeInfo,
+                                             FloatBuffer y,
+                                             IntBuffer yShapeInfo,
+                                             FloatBuffer result,
+                                             FloatBuffer resultShapeInfo,
+                                             FloatBuffer extraParams,
+                                             int n,
+                                             IntBuffer xIndexes,
+                                             IntBuffer yIndexes,
+                                             IntBuffer resultIndexes);
+
+    /**
+     *
+     * @param opNum
+     * @param dx
+     * @param xShapeInfo
+     * @param y
+     * @param yShapeInfo
+     * @param result
+     * @param resultShapeInfo
+     * @param extraParams
+     * @param n
+     */
+    public native void execPairwiseTransform(int opNum,
+                                             FloatBuffer dx,
+                                             IntBuffer  xShapeInfo,
+                                             FloatBuffer y,
+                                             IntBuffer  yShapeInfo,
+                                             FloatBuffer result,
+                                             IntBuffer  resultShapeInfo,
+                                             FloatBuffer extraParams, int n);
+
+    /**
+     *
+     * @param opNum
+     * @param dx
+     * @param xShapeInfo
+     * @param y
+     * @param yShapeInfo
+     * @param result
+     * @param resultShapeInfo
+     * @param extraParams
+     * @param n
+     * @param xIndexes
+     * @param yIndexes
+     * @param resultIndexes
+     */
+    public native   void execPairwiseTransform(int opNum,
+                                               DoubleBuffer dx,
+                                               IntBuffer  xShapeInfo,
+                                               DoubleBuffer y,
+                                               IntBuffer  yShapeInfo,
+                                               DoubleBuffer result,
+                                               IntBuffer  resultShapeInfo,
+                                               DoubleBuffer extraParams, int n,
+                                               IntBuffer  xIndexes,
+                                               IntBuffer  yIndexes,
+                                               IntBuffer  resultIndexes);
+
+    /**
+     *
+     * @param opNum
+     * @param dx
+     * @param xShapeInfo
+     * @param y
+     * @param yShapeInfo
+     * @param result
+     * @param resultShapeInfo
+     * @param extraParams
+     * @param n
+     * @param xIndexes
+     * @param yIndexes
+     * @param resultIndexes
+     */
+    public native   void execPairwiseTransform(int opNum,
+                                               FloatBuffer dx,
+                                               IntBuffer  xShapeInfo,
+                                               FloatBuffer y,
+                                               IntBuffer  yShapeInfo,
+                                               FloatBuffer result,
+                                               IntBuffer  resultShapeInfo,
+                                               FloatBuffer extraParams, int n,
+                                               IntBuffer  xIndexes,
+                                               IntBuffer  yIndexes,
+                                               IntBuffer  resultIndexes);
 
 
     /**
@@ -437,7 +673,7 @@ public class NativeOps {
      * @param extraParams
      * @param n
      */
-    public native float   execScalar(int opNum,
+    public native void   execScalar(int opNum,
                                      FloatBuffer x,
                                      int xStride,
                                      FloatBuffer result,
@@ -445,6 +681,51 @@ public class NativeOps {
                                      float scalar,
                                      FloatBuffer extraParams,
                                      int n);
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param result
+     * @param resultShapeInfo
+     * @param scalar
+     * @param extraParams
+     * @param n
+     */
+    public native void execScalar(int opNum,
+                                  FloatBuffer x,
+                                  IntBuffer xShapeInfo,
+                                  FloatBuffer result,
+                                  IntBuffer resultShapeInfo,
+                                  double scalar,
+                                  FloatBuffer extraParams,
+                                  int n);
+
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param result
+     * @param resultShapeInfo
+     * @param scalar
+     * @param extraParams
+     * @param n
+     * @param xIndexes
+     * @param resultIndexes
+     */
+    public native void execScalar(int opNum,
+                                  FloatBuffer x,
+                                  IntBuffer xShapeInfo,
+                                  FloatBuffer result,
+                                  IntBuffer resultShapeInfo,
+                                  double scalar,
+                                  FloatBuffer extraParams,
+                                  int n,
+                                  IntBuffer xIndexes,
+                                  IntBuffer resultIndexes);
+
+
     /**
      *
      * @param opNum
@@ -502,5 +783,44 @@ public class NativeOps {
                                        FloatBuffer result,
                                        int resultStride,
                                        FloatBuffer extraParams, int n);
+
+
+    /**
+     *
+     * @param opNum
+     * @param dx
+     * @param xShapeInfo
+     * @param result
+     * @param resultShapeInfo
+     * @param extraParams
+     * @param n
+     */
+    public native void   execTransform(int opNum,
+                                       FloatBuffer dx,
+                                       IntBuffer xShapeInfo,
+                                       FloatBuffer result,
+                                       IntBuffer resultShapeInfo,
+                                       FloatBuffer extraParams, int n);
+
+    /**
+     *
+     * @param opNum
+     * @param dx
+     * @param xShapeInfo
+     * @param result
+     * @param resultShapeInfo
+     * @param extraParams
+     * @param n
+     */
+    public native void   execTransform(int opNum,
+                                       FloatBuffer dx,
+                                       IntBuffer xShapeInfo,
+                                       FloatBuffer result,
+                                       IntBuffer resultShapeInfo,
+                                       FloatBuffer extraParams,
+                                       int n,
+                                       IntBuffer xIndexes,
+                                       IntBuffer resultIndexes);
+
 
 }
