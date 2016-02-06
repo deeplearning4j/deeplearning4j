@@ -15,7 +15,7 @@ Contents
 * <a href="#ai">Neural Networks & Artificial Intelligence</a>
 * <a href="#intro">Other Introductory Resources</a>
 
-##<a name="define">Neural Network Definition</a>
+## <a name="define">Neural Network Definition</a>
 
 Neural networks are a set of algorithms, modeled loosely after the human brain, that are designed to recognize patterns. They interpret sensory data through a kind of machine perception, labeling or clustering raw input. The patterns they recognize are numerical, contained in vectors, to which all real-world data, be it images, sound, text or time series, must be translated. 
 
@@ -70,7 +70,7 @@ A deep-learning network trained on labeled data can then be applied to unstructu
 
 Deep-learning networks end in an output layer: a logistic, or softmax, classifier that assigns a likelihood to a particular outcome or label. We call that predictive, but it is predictive in a broad sense. Given raw data in the form of an image, a deep-learning network may decide, for example, that the input data is 90 percent likely to represent a person. 
 
-##<a name="forward">Example: Feedforward Networks</a>
+## <a name="forward">Example: Feedforward Networks</a>
 
 Our goal in using a neural net is to arrive at the point of least error as fast as possible. We are running a race. The starting line for the race is the state in which our weights are initialized, and the finish line is the state of those parameters when they are capable of producing accurate classifications and predictions. 
 
@@ -118,7 +118,7 @@ That is, given two variables, *Error* and *weight*, that are mediated by a third
 
 The essence of learning in deep learning is nothing more than that: adjusting a model's weights in response to the error it produces, until you can't reduce the error any more. 
 
-##<a name="logistic">Logistic Regression</a>
+## <a name="logistic">Logistic Regression</a>
 
 On a deep neural network of many layers, the final layer has a particular role. When dealing with labeled input, the output layer classifies each example, applying the most likely label. Each node on the output layer represents one label, and that node turns on or off according to the strength of the signal it receives from the previous layer's input and parameters. 
 
@@ -144,13 +144,13 @@ Now imagine that, rather than having *x* as the exponent, you have the sum of th
 
 With this layer, we can set a decision threshold above which an example is labeled 1, and below which it is not. You can set different thresholds as you prefer -- a low threshold will increase the number of false positives, and a higher one will increase the number of false negatives -- depending on which side you would like to err. 
 
-##<a name="ai">Neural Networks & Artificial Intelligence</a>
+## <a name="ai">Neural Networks & Artificial Intelligence</a>
 
 In some circles, neural networks are thought of as "brute force" AI, because they start with a blank slate and hammer their way through to an accurate model. They are effective, but to some eyes inefficient in their approach to modeling, which can't make assumptions about functional dependencies between output and input. 
 
 That said, gradient descent is not recombining every weight with every other to find the best match -- its method of pathfinding shrinks the relevant weight space, and therefore the number of updates and required computation, by many orders of magnitude. 
 
-##<a name="intro">Other Introductory Resources</a>
+## <a name="intro">Other Introductory Resources</a>
 
 For people just getting started with deep learning, the following tutorials and videos provide an easy entrance to the fundamental ideas of feedforward networks:
 
