@@ -21,6 +21,7 @@ public:
 };
 
 #ifdef __cplusplus
+
 extern "C" {
 #endif
 
@@ -223,7 +224,7 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execRedu
  * Method:    execScalar
  * Signature: (ILjava/nio/DoubleBuffer;ILjava/nio/DoubleBuffer;IDLjava/nio/DoubleBuffer;I)D
  */
-JNIEXPORT jdouble JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execScalar__ILjava_nio_DoubleBuffer_2ILjava_nio_DoubleBuffer_2IDLjava_nio_DoubleBuffer_2I
+JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execScalar__ILjava_nio_DoubleBuffer_2ILjava_nio_DoubleBuffer_2IDLjava_nio_DoubleBuffer_2I
         (JNIEnv *env, jobject obj,
          jint opNum,
          jobject x,
@@ -240,7 +241,7 @@ JNIEXPORT jdouble JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execS
                                                         xBuff,xStride,
                                                         resultBuff,resultStride,
                                                         scalar,extraParamsBuff,n);
-    return 0.0;
+
 
 }
 
@@ -533,7 +534,7 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execRedu
  * Method:    execScalar
  * Signature: (ILjava/nio/FloatBuffer;ILjava/nio/FloatBuffer;IFLjava/nio/FloatBuffer;I)F
  */
-JNIEXPORT jfloat JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execScalar__ILjava_nio_FloatBuffer_2ILjava_nio_FloatBuffer_2IFLjava_nio_FloatBuffer_2I
+JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execScalar__ILjava_nio_FloatBuffer_2ILjava_nio_FloatBuffer_2IFLjava_nio_FloatBuffer_2I
         (JNIEnv *env, jobject obj,
          jint opNum,
          jobject x, jint xStride,
@@ -545,7 +546,7 @@ JNIEXPORT jfloat JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execSc
     float *extraParamsBuff = extraParams != NULL ? (float *) env->GetDirectBufferAddress(extraParams) : NULL;
     float *resultBuff = (float *) env->GetDirectBufferAddress(result);
     FloatNativeOpExecutioner::getInstance().execScalar(opNum,xBuff,xStride,resultBuff,resultStride,scalar,extraParamsBuff,n);
-    return 0;
+
 }
 
 /*
@@ -609,6 +610,407 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execTran
                                                           resultStride,extraParamsBuff,n);
 
 
+
+}
+
+
+/*
+ * Class:     org_nd4j_linalg_cpu_nativecpu_ops_NativeOps
+ * Method:    execPairwiseTransform
+ * Signature: (ILjava/nio/DoubleBuffer;Ljava/nio/IntBuffer;Ljava/nio/DoubleBuffer;Ljava/nio/IntBuffer;Ljava/nio/DoubleBuffer;Ljava/nio/DoubleBuffer;Ljava/nio/DoubleBuffer;ILjava/nio/IntBuffer;Ljava/nio/IntBuffer;Ljava/nio/IntBuffer;)V
+ */
+void Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execPairwiseTransform__ILjava_nio_DoubleBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_DoubleBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_DoubleBuffer_2Ljava_nio_DoubleBuffer_2Ljava_nio_DoubleBuffer_2ILjava_nio_IntBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_IntBuffer_2(
+        JNIEnv *env, jobject jobject1, jint opNum, jobject dx, jobject xShapeInfo, jobject y,
+        jobject yShapeInfo, jobject result, jobject resultShapeInfo, jobject extraParams, jint n, jobject xIndexes,
+        jobject yIndexes, jobject resultIndexes) {
+
+    double *xBuff = (double *) env->GetDirectBufferAddress(dx);
+    int *xShapeInfoBuff = (int *) env->GetDirectBufferAddress(xShapeInfo);
+    double *yBuff = (double *) env->GetDirectBufferAddress(y);
+    int *yShapeInfoBuff = (int *) env->GetDirectBufferAddress(yShapeInfo);
+    double *resultBuff = (double *) env->GetDirectBufferAddress(result);
+    int *resultShapeBuff = (int *) env->GetDirectBufferAddress(resultShapeInfo);
+    double *extraParamsBuff =  extraParams != NULL ? (double *) env->GetDirectBufferAddress(extraParams) : NULL;
+    int *xIndexesBuff = (int *) env->GetDirectBufferAddress(xIndexes);
+    int *yIndexesBuff = (int *) env->GetDirectBufferAddress(yIndexes);
+    int *resultIndexesBuff = (int *) env->GetDirectBufferAddress(resultIndexes);
+    DoubleNativeOpExecutioner::getInstance().execPairwiseTransform(opNum,
+                                                                   xBuff,
+                                                                   xShapeInfoBuff,
+                                                                   yBuff,
+                                                                   yShapeInfoBuff,
+                                                                   resultBuff,
+                                                                   resultShapeBuff,
+                                                                   extraParamsBuff,
+                                                                   n,xIndexesBuff,
+                                                                   yIndexesBuff,
+                                                                   resultIndexesBuff);
+
+
+}
+
+/*
+ * Class:     org_nd4j_linalg_cpu_nativecpu_ops_NativeOps
+ * Method:    execPairwiseTransform
+ * Signature: (ILjava/nio/DoubleBuffer;Ljava/nio/IntBuffer;Ljava/nio/DoubleBuffer;Ljava/nio/IntBuffer;Ljava/nio/DoubleBuffer;Ljava/nio/IntBuffer;Ljava/nio/DoubleBuffer;I)V
+ */
+void Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execPairwiseTransform__ILjava_nio_DoubleBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_DoubleBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_DoubleBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_DoubleBuffer_2I(
+        JNIEnv *env, jobject jobject1, jint opNum, jobject dx, jobject xShapeInfo, jobject y,
+        jobject yShapeInfo, jobject result, jobject resultShapeInfo, jobject extraParams, jint n) {
+    double *xBuff = (double *) env->GetDirectBufferAddress(dx);
+    int *xShapeInfoBuff = (int *) env->GetDirectBufferAddress(xShapeInfo);
+    double *yBuff = (double *) env->GetDirectBufferAddress(y);
+    int *yShapeInfoBuff = (int *) env->GetDirectBufferAddress(yShapeInfo);
+    double *resultBuff = (double *) env->GetDirectBufferAddress(result);
+    int *resultShapeBuff = (int *) env->GetDirectBufferAddress(resultShapeInfo);
+    double *extraParamsBuff =  extraParams != NULL ? (double *) env->GetDirectBufferAddress(extraParams) : NULL;
+    DoubleNativeOpExecutioner::getInstance().execPairwiseTransform(opNum,
+                                                                   xBuff,
+                                                                   xShapeInfoBuff,
+                                                                   yBuff,
+                                                                   yShapeInfoBuff,
+                                                                   resultBuff,
+                                                                   resultShapeBuff,
+                                                                   extraParamsBuff,
+                                                                   n);
+
+}
+
+/*
+ * Class:     org_nd4j_linalg_cpu_nativecpu_ops_NativeOps
+ * Method:    execScalar
+ * Signature: (ILjava/nio/DoubleBuffer;Ljava/nio/IntBuffer;Ljava/nio/DoubleBuffer;Ljava/nio/IntBuffer;DLjava/nio/DoubleBuffer;I)V
+ */
+void Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execScalar__ILjava_nio_DoubleBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_DoubleBuffer_2Ljava_nio_IntBuffer_2DLjava_nio_DoubleBuffer_2I(
+        JNIEnv *env, jobject jobject1, jint opNum, jobject x, jobject xShapeInfo, jobject result,
+        jobject resultShapeInfo, jdouble scalar, jobject extraParams, jint n) {
+    double *xBuff = (double *) env->GetDirectBufferAddress(x);
+    int *xShapeInfoBuff = (int *) env->GetDirectBufferAddress(xShapeInfo);
+    double *resultBuff = (double *) env->GetDirectBufferAddress(result);
+    int *resultShapeBuff = (int *) env->GetDirectBufferAddress(resultShapeInfo);
+    double *extraParamsBuff =  extraParams != NULL ? (double *) env->GetDirectBufferAddress(extraParams) : NULL;
+    DoubleNativeOpExecutioner::getInstance().execScalar(opNum,
+                                                        xBuff,
+                                                        xShapeInfoBuff,
+                                                        resultBuff,
+                                                        resultShapeBuff,
+                                                        scalar,
+                                                        extraParamsBuff,
+                                                        n);
+
+}
+
+/*
+ * Class:     org_nd4j_linalg_cpu_nativecpu_ops_NativeOps
+ * Method:    execScalar
+ * Signature: (ILjava/nio/DoubleBuffer;Ljava/nio/IntBuffer;Ljava/nio/DoubleBuffer;Ljava/nio/IntBuffer;DLjava/nio/DoubleBuffer;ILjava/nio/IntBuffer;Ljava/nio/IntBuffer;)V
+ */
+void Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execScalar__ILjava_nio_DoubleBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_DoubleBuffer_2Ljava_nio_IntBuffer_2DLjava_nio_DoubleBuffer_2ILjava_nio_IntBuffer_2Ljava_nio_IntBuffer_2(
+        JNIEnv *env, jobject jobject1, jint opNum, jobject x, jobject xShapeInfo, jobject result,
+        jobject resultShapeInfo, jdouble scalar, jobject extraParams, jint n, jobject xIndexes, jobject resultIndexes) {
+
+    double *xBuff = (double *) env->GetDirectBufferAddress(x);
+    int *xShapeInfoBuff = (int *) env->GetDirectBufferAddress(xShapeInfo);
+    double *resultBuff = (double *) env->GetDirectBufferAddress(result);
+    int *resultShapeBuff = (int *) env->GetDirectBufferAddress(resultShapeInfo);
+    double *extraParamsBuff =  extraParams != NULL ? (double *) env->GetDirectBufferAddress(extraParams) : NULL;
+    int *xIndexesBuff = (int *) env->GetDirectBufferAddress(xIndexes);
+    int *resultIndexesBuff = (int *) env->GetDirectBufferAddress(resultIndexes);
+    DoubleNativeOpExecutioner::getInstance().execScalar(opNum,
+                                                        xBuff,
+                                                        xShapeInfoBuff,
+                                                        resultBuff,
+                                                        resultShapeBuff,
+                                                        scalar,
+                                                        extraParamsBuff,
+                                                        n,
+                                                        xIndexesBuff,
+                                                        resultIndexesBuff);
+
+}
+
+/*
+ * Class:     org_nd4j_linalg_cpu_nativecpu_ops_NativeOps
+ * Method:    execTransform
+ * Signature: (ILjava/nio/DoubleBuffer;Ljava/nio/IntBuffer;Ljava/nio/DoubleBuffer;Ljava/nio/IntBuffer;Ljava/nio/DoubleBuffer;I)V
+ */
+void Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execTransform__ILjava_nio_DoubleBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_DoubleBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_DoubleBuffer_2I(
+        JNIEnv *env, jobject jobject1, jint opNum, jobject dx, jobject xShapeInfo, jobject result,
+        jobject resultShapeInfo, jobject extraParams, jint n) {
+    double *xBuff = (double *) env->GetDirectBufferAddress(dx);
+    int *xShapeInfoBuff = (int *) env->GetDirectBufferAddress(xShapeInfo);
+    double *resultBuff = (double *) env->GetDirectBufferAddress(result);
+    int *resultShapeBuff = (int *) env->GetDirectBufferAddress(resultShapeInfo);
+    double *extraParamsBuff =  extraParams != NULL ? (double *) env->GetDirectBufferAddress(extraParams) : NULL;
+    DoubleNativeOpExecutioner::getInstance().execTransform(opNum,
+                                                           xBuff,
+                                                           xShapeInfoBuff,
+                                                           resultBuff,
+                                                           resultShapeBuff,
+                                                           extraParamsBuff,
+                                                           n);
+
+}
+
+/*
+ * Class:     org_nd4j_linalg_cpu_nativecpu_ops_NativeOps
+ * Method:    execTransform
+ * Signature: (ILjava/nio/DoubleBuffer;Ljava/nio/IntBuffer;Ljava/nio/DoubleBuffer;Ljava/nio/IntBuffer;Ljava/nio/DoubleBuffer;ILjava/nio/IntBuffer;Ljava/nio/IntBuffer;)V
+ */
+void Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execTransform__ILjava_nio_DoubleBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_DoubleBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_DoubleBuffer_2ILjava_nio_IntBuffer_2Ljava_nio_IntBuffer_2(
+        JNIEnv *env, jobject jobject1, jint opNum, jobject dx, jobject xShapeInfo, jobject result,
+        jobject resultShapeInfo, jobject extraParams, jint n, jobject xIndexes, jobject resultIndexes) {
+    double *xBuff = (double *) env->GetDirectBufferAddress(dx);
+    int *xShapeInfoBuff = (int *) env->GetDirectBufferAddress(xShapeInfo);
+    double *resultBuff = (double *) env->GetDirectBufferAddress(result);
+    int *resultShapeBuff = (int *) env->GetDirectBufferAddress(resultShapeInfo);
+    double *extraParamsBuff =  extraParams != NULL ? (double *) env->GetDirectBufferAddress(extraParams) : NULL;
+    int *xIndexesBuff = (int *) env->GetDirectBufferAddress(xIndexes);
+    int *resultIndexesBuff = (int *) env->GetDirectBufferAddress(resultIndexes);
+
+    DoubleNativeOpExecutioner::getInstance().execTransform(opNum,
+                                                           xBuff,
+                                                           xShapeInfoBuff,
+                                                           resultBuff,
+                                                           resultShapeBuff,
+                                                           extraParamsBuff,
+                                                           n,
+                                                           xIndexesBuff,
+                                                           resultIndexesBuff);
+
+}
+
+/*
+ * Class:     org_nd4j_linalg_cpu_nativecpu_ops_NativeOps
+ * Method:    execPairwiseTransform
+ * Signature: (ILjava/nio/FloatBuffer;Ljava/nio/IntBuffer;Ljava/nio/FloatBuffer;Ljava/nio/IntBuffer;Ljava/nio/FloatBuffer;Ljava/nio/FloatBuffer;Ljava/nio/FloatBuffer;ILjava/nio/IntBuffer;Ljava/nio/IntBuffer;Ljava/nio/IntBuffer;)V
+ */
+void Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execPairwiseTransform__ILjava_nio_FloatBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_FloatBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_FloatBuffer_2Ljava_nio_FloatBuffer_2Ljava_nio_FloatBuffer_2ILjava_nio_IntBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_IntBuffer_2(
+        JNIEnv *env, jobject jobject1, jint opNum, jobject dx, jobject xShapeInfo, jobject y,
+        jobject yShapeInfo, jobject result, jobject resultShapeInfo, jobject extraParams, jint n, jobject xIndexes,
+        jobject yIndexes, jobject resultIndexes) {
+    double *xBuff = (double *) env->GetDirectBufferAddress(dx);
+    int *xShapeInfoBuff = (int *) env->GetDirectBufferAddress(xShapeInfo);
+    double *yBuff = (double *) env->GetDirectBufferAddress(y);
+    int *yShapeInfoBuff = (int *) env->GetDirectBufferAddress(yShapeInfo);
+    double *resultBuff = (double *) env->GetDirectBufferAddress(result);
+    int *resultShapeBuff = (int *) env->GetDirectBufferAddress(resultShapeInfo);
+    double *extraParamsBuff =  extraParams != NULL ? (double *) env->GetDirectBufferAddress(extraParams) : NULL;
+    int *xIndexesBuff = (int *) env->GetDirectBufferAddress(xIndexes);
+    int *yIndexesBuff = (int *) env->GetDirectBufferAddress(yIndexes);
+    int *resultIndexesBuff = (int *) env->GetDirectBufferAddress(resultIndexes);
+    DoubleNativeOpExecutioner::getInstance().execPairwiseTransform(opNum,
+                                                                   xBuff,
+                                                                   xShapeInfoBuff,
+                                                                   yBuff,
+                                                                   yShapeInfoBuff,
+                                                                   resultBuff,
+                                                                   resultShapeBuff,
+                                                                   extraParamsBuff,
+                                                                   n,
+                                                                   xIndexesBuff,
+                                                                   yIndexesBuff,
+                                                                   resultIndexesBuff);
+
+}
+
+/*
+ * Class:     org_nd4j_linalg_cpu_nativecpu_ops_NativeOps
+ * Method:    execPairwiseTransform
+ * Signature: (ILjava/nio/FloatBuffer;Ljava/nio/IntBuffer;Ljava/nio/FloatBuffer;Ljava/nio/IntBuffer;Ljava/nio/FloatBuffer;Ljava/nio/IntBuffer;Ljava/nio/FloatBuffer;I)V
+ */
+void Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execPairwiseTransform__ILjava_nio_FloatBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_FloatBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_FloatBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_FloatBuffer_2I(
+        JNIEnv *env, jobject jobject1, jint opNum, jobject dx, jobject xShapeInfo, jobject y,
+        jobject yShapeInfo, jobject result, jobject resultShapeInfo, jobject extraParams, jint n) {
+    float *xBuff = (float *) env->GetDirectBufferAddress(dx);
+    int *xShapeInfoBuff = (int *) env->GetDirectBufferAddress(xShapeInfo);
+    float *yBuff = (float *) env->GetDirectBufferAddress(y);
+    int *yShapeInfoBuff = (int *) env->GetDirectBufferAddress(yShapeInfo);
+    float *resultBuff = (float *) env->GetDirectBufferAddress(result);
+    int *resultShapeBuff = (int *) env->GetDirectBufferAddress(resultShapeInfo);
+    float *extraParamsBuff =  extraParams != NULL ? (float *) env->GetDirectBufferAddress(extraParams) : NULL;
+    FloatNativeOpExecutioner::getInstance().execPairwiseTransform(opNum,
+                                                                  xBuff,
+                                                                  xShapeInfoBuff,
+                                                                  yBuff,
+                                                                  yShapeInfoBuff,
+                                                                  resultBuff,
+                                                                  resultShapeBuff,
+                                                                  extraParamsBuff,
+                                                                  n);
+
+
+}
+
+/*
+ * Class:     org_nd4j_linalg_cpu_nativecpu_ops_NativeOps
+ * Method:    execPairwiseTransform
+ * Signature: (ILjava/nio/DoubleBuffer;Ljava/nio/IntBuffer;Ljava/nio/DoubleBuffer;Ljava/nio/IntBuffer;Ljava/nio/DoubleBuffer;Ljava/nio/IntBuffer;Ljava/nio/DoubleBuffer;ILjava/nio/IntBuffer;Ljava/nio/IntBuffer;Ljava/nio/IntBuffer;)V
+ */
+void Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execPairwiseTransform__ILjava_nio_DoubleBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_DoubleBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_DoubleBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_DoubleBuffer_2ILjava_nio_IntBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_IntBuffer_2(
+        JNIEnv *env, jobject jobject1, jint opNum, jobject dx, jobject xShapeInfo, jobject y,
+        jobject yShapeInfo, jobject result, jobject resultShapeInfo, jobject extraParams, jint n, jobject xIndexes,
+        jobject yIndexes, jobject resultIndexes) {
+    float *xBuff = (float *) env->GetDirectBufferAddress(dx);
+    int *xShapeInfoBuff = (int *) env->GetDirectBufferAddress(xShapeInfo);
+    float *yBuff = (float *) env->GetDirectBufferAddress(y);
+    int *yShapeInfoBuff = (int *) env->GetDirectBufferAddress(yShapeInfo);
+    float *resultBuff = (float *) env->GetDirectBufferAddress(result);
+    int *resultShapeBuff = (int *) env->GetDirectBufferAddress(resultShapeInfo);
+    float *extraParamsBuff =  extraParams != NULL ? (float *) env->GetDirectBufferAddress(extraParams) : NULL;
+    int *xIndexesBuff = (int *) env->GetDirectBufferAddress(xIndexes);
+    int *yIndexesBuff = (int *) env->GetDirectBufferAddress(yIndexes);
+    int *resultIndexesBuff = (int *) env->GetDirectBufferAddress(resultIndexes);
+    FloatNativeOpExecutioner::getInstance().execPairwiseTransform(opNum,
+                                                                  xBuff,
+                                                                  xShapeInfoBuff,
+                                                                  yBuff,
+                                                                  yShapeInfoBuff,
+                                                                  resultBuff,
+                                                                  resultShapeBuff,
+                                                                  extraParamsBuff,
+                                                                  n,xIndexesBuff,
+                                                                  yIndexesBuff,
+                                                                  resultIndexesBuff);
+
+}
+
+/*
+ * Class:     org_nd4j_linalg_cpu_nativecpu_ops_NativeOps
+ * Method:    execPairwiseTransform
+ * Signature: (ILjava/nio/FloatBuffer;Ljava/nio/IntBuffer;Ljava/nio/FloatBuffer;Ljava/nio/IntBuffer;Ljava/nio/FloatBuffer;Ljava/nio/IntBuffer;Ljava/nio/FloatBuffer;ILjava/nio/IntBuffer;Ljava/nio/IntBuffer;Ljava/nio/IntBuffer;)V
+ */
+void Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execPairwiseTransform__ILjava_nio_FloatBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_FloatBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_FloatBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_FloatBuffer_2ILjava_nio_IntBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_IntBuffer_2(
+        JNIEnv *env, jobject jobject1, jint opNum, jobject dx, jobject xShapeInfo, jobject y,
+        jobject yShapeInfo, jobject result, jobject resultShapeInfo, jobject extraParams, jint n, jobject xIndexes,
+        jobject yIndexes, jobject resultIndexes) {
+    float *xBuff = (float *) env->GetDirectBufferAddress(dx);
+    int *xShapeInfoBuff = (int *) env->GetDirectBufferAddress(xShapeInfo);
+    float *yBuff = (float *) env->GetDirectBufferAddress(y);
+    int *yShapeInfoBuff = (int *) env->GetDirectBufferAddress(yShapeInfo);
+    float *resultBuff = (float *) env->GetDirectBufferAddress(result);
+    int *resultShapeBuff = (int *) env->GetDirectBufferAddress(resultShapeInfo);
+    float *extraParamsBuff =  extraParams != NULL ? (float *) env->GetDirectBufferAddress(extraParams) : NULL;
+    int *xIndexesBuff = (int *) env->GetDirectBufferAddress(xIndexes);
+    int *yIndexesBuff = (int *) env->GetDirectBufferAddress(yIndexes);
+    int *resultIndexesBuff = (int *) env->GetDirectBufferAddress(resultIndexes);
+    FloatNativeOpExecutioner::getInstance().execPairwiseTransform(opNum,
+                                                                  xBuff,
+                                                                  xShapeInfoBuff,
+                                                                  yBuff,
+                                                                  yShapeInfoBuff,
+                                                                  resultBuff,
+                                                                  resultShapeBuff,
+                                                                  extraParamsBuff,
+                                                                  n,
+                                                                  xIndexesBuff,
+                                                                  yIndexesBuff,
+                                                                  resultIndexesBuff);
+
+}
+
+/*
+ * Class:     org_nd4j_linalg_cpu_nativecpu_ops_NativeOps
+ * Method:    execScalar
+ * Signature: (ILjava/nio/FloatBuffer;Ljava/nio/IntBuffer;Ljava/nio/FloatBuffer;Ljava/nio/IntBuffer;DLjava/nio/FloatBuffer;I)V
+ */
+void Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execScalar__ILjava_nio_FloatBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_FloatBuffer_2Ljava_nio_IntBuffer_2DLjava_nio_FloatBuffer_2I(
+        JNIEnv *env, jobject jobject1, jint opNum, jobject x, jobject xShapeInfo, jobject result,
+        jobject resultShapeInfo, jdouble scalar, jobject extraParams, jint n) {
+    float *xBuff = (float *) env->GetDirectBufferAddress(x);
+    int *xShapeInfoBuff = (int *) env->GetDirectBufferAddress(xShapeInfo);
+    float *resultBuff = (float *) env->GetDirectBufferAddress(result);
+    int *resultShapeBuff = (int *) env->GetDirectBufferAddress(resultShapeInfo);
+    float *extraParamsBuff =  extraParams != NULL ? (float *) env->GetDirectBufferAddress(extraParams) : NULL;
+    FloatNativeOpExecutioner::getInstance().execScalar(opNum,
+                                                       xBuff,
+                                                       xShapeInfoBuff,
+                                                       resultBuff,
+                                                       resultShapeBuff,
+                                                       scalar,
+                                                       extraParamsBuff,
+                                                       n);
+
+
+}
+
+/*
+ * Class:     org_nd4j_linalg_cpu_nativecpu_ops_NativeOps
+ * Method:    execScalar
+ * Signature: (ILjava/nio/FloatBuffer;Ljava/nio/IntBuffer;Ljava/nio/FloatBuffer;Ljava/nio/IntBuffer;DLjava/nio/FloatBuffer;ILjava/nio/IntBuffer;Ljava/nio/IntBuffer;)V
+ */
+void Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execScalar__ILjava_nio_FloatBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_FloatBuffer_2Ljava_nio_IntBuffer_2DLjava_nio_FloatBuffer_2ILjava_nio_IntBuffer_2Ljava_nio_IntBuffer_2(
+        JNIEnv *env, jobject jobject1, jint opNum, jobject x, jobject xShapeInfo, jobject result,
+        jobject resultShapeInfo, jdouble scalar, jobject extraParams, jint n, jobject xIndexes, jobject resultIndexes) {
+    float *xBuff = (float *) env->GetDirectBufferAddress(x);
+    int *xShapeInfoBuff = (int *) env->GetDirectBufferAddress(xShapeInfo);
+    float *resultBuff = (float *) env->GetDirectBufferAddress(result);
+    int *resultShapeBuff = (int *) env->GetDirectBufferAddress(resultShapeInfo);
+    float *extraParamsBuff =  extraParams != NULL ? (float *) env->GetDirectBufferAddress(extraParams) : NULL;
+    int *xIndexesBuff = (int *) env->GetDirectBufferAddress(xIndexes);
+    int *resultIndexesBuff = (int *) env->GetDirectBufferAddress(resultIndexes);
+    FloatNativeOpExecutioner::getInstance().execScalar(opNum,
+                                                       xBuff,
+                                                       xShapeInfoBuff,
+                                                       resultBuff,
+                                                       resultShapeBuff,
+                                                       scalar,
+                                                       extraParamsBuff,
+                                                       n,
+                                                       xIndexesBuff,
+                                                       resultIndexesBuff);
+
+
+}
+
+/*
+ * Class:     org_nd4j_linalg_cpu_nativecpu_ops_NativeOps
+ * Method:    execTransform
+ * Signature: (ILjava/nio/FloatBuffer;Ljava/nio/IntBuffer;Ljava/nio/FloatBuffer;Ljava/nio/IntBuffer;Ljava/nio/FloatBuffer;I)V
+ */
+void Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execTransform__ILjava_nio_FloatBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_FloatBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_FloatBuffer_2I(
+        JNIEnv *env, jobject jobject1, jint opNum, jobject dx, jobject xShapeInfo, jobject result,
+        jobject resultShapeInfo, jobject extraParams, jint n) {
+    float *xBuff = (float *) env->GetDirectBufferAddress(dx);
+    int *xShapeInfoBuff = (int *) env->GetDirectBufferAddress(xShapeInfo);
+    float *resultBuff = (float *) env->GetDirectBufferAddress(result);
+    int *resultShapeBuff = (int *) env->GetDirectBufferAddress(resultShapeInfo);
+    float *extraParamsBuff =  extraParams != NULL ? (float *) env->GetDirectBufferAddress(extraParams) : NULL;
+    FloatNativeOpExecutioner::getInstance().execTransform(opNum,
+                                                          xBuff,
+                                                          xShapeInfoBuff,
+                                                          resultBuff,
+                                                          resultShapeBuff,
+                                                          extraParamsBuff,
+                                                          n);
+
+}
+
+/*
+ * Class:     org_nd4j_linalg_cpu_nativecpu_ops_NativeOps
+ * Method:    execTransform
+ * Signature: (ILjava/nio/FloatBuffer;Ljava/nio/IntBuffer;Ljava/nio/FloatBuffer;Ljava/nio/IntBuffer;Ljava/nio/FloatBuffer;ILjava/nio/IntBuffer;Ljava/nio/IntBuffer;)V
+ */
+void Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execTransform__ILjava_nio_FloatBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_FloatBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_FloatBuffer_2ILjava_nio_IntBuffer_2Ljava_nio_IntBuffer_2(
+        JNIEnv *env, jobject jobject1, jint opNum, jobject dx, jobject xShapeInfo, jobject result,
+        jobject resultShapeInfo, jobject extraParams, jint n, jobject xIndexes, jobject resultIndexes) {
+    float *xBuff = (float *) env->GetDirectBufferAddress(dx);
+    int *xShapeInfoBuff = (int *) env->GetDirectBufferAddress(xShapeInfo);
+    float *resultBuff = (float *) env->GetDirectBufferAddress(result);
+    int *resultShapeBuff = (int *) env->GetDirectBufferAddress(resultShapeInfo);
+    float *extraParamsBuff =  extraParams != NULL ? (float *) env->GetDirectBufferAddress(extraParams) : NULL;
+    int *xIndexesBuff = (int *) env->GetDirectBufferAddress(xIndexes);
+    int *resultIndexesBuff = (int *) env->GetDirectBufferAddress(resultIndexes);
+
+    FloatNativeOpExecutioner::getInstance().execTransform(opNum,
+                                                          xBuff,
+                                                          xShapeInfoBuff,
+                                                          resultBuff,
+                                                          resultShapeBuff,
+                                                          extraParamsBuff,
+                                                          n,
+                                                          xIndexesBuff,
+                                                          resultIndexesBuff);
 
 }
 

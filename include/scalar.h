@@ -168,8 +168,15 @@ namespace functions {
          * neccssary
          * @param n the number of elements to loop over
          */
-            virtual void transform(T *x, int *xShapeInfo, T *result, int *resultShapeInfo,
-                                   T scalar, T *extraParams, int n,int *indexes,int *resultIndexes) {
+             void transform(T *x,
+                            int *xShapeInfo,
+                            T *result,
+                            int *resultShapeInfo,
+                            T scalar,
+                            T *extraParams,
+                            int n,
+                            int *indexes,
+                            int *resultIndexes) {
 #pragma omp simd
                 for (int i = 0; i < n; i++) {
                     result[resultIndexes[i]] = op(x[indexes[i]], scalar,extraParams);
@@ -188,7 +195,7 @@ namespace functions {
          * neccssary
          * @param n the number of elements to loop over
          */
-            virtual void transform(T *x, int *xShapeInfo, T *result, int *resultShapeInfo,
+             void transform(T *x, int *xShapeInfo, T *result, int *resultShapeInfo,
                                    T scalar, T *extraParams, int n,int *indexes) {
                 transform(x,
                           xShapeInfo,
@@ -213,7 +220,7 @@ namespace functions {
          * neccssary
          * @param n the number of elements to loop over
          */
-            virtual void transform(T *x, int *xShapeInfo, T *result, int *resultShapeInfo,
+             void transform(T *x, int *xShapeInfo, T *result, int *resultShapeInfo,
                                    T scalar, T *extraParams, int n) {
 
                 int *xShape = shape::shapeOf(xShapeInfo);
@@ -265,7 +272,7 @@ namespace functions {
              * neccssary
              * @param n the number of elements to loop over
              */
-            virtual void transform(T *x, int xStride, T *result, int resultStride,
+             void transform(T *x, int xStride, T *result, int resultStride,
                                    T scalar, T *extraParams, int n) {
                 if (xStride == 1 && resultStride == 1) {
 #pragma omp simd

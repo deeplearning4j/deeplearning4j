@@ -2400,7 +2400,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
                 info.tensorShapeLength - dimensionLength) <= 1;
         int tensorShapeRoughlyEquals = dimensionLength == 1 && val;
         if ((tensorShapeProd == ret2Length && tensorShapeRoughlyEquals == 1)
-            || dimensionLength == info.tensorShapeLength && dimensionLength) {
+            || (dimensionLength == info.tensorShapeLength && dimensionLength > 0)) {
             return retOffset;
         }
 

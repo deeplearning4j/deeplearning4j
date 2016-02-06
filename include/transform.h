@@ -233,7 +233,7 @@ namespace functions {
                         int *resultIdx = shape::ind2sub(resultRank, resultShape, i);
                         int xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
                         int resultOffset2 = shape::getOffset(resultOffset, resultShape, resultStride, resultIdx, resultRank);
-                        result[resultOffset] = op(dx[xOffset], extraParams);
+                        result[resultOffset2] = op(dx[xOffset2], extraParams);
                         free(xIdx);
                         free(resultIdx);
                     }

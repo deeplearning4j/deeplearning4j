@@ -41,6 +41,22 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execPair
 
 /*
  * Class:     org_nd4j_linalg_cpu_nativecpu_ops_NativeOps
+ * Method:    execPairwiseTransform
+ * Signature: (ILjava/nio/DoubleBuffer;Ljava/nio/IntBuffer;Ljava/nio/DoubleBuffer;Ljava/nio/IntBuffer;Ljava/nio/DoubleBuffer;Ljava/nio/DoubleBuffer;Ljava/nio/DoubleBuffer;ILjava/nio/IntBuffer;Ljava/nio/IntBuffer;Ljava/nio/IntBuffer;)V
+ */
+JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execPairwiseTransform__ILjava_nio_DoubleBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_DoubleBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_DoubleBuffer_2Ljava_nio_DoubleBuffer_2Ljava_nio_DoubleBuffer_2ILjava_nio_IntBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_IntBuffer_2
+  (JNIEnv *, jobject, jint, jobject, jobject, jobject, jobject, jobject, jobject, jobject, jint, jobject, jobject, jobject);
+
+/*
+ * Class:     org_nd4j_linalg_cpu_nativecpu_ops_NativeOps
+ * Method:    execPairwiseTransform
+ * Signature: (ILjava/nio/DoubleBuffer;Ljava/nio/IntBuffer;Ljava/nio/DoubleBuffer;Ljava/nio/IntBuffer;Ljava/nio/DoubleBuffer;Ljava/nio/IntBuffer;Ljava/nio/DoubleBuffer;I)V
+ */
+JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execPairwiseTransform__ILjava_nio_DoubleBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_DoubleBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_DoubleBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_DoubleBuffer_2I
+  (JNIEnv *, jobject, jint, jobject, jobject, jobject, jobject, jobject, jobject, jobject, jint);
+
+/*
+ * Class:     org_nd4j_linalg_cpu_nativecpu_ops_NativeOps
  * Method:    execReduce
  * Signature: (ILjava/nio/DoubleBuffer;Ljava/nio/IntBuffer;Ljava/nio/DoubleBuffer;Ljava/nio/DoubleBuffer;Ljava/nio/IntBuffer;)V
  */
@@ -90,10 +106,26 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execRedu
 /*
  * Class:     org_nd4j_linalg_cpu_nativecpu_ops_NativeOps
  * Method:    execScalar
- * Signature: (ILjava/nio/DoubleBuffer;ILjava/nio/DoubleBuffer;IDLjava/nio/DoubleBuffer;I)D
+ * Signature: (ILjava/nio/DoubleBuffer;ILjava/nio/DoubleBuffer;IDLjava/nio/DoubleBuffer;I)V
  */
-JNIEXPORT jdouble JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execScalar__ILjava_nio_DoubleBuffer_2ILjava_nio_DoubleBuffer_2IDLjava_nio_DoubleBuffer_2I
+JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execScalar__ILjava_nio_DoubleBuffer_2ILjava_nio_DoubleBuffer_2IDLjava_nio_DoubleBuffer_2I
   (JNIEnv *, jobject, jint, jobject, jint, jobject, jint, jdouble, jobject, jint);
+
+/*
+ * Class:     org_nd4j_linalg_cpu_nativecpu_ops_NativeOps
+ * Method:    execScalar
+ * Signature: (ILjava/nio/DoubleBuffer;Ljava/nio/IntBuffer;Ljava/nio/DoubleBuffer;Ljava/nio/IntBuffer;DLjava/nio/DoubleBuffer;I)V
+ */
+JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execScalar__ILjava_nio_DoubleBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_DoubleBuffer_2Ljava_nio_IntBuffer_2DLjava_nio_DoubleBuffer_2I
+  (JNIEnv *, jobject, jint, jobject, jobject, jobject, jobject, jdouble, jobject, jint);
+
+/*
+ * Class:     org_nd4j_linalg_cpu_nativecpu_ops_NativeOps
+ * Method:    execScalar
+ * Signature: (ILjava/nio/DoubleBuffer;Ljava/nio/IntBuffer;Ljava/nio/DoubleBuffer;Ljava/nio/IntBuffer;DLjava/nio/DoubleBuffer;ILjava/nio/IntBuffer;Ljava/nio/IntBuffer;)V
+ */
+JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execScalar__ILjava_nio_DoubleBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_DoubleBuffer_2Ljava_nio_IntBuffer_2DLjava_nio_DoubleBuffer_2ILjava_nio_IntBuffer_2Ljava_nio_IntBuffer_2
+  (JNIEnv *, jobject, jint, jobject, jobject, jobject, jobject, jdouble, jobject, jint, jobject, jobject);
 
 /*
  * Class:     org_nd4j_linalg_cpu_nativecpu_ops_NativeOps
@@ -129,6 +161,22 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execTran
 
 /*
  * Class:     org_nd4j_linalg_cpu_nativecpu_ops_NativeOps
+ * Method:    execTransform
+ * Signature: (ILjava/nio/DoubleBuffer;Ljava/nio/IntBuffer;Ljava/nio/DoubleBuffer;Ljava/nio/IntBuffer;Ljava/nio/DoubleBuffer;I)V
+ */
+JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execTransform__ILjava_nio_DoubleBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_DoubleBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_DoubleBuffer_2I
+  (JNIEnv *, jobject, jint, jobject, jobject, jobject, jobject, jobject, jint);
+
+/*
+ * Class:     org_nd4j_linalg_cpu_nativecpu_ops_NativeOps
+ * Method:    execTransform
+ * Signature: (ILjava/nio/DoubleBuffer;Ljava/nio/IntBuffer;Ljava/nio/DoubleBuffer;Ljava/nio/IntBuffer;Ljava/nio/DoubleBuffer;ILjava/nio/IntBuffer;Ljava/nio/IntBuffer;)V
+ */
+JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execTransform__ILjava_nio_DoubleBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_DoubleBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_DoubleBuffer_2ILjava_nio_IntBuffer_2Ljava_nio_IntBuffer_2
+  (JNIEnv *, jobject, jint, jobject, jobject, jobject, jobject, jobject, jint, jobject, jobject);
+
+/*
+ * Class:     org_nd4j_linalg_cpu_nativecpu_ops_NativeOps
  * Method:    execIndexReduceScalar
  * Signature: (ILjava/nio/FloatBuffer;Ljava/nio/IntBuffer;Ljava/nio/FloatBuffer;)F
  */
@@ -158,6 +206,38 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execBroa
  */
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execPairwiseTransform__ILjava_nio_FloatBuffer_2ILjava_nio_FloatBuffer_2ILjava_nio_FloatBuffer_2ILjava_nio_FloatBuffer_2I
   (JNIEnv *, jobject, jint, jobject, jint, jobject, jint, jobject, jint, jobject, jint);
+
+/*
+ * Class:     org_nd4j_linalg_cpu_nativecpu_ops_NativeOps
+ * Method:    execPairwiseTransform
+ * Signature: (ILjava/nio/FloatBuffer;Ljava/nio/IntBuffer;Ljava/nio/FloatBuffer;Ljava/nio/IntBuffer;Ljava/nio/FloatBuffer;Ljava/nio/FloatBuffer;Ljava/nio/FloatBuffer;ILjava/nio/IntBuffer;Ljava/nio/IntBuffer;Ljava/nio/IntBuffer;)V
+ */
+JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execPairwiseTransform__ILjava_nio_FloatBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_FloatBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_FloatBuffer_2Ljava_nio_FloatBuffer_2Ljava_nio_FloatBuffer_2ILjava_nio_IntBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_IntBuffer_2
+  (JNIEnv *, jobject, jint, jobject, jobject, jobject, jobject, jobject, jobject, jobject, jint, jobject, jobject, jobject);
+
+/*
+ * Class:     org_nd4j_linalg_cpu_nativecpu_ops_NativeOps
+ * Method:    execPairwiseTransform
+ * Signature: (ILjava/nio/FloatBuffer;Ljava/nio/IntBuffer;Ljava/nio/FloatBuffer;Ljava/nio/IntBuffer;Ljava/nio/FloatBuffer;Ljava/nio/IntBuffer;Ljava/nio/FloatBuffer;I)V
+ */
+JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execPairwiseTransform__ILjava_nio_FloatBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_FloatBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_FloatBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_FloatBuffer_2I
+  (JNIEnv *, jobject, jint, jobject, jobject, jobject, jobject, jobject, jobject, jobject, jint);
+
+/*
+ * Class:     org_nd4j_linalg_cpu_nativecpu_ops_NativeOps
+ * Method:    execPairwiseTransform
+ * Signature: (ILjava/nio/DoubleBuffer;Ljava/nio/IntBuffer;Ljava/nio/DoubleBuffer;Ljava/nio/IntBuffer;Ljava/nio/DoubleBuffer;Ljava/nio/IntBuffer;Ljava/nio/DoubleBuffer;ILjava/nio/IntBuffer;Ljava/nio/IntBuffer;Ljava/nio/IntBuffer;)V
+ */
+JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execPairwiseTransform__ILjava_nio_DoubleBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_DoubleBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_DoubleBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_DoubleBuffer_2ILjava_nio_IntBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_IntBuffer_2
+  (JNIEnv *, jobject, jint, jobject, jobject, jobject, jobject, jobject, jobject, jobject, jint, jobject, jobject, jobject);
+
+/*
+ * Class:     org_nd4j_linalg_cpu_nativecpu_ops_NativeOps
+ * Method:    execPairwiseTransform
+ * Signature: (ILjava/nio/FloatBuffer;Ljava/nio/IntBuffer;Ljava/nio/FloatBuffer;Ljava/nio/IntBuffer;Ljava/nio/FloatBuffer;Ljava/nio/IntBuffer;Ljava/nio/FloatBuffer;ILjava/nio/IntBuffer;Ljava/nio/IntBuffer;Ljava/nio/IntBuffer;)V
+ */
+JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execPairwiseTransform__ILjava_nio_FloatBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_FloatBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_FloatBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_FloatBuffer_2ILjava_nio_IntBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_IntBuffer_2
+  (JNIEnv *, jobject, jint, jobject, jobject, jobject, jobject, jobject, jobject, jobject, jint, jobject, jobject, jobject);
 
 /*
  * Class:     org_nd4j_linalg_cpu_nativecpu_ops_NativeOps
@@ -202,10 +282,26 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execRedu
 /*
  * Class:     org_nd4j_linalg_cpu_nativecpu_ops_NativeOps
  * Method:    execScalar
- * Signature: (ILjava/nio/FloatBuffer;ILjava/nio/FloatBuffer;IFLjava/nio/FloatBuffer;I)F
+ * Signature: (ILjava/nio/FloatBuffer;ILjava/nio/FloatBuffer;IFLjava/nio/FloatBuffer;I)V
  */
-JNIEXPORT jfloat JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execScalar__ILjava_nio_FloatBuffer_2ILjava_nio_FloatBuffer_2IFLjava_nio_FloatBuffer_2I
+JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execScalar__ILjava_nio_FloatBuffer_2ILjava_nio_FloatBuffer_2IFLjava_nio_FloatBuffer_2I
   (JNIEnv *, jobject, jint, jobject, jint, jobject, jint, jfloat, jobject, jint);
+
+/*
+ * Class:     org_nd4j_linalg_cpu_nativecpu_ops_NativeOps
+ * Method:    execScalar
+ * Signature: (ILjava/nio/FloatBuffer;Ljava/nio/IntBuffer;Ljava/nio/FloatBuffer;Ljava/nio/IntBuffer;DLjava/nio/FloatBuffer;I)V
+ */
+JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execScalar__ILjava_nio_FloatBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_FloatBuffer_2Ljava_nio_IntBuffer_2DLjava_nio_FloatBuffer_2I
+  (JNIEnv *, jobject, jint, jobject, jobject, jobject, jobject, jdouble, jobject, jint);
+
+/*
+ * Class:     org_nd4j_linalg_cpu_nativecpu_ops_NativeOps
+ * Method:    execScalar
+ * Signature: (ILjava/nio/FloatBuffer;Ljava/nio/IntBuffer;Ljava/nio/FloatBuffer;Ljava/nio/IntBuffer;DLjava/nio/FloatBuffer;ILjava/nio/IntBuffer;Ljava/nio/IntBuffer;)V
+ */
+JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execScalar__ILjava_nio_FloatBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_FloatBuffer_2Ljava_nio_IntBuffer_2DLjava_nio_FloatBuffer_2ILjava_nio_IntBuffer_2Ljava_nio_IntBuffer_2
+  (JNIEnv *, jobject, jint, jobject, jobject, jobject, jobject, jdouble, jobject, jint, jobject, jobject);
 
 /*
  * Class:     org_nd4j_linalg_cpu_nativecpu_ops_NativeOps
@@ -238,6 +334,22 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execSumm
  */
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execTransform__ILjava_nio_FloatBuffer_2ILjava_nio_FloatBuffer_2ILjava_nio_FloatBuffer_2I
   (JNIEnv *, jobject, jint, jobject, jint, jobject, jint, jobject, jint);
+
+/*
+ * Class:     org_nd4j_linalg_cpu_nativecpu_ops_NativeOps
+ * Method:    execTransform
+ * Signature: (ILjava/nio/FloatBuffer;Ljava/nio/IntBuffer;Ljava/nio/FloatBuffer;Ljava/nio/IntBuffer;Ljava/nio/FloatBuffer;I)V
+ */
+JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execTransform__ILjava_nio_FloatBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_FloatBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_FloatBuffer_2I
+  (JNIEnv *, jobject, jint, jobject, jobject, jobject, jobject, jobject, jint);
+
+/*
+ * Class:     org_nd4j_linalg_cpu_nativecpu_ops_NativeOps
+ * Method:    execTransform
+ * Signature: (ILjava/nio/FloatBuffer;Ljava/nio/IntBuffer;Ljava/nio/FloatBuffer;Ljava/nio/IntBuffer;Ljava/nio/FloatBuffer;ILjava/nio/IntBuffer;Ljava/nio/IntBuffer;)V
+ */
+JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execTransform__ILjava_nio_FloatBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_FloatBuffer_2Ljava_nio_IntBuffer_2Ljava_nio_FloatBuffer_2ILjava_nio_IntBuffer_2Ljava_nio_IntBuffer_2
+  (JNIEnv *, jobject, jint, jobject, jobject, jobject, jobject, jobject, jint, jobject, jobject);
 
 #ifdef __cplusplus
 }
