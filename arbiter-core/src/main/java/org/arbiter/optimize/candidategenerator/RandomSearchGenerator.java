@@ -18,23 +18,29 @@
 package org.arbiter.optimize.candidategenerator;
 
 import org.arbiter.optimize.api.Candidate;
-import org.arbiter.optimize.api.CandidateGenerator;
 import org.arbiter.optimize.api.ParameterSpace;
-import org.arbiter.util.CollectionUtils;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-
+/**RandomSearchGenerator: generates candidates at random.<br>
+ * Note: if a probability distribution is provided for continuous hyperparameters, this will be taken into account
+ * when generating candidates. This allows the search to be weighted more towards certain values according to a probability
+ * density. For example: generate samples for learning rate according to log uniform distribution
+ * @param <T> Type of candidates to generate
+ * @author Alex Black
+ */
 public class RandomSearchGenerator<T> extends BaseCandidateGenerator<T> {
-
-
 
     public RandomSearchGenerator( ParameterSpace<T> parameterSpace ){
         super(parameterSpace);
+
+        initialize();
     }
 
 
+    @Override
+    public boolean hasMoreCandidates() {
+        return true;
+    }
 
     @Override
     public Candidate<T> getCandidate() {
@@ -46,6 +52,6 @@ public class RandomSearchGenerator<T> extends BaseCandidateGenerator<T> {
 
     @Override
     public String toString(){
-        return "RandomSearchCandidateGenerator()";
+        return "RandomSearchGenerator()";
     }
 }

@@ -30,7 +30,7 @@ public class TestSetLossScoreFunction implements ScoreFunction<MultiLayerNetwork
     private final boolean average;
 
     public TestSetLossScoreFunction(){
-        this(false);
+        this(true);
     }
 
     public TestSetLossScoreFunction(boolean average){

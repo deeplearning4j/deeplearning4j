@@ -138,7 +138,7 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
             }
 
             //Add additional tasks
-            while (queuedFutures.size() < executor.maxConcurrentTasks()) {
+            while (config.getCandidateGenerator().hasMoreCandidates() && queuedFutures.size() < executor.maxConcurrentTasks()) {
                 Candidate<C> candidate = config.getCandidateGenerator().getCandidate();
                 ListenableFuture<OptimizationResult<C, M, A>> f = executor.execute(candidate, config.getDataProvider(), config.getScoreFunction());
                 f.addListener(new OnCompletionListener(f), futureListenerExecutor);

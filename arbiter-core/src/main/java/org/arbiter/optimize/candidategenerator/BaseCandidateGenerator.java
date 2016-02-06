@@ -23,7 +23,10 @@ import org.arbiter.util.CollectionUtils;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-
+/** BaseCandidateGenerator: abstract class upon which {@link RandomSearchGenerator} and {@link GridSearchCandidateGenerator}
+ * are built.
+ * @param <T> Type of candidates to generate
+ */
 public abstract class BaseCandidateGenerator<T> implements CandidateGenerator<T> {
 
     protected ParameterSpace<T> parameterSpace;

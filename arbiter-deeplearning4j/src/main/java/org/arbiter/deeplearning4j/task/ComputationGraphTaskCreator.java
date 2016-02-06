@@ -132,18 +132,16 @@ public class ComputationGraphTaskCreator<A> implements TaskCreator<GraphConfigur
             }
 
             Double score = null;
-            if( esConfig != null && esResult.getTerminationReason() != EarlyStoppingResult.TerminationReason.Error ) {
-                if(net == null){
-                    dl4jListener.postReport(Status.Complete, esResult,
-                            new RenderableComponentString("No best model available; cannot calculate model score"));
-                } else {
-                    try {
-                        score = scoreFunction.score(net, dataProvider, candidate.getDataParameters());
-                    } catch (Exception e) {
-                        dl4jListener.postReport(Status.Failed, esResult,
-                                new RenderableComponentString("Failed during score calculation stage\n"),
-                                new RenderableComponentString(ExceptionUtils.getFullStackTrace(e)));
-                    }
+            if(net == null){
+                dl4jListener.postReport(Status.Complete, esResult,
+                        new RenderableComponentString("No best model available; cannot calculate model score"));
+            } else {
+                try {
+                    score = scoreFunction.score(net, dataProvider, candidate.getDataParameters());
+                } catch (Exception e) {
+                    dl4jListener.postReport(Status.Failed, esResult,
+                            new RenderableComponentString("Failed during score calculation stage\n"),
+                            new RenderableComponentString(ExceptionUtils.getFullStackTrace(e)));
                 }
             }
 

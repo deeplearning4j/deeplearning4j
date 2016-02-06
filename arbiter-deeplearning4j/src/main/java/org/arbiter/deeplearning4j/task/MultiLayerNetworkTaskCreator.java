@@ -62,7 +62,7 @@ public class MultiLayerNetworkTaskCreator<A> implements TaskCreator<DL4JConfigur
         private ScoreFunction<MultiLayerNetwork,DataSetIterator> scoreFunction;
         private ModelEvaluator<MultiLayerNetwork,DataSetIterator,A> modelEvaluator;
 
-        private BaseUIStatusReportingListener dl4jListener;
+        private BaseUIStatusReportingListener<MultiLayerNetwork> dl4jListener;
 
         public DL4JLearningTask(Candidate<DL4JConfiguration> candidate, DataProvider<DataSetIterator> dataProvider, ScoreFunction<MultiLayerNetwork, DataSetIterator> scoreFunction, ModelEvaluator<MultiLayerNetwork, DataSetIterator, A> modelEvaluator, UICandidateStatusListener listener) {
             this.candidate = candidate;
@@ -132,18 +132,16 @@ public class MultiLayerNetworkTaskCreator<A> implements TaskCreator<DL4JConfigur
             }
 
             Double score = null;
-            if( esConfig != null && esResult.getTerminationReason() != EarlyStoppingResult.TerminationReason.Error ) {
-                if(net == null){
-                    dl4jListener.postReport(Status.Complete, esResult,
-                            new RenderableComponentString("No best model available; cannot calculate model score"));
-                } else {
-                    try {
-                        score = scoreFunction.score(net, dataProvider, candidate.getDataParameters());
-                    } catch (Exception e) {
-                        dl4jListener.postReport(Status.Failed, esResult,
-                                new RenderableComponentString("Failed during score calculation stage\n"),
-                                new RenderableComponentString(ExceptionUtils.getFullStackTrace(e)));
-                    }
+            if(net == null){
+                dl4jListener.postReport(Status.Complete, esResult,
+                        new RenderableComponentString("No best model available; cannot calculate model score"));
+            } else {
+                try {
+                    score = scoreFunction.score(net, dataProvider, candidate.getDataParameters());
+                } catch (Exception e) {
+                    dl4jListener.postReport(Status.Failed, esResult,
+                            new RenderableComponentString("Failed during score calculation stage\n"),
+                            new RenderableComponentString(ExceptionUtils.getFullStackTrace(e)));
                 }
             }
 

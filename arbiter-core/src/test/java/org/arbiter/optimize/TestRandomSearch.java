@@ -27,6 +27,7 @@ import org.arbiter.optimize.config.OptimizationConfiguration;
 import org.arbiter.optimize.executor.CandidateExecutor;
 import org.arbiter.optimize.executor.local.LocalCandidateExecutor;
 import org.arbiter.optimize.candidategenerator.RandomSearchGenerator;
+import org.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
 import org.arbiter.optimize.runner.OptimizationRunner;
 import org.arbiter.optimize.runner.Status;
 import org.arbiter.optimize.runner.listener.candidate.UICandidateStatusListener;
@@ -40,9 +41,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Callable;
 
 /**
@@ -56,11 +55,7 @@ public class TestRandomSearch {
     @Ignore
     public void test() throws Exception {
 
-        //Define hyperparameter space:
-
-
         //Define configuration:
-
         CandidateGenerator<BraninConfig> candidateGenerator = new RandomSearchGenerator<>(new BraninSpace());
         OptimizationConfiguration<BraninConfig, BraninConfig, Void, Void> configuration =
                 new OptimizationConfiguration.Builder<BraninConfig, BraninConfig, Void, Void >()
@@ -87,13 +82,16 @@ public class TestRandomSearch {
         System.out.println("----- Complete -----");
     }
 
-    private static class BraninSpace implements ParameterSpace<BraninConfig>{
+    public static class BraninSpace implements ParameterSpace<BraninConfig>{
         private int[] indices;
+        private ParameterSpace<Double> first = new ContinuousParameterSpace(-5,10);
+        private ParameterSpace<Double> second = new ContinuousParameterSpace(0,15);
 
         @Override
         public BraninConfig getValue(double[] parameterValues) {
-            if(parameterValues == null || parameterValues.length != 2) throw new IllegalArgumentException("Invalid input: expect parameters of length 2");
-            return new BraninConfig(15.0*parameterValues[indices[0]]-5, 15*parameterValues[indices[1]]);    //-5 to +10 and 0 to 15
+            double f = first.getValue(parameterValues);
+            double s = second.getValue(parameterValues);
+            return new BraninConfig(f,s);   //-5 to +10 and 0 to 15
         }
 
         @Override
@@ -103,27 +101,30 @@ public class TestRandomSearch {
 
         @Override
         public List<ParameterSpace> collectLeaves() {
-            return Collections.singletonList((ParameterSpace)this);
+            List<ParameterSpace> list = new ArrayList<>();
+            list.addAll(first.collectLeaves());
+            list.addAll(second.collectLeaves());
+            return list;
         }
 
         @Override
         public boolean isLeaf() {
-            return true;
+            return false;
         }
 
         @Override
         public void setIndices(int... indices) {
-            this.indices = indices;
+            throw new UnsupportedOperationException();
         }
     }
 
     @AllArgsConstructor @Data
-    private static class BraninConfig {
+    public static class BraninConfig {
         private double x1;
         private double x2;
     }
 
-    private static class BraninScoreFunction implements ScoreFunction<BraninConfig,Void>{
+    public static class BraninScoreFunction implements ScoreFunction<BraninConfig,Void>{
         private static final double a = 1.0;
         private static final double b = 5.1 / (4.0 * Math.PI * Math.PI );
         private static final double c = 5.0 / Math.PI;
@@ -140,7 +141,7 @@ public class TestRandomSearch {
         }
     }
 
-    private static class BraninTaskCreator implements TaskCreator<BraninConfig,BraninConfig,Void,Void>{
+    public static class BraninTaskCreator implements TaskCreator<BraninConfig,BraninConfig,Void,Void>{
         @Override
         public Callable<OptimizationResult<BraninConfig, BraninConfig,Void>> create(final Candidate<BraninConfig> candidate,
                                                                                     DataProvider<Void> dataProvider, final ScoreFunction<BraninConfig,Void> scoreFunction,
