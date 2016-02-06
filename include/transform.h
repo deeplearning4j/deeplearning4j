@@ -74,16 +74,21 @@ namespace functions {
                 int xRank = shape::rank(xShapeInfo);
                 int resultRank = shape::rank(resultShapeInfo);
 
+                int xOffset = shape::offset(xShapeInfo);
+                int resultBaseOffset = shape::offset(resultShapeInfo);
+
 #pragma omp simd
                 for (int i = 0; i < n; i++) {
                     int *xIdx = shape::ind2sub(xRank, xShape, i);
                     int *resultIdx = shape::ind2sub(resultRank, resultShape, i);
-                    int xOffset = shape::getOffset(0, xShape, xStride, xIdx, xRank);
-                    int resultOffset = shape::getOffset(0, resultShape, resultStride, resultIdx, resultRank);
+                    int xOffset = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
+                    int resultOffset = shape::getOffset(resultBaseOffset, resultShape, resultStride, resultIdx, resultRank);
                     result[resultOffset] = op(dx[xOffset], extraParams);
                 }
 
             }
+
+
             /**
              * CPU execution
              * @param dx the input
@@ -102,7 +107,10 @@ namespace functions {
                         result[i] = op(dx[i], extraParams);
                     }
 
-                } else {
+                }
+
+
+                else {
 #pragma omp simd
                     for (int i = 0; i < n; i++) {
                         result[i * resultStride] = op(dx[i * resultStride],

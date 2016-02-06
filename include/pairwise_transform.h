@@ -143,15 +143,19 @@ namespace functions {
                 int yRank = shape::rank(yShapeBuffer);
                 int resultRank = shape::rank(resultShapeBuffer);
 
+                int xOffset = shape::offset(xShapeBuffer);
+                int yOffset = shape::offset(yShapeBuffer);
+                int resultOffset = shape::offset(resultShapeBuffer);
+
 #pragma omp simd
                 for (int i = 0; i < n; i++) {
                     int *xIdx = shape::ind2sub(xRank, xShape, i);
                     int *yIdx = shape::ind2sub(yRank, yShape, i);
                     int *resultIdx = shape::ind2sub(resultRank, resultShape, i);
 
-                    int xOffset = shape::getOffset(0, xShape, xStride, xIdx, xRank);
-                    int yOffset = shape::getOffset(0, yShape, yStride, yIdx, yRank);
-                    int resultOffset = shape::getOffset(0, resultShape, resultStride, resultIdx, resultRank);
+                    int xOffset = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
+                    int yOffset = shape::getOffset(yOffset, yShape, yStride, yIdx, yRank);
+                    int resultOffset = shape::getOffset(resultOffset, resultShape, resultStride, resultIdx, resultRank);
                     result[resultOffset] = op(dx[xOffset],y[yOffset], extraParams);
                 }
 
