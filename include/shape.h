@@ -1044,19 +1044,14 @@ namespace shape {
         return ind2sub(rank,shape, index,shape::prod(shape,rank));
     }
 
-
-
-
-
-/**
- * Convert a linear index to
- * the equivalent nd index
- * @param shape the shape of the dimensions
- * @param index the index to map
- * @param numIndices the number of total indices (typically prod of shape(
- * @return the mapped indexes along each dimension
- */
-
+    /**
+     * Convert a linear index to
+     * the equivalent nd index
+     * @param shape the shape of the dimensions
+     * @param index the index to map
+     * @param numIndices the number of total indices (typically prod of shape(
+     * @return the mapped indexes along each dimension
+     */
 #ifdef __CUDACC__
     __host__ __device__
 #endif
@@ -1072,24 +1067,33 @@ namespace shape {
         return ret;
     }
 
+    /**
+     * Convert a linear index to
+     * the equivalent nd index.
+     * Infers the number of indices from the specified shape.
+     *
+     * @param shape the shape of the dimensions
+     * @param index the index to map
+     * @return the mapped indexes along each dimension
+     */
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    int *ind2subC(int rank,int *shape,int index) {
+        return ind2subC(rank,shape, index,shape::prod(shape,rank));
+    }
 
 
 
 /**
  * Convert a linear index to
- * the equivalent nd index.
- * Infers the number of indices from the specified shape.
- *
+ * the equivalent nd index
  * @param shape the shape of the dimensions
  * @param index the index to map
+ * @param numIndices the number of total indices (typically prod of shape(
  * @return the mapped indexes along each dimension
  */
-#ifdef __CUDACC__
-    __host__ __device__
-#endif
-    int * ind2subC(int rank,int *shape,int index) {
-        return ind2subC(rank,shape, index, shape::prod(shape,rank));
-    }
+
 
 
 /**

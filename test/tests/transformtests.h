@@ -468,4 +468,6 @@ TEST(Transform,ObjectOrientedFloatPow) {
 
 
 
+
+
 #endif //NATIVEOPERATIONS_TRANSFORMTESTS_H
