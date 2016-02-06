@@ -662,7 +662,7 @@ namespace shape {
     __host__ __device__
 #endif
 
-    int offset(int index, int *xShapeInfo, int dimensionLength,
+    int offset(int index, int *xShapeInfo,int *dimension, int dimensionLength,
                TADPermuteInfo info);
 
 /**
@@ -1935,6 +1935,9 @@ __device__ int tadOffset(int *xInfo, int offset) {
         return retOffset;
     }
 
+
+
+
 /**
  * Given the shape information and dimensions
  * returns common information
@@ -1958,14 +1961,11 @@ __device__ int tadOffset(int *xInfo, int offset) {
 
 
         int removeLength = nd4j::math::nd4j_abs<int>(xRank - dimensionLength);
-        printf("Remove  length is %d with dimension length %d\n",removeLength,dimensionLength);
         int tensorShapeLength = shape::rank(xShapeInfo) - removeLength;
-        printf("Tensor shape length is %d\n",tensorShapeLength);
         if (tensorShapeLength < 2)
             tensorShapeLength = 2;
 
         int tensorShapeProd = shape::prod(tensorShape, tensorShapeLength);
-        printf("Tensor shape prod is %d\n",tensorShapeProd);
         int *reverseDimensions = shape::reverseCopy(dimension, dimensionLength);
         int *rangeRet = shape::range(0, xRank);
 
@@ -2292,7 +2292,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
     __host__ __device__
 #endif
 
-    int offset(int index, int *xShapeInfo, int dimensionLength,
+    int offset(int index, int *xShapeInfo,int *dimension, int dimensionLength,
                TADPermuteInfo info) {
         int sliceIdx = sliceOffsetForTensor(rank(xShapeInfo), index,
                                             info.permutedShape, info.tensorShape, info.tensorShapeLength,
@@ -2306,12 +2306,15 @@ __device__ int tadOffset(int *xInfo, int offset) {
         int ret2Rank = info.xRank - 1;
 
         int retOffset = sliceIdx * info.permutedStrides[0];
+        if(dimension[0] == 0)
+            return sliceIdx;
+
         int tensorShapeProd = info.tensorShapeProd;
         int val = nd4j::math::nd4j_abs<int>(
                 info.tensorShapeLength - dimensionLength) <= 1;
         int tensorShapeRoughlyEquals = dimensionLength == 1 && val;
         if ((tensorShapeProd == ret2Length && tensorShapeRoughlyEquals == 1)
-            || dimensionLength == info.tensorShapeLength) {
+            || dimensionLength == info.tensorShapeLength && dimensionLength) {
             return retOffset;
         }
 

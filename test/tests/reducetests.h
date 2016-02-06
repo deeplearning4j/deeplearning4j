@@ -14,17 +14,17 @@
 
 TEST_GROUP(Reduce) {
 
-        static int output_method(const char* output, ...) {
-            va_list arguments;
-            va_start(arguments, output);
-            va_end(arguments);
-            return 1;
-        }
-        void setup() {
+    static int output_method(const char* output, ...) {
+        va_list arguments;
+        va_start(arguments, output);
+        va_end(arguments);
+        return 1;
+    }
+    void setup() {
 
-        }
-        void teardown() {
-        }
+    }
+    void teardown() {
+    }
 };
 
 template <typename T>
@@ -376,91 +376,91 @@ static Data<T> * getDataReduceDimensionMulti(T *assertion,T startingVal) {
 }
 
 TEST(Reduce,ObjectOrientedSum) {
-int opNum = 1;
-double comparison[1] = {10};
+    int opNum = 1;
+    double comparison[1] = {10};
 
-Data<double> *data = getDataReduce<double>(comparison,0);
+    Data<double> *data = getDataReduce<double>(comparison,0);
 //	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
-DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
-test->run();
-delete test;
-delete data;
+    DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
+    test->run();
+    delete test;
+    delete data;
 }
 
 TEST(Reduce,ObjectOrientedMax) {
-int opNum = 3;
-double comparison[1] = {4};
-Data<double> *data = getDataReduce<double>(comparison,0);
-data->extraParams[0] = data->data[0];
+    int opNum = 3;
+    double comparison[1] = {4};
+    Data<double> *data = getDataReduce<double>(comparison,0);
+    data->extraParams[0] = data->data[0];
 //	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
-DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
-test->run();
-delete test;
-delete data;
+    DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
+    test->run();
+    delete test;
+    delete data;
 }
 
 
 
 TEST(Reduce,ObjectOrientedMin) {
-int opNum = 4;
-double comparison[1] = {1};
-Data<double> *data = getDataReduce<double>(comparison,0);
-data->extraParams[0] = data->data[0];
+    int opNum = 4;
+    double comparison[1] = {1};
+    Data<double> *data = getDataReduce<double>(comparison,0);
+    data->extraParams[0] = data->data[0];
 //	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
-DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
-test->run();
-delete test;
-delete data;
+    DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
+    test->run();
+    delete test;
+    delete data;
 }
 
 
 TEST(Reduce,ObjectOrientedNorm1) {
-int opNum = 5;
-double comparison[1] = {10.0};
-Data<double> *data = getDataReduce<double>(comparison,0);
+    int opNum = 5;
+    double comparison[1] = {10.0};
+    Data<double> *data = getDataReduce<double>(comparison,0);
 //	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
-DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
-test->run();
-delete test;
-delete data;
+    DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
+    test->run();
+    delete test;
+    delete data;
 }
 
 
 TEST(Reduce,ObjectOrientedNorm2) {
-int opNum = 6;
-double comparison[1] = {5.4772255750516612};
-Data<double> *data = getDataReduce<double>(comparison,0);
+    int opNum = 6;
+    double comparison[1] = {5.4772255750516612};
+    Data<double> *data = getDataReduce<double>(comparison,0);
 //	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
-DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
-test->run();
-delete test;
-delete data;
+    DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
+    test->run();
+    delete test;
+    delete data;
 }
 
 
 TEST(Reduce,ObjectOrientedMean) {
-int opNum = 0;
-double comparison[1] = {2.5};
-Data<double> *data = getDataReduce<double>(comparison,0);
+    int opNum = 0;
+    double comparison[1] = {2.5};
+    Data<double> *data = getDataReduce<double>(comparison,0);
 //	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
-DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
-test->run();
-delete test;
-delete data;
+    DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
+    test->run();
+    delete test;
+    delete data;
 }
 
 
 
 TEST(Reduce,ObjectOrientedProd) {
-int opNum = 8;
-double comparison[1] = {24};
-Data<double> *data = getDataReduce<double>(comparison,0);
-data->extraParams[0] = 1.0;
+    int opNum = 8;
+    double comparison[1] = {24};
+    Data<double> *data = getDataReduce<double>(comparison,0);
+    data->extraParams[0] = 1.0;
 //	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
-DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
-test->run();
-delete test;
-delete data;
+    DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
+    test->run();
+    delete test;
+    delete data;
 }
 
 
@@ -472,53 +472,53 @@ delete data;
 
 
 TEST(Reduce,ObjectOrientedDimensionMax) {
-int opNum = 3;
-double comparison[2] = {2.00, 4.00};
-Data<double> *data = getDataReduceDimension<double>(comparison,0);
-data->extraParams[0] = data->data[0];
+    int opNum = 3;
+    double comparison[2] = {2.00, 4.00};
+    Data<double> *data = getDataReduceDimension<double>(comparison,0);
+    data->extraParams[0] = data->data[0];
 //	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
-DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
-test->run();
-delete test;
-delete data;
+    DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
+    test->run();
+    delete test;
+    delete data;
 }
 
 
 TEST(Reduce,ObjectOrientedDimensionSum) {
-int opNum = 1;
-double comparison[2] = {3,7};
+    int opNum = 1;
+    double comparison[2] = {3,7};
 
-Data<double> *data = getDataReduceDimension<double>(comparison,0);
+    Data<double> *data = getDataReduceDimension<double>(comparison,0);
 //	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
-DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
-test->run();
-delete test;
-delete data;
+    DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
+    test->run();
+    delete test;
+    delete data;
 }
 
 TEST(Reduce,ObjectOrientedDimensionMin) {
-int opNum = 4;
-double comparison[2] = {1.00, 3.00};
-Data<double> *data = getDataReduceDimension<double>(comparison,0);
-data->extraParams[0] = data->data[0];
+    int opNum = 4;
+    double comparison[2] = {1.00, 3.00};
+    Data<double> *data = getDataReduceDimension<double>(comparison,0);
+    data->extraParams[0] = data->data[0];
 //	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
-DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
-test->run();
-delete test;
-delete data;
+    DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
+    test->run();
+    delete test;
+    delete data;
 }
 
 
 
 TEST(Reduce,ObjectOrientedDimensionNorm1) {
-int opNum = 5;
-double comparison[2] = {3.00, 7.00};
-Data<double> *data = getDataReduceDimension<double>(comparison,0);
+    int opNum = 5;
+    double comparison[2] = {3.00, 7.00};
+    Data<double> *data = getDataReduceDimension<double>(comparison,0);
 //	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
-DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
-test->run();
-delete test;
-delete data;
+    DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
+    test->run();
+    delete test;
+    delete data;
 }
 
 
@@ -526,126 +526,126 @@ delete data;
 
 
 TEST(Reduce,ObjectOrientedDimensionMean) {
-int opNum = 0;
-double comparison[2] = {1.50, 3.50};
-Data<double> *data = getDataReduceDimension<double>(comparison,0);
+    int opNum = 0;
+    double comparison[2] = {1.50, 3.50};
+    Data<double> *data = getDataReduceDimension<double>(comparison,0);
 //	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
-DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
-test->run();
-delete test;
-delete data;
+    DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
+    test->run();
+    delete test;
+    delete data;
 }
 
 TEST(Reduce,ObjectOrientedDimensionProd) {
-int opNum = 8;
-double comparison[2] = {2.00, 12.00};
-Data<double> *data = getDataReduceDimension<double>(comparison,0);
-data->extraParams[0] = 1.0;
-DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
-test->run();
-delete test;
-delete data;
+    int opNum = 8;
+    double comparison[2] = {2.00, 12.00};
+    Data<double> *data = getDataReduceDimension<double>(comparison,0);
+    data->extraParams[0] = 1.0;
+    DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
+    test->run();
+    delete test;
+    delete data;
 }
 
 TEST(Reduce,ObjectOrientedDimensionNorm2) {
-int opNum = 6;
-double comparison[2] = {2.24, 5.00};
-Data<double> *data = getDataReduceDimension<double>(comparison,0);
+    int opNum = 6;
+    double comparison[2] = {2.24, 5.00};
+    Data<double> *data = getDataReduceDimension<double>(comparison,0);
 //	:  ReduceTest<double>(rank,opNum,data,extraParamsLength){
-DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
-test->run();
-delete test;
-delete data;
+    DoubleReduceTest *test = new DoubleReduceTest(2,opNum,data,1);
+    test->run();
+    delete test;
+    delete data;
 }
 
 
 
 TEST(Reduce,ObjectOrientedFloatSum) {
-int opNum = 1;
-float comparison[1] = {10};
+    int opNum = 1;
+    float comparison[1] = {10};
 
-Data<float> *data = getDataReduce<float>(comparison,0);
+    Data<float> *data = getDataReduce<float>(comparison,0);
 //	:  ReduceTest<float>(rank,opNum,data,extraParamsLength){
-FloatReduceTest *test = new FloatReduceTest(2,opNum,data,1);
-test->run();
-delete test;
-delete data;
+    FloatReduceTest *test = new FloatReduceTest(2,opNum,data,1);
+    test->run();
+    delete test;
+    delete data;
 }
 
 TEST(Reduce,ObjectOrientedFloatMax) {
-int opNum = 3;
-float comparison[1] = {4};
-Data<float> *data = getDataReduce<float>(comparison,0);
-data->extraParams[0] = data->data[0];
+    int opNum = 3;
+    float comparison[1] = {4};
+    Data<float> *data = getDataReduce<float>(comparison,0);
+    data->extraParams[0] = data->data[0];
 //	:  ReduceTest<float>(rank,opNum,data,extraParamsLength){
-FloatReduceTest *test = new FloatReduceTest(2,opNum,data,1);
-test->run();
-delete test;
-delete data;
+    FloatReduceTest *test = new FloatReduceTest(2,opNum,data,1);
+    test->run();
+    delete test;
+    delete data;
 }
 
 
 
 TEST(Reduce,ObjectOrientedFloatMin) {
-int opNum = 4;
-float comparison[1] = {1};
-Data<float> *data = getDataReduce<float>(comparison,0);
-data->extraParams[0] = data->data[0];
+    int opNum = 4;
+    float comparison[1] = {1};
+    Data<float> *data = getDataReduce<float>(comparison,0);
+    data->extraParams[0] = data->data[0];
 //	:  ReduceTest<float>(rank,opNum,data,extraParamsLength){
-FloatReduceTest *test = new FloatReduceTest(2,opNum,data,1);
-test->run();
-delete test;
-delete data;
+    FloatReduceTest *test = new FloatReduceTest(2,opNum,data,1);
+    test->run();
+    delete test;
+    delete data;
 }
 
 
 TEST(Reduce,ObjectOrientedFloatNorm1) {
-int opNum = 5;
-float comparison[1] = {10.0};
-Data<float> *data = getDataReduce<float>(comparison,0);
+    int opNum = 5;
+    float comparison[1] = {10.0};
+    Data<float> *data = getDataReduce<float>(comparison,0);
 //	:  ReduceTest<float>(rank,opNum,data,extraParamsLength){
-FloatReduceTest *test = new FloatReduceTest(2,opNum,data,1);
-test->run();
-delete test;
-delete data;
+    FloatReduceTest *test = new FloatReduceTest(2,opNum,data,1);
+    test->run();
+    delete test;
+    delete data;
 }
 
 
 TEST(Reduce,ObjectOrientedFloatNorm2) {
-int opNum = 6;
-float comparison[1] = {5.4772255750516612};
-Data<float> *data = getDataReduce<float>(comparison,0);
+    int opNum = 6;
+    float comparison[1] = {5.4772255750516612};
+    Data<float> *data = getDataReduce<float>(comparison,0);
 //	:  ReduceTest<float>(rank,opNum,data,extraParamsLength){
-FloatReduceTest *test = new FloatReduceTest(2,opNum,data,1);
-test->run();
-delete test;
-delete data;
+    FloatReduceTest *test = new FloatReduceTest(2,opNum,data,1);
+    test->run();
+    delete test;
+    delete data;
 }
 
 
 TEST(Reduce,ObjectOrientedFloatMean) {
-int opNum = 0;
-float comparison[1] = {2.5};
-Data<float> *data = getDataReduce<float>(comparison,0);
+    int opNum = 0;
+    float comparison[1] = {2.5};
+    Data<float> *data = getDataReduce<float>(comparison,0);
 //	:  ReduceTest<float>(rank,opNum,data,extraParamsLength){
-FloatReduceTest *test = new FloatReduceTest(2,opNum,data,1);
-test->run();
-delete test;
-delete data;
+    FloatReduceTest *test = new FloatReduceTest(2,opNum,data,1);
+    test->run();
+    delete test;
+    delete data;
 }
 
 
 
 TEST(Reduce,ObjectOrientedFloatProd) {
-int opNum = 8;
-float comparison[1] = {24};
-Data<float> *data = getDataReduce<float>(comparison,0);
-data->extraParams[0] = 1.0;
+    int opNum = 8;
+    float comparison[1] = {24};
+    Data<float> *data = getDataReduce<float>(comparison,0);
+    data->extraParams[0] = 1.0;
 //	:  ReduceTest<float>(rank,opNum,data,extraParamsLength){
-FloatReduceTest *test = new FloatReduceTest(2,opNum,data,1);
-test->run();
-delete test;
-delete data;
+    FloatReduceTest *test = new FloatReduceTest(2,opNum,data,1);
+    test->run();
+    delete test;
+    delete data;
 }
 
 
@@ -657,53 +657,53 @@ delete data;
 
 
 TEST(Reduce,ObjectOrientedFloatDimensionMax) {
-int opNum = 3;
-float comparison[2] = {2.00, 4.00};
-Data<float> *data = getDataReduceDimension<float>(comparison,0);
-data->extraParams[0] = data->data[0];
+    int opNum = 3;
+    float comparison[2] = {2.00, 4.00};
+    Data<float> *data = getDataReduceDimension<float>(comparison,0);
+    data->extraParams[0] = data->data[0];
 //	:  ReduceTest<float>(rank,opNum,data,extraParamsLength){
-FloatReduceTest *test = new FloatReduceTest(2,opNum,data,1);
-test->run();
-delete test;
-delete data;
+    FloatReduceTest *test = new FloatReduceTest(2,opNum,data,1);
+    test->run();
+    delete test;
+    delete data;
 }
 
 
 TEST(Reduce,ObjectOrientedFloatDimensionSum) {
-int opNum = 1;
-float comparison[2] = {3,7};
+    int opNum = 1;
+    float comparison[2] = {3,7};
 
-Data<float> *data = getDataReduceDimension<float>(comparison,0);
+    Data<float> *data = getDataReduceDimension<float>(comparison,0);
 //	:  ReduceTest<float>(rank,opNum,data,extraParamsLength){
-FloatReduceTest *test = new FloatReduceTest(2,opNum,data,1);
-test->run();
-delete test;
-delete data;
+    FloatReduceTest *test = new FloatReduceTest(2,opNum,data,1);
+    test->run();
+    delete test;
+    delete data;
 }
 
 TEST(Reduce,ObjectOrientedFloatDimensionMin) {
-int opNum = 4;
-float comparison[2] = {1.00, 3.00};
-Data<float> *data = getDataReduceDimension<float>(comparison,0);
-data->extraParams[0] = data->data[0];
+    int opNum = 4;
+    float comparison[2] = {1.00, 3.00};
+    Data<float> *data = getDataReduceDimension<float>(comparison,0);
+    data->extraParams[0] = data->data[0];
 //	:  ReduceTest<float>(rank,opNum,data,extraParamsLength){
-FloatReduceTest *test = new FloatReduceTest(2,opNum,data,1);
-test->run();
-delete test;
-delete data;
+    FloatReduceTest *test = new FloatReduceTest(2,opNum,data,1);
+    test->run();
+    delete test;
+    delete data;
 }
 
 
 
 TEST(Reduce,ObjectOrientedFloatDimensionNorm1) {
-int opNum = 5;
-float comparison[2] = {3.00, 7.00};
-Data<float> *data = getDataReduceDimension<float>(comparison,0);
+    int opNum = 5;
+    float comparison[2] = {3.00, 7.00};
+    Data<float> *data = getDataReduceDimension<float>(comparison,0);
 //	:  ReduceTest<float>(rank,opNum,data,extraParamsLength){
-FloatReduceTest *test = new FloatReduceTest(2,opNum,data,1);
-test->run();
-delete test;
-delete data;
+    FloatReduceTest *test = new FloatReduceTest(2,opNum,data,1);
+    test->run();
+    delete test;
+    delete data;
 }
 
 
@@ -711,83 +711,83 @@ delete data;
 
 
 TEST(Reduce,ObjectOrientedFloatDimensionMean) {
-int opNum = 0;
-float comparison[2] = {1.50, 3.50};
-Data<float> *data = getDataReduceDimension<float>(comparison,0);
+    int opNum = 0;
+    float comparison[2] = {1.50, 3.50};
+    Data<float> *data = getDataReduceDimension<float>(comparison,0);
 //	:  ReduceTest<float>(rank,opNum,data,extraParamsLength){
-FloatReduceTest *test = new FloatReduceTest(2,opNum,data,1);
-test->run();
-delete test;
-delete data;
+    FloatReduceTest *test = new FloatReduceTest(2,opNum,data,1);
+    test->run();
+    delete test;
+    delete data;
 }
 
 TEST(Reduce,ObjectOrientedFloatDimensionProd) {
-int opNum = 8;
-float comparison[2] = {2.00, 12.00};
-Data<float> *data = getDataReduceDimension<float>(comparison,0);
-data->extraParams[0] = 1.0;
-FloatReduceTest *test = new FloatReduceTest(2,opNum,data,1);
-test->run();
-delete test;
-delete data;
+    int opNum = 8;
+    float comparison[2] = {2.00, 12.00};
+    Data<float> *data = getDataReduceDimension<float>(comparison,0);
+    data->extraParams[0] = 1.0;
+    FloatReduceTest *test = new FloatReduceTest(2,opNum,data,1);
+    test->run();
+    delete test;
+    delete data;
 }
 
 TEST(Reduce,ObjectOrientedFloatDimensionNorm2) {
-int opNum = 6;
-float comparison[2] = {2.24, 5.00};
-Data<float> *data = getDataReduceDimension<float>(comparison,0);
+    int opNum = 6;
+    float comparison[2] = {2.24, 5.00};
+    Data<float> *data = getDataReduceDimension<float>(comparison,0);
 //	:  ReduceTest<float>(rank,opNum,data,extraParamsLength){
-FloatReduceTest *test = new FloatReduceTest(2,opNum,data,1);
-test->run();
-delete test;
-delete data;
+    FloatReduceTest *test = new FloatReduceTest(2,opNum,data,1);
+    test->run();
+    delete test;
+    delete data;
 }
 
 TEST(Reduce,ObjectOrientedSumDimensionMulti) {
-int opNum = 1;
-float comparison[3] = {22.00, 26.00, 30.00};
-Data<float> *data = getDataReduceDimensionMulti<float>(comparison,0);
-data->extraParams[0] = 1.0;
-FloatReduceTest *test = new FloatReduceTest(3,opNum,data,1);
-test->run();
-delete test;
-delete data;
+    int opNum = 1;
+    float comparison[3] = {22.00, 26.00, 30.00};
+    Data<float> *data = getDataReduceDimensionMulti<float>(comparison,0);
+    data->extraParams[0] = 1.0;
+    FloatReduceTest *test = new FloatReduceTest(3,opNum,data,1);
+    test->run();
+    delete test;
+    delete data;
 }
 
 TEST(Reduce,ObjectOrientedMeanDimensionMulti) {
-int opNum = 0;
-float comparison[3] = {5.5,  6.5,  7.5};
-Data<float> *data = getDataReduceDimensionMulti<float>(comparison,0);
-data->extraParams[0] = 1.0;
-FloatReduceTest *test = new FloatReduceTest(3,opNum,data,1);
-test->run();
-delete test;
-delete data;
+    int opNum = 0;
+    float comparison[3] = {5.5,  6.5,  7.5};
+    Data<float> *data = getDataReduceDimensionMulti<float>(comparison,0);
+    data->extraParams[0] = 1.0;
+    FloatReduceTest *test = new FloatReduceTest(3,opNum,data,1);
+    test->run();
+    delete test;
+    delete data;
 }
 
 TEST(Reduce,ObjectOrientedFloatDimensionSumOneFiftyByFour) {
-int opNum = 1;
-float comparison[4] = {44850.0f, 45000.0f, 45150.0f, 45300.0f};
+    int opNum = 1;
+    float comparison[4] = {44850.0f, 45000.0f, 45150.0f, 45300.0f};
 
-Data<float> *data = getDataReduceOneFiftyByFour<float>(comparison,0);
+    Data<float> *data = getDataReduceOneFiftyByFour<float>(comparison,0);
 //	:  ReduceTest<float>(rank,opNum,data,extraParamsLength){
-FloatReduceTest *test = new FloatReduceTest(2,opNum,data,1);
-test->run();
-delete test;
-delete data;
+    FloatReduceTest *test = new FloatReduceTest(2,opNum,data,1);
+    test->run();
+    delete test;
+    delete data;
 }
 
 TEST(Reduce,ObjectOrientedFloatDimensionSumTwoByThree) {
-printf("Running target test\n");
-int opNum = 1;
-float comparison[3] = {5.,  7.,  9.};
+    printf("Running target test\n");
+    int opNum = 1;
+    float comparison[3] = {5.,  7.,  9.};
 
-Data<float> *data = getDataReduceTwoByThree<float>(comparison,0);
+    Data<float> *data = getDataReduceTwoByThree<float>(comparison,0);
 //	:  ReduceTest<float>(rank,opNum,data,extraParamsLength){
-FloatReduceTest *test = new FloatReduceTest(2,opNum,data,1);
-test->run();
-delete test;
-delete data;
+    FloatReduceTest *test = new FloatReduceTest(2,opNum,data,1);
+    test->run();
+    delete test;
+    delete data;
 }
 
 

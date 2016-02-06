@@ -427,7 +427,7 @@ public:
 				//process each tad
 				//tad wrt the thread
 				int currTad = tid + (blockIdx.x * reductionIndexesPerBlock);
-				int offsetForTad = shape::offset(currTad, xShapeInfo, dimensionLength, xTadInfo);
+				int offsetForTad = shape::offset(currTad, xShapeInfo, dimension,dimensionLength, xTadInfo);
 
 				//update the reduction for the thread for the current tad
 				//note here that we compute the offset and then accumulate in shared memory
@@ -693,7 +693,7 @@ public:
 		//iterating via element wise stride
 		//note here blockidx.x + tid is the tad we want
 		int tadForThread = tid + blockIdx.x * tadsPerReduceIndex2;
-		int offsetForBlock = shape::offset(tadForThread, xShapeInfo, dimensionLength, xTadInfo);
+		int offsetForBlock = shape::offset(tadForThread, xShapeInfo, dimension,dimensionLength, xTadInfo);
 #pragma unroll
 		for (int i = 0; i < elementsPerTad; offsetForBlock += elementWiseStride, i++) {
 			IndexValue <T> opApply = {data[offsetForBlock], offsetForBlock};
