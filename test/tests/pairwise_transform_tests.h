@@ -181,7 +181,7 @@ public:
 				yEleStride,
 				this->extraParamsBuff->gData,
 				this->data->data->gData,
-				1, this->blockSize);
+				1);
 		free(shapeBuff);
 		free(yShapeBuff);
 #endif
@@ -220,7 +220,7 @@ public:
 				yEleStride,
 				this->extraParamsBuff->gData,
 				this->data->data->gData,
-				1, this->blockSize);
+				1);
 		free(shapeBuff);
 		free(yShapeBuff);
 #endif

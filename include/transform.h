@@ -40,7 +40,57 @@ namespace functions {
             T op(T d1, T *params) = 0;
 
 #ifdef __CUDACC__
-            __inline__ __device__ void transform(int n, int idx, T *dy, int incy, T *params, T *result, int blockSize) {
+            /**
+             * Cuda implementation of transform
+             * @param dx
+             * @param xShapeInfo
+             * @param result
+             * @param resultShapeInfo
+             * @param extraParams
+             * @param n
+             */
+           virtual __inline__ __device__ void transform(T *dy, int *shapeInfo, T *params, T *result) {
+                int *xShape = shape::shapeOf(shapeInfo);
+                int *xStride = shape::stride(shapeInfo);
+                char xOrder = shape::order(shapeInfo);
+                int n = shape::length(shapeInfo);
+                int xRank = shape::rank(shapeInfo);
+
+                int xElementWiseStride = shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
+
+                int totalThreads = gridDim.x * blockDim.x;
+                int tid = threadIdx.x;
+                int i = blockIdx.x * blockDim.x + tid;
+                __shared__ int length;
+                if(tid == 0)
+                    length = shape::length(shapeInfo);
+                __syncthreads();
+
+                if(xElementWiseStride >= 1) {
+                   transform(length,dy,xElementWiseStride,params,result);
+                }
+                else {
+                         /* equal, positive, non-unit increments. */
+#pragma unroll
+                for (; i < n; i += totalThreads) {
+                    result[i * xElementWiseStride] = op(dy[i * xElementWiseStride], params);
+                }
+               }
+
+
+
+            }
+
+           /**
+            * Cuda implementation of transform
+            * @param dx
+            * @param xShapeInfo
+            * @param result
+            * @param resultShapeInfo
+            * @param extraParams
+            * @param n
+            */
+           virtual  __inline__ __device__ void transform(int n, T *dy, int incy, T *params, T *result) {
                 int totalThreads = gridDim.x * blockDim.x;
                 int tid = threadIdx.x;
                 int i = blockIdx.x * blockDim.x + tid;
@@ -62,8 +112,13 @@ namespace functions {
              * @param extraParams the extra parameters
              * @param n the number of elements to iterate on
              */
-            virtual void exec(T *dx, int *xShapeInfo, T *result, int *resultShapeInfo,
-                              T *extraParams, int n) {
+            virtual void exec(
+            		T *dx,
+            		int *xShapeInfo,
+            		T *result,
+            		int *resultShapeInfo,
+                    T *extraParams,
+                    int n) {
 
 
                 int *xShape = shape::shapeOf(xShapeInfo);
@@ -75,15 +130,26 @@ namespace functions {
                 int resultRank = shape::rank(resultShapeInfo);
 
                 int xOffset = shape::offset(xShapeInfo);
-                int resultBaseOffset = shape::offset(resultShapeInfo);
+                int resultOffset = shape::offset(resultShapeInfo);
+
+                char xOrder = shape::order(xShapeInfo);
+                char resultOrder = shape::order(xShapeInfo);
+                int xElementWiseStride = shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
+                int resultElementWiseStride = shape::computeElementWiseStride(resultRank,resultShape,resultStride,resultOrder == 'f');
+                if(xElementWiseStride >= 1 && resultElementWiseStride >= 1) {
+                    exec(dx,xElementWiseStride,result,resultElementWiseStride,extraParams,n);
+                }
+                else {
 
 #pragma omp simd
-                for (int i = 0; i < n; i++) {
-                    int *xIdx = shape::ind2sub(xRank, xShape, i);
-                    int *resultIdx = shape::ind2sub(resultRank, resultShape, i);
-                    int xOffset = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
-                    int resultOffset = shape::getOffset(resultBaseOffset, resultShape, resultStride, resultIdx, resultRank);
-                    result[resultOffset] = op(dx[xOffset], extraParams);
+                    for (int i = 0; i < n; i++) {
+                        int *xIdx = shape::ind2sub(xRank, xShape, i);
+                        int *resultIdx = shape::ind2sub(resultRank, resultShape, i);
+                        int xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
+                        int resultOffset2 = shape::getOffset(resultOffset, resultShape, resultStride, resultIdx, resultRank);
+                        result[resultOffset] = op(dx[xOffset], extraParams);
+                    }
+
                 }
 
             }
@@ -2070,11 +2136,10 @@ template <typename T>
 __device__ void transformGeneric(
 		int opNum,
 		int n,
-		int idx,
 		T *dy,
 		int incy,
 		T *params,
-		T *result, int blockSize) {
+		T *result) {
 
 	__shared__ functions::transform::Transform<T> *op;
 	__shared__ functions::transform::TransformOpFactory<T> *doubleTransformFactory;
@@ -2093,7 +2158,7 @@ __device__ void transformGeneric(
 	__syncthreads();
 
 
-	op->transform(n,idx,dy,incy,params,result,blockSize);
+	op->transform(n,dy,incy,params,result);
 	if(threadIdx.x == 0) {
 		free(op);
 		free(doubleTransformFactory);
@@ -2116,13 +2181,18 @@ __device__ void transformGeneric(
 extern "C" __global__ void transformDouble(
 		int opNum,
 		int n,
-		int idx,
 		double *dy,
 		int incy,
 		double *params,
-		double *result, int blockSize) {
+		double *result) {
 
-	transformGeneric<double>(opNum,n,idx,dy,incy,params,result,blockSize);
+	transformGeneric<double>(
+			opNum,
+			n,
+			dy,
+			incy,
+			params,
+			result);
 }
 
 /**
@@ -2141,13 +2211,18 @@ extern "C" __global__ void transformDouble(
 extern "C" __global__ void transformFloat(
 		int opNum,
 		int n,
-		int idx,
 		float *dy,
 		int incy,
 		float *params,
-		float *result, int blockSize) {
+		float *result) {
 
-	transformGeneric<float>(opNum,n,idx,dy,incy,params,result,blockSize);
+	transformGeneric<float>(
+			opNum,
+			n,
+			dy,
+			incy,
+			params,
+			result);
 
 }
 
