@@ -48,7 +48,14 @@ namespace functions {
 	 * @param extraParams
 	 * @param n
 	 */
-	virtual __inline__ __device__ void transform(int n,T scalar,T *dy, int *shapeInfo, T *params, T *result,int *indexes) {
+	virtual __inline__ __device__ void transform(
+			int n,
+			T scalar,
+			T *dy,
+			int *shapeInfo,
+			T *params,
+			T *result,
+			int *indexes) {
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = threadIdx.x;
 		int i = blockIdx.x * blockDim.x + tid;
@@ -70,7 +77,13 @@ namespace functions {
 	 * @param extraParams
 	 * @param n
 	 */
-	virtual __inline__ __device__ void transform(int n,T scalar,T *dy, int *shapeInfo, T *params, T *result) {
+	virtual __inline__ __device__ void transform(
+			int n,
+			T scalar,
+			T *dy,
+			int *shapeInfo,
+			T *params,
+			T *result) {
 		int *xShape = shape::shapeOf(shapeInfo);
 		int *xStride = shape::stride(shapeInfo);
 		char xOrder = shape::order(shapeInfo);
@@ -117,7 +130,13 @@ namespace functions {
 	 * @param blockSize
 	 */
 	virtual
-	__inline__ __device__ void transform(int n, T dx, T *dy, int incy, T *params, T *result) {
+	__inline__ __device__ void transform(
+			int n,
+			T dx,
+			T *dy,
+			int incy,
+			T *params,
+			T *result) {
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = threadIdx.x;
 		int i = blockIdx.x * blockDim.x + tid;
@@ -1170,21 +1189,6 @@ namespace functions {
     }
 }
 #ifdef __CUDACC__
-__constant__ functions::scalar::ScalarOpFactory<double> *scalarDoubleOpFactory;
-__constant__ functions::scalar::ScalarOpFactory<float> *scalarFloatOpFactory;
-
-
-extern "C"
-__host__ void setupScalarTransformFactories() {
-	/*	printf("Setting up transform factories\n");
-	functions::scalar::ScalarOpFactory<double> *newOpFactory =  new functions::scalar::ScalarOpFactory<double>();
-	functions::scalar::ScalarOpFactory<float> *newOpFactoryFloat =  new functions::scalar::ScalarOpFactory<float>();
-	checkCudaErrors(cudaMemcpyToSymbol(scalarDoubleOpFactory, newOpFactory, sizeof( functions::scalar::ScalarOpFactory<double> )));
-	checkCudaErrors(cudaMemcpyToSymbol(scalarFloatOpFactory, newOpFactory, sizeof( functions::scalar::ScalarOpFactory<float>)));
-	delete(newOpFactory);
-	delete(newOpFactoryFloat);*/
-
-}
 
 template <typename T>
 __device__ void scalarGeneric(
@@ -1219,15 +1223,93 @@ extern "C" __global__ void scalarDouble(
 		double *dy,
 		int incy, double *params,
 		double *result) {
-	scalarGeneric<double>(opNum,n,dx,dy,incy,params,result);
+	scalarGeneric<double>(
+			opNum,
+			n,
+			dx,
+			dy,
+			incy,
+			params,
+			result);
 }
 
 extern "C" __global__ void scalarFloat(int opNum,
 		int n,float dx, float *dy, int incy, float *params, float *result) {
-	scalarGeneric<float>(opNum,n,dx,dy,incy,params,result);
+	scalarGeneric<float>(
+			opNum,
+			n,
+			dx,
+			dy,
+			incy,
+			params,
+			result);
 }
 
 
+
+
+
+template <typename T>
+__device__ void scalarGeneric(
+		int opNum,
+		int n,
+		T dx,
+		T *dy,
+		int *shapeInfo,
+		T *params,
+		T *result) {
+	__shared__ functions::scalar::ScalarTransform<T> *op;
+	__shared__  functions::scalar::ScalarOpFactory<T> *scalarDoubleOpFactory;
+	if(threadIdx.x == 0)
+		scalarDoubleOpFactory = new functions::scalar::ScalarOpFactory<T>();
+
+	__syncthreads();
+	if(threadIdx.x == 0)
+		op = scalarDoubleOpFactory->getOp(opNum);
+	__syncthreads();
+
+
+
+
+	op->transform(n,dx,dy,shapeInfo,params,result);
+	if(threadIdx.x == 0)
+		free(op);
+}
+
+extern "C" __global__ void scalarDoubleIndex(
+		int opNum,
+		int n,
+		double dx,
+		double *dy,
+		int *shapeInfo, double *params,
+		double *result) {
+	scalarGeneric<double>(
+			opNum,
+			n,
+			dx,
+			dy,
+			shapeInfo,
+			params,
+			result);
+}
+
+extern "C" __global__ void scalarFloatIndex(
+		int opNum,
+		int n,
+		float dx,
+		float *dy,
+		int *shapeInfo,
+		float *params,
+		float *result) {
+	scalarGeneric<float>(
+			opNum,
+			n,
+			dx,
+			dy,
+			shapeInfo,
+			params,
+			result);
+}
 
 #endif
 #endif /* SCALAR_H_ */

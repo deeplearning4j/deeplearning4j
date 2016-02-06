@@ -40,7 +40,14 @@ protected:
 
 
 public:
+
+    int useIndexes = 0;
+
     TransformTest() {}
+
+
+
+
     virtual ~TransformTest() {
         freeOpAndOpFactory();
     }
@@ -84,18 +91,31 @@ public:
     virtual void execCpuKernel() override {
         int *xShapeBuffer = shapeBuffer(this->baseData->rank,this->baseData->xShape);
         int *resultShapeBuffer = shapeBuffer(this->baseData->resultRank,this->baseData->resultShape);
-        op->exec(this->data->data->data,
-                 xShapeBuffer,
-                 this->data->data->data,
-                 resultShapeBuffer,
-                 this->extraParams,
-                 this->length);
+        int *indexes = shape::computeIndices(xShapeBuffer);
+        if(useIndexes) {
+            op->exec(this->data->data->data,
+                     xShapeBuffer,
+                     this->data->data->data,
+                     resultShapeBuffer,
+                     this->extraParams,
+                     this->length,indexes);
+        }
+        else
+            op->exec(this->data->data->data,
+                     xShapeBuffer,
+                     this->data->data->data,
+                     resultShapeBuffer,
+                     this->extraParams,
+                     this->length);
 
         free(xShapeBuffer);
         free(resultShapeBuffer);
     }
 
 };
+
+
+
 
 class DoubleTransformTest : public  TransformTest<double> {
 public:

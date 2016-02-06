@@ -195,6 +195,7 @@ namespace functions {
 		//only compute the tad indexes once
 		__shared__ shape::TADPermuteInfo xTadInfo;
 
+		__syncthreads();
 
 		T reduction = this->startingValue(dx);
 		if (tid == 0) {
@@ -523,8 +524,8 @@ namespace functions {
 		//each block processes a reduction index
 		//don't bother iterating on this block if it goes over the number of tads
 
-		__shared__
-		shape::TADPermuteInfo xTadInfo;
+		__shared__ shape::TADPermuteInfo xTadInfo;
+
 		if (tid == 0) {
 			xTadInfo = shape::tadInfo(xShapeInfo, dimension, dimensionLength);
 		}

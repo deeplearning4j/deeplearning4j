@@ -49,7 +49,13 @@ public:
 	 * @param extraParams
 	 * @param n
 	 */
-	virtual __inline__ __device__ void transform(T *dy, int *shapeInfo, T *params, T *result,int *indexes) {
+	virtual __inline__ __device__ void transform(
+			T *dy,
+			int *shapeInfo,
+			T *params,
+			T *result,
+			int *indexes) {
+
 		int n = shape::length(shapeInfo);
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = threadIdx.x;
@@ -73,7 +79,11 @@ public:
 	 * @param extraParams
 	 * @param n
 	 */
-	virtual __inline__ __device__ void transform(T *dy, int *shapeInfo, T *params, T *result) {
+	virtual __inline__ __device__ void transform(
+			T *dy,
+			int *shapeInfo,
+			T *params,
+			T *result) {
 		int *xShape = shape::shapeOf(shapeInfo);
 		int *xStride = shape::stride(shapeInfo);
 		char xOrder = shape::order(shapeInfo);
@@ -2170,6 +2180,60 @@ public:
 
 
 #ifdef __CUDACC__
+/*
+ * 	T *dy,
+			int *shapeInfo,
+			T *params,
+			T *result,
+			int *indexes
+ */
+
+/**
+ * The c and driver interface
+ *  for th kernels
+ * @param opNum the op number
+ * @param n the length of the problem
+ * @param idx
+ * the start index
+ * @param dy the vector to transform
+ * @param incy the stride for the vector
+ * @param params the extra parameters for the problem
+ * @param result the result storage
+ * @param blockSize the block size for the problem
+ */
+template <typename T>
+__device__ void transformGeneric(
+		int opNum,
+		int n,
+		T *dy,
+		int *shapeInfo,
+		T *params,
+		T *result) {
+
+	__shared__ functions::transform::Transform<T> *op;
+	__shared__ functions::transform::TransformOpFactory<T> *doubleTransformFactory;
+
+	if(threadIdx.x == 0) {
+		doubleTransformFactory = new functions::transform::TransformOpFactory<T>();
+
+	}
+
+	__syncthreads();
+
+
+	if(threadIdx.x == 0) {
+		op = doubleTransformFactory->getOp(opNum);
+	}
+	__syncthreads();
+
+
+	op->transform(dy,shapeInfo,params,result);
+	if(threadIdx.x == 0) {
+		free(op);
+		free(doubleTransformFactory);
+	}
+}
+
 
 /**
  * The c and driver interface
@@ -2273,6 +2337,68 @@ extern "C" __global__ void transformFloat(
 			n,
 			dy,
 			incy,
+			params,
+			result);
+
+}
+
+
+/**
+ * The c and driver interface
+ *  for th kernels
+ * @param opNum the op number
+ * @param n the length of the problem
+ * @param idx
+ * the start index
+ * @param dy the vector to transform
+ * @param incy the stride for the vector
+ * @param params the extra parameters for the problem
+ * @param result the result storage
+ * @param blockSize the block size for the problem
+ */
+extern "C" __global__ void transformDoubleIndexes(
+		int opNum,
+		int n,
+		double *dy,
+		int *shapeInfo,
+		double *params,
+		double *result) {
+
+	transformGeneric<double>(
+			opNum,
+			n,
+			dy,
+			shapeInfo,
+			params,
+			result);
+}
+
+/**
+ * The c and driver interface
+ *  for th kernels
+ * @param opNum the op number
+ * @param n the length of the problem
+ * @param idx
+ * the start index
+ * @param dy the vector to transform
+ * @param incy the stride for the vector
+ * @param params the extra parameters for the problem
+ * @param result the result storage
+ * @param blockSize the block size for the problem
+ */
+extern "C" __global__ void transformFloatIndexes(
+		int opNum,
+		int n,
+		float *dy,
+		int *shapeInfo,
+		float *params,
+		float *result) {
+
+	transformGeneric<float>(
+			opNum,
+			n,
+			dy,
+			shapeInfo,
 			params,
 			result);
 

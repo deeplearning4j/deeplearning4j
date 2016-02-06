@@ -52,7 +52,8 @@ public:
 			T *result,
 			int *resultShapeBuffer,
 			T *extraParams,
-			int n,int *indexes) {
+			int n,
+			int *indexes) {
 		transform(dx,
 				xShapeBuffer,
 				y,
@@ -77,7 +78,10 @@ public:
 			T *result,
 			int *resultShapeBuffer,
 			T *extraParams,
-			int n,int *indexes,int *yIndexes,int *resultIndexes) {
+			int n,
+			int *indexes,
+			int *yIndexes,
+			int *resultIndexes) {
 
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = threadIdx.x;
@@ -99,18 +103,20 @@ public:
 			T *result,
 			int *resultShapeBuffer,
 			T *extraParams,
-			int n,int *indexes,int *yIndexes) {
+			int n,
+			int *indexes,
+			int *yIndexes) {
 		transform(dx,
-					xShapeBuffer,
-					y,
-					yShapeBuffer,
-					result,
-					resultShapeBuffer,
-					extraParams,
-					n,
-					indexes,
-					yIndexes,
-					indexes);
+				xShapeBuffer,
+				y,
+				yShapeBuffer,
+				result,
+				resultShapeBuffer,
+				extraParams,
+				n,
+				indexes,
+				yIndexes,
+				indexes);
 	}
 
 	/**
@@ -284,53 +290,55 @@ public:
 			int *yShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int n,int *indexes,int *yIndexes) {
-        exec(dx,
-             xShapeBuffer,
-             y,
-             yShapeBuffer,
-             result,
-             resultShapeBuffer,
-             extraParams,
-             n,
-             indexes,
-             yIndexes,
-             indexes);
+			T *extraParams, int n,
+			int *indexes,
+			int *yIndexes) {
+		exec(dx,
+				xShapeBuffer,
+				y,
+				yShapeBuffer,
+				result,
+				resultShapeBuffer,
+				extraParams,
+				n,
+				indexes,
+				yIndexes,
+				indexes);
 	}
 
 
-            /**
- * CPU operation execution
- * @param dx the input data
- * @param xStride the stride to iterate over
- * the x input
- * @param y the y data
- * @param yStride the stride to iterate
- * over the y buffer
- * @param result the buffer
- * to store the result in
- * @param resultStride the stride for the buffer
- * @param extraParams the extra parameters for the transform
- * @param n the length of the input
- */
-            virtual void exec(
-                    T *dx,
-                    int *xShapeBuffer,
-                    T *y,
-                    int *yShapeBuffer,
-                    T *result,
-                    int *resultShapeBuffer,
-                    T *extraParams,
-                    int n,
-                    int *indexes,
-                    int *yIndexes,
-                    int *resultIndexes) {
+	/**
+	 * CPU operation execution
+	 * @param dx the input data
+	 * @param xStride the stride to iterate over
+	 * the x input
+	 * @param y the y data
+	 * @param yStride the stride to iterate
+	 * over the y buffer
+	 * @param result the buffer
+	 * to store the result in
+	 * @param resultStride the stride for the buffer
+	 * @param extraParams the extra parameters for the transform
+	 * @param n the length of the input
+	 */
+	virtual void exec(
+			T *dx,
+			int *xShapeBuffer,
+			T *y,
+			int *yShapeBuffer,
+			T *result,
+			int *resultShapeBuffer,
+			T *extraParams,
+			int n,
+			int *indexes,
+			int *yIndexes,
+			int *resultIndexes) {
 #pragma omp simd
-                for (int i = 0; i < n; i++) {
-                    result[resultIndexes[i]] = op(dx[indexes[i]],y[yIndexes[i]], extraParams);
+		for (int i = 0; i < n; i++) {
+			result[resultIndexes[i]] = op(dx[indexes[i]],y[yIndexes[i]], extraParams);
 
-                }
-            }
+		}
+	}
 
 
 	/**
@@ -1519,15 +1527,13 @@ template <typename T>
 __device__ void pairWiseTransformGeneric(
 		int opNum,
 		int n,
-		int xOffset,
-		int yOffset,
-		int resultOffset,
 		T *dx,
 		T *dy,
-		int incx,
-		int incy,
 		T *params,
-		T *result, int incz) {
+		T *result,
+		int *xShapeInfo,
+		int *yShapeInfo,
+		int *resultShapeInfo) {
 	__shared__ functions::pairwise_transforms::PairWiseTransform<T> *op;
 	__shared__ functions::pairwise_transforms::PairWiseTransformOpFactory<T> *newOpFactory;
 	if(threadIdx.x == 0)
@@ -1536,7 +1542,8 @@ __device__ void pairWiseTransformGeneric(
 	if(threadIdx.x == 0)
 		op = newOpFactory->getOp(opNum);
 	__syncthreads();
-	op->transform(n,xOffset,yOffset,resultOffset,dx,dy,incx,incy,params,result,incz);
+
+	op->transform(dx,xShapeInfo,dy,yShapeInfo,result,resultShapeInfo,params,n);
 	if(threadIdx.x == 0) {
 		free(op);
 		free(newOpFactory);
@@ -1564,27 +1571,23 @@ __device__ void pairWiseTransformGeneric(
 extern "C" __global__ void pairWiseTransformDouble(
 		int opNum,
 		int n,
-		int xOffset,
-		int yOffset,
-		int resultOffset,
 		double *dx,
 		double *dy,
-		int incx,
-		int incy,
 		double *params,
-		double *result, int incz) {
+		double *result,
+		int *xShapeInfo,
+		int *yShapeInfo,
+		int *resultShapeInfo) {
 	pairWiseTransformGeneric<double>(
 			opNum,
-			n,xOffset,
-			yOffset,
-			resultOffset,
+			n,
 			dx,
 			dy,
-			incx,
-			incy,
 			params,
 			result,
-			incz);
+			xShapeInfo,
+			yShapeInfo,
+			resultShapeInfo);
 
 }
 
@@ -1609,27 +1612,189 @@ extern "C" __global__ void pairWiseTransformDouble(
 extern "C" __global__ void pairWiseTransformFloat(
 		int opNum,
 		int n,
-		int xOffset,
-		int yOffset,
-		int resultOffset,
 		float *dx,
 		float *dy,
-		int incx,
-		int incy,
 		float *params,
-		float *result, int incz) {
+		float *result,
+		int *xShapeInfo,
+		int *yShapeInfo,
+		int *resultShapeInfo) {
 	pairWiseTransformGeneric<float>(
 			opNum,
-			n,xOffset,
-			yOffset,
-			resultOffset,
+			n,
 			dx,
 			dy,
-			incx,
-			incy,
 			params,
 			result,
-			incz);
+			xShapeInfo,
+			yShapeInfo,
+			resultShapeInfo);
+
+}
+
+
+
+/**
+ * The api for the driver interface
+ * @param opNum the op number
+ * @param n the length of the problem
+ * @param xOffset the offset for x
+ * @param yOffset the offset for y
+ * @param resultOffset the offset for result
+ * @param dx the input
+ * @param dy the pair wise array
+ * @param incx the stride for x
+ * @param incy the stride for y
+ * @param params the parameters for the problem
+ * @param result the result buffer
+ * @param incz the result stride
+ * @param blockSize the block size
+ */
+template <typename T>
+__device__ void pairWiseTransformGeneric(
+		int opNum,
+		int n,
+		T *dx,
+		T *dy,
+		T *params,
+		T *result,
+		int *xShapeInfo,
+		int *yShapeInfo,
+		int *resultShapeInfo,
+		int *xIndexes,
+		int *yIndexes,
+		int *resultIndexes) {
+	__shared__ functions::pairwise_transforms::PairWiseTransform<T> *op;
+	__shared__ functions::pairwise_transforms::PairWiseTransformOpFactory<T> *newOpFactory;
+	if(threadIdx.x == 0)
+		newOpFactory = new functions::pairwise_transforms::PairWiseTransformOpFactory<T>();
+	__syncthreads();
+	if(threadIdx.x == 0)
+		op = newOpFactory->getOp(opNum);
+	__syncthreads();
+	/*
+	 * 	T *dx,
+			int *xShapeBuffer,
+			T *y,
+			int *yShapeBuffer,
+			T *result,
+			int *resultShapeBuffer,
+			T *extraParams,
+			int n,
+			int *indexes,
+			int *yIndexes,
+			int *resultIndexes
+	 */
+	op->transform(
+			dx,
+			xShapeInfo,
+			dy,
+			yShapeInfo,
+			result,
+			resultShapeInfo,
+			params,
+			n,
+			xIndexes,
+			yIndexes,
+			resultIndexes);
+
+	if(threadIdx.x == 0) {
+		free(op);
+		free(newOpFactory);
+	}
+
+}
+
+
+/**
+ * The api for the driver interface
+ * @param opNum the op number
+ * @param n the length of the problem
+ * @param xOffset the offset for x
+ * @param yOffset the offset for y
+ * @param resultOffset the offset for result
+ * @param dx the input
+ * @param dy the pair wise array
+ * @param incx the stride for x
+ * @param incy the stride for y
+ * @param params the parameters for the problem
+ * @param result the result buffer
+ * @param incz the result stride
+ * @param blockSize the block size
+ */
+extern "C" __global__ void pairWiseTransformDoubleIndex(
+		int opNum,
+		int n,
+		double *dx,
+		double *dy,
+		double *params,
+		double *result,
+		int *xShapeInfo,
+		int *yShapeInfo,
+		int *resultShapeInfo,
+		int *xIndexes,
+		int *yIndexes,
+		int *resultIndexes) {
+	pairWiseTransformGeneric<double>(
+			opNum,
+			n,
+			dx,
+			dy,
+			params,
+			result,
+			xShapeInfo,
+			yShapeInfo,
+			resultShapeInfo,
+			xIndexes,
+			yIndexes,
+			resultIndexes);
+
+}
+
+
+
+/**
+ * The api for the driver interface
+ * @param opNum the op number
+ * @param n the length of the problem
+ * @param xOffset the offset for x
+ * @param yOffset the offset for y
+ * @param resultOffset the offset for result
+ * @param dx the input
+ * @param dy the pair wise array
+ * @param incx the stride for x
+ * @param incy the stride for y
+ * @param params the parameters for the problem
+ * @param result the result buffer
+ * @param incz the result stride
+ * @param blockSize the block size
+ */
+extern "C" __global__ void pairWiseTransformFloatIndex(
+		int opNum,
+		int n,
+		float *dx,
+		float *dy,
+		float *params,
+		float *result,
+		int *xShapeInfo,
+		int *yShapeInfo,
+		int *resultShapeInfo,
+		int *xIndexes,
+		int *yIndexes,
+		int *resultIndexes) {
+	pairWiseTransformGeneric<float>(
+			opNum,
+			n,
+			dx,
+			dy,
+			params,
+			result,
+			xShapeInfo,
+			yShapeInfo,
+			resultShapeInfo,
+			xIndexes,
+			yIndexes,
+			resultIndexes);
 
 }
 

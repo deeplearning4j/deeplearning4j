@@ -829,6 +829,57 @@ namespace shape {
 #endif
     static int getOffset(int baseOffset,int *shape,int *stride,int *indices,int rank);
 
+
+    /**
+ * Convert a linear index to
+ * the equivalent nd index
+ * @param shape the shape of the dimensions
+ * @param index the index to map
+ * @param numIndices the number of total indices (typically prod of shape(
+ * @return the mapped indexes along each dimension
+ */
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    int * ind2sub(int rank,int *shape,int index,int numIndices);
+
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    int *ind2sub(int rank,int *shape,int index);
+
+    /**
+* Convert the given index (such as 1,1)
+* to a linear index
+* @param shape the shape of the indexes to convert
+* @param indices the index to convert
+* @return the linear index given the shape
+* and indices
+*/
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    int sub2Ind(int rank,int *shape,int *indices);
+
+    /**
+   * Compute the real linear indices for the given shape and stride
+   */
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    int *computeIndices(int rank,int *shape,int *stride);
+
+
+    /**
+   * Compute the real linear indices for the
+     * given shape buffer. Shape,stride and rank are derived
+     * from the buffer
+   */
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    int *computeIndices(int *shapeBuffer);
 /**
  * Computes the standard packed array strides for a given shape.
  *
@@ -986,6 +1037,34 @@ namespace shape {
     }
 
 
+    /**
+     * Compute the real linear indices for the given shape and stride
+     */
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    int *computeIndices(int rank,int *shape,int *stride) {
+        int length = shape::prod(shape,rank);
+        int *ret = (int *) malloc(sizeof(int) * length);
+        for(int i = 0; i < length; i++) {
+            int *idx = shape::ind2sub(rank,shape,i);
+            ret[i] = shape::getOffset(0,shape,stride,idx,rank);
+            free(idx);
+        }
+
+        return ret;
+    }
+
+    /**
+  * Compute the real linear indices for the given shape and stride
+  */
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    int *computeIndices(int *shapeBuffer) {
+        return computeIndices(shape::rank(shapeBuffer),shape::shapeOf(shapeBuffer),shape::stride(shapeBuffer));
+    }
+
 
     /**
  * Convert the given index (such as 1,1)
@@ -995,7 +1074,10 @@ namespace shape {
  * @return the linear index given the shape
  * and indices
  */
-    static int sub2Ind(int rank,int *shape,int *indices) {
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    int sub2Ind(int rank,int *shape,int *indices) {
         int index = 0;
         int shift = 1;
         for(int i = 0; i < rank; i++) {

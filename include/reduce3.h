@@ -211,7 +211,11 @@ public:
 
 		//only compute the tad indexes once
 		__shared__ shape::TADPermuteInfo xTadInfo;
+		__syncthreads();
+
 		__shared__ shape::TADPermuteInfo yTadInfo;
+		__syncthreads();
+
 		__shared__ T *newExtraParams;
 
 

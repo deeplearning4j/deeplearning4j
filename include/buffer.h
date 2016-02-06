@@ -204,6 +204,7 @@ __host__ void copyDataFromGpu(Buffer <T> **buffer) {
 			if(bufferRef->data != NULL)
 				free(bufferRef->data);
 #ifdef __CUDACC__
+			if(bufferRef->gData != NULL)
             checkCudaErrors(cudaFree(bufferRef->gData));
 #endif
 		}
@@ -220,10 +221,10 @@ __host__ void copyDataFromGpu(Buffer <T> **buffer) {
 #endif
 		Buffer<T> *createBuffer(T *data, int length) {
 			Buffer<T> *ret = (Buffer<T> *) malloc(sizeof(Buffer<T>));
-            T *buffData = (T *) malloc(sizeof(T) * length);
-            for(int i = 0; i < length; i++)
-                buffData[i] = data[i];
-            ret->data = buffData;
+			T *buffData = (T *) malloc(sizeof(T) * length);
+			for(int i = 0; i < length; i++)
+				buffData[i] = data[i];
+			ret->data = buffData;
 			ret->length = length;
 
 #ifdef __CUDACC__

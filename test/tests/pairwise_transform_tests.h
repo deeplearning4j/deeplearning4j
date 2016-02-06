@@ -8,6 +8,7 @@
 #include <pairwise_transform.h>
 #include <array.h>
 #include <shape.h>
+#include <buffer.h>
 #include "testhelpers.h"
 
 static functions::pairwise_transforms::PairWiseTransformOpFactory<double> *opFactory2 =
@@ -165,26 +166,23 @@ public:
 		int *yShapeBuff = shapeBuffer(this->rank,this->baseData->yShape);
 		assertBufferProperties(shapeBuff);
 		assertBufferProperties(yShapeBuff);
-		int xOffset = shape::offset(shapeBuff);
-		int yOffset = shape::offset(yShapeBuff);
-		int xEleStride = shape::elementWiseStride(shapeBuff);
-		int yEleStride = shape::elementWiseStride(yShapeBuff);
+
+		nd4j::buffer::Buffer<int> *shapeBuffBuff = nd4j::buffer::createBuffer(shapeBuff,this->rank);
+		nd4j::buffer::Buffer<int> *yShapeBuffBuff = nd4j::buffer::createBuffer(yShapeBuff,this->yRank);
 		pairWiseTransformDouble<<<this->blockSize,this->gridSize,this->sMemSize>>>(
 				this->opNum,
 				this->length,
-				xOffset,
-				yOffset,
-				0,
 				this->data->data->gData,
 				this->yData->data->gData,
-				xEleStride,
-				yEleStride,
 				this->extraParamsBuff->gData,
 				this->data->data->gData,
-				1);
-		free(shapeBuff);
-		free(yShapeBuff);
+				shapeBuffBuff->gData,
+				yShapeBuffBuff->gData,
+				shapeBuffBuff->gData);
+		nd4j::buffer::freeBuffer(&shapeBuffBuff);
+		nd4j::buffer::freeBuffer(&yShapeBuffBuff);
 #endif
+
 	}
 
 };
@@ -203,27 +201,24 @@ public:
 		int *yShapeBuff = shapeBuffer(this->rank,this->baseData->yShape);
 		assertBufferProperties(shapeBuff);
 		assertBufferProperties(yShapeBuff);
-		int xOffset = shape::offset(shapeBuff);
-		int yOffset = shape::offset(yShapeBuff);
-		int xEleStride = shape::elementWiseStride(shapeBuff);
-		int yEleStride = shape::elementWiseStride(yShapeBuff);
 
+		nd4j::buffer::Buffer<int> *shapeBuffBuff = nd4j::buffer::createBuffer(shapeBuff,this->rank);
+		nd4j::buffer::Buffer<int> *yShapeBuffBuff = nd4j::buffer::createBuffer(yShapeBuff,this->yRank);
 		pairWiseTransformFloat<<<this->blockSize,this->gridSize,this->sMemSize>>>(
 				this->opNum,
 				this->length,
-				xOffset,
-				yOffset,
-				0,
 				this->data->data->gData,
 				this->yData->data->gData,
-				xEleStride,
-				yEleStride,
 				this->extraParamsBuff->gData,
 				this->data->data->gData,
-				1);
-		free(shapeBuff);
-		free(yShapeBuff);
+				shapeBuffBuff->gData,
+				yShapeBuffBuff->gData,
+				shapeBuffBuff->gData);
+		nd4j::buffer::freeBuffer(&shapeBuffBuff);
+		nd4j::buffer::freeBuffer(&yShapeBuffBuff);
+
 #endif
+
 	}
 };
 
