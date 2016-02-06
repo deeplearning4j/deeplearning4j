@@ -267,6 +267,4 @@ Word2Vec对于信息检索和QA系统的预处理数据尤其有用。这些系�
 
 ## <a name="next">下一步</a>
 
-[使用 Word2Vec来做情感分析的例子可以点击 这里](http://deeplearning4j.org/sentiment_analysis_word2vec.html).
-
-(我们最近仍然在测试Doc2Vec和GloVe的实现，请多关注这里！)
+我们最近仍然在测试[Doc2Vec](../doc2vec.html)和GloVe的实现，请多关注这里！
