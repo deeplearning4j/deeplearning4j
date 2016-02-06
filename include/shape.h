@@ -662,7 +662,7 @@ namespace shape {
     __host__ __device__
 #endif
 
-    int offset(int index, int *xShapeInfo, int dimensionLength,
+    int offset(int index, int *xShapeInfo,int *dimension, int dimensionLength,
                TADPermuteInfo info);
 
 /**
@@ -812,6 +812,23 @@ namespace shape {
 
     int prod(int *data, int length);
 
+
+    /**
+* Get an offset for retrieval
+* from a data buffer
+* based on the given
+* shape stride and given indices
+* @param baseOffset the offset to start from
+* @param shape the shape of the array
+* @param stride the stride of the array
+* @param indices the indices to iterate over
+* @return the double at the specified index
+*/
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    static int getOffset(int baseOffset,int *shape,int *stride,int *indices,int rank);
+
 /**
  * Computes the standard packed array strides for a given shape.
  *
@@ -949,6 +966,9 @@ namespace shape {
  * Get the shape info buffer
  * for the given rank and shape.
  */
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
     int *shapeBuffer(int rank, int *shape) {
         int *stride = shape::calcStrides(shape, rank);
         shape::ShapeInformation * shapeInfo = (shape::ShapeInformation *) malloc(
@@ -964,6 +984,113 @@ namespace shape {
         free(shapeInfo);
         return shapeInfoBuffer;
     }
+
+
+
+    /**
+ * Convert the given index (such as 1,1)
+ * to a linear index
+ * @param shape the shape of the indexes to convert
+ * @param indices the index to convert
+ * @return the linear index given the shape
+ * and indices
+ */
+    static int sub2Ind(int rank,int *shape,int *indices) {
+        int index = 0;
+        int shift = 1;
+        for(int i = 0; i < rank; i++) {
+            index += shift * indices[i];
+            shift *= shape[i];
+        }
+        return index;
+    }
+
+    /**
+     * Convert a linear index to
+     * the equivalent nd index
+     * @param shape the shape of the dimensions
+     * @param index the index to map
+     * @param numIndices the number of total indices (typically prod of shape(
+     * @return the mapped indexes along each dimension
+     */
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    int * ind2sub(int rank,int *shape,int index,int numIndices) {
+        int denom = numIndices;
+        int *ret = (int *) malloc(sizeof(int) * rank);
+        for(int i = rank - 1; i >= 0; i--) {
+            denom /= shape[i];
+            ret[i] = index / denom;
+            index %= denom;
+
+        }
+        return ret;
+    }
+
+    /**
+     * Convert a linear index to
+     * the equivalent nd index.
+     * Infers the number of indices from the specified shape.
+     *
+     * @param shape the shape of the dimensions
+     * @param index the index to map
+     * @return the mapped indexes along each dimension
+     */
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    int *ind2sub(int rank,int *shape,int index) {
+        return ind2sub(rank,shape, index,shape::prod(shape,rank));
+    }
+
+
+
+
+
+/**
+ * Convert a linear index to
+ * the equivalent nd index
+ * @param shape the shape of the dimensions
+ * @param index the index to map
+ * @param numIndices the number of total indices (typically prod of shape(
+ * @return the mapped indexes along each dimension
+ */
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    int * ind2subC(int rank,int *shape,int index,int numIndices) {
+        int denom = numIndices;
+        int *ret = (int *) malloc(sizeof(int) * rank);
+        for(int i = 0; i < rank; i++) {
+            denom /= shape[i];
+            ret[i] = index / denom;
+            index %= denom;
+
+        }
+        return ret;
+    }
+
+
+
+
+/**
+ * Convert a linear index to
+ * the equivalent nd index.
+ * Infers the number of indices from the specified shape.
+ *
+ * @param shape the shape of the dimensions
+ * @param index the index to map
+ * @return the mapped indexes along each dimension
+ */
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    int * ind2subC(int rank,int *shape,int index) {
+        return ind2subC(rank,shape, index, shape::prod(shape,rank));
+    }
+
 
 /**
  *
@@ -1808,6 +1935,9 @@ __device__ int tadOffset(int *xInfo, int offset) {
         return retOffset;
     }
 
+
+
+
 /**
  * Given the shape information and dimensions
  * returns common information
@@ -1829,13 +1959,13 @@ __device__ int tadOffset(int *xInfo, int offset) {
             tensorShape = newTensorShape;
         }
 
+
         int removeLength = nd4j::math::nd4j_abs<int>(xRank - dimensionLength);
         int tensorShapeLength = shape::rank(xShapeInfo) - removeLength;
         if (tensorShapeLength < 2)
             tensorShapeLength = 2;
 
         int tensorShapeProd = shape::prod(tensorShape, tensorShapeLength);
-
         int *reverseDimensions = shape::reverseCopy(dimension, dimensionLength);
         int *rangeRet = shape::range(0, xRank);
 
@@ -2118,6 +2248,38 @@ __device__ int tadOffset(int *xInfo, int offset) {
 
     }
 
+
+    /**
+ * Get an offset for retrieval
+ * from a data buffer
+ * based on the given
+ * shape stride and given indices
+ * @param baseOffset the offset to start from
+ * @param shape the shape of the array
+ * @param stride the stride of the array
+ * @param indices the indices to iterate over
+ * @return the double at the specified index
+ */
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    static int getOffset(int baseOffset,int *shape,int *stride,int *indices,int rank) {
+        int offset = baseOffset;
+        for(int i = 0; i < rank; i++) {
+            if(indices[i] >= shape[i]) {
+                printf("Index [%d] must not be >= shape[d].\n", i);
+                return -1;
+            }
+
+            if(shape[i] != 1) {
+                offset += indices[i] * stride[i];
+            }
+        }
+
+        return offset;
+    }
+
+
 /**
  * Computes the tensor along dimension
  * offset
@@ -2130,7 +2292,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
     __host__ __device__
 #endif
 
-    int offset(int index, int *xShapeInfo, int dimensionLength,
+    int offset(int index, int *xShapeInfo,int *dimension, int dimensionLength,
                TADPermuteInfo info) {
         int sliceIdx = sliceOffsetForTensor(rank(xShapeInfo), index,
                                             info.permutedShape, info.tensorShape, info.tensorShapeLength,
@@ -2144,12 +2306,15 @@ __device__ int tadOffset(int *xInfo, int offset) {
         int ret2Rank = info.xRank - 1;
 
         int retOffset = sliceIdx * info.permutedStrides[0];
+        if(dimension[0] == 0)
+            return sliceIdx;
+
         int tensorShapeProd = info.tensorShapeProd;
         int val = nd4j::math::nd4j_abs<int>(
                 info.tensorShapeLength - dimensionLength) <= 1;
         int tensorShapeRoughlyEquals = dimensionLength == 1 && val;
         if ((tensorShapeProd == ret2Length && tensorShapeRoughlyEquals == 1)
-            || dimensionLength == info.tensorShapeLength) {
+            || dimensionLength == info.tensorShapeLength && dimensionLength) {
             return retOffset;
         }
 

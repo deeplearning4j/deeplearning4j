@@ -1,0 +1,91 @@
+include $(KERNELDIR)/KERNEL.ARMV8
+
+SAMAXKERNEL  = amax.S
+DAMAXKERNEL  = amax.S
+CAMAXKERNEL  = zamax.S
+ZAMAXKERNEL  = zamax.S
+
+ISAMAXKERNEL = iamax.S
+IDAMAXKERNEL = iamax.S
+ICAMAXKERNEL = izamax.S
+IZAMAXKERNEL = izamax.S
+
+SASUMKERNEL  = asum.S
+DASUMKERNEL  = asum.S
+CASUMKERNEL  = casum.S
+ZASUMKERNEL  = zasum.S
+
+SAXPYKERNEL  = axpy.S
+DAXPYKERNEL  = axpy.S
+CAXPYKERNEL  = zaxpy.S
+ZAXPYKERNEL  = zaxpy.S
+
+SCOPYKERNEL  = copy.S
+DCOPYKERNEL  = copy.S
+CCOPYKERNEL  = copy.S
+ZCOPYKERNEL  = copy.S
+
+SDOTKERNEL   = dot.S
+DDOTKERNEL   = dot.S
+CDOTKERNEL   = zdot.S
+ZDOTKERNEL   = zdot.S
+
+SNRM2KERNEL  = nrm2.S
+DNRM2KERNEL  = nrm2.S
+CNRM2KERNEL  = znrm2.S
+ZNRM2KERNEL  = znrm2.S
+
+SROTKERNEL   = rot.S
+DROTKERNEL   = rot.S
+CROTKERNEL   = zrot.S
+ZROTKERNEL   = zrot.S
+
+SSCALKERNEL  = scal.S
+DSCALKERNEL  = scal.S
+CSCALKERNEL  = zscal.S
+ZSCALKERNEL  = zscal.S
+
+SSWAPKERNEL  = swap.S
+DSWAPKERNEL  = swap.S
+CSWAPKERNEL  = swap.S
+ZSWAPKERNEL  = swap.S
+
+SGEMVNKERNEL = gemv_n.S
+DGEMVNKERNEL = gemv_n.S
+CGEMVNKERNEL = zgemv_n.S
+ZGEMVNKERNEL = zgemv_n.S
+
+SGEMVTKERNEL = gemv_t.S
+DGEMVTKERNEL = gemv_t.S
+CGEMVTKERNEL = zgemv_t.S
+ZGEMVTKERNEL = zgemv_t.S
+
+STRMMKERNEL = strmm_kernel_4x4.S
+DTRMMKERNEL = dtrmm_kernel_4x4.S
+CTRMMKERNEL = ctrmm_kernel_4x4.S
+ZTRMMKERNEL = ztrmm_kernel_4x4.S
+
+SGEMMKERNEL    =  sgemm_kernel_4x4.S
+SGEMMONCOPY    =  ../generic/gemm_ncopy_4.c
+SGEMMOTCOPY    =  ../generic/gemm_tcopy_4.c
+SGEMMONCOPYOBJ =  sgemm_oncopy.o
+SGEMMOTCOPYOBJ =  sgemm_otcopy.o
+
+DGEMMKERNEL    =  dgemm_kernel_4x4.S
+DGEMMONCOPY    =  ../generic/gemm_ncopy_4.c
+DGEMMOTCOPY    =  ../generic/gemm_tcopy_4.c
+DGEMMONCOPYOBJ =  dgemm_oncopy.o
+DGEMMOTCOPYOBJ =  dgemm_otcopy.o
+
+CGEMMKERNEL    =  cgemm_kernel_4x4.S
+CGEMMONCOPY    =  ../generic/zgemm_ncopy_4.c
+CGEMMOTCOPY    =  ../generic/zgemm_tcopy_4.c
+CGEMMONCOPYOBJ =  cgemm_oncopy.o
+CGEMMOTCOPYOBJ =  cgemm_otcopy.o
+
+ZGEMMKERNEL    =  zgemm_kernel_4x4.S
+ZGEMMONCOPY    =  ../generic/zgemm_ncopy_4.c
+ZGEMMOTCOPY    =  ../generic/zgemm_tcopy_4.c
+ZGEMMONCOPYOBJ =  zgemm_oncopy.o
+ZGEMMOTCOPYOBJ =  zgemm_otcopy.o
+

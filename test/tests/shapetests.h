@@ -244,4 +244,26 @@ TEST(Shape,PermuteSwap) {
 
 }
 
+TEST(Shape,Offset) {
+	int dimensionLength = 1;
+    int rank = 2;
+	int *dimension = (int *) malloc(sizeof(int) * dimensionLength);
+	dimension[0] = 0;
+    int *shape = (int *) malloc(sizeof(int) * rank);
+    shape[0] = 2;
+    shape[1] = 3;
+    int *shapeBuff = shapeBuffer(rank,shape);
+    int offsetAssertion = 1;
+    shape::TADPermuteInfo info = shape::tadInfo(shapeBuff,dimension,dimensionLength);
+    int offset1 = shape::offset(1,shapeBuff,dimension,1,info);
+    if(offset1 != 1)
+        printf("Offset != 1 %d\n",offset1);
+    CHECK(offset1 == offsetAssertion);
+
+
+    free(shapeBuff);
+	free(dimension);
+}
+
+
 #endif /* SHAPETESTS_H_ */

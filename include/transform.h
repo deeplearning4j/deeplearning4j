@@ -52,6 +52,42 @@ namespace functions {
 
             }
 #endif
+            /**
+             * CPU execution
+             * @param dx the input
+             * @param xStride the stride to iterate for the input
+             * @param result the result buffer
+             * @param resultStride the stride for result
+             * storage
+             * @param extraParams the extra parameters
+             * @param n the number of elements to iterate on
+             */
+            virtual void exec(T *dx, int *xShapeInfo, T *result, int *resultShapeInfo,
+                              T *extraParams, int n) {
+
+
+                int *xShape = shape::shapeOf(xShapeInfo);
+                int *resultShape = shape::shapeOf(resultShapeInfo);
+
+                int *xStride = shape::stride(xShapeInfo);
+                int *resultStride = shape::stride(resultShapeInfo);
+                int xRank = shape::rank(xShapeInfo);
+                int resultRank = shape::rank(resultShapeInfo);
+
+                int xOffset = shape::offset(xShapeInfo);
+                int resultBaseOffset = shape::offset(resultShapeInfo);
+
+#pragma omp simd
+                for (int i = 0; i < n; i++) {
+                    int *xIdx = shape::ind2sub(xRank, xShape, i);
+                    int *resultIdx = shape::ind2sub(resultRank, resultShape, i);
+                    int xOffset = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
+                    int resultOffset = shape::getOffset(resultBaseOffset, resultShape, resultStride, resultIdx, resultRank);
+                    result[resultOffset] = op(dx[xOffset], extraParams);
+                }
+
+            }
+
 
             /**
              * CPU execution
@@ -71,7 +107,10 @@ namespace functions {
                         result[i] = op(dx[i], extraParams);
                     }
 
-                } else {
+                }
+
+
+                else {
 #pragma omp simd
                     for (int i = 0; i < n; i++) {
                         result[i * resultStride] = op(dx[i * resultStride],
@@ -2000,6 +2039,7 @@ namespace functions {
                 else if(op == 35) {
                     return new transform::ops::OneMinus<T>();
                 }
+
 
                 return ret;
             }
