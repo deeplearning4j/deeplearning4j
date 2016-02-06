@@ -41,6 +41,77 @@ public:
 	T op(T d1, T *params) = 0;
 
 #ifdef __CUDACC__
+	/**
+	 *
+	 */
+	virtual __inline__ __device__ void transform(
+			T *dx,
+			int *xShapeBuffer,
+			T *y,
+			int *yShapeBuffer,
+			T *result,
+			int *resultShapeBuffer,
+			T *extraParams,
+			int n,int *indexes) {
+		transform(dx,
+				xShapeBuffer,
+				y,
+				yShapeBuffer,
+				result,
+				resultShapeBuffer,
+				extraParams,
+				n,
+				indexes,
+				indexes,
+				indexes);
+	}
+
+	/**
+	 *
+	 */
+	virtual __inline__ __device__ void transform(
+			T *dx,
+			int *xShapeBuffer,
+			T *y,
+			int *yShapeBuffer,
+			T *result,
+			int *resultShapeBuffer,
+			T *extraParams,
+			int n,int *indexes,int *yIndexes,int *resultIndexes) {
+
+		int totalThreads = gridDim.x * blockDim.x;
+		int tid = threadIdx.x;
+		int i = blockIdx.x * blockDim.x + tid;
+		for (; i < n; i += totalThreads) {
+			result[resultIndexes[i]] = op(dx[indexes[i]],y[yIndexes[i]], extraParams);
+		}
+	}
+
+
+	/**
+	 *
+	 */
+	virtual __inline__ __device__ void transform(
+			T *dx,
+			int *xShapeBuffer,
+			T *y,
+			int *yShapeBuffer,
+			T *result,
+			int *resultShapeBuffer,
+			T *extraParams,
+			int n,int *indexes,int *yIndexes) {
+		transform(dx,
+					xShapeBuffer,
+					y,
+					yShapeBuffer,
+					result,
+					resultShapeBuffer,
+					extraParams,
+					n,
+					indexes,
+					yIndexes,
+					indexes);
+	}
 
 	/**
 	 *
@@ -110,6 +181,10 @@ public:
 				int yOffset2 = shape::getOffset(yOffset, yShape, yStride, yIdx, yRank);
 				int resultOffset2 = shape::getOffset(resultOffset, resultShape, resultStride, resultIdx, resultRank);
 				result[resultOffset2] = op(dx[xOffset2],y[yOffset2], extraParams);
+
+				free(xIdx);
+				free(yIdx);
+				free(resultIdx);
 			}
 		}
 
@@ -186,6 +261,109 @@ public:
 
 #endif
 public:
+
+
+	/**
+	 * CPU operation execution
+	 * @param dx the input data
+	 * @param xStride the stride to iterate over
+	 * the x input
+	 * @param y the y data
+	 * @param yStride the stride to iterate
+	 * over the y buffer
+	 * @param result the buffer
+	 * to store the result in
+	 * @param resultStride the stride for the buffer
+	 * @param extraParams the extra parameters for the transform
+	 * @param n the length of the input
+	 */
+	virtual void exec(
+			T *dx,
+			int *xShapeBuffer,
+			T *y,
+			int *yShapeBuffer,
+			T *result,
+			int *resultShapeBuffer,
+			T *extraParams, int n,int *indexes,int *yIndexes) {
+        exec(dx,
+             xShapeBuffer,
+             y,
+             yShapeBuffer,
+             result,
+             resultShapeBuffer,
+             extraParams,
+             n,
+             indexes,
+             yIndexes,
+             indexes);
+	}
+
+
+            /**
+ * CPU operation execution
+ * @param dx the input data
+ * @param xStride the stride to iterate over
+ * the x input
+ * @param y the y data
+ * @param yStride the stride to iterate
+ * over the y buffer
+ * @param result the buffer
+ * to store the result in
+ * @param resultStride the stride for the buffer
+ * @param extraParams the extra parameters for the transform
+ * @param n the length of the input
+ */
+            virtual void exec(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *y,
+                    int *yShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams,
+                    int n,
+                    int *indexes,
+                    int *yIndexes,
+                    int *resultIndexes) {
+#pragma omp simd
+                for (int i = 0; i < n; i++) {
+                    result[resultIndexes[i]] = op(dx[indexes[i]],y[yIndexes[i]], extraParams);
+
+                }
+            }
+
+
+	/**
+	 * CPU operation execution
+	 * @param dx the input data
+	 * @param xStride the stride to iterate over
+	 * the x input
+	 * @param y the y data
+	 * @param yStride the stride to iterate
+	 * over the y buffer
+	 * @param result the buffer
+	 * to store the result in
+	 * @param resultStride the stride for the buffer
+	 * @param extraParams the extra parameters for the transform
+	 * @param n the length of the input
+	 */
+	virtual void exec(
+			T *dx,
+			int *xShapeBuffer,
+			T *y,
+			int *yShapeBuffer,
+			T *result,
+			int *resultShapeBuffer,
+			T *extraParams, int n,int *indexes) {
+
+
+#pragma omp simd
+		for (int i = 0; i < n; i++) {
+			result[indexes[i]] = op(dx[indexes[i]],y[indexes[i]], extraParams);
+
+		}
+	}
+
 	/**
 	 * CPU operation execution
 	 * @param dx the input data
@@ -256,12 +434,17 @@ public:
 				int yOffset2 = shape::getOffset(yOffset, yShape, yStride, yIdx, yRank);
 				int resultOffset2 = shape::getOffset(resultOffset, resultShape, resultStride, resultIdx, resultRank);
 				result[resultOffset2] = op(dx[xOffset2],y[yOffset2], extraParams);
+
+				free(xIdx);
+				free(yIdx);
+				free(resultIdx);
+
 			}
 
 		}
-
-
 	}
+
+
 	/**
 	 * CPU operation execution
 	 * @param dx the input data
