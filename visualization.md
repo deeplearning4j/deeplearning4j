@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# Deeplearning4j's Vizualization and UI
+# Visualize, Monitor and Debug Network Learning
 
 The deeplearning4j-ui repository can display T-SNE, histograms, filters, error and activations. 
 
@@ -41,11 +41,9 @@ You would specify `HistogramIterationListener` rather than `ScoreIterationListen
 
         model.setListeners(Arrays.asList(new ScoreIterationListener(listenerFreq), new HistogramIterationListener(listenerFreq)));
 
-Here are some of the file names you'll want to get familiar with in the deeplearning4j-ui repo: 
+You'll want to get familiar with the `HistogramIterationListener` in the deeplearning4j-ui repo: 
 
 * deeplearning4j-ui/src/main/java/org/deeplearning4j/ui/weights/HistogramIterationListener.java
-* deeplearning4j-ui/src/main/java/org/deeplearning4j/ui/weights/ModelAndGradient.java 
-* deeplearning4j-ui/src/main/resources/org/deeplearning4j/ui/weights/render.ftl 
 
 ### TSNE and Word2vec
 
