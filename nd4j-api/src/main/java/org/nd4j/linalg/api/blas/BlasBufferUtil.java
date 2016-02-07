@@ -95,7 +95,7 @@ public class BlasBufferUtil {
      * array
      */
     public static char getCharForTranspose(INDArray arr) {
-        return 'N';
+        return 'n';
     }
 
     /**

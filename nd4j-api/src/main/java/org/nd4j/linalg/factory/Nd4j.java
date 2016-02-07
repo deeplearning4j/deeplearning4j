@@ -4568,7 +4568,7 @@ public class Nd4j {
             String defaultName = props.getProperty(DATA_BUFFER_OPS, DefaultDataBufferFactory.class.getName());
             dataBufferFactoryClazz = (Class<? extends DataBufferFactory>) Class.forName(System.getProperty(DATA_BUFFER_OPS, defaultName));
 
-
+            allowsOrder = backend.allowsOrder();
             String rand = props.getProperty(RANDOM, DefaultRandom.class.getName());
             randomClazz = (Class<? extends org.nd4j.linalg.api.rng.Random>) Class.forName(rand);
 

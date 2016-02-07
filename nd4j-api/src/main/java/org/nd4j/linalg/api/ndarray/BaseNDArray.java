@@ -298,9 +298,17 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         this.shapeInformation = Shape.createShapeInformation(thisShape,stride,0,stride[stride.length - 1],ordering);
         init(thisShape,stride);
 
-        for (int i = 0; i < slices(); i++) {
-            putSlice(i, slices.get(i));
+        if(slices.get(0).isScalar()) {
+            for (int i = 0; i < length(); i++) {
+                putScalar(i, slices.get(i).getDouble(0));
+            }
         }
+        else {
+            for (int i = 0; i < slices(); i++) {
+                putSlice(i, slices.get(i));
+            }
+        }
+
     }
 
     /**
@@ -1406,7 +1414,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             isScalar = Shape.shapeOf(shapeInformation).get(0) == 1 && Shape.shapeOf(shapeInformation).get(1) == 1;
         }
 
-        isScalar = false;
+        else
+            isScalar = false;
 
         return isScalar;
     }
@@ -2481,7 +2490,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         } else {
             if(other.columns() == 1) {
                 Nd4j.getBlasWrapper().level2().gemv(
-                        BlasBufferUtil.getCharForTranspose(this)
+                        'f'
                         ,  BlasBufferUtil.getCharForTranspose(other),
                         1.0
                         ,this
@@ -2491,7 +2500,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             }
             else
                 Nd4j.getBlasWrapper().level3().gemm(
-                        BlasBufferUtil.getCharForTranspose(this)
+                        'f'
                         ,BlasBufferUtil.getCharForTranspose(other)
                         ,BlasBufferUtil.getCharForTranspose(resultArray)
                         ,1.0

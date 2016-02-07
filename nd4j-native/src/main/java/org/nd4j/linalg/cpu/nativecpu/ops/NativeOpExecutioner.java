@@ -6,6 +6,7 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
+import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -118,7 +119,16 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         java.nio.IntBuffer dimensionBuffer = Shape.toBuffer(dimension);
         if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
-            if(op.y() != null) {
+            if(op instanceof Variance) {
+                loop.execSummaryStats(op.opNum(),
+                        op.x().data().asNioDouble(),
+                        op.x().shapeInfo(), null,
+                        op.z().data().asNioDouble(),
+                        op.z().shapeInfo(),
+                        dimensionBuffer, dimension.length);
+            }
+
+            else if(op.y() != null) {
                 loop.execReduce3(op.opNum(),
                         op.x().data().asNioDouble(),
                         op.x().shapeInfo(),null,
@@ -138,7 +148,15 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
         }
         else {
-            if(op.y() != null) {
+            if(op instanceof Variance) {
+                loop.execSummaryStats(op.opNum(),
+                        op.x().data().asNioFloat(),
+                        op.x().shapeInfo(), null,
+                        op.z().data().asNioFloat(),
+                        op.z().shapeInfo(),
+                        dimensionBuffer, dimension.length);
+            }
+            else if(op.y() != null) {
                 loop.execReduce3(op.opNum(),
                         op.x().data().asNioFloat(),
                         op.x().shapeInfo(),null,
@@ -291,7 +309,13 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
         else {
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
-                if(op.y() != null) {
+                if(op instanceof Variance) {
+                    op.setFinalResult(loop.execSummaryStatsScalar(
+                            op.opNum(),
+                            op.x().data().asNioDouble()
+                            , op.x().shapeInfo(), null));
+                }
+                else if(op.y() != null) {
                     op.setFinalResult(loop.execReduce3Scalar(
                             op.opNum(),
                             op.x().data().asNioDouble()
@@ -306,7 +330,13 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 }
             }
             else {
-                if(op.y() != null) {
+                if(op instanceof Variance) {
+                    op.setFinalResult(loop.execSummaryStatsScalar(
+                            op.opNum(),
+                            op.x().data().asNioFloat()
+                            ,op.x().shapeInfo(),null));
+                }
+                else if(op.y() != null) {
                     op.setFinalResult(loop.execReduce3Scalar(
                             op.opNum(),
                             op.x().data().asNioFloat()
