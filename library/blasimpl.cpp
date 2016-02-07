@@ -54,7 +54,8 @@ void cblas_xerbla(int p, const char *rout, const char *form, ...) {
 CBLAS_ORDER  convertOrder(int from) {
 	switch(from) {
 		//'c'
-		case 99: return CblasRowMajor;
+		case 99:
+			return CblasRowMajor;
 			//'C'
 		case 67: return CblasRowMajor;
 			//'f'
