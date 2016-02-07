@@ -421,7 +421,6 @@ public:
 
 
 		if(xElementWiseStride >= 1 && yElementWiseStride >= 1 && resultElementWiseStride >= 1) {
-            printf("Element wise stride \n");
 			exec(dx,
 					xElementWiseStride,
 					y,
@@ -434,17 +433,15 @@ public:
 
 
 		else {
-            printf("In else\n");
 #pragma omp simd
 			for (int i = 0; i < n; i++) {
-				int *xIdx = shape::ind2sub(xRank, xShape, i);
-				int *yIdx = shape::ind2sub(yRank, yShape, i);
+				int *xIdx = shape::ind2subC(xRank, xShape, i);
+				int *yIdx = shape::ind2subC(yRank, yShape, i);
 				int *resultIdx = shape::ind2subC(resultRank, resultShape, i);
 
 				int xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
 				int yOffset2 = shape::getOffset(yOffset, yShape, yStride, yIdx, yRank);
 				int resultOffset2 = shape::getOffset(resultOffset, resultShape, resultStride, resultIdx, resultRank);
-                printf("Mapping result index %d on to x %d and y %d\n",resultOffset2,xOffset2,yOffset2);
 				result[resultOffset2] = op(dx[xOffset2],y[yOffset2], extraParams);
 
 				free(xIdx);
