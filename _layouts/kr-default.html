@@ -27,7 +27,6 @@
       window.heap=window.heap||[],heap.load=function(e,t){window.heap.appid=e,window.heap.config=t=t||{};var n=t.forceSSL||"https:"===document.location.protocol,a=document.createElement("script");a.type="text/javascript",a.async=!0,a.src=(n?"https:":"http:")+"//cdn.heapanalytics.com/js/heap-"+e+".js";var o=document.getElementsByTagName("script")[0];o.parentNode.insertBefore(a,o);for(var r=function(e){return function(){heap.push([e].concat(Array.prototype.slice.call(arguments,0)))}},p=["clearEventProperties","identify","setEventProperties","track","unsetEventProperty"],c=0;c<p.length;c++)heap[p[c]]=r(p[c])};
       heap.load("2234280121");
     </script>
-</body>
 
 
       {{ content }}
@@ -35,4 +34,9 @@
       <div class="footer">
         <p>
           &copy; {{ site.time | date: '%Y' }}。DL4J is distributed under an Apache 2.0 License。<br>
-<a href="https://github.com/deeplearning4j/deeplearning4j">Github</a> // <a href="https://groups.google.com/forum/#!forum/deeplearning4j">Google Groups</a> // <a href="http://deeplearning4j.org/">English Version</a>。</p></br>
+<a href="https://github.com/deeplearning4j/deeplearning4j">Github</a> // <a href="https://groups.google.com/forum/#!forum/deeplearning4j">Google Groups</a> // <a href="http://deeplearning4j.org/">English Version</a>。</p>
+
+      </div>
+    </div>
+  </body>
+</html>
