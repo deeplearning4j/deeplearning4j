@@ -59,22 +59,22 @@ A special form of backpropagation is called backpropagation through time, or BPT
 
 * [Backpropagation Through Time: What It Does and How to Do It](http://deeplearning.cs.cmu.edu/pdfs/Werbos.backprop.pdf)
 
-###<a name="batch">Batch Normalization</a> 
+### <a name="batch">Batch Normalization</a> 
 
 Batch Normalization does what is says: it normalizes mini-batches as they're fed into a neural-net layer. Batch normalization has two potential benefits: it can accelerate learning because it allows you to employ higher learning rates, and also regularizes that learning.
 
 * [Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift](http://arxiv.org/abs/1502.03167)
 * [Overview	of mini-batch gradient descent (U. Toronto)](http://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf)
 
-###<a name="bidirectional">Bidirectional Recurrent Neural Networks</a> 
+### <a name="bidirectional">Bidirectional Recurrent Neural Networks</a> 
 A Bidirectional RNN is composed of two RNNs that process data in opposite directions. One reads a given sequence from start to finish; the other reads it from finish to start. Bidirectional RNNs are employed in NLP for translation problems, among other use cases. Deeplearning4j's implementation of [bidirectional Graves LSTMs is here](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers/recurrent/GravesBidirectionalLSTM.java).
 
 * [Bidirectional Recurrent Neural Networks](http://www.di.ufpe.br/~fnj/RNA/bibliografia/BRNN.pdf)
 
-###<a name="binarization">Binarization</a> 
+### <a name="binarization">Binarization</a> 
 The process of transforming data in to a set of zeros and ones. An example would be gray-scaling an image by transforming a picture from the 0-255 spectrum to a 0-1 spectrum. 
 
-###<a name="boltzmann">Boltzmann Machine</a> 
+### <a name="boltzmann">Boltzmann Machine</a> 
 "A Boltzmann machine learns internal (not defined by the user) concepts that help to explain (that can generate) the observed data. These concepts are captured by random variables (called hidden units) that have a joint distribution (statistical dependencies) among themselves and with the data, and that allow the learner to capture highly non-linear and complex interactions between the parts (observed random variables) of any observed example (like the pixels in an image). You can also think of these higher-level factors or hidden units as another, more abstract, representation of the data. The Boltzmann machine is parametrized through simple two-way interactions between every pair of random variable involved (the observed ones as well as the hidden ones)." - [Yoshua Bengio](https://www.quora.com/What-is-an-intuitive-explanation-of-a-Boltzmann-machine)
 
 ### <a name="channel">Channel</a>
@@ -148,28 +148,28 @@ The Nupic community has a good explanation of distributed representations [here]
 ### <a name="downpoursgd">Downpour Stochastic Gradient Descent</a>
 [Downpour stochastic gradient descent](http://research.google.com/archive/large_deep_networks_nips2012.html) is an asynchronous [stochastic gradient descent](#stochasticgradientdescent) procedure, employed by Google among others, that expands the scale and increases the speed of training deep-learning networks. 
 
-###<a name="dropout">Dropout</a>
+### <a name="dropout">Dropout</a>
 Dropout is a hyperparameter used for regularization in neural networks. Like all regularization techniques, its purpose is to prevent overfitting. Dropout randomly makes nodes in the neural network "drop out" by setting them to zero, which encourages the network to rely on other features that act as signals. That, in turn, creates more generalizable representations of data. 
 
 * [Dropout: A Simple Way to Prevent Neural Networks from Overfitting](https://www.cs.toronto.edu/~hinton/absps/JMLRdropout.pdf)
 * [Recurrent Neural Network Regularization](http://arxiv.org/abs/1409.2329)
 
-###<a name="dropconnect">DropConnect</a>
+### <a name="dropconnect">DropConnect</a>
 DropConnect is a generalization of Dropout for regularizing large fully-connected layers within neural networks. Dropout sets a randomly selected subset of activations to zero at each layer. DropConnect, in contrast, sets a randomly selected subset of weights within the network to zero.
 
 * [Regularization of Neural Networks using DropConnect](http://www.matthewzeiler.com/pubs/icml2013/icml2013.pdf)
 
-###<a name="embedding">Embedding</a>
+### <a name="embedding">Embedding</a>
 An embedding is a representation of input, or an encoding. For example, a neural word embedding is a vector that represents that word. The word is said to be embedded in vector space. Word2vec and GloVe are two techniques used to train word embeddings to predict a word's context. Because an embedding is a form of representation learning, we can "embed" any data type, including sounds, images and time series. 
 
-###<a name="epoch">Epoch vs. Iteration</a>
+### <a name="epoch">Epoch vs. Iteration</a>
 
 In machine-learning parlance, an epoch is a complete pass through a given dataset. That is, by the end of one epoch, your neural network -- be it a restricted Boltzmann machine, convolutional net or deep-belief network -- will have been exposed to every record to example within the dataset once. Not to be confused with an iteration, which is simply one update of the neural net model's parameters. Many iterations can occur before an epoch is over. Epoch and iteration are only synonymous if you update your parameters once for each pass through the whole dataset; if you update using mini-batches, they mean different things. Say your data has 2 minibatches: A and B. `.numIterations(3)` performs training like AAABBB, while 3 epochs looks like ABABAB.
 
-###<a name="etl">Extract, transform, load (ETL)</a>
+### <a name="etl">Extract, transform, load (ETL)</a>
 Data is loaded from disk or other sources into memory with the proper transforms such as [binarization](#binarization) and [normalization](#normalization). Broadly, you can think of a datapipeline as the process over gathering data from disparate sources and locations, putting it into a form that your algorithms can learn from, and then placing it in a data structure that they can iterate through. 
 
-###<a name="f1">f1 Score</a>
+### <a name="f1">f1 Score</a>
 The f1 score is a number between zero and one that explains how well the network performed during training. It is analogous to a percentage, with 1 being the best score and zero the worst. f1 is basically the probability that your net’s guesses are correct.
 
     F1 = 2 * ((precision * recall) / (precision + recall))
@@ -268,10 +268,10 @@ Noise-contrastive estimation offers a balance of computational and statistical e
 ### <a name="nonlineartransformfunction">Nonlinear Transform Function</a>  
 A function that maps input on a nonlinear scale such as [sigmoid](http://en.wikipedia.org/wiki/Sigmoid_function) or [tanh](http://en.wikipedia.org/wiki/Hyperbolic_function). By definition, a nonlinear function's output is not directly proportional to its input.
 
-###<a name="normalization">Normalization</a> 
+### <a name="normalization">Normalization</a> 
 The process of transforming the data to span a range from 0 to 1. 
 
-###<a name="OOP">Object-Oriented Programming (OOP)</a> 
+### <a name="OOP">Object-Oriented Programming (OOP)</a> 
 While deep learning and opject oriented programming don't necessarily go together, Deeplearning4j is written in Java following the principles of OOP. In object-oriented programming, you create so-called objects, which are generally abstract nouns representing a part in a larger symbolic machine (e.g. in Deeplearning4j, the object class DataSetIterator traverses across datasets and feeds parts of those datasets into another process, iteratively, piece by piece). 
 
 DatasetIterator is actually the name of a class of object. In any particular object-oriented program, you would create a particular instance of that general class, calling it, say, 'iter' like this: 
@@ -284,19 +284,19 @@ The way you talk about those fields and methods is with the dot operator `.`, an
 
 You can learn more about DataSetIterator and other classes in Deeplearning4j in our [Javadoc](../doc/).
 
-###<a name="objectivefunction">Objective Function</a> 
+### <a name="objectivefunction">Objective Function</a> 
 Also called a loss function or a cost function, an objective function is a heuristic function for reducing prediction error in a machine-learning algorithm. That is, an objective function allows you to measure how wrong your neural net it when it makes a guess, by comparing that guess to the ground-truth value of the training set. Measuring that error is a precondition to updating the neural net in such a way that its guesses generate less error. The error resulting from the loss function is fed into backpropagation in order to update the weights and biases that process input in the neural network. 
 
-###<a name="hot">One-Hot Encoding</a> 
+### <a name="hot">One-Hot Encoding</a> 
 Used in classification and bag of words. The label for each example is all 0s, except for a 1 at the index of the actual class to which the example belongs. For BOW, the one represents the word encountered. 
 
-###<a name="pooling">Pooling</a> 
+### <a name="pooling">Pooling</a> 
 Pooling, max pooling and average pooling are terms that refer to downsampling or subsampling within a convolutional network. Downsampling is a way of reducing the amount of data flowing through the network, and therefore decreasing the computational cost of the network. Average pooling takes the average of several values. Max pooling takes the greatest of several values. Max pooling is currently the preferred type of downsampling layer in convolutional networks. 
 
-###<a name="reconstructionentropy">Reconstruction Entropy</a> 
+### <a name="reconstructionentropy">Reconstruction Entropy</a> 
 After applying Gaussian noise, a kind of statistical white noise, to the data, this [objective function](#objectivefunction) punishes the network for any result that is not closer to the original input. That signal prompts the network to learn different features in an attempt to reconstruct the input better and minimize error. 
 
-###<a name="relu">Rectified Linear Units</a> 
+### <a name="relu">Rectified Linear Units</a> 
 Rectified linear units, or reLU, are a non-linear activation function widely applied in neural networks because they deal well with the vanishing gradient problem. They can be expressed so: `f(x) = max(0, x)`, where activation is set to zero if the output does not surpass a minimum threshhold, and activation increases linearly above that threshhold. 
 
 * [Rectifier Nonlinearities Improve Neural Network Acoustic Models](https://web.stanford.edu/~awni/papers/relu_hybrid_icml2013_final.pdf)
@@ -304,10 +304,10 @@ Rectified linear units, or reLU, are a non-linear activation function widely app
 * [Rectified Linear Units Improve Restricted Boltzmann Machines](http://www.cs.toronto.edu/~fritz/absps/reluICML.pdf)
 * [Incorporating Second-Order Functional Knowledge for Better Option Pricing](http://papers.nips.cc/paper/1920-incorporating-second-order-functional-knowledge-for-better-option-pricing.pdf)
 
-###<a name="recurrent">Recurrent Neural Networks</a> 
+### <a name="recurrent">Recurrent Neural Networks</a> 
 While "a multilayer perceptron (MLP) can only map from input to output vectors, whereas an RNN can in principle map from the entire history of previous inputs to each output. Indeed, the equivalent result to the universal approximation theory for MLPs is that an RNN with a sufficient number of hidden units can approximate any measurable sequenceto-sequence mapping to arbitrary accuracy (Hammer, 2000). The key point is that the recurrent connections allow a ‘memory’ of previous inputs to persist in the network’s internal state, which can then be used to influence the network output. The forward pass of an RNN is the same as that of an MLP with a single hidden layer, except that activations arrive at the hidden layer from both the current external input and the hidden layer activations one step back in time. " -Graves
 
-###<a name="recursive">Recursive Neural Networks</a> 
+### <a name="recursive">Recursive Neural Networks</a> 
 
 Recursive neural networks learn data with structural hierarchies, such as text arranged grammatically, much like recurrent neural networks learn data structured by its occurance in time. Their chief use is in natural-language processing, and they are associated with Richard Socher of Stanford's NLP lab.
 
@@ -317,29 +317,29 @@ Recursive neural networks learn data with structural hierarchies, such as text a
 
 Representation learning is learning the best representation of input. A vector, for example, can "represent" an image. Training a neural network will adjust the vector's elements to represent the image better, or lead to better guesses when a neural network is fed the image. The neural net might train to guess the image's name, for instance. Deep learning means that several layers of representations are stacked atop one another, and those representations are increasingly abstract; i.e. the initial, low-level representations are granular, and may represent pixels, while the higher representations will stand for combinations of pixels, and then combinations of combinations, and so forth. 
 
-###<a name="resnet">Residual Networks (ResNet)</a> 
+### <a name="resnet">Residual Networks (ResNet)</a> 
 Microsoft Research used deep Residual Networks to win ImageNet in 2015. ResNets create "shortcuts" across several layers (deep resnets have 150 layers), allowing the net to learn so-called residual mappings. ResNets are similar to nets with Highway Layers, although they're data independent. Microsoft Research created ResNets by generating by [different deep networks automatically and relying on hyperparameter optimization](http://www.wired.com/2016/01/microsoft-neural-net-shows-deep-learning-can-get-way-deeper/). 
 
 * [Deep Residual Learning for Image Recognition](http://arxiv.org/abs/1512.03385)
 
-###<a name="rbm">Restricted Boltzmann Machine (RBM)</a> 
+### <a name="rbm">Restricted Boltzmann Machine (RBM)</a> 
 Restricted Boltzmann machines are Boltzmann machines that are constrained to feed input forward symmetrically, which means all the nodes of one layer must connect to all the nodes of the subsequent layer. Stacked RBMs are known as a deep-belief network, and are used to learn how to reconstruct data layer by layer. Introduced by Geoff Hinton, RBMs were partially responsible for the renewed interest in deep learning that began circa 2006. In many labs, they have been replaced with more stable layers such as Variational Autoencoders. 
 
 * [A Practical Guide to Training Restricted Boltzmann Machines](https://www.cs.toronto.edu/~hinton/absps/guideTR.pdf)
 
-###<a name="rmsprop">RMSProp</a> 
+### <a name="rmsprop">RMSProp</a> 
 RMSProp is an optimization algorithm like Adagrad. In contrast to Adagrad, it relies on a decay term to prevent the learning rate from decreasing too rapidly.
 
 * [Optimization Algorithms (Stanford)](https://cs231n.github.io/neural-networks-3/)
 * [An overview of gradient descent optimization algorithms](http://sebastianruder.com/optimizing-gradient-descent/)
 
-###<a name="serialization">Serialization</a> 
+### <a name="serialization">Serialization</a> 
 Serialization is how you translate data structures or object state into storable formats. Deeplearning4j's nets are serialized, which means they can operate on devices with limited memory.
 
-###<a name="skipgram">Skipgram</a> 
+### <a name="skipgram">Skipgram</a> 
 The prerequisite to a definition of skipgrams is one of ngrams. [An n-gram is a contiguous sequence of n items from a given sequence of text or speech.](https://en.wikipedia.org/wiki/N-gram) A unigram represents one "item," a bigram two, a trigram three and so forth. Skipgrams are ngrams in which the items are not necessarily contiguous. This can be illustrated best with [a few examples.](http://homepages.inf.ed.ac.uk/ballison/pdf/lrec_skipgrams.pdf) Skipping is a form of noise, in the sense of [noising and denoising](http://deeplearning4j.org/stackeddenoisingautoencoder.html), which allows neural nets to better generalize their extraction of features. See how skipgrams are implemented in [Word2vec](../word2vec.html).
 
-###<a name="softmax">Softmax</a> 
+### <a name="softmax">Softmax</a> 
 Softmax is an algorithm used as the output layer of a neural network that classifies input. It converts vectors into class probabilities. Softmax normalizes the vector of scores by first exponentiating and then dividing by a constant. 
 
 * [A Scalable Hierarchical Distributed Language Model](https://www.cs.toronto.edu/~amnih/papers/hlbl_final.pdf)
