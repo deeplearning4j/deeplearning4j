@@ -4,7 +4,6 @@ package org.nd4j.linalg.cpu.nativecpu.ops;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ndarray.LinearViewNDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.shape.Shape;
@@ -162,7 +161,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     private void exec(ScalarOp op) {
-        if(op.x() instanceof IComplexNDArray || op.x() instanceof LinearViewNDArray || executionMode() == ExecutionMode.JAVA) {
+        if(op.x() instanceof IComplexNDArray || executionMode() == ExecutionMode.JAVA) {
             super.exec(op);
         }
         else {
@@ -193,28 +192,28 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     private void exec(TransformOp op) {
-        if(op.x() instanceof IComplexNDArray || op.x() instanceof LinearViewNDArray ||   executionMode() == ExecutionMode.JAVA) {
+        if(op.x() instanceof IComplexNDArray ||  executionMode() == ExecutionMode.JAVA) {
             super.exec(op);
         }
         else {
 
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 if(op.y() != null) {
-                    loop.execPairwiseTransform(op.opNum(),
-                            op.x().data().asNioDouble(),
-                            op.x().elementWiseStride(),
-                            op.y().data().asNioDouble(),
-                            op.y().elementWiseStride(),
-                            op.z().data().asNioDouble(),
-                            op.z().elementWiseStride(),
-                            null,op.n());
+                  loop.execPairwiseTransform(
+                          op.opNum(),
+                          op.x().data().asNioDouble(),
+                          op.x().shapeInfo(),op.y().data().asNioDouble(),
+                          op.y().shapeInfo(),op.z().data().asNioDouble(),
+                          op.z().shapeInfo(),
+                          null,
+                          op.n());
                 }
                 else {
                     loop.execTransform(op.opNum(),
                             op.x().data().asNioDouble(),
-                            op.x().elementWiseStride(),
+                            op.x().shapeInfo(),
                             op.z().data().asNioDouble(),
-                            op.z().elementWiseStride(),
+                            op.z().shapeInfo(),
                             null, op.n());
                 }
             }
@@ -222,20 +221,20 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 if(op.y() != null) {
                     loop.execPairwiseTransform(op.opNum(),
                             op.x().data().asNioFloat(),
-                            op.x().elementWiseStride(),
+                            op.x().shapeInfo(),
                             op.y().data().asNioFloat(),
-                            op.y().elementWiseStride(),
+                            op.y().shapeInfo(),
                             op.z().data().asNioFloat(),
-                            op.z().elementWiseStride(),
+                            op.z().shapeInfo(),
                             null,op.n());
 
                 }
                 else {
                     loop.execTransform(op.opNum(),
                             op.x().data().asNioFloat(),
-                            op.x().elementWiseStride(),
+                            op.x().shapeInfo(),
                             op.z().data().asNioFloat(),
-                            op.z().elementWiseStride(),
+                            op.z().shapeInfo(),
                             null,op.n());
                 }
             }
@@ -263,7 +262,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     private void exec(IndexAccumulation op) {
-        if(op.x() instanceof IComplexNDArray || op.x() instanceof LinearViewNDArray || executionMode() == ExecutionMode.JAVA) {
+        if(op.x() instanceof IComplexNDArray || executionMode() == ExecutionMode.JAVA) {
             super.exec(op);
 
         }
@@ -286,7 +285,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     private void exec(Accumulation op) {
-        if(op.x() instanceof IComplexNDArray || op.x() instanceof LinearViewNDArray || executionMode() == ExecutionMode.JAVA) {
+        if(op.x() instanceof IComplexNDArray || executionMode() == ExecutionMode.JAVA) {
             super.exec(op);
 
         }

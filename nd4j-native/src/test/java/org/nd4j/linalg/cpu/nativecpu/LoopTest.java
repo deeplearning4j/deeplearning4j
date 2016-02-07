@@ -41,6 +41,18 @@ public class LoopTest {
     }
 
     @Test
+    public void testDup() {
+        Nd4j.getRandom().setSeed(12345L);
+        INDArray twoByEight = Nd4j.linspace(1,16,16).reshape(2,8);
+
+        INDArray view = twoByEight.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 2));
+        int eleStride = view.elementWiseStride();
+        INDArray viewCopy = view.dup();
+        assertEquals(view,viewCopy);
+
+    }
+
+    @Test
     public void testMultiDimSum() {
         double[] data = new double[]{22.,  26.,  30};
         INDArray assertion = Nd4j.create(data);
