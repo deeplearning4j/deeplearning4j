@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include "java_cblas.h"
 #include <cblas.h>
+#include "cblas_enum_conversion.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -44,6 +45,116 @@ void cblas_xerbla(int p, const char *rout, const char *form, ...) {
 	return;
 };
 
+/**
+ * Converts a character
+ * to its proper enum
+ * for row (c) or column (f) ordering
+ * default is row major
+ */
+CBLAS_ORDER  convertOrder(int from) {
+	switch(from) {
+		//'c'
+		case 99: return CblasRowMajor;
+			//'C'
+		case 67: return CblasRowMajor;
+			//'f'
+		case 102: return CblasColMajor;
+			//'F'
+		case 70: return CblasColMajor;
+		default: return CblasRowMajor;
+
+	}
+}
+
+/**
+ * Converts a character to its proper enum
+ * t -> transpose
+ * n -> no transpose
+ * c -> conj
+ */
+CBLAS_TRANSPOSE  convertTranspose(int from) {
+	switch(from) {
+		//'t'
+		case 116: return CblasTrans;
+			//'T'
+		case 84: return CblasTrans;
+			//'n'
+		case 110: return CblasNoTrans;
+			//'N'
+		case 78: return CblasNoTrans;
+			//'c'
+		case 99: return CblasConjTrans;
+			//'C'
+		case 67: return CblasConjTrans;
+		default: return CblasNoTrans;
+	}
+}
+/**
+ * Upper or lower
+ * U/u -> upper
+ * L/l -> lower
+ * 
+ * Default is upper
+ */
+CBLAS_UPLO  convertUplo(int from) {
+	switch(from) {
+		//'u'
+		case 117: return CblasUpper;
+			//'U'
+		case 85: return CblasUpper;
+			//'l'
+		case 108: return CblasLower;
+			//'L'
+		case 76: return CblasLower;
+		default: return CblasUpper;
+
+	}
+}
+
+
+/**
+ * For diagonals:
+ * u/U -> unit
+ * n/N -> non unit
+ *
+ * Default: unit
+ */
+CBLAS_DIAG convertDiag(int from) {
+	switch(from) {
+		//'u'
+		case 117: return CblasUnit;
+			//'U'
+		case 85: return CblasUnit;
+			//'n'
+		case 110: return CblasNonUnit;
+			//'N'
+		case 78: return CblasNonUnit;
+		default: return CblasUnit;
+	}
+}
+
+
+/**
+ * Side of a matrix, left or right
+ * l /L -> left
+ * r/R -> right
+ * default: left
+ */
+CBLAS_SIDE convertSide(int from) {
+	switch(from) {
+//'l'
+		case 108: return CblasLeft;
+			//'L'
+		case 76: return CblasLeft;
+		case 82: return CblasRight;
+		case 114: return CblasRight;
+		default: return CblasLeft;
+	}
+}
+
+
+
+
 /*
  * ======================================================
  * Level 1 BLAS functions
@@ -57,9 +168,9 @@ void cblas_xerbla(int p, const char *rout, const char *form, ...) {
  */
 
 JNIEXPORT jfloat JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_sdsdot
-(JNIEnv *env, jclass clazz, jint N, jfloat alpha,
-		jobject X, jint incX,
-		jobject Y, jint incY) {
+		(JNIEnv *env, jclass clazz, jint N, jfloat alpha,
+		 jobject X, jint incX,
+		 jobject Y, jint incY) {
 
 	float *cX = (float *)env->GetDirectBufferAddress(X);
 	float *cY = (float *) env->GetDirectBufferAddress(Y);
@@ -68,9 +179,9 @@ JNIEXPORT jfloat JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_sdsdot
 
 
 JNIEXPORT jdouble JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dsdot
-(JNIEnv *env, jclass clazz, jint N,
-		jobject X, jint incX,
-		jobject Y, jint incY) {
+		(JNIEnv *env, jclass clazz, jint N,
+		 jobject X, jint incX,
+		 jobject Y, jint incY) {
 
 	float *cX = (float *) env->GetDirectBufferAddress(X);
 	float *cY = (float *) env->GetDirectBufferAddress(Y);
@@ -78,9 +189,9 @@ JNIEXPORT jdouble JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dsdot
 };
 
 JNIEXPORT jdouble JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_ddot
-(JNIEnv *env, jclass clazz, jint N,
-		jobject X, jint incX,
-		jobject Y, jint incY) {
+		(JNIEnv *env, jclass clazz, jint N,
+		 jobject X, jint incX,
+		 jobject Y, jint incY) {
 
 	double *cX = (double *) env->GetDirectBufferAddress(X);
 	double *cY = (double *) env->GetDirectBufferAddress(Y);
@@ -88,9 +199,9 @@ JNIEXPORT jdouble JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_ddot
 };
 
 JNIEXPORT jfloat JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_sdot
-(JNIEnv *env, jclass clazz, jint N,
-		jobject X, jint incX,
-		jobject Y, jint incY) {
+		(JNIEnv *env, jclass clazz, jint N,
+		 jobject X, jint incX,
+		 jobject Y, jint incY) {
 
 	float *cX = (float *) env->GetDirectBufferAddress(X);
 	float *cY = (float *) env->GetDirectBufferAddress(Y);
@@ -104,14 +215,14 @@ JNIEXPORT jfloat JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_sdot
  */
 
 JNIEXPORT jfloat JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_snrm2
-(JNIEnv *env, jclass clazz, jint N, jobject X, jint incX) {
+		(JNIEnv *env, jclass clazz, jint N, jobject X, jint incX) {
 
 	float *cX = (float *) env->GetDirectBufferAddress(X);
 	return cblas_snrm2(N, cX, incX);
 };
 
 JNIEXPORT jdouble JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dnrm2
-(JNIEnv *env, jclass clazz, jint N, jobject X, jint incX) {
+		(JNIEnv *env, jclass clazz, jint N, jobject X, jint incX) {
 
 	double *cX = (double *) env->GetDirectBufferAddress(X);
 	return cblas_dnrm2(N, cX, incX);
@@ -124,7 +235,7 @@ JNIEXPORT jdouble JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dnrm2
  */
 
 JNIEXPORT jfloat JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_sasum
-(JNIEnv *env, jclass clazz, jint N, jobject X, jint incX) {
+		(JNIEnv *env, jclass clazz, jint N, jobject X, jint incX) {
 
 	float *cX = (float *) env->GetDirectBufferAddress(X);gi
 	return cblas_sasum(N, cX, incX);
@@ -132,7 +243,7 @@ JNIEXPORT jfloat JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_sasum
 };
 
 JNIEXPORT jdouble JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dasum
-(JNIEnv *env, jclass clazz, jint N, jobject X, jint incX) {
+		(JNIEnv *env, jclass clazz, jint N, jobject X, jint incX) {
 	double *cX = (double *) env->GetDirectBufferAddress(X);
 	return cblas_dasum(N, cX, incX);
 };
@@ -144,14 +255,14 @@ JNIEXPORT jdouble JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dasum
  */
 
 JNIEXPORT jint JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_isamax
-(JNIEnv *env, jclass clazz, jint N, jobject X, jint incX) {
+		(JNIEnv *env, jclass clazz, jint N, jobject X, jint incX) {
 
 	float *cX = (float *) env->GetDirectBufferAddress(X);
 	return cblas_isamax(N, cX, incX);
 };
 
 JNIEXPORT jint JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_idamax
-(JNIEnv *env, jclass clazz, jint N, jobject X, jint incX) {
+		(JNIEnv *env, jclass clazz, jint N, jobject X, jint incX) {
 
 	double *cX = (double *) env->GetDirectBufferAddress(X);
 	return cblas_idamax(N, cX, incX);
@@ -170,10 +281,10 @@ JNIEXPORT jint JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_idamax
  */
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_srot
-(JNIEnv *env, jclass clazz, jint N,
-		jobject X, jint incX,
-		jobject Y, jint incY,
-		jfloat c, jfloat s) {
+		(JNIEnv *env, jclass clazz, jint N,
+		 jobject X, jint incX,
+		 jobject Y, jint incY,
+		 jfloat c, jfloat s) {
 
 	float *cX = (float *) env->GetDirectBufferAddress(X);
 	float *cY = (float *) env->GetDirectBufferAddress(Y);
@@ -181,10 +292,10 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_srot
 };
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_drot
-(JNIEnv *env, jclass clazz, jint N,
-		jobject X, jint incX,
-		jobject Y, jint incY,
-		jdouble c, jdouble s) {
+		(JNIEnv *env, jclass clazz, jint N,
+		 jobject X, jint incX,
+		 jobject Y, jint incY,
+		 jdouble c, jdouble s) {
 
 	double *cX = (double *) env->GetDirectBufferAddress(X);
 	double *cY = (double *) env->GetDirectBufferAddress(Y);
@@ -198,7 +309,7 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_drot
  */
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_srotg
-(JNIEnv *env, jclass clazz, jobject params) {
+		(JNIEnv *env, jclass clazz, jobject params) {
 
 	float *ca = (float *) env->GetDirectBufferAddress(params);
 	float *cb = ca + 1;
@@ -208,7 +319,7 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_srotg
 };
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_drotg
-(JNIEnv *env, jclass clazz, jobject params) {
+		(JNIEnv *env, jclass clazz, jobject params) {
 
 	double *ca = (double *) env->GetDirectBufferAddress(params);
 	double *cb = ca + 1;
@@ -224,7 +335,7 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_drotg
  */
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_srotmg
-(JNIEnv *env, jclass clazz, jobject args, jobject P) {
+		(JNIEnv *env, jclass clazz, jobject args, jobject P) {
 
 	float *cargs = (float *) env->GetDirectBufferAddress(args);
 	float *cP = (float *) env->GetDirectBufferAddress(P);
@@ -232,7 +343,7 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_srotmg
 };
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_drotmg
-(JNIEnv *env, jclass clazz, jobject args, jobject P) {
+		(JNIEnv *env, jclass clazz, jobject args, jobject P) {
 
 	double *cargs = (double *) env->GetDirectBufferAddress(args);
 	double *cP = (double *) env->GetDirectBufferAddress(P);
@@ -246,10 +357,10 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_drotmg
  */
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_srotm
-(JNIEnv *env, jclass clazz, jint N,
-		jobject X, jint incX,
-		jobject Y, jint incY,
-		jobject P) {
+		(JNIEnv *env, jclass clazz, jint N,
+		 jobject X, jint incX,
+		 jobject Y, jint incY,
+		 jobject P) {
 
 	float *cX = (float *) env->GetDirectBufferAddress(X);
 	float *cY = (float *) env->GetDirectBufferAddress(Y);
@@ -258,10 +369,10 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_srotm
 };
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_drotm
-(JNIEnv *env, jclass clazz, jint N,
-		jobject X, jint incX,
-		jobject Y, jint incY,
-		jobject P) {
+		(JNIEnv *env, jclass clazz, jint N,
+		 jobject X, jint incX,
+		 jobject Y, jint incY,
+		 jobject P) {
 
 	double *cX = (double *) env->GetDirectBufferAddress(X);
 	double *cY = (double *) env->GetDirectBufferAddress(Y);
@@ -276,9 +387,9 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_drotm
  */
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_sswap
-(JNIEnv *env, jclass clazz, jint N,
-		jobject X, jint incX,
-		jobject Y, jint incY) {
+		(JNIEnv *env, jclass clazz, jint N,
+		 jobject X, jint incX,
+		 jobject Y, jint incY) {
 
 	float *cX = (float *) env->GetDirectBufferAddress(X);
 	float *cY = (float *) env->GetDirectBufferAddress(Y);
@@ -286,9 +397,9 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_sswap
 };
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dswap
-(JNIEnv *env, jclass clazz, jint N,
-		jobject X, jint incX,
-		jobject Y, jint incY) {
+		(JNIEnv *env, jclass clazz, jint N,
+		 jobject X, jint incX,
+		 jobject Y, jint incY) {
 
 	double *cX = (double *) env->GetDirectBufferAddress(X);
 	double *cY = (double *) env->GetDirectBufferAddress(Y);
@@ -303,18 +414,18 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dswap
  */
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_sscal
-(JNIEnv *env, jclass clazz,
-		jint N, jfloat alpha,
-		jobject X, jint incX) {
+		(JNIEnv *env, jclass clazz,
+		 jint N, jfloat alpha,
+		 jobject X, jint incX) {
 
 	float *cX = (float *) env->GetDirectBufferAddress(X);
 	cblas_sscal(N, alpha, cX, incX);
 };
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dscal
-(JNIEnv *env, jclass clazz,
-		jint N, jdouble alpha,
-		jobject X, jint incX) {
+		(JNIEnv *env, jclass clazz,
+		 jint N, jdouble alpha,
+		 jobject X, jint incX) {
 
 	double *cX = (double *) env->GetDirectBufferAddress(X);
 	cblas_dscal(N, alpha, cX, incX);
@@ -327,9 +438,9 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dscal
  */
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_scopy
-(JNIEnv *env, jclass clazz, jint N,
-		jobject X, jint incX,
-		jobject Y, jint incY) {
+		(JNIEnv *env, jclass clazz, jint N,
+		 jobject X, jint incX,
+		 jobject Y, jint incY) {
 
 	float *cX = (float *) env->GetDirectBufferAddress(X);
 	float *cY = (float *) env->GetDirectBufferAddress(Y);
@@ -337,9 +448,9 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_scopy
 };
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dcopy
-(JNIEnv *env, jclass clazz, jint N,
-		jobject X, jint incX,
-		jobject Y, jint incY) {
+		(JNIEnv *env, jclass clazz, jint N,
+		 jobject X, jint incX,
+		 jobject Y, jint incY) {
 
 	double *cX = (double *) env->GetDirectBufferAddress(X);
 	double *cY = (double *) env->GetDirectBufferAddress(Y);
@@ -353,10 +464,10 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dcopy
  */
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_saxpy
-(JNIEnv *env, jclass clazz,
-		jint N, jfloat alpha,
-		jobject X, jint incX,
-		jobject Y, jint incY) {
+		(JNIEnv *env, jclass clazz,
+		 jint N, jfloat alpha,
+		 jobject X, jint incX,
+		 jobject Y, jint incY) {
 
 	float *cX = (float *) env->GetDirectBufferAddress(X);
 	float *cY = (float *) env->GetDirectBufferAddress(Y);
@@ -364,10 +475,10 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_saxpy
 };
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_daxpy
-(JNIEnv *env, jclass clazz,
-		jint N, jdouble alpha,
-		jobject X, jint incX,
-		jobject Y, jint incY) {
+		(JNIEnv *env, jclass clazz,
+		 jint N, jdouble alpha,
+		 jobject X, jint incX,
+		 jobject Y, jint incY) {
 
 	double *cX = (double *) env->GetDirectBufferAddress(X);
 	double *cY = (double *) env->GetDirectBufferAddress(Y);
@@ -387,38 +498,38 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_daxpy
  */
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_sgemv
-(JNIEnv * env, jclass clazz,
-		jint Order, jint TransA,
-		jint M, jint N,
-		jfloat alpha,
-		jobject A, jint lda,
-		jobject X, jint incX,
-		jfloat beta,
-		jobject Y, jint incY) {
+		(JNIEnv * env, jclass clazz,
+		 jint Order, jint TransA,
+		 jint M, jint N,
+		 jfloat alpha,
+		 jobject A, jint lda,
+		 jobject X, jint incX,
+		 jfloat beta,
+		 jobject Y, jint incY) {
 
 
 	float *cA = (float *) env->GetDirectBufferAddress(A);
 	float *cX = (float *) env->GetDirectBufferAddress(X);
 	float *cY = (float *) env->GetDirectBufferAddress(Y);
 
-	cblas_sgemv(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_TRANSPOSE>(TransA), M, N, alpha, cA, lda, cX, incX, beta, cY, incY);
+	cblas_sgemv(convertOrder(Order) , convertTranspose(TransA) , M, N, alpha, cA, lda, cX, incX, beta, cY, incY);
 };
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dgemv
-(JNIEnv * env, jclass clazz,
-		jint Order, jint TransA,
-		jint M, jint N,
-		jdouble alpha,
-		jobject A, jint lda,
-		jobject X, jint incX,
-		jdouble beta,
-		jobject Y, jint incY) {
+		(JNIEnv * env, jclass clazz,
+		 jint Order, jint TransA,
+		 jint M, jint N,
+		 jdouble alpha,
+		 jobject A, jint lda,
+		 jobject X, jint incX,
+		 jdouble beta,
+		 jobject Y, jint incY) {
 
 
 	double *cA = (double *) env->GetDirectBufferAddress(A);
 	double *cX = (double *) env->GetDirectBufferAddress(X);
 	double *cY = (double *) env->GetDirectBufferAddress(Y);
-	cblas_dgemv(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_TRANSPOSE>(TransA), M, N, alpha, cA, lda, cX, incX, beta, cY, incY);
+	cblas_dgemv(convertOrder(Order) , convertTranspose(TransA) , M, N, alpha, cA, lda, cX, incX, beta, cY, incY);
 };
 
 /*
@@ -428,39 +539,39 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dgemv
  */
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_sgbmv
-(JNIEnv *env, jclass clazz,
-		jint Order, jint TransA,
-		jint M, jint N,
-		jint KL, jint KU,
-		jfloat alpha,
-		jobject A, jint lda,
-		jobject X, jint incX,
-		jfloat beta,
-		jobject Y, jint incY) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint TransA,
+		 jint M, jint N,
+		 jint KL, jint KU,
+		 jfloat alpha,
+		 jobject A, jint lda,
+		 jobject X, jint incX,
+		 jfloat beta,
+		 jobject Y, jint incY) {
 
 	float *cA = (float *) env->GetDirectBufferAddress(A);
 	float *cX = (float *) env->GetDirectBufferAddress(X);
 	float *cY = (float *) env->GetDirectBufferAddress(Y);
-	cblas_sgbmv(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_TRANSPOSE>(TransA), M, N, KL, KU,
-			alpha, cA, lda, cX, incX, beta, cY, incY);
+	cblas_sgbmv(convertOrder(Order) , convertTranspose(TransA) , M, N, KL, KU,
+				alpha, cA, lda, cX, incX, beta, cY, incY);
 };
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dgbmv
-(JNIEnv *env, jclass clazz,
-		jint Order, jint TransA,
-		jint M, jint N,
-		jint KL, jint KU,
-		jdouble alpha,
-		jobject A, jint lda,
-		jobject X, jint incX,
-		jdouble beta,
-		jobject Y, jint incY) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint TransA,
+		 jint M, jint N,
+		 jint KL, jint KU,
+		 jdouble alpha,
+		 jobject A, jint lda,
+		 jobject X, jint incX,
+		 jdouble beta,
+		 jobject Y, jint incY) {
 
 	double *cA = (double *) env->GetDirectBufferAddress(A);
 	double *cX = (double *) env->GetDirectBufferAddress(X);
 	double *cY = (double *) env->GetDirectBufferAddress(Y);
-	cblas_dgbmv(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_TRANSPOSE>(TransA), M, N, KL, KU,
-			alpha, cA, lda, cX, incX, beta, cY, incY);
+	cblas_dgbmv(convertOrder(Order) , convertTranspose(TransA) , M, N, KL, KU,
+				alpha, cA, lda, cX, incX, beta, cY, incY);
 };
 
 /*
@@ -470,35 +581,35 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dgbmv
  */
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_ssymv
-(JNIEnv *env, jclass clazz,
-		jint Order, jint Uplo,
-		jint N,
-		jfloat alpha,
-		jobject A, jint lda,
-		jobject X, jint incX,
-		jfloat beta,
-		jobject Y, jint incY) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint Uplo,
+		 jint N,
+		 jfloat alpha,
+		 jobject A, jint lda,
+		 jobject X, jint incX,
+		 jfloat beta,
+		 jobject Y, jint incY) {
 
 	float *cA = (float *) env->GetDirectBufferAddress(A);
 	float *cX = (float *) env->GetDirectBufferAddress(X);
 	float *cY = (float *) env->GetDirectBufferAddress(Y);
-	cblas_ssymv(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_UPLO>(Uplo), N, alpha, cA, lda, cX, incX, beta, cY, incY);
+	cblas_ssymv(convertOrder(Order) , convertUplo(Uplo), N, alpha, cA, lda, cX, incX, beta, cY, incY);
 };
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dsymv
-(JNIEnv *env, jclass clazz,
-		jint Order, jint Uplo,
-		jint N,
-		jdouble alpha,
-		jobject A, jint lda,
-		jobject X, jint incX,
-		jdouble beta,
-		jobject Y, jint incY) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint Uplo,
+		 jint N,
+		 jdouble alpha,
+		 jobject A, jint lda,
+		 jobject X, jint incX,
+		 jdouble beta,
+		 jobject Y, jint incY) {
 
 	double *cA = (double *) env->GetDirectBufferAddress(A);
 	double *cX = (double *) env->GetDirectBufferAddress(X);
 	double *cY = (double *) env->GetDirectBufferAddress(Y);
-	cblas_dsymv(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_UPLO>(Uplo), N, alpha, cA, lda, cX, incX, beta, cY, incY);
+	cblas_dsymv(convertOrder(Order) , convertUplo(Uplo), N, alpha, cA, lda, cX, incX, beta, cY, incY);
 };
 
 /*
@@ -508,35 +619,35 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dsymv
  */
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_ssbmv
-(JNIEnv *env, jclass clazz,
-		jint Order, jint Uplo,
-		jint N, int K,
-		jfloat alpha,
-		jobject A, jint lda,
-		jobject X, jint incX,
-		jfloat beta,
-		jobject Y, jint incY) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint Uplo,
+		 jint N, int K,
+		 jfloat alpha,
+		 jobject A, jint lda,
+		 jobject X, jint incX,
+		 jfloat beta,
+		 jobject Y, jint incY) {
 
 	float *cA = (float *) env->GetDirectBufferAddress(A);
 	float *cX = (float *) env->GetDirectBufferAddress(X);
 	float *cY = (float *) env->GetDirectBufferAddress(Y);
-	cblas_ssbmv(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_UPLO>(Uplo), N, K, alpha, cA, lda, cX, incX, beta, cY, incY);
+	cblas_ssbmv(convertOrder(Order) , convertUplo(Uplo), N, K, alpha, cA, lda, cX, incX, beta, cY, incY);
 };
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dsbmv
-(JNIEnv *env, jclass clazz,
-		jint Order, jint Uplo,
-		jint N, int K,
-		jdouble alpha,
-		jobject A, jint lda,
-		jobject X, jint incX,
-		jdouble beta,
-		jobject Y, jint incY) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint Uplo,
+		 jint N, int K,
+		 jdouble alpha,
+		 jobject A, jint lda,
+		 jobject X, jint incX,
+		 jdouble beta,
+		 jobject Y, jint incY) {
 
 	double *cA = (double *) env->GetDirectBufferAddress(A);
 	double *cX = (double *) env->GetDirectBufferAddress(X);
 	double *cY = (double *) env->GetDirectBufferAddress(Y);
-	cblas_dsbmv(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_UPLO>(Uplo), N, K, alpha, cA, lda, cX, incX, beta, cY, incY);
+	cblas_dsbmv(convertOrder(Order) , convertUplo(Uplo), N, K, alpha, cA, lda, cX, incX, beta, cY, incY);
 };
 
 /*
@@ -546,35 +657,35 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dsbmv
  */
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_sspmv
-(JNIEnv *env, jclass clazz,
-		jint Order, jint Uplo,
-		jint N,
-		jfloat alpha,
-		jobject Ap,
-		jobject X, jint incX,
-		jfloat beta,
-		jobject Y, jint incY) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint Uplo,
+		 jint N,
+		 jfloat alpha,
+		 jobject Ap,
+		 jobject X, jint incX,
+		 jfloat beta,
+		 jobject Y, jint incY) {
 
 	float *cAp = (float *) env->GetDirectBufferAddress(Ap);
 	float *cX = (float *) env->GetDirectBufferAddress(X);
 	float *cY = (float *) env->GetDirectBufferAddress(Y);
-	cblas_sspmv(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_UPLO>(Uplo), N, alpha, cAp, cX, incX, beta, cY, incY);
+	cblas_sspmv(convertOrder(Order) , convertUplo(Uplo), N, alpha, cAp, cX, incX, beta, cY, incY);
 };
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dspmv
-(JNIEnv *env, jclass clazz,
-		jint Order, jint Uplo,
-		jint N,
-		jdouble alpha,
-		jobject Ap,
-		jobject X, jint incX,
-		jdouble beta,
-		jobject Y, jint incY) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint Uplo,
+		 jint N,
+		 jdouble alpha,
+		 jobject Ap,
+		 jobject X, jint incX,
+		 jdouble beta,
+		 jobject Y, jint incY) {
 
 	double *cAp = (double *) env->GetDirectBufferAddress(Ap);
 	double *cX = (double *) env->GetDirectBufferAddress(X);
 	double *cY = (double *) env->GetDirectBufferAddress(Y);
-	cblas_dspmv(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_UPLO>(Uplo), N, alpha, cAp, cX, incX, beta, cY, incY);
+	cblas_dspmv(convertOrder(Order) , convertUplo(Uplo), N, alpha, cAp, cX, incX, beta, cY, incY);
 };
 
 /*
@@ -584,30 +695,30 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dspmv
  */
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_strmv
-(JNIEnv *env, jclass clazz,
-		jint Order, jint Uplo, jint TransA,
-		jint N, jfloat alpha,
-		jobject A, jint lda,
-		jobject X, jint incX) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint Uplo, jint TransA,
+		 jint N, jfloat alpha,
+		 jobject A, jint lda,
+		 jobject X, jint incX) {
 
 	float *cA = (float *) env->GetDirectBufferAddress(A);
 	float *cX = (float *) env->GetDirectBufferAddress(X);
-	cblas_strmv(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_UPLO>(Uplo), static_cast<CBLAS_TRANSPOSE>(TransA),
-                static_cast<CBLAS_DIAG>(N), alpha, cA, lda, cX, incX);
+	cblas_strmv(convertOrder(Order) , convertUplo(Uplo), convertTranspose(TransA) ,
+				convertDiag(N), alpha, cA, lda, cX, incX);
 };
 
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dtrmv
-(JNIEnv *env, jclass clazz,
-		jint Order, jint Uplo, jint TransA,
-		jint N, jdouble alpha,
-		jobject A, jint lda,
-		jobject X, jint incX) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint Uplo, jint TransA,
+		 jint N, jdouble alpha,
+		 jobject A, jint lda,
+		 jobject X, jint incX) {
 
 	double *cA = (double *) env->GetDirectBufferAddress(A);
 	double *cX = (double *) env->GetDirectBufferAddress(X);
-	cblas_dtrmv(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_UPLO>(Uplo), static_cast<CBLAS_TRANSPOSE>(TransA),
-                static_cast<CBLAS_DIAG>(N), alpha, cA, lda, cX, incX);
+	cblas_dtrmv(convertOrder(Order) , convertUplo(Uplo), convertTranspose(TransA) ,
+				convertDiag(N), alpha, cA, lda, cX, incX);
 };
 
 /*
@@ -617,29 +728,29 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dtrmv
  */
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_stbmv
-(JNIEnv *env, jclass clazz,
-		jint Order, jint Uplo, jint TransA, jint Diag,
-		jint N, jint K,
-		jobject A, jint lda,
-		jobject X, jint incX) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint Uplo, jint TransA, jint Diag,
+		 jint N, jint K,
+		 jobject A, jint lda,
+		 jobject X, jint incX) {
 
 	float *cA = (float *) env->GetDirectBufferAddress(A);
 	float *cX = (float *) env->GetDirectBufferAddress(X);
-	cblas_strmv(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_UPLO>(Uplo), static_cast<CBLAS_TRANSPOSE>(TransA),
-                static_cast<CBLAS_DIAG>(Diag), static_cast<CBLAS_DIAG>(N), cA, lda, cX, incX);
+	cblas_strmv(convertOrder(Order) , convertUplo(Uplo), convertTranspose(TransA) ,
+				convertDiag(Diag), convertDiag(N), cA, lda, cX, incX);
 };
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dtbmv
-(JNIEnv *env, jclass clazz,
-		jint Order, jint Uplo, jint TransA, jint Diag,
-		jint N, jint K,
-		jobject A, jint lda,
-		jobject X, jint incX) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint Uplo, jint TransA, jint Diag,
+		 jint N, jint K,
+		 jobject A, jint lda,
+		 jobject X, jint incX) {
 
 	double *cA = (double *) env->GetDirectBufferAddress(A);
 	double *cX = (double *) env->GetDirectBufferAddress(X);
-	cblas_dtrmv(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_UPLO>(Uplo), static_cast<CBLAS_TRANSPOSE>(TransA),
-                static_cast<CBLAS_DIAG>(Diag), N, cA, lda, cX, incX);
+	cblas_dtrmv(convertOrder(Order) , convertUplo(Uplo), convertTranspose(TransA) ,
+				convertDiag(Diag), N, cA, lda, cX, incX);
 };
 
 /*
@@ -649,29 +760,29 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dtbmv
  */
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_stpmv
-(JNIEnv *env, jclass clazz,
-		jint Order, jint Uplo, jint TransA, jint Diag,
-		jint N,
-		jobject Ap,
-		jobject X, jint incX) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint Uplo, jint TransA, jint Diag,
+		 jint N,
+		 jobject Ap,
+		 jobject X, jint incX) {
 
 	float *cAp = (float *) env->GetDirectBufferAddress(Ap);
 	float *cX = (float *) env->GetDirectBufferAddress(X);
-	cblas_stpmv(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_UPLO>(Uplo), static_cast<CBLAS_TRANSPOSE>(TransA),
-                static_cast<CBLAS_DIAG>(Diag), N, cAp, cX, incX);
+	cblas_stpmv(convertOrder(Order) , convertUplo(Uplo), convertTranspose(TransA) ,
+				convertDiag(Diag), N, cAp, cX, incX);
 };
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dtpmv
-(JNIEnv *env, jclass clazz,
-		jint Order, jint Uplo, jint TransA, jint Diag,
-		jint N,
-		jobject Ap,
-		jobject X, jint incX) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint Uplo, jint TransA, jint Diag,
+		 jint N,
+		 jobject Ap,
+		 jobject X, jint incX) {
 
 	double *cAp = (double *) env->GetDirectBufferAddress(Ap);
 	double *cX = (double *) env->GetDirectBufferAddress(X);
-	cblas_dtpmv(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_UPLO>(Uplo), static_cast<CBLAS_TRANSPOSE>(TransA),
-                static_cast<CBLAS_DIAG>(Diag), N, cAp, cX, incX);
+	cblas_dtpmv(convertOrder(Order) , convertUplo(Uplo), convertTranspose(TransA) ,
+				convertDiag(Diag), N, cAp, cX, incX);
 };
 
 /*
@@ -681,29 +792,29 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dtpmv
  */
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_strsv
-(JNIEnv *env, jclass clazz,
-		jint Order, jint Uplo, jint TransA, jint Diag,
-		jint N,
-		jobject A, jint lda,
-		jobject X, jint incX) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint Uplo, jint TransA, jint Diag,
+		 jint N,
+		 jobject A, jint lda,
+		 jobject X, jint incX) {
 
 	float *cA = (float *) env->GetDirectBufferAddress(A);
 	float *cX = (float *) env->GetDirectBufferAddress(X);
-	cblas_strsv(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_UPLO>(Uplo), static_cast<CBLAS_TRANSPOSE>(TransA),
-                static_cast<CBLAS_DIAG>(Diag), N, cA, lda, cX, incX);
+	cblas_strsv(convertOrder(Order) , convertUplo(Uplo), convertTranspose(TransA) ,
+				convertDiag(Diag), N, cA, lda, cX, incX);
 };
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dtrsv
-(JNIEnv *env, jclass clazz,
-		jint Order, jint Uplo, jint TransA, jint Diag,
-		jint N,
-		jobject A, jint lda,
-		jobject X, jint incX) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint Uplo, jint TransA, jint Diag,
+		 jint N,
+		 jobject A, jint lda,
+		 jobject X, jint incX) {
 
 	double *cA = (double *) env->GetDirectBufferAddress(A);
 	double *cX = (double *) env->GetDirectBufferAddress(X);
-	cblas_dtrsv(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_UPLO>(Uplo), static_cast<CBLAS_TRANSPOSE>(TransA),
-                static_cast<CBLAS_DIAG>(Diag), N, cA, lda, cX, incX);
+	cblas_dtrsv(convertOrder(Order) , convertUplo(Uplo), convertTranspose(TransA) ,
+				convertDiag(Diag), N, cA, lda, cX, incX);
 };
 
 /*
@@ -713,29 +824,29 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dtrsv
  */
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_stbsv
-(JNIEnv *env, jclass clazz,
-		jint Order, jint Uplo, jint TransA, jint Diag,
-		jint N, jint K,
-		jobject A, jint lda,
-		jobject X, jint incX) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint Uplo, jint TransA, jint Diag,
+		 jint N, jint K,
+		 jobject A, jint lda,
+		 jobject X, jint incX) {
 
 	float *cA = (float *) env->GetDirectBufferAddress(A);
 	float *cX = (float *) env->GetDirectBufferAddress(X);
-	cblas_stbsv(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_UPLO>(Uplo), static_cast<CBLAS_TRANSPOSE>(TransA),
-                static_cast<CBLAS_DIAG>(Diag), N, K, cA, lda, cX, incX);
+	cblas_stbsv(convertOrder(Order) , convertUplo(Uplo), convertTranspose(TransA) ,
+				convertDiag(Diag), N, K, cA, lda, cX, incX);
 };
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dtbsv
-(JNIEnv *env, jclass clazz,
-		jint Order, jint Uplo, jint TransA, jint Diag,
-		jint N, jint K,
-		jobject A, jint lda,
-		jobject X, jint incX) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint Uplo, jint TransA, jint Diag,
+		 jint N, jint K,
+		 jobject A, jint lda,
+		 jobject X, jint incX) {
 
 	double *cA = (double *) env->GetDirectBufferAddress(A);
 	double *cX = (double *) env->GetDirectBufferAddress(X);
-	cblas_dtbsv(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_UPLO>(Uplo), static_cast<CBLAS_TRANSPOSE>(TransA),
-                static_cast<CBLAS_DIAG>(Diag), N, K, cA, lda, cX, incX);
+	cblas_dtbsv(convertOrder(Order) , convertUplo(Uplo), convertTranspose(TransA) ,
+				convertDiag(Diag), N, K, cA, lda, cX, incX);
 };
 
 /*
@@ -745,29 +856,29 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dtbsv
  */
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_stpsv
-(JNIEnv *env, jclass clazz,
-		jint Order, jint Uplo, jint TransA, jint Diag,
-		jint N,
-		jobject Ap,
-		jobject X, jint incX) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint Uplo, jint TransA, jint Diag,
+		 jint N,
+		 jobject Ap,
+		 jobject X, jint incX) {
 
 	float *cAp = (float *) env->GetDirectBufferAddress(Ap);
 	float *cX = (float *) env->GetDirectBufferAddress(X);
-	cblas_stpsv(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_UPLO>(Uplo), static_cast<CBLAS_TRANSPOSE>(TransA),
-                static_cast<CBLAS_DIAG>(Diag), N, cAp, cX, incX);
+	cblas_stpsv(convertOrder(Order) , convertUplo(Uplo), convertTranspose(TransA) ,
+				convertDiag(Diag), N, cAp, cX, incX);
 };
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dtpsv
-(JNIEnv *env, jclass clazz,
-		jint Order, jint Uplo, jint TransA, jint Diag,
-		jint N,
-		jobject Ap,
-		jobject X, jint incX) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint Uplo, jint TransA, jint Diag,
+		 jint N,
+		 jobject Ap,
+		 jobject X, jint incX) {
 
 	double *cAp = (double *) env->GetDirectBufferAddress(Ap);
 	double *cX = (double *) env->GetDirectBufferAddress(X);
-	cblas_dtpsv(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_UPLO>(Uplo), static_cast<CBLAS_TRANSPOSE>(TransA),
-                static_cast<CBLAS_DIAG>(Diag), N, cAp, cX, incX);
+	cblas_dtpsv(convertOrder(Order) , convertUplo(Uplo), convertTranspose(TransA) ,
+				convertDiag(Diag), N, cAp, cX, incX);
 };
 
 /*
@@ -777,33 +888,33 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dtpsv
  */
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_sger
-(JNIEnv *env, jclass clazz,
-		jint Order,
-		jint M, jint N,
-		jfloat alpha,
-		jobject X, jint incX,
-		jobject Y, jint incY,
-		jobject A, jint lda) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order,
+		 jint M, jint N,
+		 jfloat alpha,
+		 jobject X, jint incX,
+		 jobject Y, jint incY,
+		 jobject A, jint lda) {
 
 	float *cX = (float *) env->GetDirectBufferAddress(X);
 	float *cY = (float *) env->GetDirectBufferAddress(Y);
 	float *cA = (float *) env->GetDirectBufferAddress(A);
-	cblas_sger(static_cast<CBLAS_ORDER>(Order), M, N, alpha, cX, incX, cY, incY, cA, lda);
+	cblas_sger(convertOrder(Order) , M, N, alpha, cX, incX, cY, incY, cA, lda);
 };
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dger
-(JNIEnv *env, jclass clazz,
-		jint Order,
-		jint M, jint N,
-		jdouble alpha,
-		jobject X, jint incX,
-		jobject Y, jint incY,
-		jobject A, jint lda) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order,
+		 jint M, jint N,
+		 jdouble alpha,
+		 jobject X, jint incX,
+		 jobject Y, jint incY,
+		 jobject A, jint lda) {
 
 	double *cX = (double *) env->GetDirectBufferAddress(X);
 	double *cY = (double *) env->GetDirectBufferAddress(Y);
 	double *cA = (double *) env->GetDirectBufferAddress(A);
-	cblas_dger(static_cast<CBLAS_ORDER>(Order), M, N, alpha, cX, incX, cY, incY, cA, lda);
+	cblas_dger(convertOrder(Order) , M, N, alpha, cX, incX, cY, incY, cA, lda);
 };
 
 /*
@@ -813,29 +924,29 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dger
  */
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_ssyr
-(JNIEnv *env, jclass clazz,
-		jint Order, jint Uplo,
-		jint N,
-		jfloat alpha,
-		jobject X, jint incX,
-		jobject A, jint lda) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint Uplo,
+		 jint N,
+		 jfloat alpha,
+		 jobject X, jint incX,
+		 jobject A, jint lda) {
 
 	float *cX = (float *) env->GetDirectBufferAddress(X);
 	float *cA = (float *) env->GetDirectBufferAddress(A);
-	cblas_ssyr(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_UPLO>(Uplo), N, alpha, cX, incX, cA, lda);
+	cblas_ssyr(convertOrder(Order) , convertUplo(Uplo), N, alpha, cX, incX, cA, lda);
 };
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dsyr
-(JNIEnv *env, jclass clazz,
-		jint Order, jint Uplo,
-		jint N,
-		jdouble alpha,
-		jobject X, jint incX,
-		jobject A, jint lda) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint Uplo,
+		 jint N,
+		 jdouble alpha,
+		 jobject X, jint incX,
+		 jobject A, jint lda) {
 
 	double *cX = (double *) env->GetDirectBufferAddress(X);
 	double *cA = (double *) env->GetDirectBufferAddress(A);
-	cblas_dsyr(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_UPLO>(Uplo), N, alpha, cX, incX, cA, lda);
+	cblas_dsyr(convertOrder(Order) , convertUplo(Uplo), N, alpha, cX, incX, cA, lda);
 }
 
 /*
@@ -845,29 +956,29 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dsyr
  */
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_sspr
-(JNIEnv *env, jclass clazz,
-		jint Order, jint Uplo,
-		jint N,
-		jfloat alpha,
-		jobject X, jint incX,
-		jobject Ap) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint Uplo,
+		 jint N,
+		 jfloat alpha,
+		 jobject X, jint incX,
+		 jobject Ap) {
 
 	float *cX = (float *) env->GetDirectBufferAddress(X);
 	float *cAp = (float *) env->GetDirectBufferAddress(Ap);
-	cblas_sspr(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_UPLO>(Uplo), N, alpha, cX, incX, cAp);
+	cblas_sspr(convertOrder(Order) , convertUplo(Uplo), N, alpha, cX, incX, cAp);
 };
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dspr
-(JNIEnv *env, jclass clazz,
-		jint Order, jint Uplo,
-		jint N,
-		jdouble alpha,
-		jobject X, jint incX,
-		jobject Ap) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint Uplo,
+		 jint N,
+		 jdouble alpha,
+		 jobject X, jint incX,
+		 jobject Ap) {
 
 	double *cX = (double *) env->GetDirectBufferAddress(X);
 	double *cAp = (double *) env->GetDirectBufferAddress(Ap);
-	cblas_dspr(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_UPLO>(Uplo), N, alpha, cX, incX, cAp);
+	cblas_dspr(convertOrder(Order) , convertUplo(Uplo), N, alpha, cX, incX, cAp);
 };
 
 /*
@@ -877,33 +988,33 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dspr
  */
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_ssyr2
-(JNIEnv *env, jclass clazz,
-		jint Order, int Uplo,
-		jint N,
-		jfloat alpha,
-		jobject X, jint incX,
-		jobject Y, jint incY,
-		jobject A, jint lda) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, int Uplo,
+		 jint N,
+		 jfloat alpha,
+		 jobject X, jint incX,
+		 jobject Y, jint incY,
+		 jobject A, jint lda) {
 
 	float *cX = (float *) env->GetDirectBufferAddress(X);
 	float *cY = (float *) env->GetDirectBufferAddress(Y);
 	float *cA = (float *) env->GetDirectBufferAddress(A);
-	cblas_ssyr2(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_UPLO>(Uplo), N, alpha, cX, incX, cY, incY, cA, lda);
+	cblas_ssyr2(convertOrder(Order) , convertUplo(Uplo), N, alpha, cX, incX, cY, incY, cA, lda);
 };
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dsyr2
-(JNIEnv *env, jclass clazz,
-		jint Order, int Uplo,
-		jint N,
-		jdouble alpha,
-		jobject X, jint incX,
-		jobject Y, jint incY,
-		jobject A, jint lda) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, int Uplo,
+		 jint N,
+		 jdouble alpha,
+		 jobject X, jint incX,
+		 jobject Y, jint incY,
+		 jobject A, jint lda) {
 
 	double *cX = (double *) env->GetDirectBufferAddress(X);
 	double *cY = (double *) env->GetDirectBufferAddress(Y);
 	double *cA = (double *) env->GetDirectBufferAddress(A);
-	cblas_dsyr2(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_UPLO>(Uplo), N, alpha, cX, incX, cY, incY, cA, lda);
+	cblas_dsyr2(convertOrder(Order) , convertUplo(Uplo), N, alpha, cX, incX, cY, incY, cA, lda);
 };
 
 /*
@@ -913,33 +1024,33 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dsyr2
  */
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_sspr2
-(JNIEnv *env, jclass clazz,
-		jint Order, jint Uplo,
-		jint N,
-		jfloat alpha,
-		jobject X, jint incX,
-		jobject Y, jint incY,
-		jobject Ap) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint Uplo,
+		 jint N,
+		 jfloat alpha,
+		 jobject X, jint incX,
+		 jobject Y, jint incY,
+		 jobject Ap) {
 
 	float *cX = (float *) env->GetDirectBufferAddress(X);
 	float *cY = (float *) env->GetDirectBufferAddress(Y);
 	float *cAp = (float *) env->GetDirectBufferAddress(Ap);
-	cblas_sspr2(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_UPLO>(Uplo), N, alpha, cX, incX, cY, incY, cAp);
+	cblas_sspr2(convertOrder(Order) , convertUplo(Uplo), N, alpha, cX, incX, cY, incY, cAp);
 };
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dspr2
-(JNIEnv *env, jclass clazz,
-		jint Order, jint Uplo,
-		jint N,
-		jdouble alpha,
-		jobject X, jint incX,
-		jobject Y, jint incY,
-		jobject Ap) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint Uplo,
+		 jint N,
+		 jdouble alpha,
+		 jobject X, jint incX,
+		 jobject Y, jint incY,
+		 jobject Ap) {
 
 	double *cX = (double *) env->GetDirectBufferAddress(X);
 	double *cY = (double *) env->GetDirectBufferAddress(Y);
 	double *cAp = (double *) env->GetDirectBufferAddress(Ap);
-	cblas_dspr2(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_UPLO>(Uplo), N, alpha, cX, incX, cY, incY, cAp);
+	cblas_dspr2(convertOrder(Order) , convertUplo(Uplo), N, alpha, cX, incX, cY, incY, cAp);
 };
 
 /*
@@ -956,35 +1067,35 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dspr2
  */
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_sgemm
-(JNIEnv *env, jclass clazz,
-		jint Order, jint TransA, jint TransB,
-		jint M, jint N, jint K,
-		jfloat alpha,
-		jobject A, jint lda,
-		jobject B, jint ldb,
-		jfloat beta,
-		jobject C, jint ldc) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint TransA, jint TransB,
+		 jint M, jint N, jint K,
+		 jfloat alpha,
+		 jobject A, jint lda,
+		 jobject B, jint ldb,
+		 jfloat beta,
+		 jobject C, jint ldc) {
 
 	float *cA = (float *) env->GetDirectBufferAddress(A);
 	float *cB = (float *) env->GetDirectBufferAddress(B);
 	float *cC = (float *) env->GetDirectBufferAddress(C);
-	cblas_sgemm(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_TRANSPOSE>(TransA), static_cast<CBLAS_TRANSPOSE>(TransB), M, N, K, alpha, cA, lda, cB, ldb, beta, cC, ldc);
+	cblas_sgemm(convertOrder(Order) , convertTranspose(TransA) , convertTranspose(TransB) , M, N, K, alpha, cA, lda, cB, ldb, beta, cC, ldc);
 };
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dgemm
-(JNIEnv *env, jclass clazz,
-		jint Order, jint TransA, jint TransB,
-		jint M, jint N, jint K,
-		jdouble alpha,
-		jobject A, jint lda,
-		jobject B, jint ldb,
-		jdouble beta,
-		jobject C, jint ldc) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint TransA, jint TransB,
+		 jint M, jint N, jint K,
+		 jdouble alpha,
+		 jobject A, jint lda,
+		 jobject B, jint ldb,
+		 jdouble beta,
+		 jobject C, jint ldc) {
 
 	double *cA = (double *) env->GetDirectBufferAddress(A);
 	double *cB = (double *) env->GetDirectBufferAddress(B);
 	double *cC = (double *) env->GetDirectBufferAddress(C);
-	cblas_dgemm(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_TRANSPOSE>(TransA), static_cast<CBLAS_TRANSPOSE>(TransB), M, N, K, alpha, cA, lda, cB, ldb, beta, cC, ldc);
+	cblas_dgemm(convertOrder(Order) , convertTranspose(TransA) , convertTranspose(TransB) , M, N, K, alpha, cA, lda, cB, ldb, beta, cC, ldc);
 };
 
 /*
@@ -994,35 +1105,36 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dgemm
  */
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_ssymm
-(JNIEnv *env, jclass clazz,
-		jint Order, jint Side, jint Uplo,
-		jint M, jint N,
-		jfloat alpha,
-		jobject A, jint lda,
-		jobject B, jint ldb,
-		jfloat beta,
-		jobject C, jint ldc) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint Side, jint Uplo,
+		 jint M, jint N,
+		 jfloat alpha,
+		 jobject A, jint lda,
+		 jobject B, jint ldb,
+		 jfloat beta,
+		 jobject C, jint ldc) {
 
 	float *cA = (float *) env->GetDirectBufferAddress(A);
 	float *cB = (float *) env->GetDirectBufferAddress(B);
 	float *cC = (float *) env->GetDirectBufferAddress(C);
-	cblas_ssymm(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_SIDE>(Side), static_cast<CBLAS_UPLO>(Uplo), M, N, alpha, cA, lda, cB, ldb, beta, cC, ldc);
+
+	cblas_ssymm(convertOrder(Order) , convertSide(Side), convertUplo(Uplo), M, N, alpha, cA, lda, cB, ldb, beta, cC, ldc);
 };
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dsymm
-(JNIEnv *env, jclass clazz,
-		jint Order, jint Side, jint Uplo,
-		jint M, jint N,
-		jdouble alpha,
-		jobject A, jint lda,
-		jobject B, jint ldb,
-		jdouble beta,
-		jobject C, jint ldc) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint Side, jint Uplo,
+		 jint M, jint N,
+		 jdouble alpha,
+		 jobject A, jint lda,
+		 jobject B, jint ldb,
+		 jdouble beta,
+		 jobject C, jint ldc) {
 
 	double *cA = (double *) env->GetDirectBufferAddress(A);
 	double *cB = (double *) env->GetDirectBufferAddress(B);
 	double *cC = (double *) env->GetDirectBufferAddress(C);
-	cblas_dsymm(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_SIDE>(Side), static_cast<CBLAS_UPLO>(Uplo), M, N, alpha, cA, lda, cB, ldb, beta, cC, ldc);
+	cblas_dsymm(convertOrder(Order) , convertSide(Side), convertUplo(Uplo), M, N, alpha, cA, lda, cB, ldb, beta, cC, ldc);
 };
 
 /*
@@ -1032,31 +1144,32 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dsymm
  */
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_ssyrk
-(JNIEnv *env, jclass clazz,
-		jint Order, jint Uplo, jint Trans,
-		jint N, jint K,
-		jfloat alpha,
-		jobject A, jint lda,
-		jfloat beta,
-		jobject C, jint ldc) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint Uplo, jint Trans,
+		 jint N, jint K,
+		 jfloat alpha,
+		 jobject A, jint lda,
+		 jfloat beta,
+		 jobject C, jint ldc) {
 
 	float *cA = (float *) env->GetDirectBufferAddress(A);
 	float *cC = (float *) env->GetDirectBufferAddress(C);
-	cblas_ssyrk(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_UPLO>(Uplo), static_cast<CBLAS_TRANSPOSE>(Trans), N, K, alpha, cA, lda, beta, cC, ldc);
+
+	cblas_ssyrk(convertOrder(Order) , convertUplo(Uplo), convertTranspose(Trans), N, K, alpha, cA, lda, beta, cC, ldc);
 };
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dsyrk
-(JNIEnv *env, jclass clazz,
-		jint Order, jint Uplo, jint Trans,
-		jint N, jint K,
-		jdouble alpha,
-		jobject A, jint lda,
-		jdouble beta,
-		jobject C, jint ldc) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint Uplo, jint Trans,
+		 jint N, jint K,
+		 jdouble alpha,
+		 jobject A, jint lda,
+		 jdouble beta,
+		 jobject C, jint ldc) {
 
 	double *cA = (double *) env->GetDirectBufferAddress(A);
 	double *cC = (double *) env->GetDirectBufferAddress(C);
-	cblas_dsyrk(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_UPLO>(Uplo), static_cast<CBLAS_TRANSPOSE>(Trans), N, K, alpha, cA, lda, beta, cC, ldc);
+	cblas_dsyrk(convertOrder(Order) , convertUplo(Uplo), convertTranspose(Trans), N, K, alpha, cA, lda, beta, cC, ldc);
 };
 
 /*
@@ -1066,35 +1179,35 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dsyrk
  */
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_ssyr2k
-(JNIEnv *env, jclass clazz,
-		jint Order, jint Uplo, jint Trans,
-		jint N, jint K,
-		jfloat alpha,
-		jobject A, jint lda,
-		jobject B, jint ldb,
-		jfloat beta,
-		jobject C, jint ldc) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint Uplo, jint Trans,
+		 jint N, jint K,
+		 jfloat alpha,
+		 jobject A, jint lda,
+		 jobject B, jint ldb,
+		 jfloat beta,
+		 jobject C, jint ldc) {
 
 	float *cA = (float *) env->GetDirectBufferAddress(A);
 	float *cB = (float *) env->GetDirectBufferAddress(B);
 	float *cC = (float *) env->GetDirectBufferAddress(C);
-	cblas_ssyr2k(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_UPLO>(Uplo), static_cast<CBLAS_TRANSPOSE>(Trans), N, K, alpha, cA, lda, cB, ldb, beta, cC, ldc);
+	cblas_ssyr2k(convertOrder(Order) , convertUplo(Uplo), convertTranspose(Trans), N, K, alpha, cA, lda, cB, ldb, beta, cC, ldc);
 };
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dsyr2k
-(JNIEnv *env, jclass clazz,
-		jint Order, jint Uplo, jint Trans,
-		jint N, jint K,
-		jdouble alpha,
-		jobject A, jint lda,
-		jobject B, jint ldb,
-		jdouble beta,
-		jobject C, jint ldc) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint Uplo, jint Trans,
+		 jint N, jint K,
+		 jdouble alpha,
+		 jobject A, jint lda,
+		 jobject B, jint ldb,
+		 jdouble beta,
+		 jobject C, jint ldc) {
 
 	double *cA = (double *) env->GetDirectBufferAddress(A);
 	double *cB = (double *) env->GetDirectBufferAddress(B);
 	double *cC = (double *) env->GetDirectBufferAddress(C);
-	cblas_dsyr2k(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_UPLO>(Uplo), static_cast<CBLAS_TRANSPOSE>(Trans), N, K, alpha, cA, lda, cB, ldb, beta, cC, ldc);
+	cblas_dsyr2k(convertOrder(Order) , convertUplo(Uplo), convertTranspose(Trans), N, K, alpha, cA, lda, cB, ldb, beta, cC, ldc);
 };
 
 /*
@@ -1104,33 +1217,33 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dsyr2k
  */
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_strmm
-(JNIEnv *env, jclass clazz,
-		jint Order, jint Side,
-		jint Uplo, jint TransA, jint Diag,
-		jint M, jint N,
-		jfloat alpha,
-		jobject A, jint lda,
-		jobject B, jint ldb) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint Side,
+		 jint Uplo, jint TransA, jint Diag,
+		 jint M, jint N,
+		 jfloat alpha,
+		 jobject A, jint lda,
+		 jobject B, jint ldb) {
 
 	float *cA = (float *) env->GetDirectBufferAddress(A);
 	float *cB = (float *) env->GetDirectBufferAddress(B);
-	cblas_strmm(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_SIDE>(Side), static_cast<CBLAS_UPLO>(Uplo), static_cast<CBLAS_TRANSPOSE>(TransA),
-                static_cast<CBLAS_DIAG>(Diag), M, N, alpha, cA, lda, cB, ldb);
+	cblas_strmm(convertOrder(Order) , convertSide(Side), convertUplo(Uplo), convertTranspose(TransA) ,
+				convertDiag(Diag), M, N, alpha, cA, lda, cB, ldb);
 };
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dtrmm
-(JNIEnv *env, jclass clazz,
-		jint Order, jint Side,
-		jint Uplo, jint TransA, jint Diag,
-		jint M, jint N,
-		jdouble alpha,
-		jobject A, jint lda,
-		jobject B, jint ldb) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint Side,
+		 jint Uplo, jint TransA, jint Diag,
+		 jint M, jint N,
+		 jdouble alpha,
+		 jobject A, jint lda,
+		 jobject B, jint ldb) {
 
 	double *cA = (double *) env->GetDirectBufferAddress(A);
 	double *cB = (double *) env->GetDirectBufferAddress(B);
-	cblas_dtrmm(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_SIDE>(Side), static_cast<CBLAS_UPLO>(Uplo), static_cast<CBLAS_TRANSPOSE>(TransA),
-                static_cast<CBLAS_DIAG>(Diag), M, N, alpha, cA, lda, cB, ldb);
+	cblas_dtrmm(convertOrder(Order) , convertSide(Side), convertUplo(Uplo), convertTranspose(TransA) ,
+				convertDiag(Diag), M, N, alpha, cA, lda, cB, ldb);
 };
 
 /*
@@ -1140,31 +1253,32 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dtrmm
  */
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_strsm
-(JNIEnv *env, jclass clazz,
-		jint Order, jint Side,
-		jint Uplo, jint TransA, jint Diag,
-		jint M, jint N,
-		jfloat alpha,
-		jobject A, jint lda,
-		jobject B, jint ldb) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint Side,
+		 jint Uplo, jint TransA, jint Diag,
+		 jint M, jint N,
+		 jfloat alpha,
+		 jobject A, jint lda,
+		 jobject B, jint ldb) {
 
 	float *cA = (float *) env->GetDirectBufferAddress(A);
 	float *cB = (float *) env->GetDirectBufferAddress(B);
-	cblas_strsm(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_SIDE>(Side), static_cast<CBLAS_UPLO>(Uplo), static_cast<CBLAS_TRANSPOSE>(TransA), static_cast<CBLAS_DIAG>(Diag), M, N, alpha, cA, lda, cB, ldb);
+
+	cblas_strsm(convertOrder(Order) , convertSide(Side), convertUplo(Uplo), convertTranspose(TransA) , convertDiag(Diag), M, N, alpha, cA, lda, cB, ldb);
 };
 
 JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dtrsm
-(JNIEnv *env, jclass clazz,
-		jint Order, jint Side,
-		jint Uplo, jint TransA, jint Diag,
-		jint M, jint N,
-		jdouble alpha,
-		jobject A, jint lda,
-		jobject B, jint ldb) {
+		(JNIEnv *env, jclass clazz,
+		 jint Order, jint Side,
+		 jint Uplo, jint TransA, jint Diag,
+		 jint M, jint N,
+		 jdouble alpha,
+		 jobject A, jint lda,
+		 jobject B, jint ldb) {
 
 	double *cA = (double *) env->GetDirectBufferAddress(A);
 	double *cB = (double *) env->GetDirectBufferAddress(B);
-	cblas_dtrsm(static_cast<CBLAS_ORDER>(Order), static_cast<CBLAS_SIDE>(Side), static_cast<CBLAS_UPLO>(Uplo), static_cast<CBLAS_TRANSPOSE>(TransA), static_cast<CBLAS_DIAG>(Diag), M, N, alpha, cA, lda, cB, ldb);
+	cblas_dtrsm(convertOrder(Order) , convertSide(Side), convertUplo(Uplo), convertTranspose(TransA) , convertDiag(Diag), M, N, alpha, cA, lda, cB, ldb);
 
 };
 
