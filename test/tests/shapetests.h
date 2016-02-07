@@ -298,4 +298,29 @@ TEST(Shape,Ind2Sub) {
 }
 
 
+TEST(Shape,ElementWiseStrideLessThanOne) {
+    int length = 16;
+    int rank = 2;
+    int *shape = (int *) malloc(sizeof(int) * rank);
+    shape[0] = 2;
+    shape[1] = 2;
+    int *stride = (int *) malloc(sizeof(int) * rank);
+    stride[0] = 8;
+    stride[1] = 1;
+
+    double *data = (double *) malloc(sizeof(double) * length);
+    for(int i = 0; i < length; i++)
+        data[i] = i + 1;
+
+    int elementWise = shape::computeElementWiseStride(rank,shape,stride,0);
+    if(elementWise >= 0)
+        printf("Element wise failed %d\n",elementWise);
+    CHECK(elementWise < 0);
+    free(shape);
+    free(stride);
+    free(data);
+}
+
+
+
 #endif /* SHAPETESTS_H_ */
