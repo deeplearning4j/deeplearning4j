@@ -1,8 +1,9 @@
 ---
+title: Tricks to Train Deep Neural Networks
 layout: default
 ---
 
-# Training tricks
+# Tricks to Train Deep Neural Networks
 
 There is an art to training neural networks, just as there is an art to training tigers to jump through a ring of fire. A little to the left or the right and disaster strikes.
 
