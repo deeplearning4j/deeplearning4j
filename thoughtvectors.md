@@ -1,5 +1,5 @@
 ---
-title: 
+title: Thought Vectors, Deep Learning & the Future of AI
 layout: default
 ---
 
