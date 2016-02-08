@@ -78,6 +78,11 @@ public class LeakyReLU extends BaseTransformOp {
     }
 
     @Override
+    public int opNum() {
+        return 31;
+    }
+
+    @Override
     public String name() {
         return "leakyrelu";
     }
@@ -150,5 +155,11 @@ public class LeakyReLU extends BaseTransformOp {
     @Override
     public TransformOp derivative() {
         return new LeakyReLUDerivative(x,y,z,n,alpha);
+    }
+
+    @Override
+    public void init(INDArray x, INDArray y, INDArray z, int n) {
+        super.init(x, y, z, n);
+        this.extraArgs = new Object[] {alpha};
     }
 }

@@ -53,6 +53,11 @@ public class ScalarMax extends BaseScalarOp {
     }
 
     @Override
+    public int opNum() {
+        return 6;
+    }
+
+    @Override
     public String name() {
         return "max_scalar";
     }

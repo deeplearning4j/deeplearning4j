@@ -50,6 +50,11 @@ public class ScalarDivision extends BaseScalarOp {
     }
 
     @Override
+    public int opNum() {
+        return 3;
+    }
+
+    @Override
     public String name() {
         return "div_scalar";
     }

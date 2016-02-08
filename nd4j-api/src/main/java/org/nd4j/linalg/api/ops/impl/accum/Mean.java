@@ -50,6 +50,11 @@ public class Mean extends Sum {
     }
 
     @Override
+    public int opNum() {
+        return 0;
+    }
+
+    @Override
     public String name() {
         return "mean";
     }
@@ -83,16 +88,16 @@ public class Mean extends Sum {
 
     @Override
     public double getAndSetFinalResult(double accum) {
+        double result;
         if(applyFinalTransform()) {
-            double d = accum / n();
-            this.finalResult = d;
-            return d;
+            result = accum / n();
+            this.finalResult =result;
         }
         else {
-            double d = accum;
-            this.finalResult = d;
-            return d;
+            result = accum;
+            this.finalResult = result;
         }
+        return result;
 
     }
 

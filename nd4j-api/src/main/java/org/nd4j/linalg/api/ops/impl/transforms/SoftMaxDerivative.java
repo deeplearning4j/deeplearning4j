@@ -53,6 +53,12 @@ public class SoftMaxDerivative extends SoftMax {
     }
 
     @Override
+    public int opNum() {
+        throw new UnsupportedOperationException();
+    }
+
+
+    @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
         IComplexNumber softmax = super.op(origin, other);
         return softmax.mul(Nd4j.createComplexNumber(1, 1).sub(softmax));

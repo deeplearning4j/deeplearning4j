@@ -154,6 +154,7 @@
         <module>nd4j-serde</module>
         <module>nd4j-bytebuddy</module>
         <module>nd4j-common</module>
+        <module>nd4j-native</module>
     </modules>
 
     <properties>

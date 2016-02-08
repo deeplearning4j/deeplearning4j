@@ -53,6 +53,11 @@ public class ASin extends BaseTransformOp {
     }
 
     @Override
+    public int opNum() {
+        return 17;
+    }
+
+    @Override
     public String name() {
         return "asin";
     }

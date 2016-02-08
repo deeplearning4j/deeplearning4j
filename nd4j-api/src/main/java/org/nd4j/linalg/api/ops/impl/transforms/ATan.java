@@ -52,6 +52,11 @@ public class ATan extends BaseTransformOp {
     }
 
     @Override
+    public int opNum() {
+        return 18;
+    }
+
+    @Override
     public String name() {
         return "atan";
     }

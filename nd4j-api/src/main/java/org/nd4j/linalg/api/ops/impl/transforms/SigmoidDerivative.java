@@ -54,6 +54,11 @@ public class SigmoidDerivative extends BaseTransformOp {
     }
 
     @Override
+    public int opNum() {
+        return 29;
+    }
+
+    @Override
     public String name() {
         return "sigmoidderivative";
     }

@@ -370,12 +370,12 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
-    public void testSortRows(){
+    public void testSortRows() {
         int nRows = 10;
         int nCols = 5;
         java.util.Random r = new java.util.Random(12345);
 
-        for( int i=0; i<nCols; i++ ){
+        for( int i=0; i < nCols; i++) {
             INDArray in = Nd4j.rand(new int[]{nRows,nCols});
 
             List<Integer> order = new ArrayList<>(nRows);
@@ -383,7 +383,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
             //in.row(order(i)) should end up as out.row(nRows-j-1) - descending
             for( int j=0; j<nRows; j++ ) order.add(j);
             Collections.shuffle(order, r);
-            for( int j=0; j<nRows; j++ ) in.putScalar(new int[]{j,i},order.get(j));
+            for( int j = 0; j<nRows; j++ )
+                in.putScalar(new int[]{j,i},order.get(j));
 
             INDArray outAsc = Nd4j.sortRows(in, i, true);
             INDArray outDesc = Nd4j.sortRows(in, i, false);
@@ -401,7 +402,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
-    public void testSortColumns(){
+    public void testSortColumns() {
         int nRows = 5;
         int nCols = 10;
         java.util.Random r = new java.util.Random(12345);
@@ -417,7 +418,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
             INDArray outAsc = Nd4j.sortColumns(in, i, true);
             INDArray outDesc = Nd4j.sortColumns(in, i, false);
 
-            for( int j=0; j<nCols; j++ ){
+            for( int j = 0; j < nCols; j++ ){
                 assertTrue(outAsc.getDouble(i,j)==j);
                 int origColIdxAsc = order.indexOf(j);
                 assertTrue(outAsc.getColumn(j).equals(in.getColumn(origColIdxAsc)));
@@ -1398,6 +1399,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
         assertTrue(mmul1.equals(mmul2));
     }
+
+
     @Test
     public void testMMulRowColVectorMixedOrder(){
         INDArray colVec = Nd4j.ones(5,1);

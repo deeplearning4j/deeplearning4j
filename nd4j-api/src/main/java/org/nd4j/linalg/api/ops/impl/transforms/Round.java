@@ -52,6 +52,11 @@ public class Round extends BaseTransformOp {
     }
 
     @Override
+    public int opNum() {
+        return 8;
+    }
+
+    @Override
     public String name() {
         return "round";
     }

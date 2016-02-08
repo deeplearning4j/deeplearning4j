@@ -17,12 +17,20 @@
  *
  */
 
-package org.nd4j.linalg.api.ops;
+package org.nd4j.linalg.cpu.nativecpu;
+
+
+import org.nd4j.linalg.cpu.nativecpu.util.LibUtils;
+import org.nd4j.linalg.factory.BaseBlasWrapper;
+
 
 /**
- * Created by agibsonccc on 2/23/15.
+ * Copy of SimpleBlas to handle offsets implementing
+ * an interface for library neutral
+ * jblas operations
+ *
+ * @author Adam Gibson
  */
-public class Ops {
-
+public class BlasWrapper extends BaseBlasWrapper {
 
 }

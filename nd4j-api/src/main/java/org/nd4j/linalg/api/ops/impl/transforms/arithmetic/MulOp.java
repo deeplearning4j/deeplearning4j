@@ -54,6 +54,11 @@ public class MulOp extends BaseTransformOp {
     }
 
     @Override
+    public int opNum() {
+        return 6;
+    }
+
+    @Override
     public String name() {
         return "mul";
     }

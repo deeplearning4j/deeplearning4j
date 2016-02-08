@@ -51,6 +51,11 @@ public class ScalarReverseSubtraction extends BaseScalarOp {
     }
 
     @Override
+    public int opNum() {
+        return 5;
+    }
+
+    @Override
     public String name() {
         return "rsub_scalar";
     }

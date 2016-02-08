@@ -70,7 +70,7 @@ public class EuclideanDistance extends BaseAccumulation {
     @Override
     public float update(float accum, float x, float y) {
         float f = (x-y);
-        return accum + f*f;
+        return accum + f * f;
     }
 
     @Override
@@ -114,6 +114,11 @@ public class EuclideanDistance extends BaseAccumulation {
     @Override
     public IComplexNumber combineSubResults(IComplexNumber first, IComplexNumber second){
         return first.add(second);
+    }
+
+    @Override
+    public int opNum() {
+        return 1;
     }
 
     @Override

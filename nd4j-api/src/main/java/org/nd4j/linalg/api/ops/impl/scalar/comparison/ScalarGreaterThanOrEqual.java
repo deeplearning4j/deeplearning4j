@@ -51,6 +51,11 @@ public class ScalarGreaterThanOrEqual extends BaseScalarOp {
     }
 
     @Override
+    public int opNum() {
+        return 16;
+    }
+
+    @Override
     public String name() {
         return "greaterthanorequal_scalar";
     }

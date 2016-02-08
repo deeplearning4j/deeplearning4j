@@ -50,6 +50,11 @@ public class Dot extends BaseAccumulation {
     }
 
     @Override
+    public int opNum() {
+        return 3;
+    }
+
+    @Override
     public String name() {
         return "dot";
     }

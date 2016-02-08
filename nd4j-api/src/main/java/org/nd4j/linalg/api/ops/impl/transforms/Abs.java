@@ -54,6 +54,11 @@ public class Abs extends BaseTransformOp {
 
 
     @Override
+    public int opNum() {
+        return 0;
+    }
+
+    @Override
     public String name() {
         return "abs";
     }

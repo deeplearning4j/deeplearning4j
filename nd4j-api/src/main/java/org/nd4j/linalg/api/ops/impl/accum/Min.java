@@ -54,6 +54,11 @@ public class Min extends BaseAccumulation {
 
 
     @Override
+    public int opNum() {
+        return 4;
+    }
+
+    @Override
     public String name() {
         return "min";
     }

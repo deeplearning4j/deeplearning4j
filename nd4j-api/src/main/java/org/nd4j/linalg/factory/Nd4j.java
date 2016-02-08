@@ -106,6 +106,7 @@ public class Nd4j {
     public static boolean copyOnOps = true;
     public static boolean shouldInstrument = false;
     public static boolean resourceManagerOn = false;
+    private static boolean allowsOrder = false;
 
     protected static Class<? extends BlasWrapper> blasWrapperClazz;
     protected static Class<? extends NDArrayFactory> ndArrayFactoryClazz;
@@ -140,6 +141,7 @@ public class Nd4j {
         Nd4j nd4j = new Nd4j();
         nd4j.initContext();
     }
+
 
 
 
@@ -273,6 +275,8 @@ public class Nd4j {
 
 
 
+
+
     /**
      * Pad the given ndarray to the size along each dimension
      * @param toPad the ndarray to pad
@@ -327,6 +331,17 @@ public class Nd4j {
         return Nd4j.concat(axis, Nd4j.valueArrayOf(paShape, val), arr);
     }
 
+
+    /**
+     * Backend specific:
+     * Returns whether specifying the order
+     * for the blas impl is allowed (cblas)
+     * @return true if the blas impl
+     * can support specifying array order
+     */
+    public static boolean allowsSpecifyOrdering() {
+        return allowsOrder;
+    }
 
     /**
      * In place shuffle of an ndarray
@@ -3822,6 +3837,9 @@ public class Nd4j {
         if(shape.length == 1 && shape[0] == 0) {
             shape = new int[]{1,1};
         }
+        else if(shape.length == 1) {
+            shape = new int[] {1,shape[0]};
+        }
         INDArray ret = INSTANCE.create(shape, ordering);
         logCreationIfNecessary(ret);
         return ret;
@@ -4553,7 +4571,7 @@ public class Nd4j {
             String defaultName = props.getProperty(DATA_BUFFER_OPS, DefaultDataBufferFactory.class.getName());
             dataBufferFactoryClazz = (Class<? extends DataBufferFactory>) Class.forName(System.getProperty(DATA_BUFFER_OPS, defaultName));
 
-
+            allowsOrder = backend.allowsOrder();
             String rand = props.getProperty(RANDOM, DefaultRandom.class.getName());
             randomClazz = (Class<? extends org.nd4j.linalg.api.rng.Random>) Class.forName(rand);
 

@@ -52,6 +52,11 @@ public class Ones extends BaseTransformOp {
     }
 
     @Override
+    public int opNum() {
+        return 26;
+    }
+
+    @Override
     public String name() {
         return "ones";
     }

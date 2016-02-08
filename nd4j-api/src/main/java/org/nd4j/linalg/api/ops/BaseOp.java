@@ -19,8 +19,11 @@
 
 package org.nd4j.linalg.api.ops;
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ndarray.LinearViewNDArray;
+import org.nd4j.linalg.factory.Nd4j;
+
+import java.nio.Buffer;
 
 /**
  * Base op. An op involves iterating over 2 buffers (x,y)  up to n elements
@@ -37,6 +40,33 @@ public abstract class BaseOp implements Op {
     protected boolean passThrough;
 
     public BaseOp() {
+    }
+
+
+    @Override
+    public Buffer extraArgsBuff() {
+        if(extraArgs != null) {
+            DataBuffer retBuff;
+            if(x.data().dataType() == DataBuffer.Type.FLOAT) {
+                retBuff = Nd4j.createBuffer(new float[extraArgs.length]);
+                for(int i = 0; i < extraArgs.length; i++) {
+                    Number val = (Number) extraArgs[i];
+                    retBuff.put(i,val.floatValue());
+                }
+                return retBuff.asNioFloat();
+            }
+            else {
+                retBuff = Nd4j.createBuffer(new double[extraArgs.length]);
+                for(int i = 0; i < extraArgs.length; i++) {
+                    Number val = (Number) extraArgs[i];
+                    retBuff.put(i, val.doubleValue());
+                }
+                return retBuff.asNioDouble();
+            }
+
+
+        }
+        return null;
     }
 
     @Override
@@ -98,17 +128,17 @@ public abstract class BaseOp implements Op {
 
     protected void ensureProperVectors(INDArray x,INDArray y,INDArray z) {
         this.x = x;
-        if(x.offset() > 0 && !(x instanceof LinearViewNDArray) && x.length() < x.data().length()) {
+        if(x.offset() > 0  && x.length() < x.data().length()) {
             this.x = x.linearView();
         }
 
         this.y = y;
-        if(y != null && y.offset() > 0 && !(y instanceof LinearViewNDArray) && y.majorStride() > y.elementStride()) {
+        if(y != null && y.offset() > 0 && y.majorStride() > y.elementStride()) {
             this.y = y.linearView();
         }
 
         this.z = z;
-        if(z.offset() > 0 && !(x instanceof LinearViewNDArray) && z.majorStride() > z.elementStride()) {
+        if(z.offset() > 0 && z.majorStride() > z.elementStride()) {
             this.z = z.linearView();
         }
 

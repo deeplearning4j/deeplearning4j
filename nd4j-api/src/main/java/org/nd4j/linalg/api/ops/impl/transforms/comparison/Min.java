@@ -53,6 +53,11 @@ public class Min extends BaseTransformOp {
     }
 
     @Override
+    public int opNum() {
+        return 14;
+    }
+
+    @Override
     public String name() {
         return "min";
     }
