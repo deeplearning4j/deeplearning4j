@@ -1,9 +1,9 @@
 ---
-title: 
+title: Deep Learning Use Cases
 layout: default
 ---
 
-# Use cases
+# Deep Learning Use Cases
 
 Deep learning excels at identifying patterns in unstructured data, which most people know as media such as images, sound, video and text. 
 
