@@ -1,4 +1,5 @@
 ---
+title: Full Installation of Deeplearning4j
 layout: default
 ---
 
