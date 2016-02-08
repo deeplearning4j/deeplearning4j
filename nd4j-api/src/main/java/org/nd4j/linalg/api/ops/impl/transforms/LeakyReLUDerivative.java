@@ -68,6 +68,11 @@ public class LeakyReLUDerivative extends BaseTransformOp {
     }
 
     @Override
+    public int opNum() {
+        return 32;
+    }
+
+    @Override
     public String name() {
         return "leakyreluderivative";
     }
@@ -130,5 +135,11 @@ public class LeakyReLUDerivative extends BaseTransformOp {
             return new LeakyReLUDerivative(x.tensorAlongDimension(index, dimension), y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length(),alpha);
         else
             return new LeakyReLUDerivative(x.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length(),alpha);
+    }
+
+    @Override
+    public void init(INDArray x, INDArray y, INDArray z, int n) {
+        super.init(x, y, z, n);
+        this.extraArgs = new Object[] {alpha};
     }
 }

@@ -53,6 +53,11 @@ public class LessThanOrEqual extends BaseTransformOp {
     }
 
     @Override
+    public int opNum() {
+        return 12;
+    }
+
+    @Override
     public String name() {
         return "lte";
     }

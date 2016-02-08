@@ -55,6 +55,11 @@ public class ScalarEquals extends BaseScalarOp {
     }
 
     @Override
+    public int opNum() {
+        return 9;
+    }
+
+    @Override
     public String name() {
         return "equals_scalar";
     }

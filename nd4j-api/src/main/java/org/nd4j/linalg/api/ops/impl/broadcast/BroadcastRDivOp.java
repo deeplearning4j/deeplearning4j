@@ -18,6 +18,11 @@ public class BroadcastRDivOp extends BaseBroadcastOp {
     }
 
     @Override
+    public int opNum() {
+        return 4;
+    }
+
+    @Override
     public String name() {
         return "broadcastrdiv";
     }

@@ -14,6 +14,17 @@ public class RowVectorOpsC extends BaseNd4jTest {
         super(name, backend);
     }
 
+    public RowVectorOpsC() {
+    }
+
+    public RowVectorOpsC(Nd4jBackend backend) {
+        super(backend);
+    }
+
+    public RowVectorOpsC(String name) {
+        super(name);
+    }
+
     @Test
     public void testAddi() {
         INDArray arr = Nd4j.linspace(1,4,4).reshape(2,2);

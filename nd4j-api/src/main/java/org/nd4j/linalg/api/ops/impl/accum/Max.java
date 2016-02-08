@@ -103,6 +103,11 @@ public class Max extends BaseAccumulation {
     }
 
     @Override
+    public int opNum() {
+        return 3;
+    }
+
+    @Override
     public String name() {
         return "max";
     }

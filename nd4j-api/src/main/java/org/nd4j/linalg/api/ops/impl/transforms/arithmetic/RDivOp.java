@@ -54,6 +54,11 @@ public class RDivOp extends BaseTransformOp {
     }
 
     @Override
+    public int opNum() {
+        return 7;
+    }
+
+    @Override
     public String name() {
         return "rdiv";
     }

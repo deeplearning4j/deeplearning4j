@@ -79,6 +79,11 @@ public class RectifedLinear extends BaseTransformOp {
     }
 
     @Override
+    public int opNum() {
+        return 33;
+    }
+
+    @Override
     public String name() {
         return "relu";
     }
@@ -149,5 +154,11 @@ public class RectifedLinear extends BaseTransformOp {
     @Override
     public TransformOp derivative() {
         return new Step(x,y,z,n,cutoff);
+    }
+
+    @Override
+    public void init(INDArray x, INDArray y, INDArray z, int n) {
+        super.init(x, y, z, n);
+        this.extraArgs = new Object[] {cutoff};
     }
 }

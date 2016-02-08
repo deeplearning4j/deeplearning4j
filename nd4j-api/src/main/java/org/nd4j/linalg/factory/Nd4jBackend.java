@@ -42,6 +42,14 @@ public abstract class Nd4jBackend {
 
     private Properties props;
 
+    /**
+     * Returns true if the
+     * backend allows order to be specified
+     * on blas operations (cblas)
+     * @return true if the backend allows
+     * order to be specified on blas operations
+     */
+    public abstract boolean allowsOrder();
 
     /**
      * Gets a priority number for the backend.

@@ -56,6 +56,11 @@ public class ScalarSubtraction extends BaseScalarOp {
     }
 
     @Override
+    public int opNum() {
+        return 1;
+    }
+
+    @Override
     public String name() {
         return "sub_scalar";
     }

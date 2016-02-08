@@ -17,6 +17,17 @@ public class NDArrayMathTests extends BaseNd4jTest {
         super(name, backend);
     }
 
+    public NDArrayMathTests() {
+    }
+
+    public NDArrayMathTests(Nd4jBackend backend) {
+        super(backend);
+    }
+
+    public NDArrayMathTests(String name) {
+        super(name);
+    }
+
     @Test
     public void testVectorPerSlice() {
         INDArray arr = Nd4j.create(2,2,2,2);

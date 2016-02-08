@@ -28,6 +28,7 @@ import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
 import java.io.Serializable;
+import java.nio.IntBuffer;
 import java.util.List;
 
 /**
@@ -37,7 +38,11 @@ import java.util.List;
  */
 public interface INDArray extends Serializable  {
 
-
+    /**
+     * Shape info
+     * @return
+     */
+    IntBuffer shapeInfo();
     /**
      * Returns true if this array is a view or not
      * @return
@@ -1437,6 +1442,15 @@ public interface INDArray extends Serializable  {
      * @return the mean along the specified dimension of this ndarray
      */
     INDArray var(int...dimension);
+
+    /**
+     * Returns the overall variance of this ndarray
+     *
+     * @param biasCorrected boolean on whether to apply corrected bias
+     * @param dimension the dimension to getScalar the mean along
+     * @return the mean along the specified dimension of this ndarray
+     */
+    INDArray var(boolean biasCorrected, int...dimension);
 
     Number varNumber();
 

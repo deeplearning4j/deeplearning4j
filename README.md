@@ -3,12 +3,14 @@ ND4J: Scientific Computing on the JVM
 
 [![Join the chat at https://gitter.im/deeplearning4j/deeplearning4j](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/deeplearning4j/deeplearning4j?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-[![Build Status](https://travis-ci.org/deeplearning4j/nd4j.svg?branch=master)](https://travis-ci.org/deeplearning4j/nd4j)
-
 ND4J is an Apache2 Licensed open-sourced scientific computing library for the JVM. It is meant to be used in production environments
 rather than as a research tool, which means routines are designed to run fast with minimum RAM requirements.
 
-Current latest version in maven central is `0.4-rc0`.
+Please search for the latest version on search.maven.org.
+
+Or use the versions displayed in:
+https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml
+
 
 ---
 ## Main Features
@@ -70,8 +72,8 @@ Add the local compiled file dependency (choose the module for your backend) to y
 
     <dependency>
         <groupId>org.nd4j</groupId>
-        <artifactId>nd4j-jblas</artifactId>
-        <version>0.4-rc0</version>
+        <artifactId>nd4j-x86</artifactId>
+        <version>${nd4j.version}</version>
     </dependency>
 
 #### Yum Install / Load RPM (Fedora or CentOS)

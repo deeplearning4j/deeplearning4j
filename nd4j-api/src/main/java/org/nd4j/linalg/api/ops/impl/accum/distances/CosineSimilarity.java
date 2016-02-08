@@ -112,6 +112,11 @@ public class CosineSimilarity extends BaseAccumulation {
     }
 
     @Override
+    public int opNum() {
+        return 2;
+    }
+
+    @Override
     public String name() {
         return "cosinesimilarity";
     }

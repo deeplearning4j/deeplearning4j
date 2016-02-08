@@ -55,9 +55,8 @@ public class NDArray extends BaseNDArray {
     }
 
 
-	public void close() {
-	}
-	
+
+
     public NDArray() {
         super();
     }
@@ -283,10 +282,7 @@ public class NDArray extends BaseNDArray {
     }
 
     public NDArray(double[] data, int[] shape, int[] stride, int offset) {
-        this.data = Nd4j.createBuffer(data);
-        this.stride = stride;
-        this.offset = offset;
-        init(shape);
+        super(data,shape,stride,offset);
     }
 
     public NDArray(float[][] floats) {
@@ -345,8 +341,7 @@ public class NDArray extends BaseNDArray {
     }
 
     public NDArray(int[] shape, DataBuffer buffer) {
-        this.data = buffer;
-        init(shape);
+        super(shape,buffer);
     }
 
 

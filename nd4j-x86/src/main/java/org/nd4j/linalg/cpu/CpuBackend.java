@@ -47,6 +47,11 @@ public class CpuBackend extends Nd4jBackend {
     }
 
     @Override
+    public boolean allowsOrder() {
+        return false;
+    }
+
+    @Override
     public int getPriority() {
         return BACKEND_PRIORITY_CPU;
     }

@@ -19,6 +19,11 @@ public class BroadcastCopyOp extends BaseBroadcastOp {
     }
 
     @Override
+    public int opNum() {
+        return 6;
+    }
+
+    @Override
     public String name() {
         return "broadcastcopy";
     }

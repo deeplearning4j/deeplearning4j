@@ -33,6 +33,7 @@ import java.util.List;
  * Row vector view of an ndarray
  * @author Adam Gibson
  */
+@Deprecated
 public class LinearViewComplexNDArray extends BaseComplexNDArray {
     private IComplexNDArray wrapped;
     private List<INDArray> vectors;
@@ -48,14 +49,14 @@ public class LinearViewComplexNDArray extends BaseComplexNDArray {
             wrapped = Nd4j.createComplex(wrapped.data(), Shape.squeeze(wrapped.shape()));
         }
 
-        this.wrapped = wrapped;
+     /*   this.wrapped = wrapped;
         this.shape = new int[] {1,wrapped.length()};
         this.data = wrapped.data();
         this.offset = wrapped.offset();
         this.ordering = wrapped.ordering();
         this.length = wrapped.length();
         vectors = new ArrayList<>();
-        collectRows(wrapped);
+        collectRows(wrapped);*/
 
     }
 

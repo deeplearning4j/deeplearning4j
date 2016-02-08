@@ -18,6 +18,11 @@ public class BroadcastAddOp extends BaseBroadcastOp {
     }
 
     @Override
+    public int opNum() {
+        return 0;
+    }
+
+    @Override
     public String name() {
         return "broadcastadd";
     }

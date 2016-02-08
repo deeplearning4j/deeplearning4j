@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
+import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.parallel.ParallelExecutioner;
 import org.nd4j.linalg.api.parallel.tasks.Task;
 import org.nd4j.linalg.api.parallel.tasks.TaskFactory;
@@ -195,6 +196,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Override
+    public Accumulation execAndReturn(Variance op, boolean biasCorrected) {
+        return null;
+    }
+
+    @Override
     public INDArray execAndReturn(ScalarOp op) {
         return exec(op).z();
     }
@@ -280,6 +286,12 @@ public class DefaultOpExecutioner implements OpExecutioner {
             Task<INDArray> task = taskFactory.getAccumulationTask(op, dimension);
             return task.invokeBlocking();
         }
+    }
+
+    @Override
+    public INDArray exec(Variance accumulation, boolean biasCorrected, int... dimension) {
+        accumulation.setBiasCorrected(biasCorrected);
+        return exec(accumulation,dimension);
     }
 
     @Override
@@ -511,7 +523,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         INDArray x = op.x();
         INDArray y = op.y();
         INDArray z = op.z();
-        if(!(x instanceof IComplexNDArray) && !(y instanceof IComplexNDArray) && !(z instanceof IComplexNDArray)){
+        if(!(x instanceof IComplexNDArray) && !(y instanceof IComplexNDArray) && !(z instanceof IComplexNDArray)) {
             taskFactory.getBroadcastOpAction(op).invokeBlocking();
         } else {
             //Complex vector op

@@ -1,6 +1,5 @@
 package org.nd4j.linalg.api.parallel.tasks.cpu.accumulation;
 
-import io.netty.buffer.ByteBuf;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.parallel.tasks.Task;
@@ -219,7 +218,7 @@ public class CPUAccumulationTask extends BaseCPUAccumulationTask {
                     float accum = op.zeroFloat();
                     if (incrX == 1) {
                         for (int i = 0; i < n; i++) {
-                            accum = op.update(accum, op.op(xf[offsetX + i]));
+                             accum = op.update(accum, op.op(xf[offsetX + i]));
                         }
                     } else {
                         for (int i = 0; i < n; i++) {

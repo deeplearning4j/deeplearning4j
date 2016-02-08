@@ -45,6 +45,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public abstract class BaseDataBuffer implements DataBuffer {
 
     protected int length;
+    protected int offset;
     protected int elementSize;
     protected transient ByteBuffer wrappedBuffer;
     protected Collection<String> referencing = Collections.synchronizedSet(new HashSet<String>());
@@ -55,7 +56,15 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected int[] intData;
     protected float[] floatData;
     protected AtomicBoolean dirty = new AtomicBoolean(false);
-
+    /**
+     *
+     * @param buf
+     * @param length
+     */
+    protected BaseDataBuffer(ByteBuf buf,int length,int offset) {
+        this(buf,length);
+        this.offset = offset;
+    }
     /**
      *
      * @param buf
@@ -66,7 +75,16 @@ public abstract class BaseDataBuffer implements DataBuffer {
         this.wrappedBuffer = buf.nioBuffer();
         this.length = length;
     }
+    /**
+     *
+     * @param data
+     * @param copy
+     */
+    public BaseDataBuffer(float[] data, boolean copy,int offset) {
+        this(data,copy);
+        this.offset = offset;
 
+    }
     /**
      *
      * @param data
@@ -99,6 +117,16 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @param data
      * @param copy
      */
+    public BaseDataBuffer(double[] data, boolean copy,int offset) {
+        this(data,copy);
+        this.offset = offset;
+    }
+
+    /**
+     *
+     * @param data
+     * @param copy
+     */
     public BaseDataBuffer(double[] data, boolean copy) {
         allocationMode = Nd4j.alloc;
         if(allocationMode == AllocationMode.HEAP) {
@@ -121,6 +149,16 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     }
 
+
+    /**
+     *
+     * @param data
+     * @param copy
+     */
+    public BaseDataBuffer(int[] data, boolean copy,int offset) {
+        this(data,copy);
+        this.offset = offset;
+    }
     /**
      *
      * @param data
@@ -139,7 +177,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         else {
             wrappedBuffer =  ByteBuffer.allocateDirect(4 * data.length);
             wrappedBuffer.order(ByteOrder.nativeOrder());
-            FloatBuffer buffer = wrappedBuffer.asFloatBuffer();
+            IntBuffer buffer = wrappedBuffer.asIntBuffer();
             for(int i = 0; i < data.length; i++) {
                 buffer.put(i,data[i]);
             }
@@ -147,18 +185,44 @@ public abstract class BaseDataBuffer implements DataBuffer {
         length = data.length;
     }
 
+    /**
+     *
+     * @param data
+     */
     public BaseDataBuffer(double[] data) {
         this(data,Nd4j.copyOnOps);
     }
 
+    /**
+     *
+     * @param data
+     */
     public BaseDataBuffer(int[] data) {
         this(data, Nd4j.copyOnOps);
     }
 
+    /**
+     *
+     * @param data
+     */
     public BaseDataBuffer(float[] data) {
         this(data,Nd4j.copyOnOps);
     }
+    /**
+     *
+     * @param length
+     * @param elementSize
+     */
+    public BaseDataBuffer(int length, int elementSize,int offset) {
+        this(length,elementSize);
+        this.offset = offset;
+    }
 
+    /**
+     *
+     * @param length
+     * @param elementSize
+     */
     public BaseDataBuffer(int length, int elementSize) {
         allocationMode = Nd4j.alloc;
         this.length = length;
@@ -173,8 +237,21 @@ public abstract class BaseDataBuffer implements DataBuffer {
         else if(dataType() == Type.FLOAT) {
             floatData = new float[length];
         }
+        else if(dataType() == Type.INT)
+            intData = new int[length];
     }
+    /**
+     * Create a data buffer from
+     * the given length
+     *
+     * @param buffer
+     * @param length
+     */
+    public BaseDataBuffer(ByteBuffer buffer,int length,int offset) {
+        this(buffer,length);
+        this.offset = offset;
 
+    }
     /**
      * Create a data buffer from
      * the given length
@@ -226,6 +303,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
         this(Unpooled.wrappedBuffer(data),length);
     }
 
+    @Override
+    public int offset() {
+        return offset;
+    }
 
     @Override
     public AllocationMode allocationMode() {
@@ -270,7 +351,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         else {
             if(length * getElementSize() < 0)
                 throw new IllegalArgumentException("Unable to create buffer of length " + length + " due to negative length specified");
-            wrappedBuffer = ByteBuffer.allocateDirect(getElementSize() * length);
+            wrappedBuffer = ByteBuffer.allocateDirect(getElementSize() * length).order(ByteOrder.nativeOrder());
         }
 
     }
@@ -732,14 +813,27 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
 
 
+    @Override
+    public IntBuffer asNioInt() {
+        if(wrappedBuffer == null) {
+            return IntBuffer.wrap(intData);
+        }
+        return wrappedBuffer.asIntBuffer();
+    }
 
     @Override
     public DoubleBuffer asNioDouble() {
+        if(wrappedBuffer == null) {
+            return DoubleBuffer.wrap(doubleData);
+        }
         return wrappedBuffer.asDoubleBuffer();
     }
 
     @Override
     public FloatBuffer asNioFloat() {
+        if(wrappedBuffer == null) {
+            return FloatBuffer.wrap(floatData);
+        }
         return wrappedBuffer.asFloatBuffer();
     }
 
@@ -751,7 +845,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     @Override
     public ByteBuf asNetty() {
         if(wrappedBuffer != null)
-        return Unpooled.wrappedBuffer(wrappedBuffer);
+            return Unpooled.wrappedBuffer(wrappedBuffer);
         else if(floatData != null)
             return Unpooled.copyFloat(floatData);
         else if(doubleData != null)

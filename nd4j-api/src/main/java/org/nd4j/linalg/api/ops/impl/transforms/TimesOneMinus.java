@@ -50,6 +50,11 @@ public class TimesOneMinus extends BaseTransformOp {
     }
 
     @Override
+    public int opNum() {
+        return 24;
+    }
+
+    @Override
     public String name() {
         return "timesoneminus";
     }
@@ -73,22 +78,22 @@ public class TimesOneMinus extends BaseTransformOp {
 
     @Override
     public float op(float origin, float other) {
-        return origin*(1 - origin);
+        return origin * (1 - origin);
     }
 
     @Override
     public double op(double origin, double other) {
-        return origin*(1 - origin);
+        return origin * (1 - origin);
     }
 
     @Override
     public double op(double origin) {
-        return origin*(1 - origin);
+        return origin * (1 - origin);
     }
 
     @Override
     public float op(float origin) {
-        return origin*(1 - origin);
+        return origin * (1 - origin);
     }
 
     @Override

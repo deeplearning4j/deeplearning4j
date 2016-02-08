@@ -52,6 +52,11 @@ public class ScalarSetValue extends BaseScalarOp {
     }
 
     @Override
+    public int opNum() {
+        return 13;
+    }
+
+    @Override
     public String name() {
         return "setvalorless_scalar";
     }

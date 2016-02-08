@@ -115,6 +115,11 @@ public class ManhattanDistance extends BaseAccumulation {
 
 
     @Override
+    public int opNum() {
+        return 0;
+    }
+
+    @Override
     public String name() {
         return "manhattan";
     }
