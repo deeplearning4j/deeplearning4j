@@ -1,5 +1,5 @@
 ---
-title: 
+title: Tutorial: Recurrent Networks and LSTMs in Java
 layout: default
 ---
 
