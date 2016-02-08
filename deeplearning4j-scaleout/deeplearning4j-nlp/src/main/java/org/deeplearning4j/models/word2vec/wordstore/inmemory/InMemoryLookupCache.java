@@ -172,7 +172,9 @@ public class InMemoryLookupCache implements VocabCache<VocabWord>,Serializable {
      */
     @Override
     public synchronized int indexOf(String word) {
-        return wordIndex.indexOf(word);
+        if (containsWord(word)) {
+            return wordFor(word).getIndex();
+        } return -1;
     }
 
 

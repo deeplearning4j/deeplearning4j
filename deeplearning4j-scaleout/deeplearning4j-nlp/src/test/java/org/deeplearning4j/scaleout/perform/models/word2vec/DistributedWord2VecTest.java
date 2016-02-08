@@ -36,16 +36,22 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.*;
 
 /**
+ * This unit test is meaningless and malfunctioning.
+ *
+ * Please refer to spark-nlp tests
+ *
  * Created by agibsonccc on 11/29/14.
  */
+@Ignore
 public class DistributedWord2VecTest extends BaseTestDistributed {
-    private  InMemoryLookupTable table;
+    private InMemoryLookupTable table;
     private TextVectorizer vectorizer;
     private InvertedIndex invertedIndex;
     private VocabCache cache;

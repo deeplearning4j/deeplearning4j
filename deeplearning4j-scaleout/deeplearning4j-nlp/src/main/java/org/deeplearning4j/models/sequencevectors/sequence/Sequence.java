@@ -116,6 +116,14 @@ public class Sequence<T extends SequenceElement> implements Serializable {
     }
 
     /**
+     * Sets sequence labels
+     * @param labels
+     */
+    public void setSequenceLabels(List<T> labels) {
+        this.labels = labels;
+    }
+
+    /**
      * Set sequence label
      *
      * @param label

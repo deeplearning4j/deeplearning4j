@@ -41,6 +41,9 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
     public void init(@NonNull WeightLookupTable<T> lookupTable) {
         this.vocabCache = lookupTable.getVocabCache();
         this.lookupTable = lookupTable;
+
+        // reset normalization trigger on init call
+        this.normalized = false;
     }
 
     /**

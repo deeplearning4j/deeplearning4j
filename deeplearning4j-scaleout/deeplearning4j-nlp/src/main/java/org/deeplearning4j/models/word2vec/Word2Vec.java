@@ -29,16 +29,40 @@ import java.util.List;
  */
 public class Word2Vec extends SequenceVectors<VocabWord> {
     @Getter protected transient SentenceIterator sentenceIter;
-    @Getter @Setter protected transient TokenizerFactory tokenizerFactory;
+    @Getter protected transient TokenizerFactory tokenizerFactory;
 
+    /**
+     * This method defines TokenizerFactory instance to be using during model building
+     *
+     * @param tokenizerFactory TokenizerFactory instance
+     */
+    public void setTokenizerFactory(@NonNull TokenizerFactory tokenizerFactory) {
+        this.tokenizerFactory = tokenizerFactory;
+
+        if (sentenceIter != null) {
+            SentenceTransformer transformer = new SentenceTransformer.Builder()
+                    .iterator(sentenceIter)
+                    .tokenizerFactory(this.tokenizerFactory)
+                    .build();
+            this.iterator = new AbstractSequenceIterator.Builder<VocabWord>(transformer).build();
+        }
+    }
+
+    /**
+     * This method defines SentenceIterator instance, that will be used as training corpus source
+     *
+     * @param iterator SentenceIterator instance
+     */
     public void setSentenceIter(@NonNull SentenceIterator iterator) {
-        if (tokenizerFactory == null) throw new IllegalStateException("Please call setTokenizerFactory() prior to setSentenceIter() call.");
+        //if (tokenizerFactory == null) throw new IllegalStateException("Please call setTokenizerFactory() prior to setSentenceIter() call.");
 
-        SentenceTransformer transformer = new SentenceTransformer.Builder()
-                .iterator(iterator)
-                .tokenizerFactory(tokenizerFactory)
-                .build();
-        this.iterator = new AbstractSequenceIterator.Builder<VocabWord>(transformer).build();
+        if (tokenizerFactory != null) {
+            SentenceTransformer transformer = new SentenceTransformer.Builder()
+                    .iterator(iterator)
+                    .tokenizerFactory(tokenizerFactory)
+                    .build();
+            this.iterator = new AbstractSequenceIterator.Builder<VocabWord>(transformer).build();
+        }
     }
 
     public static class Builder extends SequenceVectors.Builder<VocabWord> {
@@ -362,9 +386,9 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
 
             Word2Vec ret = new Word2Vec();
 
-            if (tokenizerFactory == null) tokenizerFactory = new DefaultTokenizerFactory();
-
             if (sentenceIterator != null) {
+                if (tokenizerFactory == null) tokenizerFactory = new DefaultTokenizerFactory();
+
                 SentenceTransformer transformer = new SentenceTransformer.Builder()
                         .iterator(sentenceIterator)
                         .tokenizerFactory(tokenizerFactory)
@@ -388,6 +412,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             ret.useAdeGrad = this.useAdaGrad;
             ret.stopWords = this.stopWords;
             ret.workers = this.workers;
+
 
             ret.iterator = this.iterator;
             ret.lookupTable = this.lookupTable;
