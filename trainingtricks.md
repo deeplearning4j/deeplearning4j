@@ -27,7 +27,7 @@ First, know the problem you are trying to solve. This [list of questions](http:/
  
 ### For Recurrent Neural Networks
 
-* If you have long time series (> 200 time steps), you should use truncated backpropagation through time.
+* If you have long time series (> 200 time steps), you should use truncated [backpropagation through time](../glossary.html#backprop).
 
 ### For Restricted Boltzmann Machines (RBMs)
 
