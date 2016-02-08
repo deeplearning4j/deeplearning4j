@@ -290,7 +290,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param shape  the shape of the ndarray
      */
     public BaseNDArray(List<INDArray> slices, int[] shape, int[] stride, char ordering) {
-        int[] thisShape = Ints.concat(new int[]{slices.size()},slices.get(0).shape());
+        int[] thisShape = shape;
         DataBuffer ret = slices.get(0).data().dataType() == (DataBuffer.Type.FLOAT) ?
                 Nd4j.createBuffer(new float[ArrayUtil.prod(thisShape)]) :
                 Nd4j.createBuffer(new double[ArrayUtil.prod(thisShape)]);

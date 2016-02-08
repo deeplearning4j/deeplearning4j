@@ -1404,7 +1404,8 @@ public class Nd4j {
         List<INDArray> list = new ArrayList<>();
         for (int i = 0; i < num; i++)
             list.add(n.dup());
-        int[] shape = n.isColumnVector() ? new int[]{n.shape()[0]} : n.shape();
+        int[] nShape = n.shape();
+        int[] shape = n.isColumnVector() ? new int[]{n.shape()[0]} : nShape;
         int[] retShape = Ints.concat(new int[]{num}, shape);
         return Nd4j.create(list, retShape);
     }

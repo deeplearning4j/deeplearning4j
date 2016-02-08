@@ -73,7 +73,7 @@ public class CosineSimilarity extends BaseAccumulation {
 
     @Override
     public double update(double accum, double x, double y){
-        return accum + x*y;
+        return accum + x * y;
     }
 
     @Override
@@ -83,7 +83,7 @@ public class CosineSimilarity extends BaseAccumulation {
 
     @Override
     public float update(float accum, float x, float y){
-        return accum + x*y;
+        return accum + x * y;
     }
 
     @Override
