@@ -862,6 +862,21 @@ public class LoopTest {
 
 
     @Test
+    public void testCopy() {
+        int size = 200;
+
+        INDArray first = Nd4j.create(new int[]{size,size},'f');
+        first.dup();
+
+    }
+
+    @Test
+    public void testShape() {
+        INDArray arr = Nd4j.create(new int[]{10});
+        System.out.println(Arrays.toString(arr.shape()));
+    }
+
+    @Test
     public void testTanhDerivative(){
         assertTrue(Nd4j.getOpFactory().createTransform("tanh", Nd4j.ones(1)).derivative() instanceof TanhDerivative);
 

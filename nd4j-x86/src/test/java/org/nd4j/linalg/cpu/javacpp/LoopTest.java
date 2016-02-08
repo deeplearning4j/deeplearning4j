@@ -4,6 +4,7 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -28,6 +29,11 @@ public class LoopTest {
         INDArray arr = Nd4j.create(new double[10]);
     }
 
+    @Test
+    public void testShape() {
+        INDArray arr = Nd4j.create(new int[]{10});
+        System.out.println(Arrays.toString(arr.shape()));
+    }
 
 
 }

@@ -3837,6 +3837,9 @@ public class Nd4j {
         if(shape.length == 1 && shape[0] == 0) {
             shape = new int[]{1,1};
         }
+        else if(shape.length == 1) {
+            shape = new int[] {1,shape[0]};
+        }
         INDArray ret = INSTANCE.create(shape, ordering);
         logCreationIfNecessary(ret);
         return ret;

@@ -240,6 +240,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
             else {
                 if(op.y() != null) {
+                    int yEleStride = op.y().elementWiseStride();
                     loop.execPairwiseTransform(op.opNum(),
                             op.x().data().asNioFloat(),
                             op.x().shapeInfo(),
