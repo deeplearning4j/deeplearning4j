@@ -1,5 +1,5 @@
 ---
-title: 
+title: About the Deeplearning4j Team
 layout: default
 ---
 
