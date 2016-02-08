@@ -1,11 +1,9 @@
 ---
-title: 
+title: Bag of Words - TF-IDF
 layout: default
 ---
 
-*previous* - [textual analysis and deep learning](../textanalysis.html)
-
-# Bag of Words
+# Bag of Words - TF-IDF
 
 [Bag of Words](https://en.wikipedia.org/wiki/Bag-of-words_model) (BoW) is a list of words with their wordcounts. Each row is a document, each column is a word and each cell is a wordcount. 
 
