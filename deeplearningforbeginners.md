@@ -1,5 +1,5 @@
 ---
-title: 
+title: Deep Learning for Beginners
 layout: default
 ---
 
