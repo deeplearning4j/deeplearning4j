@@ -1199,4 +1199,26 @@ public class Shape {
 
         return Arrays.equals(in.stride(),stridesIfContiguous);
     }
+
+    /**
+     *
+     * Idea: make an matrix compatible for mmul without needing to be copied first<br>
+     * A matrix is compatible for mmul if its values are contiguous in memory. Offset is OK.
+     * Returns the input array if input can be used in mmul without additional copy overhead
+     * Otherwise returns a copy of the input ndarray that can be used in mmul without additional copy overhead<br>
+     * This is useful for example if a matrix is going to be used in multiple mmul operations, so that we only
+     * have the overhead of copying at most once (rather than in every mmul operation)
+     * @param input Input ndarray
+     * @return ndarray that can be used in mmul without copy overhead
+     */
+    public static INDArray toMmulCompatible(INDArray input){
+        if(input.rank() != 2) throw new IllegalArgumentException("Input must be rank 2 (matrix)");
+        //Same conditions as GemmParams.copyIfNecessary()
+        boolean doCopy = false;
+        if(input.ordering() == 'c' && (input.stride(0) != input.size(1) || input.stride(1) != 1) ) doCopy = true;
+        else if(input.ordering() == 'f' && (input.stride(0) != 1 || input.stride(1) != input.size(0))) doCopy = true;
+
+        if(doCopy) return Shape.toOffsetZeroCopyAnyOrder(input);
+        else return input;
+    }
 }
