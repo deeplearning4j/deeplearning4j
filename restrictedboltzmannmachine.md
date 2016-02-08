@@ -1,5 +1,5 @@
 ---
-title: 
+title: A Beginner's Tutorial for Restricted Boltzmann Machines
 layout: default
 ---
 
