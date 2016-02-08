@@ -4,15 +4,19 @@ layout: default
 
 # Training tricks
 
-There is an art to training neural networks, just as there is an art to training tigers to jump through a ring of fire. A little to the left or a little to the right and disaster strikes.
+There is an art to training neural networks, just as there is an art to training tigers to jump through a ring of fire. A little to the left or the right and disaster strikes.
 
 Many of these tips have already been discussed in the academic literature. Our purpose is to consolidate them in one site and express them as clearly as possible. 
 
-* When constructing distributed neural networks, for example, it’s important to lower the learning rate; that is, a small step size as you make your gradient descent is required. Otherwise the weights diverge, and when weights diverge, your net has ceased to learn. Why is a lower learning rate required? Distributed neural networks use parameter averaging, which speeds up learning, so you need to correct for that acceleration by slowing the algorithm down elsewhere.
+First, know the problem you are trying to solve. This [list of questions](http://deeplearning4j.org/questions.html) will help you clarify your task if you are new to deep learning. 
 
-  A default value for your learning rate is 0.01. Higher than that makes the weights diverge. Your aim is to minimize reconstruction entropy, but that can’t occur if weights can no longer learn features and classify. Each weight represents a neuron’s on-off function, the likelihood that it will be activated. If it gets too large, it becomes meaningless. 
+* Researchers experienced with deep neural networks tend to try three different learning rates -- 1e^-1, 1^e-3, and 1e^-6 -- to get a rough idea of what it should be. 
 
-  The learning rate represents a series of calculus operations that measure the derivative of each step.
+* They use Nesterov's Momentum.
+
+* They pair activations and loss functions. That is, for classification problems, they tend to pair the softmax activation function with the negative log likelihood loss function. For regression problems, they tend to pair linear (identity) activation functions with a loss function of root mean squared error (RMSE) cross entropy.
+
+* When constructing distributed neural networks, for example, it’s important to lower the learning rate; that is, a smaller step size as you make your gradient descent is required. Otherwise the weights diverge, and when weights diverge, your net has ceased to learn. Why is a lower learning rate required? Distributed neural networks use parameter averaging, which speeds up learning, so you need to correct for that acceleration by slowing the algorithm down elsewhere.
 
 * When creating your hidden layers, give them fewer neurons than your input data. If the hidden-layer nodes are too close to the number of input nodes, you risk reconstructing the identity function. Too many hidden-layer neurons increase the likelihood of noise and overfitting.
 
