@@ -1,5 +1,5 @@
 ---
-title: 
+title: Deep Learning and Neural Network Glossary
 layout: default
 ---
 
