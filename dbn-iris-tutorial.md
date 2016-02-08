@@ -1,9 +1,9 @@
 ---
-title: 
+title: Deep-Belief Network Tutorial for Iris
 layout: default
 ---
 
-# DBN Tutorial for Iris
+# Deep-Belief Network Tutorial for Iris
 
 **The output of a neural net training on Iris may vary, because it is a small data set.**
 
