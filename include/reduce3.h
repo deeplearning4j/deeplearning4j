@@ -290,7 +290,7 @@ public:
 			int xLength = shape::length(xShapeInfo);
 
 #pragma unroll
-			for(int i = tid; i < resultLength; i++) {
+			for(int i = tid; i < resultLength; i+= gridDim.x * blockDim.x) {
 				if(this->extraParamsLength() > 0) {
 					for(int k = 0; k < this->extraParamsLength(); k++) {
 						localExtraParams[k] = this->startingValue(dx);
@@ -632,7 +632,7 @@ public:
 			int *dimension,
 			int dimensionLength) {
 		if(shape::isScalar(resultShapeInfoBuffer)) {
-			exec(x,xShapeInfo,extraParamsVals,y,yShapeInfo,result,resultShapeInfoBuffer);
+			result[0] = execScalar(x,xShapeInfo,extraParamsVals,y,yShapeInfo);
 			return;
 		}
 
@@ -652,19 +652,25 @@ public:
 		int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
 		int tadLength = tadPermuteInfo.tensorShapeProd;
 		int i = 0,j = 0;
-#pragma omp parallel private(j,i)
-		for(i = omp_get_thread_num(); i < resultLength; i++) {
-			if(this->extraParamsLength() >= 1) {
-				for(int i = 0; i < this->extraParamsLength(); i++)
-					extraParamsVals[i] = startingValue(x);
+#pragma omp parallel private(i,j)
+		{
+			int ID = omp_get_thread_num();
+
+			for(i = ID; i < resultLength; i += omp_get_num_threads()) {
+
+				if(this->extraParamsLength() >= 1) {
+					for(int i = 0; i < this->extraParamsLength(); i++)
+						extraParamsVals[i] = startingValue(x);
+				}
+				int offset = dimensionLength > 1 ? i : shape::offset(i,xShapeInfo,dimension,dimensionLength,tadPermuteInfo);
+				result[i] = op(x[offset], y[offset],&extraParamsVals);
+				for(j = 1; j < elementsPerReductionIndex; j++) {
+					result[i] =  update(result[i],op(x[offset + tadElementWiseStride * j],y[offset + tadElementWiseStride * j], &extraParamsVals), &extraParamsVals);
+				}
+				result[i] = postProcess(result[i],tadLength,&extraParamsVals);
 			}
-			int offset = dimensionLength > 1 ? i : shape::offset(i,xShapeInfo,dimension,dimensionLength,tadPermuteInfo);
-			result[i] = op(x[offset], y[offset],&extraParamsVals);
-			for(j = 1; j < elementsPerReductionIndex; j++) {
-				result[i] =  update(result[i],op(x[offset + tadElementWiseStride * j],y[offset + tadElementWiseStride * j], &extraParamsVals), &extraParamsVals);
-			}
-			result[i] = postProcess(result[i],tadLength,&extraParamsVals);
 		}
+
 
 		shape::freePermuteInfo(tadPermuteInfo);
 	}

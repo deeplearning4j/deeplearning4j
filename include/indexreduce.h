@@ -326,7 +326,7 @@ public:
 			int xLength = shape::length(xShapeInfo);
 			int i = 0,j = 0;
 #pragma unroll
-			for(i = tid; i < resultLength; i++) {
+			for(i = tid; i < resultLength; i+= blockDim.x * gridDim.x) {
 				int offset = dimensionLength > 1 ? i : tadLength * i;
 				IndexValue<T> comp2;
 				comp2.value = dx[offset];
@@ -851,7 +851,7 @@ public:
 			int *resultShapeInfoBuffer,
 			int *dimension, int dimensionLength) {
 		if(shape::isScalar(resultShapeInfoBuffer)) {
-			exec(x,xShapeInfo,extraParams,result,resultShapeInfoBuffer);
+			result[0] = execScalar(x,xShapeInfo,extraParams);
 			return;
 		}
 
@@ -882,18 +882,23 @@ public:
 
 		int i = 0,j = 0;
 #pragma omp parallel private(j,i)
-		for(i = omp_get_thread_num(); i < resultLength; i++) {
-			int offset = dimensionLength > 1 ? i : tadLength * i;
-			startingIndex[i].value = x[offset];
-			startingIndex[i].index = 0;
-			for(j = 1; j < elementsPerReductionIndex; j++) {
-				IndexValue<T> comp2;
-				comp2.value = x[offset + tadElementWiseStride * j];
-				comp2.index = j;
-				startingIndex[i] = update(startingIndex[i],comp2, extraParams);
-				result[i] = startingIndex[i].index;
-			}
+		{
+			int ID = omp_get_thread_num();
 
+			for(i = ID; i < resultLength; i+= omp_get_num_threads()) {
+				int offset = dimensionLength > 1 ? i : tadLength * i;
+				startingIndex[i].value = x[offset];
+				startingIndex[i].index = 0;
+				for(j = 1; j < elementsPerReductionIndex; j++) {
+					IndexValue<T> comp2;
+					comp2.value = x[offset + tadElementWiseStride * j];
+					comp2.index = j;
+					startingIndex[i] = update(startingIndex[i],comp2, extraParams);
+					result[i] = startingIndex[i].index;
+				}
+
+
+			}
 
 		}
 

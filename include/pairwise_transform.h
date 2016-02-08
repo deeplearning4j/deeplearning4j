@@ -419,8 +419,7 @@ public:
 		int yElementWiseStride = shape::computeElementWiseStride(yRank,yShape,yStride,yOrder == 'f');
 		int resultElementWiseStride = shape::computeElementWiseStride(resultRank,resultShape,resultStride,resultOrder == 'f');
 
-
-		if(xElementWiseStride >= 1 && yElementWiseStride >= 1 && resultElementWiseStride >= 1) {
+		if(xElementWiseStride == 1 && yElementWiseStride == 1 && resultElementWiseStride == 1) {
 			exec(dx,
 					xElementWiseStride,
 					y,
@@ -471,12 +470,14 @@ public:
 	virtual void exec(T *dx, int xStride, T *y, int yStride, T *result,
 			int resultStride, T *extraParams, int n) {
 		if (xStride == 1 && yStride == 1 && resultStride == 1) {
+			printf("All ones\n");
 #pragma omp simd
 			for (int i = 0; i < n; i++) {
 				result[i] = op(dx[i], y[i], extraParams);
 			}
 
 		} else {
+			printf("Not all 1s x %d y %d result %d and n %d\n",xStride,yStride,resultStride,n);
 #pragma omp simd
 			for (int i = 0; i < n; i++) {
 				result[i * resultStride] = op(dx[i * xStride],
