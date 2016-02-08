@@ -1,5 +1,5 @@
 ---
-title: 
+title: A Beginner's Guide to Recurrent Networks and LSTMs
 layout: default
 ---
 
