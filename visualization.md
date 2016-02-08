@@ -1,5 +1,5 @@
 ---
-title: 
+title: How to Visualize, Monitor and Debug Neural Network Learning
 layout: default
 ---
 
