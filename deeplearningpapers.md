@@ -1,5 +1,5 @@
 ---
-title: 
+title: Deep Learning Resources (Papers, Online Courses, Books)
 layout: default
 ---
 
