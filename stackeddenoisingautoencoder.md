@@ -1,5 +1,5 @@
 ---
-title: 
+title: Stacked Denoising AutoEncoders
 layout: default
 ---
 
