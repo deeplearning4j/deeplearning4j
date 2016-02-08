@@ -1,6 +1,8 @@
 package org.nd4j.linalg.cpu.javacpp;
 
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.concurrent.TimeUnit;
 
@@ -20,6 +22,12 @@ public class LoopTest {
         loop.execScalarFloat(add1,add1,add1.length,0,0,1,1,"div_scalar",new float[]{1});
 
     }
+
+    @Test
+    public void testCreate() {
+        INDArray arr = Nd4j.create(new double[10]);
+    }
+
 
 
 }

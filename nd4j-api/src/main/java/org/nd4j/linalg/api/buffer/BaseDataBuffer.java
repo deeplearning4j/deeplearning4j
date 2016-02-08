@@ -815,16 +815,25 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public IntBuffer asNioInt() {
+        if(wrappedBuffer == null) {
+            return IntBuffer.wrap(intData);
+        }
         return wrappedBuffer.asIntBuffer();
     }
 
     @Override
     public DoubleBuffer asNioDouble() {
+        if(wrappedBuffer == null) {
+            return DoubleBuffer.wrap(doubleData);
+        }
         return wrappedBuffer.asDoubleBuffer();
     }
 
     @Override
     public FloatBuffer asNioFloat() {
+        if(wrappedBuffer == null) {
+            return FloatBuffer.wrap(floatData);
+        }
         return wrappedBuffer.asFloatBuffer();
     }
 
@@ -836,7 +845,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     @Override
     public ByteBuf asNetty() {
         if(wrappedBuffer != null)
-        return Unpooled.wrappedBuffer(wrappedBuffer);
+            return Unpooled.wrappedBuffer(wrappedBuffer);
         else if(floatData != null)
             return Unpooled.copyFloat(floatData);
         else if(doubleData != null)

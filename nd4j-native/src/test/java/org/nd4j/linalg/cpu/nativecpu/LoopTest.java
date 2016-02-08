@@ -855,6 +855,10 @@ public class LoopTest {
         }
     }
 
+    @Test
+    public void testCreate() {
+        INDArray arr = Nd4j.create(new double[10]);
+    }
 
 
     @Test
