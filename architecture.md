@@ -1,9 +1,9 @@
 ---
-title: 
+title: Deeplearning4j Architecture
 layout: default
 ---
 
-# Architecture
+# Deeplearning4j Architecture
 
 In building Deeplearning4j, we made a series of design decisions, explained in depth below.
 
