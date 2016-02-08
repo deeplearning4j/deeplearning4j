@@ -1,5 +1,5 @@
 ---
-title: 
+title: Deep Learning's Accuracy
 layout: default
 ---
 
