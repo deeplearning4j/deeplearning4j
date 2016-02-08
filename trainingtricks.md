@@ -17,6 +17,8 @@ First, know the problem you are trying to solve. This [list of questions](http:/
 
 * They pair activations and loss functions. That is, for classification problems, they tend to pair the softmax activation function with the negative log likelihood loss function. For regression problems, they tend to pair linear (identity) activation functions with a loss function of root mean squared error (RMSE) cross entropy.
 
+### For Restricted Boltzmann Machines (RBMs)
+
 * When constructing distributed neural networks, for example, it’s important to lower the learning rate; that is, a smaller step size as you make your gradient descent is required. Otherwise the weights diverge, and when weights diverge, your net has ceased to learn. Why is a lower learning rate required? Distributed neural networks use parameter averaging, which speeds up learning, so you need to correct for that acceleration by slowing the algorithm down elsewhere.
 
 * When creating your hidden layers, give them fewer neurons than your input data. If the hidden-layer nodes are too close to the number of input nodes, you risk reconstructing the identity function. Too many hidden-layer neurons increase the likelihood of noise and overfitting. For an input layer of 784, you might choose an initial hidden layer of 500, and a second hidden layer of 250. No hidden layer should be less than a quarter of the input layer’s nodes. And the output layer will simply be the number of labels. 
