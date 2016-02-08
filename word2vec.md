@@ -1,5 +1,5 @@
 ---
-title: 
+title: Word2vec: Neural Word Embeddings
 layout: default
 ---
 
