@@ -13,6 +13,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class RRWLock implements Lock {
     private ReentrantReadWriteLock globalLock = new ReentrantReadWriteLock();
+    private ReentrantReadWriteLock externalsLock = new ReentrantReadWriteLock();
 
     private Map<Object, ReentrantReadWriteLock> objectLocks = new ConcurrentHashMap<>();
 
@@ -76,7 +77,7 @@ public class RRWLock implements Lock {
      */
     @Override
     public void objectReadLock(Object object) {
-        globalReadLock();
+   //     globalReadLock();
 
         objectLocks.get(object).readLock().lock();
     }
@@ -90,7 +91,7 @@ public class RRWLock implements Lock {
     public void objectReadUnlock(Object object) {
         objectLocks.get(object).readLock().unlock();
 
-        globalReadUnlock();
+   //     globalReadUnlock();
     }
 
     /**
@@ -100,7 +101,7 @@ public class RRWLock implements Lock {
      */
     @Override
     public void objectWriteLock(Object object) {
-        globalReadLock();
+   //     globalReadLock();
 
         objectLocks.get(object).writeLock().lock();
     }
@@ -114,7 +115,7 @@ public class RRWLock implements Lock {
     public void objectWriteUnlock(Object object) {
         objectLocks.get(object).writeLock().unlock();
 
-        globalReadUnlock();
+  //      globalReadUnlock();
     }
 
     /**
@@ -160,5 +161,37 @@ public class RRWLock implements Lock {
     @Override
     public void shapeWriteUnlock(Object object, AllocationShape shape) {
         objectReadUnlock(object);
+    }
+
+    /**
+     * This methods acquires read-lock on externals, and read-lock on global
+     */
+    @Override
+    public void externalsReadLock() {
+        externalsLock.readLock().lock();
+    }
+
+    /**
+     * This methods releases read-lock on externals, and read-lock on global
+     */
+    @Override
+    public void externalsReadUnlock() {
+        externalsLock.readLock().unlock();
+    }
+
+    /**
+     * This methods acquires write-lock on externals, and read-lock on global
+     */
+    @Override
+    public void externalsWriteLock() {
+        externalsLock.writeLock().lock();
+    }
+
+    /**
+     * This methods releases write-lock on externals, and read-lock on global
+     */
+    @Override
+    public void externalsWriteUnlock() {
+        externalsLock.writeLock().unlock();
     }
 }

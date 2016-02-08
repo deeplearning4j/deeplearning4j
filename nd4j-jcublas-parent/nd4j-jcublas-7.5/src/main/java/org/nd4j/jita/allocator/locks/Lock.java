@@ -101,4 +101,24 @@ public interface Lock {
      * @param shape
      */
     void shapeWriteUnlock(Object object, AllocationShape shape);
+
+    /**
+     * This methods acquires read-lock on externals, and read-lock on global
+     */
+    void externalsReadLock();
+
+    /**
+     * This methods releases read-lock on externals, and read-lock on global
+     */
+    void externalsReadUnlock();
+
+    /**
+     * This methods acquires write-lock on externals, and read-lock on global
+     */
+    void externalsWriteLock();
+
+    /**
+     * This methods releases write-lock on externals, and read-lock on global
+     */
+    void externalsWriteUnlock();
 }

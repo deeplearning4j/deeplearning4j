@@ -3,12 +3,14 @@ package org.nd4j.jita.balance;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
+import org.nd4j.jita.allocator.locks.Lock;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 
 /**
  * @author raver119@gmail.com
  */
+@Deprecated
 public interface Balancer {
 
     /**
@@ -18,7 +20,7 @@ public interface Balancer {
      * @param configuration
      * @param environment
      */
-    void init(Configuration configuration, CudaEnvironment environment);
+    void init(Configuration configuration, CudaEnvironment environment, Lock locker);
 
     /**
      * This method checks, if it's worth moving some memory region to device

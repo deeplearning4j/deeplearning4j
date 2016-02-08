@@ -5,8 +5,7 @@ import lombok.NonNull;
 import org.nd4j.jita.allocator.enums.AccessState;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.SyncState;
-import org.nd4j.jita.allocator.time.DecayingTimer;
-import org.nd4j.jita.allocator.time.impl.BinaryTimer;
+import org.nd4j.jita.allocator.time.RateTimer;
 import org.nd4j.jita.allocator.time.impl.SimpleTimer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,8 +39,8 @@ public class AllocationPoint {
     private long accessDevice = 0;
 
     // TODO: timer should be instantiated externally
-    private DecayingTimer timerShort = new SimpleTimer(10, TimeUnit.SECONDS); //new BinaryTimer(5, TimeUnit.SECONDS);
-    private DecayingTimer timerLong = new SimpleTimer(60, TimeUnit.SECONDS);
+    private RateTimer timerShort = new SimpleTimer(10, TimeUnit.SECONDS); //new BinaryTimer(5, TimeUnit.SECONDS);
+    private RateTimer timerLong = new SimpleTimer(60, TimeUnit.SECONDS);
 
     /*
      device, where memory was allocated.

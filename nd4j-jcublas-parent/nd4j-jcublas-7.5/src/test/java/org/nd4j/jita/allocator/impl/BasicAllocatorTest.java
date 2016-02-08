@@ -7,6 +7,7 @@ import org.junit.Test;
 import org.nd4j.jita.allocator.enums.Aggressiveness;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.SyncState;
+import org.nd4j.jita.allocator.time.impl.SimpleTimer;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.balance.impl.FirstInBalancer;
 import org.nd4j.jita.conf.Configuration;
@@ -270,7 +271,7 @@ public class BasicAllocatorTest {
         // now we call for release
         allocator.releaseMemory(objectId, point.getShape());
 
-        assertEquals(AllocationStatus.DEALLOCATED, point.getAllocationStatus());
+        assertEquals(AllocationStatus.HOST, point.getAllocationStatus());
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -538,7 +539,7 @@ public class BasicAllocatorTest {
          */
         allocator.releaseMemory(objectId, shape);
 
-        assertEquals(AllocationStatus.DEALLOCATED, point.getAllocationStatus());
+        assertEquals(AllocationStatus.HOST, point.getAllocationStatus());
         assertEquals(null, allocator.getAllocationPoint(objectId));
 
 
@@ -1049,6 +1050,81 @@ public class BasicAllocatorTest {
         assertEquals(pointer, point.getDevicePointer());
     }
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////                STALE DETECTION TESTS
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * In this test we assume that there's some allocated zero-copy pinned memory that wasn't accessed for a long time
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testStaleZeroDetection1() throws Exception {
+        BasicAllocator allocator = new BasicAllocator();
+        allocator.setEnvironment(singleDevice4GBcc52);
+        allocator.setBalancer(new FirstInBalancer());
+        allocator.setMover(new DummyMover());
+
+        assertEquals(0, singleDevice4GBcc52.getAllocatedMemoryForDevice(1));
+
+        Long objectId1 = 22L;
+
+        AllocationShape shape1 = new AllocationShape();
+        shape1.setDataType(DataBuffer.Type.FLOAT);
+        shape1.setLength(1 * 1024 * 1024L);
+        shape1.setOffset(0);
+        shape1.setStride(1);
+
+        allocator.registerSpan(objectId1, shape1);
+
+        Long objectId2 = 25L;
+
+        AllocationShape shape2 = new AllocationShape();
+        shape2.setDataType(DataBuffer.Type.FLOAT);
+        shape2.setLength(1 * 1024 * 1024L);
+        shape2.setOffset(0);
+        shape2.setStride(1);
+
+        allocator.registerSpan(objectId2, shape2);
+
+        Object pointer = allocator.getDevicePointer(objectId1, shape1);
+        allocator.tackDevice(objectId1, shape1);
+
+        Object pointer2 = allocator.getDevicePointer(objectId2, shape2);
+        allocator.tackDevice(objectId2, shape2);
+
+        AllocationPoint point = allocator.getAllocationPoint(objectId1);
+        assertEquals(AllocationStatus.ZERO, point.getAllocationStatus());
+
+        AllocationPoint point2 = allocator.getAllocationPoint(objectId2);
+        assertEquals(AllocationStatus.ZERO, point2.getAllocationStatus());
+
+        assertEquals(1, point.getTimerShort().getNumberOfEvents());
+        assertEquals(1, point.getTimerLong().getNumberOfEvents());
+
+        SimpleTimer timerShort = new SimpleTimer(10, TimeUnit.SECONDS);
+        SimpleTimer timerLong = new SimpleTimer(60, TimeUnit.SECONDS);
+
+        assertEquals(0, timerLong.getNumberOfEvents());
+        assertEquals(0, timerShort.getNumberOfEvents());
+
+        point.setTimerLong(timerLong);
+        point.setTimerShort(timerShort);
+
+        assertEquals(2, allocator.zeroTableSize());
+        assertEquals(2, allocator.tableSize());
+        assertEquals(0, allocator.deviceTableSize());
+
+        allocator.deallocateUnused();
+
+        assertEquals(1, allocator.zeroTableSize());
+        assertEquals(2, allocator.tableSize());
+        assertEquals(0, allocator.deviceTableSize());
+
+        assertEquals(AllocationStatus.HOST, point.getAllocationStatus());
+    }
+
 
 
 
@@ -1064,7 +1140,7 @@ public class BasicAllocatorTest {
      */
     @Test
     public void testSingleStale1() throws Exception {
-
+        // TODO: test REQUIRED here
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1113,8 +1189,7 @@ public class BasicAllocatorTest {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     @Test
-    @Ignore
-    public void testMultithreadedRoundAccess1() throws Exception {
+    public void testMultithreadedStraightAccess1() throws Exception {
         Configuration configuration = new Configuration();
 
         final BasicAllocator allocator = new BasicAllocator();
@@ -1145,24 +1220,18 @@ public class BasicAllocatorTest {
             public void run() {
                 Random rand = new Random();
 
-                for (int x = 0; x< 2000; x++) {
+                for (int x = 0; x< 1000; x++) {
                     int rnd = rand.nextInt(objects.size());
                     Long cObject = objects.get(rnd);
                     AllocationPoint point = allocator.getAllocationPoint(cObject);
                     Object pointer = allocator.getDevicePointer(cObject);
 
-                    // emulate usage
-                    try {
-                    //    Thread.sleep(rand.nextInt(50));
-                    } catch (Exception e) {
-                        //
-                    }
                     allocator.tackDevice(cObject, point.getShape());
                 }
             }
         };
 
-        for (int x = 0; x< 10000; x++) {
+        for (int x = 0; x< 1000; x++) {
             service.execute(runnable);
         }
 
@@ -1172,19 +1241,403 @@ public class BasicAllocatorTest {
 
         // At this point we had a number of accesses being done
         long allocatedMemory = singleDevice4GBcc52.getAllocatedMemoryForDevice(1);
-        log.info("Allocated memory: " + allocatedMemory);
+        log.info("Allocated memory: " + allocatedMemory + " Max allocation: " + configuration.getMaximumAllocation());
         assertNotEquals(0, allocatedMemory);
+
+        // we should NOT have memory allocated beyond max allocation
         assertTrue(allocatedMemory <= configuration.getMaximumAllocation());
 
+        // now we emulate situation with unused memory
+        for (Long object: objects) {
+            AllocationPoint point  = allocator.getAllocationPoint(object);
+
+            SimpleTimer timerShort = new SimpleTimer(10, TimeUnit.SECONDS);
+            SimpleTimer timerLong = new SimpleTimer(60, TimeUnit.SECONDS);
+
+            point.setTimerLong(timerLong);
+            point.setTimerShort(timerShort);
+        }
+
         /*
-            This sleep emulates global no-use for most of memory.
-            During this sleep, memory should be released
-         */
-        Thread.sleep(5000);
-        Thread.sleep(5000);
+            So, at this point we have no memory used, and we force deallocation
+        */
+        allocator.deallocateUnused();
+
+
+
+        for (Long object: objects) {
+            AllocationPoint point  = allocator.getAllocationPoint(object);
+
+            assertEquals(AllocationStatus.HOST, point.getAllocationStatus());
+        }
 
         allocatedMemory = singleDevice4GBcc52.getAllocatedMemoryForDevice(1);
-        log.info("Allocated memory after sleep: " + allocatedMemory);
+        log.info("Allocated memory: " + allocatedMemory + " Max allocation: " + configuration.getMaximumAllocation());
         assertEquals(0, allocatedMemory);
+    }
+
+    /**
+     * This test simulates following real-world use situation:
+     *  1. We have few hot arrays
+     *  2. We have few*2 warm arrays
+     *  3. We have loads of cold arrays.
+     *
+     * Data gets accessed according their ap, and at the end of day we should have the following situation:
+     * 1. Hot arrays located on device
+     * 2. Warm arrays located on device and on zero
+     * 3. Everything else is located on zero
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testMultithreadedCrossedPressure1() throws Exception {
+        Configuration configuration = new Configuration();
+
+        final BasicAllocator allocator = new BasicAllocator();
+        allocator.applyConfiguration(configuration);
+        allocator.setEnvironment(singleDevice4GBcc52);
+        allocator.setBalancer(new FirstInBalancer());
+        allocator.setMover(new DummyMover());
+
+        // create HOT objects
+        final List<Long> hotObjects = new ArrayList<>();
+        for (int x = 0; x < 100; x++) {
+            Long objectId1 = new Long(x);
+
+            AllocationShape shape = new AllocationShape();
+            shape.setDataType(DataBuffer.Type.FLOAT);
+            shape.setLength(768 * 1024L);
+            shape.setOffset(0);
+            shape.setStride(1);
+
+            allocator.registerSpan(objectId1, shape);
+            hotObjects.add(objectId1);
+        }
+
+        // create some WARM objects with specific shapes
+        final List<Long> warmObjects = new ArrayList<>();
+        for (int x = 100; x < 300; x++) {
+            Long objectId1 = new Long(x);
+
+            AllocationShape shape = new AllocationShape();
+            shape.setDataType(DataBuffer.Type.FLOAT);
+            shape.setLength(8192L);
+            shape.setOffset(0);
+            shape.setStride(1);
+
+            allocator.registerSpan(objectId1, shape);
+            warmObjects.add(objectId1);
+        }
+
+        // create some COLD objects with specific shapes
+        final List<Long> coldObjects = new ArrayList<>();
+        for (int x = 1100; x < 300000; x++) {
+            Long objectId1 = new Long(x);
+
+            AllocationShape shape = new AllocationShape();
+            shape.setDataType(DataBuffer.Type.FLOAT);
+            shape.setLength(1024L);
+            shape.setOffset(0);
+            shape.setStride(1);
+
+            allocator.registerSpan(objectId1, shape);
+            coldObjects.add(objectId1);
+        }
+
+        ThreadPoolExecutor service = new ThreadPoolExecutor(50, 150, 10, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
+
+        // now, we emulate cold -> warm -> hot access using 1 x 1 x 3 pattern
+        for (int x = 0; x < hotObjects.size() * 20; x++) {
+            Runnable newRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    Random rnd = new Random();
+                    Long hotObject = hotObjects.get(rnd.nextInt(hotObjects.size()));
+                    AllocationPoint point = allocator.getAllocationPoint(hotObject);
+
+                    for (int x = 0; x < 10; x++) {
+                        allocator.getDevicePointer(hotObject, point.getShape());
+                        allocator.tackDevice(hotObject, point.getShape());
+                    }
+
+                    // warm object access, do 3 times
+                    for (int x = 0; x < 3; x++) {
+                        Long warmObject = warmObjects.get(rnd.nextInt(warmObjects.size()));
+                        AllocationPoint pointWarm = allocator.getAllocationPoint(warmObject);
+
+                        allocator.getDevicePointer(warmObject, pointWarm.getShape());
+                        allocator.tackDevice(warmObject, pointWarm.getShape());
+                    }
+
+                    // cold object access, do once
+                    Long coldObject = coldObjects.get(rnd.nextInt(coldObjects.size()));
+                    AllocationPoint pointWarm = allocator.getAllocationPoint(coldObject);
+
+                    allocator.getDevicePointer(coldObject, pointWarm.getShape());
+                    allocator.tackDevice(coldObject, pointWarm.getShape());
+                }
+            };
+
+            service.execute(newRunnable);
+        }
+
+        while (service.getActiveCount() != 0) {
+            Thread.sleep(500);
+        }
+
+        // all hot objects should reside in device memory in this case
+        double averageRate = 0;
+        int device = 0;
+        for (Long hotObject: hotObjects) {
+            AllocationPoint point = allocator.getAllocationPoint(hotObject);
+
+            averageRate += point.getTimerLong().getFrequencyOfEvents();
+
+            if (point.getAllocationStatus() == AllocationStatus.DEVICE)
+                device++;
+        }
+        log.info("Hot objects in memory: [" + device + "], Average rate: ["+ (averageRate / hotObjects.size())+"]");
+        // only 85 hot objects could fit in memory within current environment and configuration
+        assertEquals(85, device);
+
+        // some of warm objects MIGHT be in device memory
+        device = 0;
+        averageRate = 0;
+        for (Long warmObject: warmObjects) {
+            AllocationPoint point = allocator.getAllocationPoint(warmObject);
+
+            averageRate += point.getTimerLong().getFrequencyOfEvents();
+
+            if (point.getAllocationStatus() == AllocationStatus.DEVICE)
+                device++;
+        }
+        log.info("Warm objects in memory: [" + device + "], Average rate: ["+ (averageRate / hotObjects.size())+"]");
+        assertNotEquals(0, device);
+
+        // cold objects MIGHT be in device memory too, but their number should be REALLY low
+        device = 0;
+        averageRate = 0;
+        for (Long coldObject: coldObjects) {
+            AllocationPoint point = allocator.getAllocationPoint(coldObject);
+
+            averageRate += point.getTimerLong().getFrequencyOfEvents();
+
+            if (point.getAllocationStatus() == AllocationStatus.DEVICE)
+                device++;
+        }
+        log.info("Cold objects in memory: [" + device + "], Average rate: ["+ (averageRate / hotObjects.size())+"]");
+        assertTrue(device < 20);
+
+        long allocatedMemory = singleDevice4GBcc52.getAllocatedMemoryForDevice(1);
+        log.info("Allocated memory: " + allocatedMemory + " Max allocation: " + configuration.getMaximumAllocation());
+        assertNotEquals(0, allocatedMemory);
+    }
+
+    /**
+     * This test is addressing preemptive relocation. We have the following setup:
+     *  1. We have few hot arrays
+     *  2. We have few*2 warm arrays
+     *  3. We have loads of cold arrays.
+     *
+     *  But in this scenario we have memory filled with another objects, that are NOT uses for quite some time.
+     *
+     *  At the end of day we should see the following state:
+     *  1. All older objects are moved away from memory and removed from allocation tables
+     *  2. As much as possible hot objects stored on gpu
+     *  3. Some of warm objects are stored on gpu, the rest are in zero memory
+     *  4. Cold objects shouldn't be on device memory.
+     *
+     *
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testMultithreadedPreemptiveRelocation1() throws Exception {
+        Configuration configuration = new Configuration();
+
+        final BasicAllocator allocator = new BasicAllocator();
+        allocator.applyConfiguration(configuration);
+        allocator.setEnvironment(singleDevice4GBcc52);
+        allocator.setBalancer(new FirstInBalancer());
+        allocator.setMover(new DummyMover());
+
+        final Random rnd = new Random();
+
+        // thats our initial objects, that are directly seeded into gpu memory
+        final List<Long> initialObjects = new ArrayList<>();
+        for (int x = 0; x< 100; x++) {
+            Long objectId1 = new Long(rnd.nextInt(1000000) + 1000000);
+
+            AllocationShape shape = new AllocationShape();
+            shape.setDataType(DataBuffer.Type.FLOAT);
+            shape.setLength( rnd.nextInt(1) + 256 * 1024L);
+            shape.setOffset(0);
+            shape.setStride(1);
+
+            allocator.registerSpan(objectId1, shape);
+            initialObjects.add(objectId1);
+
+            allocator.getDevicePointer(objectId1, shape);
+
+            // we force each initial object to be moved into device memory, but tag it as cold
+            allocator.relocateMemory(objectId1, AllocationStatus.DEVICE);
+
+            AllocationPoint point = allocator.getAllocationPoint(objectId1);
+            assertEquals(AllocationStatus.DEVICE, point.getAllocationStatus());
+
+            SimpleTimer timerLong = new SimpleTimer(60, TimeUnit.SECONDS);
+            SimpleTimer timerShort = new SimpleTimer(10, TimeUnit.SECONDS);
+
+            point.setTimerShort(timerShort);
+            point.setTimerLong(timerLong);
+        }
+
+        long allocatedMemory = singleDevice4GBcc52.getAllocatedMemoryForDevice(1);
+        log.info("Allocated memory: " + allocatedMemory + " Max allocation: " + configuration.getMaximumAllocation());
+        assertNotEquals(0, allocatedMemory);
+
+
+        // create HOT objects
+        final List<Long> hotObjects = new ArrayList<>();
+        for (int x = 0; x < 100; x++) {
+            Long objectId1 = new Long(x);
+
+            AllocationShape shape = new AllocationShape();
+            shape.setDataType(DataBuffer.Type.FLOAT);
+            shape.setLength(768 * 1024L);
+            shape.setOffset(0);
+            shape.setStride(1);
+
+            allocator.registerSpan(objectId1, shape);
+            hotObjects.add(objectId1);
+        }
+
+        // create some WARM objects with specific shapes
+        final List<Long> warmObjects = new ArrayList<>();
+        for (int x = 100; x < 400; x++) {
+            Long objectId1 = new Long(x);
+
+            AllocationShape shape = new AllocationShape();
+            shape.setDataType(DataBuffer.Type.FLOAT);
+            shape.setLength(8192L);
+            shape.setOffset(0);
+            shape.setStride(1);
+
+            allocator.registerSpan(objectId1, shape);
+            warmObjects.add(objectId1);
+        }
+
+        // create some COLD objects with specific shapes
+        final List<Long> coldObjects = new ArrayList<>();
+        for (int x = 300; x < 300000; x++) {
+            Long objectId1 = new Long(x);
+
+            AllocationShape shape = new AllocationShape();
+            shape.setDataType(DataBuffer.Type.FLOAT);
+            shape.setLength(1024L);
+            shape.setOffset(0);
+            shape.setStride(1);
+
+            allocator.registerSpan(objectId1, shape);
+            coldObjects.add(objectId1);
+        }
+
+
+        ThreadPoolExecutor service = new ThreadPoolExecutor(50, 150, 10, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
+
+        // now, we emulate cold -> warm -> hot access using 1 x 1 x 3 pattern
+        for (int x = 0; x < hotObjects.size() * 20; x++) {
+            Runnable newRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    Random rnd = new Random();
+                    Long hotObject = hotObjects.get(rnd.nextInt(hotObjects.size()));
+                    AllocationPoint point = allocator.getAllocationPoint(hotObject);
+
+                    for (int x = 0; x < 10; x++) {
+                        allocator.getDevicePointer(hotObject, point.getShape());
+                        allocator.tackDevice(hotObject, point.getShape());
+                    }
+
+                    // warm object access, do 3 times
+                    for (int x = 0; x < 3; x++) {
+                        Long warmObject = warmObjects.get(rnd.nextInt(warmObjects.size()));
+                        AllocationPoint pointWarm = allocator.getAllocationPoint(warmObject);
+
+                        allocator.getDevicePointer(warmObject, pointWarm.getShape());
+                        allocator.tackDevice(warmObject, pointWarm.getShape());
+                    }
+
+                    // cold object access, do once
+                    Long coldObject = coldObjects.get(rnd.nextInt(coldObjects.size()));
+                    AllocationPoint pointWarm = allocator.getAllocationPoint(coldObject);
+
+                    allocator.getDevicePointer(coldObject, pointWarm.getShape());
+                    allocator.tackDevice(coldObject, pointWarm.getShape());
+                }
+            };
+
+            service.execute(newRunnable);
+        }
+
+        while (service.getActiveCount() != 0) {
+            Thread.sleep(500);
+        }
+
+        int device = 0;
+        double averageRate = 0;
+        for (Long initial: initialObjects) {
+            AllocationPoint point = allocator.getAllocationPoint(initial);
+
+            averageRate += point.getTimerLong().getFrequencyOfEvents();
+
+            if (point.getAllocationStatus() == AllocationStatus.DEVICE)
+                device++;
+        }
+        log.info("Initial objects in memory: [" + device + "], Average rate: ["+ (averageRate / hotObjects.size())+"]");
+        assertEquals(0, device);
+
+        // all hot objects should reside in device memory in this case
+        averageRate = 0;
+        device = 0;
+        for (Long hotObject: hotObjects) {
+            AllocationPoint point = allocator.getAllocationPoint(hotObject);
+
+            averageRate += point.getTimerLong().getFrequencyOfEvents();
+
+            if (point.getAllocationStatus() == AllocationStatus.DEVICE)
+                device++;
+        }
+        log.info("Hot objects in memory: [" + device + "], Average rate: ["+ (averageRate / hotObjects.size())+"]");
+        // only 85 hot objects could fit in memory within current environment and configuration
+        assertEquals(85, device);
+
+        // some of warm objects MIGHT be in device memory
+        device = 0;
+        averageRate = 0;
+        for (Long warmObject: warmObjects) {
+            AllocationPoint point = allocator.getAllocationPoint(warmObject);
+
+            averageRate += point.getTimerLong().getFrequencyOfEvents();
+
+            if (point.getAllocationStatus() == AllocationStatus.DEVICE)
+                device++;
+        }
+        log.info("Warm objects in memory: [" + device + "], Average rate: ["+ (averageRate / hotObjects.size())+"]");
+        assertNotEquals(0, device);
+
+        // cold objects MIGHT be in device memory too, but their number should be REALLY low
+        device = 0;
+        averageRate = 0;
+        for (Long coldObject: coldObjects) {
+            AllocationPoint point = allocator.getAllocationPoint(coldObject);
+
+            averageRate += point.getTimerLong().getFrequencyOfEvents();
+
+            if (point.getAllocationStatus() == AllocationStatus.DEVICE)
+                device++;
+        }
+        log.info("Cold objects in memory: [" + device + "], Average rate: ["+ (averageRate / hotObjects.size())+"]");
+        assertTrue(device < 20);
     }
 }

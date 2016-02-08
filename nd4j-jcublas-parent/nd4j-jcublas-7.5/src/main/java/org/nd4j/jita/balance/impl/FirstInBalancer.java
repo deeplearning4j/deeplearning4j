@@ -4,6 +4,7 @@ import lombok.NonNull;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
+import org.nd4j.jita.allocator.locks.Lock;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.balance.Balancer;
 import org.nd4j.jita.conf.Configuration;
@@ -15,11 +16,14 @@ import org.slf4j.LoggerFactory;
  * This is primitive balancer implementation, it accepts the first matching request without taking in account better candidates.
  * However, in exchange it's the fastest balancer, and suits workloads with many small memory regions.
  *
+ * TODO: Balancer functionality should be merged into Mover
  * @author raver119@gmail.com
  */
+@Deprecated
 public class FirstInBalancer implements Balancer {
     private Configuration configuration;
     private CudaEnvironment environment;
+    private Lock locker;
 
 
     private static Logger log = LoggerFactory.getLogger(FirstInBalancer.class);
@@ -31,9 +35,10 @@ public class FirstInBalancer implements Balancer {
      * @param environment
      */
     @Override
-    public void init(@NonNull Configuration configuration, @NonNull CudaEnvironment environment) {
+    public void init(@NonNull Configuration configuration, @NonNull CudaEnvironment environment, @NonNull Lock locker) {
         this.configuration = configuration;
         this.environment = environment;
+        this.locker = locker;
     }
 
     /**
@@ -49,13 +54,19 @@ public class FirstInBalancer implements Balancer {
         // TODO: to be decided on status here
         if (point.getAllocationStatus().equals(AllocationStatus.DEVICE)) return AllocationStatus.DEVICE;
 
-        // first, we check if memory is enough
-        long requiredMemory = AllocationUtils.getRequiredMemory(point.getShape());
+        try {
+            locker.globalWriteLock();
 
-        // TODO: balancer & affinity should be considered here
-        long availableMemory = environment.getAvailableMemoryForDevice(1);
+            // first, we check if memory is enough
+            long requiredMemory = AllocationUtils.getRequiredMemory(point.getShape());
 
-        long allocatedMemory =  environment.getAllocatedMemoryForDevice(1);
+            // TODO: balancer, affinity & locks should be considered here
+
+            long availableMemory = environment.getAvailableMemoryForDevice(1);
+
+            long allocatedMemory = environment.getAllocatedMemoryForDevice(1);
+
+            long maximumAllocation = configuration.getMaximumAllocation();
 
 /*
         log.info("Req memory: " + requiredMemory);
@@ -63,13 +74,15 @@ public class FirstInBalancer implements Balancer {
         log.info("Allocated memory: " + allocatedMemory);
         log.info("Maxumum allocation: " + configuration.getMaximumAllocation());
 */
-
-        if (availableMemory > requiredMemory && requiredMemory + allocatedMemory < configuration.getMaximumAllocation()) {
-            // we have available memory, let's consider allocation allowed
-            return AllocationStatus.DEVICE;
-        } else {
-            // we don't have available memory
-            return AllocationStatus.ZERO;
+            if (availableMemory > requiredMemory && requiredMemory + allocatedMemory < maximumAllocation) {
+                // we have available memory, let's consider allocation allowed
+                return AllocationStatus.DEVICE;
+            } else {
+                // we don't have available memory
+                return AllocationStatus.ZERO;
+            }
+        } finally {
+            locker.globalWriteUnlock();
         }
     }
 

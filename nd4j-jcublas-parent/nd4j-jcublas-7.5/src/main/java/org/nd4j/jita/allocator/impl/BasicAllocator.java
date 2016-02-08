@@ -7,6 +7,8 @@ import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.SyncState;
 import org.nd4j.jita.allocator.locks.Lock;
 import org.nd4j.jita.allocator.locks.RRWLock;
+import org.nd4j.jita.allocator.time.RateTimer;
+import org.nd4j.jita.allocator.time.impl.SimpleTimer;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.balance.Balancer;
 import org.nd4j.jita.conf.Configuration;
@@ -14,16 +16,24 @@ import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.mover.Mover;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.Log;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This is going to be basic JITA implementation.
+ *
+ * We assume that we have 3 states for each INDArray underlying memory:
+ *
+ * HOST: memory is detached from GPU use.
+ * ZERO: memory is used as zero-copy memory
+ * DEVICE: memory is used on device
  *
  * PLEASE NOTE: WORK IN PROGRESS, DO NOT EVER USE IT!
  *
@@ -35,14 +45,24 @@ public final class BasicAllocator implements Allocator {
     private Configuration configuration = new Configuration();
     private CudaEnvironment environment = new CudaEnvironment();
 
-    private transient Mover mover;
+    // Balancer will be merged with mover.
     private transient Balancer balancer;
+    private transient Mover mover;
     private transient Lock locker = new RRWLock();
 
     private Map<Long, AllocationPoint> allocationPoints = new ConcurrentHashMap<>();
 
     private Map<Long, AllocationPoint> deviceAllocations = new ConcurrentHashMap<>();
-    private Map<Long, AllocationPoint> hostAllocations = new ConcurrentHashMap<>();
+    private Map<Long, AllocationPoint> zeroAllocations = new ConcurrentHashMap<>();
+
+    // device/zero new allocations rate tracking
+    private transient RateTimer devicePressure = new SimpleTimer(10, TimeUnit.SECONDS);
+    private transient RateTimer zeroPressure = new SimpleTimer(10, TimeUnit.SECONDS);
+
+
+
+    // list of objects originated allocations
+    private WeakHashMap<Long, AllocationPoint> externals = new WeakHashMap<>();
 
     private static Logger log = LoggerFactory.getLogger(BasicAllocator.class);
 
@@ -308,6 +328,8 @@ public final class BasicAllocator implements Allocator {
                         pointer = mover.alloc(AllocationStatus.ZERO, point.getShape(), 0);
                         point.setDevicePointer(pointer);
                         point.setAllocationStatus(AllocationStatus.ZERO);
+
+                        zeroAllocations.put(objectId, point);
                     }
                 } finally {
                     locker.objectWriteUnlock(objectId);
@@ -321,6 +343,7 @@ public final class BasicAllocator implements Allocator {
                     // try relocation
                     try {
                         locker.objectWriteLock(objectId);
+
                         if (point.getAccessState() == AccessState.TACK) {
                             AllocationStatus target = makePromoteDecision(objectId, point.getShape());
                             if (target == AllocationStatus.DEVICE) {
@@ -376,6 +399,7 @@ public final class BasicAllocator implements Allocator {
                 try {
                     locker.objectWriteLock(objectId);
 
+                    // TODO: target buffer should be passed here
                     mover.copyback(point);
                 } finally {
                     locker.objectWriteUnlock(objectId);
@@ -412,7 +436,7 @@ public final class BasicAllocator implements Allocator {
     }
 
     /**
-     * This method returns the number of top-level memory allocation.
+     * This method returns the number of top-level memory allocations.
      * No descendants are included in this result.
      *
      * @return number of allocated top-level memory chunks
@@ -422,11 +446,89 @@ public final class BasicAllocator implements Allocator {
         return allocationPoints.size();
     }
 
+
+    protected int zeroTableSize() {
+        return zeroAllocations.size();
+    }
+
+    protected int deviceTableSize() {
+        return deviceAllocations.size();
+    }
+
     /**
      * This method forces allocator to shutdown gracefully
      */
     protected void shutdown() {
         // TODO: to be implemented
+    }
+
+    protected void deallocatePoint(Long object, AllocationPoint point) {
+        try {
+            locker.objectWriteLock(object);
+
+            AllocationStatus status = point.getAllocationStatus();
+
+            if (status == AllocationStatus.ZERO) {
+                zeroAllocations.remove(object);
+            } else if (status == AllocationStatus.DEVICE) {
+                deviceAllocations.remove(object);
+            }
+
+            synchronizeHostData(object);
+            mover.free(point);
+
+            long usedMemory = AllocationUtils.getRequiredMemory(point.getShape());
+
+            locker.globalWriteLock();
+
+            if (status == AllocationStatus.DEVICE) {
+                environment.trackAllocatedMemory(1, usedMemory * -1);
+            }
+
+            locker.globalWriteUnlock();
+
+        } finally {
+            locker.objectWriteUnlock(object);
+        }
+    }
+
+    /*
+        This method build list of allocationPoints that should be removed from tracking, since their originators were GCd
+    */
+    protected List<Long> updateGcState() {
+        List<Long> result = new ArrayList<>();
+        for (Long objectId: allocationPoints.keySet()) {
+            locker.externalsReadLock();
+
+            if (!externals.containsKey(objectId))
+                result.add(objectId);
+
+            locker.externalsReadUnlock();
+        }
+        return result;
+    }
+
+    protected void deallocateUnused() {
+        for (Long object: allocationPoints.keySet()) {
+            try {
+                locker.objectReadLock(object);
+                AllocationPoint point = allocationPoints.get(object);
+
+                // skip if not in trackable region of memory
+                if (point.getAllocationStatus() != AllocationStatus.ZERO && point.getAllocationStatus() != AllocationStatus.DEVICE) continue;
+
+                // skip if not in TACK state
+                if (point.getTimerLong().getNumberOfEvents() == 0 && point.getAccessState() == AccessState.TACK) {
+                    locker.objectReadUnlock(object);
+
+                    deallocatePoint(object, point);
+
+                    locker.objectReadLock(object);
+                }
+            } finally {
+                locker.objectReadUnlock(object);
+            }
+        }
     }
 
     /**
@@ -497,7 +599,7 @@ public final class BasicAllocator implements Allocator {
             locker.globalWriteLock();
 
             this.balancer = balancer;
-            this.balancer.init(configuration, environment);
+            this.balancer.init(configuration, environment, locker);
         } finally {
             locker.globalWriteUnlock();
         }
@@ -513,7 +615,7 @@ public final class BasicAllocator implements Allocator {
             locker.globalWriteLock();
 
             this.mover = mover;
-            this.mover.init(configuration, environment);
+            this.mover.init(configuration, environment, locker);
         } finally {
             locker.globalWriteUnlock();
         }
@@ -551,16 +653,12 @@ public final class BasicAllocator implements Allocator {
                 2. Memory was already relocated somehow
                 3. Memory is enough, but there's better candidates for the same device memory chunk
         */
-        try {
-            locker.globalReadLock();
 
             AllocationPoint point = getAllocationPoint(objectId);
 
             return balancer.makePromoteDecision(1, point, shape);
             //return null;
-        } finally {
-            locker.globalReadUnlock();
-        }
+
     }
 
     /**

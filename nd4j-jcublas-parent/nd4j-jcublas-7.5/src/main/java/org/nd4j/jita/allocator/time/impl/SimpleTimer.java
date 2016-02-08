@@ -1,7 +1,6 @@
 package org.nd4j.jita.allocator.time.impl;
 
-import lombok.Data;
-import org.nd4j.jita.allocator.time.DecayingTimer;
+import org.nd4j.jita.allocator.time.RateTimer;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -10,7 +9,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 /**
  * @author raver119@gmail.com
  */
-public class SimpleTimer implements DecayingTimer {
+public class SimpleTimer implements RateTimer {
     protected long timeframe;
     protected AtomicLong latestEvent = new AtomicLong(0);
     protected long[] buckets;

@@ -5,6 +5,7 @@ import org.nd4j.jita.allocator.enums.SyncState;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
+import org.nd4j.jita.allocator.locks.Lock;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
@@ -21,13 +22,15 @@ import org.slf4j.LoggerFactory;
 public class DummyMover implements Mover {
     private Configuration configuration;
     private CudaEnvironment environment;
+    private Lock locker;
 
     private static Logger log = LoggerFactory.getLogger(DummyMover.class);
 
     @Override
-    public void init(@NonNull Configuration configuration, @NonNull CudaEnvironment environment) {
+    public void init(@NonNull Configuration configuration, @NonNull CudaEnvironment environment, @NonNull Lock locker) {
         this.configuration = configuration;
         this.environment = environment;
+        this.locker = locker;
     }
 
     /**
@@ -59,8 +62,26 @@ public class DummyMover implements Mover {
             case HOST:
             case ZERO: {
                     if (targetStatus.equals(AllocationStatus.DEVICE)) {
-                        log.info("Adding memory to alloc table: [" +AllocationUtils.getRequiredMemory(point.getShape()) + "]");
-                        environment.trackAllocatedMemory(1, AllocationUtils.getRequiredMemory(point.getShape()));
+                        long memorySize = AllocationUtils.getRequiredMemory(point.getShape());
+
+
+                        try {
+                            locker.globalWriteLock();
+
+                            // TODO: real memory query should be considered here in real mover
+                            if (memorySize + environment.getAllocatedMemoryForDevice(1) >= configuration.getMaximumAllocation())
+                                return;
+
+                      //      log.info("Adding memory to alloc table: [" +memorySize + "]");
+
+                            environment.trackAllocatedMemory(1, AllocationUtils.getRequiredMemory(point.getShape()));
+
+                        } finally {
+                            locker.globalWriteUnlock();
+                        }
+
+
+
                         point.setAllocationStatus(targetStatus);
                         point.setDevicePointer(new Object());
                     } else throw new UnsupportedOperationException("HostMemory relocation in this direction isn't supported: [" + currentStatus + "] -> [" + targetStatus +"]");
@@ -96,9 +117,9 @@ public class DummyMover implements Mover {
     public void free(AllocationPoint point) {
         if (point.getAllocationStatus().equals(AllocationStatus.DEVICE) || point.getAllocationStatus().equals(AllocationStatus.ZERO)) {
             point.setAccessHost(point.getAccessDevice());
-            point.setHostMemoryState(SyncState.UNDEFINED);
+            point.setHostMemoryState(SyncState.SYNC);
             point.setDevicePointer(null);
-            point.setAllocationStatus(AllocationStatus.DEALLOCATED);
+            point.setAllocationStatus(AllocationStatus.HOST);
         } else {
             throw new UnsupportedOperationException("free() is impossible for : ["+point.getAllocationStatus()+"] allocation");
         }

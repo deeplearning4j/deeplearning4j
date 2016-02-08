@@ -3,6 +3,7 @@ package org.nd4j.jita.mover;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
+import org.nd4j.jita.allocator.locks.Lock;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 
@@ -13,7 +14,7 @@ import org.nd4j.jita.conf.CudaEnvironment;
  */
 public interface Mover {
 
-    void init(Configuration configuration, CudaEnvironment environment);
+    void init(Configuration configuration, CudaEnvironment environment, Lock locker);
 
     /**
      * Allocate specified memory chunk on specified device/host

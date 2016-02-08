@@ -3,7 +3,7 @@ package org.nd4j.jita.allocator.time;
 /**
  * @author raver119@gmail.com
  */
-public interface DecayingTimer {
+public interface RateTimer {
 
     /**
      * This method notifies timer about event

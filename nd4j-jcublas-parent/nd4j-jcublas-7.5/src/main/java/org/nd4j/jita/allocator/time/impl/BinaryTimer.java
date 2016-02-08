@@ -1,6 +1,6 @@
 package org.nd4j.jita.allocator.time.impl;
 
-import org.nd4j.jita.allocator.time.DecayingTimer;
+import org.nd4j.jita.allocator.time.RateTimer;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author raver119@gmail.com
  */
-public class BinaryTimer implements DecayingTimer {
+public class BinaryTimer implements RateTimer {
     private AtomicLong timer;
     private long timeframeMilliseconds;
 
