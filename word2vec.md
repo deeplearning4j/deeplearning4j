@@ -1,5 +1,5 @@
 ---
-title: Word2vec: Neural Word Embeddings
+title: Word2vec: Neural Word Embeddings in Java
 layout: default
 ---
 
