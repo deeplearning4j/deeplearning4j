@@ -1,5 +1,5 @@
 ---
-title: 
+title: Introduction to Deep Neural Networks
 layout: default
 ---
 
