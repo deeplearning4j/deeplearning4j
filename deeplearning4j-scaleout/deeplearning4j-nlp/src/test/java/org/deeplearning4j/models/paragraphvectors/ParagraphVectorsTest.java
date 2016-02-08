@@ -249,22 +249,6 @@ public class ParagraphVectorsTest {
         INDArray day = vec.getWordVectorMatrix("day").dup();
 
         /*
-            Testing binary serialization
-         */
-        SerializationUtils.saveObject(vec, tempFile);
-
-
-        ParagraphVectors vec2 = (ParagraphVectors) SerializationUtils.readObject(tempFile);
-        INDArray day2 = vec2.getWordVectorMatrix("day").dup();
-
-        List<String> labelsBinary = vec2.labelsSource.getLabels();
-
-        assertEquals(day, day2);
-
-        tempFile.delete();
-
-
-        /*
             Testing txt serialization
          */
         File tempFile2 = File.createTempFile("paravec", "ser");
@@ -281,6 +265,23 @@ public class ParagraphVectorsTest {
         assertEquals(day, day3);
 
         assertEquals(labelsOriginal.size(), labelsRestored.size());
+
+           /*
+            Testing binary serialization
+         */
+        SerializationUtils.saveObject(vec, tempFile);
+
+
+        ParagraphVectors vec2 = (ParagraphVectors) SerializationUtils.readObject(tempFile);
+        INDArray day2 = vec2.getWordVectorMatrix("day").dup();
+
+        List<String> labelsBinary = vec2.labelsSource.getLabels();
+
+        assertEquals(day, day2);
+
+        tempFile.delete();
+
+
         assertEquals(labelsOriginal.size(), labelsBinary.size());
     }
 
