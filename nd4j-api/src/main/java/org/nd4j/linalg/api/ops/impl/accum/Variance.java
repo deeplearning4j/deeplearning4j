@@ -164,6 +164,7 @@ public class Variance extends BaseAccumulation {
             ret = new Variance(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
             ret = new Variance(x.vectorAlongDimension(index, dimension));
+        ret.setBiasCorrected(biasCorrected);
         ret.setApplyFinalTransform(applyFinalTransform());
         return ret;
     }

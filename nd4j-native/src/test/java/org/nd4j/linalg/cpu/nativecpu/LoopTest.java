@@ -851,9 +851,6 @@ public class LoopTest {
 
         for( int i = 0; i < 100; i++ ){
             double relError = Math.abs(expOut[i] - zPrime.getDouble(i)) / (Math.abs(expOut[i]) + Math.abs(zPrime.getDouble(i)));
-           if(relError >= 1e-3) {
-               System.out.println("uhh");
-           }
             assertTrue(relError < 1e-3);
         }
     }
