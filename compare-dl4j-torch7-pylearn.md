@@ -1,5 +1,5 @@
 ---
-title: Deep Learning Comp Sheet: Deeplearning4j vs. Torch vs. Theano vs. Caffe vs. TensorFlow
+title: "Deep Learning Comp Sheet: Deeplearning4j vs. Torch vs. Theano vs. Caffe vs. TensorFlow"
 layout: default
 ---
 
