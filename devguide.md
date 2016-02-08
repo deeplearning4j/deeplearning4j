@@ -1,5 +1,5 @@
 ---
-title: 
+title: Developer Guide for Deeplearning4j
 layout: default
 ---
 
