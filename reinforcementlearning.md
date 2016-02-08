@@ -1,4 +1,5 @@
 ---
+tutorial: Beginner's Guide to Deep Learning and Reinforcement Learning
 layout: default
 ---
 
