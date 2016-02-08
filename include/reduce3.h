@@ -632,7 +632,7 @@ public:
 			int *dimension,
 			int dimensionLength) {
 		if(shape::isScalar(resultShapeInfoBuffer)) {
-			exec(x,xShapeInfo,extraParamsVals,y,yShapeInfo,result,resultShapeInfoBuffer);
+			result[0] = execScalar(x,xShapeInfo,extraParamsVals,y,yShapeInfo);
 			return;
 		}
 

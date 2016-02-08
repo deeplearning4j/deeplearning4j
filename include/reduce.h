@@ -786,7 +786,7 @@ namespace functions {
                       int dimensionLength) {
 
                 if(shape::isScalar(resultShapeInfoBuffer)) {
-                    exec(x,xShapeInfo,extraParams,result,resultShapeInfoBuffer);
+                    result[0] = execScalar(x,xShapeInfo,extraParams);
                     return;
                 }
 

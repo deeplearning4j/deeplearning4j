@@ -1172,7 +1172,7 @@ struct SharedSummaryStatsData<double> {
 					  int *resultShapeInfoBuffer,
 					  int *dimension, int dimensionLength) {
 				if (shape::isScalar(resultShapeInfoBuffer)) {
-					exec(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer);
+					result[0] = execScalar(x, xShapeInfo, extraParams);
 					return;
 				}
 
@@ -1209,7 +1209,7 @@ struct SharedSummaryStatsData<double> {
 
 					int ID = omp_get_thread_num();
 
-					for(i = omp_get_thread_num(); i < resultLength; i+= omp_get_num_threads()) {
+					for(i = ID; i < resultLength; i+= omp_get_num_threads()) {
 						int offset = dimensionLength > 1 ? i : tadLength * i;
 						SummaryStatsData<T> comp;
 						comp.initWithValue(x[offset]);
