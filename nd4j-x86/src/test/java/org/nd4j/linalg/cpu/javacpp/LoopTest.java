@@ -36,4 +36,10 @@ public class LoopTest {
     }
 
 
+    @Test
+    public void testDup() {
+        INDArray arr = Nd4j.ones(3);
+        System.out.println(arr.dup());
+    }
+
 }
