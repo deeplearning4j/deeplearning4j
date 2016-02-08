@@ -317,7 +317,7 @@ public final class BasicAllocator implements Allocator {
                 int minThreshold = configuration.getMinimumRelocationThreshold();
                 locker.globalReadUnlock();
 
-                if (point.getDeviceTicks() > minThreshold && point.getTimer().getFrequencyOfEvents() > 0 && point.getAccessState() == AccessState.TACK) {
+                if (point.getDeviceTicks() > minThreshold && point.getTimerShort().getFrequencyOfEvents() > 0 && point.getAccessState() == AccessState.TACK) {
                     // try relocation
                     try {
                         locker.objectWriteLock(objectId);
