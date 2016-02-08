@@ -97,6 +97,11 @@ public class Sum extends BaseAccumulation {
 
 
     @Override
+    public int opNum() {
+        return 1;
+    }
+
+    @Override
     public String name() {
         return "sum";
     }

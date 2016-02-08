@@ -77,6 +77,11 @@ public class Step extends BaseTransformOp {
     }
 
     @Override
+    public int opNum() {
+        return 34;
+    }
+
+    @Override
     public String name() {
         return "step";
     }
@@ -143,4 +148,9 @@ public class Step extends BaseTransformOp {
 
     }
 
+    @Override
+    public void init(INDArray x, INDArray y, INDArray z, int n) {
+        super.init(x, y, z, n);
+        this.extraArgs = new Object[] {cutoff};
+    }
 }

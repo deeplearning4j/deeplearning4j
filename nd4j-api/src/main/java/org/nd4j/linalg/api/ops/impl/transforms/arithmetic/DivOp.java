@@ -54,6 +54,11 @@ public class DivOp extends BaseTransformOp {
     }
 
     @Override
+    public int opNum() {
+        return 2;
+    }
+
+    @Override
     public String name() {
         return "div";
     }

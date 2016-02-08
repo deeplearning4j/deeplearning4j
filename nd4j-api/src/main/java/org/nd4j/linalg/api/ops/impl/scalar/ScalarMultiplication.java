@@ -55,6 +55,11 @@ public class ScalarMultiplication extends BaseScalarOp {
     }
 
     @Override
+    public int opNum() {
+        return 2;
+    }
+
+    @Override
     public String name() {
         return "mul_scalar";
     }

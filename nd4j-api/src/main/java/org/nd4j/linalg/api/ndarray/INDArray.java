@@ -28,6 +28,7 @@ import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
 import java.io.Serializable;
+import java.nio.IntBuffer;
 import java.util.List;
 
 /**
@@ -37,7 +38,11 @@ import java.util.List;
  */
 public interface INDArray extends Serializable  {
 
-
+    /**
+     * Shape info
+     * @return
+     */
+    IntBuffer shapeInfo();
     /**
      * Returns true if this array is a view or not
      * @return

@@ -4,7 +4,6 @@ package org.nd4j.linalg.cpu.ops;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
-import org.nd4j.linalg.api.ndarray.LinearViewNDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.cpu.javacpp.Loop;
@@ -47,7 +46,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     private void exec(ScalarOp op) {
-        if(op.x() instanceof IComplexNDArray || op.x() instanceof LinearViewNDArray || executionMode() == ExecutionMode.JAVA) {
+        if(op.x() instanceof IComplexNDArray  || executionMode() == ExecutionMode.JAVA) {
             super.exec(op);
         }
         else {
@@ -80,7 +79,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     private void exec(TransformOp op) {
-        if(op.x() instanceof IComplexNDArray || op.x() instanceof LinearViewNDArray ||   executionMode() == ExecutionMode.JAVA) {
+        if(op.x() instanceof IComplexNDArray ||   executionMode() == ExecutionMode.JAVA) {
             super.exec(op);
         }
         else {
@@ -148,7 +147,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
 
     private void exec(Accumulation op) {
-        if(op.x() instanceof IComplexNDArray || op.x() instanceof LinearViewNDArray || executionMode() == ExecutionMode.JAVA) {
+        if(op.x() instanceof IComplexNDArray || executionMode() == ExecutionMode.JAVA) {
             super.exec(op);
 
         }

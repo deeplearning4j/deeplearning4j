@@ -51,6 +51,11 @@ public class Sign extends BaseTransformOp {
     }
 
     @Override
+    public int opNum() {
+        return 11;
+    }
+
+    @Override
     public String name() {
         return "sign";
     }

@@ -27,7 +27,8 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**ELU: Exponential Linear Unit (alpha=1.0)<br>
+/**
+ * ELU: Exponential Linear Unit (alpha=1.0)<br>
  * Introduced in paper:<br>
  * Fast and Accurate Deep Network Learning by Exponential Linear Units (ELUs)<br>
  * Djork-Arné Clevert, Thomas Unterthiner, Sepp Hochreiter (2015)<br>
@@ -60,6 +61,11 @@ public class ELU extends BaseTransformOp {
     }
 
     @Override
+    public int opNum() {
+        return 21;
+    }
+
+    @Override
     public String name() {
         return "elu";
     }
@@ -84,28 +90,28 @@ public class ELU extends BaseTransformOp {
 
     @Override
     public float op(float origin, float other) {
-        return origin >= 0.0 ? origin : (float)(FastMath.exp(origin)-1.0);
+        return origin >= 0.0 ? origin : (float)(FastMath.exp(origin) - 1.0);
     }
 
     @Override
     public double op(double origin, double other) {
-        return origin >= 0.0 ? origin : FastMath.exp(origin)-1.0;
+        return origin >= 0.0 ? origin : FastMath.exp(origin) - 1.0;
     }
 
     @Override
     public double op(double origin) {
-        return origin >= 0.0 ? origin : FastMath.exp(origin)-1.0;
+        return origin >= 0.0 ? origin : FastMath.exp(origin) -1.0;
     }
 
     @Override
     public float op(float origin) {
-        return origin >= 0.0 ? origin : (float)(FastMath.exp(origin)-1.0);
+        return origin >= 0.0 ? origin : (float)(FastMath.exp(origin) - 1.0);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
         return origin.realComponent().doubleValue() >= 0.0 ? origin :
-                Nd4j.createComplexNumber(FastMath.exp(origin.realComponent().doubleValue()-1.0),0);
+                Nd4j.createComplexNumber(FastMath.exp(origin.realComponent().doubleValue() -1.0),0);
 
     }
 

@@ -57,6 +57,11 @@ public class Sigmoid extends BaseTransformOp {
     }
 
     @Override
+    public int opNum() {
+        return 10;
+    }
+
+    @Override
     public String name() {
         return "sigmoid";
     }

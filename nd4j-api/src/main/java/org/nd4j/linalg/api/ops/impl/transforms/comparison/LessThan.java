@@ -52,6 +52,11 @@ public class LessThan extends BaseTransformOp {
     }
 
     @Override
+    public int opNum() {
+        return 5;
+    }
+
+    @Override
     public String name() {
         return "lt";
     }

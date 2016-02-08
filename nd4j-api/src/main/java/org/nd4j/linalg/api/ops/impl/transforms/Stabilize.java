@@ -60,6 +60,11 @@ public class Stabilize extends BaseTransformOp {
     }
 
     @Override
+    public int opNum() {
+        return 28;
+    }
+
+    @Override
     public String name() {
         return "stabilize";
     }

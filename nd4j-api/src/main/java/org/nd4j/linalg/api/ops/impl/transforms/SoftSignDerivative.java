@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
+import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
@@ -46,6 +47,11 @@ public class SoftSignDerivative extends BaseTransformOp {
 
     public SoftSignDerivative(INDArray x) {
         super(x);
+    }
+
+    @Override
+    public int opNum() {
+        return 30;
     }
 
     @Override
@@ -118,7 +124,7 @@ public class SoftSignDerivative extends BaseTransformOp {
     }
     
     private static double ssderiv(double x){
-    	double y = 1+Math.abs(x);
-    	return 1.0 / (y*y);
+    	double y = 1 + FastMath.abs(x);
+    	return 1.0 / (y * y);
     }
 }

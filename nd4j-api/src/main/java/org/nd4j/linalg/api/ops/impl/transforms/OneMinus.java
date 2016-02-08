@@ -52,6 +52,11 @@ public class OneMinus extends BaseTransformOp {
     }
 
     @Override
+    public int opNum() {
+        return 35;
+    }
+
+    @Override
     public String name() {
         return "oneminus";
     }

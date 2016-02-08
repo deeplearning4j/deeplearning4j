@@ -52,6 +52,11 @@ public class HardTanh extends BaseTransformOp {
     }
 
     @Override
+    public int opNum() {
+        return 19;
+    }
+
+    @Override
     public String name() {
         return "hardtanh";
     }

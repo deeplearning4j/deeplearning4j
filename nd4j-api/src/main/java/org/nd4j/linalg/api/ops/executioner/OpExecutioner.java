@@ -21,6 +21,7 @@ package org.nd4j.linalg.api.ops.executioner;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
+import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.parallel.ParallelExecutioner;
 
 /**
@@ -64,12 +65,20 @@ public interface OpExecutioner {
     INDArray execAndReturn(TransformOp op);
 
 
-    /**Execute and return the result from an accumulation
+    /**
+     * Execute and return the result from an accumulation
      *
      * @param op the operation to execute
      * @return the accumulated result
      */
     Accumulation execAndReturn(Accumulation op);
+    /**
+     * Execute and return the result from an accumulation
+     *
+     * @param op the operation to execute
+     * @return the accumulated result
+     */
+    Accumulation execAndReturn(Variance op,boolean biasCorrected);
 
     /**Execute and return the result from an index accumulation
      * @param op the index accumulation operation to execute
@@ -103,6 +112,16 @@ public interface OpExecutioner {
      * @return the accmulation op
      */
     INDArray exec(Accumulation accumulation, int...dimension);
+
+
+    /**
+     * Execute an accumulation along one or more dimensions
+     * @param accumulation the accumulation
+     * @param dimension the dimension
+     * @return the accmulation op
+     */
+    INDArray exec(Variance accumulation, boolean biasCorrected,int...dimension);
+
 
     /** Execute an index accumulation along one or more dimensions
      * @param indexAccum the index accumulation operation

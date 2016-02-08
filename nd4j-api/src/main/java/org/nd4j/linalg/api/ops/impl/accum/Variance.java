@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.ComplexUtil;
@@ -37,7 +38,7 @@ import org.nd4j.linalg.util.ComplexUtil;
  */
 public class Variance extends BaseAccumulation {
     protected double mean, bias;
-    protected static boolean biasCorrected = true;
+    protected  boolean biasCorrected = true;
 
     public Variance() {
     }
@@ -52,7 +53,7 @@ public class Variance extends BaseAccumulation {
     }
 
     public Variance(INDArray x) {
-        this(x, null, x, x.length(), biasCorrected);
+        this(x, null, x, x.length(), true);
     }
 
     public Variance(INDArray x, INDArray y) {
@@ -144,6 +145,11 @@ public class Variance extends BaseAccumulation {
     }
 
     @Override
+    public int opNum() {
+        return 0;
+    }
+
+    @Override
     public String name() {
         return "var";
     }
@@ -158,12 +164,13 @@ public class Variance extends BaseAccumulation {
             ret = new Variance(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
             ret = new Variance(x.vectorAlongDimension(index, dimension));
+        ret.setBiasCorrected(biasCorrected);
         ret.setApplyFinalTransform(applyFinalTransform());
         return ret;
     }
 
     @Override
-    public Op opForDimension(int index, int... dimension) {
+    public Variance opForDimension(int index, int... dimension) {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         Variance ret;
@@ -178,9 +185,12 @@ public class Variance extends BaseAccumulation {
     @Override
     public void init(INDArray x, INDArray y, INDArray z, int n) {
         super.init(x, y, z, n);
-        if (biasCorrected)
-            this.bias = Nd4j.getExecutioner().execAndReturn(new Bias(x)).getFinalResult().doubleValue();
-        mean = Nd4j.getExecutioner().execAndReturn(new Mean(x)).getFinalResult().doubleValue();
+        if(Nd4j.executionMode == OpExecutioner.ExecutionMode.JAVA) {
+            if (biasCorrected)
+                this.bias = Nd4j.getExecutioner().execAndReturn(new Bias(x)).getFinalResult().doubleValue();
+            mean = Nd4j.getExecutioner().execAndReturn(new Mean(x)).getFinalResult().doubleValue();
+        }
+
     }
 
     @Override
@@ -199,7 +209,7 @@ public class Variance extends BaseAccumulation {
     }
 
     @Override
-    public void exec(int... dimension){
+    public void exec(int... dimension) {
         if(dimension.length == 1 && dimension[0] == Integer.MAX_VALUE) {
             exec();
             return;
@@ -207,8 +217,8 @@ public class Variance extends BaseAccumulation {
         int[] retShape = ArrayUtil.removeIndex(x.shape(), dimension);
         int nOps = x.tensorssAlongDimension(dimension);
         z = Nd4j.create(retShape);
-        for( int i = 0; i<nOps; i++ ) {
-            double d = Nd4j.getExecutioner().execAndReturn((Variance) opForDimension(i, dimension)).getFinalResult().doubleValue();
+        for( int i = 0; i < nOps; i++ ) {
+            double d = Nd4j.getExecutioner().execAndReturn(opForDimension(i, dimension)).getFinalResult().doubleValue();
             z.putScalar(i, d);
         }
     }
@@ -272,5 +282,11 @@ public class Variance extends BaseAccumulation {
         return (float) calculateFinalResult((double) accum, n);
     }
 
+    public boolean isBiasCorrected() {
+        return biasCorrected;
+    }
 
+    public void setBiasCorrected(boolean biasCorrected) {
+        this.biasCorrected = biasCorrected;
+    }
 }

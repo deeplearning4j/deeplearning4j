@@ -71,6 +71,11 @@ public class SetRange extends BaseTransformOp {
     }
 
     @Override
+    public int opNum() {
+        return 9;
+    }
+
+    @Override
     public String name() {
         return "setrange";
     }

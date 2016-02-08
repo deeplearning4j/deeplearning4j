@@ -32,6 +32,11 @@ public class SoftPlus extends BaseTransformOp {
     }
 
     @Override
+    public int opNum() {
+        return 13;
+    }
+
+    @Override
     public String name() {
         return "softplus";
     }

@@ -56,6 +56,11 @@ public class ScalarAdd extends BaseScalarOp {
     }
 
     @Override
+    public int opNum() {
+        return 0;
+    }
+
+    @Override
     public String name() {
         return "add_scalar";
     }

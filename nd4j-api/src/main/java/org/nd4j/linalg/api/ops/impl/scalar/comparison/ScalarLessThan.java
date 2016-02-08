@@ -51,6 +51,11 @@ public class ScalarLessThan extends BaseScalarOp {
     }
 
     @Override
+    public int opNum() {
+        return 7;
+    }
+
+    @Override
     public String name() {
         return "lessthan_scalar";
     }

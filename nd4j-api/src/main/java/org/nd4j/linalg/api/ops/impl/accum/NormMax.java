@@ -100,6 +100,11 @@ public class NormMax extends BaseAccumulation {
     }
 
     @Override
+    public int opNum() {
+        return 7;
+    }
+
+    @Override
     public String name() {
         return "normmax";
     }

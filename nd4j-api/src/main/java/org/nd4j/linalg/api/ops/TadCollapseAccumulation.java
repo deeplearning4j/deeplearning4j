@@ -253,6 +253,11 @@ public class TadCollapseAccumulation extends BaseOp {
     }
 
     @Override
+    public int opNum() {
+        return 0;
+    }
+
+    @Override
     public String name() {
         if(accum == null) {
             return DEFAULT_NAME;
