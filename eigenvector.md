@@ -1,5 +1,5 @@
 ---
-title: 
+title: Eigenvectors, PCA, Covariance and Entropy
 layout: default
 ---
 
