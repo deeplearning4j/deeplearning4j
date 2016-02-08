@@ -8,7 +8,7 @@ highlighter: rouge
 # Themes are encouraged to use these universal variables 
 # so be sure to set them if your theme uses them.
 #
-title : Deeplearning4j - Open-source, distributed deep learning for the JVM 
+title : "Deeplearning4j: Open-source, distributed deep learning for the JVM"
 tagline: Deep Learning for Java
 author :
   name : Skymind Inc.
