@@ -27,7 +27,9 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**Derivative of ELU: Exponential Linear Unit (alpha=1.0)<br>
+/**
+ *
+ * Derivative of ELU: Exponential Linear Unit (alpha=1.0)<br>
  * Introduced in paper:<br>
  * Fast and Accurate Deep Network Learning by Exponential Linear Units (ELUs)<br>
  * Djork-Arné Clevert, Thomas Unterthiner, Sepp Hochreiter (2015)<br>

@@ -156,4 +156,10 @@ public class LeakyReLU extends BaseTransformOp {
     public TransformOp derivative() {
         return new LeakyReLUDerivative(x,y,z,n,alpha);
     }
+
+    @Override
+    public void init(INDArray x, INDArray y, INDArray z, int n) {
+        super.init(x, y, z, n);
+        this.extraArgs = new Object[] {alpha};
+    }
 }

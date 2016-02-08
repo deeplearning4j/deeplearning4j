@@ -11,6 +11,9 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.nio.DoubleBuffer;
+import java.nio.FloatBuffer;
+
 
 /**
  *
@@ -55,7 +58,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
             loop.execIndexReduce(op.opNum(),
                     op.x().data().asNioDouble(),
-                    op.x().shapeInfo(), null,
+                    op.x().shapeInfo(), (DoubleBuffer) op.extraArgsBuff(),
                     op.z().data().asNioDouble(),
                     op.z().shapeInfo(),
                     dimensionBuffer, dimension.length);
@@ -64,7 +67,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         else {
             loop.execIndexReduce(op.opNum(),
                     op.x().data().asNioFloat(),
-                    op.x().shapeInfo(), null,
+                    op.x().shapeInfo(), (FloatBuffer) op.extraArgsBuff(),
                     op.z().data().asNioFloat(),
                     op.z().shapeInfo(),
                     dimensionBuffer, dimension.length);
@@ -122,7 +125,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             if(op instanceof Variance) {
                 loop.execSummaryStats(op.opNum(),
                         op.x().data().asNioDouble(),
-                        op.x().shapeInfo(), null,
+                        op.x().shapeInfo(), (DoubleBuffer) op.extraArgsBuff(),
                         op.z().data().asNioDouble(),
                         op.z().shapeInfo(),
                         dimensionBuffer, dimension.length);
@@ -131,7 +134,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             else if(op.y() != null) {
                 loop.execReduce3(op.opNum(),
                         op.x().data().asNioDouble(),
-                        op.x().shapeInfo(),null,
+                        op.x().shapeInfo(), (DoubleBuffer) op.extraArgsBuff(),
                         op.y().data().asNioDouble(),
                         op.y().shapeInfo(),
                         op.z().data().asNioDouble(),
@@ -141,7 +144,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             else {
                 loop.execReduce(op.opNum(),
                         op.x().data().asNioDouble(),
-                        op.x().shapeInfo(), null,
+                        op.x().shapeInfo(), (DoubleBuffer) op.extraArgsBuff(),
                         op.z().data().asNioDouble(),
                         op.z().shapeInfo(),
                         dimensionBuffer, dimension.length);
@@ -151,7 +154,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             if(op instanceof Variance) {
                 loop.execSummaryStats(op.opNum(),
                         op.x().data().asNioFloat(),
-                        op.x().shapeInfo(), null,
+                        op.x().shapeInfo(), (FloatBuffer) op.extraArgsBuff(),
                         op.z().data().asNioFloat(),
                         op.z().shapeInfo(),
                         dimensionBuffer, dimension.length);
@@ -159,7 +162,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             else if(op.y() != null) {
                 loop.execReduce3(op.opNum(),
                         op.x().data().asNioFloat(),
-                        op.x().shapeInfo(),null,
+                        op.x().shapeInfo(), (FloatBuffer) op.extraArgsBuff(),
                         op.y().data().asNioFloat(),
                         op.y().shapeInfo(),
                         op.z().data().asNioFloat(),
@@ -169,7 +172,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             else {
                 loop.execReduce(op.opNum(),
                         op.x().data().asNioFloat(),
-                        op.x().shapeInfo(), null,
+                        op.x().shapeInfo(), (FloatBuffer) op.extraArgsBuff(),
                         op.z().data().asNioFloat(),
                         op.z().shapeInfo(),
                         dimensionBuffer, dimension.length);
@@ -187,22 +190,22 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 loop.execScalar(
                         op.opNum()
                         ,op.x().data().asNioDouble(),
-                        op.x().elementWiseStride(),
+                        op.x().shapeInfo(),
                         op.z().data().asNioDouble(),
-                        op.z().elementWiseStride(),
+                        op.z().shapeInfo(),
                         op.scalar().doubleValue(),
-                        null,
+                        (DoubleBuffer) op.extraArgsBuff(),
                         op.n());
             }
             else {
                 loop.execScalar(
                         op.opNum()
                         ,op.x().data().asNioFloat(),
-                        op.x().elementWiseStride(),
+                        op.x().shapeInfo(),
                         op.z().data().asNioFloat(),
-                        op.z().elementWiseStride(),
+                        op.z().shapeInfo(),
                         op.scalar().floatValue(),
-                        null,
+                        (FloatBuffer) op.extraArgsBuff(),
                         op.n());
 
             }
@@ -223,7 +226,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                           op.x().shapeInfo(),op.y().data().asNioDouble(),
                           op.y().shapeInfo(),op.z().data().asNioDouble(),
                           op.z().shapeInfo(),
-                          null,
+                          (DoubleBuffer) op.extraArgsBuff(),
                           op.n());
                 }
                 else {
@@ -232,7 +235,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             op.x().shapeInfo(),
                             op.z().data().asNioDouble(),
                             op.z().shapeInfo(),
-                            null, op.n());
+                            (DoubleBuffer) op.extraArgsBuff(), op.n());
                 }
             }
             else {
@@ -244,7 +247,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             op.y().shapeInfo(),
                             op.z().data().asNioFloat(),
                             op.z().shapeInfo(),
-                            null,op.n());
+                            (FloatBuffer) op.extraArgsBuff(),op.n());
 
                 }
                 else {
@@ -253,7 +256,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             op.x().shapeInfo(),
                             op.z().data().asNioFloat(),
                             op.z().shapeInfo(),
-                            null,op.n());
+                            (FloatBuffer) op.extraArgsBuff(),op.n());
                 }
             }
         }
@@ -289,14 +292,14 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 op.setFinalResult((int) loop.execIndexReduceScalar(
                         op.opNum(),
                         op.x().data().asNioDouble()
-                        , op.x().shapeInfo(), null));
+                        , op.x().shapeInfo(), (DoubleBuffer) op.extraArgsBuff()));
 
             }
             else {
                 op.setFinalResult((int) loop.execIndexReduceScalar(
                         op.opNum(),
                         op.x().data().asNioFloat()
-                        ,op.x().shapeInfo(),null));
+                        ,op.x().shapeInfo(), (FloatBuffer) op.extraArgsBuff()));
             }
 
         }
@@ -313,20 +316,20 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     op.setFinalResult(loop.execSummaryStatsScalar(
                             op.opNum(),
                             op.x().data().asNioDouble()
-                            , op.x().shapeInfo(), null));
+                            , op.x().shapeInfo(), (DoubleBuffer) op.extraArgsBuff()));
                 }
                 else if(op.y() != null) {
                     op.setFinalResult(loop.execReduce3Scalar(
                             op.opNum(),
                             op.x().data().asNioDouble()
-                            ,op.x().shapeInfo(),null,
+                            ,op.x().shapeInfo(), (DoubleBuffer) op.extraArgsBuff(),
                             op.y().data().asNioDouble(),op.y().shapeInfo()));
                 }
                 else {
                     op.setFinalResult(loop.execReduceScalar(
                             op.opNum(),
                             op.x().data().asNioDouble()
-                            , op.x().shapeInfo(), null));
+                            , op.x().shapeInfo(), (DoubleBuffer) op.extraArgsBuff()));
                 }
             }
             else {
@@ -334,7 +337,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     op.setFinalResult(loop.execSummaryStatsScalar(
                             op.opNum(),
                             op.x().data().asNioFloat()
-                            ,op.x().shapeInfo(),null));
+                            , op.x().shapeInfo(), null));
                 }
                 else if(op.y() != null) {
                     op.setFinalResult(loop.execReduce3Scalar(

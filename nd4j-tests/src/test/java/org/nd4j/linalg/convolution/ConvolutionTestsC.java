@@ -73,7 +73,7 @@ public  class ConvolutionTestsC extends BaseNd4jTest {
 
     @Test
     public void testIm2Col2() {
-       // n, c, h, w = new_val.shape
+        // n, c, h, w = new_val.shape
         int kh = 2;
         int kw = 2;
         int ph = 0;
@@ -138,13 +138,13 @@ public  class ConvolutionTestsC extends BaseNd4jTest {
                 DataBuffer.AllocationMode.DIRECT, DataBuffer.AllocationMode.DIRECT};
 
         String factoryClassName = Nd4j.factory().getClass().toString().toLowerCase();
-        if( factoryClassName.contains("jcublas") || factoryClassName.contains("cuda") ){
+        if( factoryClassName.contains("jcublas") || factoryClassName.contains("cuda") || factoryClassName.contains("native")){
             //Only test direct for CUDA; test all for CPU
             types = new DataBuffer.Type[]{DataBuffer.Type.FLOAT, DataBuffer.Type.DOUBLE};
             modes = new DataBuffer.AllocationMode[]{DataBuffer.AllocationMode.DIRECT, DataBuffer.AllocationMode.DIRECT};
         }
 
-        for( int i=0; i<types.length; i++ ) {
+        for( int i = 0; i<types.length; i++ ) {
             DataBuffer.Type type = types[i];
             DataBuffer.AllocationMode mode = modes[i];
 
@@ -166,7 +166,7 @@ public  class ConvolutionTestsC extends BaseNd4jTest {
                                                     if ((w - kw + 2 * pw) % sw != 0 || (h - kh + 2 * ph) % sh != 0)
                                                         continue;   //(w-kp+2*pw)/sw + 1 is not an integer,  i.e., number of outputs doesn't fit
 
-                                                    for( boolean cAll : coverall ) {
+                                                    for(boolean cAll : coverall) {
 
                                                         INDArray in = Nd4j.rand(new int[]{m, d, h, w});
                                                         assertEquals(in.data().allocationMode(), mode);

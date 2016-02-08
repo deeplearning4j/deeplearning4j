@@ -155,4 +155,10 @@ public class RectifedLinear extends BaseTransformOp {
     public TransformOp derivative() {
         return new Step(x,y,z,n,cutoff);
     }
+
+    @Override
+    public void init(INDArray x, INDArray y, INDArray z, int n) {
+        super.init(x, y, z, n);
+        this.extraArgs = new Object[] {cutoff};
+    }
 }

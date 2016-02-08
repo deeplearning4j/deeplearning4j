@@ -136,4 +136,10 @@ public class LeakyReLUDerivative extends BaseTransformOp {
         else
             return new LeakyReLUDerivative(x.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length(),alpha);
     }
+
+    @Override
+    public void init(INDArray x, INDArray y, INDArray z, int n) {
+        super.init(x, y, z, n);
+        this.extraArgs = new Object[] {alpha};
+    }
 }

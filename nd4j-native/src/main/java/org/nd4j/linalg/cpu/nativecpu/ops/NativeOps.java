@@ -2,6 +2,7 @@ package org.nd4j.linalg.cpu.nativecpu.ops;
 
 import org.nd4j.linalg.cpu.nativecpu.util.LibUtils;
 
+import java.nio.Buffer;
 import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
@@ -821,6 +822,7 @@ public class NativeOps {
                                        int n,
                                        IntBuffer xIndexes,
                                        IntBuffer resultIndexes);
+
 
 
 }

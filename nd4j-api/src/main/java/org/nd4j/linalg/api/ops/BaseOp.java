@@ -19,7 +19,11 @@
 
 package org.nd4j.linalg.api.ops;
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+
+import java.nio.Buffer;
 
 /**
  * Base op. An op involves iterating over 2 buffers (x,y)  up to n elements
@@ -36,6 +40,33 @@ public abstract class BaseOp implements Op {
     protected boolean passThrough;
 
     public BaseOp() {
+    }
+
+
+    @Override
+    public Buffer extraArgsBuff() {
+        if(extraArgs != null) {
+            DataBuffer retBuff;
+            if(x.data().dataType() == DataBuffer.Type.FLOAT) {
+                retBuff = Nd4j.createBuffer(new float[extraArgs.length]);
+                for(int i = 0; i < extraArgs.length; i++) {
+                    Number val = (Number) extraArgs[i];
+                    retBuff.put(i,val.floatValue());
+                }
+                return retBuff.asNioFloat();
+            }
+            else {
+                retBuff = Nd4j.createBuffer(new double[extraArgs.length]);
+                for(int i = 0; i < extraArgs.length; i++) {
+                    Number val = (Number) extraArgs[i];
+                    retBuff.put(i, val.doubleValue());
+                }
+                return retBuff.asNioDouble();
+            }
+
+
+        }
+        return null;
     }
 
     @Override

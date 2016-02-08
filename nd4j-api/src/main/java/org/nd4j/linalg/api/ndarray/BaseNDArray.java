@@ -740,7 +740,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         int[] newPermuteDims = Ints.concat(remove, reverseDimensions);
 
         INDArray permuted = permute(newPermuteDims);
-        permuted.toString();
         int sliceIdx = NDArrayMath.sliceOffsetForTensor(index, permuted, tensorShape);
 
         INDArray ret2 = permuted.slice(sliceIdx);
@@ -1734,7 +1733,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (stride.length != n)
             throw new IllegalArgumentException("Invalid stride " + Arrays.toString(stride));
 
-        if (Shape.contentEquals(shape, Shape.shapeOf(shapeInformation))) {
+        if (shape.length == rank() && Shape.contentEquals(shape, Shape.shapeOf(shapeInformation))) {
             if (ArrayUtil.isZero(offsets)) {
                 return this;
             } else {
@@ -3673,12 +3672,27 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (slices() != n.slices())
             return false;
 
-        for (int i = 0; i < slices(); i++) {
-            INDArray slice = slice(i);
-            INDArray nSlice = n.slice(i);
+        if(n.ordering() == ordering()) {
+            for(int i = 0; i < length(); i++) {
+                double val = getDouble(i);
+                double val2 = n.getDouble(i);
+                if (Math.abs(val - val2) >= Nd4j.EPS_THRESHOLD) {
+                    return false;
+                }
+            }
 
-            if (!slice.equals(nSlice))
-                return false;
+        }
+        else {
+            NdIndexIterator iter = new NdIndexIterator(n.shape());
+            while(iter.hasNext()) {
+                int[] next = iter.next();
+                double val = getDouble(next);
+                double val2 = n.getDouble(next);
+                if (Math.abs(val - val2) >= Nd4j.EPS_THRESHOLD) {
+                    return false;
+                }
+            }
+
         }
 
         return true;

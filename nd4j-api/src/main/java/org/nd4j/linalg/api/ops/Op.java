@@ -22,6 +22,8 @@ package org.nd4j.linalg.api.ops;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.nio.Buffer;
+
 /**
  * An op is defined as follows:
  * name: name of the operation
@@ -42,7 +44,14 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public interface Op {
 
-
+    /**
+     * Returns a buffer of either float
+     * or double
+     * of the extra args for this buffer
+     * @return  a buffer of either type float or double
+     * representing the extra args for this op
+     */
+    Buffer extraArgsBuff();
     /**
      * An op number
      * @return
