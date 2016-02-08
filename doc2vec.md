@@ -1,5 +1,5 @@
 ---
-title: 
+title: Doc2Vec, or Paragraph Vectors, in Deeplearning4j
 layout: default
 ---
 
