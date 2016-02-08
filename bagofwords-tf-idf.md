@@ -3,7 +3,7 @@ title: Bag of Words - TF-IDF
 layout: default
 ---
 
-# Bag of Words - TF-IDF
+# Bag of Words & TF-IDF 
 
 [Bag of Words](https://en.wikipedia.org/wiki/Bag-of-words_model) (BoW) is a list of words with their wordcounts. Each row is a document, each column is a word and each cell is a wordcount. 
 
@@ -11,7 +11,7 @@ BoW is also a method for preparing text for input in a deep-learning net. For a 
 
 Before they're fed to the neural net, each vector of wordcounts is normalized such that all elements of the vector add up to one. Thus, the frequencies of each word is effectively converted to represent the probabilities of those words' occurrence in the document. Probabilities that surpass certain levels will activate nodes in the net and influence the document's classification. 
 
-### term-frequency-inverse document frequency
+### Term Frequency-Inverse Document Frequency
 
 [Term-frequency-inverse document frequency](https://en.wikipedia.org/wiki/Tf%E2%80%93idf) (tf-idf) is another way to judge the topic of an article by the words it contains. With tf-idf, words are given weight -- tf-idf measures relevance, not frequency. That is, wordcounts are replaced with tf-idf scores across the whole dataset. 
 
