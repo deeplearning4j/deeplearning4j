@@ -24,6 +24,10 @@ First, know the problem you are trying to solve. This [list of questions](http:/
 * The ideal minibatch size will vary. 10 is too small for GPUs, but can work on CPUs. A minibatch size of 1 works, but will not reap the benefits of parallelism. 32 may be a sensible number. 
 
 * Pretraining was more popular in the past, but not so much these days due to better weight initializations and optimization methods.
+ 
+### For Recurrent Neural Networks
+
+* If you have long time series (> 200 time steps), you should use truncated backpropagation through time.
 
 ### For Restricted Boltzmann Machines (RBMs)
 
@@ -31,16 +35,4 @@ First, know the problem you are trying to solve. This [list of questions](http:/
 
   Larger datasets require more hidden layers. Facebook's Deep Face uses nine hidden layers on what we can only presume to be an immense corpus. Many smaller datasets might only require three or four hidden layers, with their accuracy decreasing beyond that depth. As a rule: larger data sets contain more variation, which require more features/neurons for the net to obtain accurate results. Typical machine learning, of course, has one hidden layer, and those shallow nets are called Perceptrons. 
 
-* Training neural networks has two steps: pre-training and fine-tuning. You’ll want to pre-train your net first on the raw data, and then save a backup, because fine-tuning will destroy the feature blend of the pretrained net. That is, a good pre-trained net is a product in itself, on which you can iteratively fine tune. In addition, pre-training can occur in several stages. Feed your net one set of raw data, pause, and then resume when you have more to feed it. 
-
-  Two aspects of this process are notable. Pretraining and finetuning have different goals, and different directions. Pretraining is a form of forward propagation. The data moves through the net in one direction. Finetuning is a form of back propagation in which the direction is reversed. Pretraining learns features. Finetuning teaches the network to perform classification. It becomes specialized. 
-
-  It is also interesting to note that Hinton’s network made 30 passes in pretraining to achieve its 99 percent accuracy. This is only feasible with a speedy, massively parallel network that lowers the cost of iteration.
-
-  In parallel training, when the batch size is too large, any data batches that contain outliers will take longer to train in pretraining or finetuning. On average, smaller batch sizes even out these minibatches, which may have more error attached to them.
-
-* Large datasets require that you pretrain your neural net several times. Only with multiple pretrainings will the algorithm learn to correctly weight features in the context of the dataset. That said, you can run the data in parallel or through a cluster to speed up the pretraining. 
-
-### For Recurrent Neural Networks
-
-* If you have long time series (> 200 time steps), you should use truncated backpropagation through time.
+* Large datasets require that you pretrain your RBM several times. Only with multiple pretrainings will the algorithm learn to correctly weight features in the context of the dataset. That said, you can run the data in parallel or through a cluster to speed up the pretraining. 
