@@ -1,4 +1,5 @@
 ---
+title: Customized Data Pipelines for Loading Images Into Deep Neural Networks
 layout: default
 ---
 
