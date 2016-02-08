@@ -1,5 +1,6 @@
 ---
 layout: default
+title: Home
 ---
 
 # What is Deeplearning4j?

@@ -1,5 +1,5 @@
 ---
-title: Canova: A Vectorization Lib for Machine Learning
+title: "Canova: A Vectorization Lib for Machine Learning"
 layout: default
 ---
 
