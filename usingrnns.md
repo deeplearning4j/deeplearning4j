@@ -1,5 +1,5 @@
 ---
-title: Recurrent Neural Networks in DL4J
+title: Using Recurrent Neural Networks in DL4J
 layout: default
 ---
 
