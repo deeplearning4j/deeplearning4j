@@ -133,11 +133,11 @@ Cosine is the angle attached to the origin, which makes it useful here. (We norm
 
 Training a neural network on a very large dataset requires some form of parallelism, of which there are two types: data parallelism and model parallelism. 
 
-Deeplearning4j does data parallelism. 
+Deeplearning4j does **data parallelism**. 
 
 Let's say you have a very large image dataset of 1,000,000 faces. Those faces can be divided into batches of 10, and then 10 separate batches can be dispatched simultaneously to 10 different convolutional networks, so that 100 instances can be processed at once. The 10 different CNNs would then train on a batch, calculate the error on that batch, and update their parameters based on that error. Then, using parameter averaging, the 10 CNNs would update a central, master CNN that would take the average of their updated paramters. This process would repeat until the entire dataset has been exhausted. For more information, please see our page on [iterative reduce](http://deeplearning4j.org/iterativereduce). 
 
-Model parallelism is another way to accelerate neural net training on very large data sets. Here, instead of sending batches of faces to separate neural networks, let's image a different kind of image. Each image will be an enormous map of the earth. Model parallelism would divide that enormous map into regions, and it would park a separate CNN on each region, to train on only that area and no other. Then, as each enormous map was peeled off the dataset to train the neural networks, it would be broken up and different patches of it would be sent to train on separate CNNs. No parameter averaging necessary here. 
+**Model parallelism** is another way to accelerate neural net training on very large datasets. Here, instead of sending batches of faces to separate neural networks, let's imagine a different kind of image: an enormous map of the earth. Model parallelism would divide that enormous map into regions, and it would park a separate CNN on each region, to train on only that area and no other. Then, as each enormous map was peeled off the dataset to train the neural networks, it would be broken up and different patches of it would be sent to train on separate CNNs. No parameter averaging necessary here. 
 
 ### <a name="dbn">Deep-Belief Network (DBN)</a>
 
