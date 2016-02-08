@@ -1,5 +1,5 @@
 ---
-title: 
+title: Deep-Belief Networks in Java
 layout: default
 ---
 
