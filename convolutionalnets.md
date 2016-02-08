@@ -1,5 +1,5 @@
 ---
-title: 
+title: Convolutional Networks in Java
 layout: default
 ---
 
