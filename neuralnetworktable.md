@@ -1,5 +1,5 @@
 ---
-title: 
+title: How to Choose a Neural Network
 layout: default
 ---
 
