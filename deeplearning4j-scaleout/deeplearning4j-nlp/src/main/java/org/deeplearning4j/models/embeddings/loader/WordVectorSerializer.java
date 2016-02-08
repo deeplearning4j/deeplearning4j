@@ -463,7 +463,7 @@ public class WordVectorSerializer {
                 // backward compatibility code
                 vocabCache.putVocabWord(word.getLabel());
 
-                INDArray row = Nd4j.create(Nd4j.createBuffer(split.length - 2));
+                INDArray row = Nd4j.create(1, split.length - 2);
                 for (int i = 2; i < split.length; i++) {
                     row.putScalar(i - 2, Float.parseFloat(split[i]));
                 }
