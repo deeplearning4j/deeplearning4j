@@ -1017,6 +1017,57 @@ public class BasicAllocatorTest {
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////                BLIND ACCESS TESTS
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    @Test
+    public void testBlindAccessSingle1() throws Exception {
+        BasicAllocator allocator = new BasicAllocator();
+        allocator.setEnvironment(singleDevice4GBcc52);
+        allocator.setBalancer(new FirstInBalancer());
+        allocator.setMover(new DummyMover());
+
+        assertEquals(0, singleDevice4GBcc52.getAllocatedMemoryForDevice(1));
+
+        Long objectId1 = 22L;
+
+        AllocationShape shape1 = new AllocationShape();
+        shape1.setDataType(DataBuffer.Type.FLOAT);
+        shape1.setLength(2 * 1024 * 1024L);
+        shape1.setOffset(0);
+        shape1.setStride(1);
+
+        // we don't call registerSpan explicitly, registration is hidden within getDevicePointer()
+        Object pointer = allocator.getDevicePointer(objectId1, shape1);
+
+        assertNotEquals(null, pointer);
+
+        AllocationPoint point = allocator.getAllocationPoint(objectId1);
+
+        assertEquals(AllocationStatus.ZERO, point.getAllocationStatus());
+
+        assertEquals(pointer, point.getDevicePointer());
+    }
+
+
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////                STALE OBJECT TESTS
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * This test addresses impossible copyback situation on dead objects.
+     * I.e. memory was allocated on device, or in pinned area, and was never taken back.
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testSingleStale1() throws Exception {
+
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////                AUTO-PROMOTION TESTS
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

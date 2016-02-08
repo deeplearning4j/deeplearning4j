@@ -10,7 +10,7 @@ import static org.junit.Assert.*;
 /**
  * @author raver119@gmail.com
  */
-public class BlindTimerTest {
+public class BinaryTimerTest {
 
     @Before
     public void setUp() throws Exception {
@@ -19,7 +19,7 @@ public class BlindTimerTest {
 
     @Test
     public void testIsAlive1() throws Exception {
-        BlindTimer timer = new BlindTimer(2, TimeUnit.SECONDS);
+        BinaryTimer timer = new BinaryTimer(2, TimeUnit.SECONDS);
         timer.triggerEvent();
 
         assertTrue(timer.isAlive());
@@ -27,7 +27,7 @@ public class BlindTimerTest {
 
     @Test
     public void testIsAlive2() throws Exception {
-        BlindTimer timer = new BlindTimer(2, TimeUnit.SECONDS);
+        BinaryTimer timer = new BinaryTimer(2, TimeUnit.SECONDS);
         timer.triggerEvent();
 
         Thread.sleep(3000);

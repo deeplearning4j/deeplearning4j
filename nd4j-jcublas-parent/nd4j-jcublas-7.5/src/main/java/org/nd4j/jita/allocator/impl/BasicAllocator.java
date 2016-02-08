@@ -41,6 +41,8 @@ public final class BasicAllocator implements Allocator {
 
     private Map<Long, AllocationPoint> allocationPoints = new ConcurrentHashMap<>();
 
+    private Map<Long, AllocationPoint> deviceAllocations = new ConcurrentHashMap<>();
+    private Map<Long, AllocationPoint> hostAllocations = new ConcurrentHashMap<>();
 
     private static Logger log = LoggerFactory.getLogger(BasicAllocator.class);
 
@@ -287,6 +289,12 @@ public final class BasicAllocator implements Allocator {
          */
             AllocationPoint point = getAllocationPoint(objectId);
 
+            if (point == null) {
+                // TODO: blind invocation event here. something better would be nice to have here
+                registerSpan(objectId, shape);
+                point = getAllocationPoint(objectId);
+            }
+
             Object pointer = null; //point.getDevicePointer();
 
             if (point.getShape().equals(shape)) {
@@ -318,6 +326,9 @@ public final class BasicAllocator implements Allocator {
                             if (target == AllocationStatus.DEVICE) {
                                 relocateMemory(objectId, target);
                                 pointer = point.getDevicePointer();
+
+                                // put this one to device allocations bucket
+                                deviceAllocations.put(objectId, point);
                             }
                         }
                     } finally {

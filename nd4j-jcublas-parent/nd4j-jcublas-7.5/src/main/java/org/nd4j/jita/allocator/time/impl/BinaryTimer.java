@@ -11,14 +11,14 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author raver119@gmail.com
  */
-public class BlindTimer implements DecayingTimer {
+public class BinaryTimer implements DecayingTimer {
     private AtomicLong timer;
     private long timeframeMilliseconds;
 
-    public BlindTimer(long timeframe, TimeUnit timeUnit) {
+    public BinaryTimer(long timeframe, TimeUnit timeUnit) {
         timer = new AtomicLong(System.currentTimeMillis());
 
-        timeframeMilliseconds = timeUnit.convert(timeframe, TimeUnit.MILLISECONDS);
+        timeframeMilliseconds = TimeUnit.MILLISECONDS.convert(timeframe, timeUnit);
     }
 
     /**

@@ -6,12 +6,11 @@ import org.nd4j.jita.allocator.enums.AccessState;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.SyncState;
 import org.nd4j.jita.allocator.time.DecayingTimer;
-import org.nd4j.jita.allocator.time.impl.BlindTimer;
+import org.nd4j.jita.allocator.time.impl.BinaryTimer;
+import org.nd4j.jita.allocator.time.impl.SimpleTimer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -41,7 +40,8 @@ public class AllocationPoint {
     private long accessDevice = 0;
 
     // TODO: timer should be instantiated externally
-    private DecayingTimer timer = new BlindTimer(5, TimeUnit.SECONDS);
+    private DecayingTimer timerShort = new SimpleTimer(10, TimeUnit.SECONDS); //new BinaryTimer(5, TimeUnit.SECONDS);
+    private DecayingTimer timerLong = new SimpleTimer(60, TimeUnit.SECONDS);
 
     /*
      device, where memory was allocated.
@@ -86,7 +86,8 @@ public class AllocationPoint {
 
     public void tickDevice() {
         this.deviceTicks.incrementAndGet();
-        this.timer.triggerEvent();
+        this.timerShort.triggerEvent();
+        this.timerLong.triggerEvent();
     }
 
     public void tackDevice() {
