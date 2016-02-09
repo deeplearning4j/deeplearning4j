@@ -347,6 +347,7 @@ public final class BasicAllocator implements Allocator {
                         if (point.getAccessState() == AccessState.TACK) {
                             AllocationStatus target = makePromoteDecision(objectId, point.getShape());
                             if (target == AllocationStatus.DEVICE) {
+                                log.info("Trying relocation: " + objectId);
                                 relocateMemory(objectId, target);
                                 pointer = point.getDevicePointer();
 
@@ -508,6 +509,21 @@ public final class BasicAllocator implements Allocator {
         return result;
     }
 
+    /*
+        Seeks for unused device memory chunks, up to targetFreeMemory size.
+        Set to Long.MAX_VALUE to demote all unused device memory
+     */
+    protected void demoteUnused(long targetFreeMemory) {
+        long sumCandidates = 0;
+        for (Long object: deviceAllocations.keySet()) {
+            AllocationPoint point = getAllocationPoint(object);
+
+            sumCandidates += AllocationUtils.getRequiredMemory(point.getShape());
+        }
+
+        log.info("Demote candidates sum: " + sumCandidates);
+    }
+
     protected void deallocateUnused() {
         for (Long object: allocationPoints.keySet()) {
             try {
@@ -654,10 +670,42 @@ public final class BasicAllocator implements Allocator {
                 3. Memory is enough, but there's better candidates for the same device memory chunk
         */
 
-            AllocationPoint point = getAllocationPoint(objectId);
+        AllocationPoint point = getAllocationPoint(objectId);
 
-            return balancer.makePromoteDecision(1, point, shape);
-            //return null;
+        if (point.getAllocationStatus().equals(AllocationStatus.DEVICE)) return AllocationStatus.DEVICE;
+
+        try {
+            locker.globalWriteLock();
+
+            // first, we check if memory is enough
+            long requiredMemory = AllocationUtils.getRequiredMemory(point.getShape());
+
+            // TODO: balancer, affinity & locks should be considered here
+
+            long availableMemory = environment.getAvailableMemoryForDevice(1);
+
+            long allocatedMemory = environment.getAllocatedMemoryForDevice(1);
+
+            long maximumAllocation = configuration.getMaximumAllocation();
+
+/*
+        log.info("Req memory: " + requiredMemory);
+        log.info("Available memory:" + availableMemory);
+        log.info("Allocated memory: " + allocatedMemory);
+        log.info("Maxumum allocation: " + configuration.getMaximumAllocation());
+*/
+            if (availableMemory > requiredMemory && requiredMemory + allocatedMemory < maximumAllocation) {
+                // we have available memory, let's consider allocation allowed
+                return AllocationStatus.DEVICE;
+            } else {
+                // we don't have available memory
+                demoteUnused(AllocationUtils.getRequiredMemory(point.getShape()));
+
+                return AllocationStatus.ZERO;
+            }
+        } finally {
+            locker.globalWriteUnlock();
+        }
 
     }
 
