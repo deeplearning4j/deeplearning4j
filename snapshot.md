@@ -20,7 +20,7 @@ Deeplearning4j users who would like to explore the libraries' latest features ne
       </repository>
     </repositories>
 
-Then, between the `properties` tags, where you specify the version of dependency, you will need to update the versions for ND4J, Canova and Deeplearning4j to the latest SNAPSHOT. As of this writing, it was rc3.9-SNAPSHOT for ND4J and DL4J, and 0.0.0.15 for Canova. 
+Then, between the `properties` tags, where you specify the version of dependency, you will need to update the versions for ND4J, Canova and Deeplearning4j to the latest SNAPSHOT. As of this writing, it was 0.4-rc3.9-SNAPSHOT for ND4J and DL4J, and 0.0.0.15-SNAPSHOT for Canova.
 
     <properties>
       <nd4j.version>LatestVersionPastedFromMavenCentralHere-SNAPSHOT</nd4j.version>
