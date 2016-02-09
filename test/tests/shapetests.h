@@ -346,5 +346,39 @@ TEST(Shape,ElementWiseStrideTwoHundred) {
 
 }
 
+TEST(Shape,TadOffset) {
+    int rank = 4;
+    int dimensionLength = 1;
+    int shape[4]= {2,2,3,2};
+    int dimension[1] = {1};
+    int *shapeBuff = shapeBuffer(rank,shape);
+    int tads = shape::tensorsAlongDimension(rank,24,shape,dimension,dimensionLength);
+    CHECK_EQUAL(tads,12);
+    int assertionsArr[4][12] = {
+            {0,1,2,3,4,5,6,7,8,9,10,11},
+            {0,1,2,3,4,5,12,13,14,15,16,17},
+            {0,1,6,7,12,13,18,19,0,0,0,0},
+            {0,2,4,6,8,10,12,14,16,18,20,22}
+    };
+
+
+    int tadLengths[4] = {12,12,8,12};
+
+    for(int i = 0; i < 4; i++) {
+        dimension[0] = i;
+        int *currAssertion  = assertionsArr[i];
+        for(int j = 0; j < tadLengths[i]; j++) {
+            int thisAssertion = currAssertion[j];
+            int tadOffset = shape::tadOffset(j,shapeBuff,dimension,dimensionLength);
+            CHECK_EQUAL(thisAssertion,tadOffset);
+        }
+
+    }
+
+    free(shapeBuff);
+
+}
+
+
 
 #endif /* SHAPETESTS_H_ */
