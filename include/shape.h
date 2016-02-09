@@ -914,6 +914,50 @@ namespace shape {
     int tadElementWiseStride(int *shapeInfo,int *dimension,int dimensionLength);
 
     /**
+     * Compute the tad offset given a dimension.
+     *
+     * The general pattern for computing a tad offset is as follows:
+     * Every $STRIDE that was removed (the first dimension)
+     * do a jump by the major stride of the parent array
+     * (stride[0] of the parent array)
+     *
+     * For example given a c ordered 2,2,3,2 with stride 12,6,2,1
+     * A tad of dimension 1 will jump 12 every 6 tads.
+     *
+     * You then end up with offsets of:
+     * 0
+     * 1
+     * 2
+     * 3
+     * 4
+     * 5
+     * 12
+     * 13
+     * 14
+     * 15
+     * 16
+     * 17
+     *
+     * notice there are 12 tads here. This same incremental jump will happen
+     * every time.
+     * Note here that by default the
+     * stride of element wise stride is used for the hops.
+     *
+     * Sometimes a jump doesn't happen. If there are less tads
+     * than the stride of the dimension you removed, the
+     * element wise stride will always be used.
+     *
+     * For example in a dimension of 0,1, you end up with offsets of:
+     * 0,1,2,3,4,5
+     *
+     * Given that the inner most stride of the dimensions that was removed (1)
+     * had a stride of 6, we never need to do a major stride jump.
+     *
+     */
+    int tadOffset(int index,int *shapeInfo,int *dimension,int dimensionLength);
+
+
+    /**
      * Tad element wise stride:
      * given the inner most dimension (the sorted dimension of the last)
      * the element wise stride of the tad (disregarding order) is the
@@ -947,6 +991,67 @@ namespace shape {
         return stride[dimension[dimensionLength - 1]];
 
     }
+
+
+    /**
+    * Compute the tad offset given a dimension.
+    *
+    * The general pattern for computing a tad offset is as follows:
+    * Every $STRIDE that was removed (the first dimension)
+    * do a jump by the major stride of the parent array
+    * (stride[0] of the parent array)
+    *
+    * For example given a c ordered 2,2,3,2 with stride 12,6,2,1
+    * A tad of dimension 1 will jump 12 every 6 tads.
+    *
+    * You then end up with offsets of:
+    * 0
+    * 1
+    * 2
+    * 3
+    * 4
+    * 5
+    * 12
+    * 13
+    * 14
+    * 15
+    * 16
+    * 17
+    *
+    * notice there are 12 tads here. This same incremental jump will happen
+    * every time.
+    * Note here that by default the
+    * stride of element wise stride is used for the hops.
+    *
+    * Sometimes a jump doesn't happen. If there are less tads
+    * than the stride of the dimension you removed, the
+    * element wise stride will always be used.
+    *
+    * For example in a dimension of 0,1, you end up with offsets of:
+    * 0,1,2,3,4,5
+    *
+    * Given that the inner most stride of the dimensions that was removed (1)
+    * had a stride of 6, we never need to do a major stride jump.
+    *
+    */
+    int tadOffset(int index,int *shapeInfo,int *dimension,int dimensionLength) {
+        int *stride = shape::stride(shapeInfo);
+        int rank = shape::rank(shapeInfo);
+        int innerMostStride = stride[dimension[dimensionLength - 1]];
+        int elementWiseStrideParent = stride[rank - 1];
+        if(index >= innerMostStride) {
+            //represents the jump
+            //the offset represents how many jumps of the element wise stride to do after identifying
+            //the base offset for the ump as index / inner most stride. For example in our case above:
+            //13 would be the offset as the first element wise stride after the jump with a modulus of 1.
+            //14 would be the offset as the first element wise stride after the jump with a modulous of 2.
+            return (index / innerMostStride) * stride[0] + elementWiseStrideParent * (index % innerMostStride);
+        }
+
+        else return index;
+
+    }
+    
 /**
  * Computes the standard packed array strides for a given shape.
  *
