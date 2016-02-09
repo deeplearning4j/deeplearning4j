@@ -154,7 +154,7 @@ namespace functions {
                     T *result,
                     int *resultShapeInfo,
                     T *extraParams,
-                    int n,
+                    const int n,
                     int *indexes) {
 #pragma omp simd
                 for (int i = 0; i < n; i++) {
@@ -178,7 +178,7 @@ namespace functions {
                     T *result,
                     int *resultShapeInfo,
                     T *extraParams,
-                    int n,
+                    const int n,
                     int *indexes,
                     int *resultIndexes) {
 #pragma omp simd
@@ -204,7 +204,7 @@ namespace functions {
                     T *result,
                     int *resultShapeInfo,
                     T *extraParams,
-                    int n) {
+                    const int n) {
 
 
                 int *xShape = shape::shapeOf(xShapeInfo);
@@ -227,16 +227,22 @@ namespace functions {
                 }
                 else {
 
+                    int i;
+#pragma omp parallel private(i)
+                    {
 #pragma omp simd
-                    for (int i = 0; i < n; i++) {
-                        int *xIdx = shape::ind2sub(xRank, xShape, i);
-                        int *resultIdx = shape::ind2sub(resultRank, resultShape, i);
-                        int xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
-                        int resultOffset2 = shape::getOffset(resultOffset, resultShape, resultStride, resultIdx, resultRank);
-                        result[resultOffset2] = op(dx[xOffset2], extraParams);
-                        free(xIdx);
-                        free(resultIdx);
+                        for (i = omp_get_thread_num(); i < n; i+= omp_get_num_threads()) {
+                            int *xIdx = shape::ind2sub(xRank, xShape, i);
+                            int *resultIdx = shape::ind2sub(resultRank, resultShape, i);
+                            int xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
+                            int resultOffset2 = shape::getOffset(resultOffset, resultShape, resultStride, resultIdx, resultRank);
+                            result[resultOffset2] = op(dx[xOffset2], extraParams);
+                            free(xIdx);
+                            free(resultIdx);
+                        }
                     }
+
+
 
                 }
 
@@ -254,22 +260,32 @@ namespace functions {
              * @param n the number of elements to iterate on
              */
             virtual void exec(T *dx, int xStride, T *result, int resultStride,
-                              T *extraParams, int n) {
+                              T *extraParams, const int n) {
                 if (xStride == 1 && resultStride == 1) {
+                    int i;
+#pragma omp parallel private(i)
+                    {
 #pragma omp simd
-                    for (int i = 0; i < n; i++) {
-                        result[i] = op(dx[i], extraParams);
+                        for (i = omp_get_thread_num(); i < n; i+= omp_get_num_threads()) {
+                            result[i] = op(dx[i], extraParams);
+                        }
                     }
+
 
                 }
 
 
                 else {
+                    int i;
+#pragma omp parallel private(i)
+                    {
 #pragma omp simd
-                    for (int i = 0; i < n; i++) {
-                        result[i * resultStride] = op(dx[i * resultStride],
-                                                      extraParams);
+                        for (i = omp_get_thread_num(); i < n; i+= omp_get_num_threads()) {
+                            result[i * resultStride] = op(dx[i * resultStride],
+                                                          extraParams);
+                        }
                     }
+
                 }
 
             }

@@ -1926,6 +1926,7 @@ namespace shape {
     int *concat(int numArrays, int numTotalElements, int **arr, int *lengths) {
         int *ret = (int *) malloc(numTotalElements * sizeof(int));
         int count = 0;
+#pragma omp simd
         for (int i = 0; i < numArrays; i++) {
             for (int j = 0; j < lengths[i]; j++) {
                 ret[count++] = arr[i][j];
@@ -2464,7 +2465,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    static int getOffset(int baseOffset,int *shape,int *stride,int *indices,int rank) {
+    static int getOffset(int baseOffset,int *shape,int *stride,int *indices,const int rank) {
         int offset = baseOffset;
         for(int i = 0; i < rank; i++) {
             if(indices[i] >= shape[i]) {
@@ -2629,11 +2630,14 @@ __device__ int tadOffset(int *xInfo, int offset) {
     int *toShapeBuffer(ShapeInformation *info) {
         int *ret = (int *) malloc(sizeof(int) * shapeInfoLength(info->rank));
         int count = 1;
+        const int rank = info->rank;
         ret[0] = info->rank;
-        for (int i = 0; i < info->rank; i++) {
+#pragma omp simd
+        for (int i = 0; i < rank; i++) {
             ret[count++] = info->shape[i];
         }
-        for (int i = 0; i < info->rank; i++) {
+#pragma omp simd
+        for (int i = 0; i < rank; i++) {
             ret[count++] = info->stride[i];
         }
 

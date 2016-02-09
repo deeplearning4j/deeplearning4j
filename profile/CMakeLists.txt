@@ -32,8 +32,7 @@ if(NOT LAPACK_FOUND)
 endif()
 
 
-SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O3 -ffast-math -ftree-vectorize -msse2 -ftree-vectorizer-verbose=2 -fopt-info-vec -fopt-info-vec-missed" )
-#SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O3 -ffast-math -ftree-vectorize -msse2 -ftree-vectorizer-verbose=2 -fopt-info-vec" )
+SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}" )
 
 add_library(libnd4j SHARED blasimpl.cpp NativeOps.cpp)
 target_link_libraries(libnd4j ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})

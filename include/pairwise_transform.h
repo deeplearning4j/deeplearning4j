@@ -329,10 +329,11 @@ public:
 			T *result,
 			int *resultShapeBuffer,
 			T *extraParams,
-			int n,
+			const int n,
 			int *indexes,
 			int *yIndexes,
 			int *resultIndexes) {
+
 #pragma omp simd
 		for (int i = 0; i < n; i++) {
 			result[resultIndexes[i]] = op(dx[indexes[i]],y[yIndexes[i]], extraParams);
@@ -362,7 +363,7 @@ public:
 			int *yShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int n,int *indexes) {
+			T *extraParams, const int n,int *indexes) {
 
 
 #pragma omp simd
@@ -393,7 +394,7 @@ public:
 			int *yShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int n) {
+			T *extraParams, const int n) {
 
 		int *xShape = shape::shapeOf(xShapeBuffer);
 		int *yShape = shape::shapeOf(yShapeBuffer);
@@ -468,16 +469,14 @@ public:
 	 * @param n the length of the input
 	 */
 	virtual void exec(T *dx, int xStride, T *y, int yStride, T *result,
-			int resultStride, T *extraParams, int n) {
+			int resultStride, T *extraParams, const int n) {
 		if (xStride == 1 && yStride == 1 && resultStride == 1) {
-			printf("All ones\n");
 #pragma omp simd
 			for (int i = 0; i < n; i++) {
 				result[i] = op(dx[i], y[i], extraParams);
 			}
 
 		} else {
-			printf("Not all 1s x %d y %d result %d and n %d\n",xStride,yStride,resultStride,n);
 #pragma omp simd
 			for (int i = 0; i < n; i++) {
 				result[i * resultStride] = op(dx[i * xStride],
