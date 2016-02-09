@@ -174,7 +174,7 @@ namespace functions {
                             int *resultShapeInfo,
                             T scalar,
                             T *extraParams,
-                            int n,
+                            const int n,
                             int *indexes,
                             int *resultIndexes) {
 #pragma omp simd
@@ -196,7 +196,7 @@ namespace functions {
          * @param n the number of elements to loop over
          */
              void transform(T *x, int *xShapeInfo, T *result, int *resultShapeInfo,
-                                   T scalar, T *extraParams, int n,int *indexes) {
+                                   T scalar, T *extraParams, const int n,int *indexes) {
                 transform(x,
                           xShapeInfo,
                           result,
@@ -221,7 +221,7 @@ namespace functions {
          * @param n the number of elements to loop over
          */
              void transform(T *x, int *xShapeInfo, T *result, int *resultShapeInfo,
-                                   T scalar, T *extraParams, int n) {
+                                   T scalar, T *extraParams, const int n) {
 
                 int *xShape = shape::shapeOf(xShapeInfo);
                 int *resultShape = shape::shapeOf(resultShapeInfo);
@@ -273,7 +273,7 @@ namespace functions {
              * @param n the number of elements to loop over
              */
              void transform(T *x, int xStride, T *result, int resultStride,
-                                   T scalar, T *extraParams, int n) {
+                                   T scalar, T *extraParams, const int n) {
                 if (xStride == 1 && resultStride == 1) {
 #pragma omp simd
                     for (int i = 0; i < n; i++) {
