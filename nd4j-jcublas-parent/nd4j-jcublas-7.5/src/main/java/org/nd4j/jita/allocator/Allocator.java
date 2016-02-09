@@ -98,4 +98,20 @@ public interface Allocator {
      * @return number of allocated top-level memory chunks
      */
     int tableSize();
+
+
+    /**
+     * This method returns CUDA deviceId for specified buffer
+     *
+     * @param objectId
+     * @return
+     */
+    Integer getDeviceId(Long objectId);
+
+    /**
+     * This method returns CUDA deviceId for current thread
+     *
+     * @return
+     */
+    Integer getDeviceId();
 }

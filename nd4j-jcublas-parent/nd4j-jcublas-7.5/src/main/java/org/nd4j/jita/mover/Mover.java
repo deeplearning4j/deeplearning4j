@@ -20,10 +20,9 @@ public interface Mover {
      * Allocate specified memory chunk on specified device/host
      *
      * @param targetMode valid arguments are DEVICE, ZERO
-     * @param deviceId Id of the device for allocation. Value is ignored if UMA is available and/or HOST allocation is called
      * @return
      */
-    Object alloc(AllocationStatus targetMode,AllocationShape shape, Integer deviceId);
+    Object alloc(AllocationStatus targetMode,AllocationShape shape);
 
 
     /**

@@ -12,6 +12,9 @@ import org.nd4j.jita.conf.CudaEnvironment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * This is dummy Mover implementation, suitable for tests. It does not handles any allocations, but provides proper responses :)
  *
@@ -38,10 +41,9 @@ public class DummyMover implements Mover {
      *
      * @param targetMode valid arguments are DEVICE, ZERO
      * @param shape
-     * @param deviceId   Id of the device for allocation. Value is ignored if UMA is available and/or HOST allocation is called  @return
      */
     @Override
-    public Object alloc(AllocationStatus targetMode, AllocationShape shape, Integer deviceId) {
+    public Object alloc(AllocationStatus targetMode, AllocationShape shape) {
         if (!targetMode.equals(AllocationStatus.DEVICE) && !targetMode.equals(AllocationStatus.ZERO) )
             throw new UnsupportedOperationException("Target allocation ["+ targetMode+"] is not supported");
         return new Object();
@@ -59,6 +61,27 @@ public class DummyMover implements Mover {
         if (currentStatus.equals(targetStatus)) return;
 
         switch (currentStatus) {
+            case DEVICE: {
+                if (targetStatus.equals(AllocationStatus.ZERO)) {
+                    long memorySize = AllocationUtils.getRequiredMemory(point.getShape());
+
+                    point.setAllocationStatus(targetStatus);
+                    point.setCudaPointer(new Object());
+
+                    try {
+                        locker.globalWriteLock();
+
+                        log.info("Relocating: "+ point.getObjectId()+" Substracting memory from alloc table: [" +memorySize + "]. Direction is: [" + currentStatus + "] -> [" + targetStatus +"]");
+
+                        environment.trackAllocatedMemory(point.getDeviceId(), -1 * memorySize);
+
+                    } finally {
+                        locker.globalWriteUnlock();
+                    }
+
+                } else throw new UnsupportedOperationException("HostMemory relocation in this direction isn't supported: [" + currentStatus + "] -> [" + targetStatus +"]");
+            }
+            break;
             case HOST:
             case ZERO: {
                     if (targetStatus.equals(AllocationStatus.DEVICE)) {
@@ -73,8 +96,9 @@ public class DummyMover implements Mover {
                                 return;
 
                       //      log.info("Adding memory to alloc table: [" +memorySize + "]");
+                            log.info("Relocating: "+ point.getObjectId()+" Adding memory to alloc table: [" +memorySize + "]. Direction is: [" + currentStatus + "] -> [" + targetStatus +"]");
 
-                            environment.trackAllocatedMemory(1, AllocationUtils.getRequiredMemory(point.getShape()));
+                            environment.trackAllocatedMemory(point.getDeviceId(), AllocationUtils.getRequiredMemory(point.getShape()));
 
                         } finally {
                             locker.globalWriteUnlock();
@@ -83,7 +107,7 @@ public class DummyMover implements Mover {
 
 
                         point.setAllocationStatus(targetStatus);
-                        point.setDevicePointer(new Object());
+                        point.setCudaPointer(new Object());
                     } else throw new UnsupportedOperationException("HostMemory relocation in this direction isn't supported: [" + currentStatus + "] -> [" + targetStatus +"]");
                 }
                 break;
@@ -118,7 +142,7 @@ public class DummyMover implements Mover {
         if (point.getAllocationStatus().equals(AllocationStatus.DEVICE) || point.getAllocationStatus().equals(AllocationStatus.ZERO)) {
             point.setAccessHost(point.getAccessDevice());
             point.setHostMemoryState(SyncState.SYNC);
-            point.setDevicePointer(null);
+            point.setCudaPointer(null);
             point.setAllocationStatus(AllocationStatus.HOST);
         } else {
             throw new UnsupportedOperationException("free() is impossible for : ["+point.getAllocationStatus()+"] allocation");

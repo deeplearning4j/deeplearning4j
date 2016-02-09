@@ -26,7 +26,7 @@ public class AllocationPoint {
     private static Logger log = LoggerFactory.getLogger(AllocationPoint.class);
 
     // TODO: change this to Pointer later
-    private Object devicePointer;
+    private Object cudaPointer;
     private Object hostPointer;
 
     private Long objectId;
@@ -43,10 +43,10 @@ public class AllocationPoint {
     private RateTimer timerLong = new SimpleTimer(60, TimeUnit.SECONDS);
 
     /*
-     device, where memory was allocated.
-     0 for host, -1 for deallocated/undefined
+     device, where memory was/will be allocated.
+    Valid integer >= 0 is deviceId, null for undefined
     */
-    private Integer deviceId = -1;
+    private Integer deviceId = null;
 
     /*
         We assume 1D memory chunk allocations.

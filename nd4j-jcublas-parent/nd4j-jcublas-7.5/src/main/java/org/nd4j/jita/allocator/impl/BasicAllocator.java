@@ -19,10 +19,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.WeakHashMap;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -59,7 +56,8 @@ public final class BasicAllocator implements Allocator {
     private transient RateTimer devicePressure = new SimpleTimer(10, TimeUnit.SECONDS);
     private transient RateTimer zeroPressure = new SimpleTimer(10, TimeUnit.SECONDS);
 
-
+    // here we track Thread <-> Device affinity to avoid cross-device access as much as possible
+    protected Map<Long, Integer> devicesAffinity = new ConcurrentHashMap<>();
 
     // list of objects originated allocations
     private WeakHashMap<Long, AllocationPoint> externals = new WeakHashMap<>();
@@ -126,6 +124,28 @@ public final class BasicAllocator implements Allocator {
 
     }
 
+    /**
+     * Returns deviceId to be used from some thread.
+     *
+     * @return
+     */
+    protected Integer getNewDeviceId() {
+        try {
+            locker.globalReadLock();
+
+            if (!devicesAffinity.containsKey(Thread.currentThread().getId())) {
+                List<Integer> devices = new ArrayList<>(environment.getAvailableDevices().keySet());
+                Random rnd = new Random();
+                Integer device = devices.get(rnd.nextInt(devices.size()));
+                devicesAffinity.put(Thread.currentThread().getId(), device );
+                log.info("Mapping device ["+ device+"] to thread [" + Thread.currentThread().getId() + "]");
+            }
+            return devicesAffinity.get(Thread.currentThread().getId());
+        } finally {
+            locker.globalReadUnlock();
+        }
+    }
+
     protected void registerSpan(Long objectId, @NonNull AllocationShape shape) {
         // TODO: object-level lock is HIGHLY required here, for multithreaded safety
         try {
@@ -140,6 +160,10 @@ public final class BasicAllocator implements Allocator {
                     allocationPoint.setAccessHost(System.nanoTime());
                     allocationPoint.setAllocationStatus(AllocationStatus.UNDEFINED);
                     allocationPoint.setShape(shape);
+                    allocationPoint.setObjectId(objectId);
+
+                    // once deviceId is set, all future relocations should respect it
+                    allocationPoint.setDeviceId(getNewDeviceId());
 
                     //allocationPoint.addShape(shape);
 
@@ -322,11 +346,11 @@ public final class BasicAllocator implements Allocator {
                 try {
                     // FIXME: wrong lock here, consider something better like j8 stampedLock
                     locker.objectWriteLock(objectId);
-                    pointer = point.getDevicePointer();
+                    pointer = point.getCudaPointer();
 
                     if (pointer == null) {
-                        pointer = mover.alloc(AllocationStatus.ZERO, point.getShape(), 0);
-                        point.setDevicePointer(pointer);
+                        pointer = mover.alloc(AllocationStatus.ZERO, point.getShape());
+                        point.setCudaPointer(pointer);
                         point.setAllocationStatus(AllocationStatus.ZERO);
 
                         zeroAllocations.put(objectId, point);
@@ -347,9 +371,9 @@ public final class BasicAllocator implements Allocator {
                         if (point.getAccessState() == AccessState.TACK) {
                             AllocationStatus target = makePromoteDecision(objectId, point.getShape());
                             if (target == AllocationStatus.DEVICE) {
-                                log.info("Trying relocation: " + objectId);
+//                                log.info("Trying relocation: " + objectId);
                                 relocateMemory(objectId, target);
-                                pointer = point.getDevicePointer();
+                                pointer = point.getCudaPointer();
 
                                 // put this one to device allocations bucket
                                 deviceAllocations.put(objectId, point);
@@ -447,6 +471,29 @@ public final class BasicAllocator implements Allocator {
         return allocationPoints.size();
     }
 
+    /**
+     * This method returns CUDA deviceId for specified buffer
+     *
+     * @param objectId
+     * @return
+     */
+    @Override
+    public Integer getDeviceId(Long objectId) {
+        AllocationPoint point = getAllocationPoint(objectId);
+
+        return point.getDeviceId();
+    }
+
+    /**
+     * This method returns CUDA deviceId for current thread
+     *
+     * @return
+     */
+    @Override
+    public Integer getDeviceId() {
+        return getNewDeviceId();
+    }
+
 
     protected int zeroTableSize() {
         return zeroAllocations.size();
@@ -513,15 +560,35 @@ public final class BasicAllocator implements Allocator {
         Seeks for unused device memory chunks, up to targetFreeMemory size.
         Set to Long.MAX_VALUE to demote all unused device memory
      */
-    protected void demoteUnused(long targetFreeMemory) {
+    protected synchronized long demoteUnused(long targetFreeMemory) {
         long sumCandidates = 0;
         for (Long object: deviceAllocations.keySet()) {
             AllocationPoint point = getAllocationPoint(object);
 
+            if ((point.getTimerLong().getFrequencyOfEvents() > 0.5 && point.getTimerShort().getFrequencyOfEvents() > 0.1 ) || point.getAccessState() != AccessState.TACK) continue;
+
             sumCandidates += AllocationUtils.getRequiredMemory(point.getShape());
+
+  //          locker.objectWriteLock(object);
+
+             relocateMemory(object, AllocationStatus.ZERO);
+
+            /*
+            if (point.getAllocationStatus() != AllocationStatus.ZERO)
+                throw new IllegalStateException("Not a ZERO!");
+*/
+            deviceAllocations.remove(object);
+
+            zeroAllocations.put(object, point);
+//            locker.objectWriteUnlock(object);
+
+            if (sumCandidates >= targetFreeMemory) break;
         }
 
-        log.info("Demote candidates sum: " + sumCandidates);
+        if (sumCandidates > 0)
+            log.info("Demote candidates sum: " + sumCandidates);
+
+        return sumCandidates;
     }
 
     protected void deallocateUnused() {
@@ -566,11 +633,20 @@ public final class BasicAllocator implements Allocator {
         try {
             AllocationPoint point = getAllocationPoint(objectId);
 
-            locker.objectWriteLock(objectId);
+    //        locker.objectWriteLock(objectId);
 
             mover.relocate(point.getAllocationStatus(), targetStatus, point);
+
+            // FIXME: this is WRONG way to tag stuff. Fix this on next iteration.
+            if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
+                deviceAllocations.put(objectId, point);
+                zeroAllocations.remove(objectId);
+            } else if (point.getAllocationStatus() == AllocationStatus.ZERO) {
+                deviceAllocations.remove(objectId);
+                zeroAllocations.put(objectId, point);
+            }
         } finally {
-            locker.objectWriteUnlock(objectId);
+    //        locker.objectWriteUnlock(objectId);
         }
     }
 
@@ -672,13 +748,15 @@ public final class BasicAllocator implements Allocator {
 
         AllocationPoint point = getAllocationPoint(objectId);
 
+        long requiredMemory = AllocationUtils.getRequiredMemory(point.getShape());
+
+
         if (point.getAllocationStatus().equals(AllocationStatus.DEVICE)) return AllocationStatus.DEVICE;
 
-        try {
-            locker.globalWriteLock();
+
+            locker.globalReadLock();
 
             // first, we check if memory is enough
-            long requiredMemory = AllocationUtils.getRequiredMemory(point.getShape());
 
             // TODO: balancer, affinity & locks should be considered here
 
@@ -688,6 +766,7 @@ public final class BasicAllocator implements Allocator {
 
             long maximumAllocation = configuration.getMaximumAllocation();
 
+            locker.globalReadUnlock();
 /*
         log.info("Req memory: " + requiredMemory);
         log.info("Available memory:" + availableMemory);
@@ -699,14 +778,11 @@ public final class BasicAllocator implements Allocator {
                 return AllocationStatus.DEVICE;
             } else {
                 // we don't have available memory
-                demoteUnused(AllocationUtils.getRequiredMemory(point.getShape()));
+                long unused = demoteUnused(Long.MAX_VALUE);
+                if (unused >= requiredMemory) return makePromoteDecision(objectId, shape);
 
                 return AllocationStatus.ZERO;
             }
-        } finally {
-            locker.globalWriteUnlock();
-        }
-
     }
 
     /**
@@ -745,6 +821,15 @@ public final class BasicAllocator implements Allocator {
         } finally {
             locker.globalReadUnlock();
         }
+    }
+
+
+    protected Map<Long, AllocationPoint> getZeroAllocations() {
+        return zeroAllocations;
+    }
+
+    protected Map<Long, AllocationPoint> getDeviceAllocations() {
+        return deviceAllocations;
     }
 
 

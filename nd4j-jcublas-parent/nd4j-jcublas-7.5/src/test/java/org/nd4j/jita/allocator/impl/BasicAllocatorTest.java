@@ -20,8 +20,10 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
 
@@ -59,7 +61,7 @@ public class BasicAllocatorTest {
 
 
         DeviceInformation device21 = new DeviceInformation();
-        device21.setDeviceId(1);
+        device21.setDeviceId(0);
         device21.setCcMajor(5);
         device21.setCcMinor(2);
         device21.setTotalMemory(4 * 1024 * 1024 * 1024L);
@@ -77,7 +79,7 @@ public class BasicAllocatorTest {
 
 
         DeviceInformation device41 = new DeviceInformation();
-        device41.setDeviceId(1);
+        device41.setDeviceId(0);
         device41.setCcMajor(5);
         device41.setCcMinor(2);
         device41.setTotalMemory(4 * 1024 * 1024 * 1024L);
@@ -91,14 +93,14 @@ public class BasicAllocatorTest {
         device42.setAvailableMemory(4 * 1024 * 1024 * 1024L);
 
         DeviceInformation device43 = new DeviceInformation();
-        device43.setDeviceId(1);
+        device43.setDeviceId(2);
         device43.setCcMajor(5);
         device43.setCcMinor(2);
         device43.setTotalMemory(4 * 1024 * 1024 * 1024L);
         device43.setAvailableMemory(4 * 1024 * 1024 * 1024L);
 
         DeviceInformation device44 = new DeviceInformation();
-        device44.setDeviceId(1);
+        device44.setDeviceId(3);
         device44.setCcMajor(5);
         device44.setCcMinor(2);
         device44.setTotalMemory(4 * 1024 * 1024 * 1024L);
@@ -201,6 +203,7 @@ public class BasicAllocatorTest {
     @Test
     public void testDeviceToHostMovement() throws Exception {
         BasicAllocator allocator = new BasicAllocator();
+        allocator.setEnvironment(singleDevice4GBcc52);
         allocator.setMover(new DummyMover());
 
         Long objectId = 19L;
@@ -241,6 +244,7 @@ public class BasicAllocatorTest {
     @Test
     public void testSingleDeallocation1() throws Exception {
         BasicAllocator allocator = new BasicAllocator();
+        allocator.setEnvironment(singleDevice4GBcc52);
         allocator.setMover(new DummyMover());
 
         Long objectId = 19L;
@@ -285,6 +289,7 @@ public class BasicAllocatorTest {
     @Test
     public void testSuballocationSecondaryFirst() throws Exception {
         BasicAllocator allocator = new BasicAllocator();
+        allocator.setEnvironment(singleDevice4GBcc52);
         allocator.setMover(new DummyMover());
 
         Long objectId = 19L;
@@ -336,6 +341,7 @@ public class BasicAllocatorTest {
     @Test
     public void tesSuballocationPrimaryFirst() throws Exception {
         BasicAllocator allocator = new BasicAllocator();
+        allocator.setEnvironment(singleDevice4GBcc52);
         allocator.setMover(new DummyMover());
 
         Long objectId = 19L;
@@ -375,6 +381,7 @@ public class BasicAllocatorTest {
     @Test
     public void testNestedDeallocationPrimaryFirst1() throws Exception {
         BasicAllocator allocator = new BasicAllocator();
+        allocator.setEnvironment(singleDevice4GBcc52);
         allocator.setMover(new DummyMover());
 
         Long objectId = 19L;
@@ -427,6 +434,7 @@ public class BasicAllocatorTest {
     @Test
     public void testNestedDeallocationSecondaryFirst1() throws Exception {
         BasicAllocator allocator = new BasicAllocator();
+        allocator.setEnvironment(singleDevice4GBcc52);
         allocator.setMover(new DummyMover());
 
         Long objectId = 19L;
@@ -483,6 +491,7 @@ public class BasicAllocatorTest {
     @Test
     public void testNestedDeallocationSecondaryThenPrimary1() throws Exception {
         BasicAllocator allocator = new BasicAllocator();
+        allocator.setEnvironment(singleDevice4GBcc52);
         allocator.setMover(new DummyMover());
 
         Long objectId = 19L;
@@ -583,7 +592,10 @@ public class BasicAllocatorTest {
 
         allocator.relocateMemory(objectId, AllocationStatus.DEVICE);
 
-        assertNotEquals(dPtr, point.getDevicePointer());
+        assertNotEquals(dPtr, point.getCudaPointer());
+
+        assertEquals(AllocationStatus.DEVICE, point.getAllocationStatus());
+        assertEquals(1, allocator.getDeviceAllocations().size());
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -843,8 +855,8 @@ public class BasicAllocatorTest {
         Object pointer2 = allocator.getDevicePointer(objectId1, shape2);
         assertNotEquals(pointer1, pointer2);
 
-        assertNotEquals(pointer2, point.getDevicePointer());
-        assertEquals(pointer1, point.getDevicePointer());
+        assertNotEquals(pointer2, point.getCudaPointer());
+        assertEquals(pointer1, point.getCudaPointer());
         assertEquals(AllocationStatus.DEVICE, point.getAllocationStatus());
 
         AllocationStatus decision1 = allocator.makeDemoteDecision(objectId1, shape1);
@@ -905,8 +917,8 @@ public class BasicAllocatorTest {
         Object pointer2 = allocator.getDevicePointer(objectId1, shape2);
         assertNotEquals(pointer1, pointer2);
 
-        assertNotEquals(pointer2, point.getDevicePointer());
-        assertEquals(pointer1, point.getDevicePointer());
+        assertNotEquals(pointer2, point.getCudaPointer());
+        assertEquals(pointer1, point.getCudaPointer());
         assertEquals(AllocationStatus.DEVICE, point.getAllocationStatus());
 
         AllocationStatus decision1 = allocator.makeDemoteDecision(objectId1, shape1);
@@ -959,8 +971,8 @@ public class BasicAllocatorTest {
         allocator.tackDevice(objectId1, shape2);
         assertNotEquals(pointer1, pointer2);
 
-        assertNotEquals(pointer2, point.getDevicePointer());
-        assertEquals(pointer1, point.getDevicePointer());
+        assertNotEquals(pointer2, point.getCudaPointer());
+        assertEquals(pointer1, point.getCudaPointer());
         assertEquals(AllocationStatus.DEVICE, point.getAllocationStatus());
 
         AllocationStatus decision1 = allocator.makeDemoteDecision(objectId1, shape1);
@@ -1047,7 +1059,7 @@ public class BasicAllocatorTest {
 
         assertEquals(AllocationStatus.ZERO, point.getAllocationStatus());
 
-        assertEquals(pointer, point.getDevicePointer());
+        assertEquals(pointer, point.getCudaPointer());
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1181,6 +1193,7 @@ public class BasicAllocatorTest {
 
         assertEquals(AllocationStatus.DEVICE, point.getAllocationStatus());
 
+        assertEquals(1, allocator.getDeviceAllocations().size());
     }
 
 
@@ -1411,7 +1424,7 @@ public class BasicAllocatorTest {
             if (point.getAllocationStatus() == AllocationStatus.DEVICE)
                 device++;
         }
-        log.info("Warm objects in memory: [" + device + "], Average rate: ["+ (averageRate / hotObjects.size())+"]");
+        log.info("Warm objects in memory: [" + device + "], Average rate: ["+ (averageRate / warmObjects.size())+"]");
         assertNotEquals(0, device);
 
         // cold objects MIGHT be in device memory too, but their number should be REALLY low
@@ -1425,7 +1438,7 @@ public class BasicAllocatorTest {
             if (point.getAllocationStatus() == AllocationStatus.DEVICE)
                 device++;
         }
-        log.info("Cold objects in memory: [" + device + "], Average rate: ["+ (averageRate / hotObjects.size())+"]");
+        log.info("Cold objects in memory: [" + device + "], Average rate: ["+ (averageRate / coldObjects.size())+"]");
         assertTrue(device < 20);
 
         long allocatedMemory = singleDevice4GBcc52.getAllocatedMemoryForDevice(1);
@@ -1465,14 +1478,16 @@ public class BasicAllocatorTest {
 
         // thats our initial objects, that are directly seeded into gpu memory
         final List<Long> initialObjects = new ArrayList<>();
-        for (int x = 0; x< 100; x++) {
-            Long objectId1 = new Long(rnd.nextInt(1000000) + 1000000);
+        for (int x = 0; x< 50; x++) {
+            Long objectId1 = new Long(rnd.nextInt(1000000) + 10000000L);
 
             AllocationShape shape = new AllocationShape();
             shape.setDataType(DataBuffer.Type.FLOAT);
-            shape.setLength( rnd.nextInt(1) + 256 * 1024L);
+            shape.setLength((rnd.nextInt(256) + 10) * 1024L);
             shape.setOffset(0);
             shape.setStride(1);
+
+            log.info("Allocating ID: " + objectId1 + " Memory size: " + AllocationUtils.getRequiredMemory(shape));
 
             allocator.registerSpan(objectId1, shape);
             initialObjects.add(objectId1);
@@ -1500,7 +1515,7 @@ public class BasicAllocatorTest {
 
         // create HOT objects
         final List<Long> hotObjects = new ArrayList<>();
-        for (int x = 0; x < 100; x++) {
+        for (int x = 100; x < 200; x++) {
             Long objectId1 = new Long(x);
 
             AllocationShape shape = new AllocationShape();
@@ -1515,7 +1530,7 @@ public class BasicAllocatorTest {
 
         // create some WARM objects with specific shapes
         final List<Long> warmObjects = new ArrayList<>();
-        for (int x = 100; x < 400; x++) {
+        for (int x = 200; x < 500; x++) {
             Long objectId1 = new Long(x);
 
             AllocationShape shape = new AllocationShape();
@@ -1530,7 +1545,7 @@ public class BasicAllocatorTest {
 
         // create some COLD objects with specific shapes
         final List<Long> coldObjects = new ArrayList<>();
-        for (int x = 300; x < 300000; x++) {
+        for (int x = 500; x < 300000; x++) {
             Long objectId1 = new Long(x);
 
             AllocationShape shape = new AllocationShape();
@@ -1595,7 +1610,7 @@ public class BasicAllocatorTest {
             if (point.getAllocationStatus() == AllocationStatus.DEVICE)
                 device++;
         }
-        log.info("Initial objects in memory: [" + device + "], Average rate: ["+ (averageRate / hotObjects.size())+"]");
+        log.info("Initial objects in memory: [" + device + "], Average rate: ["+ (averageRate / initialObjects.size())+"]");
         assertEquals(0, device);
 
         // all hot objects should reside in device memory in this case
@@ -1624,7 +1639,7 @@ public class BasicAllocatorTest {
             if (point.getAllocationStatus() == AllocationStatus.DEVICE)
                 device++;
         }
-        log.info("Warm objects in memory: [" + device + "], Average rate: ["+ (averageRate / hotObjects.size())+"]");
+        log.info("Warm objects in memory: [" + device + "], Average rate: ["+ (averageRate / warmObjects.size())+"]");
         assertNotEquals(0, device);
 
         // cold objects MIGHT be in device memory too, but their number should be REALLY low
@@ -1638,7 +1653,108 @@ public class BasicAllocatorTest {
             if (point.getAllocationStatus() == AllocationStatus.DEVICE)
                 device++;
         }
-        log.info("Cold objects in memory: [" + device + "], Average rate: ["+ (averageRate / hotObjects.size())+"]");
+        log.info("Cold objects in memory: [" + device + "], Average rate: ["+ (averageRate / coldObjects.size())+"]");
         assertTrue(device < 20);
+    }
+
+    /**
+     *
+     * This test addresses device access from multiple threads.
+     *
+     * At the end of test objects registered within different threads, should have different devices used.
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testMultipleDevicesAllocation1() throws Exception {
+        Configuration configuration = new Configuration();
+
+        final BasicAllocator allocator = new BasicAllocator();
+        allocator.applyConfiguration(configuration);
+        allocator.setEnvironment(fourDevices4GBcc52);
+        allocator.setBalancer(new FirstInBalancer());
+        allocator.setMover(new DummyMover());
+
+
+        ThreadPoolExecutor service = new ThreadPoolExecutor(50, 150, 10, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
+
+        final Map<Integer, List<Long>> objects = new ConcurrentHashMap<>();
+
+        // we emulate 16 executor nodes that launching some calculations
+        for (int y = 0; y < 16; y++) {
+            objects.put(y, new CopyOnWriteArrayList<Long>());
+
+            ManagedRunnable1 runnable = new ManagedRunnable1(y, allocator, objects);
+
+            service.execute(runnable);
+        }
+
+
+        while (service.getActiveCount() != 0) {
+            Thread.sleep(500);
+        }
+
+        assertEquals(16, objects.size());
+        assertEquals(100, objects.get(0).size());
+
+        Map<Integer, AtomicInteger> devicesUsed = new ConcurrentHashMap<>();
+
+        for (int y = 0; y < 16; y++) {
+            // prefetching valid deviceId that will be used for future checks
+            Integer validDevice = allocator.getAllocationPoint(objects.get(y).get(0)).getDeviceId();
+
+            for (Long object: objects.get(y)) {
+                AllocationPoint point = allocator.getAllocationPoint(object);
+
+                Integer deviceId = point.getDeviceId();
+                assertNotEquals(null, deviceId);
+
+                // every allocation within this bucket should use the same device
+                assertEquals(validDevice, deviceId);
+
+                if (!devicesUsed.containsKey(deviceId))
+                    devicesUsed.put(deviceId, new AtomicInteger(0));
+
+                devicesUsed.get(deviceId).incrementAndGet();
+            }
+        }
+
+        // we should have 4 devices used now.
+        assertEquals(4, devicesUsed.size());
+    }
+
+
+    /**
+     * private utility class, used in testMultipleDevicesAllocation1()
+     */
+    private static class ManagedRunnable1 implements Runnable {
+        private int Y;
+        private BasicAllocator allocator;
+        private Map<Integer, List<Long>> objects;
+
+        public ManagedRunnable1(int Y, BasicAllocator basicAllocator, Map<Integer, List<Long>> objects) {
+            this.Y = Y;
+            this.allocator = basicAllocator;
+            this.objects = objects;
+        }
+
+        @Override
+        public void run() {
+            Random random = new Random();
+
+            for (int x = 1; x <= 100; x++) {
+                Long objectId = new Long((Y *x) + x + random.nextInt());
+
+                AllocationShape shape = new AllocationShape();
+                shape.setDataType(DataBuffer.Type.FLOAT);
+                shape.setLength(8192L);
+                shape.setOffset(0);
+                shape.setStride(1);
+
+                allocator.registerSpan(objectId, shape);
+
+                objects.get(Y).add(objectId);
+            }
+        }
     }
 }
