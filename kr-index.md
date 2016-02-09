@@ -7,7 +7,7 @@ layout: kr-default
 
 Deeplearning4j는 자바(Java)와 스칼라(Scala)를 위해 작성된 최초의 상용 등급 오픈 소스의 배포된(distributed) 딥 러닝(deep-learning) 라이브러리입니다. 하둡(Hadoop)과 스파크([Spark](../gpu_aws.html))와 통합된 DL4J는 리서치 도구이기 보다는 비즈니스 환경에서 사용할 수 있도록 설계되었습니다. 스카이마인드([Skymind](http://skymind.io))는 이의 상업적인 지원 도구 입니다.
 
-Deeplearning4j는 구성(configuration)이기보다는 규칙(convention)을 겨냥한 최첨단 플러그 앤 플레이(plug and play)로 비연구자들에게 빠른 프로토 타이핑을 가능하게 합니다. DL4J는 규모면에서 사용자 지정이 가능합니다. 아파치(Apache) 2.0 라이센스를 사용해 출시된 DL4J의 모든 파생 상품들은 그 저자에 속합니다.
+Deeplearning4j는 구성(configuration)이기보다는 규칙(convention)을 겨냥한 최첨단 플러그 앤 플레이(plug and play)로 비연구자들에게 빠른 프로토 타이핑을 가능하게 합니다. DL4J는 규모면에서 사용자 지정이 가능합니다. 아파치(Apache) 2.0 라이센스를 사용해 배포된 DL4J의 모든 파생 상품들은 그 저자에 속합니다.
 
 저희의 [퀵 스타트(Quick Start) 페이지의 설명](http://deeplearning4j.org/quickstart.html)에 따라 여러분은 학습된 신경망의 첫번째 예제들을 실행할 수 있습니다.
 
