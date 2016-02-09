@@ -9,6 +9,7 @@
 #define TRANSFORM_H_
 #include <templatemath.h>
 #include <op.h>
+#include <omp.h>
 #ifdef __CUDACC__
 #include <helper_cuda.h>
 #endif
@@ -207,27 +208,28 @@ namespace functions {
                     const int n) {
 
 
-                int *xShape = shape::shapeOf(xShapeInfo);
-                int *resultShape = shape::shapeOf(resultShapeInfo);
-
-                int *xStride = shape::stride(xShapeInfo);
-                int *resultStride = shape::stride(resultShapeInfo);
-                int xRank = shape::rank(xShapeInfo);
-                int resultRank = shape::rank(resultShapeInfo);
-
-                int xOffset = shape::offset(xShapeInfo);
-                int resultOffset = shape::offset(resultShapeInfo);
-
-                char xOrder = shape::order(xShapeInfo);
-                char resultOrder = shape::order(xShapeInfo);
-                int xElementWiseStride = shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
-                int resultElementWiseStride = shape::computeElementWiseStride(resultRank,resultShape,resultStride,resultOrder == 'f');
+                int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+                int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
                 if(xElementWiseStride >= 1 && resultElementWiseStride >= 1) {
                     exec(dx,xElementWiseStride,result,resultElementWiseStride,extraParams,n);
                 }
                 else {
 
                     int i;
+
+                    int *xShape = shape::shapeOf(xShapeInfo);
+                    int *resultShape = shape::shapeOf(resultShapeInfo);
+
+                    int *xStride = shape::stride(xShapeInfo);
+                    int *resultStride = shape::stride(resultShapeInfo);
+                    int xRank = shape::rank(xShapeInfo);
+                    int resultRank = shape::rank(resultShapeInfo);
+
+                    int xOffset = shape::offset(xShapeInfo);
+                    int resultOffset = shape::offset(resultShapeInfo);
+
+                    char xOrder = shape::order(xShapeInfo);
+                    char resultOrder = shape::order(xShapeInfo);
 #pragma omp parallel private(i)
                     {
 #pragma omp simd

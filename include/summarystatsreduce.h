@@ -1069,6 +1069,8 @@ struct SharedSummaryStatsData<double> {
 				int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 				int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
 				if (xElementWiseStride == 1 && resultElementWiseStride == 1) {
+
+
 #pragma omp simd
 					for (int i = 0; i < length; i++) {
 						SummaryStatsData<T> curr;

@@ -752,85 +752,56 @@ namespace functions {
                 const int length = shape::length(xShapeInfo);
                 int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
                 int i;
-
                 if (xElementWiseStride == 1) {
-#pragma omp parallel private(i)
+
+                    T finalVal = startingVal;
+#pragma omp parallel shared(finalVal)
                     {
-                        const int elementsPerThread = length / omp_get_num_threads();
-                        if(elementsPerThread == 1) {
-                            for (i = omp_get_thread_num(); elementsPerThread * i < length; i++) {
-                                T start = startingVal;
-                                int startIdx = elementsPerThread * i;
-                                //each thread handles a contiguous block of elements
-                                const int totalElements = elementsPerThread * omp_get_num_threads();
-#pragma omp simd
-                                for(int j = startIdx; j < totalElements; j++) {
-                                    T curr = op(x[j], extraParams);
-                                    start = update(start, curr, extraParams);
-                                }
+                        T local = startingVal;
 
-#pragma omp critical
-                                {
-                                    startingVal = update(start,startingVal,extraParams);
-                                }
-
-
-                            }
+#pragma omp for nowait
+                        for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
+                            T curr = op(x[i], extraParams);
+                            local = update(local, curr, extraParams);
                         }
-                        else {
-                            for (i = omp_get_thread_num(); elementsPerThread * i < length; i+= elementsPerThread) {
-                                T start = startingVal;
-                                int startIdx = elementsPerThread * i;
-                                //each thread handles a contiguous block of elements
-                                const int totalElements = elementsPerThread * omp_get_num_threads();
-#pragma omp simd
-                                for(int j = startIdx; j < totalElements; j++) {
-                                    T curr = op(x[j], extraParams);
-                                    start = update(start, curr, extraParams);
-                                }
 
 #pragma omp critical
-                                {
-                                    startingVal = update(start,startingVal,extraParams);
-                                }
-
-
-                            }
+                        {
+                            finalVal = update(finalVal,local,extraParams);
                         }
 
 
                     }
 
-                    T finalVal = postProcess(startingVal, length,extraParams);
+                    finalVal = postProcess(finalVal, length,extraParams);
                     return finalVal;
-                } else {
-#pragma omp parallel private(i)
-                    {
-                        int elementsPerThread = length / omp_get_num_threads();
 
-                        for (i = omp_get_thread_num(); i < length; i+= elementsPerThread) {
-                            T start = startingVal;
-                            int startIdx = elementsPerThread * i;
-                            if(startIdx >= length)
-                                break;
-                            //each thread handles a contiguous block of elements
-                            const int totalElements = elementsPerThread * omp_get_num_threads();
-#pragma omp simd
-                            for(int j = startIdx; j < totalElements ; j++) {
-                                T curr = op(x[j], extraParams);
-                                start = update(start, curr, extraParams);
-                            }
+
+
+                }
+
+                else {
+                    T finalVal = startingVal;
+#pragma omp parallel shared(finalVal)
+                    {
+                        T local = startingVal;
+
+#pragma omp for nowait
+                        for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
+                            T curr = op(x[i * xElementWiseStride], extraParams);
+                            local = update(local, curr, extraParams);
+                        }
 
 #pragma omp critical
-                            {
-                                startingVal = update(start,startingVal,extraParams);
-                            }
-
+                        {
+                            finalVal = update(finalVal,local,extraParams);
                         }
+
+
                     }
 
-
-                    return  postProcess(startingVal, length, extraParams);
+                    finalVal = postProcess(finalVal, length,extraParams);
+                    return finalVal;
 
                 }
 
