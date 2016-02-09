@@ -880,6 +880,73 @@ namespace shape {
     __host__ __device__
 #endif
     int *computeIndices(int *shapeBuffer);
+
+
+    /**
+   * Tad element wise stride:
+   * given the inner most dimension (the sorted dimension of the last)
+   * the element wise stride of the tad (disregarding order) is the
+   * last dimension's stride.
+   *
+   * For a given singular dimension this will just be the only entry.
+   * For example, given the following c order shape/stride:
+   * 2,2,3,2
+   * 12,6,2,1
+   *
+   * The tad element wise stride for 3 will be 1.
+   * For zero it wil be 12
+   *
+   * For 2,3 it's 1
+   *
+   * Note here that the multi dimensional 2,3 case
+   * is equivalent to the singular 3 case.
+   *
+   *
+   * Note that this is for the dimension that ultimately
+   * ends up removed.
+   *
+   * Again: this may not preserve ordering of the tad
+   * but maybe used for reductions.
+   */
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    int tadElementWiseStride(int *shapeInfo,int *dimension,int dimensionLength);
+
+    /**
+     * Tad element wise stride:
+     * given the inner most dimension (the sorted dimension of the last)
+     * the element wise stride of the tad (disregarding order) is the
+     * last dimension's stride.
+     *
+     * For a given singular dimension this will just be the only entry.
+     * For example, given the following c order shape/stride:
+     * 2,2,3,2
+     * 12,6,2,1
+     *
+     * The tad element wise stride for 3 will be 1.
+     * For zero it wil be 12
+     *
+     * For 2,3 it's 1
+     *
+     * Note here that the multi dimensional 2,3 case
+     * is equivalent to the singular 3 case.
+     *
+     *
+     * Note that this is for the dimension that ultimately
+     * ends up removed.
+     *
+     * Again: this may not preserve ordering of the tad
+     * but maybe used for reductions.
+     */
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    int tadElementWiseStride(int *shapeInfo,int *dimension,int dimensionLength) {
+        int *stride = shape::stride(shapeInfo);
+        return stride[dimension[dimensionLength - 1]];
+
+    }
 /**
  * Computes the standard packed array strides for a given shape.
  *

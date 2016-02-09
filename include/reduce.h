@@ -747,10 +747,8 @@ namespace functions {
 #ifdef __CUDACC__
             __host__
 #endif
-            T execScalar(T *x, int *xShapeInfo,T *extraParams) {
+            T execScalar(T *x,int xElementWiseStride,int length,T *extraParams) {
                 T startingVal = this->startingValue(x);
-                const int length = shape::length(xShapeInfo);
-                int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
                 int i;
                 if (xElementWiseStride == 1) {
 
@@ -807,6 +805,27 @@ namespace functions {
 
             }
 
+
+
+            /**
+             * Reduce down to 1 number
+             * @param x the input
+             * @param xShapeInfo the shape information
+             * for the input
+             * @param extraParams the extra params
+             * @return
+             */
+#ifdef __CUDACC__
+            __host__
+#endif
+            T execScalar(T *x, int *xShapeInfo,T *extraParams) {
+                T startingVal = this->startingValue(x);
+                const int length = shape::length(xShapeInfo);
+                int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+                return execScalar(x,xElementWiseStride,length,extraParams);
+
+            }
+
             /**
              * Execute on the cpu
              * @param x the input data
@@ -847,33 +866,33 @@ namespace functions {
                  * along which to iterate.
                  */
                 int tadElementWiseStride = dimensionLength > 1 ? shape::stride(xShapeInfo)[dimensionLength - 1] : shape::computeElementWiseStride(shape::rank(xShapeInfo),shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),shape::order(xShapeInfo) == 'f',dimension,dimensionLength);
-                int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
+                const int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
                 int tadLength = tadPermuteInfo.tensorShapeProd;
+
                 int i,j;
-#pragma omp parallel private(i,j)
-                {
-                    int ID = omp_get_thread_num();
-                    for(i = ID; i < resultLength; i+= omp_get_num_threads()) {
-                        int offset = shape::offset(i,xShapeInfo,dimension,dimensionLength,tadPermuteInfo);
-                        if(dimensionLength > 1) {
-                            offset = i;
-                        }
-                        else if(dimensionLength == 1) {
-                            if(tadElementWiseStride == 1)
-                                offset = i * tadLength;
-                            else
-                                offset = i;
-                        }
-
-                        result[i] = op(x[offset], extraParams);
-                        for(j = 1; j < elementsPerReductionIndex; j++) {
-                            result[i] =  update(result[i],op(x[offset + tadElementWiseStride * j], extraParams), extraParams);
-                        }
-
-                        result[i] = postProcess(result[i],tadLength,extraParams);
-
+#pragma omp parallel for  private(i,j)
+                for(i = omp_get_thread_num(); i < resultLength; i+= omp_get_num_threads()) {
+                    int offset = shape::offset(i,xShapeInfo,dimension,dimensionLength,tadPermuteInfo);
+                    if(dimensionLength > 1) {
+                        offset = i;
                     }
+                    else if(dimensionLength == 1) {
+                        if(tadElementWiseStride == 1)
+                            offset = i * tadLength;
+                        else
+                            offset = i;
+                    }
+
+                    result[i] = op(x[offset], extraParams);
+#pragma omp simd
+                    for(j = 1; j < elementsPerReductionIndex; j++) {
+                        result[i] =  update(result[i],op(x[offset + tadElementWiseStride * j], extraParams), extraParams);
+                    }
+
+                    result[i] = postProcess(result[i],tadLength,extraParams);
+
                 }
+
 
 
 
