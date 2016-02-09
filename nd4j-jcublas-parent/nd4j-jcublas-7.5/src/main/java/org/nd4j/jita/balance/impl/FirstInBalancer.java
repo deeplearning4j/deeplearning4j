@@ -52,38 +52,7 @@ public class FirstInBalancer implements Balancer {
     @Override
     public AllocationStatus makePromoteDecision(Integer deviceId, AllocationPoint point, AllocationShape shape) {
         // TODO: to be decided on status here
-        if (point.getAllocationStatus().equals(AllocationStatus.DEVICE)) return AllocationStatus.DEVICE;
-
-        try {
-            locker.globalWriteLock();
-
-            // first, we check if memory is enough
-            long requiredMemory = AllocationUtils.getRequiredMemory(point.getShape());
-
-            // TODO: balancer, affinity & locks should be considered here
-
-            long availableMemory = environment.getAvailableMemoryForDevice(1);
-
-            long allocatedMemory = environment.getAllocatedMemoryForDevice(1);
-
-            long maximumAllocation = configuration.getMaximumAllocation();
-
-/*
-        log.info("Req memory: " + requiredMemory);
-        log.info("Available memory:" + availableMemory);
-        log.info("Allocated memory: " + allocatedMemory);
-        log.info("Maxumum allocation: " + configuration.getMaximumAllocation());
-*/
-            if (availableMemory > requiredMemory && requiredMemory + allocatedMemory < maximumAllocation) {
-                // we have available memory, let's consider allocation allowed
-                return AllocationStatus.DEVICE;
-            } else {
-                // we don't have available memory
-                return AllocationStatus.ZERO;
-            }
-        } finally {
-            locker.globalWriteUnlock();
-        }
+       return null;
     }
 
     /**

@@ -1478,6 +1478,7 @@ public class BasicAllocatorTest {
             initialObjects.add(objectId1);
 
             allocator.getDevicePointer(objectId1, shape);
+            allocator.tackDevice(objectId1, shape);
 
             // we force each initial object to be moved into device memory, but tag it as cold
             allocator.relocateMemory(objectId1, AllocationStatus.DEVICE);
