@@ -101,6 +101,17 @@
         .charts, .chart {
             font-size: 10px;
             font-color: #000000;
+            position: relative;
+        }
+        .scoreboard {
+            position: absolute;
+            top:  20px;
+            right: 10px;
+            z-index: 1000;
+            font-size: 11px;
+        }
+        .score {
+            font-size: 11px;
         }
     </style>
 
@@ -112,7 +123,7 @@
     <tr>
         <td style="width: 48px;"><a href="/"><img src="/assets/deeplearning4j.img"  border="0"/></a></td>
         <td>DeepLearning4j UI</td>
-        <td style="width: 128px;">&nbsp; <!-- placeholder for future use --></td>
+        <td style="width: 256px;" class="hd-small">&nbsp;Updated at: <b><span id="updatetime">No updates so far</span></b>&nbsp;</td>
     </tr>
     </tbody>
 </table>
@@ -121,7 +132,8 @@
     <div id="display" style="width: 1540px; height: 900px; text-align: left; background-color: #FFFFFF; display: inline-block; overflow: hidden; ">
         <div id="scores" style="background-color: #EFEFEF; display: block; float: left; width: 750px; height: 400px; border: 1px solid #CECECE; margin: 10px;">
             <h5>&nbsp;&nbsp;Score vs. Iteration #</h5>
-            <div class="chart"></div>
+            <div class="chart" id="schart">
+            </div>
         </div>
         <div id="model" style="position: relative; background-color: #EFEFEF; display: block; float: left; width: 750px; height: 400px; border: 1px solid #CECECE; margin: 10px;">
             <h5>&nbsp;&nbsp;Model</h5>
@@ -156,10 +168,6 @@
     <div style="display: block;">
         nav bar
     </div> -->
-</div>
-<div style="position: fixed; top: 55px; left: 5px; font-size: 11px;">
-    Current score: <b><span class="score"></span></b><br />
-    Updated: <b><span id="updatetime"></span></b>
 </div>
 <!--
 <div id="score" style="display: inline-block; width: 650px; height: 400px; border: 1px solid #CECECE;">
