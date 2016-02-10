@@ -591,21 +591,44 @@ public:
 		int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
 		int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
 		if (xElementWiseStride == 1 && resultElementWiseStride == 1) {
+            int i;
+#pragma omp parallel private(i)
+			{
+				T localVal = startingVal;
 #pragma omp simd
-			for (int i = 0; i < length; i++) {
-				startingVal = update(startingVal, op(x[i], y[i], &extraParamsVals),
-						&(extraParamsVals));
-			}
+                for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
+                    localVal = update(localVal, op(x[i], y[i], &extraParamsVals),
+                                         &(extraParamsVals));
+                }
+
+#pragma omp critical
+                {
+                    startingVal = update(localVal,startingVal,extraParamsVals);
+                }
+
+
+            }
 
 			result[0] = postProcess(startingVal, length,&(extraParamsVals));
 
 		} else {
+            int i;
+#pragma omp parallel private(i)
+            {
+                T localVal = startingVal;
 #pragma omp simd
-			for (int i = 0; i < length; i++) {
-				startingVal = update(startingVal,
-						op(x[i * xElementWiseStride], y[i * yElementWiseStride],
-								&extraParamsVals), &(extraParamsVals));
-			}
+                for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
+                    startingVal = update(startingVal,
+                                         op(x[i * xElementWiseStride], y[i * yElementWiseStride],
+                                            &extraParamsVals), &(extraParamsVals));
+                }
+
+#pragma omp critical
+                {
+                    startingVal = update(localVal,startingVal,extraParamsVals);
+                }
+
+            }
 
 			result[0] = postProcess(startingVal, length,&(extraParamsVals));
 
