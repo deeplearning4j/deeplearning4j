@@ -542,12 +542,10 @@ namespace functions {
                 int length = shape::length(xShapeInfo);
                 int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
                 int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
-                printf("Before extra params\n");
                 for(int i = 0; i < this->extraParamsLength();i++) {
                     extraParamsVals[i] = startingVal;
                 }
 
-                printf("Initialized values\n");
 
                 if (xElementWiseStride == 1) {
                     int i;
@@ -559,13 +557,10 @@ namespace functions {
                             localExtraParams[extraParamsIdx] = startingVal;
                         }
 
-                        printf("Initialized local extra params on thread %d\n",omp_get_thread_num());
 #pragma omp simd
                         for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
-                            printf("About to update value on thread %d with i %d\n",omp_get_thread_num(),i);
                             local = update(local, op(x[i], y[i], &localExtraParams),
                                            &(localExtraParams));
-                            printf("Updated value on thread %d and i %d\n",omp_get_thread_num(),i);
                         }
 
 #pragma omp critical
