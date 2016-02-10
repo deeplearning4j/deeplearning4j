@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -70,7 +71,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                 the rest of vocabulary & weights should be transferred from existing model
              */
 
-            constructor.buildMergedVocabulary(existingModel, false);
+            constructor.buildMergedVocabulary(existingModel, true);
 
             /*
                 Now we have vocab transferred, and we should transfer syn0 values into lookup table
@@ -80,16 +81,18 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             log.info("Starting vocabulary building...");
             // if we don't have existing model defined, we just build vocabulary
             constructor.buildJointVocabulary(false, true);
+
+            // check for malformed inputs. if numWords/numSentences ratio is huge, then user is passing something weird
+            if (vocab.numWords() / constructor.getNumberOfSequences() > 1000) {
+                log.warn("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                log.warn("!                                                                                      !");
+                log.warn("! Your input looks malformed: number of sentences is too low, model accuracy may suffer!");
+                log.warn("!                                                                                      !");
+                log.warn("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+            }
         }
 
-        // check for malformed inputs. if numWords/numSentences ratio is huge, then user is passing something weird
-        if (vocab.numWords() / constructor.getNumberOfSequences() > 1000) {
-            log.warn("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-            log.warn("!                                                                                      !");
-            log.warn("! Your input looks malformed: number of sentences is too low, model accuracy may suffer!");
-            log.warn("!                                                                                      !");
-            log.warn("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-        }
+
     }
 
 
@@ -114,6 +117,12 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         } else {
             // otherwise we reset weights, independent of actual current state of lookup table
             lookupTable.resetWeights(true);
+        }
+
+        if (trainSequenceVectors) {
+            log.info("Zfinance before fit(): " + this.getWordVectorMatrix("Zfinance"));
+            log.info("Zhealth before fit(): " + this.getWordVectorMatrix("Zhealth"));
+            log.info("Zscience before fit(): " + this.getWordVectorMatrix("Zscience"));
         }
 
         log.info("Building learning algorithms:");
@@ -271,7 +280,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
          * @param vec existing WordVectors model
          * @return
          */
-        public Builder<T> useExistingWordVectors(@NonNull WordVectors vec) {
+        protected Builder<T> useExistingWordVectors(@NonNull WordVectors vec) {
             this.existingVectors = vec;
             return this;
         }

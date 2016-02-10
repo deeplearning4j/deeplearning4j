@@ -81,7 +81,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
          * @return
          */
         @Override
-        public Builder useExistingWordVectors(@NonNull WordVectors vec) {
+        protected Builder useExistingWordVectors(@NonNull WordVectors vec) {
             return this;
         }
 
