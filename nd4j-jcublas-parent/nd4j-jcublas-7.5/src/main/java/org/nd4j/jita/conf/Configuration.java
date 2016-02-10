@@ -39,10 +39,15 @@ public class Configuration implements Serializable {
     private Aggressiveness allocAggressiveness = Aggressiveness.REASONABLE;
 
     /**
-     * Maximum allocated ram, in bytes
+     * Maximum allocated per-device memory, in bytes
      */
-    private long maximumAllocation = 256 * 1024 * 1024L;
+    private long maximumDeviceAllocation = 256 * 1024 * 1024L;
 
+
+    /**
+     * Maximum allocatable zero-copy/pinned/pageable memory
+     */
+    private long maximumZeroAllocation = Runtime.getRuntime().maxMemory();
 
     /**
      * True if allowed, false if relocation required

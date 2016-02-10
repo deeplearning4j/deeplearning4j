@@ -69,7 +69,7 @@ public class FirstInBalancer implements Balancer {
         if (!point.getAllocationStatus().equals(AllocationStatus.DEVICE))
             throw new IllegalStateException("You can't demote memory staged at ["+ point.getAllocationStatus()+"]");
 
-        long maximumMemory = configuration.getMaximumAllocation();
+        long maximumMemory = configuration.getMaximumDeviceAllocation();
         long allocatedMemory = environment.getAllocatedMemoryForDevice(deviceId);
         long currentLength = AllocationUtils.getRequiredMemory(shape);
 

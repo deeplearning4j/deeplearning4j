@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * This is going to be basic JITA implementation.
@@ -59,6 +60,9 @@ public final class BasicAllocator implements Allocator {
     // here we track Thread <-> Device affinity to avoid cross-device access as much as possible
     protected Map<Long, Integer> devicesAffinity = new ConcurrentHashMap<>();
 
+    // simple counter to track allocated host-memory
+    protected AtomicLong zeroUseCounter = new AtomicLong(0);
+
     // list of objects originated allocations
     private WeakHashMap<Long, AllocationPoint> externals = new WeakHashMap<>();
 
@@ -72,6 +76,10 @@ public final class BasicAllocator implements Allocator {
         return INSTANCE;
     }
 
+
+    protected long getHostAllocatedMemory() {
+        return zeroUseCounter.get();
+    }
 
     /**
      * Consume and apply configuration passed in as argument
@@ -345,13 +353,36 @@ public final class BasicAllocator implements Allocator {
                 // this is the same alloc shape
                 try {
                     // FIXME: wrong lock here, consider something better like j8 stampedLock
+
+                    /*
+                        We should check allocation bounds here
+                     */
+
                     locker.objectWriteLock(objectId);
                     pointer = point.getCudaPointer();
 
                     if (pointer == null) {
+                        try {
+                       //     locker.externalsWriteLock();
+
+                            /*
+                                we set 10% barrier of max zero alloc size.
+                                if memory use is >= of that - start copyback and deallocation
+                            */
+                            if (zeroUseCounter.get() >= configuration.getMaximumZeroAllocation() - (configuration.getMaximumZeroAllocation() / 10)) {
+
+                                syncbackUnusedZero(configuration.getMaximumZeroAllocation() / 5);
+                            }
+
+                        } finally {
+                        //    locker.externalsWriteUnlock();
+                        }
+
                         pointer = mover.alloc(AllocationStatus.ZERO, point.getShape());
                         point.setCudaPointer(pointer);
                         point.setAllocationStatus(AllocationStatus.ZERO);
+
+                        zeroUseCounter.addAndGet(AllocationUtils.getRequiredMemory(shape));
 
                         zeroAllocations.put(objectId, point);
                     }
@@ -377,6 +408,10 @@ public final class BasicAllocator implements Allocator {
 
                                 // put this one to device allocations bucket
                                 deviceAllocations.put(objectId, point);
+
+                                zeroAllocations.remove(objectId);
+
+                                zeroUseCounter.addAndGet(AllocationUtils.getRequiredMemory(shape) * -1);
                             }
                         }
                     } finally {
@@ -400,7 +435,7 @@ public final class BasicAllocator implements Allocator {
                     } finally {
                         locker.shapeWriteUnlock(objectId, shape);
                     }
-                } else throw new IllegalStateException("Shape isn't existant");
+                } else throw new IllegalStateException("Shape isn't existant: " + shape);
             }
 
             // p.3
@@ -560,12 +595,12 @@ public final class BasicAllocator implements Allocator {
         Seeks for unused device memory chunks, up to targetFreeMemory size.
         Set to Long.MAX_VALUE to demote all unused device memory
      */
-    protected synchronized long demoteUnused(long targetFreeMemory) {
+    protected synchronized long demoteUnused(Integer deviceId, long targetFreeMemory, double minShortFrequency, double minLongFrequency) {
         long sumCandidates = 0;
         for (Long object: deviceAllocations.keySet()) {
             AllocationPoint point = getAllocationPoint(object);
 
-            if ((point.getTimerLong().getFrequencyOfEvents() > 0.5 && point.getTimerShort().getFrequencyOfEvents() > 0.1 ) || point.getAccessState() != AccessState.TACK) continue;
+            if ((point.getTimerLong().getFrequencyOfEvents() > minLongFrequency && point.getTimerShort().getFrequencyOfEvents() > minShortFrequency ) || point.getAccessState() != AccessState.TACK) continue;
 
             sumCandidates += AllocationUtils.getRequiredMemory(point.getShape());
 
@@ -589,6 +624,40 @@ public final class BasicAllocator implements Allocator {
             log.info("Demote candidates sum: " + sumCandidates);
 
         return sumCandidates;
+    }
+
+    /**
+     * Seeks for oldest memory chunks on host, and syncs them back to host (if originator is alive, though)
+     * if originator isn't alive anymore - memory get's discarded
+     */
+    protected synchronized void syncbackUnusedZero(long targetMemorySize) {
+        // for future locks removal
+        List<Long> deadReferences = new ArrayList<>();
+
+        for (Long object: zeroAllocations.keySet()) {
+            try {
+                locker.objectReadLock(object);
+
+                AllocationPoint point = getAllocationPoint(object);
+
+                if (point.getAccessState() == AccessState.TICK) continue;
+
+                if (!externals.containsKey(object)) {
+                    // object got expired, throw it away
+
+
+                    //   releaseMemory(object, point.getShape());
+                    zeroUseCounter.addAndGet(AllocationUtils.getRequiredMemory(point.getShape()) * -1);
+
+                    zeroAllocations.remove(object);
+                    allocationPoints.remove(object);
+                    deadReferences.add(object);
+                }
+            }finally {
+                locker.objectReadUnlock(object);
+            }
+
+        }
     }
 
     protected void deallocateUnused() {
@@ -657,7 +726,7 @@ public final class BasicAllocator implements Allocator {
      */
     protected void releaseMemory(@NonNull Long objectId, @NonNull AllocationShape shape) {
         try {
-            locker.globalReadLock();
+         //   locker.globalReadLock();
 
             AllocationPoint point = allocationPoints.get(objectId);
 
@@ -677,7 +746,7 @@ public final class BasicAllocator implements Allocator {
                 point.dropShape(shape);
             }
         } finally {
-            locker.globalReadUnlock();
+         //   locker.globalReadUnlock();
         }
     }
 
@@ -764,7 +833,7 @@ public final class BasicAllocator implements Allocator {
 
             long allocatedMemory = environment.getAllocatedMemoryForDevice(1);
 
-            long maximumAllocation = configuration.getMaximumAllocation();
+            long maximumAllocation = configuration.getMaximumDeviceAllocation();
 
             locker.globalReadUnlock();
 /*
@@ -778,7 +847,11 @@ public final class BasicAllocator implements Allocator {
                 return AllocationStatus.DEVICE;
             } else {
                 // we don't have available memory
-                long unused = demoteUnused(Long.MAX_VALUE);
+
+                double minShortFrequency = point.getTimerShort().getFrequencyOfEvents();
+                double minLongFrequency = point.getTimerLong().getFrequencyOfEvents();
+
+                long unused = demoteUnused(point.getDeviceId(), Long.MAX_VALUE, minShortFrequency, minLongFrequency);
                 if (unused >= requiredMemory) return makePromoteDecision(objectId, shape);
 
                 return AllocationStatus.ZERO;

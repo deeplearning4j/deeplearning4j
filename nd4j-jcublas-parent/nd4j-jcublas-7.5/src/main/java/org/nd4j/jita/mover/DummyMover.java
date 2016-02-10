@@ -92,7 +92,7 @@ public class DummyMover implements Mover {
                             locker.globalWriteLock();
 
                             // TODO: real memory query should be considered here in real mover
-                            if (memorySize + environment.getAllocatedMemoryForDevice(1) >= configuration.getMaximumAllocation())
+                            if (memorySize + environment.getAllocatedMemoryForDevice(1) >= configuration.getMaximumDeviceAllocation())
                                 return;
 
                       //      log.info("Adding memory to alloc table: [" +memorySize + "]");
