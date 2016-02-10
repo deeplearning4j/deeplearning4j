@@ -736,20 +736,6 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
                             // please note: this serquence element CAN be absent in vocab, due to minFreq or stopWord or whatever else
                             if (realElement != null) {
-/*
-                                // subsampling implementation, if subsampling threshold met, just continue to next element
-                                if (sampling > 0) {
-                                    double numWords =  vocab.totalWordOccurrences();
-                                    double ran = (Math.sqrt(element.getElementFrequency() / (sampling * numWords)) + 1)
-                                            * (sampling * numWords) / element.getElementFrequency();
-
-                                    nextRandom.set(nextRandom.get() * 25214903917L + 11 );
-
-                                    if (ran < (nextRandom.get() & 0xFFFF) / (double) 65536) {
-                                        continue;
-                                    }
-                                }
-*/
                                 newSequence.addElement(realElement);
                             }
                         }
