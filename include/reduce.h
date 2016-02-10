@@ -900,7 +900,6 @@ namespace functions {
                     int tadElementWiseStride = shape::tadElementWiseStride(xShapeInfo, dimension, dimensionLength);
                     int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
                     const int resultLength = shape::length(resultShapeInfoBuffer);
-                    printf("Tad length %d tad element wise %d\n",tadLength,tadElementWiseStride);
                     int i, baseOffset;
 #pragma omp parallel private(i,baseOffset)
                     {
@@ -909,7 +908,6 @@ namespace functions {
                             i < resultLength; i+= nThreads,baseOffset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength)) {
                             T currResult = op(x[baseOffset],extraParams);
                             result[i] = currResult;
-                            printf("Init result %d with %f\n",i,currResult);
                             for(int j = 1; j < tadLength; j++) {
                                 currResult = op(x[baseOffset + j * tadElementWiseStride],extraParams);
                                 result[i] = update(result[i],currResult,extraParams);
