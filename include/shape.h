@@ -914,6 +914,14 @@ namespace shape {
     int tadElementWiseStride(int *shapeInfo,int *dimension,int dimensionLength);
 
     /**
+     * Length of a tad given
+     * the shape information
+     */
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    int tadLength(int *shapeInfo,int *dimension,int dimensionLength);
+    /**
      * Compute the tad offset given a dimension.
      *
      * The general pattern for computing a tad offset is as follows:
@@ -956,6 +964,33 @@ namespace shape {
      */
     int tadOffset(int index,int *shapeInfo,int *dimension,int dimensionLength);
 
+
+    /**
+   * Length of a tad given
+   * the shape information
+   */
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    int tadLength(int *shapeInfo,int *dimension,int dimensionLength) {
+        int *shapeTwo = shape::shapeOf(shapeInfo);
+        int rank = shape::rank(shapeInfo);
+        if(dimensionLength == 1) {
+            return shapeTwo[dimension[0]];
+        }
+        else {
+            int ret = 1;
+            for(int i = 0; i < rank; i++) {
+                for(int j = 0; j < dimensionLength; j++) {
+                    if(i == dimension[j])
+                        ret *= shapeTwo[dimension[j]];
+                }
+            }
+        }
+
+
+        return ret;
+    }
 
     /**
      * Tad element wise stride:

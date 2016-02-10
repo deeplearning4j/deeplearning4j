@@ -853,51 +853,59 @@ namespace functions {
                     return;
                 }
 
+                if(dimensionLength > 1) {
+                    shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo,dimension, dimensionLength);
+                    const int resultLength = shape::length(resultShapeInfoBuffer);
+                    /**
+                     * The element wise stride belongs to a reduction index.
+                     * When used out of order, we can get rid of the data
+                     * dependencies and rely on using the max dimension
+                     * specified for stride instead.
+                     * Say we take the sum(0,1) along arr
+                     * we can use arr.stride(1) as a representation
+                     * along which to iterate.
+                     */
+                    int tadElementWiseStride = dimensionLength > 1 ? shape::stride(xShapeInfo)[dimensionLength - 1] : shape::computeElementWiseStride(shape::rank(xShapeInfo),shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),shape::order(xShapeInfo) == 'f',dimension,dimensionLength);
+                    const int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
+                    int tadLength = tadPermuteInfo.tensorShapeProd;
 
-                shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo,dimension, dimensionLength);
-                const int resultLength = shape::length(resultShapeInfoBuffer);
-                /**
-                 * The element wise stride belongs to a reduction index.
-                 * When used out of order, we can get rid of the data
-                 * dependencies and rely on using the max dimension
-                 * specified for stride instead.
-                 * Say we take the sum(0,1) along arr
-                 * we can use arr.stride(1) as a representation
-                 * along which to iterate.
-                 */
-                int tadElementWiseStride = dimensionLength > 1 ? shape::stride(xShapeInfo)[dimensionLength - 1] : shape::computeElementWiseStride(shape::rank(xShapeInfo),shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),shape::order(xShapeInfo) == 'f',dimension,dimensionLength);
-                const int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
-                int tadLength = tadPermuteInfo.tensorShapeProd;
-
-                int i,j;
+                    int i,j;
 #pragma omp parallel for  private(i,j)
-                for(i = omp_get_thread_num(); i < resultLength; i+= omp_get_num_threads()) {
-                    int offset = shape::offset(i,xShapeInfo,dimension,dimensionLength,tadPermuteInfo);
-                    if(dimensionLength > 1) {
-                        offset = i;
-                    }
-                    else if(dimensionLength == 1) {
-                        if(tadElementWiseStride == 1)
-                            offset = i * tadLength;
-                        else
+                    for(i = omp_get_thread_num(); i < resultLength; i+= omp_get_num_threads()) {
+                        int offset = shape::offset(i,xShapeInfo,dimension,dimensionLength,tadPermuteInfo);
+                        if(dimensionLength > 1) {
                             offset = i;
-                    }
+                        }
+                        else if(dimensionLength == 1) {
+                            if(tadElementWiseStride == 1)
+                                offset = i * tadLength;
+                            else
+                                offset = i;
+                        }
 
-                    result[i] = op(x[offset], extraParams);
+                        result[i] = op(x[offset], extraParams);
 #pragma omp simd
-                    for(j = 1; j < elementsPerReductionIndex; j++) {
-                        result[i] =  update(result[i],op(x[offset + tadElementWiseStride * j], extraParams), extraParams);
+                        for(j = 1; j < elementsPerReductionIndex; j++) {
+                            result[i] =  update(result[i],op(x[offset + tadElementWiseStride * j], extraParams), extraParams);
+                        }
+
+                        result[i] = postProcess(result[i],tadLength,extraParams);
+
                     }
 
-                    result[i] = postProcess(result[i],tadLength,extraParams);
 
+
+
+                    shape::freePermuteInfo(tadPermuteInfo);
                 }
 
+                else {
+                    int tadElementWiseStride = shape::tadElementWiseStride(xShapeInfo,dimension,dimensionLength);
 
 
-
-                shape::freePermuteInfo(tadPermuteInfo);
+                }
             }
+
 
 
             virtual

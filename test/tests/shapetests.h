@@ -361,6 +361,8 @@ TEST(Shape,TadOffset) {
             {0,2,4,6,8,10,12,14,16,18,20,22}
     };
 
+    int elementWiseStrides[4] = {12,6,2,1};
+
 
     int tadLengths[4] = {12,12,8,12};
 
@@ -371,6 +373,8 @@ TEST(Shape,TadOffset) {
             int thisAssertion = currAssertion[j];
             int tadOffset = shape::tadOffset(j,shapeBuff,dimension,dimensionLength);
             CHECK_EQUAL(thisAssertion,tadOffset);
+            int tadElementWise = shape::tadElementWiseStride(shapeBuff,dimension,dimensionLength);
+            CHECK_EQUAL(elementWiseStrides[i],tadElementWise);
         }
 
     }
@@ -379,6 +383,57 @@ TEST(Shape,TadOffset) {
 
 }
 
+
+
+TEST(Shape,TadLength) {
+    int rank = 4;
+    int dimensionLength = 1;
+    int shape[4]= {2,2,3,2};
+    int dimension[1] = {1};
+    int *shapeBuff = shapeBuffer(rank,shape);
+    int tadLengths[4] = {2,3,3,2};
+    for(int i = 0; i < rank; i++) {
+        int tadLength = shape::tadLength(shapeBuff,dimension,dimensionLength);
+        CHECK_EQUAL(tadLengths[i],tadLength);
+    }
+    free(shapeBuff);
+}
+/*
+TEST(Shape,TadOffsetMulti) {
+    int rank = 4;
+    int dimensionLength = 1;
+    int shape[4]= {2,2,3,2};
+    int dimension[2] = {0,1};
+    int *shapeBuff = shapeBuffer(rank,shape);
+    int tads = shape::tensorsAlongDimension(rank,24,shape,dimension,dimensionLength);
+    CHECK_EQUAL(tads,6);
+    int assertionsArr[1][6] = {
+            {0,1,2,3,4,5}
+    };
+
+    int elementWiseStrides[4] = {12,6,2,1};
+
+
+    int tadLengths[4] = {12,12,8,12};
+
+    for(int i = 0; i < 4; i++) {
+        dimension[0] = i;
+        int *currAssertion  = assertionsArr[i];
+        for(int j = 0; j < tadLengths[i]; j++) {
+            int thisAssertion = currAssertion[j];
+            int tadOffset = shape::tadOffset(j,shapeBuff,dimension,dimensionLength);
+            CHECK_EQUAL(thisAssertion,tadOffset);
+            int tadElementWise = shape::tadElementWiseStride(shapeBuff,dimension,dimensionLength);
+            CHECK_EQUAL(elementWiseStrides[i],tadElementWise);
+        }
+
+    }
+
+    free(shapeBuff);
+
+}
+
+*/
 
 
 #endif /* SHAPETESTS_H_ */
