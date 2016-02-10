@@ -34,6 +34,8 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
     protected double negative;
     protected INDArray syn0, syn1, syn1Neg, table;
 
+    protected double sampling;
+
     /**
      * Dummy construction is required for reflection
      */
@@ -73,6 +75,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         this.window = configuration.getWindow();
         this.useAdaGrad = configuration.isUseAdaGrad();
         this.negative = configuration.getNegative();
+        this.sampling = configuration.getSampling();
     }
 
     /**
@@ -85,6 +88,30 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
 
     }
 
+    protected Sequence<T> applySubsampling(@NonNull Sequence<T> sequence, @NonNull AtomicLong nextRandom) {
+        Sequence<T> result = new Sequence<>();
+
+        // subsampling implementation, if subsampling threshold met, just continue to next element
+        if (sampling > 0) {
+            result.setSequenceId(sequence.getSequenceId());
+            if (sequence.getSequenceLabels() != null) result.setSequenceLabels(sequence.getSequenceLabels());
+            if (sequence.getSequenceLabel() != null) result.setSequenceLabel(sequence.getSequenceLabel());
+
+                for (T element : sequence.getElements()) {
+                double numWords = vocabCache.totalWordOccurrences();
+                double ran = (Math.sqrt(element.getElementFrequency() / (sampling * numWords)) + 1) * (sampling * numWords) / element.getElementFrequency();
+
+                nextRandom.set(nextRandom.get() * 25214903917L + 11);
+
+                if (ran < (nextRandom.get() & 0xFFFF) / (double) 65536) {
+                    continue;
+                }
+                result.addElement(element);
+            }
+            return result;
+        } else return sequence;
+    }
+
     /**
      * Learns sequence using SkipGram algorithm
      *
@@ -94,9 +121,12 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
      */
     @Override
     public void learnSequence(@NonNull Sequence<T> sequence, @NonNull AtomicLong nextRandom, @NonNull double learningRate) {
-        for(int i = 0; i < sequence.getElements().size(); i++) {
+        Sequence<T> tempSequence = sequence;
+        if (sampling > 0) tempSequence = applySubsampling(sequence, nextRandom);
+
+        for(int i = 0; i < tempSequence.getElements().size(); i++) {
             nextRandom.set(nextRandom.get() * 25214903917L + 11);
-            skipGram(i, sequence.getElements(), (int) nextRandom.get() % window ,nextRandom, learningRate);
+            skipGram(i, tempSequence.getElements(), (int) nextRandom.get() % window ,nextRandom, learningRate);
         }
     }
 
