@@ -986,10 +986,11 @@ namespace shape {
                         ret *= shapeTwo[dimension[j]];
                 }
             }
+            return ret;
+
         }
 
 
-        return ret;
     }
 
     /**
@@ -1071,7 +1072,6 @@ namespace shape {
     */
     int tadOffset(int index,int *shapeInfo,int *dimension,int dimensionLength) {
         int *stride = shape::stride(shapeInfo);
-        int rank = shape::rank(shapeInfo);
         int innerMostStride = stride[dimension[dimensionLength - 1]];
         int elementWiseStrideParent = stride[dimension[dimensionLength - 1] -1];
         if(index >= innerMostStride) {

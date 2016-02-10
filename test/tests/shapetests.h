@@ -391,8 +391,9 @@ TEST(Shape,TadLength) {
     int shape[4]= {2,2,3,2};
     int dimension[1] = {1};
     int *shapeBuff = shapeBuffer(rank,shape);
-    int tadLengths[4] = {2,3,3,2};
+    int tadLengths[4] = {2,2,3,2};
     for(int i = 0; i < rank; i++) {
+        dimension[0] = i;
         int tadLength = shape::tadLength(shapeBuff,dimension,dimensionLength);
         CHECK_EQUAL(tadLengths[i],tadLength);
     }
