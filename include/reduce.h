@@ -747,92 +747,81 @@ namespace functions {
 #ifdef __CUDACC__
             __host__
 #endif
-            T execScalar(T *x, int *xShapeInfo,T *extraParams) {
+            T execScalar(T *x,int xElementWiseStride,int length,T *extraParams) {
                 T startingVal = this->startingValue(x);
-                const int length = shape::length(xShapeInfo);
-                int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
                 int i;
-
                 if (xElementWiseStride == 1) {
-#pragma omp parallel private(i)
+
+                    T finalVal = startingVal;
+#pragma omp parallel shared(finalVal)
                     {
-                        const int elementsPerThread = length / omp_get_num_threads();
-                        if(elementsPerThread == 1) {
-                            for (i = omp_get_thread_num(); elementsPerThread * i < length; i++) {
-                                T start = startingVal;
-                                int startIdx = elementsPerThread * i;
-                                //each thread handles a contiguous block of elements
-                                const int totalElements = elementsPerThread * omp_get_num_threads();
-#pragma omp simd
-                                for(int j = startIdx; j < totalElements; j++) {
-                                    T curr = op(x[j], extraParams);
-                                    start = update(start, curr, extraParams);
-                                }
+                        T local = startingVal;
 
-#pragma omp critical
-                                {
-                                    startingVal = update(start,startingVal,extraParams);
-                                }
-
-
-                            }
+#pragma omp for nowait
+                        for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
+                            T curr = op(x[i], extraParams);
+                            local = update(local, curr, extraParams);
                         }
-                        else {
-                            for (i = omp_get_thread_num(); elementsPerThread * i < length; i+= elementsPerThread) {
-                                T start = startingVal;
-                                int startIdx = elementsPerThread * i;
-                                //each thread handles a contiguous block of elements
-                                const int totalElements = elementsPerThread * omp_get_num_threads();
-#pragma omp simd
-                                for(int j = startIdx; j < totalElements; j++) {
-                                    T curr = op(x[j], extraParams);
-                                    start = update(start, curr, extraParams);
-                                }
 
 #pragma omp critical
-                                {
-                                    startingVal = update(start,startingVal,extraParams);
-                                }
-
-
-                            }
+                        {
+                            finalVal = update(finalVal,local,extraParams);
                         }
 
 
                     }
 
-                    T finalVal = postProcess(startingVal, length,extraParams);
+                    finalVal = postProcess(finalVal, length,extraParams);
                     return finalVal;
-                } else {
-#pragma omp parallel private(i)
-                    {
-                        int elementsPerThread = length / omp_get_num_threads();
-
-                        for (i = omp_get_thread_num(); i < length; i+= elementsPerThread) {
-                            T start = startingVal;
-                            int startIdx = elementsPerThread * i;
-                            if(startIdx >= length)
-                                break;
-                            //each thread handles a contiguous block of elements
-                            const int totalElements = elementsPerThread * omp_get_num_threads();
-#pragma omp simd
-                            for(int j = startIdx; j < totalElements ; j++) {
-                                T curr = op(x[j], extraParams);
-                                start = update(start, curr, extraParams);
-                            }
-
-#pragma omp critical
-                            {
-                                startingVal = update(start,startingVal,extraParams);
-                            }
-
-                        }
-                    }
 
 
-                    return  postProcess(startingVal, length, extraParams);
 
                 }
+
+                else {
+                    T finalVal = startingVal;
+#pragma omp parallel shared(finalVal)
+                    {
+                        T local = startingVal;
+
+#pragma omp for nowait
+                        for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
+                            T curr = op(x[i * xElementWiseStride], extraParams);
+                            local = update(local, curr, extraParams);
+                        }
+
+#pragma omp critical
+                        {
+                            finalVal = update(finalVal,local,extraParams);
+                        }
+
+
+                    }
+
+                    finalVal = postProcess(finalVal, length,extraParams);
+                    return finalVal;
+
+                }
+
+            }
+
+
+
+            /**
+             * Reduce down to 1 number
+             * @param x the input
+             * @param xShapeInfo the shape information
+             * for the input
+             * @param extraParams the extra params
+             * @return
+             */
+#ifdef __CUDACC__
+            __host__
+#endif
+            T execScalar(T *x, int *xShapeInfo,T *extraParams) {
+                const int length = shape::length(xShapeInfo);
+                int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+                return execScalar(x,xElementWiseStride,length,extraParams);
 
             }
 
@@ -863,26 +852,25 @@ namespace functions {
                     return;
                 }
 
+                if(dimensionLength > 1) {
+                    shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo,dimension, dimensionLength);
+                    const int resultLength = shape::length(resultShapeInfoBuffer);
+                    /**
+                     * The element wise stride belongs to a reduction index.
+                     * When used out of order, we can get rid of the data
+                     * dependencies and rely on using the max dimension
+                     * specified for stride instead.
+                     * Say we take the sum(0,1) along arr
+                     * we can use arr.stride(1) as a representation
+                     * along which to iterate.
+                     */
+                    int tadElementWiseStride = dimensionLength > 1 ? shape::stride(xShapeInfo)[dimensionLength - 1] : shape::computeElementWiseStride(shape::rank(xShapeInfo),shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),shape::order(xShapeInfo) == 'f',dimension,dimensionLength);
+                    const int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
+                    int tadLength = tadPermuteInfo.tensorShapeProd;
 
-                shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo,dimension, dimensionLength);
-                const int resultLength = shape::length(resultShapeInfoBuffer);
-                /**
-                 * The element wise stride belongs to a reduction index.
-                 * When used out of order, we can get rid of the data
-                 * dependencies and rely on using the max dimension
-                 * specified for stride instead.
-                 * Say we take the sum(0,1) along arr
-                 * we can use arr.stride(1) as a representation
-                 * along which to iterate.
-                 */
-                int tadElementWiseStride = dimensionLength > 1 ? shape::stride(xShapeInfo)[dimensionLength - 1] : shape::computeElementWiseStride(shape::rank(xShapeInfo),shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),shape::order(xShapeInfo) == 'f',dimension,dimensionLength);
-                int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
-                int tadLength = tadPermuteInfo.tensorShapeProd;
-                int i,j;
-#pragma omp parallel private(i,j)
-                {
-                    int ID = omp_get_thread_num();
-                    for(i = ID; i < resultLength; i+= omp_get_num_threads()) {
+                    int i,j;
+#pragma omp parallel for  private(i,j)
+                    for(i = omp_get_thread_num(); i < resultLength; i+= omp_get_num_threads()) {
                         int offset = shape::offset(i,xShapeInfo,dimension,dimensionLength,tadPermuteInfo);
                         if(dimensionLength > 1) {
                             offset = i;
@@ -895,6 +883,7 @@ namespace functions {
                         }
 
                         result[i] = op(x[offset], extraParams);
+#pragma omp simd
                         for(j = 1; j < elementsPerReductionIndex; j++) {
                             result[i] =  update(result[i],op(x[offset + tadElementWiseStride * j], extraParams), extraParams);
                         }
@@ -902,13 +891,43 @@ namespace functions {
                         result[i] = postProcess(result[i],tadLength,extraParams);
 
                     }
+
+                    shape::freePermuteInfo(tadPermuteInfo);
                 }
 
+                else {
+                    int tadElementWiseStride = shape::tadElementWiseStride(xShapeInfo, dimension, dimensionLength);
+                    int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+                    const int resultLength = shape::length(resultShapeInfoBuffer);
+                    int i, baseOffset;
+#pragma omp parallel private(i,baseOffset)
+                    {
+                        int nThreads = omp_get_num_threads();
+                        for(i = omp_get_thread_num(),baseOffset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
+                            i < resultLength; i+= nThreads,baseOffset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength)) {
+                            T currResult = op(x[baseOffset],extraParams);
+                            result[i] = currResult;
+                            for(int j = 1; j < tadLength; j++) {
+                                currResult = op(x[baseOffset + j * tadElementWiseStride],extraParams);
+                                result[i] = update(result[i],currResult,extraParams);
+                            }
 
+                            if(i < resultLength)
+                                result[i] = postProcess(result[i],tadLength,extraParams);
+                        }
 
-                shape::freePermuteInfo(tadPermuteInfo);
+                    }
+
+                }
             }
 
+            virtual inline
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
+            void aggregateExtraParams(T **extraParamsTotal,T **extraParamsLocal) {
+                // no extra params aggregation needs to happen
+            }
 
             virtual
 #ifdef __CUDACC__

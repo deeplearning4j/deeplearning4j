@@ -168,19 +168,24 @@ namespace functions {
          * neccssary
          * @param n the number of elements to loop over
          */
-             void transform(T *x,
-                            int *xShapeInfo,
-                            T *result,
-                            int *resultShapeInfo,
-                            T scalar,
-                            T *extraParams,
-                            const int n,
-                            int *indexes,
-                            int *resultIndexes) {
+            void transform(T *x,
+                           int *xShapeInfo,
+                           T *result,
+                           int *resultShapeInfo,
+                           T scalar,
+                           T *extraParams,
+                           const int n,
+                           int *indexes,
+                           int *resultIndexes) {
+                int i;
+#pragma omp parallel private(i)
+                {
 #pragma omp simd
-                for (int i = 0; i < n; i++) {
-                    result[resultIndexes[i]] = op(x[indexes[i]], scalar,extraParams);
+                    for (i = omp_get_thread_num(); i < n; i+= omp_get_num_threads()) {
+                        result[resultIndexes[i]] = op(x[indexes[i]], scalar,extraParams);
+                    }
                 }
+
             }
 
 
@@ -195,8 +200,8 @@ namespace functions {
          * neccssary
          * @param n the number of elements to loop over
          */
-             void transform(T *x, int *xShapeInfo, T *result, int *resultShapeInfo,
-                                   T scalar, T *extraParams, const int n,int *indexes) {
+            void transform(T *x, int *xShapeInfo, T *result, int *resultShapeInfo,
+                           T scalar, T *extraParams, const int n,int *indexes) {
                 transform(x,
                           xShapeInfo,
                           result,
@@ -220,42 +225,49 @@ namespace functions {
          * neccssary
          * @param n the number of elements to loop over
          */
-             void transform(T *x, int *xShapeInfo, T *result, int *resultShapeInfo,
-                                   T scalar, T *extraParams, const int n) {
+            void transform(T *x, int *xShapeInfo, T *result, int *resultShapeInfo,
+                           T scalar, T *extraParams, const int n) {
 
-                int *xShape = shape::shapeOf(xShapeInfo);
-                int *resultShape = shape::shapeOf(resultShapeInfo);
-
-                int *xStride = shape::stride(xShapeInfo);
-                int *resultStride = shape::stride(resultShapeInfo);
-                int xRank = shape::rank(xShapeInfo);
-                int resultRank = shape::rank(resultShapeInfo);
-
-                int xOffset = shape::offset(xShapeInfo);
-                int resultOffset = shape::offset(resultShapeInfo);
-
-                char xOrder = shape::order(xShapeInfo);
-                char resultOrder = shape::order(xShapeInfo);
-                int xElementWiseStride = shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
-                int resultElementWiseStride = shape::computeElementWiseStride(resultRank,resultShape,resultStride,resultOrder == 'f');
-
-
+                int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+                int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
                 if(xElementWiseStride >= 1 && resultElementWiseStride >= 1) {
                     transform(x,xElementWiseStride,result,resultElementWiseStride,scalar,extraParams,n);
                 }
                 else {
 
-#pragma omp simd
-                    for (int i = 0; i < n; i++) {
-                        int *xIdx = shape::ind2sub(xRank, xShape, i);
-                        int *resultIdx = shape::ind2sub(resultRank, resultShape, i);
-                        int xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
-                        int resultOffset2 = shape::getOffset(resultOffset, resultShape, resultStride, resultIdx, resultRank);
-                        result[resultOffset2] = op(x[xOffset2], scalar,extraParams);
 
-                        free(xIdx);
-                        free(resultIdx);
+                    int *xShape = shape::shapeOf(xShapeInfo);
+                    int *resultShape = shape::shapeOf(resultShapeInfo);
+
+                    int *xStride = shape::stride(xShapeInfo);
+                    int *resultStride = shape::stride(resultShapeInfo);
+                    int xRank = shape::rank(xShapeInfo);
+                    int resultRank = shape::rank(resultShapeInfo);
+
+                    int xOffset = shape::offset(xShapeInfo);
+                    int resultOffset = shape::offset(resultShapeInfo);
+
+                    char xOrder = shape::order(xShapeInfo);
+                    char resultOrder = shape::order(xShapeInfo);
+                    int xElementWiseStride = shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
+                    int resultElementWiseStride = shape::computeElementWiseStride(resultRank,resultShape,resultStride,resultOrder == 'f');
+
+                    int i;
+#pragma omp parallel private(i)
+                    {
+#pragma omp simd
+                        for (i = omp_get_thread_num(); i < n; i+= omp_get_num_threads()) {
+                            int *xIdx = shape::ind2sub(xRank, xShape, i);
+                            int *resultIdx = shape::ind2sub(resultRank, resultShape, i);
+                            int xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
+                            int resultOffset2 = shape::getOffset(resultOffset, resultShape, resultStride, resultIdx, resultRank);
+                            result[resultOffset2] = op(x[xOffset2], scalar,extraParams);
+
+                            free(xIdx);
+                            free(resultIdx);
+                        }
                     }
+
                 }
 
             }
@@ -272,24 +284,41 @@ namespace functions {
              * neccssary
              * @param n the number of elements to loop over
              */
-             void transform(T *x, int xStride, T *result, int resultStride,
-                                   T scalar, T *extraParams, const int n) {
+            void transform(T *x, int xStride, T *result, int resultStride,
+                           T scalar, T *extraParams, const int n) {
+                int i;
+
                 if (xStride == 1 && resultStride == 1) {
+#pragma omp parallel private (i)
+                    {
 #pragma omp simd
-                    for (int i = 0; i < n; i++) {
-                        result[i] = op(x[i], scalar, extraParams);
+                        for (i = omp_get_thread_num(); i < n; i+= omp_get_num_threads()) {
+                            result[i] = op(x[i], scalar, extraParams);
+                        }
                     }
 
+
+
                 } else {
+
+#pragma omp parallel private (i)
+                    {
 #pragma omp simd
-                    for (int i = 0; i < n; i++) {
-                        result[i * resultStride] = op(x[i * resultStride], scalar,
-                                                      extraParams);
+                        for (int i = omp_get_thread_num(); i < n; i+= omp_get_num_threads()) {
+                            result[i * resultStride] = op(x[i * resultStride], scalar,
+                                                          extraParams);
+                        }
                     }
                 }
 
             }
-
+            virtual inline
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
+            void aggregateExtraParams(T **extraParamsTotal,T **extraParamsLocal) {
+                //no extra params aggregation needs to happen
+            }
 #ifdef __CUDACC__
             __host__ __device__
 #endif

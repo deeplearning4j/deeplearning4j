@@ -141,6 +141,13 @@ public:
 
 	}
 
+		virtual inline
+#ifdef __CUDACC__
+		__host__ __device__
+#endif
+		void aggregateExtraParams(T **extraParamsTotal,T **extraParamsLocal) {
+			//no extra params aggregation needs to happen
+		}
 #ifdef __CUDACC__
 	inline __host__ __device__
 #elif defined(__GNUC__)

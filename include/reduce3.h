@@ -20,104 +20,104 @@
 #endif
 
 namespace functions {
-namespace reduce3 {
+    namespace reduce3 {
 
 /**
  * Reduce involving
  * 2 arrays
  */
-template<typename T>
-class Reduce3: public virtual functions::ops::Op<T> {
+        template<typename T>
+        class Reduce3: public virtual functions::ops::Op<T> {
 
-public:
+        public:
 
-	virtual
+            virtual
 #ifdef __CUDACC__
-	__host__  __device__
+            __host__  __device__
 
 #endif
-	inline T postProcess(T reduction, int n,T **extraParamsRef) = 0;
+            inline T postProcess(T reduction, int n,T **extraParamsRef) = 0;
 
-	virtual
+            virtual
 #ifdef __CUDACC__
-	__inline__ __host__ __device__
+            __inline__ __host__ __device__
 #endif
-	T startingValue(T *input) = 0;
+            T startingValue(T *input) = 0;
 
-	virtual
+            virtual
 #ifdef __CUDACC__
-	__inline__ __host__ __device__
+            __inline__ __host__ __device__
 #endif
-	T * generateExtraParams() = 0;
-	virtual
+            T * generateExtraParams() = 0;
+            virtual
 #ifdef __CUDACC__
-	__inline__ __host__ __device__
+            __inline__ __host__ __device__
 #endif
-	void finalizeExtraParams(T **extraParamsRef)  = 0;
+            void finalizeExtraParams(T **extraParamsRef)  = 0;
 
-	/**
-	 *
-	 * @param d1
-	 * @param d2
-	 * @param extraParams
-	 * @return
-	 */
-	//an op for the kernel
-	virtual
+            /**
+             *
+             * @param d1
+             * @param d2
+             * @param extraParams
+             * @return
+             */
+            //an op for the kernel
+            virtual
 #ifdef __CUDACC__
-	__host__  __device__
-
-#endif
-	inline T op(T d1, T d2, T **extraParamsRef) = 0;
-
-	//calculate an update of the reduce operation
-	/**
-	 *
-	 * @param old
-	 * @param opOutput
-	 * @param extraParams
-	 * @return
-	 */
-	virtual
-#ifdef __CUDACC__
-	__host__  __device__
+            __host__  __device__
 
 #endif
-	inline T update(T old, T opOutput, T **extraParamsRef) = 0;
+            inline T op(T d1, T d2, T **extraParamsRef) = 0;
 
-	/**
-	 *
-	 * @param old
-	 * @param opOutput
-	 * @param extraParams
-	 * @return
-	 */
-	virtual
+            //calculate an update of the reduce operation
+            /**
+             *
+             * @param old
+             * @param opOutput
+             * @param extraParams
+             * @return
+             */
+            virtual
 #ifdef __CUDACC__
-	__host__  __device__
+            __host__  __device__
 
 #endif
-	inline T merge(T old, T opOutput, T **extraParamsRef) = 0;
+            inline T update(T old, T opOutput, T **extraParamsRef) = 0;
 
-
-
-
-	/**
-	 *
-	 * @param d1
-	 * @param d2
-	 * @param extraParams
-	 * @return
-	 */
-	//an op for the kernel
+            /**
+             *
+             * @param old
+             * @param opOutput
+             * @param extraParams
+             * @return
+             */
+            virtual
 #ifdef __CUDACC__
-	virtual __device__
+            __host__  __device__
+
+#endif
+            inline T merge(T old, T opOutput, T **extraParamsRef) = 0;
+
+
+
+
+            /**
+             *
+             * @param d1
+             * @param d2
+             * @param extraParams
+             * @return
+             */
+            //an op for the kernel
+#ifdef __CUDACC__
+            virtual __device__
 
 	inline T opAtomic(T d1, T d2, T **extraParamsRef) = 0;
 #endif
 
 #ifdef __CUDACC__
-	/**
+            /**
 	 * Aggregate shared memory
 	 * @param sPartialsRef
 	 * @param tid
@@ -518,245 +518,361 @@ public:
 
 #endif
 
-	/**
-	 *
-	 * @param x
-	 * @param xShapeInfo
-	 * @param extraParamsVals
-	 * @param y
-	 * @param yShapeInfo
-	 * @param result
-	 * @param resultShapeInfo
-	 */
+            /**
+             *
+             * @param x
+             * @param xShapeInfo
+             * @param extraParamsVals
+             * @param y
+             * @param yShapeInfo
+             * @param result
+             * @param resultShapeInfo
+             */
 #ifdef __CUDACC__
-	__host__
+            __host__
 #endif
-	T execScalar(
-			T *x,
-			int *xShapeInfo,
-			T *extraParamsVals,
-			T *y, int *yShapeInfo) {
+            T execScalar(
+                    T *x,
+                    int *xShapeInfo,
+                    T *extraParamsVals,
+                    T *y, int *yShapeInfo) {
 
 
-		T startingVal = this->startingValue(x);
-		int length = shape::length(xShapeInfo);
-		int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-		int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
-		if (xElementWiseStride == 1) {
+                T startingVal = this->startingValue(x);
+                int length = shape::length(xShapeInfo);
+                int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+                int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
+                printf("Before extra params\n");
+                for(int i = 0; i < this->extraParamsLength();i++) {
+                    extraParamsVals[i] = startingVal;
+                }
+
+                printf("Initialized values\n");
+
+                if (xElementWiseStride == 1) {
+                    int i;
+#pragma omp parallel private(i)
+                    {
+                        T local = this->startingValue(x);
+                        T *localExtraParams = this->extraParamsLength() > 0 ? (T *) malloc(sizeof(T) * this->extraParamsLength()) : NULL;
+                        for(int extraParamsIdx = 0; extraParamsIdx < this->extraParamsLength(); extraParamsIdx++) {
+                            localExtraParams[extraParamsIdx] = startingVal;
+                        }
+
+                        printf("Initialized local extra params on thread %d\n",omp_get_thread_num());
 #pragma omp simd
-			for (int i = 0; i < length; i++) {
-				startingVal = update(startingVal, op(x[i], y[i], &extraParamsVals),
-						&(extraParamsVals));
-			}
+                        for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
+                            printf("About to update value on thread %d with i %d\n",omp_get_thread_num(),i);
+                            local = update(local, op(x[i], y[i], &localExtraParams),
+                                           &(localExtraParams));
+                            printf("Updated value on thread %d and i %d\n",omp_get_thread_num(),i);
+                        }
 
-			return postProcess(startingVal, length,&(extraParamsVals));
+#pragma omp critical
+                        {
 
-		} else {
+                            if(this->extraParamsLength() > 0)
+                                this->aggregateExtraParams(&extraParamsVals,&localExtraParams);
+                            startingVal = update(local,startingVal,&extraParamsVals);
+                        }
+
+                        if(this->extraParamsLength() > 0)
+                            free(localExtraParams);
+
+                    }
+
+                    return postProcess(startingVal, length,&(extraParamsVals));
+
+                }
+
+                else {
+                    int i;
+#pragma omp parallel private(i)
+                    {
+                        T local = this->startingValue(x);
+                        T *localExtraParams = this->extraParamsLength() > 0 ? (T *) malloc(sizeof(T) * this->extraParamsLength()) : NULL;
 #pragma omp simd
-			for (int i = 0; i < length; i++) {
-				startingVal = update(startingVal,
-						op(x[i * xElementWiseStride], y[i * yElementWiseStride],
-								&extraParamsVals), &(extraParamsVals));
-			}
+                        for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
+                            local = update(local,
+                                           op(x[i * xElementWiseStride], y[i * yElementWiseStride],
+                                              &localExtraParams), &(localExtraParams));
+                        }
 
-			return  postProcess(startingVal, length,&(extraParamsVals));
+#pragma omp critical
+                        {
+                            if(this->extraParamsLength() > 0)
+                                this->aggregateExtraParams(&extraParamsVals,&localExtraParams);
+                            startingVal = update(local,startingVal,&extraParamsVals);
+                        }
 
-		}
+                        if(this->extraParamsLength() > 0)
+                            free(localExtraParams);
+                    }
 
-	}
-	/**
-	 *
-	 * @param x
-	 * @param xShapeInfo
-	 * @param extraParamsVals
-	 * @param y
-	 * @param yShapeInfo
-	 * @param result
-	 * @param resultShapeInfo
-	 */
+
+                    return  postProcess(startingVal, length,&(extraParamsVals));
+
+                }
+
+            }
+            /**
+             *
+             * @param x
+             * @param xShapeInfo
+             * @param extraParamsVals
+             * @param y
+             * @param yShapeInfo
+             * @param result
+             * @param resultShapeInfo
+             */
 #ifdef __CUDACC__
-	__host__
+            __host__
 #endif
-	void exec(
-			T *x,
-			int *xShapeInfo,
-			T *extraParamsVals,
-			T *y, int *yShapeInfo,
-			T *result, int *resultShapeInfo) {
+            void exec(
+                    T *x,
+                    int *xShapeInfo,
+                    T *extraParamsVals,
+                    T *y, int *yShapeInfo,
+                    T *result, int *resultShapeInfo) {
 
 
-		T startingVal = this->startingValue(x);
-		int length = shape::length(xShapeInfo);
-		int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-		int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
-		int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
-		if (xElementWiseStride == 1 && resultElementWiseStride == 1) {
+                T startingVal = this->startingValue(x);
+                int length = shape::length(xShapeInfo);
+                int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+                int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
+                int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
+                if (xElementWiseStride == 1 && resultElementWiseStride == 1) {
+                    int i;
+#pragma omp parallel private(i)
+                    {
+                        T localVal = startingVal;
+                        T *localExtraParams = this->extraParamsLength() > 0 ? (T *) malloc(sizeof(T) * this->extraParamsLength()) : NULL;
+                        for(int extraParamsIdx = 0; extraParamsIdx < this->extraParamsLength(); extraParamsIdx++) {
+                            localExtraParams[extraParamsIdx] = startingVal;
+                        }
+
 #pragma omp simd
-			for (int i = 0; i < length; i++) {
-				startingVal = update(startingVal, op(x[i], y[i], &extraParamsVals),
-						&(extraParamsVals));
-			}
+                        for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
+                            localVal = update(localVal, op(x[i], y[i], &localExtraParams),
+                                              &(localExtraParams));
+                        }
 
-			result[0] = postProcess(startingVal, length,&(extraParamsVals));
+#pragma omp critical
+                        {
+                            if(this->extraParamsLength() > 0)
+                                aggregateExtraParams(&extraParamsVals,&localExtraParams);
+                            startingVal = update(localVal,startingVal,localExtraParams);
+                        }
 
-		} else {
+                        if(this->extraParamsLength() > 0)
+                            free(localExtraParams);
+
+                    }
+
+                    result[0] = postProcess(startingVal, length,&(extraParamsVals));
+
+                } else {
+                    int i;
+#pragma omp parallel private(i)
+                    {
+                        T localVal = startingVal;
+                        T *localExtraParams = this->extraParamsLength() > 0 ? (T *) malloc(sizeof(T) * this->extraParamsLength()) : NULL;
+                        for(int extraParamsIdx = 0; extraParamsIdx < this->extraParamsLength(); extraParamsIdx++) {
+                            localExtraParams[extraParamsIdx] = startingVal;
+                        }
 #pragma omp simd
-			for (int i = 0; i < length; i++) {
-				startingVal = update(startingVal,
-						op(x[i * xElementWiseStride], y[i * yElementWiseStride],
-								&extraParamsVals), &(extraParamsVals));
-			}
+                        for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
+                            startingVal = update(startingVal,
+                                                 op(x[i * xElementWiseStride], y[i * yElementWiseStride],
+                                                    &localExtraParams), &(localExtraParams));
+                        }
 
-			result[0] = postProcess(startingVal, length,&(extraParamsVals));
+#pragma omp critical
+                        {
+                            if(this->extraParamsLength() > 0)
+                                aggregateExtraParams(&localExtraParams,&extraParamsVals);
+                            startingVal = update(localVal,startingVal,extraParamsVals);
+                        }
 
-		}
+                        if(this->extraParamsLength() > 0)
+                            free(localExtraParams);
 
-	}
+                    }
 
-	/**
-	 *
-	 * @param x
-	 * @param xShapeInfo
-	 * @param extraParamsVals
-	 * @param y
-	 * @param yShapeInfo
-	 * @param result
-	 * @param resultShapeInfoBuffer
-	 * @param dimension
-	 * @param dimensionLength
-	 */
-	void exec(T *x, int *xShapeInfo,
-			T *extraParamsVals,
-			T *y, int *yShapeInfo,
-			T *result, int *resultShapeInfoBuffer,
-			int *dimension,
-			int dimensionLength) {
-		if(shape::isScalar(resultShapeInfoBuffer)) {
-			result[0] = execScalar(x,xShapeInfo,extraParamsVals,y,yShapeInfo);
-			return;
-		}
+                    result[0] = postProcess(startingVal, length,&(extraParamsVals));
 
+                }
 
-		shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo,dimension, dimensionLength);
-		int resultLength = shape::length(resultShapeInfoBuffer);
-		/**
-		 * The element wise stride belongs to a reduction index.
-		 * When used out of order, we can get rid of the data
-		 * dependencies and rely on using the max dimension
-		 * specified for stride instead.
-		 * Say we take the sum(0,1) along arr
-		 * we can use arr.stride(1) as a representation
-		 * along which to iterate.
-		 */
-		int tadElementWiseStride = dimensionLength > 1 ? shape::stride(xShapeInfo)[dimensionLength - 1] : shape::computeElementWiseStride(shape::rank(xShapeInfo),shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),shape::order(xShapeInfo) == 'f',dimension,dimensionLength);
-		int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
-		int tadLength = tadPermuteInfo.tensorShapeProd;
-		int i = 0,j = 0;
+            }
+
+            /**
+             *
+             * @param x
+             * @param xShapeInfo
+             * @param extraParamsVals
+             * @param y
+             * @param yShapeInfo
+             * @param result
+             * @param resultShapeInfoBuffer
+             * @param dimension
+             * @param dimensionLength
+             */
+            void exec(T *x, int *xShapeInfo,
+                      T *extraParamsVals,
+                      T *y, int *yShapeInfo,
+                      T *result,
+                      int *resultShapeInfoBuffer,
+                      int *dimension,
+                      int dimensionLength) {
+                if(shape::isScalar(resultShapeInfoBuffer)) {
+                    result[0] = execScalar(x,xShapeInfo,extraParamsVals,y,yShapeInfo);
+                    return;
+                }
+
+                T startingVal = this->startingValue(x);
+
+                shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo,dimension, dimensionLength);
+                int resultLength = shape::length(resultShapeInfoBuffer);
+                /**
+                 * The element wise stride belongs to a reduction index.
+                 * When used out of order, we can get rid of the data
+                 * dependencies and rely on using the max dimension
+                 * specified for stride instead.
+                 * Say we take the sum(0,1) along arr
+                 * we can use arr.stride(1) as a representation
+                 * along which to iterate.
+                 */
+                int tadElementWiseStride = dimensionLength > 1 ? shape::stride(xShapeInfo)[dimensionLength - 1] : shape::computeElementWiseStride(shape::rank(xShapeInfo),shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),shape::order(xShapeInfo) == 'f',dimension,dimensionLength);
+                int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
+                int tadLength = tadPermuteInfo.tensorShapeProd;
+                int i = 0,j = 0;
 #pragma omp parallel private(i,j)
-		{
-			int ID = omp_get_thread_num();
+                {
+                    int ID = omp_get_thread_num();
+                    T localVal = startingVal;
 
-			for(i = ID; i < resultLength; i += omp_get_num_threads()) {
+                    for(i = ID; i < resultLength; i+= omp_get_num_threads()) {
+                        T *localExtraParams = this->extraParamsLength() > 0 ? (T *) malloc(sizeof(T) * this->extraParamsLength()) : NULL;
+                        for(int extraParamsIdx = 0; extraParamsIdx < this->extraParamsLength(); extraParamsIdx++) {
+                            localExtraParams[extraParamsIdx] = startingVal;
+                        }
 
-				if(this->extraParamsLength() >= 1) {
-					for(int i = 0; i < this->extraParamsLength(); i++)
-						extraParamsVals[i] = startingValue(x);
-				}
-				int offset = dimensionLength > 1 ? i : shape::offset(i,xShapeInfo,dimension,dimensionLength,tadPermuteInfo);
-				result[i] = op(x[offset], y[offset],&extraParamsVals);
-				for(j = 1; j < elementsPerReductionIndex; j++) {
-					result[i] =  update(result[i],op(x[offset + tadElementWiseStride * j],y[offset + tadElementWiseStride * j], &extraParamsVals), &extraParamsVals);
-				}
-				result[i] = postProcess(result[i],tadLength,&extraParamsVals);
-			}
-		}
+                        int offset = dimensionLength > 1 ? i : shape::offset(i,xShapeInfo,dimension,dimensionLength,tadPermuteInfo);
+                        result[i] = op(x[offset], y[offset],&localExtraParams);
+                        for(j = 1; j < elementsPerReductionIndex; j++) {
+                            result[i] =  update(result[i],op(x[offset + tadElementWiseStride * j],y[offset + tadElementWiseStride * j], &localExtraParams), &localExtraParams);
+                        }
+
+                        result[i] = postProcess(result[i],tadLength,&localExtraParams);
+
+                        if(localExtraParams != NULL)
+                            free(localExtraParams);
+                    }
 
 
-		shape::freePermuteInfo(tadPermuteInfo);
-	}
+                }
+
+
+                shape::freePermuteInfo(tadPermuteInfo);
+            }
+
+
 
 #ifdef __CUDACC__
-	__host__ __device__
+            __host__ __device__
 #endif
-	virtual ~Reduce3() {
-	}
+            virtual ~Reduce3() {
+            }
 
 #ifdef __CUDACC__
-	__host__ __device__
+            __host__ __device__
 #endif
-	Reduce3() {
-	}
+            Reduce3() {
+            }
 
-};
+        };
 
-namespace ops {
+        namespace ops {
 /**
  * Cosine similarity between 2
  * arrays
  */
-template<typename T>
-class CosineSimilarity: public virtual Reduce3<T> {
-public:
+            template<typename T>
+            class CosineSimilarity: public virtual Reduce3<T> {
+            public:
 
-	virtual
+                virtual
 #ifdef __CUDACC__
-	__inline__ __host__ __device__
+                __inline__ __host__ __device__
 #endif
-	T * generateExtraParams() {
-		T *extraParams = (T *) malloc(sizeof(T) * 2);
-		return extraParams;
-	}
-	virtual
+                T * generateExtraParams() {
+                    T *extraParams = (T *) malloc(sizeof(T) * 2);
+                    return extraParams;
+                }
+                virtual
 #ifdef __CUDACC__
-	__inline__ __host__ __device__
+                __inline__ __host__ __device__
 #endif
-	void finalizeExtraParams(T **extraParams)  {
-		free(*extraParams);
-	}
-	virtual
+                void finalizeExtraParams(T **extraParams)  {
+                    free(*extraParams);
+                }
+                virtual
 #ifdef __CUDACC__
-	__inline__ __host__ __device__
+                __inline__ __host__ __device__
 #endif
-	T startingValue(T *input) {
-		return 0.0;
-	}
+                T startingValue(T *input) {
+                    return 0.0;
+                }
 #ifdef __CUDACC__
-	__host__ __device__
+                __host__ __device__
 #endif
-	inline T postProcess(T reduction, int n,T **extraParamsRef) {
-		T *extraParams = *extraParamsRef;
-		return reduction / (nd4j::math::nd4j_sqrt<T>(extraParams[0]) * nd4j::math::nd4j_sqrt<T>(extraParams[1]));
-	}
-	/**
-	 *
-	 * @param d1
-	 * @param d2
-	 * @param extraParams
-	 * @return
-	 */
-	//an op for the kernel
-	virtual
+                inline T postProcess(T reduction, int n,T **extraParamsRef) {
+                    T *extraParams = *extraParamsRef;
+                    return reduction / (nd4j::math::nd4j_sqrt<T>(extraParams[0]) * nd4j::math::nd4j_sqrt<T>(extraParams[1]));
+                }
+                /**
+                 *
+                 * @param d1
+                 * @param d2
+                 * @param extraParams
+                 * @return
+                 */
+                //an op for the kernel
+                virtual
 #ifdef __CUDACC__
-	__host__  __device__
+                __host__  __device__
 
 #endif
-	inline T op(T d1, T d2, T **extraParamsRef) {
-		T *extraParams = *extraParamsRef;
-		extraParams[0] += d1 * d1;
-		extraParams[1] += d2 * d2;
-		return (d1 * d2);
-	}
+                inline T op(T d1, T d2, T **extraParamsRef) {
+                    T *extraParams = *extraParamsRef;
+                    extraParams[0] += d1 * d1;
+                    extraParams[1] += d2 * d2;
+                    return (d1 * d2);
+                }
 
-	/**
-	 *
-	 * @param d1
-	 * @param d2
-	 * @param extraParams
-	 * @return
-	 */
-	//an op for the kernel
+
 #ifdef __CUDACC__
-	virtual __device__
+                __host__ __device__
+#endif
+                void aggregateExtraParams(T **extraParamsTotal,T **extraParamsLocal) {
+                    T *extraParamsTotalRef = *extraParamsTotal;
+                    T *extraParamsLocalRef = *extraParamsLocal;
+                    extraParamsTotalRef[0] += extraParamsLocalRef[0];
+                    extraParamsTotalRef[1] += extraParamsLocalRef[1];
+
+                }
+
+
+                /**
+                 *
+                 * @param d1
+                 * @param d2
+                 * @param extraParams
+                 * @return
+                 */
+                //an op for the kernel
+#ifdef __CUDACC__
+                virtual __device__
 	inline T opAtomic(T d1, T d2, T **extraParamsRef) {
 		T *extraParams = *extraParamsRef;
 
@@ -766,126 +882,130 @@ public:
 		return (d1 * d2);
 	}
 #endif
-	//calculate an update of the reduce operation
-	/**
-	 *
-	 * @param old
-	 * @param opOutput
-	 * @param extraParams
-	 * @return
-	 */
-	virtual
+                //calculate an update of the reduce operation
+                /**
+                 *
+                 * @param old
+                 * @param opOutput
+                 * @param extraParams
+                 * @return
+                 */
+                virtual
 #ifdef __CUDACC__
-	__host__  __device__
+                __host__  __device__
 
 #endif
-	inline T update(T old, T opOutput, T **extraParamsRef) {
-		return old + opOutput;
-	}
+                inline T update(T old, T opOutput, T **extraParamsRef) {
+                    return old + opOutput;
+                }
 
-	/**
-	 *
-	 * @param old
-	 * @param opOutput
-	 * @param extraParams
-	 * @return
-	 */
-	virtual
+                /**
+                 *
+                 * @param old
+                 * @param opOutput
+                 * @param extraParams
+                 * @return
+                 */
+                virtual
 #ifdef __CUDACC__
-	__host__  __device__
-
-#endif
-	inline T merge(T old, T opOutput, T **extraParamsRef) {
-		return update(old, opOutput, extraParamsRef);
-	}
-
-	/** Name of the op
-	 * @return the name of the operation
-	 */
-	virtual
-#ifdef __CUDACC__
-	inline __host__
+                __host__  __device__
 
 #endif
-	std::string name() {
-		return std::string("cosinesimilarity_strided");
-	}
+                inline T merge(T old, T opOutput, T **extraParamsRef) {
+                    return update(old, opOutput, extraParamsRef);
+                }
+
+                /** Name of the op
+                 * @return the name of the operation
+                 */
+                virtual
 #ifdef __CUDACC__
-	__host__ __device__
+                inline __host__
+
 #endif
-	virtual ~CosineSimilarity() {
-	}
+                std::string name() {
+                    return std::string("cosinesimilarity_strided");
+                }
+
+
+
+
 #ifdef __CUDACC__
-	__host__ __device__
+                __host__ __device__
 #endif
-	CosineSimilarity() {
-		this->extraParamsLen = 2;
-	}
-};
+                virtual ~CosineSimilarity() {
+                }
+#ifdef __CUDACC__
+                __host__ __device__
+#endif
+                CosineSimilarity() {
+                    this->extraParamsLen = 2;
+                }
+            };
 
 
 /**
  * Dot product between 2 arrays
  */
-template<typename T>
-class Dot: public virtual Reduce3<T> {
-public:
-	virtual
+            template<typename T>
+            class Dot: public virtual Reduce3<T> {
+            public:
+                virtual
 #ifdef __CUDACC__
-	__inline__ __host__ __device__
+                __inline__ __host__ __device__
 #endif
-	T * generateExtraParams() {
-		return NULL;
-	}
-	virtual
+                T * generateExtraParams() {
+                    return NULL;
+                }
+                virtual
 #ifdef __CUDACC__
-	__inline__ __host__ __device__
+                __inline__ __host__ __device__
 #endif
-	void finalizeExtraParams(T **extraParamsRef)  {
-		//no-op
-		free(*extraParamsRef);
-	}
-	virtual
+                void finalizeExtraParams(T **extraParamsRef)  {
+                    //no-op
+                    free(*extraParamsRef);
+                }
+                virtual
 #ifdef __CUDACC__
-	__inline__ __host__ __device__
+                __inline__ __host__ __device__
 #endif
-	T startingValue(T *input) {
-		return 0.0;
-	}
+                T startingValue(T *input) {
+                    return 0.0;
+                }
 #ifdef __CUDACC__
-	__host__ __device__
+                __host__ __device__
 #endif
-	inline T postProcess(T reduction, int n,T **extraParamsRef) {
-		return reduction;
-	}
-	/**
-	 *
-	 * @param d1
-	 * @param d2
-	 * @param extraParams
-	 * @return
-	 */
-	//an op for the kernel
-	virtual
+                inline T postProcess(T reduction, int n,T **extraParamsRef) {
+                    return reduction;
+                }
+                /**
+                 *
+                 * @param d1
+                 * @param d2
+                 * @param extraParams
+                 * @return
+                 */
+                //an op for the kernel
+                virtual
 #ifdef __CUDACC__
-	__host__  __device__
+                __host__  __device__
 
 #endif
-	inline T op(T d1, T d2, T **extraParamsRef) {
-		return d1 * d2;
-	}
+                inline T op(T d1, T d2, T **extraParamsRef) {
+                    return d1 * d2;
+                }
 
-	/**
-	 *
-	 * @param d1
-	 * @param d2
-	 * @param extraParams
-	 * @return
-	 */
-	//an op for the kernel
+                /**
+                 *
+                 * @param d1
+                 * @param d2
+                 * @param extraParams
+                 * @return
+                 */
+                //an op for the kernel
 
 #ifdef __CUDACC__
-	virtual
+                virtual
 	__device__
 
 
@@ -894,127 +1014,134 @@ public:
 	}
 #endif
 
-	//calculate an update of the reduce operation
-	/**
-	 *
-	 * @param old
-	 * @param opOutput
-	 * @param extraParams
-	 * @return
-	 */
-	virtual
+                //calculate an update of the reduce operation
+                /**
+                 *
+                 * @param old
+                 * @param opOutput
+                 * @param extraParams
+                 * @return
+                 */
+                virtual
 #ifdef __CUDACC__
-	__host__  __device__
+                __host__  __device__
 
 #endif
-	inline T update(T old, T opOutput, T **extraParamsRef) {
-		return opOutput + old;
-	}
+                inline T update(T old, T opOutput, T **extraParamsRef) {
+                    return opOutput + old;
+                }
 
-	/**
-	 *
-	 * @param old
-	 * @param opOutput
-	 * @param extraParams
-	 * @return
-	 */
-	virtual
+                /**
+                 *
+                 * @param old
+                 * @param opOutput
+                 * @param extraParams
+                 * @return
+                 */
+                virtual
 #ifdef __CUDACC__
-	__host__  __device__
-
-#endif
-	inline T merge(T old, T opOutput, T **extraParamsRef) {
-		return update(old, opOutput, extraParamsRef);
-	}
-
-	/** Name of the op
-	 * @return the name of the operation
-	 */
-	virtual
-#ifdef __CUDACC__
-	inline __host__
+                __host__  __device__
 
 #endif
-	std::string name() {
-		return std::string("euclidean_strided");
-	}
+                inline T merge(T old, T opOutput, T **extraParamsRef) {
+                    return update(old, opOutput, extraParamsRef);
+                }
+
 #ifdef __CUDACC__
-	__host__ __device__
+                __host__ __device__
 #endif
-	virtual ~Dot() {
-	}
+                void aggregateExtraParams(T **extraParamsTotal,T **extraParamsLocal) {
+                    //no extra params aggregation needs to happen
+                }
+
+                /** Name of the op
+                 * @return the name of the operation
+                 */
+                virtual
 #ifdef __CUDACC__
-	__host__ __device__
+                inline __host__
+
 #endif
-	Dot() {
-	}
-};
+                std::string name() {
+                    return std::string("euclidean_strided");
+                }
+#ifdef __CUDACC__
+                __host__ __device__
+#endif
+                virtual ~Dot() {
+                }
+#ifdef __CUDACC__
+                __host__ __device__
+#endif
+                Dot() {
+                }
+            };
 
 
 
 /**
  * Euclidean distance between 2 arrays
  */
-template<typename T>
-class EuclideanDistance: public virtual Reduce3<T> {
-public:
-	virtual
+            template<typename T>
+            class EuclideanDistance: public virtual Reduce3<T> {
+            public:
+                virtual
 #ifdef __CUDACC__
-	__inline__ __host__ __device__
+                __inline__ __host__ __device__
 #endif
-	T * generateExtraParams() {
-		return NULL;
-	}
-	virtual
+                T * generateExtraParams() {
+                    return NULL;
+                }
+                virtual
 #ifdef __CUDACC__
-	__inline__ __host__ __device__
+                __inline__ __host__ __device__
 #endif
-	void finalizeExtraParams(T **extraParamsRef)  {
-		//no-op
-		free(*extraParamsRef);
-	}
-	virtual
+                void finalizeExtraParams(T **extraParamsRef)  {
+                    //no-op
+                    free(*extraParamsRef);
+                }
+                virtual
 #ifdef __CUDACC__
-	__inline__ __host__ __device__
+                __inline__ __host__ __device__
 #endif
-	T startingValue(T *input) {
-		return 0.0;
-	}
+                T startingValue(T *input) {
+                    return 0.0;
+                }
 #ifdef __CUDACC__
-	__host__ __device__
+                __host__ __device__
 #endif
-	inline T postProcess(T reduction, int n,T **extraParamsRef) {
-		return nd4j::math::nd4j_sqrt<T>(reduction);
-	}
-	/**
-	 *
-	 * @param d1
-	 * @param d2
-	 * @param extraParams
-	 * @return
-	 */
-	//an op for the kernel
-	virtual
+                inline T postProcess(T reduction, int n,T **extraParamsRef) {
+                    return nd4j::math::nd4j_sqrt<T>(reduction);
+                }
+                /**
+                 *
+                 * @param d1
+                 * @param d2
+                 * @param extraParams
+                 * @return
+                 */
+                //an op for the kernel
+                virtual
 #ifdef __CUDACC__
-	__host__  __device__
+                __host__  __device__
 
 #endif
-	inline T op(T d1, T d2, T **extraParamsRef) {
-		T ret = d1 - d2;
-		return ret * ret;
-	}
+                inline T op(T d1, T d2, T **extraParamsRef) {
+                    T ret = d1 - d2;
+                    return ret * ret;
+                }
 
-	/**
-	 *
-	 * @param d1
-	 * @param d2
-	 * @param extraParams
-	 * @return
-	 */
-	//an op for the kernel
+                /**
+                 *
+                 * @param d1
+                 * @param d2
+                 * @param extraParams
+                 * @return
+                 */
+                //an op for the kernel
 
 #ifdef __CUDACC__
-	virtual
+                virtual
 	__device__
 
 
@@ -1023,142 +1150,154 @@ public:
 	}
 #endif
 
-	//calculate an update of the reduce operation
-	/**
-	 *
-	 * @param old
-	 * @param opOutput
-	 * @param extraParams
-	 * @return
-	 */
-	virtual
+                //calculate an update of the reduce operation
+                /**
+                 *
+                 * @param old
+                 * @param opOutput
+                 * @param extraParams
+                 * @return
+                 */
+                virtual
 #ifdef __CUDACC__
-	__host__  __device__
+                __host__  __device__
 
 #endif
-	inline T update(T old, T opOutput, T **extraParamsRef) {
-		return opOutput + old;
-	}
+                inline T update(T old, T opOutput, T **extraParamsRef) {
+                    return opOutput + old;
+                }
 
-	/**
-	 *
-	 * @param old
-	 * @param opOutput
-	 * @param extraParams
-	 * @return
-	 */
-	virtual
+                /**
+                 *
+                 * @param old
+                 * @param opOutput
+                 * @param extraParams
+                 * @return
+                 */
+                virtual
 #ifdef __CUDACC__
-	__host__  __device__
-
-#endif
-	inline T merge(T old, T opOutput, T **extraParamsRef) {
-		return update(old, opOutput, extraParamsRef);
-	}
-
-	/** Name of the op
-	 * @return the name of the operation
-	 */
-	virtual
-#ifdef __CUDACC__
-	inline __host__
+                __host__  __device__
 
 #endif
-	std::string name() {
-		return std::string("euclidean_strided");
-	}
+                inline T merge(T old, T opOutput, T **extraParamsRef) {
+                    return update(old, opOutput, extraParamsRef);
+                }
+
 #ifdef __CUDACC__
-	__host__ __device__
+                __host__ __device__
 #endif
-	virtual ~EuclideanDistance() {
-	}
+                void aggregateExtraParams(T **extraParamsTotal,T **extraParamsLocal) {
+                    //no extra params aggregation needs to happen
+                }
+
+                /** Name of the op
+                 * @return the name of the operation
+                 */
+                virtual
 #ifdef __CUDACC__
-	__host__ __device__
+                inline __host__
+
 #endif
-	EuclideanDistance() {
-	}
-};
+                std::string name() {
+                    return std::string("euclidean_strided");
+                }
+#ifdef __CUDACC__
+                __host__ __device__
+#endif
+                virtual ~EuclideanDistance() {
+                }
+#ifdef __CUDACC__
+                __host__ __device__
+#endif
+                EuclideanDistance() {
+                }
+            };
 
 
 /**
  * Manhattan distance between 2 arrays
  */
-template<typename T>
-class ManhattanDistance: public virtual Reduce3<T> {
-public:
-	virtual
+            template<typename T>
+            class ManhattanDistance: public virtual Reduce3<T> {
+            public:
+                virtual
 #ifdef __CUDACC__
-	__inline__ __host__ __device__
+                __inline__ __host__ __device__
 #endif
-	T * generateExtraParams() {
-		return NULL;
-	}
-	virtual
+                T * generateExtraParams() {
+                    return NULL;
+                }
+                virtual
 #ifdef __CUDACC__
-	__inline__ __host__ __device__
+                __inline__ __host__ __device__
 #endif
-	void finalizeExtraParams(T **extraParamsRef)  {
-		//no op
-		free(*extraParamsRef);
-	}
-	virtual
+                void finalizeExtraParams(T **extraParamsRef)  {
+                    //no op
+                    free(*extraParamsRef);
+                }
+                virtual
 #ifdef __CUDACC__
-	__inline__ __host__ __device__
+                __inline__ __host__ __device__
 #endif
-	T startingValue(T *input) {
-		return 0.0;
-	}
+                T startingValue(T *input) {
+                    return 0.0;
+                }
 #ifdef __CUDACC__
-	__host__ __device__
+                __host__ __device__
 #endif
-	inline T postProcess(T reduction, int n,T **extraParamsRef) {
-		return reduction;
-	}
-	/**
-	 *
-	 * @param d1
-	 * @param d2
-	 * @param extraParams
-	 * @return
-	 */
-	//an op for the kernel
-	virtual
+                inline T postProcess(T reduction, int n,T **extraParamsRef) {
+                    return reduction;
+                }
+                /**
+                 *
+                 * @param d1
+                 * @param d2
+                 * @param extraParams
+                 * @return
+                 */
+                //an op for the kernel
+                virtual
 #ifdef __CUDACC__
-	__host__  __device__
+                __host__  __device__
 
 #endif
-	inline T op(T d1, T d2, T **extraParamsRef) {
-		return nd4j::math::nd4j_abs<T>(d1 - d2);
-	}
+                inline T op(T d1, T d2, T **extraParamsRef) {
+                    return nd4j::math::nd4j_abs<T>(d1 - d2);
+                }
 
-	//calculate an update of the reduce operation
-	/**
-	 *
-	 * @param old
-	 * @param opOutput
-	 * @param extraParams
-	 * @return
-	 */
-	virtual
+                //calculate an update of the reduce operation
+                /**
+                 *
+                 * @param old
+                 * @param opOutput
+                 * @param extraParams
+                 * @return
+                 */
+                virtual
 #ifdef __CUDACC__
-	__host__  __device__
+                __host__  __device__
 
 #endif
-	inline T update(T old, T opOutput, T **extraParamsRef) {
-		return old + opOutput;
-	}
-
-	/**
-	 *
-	 * @param d1
-	 * @param d2
-	 * @param extraParams
-	 * @return
-	 */
-	//an op for the kernel
+                inline T update(T old, T opOutput, T **extraParamsRef) {
+                    return old + opOutput;
+                }
+#ifdef __CUDACC__
+                __host__ __device__
+#endif
+                void aggregateExtraParams(T **extraParamsTotal,T **extraParamsLocal) {
+                    //no extra params aggregation needs to happen
+                }
+                /**
+                 *
+                 * @param d1
+                 * @param d2
+                 * @param extraParams
+                 * @return
+                 */
+                //an op for the kernel
 
 #ifdef __CUDACC__
-	virtual	__device__
+                virtual	__device__
 
 
 	inline T opAtomic(T d1, T d2, T **extraParamsRef) {
@@ -1166,83 +1305,83 @@ public:
 	}
 #endif
 
-	/**
-	 *
-	 * @param old
-	 * @param opOutput
-	 * @param extraParams
-	 * @return
-	 */
-	virtual
+                /**
+                 *
+                 * @param old
+                 * @param opOutput
+                 * @param extraParams
+                 * @return
+                 */
+                virtual
 #ifdef __CUDACC__
-	__host__  __device__
+                __host__  __device__
 
 #endif
-	inline T merge(T old, T opOutput, T **extraParamsRef) {
-		return update(old, opOutput, extraParamsRef);
-	}
+                inline T merge(T old, T opOutput, T **extraParamsRef) {
+                    return update(old, opOutput, extraParamsRef);
+                }
 
-	/** Name of the op
-	 * @return the name of the operation
-	 */
-	virtual
+                /** Name of the op
+                 * @return the name of the operation
+                 */
+                virtual
 #ifdef __CUDACC__
-	inline __host__
+                inline __host__
 
 #endif
-	std::string name() {
-		return std::string("manhattan_strided");
-	}
+                std::string name() {
+                    return std::string("manhattan_strided");
+                }
 #ifdef __CUDACC__
-	__host__ __device__
+                __host__ __device__
 #endif
-	virtual ~ManhattanDistance() {
-	}
+                virtual ~ManhattanDistance() {
+                }
 #ifdef __CUDACC__
-	__host__ __device__
+                __host__ __device__
 #endif
-	ManhattanDistance() {
-	}
-};
+                ManhattanDistance() {
+                }
+            };
 
-}
+        }
 
-template<typename T>
-class Reduce3OpFactory {
-public:
+        template<typename T>
+        class Reduce3OpFactory {
+        public:
 
 #ifdef __CUDACC__
-	__host__ __device__
+            __host__ __device__
 #endif
-	Reduce3OpFactory() {
-	}
+            Reduce3OpFactory() {
+            }
 
 
-	/**
-	 * Create an op given an op number
-	 * @param op the op number
-	 * 0: manhattan distance
-	 * 1: euclidean distance
-	 * 2: cosine similarity
-	 * @return
-	 */
+            /**
+             * Create an op given an op number
+             * @param op the op number
+             * 0: manhattan distance
+             * 1: euclidean distance
+             * 2: cosine similarity
+             * @return
+             */
 #ifdef __CUDACC__
-	__inline__ __host__ __device__
+            __inline__ __host__ __device__
 #endif
-	Reduce3<T> * getOp(int op) {
-		if (op == 0)
-			return new functions::reduce3::ops::ManhattanDistance<T>();
-		else if (op == 1)
-			return new functions::reduce3::ops::EuclideanDistance<T>();
-		else if (op == 2)
-			return new functions::reduce3::ops::CosineSimilarity<T>();
-		else if (op == 3)
-			return new functions::reduce3::ops::Dot<T>();
-		return NULL;
-	}
-};
+            Reduce3<T> * getOp(int op) {
+                if (op == 0)
+                    return new functions::reduce3::ops::ManhattanDistance<T>();
+                else if (op == 1)
+                    return new functions::reduce3::ops::EuclideanDistance<T>();
+                else if (op == 2)
+                    return new functions::reduce3::ops::CosineSimilarity<T>();
+                else if (op == 3)
+                    return new functions::reduce3::ops::Dot<T>();
+                return NULL;
+            }
+        };
 
-}
+    }
 }
 
 #ifdef __CUDACC__
