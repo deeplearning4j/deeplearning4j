@@ -110,14 +110,19 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
     public void resetWeights(boolean reset) {
         if(this.rng == null)
             this.rng = Nd4j.getRandom();
+
+        this.rng.setSeed(seed);
+
         if(syn0 == null || reset) {
-            syn0 = Nd4j.rand(new int[]{vocab.numWords() + 1, vectorLength}, rng).subi(0.5).divi(vectorLength);
-            INDArray randUnk = Nd4j.rand(1, vectorLength, rng).subi(0.5).divi(vectorLength);
+            syn0 = Nd4j.rand(new int[]{vocab.numWords(), vectorLength}, rng).subi(0.5).divi(vectorLength);
+//            INDArray randUnk = Nd4j.rand(1, vectorLength, rng).subi(0.5).divi(vectorLength);
 //            putVector(Word2Vec.UNK, randUnk);
         }
         if(syn1 == null || reset)
             syn1 = Nd4j.create(syn0.shape());
         initNegative();
+
+
     }
 
     @Override
@@ -413,15 +418,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
      */
     @Override
     public void resetWeights() {
-        this.rng = Nd4j.getRandom();
-
-        syn0  = Nd4j.rand(new int[]{vocab.numWords() + 1,vectorLength},rng).subi(0.5).divi(vectorLength);
-//        INDArray randUnk = Nd4j.rand(1,vectorLength,rng).subi(0.5).divi(vectorLength);
-//        putVector(Word2Vec.UNK,randUnk);
-
-        syn1 = Nd4j.create(syn0.shape());
-        initNegative();
-
+        resetWeights(true);
     }
 
 
@@ -492,8 +489,11 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
         if(word == null)
             return null;
         int idx = vocab.indexOf(word);
-        if(idx < 0)
+        if(idx < 0) {
             idx = vocab.indexOf(Word2Vec.UNK);
+            if (idx < 0)
+                return null;
+        }
         return syn0.getRow(idx);
     }
 
@@ -692,7 +692,8 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
             throw new IllegalStateException("You can't consume lookupTable with built for larger vocabulary without updating your vocabulary first");
 
         for (int x = 0; x < srcTable.syn0.rows(); x++) {
-            this.syn0.putRow(x, srcTable.syn0.getRow(x).dup());
+        //    this.syn0.putRow(x, srcTable.syn0.getRow(x).dup());
+       //     this.syn1.putRow(x, srcTable.syn1.getRow(x).dup());
         }
     }
 }
