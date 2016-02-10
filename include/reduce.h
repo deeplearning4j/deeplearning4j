@@ -819,7 +819,6 @@ namespace functions {
             __host__
 #endif
             T execScalar(T *x, int *xShapeInfo,T *extraParams) {
-                T startingVal = this->startingValue(x);
                 const int length = shape::length(xShapeInfo);
                 int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
                 return execScalar(x,xElementWiseStride,length,extraParams);
@@ -922,7 +921,13 @@ namespace functions {
                 }
             }
 
-
+            virtual inline
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
+            void aggregateExtraParams(T **extraParamsTotal,T **extraParamsLocal) {
+                // no extra params aggregation needs to happen
+            }
 
             virtual
 #ifdef __CUDACC__

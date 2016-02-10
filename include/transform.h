@@ -228,8 +228,6 @@ namespace functions {
                     int xOffset = shape::offset(xShapeInfo);
                     int resultOffset = shape::offset(resultShapeInfo);
 
-                    char xOrder = shape::order(xShapeInfo);
-                    char resultOrder = shape::order(xShapeInfo);
 #pragma omp parallel private(i)
                     {
 #pragma omp simd
@@ -291,7 +289,13 @@ namespace functions {
                 }
 
             }
-
+            virtual inline
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
+            void aggregateExtraParams(T **extraParamsTotal,T **extraParamsLocal) {
+                //no op aggregation needs to happen for transforms
+            }
 #ifdef __CUDACC__
             inline __host__ __device__
 #elif defined(__GNUC__)

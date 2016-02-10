@@ -744,7 +744,7 @@ public:
 #pragma omp parallel private(i)
             {
 #pragma omp simd
-                for (int i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
+                for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
                     IndexValue<T> curr;
                     curr.value = x[i];
                     curr.index = i;
@@ -810,7 +810,7 @@ public:
 #pragma omp parallel private(i)
             {
 #pragma omp simd
-                for (int i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
+                for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
                     IndexValue<T> curr;
                     curr.value = x[i];
                     curr.index = i;
@@ -828,7 +828,7 @@ public:
 #pragma omp parallel private(i)
             {
 #pragma omp simd
-                for (int i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
+                for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
                     IndexValue<T> curr;
                     curr.value = x[i * xElementWiseStride];
                     curr.index = i;
@@ -902,7 +902,6 @@ int i;
         }
 
 
-		i = 0;
         int j = 0;
 #pragma omp parallel private(j,i)
 		{
@@ -928,6 +927,15 @@ int i;
 		shape::freePermuteInfo(tadPermuteInfo);
         delete[] startingIndex;
 	}
+
+    virtual inline
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    void aggregateExtraParams(T **extraParamsTotal,T **extraParamsLocal) {
+        //no extra params aggregation needs to happen
+    }
+
 
 	virtual
 #ifdef __CUDACC__
