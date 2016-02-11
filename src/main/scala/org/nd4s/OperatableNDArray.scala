@@ -30,66 +30,69 @@ import org.nd4j.linalg.indexing.INDArrayIndex
 trait OperatableNDArray[A <: INDArray] {
   val underlying: A
 
-  // --- INDArray operators
-  def +[B](that: INDArray)(implicit ev:NDArrayEvidence[A,B]): A = ev.add(underlying,that)
+  // to keep compatibility with Predef.any2stringadd syntax.
+  def +(that: String): String = underlying.toString + that
 
-  def -[B](that: INDArray)(implicit ev:NDArrayEvidence[A,B]): A = ev.sub(underlying,that)
+  // --- INDArray operators
+  def +(that: INDArray)(implicit ev:NDArrayEvidence[A, _]): A = ev.add(underlying,that)
+
+  def -(that: INDArray)(implicit ev:NDArrayEvidence[A, _]): A = ev.sub(underlying,that)
 
   /** element-by-element multiplication */
-  def *[B](that: INDArray)(implicit ev:NDArrayEvidence[A,B]): A = ev.mul(underlying,that)
-                                                        
+  def *(that: INDArray)(implicit ev:NDArrayEvidence[A,_]): A = ev.mul(underlying,that)
+
   /** matrix multiplication */
-  def **[B](that: INDArray)(implicit ev:NDArrayEvidence[A,B]): A = ev.mmul(underlying,that)
+  def **(that: INDArray)(implicit ev:NDArrayEvidence[A,_]): A = ev.mmul(underlying,that)
 
   /** matrix multiplication using Numpy syntax for arrays */
-  def dot[B](that: INDArray)(implicit ev:NDArrayEvidence[A,B]): A = ev.mmul(underlying,that)
+  def dot(that: INDArray)(implicit ev:NDArrayEvidence[A,_]): A = ev.mmul(underlying,that)
 
-  def /[B](that: INDArray)(implicit ev:NDArrayEvidence[A,B]): A  = ev.div(underlying,that)
+  def /(that: INDArray)(implicit ev:NDArrayEvidence[A,_]): A  = ev.div(underlying,that)
 
   /** right division ... is this the correct symbol? */
-  def \[B](that: INDArray)(implicit ev:NDArrayEvidence[A,B]): A  = ev.rdiv(underlying,that)
+  def \(that: INDArray)(implicit ev:NDArrayEvidence[A,_]): A  = ev.rdiv(underlying,that)
 
   // --- In-place INDArray opertors
   /** In-place addition */
-  def +=[B](that: INDArray)(implicit ev:NDArrayEvidence[A,B]): A = ev.addi(underlying,that)
+  def +=(that: INDArray)(implicit ev:NDArrayEvidence[A,_]): A = ev.addi(underlying,that)
 
   /** In-place subtraction */
-  def -=[B](that: INDArray)(implicit ev:NDArrayEvidence[A,B]): A = ev.subi(underlying,that)
+  def -=(that: INDArray)(implicit ev:NDArrayEvidence[A,_]): A = ev.subi(underlying,that)
 
   /** In-placeelement-by-element multiplication */
-  def *=[B](that: INDArray)(implicit ev:NDArrayEvidence[A,B]): A = ev.muli(underlying,that)
+  def *=(that: INDArray)(implicit ev:NDArrayEvidence[A,_]): A = ev.muli(underlying,that)
 
   /** In-place matrix multiplication */
-  def **=[B](that: INDArray)(implicit ev:NDArrayEvidence[A,B]): A = ev.mmuli(underlying,that)
+  def **=(that: INDArray)(implicit ev:NDArrayEvidence[A,_]): A = ev.mmuli(underlying,that)
 
   /** In-place division */
-  def /=[B](that: INDArray)(implicit ev:NDArrayEvidence[A,B]): A = ev.divi(underlying,that)
+  def /=(that: INDArray)(implicit ev:NDArrayEvidence[A,_]): A = ev.divi(underlying,that)
 
   /** In-place right division */
-  def \=[B](that: INDArray)(implicit ev:NDArrayEvidence[A,B]): A = ev.rdivi(underlying,that)
+  def \=(that: INDArray)(implicit ev:NDArrayEvidence[A,_]): A = ev.rdivi(underlying,that)
 
   // --- Number operators
-  def +[B](that: Number)(implicit ev:NDArrayEvidence[A,B]): A = ev.add(underlying,that)
+  def +(that: Number)(implicit ev:NDArrayEvidence[A,_]): A = ev.add(underlying,that)
 
-  def -[B](that: Number)(implicit ev:NDArrayEvidence[A,B]): A = ev.sub(underlying,that)
+  def -(that: Number)(implicit ev:NDArrayEvidence[A,_]): A = ev.sub(underlying,that)
 
-  def *[B](that: Number)(implicit ev:NDArrayEvidence[A,B]): A = ev.mul(underlying,that)
+  def *(that: Number)(implicit ev:NDArrayEvidence[A,_]): A = ev.mul(underlying,that)
 
-  def /[B](that: Number)(implicit ev:NDArrayEvidence[A,B]): A = ev.div(underlying,that)
+  def /(that: Number)(implicit ev:NDArrayEvidence[A,_]): A = ev.div(underlying,that)
 
-  def \[B](that: Number)(implicit ev:NDArrayEvidence[A,B]): A = ev.rdiv(underlying,that)
+  def \(that: Number)(implicit ev:NDArrayEvidence[A,_]): A = ev.rdiv(underlying,that)
 
   // --- In-place Number operators
-  def +=[B](that: Number)(implicit ev:NDArrayEvidence[A,B]): A = ev.addi(underlying,that)
+  def +=(that: Number)(implicit ev:NDArrayEvidence[A,_]): A = ev.addi(underlying,that)
 
-  def -=[B](that: Number)(implicit ev:NDArrayEvidence[A,B]): A = ev.subi(underlying,that)
+  def -=(that: Number)(implicit ev:NDArrayEvidence[A,_]): A = ev.subi(underlying,that)
 
-  def *=[B](that: Number)(implicit ev:NDArrayEvidence[A,B]): A = ev.muli(underlying,that)
+  def *=(that: Number)(implicit ev:NDArrayEvidence[A,_]): A = ev.muli(underlying,that)
 
-  def /=[B](that: Number)(implicit ev:NDArrayEvidence[A,B]): A = ev.divi(underlying,that)
+  def /=(that: Number)(implicit ev:NDArrayEvidence[A,_]): A = ev.divi(underlying,that)
 
   /** right division ... is this the correct symbol? */
-  def \=[B](that: Number)(implicit ev:NDArrayEvidence[A,B]): A = ev.rdivi(underlying,that)
+  def \=(that: Number)(implicit ev:NDArrayEvidence[A,_]): A = ev.rdivi(underlying,that)
 
   // --- Complex operators
   def +(that: IComplexNumber): IComplexNDArray = underlying.add(that)
