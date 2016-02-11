@@ -22,7 +22,7 @@ public interface Mover {
      * @param targetMode valid arguments are DEVICE, ZERO
      * @return
      */
-    Pointer alloc(AllocationStatus targetMode, AllocationShape shape);
+    Pointer alloc(AllocationStatus targetMode, AllocationPoint point,  AllocationShape shape);
 
 
     /**
@@ -52,9 +52,10 @@ public interface Mover {
     void copyforward(AllocationPoint point);
 
     /**
-     * This method frees memory chunk specified by allocation point
+     * This method frees memory chunk specified by pointer
      *
-     * @param point
+     * @param pointer
+     * @param location
      */
-    void free(AllocationPoint point);
+    void free(Pointer pointer, AllocationStatus location);
 }

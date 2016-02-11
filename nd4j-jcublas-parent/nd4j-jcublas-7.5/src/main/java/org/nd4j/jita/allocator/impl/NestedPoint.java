@@ -15,10 +15,9 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 @NoArgsConstructor
 public class NestedPoint {
-    @Getter @Setter private Object devicePointer;
     @Getter @Setter @NonNull private AllocationShape shape;
     @Getter @Setter @NonNull private AtomicState accessState;
-    @Getter @Setter private long accessTime;
+    private AtomicLong accessTime;
     @Getter private RateTimer timerShort = new BinaryTimer(10, TimeUnit.SECONDS);
     @Getter private RateTimer timerLong = new BinaryTimer(60, TimeUnit.SECONDS);
 
@@ -45,12 +44,13 @@ public class NestedPoint {
      * Increments number of ticks by one
      */
     public void tick() {
-        accessTime = System.nanoTime();
+        accessTime.set(System.nanoTime());
         this.counter.incrementAndGet();
     }
 
     public void tack() {
         // TODO: to be implemented
+        // TODO: or not
     }
 
     @Override

@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author raver119@gmail.com
  */
+@Deprecated
 public final class AllocatorPrototype implements Allocator {
     private static final AllocatorPrototype INSTANCE = new AllocatorPrototype();
 

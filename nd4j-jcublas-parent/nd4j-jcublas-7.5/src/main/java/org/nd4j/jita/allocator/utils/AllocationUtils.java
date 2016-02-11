@@ -11,6 +11,10 @@ public class AllocationUtils {
 
     public static long getRequiredMemory(@NonNull AllocationShape shape) {
 
-        return shape.getLength() * shape.getStride() * (shape.getDataType() == DataBuffer.Type.DOUBLE ? 8 : 4);
+        return shape.getLength() * getElementSize(shape) ;
+    }
+
+    public static int getElementSize(@NonNull AllocationShape shape) {
+        return (shape.getDataType() == DataBuffer.Type.DOUBLE ? 8 : 4);
     }
 }

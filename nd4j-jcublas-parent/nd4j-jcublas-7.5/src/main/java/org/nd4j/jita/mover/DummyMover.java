@@ -38,7 +38,7 @@ public class DummyMover implements Mover {
      * @param shape
      */
     @Override
-    public Pointer alloc(AllocationStatus targetMode, AllocationShape shape) {
+    public Pointer alloc(AllocationStatus targetMode, AllocationPoint point, AllocationShape shape) {
         if (!targetMode.equals(AllocationStatus.DEVICE) && !targetMode.equals(AllocationStatus.ZERO) )
             throw new UnsupportedOperationException("Target allocation ["+ targetMode+"] is not supported");
         return new Pointer();

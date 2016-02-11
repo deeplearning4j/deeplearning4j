@@ -8,8 +8,8 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
  */
 @Data
 public class AllocationShape {
-    private long offset = 0;
-    private long length = 0;
-    private long stride = 1;
+    private int offset = 0;
+    private int length = 0;
+    private int stride = 1;
     private DataBuffer.Type dataType = DataBuffer.Type.FLOAT;
 }

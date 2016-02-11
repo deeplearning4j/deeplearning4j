@@ -7,6 +7,7 @@ import lombok.NonNull;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.SyncState;
+import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.mover.Mover;
@@ -19,14 +20,19 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
+ * Just-in-Time Allocator for CUDA
+ *
+ * TODO: add description and basic algorithm ideas here
+ *
  * @author raver119@gmail.com
  */
 public class AtomicAllocator implements Allocator {
-    private static final AllocatorPrototype INSTANCE = new AllocatorPrototype();
+    private static final AtomicAllocator INSTANCE = new AtomicAllocator();
 
     private Configuration configuration = new Configuration();
     private CudaEnvironment environment = new CudaEnvironment();
@@ -46,12 +52,17 @@ public class AtomicAllocator implements Allocator {
     /*
         table for Thread, Device, Object allocations of device memory. Objects should be used to grab Allocation point from allocationsMap
     */
+    // TODO: proper thread-safe implementation would be nice to have here :(
+    // Table thread safety is guaranteed by reentrant read/write locks :(
     private Table<Long, Integer, Long> deviceAllocations = HashBasedTable.create();
 
     /*
         map for Thread, Object allocations in zero memory.
     */
-    private Map<Long, Long> zeroAllocations = new ConcurrentHashMap<>();
+    // CopyOnWriteArrayList performance to be investigated in this use case
+    // Map thread safety is guaranteed by exclusive writeLock in getDeviceId() method, because we can't use putIfAbsent on j7
+    // FIXME: at j7 -> j8 transition, this one could be changed to ConcurrentHashMap
+    private Map<Long, CopyOnWriteArrayList<Long>> zeroAllocations = new HashMap<>();
 
     /*
         WeakHashMap for buffer->id conversion. If DataBuffer get's removed by jvm GC, we'll know that.
@@ -69,6 +80,10 @@ public class AtomicAllocator implements Allocator {
     private ReentrantReadWriteLock deviceLock = new ReentrantReadWriteLock();
     private ReentrantReadWriteLock globalLock = new ReentrantReadWriteLock();
     private ReentrantReadWriteLock externalsLock = new ReentrantReadWriteLock();
+
+    public static AtomicAllocator getInstance() {
+        return INSTANCE;
+    }
 
     public void setMover(@NonNull Mover mover) {
         globalLock.writeLock().lock();
@@ -128,9 +143,29 @@ public class AtomicAllocator implements Allocator {
                 /*
                     We don't have such buffer registered somehow. Probably that's new allocation
                  */
-                Long allocPoiner = objectsTracker.getAndIncrement();
-                externalBuffers.put(buffer, allocPoiner);
-                return allocPoiner;
+                AllocationPoint point = new AllocationPoint();
+                point.setShape(shape);
+
+                // set device ID -> current thread
+                point.setDeviceId(getDeviceId());
+
+                Long allocPointer = objectsTracker.getAndIncrement();
+
+                point.setObjectId(allocPointer);
+
+                /*
+                    we don't keep strong references Allocator -> Buffer, but we store Buffer -> Allocator references instead :)
+                  */
+                buffer.setAllocationPoint(point);
+                buffer.setAllocatorPointer(allocPointer);
+
+                // we storing buffer instance as WeakReference here for future copybacks
+                point.attachBuffer(buffer);
+
+                // the only
+                externalBuffers.put(buffer, allocPointer);
+
+                return allocPointer;
             }
 
         } finally {
@@ -150,8 +185,8 @@ public class AtomicAllocator implements Allocator {
           */
         if (!(array.data() instanceof BaseCudaDataBuffer)) throw new IllegalStateException("Underlying buffer isn't instance of BaseCudaDataBuffer");
 
+        // TODO: confirm that these values are fetched properly
         AllocationShape shape = new AllocationShape();
-
         shape.setOffset(array.offset());
         shape.setStride(array.elementWiseStride());
         shape.setLength(array.length());
@@ -226,6 +261,8 @@ public class AtomicAllocator implements Allocator {
          */
         AllocationPoint point = getAllocationPoint(objectId);
 
+        Long trackingPoint = objectId.getAllocatorPointer();
+
         // we're checking, if cuda pointer is null without any locks. but if it's null, we'll request Toe state on this allocation, to make sure nothing can mess with it
         if (point.getCudaPointer() == null) {
             // at this point memory becomes read/write-locked for a few ms, to make sure cudaPointer exists
@@ -235,8 +272,37 @@ public class AtomicAllocator implements Allocator {
                 /*
                     If pointer is null, that means we're on first stage of allocation, so we need to allocate Zero memory
                 */
-                Pointer cudaPointer = mover.alloc(AllocationStatus.ZERO, shape);
+
+                /*
+                    Before allocating anything, we must ensure that we have enough space left
+                 */
+                long requiredMemory = AllocationUtils.getRequiredMemory(shape);
+                while (zeroUseCounter.get() > configuration.getMaximumZeroAllocation() - (configuration.getMaximumZeroAllocation() / 10)) {
+                    // TODO: call for zero copy memory copyback & deallocation
+
+                    long freedMemory = seekUnusedZero(Thread.currentThread().getId());
+                }
+                /*
+                    We intentionally update counter prior to allocation
+                 */
+                zeroUseCounter.addAndGet(AllocationUtils.getRequiredMemory(shape));
+
+                /*
+                    now it's ALMOST safe to allocate zero-copy memory.
+                    Technically it's still possible to fail there, with oom or CUDA-originated exception
+                 */
+                point.setAllocationStatus(AllocationStatus.ZERO);
+                Pointer cudaPointer = mover.alloc(AllocationStatus.ZERO, point, shape);
+
+                /*
+                    it's safe to remove this check in production environment
+                 */
+                if (cudaPointer == null)
+                    throw new IllegalStateException("Zero-copy allocation failed");
+
                 point.setCudaPointer(cudaPointer);
+                zeroAllocations.get(Thread.currentThread().getId()).add(trackingPoint);
+
 
                 /*
                     Copy data from host buffer to device
@@ -262,6 +328,7 @@ public class AtomicAllocator implements Allocator {
             after everything was done here - register tick, and return the pointer to outer context
          */
         point.getAccessState().requestTick();
+        point.tickDevice();
 
         return point.getCudaPointer();
     }
@@ -273,7 +340,19 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public void synchronizeHostData(BaseCudaDataBuffer objectId) {
+        AllocationPoint point = getAllocationPoint(objectId);
 
+        /*
+            We set memory state to Toe, and issue copyback if required
+         */
+
+
+        point.getAccessState().requestToe();
+
+        if (!point.isActualOnHostSide()) {
+            mover.copyback(point);
+        }
+        point.getAccessState().releaseToe();
     }
 
     /**
@@ -284,7 +363,21 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public SyncState getHostMemoryState(BaseCudaDataBuffer objectId) {
-        return null;
+        /*
+            basically we just want to compare two access time values: device & host.
+            we can't know, if memory was changed on device side or not
+          */
+
+        /*
+            TODO: improvement is possible here ->
+             as soon as we'll have partial allocations available, we can have partially synced memory
+         */
+        AllocationPoint point = getAllocationPoint(objectId);
+        if (point.isActualOnHostSide() == true) {
+            return SyncState.SYNC;
+        } else {
+            return SyncState.DESYNC;
+        }
     }
 
     /**
@@ -320,11 +413,19 @@ public class AtomicAllocator implements Allocator {
         try {
             deviceLock.writeLock().lock();
 
-            if (!devicesAffinity.containsKey(Thread.currentThread().getId())) {
+            Long threadId = Thread.currentThread().getId();
+
+            if (!devicesAffinity.containsKey(threadId)) {
                 List<Integer> devices = new ArrayList<>(environment.getAvailableDevices().keySet());
                 Random rnd = new Random();
                 Integer device = devices.get(rnd.nextInt(devices.size()));
-                devicesAffinity.put(Thread.currentThread().getId(), device );
+                devicesAffinity.put(threadId, device );
+
+                if (!zeroAllocations.containsKey(threadId)) {
+                    // TODO: investigate CopyOnWriteArrayList here, _PROBABLY_ we could replace it with synchronized list, without backing
+                    zeroAllocations.put(threadId, new CopyOnWriteArrayList<Long>());
+                }
+
                 log.info("Mapping device ["+ device+"] to thread [" + Thread.currentThread().getId() + "]");
             }
             return devicesAffinity.get(Thread.currentThread().getId());
@@ -352,5 +453,53 @@ public class AtomicAllocator implements Allocator {
 
     protected AllocationPoint getAllocationPoint(Long objectId) {
         return allocationsMap.get(objectId);
+    }
+
+    /**
+     * This method seeks for unused zero-copy memory allocations
+     *
+     * @param threadId Id of the thread, retrieved via Thread.currentThread().getId()
+     * @return size of memory that was deallocated
+     */
+    protected long seekUnusedZero(Long threadId) {
+        /*
+            This method is blocking on thread basis, just to prevent parallel calls
+
+            TODO: To prevent cyclic calls we need something smart here
+         */
+        AtomicLong freeSpace = new AtomicLong(0);
+        for (Long object: zeroAllocations.get(threadId)) {
+            AllocationPoint point = getAllocationPoint(object);
+            if (point.getAccessState().isToeAvailable()) {
+                point.getAccessState().requestToe();
+
+                /*
+                    Check if memory points to non-existant buffer, using externals.
+                    If externals don't have specified buffer - delete reference.
+                 */
+
+                /*
+                    Check, if memory can be removed from allocation.
+                    To check it, we just compare average rates for few tens of latest calls
+                 */
+
+                point.getAccessState().releaseToe();
+            }
+        }
+
+        return freeSpace.get();
+    }
+
+    /**
+     * This method seeks for unused device memory allocations, for specified thread and device
+     *
+     * @param threadId Id of the thread, retrieved via Thread.currentThread().getId()
+     * @param deviceId Id of the device
+     * @return size of memory that was deallocated
+     */
+    protected long seekUnusedDevice(Long threadId, Integer deviceId) {
+        AtomicLong freeSpace = new AtomicLong(0);
+
+        return freeSpace.get();
     }
 }
