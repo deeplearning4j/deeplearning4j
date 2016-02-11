@@ -209,6 +209,9 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
         //Listeners:
         for(OptimizationRunnerStatusListener listener : statusListeners) listener.onCompletion(result);
 
+        //Report completion to candidate generator
+        config.getCandidateGenerator().reportResults(result);
+
         Double score = result.getScore();
         log.info("Completed task {}, score = {}", result.getIndex(), result.getScore());
 

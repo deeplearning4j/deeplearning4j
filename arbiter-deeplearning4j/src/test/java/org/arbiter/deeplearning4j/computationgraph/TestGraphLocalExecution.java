@@ -112,7 +112,7 @@ public class TestGraphLocalExecution {
                 .build();
 
         CandidateExecutor<GraphConfiguration,ComputationGraph,DataSetIterator,Evaluation> executor =
-                new LocalCandidateExecutor<>(new ComputationGraphTaskCreator<>(new GraphClassificationDataSetEvaluator()),1);
+                new LocalCandidateExecutor<>(new ComputationGraphTaskCreator<>(new GraphClassificationDataSetEvaluator()),true,1);
 
         OptimizationRunner<GraphConfiguration,ComputationGraph,DataSetIterator,Evaluation> runner
                 = new OptimizationRunner<>(configuration, executor);
@@ -181,7 +181,7 @@ public class TestGraphLocalExecution {
                 .build();
 
         CandidateExecutor<GraphConfiguration,ComputationGraph,DataSetIterator,Evaluation> executor =
-                new LocalCandidateExecutor<>(new ComputationGraphTaskCreator<>(new GraphClassificationDataSetEvaluator()),1);
+                new LocalCandidateExecutor<>(new ComputationGraphTaskCreator<>(new GraphClassificationDataSetEvaluator()),true,1);
 
         OptimizationRunner<GraphConfiguration,ComputationGraph,DataSetIterator,Evaluation> runner
                 = new OptimizationRunner<>(configuration, executor);

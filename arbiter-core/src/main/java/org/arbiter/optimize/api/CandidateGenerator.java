@@ -32,7 +32,7 @@ public interface CandidateGenerator<T> {
     /** Generate a candidate hyperparameter configuration */
     Candidate<T> getCandidate();
 
-    void reportResults(Object result);  //TODO method signature
+    void reportResults(OptimizationResult<T,?,?> result);
 
     ParameterSpace<T> getParameterSpace();
 

@@ -17,6 +17,7 @@
 package org.arbiter.optimize.candidategenerator;
 
 import org.arbiter.optimize.api.CandidateGenerator;
+import org.arbiter.optimize.api.OptimizationResult;
 import org.arbiter.optimize.api.ParameterSpace;
 import org.arbiter.util.CollectionUtils;
 
@@ -60,7 +61,7 @@ public abstract class BaseCandidateGenerator<T> implements CandidateGenerator<T>
     }
 
     @Override
-    public void reportResults(Object result) {
-        throw new UnsupportedOperationException("Not yet implemented");
+    public void reportResults(OptimizationResult<T,?,?> result) {
+        //No op
     }
 }

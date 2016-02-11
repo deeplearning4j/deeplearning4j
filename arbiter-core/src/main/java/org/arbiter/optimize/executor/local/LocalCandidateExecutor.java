@@ -41,13 +41,21 @@ public class LocalCandidateExecutor<T, M, D, A> implements CandidateExecutor<T, 
     private TaskCreator<T, M, D, A> taskCreator;
     private ListeningExecutorService executor;
     private final int nThreads;
+    private final boolean reportResults;
 
-    public LocalCandidateExecutor(TaskCreator<T, M, D, A> taskCreator) {
-        this(taskCreator, 1);
+    public LocalCandidateExecutor(TaskCreator<T, M, D, A> taskCreator, boolean reportResults) {
+        this(taskCreator, reportResults, 1);
     }
 
-    public LocalCandidateExecutor(TaskCreator<T, M, D, A> taskCreator, int nThreads) {
+    /**
+     *
+     * @param taskCreator
+     * @param reportResults If true: report results to UI by adding a UICandidateStatusListener to each candidate
+     * @param nThreads
+     */
+    public LocalCandidateExecutor(TaskCreator<T, M, D, A> taskCreator, boolean reportResults, int nThreads) {
         this.taskCreator = taskCreator;
+        this.reportResults = reportResults;
         this.nThreads = nThreads;
 
         ExecutorService exec = Executors.newFixedThreadPool(nThreads, new ThreadFactory() {
@@ -75,7 +83,7 @@ public class LocalCandidateExecutor<T, M, D, A> implements CandidateExecutor<T, 
         List<ListenableFuture<OptimizationResult<T, M, A>>> list = new ArrayList<>(candidates.size());
         for (Candidate<T> candidate : candidates) {
             Callable<OptimizationResult<T, M, A>> task = taskCreator.create(candidate, dataProvider, scoreFunction,
-                    new UICandidateStatusListenerImpl(candidate.getIndex()));
+                    (reportResults ? new UICandidateStatusListenerImpl(candidate.getIndex()) : null));
             list.add(executor.submit(task));
         }
         return list;

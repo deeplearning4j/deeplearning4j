@@ -19,6 +19,7 @@ package org.arbiter.optimize.api;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -31,15 +32,17 @@ public class Candidate<T> implements Serializable {
 
     private T value;
     private int index;
+    private double[] flatParameters;
     private Map<String,Object> dataParameters;
 
-    public Candidate( T value, int index ) {
-        this(value, index, null);
+    public Candidate( T value, int index, double[] flatParameters ) {
+        this(value, index, flatParameters, null);
     }
 
-    public Candidate(T value, int index, Map<String,Object> dataParameters){
+    public Candidate(T value, int index, double[] flatParameters, Map<String,Object> dataParameters){
         this.value = value;
         this.index = index;
+        this.flatParameters = flatParameters;
         this.dataParameters = dataParameters;
     }
 

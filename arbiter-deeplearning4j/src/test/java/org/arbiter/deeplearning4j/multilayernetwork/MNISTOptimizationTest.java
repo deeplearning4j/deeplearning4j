@@ -124,7 +124,7 @@ public class MNISTOptimizationTest {
                 .build();
 
         CandidateExecutor<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> executor =
-                new LocalCandidateExecutor<>(new MultiLayerNetworkTaskCreator(new ClassificationEvaluator()),1);
+                new LocalCandidateExecutor<>(new MultiLayerNetworkTaskCreator(new ClassificationEvaluator()),true,1);
 
         OptimizationRunner<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> runner
                 = new OptimizationRunner<>(configuration, executor);
