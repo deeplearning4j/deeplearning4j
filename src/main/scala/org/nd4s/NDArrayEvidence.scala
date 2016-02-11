@@ -1,9 +1,8 @@
 package org.nd4s
 
-import org.nd4s.ops.FilterOps
-import org.nd4j.linalg.api.complex.{IComplexNumber, IComplexNDArray}
+import org.nd4j.linalg.api.complex.{IComplexNDArray, IComplexNumber}
 import org.nd4j.linalg.api.ndarray.INDArray
-import org.nd4j.linalg.indexing.{INDArrayIndex, NDArrayIndex}
+import org.nd4j.linalg.indexing.INDArrayIndex
 import org.nd4s.Implicits._
 
 object Evidences {
@@ -111,6 +110,10 @@ trait NDArrayEvidence[NDArray <: INDArray, Value] {
   def update(a:NDArray,indices:Array[IndexRange], i:Value):NDArray
 
   def update(a:NDArray,indices:Array[IndexRange], i:NDArray):NDArray
+
+  def greaterThan(left:Value,right:Value):Boolean
+
+  def lessThan(left:Value,right:Value):Boolean
 }
 
 trait RealNDArrayEvidence[Value] extends NDArrayEvidence[INDArray, Value] {
@@ -226,6 +229,10 @@ case object DoubleNDArrayEvidence extends RealNDArrayEvidence[Double] {
       underlying.put(underlying.getINDArrayIndexfrom(ir:_*).toArray, num)
     underlying
   }
+
+  override def greaterThan(left: Double, right: Double): Boolean = left > right
+
+  override def lessThan(left: Double, right: Double): Boolean = left < right
 }
 
 case object FloatNDArrayEvidence extends RealNDArrayEvidence[Float] {
@@ -273,6 +280,10 @@ case object FloatNDArrayEvidence extends RealNDArrayEvidence[Float] {
       underlying.put(underlying.getINDArrayIndexfrom(ir:_*).toArray, num)
     underlying
   }
+
+  override def greaterThan(left: Float, right: Float): Boolean = left > right
+
+  override def lessThan(left: Float, right: Float): Boolean = left < right
 }
 
 case object ComplexNDArrayEvidence extends NDArrayEvidence[IComplexNDArray, IComplexNumber] {
@@ -385,4 +396,8 @@ case object ComplexNDArrayEvidence extends NDArrayEvidence[IComplexNDArray, ICom
       underlying.put(underlying.getINDArrayIndexfrom(ir:_*).toArray, num)
     underlying
   }
+
+  override def greaterThan(left: IComplexNumber, right: IComplexNumber): Boolean = left.absoluteValue().doubleValue() > right.absoluteValue().doubleValue()
+
+  override def lessThan(left: IComplexNumber, right: IComplexNumber): Boolean = left.absoluteValue().doubleValue() < right.absoluteValue().doubleValue()
 }

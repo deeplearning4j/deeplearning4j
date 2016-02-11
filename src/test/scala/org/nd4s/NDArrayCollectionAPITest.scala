@@ -55,4 +55,18 @@ class NDArrayCollectionAPITest extends FlatSpec {
         Array(15, 17, 19)
       ).toNDArray)
   }
+
+  it should "provides forall checker" in {
+    val ndArray =
+      Array(
+        Array(1, 2, 3),
+        Array(4, 5, 6),
+        Array(7, 8, 9)
+      ).toNDArray
+
+    //check if all elements in nd meet the criteria.
+    assert(ndArray > 0)
+    assert(ndArray < 10)
+    assert(!(ndArray > 5))
+  }
 }

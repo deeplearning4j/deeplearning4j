@@ -42,13 +42,13 @@ trait CollectionLikeNDArray [A <: INDArray]{
     f(underlying)
   }
 
-  def forall(f: Double => Boolean): Boolean = {
+  def forall[B](f: B => Boolean)(implicit ev:NDArrayEvidence[A,B]): Boolean = {
     var result = true
-    val lv = underlying.linearView()
+    val lv = ev.linearView(underlying)
     breakable {
       for {
         i <- 0 until lv.length()
-      } if (!f(lv.getDouble(i))) {
+      } if (!f(ev.get(lv,i))) {
         result = false
         break()
       }
@@ -56,13 +56,13 @@ trait CollectionLikeNDArray [A <: INDArray]{
     result
   }
 
-  def >(d: Double): Boolean = forall(_ > d)
+  def >[B,C](d: C)(implicit ev:NDArrayEvidence[A,B], ev2:C => B): Boolean = forall{i:B => ev.greaterThan(i,d)}
 
-  def <(d: Double): Boolean = forall(_ < d)
+  def <[B,C](d: C)(implicit ev:NDArrayEvidence[A,B], ev2:C => B): Boolean = forall{i:B => ev.lessThan(i,d)}
 
-  def >=(d: Double): Boolean = forall(_ >= d)
+  def >=[B,C](d: C)(implicit ev:NDArrayEvidence[A,B], ev2:Equality[B], ev3:C => B): Boolean = forall{i:B => ev.greaterThan(i,d) || ev2.equal(i,d)}
 
-  def <=(d: Double): Boolean = forall(_ <= d)
+  def <=[B,C](d: C)(implicit ev:NDArrayEvidence[A,B], ev2:Equality[B], ev3:C => B): Boolean = forall{i:B => ev.lessThan(i,d) || ev2.equal(i,d)}
 
   def columnP:ColumnProjectedNDArray = new ColumnProjectedNDArray(underlying)
 
