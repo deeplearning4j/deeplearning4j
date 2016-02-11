@@ -1,6 +1,7 @@
 package org.nd4j.jita.allocator.impl;
 
 import lombok.*;
+import org.nd4j.jita.allocator.concurrency.AtomicState;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.AccessState;
 import org.nd4j.jita.allocator.time.RateTimer;
@@ -16,7 +17,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class NestedPoint {
     @Getter @Setter private Object devicePointer;
     @Getter @Setter @NonNull private AllocationShape shape;
-    @Getter @Setter @NonNull private AccessState accessState;
+    @Getter @Setter @NonNull private AtomicState accessState;
     @Getter @Setter private long accessTime;
     @Getter private RateTimer timerShort = new BinaryTimer(10, TimeUnit.SECONDS);
     @Getter private RateTimer timerLong = new BinaryTimer(60, TimeUnit.SECONDS);

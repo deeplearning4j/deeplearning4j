@@ -1,4 +1,4 @@
-package org.nd4j.jita.allocator.locks;
+package org.nd4j.jita.allocator.concurrency;
 
 import org.nd4j.jita.allocator.impl.AllocationShape;
 
@@ -25,7 +25,8 @@ public class RRWLock implements Lock {
      */
     @Override
     public void attachObject(Object object) {
-        objectLocks.put(object, new ReentrantReadWriteLock());
+        if (!objectLocks.containsKey(object))
+            objectLocks.put(object, new ReentrantReadWriteLock());
     }
 
     /**

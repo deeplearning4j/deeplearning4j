@@ -1,15 +1,19 @@
 package org.nd4j.jita.allocator.impl;
 
+import jcuda.Pointer;
 import lombok.Data;
 import lombok.NonNull;
+import org.nd4j.jita.allocator.concurrency.AtomicState;
 import org.nd4j.jita.allocator.enums.AccessState;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.SyncState;
 import org.nd4j.jita.allocator.time.RateTimer;
 import org.nd4j.jita.allocator.time.impl.SimpleTimer;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.ref.WeakReference;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -26,7 +30,8 @@ public class AllocationPoint {
     private static Logger log = LoggerFactory.getLogger(AllocationPoint.class);
 
     // TODO: change this to Pointer later
-    private Object cudaPointer;
+    private Pointer cudaPointer;
+
     private Object hostPointer;
 
     private Long objectId;
@@ -59,7 +64,9 @@ public class AllocationPoint {
 
     private Map<AllocationShape, NestedPoint> usedChunks = new ConcurrentHashMap<>();
 
-    private AccessState accessState = AccessState.TOE;
+    private AtomicState accessState = new AtomicState();
+
+    private transient WeakReference<DataBuffer> originalDataBuffer;
 
     public long getDeviceTicks() {
         return deviceTicks.get();

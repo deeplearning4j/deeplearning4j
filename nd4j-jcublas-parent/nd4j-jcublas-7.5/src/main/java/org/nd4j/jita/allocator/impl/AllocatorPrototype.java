@@ -5,8 +5,6 @@ import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.enums.AccessState;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.SyncState;
-import org.nd4j.jita.allocator.locks.Lock;
-import org.nd4j.jita.allocator.locks.RRWLock;
 import org.nd4j.jita.allocator.time.RateTimer;
 import org.nd4j.jita.allocator.time.impl.SimpleTimer;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
@@ -22,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -37,8 +36,8 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author raver119@gmail.com
  */
-public final class BasicAllocator implements Allocator {
-    private static final BasicAllocator INSTANCE = new BasicAllocator();
+public final class AllocatorPrototype implements Allocator {
+    private static final AllocatorPrototype INSTANCE = new AllocatorPrototype();
 
     private Configuration configuration = new Configuration();
     private CudaEnvironment environment = new CudaEnvironment();
@@ -46,7 +45,7 @@ public final class BasicAllocator implements Allocator {
     // Balancer will be merged with mover.
     private transient Balancer balancer;
     private transient Mover mover;
-    private transient Lock locker = new RRWLock();
+//    private transient Lock locker = new RRWLock();
 
     private Map<Long, AllocationPoint> allocationPoints = new ConcurrentHashMap<>();
 
@@ -66,13 +65,13 @@ public final class BasicAllocator implements Allocator {
     // list of objects originated allocations
     private WeakHashMap<Long, AllocationPoint> externals = new WeakHashMap<>();
 
-    private static Logger log = LoggerFactory.getLogger(BasicAllocator.class);
+    private static Logger log = LoggerFactory.getLogger(AllocatorPrototype.class);
 
-    protected BasicAllocator() {
+    protected AllocatorPrototype() {
         //
     }
 
-    public static BasicAllocator getInstance() {
+    public static AllocatorPrototype getInstance() {
         return INSTANCE;
     }
 
@@ -89,10 +88,10 @@ public final class BasicAllocator implements Allocator {
     @Override
     public void applyConfiguration(Configuration configuration) {
         try {
-            locker.globalWriteLock();
+//            locker.globalWriteLock();
             this.configuration = configuration;
         } finally {
-            locker.globalWriteUnlock();
+//            locker.globalWriteUnlock();
         }
     }
 
@@ -105,10 +104,10 @@ public final class BasicAllocator implements Allocator {
     public Configuration getConfiguration() {
         // TODO: global lock to be implemented
         try {
-            locker.globalReadLock();
+//            locker.globalReadLock();
             return configuration;
         } finally {
-            locker.globalReadUnlock();
+//            locker.globalReadUnlock();
         }
     }
 
@@ -139,7 +138,7 @@ public final class BasicAllocator implements Allocator {
      */
     protected Integer getNewDeviceId() {
         try {
-            locker.globalReadLock();
+//            locker.globalReadLock();
 
             if (!devicesAffinity.containsKey(Thread.currentThread().getId())) {
                 List<Integer> devices = new ArrayList<>(environment.getAvailableDevices().keySet());
@@ -150,19 +149,20 @@ public final class BasicAllocator implements Allocator {
             }
             return devicesAffinity.get(Thread.currentThread().getId());
         } finally {
-            locker.globalReadUnlock();
+//            locker.globalReadUnlock();
         }
     }
 
     protected void registerSpan(Long objectId, @NonNull AllocationShape shape) {
         // TODO: object-level lock is HIGHLY required here, for multithreaded safety
         try {
-            locker.globalReadLock();
+       //     locker.globalReadLock();
 
             if (!allocationPoints.containsKey(objectId)) {
-                locker.attachObject(objectId);
+//                locker.attachObject(objectId);
                 try {
-                    locker.objectWriteLock(objectId);
+//                    locker.objectWriteLock(objectId);
+
 
                     AllocationPoint allocationPoint = new AllocationPoint();
                     allocationPoint.setAccessHost(System.nanoTime());
@@ -175,13 +175,19 @@ public final class BasicAllocator implements Allocator {
 
                     //allocationPoint.addShape(shape);
 
+                    // we add this buffer to tracking
+//                    locker.externalsWriteLock();
+                    externals.put(objectId, allocationPoint);
+//                    locker.externalsWriteUnlock();
+
                     allocationPoints.put(objectId, allocationPoint);
                 } finally {
-                    locker.objectWriteUnlock(objectId);
+//                    locker.objectWriteUnlock(objectId);
                 }
             } else {
+                log.info("Registering older object");
                 try {
-                    locker.objectWriteLock(objectId);
+//                    locker.objectWriteLock(objectId);
 
                     AllocationPoint allocationPoint = allocationPoints.get(objectId);
                     if (shape.equals(allocationPoint.getShape())) {
@@ -194,11 +200,11 @@ public final class BasicAllocator implements Allocator {
                         allocationPoint.addShape(nestedPoint);
                     }
                 } finally {
-                    locker.objectWriteUnlock(objectId);
+//                    locker.objectWriteUnlock(objectId);
                 }
             }
         } finally {
-            locker.globalReadUnlock();
+        //    locker.globalReadUnlock();
         }
     }
 
@@ -222,12 +228,12 @@ public final class BasicAllocator implements Allocator {
     public void tickHost(Long objectId) {
         // TODO: provide object-level lock here
         try {
-            locker.globalReadLock();
+//            locker.globalReadLock();
 
             AllocationPoint point = allocationPoints.get(objectId);
             point.setAccessHost(System.nanoTime());
         } finally {
-            locker.globalReadUnlock();
+  //          locker.globalReadUnlock();
         }
     }
 
@@ -244,13 +250,13 @@ public final class BasicAllocator implements Allocator {
             AllocationPoint point = getAllocationPoint(objectId);
             if (shape.equals(point.getShape())) {
                 try {
-                    locker.objectWriteLock(objectId);
+//                    locker.objectWriteLock(objectId);
 
                     point.setAccessDevice(System.nanoTime());
                     point.tickDevice();
                     point.setAccessState(AccessState.TICK);
                 } finally {
-                    locker.objectWriteUnlock(objectId);
+  //                  locker.objectWriteUnlock(objectId);
                 }
             } else {
 
@@ -259,12 +265,12 @@ public final class BasicAllocator implements Allocator {
 
                 if (point.containsShape(shape)) {
                     try {
-                        locker.shapeWriteLock(objectId, shape);
+//                        locker.shapeWriteLock(objectId, shape);
 
                         NestedPoint nestedPoint = point.getNestedPoint(shape);
                         nestedPoint.setAccessState(AccessState.TICK);
                     } finally {
-                        locker.shapeWriteUnlock(objectId, shape);
+//                        locker.shapeWriteUnlock(objectId, shape);
                     }
                     //nestedPoint.tick();
                 } else throw new IllegalStateException("Shape [" + shape + "] wasn't found at tickDevice()");
@@ -282,25 +288,25 @@ public final class BasicAllocator implements Allocator {
             AllocationPoint point = getAllocationPoint(objectId);
             if (shape.equals(point.getShape())) {
                 try {
-                    locker.objectWriteLock(objectId);
+//                    locker.objectWriteLock(objectId);
 
                     point.setAccessDevice(System.nanoTime());
                     point.tackDevice();
                     point.setAccessState(AccessState.TACK);
                 } finally {
-                    locker.objectWriteUnlock(objectId);
+//                    locker.objectWriteUnlock(objectId);
                 }
             } else {
                 // TODO: to be decided on lock here
                 point.tackDescendant(shape);
                 if (point.containsShape(shape)) {
                     try {
-                        locker.shapeWriteLock(objectId, shape);
+//                        locker.shapeWriteLock(objectId, shape);
 
                         NestedPoint nestedPoint = point.getNestedPoint(shape);
                         nestedPoint.setAccessState(AccessState.TACK);
                     } finally {
-                        locker.shapeWriteUnlock(objectId, shape);
+//                        locker.shapeWriteUnlock(objectId, shape);
                     }
                     //  nestedPoint.tack();
                 } else throw new IllegalStateException("Shape [" + shape + "] wasn't found at tickDevice()");
@@ -313,6 +319,7 @@ public final class BasicAllocator implements Allocator {
      * @param objectId
      */
     @Override
+    @Deprecated
     public Object getDevicePointer(Long objectId) {
         // TODO: this method should return pointer at some point later
         // TODO: provide object-level lock here
@@ -358,7 +365,7 @@ public final class BasicAllocator implements Allocator {
                         We should check allocation bounds here
                      */
 
-                    locker.objectWriteLock(objectId);
+//                    locker.objectWriteLock(objectId);
                     pointer = point.getCudaPointer();
 
                     if (pointer == null) {
@@ -387,17 +394,17 @@ public final class BasicAllocator implements Allocator {
                         zeroAllocations.put(objectId, point);
                     }
                 } finally {
-                    locker.objectWriteUnlock(objectId);
+//                    locker.objectWriteUnlock(objectId);
                 }
 
-                locker.globalReadLock();
+//                locker.globalReadLock();
                 int minThreshold = configuration.getMinimumRelocationThreshold();
-                locker.globalReadUnlock();
+//                locker.globalReadUnlock();
 
                 if (point.getDeviceTicks() > minThreshold && point.getTimerShort().getFrequencyOfEvents() > 0 && point.getAccessState() == AccessState.TACK) {
                     // try relocation
                     try {
-                        locker.objectWriteLock(objectId);
+//                        locker.objectWriteLock(objectId);
 
                         if (point.getAccessState() == AccessState.TACK) {
                             AllocationStatus target = makePromoteDecision(objectId, point.getShape());
@@ -415,14 +422,14 @@ public final class BasicAllocator implements Allocator {
                             }
                         }
                     } finally {
-                        locker.objectWriteUnlock(objectId);
+///                        locker.objectWriteUnlock(objectId);
                     }
                 }
             } else {
                 // this is suballocation
                 if (point.containsShape(shape)) {
                     try {
-                        locker.shapeWriteLock(objectId, shape);
+//                        locker.shapeWriteLock(objectId, shape);
                         pointer = point.getNestedPoint(shape).getDevicePointer();
                         if (pointer == null) {
                             pointer = new Object();
@@ -433,7 +440,7 @@ public final class BasicAllocator implements Allocator {
                             //point.tickDescendant(shape);
                         }
                     } finally {
-                        locker.shapeWriteUnlock(objectId, shape);
+//                        locker.shapeWriteUnlock(objectId, shape);
                     }
                 } else throw new IllegalStateException("Shape isn't existant: " + shape);
             }
@@ -457,12 +464,12 @@ public final class BasicAllocator implements Allocator {
             if (!getHostMemoryState(objectId).equals(SyncState.SYNC)) {
                 // if data was accessed by device, it could be changed somehow
                 try {
-                    locker.objectWriteLock(objectId);
+//                    locker.objectWriteLock(objectId);
 
                     // TODO: target buffer should be passed here
                     mover.copyback(point);
                 } finally {
-                    locker.objectWriteUnlock(objectId);
+//                    locker.objectWriteUnlock(objectId);
                 }
             } else {
                 // if data wasn't accessed on device side, we don't have to do anything for validation
@@ -481,7 +488,7 @@ public final class BasicAllocator implements Allocator {
     public SyncState getHostMemoryState(Long objectId) {
         try {
             // FIXME: wrong sync here, consider something better
-            locker.objectReadLock(objectId);
+//            locker.objectReadLock(objectId);
 
             AllocationPoint point = getAllocationPoint(objectId);
             if (point.getAccessHost() >= point.getAccessDevice()) {
@@ -491,7 +498,7 @@ public final class BasicAllocator implements Allocator {
             }
             return point.getHostMemoryState();
         } finally {
-            locker.objectReadUnlock(objectId);
+//            locker.objectReadUnlock(objectId);
         }
     }
 
@@ -547,7 +554,7 @@ public final class BasicAllocator implements Allocator {
 
     protected void deallocatePoint(Long object, AllocationPoint point) {
         try {
-            locker.objectWriteLock(object);
+//            locker.objectWriteLock(object);
 
             AllocationStatus status = point.getAllocationStatus();
 
@@ -562,16 +569,16 @@ public final class BasicAllocator implements Allocator {
 
             long usedMemory = AllocationUtils.getRequiredMemory(point.getShape());
 
-            locker.globalWriteLock();
+//            locker.globalWriteLock();
 
             if (status == AllocationStatus.DEVICE) {
                 environment.trackAllocatedMemory(1, usedMemory * -1);
             }
 
-            locker.globalWriteUnlock();
+//            locker.globalWriteUnlock();
 
         } finally {
-            locker.objectWriteUnlock(object);
+//            locker.objectWriteUnlock(object);
         }
     }
 
@@ -581,12 +588,12 @@ public final class BasicAllocator implements Allocator {
     protected List<Long> updateGcState() {
         List<Long> result = new ArrayList<>();
         for (Long objectId: allocationPoints.keySet()) {
-            locker.externalsReadLock();
+//            locker.externalsReadLock();
 
             if (!externals.containsKey(objectId))
                 result.add(objectId);
 
-            locker.externalsReadUnlock();
+//            locker.externalsReadUnlock();
         }
         return result;
     }
@@ -632,38 +639,78 @@ public final class BasicAllocator implements Allocator {
      */
     protected synchronized void syncbackUnusedZero(long targetMemorySize) {
         // for future locks removal
+
         List<Long> deadReferences = new ArrayList<>();
+        AtomicInteger deadCnt = new AtomicInteger(0);
+        AtomicInteger relocCnt = new AtomicInteger(0);
 
         for (Long object: zeroAllocations.keySet()) {
-            try {
-                locker.objectReadLock(object);
+
+//                locker.objectReadLock(object);
 
                 AllocationPoint point = getAllocationPoint(object);
 
-                if (point.getAccessState() == AccessState.TICK) continue;
+                if (point == null || point.getAccessState() == AccessState.TICK) {
+//                    locker.objectReadUnlock(object);
+                    continue;
+                } //else locker.objectReadUnlock(object);
 
+//                locker.externalsReadLock();
                 if (!externals.containsKey(object)) {
+//                    locker.externalsReadUnlock();
                     // object got expired, throw it away
 
-
-                    //   releaseMemory(object, point.getShape());
+                    releaseMemory(object, point.getShape());
                     zeroUseCounter.addAndGet(AllocationUtils.getRequiredMemory(point.getShape()) * -1);
 
                     zeroAllocations.remove(object);
                     allocationPoints.remove(object);
                     deadReferences.add(object);
-                }
-            }finally {
-                locker.objectReadUnlock(object);
-            }
+                    deadCnt.incrementAndGet();
+                } else {
+//                    locker.externalsReadUnlock();
 
+                    // object is alive, so we could push it back to JVM, and let it be it's own problem
+
+//                    locker.objectWriteLock(object);
+                    if (point.getTimerLong().getFrequencyOfEvents() < 1) {
+
+                        synchronizeHostData(object);
+
+                        releaseMemory(object, point.getShape());
+
+                        zeroUseCounter.addAndGet(AllocationUtils.getRequiredMemory(point.getShape()) * -1);
+
+                        zeroAllocations.remove(object);
+                        allocationPoints.remove(object);
+                        deadReferences.add(object);
+                        relocCnt.incrementAndGet();
+
+                    }
+//                    locker.objectWriteUnlock(object);
+
+                }
+
+
+
+     //      locker.objectReadUnlock(object);
+/*            for (Long dead: deadReferences) {
+                locker.detachObject(dead);
+            }
+*/
         }
+
+       // log.info("Zero cnt: [" + zeroAllocations.size() + "]; Dead cnt: [" + deadCnt.get() + "]; Reloc cnt: [" + relocCnt.get() + "]");
+    }
+
+    protected synchronized void debug_remove_reference(Long object) {
+        externals.remove(object);
     }
 
     protected void deallocateUnused() {
         for (Long object: allocationPoints.keySet()) {
             try {
-                locker.objectReadLock(object);
+//                locker.objectReadLock(object);
                 AllocationPoint point = allocationPoints.get(object);
 
                 // skip if not in trackable region of memory
@@ -671,14 +718,14 @@ public final class BasicAllocator implements Allocator {
 
                 // skip if not in TACK state
                 if (point.getTimerLong().getNumberOfEvents() == 0 && point.getAccessState() == AccessState.TACK) {
-                    locker.objectReadUnlock(object);
+//                    locker.objectReadUnlock(object);
 
                     deallocatePoint(object, point);
 
-                    locker.objectReadLock(object);
+//                    locker.objectReadLock(object);
                 }
             } finally {
-                locker.objectReadUnlock(object);
+//                locker.objectReadUnlock(object);
             }
         }
     }
@@ -757,12 +804,12 @@ public final class BasicAllocator implements Allocator {
      */
     protected void setBalancer(@NonNull Balancer balancer) {
         try {
-            locker.globalWriteLock();
+//            locker.globalWriteLock();
 
             this.balancer = balancer;
-            this.balancer.init(configuration, environment, locker);
+            this.balancer.init(configuration, environment);
         } finally {
-            locker.globalWriteUnlock();
+//            locker.globalWriteUnlock();
         }
     }
 
@@ -773,12 +820,12 @@ public final class BasicAllocator implements Allocator {
      */
     protected void setMover(@NonNull Mover mover) {
         try {
-            locker.globalWriteLock();
+//            locker.globalWriteLock();
 
             this.mover = mover;
-            this.mover.init(configuration, environment, locker);
+            this.mover.init(configuration, environment);
         } finally {
-            locker.globalWriteUnlock();
+//            locker.globalWriteUnlock();
         }
     }
 
@@ -789,10 +836,10 @@ public final class BasicAllocator implements Allocator {
      */
     protected void setEnvironment(@NonNull CudaEnvironment environment) {
         try {
-            locker.globalWriteLock();
+//            locker.globalWriteLock();
             this.environment = environment;
         } finally {
-            locker.globalWriteUnlock();
+//            locker.globalWriteUnlock();
         }
     }
 
@@ -823,7 +870,7 @@ public final class BasicAllocator implements Allocator {
         if (point.getAllocationStatus().equals(AllocationStatus.DEVICE)) return AllocationStatus.DEVICE;
 
 
-            locker.globalReadLock();
+//            locker.globalReadLock();
 
             // first, we check if memory is enough
 
@@ -835,7 +882,7 @@ public final class BasicAllocator implements Allocator {
 
             long maximumAllocation = configuration.getMaximumDeviceAllocation();
 
-            locker.globalReadUnlock();
+//            locker.globalReadUnlock();
 /*
         log.info("Req memory: " + requiredMemory);
         log.info("Available memory:" + availableMemory);
@@ -866,7 +913,7 @@ public final class BasicAllocator implements Allocator {
      */
     protected AllocationStatus makeDemoteDecision(@NonNull Long objectId, @NonNull AllocationShape shape) {
         try {
-            locker.globalReadLock();
+//            locker.globalReadLock();
 
             AllocationPoint point = getAllocationPoint(objectId);
 
@@ -892,7 +939,7 @@ public final class BasicAllocator implements Allocator {
 
             return balancer.makeDemoteDecision(1, point, shape);
         } finally {
-            locker.globalReadUnlock();
+//            locker.globalReadUnlock();
         }
     }
 

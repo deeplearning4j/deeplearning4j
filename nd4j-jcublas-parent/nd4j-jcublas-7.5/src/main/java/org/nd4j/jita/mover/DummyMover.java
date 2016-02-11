@@ -1,19 +1,16 @@
 package org.nd4j.jita.mover;
 
+import jcuda.Pointer;
 import lombok.NonNull;
 import org.nd4j.jita.allocator.enums.SyncState;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
-import org.nd4j.jita.allocator.locks.Lock;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * This is dummy Mover implementation, suitable for tests. It does not handles any allocations, but provides proper responses :)
@@ -25,15 +22,13 @@ import java.util.concurrent.ConcurrentHashMap;
 public class DummyMover implements Mover {
     private Configuration configuration;
     private CudaEnvironment environment;
-    private Lock locker;
 
     private static Logger log = LoggerFactory.getLogger(DummyMover.class);
 
     @Override
-    public void init(@NonNull Configuration configuration, @NonNull CudaEnvironment environment, @NonNull Lock locker) {
+    public void init(@NonNull Configuration configuration, @NonNull CudaEnvironment environment) {
         this.configuration = configuration;
         this.environment = environment;
-        this.locker = locker;
     }
 
     /**
@@ -43,10 +38,10 @@ public class DummyMover implements Mover {
      * @param shape
      */
     @Override
-    public Object alloc(AllocationStatus targetMode, AllocationShape shape) {
+    public Pointer alloc(AllocationStatus targetMode, AllocationShape shape) {
         if (!targetMode.equals(AllocationStatus.DEVICE) && !targetMode.equals(AllocationStatus.ZERO) )
             throw new UnsupportedOperationException("Target allocation ["+ targetMode+"] is not supported");
-        return new Object();
+        return new Pointer();
     }
 
     /**
@@ -69,14 +64,14 @@ public class DummyMover implements Mover {
                     point.setCudaPointer(new Object());
 
                     try {
-                        locker.globalWriteLock();
+//                        locker.globalWriteLock();
 
                         log.info("Relocating: "+ point.getObjectId()+" Substracting memory from alloc table: [" +memorySize + "]. Direction is: [" + currentStatus + "] -> [" + targetStatus +"]");
 
                         environment.trackAllocatedMemory(point.getDeviceId(), -1 * memorySize);
 
                     } finally {
-                        locker.globalWriteUnlock();
+//                        locker.globalWriteUnlock();
                     }
 
                 } else throw new UnsupportedOperationException("HostMemory relocation in this direction isn't supported: [" + currentStatus + "] -> [" + targetStatus +"]");
@@ -89,7 +84,7 @@ public class DummyMover implements Mover {
 
 
                         try {
-                            locker.globalWriteLock();
+//                            locker.globalWriteLock();
 
                             // TODO: real memory query should be considered here in real mover
                             if (memorySize + environment.getAllocatedMemoryForDevice(1) >= configuration.getMaximumDeviceAllocation())
@@ -101,7 +96,7 @@ public class DummyMover implements Mover {
                             environment.trackAllocatedMemory(point.getDeviceId(), AllocationUtils.getRequiredMemory(point.getShape()));
 
                         } finally {
-                            locker.globalWriteUnlock();
+//                            locker.globalWriteUnlock();
                         }
 
 
@@ -130,6 +125,17 @@ public class DummyMover implements Mover {
         } else {
             throw new UnsupportedOperationException("Copyback is impossible for direction: ["+point.getAllocationStatus()+"] -> [HOST]");
         }
+    }
+
+    /**
+     * Copies memory from host buffer to device.
+     * Host copy is preserved as is.
+     *
+     * @param point
+     */
+    @Override
+    public void copyforward(AllocationPoint point) {
+
     }
 
     /**

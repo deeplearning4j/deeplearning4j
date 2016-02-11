@@ -1,7 +1,6 @@
 package org.nd4j.jita.allocator.multi;
 
 import org.junit.Test;
-import org.nd4j.jita.allocator.impl.BasicAllocator;
 import org.nd4j.jita.conf.CudaEnvironment;
 
 /**

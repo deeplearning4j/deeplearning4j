@@ -1,9 +1,9 @@
 package org.nd4j.jita.mover;
 
+import jcuda.Pointer;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
-import org.nd4j.jita.allocator.locks.Lock;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 
@@ -14,7 +14,7 @@ import org.nd4j.jita.conf.CudaEnvironment;
  */
 public interface Mover {
 
-    void init(Configuration configuration, CudaEnvironment environment, Lock locker);
+    void init(Configuration configuration, CudaEnvironment environment);
 
     /**
      * Allocate specified memory chunk on specified device/host
@@ -22,7 +22,7 @@ public interface Mover {
      * @param targetMode valid arguments are DEVICE, ZERO
      * @return
      */
-    Object alloc(AllocationStatus targetMode,AllocationShape shape);
+    Pointer alloc(AllocationStatus targetMode, AllocationShape shape);
 
 
     /**
@@ -41,6 +41,15 @@ public interface Mover {
      * @param point
      */
     void copyback(AllocationPoint point);
+
+
+    /**
+     * Copies memory from host buffer to device.
+     * Host copy is preserved as is.
+     *
+     * @param point
+     */
+    void copyforward(AllocationPoint point);
 
     /**
      * This method frees memory chunk specified by allocation point

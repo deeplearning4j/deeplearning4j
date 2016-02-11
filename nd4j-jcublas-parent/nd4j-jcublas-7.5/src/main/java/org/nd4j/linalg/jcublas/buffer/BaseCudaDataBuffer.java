@@ -26,8 +26,10 @@ import io.netty.buffer.Unpooled;
 import jcuda.Pointer;
 import jcuda.jcublas.JCublas2;
 import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
+import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -62,6 +64,11 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Adam Gibson
  */
 public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCudaBuffer {
+
+    @Getter @Setter private Long allocatorPointer;
+
+    // This is a backup copy of AllocationPoint, and not meant to be used unless we have to restore memory state
+    @Getter @Setter private AllocationPoint allocationPoint;
 
     static AtomicLong allocated = new AtomicLong();
     static AtomicLong totalAllocated = new AtomicLong();

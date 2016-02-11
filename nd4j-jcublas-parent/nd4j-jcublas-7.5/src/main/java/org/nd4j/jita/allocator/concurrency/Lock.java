@@ -1,4 +1,4 @@
-package org.nd4j.jita.allocator.locks;
+package org.nd4j.jita.allocator.concurrency;
 
 import org.nd4j.jita.allocator.impl.AllocationShape;
 
