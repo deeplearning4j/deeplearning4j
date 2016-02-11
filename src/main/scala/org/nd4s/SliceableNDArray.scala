@@ -13,6 +13,8 @@ trait SliceableNDArray [A <: INDArray]{
   lazy val log = LoggerFactory.getLogger(classOf[SliceableNDArray[A]])
   val underlying:A
 
+  def apply[B](target: IndexRange*)(implicit ev:NDArrayEvidence[A,B],ev2:Manifest[B]):A = subMatrix(target: _*)(ev,ev2)
+
   /*
     Extract subMatrix at given position.
   */

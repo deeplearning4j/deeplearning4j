@@ -6,6 +6,8 @@ import org.nd4j.linalg.api.complex.IComplexNumber
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
 
+import scala.util.control.Breaks._
+
 trait CollectionLikeNDArray [A <: INDArray]{
   val underlying: A
   
@@ -39,4 +41,32 @@ trait CollectionLikeNDArray [A <: INDArray]{
       throw new IllegalStateException("Invalid operation: already collected")
     f(underlying)
   }
+
+  def forall(f: Double => Boolean): Boolean = {
+    var result = true
+    val lv = underlying.linearView()
+    breakable {
+      for {
+        i <- 0 until lv.length()
+      } if (!f(lv.getDouble(i))) {
+        result = false
+        break()
+      }
+    }
+    result
+  }
+
+  def >(d: Double): Boolean = forall(_ > d)
+
+  def <(d: Double): Boolean = forall(_ < d)
+
+  def >=(d: Double): Boolean = forall(_ >= d)
+
+  def <=(d: Double): Boolean = forall(_ <= d)
+
+  def columnP:ColumnProjectedNDArray = new ColumnProjectedNDArray(underlying)
+
+  def rowP:RowProjectedNDArray = new RowProjectedNDArray(underlying)
+
+  def sliceP:SliceProjectedNDArray = new SliceProjectedNDArray(underlying)
 }
