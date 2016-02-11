@@ -112,12 +112,14 @@ public @Data class GemmParams {
     }
 
     public GemmParams(INDArray a, INDArray b, INDArray c, boolean transposeA, boolean transposeB) {
-        if(transposeA && a.columns() != c.rows()) throw new IllegalArgumentException("transposeA but a.columns != c.rows");
-        else if(!transposeA && a.rows() != c.rows() ) throw new IllegalArgumentException("a.rows != c.rows");
-        if(transposeB && b.rows() != c.columns()) throw new IllegalArgumentException("transposeB but b.rows != c.columns");
-        else if(!transposeB && b.columns() != c.columns()) throw new IllegalArgumentException("b.columns != c.columns");
-        if(c.ordering() != 'f' || c.offset() != 0 || c.length() != c.data().length() )
-            throw new IllegalArgumentException("c must be f order, offset 0 and have length == c.data.length");
+        if(transposeA && a.columns() != c.rows())
+            throw new IllegalArgumentException("transposeA but a.columns != c.rows");
+        else if(!transposeA && a.rows() != c.rows() )
+            throw new IllegalArgumentException("a.rows != c.rows");
+        if(transposeB && b.rows() != c.columns())
+            throw new IllegalArgumentException("transposeB but b.rows != c.columns");
+        else if(!transposeB && b.columns() != c.columns())
+            throw new IllegalArgumentException("b.columns != c.columns");
 
         //automatically assume fortran ordering
         //multiple backends force us to be

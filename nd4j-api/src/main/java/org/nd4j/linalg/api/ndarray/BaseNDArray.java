@@ -89,15 +89,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     private static final long serialVersionUID = 3285982317165542614L;
 
-    protected char ordering;
     protected IntBuffer shapeInformation;
     protected DataBuffer data;
     protected int rows, columns;
     protected int length;
-    protected INDArray linearView;
     protected boolean cleanedUp = false;
     protected transient WeakReference<INDArray> ref;
-    protected int firstNonOneStride = -1;
     protected int numLeadingOnes = -1;
     protected int numTrailingOnes = -1;
     protected int majorStride = -1;
@@ -259,10 +256,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param newColumns the number of columns (<i>m</i>) of the new matrix.
      */
     public BaseNDArray(int newRows, int newColumns, char ordering) {
-        this.ordering = ordering;
         this.data = Nd4j.createBuffer(newRows * newColumns);
         int[] shape = new int[]{newRows, newColumns};
-        init(shape,Nd4j.getStrides(shape));
+        int[] stride = Nd4j.getStrides(shape,ordering);
+        this.shapeInformation = Shape.createShapeInformation(shape,stride,0,stride[stride.length - 1],ordering);
+        init(shape,stride);
     }
 
 
@@ -828,7 +826,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public void setOrder(char order) {
-        this.ordering = order;
+        Shape.setOrder(shapeInfo(),order);
     }
 
     @Override
@@ -1748,7 +1746,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 data
                 , Arrays.copyOf(shape, shape.length)
                 , stride
-                , offset, ordering
+                , offset, ordering()
         );
     }
 
@@ -1782,7 +1780,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 data
                 , Arrays.copyOf(shape, shape.length)
                 , stride
-                , offset, ordering
+                , offset, ordering()
         );
     }
 
@@ -1830,8 +1828,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
         //null character
-        if (this.ordering == '\u0000')
-            this.ordering = Nd4j.order();
+        if (ordering() == '\u0000')
+            Shape.setOrder(shapeInfo(),Nd4j.order());
 
         this.length = ArrayUtil.prod(shape);
 
@@ -2302,6 +2300,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray mmul(INDArray other) {
         int[] shape = {rows(), other.columns()};
         INDArray result = create(shape,'f');
+        result.assign(1);
         if(result.isScalar())
             return Nd4j.scalar(Nd4j.getBlasWrapper().dot(this,other));
         return mmuli(other, result);
@@ -2438,17 +2437,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray mmuli(INDArray other, INDArray result) {
-        INDArray otherArray = other;
-        INDArray resultArray = result;
-
         LinAlgExceptions.assertMultiplies(this, other);
 
 
         if (other.isScalar()) {
-            return muli(otherArray.getDouble(0), resultArray);
+            return muli(other.getDouble(0), result);
         }
         if (isScalar()) {
-            return otherArray.muli(getDouble(0), resultArray);
+            return other.muli(getDouble(0), result);
         }
 
         /* check sizes and resize if necessary */
@@ -2458,15 +2454,15 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             /* actually, blas cannot do multiplications in-place. Therefore, we will fake by
              * allocating a temporary object on the side and copy the result later.
              */
-            INDArray temp = create(resultArray.shape(), Nd4j.getStrides(resultArray.shape(),'f'));
+            INDArray temp = create(result.shape(), Nd4j.getStrides(result.shape(),'f'));
 
-            if (otherArray.columns() == 1) {
+            if (other.columns() == 1) {
                 Nd4j.getBlasWrapper().level2().gemv(
                         BlasBufferUtil.getCharForTranspose(result)
                         ,BlasBufferUtil.getCharForTranspose(this)
                         ,1.0
                         ,this
-                        ,otherArray
+                        ,other
                         ,0.0
                         ,temp);
             }
@@ -2480,40 +2476,40 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                         ,this
                         ,other
                         ,0.0
-                        ,resultArray);
+                        ,temp);
             }
 
-            Nd4j.getBlasWrapper().copy(temp, resultArray);
+            result.assign(temp);
 
 
         } else {
             if(other.columns() == 1) {
                 Nd4j.getBlasWrapper().level2().gemv(
-                        'f'
+                        ordering()
                         ,  BlasBufferUtil.getCharForTranspose(other),
                         1.0
                         ,this
                         ,other
                         ,0.0
-                        ,resultArray);
+                        ,result);
             }
             else
                 Nd4j.getBlasWrapper().level3().gemm(
-                        'f'
+                        ordering()
                         ,BlasBufferUtil.getCharForTranspose(other)
-                        ,BlasBufferUtil.getCharForTranspose(resultArray)
+                        ,BlasBufferUtil.getCharForTranspose(result)
                         ,1.0
                         ,this
                         ,other
                         ,0.0
-                        ,resultArray);
+                        ,result);
 
 
         }
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
-            Nd4j.clearNans(resultArray);
-        return resultArray;
+            Nd4j.clearNans(result);
+        return result;
     }
 
     private INDArray create(int[] shape, int[] stride) {
@@ -3092,7 +3088,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if(i == 0)
             return data().getDouble(Shape.offset(shapeInfo()));
 
-        int[] dimensions = ordering == 'c'? Shape.ind2subC(this,i) : Shape.ind2sub(this, i);
+        int[] dimensions = ordering() == 'c'? Shape.ind2subC(this,i) : Shape.ind2sub(this, i);
         Shape.assertShapeLessThan(dimensions,shape());
         return getDouble(dimensions);
 
@@ -3196,7 +3192,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public int innerMostStride() {
-        if(ordering == 'c')
+        if(ordering() == 'c')
             return stride(-1);
         return stride(0);
     }
@@ -3739,7 +3735,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public char ordering() {
-        return ordering;
+        return Shape.order(shapeInfo());
     }
 
     /**

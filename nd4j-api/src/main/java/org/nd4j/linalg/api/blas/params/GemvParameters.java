@@ -53,7 +53,7 @@ public @Data class GemvParameters {
             incx = x.stride(1);
         }
 
-        this.incy = y.elementStride();
+        this.incy = y.elementWiseStride();
 
         if(x instanceof IComplexNDArray)
             this.incx /= 2;
@@ -72,7 +72,7 @@ public @Data class GemvParameters {
         return arr;
     }
 
-    private INDArray copyIfNecessaryVector(INDArray vec){
+    private INDArray copyIfNecessaryVector(INDArray vec) {
         if(vec.offset() != 0) return vec.dup();
         return vec;
     }

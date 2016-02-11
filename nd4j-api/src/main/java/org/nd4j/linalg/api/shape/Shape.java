@@ -1033,6 +1033,8 @@ public class Shape {
         IntBuffer strideBuff = stride(buffer);
         StringBuffer sb = new StringBuffer();
         sb.append("Rank: " + rank + ",");
+        sb.append("Offset: " + Shape.offset(buffer) + "\n");
+        sb.append(" Order: " + Shape.order(buffer));
         sb.append("shape: [");
         for(int i = 0; i < rank; i++) {
             sb.append(shapeBuff.get(i));
@@ -1059,7 +1061,8 @@ public class Shape {
      */
     public static int offset(IntBuffer buffer) {
         int length = shapeInfoLength(rank(buffer));
-        return buffer.get(length - 3);
+        int ret = buffer.get(length - 3);
+        return ret;
     }
 
     /**
@@ -1083,6 +1086,16 @@ public class Shape {
     public static char order(IntBuffer buffer) {
         int length = Shape.shapeInfoLength(Shape.rank(buffer));
         return (char) buffer.get(length - 1);
+    }
+
+    /**
+     * Returns the order given the shape information
+     * @param buffer the buffer
+     * @return
+     */
+    public static void setOrder(IntBuffer buffer,char order) {
+        int length = Shape.shapeInfoLength(Shape.rank(buffer));
+        buffer.put(length - 1,(int) order);
     }
 
     /**

@@ -105,13 +105,8 @@ public  class Nd4jTestsComparisonC extends BaseNd4jTest {
         List<Pair<INDArray,String>> secondT = NDArrayCreationUtil.getAllTestMatricesWithShape(4, 5, SEED);
         double[] alpha = {1.0,-0.5,2.5};
         double[] beta = {0.0,-0.25,1.5};
-        INDArray cOrig = Nd4j.create(new int[]{3, 4});
-        Random r = new Random(12345);
-        for( int i=0; i<cOrig.size(0); i++ ){
-            for( int j=0; j<cOrig.size(1); j++ ){
-                cOrig.putScalar(new int[]{i,j},r.nextDouble());
-            }
-        }
+        INDArray cOrig = Nd4j.linspace(1,12,12).reshape(3,4);
+
     	for( int i = 0; i < first.size(); i++ ){
     		for( int j = 0; j < second.size(); j++) {
                 for( int k = 0; k < alpha.length; k++) {
@@ -156,7 +151,7 @@ public  class Nd4jTestsComparisonC extends BaseNd4jTest {
         int[] rowsArr = new int[]{4,4,4,8,8,8};
         int[] colsArr = new int[]{2,1,10,2,1,10};
 
-        for( int x=0; x<rowsArr.length; x++ ) {
+        for(int x = 0; x < rowsArr.length; x++) {
             int rows = rowsArr[x];
             int cols = colsArr[x];
 
@@ -197,7 +192,6 @@ public  class Nd4jTestsComparisonC extends BaseNd4jTest {
                     for (int r = 0; r < rows; r++) {
                         double exp = gemv2.getEntry(r, 0);
                         double act = gemv.getDouble(r, 0);
-
                         assertEquals(errorMsg, exp, act, 1e-5);
                     }
                 }

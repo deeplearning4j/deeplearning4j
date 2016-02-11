@@ -52,14 +52,17 @@ public class CheckUtil {
 	public static boolean checkGemm(INDArray a, INDArray b, INDArray c, boolean transposeA, boolean transposeB,
 									double alpha, double beta,
 									double maxRelativeDifference, double minAbsDifference ){
-		int commonDimA = (transposeA ? a.rows() : a.columns() );
-		int commonDimB = (transposeB ? b.columns() : b.rows() );
-		if(commonDimA != commonDimB) throw new IllegalArgumentException("Common dimensions don't match: a.shape=" +
+		int commonDimA = (transposeA ? a.rows() : a.columns());
+		int commonDimB = (transposeB ? b.columns() : b.rows());
+		if(commonDimA != commonDimB)
+            throw new IllegalArgumentException("Common dimensions don't match: a.shape=" +
                 Arrays.toString(a.shape()) + ", b.shape="+ Arrays.toString(b.shape()) + ", tA=" + transposeA + ", tb=" + transposeB);
 		int outRows = (transposeA ? a.columns() : a.rows() );
 		int outCols = (transposeB ? b.rows() : b.columns() );
-		if(c.rows() != outRows || c.columns() != outCols) throw new IllegalArgumentException("C does not match outRows or outCols");
-		if(c.offset() != 0 || c.ordering() != 'f') throw new IllegalArgumentException("Invalid c");
+		if(c.rows() != outRows || c.columns() != outCols)
+            throw new IllegalArgumentException("C does not match outRows or outCols");
+		if(c.offset() != 0 || c.ordering() != 'f')
+            throw new IllegalArgumentException("Invalid c");
 
 		RealMatrix rmA = convertToApacheMatrix(transposeA ? a.transpose() : a);
 		RealMatrix rmB = convertToApacheMatrix(transposeB ? b.transpose() : b);
