@@ -2,22 +2,22 @@
 
 [![Join the chat at https://gitter.im/deeplearning4j/nd4s](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/deeplearning4j/nd4s?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-ND4S is an Apache2 Licensed open-sourced Scala bindings for [ND4J](https://github.com/deeplearning4j/nd4j).
+ND4S is Apache 2.0-licensed open-source Scala bindings for [ND4J](https://github.com/deeplearning4j/nd4j).
 
-#Main Features
+# Main Features
 * NDArray manipulation syntax sugar with safer type.
 * NDArray slicing syntax, similar with NumPy.
 
-#Installation
+# Installation
 
-##Install via Maven
+## Install via Maven
 ND4S is already included in official Maven repositories.
 
 With IntelliJ, incorporation of ND4S is easy: just create a new Scala project, go to "Project Settings"/Libraries, add "From Maven...", and search for nd4s.
 
 No need for git-cloning & compiling!
 
-##Clone from the GitHub Repo
+## Clone from the GitHub Repo
 ND4S is actively developed. You can clone the repository, compile it, and reference it in your project.
 
 Clone the repository:
@@ -33,7 +33,7 @@ $ cd nd4s
 $ sbt +publish-local
 ```
 
-##Try ND4S in REPL
+## Try ND4S in REPL
 The easiest way to play ND4S around is cloning this repository and run the following command.
 
 ```
