@@ -655,7 +655,7 @@ namespace functions {
             T aggregateBuffer(int n,T *buffer,T *extraParams) {
 
                 T ret = buffer[0];
-#pragma omp simd
+#pragma omp for
                 for(int i = 1; i < n; i++) {
                     ret = update(ret,buffer[i],extraParams);
                 }
@@ -704,7 +704,7 @@ namespace functions {
                     int i;
 #pragma omp parallel private (i)
                     {
-#pragma omp simd
+#pragma omp for
                         for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
                             T curr = op(x[i], extraParams);
                             startingVal = update(startingVal, curr, extraParams);
@@ -720,7 +720,7 @@ namespace functions {
 
 #pragma omp parallel private(i)
                     {
-#pragma omp simd
+#pragma omp for
                         for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
                             startingVal = update(startingVal,
                                                  op(x[i * xElementWiseStride], extraParams),
@@ -869,26 +869,30 @@ namespace functions {
                     int tadLength = tadPermuteInfo.tensorShapeProd;
 
                     int i,j;
-#pragma omp parallel for  private(i,j)
-                    for(i = omp_get_thread_num(); i < resultLength; i+= omp_get_num_threads()) {
-                        int offset = shape::offset(i,xShapeInfo,dimension,dimensionLength,tadPermuteInfo);
-                        if(dimensionLength > 1) {
-                            offset = i;
-                        }
-                        else if(dimensionLength == 1) {
-                            if(tadElementWiseStride == 1)
-                                offset = i * tadLength;
-                            else
+#pragma omp  parallel   private(i,j)
+                    {
+#pragma omp  for
+                        for(i = omp_get_thread_num(); i < resultLength; i+= omp_get_num_threads()) {
+                            int offset = shape::offset(i,xShapeInfo,dimension,dimensionLength,tadPermuteInfo);
+                            if(dimensionLength > 1) {
                                 offset = i;
-                        }
+                            }
+                            else if(dimensionLength == 1) {
+                                if(tadElementWiseStride == 1)
+                                    offset = i * tadLength;
+                                else
+                                    offset = i;
+                            }
 
-                        result[i] = op(x[offset], extraParams);
+                            result[i] = op(x[offset], extraParams);
 #pragma omp simd
-                        for(j = 1; j < elementsPerReductionIndex; j++) {
-                            result[i] =  update(result[i],op(x[offset + tadElementWiseStride * j], extraParams), extraParams);
-                        }
+                            for(j = 1; j < elementsPerReductionIndex; j++) {
+                                result[i] =  update(result[i],op(x[offset + tadElementWiseStride * j], extraParams), extraParams);
+                            }
 
-                        result[i] = postProcess(result[i],tadLength,extraParams);
+                            result[i] = postProcess(result[i],tadLength,extraParams);
+
+                        }
 
                     }
 
@@ -903,8 +907,9 @@ namespace functions {
 #pragma omp parallel private(i,baseOffset)
                     {
                         int nThreads = omp_get_num_threads();
-                        for(i = omp_get_thread_num(),baseOffset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
-                            i < resultLength; i+= nThreads,baseOffset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength)) {
+#pragma omp for
+                        for(i = omp_get_thread_num();  i < resultLength; i+= nThreads) {
+                            int baseOffset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
                             T currResult = op(x[baseOffset],extraParams);
                             result[i] = currResult;
                             for(int j = 1; j < tadLength; j++) {
