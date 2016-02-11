@@ -66,7 +66,20 @@ class NDArrayCollectionAPITest extends FlatSpec {
 
     //check if all elements in nd meet the criteria.
     assert(ndArray > 0)
+    assert(ndArray.forall(_ > 0))
     assert(ndArray < 10)
-    assert(!(ndArray > 5))
+    assert(!(ndArray >= 5))
+  }
+
+  it should "provides exist API" in {
+    val ndArray =
+      Array(
+        Array(1, 2, 3),
+        Array(4, 5, 6),
+        Array(7, 8, 9)
+      ).toNDArray
+
+    //check if any element in nd meet the criteria.
+    assert(ndArray.exist(_ > 8))
   }
 }

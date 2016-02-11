@@ -42,7 +42,23 @@ trait CollectionLikeNDArray [A <: INDArray]{
     f(underlying)
   }
 
-  def forall[B](f: B => Boolean)(implicit ev:NDArrayEvidence[A,B]): Boolean = {
+  def existC[B](f:B => Boolean)(implicit ev:NDArrayEvidence[A,B]):Boolean = {
+    var result = false
+    val lv = ev.linearView(underlying)
+    breakable {
+      for {
+        i <- 0 until lv.length()
+      } if (!f(ev.get(lv,i))) {
+        result = true
+        break()
+      }
+    }
+    result
+  }
+
+  def exist(f:Double=>Boolean)(implicit ev:NDArrayEvidence[A,Double]):Boolean = existC[Double](f)
+
+  def forallC[B](f: B => Boolean)(implicit ev:NDArrayEvidence[A,B]): Boolean = {
     var result = true
     val lv = ev.linearView(underlying)
     breakable {
@@ -56,13 +72,15 @@ trait CollectionLikeNDArray [A <: INDArray]{
     result
   }
 
-  def >[B,C](d: C)(implicit ev:NDArrayEvidence[A,B], ev2:C => B): Boolean = forall{i:B => ev.greaterThan(i,d)}
+  def forall(f:Double=>Boolean)(implicit ev:NDArrayEvidence[A,Double]):Boolean = forallC[Double](f)
 
-  def <[B,C](d: C)(implicit ev:NDArrayEvidence[A,B], ev2:C => B): Boolean = forall{i:B => ev.lessThan(i,d)}
+  def >[B,C](d: C)(implicit ev:NDArrayEvidence[A,B], ev2:C => B): Boolean = forallC{i:B => ev.greaterThan(i,d)}
 
-  def >=[B,C](d: C)(implicit ev:NDArrayEvidence[A,B], ev2:Equality[B], ev3:C => B): Boolean = forall{i:B => ev.greaterThan(i,d) || ev2.equal(i,d)}
+  def <[B,C](d: C)(implicit ev:NDArrayEvidence[A,B], ev2:C => B): Boolean = forallC{i:B => ev.lessThan(i,d)}
 
-  def <=[B,C](d: C)(implicit ev:NDArrayEvidence[A,B], ev2:Equality[B], ev3:C => B): Boolean = forall{i:B => ev.lessThan(i,d) || ev2.equal(i,d)}
+  def >=[B,C](d: C)(implicit ev:NDArrayEvidence[A,B], ev2:Equality[B], ev3:C => B): Boolean = forallC{i:B => ev.greaterThan(i,d) || ev2.equal(i,d)}
+
+  def <=[B,C](d: C)(implicit ev:NDArrayEvidence[A,B], ev2:Equality[B], ev3:C => B): Boolean = forallC{i:B => ev.lessThan(i,d) || ev2.equal(i,d)}
 
   def columnP:ColumnProjectedNDArray = new ColumnProjectedNDArray(underlying)
 

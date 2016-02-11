@@ -7,7 +7,7 @@ import org.nd4j.linalg.indexing.{NDArrayIndex, INDArrayIndex}
 
 object Implicits {
 
-  implicit class RichINDArray[A <: INDArray](val underlying: A) extends SliceableNDArray[A] with OperatableNDArray[A] with CollectionLikeNDArray[A]
+  implicit class RichINDArray[A <: INDArray, B](val underlying: A) extends SliceableNDArray[A] with OperatableNDArray[A] with CollectionLikeNDArray[A]
 
   implicit def rowProjection2NDArray(row:RowProjectedNDArray):INDArray = row.array
 
