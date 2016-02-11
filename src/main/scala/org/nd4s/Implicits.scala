@@ -5,41 +5,9 @@ import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.linalg.indexing.{NDArrayIndex, INDArrayIndex}
 
-import _root_.scala.util.control.Breaks._
-
 object Implicits {
 
-  implicit class RichINDArray[A <: INDArray](val underlying: A) extends SliceableNDArray[A] with OperatableNDArray[A] with CollectionLikeNDArray[A] {
-    def forall(f: Double => Boolean): Boolean = {
-      var result = true
-      val lv = underlying.linearView()
-      breakable {
-        for {
-          i <- 0 until lv.length()
-        } if (!f(lv.getDouble(i))) {
-          result = false
-          break()
-        }
-      }
-      result
-    }
-
-    def >(d: Double): Boolean = forall(_ > d)
-
-    def <(d: Double): Boolean = forall(_ < d)
-
-    def >=(d: Double): Boolean = forall(_ >= d)
-
-    def <=(d: Double): Boolean = forall(_ <= d)
-
-    def apply[B](target: IndexRange*)(implicit ev:NDArrayEvidence[A,B],ev2:Manifest[B]):A = subMatrix(target: _*)(ev,ev2)
-
-    def columnP:ColumnProjectedNDArray = new ColumnProjectedNDArray(underlying)
-
-    def rowP:RowProjectedNDArray = new RowProjectedNDArray(underlying)
-
-    def sliceP:SliceProjectedNDArray = new SliceProjectedNDArray(underlying)
-  }
+  implicit class RichINDArray[A <: INDArray](val underlying: A) extends SliceableNDArray[A] with OperatableNDArray[A] with CollectionLikeNDArray[A]
 
   implicit def rowProjection2NDArray(row:RowProjectedNDArray):INDArray = row.array
 
@@ -202,6 +170,8 @@ object Implicits {
   implicit def float2ComplexNumberBuilder(underlying: Float): ComplexNumberBuilder[java.lang.Float] = new ComplexNumberBuilder[java.lang.Float](underlying)
 
   implicit def double2ComplexNumberBuilder(underlying: Double): ComplexNumberBuilder[java.lang.Double] = new ComplexNumberBuilder[java.lang.Double](underlying)
+
+  implicit def Number2ComplexNumberBuilder(underlying: Number): ComplexNumberBuilder[java.lang.Number] = new ComplexNumberBuilder[java.lang.Number](underlying)
 
   lazy val i = new ImaginaryNumber[Integer](1)
 }

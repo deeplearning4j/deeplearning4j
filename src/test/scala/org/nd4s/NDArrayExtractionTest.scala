@@ -9,21 +9,7 @@ class NDArrayExtractionInFortranOrderingTest extends NDArrayExtractionTestBase w
 
 trait NDArrayExtractionTestBase extends FlatSpec{self:OrderingForTest =>
 
-  "org.nd4j.api.Implicits.RichNDArray" should "provides forall checker" in {
-    val ndArray =
-      Array(
-        Array(1, 2, 3),
-        Array(4, 5, 6),
-        Array(7, 8, 9)
-      ).mkNDArray(ordering)
-
-    //check if all elements in nd meet the criteria.
-    assert(ndArray > 0)
-    assert(ndArray < 10)
-    assert(!(ndArray > 5))
-  }
-
-  it should "be able to extract a value in specified indices" in {
+  "org.nd4j.api.Implicits.RichNDArray" should "be able to extract a value in specified indices" in {
     val ndArray = Array(
       Array(1, 2),
       Array(3, 4)
