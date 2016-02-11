@@ -136,7 +136,7 @@ public class NDArrayCreationUtil {
         Nd4j.getRandom().setSeed(seed);
         int len = rows * cols;
         INDArray arr = Nd4j.linspace(1,len,len).reshape(cols,rows);
-        return new Pair<>(arr.permute(1, 0),"getPermutedWithShape("+rows+"," + cols +"," + seed +")");
+        return new Pair<>(arr.permute(1, 0),"getPermutedWithShape(" + rows + "," + cols +"," + seed +")");
     }
 
     public static Pair<INDArray,String> getReshapedWithShape(int rows, int cols, int seed) {
