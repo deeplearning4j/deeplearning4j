@@ -1,9 +1,9 @@
 package org.nd4s
 
 import org.nd4s.Implicits._
-import org.scalatest.FlatSpec
+import org.scalatest.{Matchers, FlatSpec}
 
-class NDArrayCollectionAPITest extends FlatSpec {
+class NDArrayCollectionAPITest extends FlatSpec with Matchers{
   "CollectionLikeNDArray" should "provides filter API" in {
     val ndArray =
       Array(
@@ -67,6 +67,7 @@ class NDArrayCollectionAPITest extends FlatSpec {
     //check if all elements in nd meet the criteria.
     assert(ndArray > 0)
     assert(ndArray.forall(_ > 0))
+    "ndArray.forallC(_.absoluteValue().doubleValue() > 0)" shouldNot typeCheck
     assert(ndArray < 10)
     assert(!(ndArray >= 5))
   }
@@ -80,6 +81,6 @@ class NDArrayCollectionAPITest extends FlatSpec {
       ).toNDArray
 
     //check if any element in nd meet the criteria.
-    assert(ndArray.exist(_ > 8))
+    assert(ndArray.exists(_ > 8))
   }
 }

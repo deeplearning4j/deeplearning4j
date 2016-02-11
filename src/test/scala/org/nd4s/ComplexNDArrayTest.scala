@@ -25,6 +25,8 @@ trait ComplexNDArrayTestBase extends FlatSpec with BeforeAndAfter{self:OrderingF
     val result2 = complexNDArray(->,0)
 
     assert(result2 == Array(Array(1 + i),Array(1 + 3*i)).toNDArray)
+
+    complexNDArray.forallC(_.realComponent() == 1)
   }
 
 

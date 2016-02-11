@@ -7,7 +7,7 @@ import org.nd4j.linalg.indexing.{NDArrayIndex, INDArrayIndex}
 
 object Implicits {
 
-  implicit class RichINDArray[A <: INDArray, B](val underlying: A) extends SliceableNDArray[A] with OperatableNDArray[A] with CollectionLikeNDArray[A]
+  implicit class RichINDArray[A <: INDArray](val underlying: A) extends SliceableNDArray[A] with OperatableNDArray[A] with CollectionLikeNDArray[A]
 
   implicit def rowProjection2NDArray(row:RowProjectedNDArray):INDArray = row.array
 
@@ -170,6 +170,8 @@ object Implicits {
   implicit def float2ComplexNumberBuilder(underlying: Float): ComplexNumberBuilder[java.lang.Float] = new ComplexNumberBuilder[java.lang.Float](underlying)
 
   implicit def double2ComplexNumberBuilder(underlying: Double): ComplexNumberBuilder[java.lang.Double] = new ComplexNumberBuilder[java.lang.Double](underlying)
+
+  implicit def Number2ComplexNumberBuilder(underlying: Number): ComplexNumberBuilder[java.lang.Number] = new ComplexNumberBuilder[java.lang.Number](underlying)
 
   lazy val i = new ImaginaryNumber[Integer](1)
 }

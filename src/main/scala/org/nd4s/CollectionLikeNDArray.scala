@@ -8,33 +8,56 @@ import org.nd4j.linalg.factory.Nd4j
 
 import scala.util.control.Breaks._
 
-trait CollectionLikeNDArray [A <: INDArray]{
+/*
+  This provides Scala Collection like APIs such as map, filter, exist, forall.
+ */
+trait CollectionLikeNDArray[A <: INDArray] {
   val underlying: A
-  
-  def filteri(f: Double => Boolean)(implicit ev:NDArrayEvidence[A,Double]): A = notCleanedUp { array =>
-    val shape = underlying.shape()
-    ev.reshape(Nd4j.getExecutioner.exec(FilterOps(ev.linearView(underlying), f)).z().asInstanceOf[A],shape:_*)
-  }
-  def filter(f: Double => Boolean)(implicit ev:NDArrayEvidence[A,Double]): A = ev.dup(underlying).filteri(f)(ev)
 
-  def filterBiti(f: Double => Boolean)(implicit ev:NDArrayEvidence[A,_]): A = notCleanedUp { array =>
+  def filterRCi(f: Double => Boolean)(g:IComplexNumber => Boolean)(implicit ev: NDArrayEvidence[A,_]): A = notCleanedUp { array =>
     val shape = underlying.shape()
-    ev.reshape(Nd4j.getExecutioner.exec(BitFilterOps(underlying.linearView(), f)).z().asInstanceOf[A],shape:_*)
+    ev.reshape(Nd4j.getExecutioner.exec(FilterOps(ev.linearView(underlying), f,g)).z().asInstanceOf[A], shape: _*)
   }
 
-  def filterBit(f: Double => Boolean)(implicit ev:NDArrayEvidence[A,_]): A = ev.dup(underlying).filterBiti(f)(ev)
+  def filterRC(f: Double => Boolean)(g:IComplexNumber => Boolean)(implicit ev: NDArrayEvidence[A,_]): A = ev.dup(underlying).filterRCi(f)(g)
 
-  def mapRCi(f: Double => Double)(g:IComplexNumber => IComplexNumber)(implicit ev:NDArrayEvidence[A,_]): A = notCleanedUp { array =>
+  def filteri(f: Double => Boolean)(implicit ev: NDArrayEvidence[A, Double]): A = filterRCi(f)(_ => false)
+
+  def filter(f: Double => Boolean)(implicit ev: NDArrayEvidence[A, Double]): A = filterRC(f)(_ => false)
+
+  def filterCi(f: IComplexNumber => Boolean)(implicit ev: NDArrayEvidence[A, IComplexNumber]): A = filterRCi(_ => false)(f)
+
+  def filterC(f: IComplexNumber => Boolean)(implicit ev: NDArrayEvidence[A, IComplexNumber]): A = filterRC(_ => false)(f)
+
+  def filterBitRCi(f: Double => Boolean)(g: IComplexNumber => Boolean)(implicit ev: NDArrayEvidence[A, _]): A = notCleanedUp { array =>
     val shape = underlying.shape()
-    ev.reshape(Nd4j.getExecutioner.exec(MapOps(underlying.linearView(), f,g)).z().asInstanceOf[A],shape:_*)
+    ev.reshape(Nd4j.getExecutioner.exec(BitFilterOps(ev.linearView(underlying), f, g)).z().asInstanceOf[A], shape: _*)
   }
-  def mapRC(f: Double => Double)(g:IComplexNumber => IComplexNumber)(implicit ev:NDArrayEvidence[A,_]): A = ev.dup(underlying).mapRCi(f)(g)(ev)
 
-  def mapi(f: Double => Double)(implicit ev:NDArrayEvidence[A,_]): A = mapRCi(f)(g => g)(ev)
-  def map(f: Double => Double)(implicit ev:NDArrayEvidence[A,_]): A = mapRC(f)(g => g)(ev)
+  def filterBitRC(f: Double => Boolean)(g: IComplexNumber => Boolean)(implicit ev: NDArrayEvidence[A, _]): A = ev.dup(underlying).filterBitRCi(f)(g)
 
-  def mapCi(g:IComplexNumber => IComplexNumber)(implicit ev:NDArrayEvidence[A,_]):A = mapRCi(f => f)(g)(ev)
-  def mapC(g:IComplexNumber => IComplexNumber)(implicit ev:NDArrayEvidence[A,_]):A = mapRC(f => f)(g)(ev)
+  def filterBitCi(f: IComplexNumber => Boolean)(implicit ev: NDArrayEvidence[A, IComplexNumber]): A = filterBitRCi(_ => false)(f)
+
+  def filterBitC(f: IComplexNumber => Boolean)(implicit ev: NDArrayEvidence[A, IComplexNumber]): A = filterBitRC(_ => false)(f)
+
+  def filterBiti(f: Double => Boolean)(implicit ev: NDArrayEvidence[A, Double]): A = filterBitRCi(f)(_ => false)
+
+  def filterBit(f: Double => Boolean)(implicit ev: NDArrayEvidence[A, Double]): A = filterBitRC(f)(_ => false)
+
+  def mapRCi(f: Double => Double)(g: IComplexNumber => IComplexNumber)(implicit ev: NDArrayEvidence[A, _]): A = notCleanedUp { array =>
+    val shape = underlying.shape()
+    ev.reshape(Nd4j.getExecutioner.exec(MapOps(ev.linearView(underlying), f, g)).z().asInstanceOf[A], shape: _*)
+  }
+
+  def mapRC(f: Double => Double)(g: IComplexNumber => IComplexNumber)(implicit ev: NDArrayEvidence[A, _]): A = ev.dup(underlying).mapRCi(f)(g)(ev)
+
+  def mapi(f: Double => Double)(implicit ev: NDArrayEvidence[A, _]): A = mapRCi(f)(g => g)(ev)
+
+  def map(f: Double => Double)(implicit ev: NDArrayEvidence[A, _]): A = mapRC(f)(g => g)(ev)
+
+  def mapCi(g: IComplexNumber => IComplexNumber)(implicit ev: NDArrayEvidence[A, _]): A = mapRCi(f => f)(g)(ev)
+
+  def mapC(g: IComplexNumber => IComplexNumber)(implicit ev: NDArrayEvidence[A, _]): A = mapRC(f => f)(g)(ev)
 
   def notCleanedUp[B](f: INDArray => B): B = {
     if (underlying.isCleanedUp)
@@ -42,13 +65,13 @@ trait CollectionLikeNDArray [A <: INDArray]{
     f(underlying)
   }
 
-  def existC[B](f:B => Boolean)(implicit ev:NDArrayEvidence[A,B]):Boolean = {
+  def existsRC[B](f: B => Boolean)(implicit ev: NDArrayEvidence[A, B]): Boolean = {
     var result = false
     val lv = ev.linearView(underlying)
     breakable {
       for {
         i <- 0 until lv.length()
-      } if (!f(ev.get(lv,i))) {
+      } if (!f(ev.get(lv, i))) {
         result = true
         break()
       }
@@ -56,15 +79,17 @@ trait CollectionLikeNDArray [A <: INDArray]{
     result
   }
 
-  def exist(f:Double=>Boolean)(implicit ev:NDArrayEvidence[A,Double]):Boolean = existC[Double](f)
+  def exists(f: Double => Boolean)(implicit ev: NDArrayEvidence[A, Double]): Boolean = existsRC[Double](f)
 
-  def forallC[B](f: B => Boolean)(implicit ev:NDArrayEvidence[A,B]): Boolean = {
+  def existsC(f: IComplexNumber => Boolean)(implicit ev: NDArrayEvidence[A, IComplexNumber]): Boolean = existsRC[IComplexNumber](f)
+
+  def forallRC[B](f: B => Boolean)(implicit ev: NDArrayEvidence[A, B]): Boolean = {
     var result = true
     val lv = ev.linearView(underlying)
     breakable {
       for {
         i <- 0 until lv.length()
-      } if (!f(ev.get(lv,i))) {
+      } if (!f(ev.get(lv, i))) {
         result = false
         break()
       }
@@ -72,19 +97,21 @@ trait CollectionLikeNDArray [A <: INDArray]{
     result
   }
 
-  def forall(f:Double=>Boolean)(implicit ev:NDArrayEvidence[A,Double]):Boolean = forallC[Double](f)
+  def forall(f: Double => Boolean)(implicit ev: NDArrayEvidence[A, Double]): Boolean = forallRC[Double](f)
 
-  def >[B,C](d: C)(implicit ev:NDArrayEvidence[A,B], ev2:C => B): Boolean = forallC{i:B => ev.greaterThan(i,d)}
+  def forallC(f: IComplexNumber => Boolean)(implicit ev: NDArrayEvidence[A, IComplexNumber]): Boolean = forallRC[IComplexNumber](f)
 
-  def <[B,C](d: C)(implicit ev:NDArrayEvidence[A,B], ev2:C => B): Boolean = forallC{i:B => ev.lessThan(i,d)}
+  def >[B, C](d: C)(implicit ev: NDArrayEvidence[A, B], ev2: C => B): Boolean = forallRC { i: B => ev.greaterThan(i, d) }
 
-  def >=[B,C](d: C)(implicit ev:NDArrayEvidence[A,B], ev2:Equality[B], ev3:C => B): Boolean = forallC{i:B => ev.greaterThan(i,d) || ev2.equal(i,d)}
+  def <[B, C](d: C)(implicit ev: NDArrayEvidence[A, B], ev2: C => B): Boolean = forallRC { i: B => ev.lessThan(i, d) }
 
-  def <=[B,C](d: C)(implicit ev:NDArrayEvidence[A,B], ev2:Equality[B], ev3:C => B): Boolean = forallC{i:B => ev.lessThan(i,d) || ev2.equal(i,d)}
+  def >=[B, C](d: C)(implicit ev: NDArrayEvidence[A, B], ev2: Equality[B], ev3: C => B): Boolean = forallRC { i: B => ev.greaterThan(i, d) || ev2.equal(i, d) }
 
-  def columnP:ColumnProjectedNDArray = new ColumnProjectedNDArray(underlying)
+  def <=[B, C](d: C)(implicit ev: NDArrayEvidence[A, B], ev2: Equality[B], ev3: C => B): Boolean = forallRC { i: B => ev.lessThan(i, d) || ev2.equal(i, d) }
 
-  def rowP:RowProjectedNDArray = new RowProjectedNDArray(underlying)
+  def columnP: ColumnProjectedNDArray = new ColumnProjectedNDArray(underlying)
 
-  def sliceP:SliceProjectedNDArray = new SliceProjectedNDArray(underlying)
+  def rowP: RowProjectedNDArray = new RowProjectedNDArray(underlying)
+
+  def sliceP: SliceProjectedNDArray = new SliceProjectedNDArray(underlying)
 }
