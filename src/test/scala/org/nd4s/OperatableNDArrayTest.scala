@@ -143,6 +143,10 @@ class OperatableNDArrayTest extends FlatSpec with Matchers {
     )
   }
 
+  it should "not prevent any2stringadd syntax" in {
+    val s:String = Nd4j.create(2,2) + ""
+  }
+
   "Sum function" should "choose return value depending on INDArray type" in {
     val ndArray =
       Array(

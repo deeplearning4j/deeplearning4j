@@ -30,6 +30,9 @@ import org.nd4j.linalg.indexing.INDArrayIndex
 trait OperatableNDArray[A <: INDArray] {
   val underlying: A
 
+  // to keep compatibility with Predef.any2stringadd syntax.
+  def +(that: String): String = underlying.toString + that
+
   // --- INDArray operators
   def +(that: INDArray)(implicit ev:NDArrayEvidence[A, _]): A = ev.add(underlying,that)
 
