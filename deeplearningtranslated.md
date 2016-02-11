@@ -11,8 +11,8 @@ Below, we'll define the following terms in order for each language.
 
 ### English
 
-* Deep learning
-* Machine learning
+* [Deep learning](https://en.wikipedia.org/wiki/Deep_learning)
+* [Machine learning](https://en.wikipedia.org/wiki/Machine_learning)
 * Aritificial neural network
 * Convolutional network
 * Recurrent neural network
@@ -28,10 +28,10 @@ Below, we'll define the following terms in order for each language.
 ### German
 
 * Tiefes Lernen
-* Maschinelles Lernen
+* [Maschinelles Lernen](https://de.wikipedia.org/wiki/Maschinelles_Lernen)
 * [Künstliches neuronales Netz](https://de.wikipedia.org/wiki/Künstliches_neuronales_Netz)
 * Convolutional neuronales Netz
-* Rekurrente neuronale Netze 
+* Rekurrente neuronale Netze
 
 ### French
 
