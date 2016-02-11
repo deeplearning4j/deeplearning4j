@@ -19,6 +19,12 @@ Below, we'll define the following terms in order for each language.
 
 ### Chinese
 
+*
+*
+*
+*
+* 
+
 ### German
 
 * Tiefes Lernen
@@ -45,7 +51,19 @@ Below, we'll define the following terms in order for each language.
 
 ### Japanese
 
+* 
+*
+* 
+*
+* 
+
 ### Korean
+
+* 
+*
+* 
+* 
+* 
 
 ### Spanish
 
@@ -53,3 +71,5 @@ Below, we'll define the following terms in order for each language.
 * Aprendizaje automático 
 * Red neuronal
 * Red neuronal convolucional
+* 
+
