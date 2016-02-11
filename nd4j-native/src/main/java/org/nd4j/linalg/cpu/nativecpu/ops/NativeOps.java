@@ -326,7 +326,8 @@ public class NativeOps {
      * @param result
      * @param resultShapeInfo
      */
-    public native void   execSummaryStats(int opNum,DoubleBuffer x,
+    public native void   execSummaryStats(int opNum,
+                                          DoubleBuffer x,
                                           IntBuffer xShapeInfo,
                                           DoubleBuffer extraParams,
                                           DoubleBuffer result,

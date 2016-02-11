@@ -37,7 +37,7 @@ import org.nd4j.linalg.util.ArrayUtil;
  *
  * @author Adam Gibson
  */
-public class DefaultOpExecutioner implements OpExecutioner {
+public  class DefaultOpExecutioner implements OpExecutioner {
 
 
     protected ExecutionMode executionMode = ExecutionMode.JAVA;
@@ -358,7 +358,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public INDArray execAndReturn(ScalarOp op, int... dimension) {
-        return exec(op, dimension).z();
+        return exec(op, dimension);
     }
 
     @Override
@@ -564,5 +564,10 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 throw new UnsupportedOperationException("Complex vector op with real x not supported/implemented");
             }
         }
+    }
+
+    @Override
+    public INDArray exec(BroadcastOp broadcast, int... dimension) {
+       throw new UnsupportedOperationException();
     }
 }
