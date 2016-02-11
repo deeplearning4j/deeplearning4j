@@ -283,7 +283,7 @@ Note that in the case of training data that contains time series of different le
 ![Sequence Alignment](../img/rnn_seq_alignment_2.png)
 
 #### Alternative: Implementing a custom DataSetIterator
-In some cases, you will have to do something that doesn't fit into a typical data import scenario. One option for this scenario is to implement a custom [DataSetIterator](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-api/src/main/java/org/nd4j/linalg/dataset/api/iterator/DataSetIterator.java). DataSetIterator is mererly an interface for iterating over DataSet objects - objects that encapsulate the input and target INDArrays, plus (optionally) the input and labels mask arrays.
+In some cases, you will have to do something that doesn't fit into a typical data import scenario. One option for this scenario is to implement a custom [DataSetIterator](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-api/src/main/java/org/nd4j/linalg/dataset/api/iterator/DataSetIterator.java). DataSetIterator is merely an interface for iterating over DataSet objects - objects that encapsulate the input and target INDArrays, plus (optionally) the input and labels mask arrays.
 
 Note however that this approach is quite low level: implementing a DataSetIterator requires you to manually create the required INDArrays for the input and the labels, as well as (if required) the input and labels mask arrays. However, this approach gives you a great degree of flexibility over exactly how data is loaded.
 
