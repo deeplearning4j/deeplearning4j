@@ -44,10 +44,9 @@ public class RandomSearchGenerator<T> extends BaseCandidateGenerator<T> {
 
     @Override
     public Candidate<T> getCandidate() {
-
         double[] randomValues = Nd4j.rand(1,parameterSpace.numParameters()).data().asDouble();
 
-        return new Candidate<T>(parameterSpace.getValue(randomValues),candidateCounter.getAndIncrement());
+        return new Candidate<T>(parameterSpace.getValue(randomValues),candidateCounter.getAndIncrement(),randomValues);
     }
 
     @Override

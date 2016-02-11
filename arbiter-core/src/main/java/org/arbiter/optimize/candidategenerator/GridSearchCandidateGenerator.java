@@ -157,7 +157,7 @@ public class GridSearchCandidateGenerator<T> extends BaseCandidateGenerator<T> {
         //Next: max integer (candidate number) to values
         double[] values = indexToValues(numValuesPerParam,next,totalNumCandidates);
 
-        return new Candidate<T>(parameterSpace.getValue(values),candidateCounter.getAndIncrement());
+        return new Candidate<T>(parameterSpace.getValue(values),candidateCounter.getAndIncrement(),values);
     }
 
     public static double[] indexToValues(int[] numValuesPerParam, int candidateIdx,int product){

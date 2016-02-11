@@ -65,7 +65,7 @@ public class TestRandomSearch {
                         .build();
 
         CandidateExecutor<BraninConfig, BraninConfig, Void, Void> executor =
-                new LocalCandidateExecutor<>(new BraninTaskCreator());
+                new LocalCandidateExecutor<>(new BraninTaskCreator(),true);
 
         OptimizationRunner<BraninConfig, BraninConfig, Void, Void> runner
                 = new OptimizationRunner<>(configuration, executor);
