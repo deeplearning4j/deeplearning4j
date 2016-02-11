@@ -115,7 +115,7 @@ public:
 
 		//optimized loop for vectorization
 		if (xElementWiseStride == 1 && yElementWiseStride == 1) {
-#pragma omp simd
+#pragma omp parallel for
 			for (int i = 0; i < xLength; i++) {
 				int yOffset2 = yOffset
 						+ ((i / xElementWiseStride) % yLength)
@@ -128,7 +128,7 @@ public:
 		}
 
 		else {
-#pragma omp simd
+#pragma omp parallel for
 			for (int i = 0; i < xLength; i++) {
 				int yOffset2 = yOffset
 						+ ((i / xElementWiseStride) % yLength)

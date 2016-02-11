@@ -337,7 +337,7 @@ namespace functions {
                 int i;
 #pragma omp parallel private(i)
                 {
-#pragma omp simd
+#pragma omp for
                     for (i = omp_get_thread_num(); i < n; i+= omp_get_num_threads()) {
                         result[resultIndexes[i]] = op(dx[indexes[i]],y[yIndexes[i]], extraParams);
 
@@ -375,7 +375,7 @@ namespace functions {
                 int i;
 #pragma omp parallel private(i)
                 {
-#pragma omp simd
+#pragma omp for
                     for (i = omp_get_thread_num(); i < n; i+= omp_get_num_threads()) {
                         result[indexes[i]] = op(dx[indexes[i]],y[indexes[i]], extraParams);
 
@@ -408,29 +408,10 @@ namespace functions {
                     int *resultShapeBuffer,
                     T *extraParams, const int n) {
 
-                int *xShape = shape::shapeOf(xShapeBuffer);
-                int *yShape = shape::shapeOf(yShapeBuffer);
-                int *resultShape = shape::shapeOf(resultShapeBuffer);
 
-                int *xStride = shape::stride(xShapeBuffer);
-                int *yStride = shape::stride(yShapeBuffer);
-                int *resultStride = shape::stride(resultShapeBuffer);
-
-                int xRank = shape::rank(xShapeBuffer);
-                int yRank = shape::rank(yShapeBuffer);
-                int resultRank = shape::rank(resultShapeBuffer);
-
-                int xOffset = shape::offset(xShapeBuffer);
-                int yOffset = shape::offset(yShapeBuffer);
-                int resultOffset = shape::offset(resultShapeBuffer);
-
-                char xOrder = shape::order(xShapeBuffer);
-                char yOrder = shape::order(yShapeBuffer);
-                char resultOrder = shape::order(resultShapeBuffer);
-
-                int xElementWiseStride = shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
-                int yElementWiseStride = shape::computeElementWiseStride(yRank,yShape,yStride,yOrder == 'f');
-                int resultElementWiseStride = shape::computeElementWiseStride(resultRank,resultShape,resultStride,resultOrder == 'f');
+                int xElementWiseStride = shape::elementWiseStride(xShapeBuffer);
+                int yElementWiseStride = shape::elementWiseStride(yShapeBuffer);
+                int resultElementWiseStride = shape::elementWiseStride(resultShapeBuffer);
 
                 if(xElementWiseStride == 1 && yElementWiseStride == 1 && resultElementWiseStride == 1) {
                     exec(dx,
@@ -445,10 +426,31 @@ namespace functions {
 
 
                 else {
+                    int *xShape = shape::shapeOf(xShapeBuffer);
+                    int *yShape = shape::shapeOf(yShapeBuffer);
+                    int *resultShape = shape::shapeOf(resultShapeBuffer);
+
+                    int *xStride = shape::stride(xShapeBuffer);
+                    int *yStride = shape::stride(yShapeBuffer);
+                    int *resultStride = shape::stride(resultShapeBuffer);
+
+                    int xRank = shape::rank(xShapeBuffer);
+                    int yRank = shape::rank(yShapeBuffer);
+                    int resultRank = shape::rank(resultShapeBuffer);
+
+                    int xOffset = shape::offset(xShapeBuffer);
+                    int yOffset = shape::offset(yShapeBuffer);
+                    int resultOffset = shape::offset(resultShapeBuffer);
+
+                    char xOrder = shape::order(xShapeBuffer);
+                    char yOrder = shape::order(yShapeBuffer);
+                    char resultOrder = shape::order(resultShapeBuffer);
+
+
                     int i;
 #pragma omp parallel private(i)
                     {
-#pragma omp simd
+#pragma omp for
                         for (i = omp_get_thread_num(); i < n; i+= omp_get_num_threads()) {
                             int *xIdx = shape::ind2subC(xRank, xShape, i);
                             int *yIdx = shape::ind2subC(yRank, yShape, i);
@@ -491,7 +493,7 @@ namespace functions {
                     int i;
 #pragma omp parallel private(i)
                     {
-#pragma omp simd
+#pragma omp for
                         for (i = omp_get_thread_num(); i < n; i+= omp_get_num_threads()) {
                             result[i] = op(dx[i], y[i], extraParams);
                         }
@@ -502,7 +504,7 @@ namespace functions {
                     int i;
 #pragma omp parallel private(i)
                     {
-#pragma omp simd
+#pragma omp for
                         for (i = omp_get_thread_num(); i < n; i+= omp_get_num_threads()) {
                             result[i * resultStride] = op(dx[i * xStride],
                                                           y[i * yStride], extraParams);

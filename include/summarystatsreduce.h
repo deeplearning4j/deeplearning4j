@@ -1075,7 +1075,7 @@ struct SharedSummaryStatsData<double> {
 					{
 						SummaryStatsData<T> local;
                         local.initialize();
-#pragma omp simd
+#pragma omp for
 						for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
 							SummaryStatsData<T> curr;
 							curr.initWithValue(x[i]);
@@ -1100,7 +1100,7 @@ struct SharedSummaryStatsData<double> {
 					{
                         SummaryStatsData<T> localVal;
                         localVal.initialize();
-#pragma omp simd
+#pragma omp for
 						for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
 							SummaryStatsData<T> curr;
 							curr.initWithValue(x[i]);
@@ -1153,7 +1153,7 @@ struct SharedSummaryStatsData<double> {
 #pragma omp parallel private(i)
                     {
                         SummaryStatsData<T> local;
-#pragma omp simd
+#pragma omp for
                         for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
                             SummaryStatsData<T> curr;
                             curr.initWithValue(x[i]);
@@ -1177,7 +1177,7 @@ struct SharedSummaryStatsData<double> {
                     {
                         SummaryStatsData<T> local;
 
-#pragma omp simd
+#pragma omp for
                         for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
                             SummaryStatsData<T> curr;
                             curr.initWithValue(x[i]);
@@ -1261,7 +1261,7 @@ struct SharedSummaryStatsData<double> {
 				{
 
 					int ID = omp_get_thread_num();
-
+#pragma omp for
 					for(i = ID; i < resultLength; i+= omp_get_num_threads()) {
 						int offset = dimensionLength > 1 ? i : tadLength * i;
 						SummaryStatsData<T> comp;

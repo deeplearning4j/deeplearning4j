@@ -646,7 +646,7 @@ namespace functions {
                             localExtraParams[extraParamsIdx] = startingVal;
                         }
 
-#pragma omp simd
+#pragma omp for
                         for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
                             localVal = update(localVal, op(x[i], y[i], &localExtraParams),
                                               &(localExtraParams));
@@ -675,7 +675,7 @@ namespace functions {
                         for(int extraParamsIdx = 0; extraParamsIdx < this->extraParamsLength(); extraParamsIdx++) {
                             localExtraParams[extraParamsIdx] = startingVal;
                         }
-#pragma omp simd
+#pragma omp for
                         for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
                             startingVal = update(startingVal,
                                                  op(x[i * xElementWiseStride], y[i * yElementWiseStride],
@@ -745,7 +745,7 @@ namespace functions {
                 {
                     int ID = omp_get_thread_num();
                     T localVal = startingVal;
-
+#pragma omp for
                     for(i = ID; i < resultLength; i+= omp_get_num_threads()) {
                         T *localExtraParams = this->extraParamsLength() > 0 ? (T *) malloc(sizeof(T) * this->extraParamsLength()) : NULL;
                         for(int extraParamsIdx = 0; extraParamsIdx < this->extraParamsLength(); extraParamsIdx++) {

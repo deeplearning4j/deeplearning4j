@@ -743,7 +743,7 @@ public:
             int i;
 #pragma omp parallel private(i)
             {
-#pragma omp simd
+#pragma omp for
                 for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
                     IndexValue<T> curr;
                     curr.value = x[i];
@@ -760,7 +760,7 @@ public:
             int i;
 #pragma omp parallel private(i)
             {
-#pragma omp simd
+#pragma omp for
                 for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
                     IndexValue<T> curr;
                     curr.value = x[i * xElementWiseStride];
@@ -809,7 +809,7 @@ public:
             int i;
 #pragma omp parallel private(i)
             {
-#pragma omp simd
+#pragma omp for
                 for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
                     IndexValue<T> curr;
                     curr.value = x[i];
@@ -827,7 +827,7 @@ public:
             int i;
 #pragma omp parallel private(i)
             {
-#pragma omp simd
+#pragma omp for
                 for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
                     IndexValue<T> curr;
                     curr.value = x[i * xElementWiseStride];
@@ -893,6 +893,7 @@ public:
 int i;
 #pragma omp parallel private(i)
         {
+#pragma omp for
             for (i = omp_get_thread_num(); i < resultLength; i+= omp_get_num_threads()) {
                 IndexValue<T> val;
                 val.value = this->startingValue(x);

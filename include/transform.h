@@ -182,7 +182,7 @@ namespace functions {
                     const int n,
                     int *indexes,
                     int *resultIndexes) {
-#pragma omp simd
+#pragma omp parallel for
                 for (int i = 0; i < n; i++) {
                     result[resultIndexes[i]] = op(dx[indexes[i]], extraParams);
                 }
