@@ -32,6 +32,10 @@ Once you've done that, run a `spark-submit` command similar to this.
 
         bin/spark-submit --master spark://ec2-$ADDRESS_HERE.us-west-1.compute.amazonaws.com:7077 --driver-memory 3g --driver-cores 4 --executor-cores 30 --num-executors 200 --class org.deeplearning4j.SparkMnist scene-classification-spark-1.0-SNAPSHOT.jar
 
+## OpenBLAS With Spark
+
+To get OpenBLAS support in a Spark environment, Netlib should be in the Spark classpath. Add the application fat JAR to the Spark classpath (via `--driver-class-path` for local runs and with `spark.executor.extraClassPath` for clusters).
+
 ## Scala Resources
 
 * [Deeplearning4j Spark Examples Repo](https://github.com/deeplearning4j/scene-classification-spark)
