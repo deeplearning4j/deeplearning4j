@@ -43,7 +43,7 @@ public class TestTensorCalculator extends BaseNd4jTest {
         shapes[5] = new int[]{3,4,5,6,7,8};
 
         int seed = 123;
-        for( int z=0; z<shapes.length; z++ ) {
+        for(int z = 0; z < shapes.length; z++) {
             List<Pair<INDArray, String>> list;
             switch(z){
                 case 0:
@@ -94,7 +94,7 @@ public class TestTensorCalculator extends BaseNd4jTest {
 
                         //Check values:
                         DataBuffer db = arr.data();
-                        for( int x=0; x<tensor.length(); x++ ){
+                        for( int x = 0; x<tensor.length(); x++) {
                             double dTensor = tensor.getDouble(x);
                             double dCalc = db.getDouble(tCalc.getOffsetForTensor(i) + x*tCalc.getElementWiseStrideForTensor());
                             assertEquals(dTensor,dCalc,1e-1);

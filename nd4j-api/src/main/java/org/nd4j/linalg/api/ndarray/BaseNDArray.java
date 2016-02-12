@@ -290,13 +290,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param shape  the shape of the ndarray
      */
     public BaseNDArray(List<INDArray> slices, int[] shape, int[] stride, char ordering) {
-        int[] thisShape = Ints.concat(new int[]{slices.size()},slices.get(0).shape());
         DataBuffer ret = slices.get(0).data().dataType() == (DataBuffer.Type.FLOAT) ?
-                Nd4j.createBuffer(new float[ArrayUtil.prod(thisShape)]) :
-                Nd4j.createBuffer(new double[ArrayUtil.prod(thisShape)]);
+                Nd4j.createBuffer(new float[ArrayUtil.prod(shape)]) :
+                Nd4j.createBuffer(new double[ArrayUtil.prod(shape)]);
         this.data = ret;
-        this.shapeInformation = Shape.createShapeInformation(thisShape,stride,0,stride[stride.length - 1],ordering);
-        init(thisShape,stride);
+        this.shapeInformation = Shape.createShapeInformation(shape,stride,0,stride[stride.length - 1],ordering);
+        init(shape,stride);
 
         if(slices.get(0).isScalar()) {
             for (int i = 0; i < length(); i++) {
@@ -709,17 +708,25 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public int tensorssAlongDimension(int... dimension) {
+      if(dimension.length >= rank())
+          return 1;
         for(int i = 0; i < dimension.length; i++)
             if(dimension[i] < 0)
                 dimension[i] += rank();
         if(dimension == null || dimension.length == 0)
             throw new IllegalArgumentException("Invalid input: dimensions not specified (null or length 0)");
         int[] tensorShape = ArrayUtil.keep(shape(), dimension);
-        return length / ArrayUtil.prod(tensorShape);
+        int len =  ArrayUtil.prod(tensorShape);
+        if(len == 0)
+            throw new IllegalStateException("Illegal length found after removing index");
+        return length / len;
     }
 
     @Override
     public INDArray tensorAlongDimension(int index, int... dimension) {
+        if(dimension.length >= rank())
+            return this;
+
         int tads = tensorssAlongDimension(dimension);
         if(index >= tads)
             throw new IllegalArgumentException("Illegal index " + index + " out of tads " + tads);

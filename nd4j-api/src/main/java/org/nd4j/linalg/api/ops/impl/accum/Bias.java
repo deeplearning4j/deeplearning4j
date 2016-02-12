@@ -168,6 +168,11 @@ public class Bias extends BaseAccumulation {
     }
 
     @Override
+    public boolean isPassThrough() {
+        return true;
+    }
+
+    @Override
     public void exec() {
         this.mean = Nd4j.getExecutioner().execAndReturn(new Mean(x)).getFinalResult().doubleValue();
         INDArray xMinusMean = x.sub(mean);
@@ -176,7 +181,7 @@ public class Bias extends BaseAccumulation {
     }
 
     @Override
-    public void exec(int... dimension){
+    public void exec(int... dimension) {
         int[] retShape = ArrayUtil.removeIndex(x.shape(), dimension);
         int nOps = x.tensorssAlongDimension(dimension);
         z = Nd4j.create(retShape);

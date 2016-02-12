@@ -2,6 +2,11 @@ package org.nd4j.linalg.cpu.javacpp;
 
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.Accumulation;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.api.ops.impl.accum.Bias;
+import org.nd4j.linalg.api.ops.impl.accum.Mean;
+import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
@@ -76,6 +81,53 @@ public class LoopTest {
         INDArray testColumn1 = n.getColumn(1);
         assertEquals(column, testColumn);
         assertEquals(column2, testColumn1);
+
+    }
+
+    @Test
+    public void testDescriptiveStats() {
+        OpExecutioner opExecutioner = Nd4j.getExecutioner();
+        INDArray x = Nd4j.linspace(1, 5, 5);
+
+        Mean mean = new Mean(x);
+        opExecutioner.exec(mean);
+        assertEquals(3.0, mean.currentResult().doubleValue(), 1e-1);
+
+        Variance variance = new Variance(x.dup(), true);
+        opExecutioner.exec(variance);
+        assertEquals(2.5, variance.currentResult().doubleValue(), 1e-1);
+    }
+
+
+    @Test
+    public void testBias() {
+        INDArray bias = Nd4j.linspace(1, 4, 4);
+        Bias biaOp = new Bias(bias);
+        Nd4j.getExecutioner().exec(biaOp);
+        assertEquals(0.0,biaOp.currentResult().doubleValue(),1e-1);
+    }
+
+
+    @Test
+    public void testLength() {
+        INDArray values = Nd4j.create(2, 2);
+        INDArray values2 = Nd4j.create(2, 2);
+
+        values.put(0, 0, 0);
+        values2.put(0, 0, 2);
+        values.put(1, 0, 0);
+        values2.put(1, 0, 2);
+        values.put(0, 1, 0);
+        values2.put(0, 1, 0);
+        values.put(1, 1, 2);
+        values2.put(1, 1, 2);
+
+
+        INDArray expected = Nd4j.repeat(Nd4j.scalar(2), 2).reshape(2,1);
+
+        Accumulation accum = Nd4j.getOpFactory().createAccum("euclidean", values, values2);
+        INDArray results = Nd4j.getExecutioner().exec(accum, 1);
+        assertEquals(expected, results);
 
     }
 
