@@ -194,7 +194,7 @@ public class Variance extends BaseAccumulation {
     }
 
     @Override
-    public void exec(){
+    public void exec() {
         if (biasCorrected)
             this.bias = Nd4j.getExecutioner().execAndReturn(new Bias(x)).getFinalResult().doubleValue();
         this.mean = Nd4j.getExecutioner().execAndReturn(new Mean(x)).getFinalResult().doubleValue();

@@ -1282,7 +1282,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testGetRow(){
         INDArray arr = Nd4j.ones(10, 4);
-        for( int i=0; i<10; i++ ){
+        for( int i=0; i < 10; i++ ){
             INDArray row = arr.getRow(i);
             assertArrayEquals(row.shape(), new int[]{1, 4});
         }
