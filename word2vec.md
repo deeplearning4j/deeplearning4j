@@ -237,7 +237,7 @@ This configuration accepts a number of hyperparameters. A few require some expla
 * *minWordFrequency* is the minimum number of times a word must appear in the corpus. Here, if it appears less than 5 times, it is not learned. Words must appear in multiple contexts to learn useful features about them. In very large corpora, it's reasonable to raise the minimum.
 * *useAdaGrad* - Adagrad creates a different gradient for each feature. Here we are not concerned with that. 
 * *layerSize* specifies the number of features in the word vector. This is equal to the number of dimensions in the featurespace. Words represented by 500 features become points in a 500-dimensional space.
-* *iterations* this is the number of times you allow the net to update its coefficients for one batch of the data. Too few iterations mean it many not have time to learn all it can; too many will make the net's training longer.
+* *iterations* this is the number of times you allow the net to update its coefficients for one batch of the data. Too few iterations mean it may not have time to learn all it can; too many will make the net's training longer.
 * *learningRate* is the step size for each update of the coefficients, as words are repositioned in the feature space. 
 * *minLearningRate* is the floor on the learning rate. Learning rate decays as the number of words you train on decreases. If learning rate shrinks too much, the net's learning is no longer efficient. This keeps the coefficients moving. 
 * *iterate* tells the net what batch of the dataset it's training on. 
