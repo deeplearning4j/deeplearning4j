@@ -2,6 +2,7 @@ package org.nd4j.jita.mover;
 
 import jcuda.Pointer;
 import jcuda.runtime.JCuda;
+import jcuda.runtime.cudaMemcpyKind;
 import lombok.NonNull;
 import org.apache.commons.lang3.tuple.Triple;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
@@ -15,6 +16,7 @@ import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.DevicePointerInfo;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.buffer.allocation.HostDevicePointer;
+import org.nd4j.linalg.jcublas.util.PointerUtil;
 import org.nd4j.linalg.util.NioUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,9 +98,24 @@ public class UmaMover implements Mover {
             case DEVICE: {
                 point.setAllocationStatus(AllocationStatus.DEVICE);
                     // cudaMalloc call
+                Pointer devicePointer = new Pointer();
+                Pointer hostPointer = new Pointer();
+                JCuda.cudaMalloc(devicePointer, AllocationUtils.getRequiredMemory(shape));
 
-                    return null;
-                }
+                DevicePointerInfo devicePointerInfo = new DevicePointerInfo(
+                    new HostDevicePointer(hostPointer,devicePointer),
+                    shape.getLength(),
+                    shape.getStride(),
+                    shape.getOffset(),
+                    false);
+
+                // FIXME: async copy is required here
+                JCuda.cudaMemcpy(devicePointer, point.getHostPointer(), AllocationUtils.getRequiredMemory(shape), cudaMemcpyKind.cudaMemcpyHostToDevice);
+
+                free(point, AllocationStatus.ZERO);
+
+                return devicePointerInfo;
+            }
             default:
                 throw new IllegalStateException("Can't allocate memory on target [" + targetMode + "]");
         }
@@ -137,6 +154,15 @@ public class UmaMover implements Mover {
 
         } else if (currentStatus == AllocationStatus.DEVICE && targetStatus == AllocationStatus.HOST) {
             // DEVICE -> HOST
+            BaseCudaDataBuffer targetBuffer = point.getBuffer();
+            if (targetBuffer == null)
+                throw new IllegalStateException("Target buffer is NULL!");
+
+            Pointer devicePointer = point.getCudaPointer();
+
+            // FIXME: ASYNC should be here
+            JCuda.cudaMemcpy(PointerUtil.getHostPointer(targetBuffer), devicePointer, AllocationUtils.getRequiredMemory(shape), cudaMemcpyKind.cudaMemcpyDeviceToHost );
+
         } else if (currentStatus == AllocationStatus.HOST && targetStatus == AllocationStatus.ZERO) {
             // HOST -> ZERO
             Pointer hostPointer = point.getHostPointer();
@@ -150,6 +176,14 @@ public class UmaMover implements Mover {
 
         } else if (currentStatus == AllocationStatus.HOST && targetStatus == AllocationStatus.DEVICE) {
             // HOST -> DEVICE
+            BaseCudaDataBuffer hostBuffer = point.getBuffer();
+            if (hostBuffer == null)
+                throw new IllegalStateException("Target buffer is NULL!");
+
+            Pointer devicePointer = point.getCudaPointer();
+
+            // FIXME: ASYNC should be here
+            JCuda.cudaMemcpy(devicePointer, PointerUtil.getHostPointer(hostBuffer), AllocationUtils.getRequiredMemory(shape), cudaMemcpyKind.cudaMemcpyHostToDevice );
 
         }  else throw new UnsupportedOperationException("Can't relocate data in requested direction: [" + currentStatus + "] -> [" + targetStatus + "]");
     }
@@ -166,7 +200,7 @@ public class UmaMover implements Mover {
             Technically that's just a case for relocate, with source as point.getAllocationStatus() and target HOST
          */
      //   log.info("copyback() called on shape: " + point.getShape());
-        relocate(AllocationStatus.ZERO, AllocationStatus.HOST, point, shape);
+        relocate(point.getAllocationStatus(), AllocationStatus.HOST, point, shape);
     }
 
     /**
@@ -199,6 +233,7 @@ public class UmaMover implements Mover {
                 break;
             case DEVICE: {
                     // cudaFree call
+                    JCuda.cudaFree(point.getCudaPointer());
                 }
                 break;
             default:

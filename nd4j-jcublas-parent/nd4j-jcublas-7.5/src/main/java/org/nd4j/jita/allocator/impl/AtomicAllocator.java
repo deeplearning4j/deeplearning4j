@@ -415,7 +415,17 @@ public class AtomicAllocator implements Allocator {
          */
         if (!isNewAllocation) {
             // we check promotion only for existant allocations. just ignore new allocations here :)
+            if (point.getDeviceTicks() > 5 && point.getAllocationStatus() == AllocationStatus.ZERO) {
+                point.getAccessState().requestToe();
 
+                DevicePointerInfo newPointers = mover.alloc(AllocationStatus.DEVICE, point, shape);
+
+                point.setAllocationStatus(AllocationStatus.DEVICE);
+                point.setCudaPointers(newPointers);
+                log.info("Relocation happened!");
+
+                point.getAccessState().releaseToe();
+            }
         }
 
         /*

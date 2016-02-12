@@ -68,7 +68,7 @@ public class AtomicAllocatorTest {
 
         long time1 = 0;
         long time2 = 0;
-        long exec[] = new long[10];
+        long exec[] = new long[100];
         for (int x = 0; x < exec.length; x++) {
             time1 = System.nanoTime();
             dotWrapped = Nd4j.getBlasWrapper().dot(array1, array2);
@@ -88,7 +88,17 @@ public class AtomicAllocatorTest {
         INDArray array1 = Nd4j.create(new float[]{1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
         INDArray array2 = Nd4j.create(new float[]{1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
 
+        for (int x = 0; x < 1; x++) {
+             Nd4j.getBlasWrapper().dot(array1, array2);
+        }
+
+        long time1 = System.nanoTime();
         Nd4j.getBlasWrapper().axpy(new Float(0.75f), array1, array2);
+        long time2 = System.nanoTime();
+        log.info("Execution time: [" + (time2 - time1) + "] ns");
+        // 3572174 ns average on warm zero copy
+        // 698620 ns lowest on device
+
 
         assertEquals(1.7574999332427979, array2.getDouble(0), 0.00001);
         assertEquals(1.7574999332427979, array2.getDouble(1), 0.00001);
@@ -105,7 +115,7 @@ public class AtomicAllocatorTest {
     /*
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
 
-        DO NOT EVER REMOVE @IGNORE FROM THIS TEST -> THIS IS INFINITE TEST, SUITED TO GUARANTEE ABSENCE OF MEMLEAKS ON ND4J JCUBLAS
+        DO NOT EVER REMOVE @IGNORE FROM THIS TEST -> THIS IS INFINITE TEST, SUITED TO GUARANTEE ABSENCE OF MEMLEAKS ON ND4J JCUBLAS ON A LONG RUN
 
      */
     @Test
