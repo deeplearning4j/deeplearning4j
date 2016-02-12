@@ -27,7 +27,7 @@ For example, if you want to identify a group of people at risk for cancer, your 
 
 Searching for potential dating partners, future major-league superstars, a company's most promising employees, or potential bad actors, involves much the same process of contructing a training set by amassing vital statistics, social graphs, raw text communications, click streams, etc., and then comparing them to others to surface patterns and persons of interest. 
 
-##<a name="element">Neural Network Elements</a>
+## <a name="element">Neural Network Elements</a>
 
 Deep learning is a name for a certain set of stacked neural networks composed of several layers. The layers are made of nodes. A node is a place where computation happens, loosely patterned on the human neuron, and firing when it encounters sufficient stimuli. It combines input from the data with a set of coefficients, or weights, that either amplify or dampen that input, thereby assigning significance to it in the task the algorithm is trying to learn. These input-weight products are summed and the sum is passed through a node's so-called activation function, to determine whether and to what extent that signal progresses further in the net to affect the ultimate outcome, say, an act of classification. 
 
@@ -41,7 +41,7 @@ A node layer is a row of those neuronlike switches that turn on or off as the in
 
 Pairing adjustable weights with input features is how we assign significance to those features with regard to how the network classifies and clusters input. 
 
-##<a name="concept">Key Concepts of Deep Neural Networks</a>
+## <a name="concept">Key Concepts of Deep Neural Networks</a>
 
 Deep-learning networks are distinguished from the more commonplace single-hidden-layer neural networks by their **depth**; that is, the number of node layers through which data passes in a multistep process of pattern recognition. 
 
