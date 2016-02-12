@@ -455,7 +455,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testVariance(){
+    public void testVariance() {
 
         INDArray arr = Nd4j.create(new float[]{0.9296161f, 0.31637555f, 0.1839188f},new int[]{1,3},ordering());
         double var = arr.varNumber().doubleValue();

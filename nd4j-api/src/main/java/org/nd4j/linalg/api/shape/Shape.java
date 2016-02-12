@@ -985,7 +985,8 @@ public class Shape {
      * @return the rank for the shape buffer
      */
     public static int rank(IntBuffer buffer) {
-        return buffer.get(0);
+        IntBuffer ret =  (IntBuffer) buffer.position(0);
+        return ret.get(0);
     }
 
     /**
@@ -1005,7 +1006,8 @@ public class Shape {
      * @return
      */
     public static IntBuffer stride(IntBuffer buffer) {
-        IntBuffer ret =  (IntBuffer) buffer.asReadOnlyBuffer().position(1 + rank(buffer));
+        int rank =  rank(buffer);
+        IntBuffer ret =  (IntBuffer) buffer.position(1 + rank);
         return ret.slice();
     }
 
@@ -1108,7 +1110,7 @@ public class Shape {
      * @param order the order for the buffer
      * @return the shape information buffer given the parameters
      */
-    public static IntBuffer createShapeInformation(int[] shape,int[] stride,int offset,int elementWiseStride,char order) {
+    public static DataBuffer createShapeInformation(int[] shape,int[] stride,int offset,int elementWiseStride,char order) {
         DataBuffer ret = Nd4j.createBuffer(new int[shapeInfoLength(shape.length)]);
         int count = 1;
         ret.put(0,shape.length);
@@ -1124,7 +1126,7 @@ public class Shape {
         ret.put(count++,order);
 
 
-        return ret.asNioInt();
+        return ret;
     }
 
 
@@ -1178,8 +1180,6 @@ public class Shape {
      * @return true if the content equals false otherwise
      */
     public static boolean contentEquals(int[] arr,IntBuffer other) {
-        if(arr.length != Shape.rank(other))
-            return false;
         for(int i = 0; i < arr.length; i++) {
             other.position(i);
             if (arr[i] != other.get()) {

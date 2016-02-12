@@ -1201,7 +1201,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         Nd4j.getRandom().setSeed(12345);
         int[] maxShape = new int[]{5, 7, 9, 11, 13, 15};
 
-        for( int opNum=0; opNum<6; opNum++ ) {
+        for( int opNum=0; opNum < 6; opNum++ ) {
             for (int rank = 2; rank < maxShape.length; rank++) {
                 int[] shape = Arrays.copyOfRange(maxShape, 0, rank);
                 INDArray orig = Nd4j.rand(shape);

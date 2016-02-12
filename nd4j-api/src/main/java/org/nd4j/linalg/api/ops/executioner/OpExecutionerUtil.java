@@ -203,7 +203,7 @@ public class OpExecutionerUtil {
         //Next: Need to work out the separation between the start (first element) of each 1d tensor
         int tensorStartSeparation;
         int elementWiseStride;  //Separation in buffer between elements in the tensor
-        if(numTensors == 1){
+        if(numTensors == 1) {
             tensorStartSeparation = -1; //Not applicable
             elementWiseStride = array.elementWiseStride();
         } else {
