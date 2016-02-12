@@ -115,7 +115,7 @@ public:
 
 		//optimized loop for vectorization
 		if (xElementWiseStride == 1 && yElementWiseStride == 1) {
-#pragma omp simd
+#pragma omp parallel for
 			for (int i = 0; i < xLength; i++) {
 				int yOffset2 = yOffset
 						+ ((i / xElementWiseStride) % yLength)
@@ -128,7 +128,7 @@ public:
 		}
 
 		else {
-#pragma omp simd
+#pragma omp parallel for
 			for (int i = 0; i < xLength; i++) {
 				int yOffset2 = yOffset
 						+ ((i / xElementWiseStride) % yLength)
@@ -141,6 +141,13 @@ public:
 
 	}
 
+		virtual inline
+#ifdef __CUDACC__
+		__host__ __device__
+#endif
+		void aggregateExtraParams(T **extraParamsTotal,T **extraParamsLocal) {
+			//no extra params aggregation needs to happen
+		}
 #ifdef __CUDACC__
 	inline __host__ __device__
 #elif defined(__GNUC__)

@@ -725,7 +725,7 @@ public:
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+	inline __host__
 
 #elif defined(__GNUC__)
 	__always_inline
@@ -740,27 +740,36 @@ public:
 		int length = shape::length(xShapeInfo);
 		int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 		if (xElementWiseStride == 1) {
-#pragma omp simd
-			for (int i = 0; i < length; i++) {
-				IndexValue<T> curr;
-				curr.value = x[i];
-				curr.index = i;
-				startingIndex = update(startingIndex, curr,
-						extraParams);
+            int i;
+#pragma omp parallel private(i)
+            {
+#pragma omp for
+                for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
+                    IndexValue<T> curr;
+                    curr.value = x[i];
+                    curr.index = i;
+                    startingIndex = update(startingIndex, curr,
+                                           extraParams);
 
-			}
+                }
+            }
 
-			return startingIndex.index;
+            return startingIndex.index;
 		} else {
 
-#pragma omp simd
-			for (int i = 0; i < length; i++) {
-				IndexValue<T> curr;
-				curr.value = x[i * xElementWiseStride];
-				curr.index = i;
-				startingIndex = update(startingIndex, curr,
-						extraParams);
-			}
+            int i;
+#pragma omp parallel private(i)
+            {
+#pragma omp for
+                for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
+                    IndexValue<T> curr;
+                    curr.value = x[i * xElementWiseStride];
+                    curr.index = i;
+                    startingIndex = update(startingIndex, curr,
+                                           extraParams);
+                }
+            }
+
 			return  startingIndex.index;
 
 		}
@@ -779,7 +788,7 @@ public:
 	 */
 	virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+	inline __host__
 
 #elif defined(__GNUC__)
 	__always_inline
@@ -797,27 +806,37 @@ public:
 		int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 		int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
 		if (xElementWiseStride == 1 && resultElementWiseStride == 1) {
-#pragma omp simd
-			for (int i = 0; i < length; i++) {
-				IndexValue<T> curr;
-				curr.value = x[i];
-				curr.index = i;
-				startingIndex = update(startingIndex, curr,
-						extraParams);
+            int i;
+#pragma omp parallel private(i)
+            {
+#pragma omp for
+                for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
+                    IndexValue<T> curr;
+                    curr.value = x[i];
+                    curr.index = i;
+                    startingIndex = update(startingIndex, curr,
+                                           extraParams);
 
-			}
+                }
+
+            }
 
 			result[0] = startingIndex.index;
 		} else {
 
-#pragma omp simd
-			for (int i = 0; i < length; i++) {
-				IndexValue<T> curr;
-				curr.value = x[i * xElementWiseStride];
-				curr.index = i;
-				startingIndex = update(startingIndex, curr,
-						extraParams);
-			}
+            int i;
+#pragma omp parallel private(i)
+            {
+#pragma omp for
+                for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
+                    IndexValue<T> curr;
+                    curr.value = x[i * xElementWiseStride];
+                    curr.index = i;
+                    startingIndex = update(startingIndex, curr,
+                                           extraParams);
+                }
+            }
+
 			result[0] = startingIndex.index;
 
 		}
@@ -871,16 +890,20 @@ public:
 		int tadElementWiseStride = dimensionLength > 1 ? shape::stride(xShapeInfo)[dimensionLength - 1] : shape::computeElementWiseStride(shape::rank(xShapeInfo),shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),shape::order(xShapeInfo) == 'f',dimension,dimensionLength);
 		int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
 		int tadLength = tadPermuteInfo.tensorShapeProd;
+int i;
+#pragma omp parallel private(i)
+        {
+#pragma omp for
+            for (i = omp_get_thread_num(); i < resultLength; i+= omp_get_num_threads()) {
+                IndexValue<T> val;
+                val.value = this->startingValue(x);
+                val.index = 0;
+                startingIndex[i] = val;
+            }
+        }
 
-#pragma omp simd
-		for (int i = 0; i < resultLength; i++) {
-			IndexValue<T> val;
-			val.value = this->startingValue(x);
-			val.index = 0;
-			startingIndex[i] = val;
-		}
 
-		int i = 0,j = 0;
+        int j = 0;
 #pragma omp parallel private(j,i)
 		{
 			int ID = omp_get_thread_num();
@@ -905,6 +928,15 @@ public:
 		shape::freePermuteInfo(tadPermuteInfo);
         delete[] startingIndex;
 	}
+
+    virtual inline
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    void aggregateExtraParams(T **extraParamsTotal,T **extraParamsLocal) {
+        //no extra params aggregation needs to happen
+    }
+
 
 	virtual
 #ifdef __CUDACC__

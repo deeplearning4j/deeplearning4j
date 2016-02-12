@@ -32,13 +32,21 @@ public:
 
 #endif
 	std::string name() = 0;
-	virtual
+
+	virtual inline
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
 	int extraParamsLength() {
 		return extraParamsLen;
 	}
+
+
+	virtual inline
+#ifdef __CUDACC__
+	__host__ __device__
+#endif
+    void aggregateExtraParams(T **extraParamsTotal,T **extraParamsLocal) = 0;
 
 
 	virtual inline

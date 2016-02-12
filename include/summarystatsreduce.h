@@ -1054,7 +1054,7 @@ struct SharedSummaryStatsData<double> {
              */
 			virtual
 #ifdef __CUDACC__
-			inline __host__  __device__
+			inline __host__
 
 #elif defined(__GNUC__)
 			__always_inline
@@ -1065,29 +1065,57 @@ struct SharedSummaryStatsData<double> {
 					  T *result,
 					  int *resultShapeInfo) {
 				SummaryStatsData<T> startingIndex;
+                startingIndex.initialize();
 				int length = shape::length(xShapeInfo);
 				int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 				int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
 				if (xElementWiseStride == 1 && resultElementWiseStride == 1) {
-#pragma omp simd
-					for (int i = 0; i < length; i++) {
-						SummaryStatsData<T> curr;
-						curr.initWithValue(x[i]);
-						startingIndex = update(startingIndex, curr,
-											   extraParams);
+					int i;
+#pragma omp parallel private(i)
+					{
+						SummaryStatsData<T> local;
+                        local.initialize();
+#pragma omp for
+						for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
+							SummaryStatsData<T> curr;
+							curr.initWithValue(x[i]);
+							local = update(local, curr,
+										   extraParams);
+						}
+
+#pragma omp critical
+						{
+							startingIndex = update(local,startingIndex,extraParams);
+						}
 					}
+
 
 					T finalVal = this->getValue(startingIndex);
 					result[0] = finalVal;
-				} else {
+				}
 
-#pragma omp simd
-					for (int i = 0; i < length; i++) {
-						SummaryStatsData<T> curr;
-						curr.initWithValue(x[i]);
-						startingIndex = update(startingIndex, curr,
-											   extraParams);
+				else {
+					int i;
+#pragma omp parallel private(i)
+					{
+                        SummaryStatsData<T> localVal;
+                        localVal.initialize();
+#pragma omp for
+						for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
+							SummaryStatsData<T> curr;
+							curr.initWithValue(x[i]);
+                            localVal = update(localVal, curr,
+												   extraParams);
+						}
+
+#pragma omp critical
+                        {
+                            startingIndex = update(localVal,startingIndex,extraParams);
+                        }
+
 					}
+
+
 
 					result[0] = getValue(startingIndex);
 
@@ -1108,7 +1136,7 @@ struct SharedSummaryStatsData<double> {
              */
 			virtual
 #ifdef __CUDACC__
-			inline __host__  __device__
+			inline __host__
 
 #elif defined(__GNUC__)
 			__always_inline
@@ -1117,28 +1145,53 @@ struct SharedSummaryStatsData<double> {
 						 int *xShapeInfo,
 						 T *extraParams) {
 				SummaryStatsData<T> startingIndex;
+                startingIndex.initialize();
 				int length = shape::length(xShapeInfo);
 				int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 				if (xElementWiseStride == 1) {
-#pragma omp simd
-					for (int i = 0; i < length; i++) {
-						SummaryStatsData<T> curr;
-						curr.initWithValue(x[i]);
-						startingIndex = update(startingIndex, curr,
-											   extraParams);
-					}
+                    int i;
+#pragma omp parallel private(i)
+                    {
+                        SummaryStatsData<T> local;
+#pragma omp for
+                        for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
+                            SummaryStatsData<T> curr;
+                            curr.initWithValue(x[i]);
+                            local = update(local, curr,
+                                                   extraParams);
+                        }
+
+#pragma omp critical
+                        {
+                          startingIndex = update(local,startingIndex,extraParams);
+                        }
+                    }
+
 
 					T finalVal = this->getValue(startingIndex);
 					return finalVal;
 				} else {
 
-#pragma omp simd
-					for (int i = 0; i < length; i++) {
-						SummaryStatsData<T> curr;
-						curr.initWithValue(x[i]);
-						startingIndex = update(startingIndex, curr,
-											   extraParams);
-					}
+                    int i;
+#pragma omp parallel private(i)
+                    {
+                        SummaryStatsData<T> local;
+
+#pragma omp for
+                        for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
+                            SummaryStatsData<T> curr;
+                            curr.initWithValue(x[i]);
+                            local = update(local, curr,
+                                                   extraParams);
+                        }
+
+#pragma omp critical
+                        {
+                            startingIndex = update(local,startingIndex,extraParams);
+                        }
+                    }
+
+
 
 					return getValue(startingIndex);
 
@@ -1152,10 +1205,10 @@ struct SharedSummaryStatsData<double> {
              * Dimension wise execution for CPU
              * @param x the input
              * @param xShapeInfo the shape information
-             * @param extraParams the extra paremters
+             * @param extraParams the extra parameters
              * @param result the result buffer
              * @param resultShapeInfoBuffer the shape information
-             * @param dimension the dimension to exeucte along
+             * @param dimension the dimension to execute along
              * @param dimensionLength the length of the dimension
              */
 			virtual
@@ -1208,7 +1261,7 @@ struct SharedSummaryStatsData<double> {
 				{
 
 					int ID = omp_get_thread_num();
-
+#pragma omp for
 					for(i = ID; i < resultLength; i+= omp_get_num_threads()) {
 						int offset = dimensionLength > 1 ? i : tadLength * i;
 						SummaryStatsData<T> comp;
@@ -1236,6 +1289,13 @@ struct SharedSummaryStatsData<double> {
 				return 0;
 			}
 
+			virtual inline
+#ifdef __CUDACC__
+			__host__ __device__
+#endif
+			void aggregateExtraParams(T **extraParamsTotal,T **extraParamsLocal) {
+				//no extra params aggregation needs to happen
+			}
 
 #ifdef __CUDACC__
 			__host__ __device__
