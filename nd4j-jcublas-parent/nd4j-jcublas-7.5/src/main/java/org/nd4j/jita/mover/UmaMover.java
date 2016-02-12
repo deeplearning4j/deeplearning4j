@@ -165,7 +165,7 @@ public class UmaMover implements Mover {
         /*
             Technically that's just a case for relocate, with source as point.getAllocationStatus() and target HOST
          */
-        log.info("copyback() called on shape: " + point.getShape());
+     //   log.info("copyback() called on shape: " + point.getShape());
         relocate(AllocationStatus.ZERO, AllocationStatus.HOST, point, shape);
     }
 
@@ -180,21 +180,21 @@ public class UmaMover implements Mover {
         /*
             Technically that's just a case for relocate, with source as HOST and target point.getAllocationStatus()
          */
-        log.info("copyforward() called on shape: " + point.getShape());
+     //   log.info("copyforward() called on shape: " + point.getShape());
         relocate(AllocationStatus.HOST, point.getAllocationStatus(), point, shape);
     }
 
     /**
      * This method frees memory chunk specified by pointer and location
      *
-     * @param pointer Pointer
-     * @param location AllocationStatus
+     * @param point Pointer
      */
     @Override
-    public void free(@NonNull Pointer pointer, @NonNull AllocationStatus location) {
-        switch (location) {
+    public void free(@NonNull AllocationPoint point, AllocationStatus target) {
+        switch (target) {
             case ZERO: {
                     // cudaFreeHost call here
+                    JCuda.cudaFreeHost(point.getCudaPointer());
                 }
                 break;
             case DEVICE: {
@@ -202,7 +202,7 @@ public class UmaMover implements Mover {
                 }
                 break;
             default:
-                throw new IllegalStateException("Can't free memory on target [" + location + "]");
+                throw new IllegalStateException("Can't free memory on target [" + target + "]");
         }
     }
 

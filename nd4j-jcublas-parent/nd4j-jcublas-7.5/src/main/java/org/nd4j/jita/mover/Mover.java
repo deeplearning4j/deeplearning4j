@@ -55,8 +55,7 @@ public interface Mover {
     /**
      * This method frees memory chunk specified by pointer
      *
-     * @param pointer
-     * @param location
+     * @param point
      */
-    void free(Pointer pointer, AllocationStatus location);
+    void free(AllocationPoint point, AllocationStatus target);
 }

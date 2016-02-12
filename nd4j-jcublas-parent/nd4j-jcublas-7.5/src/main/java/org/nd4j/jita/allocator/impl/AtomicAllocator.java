@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -40,6 +41,7 @@ public class AtomicAllocator implements Allocator {
     private Configuration configuration = new Configuration();
     private CudaEnvironment environment = new CudaEnvironment();
     private transient Mover mover;
+    private AtomicLong allocationsCounter = new AtomicLong(0);
 
     private AtomicLong objectsTracker = new AtomicLong(Long.MIN_VALUE);
 
@@ -47,7 +49,7 @@ public class AtomicAllocator implements Allocator {
     protected Map<Long, Integer> devicesAffinity = new ConcurrentHashMap<>();
 
     // simple counter to track allocated host-memory
-    protected AtomicLong zeroUseCounter = new AtomicLong(0);
+    protected volatile AtomicLong zeroUseCounter = new AtomicLong(0);
 
     // we have single tracking point for allocation points, since we're not going to cycle through it it any time soon
     private Map<Long, AllocationPoint> allocationsMap = new ConcurrentHashMap<>();
@@ -337,7 +339,7 @@ public class AtomicAllocator implements Allocator {
                 while (zeroUseCounter.get() > configuration.getMaximumZeroAllocation() - (configuration.getMaximumZeroAllocation() / 10)) {
                     // TODO: call for zero copy memory copyback & deallocation
 
-                    long freedMemory = seekUnusedZero(Thread.currentThread().getId());
+                    long freedMemory = seekUnusedZero(Thread.currentThread().getId(),1, 1);
                 }
                 /*
                     We intentionally update counter prior to allocation
@@ -350,7 +352,8 @@ public class AtomicAllocator implements Allocator {
                  */
                 point.setAllocationStatus(AllocationStatus.ZERO);
                 DevicePointerInfo info = mover.alloc(AllocationStatus.ZERO, point, shape);
-
+                long allocCnt = allocationsCounter.incrementAndGet();
+                if (allocCnt % 1000 == 0) log.info("Total zero allocations happened: [" + allocCnt + "]; active zero allocations: ["+ zeroAllocations.get(Thread.currentThread().getId()).size()+"]");
 
                 /*
                     it's safe to remove this check in production environment
@@ -569,18 +572,50 @@ public class AtomicAllocator implements Allocator {
     }
 
     /**
+     *
+     * @param threadId
+     * @param objectId
+     */
+    protected void purgeZeroObject(Long threadId, Long objectId, AllocationPoint point, boolean copyback) {
+        if (copyback) {
+
+            // copyback here
+            mover.copyback(point, point.getShape());
+
+            externalsLock.writeLock().lock();
+
+            externalBuffers.remove(point.getBuffer());
+
+            externalsLock.writeLock().unlock();
+        }
+        zeroAllocations.get(threadId).remove(objectId);
+        allocationsMap.remove(objectId);
+
+        // we call for caseless deallocation here
+        mover.free(point, point.getAllocationStatus());
+        point.setAllocationStatus(AllocationStatus.DEALLOCATED);
+
+        zeroUseCounter.set(zeroUseCounter.get() - AllocationUtils.getRequiredMemory(point.getShape()));
+    }
+
+    /**
      * This method seeks for unused zero-copy memory allocations
      *
      * @param threadId Id of the thread, retrieved via Thread.currentThread().getId()
      * @return size of memory that was deallocated
      */
-    protected long seekUnusedZero(Long threadId) {
+    protected long seekUnusedZero(Long threadId, double minShortRate, double minLongRate) {
         /*
             This method is blocking on thread basis, just to prevent parallel calls
 
             TODO: To prevent cyclic calls we need something smart here
          */
         AtomicLong freeSpace = new AtomicLong(0);
+
+        int totalElements = zeroAllocations.get(threadId).size();
+        //log.info("Total zero elements to be checked: [" + totalElements + "]; zeroUsed: ["+ zeroUseCounter.get()+"]");
+
+
 
         for (Long object: zeroAllocations.get(threadId)) {
             AllocationPoint point = getAllocationPoint(object);
@@ -591,16 +626,35 @@ public class AtomicAllocator implements Allocator {
                     Check if memory points to non-existant buffer, using externals.
                     If externals don't have specified buffer - delete reference.
                  */
+                if (point.getBuffer() == null) {
+                    //log.info("Ghost reference removed: " + object);
+
+                    purgeZeroObject(threadId, object, point, false);
+                    freeSpace.addAndGet(AllocationUtils.getRequiredMemory(point.getShape()));
+                    continue;
+                }
 
                 /*
                     Check, if memory can be removed from allocation.
                     To check it, we just compare average rates for few tens of latest calls
                  */
+                long nanos = TimeUnit.NANOSECONDS.convert(configuration.getMinimumTTLMilliseconds(), TimeUnit.MILLISECONDS);
+                if (point.getDeviceAccessTime() < System.nanoTime() - nanos ) {
+                    // we could remove device allocation ONLY if it's older then minimum TTL
+                    if (point.getTimerLong().getFrequencyOfEvents() < minLongRate && point.getTimerShort().getFrequencyOfEvents() < minShortRate) {
+                        //log.info("Removing object: " + object);
+
+                        purgeZeroObject(threadId, object, point, true);
+                        freeSpace.addAndGet(AllocationUtils.getRequiredMemory(point.getShape()));
+                    }
+                }
 
                 point.getAccessState().releaseToe();
             }
         }
 
+
+        //log.info("Total zero elements left: " + zeroAllocations.get(threadId).size());
         return freeSpace.get();
     }
 
@@ -646,7 +700,7 @@ public class AtomicAllocator implements Allocator {
                 /*
                     Check for zero-copy garbage
                  */
-                seekUnusedZero(threadId);
+                seekUnusedZero(threadId, 1, 1);
 
                 try {
                     Thread.sleep(30000);
