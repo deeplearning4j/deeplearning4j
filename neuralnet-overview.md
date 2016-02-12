@@ -11,6 +11,7 @@ Contents
 * <a href="#element">Neural Network Elements</a>
 * <a href="#concept">Key Concepts of Deep Neural Networks</a>
 * <a href="#forward">Example: Feedforward Networks & Backprop</a>
+* <a href="#regression">Multiple Linear Regression</a>
 * <a href="#logistic">Logistic Regression & Classifiers</a>
 * <a href="#ai">Neural Networks & Artificial Intelligence</a>
 * <a href="#intro">Other Introductory Resources</a>
@@ -100,7 +101,7 @@ The three pseudo-mathematical formulas above account for the three key functions
 
 Let's linger on the first step above.
 
-### Multiple Linear Regression
+### <a name="multiple">Multiple Linear Regression</a>
 
 Despite their biologically inspired name, artificial neural networks are nothing more than math and code, like any other machine-learning algorithm. In fact, anyone who understands *linear regression*, one of first methods you learn in statistics, can understand how a neural net works. In its simplest form, linear regression is expressed as
 
