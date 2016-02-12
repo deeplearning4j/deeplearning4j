@@ -17,14 +17,6 @@ Below, we'll define the following terms in order for each language.
 * Convolutional network
 * Recurrent neural network
 
-### Chinese
-
-*
-*
-*
-*
-* 
-
 ### German
 
 * Tiefes Lernen
@@ -47,23 +39,6 @@ Below, we'll define the following terms in order for each language.
 * [Apprendimento automatico](https://it.wikipedia.org/wiki/Apprendimento_automatico)
 * [Rete neurale](https://it.wikipedia.org/wiki/Rete_neurale)
 * Convoluzione di reti neurali
-* 
-
-### Japanese
-
-* 
-*
-* 
-*
-* 
-
-### Korean
-
-* 
-*
-* 
-* 
-* 
 
 ### Spanish
 
@@ -71,5 +46,3 @@ Below, we'll define the following terms in order for each language.
 * Aprendizaje automático 
 * Red neuronal
 * Red neuronal convolucional
-* 
-
