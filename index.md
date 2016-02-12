@@ -54,6 +54,9 @@ If you have any questions, please join [us on Gitter](https://gitter.im/deeplear
 
 ### Deeplearning4j Tutorials
 
+* [Introduction to Deep Neural Networks](../neuralnet-overview.html)
+* [Convolutional Networks Tutorial](../convolutionalnets.html)
+* [LSTM and Recurrent Network Tutorial](../lstm.html)
 * [Using Recurrent Nets With DL4J](../usingrnns.html)
 * [Deep-Belief Networks With MNIST](../mnist-tutorial.html)
 * [IRIS Flower Dataset Tutorial](../iris-flower-dataset-tutorial.html)
