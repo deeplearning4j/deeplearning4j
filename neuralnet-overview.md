@@ -121,6 +121,8 @@ What we are trying to build at each node is a switch (like a neuron...) that tur
 
 When you have a switch, you have a classification problem. Does the input's signal indicate the node should classify it as enough, or not_enough, on or off? A binary decision can be expressed by 1 and 0, and [logistic regression](#logistic) is a non-linear function that squashes input to translate it to a space between 0 and 1. 
 
+In fact, the nonlinear transforms at each node are usually s-shaped functions similar to logistic regression. They go by the names of sigmoid (the Greek word for "S"), tanh, hard tanh, etc., which can be used as the non-linear transform shaping the output of each node. The output of all nodes, equally squashed into an s-shaped space between 0 and 1, is then passed as input to the next layer in a feed forward neural network, and so on until the signal reaches the final layer of the net, where decisions are made. 
+
 ### Gradient Descent
 
 The name for one commonly used optimization function that adjusts weights according to the error they caused is called "gradient descent." 
@@ -182,6 +184,10 @@ That said, gradient descent is not recombining every weight with every other to 
 For people just getting started with deep learning, the following tutorials and videos provide an easy entrance to the fundamental ideas of feedforward networks:
 
 * [Restricted Boltzmann Machines](../restrictedboltzmannmachine.html)
+* [Eigenvectors, PCA, Covariance and Entropy](../eigenvector.html)
+* [Glossary of Deep-Learning and Neural-Net Terms](../glossary.html)
+* [Convolutional Networks](../convolutionalnets.html)
+* [Recurrent Networks and LSTMs](../lstm.html)
 * [Iris Flower Dataset Tutorial](../iris-flower-dataset-tutorial.html)
 * [Deeplearning4j Examples via Quickstart](../quickstart.html)
 * [Neural Networks Demystified](https://www.youtube.com/watch?v=bxe2T-V8XRs) (A seven-video series)
