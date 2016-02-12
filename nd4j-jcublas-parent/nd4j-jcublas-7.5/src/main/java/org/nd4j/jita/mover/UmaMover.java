@@ -3,6 +3,7 @@ package org.nd4j.jita.mover;
 import jcuda.Pointer;
 import jcuda.runtime.JCuda;
 import lombok.NonNull;
+import org.apache.commons.lang3.tuple.Triple;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
@@ -10,9 +11,13 @@ import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.DevicePointerInfo;
+import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.buffer.allocation.HostDevicePointer;
 import org.nd4j.linalg.util.NioUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -32,6 +37,8 @@ import java.nio.ByteOrder;
 public class UmaMover implements Mover {
     private Configuration configuration;
     private CudaEnvironment environment;
+
+    private static Logger log = LoggerFactory.getLogger(UmaMover.class);
 
     @Override
     public void init(Configuration configuration, CudaEnvironment environment) {
@@ -114,6 +121,20 @@ public class UmaMover implements Mover {
             // DEVICE -> ZERO
         } else if (currentStatus == AllocationStatus.ZERO && targetStatus == AllocationStatus.HOST) {
             // ZERO -> HOST
+            Pointer hostPointer = point.getHostPointer();
+
+            if (hostPointer == null)
+                throw new IllegalStateException("HostPointer is null, can't relocate!");
+
+            BaseCudaDataBuffer targetBuffer = point.getBuffer();
+            if (targetBuffer == null)
+                throw new IllegalStateException("Target buffer is NULL!");
+
+            // FIXME: this is wrong. We MUST take AllocationShape into account, to avoid unneccessary copybacks, also breaking partial allocations
+            ByteBuffer pointer = hostPointer.getByteBuffer(0, targetBuffer.getElementSize() * targetBuffer.length()).order(ByteOrder.nativeOrder());
+            ByteBuffer bufferNio = targetBuffer.asNio();
+            NioUtil.copyAtStride(targetBuffer.length(),getBufferType(targetBuffer),pointer, 0,1,bufferNio,0,1);
+
         } else if (currentStatus == AllocationStatus.DEVICE && targetStatus == AllocationStatus.HOST) {
             // DEVICE -> HOST
         } else throw new UnsupportedOperationException("Can't relocate data in requested direction: [" + currentStatus + "] -> [" + targetStatus + "]");
@@ -130,7 +151,10 @@ public class UmaMover implements Mover {
         /*
             Technically that's just a case for relocate, with source as point.getAllocationStatus() and target HOST
          */
+        log.info("copyback() called on shape: " + point.getShape());
+        relocate(AllocationStatus.ZERO, AllocationStatus.HOST, point);
 
+        point.tickHostRead();
     }
 
     /**

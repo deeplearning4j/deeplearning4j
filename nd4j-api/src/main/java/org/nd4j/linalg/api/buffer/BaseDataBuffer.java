@@ -944,6 +944,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public boolean equals(Object o) {
+        // FIXME: this is BAD. it takes too long to work, and it breaks general equals contract
         if(o instanceof DataBuffer) {
             DataBuffer d = (DataBuffer) o;
             if(d.length() != length())

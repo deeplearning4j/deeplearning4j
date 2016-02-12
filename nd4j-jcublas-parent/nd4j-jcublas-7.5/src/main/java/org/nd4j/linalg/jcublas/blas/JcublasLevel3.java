@@ -2,6 +2,8 @@ package org.nd4j.linalg.jcublas.blas;
 
 import jcuda.Pointer;
 import jcuda.jcublas.JCublas2;
+import org.nd4j.jita.allocator.Allocator;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.blas.impl.BaseLevel3;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
@@ -20,6 +22,8 @@ import org.nd4j.linalg.jcublas.util.PointerUtil;
  * @author Adam Gibson
  */
 public class JcublasLevel3 extends BaseLevel3 {
+    private Allocator allocator = AtomicAllocator.getInstance();
+
     @Override
     protected void sgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A, int lda, INDArray B, int ldb, float beta, INDArray C, int ldc) {
         A = Shape.toOffsetZero(A);
@@ -47,6 +51,15 @@ public class JcublasLevel3 extends BaseLevel3 {
                     ldc);
             ctx.syncOldStream();
             cCPointer.copyToHost();
+
+            allocator.tickDeviceWrite(C);
+
+
+            allocator.tackDevice(A);
+            allocator.tackDevice(B);
+            allocator.tackDevice(C);
+
+
         }catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -80,6 +93,14 @@ public class JcublasLevel3 extends BaseLevel3 {
                     , ldc);
             ctx.syncOldStream();
             cPointer.copyToHost();
+
+            allocator.tickDeviceWrite(C);
+
+
+            allocator.tackDevice(A);
+            allocator.tackDevice(B);
+            allocator.tackDevice(C);
+
         }catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -97,6 +118,13 @@ public class JcublasLevel3 extends BaseLevel3 {
             JCublas2.cublasSsyrk(ctx.getHandle(),OpUtil.getOp(Order),OpUtil.getOp(Trans),N,K,PointerUtil.getPointer(alpha),aPointer.getDevicePointer(),lda,PointerUtil.getPointer(beta),cPointer.getDevicePointer(),ldc);
             ctx.syncOldStream();
             cPointer.copyToHost();
+
+            allocator.tickDeviceWrite(C);
+
+
+            allocator.tackDevice(A);
+            allocator.tackDevice(C);
+
         }catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -132,6 +160,13 @@ public class JcublasLevel3 extends BaseLevel3 {
                     ,ldb);
             ctx.syncOldStream();
             bPointer.copyToHost();
+
+            allocator.tickDeviceWrite(B);
+
+
+            allocator.tackDevice(A);
+            allocator.tackDevice(B);
+
         }catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -172,6 +207,12 @@ public class JcublasLevel3 extends BaseLevel3 {
                     ldc); // incy
             ctx.syncOldStream();
             cCPointer.copyToHost();
+
+            allocator.tickDeviceWrite(C);
+
+            allocator.tackDevice(A);
+            allocator.tackDevice(B);
+            allocator.tackDevice(C);
         }catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -202,9 +243,13 @@ public class JcublasLevel3 extends BaseLevel3 {
                     , ldc);
             ctx.syncOldStream();
             cPointer.copyToHost();
-        }
 
-        catch (Exception e) {
+            allocator.tickDeviceWrite(C);
+
+            allocator.tackDevice(A);
+            allocator.tackDevice(B);
+            allocator.tackDevice(C);
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
@@ -233,6 +278,11 @@ public class JcublasLevel3 extends BaseLevel3 {
             ctx.syncOldStream();
             cPointer.copyToHost();
 
+            allocator.tickDeviceWrite(C);
+
+            allocator.tackDevice(A);
+            allocator.tackDevice(C);
+
         }catch(Exception e) {
             throw new RuntimeException(e);
         }
@@ -258,6 +308,12 @@ public class JcublasLevel3 extends BaseLevel3 {
                     , ldb, PointerUtil.getPointer(beta), cPointer.getDevicePointer().withByteOffset(C.offset() * C.data().getElementSize()), ldc);
             ctx.syncOldStream();
             cPointer.copyToHost();
+
+            allocator.tickDeviceWrite(C);
+
+            allocator.tackDevice(A);
+            allocator.tackDevice(B);
+            allocator.tackDevice(C);
         }
         catch (Exception e) {
             throw new RuntimeException(e);
@@ -292,6 +348,12 @@ public class JcublasLevel3 extends BaseLevel3 {
                     , bPointer.getDevicePointer().withByteOffset(B.offset() * B.data().getElementSize()), ldb);
             ctx.syncOldStream();
             bPointer.copyToHost();
+
+            allocator.tickDeviceWrite(B);
+
+            allocator.tackDevice(A);
+            allocator.tackDevice(B);
+
         }catch (Exception e) {
             throw new RuntimeException(e);
         }

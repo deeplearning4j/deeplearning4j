@@ -14,6 +14,7 @@ import org.nd4j.jita.mover.Mover;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.JCublasNDArray;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.DevicePointerInfo;
 import org.slf4j.Logger;
@@ -245,11 +246,48 @@ public class AtomicAllocator implements Allocator {
         throw new UnsupportedOperationException("tickDevice should be removed!!!11one");
     }
 
+    /**
+     * This method hints allocator, that specific object was released on device side
+     *
+     * @param array
+     */
+    @Override
+    public void tackDevice(INDArray array) {
+        tackDevice((BaseCudaDataBuffer) array.data(), AllocationUtils.buildAllocationShape(array));
+    }
+
+
+
     @Override
     public void tackDevice(BaseCudaDataBuffer objectId, AllocationShape shape) {
         AllocationPoint point = getAllocationPoint(objectId);
 
         point.getAccessState().requestTack();
+    }
+
+
+    /**
+     * This method notifies allocator, that specific object was changed on device side
+     *
+     * @param array
+     */
+    @Override
+    public void tickDeviceWrite(INDArray array) {
+        AllocationPoint point = getAllocationPoint((BaseCudaDataBuffer) array.data());
+
+        point.tickDeviceWrite();
+    }
+
+    /**
+     * This method notifies allocator, that specific object was changed on host side
+     *
+     * @param array
+     */
+    @Override
+    public void tickHostWrite(INDArray array) {
+        AllocationPoint point = getAllocationPoint((BaseCudaDataBuffer) array.data());
+
+        point.tickHostWrite();
     }
 
     /**
@@ -364,12 +402,12 @@ public class AtomicAllocator implements Allocator {
     }
 
     /**
-     * This method should be called to make sure that data on host size is actualized
+     * This method should be called to make sure that data on host side is actualized
      *
      * @param objectId
      */
     @Override
-    public void synchronizeHostData(BaseCudaDataBuffer objectId) {
+    public void synchronizeHostData(BaseCudaDataBuffer objectId, AllocationShape shape) {
         AllocationPoint point = getAllocationPoint(objectId);
 
         /*
@@ -381,8 +419,18 @@ public class AtomicAllocator implements Allocator {
 
         if (!point.isActualOnHostSide()) {
             mover.copyback(point);
-        }
+        } else log.info("Data is actual, skipping sync");
         point.getAccessState().releaseToe();
+    }
+
+    /**
+     * This method should be called to make sure that data on host side is actualized
+     *
+     * @param array
+     */
+    @Override
+    public void synchronizeHostData(JCublasNDArray array) {
+        synchronizeHostData((BaseCudaDataBuffer) array.data(), AllocationUtils.buildAllocationShape(array));
     }
 
     /**

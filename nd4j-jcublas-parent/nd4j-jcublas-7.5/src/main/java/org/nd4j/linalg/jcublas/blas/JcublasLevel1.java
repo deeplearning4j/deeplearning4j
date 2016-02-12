@@ -3,6 +3,9 @@ package org.nd4j.linalg.jcublas.blas;
 import jcuda.Pointer;
 import jcuda.jcublas.JCublas;
 import jcuda.jcublas.JCublas2;
+import org.nd4j.jita.allocator.Allocator;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.linalg.api.blas.impl.BaseLevel1;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
@@ -11,6 +14,7 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.DataTypeValidation;
 import org.nd4j.linalg.jcublas.CublasPointer;
+import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
@@ -19,6 +23,8 @@ import org.nd4j.linalg.jcublas.util.PointerUtil;
  * @author Adam Gibson
  */
 public class JcublasLevel1 extends BaseLevel1 {
+    private Allocator allocator = AtomicAllocator.getInstance();
+
     @Override
     protected float sdsdot(int N, float alpha, INDArray X, int incX, INDArray Y, int incY) {
         throw new UnsupportedOperationException();
@@ -50,6 +56,8 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incY, result);
             ctx.syncOldStream();
 
+            allocator.tackDevice((BaseCudaDataBuffer) X.data(), AllocationUtils.buildAllocationShape(X));
+            allocator.tackDevice((BaseCudaDataBuffer) Y.data(), AllocationUtils.buildAllocationShape(Y));
 
         }catch(Exception e2) {
             throw new RuntimeException(e2);
@@ -87,6 +95,9 @@ public class JcublasLevel1 extends BaseLevel1 {
                     , yCPointer.getDevicePointer().withByteOffset(Y.offset() * Y.data().getElementSize()),
                     incY, result);
             ctx.syncOldStream();
+
+            allocator.tackDevice(X);
+            allocator.tackDevice(Y);
 
         }catch (Exception e) {
               throw new RuntimeException(e);
@@ -140,6 +151,9 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incX
                     , result);
             ctx.syncOldStream();
+
+            allocator.tackDevice(X);
+
         }catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -164,6 +178,8 @@ public class JcublasLevel1 extends BaseLevel1 {
                     , incX
                     , result);
             ctx.syncOldStream();
+
+            allocator.tackDevice(X);
 
         }catch(Exception e) {
             throw new RuntimeException(e);
@@ -198,6 +214,9 @@ public class JcublasLevel1 extends BaseLevel1 {
                     , incX
                     , result);
             ctx.syncOldStream();
+
+            allocator.tackDevice(X);
+
         }catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -223,6 +242,9 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incX,
                     result);
             ctx.syncOldStream();
+
+            allocator.tackDevice(X);
+
         }catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -254,6 +276,8 @@ public class JcublasLevel1 extends BaseLevel1 {
                     , result);
             ctx.syncOldStream();
 
+            allocator.tackDevice(X);
+
         }catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -279,6 +303,8 @@ public class JcublasLevel1 extends BaseLevel1 {
                     , incX
                     , result);
             ctx.syncOldStream();
+
+            allocator.tackDevice(X);
 
         }catch (Exception e) {
             throw new RuntimeException(e);
@@ -312,6 +338,9 @@ public class JcublasLevel1 extends BaseLevel1 {
                     xCPointer.getDevicePointer().withByteOffset(X.offset() * X.data().getElementSize()),
                     incX);
             ctx.syncOldStream();
+
+            allocator.tackDevice(X);
+
         }catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -339,6 +368,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incX);
             ctx.syncOldStream();
 
+            allocator.tackDevice(X);
 
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -380,6 +410,14 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incY);
             ctx.syncOldStream();
             yCPointer.copyToHost();
+
+            allocator.tickDeviceWrite(Y);
+
+            allocator.tackDevice(X);
+            allocator.tackDevice(Y);
+
+
+
         }catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -404,6 +442,12 @@ public class JcublasLevel1 extends BaseLevel1 {
                     , incY);
             ctx.syncOldStream();
             yCPointer.copyToHost();
+
+            allocator.tickDeviceWrite(Y);
+
+            allocator.tackDevice(X);
+            allocator.tackDevice(Y);
+
         }catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -435,6 +479,12 @@ public class JcublasLevel1 extends BaseLevel1 {
             ctx.syncOldStream();
             xBPointer.copyToHost();
 
+            allocator.tickDeviceWrite(Y);
+
+            allocator.tackDevice((BaseCudaDataBuffer) X.data(), AllocationUtils.buildAllocationShape(X));
+            allocator.tackDevice((BaseCudaDataBuffer) Y.data(), AllocationUtils.buildAllocationShape(Y));
+
+
         }catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -464,6 +514,12 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incY);
             ctx.syncOldStream();
             yCPointer.copyToHost();
+
+            allocator.tickDeviceWrite(Y);
+
+            allocator.tackDevice((BaseCudaDataBuffer) X.data(), AllocationUtils.buildAllocationShape(X));
+            allocator.tackDevice((BaseCudaDataBuffer) Y.data(), AllocationUtils.buildAllocationShape(Y));
+
         }catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -488,6 +544,12 @@ public class JcublasLevel1 extends BaseLevel1 {
                     , incY);
             ctx.syncOldStream();
             yCPointer.copyToHost();
+
+            allocator.tickDeviceWrite(Y);
+
+            allocator.tackDevice(X);
+            allocator.tackDevice(Y);
+
         }catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -518,6 +580,11 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incY);
             ctx.syncOldStream();
             xBPointer.copyToHost();
+
+            allocator.tickDeviceWrite(Y);
+
+            allocator.tackDevice(X);
+            allocator.tackDevice(Y);
         }catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -626,6 +693,11 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incX);
             ctx.syncOldStream();
             xCPointer.copyToHost();
+
+            allocator.tickDeviceWrite(X);
+
+            allocator.tackDevice(X);
+
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -643,6 +715,11 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incX);
             ctx.syncOldStream();
             xCPointer.copyToHost();
+
+            allocator.tickDeviceWrite(X);
+
+            allocator.tackDevice(X);
+
         }catch (Exception e) {
             throw new RuntimeException(e);
         }

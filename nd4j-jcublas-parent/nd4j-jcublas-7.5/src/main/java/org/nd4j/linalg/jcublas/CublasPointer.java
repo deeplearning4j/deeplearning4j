@@ -20,6 +20,7 @@
 package org.nd4j.linalg.jcublas;
 
 import jcuda.Pointer;
+import lombok.Data;
 import lombok.Getter;
 import org.apache.commons.lang3.tuple.Triple;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
@@ -108,8 +109,14 @@ public class CublasPointer  implements AutoCloseable {
 
     /**
      * copies the result to the host buffer
+     *
+     *
      */
+    @Deprecated
     public void copyToHost() {
+
+        if (1 > 0) return;
+
         if(arr != null) {
             int compLength = arr instanceof IComplexNDArray ? arr.length() * 2 : arr.length();
             ContextHolder.getInstance().getMemoryStrategy().copyToHost(buffer,arr.offset(),arr.elementWiseStride(),compLength,cudaContext,arr.offset(),arr.elementWiseStride());

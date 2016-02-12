@@ -20,11 +20,15 @@
 package org.nd4j.linalg.jcublas;
 
 
+import org.nd4j.jita.allocator.Allocator;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
+import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 
 import java.util.List;
 
@@ -34,10 +38,11 @@ import java.util.List;
  *
  * @author mjk
  * @author Adam Gibson
+ * @author raver119@gmail.com
  */
 
 public class JCublasNDArray extends BaseNDArray {
-	
+	private Allocator allocator = AtomicAllocator.getInstance();
 
     public JCublasNDArray(double[][] data) {
         super(data);
@@ -338,4 +343,316 @@ public class JCublasNDArray extends BaseNDArray {
         super(data, shape, stride, offset, ordering);
     }
 
+    /**
+     * Returns the elements at the the specified indices
+     *
+     * @param indices the indices to get
+     * @return the array with the specified elements
+     */
+    @Override
+    public double getDouble(int... indices) {
+        allocator.synchronizeHostData(this);
+        return super.getDouble(indices);
+    }
+
+    /**
+     * Returns the elements at the the specified indices
+     *
+     * @param index the indices to get
+     * @return the array with the specified elements
+     */
+    @Override
+    public double getDouble(int index) {
+        allocator.synchronizeHostData(this);
+        return super.getDouble(index);
+    }
+
+    @Override
+    public INDArray putScalar(int i, double value) {
+        try {
+            allocator.synchronizeHostData(this);
+            return super.putScalar(i, value);
+        } finally {
+            allocator.tickHostWrite(this);
+        }
+    }
+
+    @Override
+    public INDArray putScalar(int i, float value) {
+        try {
+            allocator.synchronizeHostData(this);
+            return super.putScalar(i, value);
+        } finally {
+            allocator.tickHostWrite(this);
+        }
+    }
+
+    @Override
+    public INDArray putScalar(int i, int value) {
+        try {
+            allocator.synchronizeHostData(this);
+            return super.putScalar(i, value);
+        } finally {
+            allocator.tickHostWrite(this);
+        }
+    }
+
+    @Override
+    public INDArray putScalar(int[] indexes, double value) {
+        try {
+            allocator.synchronizeHostData(this);
+            return super.putScalar(indexes, value);
+        } finally {
+            allocator.tickHostWrite(this);
+        }
+    }
+
+    @Override
+    public INDArray putScalar(int[] indexes, float value) {
+        try {
+            allocator.synchronizeHostData(this);
+            return super.putScalar(indexes, value);
+        } finally {
+            allocator.tickHostWrite(this);
+        }
+    }
+
+    @Override
+    public INDArray putScalar(int[] indexes, int value) {
+        try {
+            allocator.synchronizeHostData(this);
+            return super.putScalar(indexes, value);
+        } finally {
+            allocator.tickHostWrite(this);
+        }
+    }
+
+    /**
+     * Inserts the element at the specified index
+     *
+     * @param indices the indices to insert into
+     * @param element a scalar ndarray
+     * @return a scalar ndarray of the element at this index
+     */
+    @Override
+    public INDArray put(int[] indices, INDArray element) {
+        try {
+            allocator.synchronizeHostData(this);
+            return super.put(indices, element);
+        } finally {
+            allocator.tickHostWrite(this);
+        }
+    }
+
+    /**
+     * Inserts the element at the specified index
+     *
+     * @param i       the row insert into
+     * @param j       the column to insert into
+     * @param element a scalar ndarray
+     * @return a scalar ndarray of the element at this index
+     */
+    @Override
+    public INDArray put(int i, int j, INDArray element) {
+        try {
+            allocator.synchronizeHostData(this);
+            return super.put(i, j, element);
+        } finally {
+            allocator.tickHostWrite(this);
+        }
+    }
+
+    /**
+     * Inserts the element at the specified index
+     *
+     * @param i       the row insert into
+     * @param j       the column to insert into
+     * @param element a scalar ndarray
+     * @return a scalar ndarray of the element at this index
+     */
+    @Override
+    public INDArray put(int i, int j, Number element) {
+        try {
+            allocator.synchronizeHostData(this);
+            return super.put(i, j, element);
+        } finally {
+            allocator.tickHostWrite(this);
+        }
+    }
+
+    /**
+     * Assigns the given matrix (put) to the specified slice
+     *
+     * @param slice the slice to assign
+     * @param put   the slice to put
+     * @return this for chainability
+     */
+    @Override
+    public INDArray putSlice(int slice, INDArray put) {
+        try {
+            allocator.synchronizeHostData(this);
+            return super.putSlice(slice, put);
+        } finally {
+            allocator.tickHostWrite(this);
+        }
+    }
+
+    /**
+     * Returns the elements at the the specified indices
+     *
+     * @param indices the indices to get
+     * @return the array with the specified elements
+     */
+    @Override
+    public float getFloat(int... indices) {
+        allocator.synchronizeHostData(this);
+        return super.getFloat(indices);
+    }
+
+    @Override
+    public INDArray dup() {
+        allocator.synchronizeHostData(this);
+        return super.dup();
+    }
+
+    @Override
+    public INDArray dup(char order) {
+        allocator.synchronizeHostData(this);
+        return super.dup(order);
+    }
+
+    /**
+     * Returns the elements at the the specified indices
+     *
+     * @param indices the indices to getScalar
+     * @return the array with the specified elements
+     */
+    @Override
+    public int getInt(int... indices) {
+        allocator.synchronizeHostData(this);
+        return super.getInt(indices);
+    }
+
+    @Override
+    public INDArray put(INDArrayIndex[] indices, Number element) {
+        try {
+            allocator.synchronizeHostData(this);
+            return super.put(indices, element);
+        } finally {
+            allocator.tickHostWrite(this);
+        }
+    }
+
+    @Override
+    public INDArray put(INDArrayIndex[] indices, INDArray element) {
+        try {
+            allocator.synchronizeHostData(this);
+            return super.put(indices, element);
+        } finally {
+            allocator.tickHostWrite(this);
+        }
+    }
+
+    @Override
+    public INDArray getScalar(int i) {
+        return super.getScalar(i);
+    }
+
+    /**
+     * Fetch a particular number on a multi dimensional scale.
+     *
+     * @param indexes the indexes to get a number from
+     * @return the number at the specified indices
+     */
+    @Override
+    public INDArray getScalar(int... indexes) {
+        allocator.synchronizeHostData(this);
+        return super.getScalar(indexes);
+    }
+
+    @Override
+    public double getDoubleUnsafe(int offset) {
+        allocator.synchronizeHostData(this);
+        return super.getDoubleUnsafe(offset);
+    }
+
+    @Override
+    public double getDouble(int i, int j) {
+        allocator.synchronizeHostData(this);
+        return super.getDouble(i, j);
+    }
+
+    @Override
+    public float getFloat(int i) {
+        allocator.synchronizeHostData(this);
+        return super.getFloat(i);
+    }
+
+    @Override
+    public float getFloat(int i, int j) {
+        allocator.synchronizeHostData(this);
+        return super.getFloat(i, j);
+    }
+
+    /**
+     * Returns the element at the specified row/column
+     * This will throw an exception if the
+     *
+     * @param row    the row of the element to return
+     * @param column the row of the element to return
+     * @return a scalar indarray of the element at this index
+     */
+    @Override
+    public INDArray getScalar(int row, int column) {
+        allocator.synchronizeHostData(this);
+        return super.getScalar(row, column);
+    }
+
+    /**
+     * Insert a row in to this array
+     * Will throw an exception if this
+     * ndarray is not a matrix
+     *
+     * @param row   the row insert into
+     * @param toPut the row to insert
+     * @return this
+     */
+    @Override
+    public INDArray putRow(int row, INDArray toPut) {
+        try {
+            allocator.synchronizeHostData(this);
+            return super.putRow(row, toPut);
+        } finally {
+            allocator.tickHostWrite(this);
+        }
+    }
+
+    /**
+     * Insert a column in to this array
+     * Will throw an exception if this
+     * ndarray is not a matrix
+     *
+     * @param column the column to insert
+     * @param toPut  the array to put
+     * @return this
+     */
+    @Override
+    public INDArray putColumn(int column, INDArray toPut) {
+        try {
+            allocator.synchronizeHostData(this);
+            return super.putColumn(column, toPut);
+        } finally {
+            allocator.tickHostWrite(this);
+        }
+    }
+
+    @Override
+    public INDArray putScalarUnsafe(int offset, double value) {
+        try {
+            allocator.synchronizeHostData(this);
+            return super.putScalarUnsafe(offset, value);
+        } finally {
+            allocator.tickHostWrite(this);
+        }
+    }
 }

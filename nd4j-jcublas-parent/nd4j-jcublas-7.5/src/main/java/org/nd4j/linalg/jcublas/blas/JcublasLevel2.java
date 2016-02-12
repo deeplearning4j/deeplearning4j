@@ -4,6 +4,8 @@ import jcuda.Pointer;
 import jcuda.cuComplex;
 import jcuda.cuDoubleComplex;
 import jcuda.jcublas.JCublas2;
+import org.nd4j.jita.allocator.Allocator;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.blas.impl.BaseLevel2;
 import org.nd4j.linalg.api.complex.IComplexDouble;
@@ -22,6 +24,8 @@ import org.nd4j.linalg.jcublas.util.PointerUtil;
  * @author Adam Gibson
  */
 public class JcublasLevel2 extends BaseLevel2 {
+    private Allocator allocator = AtomicAllocator.getInstance();
+
     @Override
     protected void sgemv(char order, char TransA, int M, int N, float alpha, INDArray A, int lda, INDArray X, int incX, float beta, INDArray Y, int incY) {
         CudaContext ctx = CudaContext.getBlasContext();
@@ -44,6 +48,15 @@ public class JcublasLevel2 extends BaseLevel2 {
                     incY);
             ctx.syncOldStream();
             cCPointer.copyToHost();
+
+            allocator.tickDeviceWrite(Y);
+
+
+            allocator.tackDevice(X);
+            allocator.tackDevice(Y);
+            allocator.tackDevice(A);
+
+
         }
         catch (Exception e) {
             throw new RuntimeException(e);
@@ -118,6 +131,15 @@ public class JcublasLevel2 extends BaseLevel2 {
                     incY);
             ctx.syncOldStream();
             cCPointer.copyToHost();
+
+            allocator.tickDeviceWrite(Y);
+
+
+            allocator.tackDevice(X);
+            allocator.tackDevice(Y);
+            allocator.tackDevice(A);
+
+
         }catch (Exception e) {
             throw new RuntimeException(e);
         }

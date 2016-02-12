@@ -9,6 +9,7 @@ import org.nd4j.jita.mover.Mover;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.jcublas.JCublasNDArray;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 
 /**
@@ -78,8 +79,34 @@ public interface Allocator {
     @Deprecated
     void tickDevice(BaseCudaDataBuffer objectId, AllocationShape shape);
 
+    /**
+     * This method hints allocator, that specific object was released on device side
+     *
+     * @param buffer
+     * @param shape
+     */
+    void tackDevice(BaseCudaDataBuffer buffer, AllocationShape shape);
 
-    void tackDevice(BaseCudaDataBuffer objectId, AllocationShape shape);
+    /**
+     * This method hints allocator, that specific object was released on device side
+     *
+     * @param array
+     */
+    void tackDevice(INDArray array);
+
+    /**
+     * This method notifies allocator, that specific object was changed on device side
+     *
+     * @param array
+     */
+    void tickDeviceWrite(INDArray array);
+
+    /**
+     * This method notifies allocator, that specific object was changed on host side
+     *
+     * @param array
+     */
+    void tickHostWrite(INDArray array);
 
     /**
      * This method returns actual device pointer valid for current object
@@ -108,11 +135,18 @@ public interface Allocator {
     Pointer getHostPointer(BaseCudaDataBuffer buffer, AllocationShape shape);
 
     /**
-     * This method should be called to make sure that data on host size is actualized
+     * This method should be called to make sure that data on host side is actualized
      *
      * @param buffer
      */
-    void synchronizeHostData(BaseCudaDataBuffer buffer);
+    void synchronizeHostData(BaseCudaDataBuffer buffer, AllocationShape shape);
+
+    /**
+     * This method should be callsd to make sure that data on host side is actualized
+     *
+     * @param array
+     */
+    void synchronizeHostData(JCublasNDArray array);
 
     /**
      * This method returns current host memory state

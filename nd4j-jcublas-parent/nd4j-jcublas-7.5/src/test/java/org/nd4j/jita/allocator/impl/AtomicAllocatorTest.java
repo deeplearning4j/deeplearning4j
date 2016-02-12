@@ -53,10 +53,6 @@ public class AtomicAllocatorTest {
         // reset to default MemoryStrategy, most probable is Pinned
         ContextHolder.getInstance().forceMemoryStrategyForThread(new PinnedMemoryStrategy());
 
-        assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
-
-    //    CudaContext ctx = CudaContext.getBlasContext();
-
         INDArray array1 = Nd4j.create(new float[]{1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
         INDArray array2 = Nd4j.create(new float[]{1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f, 1.10f});
 
@@ -82,12 +78,6 @@ public class AtomicAllocatorTest {
     public void testGpuBlas2() throws Exception {
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
 
-        // reset to default MemoryStrategy, most probable is Pinned
-        ContextHolder.getInstance().forceMemoryStrategyForThread(new PinnedMemoryStrategy());
-
-        assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
-
-
         INDArray array1 = Nd4j.create(new float[]{1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
         INDArray array2 = Nd4j.create(new float[]{1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
 
@@ -95,5 +85,7 @@ public class AtomicAllocatorTest {
 
         assertEquals(1.7574999332427979, array2.getDouble(0), 0.00001);
         assertEquals(1.7574999332427979, array2.getDouble(1), 0.00001);
+
+
     }
 }

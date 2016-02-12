@@ -44,9 +44,11 @@ public class AllocationPoint {
 
     private SyncState hostMemoryState = SyncState.UNDEFINED;
 
-    // corresponding access time in nanoseconds
-    private AtomicLong accessHost = new AtomicLong(0);
-    private AtomicLong accessDevice = new AtomicLong(0);
+    // corresponding access times in milliseconds
+    private AtomicLong accessHostRead = new AtomicLong(0);
+    private AtomicLong accessDeviceRead = new AtomicLong(0);
+    private AtomicLong accessHostWrite = new AtomicLong(0);
+    private AtomicLong accessDeviceWrite = new AtomicLong(0);
 
     // TODO: timer should be instantiated externally
     @Getter private final RateTimer timerShort = new SimpleTimer(10, TimeUnit.SECONDS); //new BinaryTimer(5, TimeUnit.SECONDS);
@@ -150,6 +152,29 @@ public class AllocationPoint {
     }
 
     /**
+     * This method returns CUDA pointer object for this allocation.
+     * It can be either device pointer or pinned memory pointer, or null.
+     *
+     * PLEASE NOTE: Thread safety is guaranteed by reentrant read/write lock
+     * @return
+     */
+    public Pointer getHostPointer() {
+        try {
+            cudaLock.readLock().lock();
+
+            if (pointerInfo == null)
+                return null;
+
+            if (pointerInfo.getPointers() == null)
+                return null;
+
+            return pointerInfo.getPointers().getHostPointer();
+        } finally {
+            cudaLock.readLock().unlock();
+        }
+    }
+
+    /**
      * This method sets CUDA pointer for this allocation.
      * It can be either device pointer, or pinned memory pointer, or null.
      *
@@ -192,12 +217,12 @@ public class AllocationPoint {
         this.deviceTicks.incrementAndGet();
         this.timerShort.triggerEvent();
         this.timerLong.triggerEvent();
-        this.accessDevice.set(System.currentTimeMillis());
+        this.accessDeviceRead.set(System.currentTimeMillis());
     }
 
     public void tackDevice() {
         //this.deviceTicks.incrementAndGet();
-        this.accessDevice.set(System.currentTimeMillis());
+        this.accessDeviceRead.set(System.currentTimeMillis());
     }
 
     public void tickDescendant(AllocationShape shape) {
@@ -285,7 +310,7 @@ public class AllocationPoint {
      * @return
      */
     public long getHostAccessTime() {
-        return accessHost.get();
+        return accessHostRead.get();
     }
 
     /**
@@ -294,7 +319,35 @@ public class AllocationPoint {
      * @return
      */
     public long getDeviceAccessTime() {
-        return accessDevice.get();
+        return accessHostRead.get();
+    }
+
+    /**
+     * Returns time when point was written on device last time
+     *
+     * @return
+     */
+    public long getDeviceWriteTime() {
+        return accessDeviceWrite.get();
+    }
+
+    public void tickHostRead() {
+        accessHostRead.set(System.currentTimeMillis());
+    }
+
+    /**
+     * This method sets time when this point was changed on device
+     *
+     */
+    public void tickDeviceWrite() {
+        accessDeviceWrite.set(System.currentTimeMillis());
+    }
+
+    /**
+     * This method sets time when this point was changed on host
+     */
+    public void tickHostWrite() {
+        accessHostWrite.set(System.currentTimeMillis());
     }
 
     /**
@@ -303,6 +356,6 @@ public class AllocationPoint {
      * @return true, if data is actual, false otherwise
      */
     public boolean isActualOnHostSide() {
-        return getHostAccessTime() >= getDeviceAccessTime();
+        return getHostAccessTime() >= getDeviceWriteTime();
     }
 }
