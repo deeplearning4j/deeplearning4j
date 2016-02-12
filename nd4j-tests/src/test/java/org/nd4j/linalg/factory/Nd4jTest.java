@@ -97,7 +97,7 @@ public class Nd4jTest extends BaseNd4jTest {
                 6.,  6.,  6.,  3.,  3.,  3.,  3.,  6.,  6.,  6.,  6.,  3.,  3.,
                 3.,  3.,  6.,  6.,  6.,  6.
         },new int[]{2, 4, 4});
-        assertEquals(expectedResult, actualResult);
+        assertEquals(getFailureMessage(),expectedResult, actualResult);
     }
 
 
@@ -116,6 +116,6 @@ public class Nd4jTest extends BaseNd4jTest {
                 4.,  4.,  4.,  1.,  1.,  1.,  1.,  4.,  4.,  4.,  4.,  1.,  1.,
                 1.,  1.,  4.,  4.,  4.,  4.
         },new int[]{2, 4, 4});
-        assertEquals(expectedResult, actualResult);
+        assertEquals(getFailureMessage(),expectedResult, actualResult);
     }
 }

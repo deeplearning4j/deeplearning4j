@@ -79,7 +79,7 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
         char Order = 'N';   //Check this?
 
         if(A.data().dataType() == DataBuffer.Type.DOUBLE)
-            dgemm(Order
+            dgemm(A.ordering()
                     ,params.getTransA()
                     ,params.getTransB()
                     ,params.getM()
@@ -94,18 +94,18 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
                     ,C
                     ,params.getLdc());
         else
-            sgemm(Order
+            sgemm(A.ordering()
                     , params.getTransA()
                     , params.getTransB()
                     , params.getM()
                     , params.getN()
                     , params.getK()
-                    , (float)alpha
+                    , (float) alpha
                     , params.getA()
                     , params.getLda()
                     , params.getB()
                     , params.getLdb()
-                    , (float)beta
+                    , (float) beta
                     , C
                     , params.getLdc());
     }

@@ -177,7 +177,7 @@ public class Variance extends BaseAccumulation {
         if (y() != null)
             ret = new Variance(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            ret = new Variance(x.tensorAlongDimension(index, dimension));
+            ret = new Variance(x.tensorAlongDimension(index, dimension),biasCorrected);
         ret.setApplyFinalTransform(applyFinalTransform());
         return ret;
     }
@@ -194,7 +194,12 @@ public class Variance extends BaseAccumulation {
     }
 
     @Override
-    public void exec() {
+    public boolean isPassThrough() {
+        return true;
+    }
+
+    @Override
+    public void exec(){
         if (biasCorrected)
             this.bias = Nd4j.getExecutioner().execAndReturn(new Bias(x)).getFinalResult().doubleValue();
         this.mean = Nd4j.getExecutioner().execAndReturn(new Mean(x)).getFinalResult().doubleValue();
