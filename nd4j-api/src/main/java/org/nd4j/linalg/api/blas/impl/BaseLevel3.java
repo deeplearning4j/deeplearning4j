@@ -76,8 +76,6 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
     @Override
     public void gemm(INDArray A, INDArray B, INDArray C, boolean transposeA, boolean transposeB, double alpha, double beta) {
         GemmParams params = new GemmParams(A,B,C,transposeA,transposeB);
-        char Order = 'N';   //Check this?
-
         if(A.data().dataType() == DataBuffer.Type.DOUBLE)
             dgemm(A.ordering()
                     ,params.getTransA()
