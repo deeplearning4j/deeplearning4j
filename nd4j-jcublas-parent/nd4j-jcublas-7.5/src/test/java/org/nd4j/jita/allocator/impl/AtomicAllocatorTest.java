@@ -36,7 +36,7 @@ public class AtomicAllocatorTest {
             singleDevice4GBcc52 = new CudaEnvironment();
 
             Configuration configuration = new Configuration();
-            configuration.setMaximumZeroAllocation(1000000);
+            configuration.setMaximumZeroAllocation(1000000000);
 
             DeviceInformation device1 = new DeviceInformation();
             device1.setDeviceId(1);
@@ -121,7 +121,7 @@ public class AtomicAllocatorTest {
             Nd4j.getBlasWrapper().axpy(new Float(0.75f), array1, array2);
 
             assertNotEquals(0, array2.getDouble(0), 0.00001);
-            if (cnt.incrementAndGet() % 10000 == 0) {
+            if (cnt.incrementAndGet() % 100000 == 0) {
                 log.info("Sleeping for 5 seconds...");
                 Thread.sleep(5000);
             }

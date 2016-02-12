@@ -86,6 +86,14 @@ public class AtomicAllocator implements Allocator {
     private ReentrantReadWriteLock globalLock = new ReentrantReadWriteLock();
     private ReentrantReadWriteLock externalsLock = new ReentrantReadWriteLock();
 
+    /*
+        here we have handles for garbage collector threads
+        ThreadId, GarbageCollector
+     */
+    private Map<Long, GarbageCollectorThread> collectors = new ConcurrentHashMap<>();
+
+    private final AtomicBoolean shouldStop = new AtomicBoolean(false);
+
     public static AtomicAllocator getInstance() {
         return INSTANCE;
     }
@@ -337,9 +345,12 @@ public class AtomicAllocator implements Allocator {
                  */
                 long requiredMemory = AllocationUtils.getRequiredMemory(shape);
                 while (zeroUseCounter.get() > configuration.getMaximumZeroAllocation() - (configuration.getMaximumZeroAllocation() / 10)) {
-                    // TODO: call for zero copy memory copyback & deallocation
+                        log.info("Executing manually");
+//                    if (zeroUseCounter.get() > configuration.getMaximumZeroAllocation() - (configuration.getMaximumZeroAllocation() / 10)) {
+                        long freedMemory = seekUnusedZero(Thread.currentThread().getId(), 1, 1);
+//                    } else {
 
-                    long freedMemory = seekUnusedZero(Thread.currentThread().getId(),1, 1);
+//                    }
                 }
                 /*
                     We intentionally update counter prior to allocation
@@ -542,6 +553,10 @@ public class AtomicAllocator implements Allocator {
                 }
 
                 log.info("Mapping device ["+ device+"] to thread [" + Thread.currentThread().getId() + "]");
+
+                GarbageCollectorThread thread = new GarbageCollectorThread(threadId, device, shouldStop);
+                thread.start();
+                collectors.put(threadId, thread);
             }
             return devicesAffinity.get(Thread.currentThread().getId());
         } finally {
@@ -604,7 +619,7 @@ public class AtomicAllocator implements Allocator {
      * @param threadId Id of the thread, retrieved via Thread.currentThread().getId()
      * @return size of memory that was deallocated
      */
-    protected long seekUnusedZero(Long threadId, double minShortRate, double minLongRate) {
+    protected synchronized long seekUnusedZero(Long threadId, double minShortRate, double minLongRate) {
         /*
             This method is blocking on thread basis, just to prevent parallel calls
 
@@ -638,8 +653,9 @@ public class AtomicAllocator implements Allocator {
                     Check, if memory can be removed from allocation.
                     To check it, we just compare average rates for few tens of latest calls
                  */
-                long nanos = TimeUnit.NANOSECONDS.convert(configuration.getMinimumTTLMilliseconds(), TimeUnit.MILLISECONDS);
-                if (point.getDeviceAccessTime() < System.nanoTime() - nanos ) {
+
+                long millisecondsTTL = configuration.getMinimumTTLMilliseconds();
+                if (point.getRealDeviceAccessTime() < System.currentTimeMillis() - millisecondsTTL) {
                     // we could remove device allocation ONLY if it's older then minimum TTL
                     if (point.getTimerLong().getFrequencyOfEvents() < minLongRate && point.getTimerShort().getFrequencyOfEvents() < minShortRate) {
                         //log.info("Removing object: " + object);
@@ -665,7 +681,7 @@ public class AtomicAllocator implements Allocator {
      * @param deviceId Id of the device
      * @return size of memory that was deallocated
      */
-    protected long seekUnusedDevice(Long threadId, Integer deviceId) {
+    protected synchronized long seekUnusedDevice(Long threadId, Integer deviceId) {
         AtomicLong freeSpace = new AtomicLong(0);
 
         deviceLock.readLock().lock();
@@ -695,15 +711,16 @@ public class AtomicAllocator implements Allocator {
                 /*
                     Check for device garbage
                  */
-                seekUnusedDevice(this.threadId, this.deviceId);
+                //seekUnusedDevice(this.threadId, this.deviceId);
 
                 /*
                     Check for zero-copy garbage
                  */
+                log.info("Executing automatically");
                 seekUnusedZero(threadId, 1, 1);
 
                 try {
-                    Thread.sleep(30000);
+                    Thread.sleep(10000);
                 } catch (Exception e) {
                     // we can have interruption here, to force gc
                   ;

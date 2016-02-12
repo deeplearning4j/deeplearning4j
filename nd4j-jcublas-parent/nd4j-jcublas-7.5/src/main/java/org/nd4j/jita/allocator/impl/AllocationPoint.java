@@ -10,7 +10,10 @@ import org.nd4j.jita.allocator.enums.AccessState;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.SyncState;
 import org.nd4j.jita.allocator.time.RateTimer;
+import org.nd4j.jita.allocator.time.TimeProvider;
 import org.nd4j.jita.allocator.time.impl.SimpleTimer;
+import org.nd4j.jita.allocator.time.providers.MillisecondsProvider;
+import org.nd4j.jita.allocator.time.providers.OperativeProvider;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.DevicePointerInfo;
@@ -44,11 +47,17 @@ public class AllocationPoint {
 
     private SyncState hostMemoryState = SyncState.UNDEFINED;
 
-    // corresponding access times in milliseconds
+    private transient TimeProvider timeProvider = new OperativeProvider();
+    private transient TimeProvider realTimeProvider = new MillisecondsProvider();
+
+    // corresponding access times in TimeProvider quants
     private AtomicLong accessHostRead = new AtomicLong(0);
     private AtomicLong accessDeviceRead = new AtomicLong(0);
     private AtomicLong accessHostWrite = new AtomicLong(0);
     private AtomicLong accessDeviceWrite = new AtomicLong(0);
+
+    // real time here
+    private AtomicLong deviceAccessTime = new AtomicLong(0);
 
     // TODO: timer should be instantiated externally
     @Getter private final RateTimer timerShort = new SimpleTimer(10, TimeUnit.SECONDS); //new BinaryTimer(5, TimeUnit.SECONDS);
@@ -217,12 +226,14 @@ public class AllocationPoint {
         this.deviceTicks.incrementAndGet();
         this.timerShort.triggerEvent();
         this.timerLong.triggerEvent();
-        this.accessDeviceRead.set(System.nanoTime());
+        this.deviceAccessTime.set(realTimeProvider.getCurrentTime());
+        this.accessDeviceRead.set(timeProvider.getCurrentTime());
     }
 
     public void tackDevice() {
         //this.deviceTicks.incrementAndGet();
-        this.accessDeviceRead.set(System.nanoTime());
+        this.accessDeviceRead.set(timeProvider.getCurrentTime());
+        this.deviceAccessTime.set(realTimeProvider.getCurrentTime());
     }
 
     public void tickDescendant(AllocationShape shape) {
@@ -313,6 +324,11 @@ public class AllocationPoint {
         return accessHostRead.get();
     }
 
+
+    public long getRealDeviceAccessTime() {
+        return deviceAccessTime.get();
+    }
+
     /**
      * Returns time, in milliseconds, when this point was accessed on device side
      *
@@ -332,7 +348,7 @@ public class AllocationPoint {
     }
 
     public void tickHostRead() {
-        accessHostRead.set(System.nanoTime());
+        accessHostRead.set(timeProvider.getCurrentTime());
     }
 
     /**
@@ -340,14 +356,15 @@ public class AllocationPoint {
      *
      */
     public void tickDeviceWrite() {
-        accessDeviceWrite.set(System.nanoTime());
+        deviceAccessTime.set(realTimeProvider.getCurrentTime());
+        accessDeviceWrite.set(timeProvider.getCurrentTime());
     }
 
     /**
      * This method sets time when this point was changed on host
      */
     public void tickHostWrite() {
-        accessHostWrite.set(System.nanoTime());
+        accessHostWrite.set(timeProvider.getCurrentTime());
     }
 
     /**
@@ -373,5 +390,6 @@ public class AllocationPoint {
      */
     public void tickDeviceToHost() {
         accessDeviceRead.set(accessHostRead.get());
+        this.deviceAccessTime.set(realTimeProvider.getCurrentTime());
     }
 }
