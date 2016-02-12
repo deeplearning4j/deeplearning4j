@@ -188,6 +188,7 @@ For people just getting started with deep learning, the following tutorials and 
 * [Glossary of Deep-Learning and Neural-Net Terms](../glossary.html)
 * [Convolutional Networks](../convolutionalnets.html)
 * [Recurrent Networks and LSTMs](../lstm.html)
+* [Word2vec and Natural-Language Processing](../lstm.html)
 * [Iris Flower Dataset Tutorial](../iris-flower-dataset-tutorial.html)
 * [Deeplearning4j Examples via Quickstart](../quickstart.html)
 * [Neural Networks Demystified](https://www.youtube.com/watch?v=bxe2T-V8XRs) (A seven-video series)
