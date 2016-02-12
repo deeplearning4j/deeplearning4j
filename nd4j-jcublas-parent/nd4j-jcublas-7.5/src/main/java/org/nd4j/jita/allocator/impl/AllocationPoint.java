@@ -13,6 +13,7 @@ import org.nd4j.jita.allocator.time.RateTimer;
 import org.nd4j.jita.allocator.time.impl.SimpleTimer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
+import org.nd4j.linalg.jcublas.buffer.DevicePointerInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +35,7 @@ public class AllocationPoint {
     private static Logger log = LoggerFactory.getLogger(AllocationPoint.class);
 
     // thread safety is guaranteed by cudaLock
-    private volatile Pointer cudaPointer;
+    private volatile DevicePointerInfo pointerInfo;
 
     @Getter @Setter private Long objectId;
 
@@ -136,7 +137,13 @@ public class AllocationPoint {
         try {
             cudaLock.readLock().lock();
 
-            return cudaPointer;
+            if (pointerInfo == null)
+                return null;
+
+            if (pointerInfo.getPointers() == null)
+                return null;
+
+            return pointerInfo.getPointers().getDevicePointer();
         } finally {
             cudaLock.readLock().unlock();
         }
@@ -147,13 +154,13 @@ public class AllocationPoint {
      * It can be either device pointer, or pinned memory pointer, or null.
      *
      * PLEASE NOTE: Thread safety is guaranteed by reentrant read/write lock
-     * @param pointer CUDA pointer
+     * @param pointerInfo CUDA pointers wrapped into DevicePointerInfo
      */
-    public void setCudaPointer(Pointer pointer) {
+    public void setCudaPointer(DevicePointerInfo pointerInfo) {
         try {
             cudaLock.writeLock().lock();
 
-            this.cudaPointer = pointer;
+            this.pointerInfo = pointerInfo;
         } finally {
             cudaLock.writeLock().unlock();
         }

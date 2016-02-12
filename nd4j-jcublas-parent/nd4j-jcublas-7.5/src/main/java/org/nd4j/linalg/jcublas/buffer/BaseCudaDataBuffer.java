@@ -29,7 +29,10 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
+import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
+import org.nd4j.jita.allocator.impl.AllocationShape;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -274,6 +277,18 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public Pointer getDevicePointer(int stride, int offset,int length) {
+        Allocator allocator = AtomicAllocator.getInstance();
+
+        AllocationShape shape = new AllocationShape();
+        shape.setDataType(this.dataType());
+        shape.setLength(length);
+        shape.setOffset(offset);
+        shape.setStride(stride);
+
+        if (1 > 0) return allocator.getDevicePointer(this, shape);
+
+      //  if (1 > 0) throw new RuntimeException("Brick wall found on primary getDevicePointer()");
+
         String name = Thread.currentThread().getName();
         DevicePointerInfo devicePointerInfo = pointersToContexts.get(name,Triple.of(offset,length,stride));
 
@@ -355,9 +370,31 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
 
 
+    public Pointer getHostPointer(INDArray arr,int stride, int offset,int length) {
+        return null;
+    }
 
     @Override
     public Pointer getDevicePointer(INDArray arr,int stride, int offset,int length) {
+        Allocator allocator = AtomicAllocator.getInstance();
+
+        AllocationShape shape = new AllocationShape();
+        shape.setDataType(arr.data().dataType());
+        shape.setLength(length);
+        shape.setOffset(offset);
+        shape.setStride(stride);
+
+        synchronized (this) {
+            if (this.getAllocatorPointer() == null) {
+                allocator.pickupSpan((BaseCudaDataBuffer) arr.data(), shape);
+            }
+        }
+
+        if (1 > 0) return allocator.getDevicePointer((BaseCudaDataBuffer) arr.data(), shape);
+
+
+        if (1 > 0) throw new RuntimeException("Brick wall found on secondary getDevicePointer()");
+
         // FIXME: this is ugly hack that address double allocation over the same offset/length
         referenceCounter.incrementAndGet();
 
@@ -609,6 +646,13 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public boolean freeDevicePointer(int offset, int length, int stride) {
+        /*
+            actually this method should do nothing, since memory deallocation is handled with Allocator implementations
+
+         */
+        if (1 > 0) return true;
+
+
         String name = Thread.currentThread().getName();
 
         int off = 0;

@@ -15,6 +15,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
+import org.nd4j.linalg.jcublas.buffer.DevicePointerInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,7 +55,7 @@ public class AtomicAllocator implements Allocator {
     */
     // TODO: proper thread-safe implementation would be nice to have here :(
     // Table thread safety is guaranteed by reentrant read/write locks :(
-    private Table<Long, Integer, Long> deviceAllocations = HashBasedTable.create();
+    private Table<Long, Integer, CopyOnWriteArrayList<Long>> deviceAllocations = HashBasedTable.create();
 
     /*
         map for Thread, Object allocations in zero memory.
@@ -85,6 +86,7 @@ public class AtomicAllocator implements Allocator {
         return INSTANCE;
     }
 
+    @Override
     public void setMover(@NonNull Mover mover) {
         globalLock.writeLock().lock();
 
@@ -105,6 +107,18 @@ public class AtomicAllocator implements Allocator {
 
         this.configuration = configuration;
 
+        globalLock.writeLock().unlock();
+    }
+
+    /**
+     * Set active CUDA environment
+     *
+     * @param environment
+     */
+    @Override
+    public void setEnvironment(@NonNull CudaEnvironment environment) {
+        globalLock.writeLock().lock();
+        this.environment = environment;
         globalLock.writeLock().unlock();
     }
 
@@ -164,6 +178,8 @@ public class AtomicAllocator implements Allocator {
 
                 // the only
                 externalBuffers.put(buffer, allocPointer);
+
+                allocationsMap.put(allocPointer, point);
 
                 return allocPointer;
             }
@@ -244,8 +260,8 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     @Deprecated
-    public Object getDevicePointer(BaseCudaDataBuffer objectId) {
-        return null;
+    public Pointer getDevicePointer(BaseCudaDataBuffer objectId) {
+        throw new UnsupportedOperationException("getDevicePointer() method should be removed");
     }
 
     /**
@@ -255,7 +271,7 @@ public class AtomicAllocator implements Allocator {
      * @param shape
      */
     @Override
-    public Object getDevicePointer(BaseCudaDataBuffer objectId, AllocationShape shape) {
+    public Pointer getDevicePointer(BaseCudaDataBuffer objectId, AllocationShape shape) {
         /*
             We assume that object is registered within allocator
          */
@@ -292,22 +308,24 @@ public class AtomicAllocator implements Allocator {
                     Technically it's still possible to fail there, with oom or CUDA-originated exception
                  */
                 point.setAllocationStatus(AllocationStatus.ZERO);
-                Pointer cudaPointer = mover.alloc(AllocationStatus.ZERO, point, shape);
+                DevicePointerInfo info = mover.alloc(AllocationStatus.ZERO, point, shape);
+
 
                 /*
                     it's safe to remove this check in production environment
                  */
-                if (cudaPointer == null)
+                if (info == null)
                     throw new IllegalStateException("Zero-copy allocation failed");
 
-                point.setCudaPointer(cudaPointer);
+                point.setCudaPointer(info);
                 zeroAllocations.get(Thread.currentThread().getId()).add(trackingPoint);
 
 
                 /*
                     Copy data from host buffer to device
                  */
-                mover.copyforward(point);
+                // We don't need separate call here, we wrap that inside alloc call
+                // mover.copyforward(point);
             } else {
                 /*
                     do nothing here, the only possible reason for us to get in this scope, is concurrent getDevicePointer access, so it was stopped by TTT barrier, and now we're here after everything being done
@@ -331,6 +349,18 @@ public class AtomicAllocator implements Allocator {
         point.tickDevice();
 
         return point.getCudaPointer();
+    }
+
+    /**
+     * This method returns actual host pointer, valid for specified shape of current object
+     *
+     * @param buffer
+     * @param shape
+     * @return
+     */
+    @Override
+    public Pointer getHostPointer(BaseCudaDataBuffer buffer, AllocationShape shape) {
+        return null;
     }
 
     /**
@@ -426,6 +456,10 @@ public class AtomicAllocator implements Allocator {
                     zeroAllocations.put(threadId, new CopyOnWriteArrayList<Long>());
                 }
 
+                if (!deviceAllocations.contains(threadId, device)) {
+                    deviceAllocations.put(threadId, device, new CopyOnWriteArrayList<Long>());
+                }
+
                 log.info("Mapping device ["+ device+"] to thread [" + Thread.currentThread().getId() + "]");
             }
             return devicesAffinity.get(Thread.currentThread().getId());
@@ -440,6 +474,7 @@ public class AtomicAllocator implements Allocator {
         // that's a temporary exception, we'll change that to re-ack later
         if (trackingPointer == null)
             throw new IllegalStateException("trackingPointer is NULL");
+
 
         AllocationPoint point = getAllocationPoint(trackingPointer);
 
@@ -468,6 +503,7 @@ public class AtomicAllocator implements Allocator {
             TODO: To prevent cyclic calls we need something smart here
          */
         AtomicLong freeSpace = new AtomicLong(0);
+
         for (Long object: zeroAllocations.get(threadId)) {
             AllocationPoint point = getAllocationPoint(object);
             if (point.getAccessState().isToeAvailable()) {
@@ -499,6 +535,11 @@ public class AtomicAllocator implements Allocator {
      */
     protected long seekUnusedDevice(Long threadId, Integer deviceId) {
         AtomicLong freeSpace = new AtomicLong(0);
+
+        deviceLock.readLock().lock();
+        List<Long> allocations = deviceAllocations.get(threadId, deviceId);
+        deviceLock.readLock().unlock();
+
 
         return freeSpace.get();
     }

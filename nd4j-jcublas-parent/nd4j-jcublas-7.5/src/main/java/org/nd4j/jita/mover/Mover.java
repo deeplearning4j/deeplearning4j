@@ -6,6 +6,7 @@ import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
+import org.nd4j.linalg.jcublas.buffer.DevicePointerInfo;
 
 /**
  * Mover interface describes methods for data transfers between host and devices
@@ -22,7 +23,7 @@ public interface Mover {
      * @param targetMode valid arguments are DEVICE, ZERO
      * @return
      */
-    Pointer alloc(AllocationStatus targetMode, AllocationPoint point,  AllocationShape shape);
+    DevicePointerInfo alloc(AllocationStatus targetMode, AllocationPoint point, AllocationShape shape);
 
 
     /**

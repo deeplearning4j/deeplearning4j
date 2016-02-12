@@ -189,16 +189,21 @@ public class CublasPointer  implements AutoCloseable {
          * due to how the striding works out.
          */
         // Copy the data to the device iff the whole buffer hasn't been copied
+        /*
+
+        //Data is already copied into CUDA buffer during allocation at getDevicePointer
+
         if(!buffer.copied(name)) {
             ContextHolder.getInstance().getMemoryStrategy().setData(buffer,0,1,buffer.length());
             //mark the buffer copied
             buffer.setCopied(name);
 
-        }
+        }*/
 
+        /*
         DevicePointerInfo info = buffer.getPointersToContexts().get(Thread.currentThread().getName(), Triple.of(0, buffer.length(), 1));
         hostPointer = info.getPointers().getHostPointer();
-
+        */
     }
 
 

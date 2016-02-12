@@ -9,8 +9,13 @@ import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.jcublas.buffer.DevicePointerInfo;
 import org.nd4j.linalg.jcublas.buffer.allocation.HostDevicePointer;
+import org.nd4j.linalg.util.NioUtil;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 /**
  * This Mover implementation uses following techs:
@@ -42,7 +47,7 @@ public class UmaMover implements Mover {
      * @return
      */
     @Override
-    public Pointer alloc(@NonNull AllocationStatus targetMode,@NonNull AllocationPoint point,  @NonNull AllocationShape shape) {
+    public DevicePointerInfo alloc(@NonNull AllocationStatus targetMode,@NonNull AllocationPoint point,  @NonNull AllocationShape shape) {
         switch (targetMode) {
             case ZERO: {
                     /*
@@ -73,9 +78,14 @@ public class UmaMover implements Mover {
 
 
 
-                    point.setAllocationStatus(AllocationStatus.ZERO);
-                    return null;
-                }
+                // copy data from
+                ByteBuffer pointer = hostPointer.getByteBuffer(0, AllocationUtils.getRequiredMemory(shape));
+                pointer.order(ByteOrder.nativeOrder());
+                NioUtil.copyAtStride(shape.getLength(),getBufferType(point.getBuffer()), point.getBuffer().asNio(), shape.getOffset(), shape.getStride(), pointer,0,1);
+
+                point.setAllocationStatus(AllocationStatus.ZERO);
+                return devicePointerInfo;
+            }
             case DEVICE: {
                 point.setAllocationStatus(AllocationStatus.DEVICE);
                     // cudaMalloc call
@@ -155,6 +165,15 @@ public class UmaMover implements Mover {
                 break;
             default:
                 throw new IllegalStateException("Can't free memory on target [" + location + "]");
+        }
+    }
+
+    private NioUtil.BufferType getBufferType(DataBuffer buffer) {
+        switch(buffer.dataType()) {
+            case DOUBLE: return NioUtil.BufferType.DOUBLE;
+            case INT: return NioUtil.BufferType.FLOAT;
+            case FLOAT: return NioUtil.BufferType.FLOAT;
+            default: throw new UnsupportedOperationException("Unsupported data buffer type");
         }
     }
 }

@@ -4,6 +4,8 @@ import jcuda.Pointer;
 import org.nd4j.jita.allocator.enums.SyncState;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.conf.Configuration;
+import org.nd4j.jita.conf.CudaEnvironment;
+import org.nd4j.jita.mover.Mover;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -24,6 +26,22 @@ public interface Allocator {
      * @param configuration configuration bean to be applied
      */
     void applyConfiguration(Configuration configuration);
+
+
+    /**
+     * Set active CUDA environment
+     *
+     * @param environment
+     */
+    void setEnvironment(CudaEnvironment environment);
+
+
+    /**
+     * This methods specifies Mover implementation to be used internally
+     *
+     * @param mover
+     */
+    void setMover(Mover mover);
 
     /**
      * Returns current Allocator configuration
@@ -66,24 +84,35 @@ public interface Allocator {
     /**
      * This method returns actual device pointer valid for current object
      *
-     * @param objectId
+     * @param buffer
      */
-    Object getDevicePointer(BaseCudaDataBuffer objectId);
+    @Deprecated
+    Pointer getDevicePointer(BaseCudaDataBuffer buffer);
 
     /**
      * This method returns actual device pointer valid for specified shape of current object
      *
-     * @param objectId
+     * @param buffer
      * @param shape
      */
-    Object getDevicePointer(BaseCudaDataBuffer objectId, AllocationShape shape);
+    Pointer getDevicePointer(BaseCudaDataBuffer buffer, AllocationShape shape);
+
+
+    /**
+     * This method returns actual host pointer, valid for specified shape of current object
+     *
+     * @param buffer
+     * @param shape
+     * @return
+     */
+    Pointer getHostPointer(BaseCudaDataBuffer buffer, AllocationShape shape);
 
     /**
      * This method should be called to make sure that data on host size is actualized
      *
-     * @param objectId
+     * @param buffer
      */
-    void synchronizeHostData(BaseCudaDataBuffer objectId);
+    void synchronizeHostData(BaseCudaDataBuffer buffer);
 
     /**
      * This method returns current host memory state
