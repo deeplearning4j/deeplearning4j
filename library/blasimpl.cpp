@@ -1096,7 +1096,6 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_CBLAS_dgemm
     double *cA = (double *) env->GetDirectBufferAddress(A);
     double *cB = (double *) env->GetDirectBufferAddress(B);
     double *cC = (double *) env->GetDirectBufferAddress(C);
-    printf("Running matrix multiply on input order %d and converted order %d with transpose a %d and transpose b %d\n",Order,convertOrder(Order),convertTranspose(TransA) , convertTranspose(TransB));
     cblas_dgemm(convertOrder(Order) , convertTranspose(TransA) , convertTranspose(TransB) , M, N, K, alpha, cA, lda, cB, ldb, beta, cC, ldc);
 };
 

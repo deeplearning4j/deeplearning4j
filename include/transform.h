@@ -228,19 +228,17 @@ namespace functions {
                     int xOffset = shape::offset(xShapeInfo);
                     int resultOffset = shape::offset(resultShapeInfo);
 
-#pragma omp parallel private(i)
-                    {
-#pragma omp simd
-                        for (i = omp_get_thread_num(); i < n; i+= omp_get_num_threads()) {
-                            int *xIdx = shape::ind2sub(xRank, xShape, i);
-                            int *resultIdx = shape::ind2sub(resultRank, resultShape, i);
-                            int xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
-                            int resultOffset2 = shape::getOffset(resultOffset, resultShape, resultStride, resultIdx, resultRank);
-                            result[resultOffset2] = op(dx[xOffset2], extraParams);
-                            free(xIdx);
-                            free(resultIdx);
-                        }
+#pragma omp parallel for
+                    for (int i = 0; i < n; i++) {
+                        int *xIdx = shape::ind2sub(xRank, xShape, i);
+                        int *resultIdx = shape::ind2sub(resultRank, resultShape, i);
+                        int xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
+                        int resultOffset2 = shape::getOffset(resultOffset, resultShape, resultStride, resultIdx, resultRank);
+                        result[resultOffset2] = op(dx[xOffset2], extraParams);
+                        free(xIdx);
+                        free(resultIdx);
                     }
+
 
 
 
@@ -262,30 +260,19 @@ namespace functions {
             virtual void exec(T *dx, int xStride, T *result, int resultStride,
                               T *extraParams, const int n) {
                 if (xStride == 1 && resultStride == 1) {
-                    int i;
-#pragma omp parallel private(i)
-                    {
-#pragma omp simd
-                        for (i = omp_get_thread_num(); i < n; i+= omp_get_num_threads()) {
-                            result[i] = op(dx[i], extraParams);
-                        }
+#pragma omp parallel  for
+                    for (int i = 0; i < n; i++) {
+                        result[i] = op(dx[i], extraParams);
                     }
-
-
                 }
 
 
                 else {
-                    int i;
-#pragma omp parallel private(i)
-                    {
-#pragma omp simd
-                        for (i = omp_get_thread_num(); i < n; i+= omp_get_num_threads()) {
-                            result[i * resultStride] = op(dx[i * resultStride],
-                                                          extraParams);
-                        }
+#pragma omp parallel for
+                    for (int i = 0; i < n; i++) {
+                        result[i * resultStride] = op(dx[i * resultStride],
+                                                      extraParams);
                     }
-
                 }
 
             }

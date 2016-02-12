@@ -39,6 +39,7 @@ JNIEXPORT jdouble JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execI
     int *xShapeBuff = (int *) env->GetDirectBufferAddress(xShapeInfo);
     double *extraParamsBuff = extraParams != NULL ? (double *) env->GetDirectBufferAddress(extraParams) : NULL;
     double *xBuff = (double *) env->GetDirectBufferAddress(x);
+    xBuff += shape::offset(xShapeBuff);
     return DoubleNativeOpExecutioner::getInstance().execIndexReduceScalar(opNum,xBuff,xShapeBuff,extraParamsBuff);
 }
 
@@ -55,6 +56,7 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execInde
     double *resultBuff = (double *) env->GetDirectBufferAddress(result);
     int *resultShapeBuff = (int *) env->GetDirectBufferAddress(resultShapeInfo);
     int *dimensionBuff = (int *) env->GetDirectBufferAddress(dimension);
+    xBuff += shape::offset(xShapeBuff);
     DoubleNativeOpExecutioner::getInstance().execIndexReduce(opNum,xBuff,xShapeBuff,extraParamsBuff,resultBuff,resultShapeBuff,dimensionBuff,dimensionLength);
 }
 
@@ -74,7 +76,8 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execBroa
     double *resultBuff = (double *) env->GetDirectBufferAddress(result);
     int *resultShapeBuff = (int *) env->GetDirectBufferAddress(resultShapeInfo);
     int *dimensionBuff = (int *) env->GetDirectBufferAddress(dimension);
-
+    xBuff += shape::offset(xShapeBuff);
+    yBuff += shape::offset(yShapeBuff);
     DoubleNativeOpExecutioner::getInstance().execBroadcast(
             opNum,xBuff,xShapeBuff,yBuff,yShapeBuff,resultBuff,resultShapeBuff,dimensionBuff,dimensionLength);
 }
@@ -133,7 +136,8 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execRedu
     double *resultBuff = (double *) env->GetDirectBufferAddress(result);
     int *resultShapeBuff = (int *) env->GetDirectBufferAddress(resultShapeInfo);
     int *dimensionBuff = (int *) env->GetDirectBufferAddress(dimension);
-
+    xBuff += shape::offset(xShapeBuff);
+    resultBuff += shape::offset(resultShapeBuff);
     DoubleNativeOpExecutioner::getInstance().execReduce(opNum,xBuff,xShapeBuff,extraParamsBuff,
                                                         resultBuff,resultShapeBuff,dimensionBuff,dimensionLength);
 
@@ -148,6 +152,7 @@ JNIEXPORT jdouble JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execR
         (JNIEnv *env, jobject obj, jint opNum, jobject x, jobject xShapeInfo, jobject extraParams) {
     double *xBuff = (double *) env->GetDirectBufferAddress(x);
     int *xShapeBuff = (int *) env->GetDirectBufferAddress(xShapeInfo);
+    xBuff += shape::offset(xShapeBuff);
     double *extraParamsBuff = extraParams != NULL ? (double * ) env->GetDirectBufferAddress(extraParams) : NULL;
     return DoubleNativeOpExecutioner::getInstance().execReduceScalar(opNum,xBuff,xShapeBuff,extraParamsBuff);
 
@@ -186,6 +191,8 @@ JNIEXPORT jdouble JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execR
     double *extraParamsBuff = extraParams != NULL ? (double *) env->GetDirectBufferAddress(extraParams) : NULL;
     double *yBuff = (double *) env->GetDirectBufferAddress(y);
     int *yShapeBuff = (int *) env->GetDirectBufferAddress(yShapeInfo);
+    xBuff += shape::offset(xShapeBuff);
+    yBuff += shape::offset(yShapeBuff);
     return DoubleNativeOpExecutioner::getInstance().execReduce3Scalar(opNum,xBuff,xShapeBuff,
                                                                       extraParamsBuff,yBuff,yShapeBuff);
 }
@@ -215,6 +222,9 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execRedu
     double *resultBuff = (double *) env->GetDirectBufferAddress(result);
     int *resultShapeBuff = (int *) env->GetDirectBufferAddress(resultShapeInfo);
     int *dimensionBuff = (int *) env->GetDirectBufferAddress(dimension);
+    xBuff += shape::offset(xShapeBuff);
+    yBuff += shape::offset(yShapeBuff);
+    resultBuff += shape::offset(resultShapeBuff);
     DoubleNativeOpExecutioner::getInstance().execReduce3(opNum,xBuff,xShapeBuff,extraParamsBuff,yBuff,yShapeBuff,resultBuff,resultShapeBuff,dimensionBuff,dimensionLength);
 
 }
@@ -258,6 +268,7 @@ JNIEXPORT jdouble JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execS
     double *xBuff = (double *) env->GetDirectBufferAddress(x);
     int *xShapeBuff = (int *) env->GetDirectBufferAddress(xShapeInfo);
     double *extraParamsBuff = extraParams != NULL ? (double *) env->GetDirectBufferAddress(extraParams) : NULL;
+    xBuff += shape::offset(xShapeBuff);
     return DoubleNativeOpExecutioner::getInstance().execSummaryStatsScalar(opNum,xBuff,xShapeBuff,extraParamsBuff);
 }
 
