@@ -203,6 +203,7 @@ public class CPUAccumulationAlongDimensionTask extends BaseCPUTask<INDArray> {
         @Override
         protected Double compute() {
             //Fork join
+            int tads = op.x().tensorssAlongDimension(dimensions);
             Accumulation opOnDimension = (Accumulation) op.opForDimension(tensorNum, dimensions);
             INDArray x2 = opOnDimension.x();
             INDArray y2 = opOnDimension.y();

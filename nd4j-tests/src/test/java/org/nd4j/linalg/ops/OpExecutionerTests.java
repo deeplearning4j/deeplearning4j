@@ -374,7 +374,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
         INDArray arr = Nd4j.linspace(1, 6, 6).reshape(2, 3);
         INDArray slice = arr.slice(0);
         float[] expected = new float[slice.length()];
-        for( int i=0; i<slice.length(); i++) expected[i] = (float)Math.exp(slice.getDouble(i));
+        for( int i=0; i< slice.length(); i++) expected[i] = (float)Math.exp(slice.getDouble(i));
         Exp exp = new Exp(slice);
         opExecutioner.exec(exp);
         assertEquals(getFailureMessage(),Nd4j.create(Nd4j.createBuffer(expected)), slice);
@@ -455,7 +455,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testVariance(){
+    public void testVariance() {
 
         INDArray arr = Nd4j.create(new float[]{0.9296161f, 0.31637555f, 0.1839188f},new int[]{1,3},ordering());
         double var = arr.varNumber().doubleValue();

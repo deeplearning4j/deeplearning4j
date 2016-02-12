@@ -42,7 +42,7 @@ public class CheckUtil {
 
 		if(!checkShape(rmResult,result)) return false;
         boolean ok = checkEntries(rmResult, result, maxRelativeDifference, minAbsDifference);
-        if(!ok){
+        if(!ok) {
             INDArray onCopies = Shape.toOffsetZeroCopy(first).mmul(Shape.toOffsetZeroCopy(second));
             printFailureDetails(first, second, rmResult, result, onCopies, "mmul");
         }
@@ -51,33 +51,39 @@ public class CheckUtil {
 
 	public static boolean checkGemm(INDArray a, INDArray b, INDArray c, boolean transposeA, boolean transposeB,
 									double alpha, double beta,
-									double maxRelativeDifference, double minAbsDifference ){
-		int commonDimA = (transposeA ? a.rows() : a.columns() );
-		int commonDimB = (transposeB ? b.columns() : b.rows() );
-		if(commonDimA != commonDimB) throw new IllegalArgumentException("Common dimensions don't match: a.shape=" +
+									double maxRelativeDifference, double minAbsDifference) {
+		int commonDimA = (transposeA ? a.rows() : a.columns());
+		int commonDimB = (transposeB ? b.columns() : b.rows());
+		if(commonDimA != commonDimB)
+            throw new IllegalArgumentException("Common dimensions don't match: a.shape=" +
                 Arrays.toString(a.shape()) + ", b.shape="+ Arrays.toString(b.shape()) + ", tA=" + transposeA + ", tb=" + transposeB);
-		int outRows = (transposeA ? a.columns() : a.rows() );
-		int outCols = (transposeB ? b.rows() : b.columns() );
-		if(c.rows() != outRows || c.columns() != outCols) throw new IllegalArgumentException("C does not match outRows or outCols");
-		if(c.offset() != 0 || c.ordering() != 'f') throw new IllegalArgumentException("Invalid c");
+		int outRows = (transposeA ? a.columns() : a.rows());
+		int outCols = (transposeB ? b.rows() : b.columns());
+		if(c.rows() != outRows || c.columns() != outCols)
+            throw new IllegalArgumentException("C does not match outRows or outCols");
+		if(c.offset() != 0 || c.ordering() != 'f')
+            throw new IllegalArgumentException("Invalid c");
 
-		RealMatrix rmA = convertToApacheMatrix(transposeA ? a.transpose() : a);
-		RealMatrix rmB = convertToApacheMatrix(transposeB ? b.transpose() : b);
+        INDArray aConvert = transposeA ? a.transpose() : a;
+        RealMatrix rmA = convertToApacheMatrix(aConvert);
+        INDArray bConvet = transposeB ? b.transpose() : b;
+		RealMatrix rmB = convertToApacheMatrix(bConvet);
 		RealMatrix rmC = convertToApacheMatrix(c);
-		RealMatrix rmExpected = rmA.multiply(rmB).scalarMultiply(alpha).add(rmC.scalarMultiply(beta));
+		RealMatrix rmExpected = rmA.scalarMultiply(alpha).multiply(rmB).add(rmC.scalarMultiply(beta));
         INDArray cCopy1 = Nd4j.create(c.shape(), 'f');
         cCopy1.assign(c);
         INDArray cCopy2 = Nd4j.create(c.shape(), 'f');
         cCopy2.assign(c);
 
 		INDArray out = Nd4j.gemm(a, b, c, transposeA, transposeB, alpha, beta);
-        if(out != c){
+        if(out != c) {
             System.out.println("Returned different array than c");
             return false;
         }
-		if(!checkShape(rmExpected,out)) return false;
+		if(!checkShape(rmExpected,out))
+            return false;
 		boolean ok = checkEntries(rmExpected,out,maxRelativeDifference,minAbsDifference);
-		if(!ok){
+		if(!ok) {
 			INDArray aCopy = Shape.toOffsetZeroCopy(a);
 			INDArray bCopy = Shape.toOffsetZeroCopy(b);
 			INDArray onCopies = Nd4j.gemm(aCopy, bCopy, cCopy1, transposeA, transposeB, alpha, beta);
@@ -87,7 +93,7 @@ public class CheckUtil {
 	}
 
 	/**Same as checkMmul, but for matrix addition */
-	public static boolean checkAdd(INDArray first, INDArray second, double maxRelativeDifference, double minAbsDifference ){
+	public static boolean checkAdd(INDArray first, INDArray second, double maxRelativeDifference, double minAbsDifference) {
 		RealMatrix rmFirst = convertToApacheMatrix(first);
         RealMatrix rmSecond = convertToApacheMatrix(second);
 

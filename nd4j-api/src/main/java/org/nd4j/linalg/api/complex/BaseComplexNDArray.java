@@ -469,7 +469,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     public BaseComplexNDArray(int[] shape, int[] stride, int offset, char ordering) {
         this(new float[ArrayUtil.prod(shape) * 2], shape, stride, offset);
-        this.ordering = ordering;
+        this.shapeInformation = Shape.createShapeInformation(shape,stride,offset,stride[stride.length - 1],ordering);
     }
 
     /**
@@ -604,21 +604,11 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     public IComplexNDArray linearView() {
         if (isVector() || isScalar() || length() == 1 || length() == size(0))
             return this;
-        if (linearView == null)
-            resetLinearView();
-        return (IComplexNDArray) linearView;
+      return this;
     }
 
     @Override
     public void resetLinearView() {
-
-        if(isVector() || isScalar() || length() == 1)
-            linearView = this;
-       /* else if(ordering() == NDArrayFactory.C && offset == 0 && length() == data().length()) {
-            linearView = Nd4j.createComplex(data(),new int[]{1,length()},new int[]{1,elementStride()},offset);
-        }*/
-        else
-            linearView = new LinearViewComplexNDArray(this);
     }
 
     @Override
@@ -1668,7 +1658,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     protected IComplexNDArray create(int[] shape) {
-        return Nd4j.createComplex(shape, Nd4j.getComplexStrides(shape, ordering), 0);
+        return Nd4j.createComplex(shape, Nd4j.getComplexStrides(shape, ordering()), 0);
     }
 
     @Override
@@ -3400,7 +3390,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     @Override
     public IComplexNDArray ravel() {
 
-        IComplexNDArray ret = Nd4j.createComplex(length, ordering);
+        IComplexNDArray ret = Nd4j.createComplex(length, ordering());
         IComplexNDArray linear = linearView();
         for(int i = 0; i < length(); i++) {
             ret.putScalar(i,linear.getComplex(i));

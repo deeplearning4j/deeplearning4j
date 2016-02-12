@@ -109,10 +109,16 @@ public interface OpExecutioner {
      * Execute an accumulation along one or more dimensions
      * @param accumulation the accumulation
      * @param dimension the dimension
-     * @return the accmulation op
+     * @return the accumulation op
      */
     INDArray exec(Accumulation accumulation, int...dimension);
-
+    /**
+     * Execute an broadcast along one or more dimensions
+     * @param broadcast the accumulation
+     * @param dimension the dimension
+     * @return the broadcast op
+     */
+    INDArray exec(BroadcastOp broadcast, int...dimension);
 
     /**
      * Execute an accumulation along one or more dimensions

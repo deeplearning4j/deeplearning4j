@@ -581,6 +581,9 @@ public class ArrayUtil {
      * item
      */
     public static int[] keep(int[] data, int...index) {
+        if(index.length == data.length)
+            return data;
+
         int[] ret = new int[index.length];
         int count = 0;
         for(int i = 0; i < data.length; i++)
@@ -603,6 +606,8 @@ public class ArrayUtil {
      * item
      */
     public static int[] removeIndex(int[] data, int...index) {
+        if(index.length >= data.length)
+            throw new IllegalStateException("Illegal remove: indexes.length > data.length");
         int offset = 0;
         /*
             workaround for non-existant indexes (such as Integer.MAX_VALUE)

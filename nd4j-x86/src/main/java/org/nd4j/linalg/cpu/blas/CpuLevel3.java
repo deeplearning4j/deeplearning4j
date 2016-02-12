@@ -66,9 +66,6 @@ public class CpuLevel3 extends BaseLevel3 {
 
     @Override
     protected void dgemm(char Order, char TransA, char TransB, int M, int N, int K, double alpha, INDArray A, int lda, INDArray B, int ldb, double beta, INDArray C, int ldc) {
-        A = Shape.toOffsetZero(A);
-        B = Shape.toOffsetZero(B);
-
         DataBuffer aData = A.data();
         DataBuffer bData = B.data();
 
