@@ -17,7 +17,8 @@ By following the [instructions on our Quick Start page](../quickstart.html), you
 * Voice search
 * Speech-to-text (transcription)
 * Spam filtering (anomaly detection)
-* E-commerce fraud detection
+* Fraud detection 
+* Recommender Systems (CRM, adtech, churn prevention)
 * [Regression](../linear-regression.html)
 
 ### Why Deeplearning4j? 
