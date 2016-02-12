@@ -42,7 +42,7 @@ import java.util.List;
  */
 
 public class JCublasNDArray extends BaseNDArray {
-	private Allocator allocator = AtomicAllocator.getInstance();
+	private transient Allocator allocator = AtomicAllocator.getInstance();
 
     public JCublasNDArray(double[][] data) {
         super(data);

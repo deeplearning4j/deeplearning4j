@@ -33,7 +33,7 @@ public interface Mover {
      * @param targetStatus
      * @param point
      */
-    void relocate(AllocationStatus currentStatus, AllocationStatus targetStatus, AllocationPoint point);
+    void relocate(AllocationStatus currentStatus, AllocationStatus targetStatus, AllocationPoint point, AllocationShape shape);
 
     /**
      * Copies memory from device to host, if needed.
@@ -41,7 +41,7 @@ public interface Mover {
      *
      * @param point
      */
-    void copyback(AllocationPoint point);
+    void copyback(AllocationPoint point, AllocationShape shape);
 
 
     /**
@@ -50,7 +50,7 @@ public interface Mover {
      *
      * @param point
      */
-    void copyforward(AllocationPoint point);
+    void copyforward(AllocationPoint point, AllocationShape shape);
 
     /**
      * This method frees memory chunk specified by pointer

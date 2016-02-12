@@ -181,7 +181,7 @@ public class AllocationPoint {
      * PLEASE NOTE: Thread safety is guaranteed by reentrant read/write lock
      * @param pointerInfo CUDA pointers wrapped into DevicePointerInfo
      */
-    public void setCudaPointer(DevicePointerInfo pointerInfo) {
+    public void setCudaPointers(DevicePointerInfo pointerInfo) {
         try {
             cudaLock.writeLock().lock();
 
@@ -217,12 +217,12 @@ public class AllocationPoint {
         this.deviceTicks.incrementAndGet();
         this.timerShort.triggerEvent();
         this.timerLong.triggerEvent();
-        this.accessDeviceRead.set(System.currentTimeMillis());
+        this.accessDeviceRead.set(System.nanoTime());
     }
 
     public void tackDevice() {
         //this.deviceTicks.incrementAndGet();
-        this.accessDeviceRead.set(System.currentTimeMillis());
+        this.accessDeviceRead.set(System.nanoTime());
     }
 
     public void tickDescendant(AllocationShape shape) {
@@ -332,7 +332,7 @@ public class AllocationPoint {
     }
 
     public void tickHostRead() {
-        accessHostRead.set(System.currentTimeMillis());
+        accessHostRead.set(System.nanoTime());
     }
 
     /**
@@ -340,14 +340,14 @@ public class AllocationPoint {
      *
      */
     public void tickDeviceWrite() {
-        accessDeviceWrite.set(System.currentTimeMillis());
+        accessDeviceWrite.set(System.nanoTime());
     }
 
     /**
      * This method sets time when this point was changed on host
      */
     public void tickHostWrite() {
-        accessHostWrite.set(System.currentTimeMillis());
+        accessHostWrite.set(System.nanoTime());
     }
 
     /**
@@ -357,5 +357,21 @@ public class AllocationPoint {
      */
     public boolean isActualOnHostSide() {
         return getHostAccessTime() >= getDeviceWriteTime();
+    }
+
+    /**
+     * This method returns, if device side has actual copy of data
+     *
+     * @return
+     */
+    public boolean isActualOnDeviceSide() {
+        return accessHostWrite.get() <= getDeviceAccessTime();
+    }
+
+    /**
+     * This method sets device access time equal to host write time
+     */
+    public void tickDeviceToHost() {
+        accessDeviceRead.set(accessHostRead.get());
     }
 }

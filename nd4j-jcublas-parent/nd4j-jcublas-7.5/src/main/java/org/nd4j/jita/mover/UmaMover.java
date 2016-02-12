@@ -114,7 +114,7 @@ public class UmaMover implements Mover {
      * @param point
      */
     @Override
-    public void relocate(AllocationStatus currentStatus, AllocationStatus targetStatus, AllocationPoint point) {
+    public void relocate(AllocationStatus currentStatus, AllocationStatus targetStatus, AllocationPoint point, AllocationShape shape) {
         if (currentStatus == AllocationStatus.ZERO && targetStatus == AllocationStatus.DEVICE) {
             // ZERO -> DEVICE
         } else if (currentStatus == AllocationStatus.DEVICE && targetStatus == AllocationStatus.ZERO) {
@@ -133,11 +133,25 @@ public class UmaMover implements Mover {
             // FIXME: this is wrong. We MUST take AllocationShape into account, to avoid unneccessary copybacks, also breaking partial allocations
             ByteBuffer pointer = hostPointer.getByteBuffer(0, targetBuffer.getElementSize() * targetBuffer.length()).order(ByteOrder.nativeOrder());
             ByteBuffer bufferNio = targetBuffer.asNio();
-            NioUtil.copyAtStride(targetBuffer.length(),getBufferType(targetBuffer),pointer, 0,1,bufferNio,0,1);
+            NioUtil.copyAtStride(shape.getLength(),getBufferType(targetBuffer),pointer, 0,1,bufferNio,shape.getOffset(),1);
 
         } else if (currentStatus == AllocationStatus.DEVICE && targetStatus == AllocationStatus.HOST) {
             // DEVICE -> HOST
-        } else throw new UnsupportedOperationException("Can't relocate data in requested direction: [" + currentStatus + "] -> [" + targetStatus + "]");
+        } else if (currentStatus == AllocationStatus.HOST && targetStatus == AllocationStatus.ZERO) {
+            // HOST -> ZERO
+            Pointer hostPointer = point.getHostPointer();
+
+            if (hostPointer == null)
+                throw new IllegalStateException("HostPointer is null, can't relocate!");
+
+            ByteBuffer pointer = hostPointer.getByteBuffer(0, AllocationUtils.getRequiredMemory(shape));
+            pointer.order(ByteOrder.nativeOrder());
+            NioUtil.copyAtStride(shape.getLength(),getBufferType(point.getBuffer()), point.getBuffer().asNio(), 0, shape.getStride(), pointer,shape.getOffset(),1);
+
+        } else if (currentStatus == AllocationStatus.HOST && targetStatus == AllocationStatus.DEVICE) {
+            // HOST -> DEVICE
+
+        }  else throw new UnsupportedOperationException("Can't relocate data in requested direction: [" + currentStatus + "] -> [" + targetStatus + "]");
     }
 
     /**
@@ -147,14 +161,12 @@ public class UmaMover implements Mover {
      * @param point
      */
     @Override
-    public void copyback(AllocationPoint point) {
+    public void copyback(AllocationPoint point, AllocationShape shape) {
         /*
             Technically that's just a case for relocate, with source as point.getAllocationStatus() and target HOST
          */
         log.info("copyback() called on shape: " + point.getShape());
-        relocate(AllocationStatus.ZERO, AllocationStatus.HOST, point);
-
-        point.tickHostRead();
+        relocate(AllocationStatus.ZERO, AllocationStatus.HOST, point, shape);
     }
 
     /**
@@ -164,10 +176,12 @@ public class UmaMover implements Mover {
      * @param point
      */
     @Override
-    public void copyforward(AllocationPoint point) {
+    public void copyforward(AllocationPoint point, AllocationShape shape) {
         /*
             Technically that's just a case for relocate, with source as HOST and target point.getAllocationStatus()
          */
+        log.info("copyforward() called on shape: " + point.getShape());
+        relocate(AllocationStatus.HOST, point.getAllocationStatus(), point, shape);
     }
 
     /**

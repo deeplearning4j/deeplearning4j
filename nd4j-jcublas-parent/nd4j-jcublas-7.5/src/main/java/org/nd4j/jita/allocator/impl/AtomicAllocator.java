@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -315,6 +316,8 @@ public class AtomicAllocator implements Allocator {
          */
         AllocationPoint point = getAllocationPoint(objectId);
 
+        boolean isNewAllocation = false;
+
         Long trackingPoint = objectId.getAllocatorPointer();
 
         // we're checking, if cuda pointer is null without any locks. but if it's null, we'll request Toe state on this allocation, to make sure nothing can mess with it
@@ -355,7 +358,7 @@ public class AtomicAllocator implements Allocator {
                 if (info == null)
                     throw new IllegalStateException("Zero-copy allocation failed");
 
-                point.setCudaPointer(info);
+                point.setCudaPointers(info);
                 zeroAllocations.get(Thread.currentThread().getId()).add(trackingPoint);
 
 
@@ -371,14 +374,35 @@ public class AtomicAllocator implements Allocator {
                 ;
             }
 
+            isNewAllocation = true;
+
             point.getAccessState().releaseToe();
         }
 
+        /*
+            Before coming to promotion, we should decide, if we need to synchronize data on device
+         */
+        if (!isNewAllocation) {
+            if (!point.isActualOnDeviceSide()) {
+                // update data
+                point.getAccessState().requestToe();
+
+                if (!point.isActualOnDeviceSide()) {
+                    mover.copyforward(point, shape);
+                }
+                point.tickDeviceToHost();
+
+                point.getAccessState().releaseToe();
+            }
+        }
 
         /*
             So, right now we are guaranteed to have cudaPointer. We can decide now, if this memory chunk should be promoted or not.
          */
+        if (!isNewAllocation) {
+            // we check promotion only for existant allocations. just ignore new allocations here :)
 
+        }
 
         /*
             after everything was done here - register tick, and return the pointer to outer context
@@ -418,8 +442,14 @@ public class AtomicAllocator implements Allocator {
         point.getAccessState().requestToe();
 
         if (!point.isActualOnHostSide()) {
-            mover.copyback(point);
+            mover.copyback(point, shape);
+
+            // update the timer for hostRead
+            point.tickHostRead();
         } else log.info("Data is actual, skipping sync");
+
+
+
         point.getAccessState().releaseToe();
     }
 
@@ -590,5 +620,41 @@ public class AtomicAllocator implements Allocator {
 
 
         return freeSpace.get();
+    }
+
+
+    private class GarbageCollectorThread extends Thread implements Runnable {
+
+        private final Long threadId;
+        private final Integer deviceId;
+        private final AtomicBoolean terminate;
+
+        public GarbageCollectorThread(Long threadId, Integer deviceId, AtomicBoolean terminate) {
+            this.threadId = threadId;
+            this.deviceId = deviceId;
+            this.terminate = terminate;
+        }
+
+        @Override
+        public void run() {
+            while (!terminate.get()) {
+                /*
+                    Check for device garbage
+                 */
+                seekUnusedDevice(this.threadId, this.deviceId);
+
+                /*
+                    Check for zero-copy garbage
+                 */
+                seekUnusedZero(threadId);
+
+                try {
+                    Thread.sleep(30000);
+                } catch (Exception e) {
+                    // we can have interruption here, to force gc
+                  ;
+                }
+            }
+        }
     }
 }

@@ -86,6 +86,12 @@ public class AtomicAllocatorTest {
         assertEquals(1.7574999332427979, array2.getDouble(0), 0.00001);
         assertEquals(1.7574999332427979, array2.getDouble(1), 0.00001);
 
+        array1.putScalar(0, 1.15);
+        Nd4j.getBlasWrapper().axpy(new Float(0.75f), array1, array2);
 
+        assertNotEquals(0, array2.getDouble(0), 0.00001);
+        assertNotEquals(1.7574999332427979, array2.getDouble(0), 0.00001);
+        assertEquals(2.619999885559082, array2.getDouble(0), 0.00001);
+        assertEquals(2.5149998664855957, array2.getDouble(1), 0.00001);
     }
 }
