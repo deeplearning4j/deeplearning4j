@@ -115,13 +115,15 @@ The next step is to imagine multiple linear regression, where you have many inpu
 
 (To extend the crop example above, you might add the amount of sunlight and rainfall in a growing season to the fertilizer variable, with all three affecting `Y_hat`.)
 
-Now that form of multiple linear regression is happening at every node of a neural network. Once you sum your node inputs to arrive at `Y_hat`, it's passed through a non-linear function. Here's why: If every node merely performed multiple linear regression, `Y_hat` would increase linearly and without limit as the X's increase, but that doesn't suit our purposes. 
+Now, that form of multiple linear regression is happening at every node of a neural network. For each node of a single layer, input from each node of the previous layer is recombined with input from every other node. That is, the inputs are mixed in different proportions, according to their coefficients, which are different leading into each node of the subsequent layer. In this way, a net tests which combination of input is significant as it tries to reduce error. 
+
+Once you sum your node inputs to arrive at `Y_hat`, it's passed through a non-linear function. Here's why: If every node merely performed multiple linear regression, `Y_hat` would increase linearly and without limit as the X's increase, but that doesn't suit our purposes. 
 
 What we are trying to build at each node is a switch (like a neuron...) that turns on and off, depending on whether or not it should let the signal of the input pass through to affect the ultimate decisions of the network. 
 
 When you have a switch, you have a classification problem. Does the input's signal indicate the node should classify it as enough, or not_enough, on or off? A binary decision can be expressed by 1 and 0, and [logistic regression](#logistic) is a non-linear function that squashes input to translate it to a space between 0 and 1. 
 
-In fact, the nonlinear transforms at each node are usually s-shaped functions similar to logistic regression. They go by the names of sigmoid (the Greek word for "S"), tanh, hard tanh, etc., which can be used as the non-linear transform shaping the output of each node. The output of all nodes, equally squashed into an s-shaped space between 0 and 1, is then passed as input to the next layer in a feed forward neural network, and so on until the signal reaches the final layer of the net, where decisions are made. 
+The nonlinear transforms at each node are usually s-shaped functions similar to logistic regression. They go by the names of sigmoid (the Greek word for "S"), tanh, hard tanh, etc., and they shaping the output of each node. The output of all nodes, each squashed into an s-shaped space between 0 and 1, is then passed as input to the next layer in a feed forward neural network, and so on until the signal reaches the final layer of the net, where decisions are made. 
 
 ### Gradient Descent
 
