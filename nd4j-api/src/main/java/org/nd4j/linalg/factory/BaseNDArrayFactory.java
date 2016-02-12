@@ -1729,7 +1729,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray scalar(float value, int offset) {
-        return create(new float[]{value}, new int[]{1}, new int[]{1}, offset);
+        return create(new float[]{value}, new int[]{1,1}, new int[]{1,1}, offset);
     }
 
     /**
@@ -1741,7 +1741,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray scalar(double value, int offset) {
-        return create(new double[]{value}, new int[]{1}, new int[]{1}, offset);
+        return create(new double[]{value}, new int[]{1,1}, new int[]{1,1}, offset);
     }
 
     /**

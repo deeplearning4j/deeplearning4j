@@ -3,14 +3,19 @@ package org.nd4j.linalg.cpu.javacpp;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
+<<<<<<< HEAD
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.Bias;
 import org.nd4j.linalg.api.ops.impl.accum.Mean;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
+=======
+>>>>>>> 139b75e2c185a74d6b79990763c70ad3d806ec7b
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
+import static org.junit.Assert.*;
+
 import static org.junit.Assert.*;
 
 /**
@@ -48,6 +53,7 @@ public class LoopTest {
         System.out.println(arr.dup());
     }
 
+<<<<<<< HEAD
 
     @Test
     public void testSumWithRow2(){
@@ -108,6 +114,8 @@ public class LoopTest {
     }
 
 
+=======
+>>>>>>> 139b75e2c185a74d6b79990763c70ad3d806ec7b
     @Test
     public void testLength() {
         INDArray values = Nd4j.create(2, 2);
@@ -131,4 +139,19 @@ public class LoopTest {
 
     }
 
+<<<<<<< HEAD
+=======
+
+
+
+    @Test
+    public void testSum() {
+        INDArray n = Nd4j.create(Nd4j.linspace(1, 8, 8).data(), new int[]{2, 2, 2});
+        INDArray test = Nd4j.create(new float[]{3, 7, 11, 15}, new int[]{2, 2});
+        INDArray sum = n.sum(-1);
+        assertEquals(test, sum);
+
+    }
+
+>>>>>>> 139b75e2c185a74d6b79990763c70ad3d806ec7b
 }
