@@ -33,9 +33,9 @@ After those installs, if you can follow these steps, you'll be up and running (W
 * Select `DBNIrisExample.java` from the lefthand file tree.
 * Hit run! (It's the green button that appears when you right-click on the source file...)
 
-## Managed Environments
+### Managed Environments
 
-* If you are working in a managed environment like Databricks, Domino or Sense.io, you'll need to run 
+If you are working in a managed environment like Databricks, Domino or Sense.io, you'll need to take an additional step. After you've followed the local setup above, just run 
 
 		mvn clean package
 
