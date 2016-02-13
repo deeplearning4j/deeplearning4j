@@ -375,8 +375,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         int nCols = 5;
         java.util.Random r = new java.util.Random(12345);
 
-        for( int i=0; i < nCols; i++) {
-            INDArray in = Nd4j.rand(new int[]{nRows,nCols});
+        for( int i = 0; i < nCols; i++) {
+            INDArray in = Nd4j.linspace(1,nRows * nCols,nRows * nCols).reshape(nRows,nCols);
 
             List<Integer> order = new ArrayList<>(nRows);
             //in.row(order(i)) should end up as out.row(i) - ascending
@@ -389,8 +389,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
             INDArray outAsc = Nd4j.sortRows(in, i, true);
             INDArray outDesc = Nd4j.sortRows(in, i, false);
 
-            for( int j=0; j<nRows; j++ ){
-                assertTrue(outAsc.getDouble(j,i)==j);
+            for( int j = 0; j < nRows; j++ ) {
+                assertEquals(outAsc.getDouble(j,i),j,1e-1);
                 int origRowIdxAsc = order.indexOf(j);
                 assertTrue(outAsc.getRow(j).equals(in.getRow(origRowIdxAsc)));
 

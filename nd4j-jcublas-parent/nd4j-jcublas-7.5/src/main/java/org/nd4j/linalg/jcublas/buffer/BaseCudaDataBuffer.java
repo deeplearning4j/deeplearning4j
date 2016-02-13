@@ -101,10 +101,18 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         //  pointersToContexts = new SynchronizedTable<>(pointersToContexts);
     }
 
+    public BaseCudaDataBuffer(ByteBuf buf, int length, int offset) {
+        super(buf, length, offset);
+    }
+
     public BaseCudaDataBuffer(float[] data, boolean copy) {
         super(data, copy);
         //  pointersToContexts = new SynchronizedTable<>(pointersToContexts);
 
+    }
+
+    public BaseCudaDataBuffer(float[] data, boolean copy, int offset) {
+        super(data, copy, offset);
     }
 
     public BaseCudaDataBuffer(double[] data, boolean copy) {
@@ -112,9 +120,17 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         //  pointersToContexts = new SynchronizedTable<>(pointersToContexts);
     }
 
+    public BaseCudaDataBuffer(double[] data, boolean copy, int offset) {
+        super(data, copy, offset);
+    }
+
     public BaseCudaDataBuffer(int[] data, boolean copy) {
         super(data, copy);
 
+    }
+
+    public BaseCudaDataBuffer(int[] data, boolean copy, int offset) {
+        super(data, copy, offset);
     }
 
     /**
@@ -126,6 +142,10 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     public BaseCudaDataBuffer(int length, int elementSize) {
         super(length,elementSize);
 
+    }
+
+    public BaseCudaDataBuffer(int length, int elementSize, int offset) {
+        super(length, elementSize, offset);
     }
 
     public BaseCudaDataBuffer(int length) {
@@ -154,6 +174,10 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     public BaseCudaDataBuffer(ByteBuffer buffer, int length) {
         super(buffer,length);
+    }
+
+    public BaseCudaDataBuffer(ByteBuffer buffer, int length, int offset) {
+        super(buffer, length, offset);
     }
 
     /**

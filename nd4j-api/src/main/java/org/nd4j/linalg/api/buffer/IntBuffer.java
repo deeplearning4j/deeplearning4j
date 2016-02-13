@@ -36,6 +36,46 @@ public class IntBuffer extends BaseDataBuffer {
         super(length);
     }
 
+    protected IntBuffer(ByteBuf buf, int length, int offset) {
+        super(buf, length, offset);
+    }
+
+    public IntBuffer(ByteBuffer buffer, int length, int offset) {
+        super(buffer, length, offset);
+    }
+
+    public IntBuffer(byte[] data, int length) {
+        super(data, length);
+    }
+
+    public IntBuffer(double[] data, boolean copy) {
+        super(data, copy);
+    }
+
+    public IntBuffer(double[] data, boolean copy, int offset) {
+        super(data, copy, offset);
+    }
+
+    public IntBuffer(float[] data, boolean copy) {
+        super(data, copy);
+    }
+
+    public IntBuffer(float[] data, boolean copy, int offset) {
+        super(data, copy, offset);
+    }
+
+    public IntBuffer(int[] data, boolean copy, int offset) {
+        super(data, copy, offset);
+    }
+
+    public IntBuffer(int length, int elementSize) {
+        super(length, elementSize);
+    }
+
+    public IntBuffer(int length, int elementSize, int offset) {
+        super(length, elementSize, offset);
+    }
+
     public IntBuffer(ByteBuffer buffer,int length) {
         super(buffer,length);
     }

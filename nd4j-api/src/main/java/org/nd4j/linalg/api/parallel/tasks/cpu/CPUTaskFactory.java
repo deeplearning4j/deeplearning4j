@@ -80,23 +80,23 @@ public class CPUTaskFactory implements TaskFactory {
             else{
                 canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x,z);
                 if(!Arrays.equals(x.shape(), z.shape())){
-                    throw new IllegalArgumentException("Shapes do not match: x.shape="+Arrays.toString(x.shape()) +
-                            ", z.shape="+Arrays.toString(z.shape()));
+                    throw new IllegalArgumentException("Shapes do not match: x.shape=" + Arrays.toString(x.shape()) +
+                            ", z.shape=" + Arrays.toString(z.shape()));
                 }
             }
         } else {
             if( x== z) {
                 canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x,y);
                 if(!Arrays.equals(x.shape(), y.shape())){
-                    throw new IllegalArgumentException("Shapes do not match: x.shape="+Arrays.toString(x.shape()) +
+                    throw new IllegalArgumentException("Shapes do not match: x.shape=" + Arrays.toString(x.shape()) +
                             ", y.shape="+Arrays.toString(y.shape()));
                 }
             }
             else{
                 canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x,y,z);
                 if(!Arrays.equals(x.shape(), y.shape()) || !Arrays.equals(x.shape(), z.shape())){
-                    throw new IllegalArgumentException("Shapes do not match: x.shape="+Arrays.toString(x.shape()) +
-                            ", y.shape="+Arrays.toString(y.shape()) + ", z.shape="+Arrays.toString(z.shape()));
+                    throw new IllegalArgumentException("Shapes do not match: x.shape=" + Arrays.toString(x.shape()) +
+                            ", y.shape="+Arrays.toString(y.shape()) + ", z.shape=" + Arrays.toString(z.shape()));
                 }
             }
         }
@@ -119,17 +119,18 @@ public class CPUTaskFactory implements TaskFactory {
                 throw new IllegalArgumentException("Shapes do not match: x.shape=" + Arrays.toString(x.shape()) +
                         ", z.shape=" + Arrays.toString(z.shape()));
             }
-        } else {
-            if(x==z){
+        }
+        else {
+            if(x == z ) {
                 if(!Arrays.equals(x.shape(), y.shape())){
                     throw new IllegalArgumentException("Shapes do not match: x.shape="+Arrays.toString(x.shape()) +
-                            ", y.shape="+Arrays.toString(y.shape()));
+                            ", y.shape=" + Arrays.toString(y.shape()));
                 }
             }
-            else{
+            else {
                 if(!Arrays.equals(x.shape(), y.shape()) || !Arrays.equals(x.shape(), z.shape())){
                     throw new IllegalArgumentException("Shapes do not match: x.shape="+Arrays.toString(x.shape()) +
-                            ", y.shape="+Arrays.toString(y.shape()) + ", z.shape="+Arrays.toString(z.shape()));
+                            ", y.shape=" + Arrays.toString(y.shape()) + ", z.shape="+Arrays.toString(z.shape()));
                 }
             }
         }

@@ -31,6 +31,220 @@ import java.nio.ByteBuffer;
  */
 public interface DataBufferFactory {
 
+
+
+
+    /**
+     * Create int buffer
+     * @param buffer
+     * @param length
+     * @return
+     */
+    DataBuffer createInt(int offset,ByteBuffer buffer, int length);
+
+    /**
+     * Create a float data buffer
+     * @param buffer
+     * @param length
+     * @return
+     */
+    DataBuffer createFloat(int offset,ByteBuffer buffer, int length);
+
+    /**
+     * Creates a double data buffer
+     * @param buffer
+     * @param length
+     * @return
+     */
+    DataBuffer createDouble(int offset,ByteBuffer buffer, int length);
+
+    /**
+     * Create a double data buffer
+     *
+     * @return the new data buffer
+     */
+    DataBuffer createDouble(int offset,int length);
+
+    /**
+     * Create a float data buffer
+     *
+     * @param length the length of the buffer
+     * @return the new data buffer
+     */
+    DataBuffer createFloat(int offset,int length);
+
+    /**
+     * Create an int data buffer
+     *
+     * @param length the length of the data buffer
+     * @return the create data buffer
+     */
+    DataBuffer createInt(int offset,int length);
+
+
+    /**
+     * Creates a double data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createDouble(int offset,int[] data);
+
+    /**
+     * Creates a double data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createFloat(int offset,int[] data);
+
+    /**
+     * Creates a double data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createInt(int offset,int[] data);
+
+    /**
+     * Creates a double data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createDouble(int offset,double[] data);
+
+
+    /**
+     * Create a double buffer buffer
+     * @param data
+     * @param length
+     * @return
+     */
+    DataBuffer createDouble(int offset,byte[] data, int length);
+
+    /**
+     * Create a double buffer
+     * @param data
+     * @param length
+     * @return
+     */
+    DataBuffer createFloat(int offset,byte[] data, int length);
+
+    /**
+     * Creates a float data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createFloat(int offset,double[] data);
+
+    /**
+     * Creates an int data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createInt(int offset,double[] data);
+
+    /**
+     * Creates a double data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createDouble(int offset,float[] data);
+
+    /**
+     * Creates a float data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createFloat(int offset,float[] data);
+
+    /**
+     * Creates an int data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createInt(int offset,float[] data);
+
+
+    /**
+     * Creates a double data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createDouble(int offset,int[] data, boolean copy);
+
+    /**
+     * Creates a double data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createFloat(int offset,int[] data, boolean copy);
+
+    /**
+     * Creates a double data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createInt(int offset,int[] data, boolean copy);
+
+    /**
+     * Creates a double data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createDouble(int offset,double[] data, boolean copy);
+
+    /**
+     * Creates a float data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createFloat(int offset,double[] data, boolean copy);
+
+    /**
+     * Creates an int data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createInt(int offset,double[] data, boolean copy);
+
+    /**
+     * Creates a double data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createDouble(int offset,float[] data, boolean copy);
+
+    /**
+     * Creates a float data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createFloat(int offset,float[] data, boolean copy);
+
+    /**
+     * Creates an int data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createInt(int offset,float[] data, boolean copy);
+
+
     /**
      * Create int buffer
      * @param buffer

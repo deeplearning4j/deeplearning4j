@@ -41,10 +41,20 @@ public class FloatBuffer extends BaseDataBuffer {
         super(length);
     }
 
+    public FloatBuffer(int length, int elementSize) {
+        super(length, elementSize);
+    }
 
+    public FloatBuffer(int length, int elementSize, int offset) {
+        super(length, elementSize, offset);
+    }
 
     public FloatBuffer(ByteBuf buf,int length) {
         super(buf,length);
+    }
+
+    public FloatBuffer(ByteBuf buf, int length, int offset) {
+        super(buf, length, offset);
     }
 
     public FloatBuffer(float[] data) {
@@ -63,12 +73,28 @@ public class FloatBuffer extends BaseDataBuffer {
         super(data, copyOnOps);
     }
 
+    public FloatBuffer(int[] data, boolean copy, int offset) {
+        super(data, copy, offset);
+    }
+
     public FloatBuffer(double[] data, boolean copyOnOps) {
         super(data,copyOnOps);
     }
 
+    public FloatBuffer(double[] data, boolean copy, int offset) {
+        super(data, copy, offset);
+    }
+
     public FloatBuffer(ByteBuffer buffer,int length) {
         super(buffer,length);
+    }
+
+    public FloatBuffer(ByteBuffer buffer, int length, int offset) {
+        super(buffer, length, offset);
+    }
+
+    public FloatBuffer(byte[] data, int length) {
+        super(data, length);
     }
 
 
@@ -79,6 +105,10 @@ public class FloatBuffer extends BaseDataBuffer {
 
     public FloatBuffer(float[] floats, boolean copy) {
         super(floats, copy);
+    }
+
+    public FloatBuffer(float[] data, boolean copy, int offset) {
+        super(data, copy, offset);
     }
 
     @Override

@@ -46,6 +46,10 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
         super(length, elementSize);
     }
 
+    public CudaIntDataBuffer(int length, int elementSize, int offset) {
+        super(length, elementSize, offset);
+    }
+
     public CudaIntDataBuffer(int[] data) {
         this(data.length);
         setData(data);
@@ -55,9 +59,17 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
         super(data, copy);
     }
 
+    public CudaIntDataBuffer(int[] data, boolean copy, int offset) {
+        super(data, copy, offset);
+    }
+
 
     public CudaIntDataBuffer(ByteBuf buf, int length) {
         super(buf, length);
+    }
+
+    public CudaIntDataBuffer(ByteBuf buf, int length, int offset) {
+        super(buf, length, offset);
     }
 
     public CudaIntDataBuffer(byte[] data, int length) {
@@ -72,6 +84,10 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
         super(data, copy);
     }
 
+    public CudaIntDataBuffer(double[] data, boolean copy, int offset) {
+        super(data, copy, offset);
+    }
+
     public CudaIntDataBuffer(float[] data) {
         super(data);
     }
@@ -80,8 +96,16 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
         super(data, copy);
     }
 
+    public CudaIntDataBuffer(float[] data, boolean copy, int offset) {
+        super(data, copy, offset);
+    }
+
     public CudaIntDataBuffer(ByteBuffer buffer, int length) {
         super(buffer, length);
+    }
+
+    public CudaIntDataBuffer(ByteBuffer buffer, int length, int offset) {
+        super(buffer, length, offset);
     }
 
     @Override

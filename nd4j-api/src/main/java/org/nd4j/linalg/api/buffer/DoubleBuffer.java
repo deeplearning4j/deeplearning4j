@@ -31,16 +31,25 @@ import java.nio.ByteBuffer;
  * @author Adam Gibson
  */
 public class DoubleBuffer extends BaseDataBuffer {
-
-
     public DoubleBuffer(int length) {
         super(length);
     }
 
+    public DoubleBuffer(int length, int elementSize) {
+        super(length, elementSize);
+    }
+
+    public DoubleBuffer(int length, int elementSize, int offset) {
+        super(length, elementSize, offset);
+    }
 
 
     public DoubleBuffer(ByteBuf buf,int length) {
         super(buf,length);
+    }
+
+    public DoubleBuffer(ByteBuf buf, int length, int offset) {
+        super(buf, length, offset);
     }
 
     public DoubleBuffer(double[] data) {
@@ -55,6 +64,10 @@ public class DoubleBuffer extends BaseDataBuffer {
         super(data, copyOnOps);
     }
 
+    public DoubleBuffer(int[] data, boolean copy, int offset) {
+        super(data, copy, offset);
+    }
+
     public DoubleBuffer(float[] data) {
         this(data, Nd4j.copyOnOps);
     }
@@ -63,8 +76,20 @@ public class DoubleBuffer extends BaseDataBuffer {
         super(data, copyOnOps);
     }
 
+    public DoubleBuffer(float[] data, boolean copy, int offset) {
+        super(data, copy, offset);
+    }
+
     public DoubleBuffer(ByteBuffer buffer,int length) {
         super(buffer,length);
+    }
+
+    public DoubleBuffer(ByteBuffer buffer, int length, int offset) {
+        super(buffer, length, offset);
+    }
+
+    public DoubleBuffer(byte[] data, int length) {
+        super(data, length);
     }
 
     @Override
@@ -74,6 +99,10 @@ public class DoubleBuffer extends BaseDataBuffer {
 
     public DoubleBuffer(double[] doubles, boolean copy) {
         super(doubles, copy);
+    }
+
+    public DoubleBuffer(double[] data, boolean copy, int offset) {
+        super(data, copy, offset);
     }
 
 
