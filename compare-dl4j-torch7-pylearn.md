@@ -19,6 +19,7 @@ Content
 * <a href="#ecosystem">DL4J: Ecosystem</a>
 * <a href="#scala">DL4S: Deep Learning in Scala</a>
 * <a href="#ml">Machine-Learning Frameworks</a>
+* <a href="#tutorial">Deep Learning Tutorials</a>
 
 ### <a name="tensorflow">TensorFlow</a>
 
@@ -45,7 +46,7 @@ In contrast, Deeplearning4j intends to be the equivalent of Scikit-learn in the 
 
 [**Torch**](http://torch.ch/) is a computational framework written in Lua that supports machine-learning algorithms. Some version of it is used by large tech companies such as Google and Facebook, which devote in-house teams to customizing their deep learning platforms. Lua is a multi-paradigm scripting language that was developed in Brazil in the early 1990s. 
 
-Torch7, while powerful, [was not designed to be widely accessible](https://news.ycombinator.com/item?id=7929216) to the Python-based academic community, nor to corporate software engineers, whose lingua franca is Java. Deeplearning4j was written in Java to reflect our focus on industry and ease of use. We believe usability is the limiting parameter that inhibits more widespread deep-learning implementations. We believe scalability ought to be automated with open-source distributed run-times like Hadoop and Spark. And we believe that a commercially supported open-source framework is the appropriate solution to ensure working tools and building a community. 
+Torch7, while powerful, [was not designed to be widely accessible](https://news.ycombinator.com/item?id=7929216) to the Python-based academic community, nor to corporate software engineers, whose lingua franca is Java. Deeplearning4j was written in Java to reflect our focus on industry and ease of use. We believe usability is the limiting parameter that inhibits more widespread deep-learning implementations. We believe scalability ought to be automated with open-source distributed run-times like Hadoop and Spark. And we believe that a commercially supported open-source framework is the appropriate solution to ensure working tools and building a community.
 
 ### <a name="caffe">Caffe</a>
 
@@ -91,7 +92,7 @@ We have paid special attention to [Scala](http://deeplearning4j.org/scala.html) 
 
 To really understand the differences between DL4J and other frameworks, you may just have to [try us out](http://deeplearning4j.org/quickstart.html).
 
-###<a name="ml">Machine-learning frameworks</a>
+### <a name="ml">Machine-learning frameworks</a>
 
 The deep-learning frameworks listed above are more specialized than general machine-learning frameworks, of which there are many. We'll list the major ones here:
 
@@ -99,3 +100,17 @@ The deep-learning frameworks listed above are more specialized than general mach
 * [Apache Mahout](https://mahout.apache.org/users/basics/quickstart.html) - The flagship machine-learning framework on Apache. Mahout does classifications, clustering and recommendations.
 * [SystemML](https://sparktc.github.io/systemml/quick-start-guide.html) - IBM's machine-learning framework, which performs Descriptive Statistics, Classification, Clustering, Regression, Matrix Factorization and Survival Analysis, and includes support-vector machines. 
 * [Microsoft DMTK](http://www.dmtk.io/) - Microsoft's distributed machine-learning toolkit. Distributed word embeddings and LDA. 
+
+### <a name="tutorial">Deeplearning4j Tutorials</a>
+
+* [Introduction to Deep Neural Networks](../neuralnet-overview.html)
+* [Convolutional Networks Tutorial](../convolutionalnets.html)
+* [LSTM and Recurrent Network Tutorial](../lstm.html)
+* [Using Recurrent Nets With DL4J](../usingrnns.html)
+* [Deep-Belief Networks With MNIST](../mnist-tutorial.html)
+* [IRIS Flower Dataset Tutorial](../iris-flower-dataset-tutorial.html)
+* [Facial Reconstruction With Labeled Faces in the Wild](../facial-reconstruction-tutorial.html)
+* [Customizing Data Pipelines With Canova](../image-data-pipeline.html)
+* [Restricted Boltzmann machines](../restrictedboltzmannmachine.html)
+* [Eigenvectors, PCA and Entropy](../eigenvector.html)
+* [A Glossary of Deep-Learning Terms](../glossary.html)
