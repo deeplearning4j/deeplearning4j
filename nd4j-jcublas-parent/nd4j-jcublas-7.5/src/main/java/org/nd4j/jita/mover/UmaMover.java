@@ -100,6 +100,8 @@ public class UmaMover implements Mover {
                     // cudaMalloc call
                 Pointer devicePointer = new Pointer();
                 Pointer hostPointer = new Pointer();
+
+
                 JCuda.cudaMalloc(devicePointer, AllocationUtils.getRequiredMemory(shape));
 
                 DevicePointerInfo devicePointerInfo = new DevicePointerInfo(

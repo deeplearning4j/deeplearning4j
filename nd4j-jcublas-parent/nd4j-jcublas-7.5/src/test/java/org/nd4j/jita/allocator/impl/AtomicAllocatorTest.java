@@ -4,6 +4,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.jita.allocator.Allocator;
+import org.nd4j.jita.allocator.enums.Aggressiveness;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.conf.DeviceInformation;
@@ -24,8 +25,8 @@ import static org.junit.Assert.*;
  * @author raver119@gmail.com
  */
 public class AtomicAllocatorTest {
-    private Allocator allocator;
-    private CudaEnvironment singleDevice4GBcc52;
+    private static Allocator allocator;
+    private static CudaEnvironment singleDevice4GBcc52;
 
 
     private static Logger log = LoggerFactory.getLogger(AtomicAllocatorTest.class);
@@ -33,10 +34,13 @@ public class AtomicAllocatorTest {
     @Before
     public void setUp() throws Exception {
         if (allocator == null) {
-            singleDevice4GBcc52 = new CudaEnvironment();
+
 
             Configuration configuration = new Configuration();
+            configuration.setDeallocAggressiveness(Aggressiveness.IMMEDIATE);
             configuration.setMaximumZeroAllocation(1000000000);
+
+            singleDevice4GBcc52 = new CudaEnvironment(configuration);
 
             DeviceInformation device1 = new DeviceInformation();
             device1.setDeviceId(1);
@@ -48,8 +52,8 @@ public class AtomicAllocatorTest {
             singleDevice4GBcc52.addDevice(device1);
 
             allocator = AtomicAllocator.getInstance();
-            allocator.setEnvironment(singleDevice4GBcc52);
             allocator.applyConfiguration(configuration);
+//            allocator.setEnvironment(singleDevice4GBcc52);
             allocator.setMover(new UmaMover());
         }
     }
@@ -69,7 +73,7 @@ public class AtomicAllocatorTest {
         long time1 = 0;
         long time2 = 0;
         long exec[] = new long[100];
-        for (int x = 0; x < 100000000; x++) {
+        for (int x = 0; x < 100; x++) {
             time1 = System.nanoTime();
             dotWrapped = Nd4j.getBlasWrapper().dot(array1, array2);
             time2 = System.nanoTime();

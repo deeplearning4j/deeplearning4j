@@ -419,6 +419,7 @@ public class KernelFunctionLoader {
      * @param ctx
      * @throws Exception
      */
+    @Deprecated
     public static void printBuffer(JCudaBuffer buffer,CudaContext ctx) throws Exception {
         CublasPointer pointer = new CublasPointer(buffer,ctx);
         pointer.copyToHost();

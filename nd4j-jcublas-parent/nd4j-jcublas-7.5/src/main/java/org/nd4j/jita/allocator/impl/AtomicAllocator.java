@@ -9,9 +9,13 @@ import jcuda.jcublas.cublasHandle;
 import jcuda.runtime.JCuda;
 import lombok.NonNull;
 import org.nd4j.jita.allocator.Allocator;
+import org.nd4j.jita.allocator.concurrency.Lock;
 import org.nd4j.jita.allocator.enums.AccessState;
+import org.nd4j.jita.allocator.enums.Aggressiveness;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.SyncState;
+import org.nd4j.jita.allocator.time.Ring;
+import org.nd4j.jita.allocator.time.rings.LockedRing;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
@@ -31,6 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -45,7 +50,7 @@ public class AtomicAllocator implements Allocator {
     private static final AtomicAllocator INSTANCE = new AtomicAllocator();
 
     private Configuration configuration = new Configuration();
-    private CudaEnvironment environment = new CudaEnvironment();
+    private CudaEnvironment environment;
     private transient Mover mover;
     private AtomicLong allocationsCounter = new AtomicLong(0);
 
@@ -86,6 +91,8 @@ public class AtomicAllocator implements Allocator {
 
     private static Logger log = LoggerFactory.getLogger(AtomicAllocator.class);
 
+    // list of banned devices to be used
+    private List<Integer> bannedDevices = new ArrayList<>();
 
     /*
         locks for internal resources
@@ -103,8 +110,23 @@ public class AtomicAllocator implements Allocator {
 
     private final AtomicBoolean shouldStop = new AtomicBoolean(false);
 
+    private final AtomicBoolean wasInitialised = new AtomicBoolean(false);
+
+
+    private final Ring deviceLong = new LockedRing(30);
+    private final Ring deviceShort = new LockedRing(30);
+
+    private final Ring zeroLong = new LockedRing(30);
+    private final Ring zeroShort = new LockedRing(30);
+
+
+
     public static AtomicAllocator getInstance() {
         return INSTANCE;
+    }
+
+    protected AtomicAllocator() {
+        environment = new CudaEnvironment(configuration);
     }
 
     /**
@@ -135,13 +157,34 @@ public class AtomicAllocator implements Allocator {
     /**
      * Consume and apply configuration passed in as argument
      *
+     * PLEASE NOTE: This method should only be used BEFORE any calculations were started.
+     *
      * @param configuration configuration bean to be applied
      */
     @Override
     public void applyConfiguration(@NonNull Configuration configuration) {
+        if (!wasInitialised.get()) {
+            globalLock.writeLock().lock();
+
+            this.configuration = configuration;
+            this.environment = new CudaEnvironment(this.configuration);
+
+            globalLock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * This method allows you to exclude specific device from being used for calculations
+     * <p>
+     * Please note: you can call this method multiple times, to ban multiple devices
+     *
+     * @param deviceId deviceId to be banned
+     */
+    @Override
+    public void banDevice(@NonNull Integer deviceId) {
         globalLock.writeLock().lock();
 
-        this.configuration = configuration;
+        environment.banDevice(deviceId);
 
         globalLock.writeLock().unlock();
     }
@@ -180,6 +223,7 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public Long pickupSpan(@NonNull BaseCudaDataBuffer buffer, @NonNull AllocationShape shape) {
+
         try {
             externalsLock.writeLock().lock();
 
@@ -232,6 +276,7 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public Long pickupSpan(INDArray array) {
+
         /*
          while working on array level, we actually immediately downgrade to buffer level, with AllocationShape defined by this array
           */
@@ -369,9 +414,9 @@ public class AtomicAllocator implements Allocator {
                  */
                 long requiredMemory = AllocationUtils.getRequiredMemory(shape);
                 while (zeroUseCounter.get() > configuration.getMaximumZeroAllocation() - (configuration.getMaximumZeroAllocation() / 10)) {
-                        log.info("Executing manually");
+                        log.info("No free host memory available. Startig GC manually with [URGENT] agressiveness");
 //                    if (zeroUseCounter.get() > configuration.getMaximumZeroAllocation() - (configuration.getMaximumZeroAllocation() / 10)) {
-                        long freedMemory = seekUnusedZero(Thread.currentThread().getId(), 1, 1);
+                        long freedMemory = seekUnusedZero(Thread.currentThread().getId(), Aggressiveness.URGENT);
 //                    } else {
 
 //                    }
@@ -441,7 +486,7 @@ public class AtomicAllocator implements Allocator {
         if (!isNewAllocation) {
             // we check promotion only for existant allocations. just ignore new allocations here :)
             // TODO: add memory check all the way here
-            if (point.getDeviceTicks() > 5 && point.getAllocationStatus() == AllocationStatus.ZERO) {
+     /*       if (point.getDeviceTicks() > 5 && point.getAllocationStatus() == AllocationStatus.ZERO) {
                 point.getAccessState().requestToe();
 
                 try {
@@ -454,7 +499,7 @@ public class AtomicAllocator implements Allocator {
 
                 }
                 point.getAccessState().releaseToe();
-            }
+            }*/
         }
 
         /*
@@ -462,6 +507,18 @@ public class AtomicAllocator implements Allocator {
          */
         point.getAccessState().requestTick();
         point.tickDevice();
+
+        /*
+            Now we store use rates
+         */
+
+        if (point.getAllocationStatus() == AllocationStatus.ZERO) {
+            zeroLong.store(point.getTimerLong().getFrequencyOfEvents());
+            zeroShort.store(point.getTimerShort().getFrequencyOfEvents());
+        } else {
+            deviceLong.store(point.getTimerLong().getFrequencyOfEvents());
+            deviceShort.store(point.getTimerShort().getFrequencyOfEvents());
+        }
 
         return point.getCudaPointer();
     }
@@ -584,6 +641,8 @@ public class AtomicAllocator implements Allocator {
             Long threadId = Thread.currentThread().getId();
 
             if (!devicesAffinity.containsKey(threadId)) {
+                wasInitialised.compareAndSet(false, true);
+
                 List<Integer> devices = new ArrayList<>(environment.getAvailableDevices().keySet());
                 Random rnd = new Random();
                 Integer device = devices.get(rnd.nextInt(devices.size()));
@@ -671,7 +730,7 @@ public class AtomicAllocator implements Allocator {
      * @param threadId Id of the thread, retrieved via Thread.currentThread().getId()
      * @return size of memory that was deallocated
      */
-    protected synchronized long seekUnusedZero(Long threadId, double minShortRate, double minLongRate) {
+    protected synchronized long seekUnusedZero(Long threadId, Aggressiveness aggressiveness) {
         /*
             This method is blocking on thread basis, just to prevent parallel calls
 
@@ -682,7 +741,15 @@ public class AtomicAllocator implements Allocator {
         int totalElements = zeroAllocations.get(threadId).size();
         //log.info("Total zero elements to be checked: [" + totalElements + "]; zeroUsed: ["+ zeroUseCounter.get()+"]");
 
+        float shortAverage = zeroShort.getAverage();
+        float longAverage = zeroLong.getAverage();
 
+        float shortThreshold = shortAverage / (Aggressiveness.values().length - aggressiveness.ordinal());
+        float longThreshold = longAverage / (Aggressiveness.values().length - aggressiveness.ordinal());
+
+
+
+        AtomicInteger elementsDropped = new AtomicInteger(0);
 
         for (Long object: zeroAllocations.get(threadId)) {
             AllocationPoint point = getAllocationPoint(object);
@@ -698,6 +765,7 @@ public class AtomicAllocator implements Allocator {
 
                     purgeZeroObject(threadId, object, point, false);
                     freeSpace.addAndGet(AllocationUtils.getRequiredMemory(point.getShape()));
+                    elementsDropped.incrementAndGet();
                     continue;
                 }
 
@@ -709,17 +777,43 @@ public class AtomicAllocator implements Allocator {
                 long millisecondsTTL = configuration.getMinimumTTLMilliseconds();
                 if (point.getRealDeviceAccessTime() < System.currentTimeMillis() - millisecondsTTL) {
                     // we could remove device allocation ONLY if it's older then minimum TTL
-                    if (point.getTimerLong().getFrequencyOfEvents() < minLongRate && point.getTimerShort().getFrequencyOfEvents() < minShortRate) {
+                    if (point.getTimerLong().getFrequencyOfEvents() < longThreshold && point.getTimerShort().getFrequencyOfEvents() < shortThreshold) {
                         //log.info("Removing object: " + object);
 
                         purgeZeroObject(threadId, object, point, true);
                         freeSpace.addAndGet(AllocationUtils.getRequiredMemory(point.getShape()));
+                        elementsDropped.incrementAndGet();
                     }
                 }
 
                 point.getAccessState().releaseToe();
             }
         }
+
+
+
+        log.info("Short average: ["+shortAverage+"], Long average: [" + longAverage + "]");
+        log.info("Aggressiveness: ["+ aggressiveness+"]; Short threshold: ["+shortThreshold+"]; Long threshold: [" + longThreshold + "]");
+        log.info("Elements deleted: " + elementsDropped.get());
+
+        /*
+            o.n.j.a.i.AtomicAllocator - Short average: [2.29], Long average: [0.3816667]
+            o.n.j.a.i.AtomicAllocator - Aggressiveness: [PEACEFUL]; Short threshold: [0.5725]; Long threshold: [0.09541667]
+            o.n.j.a.i.AtomicAllocator - Elements deleted: 17485
+
+
+            o.n.j.a.i.AtomicAllocator - Short average: [1.0566667], Long average: [0.14388889]
+            o.n.j.a.i.AtomicAllocator - Aggressiveness: [REASONABLE]; Short threshold: [0.35222223]; Long threshold: [0.047962964]
+            o.n.j.a.i.AtomicAllocator - Elements deleted: 18214
+
+            o.n.j.a.i.AtomicAllocator - Short average: [1.4866666], Long average: [0.19944443]
+            o.n.j.a.i.AtomicAllocator - Aggressiveness: [URGENT]; Short threshold: [0.7433333]; Long threshold: [0.099722214]
+            o.n.j.a.i.AtomicAllocator - Elements deleted: 18933
+
+            o.n.j.a.i.AtomicAllocator - Short average: [1.6933333], Long average: [0.28222224]
+            o.n.j.a.i.AtomicAllocator - Aggressiveness: [IMMEDIATE]; Short threshold: [1.6933333]; Long threshold: [0.28222224]
+            o.n.j.a.i.AtomicAllocator - Elements deleted: 18169
+         */
 
 
         //log.info("Total zero elements left: " + zeroAllocations.get(threadId).size());
@@ -733,7 +827,7 @@ public class AtomicAllocator implements Allocator {
      * @param deviceId Id of the device
      * @return size of memory that was deallocated
      */
-    protected synchronized long seekUnusedDevice(Long threadId, Integer deviceId) {
+    protected long seekUnusedDevice(Long threadId, Integer deviceId) {
         AtomicLong freeSpace = new AtomicLong(0);
 
         deviceLock.readLock().lock();
@@ -766,8 +860,25 @@ public class AtomicAllocator implements Allocator {
                 /*
                     Check for zero-copy garbage
                  */
-                log.info("Executing automatically ZGC");
-                seekUnusedZero(threadId, 1, 1);
+                log.info("ZeroGC started...");
+                /*
+                    We want allocations to take in account multiple things:
+                    1. average access rates for last X objects
+                    2. total number of currently allocated objects
+                    3. total allocated memory size
+                    4. desired aggressiveness
+                */
+
+                Aggressiveness aggressiveness = configuration.getDeallocAggressiveness();
+
+                // if we have too much objects, or total allocated memory has met 75% of max allocation - use urgent mode
+                if ((zeroAllocations.get(threadId).size() > 500000 || zeroUseCounter.get() > (configuration.getMaximumZeroAllocation() * 0.75)) && aggressiveness.ordinal() < Aggressiveness.URGENT.ordinal())
+                    aggressiveness = Aggressiveness.URGENT;
+
+                if (zeroUseCounter.get() > (configuration.getMaximumZeroAllocation() * 0.85))
+                    aggressiveness = Aggressiveness.IMMEDIATE;
+
+                seekUnusedZero(threadId, aggressiveness);
 
                 try {
                     Thread.sleep(Math.max(configuration.getMinimumTTLMilliseconds(), 5000));
@@ -798,7 +909,7 @@ public class AtomicAllocator implements Allocator {
                 /*
                     Check for device garbage
                  */
-                log.info("Executing automatically DGC");
+                log.info("DeviceGC started...");
                 seekUnusedDevice(this.threadId, this.deviceId);
 
 

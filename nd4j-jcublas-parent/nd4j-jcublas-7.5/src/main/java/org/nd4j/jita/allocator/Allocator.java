@@ -30,6 +30,14 @@ public interface Allocator {
      */
     void applyConfiguration(Configuration configuration);
 
+    /**
+     * This method allows you to exclude specific device from being used for calculations
+     *
+     * Please note: you can call this method multiple times, to ban multiple devices
+     *
+     * @param deviceId deviceId to be banned
+     */
+    void banDevice(Integer deviceId);
 
     /**
      * Set active CUDA environment
