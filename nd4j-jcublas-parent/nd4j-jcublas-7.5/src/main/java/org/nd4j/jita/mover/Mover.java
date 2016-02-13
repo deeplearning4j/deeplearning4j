@@ -53,6 +53,14 @@ public interface Mover {
     void copyforward(AllocationPoint point, AllocationShape shape);
 
     /**
+     * Copies memory from device to zero-copy memory
+     *
+     * @param point
+     * @param shape
+     */
+    void fallback(AllocationPoint point, AllocationShape shape);
+
+    /**
      * This method frees memory chunk specified by pointer
      *
      * @param point

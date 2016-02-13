@@ -31,12 +31,16 @@ public class Configuration implements Serializable {
     /**
      * Deallocation aggressiveness
      */
-    private Aggressiveness deallocAggressiveness = Aggressiveness.REASONABLE;
+    private Aggressiveness hostDeallocAggressiveness = Aggressiveness.REASONABLE;
+
+    private Aggressiveness gpuDeallocAggressiveness = Aggressiveness.REASONABLE;
 
     /**
      * Allocation aggressiveness
      */
-    private Aggressiveness allocAggressiveness = Aggressiveness.REASONABLE;
+    private Aggressiveness gpuAllocAggressiveness = Aggressiveness.REASONABLE;
+
+    private Aggressiveness hostAllocAggressiveness = Aggressiveness.REASONABLE;
 
     /**
      * Maximum allocated per-device memory, in bytes

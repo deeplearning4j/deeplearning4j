@@ -69,6 +69,7 @@ public class AtomicAllocator implements Allocator {
         table for Thread, Device, Object allocations of device memory. Objects should be used to grab Allocation point from allocationsMap
     */
     // TODO: proper thread-safe implementation would be nice to have here :(
+    // FIXME: CopyOnWriteArrayList is BAD here. Really BAD. B A D.
     // Table thread safety is guaranteed by reentrant read/write locks :(
     private Table<Long, Integer, CopyOnWriteArrayList<Long>> deviceAllocations = HashBasedTable.create();
 
@@ -486,7 +487,7 @@ public class AtomicAllocator implements Allocator {
         if (!isNewAllocation) {
             // we check promotion only for existant allocations. just ignore new allocations here :)
             // TODO: add memory check all the way here
-     /*       if (point.getDeviceTicks() > 5 && point.getAllocationStatus() == AllocationStatus.ZERO) {
+            if (point.getDeviceTicks() > 5 && point.getAllocationStatus() == AllocationStatus.ZERO) {
                 point.getAccessState().requestToe();
 
                 try {
@@ -494,12 +495,18 @@ public class AtomicAllocator implements Allocator {
 
                     point.setAllocationStatus(AllocationStatus.DEVICE);
                     point.setCudaPointers(newPointers);
-                    log.info("Relocation happened!");
+
+                    deviceLock.readLock().lock();
+
+                    deviceAllocations.get(Thread.currentThread().getId(), point.getDeviceId()).add(trackingPoint);
+
+                    deviceLock.readLock().unlock();
+//                    log.info("Relocation happened!");
                 } catch (Exception e){
 
                 }
                 point.getAccessState().releaseToe();
-            }*/
+            }
         }
 
         /*
@@ -724,6 +731,31 @@ public class AtomicAllocator implements Allocator {
         zeroUseCounter.set(zeroUseCounter.get() - AllocationUtils.getRequiredMemory(point.getShape()));
     }
 
+
+    protected void purgeDeviceObject(Long threadId, Integer deviceId, Long objectId, AllocationPoint point, boolean copyback) {
+        if (copyback) {
+            // copyback here basically means that we're gonna have new zero allocation right now
+            mover.fallback(point, point.getShape());
+
+            zeroAllocations.get(threadId).add(objectId);
+            point.tickDeviceWrite();
+            point.setAllocationStatus(AllocationStatus.ZERO);
+            zeroUseCounter.set(zeroUseCounter.get() - AllocationUtils.getRequiredMemory(point.getShape()));
+        }
+
+        deviceLock.readLock().lock();
+        List<Long> allocations = deviceAllocations.get(threadId, deviceId);
+        deviceLock.readLock().unlock();
+
+        // FIXME: THIS IS BAD
+        allocations.remove(objectId);
+
+        if (!copyback)
+            mover.free(point, AllocationStatus.DEVICE);
+
+        environment.trackAllocatedMemory(deviceId, AllocationUtils.getRequiredMemory(point.getShape()));
+    }
+
     /**
      * This method seeks for unused zero-copy memory allocations
      *
@@ -753,6 +785,8 @@ public class AtomicAllocator implements Allocator {
 
         for (Long object: zeroAllocations.get(threadId)) {
             AllocationPoint point = getAllocationPoint(object);
+            if (point == null) continue;
+
             if (point.getAccessState().isToeAvailable()) {
                 point.getAccessState().requestToe();
 
@@ -794,7 +828,7 @@ public class AtomicAllocator implements Allocator {
 
         log.info("Short average: ["+shortAverage+"], Long average: [" + longAverage + "]");
         log.info("Aggressiveness: ["+ aggressiveness+"]; Short threshold: ["+shortThreshold+"]; Long threshold: [" + longThreshold + "]");
-        log.info("Elements deleted: " + elementsDropped.get());
+        log.info("Zero elements deleted: " + elementsDropped.get());
 
         /*
             o.n.j.a.i.AtomicAllocator - Short average: [2.29], Long average: [0.3816667]
@@ -827,13 +861,72 @@ public class AtomicAllocator implements Allocator {
      * @param deviceId Id of the device
      * @return size of memory that was deallocated
      */
-    protected long seekUnusedDevice(Long threadId, Integer deviceId) {
+    protected long seekUnusedDevice(Long threadId, Integer deviceId, Aggressiveness aggressiveness) {
         AtomicLong freeSpace = new AtomicLong(0);
 
         deviceLock.readLock().lock();
         List<Long> allocations = deviceAllocations.get(threadId, deviceId);
         deviceLock.readLock().unlock();
 
+        float shortAverage = zeroShort.getAverage();
+        float longAverage = zeroLong.getAverage();
+
+        float shortThreshold = shortAverage / (Aggressiveness.values().length - aggressiveness.ordinal());
+        float longThreshold = longAverage / (Aggressiveness.values().length - aggressiveness.ordinal());
+
+        log.info("Total device elements: " + allocations.size());
+
+        AtomicInteger elementsDropped = new AtomicInteger(0);
+
+        for (Long object: allocations) {
+            AllocationPoint point = getAllocationPoint(object);
+            if (point == null) continue;
+            if (point.getAccessState().isToeAvailable()) {
+                point.getAccessState().requestToe();
+
+                /*
+                    Check if memory points to non-existant buffer, using externals.
+                    If externals don't have specified buffer - delete reference.
+                 */
+                if (point.getBuffer() == null) {
+                    //log.info("Ghost reference removed: " + object);
+
+                    purgeDeviceObject(threadId, deviceId, object, point, false);
+                    freeSpace.addAndGet(AllocationUtils.getRequiredMemory(point.getShape()));
+
+                    elementsDropped.incrementAndGet();
+                    continue;
+                }
+
+                /*
+                    Check, if memory can be removed from allocation.
+                    To check it, we just compare average rates for few tens of latest calls
+                 */
+
+                long millisecondsTTL = configuration.getMinimumTTLMilliseconds();
+                if (point.getRealDeviceAccessTime() < System.currentTimeMillis() - millisecondsTTL) {
+                    // we could remove device allocation ONLY if it's older then minimum TTL
+
+                    purgeDeviceObject(threadId, deviceId, object, point, true);
+
+                    freeSpace.addAndGet(AllocationUtils.getRequiredMemory(point.getShape()));
+
+                    elementsDropped.incrementAndGet();
+
+                    /*if (point.getTimerLong().getFrequencyOfEvents() < longThreshold && point.getTimerShort().getFrequencyOfEvents() < shortThreshold) {
+                        //log.info("Removing object: " + object);
+
+                        purgeZeroObject(threadId, object, point, true);
+
+
+                    }*/
+                }
+
+                point.getAccessState().releaseToe();
+            }
+        }
+
+        log.info("Device elements deleted: " + elementsDropped.get());
 
         return freeSpace.get();
     }
@@ -869,7 +962,7 @@ public class AtomicAllocator implements Allocator {
                     4. desired aggressiveness
                 */
 
-                Aggressiveness aggressiveness = configuration.getDeallocAggressiveness();
+                Aggressiveness aggressiveness = configuration.getHostDeallocAggressiveness();
 
                 // if we have too much objects, or total allocated memory has met 75% of max allocation - use urgent mode
                 if ((zeroAllocations.get(threadId).size() > 500000 || zeroUseCounter.get() > (configuration.getMaximumZeroAllocation() * 0.75)) && aggressiveness.ordinal() < Aggressiveness.URGENT.ordinal())
@@ -878,7 +971,10 @@ public class AtomicAllocator implements Allocator {
                 if (zeroUseCounter.get() > (configuration.getMaximumZeroAllocation() * 0.85))
                     aggressiveness = Aggressiveness.IMMEDIATE;
 
-                seekUnusedZero(threadId, aggressiveness);
+                if (zeroUseCounter.get() < (configuration.getMaximumZeroAllocation() * 0.25) && (zeroAllocations.get(threadId).size() < 10000)) {
+                    ; // i don't want deallocation to be fired on lower thresholds. just no sense locking stuff
+                } else seekUnusedZero(threadId, aggressiveness);
+
 
                 try {
                     Thread.sleep(Math.max(configuration.getMinimumTTLMilliseconds(), 5000));
@@ -910,7 +1006,7 @@ public class AtomicAllocator implements Allocator {
                     Check for device garbage
                  */
                 log.info("DeviceGC started...");
-                seekUnusedDevice(this.threadId, this.deviceId);
+                seekUnusedDevice(this.threadId, this.deviceId, configuration.getGpuDeallocAggressiveness());
 
 
                 try {

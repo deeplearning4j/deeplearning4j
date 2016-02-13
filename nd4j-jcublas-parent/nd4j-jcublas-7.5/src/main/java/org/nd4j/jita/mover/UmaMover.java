@@ -221,6 +221,27 @@ public class UmaMover implements Mover {
     }
 
     /**
+     * Copies memory from device to zero-copy memory
+     *
+     * @param point
+     * @param shape
+     */
+    @Override
+    public void fallback(AllocationPoint point, AllocationShape shape) {
+        if (point.getAllocationStatus() != AllocationStatus.DEVICE)
+            throw new IllegalStateException("Can't fallback from ["+point.getAllocationStatus()+"]");
+
+
+        DevicePointerInfo info = alloc(AllocationStatus.ZERO, point, shape);
+
+        JCuda.cudaMemcpy(info.getPointers().getHostPointer(), point.getCudaPointer(), AllocationUtils.getRequiredMemory(shape), cudaMemcpyKind.cudaMemcpyDeviceToHost);
+
+        JCuda.cudaFree(point.getCudaPointer());
+
+        point.setCudaPointers(info);
+    }
+
+    /**
      * This method frees memory chunk specified by pointer and location
      *
      * @param point Pointer

@@ -68,7 +68,7 @@ public class FirstInBalancer implements Balancer {
         long maximumMemory = configuration.getMaximumDeviceAllocation();
         long allocatedMemory = environment.getAllocatedMemoryForDevice(deviceId);
         long currentLength = AllocationUtils.getRequiredMemory(shape);
-
+/*
         int singleDivider = 1;
         int allocDivider = 1;
         switch (configuration.getDeallocAggressiveness()) {
@@ -92,6 +92,6 @@ public class FirstInBalancer implements Balancer {
 
         if (currentLength > (maximumMemory / singleDivider) || allocatedMemory > (maximumMemory / allocDivider) ) {
             return AllocationStatus.ZERO;
-        } else return AllocationStatus.DEVICE;
+        } else */return AllocationStatus.DEVICE;
     }
 }
