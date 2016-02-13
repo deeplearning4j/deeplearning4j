@@ -19,7 +19,7 @@ Content
 * <a href="#ecosystem">DL4J: Ecosystem</a>
 * <a href="#scala">DL4S: Deep Learning in Scala</a>
 * <a href="#ml">Machine-Learning Frameworks</a>
-* <a href="#tutorial">Deep Learning Tutorials</a>
+* <a href="#tutorial">Further Reading</a>
 
 ### <a name="tensorflow">TensorFlow</a>
 
