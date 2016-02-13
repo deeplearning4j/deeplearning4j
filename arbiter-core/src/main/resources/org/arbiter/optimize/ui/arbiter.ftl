@@ -370,16 +370,20 @@
         // Scale the range of the chart
         var xMax = -Number.MAX_VALUE;
         var yMax = -Number.MAX_VALUE;
+        var yMin = Number.MAX_VALUE;
         for( var i=0; i<nSeries; i++){
             var xV = xData[i];
             var yV = yData[i];
             var thisMax = d3.max(xV);
             var thisMaxY = d3.max(yV);
+            var thisMinY = d3.min(yV);
             if(thisMax > xMax) xMax = thisMax;
             if(thisMaxY > yMax) yMax = thisMaxY;
+            if(thisMinY < yMin) yMin = thisMinY;
         }
+        if(yMin > 0) yMin = 0;
         xScale.domain([0, xMax]);
-        yScale.domain([0, yMax]);
+        yScale.domain([yMin, yMax]);
 
         // Add the valueline path.
         var color = d3.scale.category10();
@@ -489,16 +493,20 @@
         // Scale the range of the chart
         var xMax = -Number.MAX_VALUE;
         var yMax = -Number.MAX_VALUE;
+        var yMin = Number.MAX_VALUE;
         for( var i=0; i<nSeries; i++){
             var xV = xData[i];
             var yV = yData[i];
             var thisMax = d3.max(xV);
             var thisMaxY = d3.max(yV);
+            var thisMinY = d3.min(yV);
             if(thisMax > xMax) xMax = thisMax;
             if(thisMaxY > yMax) yMax = thisMaxY;
+            if(thisMinY < yMin) yMin = thisMinY;
         }
+        if(yMin > 0) yMin = 0;
         xScale.domain([0, xMax]);
-        yScale.domain([0, yMax]);
+        yScale.domain([yMin, yMax]);
 
         // Add the valueline path.
         var color = d3.scale.category10();
