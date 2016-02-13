@@ -49,7 +49,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M, A> {
 
-    private static final int POLLING_FREQUENCY = 10;
+    private static final int POLLING_FREQUENCY = 1;
     private static final TimeUnit POLLING_FREQUENCY_UNIT = TimeUnit.SECONDS;
     private static Logger log = LoggerFactory.getLogger(OptimizationRunner.class);
 
