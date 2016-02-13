@@ -270,6 +270,9 @@
             case "linechart":
                 createLineChart(renderableComponent[key],appendTo);
                 break;
+            case "scatterplot":
+                createScatterPlot(renderableComponent[key],appendTo);
+                break;
             case "accordion":
                 createAccordion(renderableComponent[key],appendTo);
                 break;
@@ -391,6 +394,130 @@
                     .attr("class", "line")
                     .style("stroke", color(i))
                     .attr("d", valueline(data));
+        }
+
+        // Add the X Axis
+        svg.append("g")
+                .attr("class", "x axis")
+                .attr("transform", "translate(0," + height + ")")
+                .call(xAxis);
+
+        // Add the Y Axis
+        svg.append("g")
+                .attr("class", "y axis")
+                .call(yAxis);
+
+        //Add legend (if present)
+        if(seriesNames) {
+            var legendSpace = width / i;
+            for (var i = 0; i < nSeries; i++) {
+                var values = xData[i];
+                var yValues = yData[i];
+                var lastX = values[values.length - 1];
+                var lastY = yValues[yValues.length - 1];
+                var toDisplay;
+                if(!lastX || !lastY) toDisplay = seriesNames[i] + " (no data)";
+                else toDisplay = seriesNames[i] + " (" + lastX.toPrecision(5) + "," + lastY.toPrecision(5) + ")";
+                svg.append("text")
+                        .attr("x", (legendSpace / 2) + i * legendSpace) // spacing
+                        .attr("y", height + (margin.bottom / 2) + 5)
+                        .attr("class", "legend")    // style the legend
+                        .style("fill", color(i))
+                        .text(toDisplay);
+
+            }
+        }
+
+        //Add title (if present)
+        if(title){
+            svg.append("text")
+                    .attr("x", (width / 2))
+                    .attr("y", 0 - ((margin.top-30) / 2))
+                    .attr("text-anchor", "middle")
+                    .style("font-size", "13px")
+                    .style("text-decoration", "underline")
+                    .text(title);
+        }
+    }
+
+    /** Create + add scatter plot chart with multiple different types of points, (optional) title, (optional) series names.
+     * appendTo: jquery selector of object to append to. MUST HAVE ID
+     * */
+    function createScatterPlot(chartObj, appendTo){
+        //TODO modify this to do scatter plot, not line chart
+        //Expect: RenderableComponentLineChart
+        var title = chartObj['title'];
+        var xData = chartObj['x'];
+        var yData = chartObj['y'];
+        var seriesNames = chartObj['seriesNames'];
+        var nSeries = (!xData ? 0 : xData.length);
+        var title = chartObj['title'];
+
+        // Set the dimensions of the canvas / graph
+        var margin = {top: 60, right: 20, bottom: 60, left: 50},
+                width = 650 - margin.left - margin.right,
+                height = 350 - margin.top - margin.bottom;
+
+        // Set the ranges
+        var xScale = d3.scale.linear().range([0, width]);
+        var yScale = d3.scale.linear().range([height, 0]);
+
+        // Define the axes
+        var xAxis = d3.svg.axis().scale(xScale)
+                .innerTickSize(-height)     //used as grid line
+                .orient("bottom").ticks(5);
+
+        var yAxis = d3.svg.axis().scale(yScale)
+                .innerTickSize(-width)      //used as grid line
+                .orient("left").ticks(5);
+
+        // Define the line
+        var valueline = d3.svg.line()
+                .x(function(d) { return xScale(d.xPos); })
+                .y(function(d) { return yScale(d.yPos); });
+
+        // Adds the svg canvas
+        var svg = d3.select("#" + appendTo.attr("id"))
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .attr("padding", "20px")
+                .append("g")
+                .attr("transform",
+                "translate(" + margin.left + "," + margin.top + ")");
+
+        // Scale the range of the chart
+        var xMax = -Number.MAX_VALUE;
+        var yMax = -Number.MAX_VALUE;
+        for( var i=0; i<nSeries; i++){
+            var xV = xData[i];
+            var yV = yData[i];
+            var thisMax = d3.max(xV);
+            var thisMaxY = d3.max(yV);
+            if(thisMax > xMax) xMax = thisMax;
+            if(thisMaxY > yMax) yMax = thisMaxY;
+        }
+        xScale.domain([0, xMax]);
+        yScale.domain([0, yMax]);
+
+        // Add the valueline path.
+        var color = d3.scale.category10();
+        for( var i=0; i<nSeries; i++){
+            var xVals = xData[i];
+            var yVals = yData[i];
+
+            var data = xVals.map(function(d, i){
+                return { 'xPos' : xVals[i], 'yPos' : yVals[i] };
+            });
+
+            svg.selectAll("circle")
+                    .data(data)
+                    .enter()
+                    .append("circle")
+                    .style("fill", function(d){ return color(i)})
+                    .attr("r",3.0)
+                    .attr("cx", function(d){ return xScale(d['xPos']); })
+                    .attr("cy", function(d){ return yScale(d['yPos']); });
         }
 
         // Add the X Axis

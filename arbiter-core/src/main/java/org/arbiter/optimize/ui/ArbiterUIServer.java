@@ -33,6 +33,7 @@ import javax.ws.rs.client.Client;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -148,8 +149,9 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
     }
 
     public void updateStatus(RenderElements elements){
-        targetSummaryStatusUpdate.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
+        Response response = targetSummaryStatusUpdate.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
                 .post(Entity.entity(elements, MediaType.APPLICATION_JSON));
+        log.info("Status update response: {}", response);
         log.info("Posted summary status update: {}", elements);
         lastSummaryUpdateTime.set(System.currentTimeMillis());
 

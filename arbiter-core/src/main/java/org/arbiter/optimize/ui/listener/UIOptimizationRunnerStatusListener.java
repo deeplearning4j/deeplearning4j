@@ -20,16 +20,16 @@ package org.arbiter.optimize.ui.listener;
 import org.arbiter.optimize.api.OptimizationResult;
 import org.arbiter.optimize.api.ParameterSpace;
 import org.arbiter.optimize.api.data.DataProvider;
+import org.arbiter.optimize.api.saving.ResultReference;
 import org.arbiter.optimize.api.saving.ResultSaver;
 import org.arbiter.optimize.api.score.ScoreFunction;
 import org.arbiter.optimize.config.OptimizationConfiguration;
+import org.arbiter.optimize.runner.CandidateStatus;
 import org.arbiter.optimize.runner.IOptimizationRunner;
+import org.arbiter.optimize.runner.Status;
 import org.arbiter.optimize.runner.listener.runner.OptimizationRunnerStatusListener;
 import org.arbiter.optimize.ui.ArbiterUIServer;
-import org.arbiter.optimize.ui.components.RenderElements;
-import org.arbiter.optimize.ui.components.RenderableComponent;
-import org.arbiter.optimize.ui.components.RenderableComponentLineChart;
-import org.arbiter.optimize.ui.components.RenderableComponentTable;
+import org.arbiter.optimize.ui.components.*;
 
 import java.util.*;
 
@@ -115,9 +115,6 @@ public class UIOptimizationRunnerStatusListener implements OptimizationRunnerSta
                 {"Termination Conditions:",runner.getConfiguration().getTerminationConditions().toString()}
         };
 
-        //TODO: best score vs. iteration or model number?
-        //TODO: add (overlay) completed candidate score vs. time on chart (i.e., as 'x' marks on score vs. time graph, one for each completed model)
-
         List<RenderableComponent> components = new ArrayList<>();
         components.add(new RenderableComponentTable(null,table));
 
@@ -156,6 +153,34 @@ public class UIOptimizationRunnerStatusListener implements OptimizationRunnerSta
 
             components.add(chart);
         }
+
+        //Create a plot of all models vs. time
+        List<CandidateStatus> statusList = runner.getCandidateStatus();
+        List<CandidateStatus> completedStatuses = new ArrayList<>();
+        for(CandidateStatus s : statusList){
+            if(s.getStatus() == Status.Complete) completedStatuses.add(s);
+        }
+        Collections.sort(completedStatuses, new Comparator<CandidateStatus>() {
+            @Override
+            public int compare(CandidateStatus o1, CandidateStatus o2) {
+                return Long.compare(o1.getEndTime(),o2.getEndTime());
+            }
+        });
+
+        double[] time = new double[completedStatuses.size()];
+        double[] score = new double[completedStatuses.size()];
+        for( int i=0; i<completedStatuses.size(); i++ ){
+            CandidateStatus cs = completedStatuses.get(i);
+            time[i] = (cs.getEndTime() - startTime) / 60000.0;  //minutes since start
+            score[i] = cs.getScore();
+        }
+        RenderableComponent allCandidateScores = new RenderableComponentScatterPlot.Builder()
+                .addSeries("Score vs. Time (mins)",time,score)
+                .title("All Candidate Scores")
+                .build();
+        components.add(allCandidateScores);
+
+
 
         RenderElements elements = new RenderElements(components.toArray(new RenderableComponent[components.size()]));
         server.updateStatus(elements);
