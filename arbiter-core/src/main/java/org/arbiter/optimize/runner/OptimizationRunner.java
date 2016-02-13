@@ -72,6 +72,7 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
     private List<OptimizationRunnerStatusListener> statusListeners = new ArrayList<>();
 
 
+
     public OptimizationRunner(OptimizationConfiguration<C, M, D, A> config, CandidateExecutor<C, M, D, A> executor) {
         this.config = config;
         this.executor = executor;
@@ -179,7 +180,7 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
      * Process returned task (either completed or failed
      */
     private void processReturnedTask(Future<OptimizationResult<C, M, A>> future) {
-
+        long currentTime = System.currentTimeMillis();
         //TODO: track and log execution time
         OptimizationResult<C, M, A> result;
         try {
@@ -202,8 +203,8 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
                 Status.Complete,
                 result.getScore(),
                 status.getCreatedTime(),
-                null,
-                null);
+                null,       //TODO: how to know when execution actually started?
+                currentTime);
         currentStatus.put(result.getIndex(),newStatus);
 
         //Listeners:
