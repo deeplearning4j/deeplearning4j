@@ -1,6 +1,7 @@
 package org.nd4j.jita.allocator;
 
 import jcuda.Pointer;
+import jcuda.jcublas.cublasHandle;
 import org.nd4j.jita.allocator.enums.SyncState;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.conf.Configuration;
@@ -11,6 +12,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.jcublas.JCublasNDArray;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
+import org.nd4j.linalg.jcublas.context.CudaContext;
 
 /**
  *
@@ -36,6 +38,12 @@ public interface Allocator {
      */
     void setEnvironment(CudaEnvironment environment);
 
+    /**
+     * This method returns CudaContext for current thread
+     *
+     * @return
+     */
+    CudaContext getCudaContext();
 
     /**
      * This methods specifies Mover implementation to be used internally

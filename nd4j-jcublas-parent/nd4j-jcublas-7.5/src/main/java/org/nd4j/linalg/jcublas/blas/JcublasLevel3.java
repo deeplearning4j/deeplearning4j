@@ -50,7 +50,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                     cCPointer.getDevicePointer().withByteOffset(C.offset() * C.data().getElementSize()),
                     ldc);
             ctx.syncOldStream();
-            cCPointer.copyToHost();
+     //       cCPointer.copyToHost();
 
             allocator.tickDeviceWrite(C);
 
@@ -92,7 +92,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                     , cPointer.getDevicePointer().withByteOffset(C.offset() * C.data().getElementSize())
                     , ldc);
             ctx.syncOldStream();
-            cPointer.copyToHost();
+        //    cPointer.copyToHost();
 
             allocator.tickDeviceWrite(C);
 
@@ -117,7 +117,7 @@ public class JcublasLevel3 extends BaseLevel3 {
             CublasPointer cPointer = new CublasPointer(C,ctx)) {
             JCublas2.cublasSsyrk(ctx.getHandle(),OpUtil.getOp(Order),OpUtil.getOp(Trans),N,K,PointerUtil.getPointer(alpha),aPointer.getDevicePointer(),lda,PointerUtil.getPointer(beta),cPointer.getDevicePointer(),ldc);
             ctx.syncOldStream();
-            cPointer.copyToHost();
+        //    cPointer.copyToHost();
 
             allocator.tickDeviceWrite(C);
 
@@ -159,7 +159,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                     ,bPointer.getDevicePointer().withByteOffset(B.offset() * B.data().getElementSize())
                     ,ldb);
             ctx.syncOldStream();
-            bPointer.copyToHost();
+        //    bPointer.copyToHost();
 
             allocator.tickDeviceWrite(B);
 
@@ -206,7 +206,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                     cCPointer.getDevicePointer().withByteOffset(C.offset() * C.data().getElementSize()), // y
                     ldc); // incy
             ctx.syncOldStream();
-            cCPointer.copyToHost();
+        //    cCPointer.copyToHost();
 
             allocator.tickDeviceWrite(C);
 
@@ -242,7 +242,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                     , cPointer.getDevicePointer().withByteOffset(C.offset() * C.data().getElementSize())
                     , ldc);
             ctx.syncOldStream();
-            cPointer.copyToHost();
+        //    cPointer.copyToHost();
 
             allocator.tickDeviceWrite(C);
 
@@ -276,7 +276,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                     , cPointer.getDevicePointer().withByteOffset(C.offset() * C.data().getElementSize())
                     , ldc);
             ctx.syncOldStream();
-            cPointer.copyToHost();
+        //    cPointer.copyToHost();
 
             allocator.tickDeviceWrite(C);
 
@@ -307,7 +307,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                     , lda, bPointer.getDevicePointer().withByteOffset(B.offset() * B.data().getElementSize())
                     , ldb, PointerUtil.getPointer(beta), cPointer.getDevicePointer().withByteOffset(C.offset() * C.data().getElementSize()), ldc);
             ctx.syncOldStream();
-            cPointer.copyToHost();
+        //    cPointer.copyToHost();
 
             allocator.tickDeviceWrite(C);
 
@@ -347,7 +347,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                     , lda
                     , bPointer.getDevicePointer().withByteOffset(B.offset() * B.data().getElementSize()), ldb);
             ctx.syncOldStream();
-            bPointer.copyToHost();
+         //   bPointer.copyToHost();
 
             allocator.tickDeviceWrite(B);
 

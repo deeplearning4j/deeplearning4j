@@ -165,7 +165,7 @@ public class CublasPointer  implements AutoCloseable {
         buffer = (JCudaBuffer) array.data();
 
         //the name of this thread for knowing whether to copy data or not
-        String name = Thread.currentThread().getName();
+        //String name = Thread.currentThread().getName();
         this.arr = array;
         if(array.elementWiseStride() < 0) {
             this.arr = array.dup();

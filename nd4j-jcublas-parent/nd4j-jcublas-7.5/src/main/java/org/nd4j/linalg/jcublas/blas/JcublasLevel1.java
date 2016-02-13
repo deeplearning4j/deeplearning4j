@@ -41,6 +41,8 @@ public class JcublasLevel1 extends BaseLevel1 {
     protected float sdot(int N, INDArray X, int incX, INDArray Y, int incY) {
         DataTypeValidation.assertSameDataType(X, Y);
         CudaContext ctx = CudaContext.getBlasContext();
+        if (ctx == null)
+            throw new IllegalStateException("CudaContext is NULL");
         Pointer result;
         float[] ret = new float[1];
         result = Pointer.to(ret);
@@ -409,7 +411,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     yCPointer.getDevicePointer().withByteOffset(Y.offset() * Y.data().getElementSize()),
                     incY);
             ctx.syncOldStream();
-            yCPointer.copyToHost();
+    //        yCPointer.copyToHost();
 
             allocator.tickDeviceWrite(Y);
 
@@ -441,7 +443,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     , yCPointer.getDevicePointer().withByteOffset(Y.offset() * Y.data().getElementSize())
                     , incY);
             ctx.syncOldStream();
-            yCPointer.copyToHost();
+          //  yCPointer.copyToHost();
 
             allocator.tickDeviceWrite(Y);
 
@@ -477,7 +479,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     xBPointer.getDevicePointer().withByteOffset(Y.offset() * Y.data().getElementSize()),
                     incY);
             ctx.syncOldStream();
-            xBPointer.copyToHost();
+            //xBPointer.copyToHost();
 
             allocator.tickDeviceWrite(Y);
 
@@ -513,7 +515,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     yCPointer.getDevicePointer().withByteOffset(Y.offset() * Y.data().getElementSize()),
                     incY);
             ctx.syncOldStream();
-            yCPointer.copyToHost();
+          //  yCPointer.copyToHost();
 
             allocator.tickDeviceWrite(Y);
 
@@ -543,7 +545,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     , yCPointer.getDevicePointer().withByteOffset(Y.offset() * Y.data().getElementSize())
                     , incY);
             ctx.syncOldStream();
-            yCPointer.copyToHost();
+        //    yCPointer.copyToHost();
 
             allocator.tickDeviceWrite(Y);
 
@@ -579,7 +581,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     xBPointer.getDevicePointer().withByteOffset(Y.offset() * Y.data().getElementSize()),
                     incY);
             ctx.syncOldStream();
-            xBPointer.copyToHost();
+         //   xBPointer.copyToHost();
 
             allocator.tickDeviceWrite(Y);
 
@@ -692,7 +694,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     xCPointer.getDevicePointer().withByteOffset(X.offset() * X.data().getElementSize()),
                     incX);
             ctx.syncOldStream();
-            xCPointer.copyToHost();
+        //    xCPointer.copyToHost();
 
             allocator.tickDeviceWrite(X);
 
@@ -714,7 +716,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     xCPointer.getDevicePointer().withByteOffset(X.offset() * X.data().getElementSize()),
                     incX);
             ctx.syncOldStream();
-            xCPointer.copyToHost();
+        //    xCPointer.copyToHost();
 
             allocator.tickDeviceWrite(X);
 

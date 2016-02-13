@@ -3,8 +3,13 @@ package org.nd4j.jita.allocator.impl;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import jcuda.Pointer;
+import jcuda.jcublas.JCublas;
+import jcuda.jcublas.JCublas2;
+import jcuda.jcublas.cublasHandle;
+import jcuda.runtime.JCuda;
 import lombok.NonNull;
 import org.nd4j.jita.allocator.Allocator;
+import org.nd4j.jita.allocator.enums.AccessState;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.SyncState;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
@@ -17,6 +22,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.JCublasNDArray;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.DevicePointerInfo;
+import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,6 +81,8 @@ public class AtomicAllocator implements Allocator {
      */
     private Map<BaseCudaDataBuffer, Long> externalBuffers = Collections.synchronizedMap(new WeakHashMap<BaseCudaDataBuffer, Long>());
 
+    // simple pool for cublas contexts
+    private Map<Long, CudaContext> contextPool = new ConcurrentHashMap<>();
 
     private static Logger log = LoggerFactory.getLogger(AtomicAllocator.class);
 
@@ -90,12 +98,28 @@ public class AtomicAllocator implements Allocator {
         here we have handles for garbage collector threads
         ThreadId, GarbageCollector
      */
-    private Map<Long, GarbageCollectorThread> collectors = new ConcurrentHashMap<>();
+    private Map<Long, ZeroGarbageCollectorThread> collectorsZero = new ConcurrentHashMap<>();
+    private Map<Long, DeviceGarbageCollectorThread> collectorsDevice = new ConcurrentHashMap<>();
 
     private final AtomicBoolean shouldStop = new AtomicBoolean(false);
 
     public static AtomicAllocator getInstance() {
         return INSTANCE;
+    }
+
+    /**
+     * This method returns cublasHandle for current thread
+     *
+     * @return
+     */
+    @Override
+    public CudaContext getCudaContext() {
+        // FIXME: proper lock avoidance required here
+
+            if (!contextPool.containsKey(Thread.currentThread().getId())) {
+                initCudaContextForThread(Thread.currentThread().getId());
+            }
+            return contextPool.get(Thread.currentThread().getId());
     }
 
     @Override
@@ -415,6 +439,7 @@ public class AtomicAllocator implements Allocator {
          */
         if (!isNewAllocation) {
             // we check promotion only for existant allocations. just ignore new allocations here :)
+            // TODO: add memory check all the way here
             if (point.getDeviceTicks() > 5 && point.getAllocationStatus() == AllocationStatus.ZERO) {
                 point.getAccessState().requestToe();
 
@@ -462,19 +487,21 @@ public class AtomicAllocator implements Allocator {
             We set memory state to Toe, and issue copyback if required
          */
 
+        if (!point.isActualOnHostSide() || point.getAccessState().getCurrentState() != AccessState.TACK) {
 
-        point.getAccessState().requestToe();
+            point.getAccessState().requestToe();
 
-        if (!point.isActualOnHostSide()) {
-            mover.copyback(point, shape);
+            if (!point.isActualOnHostSide()) {
+                mover.copyback(point, shape);
 
-            // update the timer for hostRead
-            point.tickHostRead();
-        } else log.info("Data is actual, skipping sync");
+                // update the timer for hostRead
+                point.tickHostRead();
+            } else log.info("Data is actual, skipping sync");
+
+            point.getAccessState().releaseToe();
+        }
 
 
-
-        point.getAccessState().releaseToe();
     }
 
     /**
@@ -534,12 +561,17 @@ public class AtomicAllocator implements Allocator {
         return null;
     }
 
+    protected void initCudaContextForThread(Long threadId) {
+        CudaContext context = new CudaContext();
+        context.initHandle();
+        contextPool.put(threadId, context);
+    }
+
     /**
      * This method returns CUDA deviceId for current thread
      *
      * @return
      */
-
     @Override
     public Integer getDeviceId() {
         try {
@@ -562,11 +594,17 @@ public class AtomicAllocator implements Allocator {
                     deviceAllocations.put(threadId, device, new CopyOnWriteArrayList<Long>());
                 }
 
+                initCudaContextForThread(threadId);
+
                 log.info("Mapping device ["+ device+"] to thread [" + Thread.currentThread().getId() + "]");
 
-                GarbageCollectorThread thread = new GarbageCollectorThread(threadId, device, shouldStop);
+                ZeroGarbageCollectorThread thread = new ZeroGarbageCollectorThread(threadId, device, shouldStop);
                 thread.start();
-                collectors.put(threadId, thread);
+                collectorsZero.put(threadId, thread);
+
+                DeviceGarbageCollectorThread dThread = new DeviceGarbageCollectorThread(threadId, device, shouldStop);
+                dThread.start();
+                collectorsDevice.put(threadId, dThread);
             }
             return devicesAffinity.get(Thread.currentThread().getId());
         } finally {
@@ -703,16 +741,51 @@ public class AtomicAllocator implements Allocator {
     }
 
 
-    private class GarbageCollectorThread extends Thread implements Runnable {
+    private class ZeroGarbageCollectorThread extends Thread implements Runnable {
 
         private final Long threadId;
         private final Integer deviceId;
         private final AtomicBoolean terminate;
 
-        public GarbageCollectorThread(Long threadId, Integer deviceId, AtomicBoolean terminate) {
+        public ZeroGarbageCollectorThread(Long threadId, Integer deviceId, AtomicBoolean terminate) {
             this.threadId = threadId;
             this.deviceId = deviceId;
             this.terminate = terminate;
+
+            this.setName("zero gc thread " + threadId);
+        }
+
+        @Override
+        public void run() {
+            while (!terminate.get()) {
+
+                /*
+                    Check for zero-copy garbage
+                 */
+                log.info("Executing automatically ZGC");
+                seekUnusedZero(threadId, 1, 1);
+
+                try {
+                    Thread.sleep(Math.max(configuration.getMinimumTTLMilliseconds(), 5000));
+                } catch (Exception e) {
+                    // we can have interruption here, to force gc
+                  ;
+                }
+            }
+        }
+    }
+
+    private class DeviceGarbageCollectorThread extends Thread implements Runnable {
+
+        private final Long threadId;
+        private final Integer deviceId;
+        private final AtomicBoolean terminate;
+
+        public DeviceGarbageCollectorThread(Long threadId, Integer deviceId, AtomicBoolean terminate) {
+            this.threadId = threadId;
+            this.deviceId = deviceId;
+            this.terminate = terminate;
+            this.setName("device gc thread " + threadId + "/" + deviceId);
         }
 
         @Override
@@ -721,19 +794,15 @@ public class AtomicAllocator implements Allocator {
                 /*
                     Check for device garbage
                  */
-                //seekUnusedDevice(this.threadId, this.deviceId);
+                log.info("Executing automatically DGC");
+                seekUnusedDevice(this.threadId, this.deviceId);
 
-                /*
-                    Check for zero-copy garbage
-                 */
-                log.info("Executing automatically");
-                seekUnusedZero(threadId, 1, 1);
 
                 try {
-                    Thread.sleep(10000);
+                    Thread.sleep(Math.max(configuration.getMinimumTTLMilliseconds(), 5000));
                 } catch (Exception e) {
                     // we can have interruption here, to force gc
-                  ;
+                    ;
                 }
             }
         }

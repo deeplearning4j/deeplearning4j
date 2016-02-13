@@ -10,6 +10,8 @@ import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaEvent_t;
 import jcuda.runtime.cudaStream_t;
 import lombok.Data;
+import org.nd4j.jita.allocator.Allocator;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.jcublas.CublasPointer;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -24,7 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  */
 @Data
-public class CudaContext implements AutoCloseable {
+public class CudaContext {
     private CUstream stream;
     //private CUevent cUevent;
     private cudaStream_t oldStream;
@@ -202,7 +204,9 @@ public class CudaContext implements AutoCloseable {
      * Destroys the context
      * and associated resources
      */
+    @Deprecated
     public void destroy(CublasPointer resultPointer,boolean freeIfNotEqual) {
+        /*
         if(handle != null && !handleReturned.get()) {
             try {
                 if(handleFromPool)
@@ -259,6 +263,7 @@ public class CudaContext implements AutoCloseable {
         if(!eventDestroyed) {
             eventDestroyed = true;
         }
+        */
     }
 
 
@@ -266,7 +271,9 @@ public class CudaContext implements AutoCloseable {
      * Destroys the context
      * and associated resources
      */
+    @Deprecated
     public void destroy() {
+        /*
         ContextHolder.getInstance().setContext();
 
         if(stream != null && !streamReturned.get()) {
@@ -324,6 +331,7 @@ public class CudaContext implements AutoCloseable {
                 e.printStackTrace();
             }
         }
+        */
     }
 
 
@@ -342,11 +350,15 @@ public class CudaContext implements AutoCloseable {
      * as setup for cublas usage
      */
     public static CudaContext getBlasContext() {
+        Allocator allocator = AtomicAllocator.getInstance();
+
+        return allocator.getCudaContext();
+        /*
         CudaContext ctx = new CudaContext();
         //ctx.initOldStream();
         ctx.initHandle();
         //ctx.startOldEvent();
-        return ctx;
+        return ctx;*/
     }
 
     /**
@@ -356,8 +368,10 @@ public class CudaContext implements AutoCloseable {
         JCuda.cudaDeviceSynchronize();
     }
 
+    /*
     @Override
     public void close() throws Exception {
         destroy();
     }
+    */
 }

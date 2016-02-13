@@ -47,7 +47,7 @@ public class JcublasLevel2 extends BaseLevel2 {
                     cCPointer.getDevicePointer().withByteOffset(Y.offset() * Y.data().getElementSize()),
                     incY);
             ctx.syncOldStream();
-            cCPointer.copyToHost();
+        //    cCPointer.copyToHost();
 
             allocator.tickDeviceWrite(Y);
 
@@ -130,7 +130,7 @@ public class JcublasLevel2 extends BaseLevel2 {
                     cCPointer.getDevicePointer().withByteOffset(Y.offset() * Y.data().getElementSize()),
                     incY);
             ctx.syncOldStream();
-            cCPointer.copyToHost();
+    //        cCPointer.copyToHost();
 
             allocator.tickDeviceWrite(Y);
 
