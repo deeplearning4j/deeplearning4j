@@ -7,6 +7,10 @@ layout: default
 
 The deeplearning4j-ui repository can display T-SNE, histograms, filters, error and activations. 
 
+Here's an example of an weight visualization during neural net training with DL4J.
+
+![Alt text](../img/DL4J_UI.png)
+
 Here's an example of an error visualization with D3.
 
 ![Alt text](../img/error_d3.png)
