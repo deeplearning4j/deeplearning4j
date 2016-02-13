@@ -422,12 +422,13 @@ public class AtomicAllocator implements Allocator {
          */
         if (!isNewAllocation) {
             if (!point.isActualOnDeviceSide()) {
-                // update data
+                // update data in Toe state
                 point.getAccessState().requestToe();
 
                 if (!point.isActualOnDeviceSide()) {
                     mover.copyforward(point, shape);
                 }
+                // we set device access time equal to host write time
                 point.tickDeviceToHost();
 
                 point.getAccessState().releaseToe();
@@ -443,12 +444,15 @@ public class AtomicAllocator implements Allocator {
             if (point.getDeviceTicks() > 5 && point.getAllocationStatus() == AllocationStatus.ZERO) {
                 point.getAccessState().requestToe();
 
-                DevicePointerInfo newPointers = mover.alloc(AllocationStatus.DEVICE, point, shape);
+                try {
+                    DevicePointerInfo newPointers = mover.alloc(AllocationStatus.DEVICE, point, shape);
 
-                point.setAllocationStatus(AllocationStatus.DEVICE);
-                point.setCudaPointers(newPointers);
-                log.info("Relocation happened!");
+                    point.setAllocationStatus(AllocationStatus.DEVICE);
+                    point.setCudaPointers(newPointers);
+                    log.info("Relocation happened!");
+                } catch (Exception e){
 
+                }
                 point.getAccessState().releaseToe();
             }
         }
