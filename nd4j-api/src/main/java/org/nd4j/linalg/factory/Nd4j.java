@@ -679,20 +679,12 @@ public class Nd4j {
 
 
 
-        INDArray at = a.permute(newAxesA);
-        if(at.ordering() != a.ordering())
-            at = at.dup().reshape(newShapeA);
-        else
-            at = at.reshape(newShapeA);
-        INDArray bt = b.permute(newAxesB);
-        if(b.ordering() != bt.ordering())
-            bt = bt.dup().reshape(newShapeB);
-        else
-            bt = bt.reshape(newShapeB);
+        INDArray at = a.permute(newAxesA).reshape(newShapeA);
+        INDArray bt = b.permute(newAxesB).reshape(newShapeB);
         INDArray ret = at.mmul(bt);
 
         int[] aPlusB = Ints.concat(oldShapeA, oldShapeB);
-        return ret.reshape('c',aPlusB);
+        return ret.reshape(aPlusB);
     }
 
     /** Matrix multiply: Implements op(a)*op(b) where op(X) means transpose X (or not) depending on

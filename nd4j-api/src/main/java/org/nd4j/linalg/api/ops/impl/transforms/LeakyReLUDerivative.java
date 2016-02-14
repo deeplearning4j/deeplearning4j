@@ -29,6 +29,7 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class LeakyReLUDerivative extends BaseTransformOp {
 	private double alpha = 0.01;
+    private boolean alphaSpecified = false;
     public LeakyReLUDerivative() { }
 
     public LeakyReLUDerivative(INDArray x, INDArray z) {
@@ -50,16 +51,19 @@ public class LeakyReLUDerivative extends BaseTransformOp {
     public LeakyReLUDerivative(INDArray x, INDArray z, double alpha) {
         super(x, z);
         this.alpha = alpha;
+        alphaSpecified = true;
     }
 
     public LeakyReLUDerivative(INDArray x, INDArray z, int n, double alpha) {
         super(x, z, n);
         this.alpha = alpha;
+        alphaSpecified = true;
     }
 
     public LeakyReLUDerivative(INDArray x, INDArray y, INDArray z, int n, double alpha) {
         super(x, y, z, n);
         this.alpha = alpha;
+        alphaSpecified = true;
     }
 
     public LeakyReLUDerivative(INDArray x, double alpha) {
@@ -140,6 +144,8 @@ public class LeakyReLUDerivative extends BaseTransformOp {
     @Override
     public void init(INDArray x, INDArray y, INDArray z, int n) {
         super.init(x, y, z, n);
+        if(!alphaSpecified)
+            alpha = 0.01;
         this.extraArgs = new Object[] {alpha};
     }
 }
