@@ -71,6 +71,7 @@ A special form of backpropagation is called backpropagation through time, or BPT
 
 Batch Normalization does what is says: it normalizes mini-batches as they're fed into a neural-net layer. Batch normalization has two potential benefits: it can accelerate learning because it allows you to employ higher learning rates, and also regularizes that learning.
 
+* [Batch Normalization in Deeplearning4j](http://deeplearning4j.org/doc/org/deeplearning4j/nn/layers/normalization/BatchNormalization.html)
 * [Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift](http://arxiv.org/abs/1502.03167)
 * [Overview	of mini-batch gradient descent (U. Toronto)](http://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf)
 
