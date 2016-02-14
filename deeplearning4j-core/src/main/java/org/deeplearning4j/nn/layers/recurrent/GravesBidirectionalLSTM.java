@@ -269,12 +269,19 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning
     @Override
     public double calcL2() {
         if (!conf.isUseRegularization() || conf.getLayer().getL2() <= 0.0) return 0.0;
-        double l2 = Transforms.pow(getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS), 2).sum(Integer.MAX_VALUE).getDouble(0)
-                + Transforms.pow(getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS), 2).sum(Integer.MAX_VALUE).getDouble(0)
-                + Transforms.pow(getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS), 2).sum(Integer.MAX_VALUE).getDouble(0)
-                + Transforms.pow(getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS), 2).sum(Integer.MAX_VALUE).getDouble(0);
+        double l2Norm = getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS).norm2Number().doubleValue();
+        double sumSquaredWeights = l2Norm*l2Norm;
 
-        return 0.5 * conf.getLayer().getL2() * l2;
+        l2Norm = getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS).norm2Number().doubleValue();
+        sumSquaredWeights += l2Norm*l2Norm;
+
+        l2Norm = getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS).norm2Number().doubleValue();
+        sumSquaredWeights += l2Norm*l2Norm;
+
+        l2Norm = getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS).norm2Number().doubleValue();
+        sumSquaredWeights += l2Norm * l2Norm;
+
+        return 0.5 * conf.getLayer().getL2() * sumSquaredWeights;
     }
 
 

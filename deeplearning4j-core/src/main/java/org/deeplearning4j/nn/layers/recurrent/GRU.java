@@ -348,9 +348,14 @@ public class GRU extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.GR
 	@Override
     public double calcL2() {
     	if(!conf.isUseRegularization() || conf.getLayer().getL2() <= 0.0 ) return 0.0;
-    	double l2 = Transforms.pow(getParam(GRUParamInitializer.RECURRENT_WEIGHT_KEY), 2).sum(Integer.MAX_VALUE).getDouble(0)
-    			+ Transforms.pow(getParam(GRUParamInitializer.INPUT_WEIGHT_KEY), 2).sum(Integer.MAX_VALUE).getDouble(0);
-    	return 0.5 * conf.getLayer().getL2() * l2;
+
+		double l2Norm = getParam(GRUParamInitializer.RECURRENT_WEIGHT_KEY).norm2Number().doubleValue();
+		double sumSquaredWeights = l2Norm*l2Norm;
+
+		l2Norm = getParam(GRUParamInitializer.INPUT_WEIGHT_KEY).norm2Number().doubleValue();
+		sumSquaredWeights += l2Norm*l2Norm;
+
+		return 0.5 * conf.getLayer().getL2() * sumSquaredWeights;
     }
 
     @Override
