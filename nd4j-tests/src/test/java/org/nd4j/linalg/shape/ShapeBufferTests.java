@@ -41,7 +41,7 @@ public class ShapeBufferTests extends BaseNd4jTest {
     public void testRank() {
         int[] shape = {2,4};
         int[] stride = {1,2};
-        IntBuffer buff = Shape.createShapeInformation(shape, stride, 0, 1, 'c');
+        IntBuffer buff = Shape.createShapeInformation(shape, stride, 0, 1, 'c').asNioInt();
         int rank = 2;
         assertEquals(rank,Shape.rank(buff));
 
@@ -63,7 +63,7 @@ public class ShapeBufferTests extends BaseNd4jTest {
     public void testShape() {
         int[] shape = {2, 4};
         int[] stride = {1, 2};
-        IntBuffer buff = Shape.createShapeInformation(shape, stride, 0, 1, 'c');
+        IntBuffer buff = Shape.createShapeInformation(shape, stride, 0, 1, 'c').asNioInt();
         IntBuffer shapeView = Shape.shapeOf(buff);
         assertTrue(Shape.contentEquals(shape, shapeView));
         IntBuffer strideView = Shape.stride(buff);
@@ -79,7 +79,7 @@ public class ShapeBufferTests extends BaseNd4jTest {
     public void testBuff() {
         int[] shape = {1,2};
         int[] stride = {1, 2};
-        IntBuffer buff = Shape.createShapeInformation(shape, stride, 0, 1, 'c');
+        IntBuffer buff = Shape.createShapeInformation(shape, stride, 0, 1, 'c').asNioInt();
         assertTrue(Shape.isVector(buff));
     }
 

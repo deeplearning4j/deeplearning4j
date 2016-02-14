@@ -31,6 +31,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.nio.ByteBuffer;
 import java.util.*;
 
 /**
@@ -581,6 +582,9 @@ public class ArrayUtil {
      * item
      */
     public static int[] keep(int[] data, int...index) {
+        if(index.length == data.length)
+            return data;
+
         int[] ret = new int[index.length];
         int count = 0;
         for(int i = 0; i < data.length; i++)
@@ -603,6 +607,8 @@ public class ArrayUtil {
      * item
      */
     public static int[] removeIndex(int[] data, int...index) {
+        if(index.length >= data.length)
+            throw new IllegalStateException("Illegal remove: indexes.length > data.length");
         int offset = 0;
         /*
             workaround for non-existant indexes (such as Integer.MAX_VALUE)
@@ -621,6 +627,94 @@ public class ArrayUtil {
             }
 
         return ret;
+    }
+
+
+    //Credit: http://stackoverflow.com/questions/15533854/converting-byte-array-to-double-array
+
+    /**
+     *
+     * @param doubleArray
+     * @return
+     */
+    public static byte[] toByteArray(double[] doubleArray) {
+        int times = Double.SIZE / Byte.SIZE;
+        byte[] bytes = new byte[doubleArray.length * times];
+        for(int i = 0;i<doubleArray.length;i++){
+            ByteBuffer.wrap(bytes, i*times, times).putDouble(doubleArray[i]);
+        }
+        return bytes;
+    }
+
+    /**
+     *
+     * @param byteArray
+     * @return
+     */
+    public static double[] toDoubleArray(byte[] byteArray) {
+        int times = Double.SIZE / Byte.SIZE;
+        double[] doubles = new double[byteArray.length / times];
+        for(int i=0;i<doubles.length;i++){
+            doubles[i] = ByteBuffer.wrap(byteArray, i*times, times).getDouble();
+        }
+        return doubles;
+    }
+
+
+    /**
+     *
+     * @param doubleArray
+     * @return
+     */
+    public static byte[] toByteArray(float[] doubleArray) {
+        int times = Float.SIZE / Byte.SIZE;
+        byte[] bytes = new byte[doubleArray.length * times];
+        for(int i = 0;i<doubleArray.length;i++){
+            ByteBuffer.wrap(bytes, i*times, times).putFloat(doubleArray[i]);
+        }
+        return bytes;
+    }
+
+    /**
+     *
+     * @param byteArray
+     * @return
+     */
+    public static float[] toFloatArray(byte[] byteArray) {
+        int times = Float.SIZE / Byte.SIZE;
+        float[] doubles = new float[byteArray.length / times];
+        for(int i=0;i<doubles.length;i++){
+            doubles[i] = ByteBuffer.wrap(byteArray, i*times, times).getFloat();
+        }
+        return doubles;
+    }
+
+    /**
+     *
+     * @param intArray
+     * @return
+     */
+    public static byte[] toByteArray(int[] intArray) {
+        int times = Integer.SIZE / Byte.SIZE;
+        byte[] bytes = new byte[intArray.length * times];
+        for(int i = 0;i<intArray.length;i++){
+            ByteBuffer.wrap(bytes, i*times, times).putInt(intArray[i]);
+        }
+        return bytes;
+    }
+
+    /**
+     *
+     * @param byteArray
+     * @return
+     */
+    public static int[] toIntArray(byte[] byteArray) {
+        int times = Integer.SIZE / Byte.SIZE;
+        int[] ints = new int[byteArray.length / times];
+        for(int i=0;i<ints.length;i++){
+            ints[i] = ByteBuffer.wrap(byteArray, i * times, times).getInt();
+        }
+        return ints;
     }
 
 

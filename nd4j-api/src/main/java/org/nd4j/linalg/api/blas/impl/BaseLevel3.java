@@ -37,7 +37,7 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
     public void gemm(char Order, char TransA, char TransB, double alpha, INDArray A, INDArray B, double beta, INDArray C) {
         GemmParams params = new GemmParams(A,B,C);
 
-
+        int charOder = Order;
         if(A.data().dataType() == DataBuffer.Type.DOUBLE)
             dgemm(Order
                     ,params.getTransA()
@@ -76,10 +76,8 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
     @Override
     public void gemm(INDArray A, INDArray B, INDArray C, boolean transposeA, boolean transposeB, double alpha, double beta) {
         GemmParams params = new GemmParams(A,B,C,transposeA,transposeB);
-        char Order = 'N';   //Check this?
-
         if(A.data().dataType() == DataBuffer.Type.DOUBLE)
-            dgemm(Order
+            dgemm(A.ordering()
                     ,params.getTransA()
                     ,params.getTransB()
                     ,params.getM()
@@ -94,18 +92,18 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
                     ,C
                     ,params.getLdc());
         else
-            sgemm(Order
+            sgemm(A.ordering()
                     , params.getTransA()
                     , params.getTransB()
                     , params.getM()
                     , params.getN()
                     , params.getK()
-                    , (float)alpha
+                    , (float) alpha
                     , params.getA()
                     , params.getLda()
                     , params.getB()
                     , params.getLdb()
-                    , (float)beta
+                    , (float) beta
                     , C
                     , params.getLdc());
     }

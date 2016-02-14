@@ -112,35 +112,7 @@ public @Data class GemmParams {
     }
 
     public GemmParams(INDArray a, INDArray b, INDArray c, boolean transposeA, boolean transposeB) {
-        if(transposeA && a.columns() != c.rows()) throw new IllegalArgumentException("transposeA but a.columns != c.rows");
-        else if(!transposeA && a.rows() != c.rows() ) throw new IllegalArgumentException("a.rows != c.rows");
-        if(transposeB && b.rows() != c.columns()) throw new IllegalArgumentException("transposeB but b.rows != c.columns");
-        else if(!transposeB && b.columns() != c.columns()) throw new IllegalArgumentException("b.columns != c.columns");
-        if(c.ordering() != 'f' || c.offset() != 0 || c.length() != c.data().length() )
-            throw new IllegalArgumentException("c must be f order, offset 0 and have length == c.data.length");
-
-        //automatically assume fortran ordering
-        //multiple backends force us to be
-        //in fortran ordering only
-        this.a = copyIfNeccessary(a);
-        this.b = copyIfNeccessary(b);
-        this.c = c;
-
-        this.m = c.rows();
-        this.n = c.columns();
-        this.k = a.columns();
-
-        //Might transpose because (a) it's the op we want, and (b) because order is c.
-        //But 2 transposes == no transpose
-        boolean transposeAOut = transposeA ^ this.a.ordering() == 'c';
-        boolean transposeBOut = transposeB ^ this.b.ordering() == 'c';
-
-        this.lda = (this.a.ordering() == 'f' ? this.a.rows() : this.a.columns());  //Leading dimension of a, as declared. But swap if 'c' order
-        this.ldb = (this.b.ordering() == 'f' ? this.b.rows() : this.b.columns());  //Leading dimension of b, as declared. But swap if 'c' order
-        this.ldc = c.rows();
-
-        this.transA = (transposeAOut ? 'T' : 'N');
-        this.transB = (transposeBOut ? 'T' : 'N');
+       this(transposeA ? a.transpose() : a,transposeB ? b.transpose() : b,c);
     }
 
 

@@ -20,6 +20,8 @@
 package org.nd4j.linalg.jcublas.buffer.factory;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DoubleBuffer;
+import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.buffer.IntBuffer;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
 import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
@@ -30,9 +32,157 @@ import org.nd4j.linalg.util.ArrayUtil;
 import java.nio.ByteBuffer;
 
 /**
- * Created by agibsonccc on 2/14/15.
+ * Creates cuda buffers
+ *
+ * @author Adam Gibson
  */
 public class CudaDataBufferFactory implements DataBufferFactory {
+    @Override
+    public DataBuffer create(DataBuffer underlyingBuffer, int offset, int length) {
+        if(underlyingBuffer.dataType() == DataBuffer.Type.DOUBLE) {
+           return new CudaDoubleDataBuffer(underlyingBuffer,length,offset);
+        }
+        else if(underlyingBuffer.dataType() == DataBuffer.Type.FLOAT) {
+            return new CudaFloatDataBuffer(underlyingBuffer,length,offset);
+
+        }
+        else if(underlyingBuffer.dataType() == DataBuffer.Type.INT) {
+            return new CudaIntDataBuffer(underlyingBuffer,length,offset);
+
+        }
+        return null;
+    }
+
+    @Override
+    public DataBuffer createInt(int offset, ByteBuffer buffer, int length) {
+        return new CudaIntDataBuffer(buffer,length,offset);
+    }
+
+    @Override
+    public DataBuffer createFloat(int offset, ByteBuffer buffer, int length) {
+        return new CudaFloatDataBuffer(buffer,length,offset);
+    }
+
+    @Override
+    public DataBuffer createDouble(int offset, ByteBuffer buffer, int length) {
+        return new CudaDoubleDataBuffer(buffer,length,offset);
+    }
+
+    @Override
+    public DataBuffer createDouble(int offset, int length) {
+        return new CudaDoubleDataBuffer(length,8,offset);
+    }
+
+    @Override
+    public DataBuffer createFloat(int offset, int length) {
+        return new CudaFloatDataBuffer(length,4,length);
+    }
+
+    @Override
+    public DataBuffer createInt(int offset, int length) {
+        return new CudaIntDataBuffer(length,4,offset);
+    }
+
+    @Override
+    public DataBuffer createDouble(int offset, int[] data) {
+        return new CudaDoubleDataBuffer(data,true,offset);
+    }
+
+    @Override
+    public DataBuffer createFloat(int offset, int[] data) {
+        return new CudaFloatDataBuffer(data,true,offset);
+    }
+
+    @Override
+    public DataBuffer createInt(int offset, int[] data) {
+        return new CudaIntDataBuffer(data,true,offset);
+    }
+
+    @Override
+    public DataBuffer createDouble(int offset, double[] data) {
+        return new CudaDoubleDataBuffer(data,true,offset);
+    }
+
+    @Override
+    public DataBuffer createDouble(int offset, byte[] data, int length) {
+        return new CudaDoubleDataBuffer(ArrayUtil.toDoubleArray(data),true,offset);
+    }
+
+    @Override
+    public DataBuffer createFloat(int offset, byte[] data, int length) {
+        return new CudaFloatDataBuffer(ArrayUtil.toDoubleArray(data),true,offset);
+    }
+
+    @Override
+    public DataBuffer createFloat(int offset, double[] data) {
+        return new CudaFloatDataBuffer(data,true,offset);
+    }
+
+    @Override
+    public DataBuffer createInt(int offset, double[] data) {
+        return new CudaIntDataBuffer(data,true,offset);
+    }
+
+    @Override
+    public DataBuffer createDouble(int offset, float[] data) {
+        return new CudaDoubleDataBuffer(data,true,offset);
+    }
+
+    @Override
+    public DataBuffer createFloat(int offset, float[] data) {
+        return new CudaFloatDataBuffer(data,true,offset);
+    }
+
+    @Override
+    public DataBuffer createInt(int offset, float[] data) {
+        return new CudaIntDataBuffer(data,true,offset);
+    }
+
+    @Override
+    public DataBuffer createDouble(int offset, int[] data, boolean copy) {
+        return new CudaDoubleDataBuffer(data,true,offset);
+    }
+
+    @Override
+    public DataBuffer createFloat(int offset, int[] data, boolean copy) {
+        return new CudaFloatDataBuffer(data,copy,offset);
+    }
+
+    @Override
+    public DataBuffer createInt(int offset, int[] data, boolean copy) {
+        return new CudaIntDataBuffer(data,copy,offset);
+    }
+
+    @Override
+    public DataBuffer createDouble(int offset, double[] data, boolean copy) {
+        return new CudaDoubleDataBuffer(data,copy,offset);
+    }
+
+    @Override
+    public DataBuffer createFloat(int offset, double[] data, boolean copy) {
+        return new CudaFloatDataBuffer(data,copy,offset);
+    }
+
+    @Override
+    public DataBuffer createInt(int offset, double[] data, boolean copy) {
+        return new CudaIntDataBuffer(data,copy,offset);
+    }
+
+    @Override
+    public DataBuffer createDouble(int offset, float[] data, boolean copy) {
+        return new CudaDoubleDataBuffer(data,copy,offset);
+    }
+
+    @Override
+    public DataBuffer createFloat(int offset, float[] data, boolean copy) {
+        return new CudaFloatDataBuffer(data,copy,offset);
+    }
+
+    @Override
+    public DataBuffer createInt(int offset, float[] data, boolean copy) {
+        return new CudaIntDataBuffer(data,copy,offset);
+    }
+
     @Override
     public DataBuffer createInt(ByteBuffer buffer, int length) {
         return new CudaIntDataBuffer(buffer,length);

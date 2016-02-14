@@ -102,7 +102,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     private Map<String,Boolean> copied = new ConcurrentHashMap<>();
 
     // FIXME: this is ugly ad-hoc fix for double allocation at the sam, and it should be removed as soon as whole memory management will be rewritten
-    // idea of this fix is simpe: keep count of referenced allocations, and do not release buffer untill all references are removed
+    // idea of this fix is simple: keep count of referenced allocations, and do not release buffer until all references are removed
     protected transient AtomicInteger referenceCounter = new AtomicInteger(0);
     protected transient Map<Pair<String, Triple<Integer, Integer, Integer>>, AtomicInteger> referencedOffsets = new ConcurrentHashMap();
 
@@ -111,10 +111,18 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         //  pointersToContexts = new SynchronizedTable<>(pointersToContexts);
     }
 
+    public BaseCudaDataBuffer(ByteBuf buf, int length, int offset) {
+        super(buf, length, offset);
+    }
+
     public BaseCudaDataBuffer(float[] data, boolean copy) {
         super(data, copy);
         //  pointersToContexts = new SynchronizedTable<>(pointersToContexts);
 
+    }
+
+    public BaseCudaDataBuffer(float[] data, boolean copy, int offset) {
+        super(data, copy, offset);
     }
 
     public BaseCudaDataBuffer(double[] data, boolean copy) {
@@ -122,9 +130,17 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         //  pointersToContexts = new SynchronizedTable<>(pointersToContexts);
     }
 
+    public BaseCudaDataBuffer(double[] data, boolean copy, int offset) {
+        super(data, copy, offset);
+    }
+
     public BaseCudaDataBuffer(int[] data, boolean copy) {
         super(data, copy);
 
+    }
+
+    public BaseCudaDataBuffer(int[] data, boolean copy, int offset) {
+        super(data, copy, offset);
     }
 
     /**
@@ -136,6 +152,14 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     public BaseCudaDataBuffer(int length, int elementSize) {
         super(length,elementSize);
 
+    }
+
+    public BaseCudaDataBuffer(int length, int elementSize, int offset) {
+        super(length, elementSize, offset);
+    }
+
+    public BaseCudaDataBuffer(DataBuffer underlyingBuffer, int length, int offset) {
+        super(underlyingBuffer, length, offset);
     }
 
     public BaseCudaDataBuffer(int length) {
@@ -164,6 +188,10 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     public BaseCudaDataBuffer(ByteBuffer buffer, int length) {
         super(buffer,length);
+    }
+
+    public BaseCudaDataBuffer(ByteBuffer buffer, int length, int offset) {
+        super(buffer, length, offset);
     }
 
     /**

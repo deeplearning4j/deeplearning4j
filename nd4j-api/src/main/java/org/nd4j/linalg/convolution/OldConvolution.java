@@ -1,4 +1,4 @@
-package org.nd4j.linalg.cpu.nativecpu;
+package org.nd4j.linalg.convolution;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;

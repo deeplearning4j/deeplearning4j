@@ -32,63 +32,18 @@ class LossCalculation {
     private INDArray preOut;
     private INDArray mask;
 
-    public double score() {
-        double ret = 0.0;
-        switch (lossFunction) {
-            case CUSTOM: throw new IllegalStateException("Unable to score custom operation. Please define an alternative mechanism");
-            case RECONSTRUCTION_CROSSENTROPY:
-                INDArray xEntLogZ2 = logZ(z);
-                INDArray xEntOneMinusLabelsOut2 = labels.rsub(1);
-                INDArray xEntOneMinusLogOneMinusZ2 = xEntLogZ2.rsubi(1);
-                INDArray temp = labels.mul(xEntLogZ2).add(xEntOneMinusLabelsOut2).muli(xEntOneMinusLogOneMinusZ2);
-                if(mask != null) temp.muliColumnVector(mask);
-                ret = -temp.sumNumber().doubleValue();
-                break;
-            case NEGATIVELOGLIKELIHOOD:
+    /** Score the entire (mini)batch */
+    public double score(){
+        INDArray exampleScores = scoreArray();
+        double ret = exampleScores.sumNumber().doubleValue();
+        switch(lossFunction){
             case MCXENT:
-                if(preOut != null && "softmax".equals(activationFn)){
-                    //Use LogSoftMax op to avoid numerical issues when calculating score
-                    INDArray logsoftmax = Nd4j.getExecutioner().execAndReturn(new LogSoftMax(preOut.dup()), 1);
-                    INDArray sums = labels.mul(logsoftmax);
-                    if(mask != null) sums.muliColumnVector(mask);
-                    ret = -sums.sumNumber().doubleValue();
-                } else {
-                    //Standard calculation
-                    INDArray sums = labels.mul(logZ(z));
-                    if(mask != null) sums.muliColumnVector(mask);
-                    ret = -sums.sumNumber().doubleValue();
-                }
-                break;
-            case XENT:
-                INDArray xEntLogZ = logZ(z);
-                INDArray xEntOneMinusLabelsOut = labels.rsub(1);
-                INDArray xEntOneMinusLogOneMinusZ = xEntLogZ.dup().rsubi(1);
-                INDArray temp2 = labels.mul(xEntLogZ).add(xEntOneMinusLabelsOut).muli(xEntOneMinusLogOneMinusZ);
-                if(mask != null) temp2.muliColumnVector(mask);
-                ret = temp2.sumNumber().doubleValue();
-                break;
-            case RMSE_XENT:
-                INDArray rmseXentDiff = labels.sub(z);
-                INDArray squaredrmseXentDiff = pow(rmseXentDiff, 2.0);
-                INDArray sqrt = sqrt(squaredrmseXentDiff);
-                if(mask != null) sqrt.muliColumnVector(mask);
-                ret = sqrt.sumNumber().doubleValue();
+            case NEGATIVELOGLIKELIHOOD:
+            case RECONSTRUCTION_CROSSENTROPY:
+                ret *= -1;
                 break;
             case MSE:
-                INDArray mseDelta = labels.sub(z) ;
-                if(mask != null) mseDelta.muliColumnVector(mask);
-                ret = 0.5 * pow(mseDelta, 2).sum(1).sumNumber().doubleValue();
-                break;
-            case EXPLL:
-                INDArray expLLLogZ = logZ(z);
-                INDArray temp3 = z.sub(labels.mul(expLLLogZ));
-                if(mask != null) temp3.muliColumnVector(mask);
-                ret = temp3.sumNumber().doubleValue();
-                break;
-            case SQUARED_LOSS:
-                INDArray labelsSubZ = labels.sub(z);
-                if(mask != null) labelsSubZ.muliColumnVector(mask);
-                ret = pow(labelsSubZ, 2).sumNumber().doubleValue();
+                ret *= 0.5;
                 break;
         }
 
@@ -98,7 +53,101 @@ class LossCalculation {
 
         if(miniBatch)
             ret /= (double) miniBatchSize;
+
         return ret;
+    }
+
+    /** Calculate the score for each example individually.
+     * @return If labels are shape [miniBatchSize,nOut] then return shape is [miniBatchSize,1] with value at position i
+     * being the score for example i
+     */
+    public INDArray scoreExamples(){
+        INDArray exampleScores = scoreArray().sum(1);
+
+        switch(lossFunction){
+            case MCXENT:
+            case NEGATIVELOGLIKELIHOOD:
+            case RECONSTRUCTION_CROSSENTROPY:
+                exampleScores.muli(-1);
+                break;
+            case MSE:
+                exampleScores.muli(0.5);
+                break;
+        }
+
+        double l = l1+l2;
+        if (useRegularization && l != 0.0) {
+            exampleScores.addi(l);
+        }
+
+        return exampleScores;
+    }
+
+    private INDArray scoreArray() {
+        INDArray scoreArray;    //shape: [batchSize,nOut]
+        switch (lossFunction) {
+            case CUSTOM: throw new IllegalStateException("Unable to score custom operation. Please define an alternative mechanism");
+            case RECONSTRUCTION_CROSSENTROPY:
+                INDArray xEntLogZ2 = logZ(z);
+                INDArray xEntOneMinusLabelsOut2 = labels.rsub(1);
+                INDArray xEntOneMinusLogOneMinusZ2 = xEntLogZ2.rsubi(1);
+                INDArray temp = labels.mul(xEntLogZ2).add(xEntOneMinusLabelsOut2).muli(xEntOneMinusLogOneMinusZ2);
+                if(mask != null) temp.muliColumnVector(mask);
+                scoreArray = temp;
+                break;
+            case NEGATIVELOGLIKELIHOOD:
+            case MCXENT:
+                if(preOut != null && "softmax".equals(activationFn)){
+                    //Use LogSoftMax op to avoid numerical issues when calculating score
+                    INDArray logsoftmax = Nd4j.getExecutioner().execAndReturn(new LogSoftMax(preOut.dup()), 1);
+                    INDArray sums = labels.mul(logsoftmax);
+                    if(mask != null) sums.muliColumnVector(mask);
+                    scoreArray = sums;
+                } else {
+                    //Standard calculation
+                    INDArray sums = labels.mul(logZ(z));
+                    if(mask != null) sums.muliColumnVector(mask);
+                    scoreArray = sums;
+                }
+                break;
+            case XENT:
+                INDArray xEntLogZ = logZ(z);
+                INDArray xEntOneMinusLabelsOut = labels.rsub(1);
+                INDArray xEntOneMinusLogOneMinusZ = xEntLogZ.dup().rsubi(1);
+                INDArray temp2 = labels.mul(xEntLogZ).add(xEntOneMinusLabelsOut).muli(xEntOneMinusLogOneMinusZ);
+                if(mask != null) temp2.muliColumnVector(mask);
+                scoreArray = temp2;
+                break;
+            case RMSE_XENT:
+                INDArray rmseXentDiff = labels.sub(z);
+                INDArray squaredrmseXentDiff = pow(rmseXentDiff, 2.0);
+                INDArray sqrt = sqrt(squaredrmseXentDiff);
+                if(mask != null) sqrt.muliColumnVector(mask);
+                scoreArray = sqrt;
+                break;
+            case MSE:
+                INDArray mseDeltaSquared = labels.sub(z);
+                mseDeltaSquared.muli(mseDeltaSquared);
+                if(mask != null) mseDeltaSquared.muliColumnVector(mask);
+                scoreArray = mseDeltaSquared;
+                break;
+            case EXPLL:
+                INDArray expLLLogZ = logZ(z);
+                INDArray temp3 = z.sub(labels.mul(expLLLogZ));
+                if(mask != null) temp3.muliColumnVector(mask);
+                scoreArray = temp3;
+                break;
+            case SQUARED_LOSS:
+                INDArray labelsSubZSquared = labels.sub(z);
+                labelsSubZSquared.muli(labelsSubZSquared);
+                if(mask != null) labelsSubZSquared.muliColumnVector(mask);
+                scoreArray = labelsSubZSquared;
+                break;
+            default:
+                throw new RuntimeException("Unknown loss function: " + lossFunction);
+        }
+
+        return scoreArray;
     }
 
 

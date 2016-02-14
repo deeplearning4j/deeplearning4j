@@ -209,7 +209,11 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
         }
 
+        //edge case for scalars
         INDArray ret = Nd4j.create(data.length);
+        if(ret.isScalar())
+            return ret;
+
         for(int i = 0; i < ret.length(); i++)
             ret.putScalar(i,data[i]);
         return ret;
@@ -1725,7 +1729,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray scalar(float value, int offset) {
-        return create(new float[]{value}, new int[]{1}, new int[]{1}, offset);
+        return create(new float[]{value}, new int[]{1,1}, new int[]{1,1}, offset);
     }
 
     /**
@@ -1737,7 +1741,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray scalar(double value, int offset) {
-        return create(new double[]{value}, new int[]{1}, new int[]{1}, offset);
+        return create(new double[]{value}, new int[]{1,1}, new int[]{1,1}, offset);
     }
 
     /**
@@ -1749,7 +1753,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray scalar(int value, int offset) {
-        return create(new int[]{value}, new int[]{1}, new int[]{1}, offset);
+        return create(new int[]{value}, new int[]{1,1}, new int[]{1,1}, offset);
     }
 
 
@@ -1779,7 +1783,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray scalar(float value) {
         if (dtype == DataBuffer.Type.FLOAT)
-            return create(new float[]{value}, new int[]{1}, new int[]{1}, 0);
+            return create(new float[]{value}, new int[]{1,1}, new int[]{1,1}, 0);
         else if (dtype == DataBuffer.Type.DOUBLE)
             return scalar((double) value);
         else
@@ -1795,7 +1799,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray scalar(double value) {
         if (dtype == DataBuffer.Type.DOUBLE)
-            return create(new double[]{value}, new int[]{1}, new int[]{1}, 0);
+            return create(new double[]{value}, new int[]{1,1}, new int[]{1,1}, 0);
         else
             return scalar((float) value);
     }

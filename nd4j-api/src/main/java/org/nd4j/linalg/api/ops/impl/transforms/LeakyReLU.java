@@ -39,6 +39,7 @@ public class LeakyReLU extends BaseTransformOp {
     private double alpha = 0.01;
 
     public LeakyReLU() {
+        alpha = 0.01;
     }
     
     public LeakyReLU(INDArray x, double alpha) {
@@ -117,12 +118,12 @@ public class LeakyReLU extends BaseTransformOp {
 
     @Override
     public double op(double origin) {
-    	return origin < 0 ?  alpha*origin : origin;
+    	return origin < 0 ?  alpha * origin : origin;
     }
 
     @Override
     public float op(float origin) {
-    	return origin < 0 ? (float)alpha*origin : origin;
+    	return origin < 0 ? (float)alpha * origin : origin;
     }
 
     @Override
