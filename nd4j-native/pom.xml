@@ -22,12 +22,12 @@
         <javacpp.version>1.1</javacpp.version>
     </properties>
     <build>
-       <!-- <testSourceDirectory>../nd4j-tests/src/test</testSourceDirectory>
+        <testSourceDirectory>../nd4j-tests/src/test</testSourceDirectory>
         <testResources>
             <testResource>
                 <directory>../nd4j-tests/src/test/resources</directory>
             </testResource>
-        </testResources>-->
+        </testResources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -38,14 +38,14 @@
                     <environmentVariables>
                         <LD_LIBRARY_PATH>${env.LD_LIBRARY_PATH}:${user.dir}</LD_LIBRARY_PATH>
                     </environmentVariables>
-                    <!--    <includes>
+                        <includes>
                           <include>**/Nd4jTestSuite.java</include>
                       </includes>
                     <excludes>
                           <exclude>**/Test*.java</exclude>
                           <exclude>**/*Test.java</exclude>
                           <exclude>**/*TestCase.java</exclude>
-                      </excludes>-->
+                      </excludes>
                     <systemPropertyVariables>
                         <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.cpu.nativecpu.CpuBackend</org.nd4j.linalg.defaultbackend>
                         <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.cpu.nativecpu.CpuBackend</org.nd4j.linalg.tests.backendstorun>

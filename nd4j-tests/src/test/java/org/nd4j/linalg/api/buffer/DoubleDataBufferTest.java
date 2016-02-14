@@ -98,7 +98,7 @@ public  class DoubleDataBufferTest extends BaseNd4jTest {
         Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
         buf = Nd4j.createBuffer(5);
         file.deleteOnExit();
-       SerializationUtils.saveObject(buf, file);
+        SerializationUtils.saveObject(buf, file);
         buf2 = SerializationUtils.readObject(file);
         assertEquals(buf, buf2);
     }
@@ -176,6 +176,18 @@ public  class DoubleDataBufferTest extends BaseNd4jTest {
         DataBuffer blank = Nd4j.createBuffer(new double[]{0, 0, 0});
         blank.assign(one,twoThree);
         assertEquals(assertion, blank);
+    }
+
+
+    @Test
+    public void testOffset() {
+        DataBuffer create = Nd4j.createBuffer(new double[]{1,2,3,4},2);
+        assertEquals(2,create.length());
+        assertEquals(4,create.underlyingLength());
+        assertEquals(2,create.offset());
+        assertEquals(3,create.getDouble(0),1e-1);
+        assertEquals(4,create.getDouble(1),1e-1);
+
     }
 
 

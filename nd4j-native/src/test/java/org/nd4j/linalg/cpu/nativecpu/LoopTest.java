@@ -11,6 +11,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.convolution.Convolution;
+import org.nd4j.linalg.convolution.OldConvolution;
 import org.nd4j.linalg.cpu.nativecpu.CBLAS;
 import org.nd4j.linalg.cpu.nativecpu.util.LibUtils;
 import org.nd4j.linalg.factory.Nd4j;

@@ -66,7 +66,8 @@ public class TestTensorCalculator extends BaseNd4jTest {
                     throw new RuntimeException();
             }
 
-            for (Pair<INDArray, String> pair : list) {
+            for (int j = 0; j < list.size(); j++) {
+                Pair<INDArray, String> pair = list.get(j);
                 INDArray arr = pair.getFirst();
                 int[] shape = arr.shape();
                 if(arr.ordering() != 'c') continue;
@@ -78,7 +79,7 @@ public class TestTensorCalculator extends BaseNd4jTest {
                         String msg = pair.getSecond() + " - " + i + ", d="+ d;
                         INDArray tensor = arr.tensorAlongDimension(i, d);
                         assertEquals(msg, tensor.offset(), tCalc.getOffsetForTensor(i));
-                        if(shape[d] > 1 ) {
+                        if(shape[d] > 1) {
                             //If shape[d]==1, we might get different calculations. But we don't really care about stride then as our tensor is length 1
                             assertEquals(msg, tensor.elementWiseStride(), tCalc.getElementWiseStrideForTensor());
                         } else {
@@ -90,13 +91,14 @@ public class TestTensorCalculator extends BaseNd4jTest {
                         assertArrayEquals(msg, tensor.shape(), tCalc.getShape());
                         assertEquals(msg, 2, tCalc.getStride().length);
                         //1 element: stride calculation might differ, but don't matter
-                        if(tensor.length() > 1) assertEquals(msg, tensor.stride(1), tCalc.getStride()[1]);
+                        if(tensor.length() > 1)
+                            assertEquals(msg, tensor.stride(1), tCalc.getStride()[1]);
 
                         //Check values:
-                        DataBuffer db = arr.data();
-                        for( int x = 0; x<tensor.length(); x++) {
+                        DataBuffer db = tensor.data();
+                        for( int x = 0; x < tensor.length(); x++) {
                             double dTensor = tensor.getDouble(x);
-                            double dCalc = db.getDouble(tCalc.getOffsetForTensor(i) + x*tCalc.getElementWiseStrideForTensor());
+                            double dCalc = db.getDouble(x * tensor.elementWiseStride());
                             assertEquals(dTensor,dCalc,1e-1);
                         }
                     }

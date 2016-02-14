@@ -18,7 +18,7 @@ import org.nd4j.linalg.cpu.nativecpu.CBLAS;
 public class CpuLevel3 extends BaseLevel3 {
     @Override
     protected void sgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A, int lda, INDArray B, int ldb, float beta, INDArray C, int ldc) {
-        CBLAS.sgemm(Order,TransA,TransB,M,N,K,alpha,A.data().asNioFloat(),lda,B.data().asNioFloat(),ldb,beta,C.data().asNioFloat(),ldc);
+        CBLAS.sgemm('f',TransA,TransB,M,N,K,alpha,A.data().asNioFloat(),lda,B.data().asNioFloat(),ldb,beta,C.data().asNioFloat(),ldc);
     }
 
     @Override
@@ -51,7 +51,7 @@ public class CpuLevel3 extends BaseLevel3 {
 
     @Override
     protected void dgemm(char Order, char TransA, char TransB, int M, int N, int K, double alpha, INDArray A, int lda, INDArray B, int ldb, double beta, INDArray C, int ldc) {
-        CBLAS.dgemm(Order,TransA,TransB,M,N,K,alpha,A.data().asNioDouble(),lda,B.data().asNioDouble(),ldb,beta,C.data().asNioDouble(),ldc);
+        CBLAS.dgemm('f',TransA,TransB,M,N,K,alpha,A.data().asNioDouble(),lda,B.data().asNioDouble(),ldb,beta,C.data().asNioDouble(),ldc);
     }
 
     @Override

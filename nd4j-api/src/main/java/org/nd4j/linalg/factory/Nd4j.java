@@ -951,6 +951,140 @@ public class Nd4j {
         return compute.mean(dimension);
     }
 
+
+    /**
+     * Create a view of a data buffer
+     * that leverages the underlying storage of the buffer
+     * with a new view
+     * @param underlyingBuffer the underlying buffer
+     * @param length the length of the view
+     * @param offset the offset for the view
+     * @return the new view of the data buffer
+     */
+    public static DataBuffer createBuffer(DataBuffer underlyingBuffer,int offset) {
+        int length = underlyingBuffer.underlyingLength() - offset;
+        return DATA_BUFFER_FACTORY_INSTANCE.create(underlyingBuffer,offset,length);
+    }
+
+    /**
+     * Create a buffer equal of length prod(shape)
+     *
+     * @param shape the shape of the buffer to create
+     * @param type  the type to create
+     * @return the created buffer
+     */
+    public static DataBuffer createBuffer(int[] shape, DataBuffer.Type type,int offset) {
+        int length = ArrayUtil.prod(shape);
+        return type == DataBuffer.Type.DOUBLE ? createBuffer(new double[length],offset) : createBuffer(new float[length],offset);
+    }
+
+    /**
+     * Creates a buffer of the specified type
+     * and length with the given byte buffer.
+     *
+     * This will wrap the buffer as a reference (no copy)
+     * if the allocation type is the same.
+     * @param buffer the buffer to create from
+     * @param type the type of buffer to create
+     * @param length the length of the buffer
+     * @return
+     */
+    public static DataBuffer createBuffer(ByteBuffer buffer,DataBuffer.Type type,int length,int offset) {
+        switch(type) {
+            case INT: return DATA_BUFFER_FACTORY_INSTANCE.createInt(offset,buffer,length);
+            case DOUBLE: return DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset,buffer,length);
+            case FLOAT: return DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset,buffer,length);
+            default: throw new IllegalArgumentException("Illegal type " + type);
+        }
+    }
+
+
+    /**
+     * Create a buffer based on the data type
+     *
+     * @param data the data to create the buffer with
+     * @return the created buffer
+     */
+    public static DataBuffer createBuffer(byte[] data,int length,int offset) {
+        DataBuffer ret;
+        if (dataType() == DataBuffer.Type.DOUBLE)
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset,data,length);
+        else
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset,data,length);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Create a buffer equal of length prod(shape)
+     *
+     * @param data the shape of the buffer to create
+     * @return the created buffer
+     */
+    public static DataBuffer createBuffer(int[] data,int offset) {
+        DataBuffer ret;
+        ret = DATA_BUFFER_FACTORY_INSTANCE.createInt(offset,data);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Creates a buffer of the specified length based on the data type
+     *
+     * @param length the length of te buffer
+     * @return the buffer to create
+     */
+    public static DataBuffer createBuffer(int length,int offset) {
+        DataBuffer ret;
+        if (dataType() == DataBuffer.Type.FLOAT)
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset,length);
+        else if(dataType() == DataBuffer.Type.INT)
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createInt(offset,length);
+        else
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset,length);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Create a buffer based on the data type
+     *
+     * @param data the data to create the buffer with
+     * @return the created buffer
+     */
+    public static DataBuffer createBuffer(float[] data,int offset) {
+        DataBuffer ret;
+        if (dataType() == DataBuffer.Type.FLOAT)
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset,data);
+        else
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset,ArrayUtil.toDoubles(data));
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Create a buffer based on the data type
+     *
+     * @param data the data to create the buffer with
+     * @return the created buffer
+     */
+    public static DataBuffer createBuffer(double[] data,int offset) {
+        DataBuffer ret;
+        if (dataType() == DataBuffer.Type.DOUBLE)
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset,data);
+        else
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset,ArrayUtil.toFloats(data));
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+
+
+
+
+
+
+
     /**
      * Create a buffer equal of length prod(shape)
      *
@@ -1349,7 +1483,7 @@ public class Nd4j {
                 else return -Double.compare(in.getDouble(o1, colIdx), in.getDouble(o2, colIdx));
             }
         });
-        for( int i=0; i<nRows; i++ ){
+        for( int i = 0; i<nRows; i++ ){
             out.putRow(i, in.getRow(list.get(i)));
         }
         return out;

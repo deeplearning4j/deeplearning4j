@@ -160,7 +160,7 @@ public class Shape {
      * @return the double at the specified index
      */
     public static double getDouble(INDArray arr, int... indices) {
-        int offset = getOffset(arr.offset(), arr.shape(), arr.stride(), indices);
+        int offset = getOffset(0, arr.shape(), arr.stride(), indices);
         return arr.data().getDouble(offset);
     }
 
@@ -513,6 +513,129 @@ public class Shape {
         StridePermutation[] perm = StridePermutation.create(strides);
         Arrays.sort(perm);
         return perm;
+    }
+
+
+    /**
+     *
+     * @param shape
+     * @param stride
+     * @param isFOrder
+     * @return
+     */
+    public static  int elementWiseStride(int[] shape,int[] stride,boolean isFOrder) {
+        int oldnd;
+        int[] olddims = ArrayUtil.copy(shape);
+        int [] oldstrides = ArrayUtil.copy(stride);
+        int np, op, last_stride;
+        int oi, oj, ok, ni, nj, nk;
+        int [] newStrides = new int[stride.length];
+        oldnd = 0;
+        //set the shape to be 1 x length
+        int newShapeRank = 2;
+        int [] newShape = new int[shape.length];
+        newShape[0] = 1;
+        newShape[1] = ArrayUtil.prod(shape);
+
+        /*
+         * Remove axes with dimension 1 from the old array. They have no effect
+         * but would need special cases since their strides do not matter.
+         */
+        for (oi = 0; oi < shape.length; oi++) {
+            if (shape[oi] != 1) {
+                olddims[oldnd] = shape[oi];
+                oldstrides[oldnd] = stride[oi];
+                oldnd++;
+            }
+        }
+
+        np = 1;
+        for (ni = 0; ni < newShapeRank; ni++) {
+            np *= newShape[ni];
+        }
+        op = 1;
+        for (oi = 0; oi < oldnd; oi++) {
+            op *= olddims[oi];
+        }
+        if (np != op) {
+            /* different total sizes; no hope */
+            return -1;
+        }
+
+        if (np == 0) {
+            /* the current code does not handle 0-sized arrays, so give up */
+            return -1;
+        }
+
+        /* oi to oj and ni to nj give the axis ranges currently worked with */
+        oi = 0;
+        oj = 1;
+        ni = 0;
+        nj = 1;
+        while (ni < newShapeRank && oi < oldnd) {
+            np = newShape[ni];
+            op = olddims[oi];
+
+            while (np != op) {
+                if (np < op) {
+                    /* Misses trailing 1s, these are handled later */
+                    np *= newShape[nj++];
+                } else {
+                    op *= olddims[oj++];
+                }
+            }
+
+            /* Check whether the original axes can be combined */
+            for (ok = oi; ok < oj - 1; ok++) {
+                if (isFOrder) {
+                    if (oldstrides[ok + 1] != olddims[ok] * oldstrides[ok]) {
+                        /* not contiguous enough */
+                        return -1;
+                    }
+                } else {
+                    /* C order */
+                    if (oldstrides[ok] != olddims[ok + 1] * oldstrides[ok + 1]) {
+                        /* not contiguous enough */
+                        return -1;
+                    }
+                }
+            }
+
+            /* Calculate new strides for all axes currently worked with */
+            if (isFOrder) {
+                newStrides[ni] = oldstrides[oi];
+                for (nk = ni + 1; nk < nj; nk++) {
+                    newStrides[nk] = newStrides[nk - 1] * newShape[nk - 1];
+                }
+            } else {
+                /* C order */
+                newStrides[nj - 1] = oldstrides[oj - 1];
+                for (nk = nj - 1; nk > ni; nk--) {
+                    newStrides[nk - 1] = newStrides[nk] * newShape[nk];
+                }
+            }
+            ni = nj++;
+            oi = oj++;
+        }
+
+        /*
+         * Set strides corresponding to trailing 1s of the new shape.
+         */
+        if (ni >= 1) {
+            last_stride = newStrides[ni - 1];
+        } else {
+            last_stride = stride[shape.length - 1];
+        }
+        if (isFOrder) {
+            if (ni >= 1)
+                last_stride *= newShape[ni - 1];
+        }
+        for (nk = ni; nk < newShapeRank; nk++) {
+            newStrides[nk] = last_stride;
+        }
+        //returns the last element of the new stride array
+        int ret = last_stride;
+        return ret;
     }
 
     /**
@@ -1077,6 +1200,19 @@ public class Shape {
     public static int elementWiseStride(IntBuffer buffer) {
         int length2 = shapeInfoLength(buffer.get(0));
         return buffer.get(length2 - 2);
+    }
+
+
+    /**
+     * Get the element wise stride for the
+     * shape info buffer
+     * @param buffer the buffer to get the element
+     *               wise stride from
+     * @return the element wise stride for the buffer
+     */
+    public static void setElementWiseStride(IntBuffer buffer,int elementWiseStride) {
+        int length2 = shapeInfoLength(buffer.get(0));
+        buffer.put(length2 - 2, elementWiseStride);
     }
 
 

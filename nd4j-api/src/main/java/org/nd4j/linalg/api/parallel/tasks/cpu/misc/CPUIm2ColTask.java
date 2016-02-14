@@ -8,12 +8,17 @@ import org.nd4j.linalg.api.parallel.tasks.TaskExecutorProvider;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.nio.ByteBuffer;
+import java.nio.DoubleBuffer;
+import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.RecursiveTask;
 
-/** Parallel Im2Col implementation
+/**
+ *
+ * Parallel Im2Col implementation
  * @author Alex Black
  */
 public class CPUIm2ColTask extends RecursiveTask<INDArray> implements Task<INDArray> {
@@ -230,15 +235,15 @@ public class CPUIm2ColTask extends RecursiveTask<INDArray> implements Task<INDAr
         }
     }
 
-    private void doHeapFloat(){
+    private void doHeapFloat() {
         DataBuffer dbIn = img.data();
         DataBuffer dbOut = out.data();
 
-        int outArrayOffset = out.offset();
+        int outArrayOffset = 0;
         int[] outShape = out.shape();
         int[] outStride = out.stride();
 
-        int inArrayOffset = img.offset();
+        int inArrayOffset = 0;
         int[] inShape = img.shape();
         int[] inStride = img.stride();
 
@@ -446,7 +451,7 @@ public class CPUIm2ColTask extends RecursiveTask<INDArray> implements Task<INDAr
         }
     }
 
-    private void doDirectFloat(){
+    private void doDirectFloat() {
         DataBuffer dbIn = img.data();
         DataBuffer dbOut = out.data();
 
@@ -461,17 +466,17 @@ public class CPUIm2ColTask extends RecursiveTask<INDArray> implements Task<INDAr
         int[] outIndices = new int[6];
         int[] inIndices = new int[4];
 
-        final int inStride2_times4 = inStride[2] * 4;
-        final int inStride3_times4 = inStride[3] * 4;
-        final int outStride2_times4 = outStride[2] * 4;
-        final int outStride3_times4 = outStride[3] * 4;
+        final int inStride2 = inStride[2];
+        final int inStride3 = inStride[3];
+        final int outStride2 = outStride[2];
+        final int outStride3 = outStride[3];
         final int inShape2 = inShape[2];
         final int inShape3 = inShape[3];
 
         final boolean padding = padHeight > 0 || padWidth > 0;
 
-        ByteBuf nbbIn = dbIn.asNetty();
-        ByteBuf nbbOut = dbOut.asNetty();
+        FloatBuffer dIn = dbIn.asNioFloat();
+        FloatBuffer dOut = dbOut.asNioFloat();
 
         for (int ex = exampleFrom; ex < exampleTo; ex++) {
             for (int d = depthFrom; d < depthTo; d++) {
@@ -484,7 +489,7 @@ public class CPUIm2ColTask extends RecursiveTask<INDArray> implements Task<INDAr
                     for (int y = yOutFrom; y < yOutTo; y++) {  //along height
                         outIndices[4] = y;
                         outIndices[5] = x;
-                        int baseOffsetOutBytes = 4*getOffsetUnsafe6(outArrayOffset, outShape, outStride, outIndices);
+                        int baseOffsetOut = getOffsetUnsafe6(outArrayOffset, outShape, outStride, outIndices);
 
                         if(padding){
                             int i = y * strideY - padHeight;    //index along height of first element of patch in original img
@@ -492,32 +497,30 @@ public class CPUIm2ColTask extends RecursiveTask<INDArray> implements Task<INDAr
                             inIndices[2] = i;   //along height
                             inIndices[3] = j;   //along width
 
-                            int baseOffsetInBytes = 4*getOffsetUnsafe4(inArrayOffset, inShape, inStride, inIndices);
-                            if (outStride2_times4 <= outStride3_times4) {
+                            int baseOffsetIn = getOffsetUnsafe4(inArrayOffset, inShape, inStride, inIndices);
+                            if (outStride2 <= outStride3) {
                                 //Want dimension 2 (along height) in inner loop for cache reasons
                                 for (int patchX = 0; patchX < kernelWidth; patchX++) {
-                                    int outBufferIdxXBytes = baseOffsetOutBytes + patchX * outStride3_times4;
-                                    int inBufferIdxXBytes = baseOffsetInBytes + patchX * inStride3_times4;
+                                    int outBufferIdxX = baseOffsetOut + patchX * outStride3;
+                                    int inBufferIdxX = baseOffsetIn + patchX * inStride3;
                                     for (int patchY = 0; patchY < kernelHeight; patchY++) {
                                         if (i + patchY < 0 || j + patchX < 0 || i + patchY >= inShape2 || j + patchX >= inShape3)
-                                            nbbOut.setFloat(outBufferIdxXBytes + patchY * outStride2_times4, 0f); //padding
+                                            dOut.put(outBufferIdxX + patchY * outStride2,0); //padding
                                         else {
-                                            nbbOut.setFloat(outBufferIdxXBytes + patchY * outStride2_times4,
-                                                    nbbIn.getFloat(inBufferIdxXBytes + patchY * inStride2_times4));
+                                            dOut.put(outBufferIdxX + patchY * outStride2,dIn.get(inBufferIdxX + patchY * inStride2));
                                         }
                                     }
                                 }
                             } else {
                                 //Want dimension 3 in inner loop for cache reasons
                                 for (int patchY = 0; patchY < kernelHeight; patchY++) {
-                                    int outBufferIdxYBytes = baseOffsetOutBytes + patchY * outStride2_times4;
-                                    int inBufferIdxYBytes = baseOffsetInBytes + patchY * inStride2_times4;
+                                    int outBufferIdxY = baseOffsetOut + patchY * outStride2;
+                                    int inBufferIdxY = baseOffsetIn + patchY * inStride2;
                                     for (int patchX = 0; patchX < kernelWidth; patchX++) {
-                                        if (i + patchY < 0 || j + patchX < 0 || i + patchY >= inShape2 || j + patchX >= inShape3)
-                                            nbbOut.setFloat(outBufferIdxYBytes + patchX * outStride3_times4, 0f); //padding
+                                        if (i + patchY < 0 || j + patchX < 0 || i + patchY >= inShape[2] || j + patchX >= inShape[3])
+                                            dOut.put(outBufferIdxY + patchX * outStride3,0f); //padding
                                         else {
-                                            nbbOut.setFloat(outBufferIdxYBytes + patchX * outStride3_times4,
-                                                    nbbIn.getFloat(inBufferIdxYBytes + patchX * inStride3_times4));
+                                            dOut.put(outBufferIdxY + patchX * outStride3,dIn.get(inBufferIdxY + patchX * inStride3));
                                         }
                                     }
                                 }
@@ -529,25 +532,23 @@ public class CPUIm2ColTask extends RecursiveTask<INDArray> implements Task<INDAr
                             inIndices[2] = i;   //along height
                             inIndices[3] = j;   //along width
 
-                            int baseOffsetInBytes = 4*getOffsetUnsafe4(inArrayOffset, inShape, inStride, inIndices);
-                            if (outStride2_times4 <= outStride3_times4) {
+                            int baseOffsetIn = getOffsetUnsafe4(inArrayOffset, inShape, inStride, inIndices);
+                            if (outStride2 <= outStride3) {
                                 //Want dimension 2 (along height) in inner loop for cache reasons
                                 for (int patchX = 0; patchX < kernelWidth; patchX++) {
-                                    int outBufferIdxXBytes = baseOffsetOutBytes + patchX * outStride3_times4;
-                                    int inBufferIdxXBytes = baseOffsetInBytes + patchX * inStride3_times4;
+                                    int outBufferIdxX = baseOffsetOut + patchX * outStride3;
+                                    int inBufferIdxX = baseOffsetIn + patchX * inStride3;
                                     for (int patchY = 0; patchY < kernelHeight; patchY++) {
-                                        nbbOut.setFloat(outBufferIdxXBytes + patchY * outStride2_times4,
-                                                nbbIn.getFloat(inBufferIdxXBytes + patchY * inStride2_times4));
+                                        dOut.put(outBufferIdxX + patchY * outStride2,dIn.get(inBufferIdxX + patchY * inStride2));
                                     }
                                 }
                             } else {
                                 //Want dimension 3 in inner loop for cache reasons
                                 for (int patchY = 0; patchY < kernelHeight; patchY++) {
-                                    int outBufferIdxYBytes = baseOffsetOutBytes + patchY * outStride2_times4;
-                                    int inBufferIdxYBytes = baseOffsetInBytes + patchY * inStride2_times4;
+                                    int outBufferIdxY = baseOffsetOut + patchY * outStride2;
+                                    int inBufferIdxY = baseOffsetIn + patchY * inStride2;
                                     for (int patchX = 0; patchX < kernelWidth; patchX++) {
-                                        nbbOut.setFloat(outBufferIdxYBytes + patchX * outStride3_times4,
-                                                nbbIn.getFloat(inBufferIdxYBytes + patchX * inStride3_times4));
+                                        dOut.put(outBufferIdxY + patchX*outStride3,dIn.get(inBufferIdxY + patchX*inStride3));
                                     }
                                 }
                             }
@@ -558,7 +559,7 @@ public class CPUIm2ColTask extends RecursiveTask<INDArray> implements Task<INDAr
         }
     }
 
-    private void doDirectDouble(){
+    private void doDirectDouble() {
         DataBuffer dbIn = img.data();
         DataBuffer dbOut = out.data();
 
@@ -573,17 +574,17 @@ public class CPUIm2ColTask extends RecursiveTask<INDArray> implements Task<INDAr
         int[] outIndices = new int[6];
         int[] inIndices = new int[4];
 
-        final int inStride2_times8 = inStride[2] * 8;
-        final int inStride3_times8 = inStride[3] * 8;
-        final int outStride2_times8 = outStride[2] * 8;
-        final int outStride3_times8 = outStride[3] * 8;
+        final int inStride2 = inStride[2];
+        final int inStride3 = inStride[3];
+        final int outStride2 = outStride[2];
+        final int outStride3 = outStride[3];
         final int inShape2 = inShape[2];
         final int inShape3 = inShape[3];
 
         final boolean padding = padHeight > 0 || padWidth > 0;
 
-        ByteBuf nbbIn = dbIn.asNetty();
-        ByteBuf nbbOut = dbOut.asNetty();
+        DoubleBuffer dIn = dbIn.asNioDouble();
+        DoubleBuffer dOut = dbOut.asNioDouble();
 
         for (int ex = exampleFrom; ex < exampleTo; ex++) {
             for (int d = depthFrom; d < depthTo; d++) {
@@ -596,7 +597,7 @@ public class CPUIm2ColTask extends RecursiveTask<INDArray> implements Task<INDAr
                     for (int y = yOutFrom; y < yOutTo; y++) {  //along height
                         outIndices[4] = y;
                         outIndices[5] = x;
-                        int baseOffsetOutBytes = 8*getOffsetUnsafe6(outArrayOffset, outShape, outStride, outIndices);
+                        int baseOffsetOut = getOffsetUnsafe6(outArrayOffset, outShape, outStride, outIndices);
 
                         if(padding){
                             int i = y * strideY - padHeight;    //index along height of first element of patch in original img
@@ -604,32 +605,30 @@ public class CPUIm2ColTask extends RecursiveTask<INDArray> implements Task<INDAr
                             inIndices[2] = i;   //along height
                             inIndices[3] = j;   //along width
 
-                            int baseOffsetInBytes = 8*getOffsetUnsafe4(inArrayOffset, inShape, inStride, inIndices);
-                            if (outStride2_times8 <= outStride3_times8) {
+                            int baseOffsetIn = getOffsetUnsafe4(inArrayOffset, inShape, inStride, inIndices);
+                            if (outStride2 <= outStride3) {
                                 //Want dimension 2 (along height) in inner loop for cache reasons
                                 for (int patchX = 0; patchX < kernelWidth; patchX++) {
-                                    int outBufferIdxXBytes = baseOffsetOutBytes + patchX * outStride3_times8;
-                                    int inBufferIdxXBytes = baseOffsetInBytes + patchX * inStride3_times8;
+                                    int outBufferIdxX = baseOffsetOut + patchX * outStride3;
+                                    int inBufferIdxX = baseOffsetIn + patchX * inStride3;
                                     for (int patchY = 0; patchY < kernelHeight; patchY++) {
                                         if (i + patchY < 0 || j + patchX < 0 || i + patchY >= inShape2 || j + patchX >= inShape3)
-                                            nbbOut.setDouble(outBufferIdxXBytes + patchY * outStride2_times8, 0f); //padding
+                                            dOut.put(outBufferIdxX + patchY * outStride2,0); //padding
                                         else {
-                                            nbbOut.setDouble(outBufferIdxXBytes + patchY * outStride2_times8,
-                                                    nbbIn.getDouble(inBufferIdxXBytes + patchY * inStride2_times8));
+                                            dOut.put(outBufferIdxX + patchY * outStride2,dIn.get(inBufferIdxX + patchY * inStride2));
                                         }
                                     }
                                 }
                             } else {
                                 //Want dimension 3 in inner loop for cache reasons
                                 for (int patchY = 0; patchY < kernelHeight; patchY++) {
-                                    int outBufferIdxYBytes = baseOffsetOutBytes + patchY * outStride2_times8;
-                                    int inBufferIdxYBytes = baseOffsetInBytes + patchY * inStride2_times8;
+                                    int outBufferIdxY = baseOffsetOut + patchY * outStride2;
+                                    int inBufferIdxY = baseOffsetIn + patchY * inStride2;
                                     for (int patchX = 0; patchX < kernelWidth; patchX++) {
                                         if (i + patchY < 0 || j + patchX < 0 || i + patchY >= inShape[2] || j + patchX >= inShape[3])
-                                            nbbOut.setDouble(outBufferIdxYBytes + patchX * outStride3_times8, 0f); //padding
+                                            dOut.put(outBufferIdxY + patchX * outStride3,0f); //padding
                                         else {
-                                            nbbOut.setDouble(outBufferIdxYBytes + patchX * outStride3_times8,
-                                                    nbbIn.getDouble(inBufferIdxYBytes + patchX * inStride3_times8));
+                                            dOut.put(outBufferIdxY + patchX * outStride3,dIn.get(inBufferIdxY + patchX * inStride3));
                                         }
                                     }
                                 }
@@ -641,25 +640,23 @@ public class CPUIm2ColTask extends RecursiveTask<INDArray> implements Task<INDAr
                             inIndices[2] = i;   //along height
                             inIndices[3] = j;   //along width
 
-                            int baseOffsetInBytes = 8*getOffsetUnsafe4(inArrayOffset, inShape, inStride, inIndices);
-                            if (outStride2_times8 <= outStride3_times8) {
+                            int baseOffsetIn = getOffsetUnsafe4(inArrayOffset, inShape, inStride, inIndices);
+                            if (outStride2 <= outStride3) {
                                 //Want dimension 2 (along height) in inner loop for cache reasons
                                 for (int patchX = 0; patchX < kernelWidth; patchX++) {
-                                    int outBufferIdxXBytes = baseOffsetOutBytes + patchX * outStride3_times8;
-                                    int inBufferIdxXBytes = baseOffsetInBytes + patchX * inStride3_times8;
+                                    int outBufferIdxX = baseOffsetOut + patchX * outStride3;
+                                    int inBufferIdxX = baseOffsetIn + patchX * inStride3;
                                     for (int patchY = 0; patchY < kernelHeight; patchY++) {
-                                        nbbOut.setDouble(outBufferIdxXBytes + patchY * outStride2_times8,
-                                                nbbIn.getDouble(inBufferIdxXBytes + patchY * inStride2_times8));
+                                        dOut.put(outBufferIdxX + patchY * outStride2,dIn.get(inBufferIdxX + patchY * inStride2));
                                     }
                                 }
                             } else {
                                 //Want dimension 3 in inner loop for cache reasons
                                 for (int patchY = 0; patchY < kernelHeight; patchY++) {
-                                    int outBufferIdxYBytes = baseOffsetOutBytes + patchY * outStride2_times8;
-                                    int inBufferIdxYBytes = baseOffsetInBytes + patchY * inStride2_times8;
+                                    int outBufferIdxY = baseOffsetOut + patchY * outStride2;
+                                    int inBufferIdxY = baseOffsetIn + patchY * inStride2;
                                     for (int patchX = 0; patchX < kernelWidth; patchX++) {
-                                        nbbOut.setDouble(outBufferIdxYBytes + patchX * outStride3_times8,
-                                                nbbIn.getDouble(inBufferIdxYBytes + patchX * inStride3_times8));
+                                        dOut.put(outBufferIdxY + patchX*outStride3,dIn.get(inBufferIdxY + patchX*inStride3));
                                     }
                                 }
                             }
@@ -683,7 +680,8 @@ public class CPUIm2ColTask extends RecursiveTask<INDArray> implements Task<INDAr
         return offset;
     }
 
-    /** A version of Shape.getOffset without checking on input for negative indices etc
+    /**
+     * A version of Shape.getOffset without checking on input for negative indices etc
      * normally negative indices are bad, OK here because of other checks on input indices
      * Uses unrolled loop specifically for length 6, where indices[2] and indices[3] are zero (always are here)
      */
@@ -711,12 +709,12 @@ public class CPUIm2ColTask extends RecursiveTask<INDArray> implements Task<INDAr
     public INDArray blockUntilComplete() {
         try{
             future.get();
-        }catch(Exception e){
+        }catch(Exception e) {
             throw new RuntimeException(e);
         }
         if(subTasks != null){
             //Callable execution
-            for(CPUIm2ColTask task : subTasks){
+            for(CPUIm2ColTask task : subTasks) {
                 task.blockUntilComplete();
             }
         }

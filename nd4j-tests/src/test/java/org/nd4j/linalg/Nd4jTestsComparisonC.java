@@ -87,16 +87,16 @@ public  class Nd4jTestsComparisonC extends BaseNd4jTest {
 
     @Test
     public void testGemmWithOpsCommonsMath() {
-    	List<Pair<INDArray,String>> first = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED);
+        List<Pair<INDArray,String>> first = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED);
         List<Pair<INDArray,String>> firstT = NDArrayCreationUtil.getAllTestMatricesWithShape(5, 3, SEED);
-    	List<Pair<INDArray,String>> second = NDArrayCreationUtil.getAllTestMatricesWithShape(5, 4, SEED);
+        List<Pair<INDArray,String>> second = NDArrayCreationUtil.getAllTestMatricesWithShape(5, 4, SEED);
         List<Pair<INDArray,String>> secondT = NDArrayCreationUtil.getAllTestMatricesWithShape(4, 5, SEED);
         double[] alpha = {1.0,-0.5,2.5};
         double[] beta = {0.0,-0.25,1.5};
         INDArray cOrig = Nd4j.linspace(1,12,12).reshape(3,4);
 
-    	for( int i = 0; i < first.size(); i++ ){
-    		for( int j = 0; j < second.size(); j++) {
+        for( int i = 0; i < first.size(); i++ ){
+            for( int j = 0; j < second.size(); j++) {
                 for( int k = 0; k < alpha.length; k++) {
                     for( int m = 0; m < beta.length; m++) {
                         INDArray cff = Nd4j.create(cOrig.shape(),'f');
@@ -118,7 +118,7 @@ public  class Nd4jTestsComparisonC extends BaseNd4jTest {
                         String errorMsgft = getGemmErrorMsg(i, j, false, true, a, b, p1, p2T);
                         String errorMsgtf = getGemmErrorMsg(i, j, true, false, a, b, p1T, p2);
                         String errorMsgtt = getGemmErrorMsg(i, j, true, true, a, b, p1T, p2T);
-
+                        System.out.println((String.format("Running iteration %d %d %d %d",i,j,k,m)));
                         assertTrue(errorMsgff, CheckUtil.checkGemm(p1.getFirst(), p2.getFirst(), cff,
                                 false, false, a, b, 1e-4, 1e-6));
                         assertTrue(errorMsgft, CheckUtil.checkGemm(p1.getFirst(), p2T.getFirst(), cft,
@@ -129,8 +129,8 @@ public  class Nd4jTestsComparisonC extends BaseNd4jTest {
                                 true, true, a, b, 1e-4, 1e-6));
                     }
                 }
-    		}
-    	}
+            }
+        }
     }
 
 

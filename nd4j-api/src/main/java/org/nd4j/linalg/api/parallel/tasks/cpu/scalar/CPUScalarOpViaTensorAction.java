@@ -65,7 +65,7 @@ public class CPUScalarOpViaTensorAction extends BaseCPUAction {
         List<RecursiveAction> fjTasks = null;
         if(forkJoin) fjTasks = new ArrayList<>(nTensors);
         else subTasks = new ArrayList<>(nTensors);
-        if(nTensors == 1){
+        if(nTensors == 1) {
             //Generally shouldn't be called if nTensors = 1, as this is a vector
             CPUScalarOpAction task = new CPUScalarOpAction(op,threshold);
             if(forkJoin){
@@ -83,7 +83,7 @@ public class CPUScalarOpViaTensorAction extends BaseCPUAction {
                 int incrX = tsx.getElementWiseStride();
                 if(x==z){
                     //x=Op(x)
-                    for( int i=0; i<nTensors; i++){
+                    for( int i=0; i<nTensors; i++) {
                         int offsetX = tsx.getFirstTensorOffset() + i*tsx.getTensorStartSeparation();
                         CPUScalarOpAction task = new CPUScalarOpAction(op,threshold,n,offsetX,offsetX,incrX,incrX);
                         if(forkJoin){

@@ -45,21 +45,61 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         super(length, Sizeof.FLOAT);
     }
 
+    public CudaFloatDataBuffer(int length, int elementSize) {
+        super(length, elementSize);
+    }
+
+    public CudaFloatDataBuffer(int length, int elementSize, int offset) {
+        super(length, elementSize, offset);
+    }
+
+    public CudaFloatDataBuffer(DataBuffer underlyingBuffer, int length, int offset) {
+        super(underlyingBuffer, length, offset);
+    }
+
     public CudaFloatDataBuffer(float[] buffer) {
         this(buffer.length);
         setData(buffer);
+    }
+
+    public CudaFloatDataBuffer(float[] data, boolean copy) {
+        super(data, copy);
+    }
+
+    public CudaFloatDataBuffer(float[] data, boolean copy, int offset) {
+        super(data, copy, offset);
     }
 
     public CudaFloatDataBuffer(double[] data) {
         super(data);
     }
 
+    public CudaFloatDataBuffer(double[] data, boolean copy) {
+        super(data, copy);
+    }
+
+    public CudaFloatDataBuffer(double[] data, boolean copy, int offset) {
+        super(data, copy, offset);
+    }
+
     public CudaFloatDataBuffer(int[] data) {
         super(data);
     }
 
+    public CudaFloatDataBuffer(int[] data, boolean copy) {
+        super(data, copy);
+    }
+
+    public CudaFloatDataBuffer(int[] data, boolean copy, int offset) {
+        super(data, copy, offset);
+    }
+
     public CudaFloatDataBuffer(ByteBuf buf, int length) {
         super(buf, length);
+    }
+
+    public CudaFloatDataBuffer(ByteBuf buf, int length, int offset) {
+        super(buf, length, offset);
     }
 
     public CudaFloatDataBuffer(byte[] data, int length) {
@@ -68,6 +108,10 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
     public CudaFloatDataBuffer(ByteBuffer buffer, int length) {
         super(buffer, length);
+    }
+
+    public CudaFloatDataBuffer(ByteBuffer buffer, int length, int offset) {
+        super(buffer, length, offset);
     }
 
 

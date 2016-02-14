@@ -180,7 +180,7 @@ public class OpExecutionerUtil {
 
         int nOpsAlongMinStride = ArrayUtil.prod(ArrayUtil.removeIndex(x.shape(), opAlongDimensionMinStride));
         int nOpsAlongMaxLength = ArrayUtil.prod(ArrayUtil.removeIndex(x.shape(), opAlongDimensionMaxLength));
-        if(nOpsAlongMinStride <= 10*nOpsAlongMaxLength) return opAlongDimensionMinStride;
+        if(nOpsAlongMinStride <= 10 * nOpsAlongMaxLength) return opAlongDimensionMinStride;
         else return opAlongDimensionMaxLength;
     }
 

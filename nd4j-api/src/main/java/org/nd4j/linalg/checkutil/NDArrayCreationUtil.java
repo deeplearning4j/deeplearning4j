@@ -11,7 +11,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-/**This class contains utility methods for generating NDArrays for use in unit tests
+/**
+ *
+ * This class contains utility methods for generating NDArrays for use in unit tests
  * The idea is to generate arrays with a specific shape, after various operations have been undertaken on them
  * So output is after get, reshape, transpose, permute, tensorAlongDimension etc operations have been done<br>
  * Most useful methods:<br>

@@ -35,7 +35,6 @@ import java.nio.ByteOrder;
  * @author Adam Gibson
  */
 public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
-
     /**
      * Base constructor
      *
@@ -43,6 +42,18 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
      */
     public CudaDoubleDataBuffer(int length) {
         super(length, Sizeof.DOUBLE);
+    }
+
+    public CudaDoubleDataBuffer(int length, int elementSize) {
+        super(length, elementSize);
+    }
+
+    public CudaDoubleDataBuffer(int length, int elementSize, int offset) {
+        super(length, elementSize, offset);
+    }
+
+    public CudaDoubleDataBuffer(DataBuffer underlyingBuffer, int length, int offset) {
+        super(underlyingBuffer, length, offset);
     }
 
     /**
@@ -55,16 +66,44 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         setData(data);
     }
 
+    public CudaDoubleDataBuffer(double[] data, boolean copy) {
+        super(data, copy);
+    }
+
+    public CudaDoubleDataBuffer(double[] data, boolean copy, int offset) {
+        super(data, copy, offset);
+    }
+
     public CudaDoubleDataBuffer(float[] data) {
         super(data);
+    }
+
+    public CudaDoubleDataBuffer(float[] data, boolean copy) {
+        super(data, copy);
+    }
+
+    public CudaDoubleDataBuffer(float[] data, boolean copy, int offset) {
+        super(data, copy, offset);
     }
 
     public CudaDoubleDataBuffer(int[] data) {
         super(data);
     }
 
+    public CudaDoubleDataBuffer(int[] data, boolean copy) {
+        super(data, copy);
+    }
+
+    public CudaDoubleDataBuffer(int[] data, boolean copy, int offset) {
+        super(data, copy, offset);
+    }
+
     public CudaDoubleDataBuffer(ByteBuf buf, int length) {
         super(buf, length);
+    }
+
+    public CudaDoubleDataBuffer(ByteBuf buf, int length, int offset) {
+        super(buf, length, offset);
     }
 
     public CudaDoubleDataBuffer(byte[] data, int length) {
@@ -73,6 +112,10 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     public CudaDoubleDataBuffer(ByteBuffer buffer, int length) {
         super(buffer, length);
+    }
+
+    public CudaDoubleDataBuffer(ByteBuffer buffer, int length, int offset) {
+        super(buffer, length, offset);
     }
 
 
