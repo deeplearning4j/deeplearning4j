@@ -3235,7 +3235,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray reshape(int...shape) {
-        return reshape(ordering(), shape);
+        return reshape('c', shape);
     }
 
     @Override

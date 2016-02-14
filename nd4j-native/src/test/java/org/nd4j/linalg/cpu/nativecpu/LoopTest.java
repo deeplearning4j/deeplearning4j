@@ -655,7 +655,12 @@ public class LoopTest {
         INDArray b = Nd4j.arange(24).reshape(4, 3, 2);
         INDArray aReshape = a.permute(2,1,0);
         INDArray reshapedA = aReshape.reshape(5,12);
+        INDArray reshapedAssertion = Nd4j.create(new double[]{
+                0, 20, 40,  5, 25, 45, 10, 30, 50, 15, 35, 55,1, 21, 41,  6, 26, 46, 11, 31, 51, 16, 36, 56,2, 22, 42,  7, 27, 47, 12, 32, 52, 17, 37, 57, 3, 23, 43,  8, 28, 48, 13, 33, 53, 18, 38, 58,4, 24, 44,  9, 29, 49, 14, 34, 54, 19, 39, 59
+        },new int[]{5,12});
+        assertEquals(reshapedAssertion,reshapedA);
         INDArray reshapedB = b.reshape(12,2);
+
         
     }
 
