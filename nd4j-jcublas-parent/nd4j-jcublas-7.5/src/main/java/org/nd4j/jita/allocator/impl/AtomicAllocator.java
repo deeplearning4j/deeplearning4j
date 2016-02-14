@@ -545,6 +545,8 @@ public class AtomicAllocator implements Allocator {
 
             deviceMemoryTracker.addToAllocation(Thread.currentThread().getId(), point.getDeviceId(), AllocationUtils.getRequiredMemory(shape));
 
+            zeroUseCounter.set(zeroUseCounter.get() - AllocationUtils.getRequiredMemory(point.getShape()));
+
 //                    log.info("Relocation happened!");
         } catch (Exception e){
             if (1>0) throw new RuntimeException(e);
