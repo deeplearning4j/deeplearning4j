@@ -715,57 +715,38 @@ namespace functions {
 #endif
             T execScalar(T *x,int xElementWiseStride,int length,T *extraParams) {
                 T startingVal = this->startingValue(x);
-                int i;
                 if (xElementWiseStride == 1) {
-
                     T finalVal = startingVal;
-#pragma omp parallel shared(finalVal)
-                    {
-                        T local = startingVal;
-
-#pragma omp for nowait
-                        for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
-                            T curr = op(x[i], extraParams);
-                            local = update(local, curr, extraParams);
-                        }
-
+#pragma omp parallel for shared(finalVal)
+                    for (int i = 0; i < length; i++) {
+                        T curr = op(x[i], extraParams);
 #pragma omp critical
                         {
-                            finalVal = update(finalVal,local,extraParams);
+                            finalVal = update(finalVal, curr, extraParams);
+
                         }
-
-
                     }
 
                     finalVal = postProcess(finalVal, length,extraParams);
                     return finalVal;
-
-
 
                 }
 
                 else {
                     T finalVal = startingVal;
-#pragma omp parallel shared(finalVal)
-                    {
-                        T local = startingVal;
-
-#pragma omp for nowait
-                        for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
-                            T curr = op(x[i * xElementWiseStride], extraParams);
-                            local = update(local, curr, extraParams);
-                        }
-
+#pragma omp parallel for shared(finalVal)
+                    for (int i = 0; i < length; i++) {
+                        T curr = op(x[i * xElementWiseStride], extraParams);
 #pragma omp critical
                         {
-                            finalVal = update(finalVal,local,extraParams);
+                            finalVal = update(finalVal, curr, extraParams);
+
                         }
-
-
                     }
 
                     finalVal = postProcess(finalVal, length,extraParams);
                     return finalVal;
+
 
                 }
 
@@ -835,27 +816,27 @@ namespace functions {
                     int tadLength = tadPermuteInfo.tensorShapeProd;
 
 #pragma omp  parallel  for
-                        for(int i = 0; i < resultLength; i++) {
-                            int offset = shape::offset(i,xShapeInfo,dimension,dimensionLength,tadPermuteInfo);
-                            if(dimensionLength > 1) {
-                                offset = i;
-                            }
-                            else if(dimensionLength == 1) {
-                                if(tadElementWiseStride == 1)
-                                    offset = i * tadLength;
-                                else
-                                    offset = i;
-                            }
-
-                            result[i] = op(x[offset], extraParams);
-#pragma omp simd
-                            for(int j = 1; j < elementsPerReductionIndex; j++) {
-                                result[i] =  update(result[i],op(x[offset + tadElementWiseStride * j], extraParams), extraParams);
-                            }
-
-                            result[i] = postProcess(result[i],tadLength,extraParams);
-
+                    for(int i = 0; i < resultLength; i++) {
+                        int offset = shape::offset(i,xShapeInfo,dimension,dimensionLength,tadPermuteInfo);
+                        if(dimensionLength > 1) {
+                            offset = i;
                         }
+                        else if(dimensionLength == 1) {
+                            if(tadElementWiseStride == 1)
+                                offset = i * tadLength;
+                            else
+                                offset = i;
+                        }
+
+                        result[i] = op(x[offset], extraParams);
+#pragma omp simd
+                        for(int j = 1; j < elementsPerReductionIndex; j++) {
+                            result[i] =  update(result[i],op(x[offset + tadElementWiseStride * j], extraParams), extraParams);
+                        }
+
+                        result[i] = postProcess(result[i],tadLength,extraParams);
+
+                    }
 
 
 
@@ -867,18 +848,18 @@ namespace functions {
                     int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
                     const int resultLength = shape::length(resultShapeInfoBuffer);
 #pragma omp parallel for
-                        for(int i = 0;  i < resultLength; i++) {
-                            int baseOffset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
-                            T currResult = op(x[baseOffset],extraParams);
-                            result[i] = currResult;
-                            for(int j = 1; j < tadLength; j++) {
-                                currResult = op(x[baseOffset + j * tadElementWiseStride],extraParams);
-                                result[i] = update(result[i],currResult,extraParams);
-                            }
-
-                            if(i < resultLength)
-                                result[i] = postProcess(result[i],tadLength,extraParams);
+                    for(int i = 0;  i < resultLength; i++) {
+                        int baseOffset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
+                        T currResult = op(x[baseOffset],extraParams);
+                        result[i] = currResult;
+                        for(int j = 1; j < tadLength; j++) {
+                            currResult = op(x[baseOffset + j * tadElementWiseStride],extraParams);
+                            result[i] = update(result[i],currResult,extraParams);
                         }
+
+                        if(i < resultLength)
+                            result[i] = postProcess(result[i],tadLength,extraParams);
+                    }
 
 
 

@@ -1092,52 +1092,30 @@ struct SharedSummaryStatsData<double> {
 				int length = shape::length(xShapeInfo);
 				int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 				if (xElementWiseStride == 1) {
-					int i;
-#pragma omp parallel private(i)
-					{
-						SummaryStatsData<T> local;
-#pragma omp for
-						for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
-							SummaryStatsData<T> curr;
-							curr.initWithValue(x[i]);
-							local = update(local, curr,
-										   extraParams);
-						}
-
-#pragma omp critical
-						{
-							startingIndex = update(local,startingIndex,extraParams);
-						}
+					printf("In element wise stride == 1\n");
+#pragma omp parallel for shared(startingIndex)
+					for (int i = 0; i < length; i++) {
+						SummaryStatsData<T> curr;
+						curr.initWithValue(x[i]);
+						startingIndex = update(startingIndex, curr,
+											   extraParams);
 					}
-
 
 					T finalVal = this->getValue(startingIndex);
 					return finalVal;
 				} else {
+					printf("In element wise stride != 1");
 
-					int i;
-#pragma omp parallel private(i)
-					{
-						SummaryStatsData<T> local;
-
-#pragma omp for
-						for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
-							SummaryStatsData<T> curr;
-							curr.initWithValue(x[i]);
-							local = update(local, curr,
-										   extraParams);
-						}
-
-#pragma omp critical
-						{
-							startingIndex = update(local,startingIndex,extraParams);
-						}
+#pragma omp parallel for shared(startingIndex)
+					for (int i = 0; i < length; i++) {
+						SummaryStatsData<T> curr;
+						curr.initWithValue(x[i]);
+						startingIndex = update(startingIndex, curr,
+											   extraParams);
 					}
 
-
-
-					return getValue(startingIndex);
-
+					T finalVal = this->getValue(startingIndex);
+					return finalVal;
 				}
 
 
@@ -1200,19 +1178,19 @@ struct SharedSummaryStatsData<double> {
 				}
 
 #pragma omp parallel for
-					for(int i = 0; i < resultLength; i++) {
-						int offset = dimensionLength > 1 ? i : tadLength * i;
-						SummaryStatsData<T> comp;
-						comp.initWithValue(x[offset]);
-						currStartingValue[i]  = op(comp, extraParams);
-						for(int j = 1; j < elementsPerReductionIndex; j++) {
-							SummaryStatsData<T> comp2;
-							comp2.initWithValue(x[offset + tadElementWiseStride * j]);
-							currStartingValue[i] =  update(currStartingValue[i],comp2, extraParams);
-						}
-						result[i] = getValue(currStartingValue[i]);
-
+				for(int i = 0; i < resultLength; i++) {
+					int offset = dimensionLength > 1 ? i : tadLength * i;
+					SummaryStatsData<T> comp;
+					comp.initWithValue(x[offset]);
+					currStartingValue[i]  = op(comp, extraParams);
+					for(int j = 1; j < elementsPerReductionIndex; j++) {
+						SummaryStatsData<T> comp2;
+						comp2.initWithValue(x[offset + tadElementWiseStride * j]);
+						currStartingValue[i] =  update(currStartingValue[i],comp2, extraParams);
 					}
+					result[i] = getValue(currStartingValue[i]);
+
+				}
 
 
 				free(currStartingValue);
