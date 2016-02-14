@@ -289,10 +289,10 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning
     @Override
     public double calcL1() {
         if (!conf.isUseRegularization() || conf.getLayer().getL1() <= 0.0) return 0.0;
-        double l1 = Transforms.abs(getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS)).sum(Integer.MAX_VALUE).getDouble(0)
-                + Transforms.abs(getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS)).sum(Integer.MAX_VALUE).getDouble(0)
-        + Transforms.abs(getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS)).sum(Integer.MAX_VALUE).getDouble(0)
-        + Transforms.abs(getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS)).sum(Integer.MAX_VALUE).getDouble(0);
+        double l1 = getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS).norm1Number().doubleValue()
+                + getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS).norm1Number().doubleValue()
+                + getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS).norm1Number().doubleValue()
+                + getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS).norm1Number().doubleValue();
 
         return conf.getLayer().getL1() * l1;
     }
