@@ -302,11 +302,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         loop.execPairwiseTransform
                                 (op.opNum(),
                                         op.x().data().asNioDouble(),
-                                        op.x().elementWiseStride(),
+                                        op.x().shapeInfo(),
                                         op.y().data().asNioDouble(),
-                                        op.y().elementWiseStride(),
+                                        op.y().shapeInfo(),
                                         op.z().data().asNioDouble(),
-                                        op.z().elementWiseStride(),
+                                        op.z().shapeInfo(),
                                         (DoubleBuffer) op.extraArgsBuff(),
                                         op.n());
                     }

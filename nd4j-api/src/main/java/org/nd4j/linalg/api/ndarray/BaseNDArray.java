@@ -2320,7 +2320,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray mmul(INDArray other) {
         int[] shape = {rows(), other.columns()};
         INDArray result = create(shape,'f');
-        result.assign(1);
         if(result.isScalar())
             return Nd4j.scalar(Nd4j.getBlasWrapper().dot(this,other));
         return mmuli(other, result);

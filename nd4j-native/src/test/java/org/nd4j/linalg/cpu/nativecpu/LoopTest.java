@@ -19,6 +19,8 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.*;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -27,6 +29,7 @@ import static org.junit.Assert.*;
  * @author Adam Gibson
  */
 public class LoopTest {
+    private static Logger log = LoggerFactory.getLogger(LoopTest.class);
     static {
         LibUtils.loadLibrary("libnd4j");
     }
@@ -56,10 +59,10 @@ public class LoopTest {
         INDArray arr = Nd4j.create(new float[]{0.9296161f, 0.31637555f, 0.1839188f}, new int[]{1, 3}, 'c');
         double stdev = arr.stdNumber().doubleValue();
         double stdev2 = arr.std(1).getDouble(0);
-        assertEquals(stdev,stdev2,0.0);
+        assertEquals(stdev,stdev2,1e-4);
 
-        double exp = 0.397842772f;
-        assertEquals(exp,stdev,1e-7f);
+        double exp = 0.39784276485443115;
+        assertEquals(exp,stdev,1e-3f);
     }
 
     @Test
@@ -244,7 +247,7 @@ public class LoopTest {
         //Check merging of AdamAggregators:
         GradientUpdaterAggregator first = adams[0].getAggregator(false);
         GradientUpdaterAggregator second = adams[2].getAggregator(false);
-        for(int i=0; i < n; i++ ){
+        for(int i = 0; i < n; i++ ){
             if(i < 2){
                 first.aggregate(adams[i]);
             } else {
@@ -582,7 +585,7 @@ public class LoopTest {
         int nCols = 10;
         java.util.Random r = new java.util.Random(12345);
 
-        for( int i=0; i<nRows; i++ ){
+        for( int i = 0; i < nRows; i++ ){
             INDArray in = Nd4j.rand(new int[]{nRows,nCols});
 
             List<Integer> order = new ArrayList<>(nRows);
@@ -610,7 +613,8 @@ public class LoopTest {
     @Test
     public void testEps() {
         INDArray ones = Nd4j.ones(5);
-        double sum = Nd4j.getExecutioner().exec(new Eps(ones, ones, ones, ones.length())).z().sumNumber().doubleValue();
+        INDArray epsed = Nd4j.getExecutioner().exec(new Eps(ones, ones, ones, ones.length())).z();
+        double sum = epsed.sumNumber().doubleValue();
         assertEquals(5, sum, 1e-1);
     }
 
@@ -643,6 +647,16 @@ public class LoopTest {
                 , {0, 1, 2, 0, 1, 2}
         });
         assertEquals(assertion,tile);
+    }
+
+    @Test
+    public void testReshapePermute() {
+        INDArray a = Nd4j.arange(60).reshape(3, 4, 5);
+        INDArray b = Nd4j.arange(24).reshape(4, 3, 2);
+        INDArray aReshape = a.permute(2,1,0);
+        INDArray reshapedA = aReshape.reshape(5,12);
+        INDArray reshapedB = b.reshape(12,2);
+        
     }
 
     @Test
@@ -754,7 +768,7 @@ public class LoopTest {
 
 
     @Test
-    public void testMmulGet(){
+    public void testMmulGet() {
         Nd4j.dtype = DataBuffer.Type.DOUBLE;
         Nd4j.getRandom().setSeed(12345L);
         INDArray elevenByTwo = Nd4j.linspace(1,22,22).reshape(11,2);
@@ -767,7 +781,6 @@ public class LoopTest {
 
         INDArray viewCopy = view.dup();
         assertEquals(view,viewCopy);
-
         INDArray mmul1 = elevenByTwo.mmul(view);
         INDArray mmul2 = elevenByTwo.mmul(viewCopy);
         assertEquals(assertion,mmul1);
@@ -903,7 +916,7 @@ public class LoopTest {
 
 
     @Test
-    public void testSoftPlusDerivative(){
+    public void testSoftPlusDerivative() {
         //Derivative of softplus in sigmoid
         assertTrue( Nd4j.getOpFactory().createTransform("softplus", Nd4j.ones(1)).derivative() instanceof Sigmoid);
 
