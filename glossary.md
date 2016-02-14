@@ -27,6 +27,7 @@ Adagrad, short for adaptive gradient, is an updater or learning algorithm that a
 ### <a name="adam">Adam</a>
 Adam (Gibson) co-created Deeplearning4j. :) Adam is also an updater, similar to rmsprop, which uses a running average of the gradient's first and second moment plus a bias-correction term.
 
+* [AdamUpdater in Deeplearning4j](http://deeplearning4j.org/doc/org/deeplearning4j/nn/updater/AdamUpdater.html)
 * [Adam: A Method for Stochastic Optimization](http://arxiv.org/abs/1412.6980)
 
 ### <a name="affine">Affine Layer</a>
