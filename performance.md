@@ -1,5 +1,5 @@
 ---
-title: 
+title: Performance and practical considerations
 layout: default
 ---
 

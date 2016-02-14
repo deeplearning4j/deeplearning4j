@@ -1,5 +1,5 @@
 ---
-title: 
+title: "Tutorial: IRIS Classifed With a DBN"
 layout: default
 ---
 

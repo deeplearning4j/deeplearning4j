@@ -1,5 +1,5 @@
 ---
-title: 
+title: t-SNE's Data Visualization
 layout: default
 ---
 

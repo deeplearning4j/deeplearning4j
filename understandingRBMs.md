@@ -1,5 +1,5 @@
 ---
-title: 
+title: Understanding RBMs
 layout: default
 ---
 

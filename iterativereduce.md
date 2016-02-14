@@ -1,5 +1,5 @@
 ---
-title: 
+title: "Iterative Reduce With DL4J on Hadoop and Spark"
 layout: default
 ---
 

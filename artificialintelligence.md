@@ -1,5 +1,5 @@
 ---
-title: 
+title: Artificial Intelligence Resources
 layout: default
 ---
 

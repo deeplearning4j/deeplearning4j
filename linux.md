@@ -1,5 +1,6 @@
 ---
 layout: default
+title: Getting Started on Linux
 ---
 
 #Getting Started on Linux

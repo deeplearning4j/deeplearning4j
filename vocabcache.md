@@ -1,5 +1,5 @@
 ---
-title:
+title: How the Vocab Cache Works
 layout: default
 ---
 
