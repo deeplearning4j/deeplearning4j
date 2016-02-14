@@ -74,7 +74,6 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execBroa
     double *resultBuff = (double *) env->GetDirectBufferAddress(result);
     int *resultShapeBuff = (int *) env->GetDirectBufferAddress(resultShapeInfo);
     int *dimensionBuff = (int *) env->GetDirectBufferAddress(dimension);
-
     DoubleNativeOpExecutioner::getInstance().execBroadcast(
             opNum,xBuff,xShapeBuff,yBuff,yShapeBuff,resultBuff,resultShapeBuff,dimensionBuff,dimensionLength);
 }
@@ -133,7 +132,6 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execRedu
     double *resultBuff = (double *) env->GetDirectBufferAddress(result);
     int *resultShapeBuff = (int *) env->GetDirectBufferAddress(resultShapeInfo);
     int *dimensionBuff = (int *) env->GetDirectBufferAddress(dimension);
-
     DoubleNativeOpExecutioner::getInstance().execReduce(opNum,xBuff,xShapeBuff,extraParamsBuff,
                                                         resultBuff,resultShapeBuff,dimensionBuff,dimensionLength);
 

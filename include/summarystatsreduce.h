@@ -1064,64 +1064,7 @@ struct SharedSummaryStatsData<double> {
 					  T *extraParams,
 					  T *result,
 					  int *resultShapeInfo) {
-				SummaryStatsData<T> startingIndex;
-                startingIndex.initialize();
-				int length = shape::length(xShapeInfo);
-				int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-				int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
-				if (xElementWiseStride == 1 && resultElementWiseStride == 1) {
-					int i;
-#pragma omp parallel private(i)
-					{
-						SummaryStatsData<T> local;
-                        local.initialize();
-#pragma omp for
-						for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
-							SummaryStatsData<T> curr;
-							curr.initWithValue(x[i]);
-							local = update(local, curr,
-										   extraParams);
-						}
-
-#pragma omp critical
-						{
-							startingIndex = update(local,startingIndex,extraParams);
-						}
-					}
-
-
-					T finalVal = this->getValue(startingIndex);
-					result[0] = finalVal;
-				}
-
-				else {
-					int i;
-#pragma omp parallel private(i)
-					{
-                        SummaryStatsData<T> localVal;
-                        localVal.initialize();
-#pragma omp for
-						for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
-							SummaryStatsData<T> curr;
-							curr.initWithValue(x[i]);
-                            localVal = update(localVal, curr,
-												   extraParams);
-						}
-
-#pragma omp critical
-                        {
-                            startingIndex = update(localVal,startingIndex,extraParams);
-                        }
-
-					}
-
-
-
-					result[0] = getValue(startingIndex);
-
-				}
-
-
+				result[0] = this->execScalar(x,xShapeInfo,extraParams);
 			}
 
 
@@ -1145,51 +1088,51 @@ struct SharedSummaryStatsData<double> {
 						 int *xShapeInfo,
 						 T *extraParams) {
 				SummaryStatsData<T> startingIndex;
-                startingIndex.initialize();
+				startingIndex.initialize();
 				int length = shape::length(xShapeInfo);
 				int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 				if (xElementWiseStride == 1) {
-                    int i;
+					int i;
 #pragma omp parallel private(i)
-                    {
-                        SummaryStatsData<T> local;
+					{
+						SummaryStatsData<T> local;
 #pragma omp for
-                        for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
-                            SummaryStatsData<T> curr;
-                            curr.initWithValue(x[i]);
-                            local = update(local, curr,
-                                                   extraParams);
-                        }
+						for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
+							SummaryStatsData<T> curr;
+							curr.initWithValue(x[i]);
+							local = update(local, curr,
+										   extraParams);
+						}
 
 #pragma omp critical
-                        {
-                          startingIndex = update(local,startingIndex,extraParams);
-                        }
-                    }
+						{
+							startingIndex = update(local,startingIndex,extraParams);
+						}
+					}
 
 
 					T finalVal = this->getValue(startingIndex);
 					return finalVal;
 				} else {
 
-                    int i;
+					int i;
 #pragma omp parallel private(i)
-                    {
-                        SummaryStatsData<T> local;
+					{
+						SummaryStatsData<T> local;
 
 #pragma omp for
-                        for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
-                            SummaryStatsData<T> curr;
-                            curr.initWithValue(x[i]);
-                            local = update(local, curr,
-                                                   extraParams);
-                        }
+						for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
+							SummaryStatsData<T> curr;
+							curr.initWithValue(x[i]);
+							local = update(local, curr,
+										   extraParams);
+						}
 
 #pragma omp critical
-                        {
-                            startingIndex = update(local,startingIndex,extraParams);
-                        }
-                    }
+						{
+							startingIndex = update(local,startingIndex,extraParams);
+						}
+					}
 
 
 
@@ -1251,23 +1194,18 @@ struct SharedSummaryStatsData<double> {
 
 				SummaryStatsData<T> *currStartingValue = (SummaryStatsData<T> *) malloc(
 						sizeof(SummaryStatsData<T>) * resultLength);
-#pragma omp simd
+#pragma omp parallel for
 				for (int i = 0; i < resultLength; i++) {
 					currStartingValue[i].initialize();
 				}
 
-				int i = 0, j = 0;
-#pragma omp parallel private(i,j)
-				{
-
-					int ID = omp_get_thread_num();
-#pragma omp for
-					for(i = ID; i < resultLength; i+= omp_get_num_threads()) {
+#pragma omp parallel for
+					for(int i = 0; i < resultLength; i++) {
 						int offset = dimensionLength > 1 ? i : tadLength * i;
 						SummaryStatsData<T> comp;
 						comp.initWithValue(x[offset]);
 						currStartingValue[i]  = op(comp, extraParams);
-						for(j = 1; j < elementsPerReductionIndex; j++) {
+						for(int j = 1; j < elementsPerReductionIndex; j++) {
 							SummaryStatsData<T> comp2;
 							comp2.initWithValue(x[offset + tadElementWiseStride * j]);
 							currStartingValue[i] =  update(currStartingValue[i],comp2, extraParams);
@@ -1275,7 +1213,7 @@ struct SharedSummaryStatsData<double> {
 						result[i] = getValue(currStartingValue[i]);
 
 					}
-				}
+
 
 				free(currStartingValue);
 				shape::freePermuteInfo(tadPermuteInfo);
