@@ -1,5 +1,5 @@
 ---
-title:
+title: Facial reconstruction
 layout: default
 ---
 

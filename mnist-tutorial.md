@@ -1,5 +1,5 @@
 ---
-title: 
+title: MNIST for Deep-Belief Networks
 layout: default
 ---
 

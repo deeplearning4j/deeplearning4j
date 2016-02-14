@@ -1,5 +1,6 @@
 ---
 layout: default
+title: Getting Started on Windows
 ---
 
 # Getting Started on Windows

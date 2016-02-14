@@ -1,5 +1,5 @@
 ---
-title: 
+title: Visualizing deep learning
 layout: default
 ---
 

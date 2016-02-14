@@ -1,5 +1,5 @@
 ---
-title: 
+title: MNIST for restricted Boltzmann machines
 layout: default
 ---
 

@@ -1,5 +1,5 @@
 ---
-title: 
+title: The WellDressed Recommendation Engine
 layout: default
 ---
 

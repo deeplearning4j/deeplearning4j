@@ -1,5 +1,5 @@
 ---
-title: deeplearning4j
+title: Creating deep-learning networks
 layout: default
 ---
 

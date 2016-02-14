@@ -2,6 +2,7 @@
 
 ---
 layout: default
+title: Sentiment Analysis With Word2vec
 ---
 
 # Sentiment Analysis With Word2vec
