@@ -1,5 +1,5 @@
 ---
-title: 
+title: Single-layer neural network
 layout: default
 ---
 

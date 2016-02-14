@@ -1,5 +1,5 @@
 ---
-title: 
+title: Troubleshooting Neural Net Training
 layout: default
 ---
 

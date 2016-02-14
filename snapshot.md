@@ -1,5 +1,5 @@
 ---
-title: 
+title: Using Deeplearning4j, ND4J and Canova SNAPSHOTS 
 layout: default
 ---
 

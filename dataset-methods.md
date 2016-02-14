@@ -1,5 +1,6 @@
 ---
 layout: default
+title: Dataset methods
 ---
 
 # Dataset methods

@@ -1,5 +1,5 @@
 ---
-title: 
+title: NeuralNetConfiguration Class
 layout: default
 ---
 

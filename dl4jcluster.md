@@ -1,5 +1,5 @@
 ---
-title: 
+title: Setting up a Deeplearning4j Cluster
 layout: default
 ---
 

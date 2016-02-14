@@ -1,5 +1,5 @@
 ---
-title: 
+title: Early Stopping
 layout: default
 ---
 

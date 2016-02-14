@@ -1,5 +1,6 @@
 ---
 layout: default
+title: Deeplearning4j on Spark
 ---
 
 # Deeplearning4j on Spark
