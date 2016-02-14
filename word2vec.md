@@ -19,7 +19,7 @@ Contents
 * <a href="#foreign">Foreign Languages</a>
 * <a href="#glove">GloVe (Global Vectors) & Doc2Vec</a>
 
-##<a name="intro">Introduction to Word2Vec</a>
+## <a name="intro">Introduction to Word2Vec</a>
 
 Word2vec is a two-layer neural net that processes text. Its input is a text corpus and its output is a set of vectors: feature vectors for words in that corpus. While Word2vec is not a [deep neural network](../neuralnet-overview.html), it turns text into a numerical form that deep nets can understand. 
 
@@ -39,7 +39,7 @@ Here's a list of words associated with "Sweden" using Word2vec, in order of prox
 
 The nations of Scandinavia and several wealthy, northern European, Germanic countries are among the top nine. 
 
-##<a name="embed">Neural Word Embeddings</a>
+## <a name="embed">Neural Word Embeddings</a>
 
 The vectors we use to represent words are called *neural word embeddings*, and representations are strange. One thing describes another, even though those two things are radically different. As Elvis Costello said: "Writing about music is like dancing about architecture." Word2vec "vectorizes" about words, and by doing so it makes natural language computer-readable -- we can start to perform powerful mathematical operations on words to detect their similarities. 
 
@@ -67,7 +67,7 @@ These vectors are the basis of a more comprehensive geometry of words. Not only 
 
 ![Alt text](../img/countries_capitals.png) 
 
-##<a name="crazy">Amusing Word2Vec Results</a>
+## <a name="crazy">Amusing Word2Vec Results</a>
 
 Let's look at some other associations Word2vec can produce. 
 
@@ -118,7 +118,7 @@ By building a sense of one word's proximity to other similar words, which do not
 
 # <a name="just">Just Give Me the Code</a>
 
-##<a name="anatomy">Anatomy of Word2vec in DL4J</a>
+## <a name="anatomy">Anatomy of Word2vec in DL4J</a>
 
 Here are Deeplearning4j's natural-language processing components:
 
