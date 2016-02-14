@@ -695,42 +695,8 @@ namespace functions {
                       T *extraParams,
                       T *result,
                       int *resultShapeInfo) {
-                T startingVal = this->startingValue(x);
-                const int length = shape::length(xShapeInfo);
-                int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-                int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
-                if (xElementWiseStride == 1 && resultElementWiseStride == 1) {
-
-                    int i;
-#pragma omp parallel private (i)
-                    {
-#pragma omp for
-                        for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
-                            T curr = op(x[i], extraParams);
-                            startingVal = update(startingVal, curr, extraParams);
-
-                        }
-                    }
-
-                    T finalVal = postProcess(startingVal, length,extraParams);
-                    result[0] = finalVal;
-                } else {
-
-                    int i;
-
-#pragma omp parallel private(i)
-                    {
-#pragma omp for
-                        for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
-                            startingVal = update(startingVal,
-                                                 op(x[i * xElementWiseStride], extraParams),
-                                                 extraParams);
-                        }
-
-                        result[0] = postProcess(startingVal, length, extraParams);
-
-                    }
-                }
+                T startingVal = this->execScalar(x,xShapeInfo,extraParams);
+                result[0] = startingVal;
 
             }
 
@@ -868,11 +834,8 @@ namespace functions {
                     const int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
                     int tadLength = tadPermuteInfo.tensorShapeProd;
 
-                    int i,j;
-#pragma omp  parallel   private(i,j)
-                    {
-#pragma omp  for
-                        for(i = omp_get_thread_num(); i < resultLength; i+= omp_get_num_threads()) {
+#pragma omp  parallel  for
+                        for(int i = 0; i < resultLength; i++) {
                             int offset = shape::offset(i,xShapeInfo,dimension,dimensionLength,tadPermuteInfo);
                             if(dimensionLength > 1) {
                                 offset = i;
@@ -886,7 +849,7 @@ namespace functions {
 
                             result[i] = op(x[offset], extraParams);
 #pragma omp simd
-                            for(j = 1; j < elementsPerReductionIndex; j++) {
+                            for(int j = 1; j < elementsPerReductionIndex; j++) {
                                 result[i] =  update(result[i],op(x[offset + tadElementWiseStride * j], extraParams), extraParams);
                             }
 
@@ -894,7 +857,7 @@ namespace functions {
 
                         }
 
-                    }
+
 
                     shape::freePermuteInfo(tadPermuteInfo);
                 }
@@ -903,12 +866,8 @@ namespace functions {
                     int tadElementWiseStride = shape::tadElementWiseStride(xShapeInfo, dimension, dimensionLength);
                     int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
                     const int resultLength = shape::length(resultShapeInfoBuffer);
-                    int i, baseOffset;
-#pragma omp parallel private(i,baseOffset)
-                    {
-                        int nThreads = omp_get_num_threads();
-#pragma omp for
-                        for(i = omp_get_thread_num();  i < resultLength; i+= nThreads) {
+#pragma omp parallel for
+                        for(int i = 0;  i < resultLength; i++) {
                             int baseOffset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
                             T currResult = op(x[baseOffset],extraParams);
                             result[i] = currResult;
@@ -921,7 +880,7 @@ namespace functions {
                                 result[i] = postProcess(result[i],tadLength,extraParams);
                         }
 
-                    }
+
 
                 }
             }

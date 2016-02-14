@@ -630,74 +630,7 @@ namespace functions {
                     T *y, int *yShapeInfo,
                     T *result, int *resultShapeInfo) {
 
-
-                T startingVal = this->startingValue(x);
-                int length = shape::length(xShapeInfo);
-                int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-                int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
-                int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
-                if (xElementWiseStride == 1 && resultElementWiseStride == 1) {
-                    int i;
-#pragma omp parallel private(i)
-                    {
-                        T localVal = startingVal;
-                        T *localExtraParams = this->extraParamsLength() > 0 ? (T *) malloc(sizeof(T) * this->extraParamsLength()) : NULL;
-                        for(int extraParamsIdx = 0; extraParamsIdx < this->extraParamsLength(); extraParamsIdx++) {
-                            localExtraParams[extraParamsIdx] = startingVal;
-                        }
-
-#pragma omp for
-                        for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
-                            localVal = update(localVal, op(x[i], y[i], &localExtraParams),
-                                              &(localExtraParams));
-                        }
-
-#pragma omp critical
-                        {
-                            if(this->extraParamsLength() > 0)
-                                aggregateExtraParams(&extraParamsVals,&localExtraParams);
-                            startingVal = update(localVal,startingVal,localExtraParams);
-                        }
-
-                        if(this->extraParamsLength() > 0)
-                            free(localExtraParams);
-
-                    }
-
-                    result[0] = postProcess(startingVal, length,&(extraParamsVals));
-
-                } else {
-                    int i;
-#pragma omp parallel private(i)
-                    {
-                        T localVal = startingVal;
-                        T *localExtraParams = this->extraParamsLength() > 0 ? (T *) malloc(sizeof(T) * this->extraParamsLength()) : NULL;
-                        for(int extraParamsIdx = 0; extraParamsIdx < this->extraParamsLength(); extraParamsIdx++) {
-                            localExtraParams[extraParamsIdx] = startingVal;
-                        }
-#pragma omp for
-                        for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
-                            startingVal = update(startingVal,
-                                                 op(x[i * xElementWiseStride], y[i * yElementWiseStride],
-                                                    &localExtraParams), &(localExtraParams));
-                        }
-
-#pragma omp critical
-                        {
-                            if(this->extraParamsLength() > 0)
-                                aggregateExtraParams(&localExtraParams,&extraParamsVals);
-                            startingVal = update(localVal,startingVal,extraParamsVals);
-                        }
-
-                        if(this->extraParamsLength() > 0)
-                            free(localExtraParams);
-
-                    }
-
-                    result[0] = postProcess(startingVal, length,&(extraParamsVals));
-
-                }
-
+               result[0] = execScalar(x,xShapeInfo,extraParamsVals,y,yShapeInfo);
             }
 
             /**
@@ -740,13 +673,8 @@ namespace functions {
                 int tadElementWiseStride = dimensionLength > 1 ? shape::stride(xShapeInfo)[dimensionLength - 1] : shape::computeElementWiseStride(shape::rank(xShapeInfo),shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),shape::order(xShapeInfo) == 'f',dimension,dimensionLength);
                 int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
                 int tadLength = tadPermuteInfo.tensorShapeProd;
-                int i = 0,j = 0;
-#pragma omp parallel private(i,j)
-                {
-                    int ID = omp_get_thread_num();
-                    T localVal = startingVal;
-#pragma omp for
-                    for(i = ID; i < resultLength; i+= omp_get_num_threads()) {
+#pragma omp parallel for
+                    for(int i = 0; i < resultLength; i++) {
                         T *localExtraParams = this->extraParamsLength() > 0 ? (T *) malloc(sizeof(T) * this->extraParamsLength()) : NULL;
                         for(int extraParamsIdx = 0; extraParamsIdx < this->extraParamsLength(); extraParamsIdx++) {
                             localExtraParams[extraParamsIdx] = startingVal;
@@ -754,7 +682,7 @@ namespace functions {
 
                         int offset = dimensionLength > 1 ? i : shape::offset(i,xShapeInfo,dimension,dimensionLength,tadPermuteInfo);
                         result[i] = op(x[offset], y[offset],&localExtraParams);
-                        for(j = 1; j < elementsPerReductionIndex; j++) {
+                        for(int j = 1; j < elementsPerReductionIndex; j++) {
                             result[i] =  update(result[i],op(x[offset + tadElementWiseStride * j],y[offset + tadElementWiseStride * j], &localExtraParams), &localExtraParams);
                         }
 
@@ -765,7 +693,7 @@ namespace functions {
                     }
 
 
-                }
+
 
 
                 shape::freePermuteInfo(tadPermuteInfo);

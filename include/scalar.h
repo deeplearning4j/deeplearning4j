@@ -177,16 +177,13 @@ namespace functions {
                            const int n,
                            int *indexes,
                            int *resultIndexes) {
-                int i;
-#pragma omp parallel private(i)
-                {
-#pragma omp simd
-                    for (i = omp_get_thread_num(); i < n; i+= omp_get_num_threads()) {
+#pragma omp parallel for
+                    for (int i = 0; i < n; i++) {
                         result[resultIndexes[i]] = op(x[indexes[i]], scalar,extraParams);
                     }
                 }
 
-            }
+
 
 
             /**
@@ -253,10 +250,8 @@ namespace functions {
                     int resultElementWiseStride = shape::computeElementWiseStride(resultRank,resultShape,resultStride,resultOrder == 'f');
 
                     int i;
-#pragma omp parallel private(i)
-                    {
-#pragma omp simd
-                        for (i = omp_get_thread_num(); i < n; i+= omp_get_num_threads()) {
+#pragma omp parallel for
+                        for (i = 0; i < n; i++) {
                             int *xIdx = shape::ind2sub(xRank, xShape, i);
                             int *resultIdx = shape::ind2sub(resultRank, resultShape, i);
                             int xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
@@ -265,7 +260,7 @@ namespace functions {
 
                             free(xIdx);
                             free(resultIdx);
-                        }
+
                     }
 
                 }
@@ -289,25 +284,21 @@ namespace functions {
                 int i;
 
                 if (xStride == 1 && resultStride == 1) {
-#pragma omp parallel private (i)
-                    {
-#pragma omp simd
-                        for (i = omp_get_thread_num(); i < n; i+= omp_get_num_threads()) {
+#pragma omp parallel for
+                        for (int i = 0; i < n; i++) {
                             result[i] = op(x[i], scalar, extraParams);
                         }
-                    }
+
 
 
 
                 } else {
 
-#pragma omp parallel private (i)
-                    {
-#pragma omp simd
-                        for (int i = omp_get_thread_num(); i < n; i+= omp_get_num_threads()) {
+#pragma omp parallel for
+                        for (int i = 0; i < n; i++) {
                             result[i * resultStride] = op(x[i * resultStride], scalar,
                                                           extraParams);
-                        }
+
                     }
                 }
 

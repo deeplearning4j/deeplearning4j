@@ -23,7 +23,7 @@ namespace functions {
  * Transforms involving 2 arrays
  */
         template<typename T>
-        class PairWiseTransform: public virtual functions::ops::Op<T> {
+        class PairWiseTransform : public virtual functions::ops::Op<T> {
         public:
             virtual
 #ifdef __CUDACC__
@@ -43,228 +43,228 @@ namespace functions {
 
 #ifdef __CUDACC__
             /**
-	 *
-	 */
-	virtual __inline__ __device__ void transform(
-			T *dx,
-			int *xShapeBuffer,
-			T *y,
-			int *yShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams,
-			int n,
-			int *indexes) {
-		transform(dx,
-				xShapeBuffer,
-				y,
-				yShapeBuffer,
-				result,
-				resultShapeBuffer,
-				extraParams,
-				n,
-				indexes,
-				indexes,
-				indexes);
-	}
+     *
+     */
+    virtual __inline__ __device__ void transform(
+            T *dx,
+            int *xShapeBuffer,
+            T *y,
+            int *yShapeBuffer,
+            T *result,
+            int *resultShapeBuffer,
+            T *extraParams,
+            int n,
+            int *indexes) {
+        transform(dx,
+                xShapeBuffer,
+                y,
+                yShapeBuffer,
+                result,
+                resultShapeBuffer,
+                extraParams,
+                n,
+                indexes,
+                indexes,
+                indexes);
+    }
 
-	/**
-	 *
-	 */
-	virtual __inline__ __device__ void transform(
-			T *dx,
-			int *xShapeBuffer,
-			T *y,
-			int *yShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams,
-			int n,
-			int *indexes,
-			int *yIndexes,
-			int *resultIndexes) {
+    /**
+     *
+     */
+    virtual __inline__ __device__ void transform(
+            T *dx,
+            int *xShapeBuffer,
+            T *y,
+            int *yShapeBuffer,
+            T *result,
+            int *resultShapeBuffer,
+            T *extraParams,
+            int n,
+            int *indexes,
+            int *yIndexes,
+            int *resultIndexes) {
 
-		int totalThreads = gridDim.x * blockDim.x;
-		int tid = threadIdx.x;
-		int i = blockIdx.x * blockDim.x + tid;
-		for (; i < n; i += totalThreads) {
-			result[resultIndexes[i]] = op(dx[indexes[i]],y[yIndexes[i]], extraParams);
-		}
-	}
-
-
-	/**
-	 *
-	 */
-	virtual __inline__ __device__ void transform(
-			T *dx,
-			int *xShapeBuffer,
-			T *y,
-			int *yShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams,
-			int n,
-			int *indexes,
-			int *yIndexes) {
-		transform(dx,
-				xShapeBuffer,
-				y,
-				yShapeBuffer,
-				result,
-				resultShapeBuffer,
-				extraParams,
-				n,
-				indexes,
-				yIndexes,
-				indexes);
-	}
-
-	/**
-	 *
-	 */
-	virtual __inline__ __device__ void transform(
-			T *dx,
-			int *xShapeBuffer,
-			T *y,
-			int *yShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams,
-			int n) {
-
-		int totalThreads = gridDim.x * blockDim.x;
-		int tid = threadIdx.x;
-		int i = blockIdx.x * blockDim.x + tid;
+        int totalThreads = gridDim.x * blockDim.x;
+        int tid = threadIdx.x;
+        int i = blockIdx.x * blockDim.x + tid;
+        for (; i < n; i += totalThreads) {
+            result[resultIndexes[i]] = op(dx[indexes[i]],y[yIndexes[i]], extraParams);
+        }
+    }
 
 
-		int *xShape = shape::shapeOf(xShapeBuffer);
-		int *yShape = shape::shapeOf(yShapeBuffer);
-		int *resultShape = shape::shapeOf(resultShapeBuffer);
+    /**
+     *
+     */
+    virtual __inline__ __device__ void transform(
+            T *dx,
+            int *xShapeBuffer,
+            T *y,
+            int *yShapeBuffer,
+            T *result,
+            int *resultShapeBuffer,
+            T *extraParams,
+            int n,
+            int *indexes,
+            int *yIndexes) {
+        transform(dx,
+                xShapeBuffer,
+                y,
+                yShapeBuffer,
+                result,
+                resultShapeBuffer,
+                extraParams,
+                n,
+                indexes,
+                yIndexes,
+                indexes);
+    }
 
-		int *xStride = shape::stride(xShapeBuffer);
-		int *yStride = shape::stride(yShapeBuffer);
-		int *resultStride = shape::stride(resultShapeBuffer);
+    /**
+     *
+     */
+    virtual __inline__ __device__ void transform(
+            T *dx,
+            int *xShapeBuffer,
+            T *y,
+            int *yShapeBuffer,
+            T *result,
+            int *resultShapeBuffer,
+            T *extraParams,
+            int n) {
 
-		int xRank = shape::rank(xShapeBuffer);
-		int yRank = shape::rank(yShapeBuffer);
-		int resultRank = shape::rank(resultShapeBuffer);
-
-		int xOffset = shape::offset(xShapeBuffer);
-		int yOffset = shape::offset(yShapeBuffer);
-		int resultOffset = shape::offset(resultShapeBuffer);
-
-
-		char xOrder = shape::order(xShapeBuffer);
-		char yOrder = shape::order(yShapeBuffer);
-		char resultOrder = shape::order(resultShapeBuffer);
-
-		int xElementWiseStride = shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
-		int yElementWiseStride = shape::computeElementWiseStride(yRank,yShape,resultShape,resultOrder == 'f');
-		int resultElementWiseStride = shape::computeElementWiseStride(resultRank,resultShape,resultStride,resultOrder == 'f');
-
-		if(xElementWiseStride >= 1 && yElementWiseStride >= 1 && resultElementWiseStride >= 1) {
-			transform(
-					n,
-					xOffset,
-					yOffset,
-					resultOffset,
-					dx,
-					y,
-					xElementWiseStride,
-					yElementWiseStride,
-					extraParams,
-					result,
-					resultElementWiseStride);
-		}
-
-		else {
-			for (; i < n; i += totalThreads) {
-				int *xIdx = shape::ind2sub(xRank, xShape, i);
-				int *yIdx = shape::ind2sub(yRank, yShape, i);
-				int *resultIdx = shape::ind2sub(resultRank, resultShape, i);
-
-				int xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
-				int yOffset2 = shape::getOffset(yOffset, yShape, yStride, yIdx, yRank);
-				int resultOffset2 = shape::getOffset(resultOffset, resultShape, resultStride, resultIdx, resultRank);
-				result[resultOffset2] = op(dx[xOffset2],y[yOffset2], extraParams);
-
-				free(xIdx);
-				free(yIdx);
-				free(resultIdx);
-			}
-		}
+        int totalThreads = gridDim.x * blockDim.x;
+        int tid = threadIdx.x;
+        int i = blockIdx.x * blockDim.x + tid;
 
 
+        int *xShape = shape::shapeOf(xShapeBuffer);
+        int *yShape = shape::shapeOf(yShapeBuffer);
+        int *resultShape = shape::shapeOf(resultShapeBuffer);
+
+        int *xStride = shape::stride(xShapeBuffer);
+        int *yStride = shape::stride(yShapeBuffer);
+        int *resultStride = shape::stride(resultShapeBuffer);
+
+        int xRank = shape::rank(xShapeBuffer);
+        int yRank = shape::rank(yShapeBuffer);
+        int resultRank = shape::rank(resultShapeBuffer);
+
+        int xOffset = shape::offset(xShapeBuffer);
+        int yOffset = shape::offset(yShapeBuffer);
+        int resultOffset = shape::offset(resultShapeBuffer);
 
 
-	}
+        char xOrder = shape::order(xShapeBuffer);
+        char yOrder = shape::order(yShapeBuffer);
+        char resultOrder = shape::order(resultShapeBuffer);
 
-	/**
-	 *
-	 * @param n
-	 * @param xOffset
-	 * @param yOffset
-	 * @param resultOffset
-	 * @param dx
-	 * @param dy
-	 * @param incx
-	 * @param incy
-	 * @param params
-	 * @param result
-	 * @param incz
-	 * @param blockSize
-	 */
-	virtual __inline__ __device__ void transform(
-			int n,
-			int xOffset,
-			int yOffset,
-			int resultOffset,
-			T *dx,
-			T *dy,
-			int incx,
-			int incy,
-			T *params,
-			T *result, int incz) {
+        int xElementWiseStride = shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
+        int yElementWiseStride = shape::computeElementWiseStride(yRank,yShape,resultShape,resultOrder == 'f');
+        int resultElementWiseStride = shape::computeElementWiseStride(resultRank,resultShape,resultStride,resultOrder == 'f');
 
-		int totalThreads = gridDim.x * blockDim.x;
-		int tid = threadIdx.x;
-		int i = blockIdx.x * blockDim.x + tid;
+        if(xElementWiseStride >= 1 && yElementWiseStride >= 1 && resultElementWiseStride >= 1) {
+            transform(
+                    n,
+                    xOffset,
+                    yOffset,
+                    resultOffset,
+                    dx,
+                    y,
+                    xElementWiseStride,
+                    yElementWiseStride,
+                    extraParams,
+                    result,
+                    resultElementWiseStride);
+        }
 
-		if (incy == 0) {
-			if ((blockIdx.x == 0) && (tid == 0)) {
+        else {
+            for (; i < n; i += totalThreads) {
+                int *xIdx = shape::ind2sub(xRank, xShape, i);
+                int *yIdx = shape::ind2sub(yRank, yShape, i);
+                int *resultIdx = shape::ind2sub(resultRank, resultShape, i);
+
+                int xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
+                int yOffset2 = shape::getOffset(yOffset, yShape, yStride, yIdx, yRank);
+                int resultOffset2 = shape::getOffset(resultOffset, resultShape, resultStride, resultIdx, resultRank);
+                result[resultOffset2] = op(dx[xOffset2],y[yOffset2], extraParams);
+
+                free(xIdx);
+                free(yIdx);
+                free(resultIdx);
+            }
+        }
+
+
+
+
+    }
+
+    /**
+     *
+     * @param n
+     * @param xOffset
+     * @param yOffset
+     * @param resultOffset
+     * @param dx
+     * @param dy
+     * @param incx
+     * @param incy
+     * @param params
+     * @param result
+     * @param incz
+     * @param blockSize
+     */
+    virtual __inline__ __device__ void transform(
+            int n,
+            int xOffset,
+            int yOffset,
+            int resultOffset,
+            T *dx,
+            T *dy,
+            int incx,
+            int incy,
+            T *params,
+            T *result, int incz) {
+
+        int totalThreads = gridDim.x * blockDim.x;
+        int tid = threadIdx.x;
+        int i = blockIdx.x * blockDim.x + tid;
+
+        if (incy == 0) {
+            if ((blockIdx.x == 0) && (tid == 0)) {
 #pragma unroll
-				for (; i < n; i++) {
-					result[resultOffset + i * incz] = op(dx[xOffset + i * incx], params);
-				}
+                for (; i < n; i++) {
+                    result[resultOffset + i * incz] = op(dx[xOffset + i * incx], params);
+                }
 
-			}
-		} else if ((incx == incy) && (incx > 0)) {
-			/* equal, positive, increments */
-			if (incx == 1) {
-				/* both increments equal to 1 */
+            }
+        } else if ((incx == incy) && (incx > 0)) {
+            /* equal, positive, increments */
+            if (incx == 1) {
+                /* both increments equal to 1 */
 #pragma unroll
-				for (; i < n; i += totalThreads) {
-					result[resultOffset + i * incz] = op(dx[xOffset + i * incx], dy[yOffset + i * incy],
-							params);
-				}
-			} else {
-				/* equal, positive, non-unit increments. */
+                for (; i < n; i += totalThreads) {
+                    result[resultOffset + i * incz] = op(dx[xOffset + i * incx], dy[yOffset + i * incy],
+                            params);
+                }
+            } else {
+                /* equal, positive, non-unit increments. */
 #pragma unroll
-				for (; i < n; i += totalThreads) {
-					result[resultOffset + i * incz] = op(dx[xOffset + i * incx], dy[yOffset + i * incy],
-							params);
-				}
-			}
-		} else {
-			/* unequal or nonpositive increments */
+                for (; i < n; i += totalThreads) {
+                    result[resultOffset + i * incz] = op(dx[xOffset + i * incx], dy[yOffset + i * incy],
+                            params);
+                }
+            }
+        } else {
+            /* unequal or nonpositive increments */
 #pragma unroll
-			for (; i < n; i += totalThreads) {
-				result[resultOffset + i * incz] = op(dx[xOffset + i * incx], dy[yOffset + i * incy],
-						params);
-			}
-		}
-	}
+            for (; i < n; i += totalThreads) {
+                result[resultOffset + i * incz] = op(dx[xOffset + i * incx], dy[yOffset + i * incy],
+                        params);
+            }
+        }
+    }
 
 #endif
         public:
@@ -334,17 +334,15 @@ namespace functions {
                     int *indexes,
                     int *yIndexes,
                     int *resultIndexes) {
-                int i;
-#pragma omp parallel private(i)
-                {
-#pragma omp for
-                    for (i = omp_get_thread_num(); i < n; i+= omp_get_num_threads()) {
-                        result[resultIndexes[i]] = op(dx[indexes[i]],y[yIndexes[i]], extraParams);
+#pragma omp parallel for
+                for (int i = 0; i < n; i++) {
+                    result[resultIndexes[i]] = op(dx[indexes[i]], y[yIndexes[i]], extraParams);
 
-                    }
                 }
-
             }
+
+
+
 
 
             /**
@@ -378,8 +376,6 @@ namespace functions {
 
                     }
 
-
-
             }
 
             /**
@@ -410,7 +406,6 @@ namespace functions {
                 int yElementWiseStride = shape::elementWiseStride(yShapeBuffer);
                 int resultElementWiseStride = shape::elementWiseStride(resultShapeBuffer);
                 if(xElementWiseStride == 1 && yElementWiseStride == 1 && resultElementWiseStride == 1) {
-                    printf("In element wise stride\n");
                     exec(dx,
                          xElementWiseStride,
                          y,
@@ -423,7 +418,6 @@ namespace functions {
 
 
                 else {
-                    printf("In non element wise stride\n");
                     int *xShape = shape::shapeOf(xShapeBuffer);
                     int *yShape = shape::shapeOf(yShapeBuffer);
                     int *resultShape = shape::shapeOf(resultShapeBuffer);
