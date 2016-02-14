@@ -11,7 +11,7 @@ Many of these tips have already been discussed in the academic literature. Our p
 
 First, know the problem you are trying to solve. This [list of questions](http://deeplearning4j.org/questions.html) will help you clarify your task if you are new to deep learning. 
 
-* Researchers experienced with deep neural networks tend to try three different learning rates -- 1e^-1, 1^e-3, and 1e^-6 -- to get a rough idea of what it should be. If the LR is too high, learning will be unstable and not work at all; too low and it will take much longer than necessary.
+* Researchers experienced with deep neural networks tend to try three different learning rates -- 1e^-1, 1^e-3, and 1e^-6 -- to get a rough idea of what it should be. If the LR is too high, learning will be unstable and not work at all; too low and it will take much longer than necessary. Ideally, they run models with different learning rates simultaneously to save time. 
 
 * They use Nesterov's Momentum.
 
