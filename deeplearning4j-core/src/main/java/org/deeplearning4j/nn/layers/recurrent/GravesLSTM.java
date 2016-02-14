@@ -21,15 +21,9 @@ package org.deeplearning4j.nn.layers.recurrent;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
-import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
@@ -173,9 +167,14 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
     @Override
     public double calcL2() {
         if (!conf.isUseRegularization() || conf.getLayer().getL2() <= 0.0) return 0.0;
-        double l2 = Transforms.pow(getParam(GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY), 2).sum(Integer.MAX_VALUE).getDouble(0)
-                + Transforms.pow(getParam(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY), 2).sum(Integer.MAX_VALUE).getDouble(0);
-        return 0.5 * conf.getLayer().getL2() * l2;
+
+        double l2Norm = getParam(GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY).norm2Number().doubleValue();
+        double sumSquaredWeights = l2Norm*l2Norm;
+
+        l2Norm = getParam(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY).norm2Number().doubleValue();
+        sumSquaredWeights += l2Norm*l2Norm;
+
+        return 0.5 * conf.getLayer().getL2() * sumSquaredWeights;
     }
 
     @Override
