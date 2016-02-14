@@ -409,8 +409,8 @@ namespace functions {
                 int xElementWiseStride = shape::elementWiseStride(xShapeBuffer);
                 int yElementWiseStride = shape::elementWiseStride(yShapeBuffer);
                 int resultElementWiseStride = shape::elementWiseStride(resultShapeBuffer);
-
                 if(xElementWiseStride == 1 && yElementWiseStride == 1 && resultElementWiseStride == 1) {
+                    printf("In element wise stride\n");
                     exec(dx,
                          xElementWiseStride,
                          y,
@@ -423,6 +423,7 @@ namespace functions {
 
 
                 else {
+                    printf("In non element wise stride\n");
                     int *xShape = shape::shapeOf(xShapeBuffer);
                     int *yShape = shape::shapeOf(yShapeBuffer);
                     int *resultShape = shape::shapeOf(resultShapeBuffer);
