@@ -12,10 +12,12 @@ An activation, or activation function, for a neural network is defined as the ma
 
 Activation algorithms are the gates that determine, at each node in the net, whether and to what extent to transmit the signal the node has received from the previous layer. A combination of weights (coefficients) and biases work on the input data from the previous layer to determine whether that signal surpasses a given treshhold and is deemed significant. Those weights and biases are slowly updated as the neural net minimizes its error; i.e. the level of nodes' activation change in the course of learning. Deeplearning4j includes activation functions such as sigmoid, relu, tanh and ELU. These activation functions allow neural networks to make complex boundary decisions for features at various levels of abstraction. 
 
+* [Activation Visualizer in Deeplearning4j](http://deeplearning4j.org/doc/org/deeplearning4j/plot/iterationlistener/ActivationMeanIterationListener.html)
+
 ### <a name="adadelta">Adadelta</a> 
 Adadelta is an updater, or learning algorithm, related to gradient descent. Unlike SGD, which applies the same learning rate to all parameters of the network, Adadelta adapts the learning rate per parameter. 
 
-* [AdaDeltaUpdater in Deepelarning4j](http://deeplearning4j.org/doc/org/deeplearning4j/nn/updater/AdaDeltaUpdater.html)
+* [AdaDeltaUpdater in Deepelearning4j](http://deeplearning4j.org/doc/org/deeplearning4j/nn/updater/AdaDeltaUpdater.html)
 * [ADADELTA: An Adaptive Learning Rate Method](http://arxiv.org/abs/1212.5701)
 
 ### <a name="adagrad">Adagrad</a>
