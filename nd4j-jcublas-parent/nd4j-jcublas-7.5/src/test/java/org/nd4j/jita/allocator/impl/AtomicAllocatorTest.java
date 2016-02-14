@@ -82,6 +82,8 @@ public class AtomicAllocatorTest {
       //      exec[x] = time2 - time1;
         }
 
+        log.info("Execution time: [" + (time2 - time1) + "] ns");
+
         assertEquals(879.2554931640625, dotWrapped, 0.001d);
     }
 
@@ -115,6 +117,11 @@ public class AtomicAllocatorTest {
         assertNotEquals(1.7574999332427979, array2.getDouble(0), 0.00001);
         assertEquals(2.629999876022339, array2.getDouble(0), 0.00001);
         assertEquals(2.5249998569488525, array2.getDouble(1), 0.00001);
+    }
+
+    @Test
+    public void testGpuBlas5akaFallbackTest() throws Exception {
+
     }
 
     /*
@@ -178,4 +185,5 @@ public class AtomicAllocatorTest {
             }
         }
     }
+
 }

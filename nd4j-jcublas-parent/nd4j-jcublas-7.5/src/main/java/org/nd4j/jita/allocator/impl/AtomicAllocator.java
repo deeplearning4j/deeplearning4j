@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -71,7 +72,7 @@ public class AtomicAllocator implements Allocator {
     // TODO: proper thread-safe implementation would be nice to have here :(
     // FIXME: CopyOnWriteArrayList is BAD here. Really BAD. B A D.
     // Table thread safety is guaranteed by reentrant read/write locks :(
-    private Table<Long, Integer, CopyOnWriteArrayList<Long>> deviceAllocations = HashBasedTable.create();
+    private Table<Long, Integer, ConcurrentHashMap<Long, Long>> deviceAllocations = HashBasedTable.create();
 
     /*
         map for Thread, Object allocations in zero memory.
@@ -498,9 +499,14 @@ public class AtomicAllocator implements Allocator {
 
                     deviceLock.readLock().lock();
 
-                    deviceAllocations.get(Thread.currentThread().getId(), point.getDeviceId()).add(trackingPoint);
+                    deviceAllocations.get(Thread.currentThread().getId(), point.getDeviceId()).put(trackingPoint, trackingPoint);
 
                     deviceLock.readLock().unlock();
+
+                    // FIXME: that's BAD
+                    zeroAllocations.get(Thread.currentThread().getId()).remove(trackingPoint);
+
+
 //                    log.info("Relocation happened!");
                 } catch (Exception e){
 
@@ -661,7 +667,7 @@ public class AtomicAllocator implements Allocator {
                 }
 
                 if (!deviceAllocations.contains(threadId, device)) {
-                    deviceAllocations.put(threadId, device, new CopyOnWriteArrayList<Long>());
+                    deviceAllocations.put(threadId, device, new ConcurrentHashMap<Long, Long>());
                 }
 
                 initCudaContextForThread(threadId);
@@ -738,20 +744,23 @@ public class AtomicAllocator implements Allocator {
             mover.fallback(point, point.getShape());
 
             zeroAllocations.get(threadId).add(objectId);
+            point.tickDevice();
             point.tickDeviceWrite();
             point.setAllocationStatus(AllocationStatus.ZERO);
             zeroUseCounter.set(zeroUseCounter.get() - AllocationUtils.getRequiredMemory(point.getShape()));
         }
 
         deviceLock.readLock().lock();
-        List<Long> allocations = deviceAllocations.get(threadId, deviceId);
+        Map<Long, Long> allocations = deviceAllocations.get(threadId, deviceId);
         deviceLock.readLock().unlock();
 
         // FIXME: THIS IS BAD
         allocations.remove(objectId);
 
-        if (!copyback)
+        if (!copyback) {
+            allocationsMap.remove(objectId);
             mover.free(point, AllocationStatus.DEVICE);
+        }
 
         environment.trackAllocatedMemory(deviceId, AllocationUtils.getRequiredMemory(point.getShape()));
     }
@@ -785,7 +794,6 @@ public class AtomicAllocator implements Allocator {
 
         for (Long object: zeroAllocations.get(threadId)) {
             AllocationPoint point = getAllocationPoint(object);
-            if (point == null) continue;
 
             if (point.getAccessState().isToeAvailable()) {
                 point.getAccessState().requestToe();
@@ -865,7 +873,7 @@ public class AtomicAllocator implements Allocator {
         AtomicLong freeSpace = new AtomicLong(0);
 
         deviceLock.readLock().lock();
-        List<Long> allocations = deviceAllocations.get(threadId, deviceId);
+        Map<Long,Long> allocations = deviceAllocations.get(threadId, deviceId);
         deviceLock.readLock().unlock();
 
         float shortAverage = zeroShort.getAverage();
@@ -877,10 +885,11 @@ public class AtomicAllocator implements Allocator {
         log.info("Total device elements: " + allocations.size());
 
         AtomicInteger elementsDropped = new AtomicInteger(0);
+        AtomicInteger elementsMoved = new AtomicInteger(0);
 
-        for (Long object: allocations) {
+        for (Long object: allocations.keySet()) {
             AllocationPoint point = getAllocationPoint(object);
-            if (point == null) continue;
+
             if (point.getAccessState().isToeAvailable()) {
                 point.getAccessState().requestToe();
 
@@ -911,7 +920,7 @@ public class AtomicAllocator implements Allocator {
 
                     freeSpace.addAndGet(AllocationUtils.getRequiredMemory(point.getShape()));
 
-                    elementsDropped.incrementAndGet();
+                    elementsMoved.incrementAndGet();
 
                     /*if (point.getTimerLong().getFrequencyOfEvents() < longThreshold && point.getTimerShort().getFrequencyOfEvents() < shortThreshold) {
                         //log.info("Removing object: " + object);
@@ -926,7 +935,7 @@ public class AtomicAllocator implements Allocator {
             }
         }
 
-        log.info("Device elements deleted: " + elementsDropped.get());
+        log.info("Device elements purged: [" + elementsDropped.get()+"]; Relocated: ["+ elementsMoved.get()+"]; Device objects left: ["+allocations.size()+"]");
 
         return freeSpace.get();
     }
