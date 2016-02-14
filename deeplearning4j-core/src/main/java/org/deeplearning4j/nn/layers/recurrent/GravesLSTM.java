@@ -180,8 +180,8 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
     @Override
     public double calcL1() {
         if (!conf.isUseRegularization() || conf.getLayer().getL1() <= 0.0) return 0.0;
-        double l1 = Transforms.abs(getParam(GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY)).sum(Integer.MAX_VALUE).getDouble(0)
-                + Transforms.abs(getParam(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY)).sum(Integer.MAX_VALUE).getDouble(0);
+        double l1 = getParam(GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY).norm1Number().doubleValue()
+                + getParam(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY).norm1Number().doubleValue();
         return conf.getLayer().getL1() * l1;
     }
 
