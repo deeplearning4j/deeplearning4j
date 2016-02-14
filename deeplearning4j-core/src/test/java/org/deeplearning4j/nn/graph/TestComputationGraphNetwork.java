@@ -481,12 +481,12 @@ public class TestComputationGraphNetwork {
                         .nIn(4).nOut(3)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0, 1))
                         .activation("tanh")
-                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build(),"in")
+                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build(), "in")
                 .addLayer("layer1", new RBM.Builder(RBM.HiddenUnit.GAUSSIAN, RBM.VisibleUnit.GAUSSIAN)
                         .nIn(4).nOut(3)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0, 1))
                         .activation("tanh")
-                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build(),"in")
+                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build(), "in")
                 .addLayer("layer2", new RBM.Builder(RBM.HiddenUnit.GAUSSIAN, RBM.VisibleUnit.GAUSSIAN)
                         .nIn(3).nOut(3)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0, 1))
@@ -509,4 +509,65 @@ public class TestComputationGraphNetwork {
         net.fit(iter);
     }
 
+    @Test
+    public void testScoreExamples(){
+        Nd4j.getRandom().setSeed(12345);
+        int nIn = 5;
+        int nOut = 6;
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .regularization(true).l1(0.01).l2(0.01)
+                .learningRate(0.1).activation("tanh").weightInit(WeightInit.XAVIER)
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("0", new DenseLayer.Builder().nIn(nIn).nOut(20).build(),"in")
+                .addLayer("1", new DenseLayer.Builder().nIn(20).nOut(30).build(), "0")
+                .addLayer("2", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(30).nOut(nOut).build(), "1")
+                .setOutputs("2")
+                .build();
+
+        ComputationGraphConfiguration confNoReg = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .learningRate(0.1).activation("tanh").weightInit(WeightInit.XAVIER)
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("0", new DenseLayer.Builder().nIn(nIn).nOut(20).build(), "in")
+                .addLayer("1", new DenseLayer.Builder().nIn(20).nOut(30).build(), "0")
+                .addLayer("2", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(30).nOut(nOut).build(), "1")
+                .setOutputs("2")
+                .build();
+
+
+        ComputationGraph net = new ComputationGraph(conf);
+        net.init();
+
+        ComputationGraph netNoReg = new ComputationGraph(confNoReg);
+        netNoReg.init();
+        netNoReg.setParams(net.params().dup());
+
+        //Score single example, and compare to scoreExamples:
+        INDArray input = Nd4j.rand(3,nIn);
+        INDArray output = Nd4j.rand(3,nOut);
+        DataSet ds = new DataSet(input,output);
+
+        INDArray scoresWithRegularization = net.scoreExamples(ds,true);
+        INDArray scoresNoRegularization = net.scoreExamples(ds,false);
+
+        assertArrayEquals(new int[]{3,1},scoresWithRegularization.shape());
+        assertArrayEquals(new int[]{3,1},scoresNoRegularization.shape());
+
+        for( int i=0; i<3; i++ ){
+            DataSet singleEx = new DataSet(input.getRow(i),output.getRow(i));
+            double score = net.score(singleEx);
+            double scoreNoReg = netNoReg.score(singleEx);
+
+            double scoreUsingScoreExamples = scoresWithRegularization.getDouble(i);
+            double scoreUsingScoreExamplesNoReg = scoresNoRegularization.getDouble(i);
+            assertEquals(score,scoreUsingScoreExamples,1e-4);
+            assertEquals(scoreNoReg,scoreUsingScoreExamplesNoReg,1e-4);
+            assertTrue(scoreUsingScoreExamples > scoreUsingScoreExamplesNoReg);     //Regularization term increases score
+
+//            System.out.println(score + "\t" + scoreUsingScoreExamples + "\t|\t" + scoreNoReg + "\t" + scoreUsingScoreExamplesNoReg);
+        }
+    }
 }
