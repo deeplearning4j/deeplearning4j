@@ -21,6 +21,7 @@ Adadelta is an updater, or learning algorithm, related to gradient descent. Unli
 ### <a name="adagrad">Adagrad</a>
 Adagrad, short for adaptive gradient, is an updater or learning algorithm that adjust the learning rate for each parameter in the net by monitoring the squared gradients in the course of learning. It is a substitute for SGD, and can be useful when processing sparse data.
 
+* [AdaGradUpdater in Deeplearning4j](http://deeplearning4j.org/doc/org/deeplearning4j/nn/updater/AdaGradUpdater.html)
 * [Adaptive Subgradient Methods for Online Learning and Stochastic Optimization](http://www.magicbroom.info/Papers/DuchiHaSi10.pdf)
 
 ### <a name="adam">Adam</a>
