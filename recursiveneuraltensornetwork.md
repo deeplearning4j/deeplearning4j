@@ -1,5 +1,5 @@
 ---
-title: 
+title: Recursive Neural Tensor Network
 layout: default
 ---
 

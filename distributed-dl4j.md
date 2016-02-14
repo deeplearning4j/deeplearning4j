@@ -1,5 +1,5 @@
 ---
-title: 
+title: Distributed DL4J
 layout: default
 ---
 

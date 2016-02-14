@@ -1,5 +1,5 @@
 ---
-title:
+title: MultiLayerConfiguration class
 layout: default
 ---
 

@@ -1,5 +1,5 @@
 ---
-title: 
+title: Scala, Spark and Deeplearning4j
 layout: default
 ---
 

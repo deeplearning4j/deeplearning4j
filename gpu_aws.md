@@ -1,5 +1,5 @@
 ---
-title: 
+title: Launching GPUs on AWS With Spark
 layout: default
 ---
 

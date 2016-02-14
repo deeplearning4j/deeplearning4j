@@ -1,5 +1,6 @@
 ---
 layout: default
+title: Getting Started on OSX
 ---
 
 #Getting Started on OSX

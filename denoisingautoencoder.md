@@ -1,5 +1,5 @@
 ---
-title: 
+title: Denoising Autoencoders
 layout: default
 ---
 

@@ -1,5 +1,6 @@
 ---
 layout: default
+title: Custom Datasets
 ---
 
 # Custom Datasets 
