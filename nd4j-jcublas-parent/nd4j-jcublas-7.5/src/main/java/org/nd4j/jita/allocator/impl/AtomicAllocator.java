@@ -234,7 +234,7 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public Long pickupSpan(@NonNull BaseCudaDataBuffer buffer, @NonNull AllocationShape shape) {
-        log.info("pickupSpan(BaseCudaDataBuffer)");
+        //log.info("pickupSpan(BaseCudaDataBuffer)");
 //        if (1> 0) throw new RuntimeException("");
         try {
             externalsLock.writeLock().lock();
@@ -288,7 +288,7 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public Long pickupSpan(INDArray array) {
-        log.info("pickupSpan(INDarray)");
+        //log.info("pickupSpan(INDarray)");
         /*
          while working on array level, we actually immediately downgrade to buffer level, with AllocationShape defined by this array
           */
@@ -402,7 +402,7 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public Pointer getDevicePointer(BaseCudaDataBuffer objectId, AllocationShape shape, boolean isView) {
-        log.info("requesting pointer for: [" + shape + "]; isView: [" + isView +"]");
+      //  log.info("requesting pointer for: [" + shape + "]; isView: [" + isView +"]");
         /*
             We assume that object is registered within allocator
          */
@@ -414,7 +414,7 @@ public class AtomicAllocator implements Allocator {
 
         // we're checking, if cuda pointer is null without any locks. but if it's null, we'll request Toe state on this allocation, to make sure nothing can mess with it
         if (point.getCudaPointer() == null) {
-            log.info("Building pointer");
+            //log.info("Building pointer");
             // at this point memory becomes read/write-locked for a few ms, to make sure cudaPointer exists
             point.getAccessState().requestToe();
 
@@ -510,7 +510,7 @@ public class AtomicAllocator implements Allocator {
             if (point.getDeviceTicks() > 5 && point.getAllocationStatus() == AllocationStatus.ZERO && AllocationUtils.getRequiredMemory(shape) < configuration.getMaximumSingleAllocation()) {
                 point.getAccessState().requestToe();
 
-                log.info("Starting promotion");
+           //     log.info("Starting promotion");
 
                 // moving memory from ZERO to DEVICE
                 promoteObject(trackingPoint, point, shape);

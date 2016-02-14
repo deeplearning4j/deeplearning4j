@@ -209,8 +209,10 @@ public class AtomicAllocatorTest {
         INDArray slice1 = array1.slice(10);
         INDArray slice2 = array2.slice(10);
 
-        assertTrue(slice1.data() == array1.data());
-        assertTrue(slice2.data() == array2.data());
+
+        assertEquals(null, array1.data().underlyingDataBuffer().underlyingDataBuffer());
+        assertTrue(slice1.data().underlyingDataBuffer() == array1.data());
+        assertTrue(slice2.data().underlyingDataBuffer() == array2.data());
 
         double results[] = new double[] {196.73057556152344,187.9628448486328,185.44927978515625,195.71868896484375,201.3914031982422,206.9940948486328,186.59426879882812,178.36427307128906,188.29483032226562,183.08912658691406,193.56333923339844,189.89263916015625,189.0192108154297,193.63824462890625,201.99197387695312,187.71295166015625,197.52166748046875,180.9663848876953,189.44374084472656,186.75148010253906};
 
