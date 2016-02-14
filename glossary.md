@@ -38,6 +38,7 @@ Affine is a fancy word for a fully connected layer in a neural network. "Fully c
 ### <a name="alex">AlexNet</a>
 AlexNet is a deep convolutional network named after Alex Krizhevsky, a former student of Geoff Hinton's at the University of Toronto, now at Google. AlexNet was used to win ILSVRC 2012, and foretold a wave of deep convolutional networks that would set new records in image recognition. AlexNet is now a standard architecture: it contains five convolutional layers, three of which are followed by max-pooling (downsampling) layers, two fully connected (affine) layers -- all of which ends in a softmax layer. Here is [Deeplearning4j's implementation of AlexNet](https://github.com/deeplearning4j/ImageNet-Example/blob/master/src/main/java/imagenet/Models/AlexNet.java).
 
+* [AlexNet Example in Deeplearning4j](https://github.com/deeplearning4j/ImageNet-Example/blob/master/src/main/java/imagenet/Models/AlexNet.java)
 * [ImageNet Classification with Deep Convolutional Neural Networks](http://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks.pdf)
 
 ### <a name="attention">Attention Models</a> 
@@ -49,6 +50,7 @@ Attention models "attend" to specific parts of an image in sequence, one after a
 ### <a name="backprop">Autoencoder</a>
 Autoencoders are at the heart of representation learning. They encode input, usually by compressing large vectors into smaller vectors that capture their most significant features; that is, they are useful for data compression (dimensionality reduction) as well as data reconstruction for unsupervised learning. A restricted Boltzmann machine is a type of autoencoder, and in fact, autoencoders come in many flavors, including Variational Autoencoders, Denoising Autoencoders and Sequence Autoencoders. Variational autoencoders have replaced RBMs in many labs because they produce more stable results. Denoising autoencoders provide a form of regularization by introducing Gaussian noise into the input, which the network learns to ignore in search of the true signal. 
 
+* [Autoencoder in Deeplearning4j](http://deeplearning4j.org/doc/org/deeplearning4j/nn/layers/feedforward/autoencoder/AutoEncoder.html)
 * [Auto-Encoding Variational Bayes](http://arxiv.org/abs/1312.6114)
 * [Stacked Denoising Autoencoders: Learning Useful Representations in a Deep Network with a Local Denoising Criterion](http://www.jmlr.org/papers/volume11/vincent10a/vincent10a.pdf)
 * [Semi-supervised Sequence Learning](http://arxiv.org/abs/1511.01432)
@@ -62,6 +64,7 @@ derivatives. The first step is to calculate the derivatives of the objective fun
 
 A special form of backpropagation is called backpropagation through time, or BPTT, which is specifically useful for recurrent networks analyzing text and time series. With BPTT, each time step of the RNN is the equivalent of a layer in a feed-forward network. To backpropagate over many time steps, BPTT can be truncated for the purpose of efficiency. Truncated BPTT limits the time steps over which error is propagated.
 
+* [Backpropagation Types in Deeplearningtj](http://deeplearning4j.org/doc/org/deeplearning4j/nn/conf/BackpropType.html)
 * [Backpropagation Through Time: What It Does and How to Do It](http://deeplearning.cs.cmu.edu/pdfs/Werbos.backprop.pdf)
 
 ### <a name="batch">Batch Normalization</a> 
