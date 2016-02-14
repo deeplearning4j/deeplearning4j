@@ -31,8 +31,6 @@ import java.nio.ByteBuffer;
  * @author Adam Gibson
  */
 public class FloatBuffer extends BaseDataBuffer {
-
-
     /**
      * Create a float buffer with the given length
      * @param length the float buffer with the given length
@@ -47,6 +45,10 @@ public class FloatBuffer extends BaseDataBuffer {
 
     public FloatBuffer(int length, int elementSize, int offset) {
         super(length, elementSize, offset);
+    }
+
+    public FloatBuffer(DataBuffer underlyingBuffer, int length, int offset) {
+        super(underlyingBuffer, length, offset);
     }
 
     public FloatBuffer(ByteBuf buf,int length) {

@@ -43,6 +43,10 @@ public class DoubleBuffer extends BaseDataBuffer {
         super(length, elementSize, offset);
     }
 
+    public DoubleBuffer(DataBuffer underlyingBuffer, int length, int offset) {
+        super(underlyingBuffer, length, offset);
+    }
+
 
     public DoubleBuffer(ByteBuf buf,int length) {
         super(buf,length);

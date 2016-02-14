@@ -31,7 +31,6 @@ import java.nio.ByteBuffer;
  */
 public class IntBuffer extends BaseDataBuffer {
 
-
     public IntBuffer(int length) {
         super(length);
     }
@@ -74,6 +73,10 @@ public class IntBuffer extends BaseDataBuffer {
 
     public IntBuffer(int length, int elementSize, int offset) {
         super(length, elementSize, offset);
+    }
+
+    public IntBuffer(DataBuffer underlyingBuffer, int length, int offset) {
+        super(underlyingBuffer, length, offset);
     }
 
     public IntBuffer(ByteBuffer buffer,int length) {

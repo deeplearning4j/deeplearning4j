@@ -17,12 +17,12 @@ public class CPUTransformOpAction extends BaseCPUTransformOpAction {
         super(op, threshold, n, offsetX, offsetY, offsetZ, incrX, incrY, incrZ);
     }
 
-    public CPUTransformOpAction(TransformOp op, int threshold){
+    public CPUTransformOpAction(TransformOp op, int threshold) {
         super(op,threshold);
     }
 
     /** Constructor for doing a 1d TAD first */
-    public CPUTransformOpAction(TransformOp op, int threshold, int tadIdx, int tadDim){
+    public CPUTransformOpAction(TransformOp op, int threshold, int tadIdx, int tadDim) {
         super(op,threshold,tadIdx,tadDim);
     }
 

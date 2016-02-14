@@ -52,6 +52,10 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         super(length, elementSize, offset);
     }
 
+    public CudaDoubleDataBuffer(DataBuffer underlyingBuffer, int length, int offset) {
+        super(underlyingBuffer, length, offset);
+    }
+
     /**
      * Instantiate based on the given data
      *

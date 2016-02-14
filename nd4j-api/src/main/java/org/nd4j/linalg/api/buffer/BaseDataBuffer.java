@@ -49,6 +49,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected int offset;
     protected int elementSize;
     protected transient ByteBuffer wrappedBuffer;
+    protected DataBuffer wrappedDataBuffer;
     protected Collection<String> referencing = Collections.synchronizedSet(new HashSet<String>());
     protected transient WeakReference<DataBuffer> ref;
     protected boolean isPersist = false;
@@ -57,6 +58,56 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected int[] intData;
     protected float[] floatData;
     protected AtomicBoolean dirty = new AtomicBoolean(false);
+
+
+    /**
+     * Meant for creating another view of a buffer
+     * @param underlyingBuffer the underlying buffer to create a view from
+     * @param length the length of the view
+     * @param offset the offset for the view
+     */
+    protected BaseDataBuffer(DataBuffer underlyingBuffer,int length,int offset) {
+        this.length = length;
+        this.offset = offset;
+        this.allocationMode = underlyingBuffer.allocationMode();
+        this.elementSize = underlyingBuffer.getElementSize();
+        this.underlyingLength = underlyingBuffer.underlyingLength() - offset;
+        this.wrappedDataBuffer = underlyingBuffer;
+
+        if(underlyingBuffer.dataType() == Type.DOUBLE) {
+            if(underlyingBuffer.allocationMode() == AllocationMode.HEAP) {
+                double[] underlyingArray = (double[]) underlyingBuffer.array();
+                this.doubleData = underlyingArray;
+            }
+            else {
+                ByteBuffer underlyingBuff = underlyingBuffer.asNio();
+                this.wrappedBuffer = underlyingBuff;
+            }
+        }
+        else if(underlyingBuffer.dataType() == Type.FLOAT) {
+            if(underlyingBuffer.allocationMode() == AllocationMode.HEAP) {
+                float[] underlyingArray = (float[]) underlyingBuffer.array();
+                this.floatData = underlyingArray;
+            }
+            else {
+                ByteBuffer underlyingBuff = underlyingBuffer.asNio();
+                this.wrappedBuffer = underlyingBuff;
+
+            }
+        }
+        else if(underlyingBuffer.dataType() == Type.INT) {
+            if(underlyingBuffer.allocationMode() == AllocationMode.HEAP) {
+                int[] underlyingArray = (int[]) underlyingBuffer.array();
+                this.intData = underlyingArray;
+            }
+            else {
+                ByteBuffer underlyingBuff = underlyingBuffer.asNio();
+                this.wrappedBuffer = underlyingBuff;
+
+            }
+        }
+    }
+
     /**
      *
      * @param buf
@@ -322,6 +373,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     public BaseDataBuffer(byte[] data, int length) {
         this(Unpooled.wrappedBuffer(data),length);
+    }
+
+    @Override
+    public DataBuffer underlyingDataBuffer() {
+        return wrappedDataBuffer;
     }
 
     @Override
@@ -732,13 +788,13 @@ public abstract class BaseDataBuffer implements DataBuffer {
     @Override
     public double getDouble(int i) {
         if(doubleData != null) {
-            if(i >= doubleData.length)
+            if(offset() + i >= doubleData.length)
                 throw new IllegalStateException("Index out of bounds " + i);
             dirty.set(false);
             return doubleData[offset() + i];
         }
         else if(floatData != null) {
-            if(i >= floatData.length)
+            if(offset() + i >= floatData.length)
                 throw new IllegalStateException("Index out of bounds " + i);
             dirty.set(false);
             return (double) floatData[offset() + i];
@@ -806,10 +862,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void put(int i, double element) {
-        if(i < 0 || i >= length())
-            throw new IllegalArgumentException("Illegal index " + i);
-
-        if(doubleData != null)
+          if(doubleData != null)
             doubleData[offset() + i] = element;
 
         else if(floatData != null)

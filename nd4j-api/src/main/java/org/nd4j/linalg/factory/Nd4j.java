@@ -952,6 +952,19 @@ public class Nd4j {
     }
 
 
+    /**
+     * Create a view of a data buffer
+     * that leverages the underlying storage of the buffer
+     * with a new view
+     * @param underlyingBuffer the underlying buffer
+     * @param length the length of the view
+     * @param offset the offset for the view
+     * @return the new view of the data buffer
+     */
+    public static DataBuffer createBuffer(DataBuffer underlyingBuffer,int offset) {
+        int length = underlyingBuffer.underlyingLength() - offset;
+        return DATA_BUFFER_FACTORY_INSTANCE.create(underlyingBuffer,offset,length);
+    }
 
     /**
      * Create a buffer equal of length prod(shape)

@@ -35,6 +35,21 @@ import java.nio.ByteBuffer;
  */
 public class DefaultDataBufferFactory implements DataBufferFactory {
     @Override
+    public DataBuffer create(DataBuffer underlyingBuffer, int offset, int length) {
+        if(underlyingBuffer.dataType() == DataBuffer.Type.DOUBLE) {
+            return new DoubleBuffer(underlyingBuffer,length,offset);
+        }
+        else if(underlyingBuffer.dataType() == DataBuffer.Type.FLOAT) {
+            return new FloatBuffer(underlyingBuffer,length,offset);
+
+        }
+        else if(underlyingBuffer.dataType() == DataBuffer.Type.INT) {
+            return new IntBuffer(underlyingBuffer,length,offset);
+        }
+        return null;
+    }
+
+    @Override
     public DataBuffer createInt(int offset, ByteBuffer buffer, int length) {
         return new IntBuffer(buffer,length,offset);
     }

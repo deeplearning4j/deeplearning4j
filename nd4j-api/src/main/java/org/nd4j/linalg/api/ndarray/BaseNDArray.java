@@ -43,7 +43,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.SubOp;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.api.ops.impl.broadcast.*;
-import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.*;
 import org.nd4j.linalg.indexing.conditions.Condition;
@@ -60,7 +59,6 @@ import java.lang.Iterable;
 import java.nio.IntBuffer;
 import java.util.*;
 
-import static org.nd4j.linalg.util.ArrayUtil.*;
 
 
 /**
@@ -105,6 +103,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     protected int linearStride = -1;
     protected int elementWiseStride = -1;
     protected boolean attemptedToFindElementWiseStride = false;
+
+
+
+
+
+
     public BaseNDArray() {
     }
 
@@ -130,9 +134,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param ordering
      */
     public BaseNDArray(DataBuffer buffer, int[] shape, int[] stride, int offset, char ordering) {
-        this.data = buffer;
-        if (ArrayUtil.prod(shape) > buffer.length())
-            throw new IllegalArgumentException("Shape must be <= buffer length");
+        this.data = Nd4j.createBuffer(buffer,offset);
         this.shapeInformation = Shape.createShapeInformation(shape,stride,offset,stride[stride.length - 1],ordering);
         init(shape,stride);
 
@@ -198,7 +200,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param ordering the ordering of the ndarray
      */
     public BaseNDArray(float[] data, int[] shape, int offset, char ordering) {
-        this(data, shape, ordering == NDArrayFactory.C ? calcStrides(shape) : calcStridesFortran(shape), offset);
+        this(data, shape, Nd4j.getStrides(shape,ordering), offset);
 
     }
 
@@ -332,7 +334,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public BaseNDArray(float[] data, int[] shape, int[] stride, int offset, char ordering) {
         this.shapeInformation = Shape.createShapeInformation(shape,stride,offset,stride[stride.length - 1],ordering);
         if (data != null && data.length > 0) {
-            this.data = Nd4j.createBuffer(data);
+            this.data = Nd4j.createBuffer(data,offset);
             if (offset >= data.length)
                 throw new IllegalArgumentException("invalid offset: must be < data.length");
         }
@@ -348,7 +350,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param offset
      */
     public BaseNDArray(DataBuffer data, int[] shape, int[] stride, int offset) {
-        this.data = data;
+        this.data = Nd4j.createBuffer(data,offset);
         this.shapeInformation = Shape.createShapeInformation(shape,stride,offset,stride[stride.length - 1],Nd4j.order());
         init(shape,stride);
 
@@ -381,7 +383,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param offset
      */
     public BaseNDArray(DataBuffer buffer, int[] shape, int offset) {
-        this(buffer, shape, Nd4j.getStrides(shape), offset, Nd4j.order());
+        this(Nd4j.createBuffer(buffer,offset), shape, Nd4j.getStrides(shape), offset, Nd4j.order());
     }
 
     /**
@@ -413,7 +415,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param ordering
      */
     public BaseNDArray(double[] data, int[] shape, int[] stride, int offset, char ordering) {
-        this(Nd4j.createBuffer(data), shape, stride, offset, ordering);
+        this(Nd4j.createBuffer(data,offset), shape, stride, offset, ordering);
     }
 
     /**
@@ -496,7 +498,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param offset
      */
     public BaseNDArray(int[] shape, int offset) {
-        this(shape, calcStrides(shape), offset);
+        this(shape, Nd4j.getStrides(shape), offset);
     }
 
     /**
@@ -547,7 +549,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     }
 
-
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param stride
+     */
     public BaseNDArray(float[] data, int[] shape, int[] stride) {
         this(data, shape, stride, Nd4j.order());
     }
@@ -1057,8 +1064,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray putScalar(int[] indexes, double value) {
         int offset = Shape.getOffset(0,shape(),stride(),indexes);
-        if(offset >= data().length())
-            throw new IllegalArgumentException("Illegal index " + Arrays.toString(indexes));
         data.put(offset, value);
         return this;
     }
@@ -1730,7 +1735,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         int[] shape = resolution.getShapes();
         int[] stride = resolution.getStrides();
 
-        int offset = Shape.offset(shapeInfo()) + resolution.getOffset();
+        int offset = offset() + resolution.getOffset();
 
         int n = shape.length;
         if (shape.length < 1)
@@ -1748,8 +1753,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             }
         }
 
-        if (offset >= data().length())
-            offset = ArrayUtil.sum(offsets);
 
         return create(
                 data
@@ -3096,7 +3099,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
         if(i == 0)
-            return data().getDouble(Shape.offset(shapeInfo()));
+            return data().getDouble(i);
 
         int[] dimensions = ordering() == 'c'? Shape.ind2subC(this,i) : Shape.ind2sub(this, i);
         Shape.assertShapeLessThan(dimensions,shape());
@@ -3740,7 +3743,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public int offset() {
-        return Shape.offset(shapeInfo());
+        //  return Shape.offset(shapeInfo());
+        return data().offset();
     }
 
     @Override
@@ -4016,7 +4020,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 data(),
                 newShape,
                 newStride,
-                0,
+                offset(),
                 newOrder);
         return value;
     }

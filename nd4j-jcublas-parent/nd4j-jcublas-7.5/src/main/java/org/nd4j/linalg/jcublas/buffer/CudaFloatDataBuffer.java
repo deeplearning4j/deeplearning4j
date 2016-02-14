@@ -53,6 +53,10 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         super(length, elementSize, offset);
     }
 
+    public CudaFloatDataBuffer(DataBuffer underlyingBuffer, int length, int offset) {
+        super(underlyingBuffer, length, offset);
+    }
+
     public CudaFloatDataBuffer(float[] buffer) {
         this(buffer.length);
         setData(buffer);

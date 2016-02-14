@@ -38,6 +38,22 @@ import java.nio.ByteBuffer;
  */
 public class CudaDataBufferFactory implements DataBufferFactory {
     @Override
+    public DataBuffer create(DataBuffer underlyingBuffer, int offset, int length) {
+        if(underlyingBuffer.dataType() == DataBuffer.Type.DOUBLE) {
+           return new CudaDoubleDataBuffer(underlyingBuffer,length,offset);
+        }
+        else if(underlyingBuffer.dataType() == DataBuffer.Type.FLOAT) {
+            return new CudaFloatDataBuffer(underlyingBuffer,length,offset);
+
+        }
+        else if(underlyingBuffer.dataType() == DataBuffer.Type.INT) {
+            return new CudaIntDataBuffer(underlyingBuffer,length,offset);
+
+        }
+        return null;
+    }
+
+    @Override
     public DataBuffer createInt(int offset, ByteBuffer buffer, int length) {
         return new CudaIntDataBuffer(buffer,length,offset);
     }

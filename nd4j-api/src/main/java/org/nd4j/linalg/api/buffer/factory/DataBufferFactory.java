@@ -32,7 +32,17 @@ import java.nio.ByteBuffer;
 public interface DataBufferFactory {
 
 
-
+    /**
+     * Create a databuffer wrapping another one
+     * this allows you to create a view of a buffer
+     * with a different offset and length
+     * backed by the same storage
+     * @param underlyingBuffer the underlying buffer to get the storage from
+     * @param offset the offset to view the data as
+     * @param length the length of the buffer
+     * @return the databuffer as a view
+     */
+    DataBuffer create(DataBuffer underlyingBuffer,int offset,int length);
 
     /**
      * Create int buffer

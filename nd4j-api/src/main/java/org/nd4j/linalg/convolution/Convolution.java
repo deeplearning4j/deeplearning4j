@@ -48,8 +48,6 @@ public class Convolution {
     }
 
 
-
-
     /**
      * Default no-arg constructor.
      */

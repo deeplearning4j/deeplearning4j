@@ -277,7 +277,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
-    public void testTADOnVector(){
+    public void testTADOnVector() {
 
         Nd4j.getRandom().setSeed(12345);
         INDArray rowVec = Nd4j.rand(1, 10);
@@ -289,7 +289,6 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(5, thirdElem.getDouble(0), 0.0);
 
         assertEquals(5, rowVec.getDouble(2), 0.0);    //Both should be modified if thirdElem is a view
-        assertTrue(thirdElem.data() == rowVec.data());    //equivalently: should be same object if a view
 
         //Same thing for column vector:
         INDArray colVec = Nd4j.rand(10,1);
@@ -300,7 +299,6 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         thirdElem.putScalar(0, 5);
         assertEquals(5, thirdElem.getDouble(0), 0.0);
         assertEquals(5,colVec.getDouble(2),0.0);
-        assertTrue(thirdElem.data() == colVec.data());    //equivalently: should be same object if a view
     }
 
     @Test
@@ -1945,7 +1943,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
-    public void testTensorStats(){
+    public void testTensorStats() {
         List<Pair<INDArray,String>> testInputs = NDArrayCreationUtil.getAllTestMatricesWithShape(9, 13, 123);
 
         for(Pair<INDArray,String> pair : testInputs ){

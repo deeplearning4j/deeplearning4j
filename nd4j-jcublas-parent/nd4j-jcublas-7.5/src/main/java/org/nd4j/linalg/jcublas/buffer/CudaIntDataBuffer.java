@@ -50,6 +50,10 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
         super(length, elementSize, offset);
     }
 
+    public CudaIntDataBuffer(DataBuffer underlyingBuffer, int length, int offset) {
+        super(underlyingBuffer, length, offset);
+    }
+
     public CudaIntDataBuffer(int[] data) {
         this(data.length);
         setData(data);

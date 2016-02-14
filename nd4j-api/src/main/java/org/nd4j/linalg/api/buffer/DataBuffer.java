@@ -113,6 +113,14 @@ public interface DataBuffer extends Serializable {
     ByteBuf asNetty();
 
     /**
+     * Underlying buffer:
+     * This is meant for a data buffer
+     * to be a view of another data buffer
+     * @return
+     */
+    DataBuffer underlyingDataBuffer();
+
+    /**
      * Copies from
      * the given buffer
      * at the specified stride
