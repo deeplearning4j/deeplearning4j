@@ -9,6 +9,7 @@ import jcuda.jcublas.cublasHandle;
 import jcuda.runtime.JCuda;
 import lombok.NonNull;
 import org.nd4j.jita.allocator.Allocator;
+import org.nd4j.jita.allocator.concurrency.DeviceAllocationsTracker;
 import org.nd4j.jita.allocator.concurrency.Lock;
 import org.nd4j.jita.allocator.enums.AccessState;
 import org.nd4j.jita.allocator.enums.Aggressiveness;
@@ -61,7 +62,10 @@ public class AtomicAllocator implements Allocator {
     protected Map<Long, Integer> devicesAffinity = new ConcurrentHashMap<>();
 
     // simple counter to track allocated host-memory
-    protected volatile AtomicLong zeroUseCounter = new AtomicLong(0);
+    protected final AtomicLong zeroUseCounter = new AtomicLong(0);
+
+    // another simple counter, to track allocated device memory on per-thread per-device basis
+    protected volatile DeviceAllocationsTracker deviceMemoryTracker;
 
     // we have single tracking point for allocation points, since we're not going to cycle through it it any time soon
     private Map<Long, AllocationPoint> allocationsMap = new ConcurrentHashMap<>();
@@ -80,7 +84,7 @@ public class AtomicAllocator implements Allocator {
     // CopyOnWriteArrayList performance to be investigated in this use case
     // Map thread safety is guaranteed by exclusive writeLock in getDeviceId() method, because we can't use putIfAbsent on j7
     // FIXME: at j7 -> j8 transition, this one could be changed to ConcurrentHashMap
-    private Map<Long, CopyOnWriteArrayList<Long>> zeroAllocations = new HashMap<>();
+    private Map<Long, ConcurrentHashMap<Long, Long>> zeroAllocations = new HashMap<>();
 
     /*
         WeakHashMap for buffer->id conversion. If DataBuffer get's removed by jvm GC, we'll know that.
@@ -171,6 +175,8 @@ public class AtomicAllocator implements Allocator {
             this.configuration = configuration;
             this.environment = new CudaEnvironment(this.configuration);
 
+            this.deviceMemoryTracker = new DeviceAllocationsTracker(this.environment);
+
             globalLock.writeLock().unlock();
         }
     }
@@ -200,6 +206,9 @@ public class AtomicAllocator implements Allocator {
     public void setEnvironment(@NonNull CudaEnvironment environment) {
         globalLock.writeLock().lock();
         this.environment = environment;
+
+        this.deviceMemoryTracker = new DeviceAllocationsTracker(this.environment);
+
         globalLock.writeLock().unlock();
     }
 
@@ -444,7 +453,7 @@ public class AtomicAllocator implements Allocator {
                     throw new IllegalStateException("Zero-copy allocation failed");
 
                 point.setCudaPointers(info);
-                zeroAllocations.get(Thread.currentThread().getId()).add(trackingPoint);
+                zeroAllocations.get(Thread.currentThread().getId()).put(trackingPoint, trackingPoint);
 
 
                 /*
@@ -491,26 +500,9 @@ public class AtomicAllocator implements Allocator {
             if (point.getDeviceTicks() > 5 && point.getAllocationStatus() == AllocationStatus.ZERO) {
                 point.getAccessState().requestToe();
 
-                try {
-                    DevicePointerInfo newPointers = mover.alloc(AllocationStatus.DEVICE, point, shape);
+                // moving memory from ZERO to DEVICE
+                promoteObject(trackingPoint, point, shape);
 
-                    point.setAllocationStatus(AllocationStatus.DEVICE);
-                    point.setCudaPointers(newPointers);
-
-                    deviceLock.readLock().lock();
-
-                    deviceAllocations.get(Thread.currentThread().getId(), point.getDeviceId()).put(trackingPoint, trackingPoint);
-
-                    deviceLock.readLock().unlock();
-
-                    // FIXME: that's BAD
-                    zeroAllocations.get(Thread.currentThread().getId()).remove(trackingPoint);
-
-
-//                    log.info("Relocation happened!");
-                } catch (Exception e){
-
-                }
                 point.getAccessState().releaseToe();
             }
         }
@@ -534,6 +526,32 @@ public class AtomicAllocator implements Allocator {
         }
 
         return point.getCudaPointer();
+    }
+
+    protected boolean promoteObject(Long trackingPoint, AllocationPoint point, AllocationShape shape) {
+        try {
+            DevicePointerInfo newPointers = mover.alloc(AllocationStatus.DEVICE, point, shape);
+
+            point.setAllocationStatus(AllocationStatus.DEVICE);
+            point.setCudaPointers(newPointers);
+
+            deviceLock.readLock().lock();
+
+            deviceAllocations.get(Thread.currentThread().getId(), point.getDeviceId()).put(trackingPoint, trackingPoint);
+
+            deviceLock.readLock().unlock();
+
+            zeroAllocations.get(Thread.currentThread().getId()).remove(trackingPoint);
+
+            deviceMemoryTracker.addToAllocation(Thread.currentThread().getId(), point.getDeviceId(), AllocationUtils.getRequiredMemory(shape));
+
+//                    log.info("Relocation happened!");
+        } catch (Exception e){
+            if (1>0) throw new RuntimeException(e);
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -663,7 +681,7 @@ public class AtomicAllocator implements Allocator {
 
                 if (!zeroAllocations.containsKey(threadId)) {
                     // TODO: investigate CopyOnWriteArrayList here, _PROBABLY_ we could replace it with synchronized list, without backing
-                    zeroAllocations.put(threadId, new CopyOnWriteArrayList<Long>());
+                    zeroAllocations.put(threadId, new ConcurrentHashMap<Long, Long>());
                 }
 
                 if (!deviceAllocations.contains(threadId, device)) {
@@ -743,7 +761,7 @@ public class AtomicAllocator implements Allocator {
             // copyback here basically means that we're gonna have new zero allocation right now
             mover.fallback(point, point.getShape());
 
-            zeroAllocations.get(threadId).add(objectId);
+            zeroAllocations.get(threadId).put(objectId, objectId);
             point.tickDevice();
             point.tickDeviceWrite();
             point.setAllocationStatus(AllocationStatus.ZERO);
@@ -754,8 +772,9 @@ public class AtomicAllocator implements Allocator {
         Map<Long, Long> allocations = deviceAllocations.get(threadId, deviceId);
         deviceLock.readLock().unlock();
 
-        // FIXME: THIS IS BAD
         allocations.remove(objectId);
+
+        deviceMemoryTracker.subFromAllocation(threadId, deviceId, AllocationUtils.getRequiredMemory(point.getShape()));
 
         if (!copyback) {
             allocationsMap.remove(objectId);
@@ -792,7 +811,7 @@ public class AtomicAllocator implements Allocator {
 
         AtomicInteger elementsDropped = new AtomicInteger(0);
 
-        for (Long object: zeroAllocations.get(threadId)) {
+        for (Long object: zeroAllocations.get(threadId).keySet()) {
             AllocationPoint point = getAllocationPoint(object);
 
             if (point.getAccessState().isToeAvailable()) {
@@ -876,8 +895,8 @@ public class AtomicAllocator implements Allocator {
         Map<Long,Long> allocations = deviceAllocations.get(threadId, deviceId);
         deviceLock.readLock().unlock();
 
-        float shortAverage = zeroShort.getAverage();
-        float longAverage = zeroLong.getAverage();
+        float shortAverage = deviceShort.getAverage();
+        float longAverage = deviceLong.getAverage();
 
         float shortThreshold = shortAverage / (Aggressiveness.values().length - aggressiveness.ordinal());
         float longThreshold = longAverage / (Aggressiveness.values().length - aggressiveness.ordinal());
@@ -915,20 +934,17 @@ public class AtomicAllocator implements Allocator {
                 long millisecondsTTL = configuration.getMinimumTTLMilliseconds();
                 if (point.getRealDeviceAccessTime() < System.currentTimeMillis() - millisecondsTTL) {
                     // we could remove device allocation ONLY if it's older then minimum TTL
-
-                    purgeDeviceObject(threadId, deviceId, object, point, true);
-
-                    freeSpace.addAndGet(AllocationUtils.getRequiredMemory(point.getShape()));
-
-                    elementsMoved.incrementAndGet();
-
-                    /*if (point.getTimerLong().getFrequencyOfEvents() < longThreshold && point.getTimerShort().getFrequencyOfEvents() < shortThreshold) {
+                    if (point.getTimerLong().getFrequencyOfEvents() < longThreshold && point.getTimerShort().getFrequencyOfEvents() < shortThreshold) {
                         //log.info("Removing object: " + object);
 
+                        purgeDeviceObject(threadId, deviceId, object, point, true);
+
+                        freeSpace.addAndGet(AllocationUtils.getRequiredMemory(point.getShape()));
+
+                        elementsMoved.incrementAndGet();
+
                         purgeZeroObject(threadId, object, point, true);
-
-
-                    }*/
+                    }
                 }
 
                 point.getAccessState().releaseToe();
@@ -1015,7 +1031,18 @@ public class AtomicAllocator implements Allocator {
                     Check for device garbage
                  */
                 log.info("DeviceGC started...");
-                seekUnusedDevice(this.threadId, this.deviceId, configuration.getGpuDeallocAggressiveness());
+                Aggressiveness aggressiveness = configuration.getHostDeallocAggressiveness();
+
+                // if we have too much objects, or total allocated memory has met 75% of max allocation - use urgent mode
+                if ((deviceAllocations.get(threadId, deviceId).size() > 100000 || deviceMemoryTracker.getAllocatedSize(threadId, deviceId)> (configuration.getMaximumDeviceAllocation() * 0.75)) && aggressiveness.ordinal() < Aggressiveness.URGENT.ordinal())
+                    aggressiveness = Aggressiveness.URGENT;
+
+                if (deviceMemoryTracker.getAllocatedSize(threadId, deviceId) > (configuration.getMaximumDeviceAllocation() * 0.85))
+                    aggressiveness = Aggressiveness.IMMEDIATE;
+
+                if (deviceMemoryTracker.getAllocatedSize(threadId, deviceId) < (configuration.getMaximumDeviceAllocation() * 0.25) && (deviceAllocations.get(threadId, deviceId).size()  < 10000)) {
+                    ; // i don't want deallocation to be fired on lower thresholds. just no sense locking stuff
+                } else seekUnusedDevice(this.threadId, this.deviceId, aggressiveness);
 
 
                 try {

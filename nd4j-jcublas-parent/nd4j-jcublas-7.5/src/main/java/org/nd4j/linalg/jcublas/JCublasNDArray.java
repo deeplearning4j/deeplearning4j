@@ -34,6 +34,9 @@ import java.util.List;
 
 /**
  *
+ * PLEASE NOTE: This method uses hooks to Allocator instance, to notify when data gets changed on java side.
+ * PLEASE NOTE: This method uses hooks to Allocator instance, to valida data actuality on host side, compared to gpu side
+ *
  * Created by mjk on 8/23/14.
  *
  * @author mjk
