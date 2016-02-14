@@ -137,6 +137,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         this.data = Nd4j.createBuffer(buffer,offset);
         this.shapeInformation = Shape.createShapeInformation(shape,stride,offset,stride[stride.length - 1],ordering);
         init(shape,stride);
+        Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, ordering == 'f'));
 
     }
 
@@ -265,6 +266,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         int[] stride = Nd4j.getStrides(shape,ordering);
         this.shapeInformation = Shape.createShapeInformation(shape,stride,0,stride[stride.length - 1],ordering);
         init(shape,stride);
+        Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, ordering == 'f'));
+
     }
 
 
@@ -298,6 +301,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         this.data = ret;
         this.shapeInformation = Shape.createShapeInformation(shape,stride,0,stride[stride.length - 1],ordering);
         init(shape,stride);
+        Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, ordering == 'f'));
 
         if(slices.get(0).isScalar()) {
             for (int i = 0; i < length(); i++) {
@@ -340,6 +344,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
         init(shape,stride);
+        Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape,stride,ordering == 'f'));
+
     }
 
     /**
@@ -353,6 +359,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         this.data = Nd4j.createBuffer(data,offset);
         this.shapeInformation = Shape.createShapeInformation(shape,stride,offset,stride[stride.length - 1],Nd4j.order());
         init(shape,stride);
+        Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, Nd4j.order() == 'f'));
+
 
     }
 
@@ -383,7 +391,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param offset
      */
     public BaseNDArray(DataBuffer buffer, int[] shape, int offset) {
-        this(Nd4j.createBuffer(buffer,offset), shape, Nd4j.getStrides(shape), offset, Nd4j.order());
+        this(Nd4j.createBuffer(buffer, offset), shape, Nd4j.getStrides(shape), offset, Nd4j.order());
     }
 
     /**
