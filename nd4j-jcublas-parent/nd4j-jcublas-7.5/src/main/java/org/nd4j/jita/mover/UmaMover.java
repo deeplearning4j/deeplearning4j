@@ -57,6 +57,7 @@ public class UmaMover implements Mover {
      */
     @Override
     public DevicePointerInfo alloc(@NonNull AllocationStatus targetMode,@NonNull AllocationPoint point,  @NonNull AllocationShape shape) {
+        log.info("Alloc called for shape: " + shape);
         switch (targetMode) {
             case ZERO: {
                     /*
@@ -134,6 +135,7 @@ public class UmaMover implements Mover {
      */
     @Override
     public void relocate(AllocationStatus currentStatus, AllocationStatus targetStatus, AllocationPoint point, AllocationShape shape) {
+        log.info("RELOCATE CALLED: [" +currentStatus+ "] -> ["+targetStatus+"]");
         if (currentStatus == AllocationStatus.ZERO && targetStatus == AllocationStatus.DEVICE) {
             // ZERO -> DEVICE
         } else if (currentStatus == AllocationStatus.DEVICE && targetStatus == AllocationStatus.ZERO) {
@@ -174,7 +176,17 @@ public class UmaMover implements Mover {
 
             ByteBuffer pointer = hostPointer.getByteBuffer(0, AllocationUtils.getRequiredMemory(shape));
             pointer.order(ByteOrder.nativeOrder());
-            NioUtil.copyAtStride(shape.getLength(),getBufferType(point.getBuffer()), point.getBuffer().asNio(), 0, shape.getStride(), pointer,shape.getOffset(),1);
+            log.info("copyforward HOST->ZERO shape: " + shape);
+            NioUtil.copyAtStride(
+                    shape.getLength(), // copy length
+                    getBufferType(point.getBuffer()),  // buffer type
+                    point.getBuffer().asNio(), // copy from
+                    shape.getOffset(), // copy from offset
+                    shape.getStride(), // copy from stride
+                    pointer, // copy to
+                    0, // dst offset
+                    shape.getStride() // dst stride
+            );
 
         } else if (currentStatus == AllocationStatus.HOST && targetStatus == AllocationStatus.DEVICE) {
             // HOST -> DEVICE

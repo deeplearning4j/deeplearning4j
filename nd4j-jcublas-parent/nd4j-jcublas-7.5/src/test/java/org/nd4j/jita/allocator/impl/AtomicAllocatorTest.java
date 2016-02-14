@@ -6,6 +6,7 @@ import org.junit.Test;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.enums.Aggressiveness;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
+import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.conf.DeviceInformation;
@@ -19,6 +20,7 @@ import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.*;
@@ -40,6 +42,7 @@ public class AtomicAllocatorTest {
 
             Configuration configuration = new Configuration();
             configuration.setHostDeallocAggressiveness(Aggressiveness.IMMEDIATE);
+            configuration.setMaximumSingleAllocation(5000);
             configuration.setMaximumZeroAllocation(1000000000);
 
             singleDevice4GBcc52 = new CudaEnvironment(configuration);
@@ -156,6 +159,80 @@ public class AtomicAllocatorTest {
         assertEquals(1.7674999237060547, array2.getDouble(0), 0.00001);
 
         assertTrue(point.isActualOnHostSide());
+    }
+
+    @Test
+    public void testGpuBlas6akaPartialAllocationsTest() throws Exception {
+
+        assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
+
+        Random rnd = new Random(42);
+
+        INDArray array1 = Nd4j.create(100, 757);
+        INDArray array2 = Nd4j.create(100, 757);
+        for (int y = 0; y < array1.rows(); y++) {
+            float[] srcArray1 = new float[757];
+            float[] srcArray2 = new float[757];
+
+            for (int x = 0; x < srcArray1.length; x++) {
+                srcArray1[x] = rnd.nextFloat();
+                srcArray2[x] = rnd.nextFloat();
+            }
+
+            array1.putRow(y, Nd4j.create(srcArray1));
+            array2.putRow(y, Nd4j.create(srcArray2));
+        }
+
+        assertEquals(2, allocator.getTotalTrackingPoints());
+        assertEquals(0, allocator.getTotalZeroAllocations());
+/*
+        for (int x = 0; x < 20; x++) {
+            ((BaseCudaDataBuffer) array1.data()).getDevicePointer(array1.elementWiseStride(), array1.offset(), array1.length());
+
+            allocator.tackDevice((BaseCudaDataBuffer) array1.data(), AllocationUtils.buildAllocationShape(array1));
+        }
+        assertEquals(1, allocator.getTotalZeroAllocations());
+
+        for (int x = 0; x < 20; x++) {
+            ((BaseCudaDataBuffer) array2.data()).getDevicePointer(array2.elementWiseStride(), array2.offset(), array2.length());
+
+            allocator.tackDevice((BaseCudaDataBuffer) array2.data(), AllocationUtils.buildAllocationShape(array2));
+        }
+
+        assertEquals(2, allocator.getTotalZeroAllocations());
+        */
+
+        assertEquals(AllocationStatus.UNDEFINED, ((BaseCudaDataBuffer) array1.data()).getAllocationPoint().getAllocationStatus());
+
+        log.info("Original shape: " + AllocationUtils.buildAllocationShape(array1));
+
+        INDArray slice1 = array1.slice(10);
+        INDArray slice2 = array2.slice(10);
+
+        assertTrue(slice1.data() == array1.data());
+        assertTrue(slice2.data() == array2.data());
+
+        double results[] = new double[] {196.73057556152344,187.9628448486328,185.44927978515625,195.71868896484375,201.3914031982422,206.9940948486328,186.59426879882812,178.36427307128906,188.29483032226562,183.08912658691406,193.56333923339844,189.89263916015625,189.0192108154297,193.63824462890625,201.99197387695312,187.71295166015625,197.52166748046875,180.9663848876953,189.44374084472656,186.75148010253906};
+
+        for (int x = 0; x < 20; x++) {
+            slice1 = array1.slice(x);
+            slice2 = array2.slice(x);
+
+            double dotWrapped = Nd4j.getBlasWrapper().dot(slice1, slice2);
+
+
+            assertEquals(results[x], dotWrapped, 0.001d);
+
+            log.info("Cycle [" + x + "] passed. Dot: " + dotWrapped);
+        }
+        assertEquals(2, allocator.getTotalTrackingPoints());
+        assertEquals(2, allocator.getTotalZeroAllocations());
+        log.info("Slice shape: " + AllocationUtils.buildAllocationShape(slice1));
+
+        assertEquals(AllocationStatus.ZERO, ((BaseCudaDataBuffer) array1.data()).getAllocationPoint().getAllocationStatus());
+
+
+
     }
 
     /*

@@ -58,8 +58,8 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incY, result);
             ctx.syncOldStream();
 
-            allocator.tackDevice((BaseCudaDataBuffer) X.data(), AllocationUtils.buildAllocationShape(X));
-            allocator.tackDevice((BaseCudaDataBuffer) Y.data(), AllocationUtils.buildAllocationShape(Y));
+            allocator.tackDevice(X);
+            allocator.tackDevice(Y);
 
         }catch(Exception e2) {
             throw new RuntimeException(e2);

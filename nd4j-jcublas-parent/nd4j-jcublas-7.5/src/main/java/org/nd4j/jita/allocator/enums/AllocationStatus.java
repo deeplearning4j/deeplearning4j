@@ -9,5 +9,6 @@ public enum AllocationStatus {
     DEVICE,
     ZERO,
     DEALLOCATED,
+    PARTIAL,
     NESTED
 }

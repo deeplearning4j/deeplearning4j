@@ -138,7 +138,7 @@ public interface Allocator {
      * @param buffer
      * @param shape
      */
-    Pointer getDevicePointer(BaseCudaDataBuffer buffer, AllocationShape shape);
+    Pointer getDevicePointer(BaseCudaDataBuffer buffer, AllocationShape shape, boolean isView);
 
 
     /**
@@ -170,7 +170,7 @@ public interface Allocator {
      * @param objectId
      * @return
      */
-    SyncState getHostMemoryState(BaseCudaDataBuffer objectId);
+    SyncState getHostMemoryState(BaseCudaDataBuffer objectId, AllocationShape shape);
 
     /**
      * This method returns the number of top-level memory allocation.

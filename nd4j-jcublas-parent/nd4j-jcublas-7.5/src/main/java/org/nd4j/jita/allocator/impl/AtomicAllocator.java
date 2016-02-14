@@ -234,7 +234,8 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public Long pickupSpan(@NonNull BaseCudaDataBuffer buffer, @NonNull AllocationShape shape) {
-
+        log.info("pickupSpan(BaseCudaDataBuffer)");
+//        if (1> 0) throw new RuntimeException("");
         try {
             externalsLock.writeLock().lock();
 
@@ -287,17 +288,17 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public Long pickupSpan(INDArray array) {
-
+        log.info("pickupSpan(INDarray)");
         /*
          while working on array level, we actually immediately downgrade to buffer level, with AllocationShape defined by this array
           */
-        if (!(array.data() instanceof BaseCudaDataBuffer)) throw new IllegalStateException("Underlying buffer isn't instance of BaseCudaDataBuffer");
+        if (!(array.data() instanceof BaseCudaDataBuffer) || !(array instanceof JCublasNDArray)) throw new IllegalStateException("Underlying buffer isn't instance of BaseCudaDataBuffer");
 
-        // TODO: confirm that these values are fetched properly
+        // For buffer registration we're always using full underlying buffer
         AllocationShape shape = new AllocationShape();
-        shape.setOffset(array.offset());
-        shape.setStride(array.elementWiseStride());
-        shape.setLength(array.length());
+        shape.setOffset(0);
+        shape.setStride(1);
+        shape.setLength(array.data().length());
         shape.setDataType(Nd4j.dataType());
 
         return pickupSpan((BaseCudaDataBuffer) array.data(), shape);
@@ -351,7 +352,7 @@ public class AtomicAllocator implements Allocator {
 
     @Override
     public void tackDevice(BaseCudaDataBuffer objectId, AllocationShape shape) {
-        AllocationPoint point = getAllocationPoint(objectId);
+        AllocationPoint point = getAllocationPoint(objectId, shape);
 
         point.getAccessState().requestTack();
     }
@@ -364,7 +365,7 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public void tickDeviceWrite(INDArray array) {
-        AllocationPoint point = getAllocationPoint((BaseCudaDataBuffer) array.data());
+        AllocationPoint point = getAllocationPoint((BaseCudaDataBuffer) array.data(), AllocationUtils.buildAllocationShape(array));
 
         point.tickDeviceWrite();
     }
@@ -376,7 +377,7 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public void tickHostWrite(INDArray array) {
-        AllocationPoint point = getAllocationPoint((BaseCudaDataBuffer) array.data());
+        AllocationPoint point = getAllocationPoint((BaseCudaDataBuffer) array.data(), AllocationUtils.buildAllocationShape(array));
 
         point.tickHostWrite();
     }
@@ -400,11 +401,12 @@ public class AtomicAllocator implements Allocator {
      * @param shape
      */
     @Override
-    public Pointer getDevicePointer(BaseCudaDataBuffer objectId, AllocationShape shape) {
+    public Pointer getDevicePointer(BaseCudaDataBuffer objectId, AllocationShape shape, boolean isView) {
+        log.info("requesting pointer for: [" + shape + "]; isView: [" + isView +"]");
         /*
             We assume that object is registered within allocator
          */
-        AllocationPoint point = getAllocationPoint(objectId);
+        AllocationPoint point = getAllocationPoint(objectId, shape);
 
         boolean isNewAllocation = false;
 
@@ -412,18 +414,22 @@ public class AtomicAllocator implements Allocator {
 
         // we're checking, if cuda pointer is null without any locks. but if it's null, we'll request Toe state on this allocation, to make sure nothing can mess with it
         if (point.getCudaPointer() == null) {
+            log.info("Building pointer");
             // at this point memory becomes read/write-locked for a few ms, to make sure cudaPointer exists
             point.getAccessState().requestToe();
 
             if (point.getCudaPointer() == null) {
                 /*
                     If pointer is null, that means we're on first stage of allocation, so we need to allocate Zero memory
+                    PLEASE NOTE: Also, if this is a view - we allocate full underlying buffer on first call, not a shape
                 */
+
+                AllocationShape internalShape = isView? AllocationUtils.buildAllocationShape(objectId) : shape;
 
                 /*
                     Before allocating anything, we must ensure that we have enough space left
                  */
-                long requiredMemory = AllocationUtils.getRequiredMemory(shape);
+                long requiredMemory = AllocationUtils.getRequiredMemory(internalShape);
                 while (zeroUseCounter.get() > configuration.getMaximumZeroAllocation() - (configuration.getMaximumZeroAllocation() / 10)) {
                         log.info("No free host memory available. Startig GC manually with [URGENT] agressiveness");
 //                    if (zeroUseCounter.get() > configuration.getMaximumZeroAllocation() - (configuration.getMaximumZeroAllocation() / 10)) {
@@ -435,16 +441,18 @@ public class AtomicAllocator implements Allocator {
                 /*
                     We intentionally update counter prior to allocation
                  */
-                zeroUseCounter.addAndGet(AllocationUtils.getRequiredMemory(shape));
+                zeroUseCounter.addAndGet(AllocationUtils.getRequiredMemory(internalShape));
 
                 /*
                     now it's ALMOST safe to allocate zero-copy memory.
                     Technically it's still possible to fail there, with oom or CUDA-originated exception
                  */
                 point.setAllocationStatus(AllocationStatus.ZERO);
-                DevicePointerInfo info = mover.alloc(AllocationStatus.ZERO, point, shape);
+                DevicePointerInfo info = mover.alloc(AllocationStatus.ZERO, point, internalShape);
                 long allocCnt = allocationsCounter.incrementAndGet();
-                if (allocCnt % 1000 == 0) log.info("Total zero allocations happened: [" + allocCnt + "]; active zero allocations: ["+ zeroAllocations.get(Thread.currentThread().getId()).size()+"]");
+                zeroAllocations.get(Thread.currentThread().getId()).put(trackingPoint, trackingPoint);
+                //if (allocCnt % 1000 == 0)
+                    log.info("Total zero allocations happened: [" + allocCnt + "]; active zero allocations: ["+ zeroAllocations.get(Thread.currentThread().getId()).size()+"]");
 
                 /*
                     it's safe to remove this check in production environment
@@ -453,7 +461,8 @@ public class AtomicAllocator implements Allocator {
                     throw new IllegalStateException("Zero-copy allocation failed");
 
                 point.setCudaPointers(info);
-                zeroAllocations.get(Thread.currentThread().getId()).put(trackingPoint, trackingPoint);
+
+
 
 
                 /*
@@ -471,7 +480,7 @@ public class AtomicAllocator implements Allocator {
             isNewAllocation = true;
 
             point.getAccessState().releaseToe();
-        }
+        };
 
         /*
             Before coming to promotion, we should decide, if we need to synchronize data on device
@@ -482,6 +491,7 @@ public class AtomicAllocator implements Allocator {
                 point.getAccessState().requestToe();
 
                 if (!point.isActualOnDeviceSide()) {
+                    log.info("Calling for copyforward on: " + shape);
                     mover.copyforward(point, shape);
                 }
                 // we set device access time equal to host write time
@@ -494,11 +504,13 @@ public class AtomicAllocator implements Allocator {
         /*
             So, right now we are guaranteed to have cudaPointer. We can decide now, if this memory chunk should be promoted or not.
          */
-        if (!isNewAllocation) {
+        if (!isNewAllocation && !isView) {
             // we check promotion only for existant allocations. just ignore new allocations here :)
             // TODO: add memory check all the way here
-            if (point.getDeviceTicks() > 5 && point.getAllocationStatus() == AllocationStatus.ZERO) {
+            if (point.getDeviceTicks() > 5 && point.getAllocationStatus() == AllocationStatus.ZERO && AllocationUtils.getRequiredMemory(shape) < configuration.getMaximumSingleAllocation()) {
                 point.getAccessState().requestToe();
+
+                log.info("Starting promotion");
 
                 // moving memory from ZERO to DEVICE
                 promoteObject(trackingPoint, point, shape);
@@ -575,7 +587,13 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public void synchronizeHostData(BaseCudaDataBuffer objectId, AllocationShape shape) {
-        AllocationPoint point = getAllocationPoint(objectId);
+        AllocationPoint point = getAllocationPoint(objectId, shape);
+        log.info("Synchronize called on buffer");
+        if (point == null) {
+            log.info("aha");
+            pickupSpan(objectId, shape);
+        }
+
 
         /*
             We set memory state to Toe, and issue copyback if required
@@ -605,6 +623,14 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public void synchronizeHostData(JCublasNDArray array) {
+        log.info("Synchronize called on array");
+        AllocationPoint point = getAllocationPoint((BaseCudaDataBuffer) array.data(), AllocationUtils.buildAllocationShape(array));
+
+        if (point == null) {
+            log.info("sHD INDarray");
+            pickupSpan(array);
+        }
+
         synchronizeHostData((BaseCudaDataBuffer) array.data(), AllocationUtils.buildAllocationShape(array));
     }
 
@@ -615,7 +641,7 @@ public class AtomicAllocator implements Allocator {
      * @return
      */
     @Override
-    public SyncState getHostMemoryState(BaseCudaDataBuffer objectId) {
+    public SyncState getHostMemoryState(BaseCudaDataBuffer objectId, AllocationShape shape) {
         /*
             basically we just want to compare two access time values: device & host.
             we can't know, if memory was changed on device side or not
@@ -625,7 +651,7 @@ public class AtomicAllocator implements Allocator {
             TODO: improvement is possible here ->
              as soon as we'll have partial allocations available, we can have partially synced memory
          */
-        AllocationPoint point = getAllocationPoint(objectId);
+        AllocationPoint point = getAllocationPoint(objectId, shape);
         if (point.isActualOnHostSide() == true) {
             return SyncState.SYNC;
         } else {
@@ -708,8 +734,14 @@ public class AtomicAllocator implements Allocator {
         }
     }
 
-    protected AllocationPoint getAllocationPoint(BaseCudaDataBuffer objectId) {
+    protected AllocationPoint getAllocationPoint(BaseCudaDataBuffer objectId, AllocationShape shape) {
         Long trackingPointer = objectId.getAllocatorPointer();
+
+        if (trackingPointer == null) {
+            log.info("Registering at getAllocationPoint()");
+            pickupSpan(objectId, shape);
+            trackingPointer = objectId.getAllocatorPointer();
+        }
 
         // that's a temporary exception, we'll change that to re-ack later
         if (trackingPointer == null)
@@ -1055,5 +1087,14 @@ public class AtomicAllocator implements Allocator {
                 }
             }
         }
+    }
+
+
+    protected int getTotalZeroAllocations() {
+        return zeroAllocations.get(Thread.currentThread().getId()).size();
+    }
+
+    protected int getTotalTrackingPoints() {
+        return allocationsMap.size();
     }
 }

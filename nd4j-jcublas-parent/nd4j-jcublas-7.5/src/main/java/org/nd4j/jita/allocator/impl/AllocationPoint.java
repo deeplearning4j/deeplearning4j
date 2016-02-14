@@ -335,7 +335,7 @@ public class AllocationPoint {
      * @return
      */
     public long getDeviceAccessTime() {
-        return accessHostRead.get();
+        return accessDeviceRead.get();
     }
 
     /**

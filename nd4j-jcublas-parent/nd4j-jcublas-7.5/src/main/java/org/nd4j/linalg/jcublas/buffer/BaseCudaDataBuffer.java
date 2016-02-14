@@ -285,7 +285,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         shape.setOffset(offset);
         shape.setStride(stride);
 
-        if (1 > 0) return allocator.getDevicePointer(this, shape);
+        if (1 > 0) return allocator.getDevicePointer(this, shape, false);
 
       //  if (1 > 0) throw new RuntimeException("Brick wall found on primary getDevicePointer()");
 
@@ -386,11 +386,12 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
         synchronized (this) {
             if (this.getAllocatorPointer() == null) {
-                allocator.pickupSpan((BaseCudaDataBuffer) arr.data(), shape);
+                log.info("Triggering pickupSpan(INDArray)");
+                allocator.pickupSpan(arr);
             }
         }
 
-        if (1 > 0) return allocator.getDevicePointer((BaseCudaDataBuffer) arr.data(), shape);
+        if (1 > 0) return allocator.getDevicePointer((BaseCudaDataBuffer) arr.data(), shape, arr.isView());
 
 
         if (1 > 0) throw new RuntimeException("Brick wall found on secondary getDevicePointer()");

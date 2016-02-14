@@ -625,6 +625,8 @@ public class JCublasNDArray extends BaseNDArray {
         try {
             allocator.synchronizeHostData(this);
             return super.putRow(row, toPut);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
         } finally {
             allocator.tickHostWrite(this);
         }

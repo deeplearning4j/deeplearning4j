@@ -16,12 +16,7 @@ public class Configuration implements Serializable {
     /**
      * Minimal number of activations for relocation threshold
      */
-    private int minimumRelocationThreshold = 10;
-
-    /**
-     * How long allocated chunk have right to exist
-     */
-    private long decay = 10 * 1000L;
+    private int minimumRelocationThreshold = 5;
 
     /**
      * Minimal guaranteed TTL for memory chunk
@@ -64,8 +59,7 @@ public class Configuration implements Serializable {
     private boolean zeroCopyFallbackAllowed = false;
 
     /**
-     * List of forbidden devices that can't be used for allocation and calculation
+     * Maximum length of single memory chunk
      */
-    private List<Integer> forbiddenDevices = new ArrayList<>();
-
+    private long maximumSingleAllocation = Long.MAX_VALUE;
 }
