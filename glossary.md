@@ -15,6 +15,7 @@ Activation algorithms are the gates that determine, at each node in the net, whe
 ### <a name="adadelta">Adadelta</a> 
 Adadelta is an updater, or learning algorithm, related to gradient descent. Unlike SGD, which applies the same learning rate to all parameters of the network, Adadelta adapts the learning rate per parameter. 
 
+* [AdaDeltaUpdater in Deepelarning4j](http://deeplearning4j.org/doc/org/deeplearning4j/nn/updater/AdaDeltaUpdater.html)
 * [ADADELTA: An Adaptive Learning Rate Method](http://arxiv.org/abs/1212.5701)
 
 ### <a name="adagrad">Adagrad</a>
