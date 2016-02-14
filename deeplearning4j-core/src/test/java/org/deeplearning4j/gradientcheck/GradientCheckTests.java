@@ -356,7 +356,7 @@ public class GradientCheckTests {
     				double l1 = l1vals[k];
     				
 			        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-			                .regularization(l1>0.0 && l2>0.0)
+			                .regularization(l1>0.0 || l2>0.0)
 			                .l2(l2).l1(l1)
 			                .seed(12345L)
 			                .list(2)
@@ -541,7 +541,7 @@ public class GradientCheckTests {
     				double l1 = l1vals[k];
     				
 			        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-			                .regularization(l1>0.0 && l2>0.0)
+			                .regularization(l1>0.0 || l2>0.0)
 			                .l2(l2).l1(l1)
 			                .seed(12345L)
 			                .list(2)
@@ -672,7 +672,7 @@ public class GradientCheckTests {
 					double l1 = l1vals[k];
 
 					MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-							.regularization(l1>0.0 && l2>0.0)
+							.regularization(l1>0.0 || l2>0.0)
 							.l2(l2).l1(l1)
 							.seed(12345L)
 							.list(2)
