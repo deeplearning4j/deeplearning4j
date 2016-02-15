@@ -26,7 +26,8 @@ Deeplearning4jは、プロのJava開発者向けのオープンソースプロ�
 上記をインストールした後、以下のステップを踏んでいただくと、すぐにお使いいただけます。（Windowsのユーザーの方は、以下の[ステップごとの手順](#walk)をお読みください。）
 
 * コマンドラインに`git clone https://github.com/deeplearning4j/dl4j-0.4-examples.git`と入力します。（現在使用中のexampleバージョンは0.0.4です。）
-* IntelliJを開き、Mavenを使って新しいプロジェクトを作成し、上記のexampleのルートディレクトリを指定します。 
+* IntelliJを開き、Mavenを使って新しいプロジェクトを作成し、上記のexampleのルートディレクトリを指定します。 `File/New/Project from Existing Sources`:
+![Alt text](../img/IntelliJ_New_Project.png)
 * 以下のコードをPOM.xmlにコピー＆ペーストし、［こちら] （ https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml)のようにします。 
 * 追加の[Windowsユーザー向け手引きは、こちらをお読みください。](../gettingstarted.html#windows)。 
 * 左側のファイルツリーから`DBNIrisExample.java`を選びます。
