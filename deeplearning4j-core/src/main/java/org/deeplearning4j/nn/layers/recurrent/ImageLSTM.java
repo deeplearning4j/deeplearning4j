@@ -453,16 +453,20 @@ public class ImageLSTM extends BaseLayer<org.deeplearning4j.nn.conf.layers.Image
     @Override
     public double calcL2() {
     	if(!conf.isUseRegularization() || conf.getLayer().getL2() <= 0.0 ) return 0.0;
-    	double l2 = Transforms.pow(getParam(ImageLSTMParamInitializer.RECURRENT_WEIGHT_KEY), 2).sum(Integer.MAX_VALUE).getDouble(0)
-    			+ Transforms.pow(getParam(ImageLSTMParamInitializer.INPUT_WEIGHT_KEY), 2).sum(Integer.MAX_VALUE).getDouble(0);
-    	return 0.5 * conf.getLayer().getL2() * l2;
+        double l2Norm = getParam(ImageLSTMParamInitializer.RECURRENT_WEIGHT_KEY).norm2Number().doubleValue();
+        double sumSquaredWeights = l2Norm*l2Norm;
+
+        l2Norm = getParam(ImageLSTMParamInitializer.INPUT_WEIGHT_KEY).norm2Number().doubleValue();
+        sumSquaredWeights += l2Norm*l2Norm;
+
+        return 0.5 * conf.getLayer().getL2() * sumSquaredWeights;
     }
 
     @Override
     public double calcL1() {
     	if(!conf.isUseRegularization() || conf.getLayer().getL1() <= 0.0 ) return 0.0;
-        double l1 = Transforms.abs(getParam(ImageLSTMParamInitializer.RECURRENT_WEIGHT_KEY)).sum(Integer.MAX_VALUE).getDouble(0)
-        		+ Transforms.abs(getParam(ImageLSTMParamInitializer.INPUT_WEIGHT_KEY)).sum(Integer.MAX_VALUE).getDouble(0);
+        double l1 = getParam(ImageLSTMParamInitializer.RECURRENT_WEIGHT_KEY).norm1Number().doubleValue()
+        		+ getParam(ImageLSTMParamInitializer.INPUT_WEIGHT_KEY).norm1Number().doubleValue();
         return conf.getLayer().getL1() * l1;
     }
 
