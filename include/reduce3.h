@@ -542,6 +542,7 @@ namespace functions {
                 int length = shape::length(xShapeInfo);
                 int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
                 int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
+#pragma omp parallel for
                 for(int i = 0; i < this->extraParamsLength();i++) {
                     extraParamsVals[i] = startingVal;
                 }

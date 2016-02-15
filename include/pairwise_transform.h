@@ -488,6 +488,7 @@ namespace functions {
                 }
 
                 else {
+
 #pragma omp parallel for
                     for (int i = 0; i < n; i++) {
                         result[i * resultStride] = op(dx[i * xStride],
