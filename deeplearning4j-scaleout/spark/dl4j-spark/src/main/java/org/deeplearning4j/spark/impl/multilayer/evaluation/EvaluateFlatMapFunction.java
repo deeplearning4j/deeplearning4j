@@ -75,7 +75,10 @@ public class EvaluateFlatMapFunction implements FlatMapFunction<Iterator<DataSet
             throw new IllegalStateException("Network did not have same number of parameters as the broadcasted set parameters");
         network.setParameters(val);
 
-        Evaluation evaluation = new Evaluation(labels.getValue());
+        Evaluation evaluation;
+        if(labels != null) evaluation = new Evaluation(labels.getValue());
+        else evaluation = new Evaluation();
+
         List<DataSet> collect = new ArrayList<>();
         int totalCount = 0;
         while (dataSetIterator.hasNext()) {
