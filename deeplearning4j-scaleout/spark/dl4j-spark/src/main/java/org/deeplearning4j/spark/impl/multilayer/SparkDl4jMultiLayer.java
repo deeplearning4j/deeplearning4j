@@ -21,6 +21,7 @@ package org.deeplearning4j.spark.impl.multilayer;
 import org.apache.spark.Accumulator;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaDoubleRDD;
+import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.DoubleFunction;
@@ -48,9 +49,11 @@ import org.deeplearning4j.spark.impl.common.misc.UpdaterFromGradientTupleFunctio
 import org.deeplearning4j.spark.impl.common.misc.UpdaterFromTupleFunction;
 import org.deeplearning4j.spark.impl.common.updater.UpdaterAggregatorCombiner;
 import org.deeplearning4j.spark.impl.common.updater.UpdaterElementCombiner;
+import org.deeplearning4j.spark.impl.multilayer.evaluation.EvaluateFlatMapFunction;
 import org.deeplearning4j.spark.impl.multilayer.evaluation.EvaluateMapFunction;
 import org.deeplearning4j.spark.impl.multilayer.evaluation.EvaluationReduceFunction;
 import org.deeplearning4j.spark.impl.multilayer.gradientaccum.GradientAccumFlatMap;
+import org.deeplearning4j.spark.impl.multilayer.scoring.ScoreExamplesFunction;
 import org.deeplearning4j.spark.util.MLLibUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -69,6 +72,7 @@ import java.util.List;
  */
 public class SparkDl4jMultiLayer implements Serializable {
 
+    public static final int DEFAULT_EVAL_BATCH_SIZE = 50;
     private transient SparkContext sparkContext;
     private transient JavaSparkContext sc;
     private MultiLayerConfiguration conf;
@@ -409,6 +413,11 @@ public class SparkDl4jMultiLayer implements Serializable {
         return sum;
     }
 
+    public <K> JavaPairRDD<K,Double> scoreExamples(JavaPairRDD<K,DataSet> data, boolean includeRegularizationTerms ){
+        return data.mapPartitions(new ScoreExamplesFunction<K>())
+        throw new UnsupportedOperationException();
+    }
+
     public Evaluation evaluate(JavaRDD<DataSet> data) {
         return evaluate(data, null);
     }
@@ -418,8 +427,14 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @param labelsList List of labels used for evaluation
      * @return Evaluation object; results of evaluation on all examples in the data set
      */
-    public Evaluation evaluate(JavaRDD<DataSet> data, List<String> labelsList){
-        JavaRDD<Evaluation> evaluations = data.map(new EvaluateMapFunction(network, labelsList));
+    public Evaluation evaluate(JavaRDD<DataSet> data, List<String> labelsList) {
+        return evaluate(data,labelsList,DEFAULT_EVAL_BATCH_SIZE);
+    }
+
+    public Evaluation evaluate(JavaRDD<DataSet> data, List<String> labelsList, int evalBatchSize ){
+        Broadcast<List<String>> listBroadcast = (labelsList == null ? null : sc.broadcast(labelsList));
+        JavaRDD<Evaluation> evaluations = data.mapPartitions(new EvaluateFlatMapFunction(sc.broadcast(conf.toJson()),
+                sc.broadcast(network.params()), evalBatchSize, listBroadcast));
         return evaluations.reduce(new EvaluationReduceFunction());
     }
 }
