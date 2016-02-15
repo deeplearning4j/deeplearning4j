@@ -61,9 +61,9 @@ public abstract class BaseUpdater implements Updater {
     public void postApply(Layer layer, INDArray gradient, String param, int miniBatchSize) {
         NeuralNetConfiguration conf = layer.conf();
         INDArray params = layer.getParam(param);
-        if (conf.isUseRegularization() && conf.getLayer().getL2() > 0 && !(param.equals(DefaultParamInitializer.BIAS_KEY)))
+        if (conf.isUseRegularization() && conf.getLayer().getL2() > 0 && !(param.startsWith(DefaultParamInitializer.BIAS_KEY)))
             gradient.addi(params.mul(conf.getLayer().getL2()));    //dC/dw = dC0/dw + lambda/n * w where C0 is pre-l2 cost function
-        if (conf.isUseRegularization() && conf.getLayer().getL1() > 0 && !(param.equals(DefaultParamInitializer.BIAS_KEY)))
+        if (conf.isUseRegularization() && conf.getLayer().getL1() > 0 && !(param.startsWith(DefaultParamInitializer.BIAS_KEY)))
             gradient.addi(Transforms.sign(params).muli(conf.getLayer().getL1()));
         if (conf.isMiniBatch())
             gradient.divi(miniBatchSize);
