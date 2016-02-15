@@ -385,13 +385,15 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     @Override
     public double calcL2() {
     	if(!conf.isUseRegularization() || conf.getLayer().getL2() <= 0.0 ) return 0.0;
-        return 0.5 * conf.getLayer().getL2()  * Transforms.pow(getParam(DefaultParamInitializer.WEIGHT_KEY),2).sum(Integer.MAX_VALUE).getDouble(0);
+        //L2 norm: sqrt( sum_i x_i^2 ) -> want sum squared weights, so l2 norm squared
+        double l2Norm = getParam(DefaultParamInitializer.WEIGHT_KEY).norm2Number().doubleValue();
+        return 0.5 * conf.getLayer().getL2() * l2Norm * l2Norm;
     }
 
     @Override
     public double calcL1() {
     	if(!conf.isUseRegularization() || conf.getLayer().getL1()  <= 0.0 ) return 0.0;
-        return conf.getLayer().getL1() * Transforms.abs(getParam(DefaultParamInitializer.WEIGHT_KEY)).sum(Integer.MAX_VALUE).getDouble(0);
+        return conf.getLayer().getL1() * getParam(DefaultParamInitializer.WEIGHT_KEY).norm1Number().doubleValue();
     }
 
     @Override

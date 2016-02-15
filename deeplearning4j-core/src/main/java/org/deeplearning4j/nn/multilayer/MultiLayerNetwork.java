@@ -1262,7 +1262,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     protected void doTruncatedBPTT(INDArray input, INDArray labels, INDArray featuresMaskArray, INDArray labelsMaskArray) {
         if( input.rank() != 3 || labels.rank() != 3 ){
             log.warn("Cannot do truncated BPTT with non-3d inputs or labels. Expect input with shape [miniBatchSize,nIn,timeSeriesLength], got "
-                        + Arrays.toString(input.shape()) + "\t" + Arrays.toString(labels.shape()));
+                    + Arrays.toString(input.shape()) + "\t" + Arrays.toString(labels.shape()));
             return;
         }
         if( input.size(2) != labels.size(2) ){
@@ -1747,6 +1747,34 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
         if(hasMaskArray) clearLayerMaskArrays();
         return score();
+    }
+
+    /**Calculate the score for each example in a DataSet individually. Unlike {@link #score(DataSet)} and {@link #score(DataSet, boolean)}
+     * this method does not average/sum over examples. This method allows for examples to be scored individually (at test time only), which
+     * may be useful for example for autoencoder architectures and the like.<br>
+     * Each row of the output (assuming addRegularizationTerms == true) is equivalent to calling score(DataSet) with a single example.
+     * @param data The data to score
+     * @param addRegularizationTerms If true: add l1/l2 regularization terms (if any) to the score. If false: don't add regularization terms
+     * @return An INDArray (column vector) of size input.numRows(); the ith entry is the score (loss value) of the ith example
+     */
+    public INDArray scoreExamples(DataSet data, boolean addRegularizationTerms){
+        boolean hasMaskArray = data.hasMaskArrays();
+        if(hasMaskArray) setLayerMaskArrays(data.getFeaturesMaskArray(),data.getLabelsMaskArray());
+        feedForward(data.getFeatureMatrix(),false);
+        setLabels(data.getLabels());
+
+        INDArray out;
+        if( getOutputLayer() instanceof BaseOutputLayer ){
+            BaseOutputLayer<?> ol = (BaseOutputLayer<?>)getOutputLayer();
+            ol.setLabels(data.getLabels());
+            double l1 = (addRegularizationTerms ? calcL1() : 0.0);
+            double l2 = (addRegularizationTerms ? calcL2() : 0.0);
+            out = ol.computeScoreForExamples(l1,l2);
+        } else {
+            throw new UnsupportedOperationException("Cannot calculate score wrt labels without an OutputLayer");
+        }
+        if(hasMaskArray) clearLayerMaskArrays();
+        return out;
     }
 
 
