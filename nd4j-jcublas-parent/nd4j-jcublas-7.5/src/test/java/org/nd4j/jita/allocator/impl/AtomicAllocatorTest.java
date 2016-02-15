@@ -20,6 +20,7 @@ import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -83,6 +84,8 @@ public class AtomicAllocatorTest {
             dotWrapped = Nd4j.getBlasWrapper().dot(array1, array2);
             time2 = System.nanoTime();
 
+
+            assertEquals(879.2554931640625, dotWrapped, 0.001d);
             if (x % 50000 == 0) log.info("Execution time: [" + (time2 - time1) + "] ns");
       //      exec[x] = time2 - time1;
         }
@@ -131,8 +134,8 @@ public class AtomicAllocatorTest {
 
         Nd4j.getBlasWrapper().axpy(new Float(0.75f), array1, array2);
 
-        Long objectId = ((BaseCudaDataBuffer)array2.data()).getAllocatorPointer();
-        AllocationPoint point = ((BaseCudaDataBuffer)array2.data()).getAllocationPoint();
+        Long objectId = array2.data().originalDataBuffer().getTrackingPoint();
+        AllocationPoint point = allocator.getAllocationPoint(objectId);
 
         assertFalse(point.isActualOnHostSide());
 
@@ -183,8 +186,8 @@ public class AtomicAllocatorTest {
             array2.putRow(y, Nd4j.create(srcArray2));
         }
 
-        assertEquals(2, allocator.getTotalTrackingPoints());
-        assertEquals(0, allocator.getTotalZeroAllocations());
+    //    assertEquals(2, allocator.getTotalTrackingPoints());
+    //    assertEquals(0, allocator.getTotalZeroAllocations());
 /*
         for (int x = 0; x < 20; x++) {
             ((BaseCudaDataBuffer) array1.data()).getDevicePointer(array1.elementWiseStride(), array1.offset(), array1.length());
@@ -202,13 +205,18 @@ public class AtomicAllocatorTest {
         assertEquals(2, allocator.getTotalZeroAllocations());
         */
 
-        assertEquals(AllocationStatus.UNDEFINED, ((BaseCudaDataBuffer) array1.data()).getAllocationPoint().getAllocationStatus());
+//        assertEquals(AllocationStatus.UNDEFINED, ((BaseCudaDataBuffer) array1.data()).getAllocationPoint().getAllocationStatus());
 
         log.info("Original shape: " + AllocationUtils.buildAllocationShape(array1));
 
         INDArray slice1 = array1.slice(10);
         INDArray slice2 = array2.slice(10);
 
+        INDArray slice3 = slice1.slice(0);
+        log.info("slice1 offset: " + slice1.offset());
+        log.info("slice3 offset: " + slice3.offset());
+        log.info("slice3 length: " + slice3.length());
+        assertNotEquals(0, slice1.offset());
 
         assertEquals(null, array1.data().underlyingDataBuffer().underlyingDataBuffer());
         assertTrue(slice1.data().originalDataBuffer() == array1.data().originalDataBuffer());
@@ -232,7 +240,7 @@ public class AtomicAllocatorTest {
         assertEquals(2, allocator.getTotalZeroAllocations());
         log.info("Slice shape: " + AllocationUtils.buildAllocationShape(slice1));
 
-        assertEquals(AllocationStatus.ZERO, ((BaseCudaDataBuffer) array1.data()).getAllocationPoint().getAllocationStatus());
+     //   assertEquals(AllocationStatus.ZERO, ((BaseCudaDataBuffer) array1.data()).getAllocationPoint().getAllocationStatus());
 
 
 
@@ -300,4 +308,53 @@ public class AtomicAllocatorTest {
         }
     }
 
+
+    /**
+     *
+     * This test addresses original offsets tracking.
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testINDArrayOffsets() throws Exception {
+        INDArray array = Nd4j.create(10, 10, 10);
+
+        System.out.println("");
+        System.out.println("");
+
+        System.out.println("Slice1 init");
+        INDArray slice1 = array.slice(1);
+        System.out.println("");
+
+        log.info("Slice1 shape: " + Arrays.toString(slice1.shape()));
+        log.info("Slice1 offset: " + slice1.offset());
+        log.info("Slice1 original offset: " + slice1.originalOffset());
+
+        System.out.println("");
+        System.out.println("");
+
+        System.out.println("Slice2 init");
+        INDArray slice2 = slice1.slice(0);
+        System.out.println("");
+
+        log.info("Slice2 shape: " + Arrays.toString(slice2.shape()));
+        log.info("Slice2 offset: " + slice2.offset());
+        log.info("Slice2 original offset: " + slice2.originalOffset());
+
+        System.out.println("");
+        System.out.println("");
+
+        System.out.println("Slice3 init");
+        INDArray slice3 = slice1.slice(1);
+        System.out.println("");
+
+        log.info("Slice3 shape: " + Arrays.toString(slice3.shape()));
+        log.info("Slice3 offset: " + slice3.offset());
+        log.info("Slice3 original offset: " + slice3.originalOffset());
+
+
+        assertEquals(100, slice1.originalOffset());
+        assertEquals(100, slice2.originalOffset());
+        assertEquals(110, slice3.originalOffset());
+    }
 }

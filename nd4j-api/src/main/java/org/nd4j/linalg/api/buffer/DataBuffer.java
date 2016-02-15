@@ -450,6 +450,12 @@ public interface DataBuffer extends Serializable {
      */
     int offset();
 
+    /**
+     * Returns the offset of the buffer relative to originalDataBuffer
+     *
+     * @return
+     */
+    int originalOffset();
 
     /**
      * Get the int at the specified index
@@ -537,4 +543,20 @@ public interface DataBuffer extends Serializable {
      */
     void read(InputStream is);
 
+    /**
+     * Returns tracking point for Allocator
+     *
+     * PLEASE NOTE: Suitable & meaningful only for specific backends
+     * @return
+     */
+    Long getTrackingPoint();
+
+    /**
+     * Sets tracking point used by Allocator
+     *
+     * PLEASE NOTE: Suitable & meaningful only for specific backends
+     *
+     * @param trackingPoint
+     */
+    void setTrackingPoint(Long trackingPoint);
 }

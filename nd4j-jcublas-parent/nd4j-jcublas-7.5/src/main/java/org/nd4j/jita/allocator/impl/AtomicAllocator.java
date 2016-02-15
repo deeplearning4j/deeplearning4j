@@ -90,7 +90,7 @@ public class AtomicAllocator implements Allocator {
         WeakHashMap for buffer->id conversion. If DataBuffer get's removed by jvm GC, we'll know that.
         So, just a short way for reverse lookup, that causes no GC issues.
      */
-    private Map<BaseCudaDataBuffer, Long> externalBuffers = Collections.synchronizedMap(new WeakHashMap<BaseCudaDataBuffer, Long>());
+    private Map<DataBuffer, Long> externalBuffers = Collections.synchronizedMap(new WeakHashMap<DataBuffer, Long>());
 
     // simple pool for cublas contexts
     private Map<Long, CudaContext> contextPool = new ConcurrentHashMap<>();
@@ -233,7 +233,7 @@ public class AtomicAllocator implements Allocator {
      * @param buffer DataBuffer object to be picked & tracked
      */
 
-    protected Long pickupSpan(@NonNull BaseCudaDataBuffer buffer) {
+    protected Long pickupSpan(@NonNull DataBuffer buffer, AllocationShape shape) {
         //log.info("pickupSpan(BaseCudaDataBuffer)");
 //        if (1> 0) throw new RuntimeException("");
         try {
@@ -244,8 +244,8 @@ public class AtomicAllocator implements Allocator {
                     We have such buffer already. It's either the Nested allocation, or something like that.
                     Just throw exception for now.
                  */
-             //   throw new IllegalStateException("Buffer is already registered");
-                return buffer.getAllocatorPointer();
+                throw new IllegalStateException("Buffer is already registered");
+                //return buffer.getAllocatorPointer();
             } else {
                 /*
                     We don't have such buffer registered somehow. Probably that's new allocation
@@ -259,12 +259,13 @@ public class AtomicAllocator implements Allocator {
                 Long allocPointer = objectsTracker.getAndIncrement();
 
                 point.setObjectId(allocPointer);
+                point.setShape(shape);
 
                 /*
                     we don't keep strong references Allocator -> Buffer, but we store Buffer -> Allocator references instead :)
                   */
-                buffer.setAllocationPoint(point);
-                buffer.setAllocatorPointer(allocPointer);
+                //buffer.setAllocationPoint(point);
+                buffer.setTrackingPoint(allocPointer);
 
                 // we storing buffer instance as WeakReference here for future copybacks
                 point.attachBuffer(buffer);
@@ -293,7 +294,7 @@ public class AtomicAllocator implements Allocator {
         /*
          while working on array level, we actually immediately downgrade to buffer level, with AllocationShape defined by this array
           */
-        if (!(array.data() instanceof BaseCudaDataBuffer)) throw new IllegalStateException("Underlying buffer isn't instance of BaseCudaDataBuffer");
+        //if (!(array.data() instanceof BaseCudaDataBuffer)) throw new IllegalStateException("Underlying buffer isn't instance of BaseCudaDataBuffer");
 
         // For buffer registration we're always using full underlying buffer
         AllocationShape shape = new AllocationShape();
@@ -302,7 +303,7 @@ public class AtomicAllocator implements Allocator {
         shape.setLength(array.data().length());
         shape.setDataType(Nd4j.dataType());
 
-        return null; //pickupSpan((BaseCudaDataBuffer) array.data().originalDataBuffer(), shape);
+        return pickupSpan(array.data().originalDataBuffer(), AllocationUtils.buildAllocationShape(array.data().originalDataBuffer()));
     }
 
     /**
@@ -345,13 +346,13 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public void tackDevice(INDArray array) {
-        tackDevice((BaseCudaDataBuffer) array.data(), AllocationUtils.buildAllocationShape(array));
+        tackDevice(array.data().originalDataBuffer(), AllocationUtils.buildAllocationShape(array));
     }
 
 
 
 
-    protected void tackDevice(BaseCudaDataBuffer objectId, AllocationShape shape) {
+    protected void tackDevice(DataBuffer objectId, AllocationShape shape) {
         AllocationPoint point = getAllocationPoint(objectId, shape);
 
         point.getAccessState().requestTack();
@@ -365,7 +366,7 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public void tickDeviceWrite(INDArray array) {
-        AllocationPoint point = getAllocationPoint((BaseCudaDataBuffer) array.data(), AllocationUtils.buildAllocationShape(array));
+        AllocationPoint point = getAllocationPoint(array.data().originalDataBuffer(), AllocationUtils.buildAllocationShape(array));
 
         point.tickDeviceWrite();
     }
@@ -377,7 +378,7 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public void tickHostWrite(INDArray array) {
-        AllocationPoint point = getAllocationPoint((BaseCudaDataBuffer) array.data(), AllocationUtils.buildAllocationShape(array));
+        AllocationPoint point = getAllocationPoint(array.data().originalDataBuffer(), AllocationUtils.buildAllocationShape(array));
 
         point.tickHostWrite();
     }
@@ -390,7 +391,7 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     @Deprecated
-    public Pointer getDevicePointer(BaseCudaDataBuffer objectId) {
+    public Pointer getDevicePointer(DataBuffer objectId) {
         throw new UnsupportedOperationException("getDevicePointer() method should be removed");
     }
 
@@ -401,16 +402,16 @@ public class AtomicAllocator implements Allocator {
      * @param shape
      */
     @Override
-    public Pointer getDevicePointer(BaseCudaDataBuffer objectId, AllocationShape shape, boolean isView) {
+    public Pointer getDevicePointer(DataBuffer buffer, AllocationShape shape, boolean isView) {
       //  log.info("requesting pointer for: [" + shape + "]; isView: [" + isView +"]");
         /*
             We assume that object is registered within allocator
          */
-        AllocationPoint point = getAllocationPoint(objectId, shape);
+        AllocationPoint point = getAllocationPoint(buffer, shape);
 
         boolean isNewAllocation = false;
 
-        Long trackingPoint = objectId.getAllocatorPointer();
+        Long trackingPoint = buffer.getTrackingPoint();
 
         // we're checking, if cuda pointer is null without any locks. but if it's null, we'll request Toe state on this allocation, to make sure nothing can mess with it
         if (point.getCudaPointer() == null) {
@@ -424,12 +425,12 @@ public class AtomicAllocator implements Allocator {
                     PLEASE NOTE: Also, if this is a view - we allocate full underlying buffer on first call, not a shape
                 */
 
-                AllocationShape internalShape = isView? AllocationUtils.buildAllocationShape(objectId) : shape;
+                //AllocationShape internalShape = isView? AllocationUtils.buildAllocationShape(buffer) : shape;
 
                 /*
                     Before allocating anything, we must ensure that we have enough space left
                  */
-                long requiredMemory = AllocationUtils.getRequiredMemory(internalShape);
+                long requiredMemory = AllocationUtils.getRequiredMemory(shape);
                 while (zeroUseCounter.get() > configuration.getMaximumZeroAllocation() - (configuration.getMaximumZeroAllocation() / 10)) {
                         log.info("No free host memory available. Startig GC manually with [URGENT] agressiveness");
 //                    if (zeroUseCounter.get() > configuration.getMaximumZeroAllocation() - (configuration.getMaximumZeroAllocation() / 10)) {
@@ -441,14 +442,14 @@ public class AtomicAllocator implements Allocator {
                 /*
                     We intentionally update counter prior to allocation
                  */
-                zeroUseCounter.addAndGet(AllocationUtils.getRequiredMemory(internalShape));
+                zeroUseCounter.addAndGet(AllocationUtils.getRequiredMemory(shape));
 
                 /*
                     now it's ALMOST safe to allocate zero-copy memory.
                     Technically it's still possible to fail there, with oom or CUDA-originated exception
                  */
                 point.setAllocationStatus(AllocationStatus.ZERO);
-                DevicePointerInfo info = mover.alloc(AllocationStatus.ZERO, point, internalShape);
+                DevicePointerInfo info = mover.alloc(AllocationStatus.ZERO, point, shape);
                 long allocCnt = allocationsCounter.incrementAndGet();
                 zeroAllocations.get(Thread.currentThread().getId()).put(trackingPoint, trackingPoint);
                 //if (allocCnt % 1000 == 0)
@@ -513,7 +514,7 @@ public class AtomicAllocator implements Allocator {
            //     log.info("Starting promotion");
 
                 // moving memory from ZERO to DEVICE
-                promoteObject(trackingPoint, point, shape);
+      //          promoteObject(trackingPoint, point, shape);
 
                 point.getAccessState().releaseToe();
             }
@@ -551,7 +552,11 @@ public class AtomicAllocator implements Allocator {
 
         DataBuffer buffer = array.data().originalDataBuffer();
 
-        return null;
+        if (buffer.getTrackingPoint() == null) {
+            pickupSpan(array);
+        }
+
+        return getDevicePointer(buffer, shape, array.isView());
     }
 
     protected boolean promoteObject(Long trackingPoint, AllocationPoint point, AllocationShape shape) {
@@ -599,7 +604,7 @@ public class AtomicAllocator implements Allocator {
      * @param objectId
      */
 
-    protected void synchronizeHostData(BaseCudaDataBuffer objectId, AllocationShape shape) {
+    protected void synchronizeHostData(DataBuffer objectId, AllocationShape shape) {
         AllocationPoint point = getAllocationPoint(objectId, shape);
         log.info("Synchronize called on buffer");
 
@@ -634,14 +639,14 @@ public class AtomicAllocator implements Allocator {
     @Override
     public void synchronizeHostData(INDArray array) {
         log.info("Synchronize called on array");
-        AllocationPoint point = getAllocationPoint((BaseCudaDataBuffer) array.data(), AllocationUtils.buildAllocationShape(array));
+        AllocationPoint point = getAllocationPoint(array.data().originalDataBuffer(), AllocationUtils.buildAllocationShape(array));
 
         if (point == null) {
             log.info("sHD INDarray");
             pickupSpan(array);
         }
 
-        synchronizeHostData((BaseCudaDataBuffer) array.data(), AllocationUtils.buildAllocationShape(array));
+        synchronizeHostData( array.data().originalDataBuffer(), AllocationUtils.buildAllocationShape(array));
     }
 
     /**
@@ -746,8 +751,8 @@ public class AtomicAllocator implements Allocator {
 
 
 
-    protected AllocationPoint getAllocationPoint(BaseCudaDataBuffer objectId, AllocationShape shape) {
-        Long trackingPointer = ((BaseCudaDataBuffer) objectId.originalDataBuffer()).getAllocatorPointer();
+    protected AllocationPoint getAllocationPoint(DataBuffer objectId, AllocationShape shape) {
+        Long trackingPointer = objectId.getTrackingPoint();
 
 
         // that's a temporary exception, we'll change that to re-ack later

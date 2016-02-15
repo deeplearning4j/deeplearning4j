@@ -68,11 +68,6 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCudaBuffer {
 
-    @Getter @Setter private Long allocatorPointer;
-
-    // This is a backup copy of AllocationPoint, and not meant to be used unless we have to restore memory state
-    @Getter @Setter private AllocationPoint allocationPoint;
-
     static AtomicLong allocated = new AtomicLong();
     static AtomicLong totalAllocated = new AtomicLong();
     private static Logger log = LoggerFactory.getLogger(BaseCudaDataBuffer.class);

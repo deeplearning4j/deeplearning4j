@@ -122,7 +122,7 @@ public interface Allocator {
      * @param buffer
      */
     @Deprecated
-    Pointer getDevicePointer(BaseCudaDataBuffer buffer);
+    Pointer getDevicePointer(DataBuffer buffer);
 
     /**
      * This method returns actual device pointer valid for specified shape of current object
@@ -131,7 +131,7 @@ public interface Allocator {
      * @param shape
      */
     @Deprecated
-    Pointer getDevicePointer(BaseCudaDataBuffer buffer, AllocationShape shape, boolean isView);
+    Pointer getDevicePointer(DataBuffer buffer, AllocationShape shape, boolean isView);
 
 
     /**

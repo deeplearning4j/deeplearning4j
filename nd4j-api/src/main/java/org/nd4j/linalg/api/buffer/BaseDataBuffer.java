@@ -59,7 +59,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected float[] floatData;
     protected AtomicBoolean dirty = new AtomicBoolean(false);
 
-    protected DataBuffer originalBuffer;
+    // Allocator-related stuff. Moved down here to avoid type casting.
+    protected transient DataBuffer originalBuffer;
+    protected transient int originalOffset = 0;
+    protected transient Long trackingPoint;
 
 
     /**
@@ -79,7 +82,17 @@ public abstract class BaseDataBuffer implements DataBuffer {
         // Adding link to original databuffer
         if (underlyingBuffer.originalDataBuffer() == null) {
             this.originalBuffer = underlyingBuffer;
-        } else this.originalBuffer = underlyingBuffer.originalDataBuffer();
+            this.originalOffset = offset;
+        } else {
+
+            this.originalBuffer = underlyingBuffer.originalDataBuffer();
+
+            // FIXME: please don't remove this comment, since there's probably a bug in current offset() impl, and this line will change originalOffset accroding to proper offset() impl
+            // FIXME: raver119@gmail.com
+            this.originalOffset = offset; // + underlyingBuffer.originalOffset();
+
+            System.out.println("Original offset: [" + underlyingBuffer.originalOffset() + "], this offset: ["+ offset +"] ");
+        }
 
         if(underlyingBuffer.dataType() == Type.DOUBLE) {
             if(underlyingBuffer.allocationMode() == AllocationMode.HEAP) {
@@ -132,6 +145,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected BaseDataBuffer(ByteBuf buf,int length,int offset) {
         this(buf,length);
         this.offset = offset;
+        this.originalOffset = offset;
         this.length = length - offset;
         this.underlyingLength = length;
     }
@@ -154,6 +168,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public BaseDataBuffer(float[] data, boolean copy,int offset) {
         this(data,copy);
         this.offset = offset;
+        this.originalOffset = offset;
         this.length = data.length - offset;
         this.underlyingLength = data.length;
 
@@ -195,6 +210,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public BaseDataBuffer(double[] data, boolean copy,int offset) {
         this(data,copy);
         this.offset = offset;
+        this.originalOffset = offset;
         this.underlyingLength = data.length;
         this.length = underlyingLength - offset;
     }
@@ -236,6 +252,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public BaseDataBuffer(int[] data, boolean copy,int offset) {
         this(data,copy);
         this.offset = offset;
+        this.originalOffset = offset;
         this.length = data.length - offset;
         this.underlyingLength = data.length;
     }
@@ -298,6 +315,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public BaseDataBuffer(int length, int elementSize,int offset) {
         this(length,elementSize);
         this.offset = offset;
+        this.originalOffset = offset;
         this.length = length - offset;
         this.underlyingLength = length;
     }
@@ -335,6 +353,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public BaseDataBuffer(ByteBuffer buffer,int length,int offset) {
         this(buffer,length);
         this.offset = offset;
+        this.originalOffset = offset;
         this.underlyingLength = length;
         this.length = length - offset;
 
@@ -1217,5 +1236,38 @@ public abstract class BaseDataBuffer implements DataBuffer {
         result = 31 * result + (isPersist ? 1 : 0);
         result = 31 * result + (allocationMode != null ? allocationMode.hashCode() : 0);
         return result;
+    }
+
+    /**
+     * Returns the offset of the buffer relative to originalDataBuffer
+     *
+     * @return
+     */
+    @Override
+    public int originalOffset() {
+        return originalOffset;
+    }
+
+    /**
+     * Returns tracking point for Allocator
+     *
+     * PLEASE NOTE: Suitable & meaningful only for specific backends
+     *
+     * @return
+     */
+    @Override
+    public Long getTrackingPoint() {
+        return trackingPoint;
+    }
+
+    /**
+     * Sets tracking point used by Allocator
+     *
+     * PLEASE NOTE: Suitable & meaningful only for specific backends
+     *
+     * @param trackingPoint
+     */
+    public void setTrackingPoint(Long trackingPoint) {
+        this.trackingPoint = trackingPoint;
     }
 }

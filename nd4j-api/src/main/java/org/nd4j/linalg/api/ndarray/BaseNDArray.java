@@ -4283,4 +4283,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public Iterator<Object> iterator() {
         return new FirstAxisIterator(this);
     }
+
+    /**
+     * Returns the start of where the ndarray is for the original data buffer
+     *
+     * @return
+     */
+    @Override
+    public int originalOffset() {
+        return data().originalOffset();
+    }
 }

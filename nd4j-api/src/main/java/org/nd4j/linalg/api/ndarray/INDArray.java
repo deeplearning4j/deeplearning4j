@@ -1682,6 +1682,13 @@ public interface INDArray extends Serializable  {
 
 
     /**
+     * Returns the start of where the ndarray is for the original data buffer
+     * @return
+     */
+    int originalOffset();
+
+
+    /**
      * Reshapes the ndarray (can't change the length of the ndarray)
      *
      * @param newShape the new shape of the ndarray

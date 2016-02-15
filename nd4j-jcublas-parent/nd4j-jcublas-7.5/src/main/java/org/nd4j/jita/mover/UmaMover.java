@@ -147,7 +147,7 @@ public class UmaMover implements Mover {
             if (hostPointer == null)
                 throw new IllegalStateException("HostPointer is null, can't relocate!");
 
-            BaseCudaDataBuffer targetBuffer = point.getBuffer();
+            DataBuffer targetBuffer = point.getBuffer();
             if (targetBuffer == null)
                 throw new IllegalStateException("Target buffer is NULL!");
 
@@ -158,7 +158,7 @@ public class UmaMover implements Mover {
 
         } else if (currentStatus == AllocationStatus.DEVICE && targetStatus == AllocationStatus.HOST) {
             // DEVICE -> HOST
-            BaseCudaDataBuffer targetBuffer = point.getBuffer();
+            DataBuffer targetBuffer = point.getBuffer();
             if (targetBuffer == null)
                 throw new IllegalStateException("Target buffer is NULL!");
 
@@ -190,7 +190,7 @@ public class UmaMover implements Mover {
 
         } else if (currentStatus == AllocationStatus.HOST && targetStatus == AllocationStatus.DEVICE) {
             // HOST -> DEVICE
-            BaseCudaDataBuffer hostBuffer = point.getBuffer();
+            DataBuffer hostBuffer = point.getBuffer();
             if (hostBuffer == null)
                 throw new IllegalStateException("Target buffer is NULL!");
 

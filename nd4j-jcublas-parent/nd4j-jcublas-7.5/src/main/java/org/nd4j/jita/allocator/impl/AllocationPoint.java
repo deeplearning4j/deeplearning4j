@@ -82,7 +82,7 @@ public class AllocationPoint {
 
     @Getter private AtomicState accessState = new AtomicState();
 
-    private volatile WeakReference<BaseCudaDataBuffer> originalDataBufferReference;
+    private volatile WeakReference<DataBuffer> originalDataBufferReference;
 
     private ReentrantReadWriteLock cudaLock = new ReentrantReadWriteLock();
     private ReentrantReadWriteLock allocLock = new ReentrantReadWriteLock();
@@ -92,8 +92,8 @@ public class AllocationPoint {
      *
      * @param buffer
      */
-    public void attachBuffer(@NonNull BaseCudaDataBuffer buffer) {
-        originalDataBufferReference = new WeakReference<BaseCudaDataBuffer>(buffer);
+    public void attachBuffer(@NonNull DataBuffer buffer) {
+        originalDataBufferReference = new WeakReference<DataBuffer>(buffer);
     }
 
     /**
@@ -103,7 +103,7 @@ public class AllocationPoint {
      *
      * @return
      */
-    public BaseCudaDataBuffer getBuffer() {
+    public DataBuffer getBuffer() {
         if (originalDataBufferReference != null) {
             return originalDataBufferReference.get();
         } else return null;

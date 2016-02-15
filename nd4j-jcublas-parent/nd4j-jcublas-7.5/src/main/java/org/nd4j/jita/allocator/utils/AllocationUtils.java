@@ -20,17 +20,29 @@ public class AllocationUtils {
         return (shape.getDataType() == DataBuffer.Type.DOUBLE ? 8 : 4);
     }
 
+    /**
+     * This method returns AllocationShape for specific array, that takes in account its real shape: offset, length, etc
+     *
+     * @param array
+     * @return
+     */
     public static AllocationShape buildAllocationShape(INDArray array) {
         AllocationShape shape = new AllocationShape();
         shape.setStride(array.elementWiseStride());
-        shape.setOffset(array.offset());
+        shape.setOffset(array.originalOffset());
         shape.setDataType(array.data().dataType());
         shape.setLength(array.length());
 
         return shape;
     }
 
-    public static AllocationShape buildAllocationShape(BaseCudaDataBuffer array) {
+    /**
+     * This method returns AllocationShape for the whole DataBuffer.
+     *
+     * @param array
+     * @return
+     */
+    public static AllocationShape buildAllocationShape(DataBuffer array) {
         AllocationShape shape = new AllocationShape();
         shape.setStride(1);
         shape.setOffset(0);
