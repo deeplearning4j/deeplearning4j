@@ -3518,38 +3518,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         int[] shape = resolution.getShapes();
 
-        //This means upsampling.
-        if (ArrayUtil.prod(shape) > length()) {
-            INDArray ret = create(shape);
-            INDArrayIndex slices = indexes[0];
-            if(slices.length() == 1) {
-                INDArrayIndex subRange = indexes[0];
-                int count = 0;
-                for(int i = 0; i < slices.length(); i++) {
-                    if(count >= ret.length())
-                        count = 0;
-                    int get = subRange.next();
-                    ret.putScalar(count,getDouble(get));
-                    count++;
-
-                }
-            }
-
-            else {
-                INDArrayIndex[] subRange = Arrays.copyOfRange(indexes, 1, indexes.length);
-                INDArrayIndex[] putRange = NDArrayIndex.rangeOfLength(subRange);
-                for(int i = 0; i < slices.length(); i++) {
-                    INDArray sliceI = ret.slice(i);
-                    INDArray thisSlice = slice(slices.next());
-                    sliceI.put(putRange,thisSlice.get(subRange));
-
-                }
-            }
-
-
-            return ret;
-        }
-
         if(indexes[0] instanceof SpecifiedIndex) {
             INDArray ret = create(shape);
             int count = 0;
