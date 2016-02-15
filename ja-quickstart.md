@@ -44,7 +44,7 @@ F１スコは、約0.66と出るはずですが、Irisのような小さなデ�
 
 何か問題が発生したら、まずはPOM.xmlファイルが、[こちらの正しい例](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml)のようになっているか、確認してください。 
 
-# 依存関係およびバックエンド
+## 依存関係およびバックエンド
 
 バックエンドとは、DL4Jのニューラルネットワークが利用する線形代数ライブラリの処理基盤です。バックエンドはチップによって異なります。CPUはx86で、GPUはJcublasで最も高速に動作します。すべてのバックエンドを[Maven Central](https://search.maven.org)で見つけることができます。 「Latest Version」にある最新バージョン番号をクリックし、次の画面の左側にあるdependencyコードをコピーし、プロジェクトルートのpom.xmlにペーストします。 
 
