@@ -1183,25 +1183,68 @@ struct SharedSummaryStatsData<double> {
                     currStartingValue[i].initialize();
                 }
 
-#pragma omp parallel for
-                for(int i = 0; i < resultLength; i++) {
-                    int offset = dimensionLength > 1 ? i : tadLength * i;
-                    SummaryStatsData<T> comp;
-                    comp.initWithValue(x[offset]);
-                    currStartingValue[i]  = op(comp, extraParams);
-                    for(int j = 1; j < elementsPerReductionIndex; j++) {
-                        SummaryStatsData<T> comp2;
-                        comp2.initWithValue(x[offset + tadElementWiseStride * j]);
-                        currStartingValue[i] =  update(currStartingValue[i],comp2, extraParams);
+
+                if (dimensionLength > 1) {
+                    shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo, dimension, dimensionLength);
+                    const int resultLength = shape::length(resultShapeInfoBuffer);
+                    /**
+                     * The element wise stride belongs to a reduction index.
+                     * When used out of order, we can get rid of the data
+                     * dependencies and rely on using the max dimension
+                     * specified for stride instead.
+                     * Say we take the sum(0,1) along arr
+                     * we can use arr.stride(1) as a representation
+                     * along which to iterate.
+                     */
+                    int tadElementWiseStride = shape::reductionIndexElementWiseStride(xShapeInfo, dimension,dimensionLength);
+                    const int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
+                    int tadLength = tadPermuteInfo.tensorShapeProd;
+
+#pragma omp  parallel  for
+                    for (int i = 0; i < resultLength; i++) {
+                        int offset = i + tadElementWiseStride  * tadLength;
+                        SummaryStatsData<T> comp;
+                        comp.initWithValue(x[offset]);
+                        currStartingValue[i] = op(comp, extraParams);
+#pragma omp simd
+                        for (int j = 1; j < elementsPerReductionIndex; j++) {
+                            SummaryStatsData<T> comp2;
+                            comp2.initWithValue(x[offset + tadElementWiseStride * j]);
+                            currStartingValue[i] = update(currStartingValue[i], comp2, extraParams);
+                        }
+
+                        result[i] = getValue(currStartingValue[i]);
+
+
                     }
 
-                    result[i] = getValue(currStartingValue[i]);
+
+                    shape::freePermuteInfo(tadPermuteInfo);
+                }
+
+                else {
+                    int tadElementWiseStride = shape::tadElementWiseStride(xShapeInfo, dimension, dimensionLength);
+                    int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+                    const int resultLength = shape::length(resultShapeInfoBuffer);
+#pragma omp parallel for
+                    for (int i = 0; i < resultLength; i++) {
+                        int offset = shape::tadOffset(i, xShapeInfo, dimension, dimensionLength);
+                        SummaryStatsData<T> comp;
+                        comp.initWithValue(x[offset]);
+                        currStartingValue[i] = op(comp, extraParams);
+                        for (int j = 1; j < tadLength; j++) {
+                            SummaryStatsData<T> comp2;
+                            comp2.initWithValue(x[offset + tadElementWiseStride * j]);
+                            currStartingValue[i] = update(currStartingValue[i], comp2, extraParams);
+                        }
+
+                        result[i] = getValue(currStartingValue[i]);
+                    }
+
 
                 }
 
-
                 free(currStartingValue);
-                shape::freePermuteInfo(tadPermuteInfo);
             }
 
             virtual

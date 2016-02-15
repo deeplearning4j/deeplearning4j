@@ -104,14 +104,11 @@ namespace functions {
 
 				int xElementWiseStride = shape::tadElementWiseStride(xShapeInfo,dimension,dimensionLength);
 				int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
-				int yOffset = shape::offset(yShapeInfo);
 
 				//length for the tad
 				int yLength = shape::length(yShapeInfo);
 				//length for the tad
 				int xLength = shape::length(xShapeInfo);
-
-				int resultLength = shape::length(resultShapeInfo);
 
 				//optimized loop for vectorization
 				if (xElementWiseStride == 1 && yElementWiseStride == 1) {

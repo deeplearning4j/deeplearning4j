@@ -740,35 +740,36 @@ struct SharedIndexValue<double> {
                 int length = shape::length(xShapeInfo);
                 int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
                 if (xElementWiseStride == 1) {
-                    int i;
-#pragma omp parallel private(i)
-                    {
-#pragma omp for
-                        for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
+#pragma omp parallel for
+                        for (int i = 0; i < length; i++) {
                             IndexValue<T> curr;
                             curr.value = x[i];
                             curr.index = i;
-                            startingIndex = update(startingIndex, curr,
-                                                   extraParams);
+#pragma omp critical
+                            {
+                                startingIndex = update(startingIndex, curr,
+                                                       extraParams);
+                            }
+
 
                         }
-                    }
+
 
                     return startingIndex.index;
                 } else {
-
-                    int i;
-#pragma omp parallel private(i)
-                    {
-#pragma omp for
-                        for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
+#pragma omp parallel for
+                        for (int i = 0; i < length; i++) {
                             IndexValue<T> curr;
                             curr.value = x[i * xElementWiseStride];
                             curr.index = i;
-                            startingIndex = update(startingIndex, curr,
-                                                   extraParams);
+#pragma omp critical
+                            {
+                                startingIndex = update(startingIndex, curr,
+                                                       extraParams);
+                            }
+
                         }
-                    }
+
 
                     return  startingIndex.index;
 

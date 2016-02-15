@@ -178,10 +178,10 @@ namespace functions {
                            int *indexes,
                            int *resultIndexes) {
 #pragma omp parallel for
-                    for (int i = 0; i < n; i++) {
-                        result[resultIndexes[i]] = op(x[indexes[i]], scalar,extraParams);
-                    }
+                for (int i = 0; i < n; i++) {
+                    result[resultIndexes[i]] = op(x[indexes[i]], scalar,extraParams);
                 }
+            }
 
 
 
@@ -251,15 +251,15 @@ namespace functions {
 
                     int i;
 #pragma omp parallel for
-                        for (i = 0; i < n; i++) {
-                            int *xIdx = shape::ind2sub(xRank, xShape, i);
-                            int *resultIdx = shape::ind2sub(resultRank, resultShape, i);
-                            int xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
-                            int resultOffset2 = shape::getOffset(resultOffset, resultShape, resultStride, resultIdx, resultRank);
-                            result[resultOffset2] = op(x[xOffset2], scalar,extraParams);
+                    for (i = 0; i < n; i++) {
+                        int *xIdx = shape::ind2sub(xRank, xShape, i);
+                        int *resultIdx = shape::ind2sub(resultRank, resultShape, i);
+                        int xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
+                        int resultOffset2 = shape::getOffset(resultOffset, resultShape, resultStride, resultIdx, resultRank);
+                        result[resultOffset2] = op(x[xOffset2], scalar,extraParams);
 
-                            free(xIdx);
-                            free(resultIdx);
+                        free(xIdx);
+                        free(resultIdx);
 
                     }
 
@@ -281,23 +281,19 @@ namespace functions {
              */
             void transform(T *x, int xStride, T *result, int resultStride,
                            T scalar, T *extraParams, const int n) {
-                int i;
 
                 if (xStride == 1 && resultStride == 1) {
 #pragma omp parallel for
-                        for (int i = 0; i < n; i++) {
-                            result[i] = op(x[i], scalar, extraParams);
-                        }
+                    for (int i = 0; i < n; i++) {
+                        result[i] = op(x[i], scalar, extraParams);
+                    }
+                }
 
-
-
-
-                } else {
-
+                else {
 #pragma omp parallel for
-                        for (int i = 0; i < n; i++) {
-                            result[i * resultStride] = op(x[i * resultStride], scalar,
-                                                          extraParams);
+                    for (int i = 0; i < n; i++) {
+                        result[i * resultStride] = op(x[i * xStride], scalar,
+                                                      extraParams);
 
                     }
                 }
