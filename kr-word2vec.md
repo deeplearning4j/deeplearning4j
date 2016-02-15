@@ -19,7 +19,7 @@ layout: kr-default
 * <a href="#foreign">외국어</a>
 * <a href="#glove">GloVe (Global Vectors) & Doc2Vec</a>
 
-##<a name="intro">Word2Vec 소개</a>
+## <a name="intro">Word2Vec 소개</a>
 
 Word2vec는 텍스트를 처리하는 두개의 레이어 입니다. 그것의 입력은 텍스트 코퍼스 (corpus)이고, 그 출력은 벡터들의 집합 입니다: 벡터는 그 코퍼스에서 단어들에 대한 속성 벡터 입니다. Word2vec는 [deep neural network](../neuralnet-overview.html)가 아닌 반면, 텍스트를 딥 망들이 이해할 수 있는 숫자의 형태로 전환 합니다. 
 
@@ -39,7 +39,7 @@ Word2vec 신경망의 출력은 각각의 항목이 그것에 부착된 벡터�
 
 스칸디나비아의 국가들과 여러 부유한 북유럽, 독일계 나라들이 상위 9 사이에 있습니다.
 
-##<a name="embed">Neural Word Embeddings</a>
+## <a name="embed">Neural Word Embeddings</a>
 
 단어들을 표현하기 위해 저희가 사용하는 벡터들은 *neural word embeddings*이라고 불리고, 표현들은 이상합니다. 두가지가 근본적으로 다름에도 불구하고 한가지가 다른 하나를 설명합니다. Elvis Costello가 말한 것과 같이: "음악에 대해 작성하는 것은 건축에 대한 무용과 같다." Word2vec는 단어들에 대해 "벡터화"하고, 그렇게 함으로써 그것이 자연 언어를 컴퓨터-판독 가능한 것으로 만듭니다 -- 저희는 그들의 유사성을 검출하기 위해 단어들에 강력한 수학적인 연산 수행을 시작할 수 있습니다. 
 
@@ -67,7 +67,7 @@ Word2vec는 벡터에서 각각의 단어를 코딩하는 오토인코더와 비
 
 ![Alt text](../img/countries_capitals.png) 
 
-##<a name="crazy">재미있는 Word2Vec 결과</a>
+## <a name="crazy">재미있는 Word2Vec 결과</a>
 
 이제 Word2vec이 생산할 수 있는 다른 조합들을 살펴보도록 하겠습니다. 
 
@@ -118,7 +118,7 @@ Word2vec는 벡터에서 각각의 단어를 코딩하는 오토인코더와 비
 
 # <a name="just">코드를 주십시오</a>
 
-##<a name="anatomy">DL4J에서 Word2vec의 해부학</a>
+## <a name="anatomy">DL4J에서 Word2vec의 해부학</a>
 
 여기 Deeplearning4j의 자연-언어 처리 구성 요소들이 있습니다:
 
@@ -389,7 +389,7 @@ Mikolov에 의해 대중화되고 DL4J 구현에서 사용된 skip-gram 표현�
 
 *답:* 만약 Ubuntu를 사용하신다면 직렬화된 데이터가 제대로 로드되지 않았을 수 있습니다. 이는 Ubuntu의 문제 입니다. 저희는 Linux의 다른 버전에서 이 버전의 Wordvec를 테스트 하시기를 추천드립니다.
 
-###<a name="use">이용 사례</a>
+### <a name="use">이용 사례</a>
 
 구글 학술 검색은 [Deeplearning4j의 Word2vec 구현을 여기에](https://scholar.google.com/scholar?hl=en&q=deeplearning4j+word2vec&btnG=&as_sdt=1%2C5&as_sdtp=) 인용하여 논문의 실행 집계를 유지하고 있습니다.
 
@@ -401,11 +401,11 @@ Word2Vec는 DL4J가 [딥 오토인코더들](../deepautoencoder.html)로 구현�
 
 마케터들은 추천 엔진을 구축할 제품들 간의 관계를 설정하고자 할 수 있습니다. 투자자들은 단일 그룹의 피상적인 멤버들에 대한 소셜 그래프, 혹은 그들이 가지고 있을 위치나 재정적인 후원에 대한 다른 관계들을 분석할 수 있습니다.
 
-###<a name="patent">구글의 Word2vec 특허</a>
+### <a name="patent">구글의 Word2vec 특허</a>
 
 Word2vec는 Tomas Mikolov가 이끄는 구글의 연구자들로 구성된 팀에 의해 소개된 [단어들의 벡터 표현들을 계산하는 방법](http://arxiv.org/pdf/1301.3781.pdf) 입니다. 구글은 Apache 2.0 라이센스에 따라 출시된 [오픈 소스 버전의 Word2vec를 호스트 합니다](https://code.google.com/p/word2vec/). 2014년, Mikolov는 페이스북으로 가기 위해 구글을 떠났고, 2015년 5월, [구글은 출시되어 온 Apache 라이센스를 폐지하지 않는 방식에 대한 특허](http://patft.uspto.gov/netacgi/nph-Parser?Sect1=PTO2&Sect2=HITOFF&p=1&u=%2Fnetahtml%2FPTO%2Fsearch-bool.html&r=1&f=G&l=50&co1=AND&d=PTXT&s1=9037464&OS=9037464&RS=9037464)를 획득했습니다.
 
-###<a name="foreign">외국어</a>
+### <a name="foreign">외국어</a>
 
 모든 언어들로 단어들은 Word2vec를 통해 벡터로 전환될 수 있고 그 벡터들은 Deeplearning4j로 학습될 수 있는 반면, NLP 전처리는 매우 언어 구체적이며 저희의 라이브러리 이상의 도구들을 요구할 수 있습니다. [Stanford Natural Language Processing Group](http://nlp.stanford.edu/software/)은 [만다린 중국어](http://nlp.stanford.edu/projects/chinese-nlp.shtml), 아랍어, 프랑스어, 독일어 및 스페인어와 같은 언어들을 위한 토큰화, 품사 태깅 및 명명된 개체 인식을 위한 많은 Java 기반의 도구들을 가집니다. 일본어를 위해서는, [Kuromoji](http://www.atilika.org/)와 같은 NLP 도구들이 유용합니다. [텍스트 코퍼스를 포함한 다른 외국어 리소스는 여기에서 보실 수 있습니다](http://www-nlp.stanford.edu/links/statnlp.html).
 
