@@ -65,7 +65,7 @@ public class EvaluateFlatMapFunction implements FlatMapFunction<Iterator<DataSet
     @Override
     public Iterable<Evaluation> call(Iterator<DataSet> dataSetIterator) throws Exception {
         if (!dataSetIterator.hasNext()) {
-            return (Iterable<Evaluation>)Collections.emptyIterator();
+            return Collections.emptyList();
         }
 
         MultiLayerNetwork network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(json.getValue()));
