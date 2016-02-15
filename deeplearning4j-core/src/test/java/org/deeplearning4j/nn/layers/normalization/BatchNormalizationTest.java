@@ -69,29 +69,24 @@ public class BatchNormalizationTest {
     public void testBatchNormBack(){
         Pair<Gradient, INDArray> actualOut = layer.backpropGradient(epsilon);
 
-        INDArray expectedEpsilon = Nd4j.create(new double[] {
-                1.,1.,1.,1.,.5,.5,.5,.5,1.,1.,1.,1.,.5,.5,.5,.5,
-                1.,1.,1.,1.,.5,.5,.5,.5,1.,1.,1.,1.,.5,.5,.5,.5,
-                -1.,-1.,-1.,-1.,-.5,-.5,-.5,-.5,-1.,-1.,-1.,-1.,-.5,-.5,-.5,-.5,
-                -1.,-1.,-1.,-1.,-.5,-.5,-.5,-.5,-1.,-1.,-1.,-1.,-.5,-.5,-.5,-.5,
+        INDArray expectedEpsilonOut = Nd4j.create(new double[] {
+                0.,0.,0.,0.,-0.5,-0.5,-0.5,-0.5,0.,0.,0.,0.,-0.5,-0.5,-0.5,-0.5,
+                0.,0.,0.,0.,-0.5,-0.5,-0.5,-0.5,0.,0.,0.,0.,-0.5,-0.5,-0.5,-0.5,
+                -0.,-0.,-0.,-0.,0.5,0.5,0.5,0.5,-0.,-0.,-0.,-0.,0.5,0.5,0.5,0.5,
+                -0.,-0.,-0.,-0.,0.5,0.5,0.5,0.5,-0.,-0.,-0.,-0.,0.5,0.5,0.5,0.5
         },new int[]{2, 2, 4, 4});
 
         INDArray expectedGamma = Nd4j.create(new double[]
-                {
-                  0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,
-                  0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,
-                  0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,
-                }, new int[] {1, 32});
+                { 2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.
+                }, new int[] {1, 16});
 
         INDArray expectedBeta = Nd4j.create(new double[]
-                { 0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,
-                        0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,
-                        0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,
-                }, new int[] {1, 32});
+                { 0.,0.,0.,0.,0.,0.,0.,0. }, new int[] {1, 8});
 
-        assertEquals(expectedEpsilon, actualOut.getSecond());
+        assertEquals(expectedEpsilonOut, actualOut.getSecond());
+        assertEquals(expectedBeta, actualOut.getFirst().getGradientFor("beta"));
         assertEquals(expectedGamma, actualOut.getFirst().getGradientFor("gamma"));
-        assertEquals(expectedGamma, actualOut.getFirst().getGradientFor("beta"));
+
     }
 
     @Test
