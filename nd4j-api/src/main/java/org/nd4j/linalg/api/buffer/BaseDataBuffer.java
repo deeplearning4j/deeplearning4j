@@ -59,6 +59,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected float[] floatData;
     protected AtomicBoolean dirty = new AtomicBoolean(false);
 
+    protected DataBuffer originalBuffer;
+
 
     /**
      * Meant for creating another view of a buffer
@@ -73,6 +75,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
         this.elementSize = underlyingBuffer.getElementSize();
         this.underlyingLength = underlyingBuffer.underlyingLength() - offset;
         this.wrappedDataBuffer = underlyingBuffer;
+
+        // Adding link to original databuffer
+        if (underlyingBuffer.originalDataBuffer() == null) {
+            this.originalBuffer = underlyingBuffer;
+        } else this.originalBuffer = underlyingBuffer.originalDataBuffer();
 
         if(underlyingBuffer.dataType() == Type.DOUBLE) {
             if(underlyingBuffer.allocationMode() == AllocationMode.HEAP) {
@@ -106,6 +113,15 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
             }
         }
+    }
+
+    /**
+     * Original DataBuffer.
+     * In case if we have a view derived from another view, derived from some other view, original DataBuffer will point to the originating DataBuffer, where all views come from.
+     */
+    @Override
+    public DataBuffer originalDataBuffer() {
+        return originalBuffer;
     }
 
     /**

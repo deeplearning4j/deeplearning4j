@@ -483,8 +483,8 @@ public class JcublasLevel1 extends BaseLevel1 {
 
             allocator.tickDeviceWrite(Y);
 
-            allocator.tackDevice((BaseCudaDataBuffer) X.data(), AllocationUtils.buildAllocationShape(X));
-            allocator.tackDevice((BaseCudaDataBuffer) Y.data(), AllocationUtils.buildAllocationShape(Y));
+            allocator.tackDevice(X);
+            allocator.tackDevice(Y);
 
 
         }catch (Exception e) {
@@ -519,8 +519,8 @@ public class JcublasLevel1 extends BaseLevel1 {
 
             allocator.tickDeviceWrite(Y);
 
-            allocator.tackDevice((BaseCudaDataBuffer) X.data(), AllocationUtils.buildAllocationShape(X));
-            allocator.tackDevice((BaseCudaDataBuffer) Y.data(), AllocationUtils.buildAllocationShape(Y));
+            allocator.tackDevice(X);
+            allocator.tackDevice(Y);
 
         }catch (Exception e) {
             throw new RuntimeException(e);

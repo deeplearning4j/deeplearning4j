@@ -232,8 +232,8 @@ public class AtomicAllocator implements Allocator {
      *
      * @param buffer DataBuffer object to be picked & tracked
      */
-    @Override
-    public Long pickupSpan(@NonNull BaseCudaDataBuffer buffer, @NonNull AllocationShape shape) {
+
+    protected Long pickupSpan(@NonNull BaseCudaDataBuffer buffer) {
         //log.info("pickupSpan(BaseCudaDataBuffer)");
 //        if (1> 0) throw new RuntimeException("");
         try {
@@ -244,13 +244,14 @@ public class AtomicAllocator implements Allocator {
                     We have such buffer already. It's either the Nested allocation, or something like that.
                     Just throw exception for now.
                  */
-                throw new IllegalStateException("Buffer is already registered");
+             //   throw new IllegalStateException("Buffer is already registered");
+                return buffer.getAllocatorPointer();
             } else {
                 /*
                     We don't have such buffer registered somehow. Probably that's new allocation
                  */
                 AllocationPoint point = new AllocationPoint();
-                point.setShape(shape);
+                //point.setShape(AllocationUtils.buildAllocationShape(buffer.originalDataBuffer()));
 
                 // set device ID -> current thread
                 point.setDeviceId(getDeviceId());
@@ -292,7 +293,7 @@ public class AtomicAllocator implements Allocator {
         /*
          while working on array level, we actually immediately downgrade to buffer level, with AllocationShape defined by this array
           */
-        if (!(array.data() instanceof BaseCudaDataBuffer) || !(array instanceof JCublasNDArray)) throw new IllegalStateException("Underlying buffer isn't instance of BaseCudaDataBuffer");
+        if (!(array.data() instanceof BaseCudaDataBuffer)) throw new IllegalStateException("Underlying buffer isn't instance of BaseCudaDataBuffer");
 
         // For buffer registration we're always using full underlying buffer
         AllocationShape shape = new AllocationShape();
@@ -301,7 +302,28 @@ public class AtomicAllocator implements Allocator {
         shape.setLength(array.data().length());
         shape.setDataType(Nd4j.dataType());
 
-        return pickupSpan((BaseCudaDataBuffer) array.data(), shape);
+        return null; //pickupSpan((BaseCudaDataBuffer) array.data().originalDataBuffer(), shape);
+    }
+
+    /**
+     * This method hints allocator, that specific object was accessed on host side.
+     * This includes putRow, putScalar;
+     *
+     * @param array
+     */
+    @Override
+    public void tickHost(INDArray array) {
+
+    }
+
+    /**
+     * This methods hints allocator, that specific object was accessed on device side.
+     *
+     * @param array
+     */
+    @Override
+    public void tickDevice(INDArray array) {
+
     }
 
     /**
@@ -315,28 +337,6 @@ public class AtomicAllocator implements Allocator {
         return null;
     }
 
-    /**
-     * This method hints allocator, that specific object was accessed on host side.
-     * This includes putRow, putScalar;
-     *
-     * @param objectId unique object ID
-     */
-    @Override
-    public void tickHost(BaseCudaDataBuffer objectId) {
-
-    }
-
-    /**
-     * This methods hints allocator, that specific object was accessed on device side.
-     *
-     * @param objectId unique object ID
-     * @param shape    shape
-     */
-    @Override
-    @Deprecated
-    public void tickDevice(BaseCudaDataBuffer objectId, AllocationShape shape) {
-        throw new UnsupportedOperationException("tickDevice should be removed!!!11one");
-    }
 
     /**
      * This method hints allocator, that specific object was released on device side
@@ -350,8 +350,8 @@ public class AtomicAllocator implements Allocator {
 
 
 
-    @Override
-    public void tackDevice(BaseCudaDataBuffer objectId, AllocationShape shape) {
+
+    protected void tackDevice(BaseCudaDataBuffer objectId, AllocationShape shape) {
         AllocationPoint point = getAllocationPoint(objectId, shape);
 
         point.getAccessState().requestTack();
@@ -540,6 +540,20 @@ public class AtomicAllocator implements Allocator {
         return point.getCudaPointer();
     }
 
+    /**
+     * This method returns actual device pointer valid for specified INDArray
+     *
+     * @param array
+     */
+    @Override
+    public Pointer getDevicePointer(INDArray array) {
+        AllocationShape shape = AllocationUtils.buildAllocationShape(array);
+
+        DataBuffer buffer = array.data().originalDataBuffer();
+
+        return null;
+    }
+
     protected boolean promoteObject(Long trackingPoint, AllocationPoint point, AllocationShape shape) {
         try {
             DevicePointerInfo newPointers = mover.alloc(AllocationStatus.DEVICE, point, shape);
@@ -571,12 +585,11 @@ public class AtomicAllocator implements Allocator {
     /**
      * This method returns actual host pointer, valid for specified shape of current object
      *
-     * @param buffer
-     * @param shape
+     * @param array
      * @return
      */
     @Override
-    public Pointer getHostPointer(BaseCudaDataBuffer buffer, AllocationShape shape) {
+    public Pointer getHostPointer(INDArray array) {
         return null;
     }
 
@@ -585,14 +598,11 @@ public class AtomicAllocator implements Allocator {
      *
      * @param objectId
      */
-    @Override
-    public void synchronizeHostData(BaseCudaDataBuffer objectId, AllocationShape shape) {
+
+    protected void synchronizeHostData(BaseCudaDataBuffer objectId, AllocationShape shape) {
         AllocationPoint point = getAllocationPoint(objectId, shape);
         log.info("Synchronize called on buffer");
-        if (point == null) {
-            log.info("aha");
-            pickupSpan(objectId, shape);
-        }
+
 
 
         /*
@@ -622,7 +632,7 @@ public class AtomicAllocator implements Allocator {
      * @param array
      */
     @Override
-    public void synchronizeHostData(JCublasNDArray array) {
+    public void synchronizeHostData(INDArray array) {
         log.info("Synchronize called on array");
         AllocationPoint point = getAllocationPoint((BaseCudaDataBuffer) array.data(), AllocationUtils.buildAllocationShape(array));
 
@@ -637,11 +647,11 @@ public class AtomicAllocator implements Allocator {
     /**
      * This method returns current host memory state
      *
-     * @param objectId
+     * @param array
      * @return
      */
     @Override
-    public SyncState getHostMemoryState(BaseCudaDataBuffer objectId, AllocationShape shape) {
+    public SyncState getHostMemoryState(INDArray array) {
         /*
             basically we just want to compare two access time values: device & host.
             we can't know, if memory was changed on device side or not
@@ -651,7 +661,7 @@ public class AtomicAllocator implements Allocator {
             TODO: improvement is possible here ->
              as soon as we'll have partial allocations available, we can have partially synced memory
          */
-        AllocationPoint point = getAllocationPoint(objectId, shape);
+        AllocationPoint point = getAllocationPoint(null);
         if (point.isActualOnHostSide() == true) {
             return SyncState.SYNC;
         } else {
@@ -673,11 +683,11 @@ public class AtomicAllocator implements Allocator {
     /**
      * This method returns CUDA deviceId for specified buffer
      *
-     * @param objectId
+     * @param array
      * @return
      */
     @Override
-    public Integer getDeviceId(BaseCudaDataBuffer objectId) {
+    public Integer getDeviceId(INDArray array) {
         return null;
     }
 
@@ -734,14 +744,11 @@ public class AtomicAllocator implements Allocator {
         }
     }
 
-    protected AllocationPoint getAllocationPoint(BaseCudaDataBuffer objectId, AllocationShape shape) {
-        Long trackingPointer = objectId.getAllocatorPointer();
 
-        if (trackingPointer == null) {
-            log.info("Registering at getAllocationPoint()");
-            pickupSpan(objectId, shape);
-            trackingPointer = objectId.getAllocatorPointer();
-        }
+
+    protected AllocationPoint getAllocationPoint(BaseCudaDataBuffer objectId, AllocationShape shape) {
+        Long trackingPointer = ((BaseCudaDataBuffer) objectId.originalDataBuffer()).getAllocatorPointer();
+
 
         // that's a temporary exception, we'll change that to re-ack later
         if (trackingPointer == null)

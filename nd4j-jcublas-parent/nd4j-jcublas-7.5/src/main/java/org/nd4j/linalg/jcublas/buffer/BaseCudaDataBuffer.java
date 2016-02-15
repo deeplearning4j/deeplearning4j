@@ -305,17 +305,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public Pointer getDevicePointer(int stride, int offset,int length) {
-        Allocator allocator = AtomicAllocator.getInstance();
 
-        AllocationShape shape = new AllocationShape();
-        shape.setDataType(this.dataType());
-        shape.setLength(length);
-        shape.setOffset(offset);
-        shape.setStride(stride);
-
-        if (1 > 0) return allocator.getDevicePointer(this, shape, false);
-
-      //  if (1 > 0) throw new RuntimeException("Brick wall found on primary getDevicePointer()");
+        if (1 > 0) throw new RuntimeException("Brick wall found on primary getDevicePointer()");
 
         String name = Thread.currentThread().getName();
         DevicePointerInfo devicePointerInfo = pointersToContexts.get(name,Triple.of(offset,length,stride));
@@ -404,22 +395,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public Pointer getDevicePointer(INDArray arr,int stride, int offset,int length) {
-        Allocator allocator = AtomicAllocator.getInstance();
-
-        AllocationShape shape = new AllocationShape();
-        shape.setDataType(arr.data().dataType());
-        shape.setLength(length);
-        shape.setOffset(offset);
-        shape.setStride(stride);
-
-        synchronized (this) {
-            if (this.getAllocatorPointer() == null) {
-                log.info("Triggering pickupSpan(INDArray)");
-                allocator.pickupSpan(arr);
-            }
-        }
-
-        if (1 > 0) return allocator.getDevicePointer((BaseCudaDataBuffer) arr.data(), shape, arr.isView());
 
 
         if (1 > 0) throw new RuntimeException("Brick wall found on secondary getDevicePointer()");

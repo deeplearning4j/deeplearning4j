@@ -23,6 +23,7 @@ import jcuda.Pointer;
 import lombok.Data;
 import lombok.Getter;
 import org.apache.commons.lang3.tuple.Triple;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -178,11 +179,14 @@ public class CublasPointer  implements AutoCloseable {
         int stride = arr instanceof IComplexNDArray ? BlasBufferUtil.getBlasStride(arr) / 2 : BlasBufferUtil.getBlasStride(arr);
         //no striding for upload if we are using the whole buffer
       //  System.out.println("Allocation offset: ["+array.offset()+"], length: ["+compLength+"], stride: ["+ stride+"]");
-        this.devicePointer = buffer.getDevicePointer(
+        this.devicePointer = AtomicAllocator.getInstance().getDevicePointer(array);
+        /*
+                buffer.getDevicePointer(
                 this.arr,
                 stride
                 ,this.arr.offset()
                 ,compLength);
+        */
 
 
         /**

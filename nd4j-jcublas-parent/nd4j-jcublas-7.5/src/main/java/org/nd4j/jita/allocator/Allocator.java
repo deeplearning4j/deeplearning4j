@@ -10,7 +10,6 @@ import org.nd4j.jita.mover.Mover;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.jcublas.JCublasNDArray;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 
@@ -70,7 +69,7 @@ public interface Allocator {
     /**
      * This method registers buffer within allocator instance
      */
-    Long pickupSpan(BaseCudaDataBuffer buffer, AllocationShape shape);
+   // Long pickupSpan(BaseCudaDataBuffer buffer, AllocationShape shape);
 
     /**
      * This method registers array's buffer within allocator instance
@@ -82,26 +81,19 @@ public interface Allocator {
      * This method hints allocator, that specific object was accessed on host side.
      * This includes putRow, putScalar;
      *
-     * @param objectId unique object ID
+     * @param array
      */
-    void tickHost(BaseCudaDataBuffer objectId);
+    void tickHost(INDArray array);
+
 
     /**
      * This methods hints allocator, that specific object was accessed on device side.
      *
-     * @param objectId unique object ID
-     * @param shape shape
+     * @param array
      */
     @Deprecated
-    void tickDevice(BaseCudaDataBuffer objectId, AllocationShape shape);
+    void tickDevice(INDArray array);
 
-    /**
-     * This method hints allocator, that specific object was released on device side
-     *
-     * @param buffer
-     * @param shape
-     */
-    void tackDevice(BaseCudaDataBuffer buffer, AllocationShape shape);
 
     /**
      * This method hints allocator, that specific object was released on device side
@@ -138,39 +130,38 @@ public interface Allocator {
      * @param buffer
      * @param shape
      */
+    @Deprecated
     Pointer getDevicePointer(BaseCudaDataBuffer buffer, AllocationShape shape, boolean isView);
+
+
+    /**
+     * This method returns actual device pointer valid for specified INDArray
+     */
+    Pointer getDevicePointer(INDArray array);
 
 
     /**
      * This method returns actual host pointer, valid for specified shape of current object
      *
-     * @param buffer
-     * @param shape
+     * @param array
      * @return
      */
-    Pointer getHostPointer(BaseCudaDataBuffer buffer, AllocationShape shape);
-
-    /**
-     * This method should be called to make sure that data on host side is actualized
-     *
-     * @param buffer
-     */
-    void synchronizeHostData(BaseCudaDataBuffer buffer, AllocationShape shape);
+    Pointer getHostPointer(INDArray array);
 
     /**
      * This method should be callsd to make sure that data on host side is actualized
      *
      * @param array
      */
-    void synchronizeHostData(JCublasNDArray array);
+    void synchronizeHostData(INDArray array);
 
     /**
      * This method returns current host memory state
      *
-     * @param objectId
+     * @param array
      * @return
      */
-    SyncState getHostMemoryState(BaseCudaDataBuffer objectId, AllocationShape shape);
+    SyncState getHostMemoryState(INDArray array);
 
     /**
      * This method returns the number of top-level memory allocation.
@@ -182,12 +173,12 @@ public interface Allocator {
 
 
     /**
-     * This method returns CUDA deviceId for specified buffer
+     * This method returns CUDA deviceId for specified array
      *
-     * @param objectId
+     * @param array
      * @return
      */
-    Integer getDeviceId(BaseCudaDataBuffer objectId);
+    Integer getDeviceId(INDArray array);
 
     /**
      * This method returns CUDA deviceId for current thread

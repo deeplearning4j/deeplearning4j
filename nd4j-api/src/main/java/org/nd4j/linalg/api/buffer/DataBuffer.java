@@ -120,6 +120,13 @@ public interface DataBuffer extends Serializable {
      */
     DataBuffer underlyingDataBuffer();
 
+
+    /**
+     *  Original DataBuffer.
+     *  In case if we have a view derived from another view, derived from some other view, original DataBuffer will point to the originating DataBuffer, where all views come from.
+     */
+    DataBuffer originalDataBuffer();
+
     /**
      * Copies from
      * the given buffer
