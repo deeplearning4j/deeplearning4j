@@ -1150,12 +1150,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                     break;
 
                 boolean hasMaskArrays = next.hasMaskArrays();
-                if(hasMaskArrays) setLayerMaskArrays(next.getFeaturesMaskArray(), next.getLabelsMaskArray());
 
                 if(layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
-                    doTruncatedBPTT(next.getFeatureMatrix(),next.getLabels());
+                    doTruncatedBPTT(next.getFeatureMatrix(),next.getLabels(),next.getFeaturesMaskArray(),next.getLabelsMaskArray());
                 }
                 else {
+                    if(hasMaskArrays) setLayerMaskArrays(next.getFeaturesMaskArray(), next.getLabelsMaskArray());
                     setInput(next.getFeatureMatrix());
                     setLabels(next.getLabels());
                     if( solver == null ){
@@ -1259,9 +1259,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         return new Pair<>(gradient,currPair.getSecond());
     }
 
-    protected void doTruncatedBPTT(INDArray input, INDArray labels) {
+    protected void doTruncatedBPTT(INDArray input, INDArray labels, INDArray featuresMaskArray, INDArray labelsMaskArray) {
         if( input.rank() != 3 || labels.rank() != 3 ){
-            log.warn("Cannot do truncated BPTT with non-3d inputs or labels. Expect input with shape [miniBatchSize,nIn,timeSeriesLength]");
+            log.warn("Cannot do truncated BPTT with non-3d inputs or labels. Expect input with shape [miniBatchSize,nIn,timeSeriesLength], got "
+                        + Arrays.toString(input.shape()) + "\t" + Arrays.toString(labels.shape()));
             return;
         }
         if( input.size(2) != labels.size(2) ){
@@ -1289,6 +1290,16 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             setInput(inputSubset);
             setLabels(labelSubset);
 
+            INDArray featuresMaskSubset = null;
+            INDArray labelsMaskSubset = null;
+            if(featuresMaskArray != null){
+                 featuresMaskSubset = featuresMaskArray.get(NDArrayIndex.all(), NDArrayIndex.interval(startTimeIdx,endTimeIdx));
+            }
+            if(labelsMaskArray != null){
+                labelsMaskSubset = labelsMaskArray.get(NDArrayIndex.all(), NDArrayIndex.interval(startTimeIdx,endTimeIdx));
+            }
+            if(featuresMaskSubset != null || labelsMaskSubset != null) setLayerMaskArrays(featuresMaskSubset,labelsMaskSubset);
+
             if(solver == null) {
                 solver = new Solver.Builder()
                         .configure(conf())
@@ -1302,6 +1313,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
         rnnClearPreviousState();
+        if(featuresMaskArray != null || labelsMaskArray != null) clearLayerMaskArrays();
     }
 
     public void updateRnnStateWithTBPTTState() {
@@ -1483,7 +1495,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         if(layerWiseConfigurations.isBackprop()) {
             if(layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
-                doTruncatedBPTT(data,labels);
+                doTruncatedBPTT(data,labels,null,null);
             }
             else {
                 if( solver == null) {
@@ -1523,10 +1535,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     @Override
     public void fit(org.nd4j.linalg.dataset.api.DataSet data) {
-        boolean hasMaskArrays = data.hasMaskArrays();
-        if(hasMaskArrays) setLayerMaskArrays(data.getFeaturesMaskArray(), data.getLabelsMaskArray());
-        fit(data.getFeatureMatrix(), data.getLabels());
-        if(hasMaskArrays) clearLayerMaskArrays();
+        if(layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
+            doTruncatedBPTT(data.getFeatureMatrix(),data.getLabels(),data.getFeaturesMaskArray(),data.getLabelsMaskArray());
+        } else {
+            //Standard training
+            boolean hasMaskArrays = data.hasMaskArrays();
+            if(hasMaskArrays) setLayerMaskArrays(data.getFeaturesMaskArray(), data.getLabelsMaskArray());
+            fit(data.getFeatureMatrix(), data.getLabels());
+            if(hasMaskArrays) clearLayerMaskArrays();
+        }
     }
 
     /**
