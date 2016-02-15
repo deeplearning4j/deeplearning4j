@@ -20,6 +20,7 @@ package org.deeplearning4j.spark.impl.computationgraph;
 
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaDoubleRDD;
+import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.DoubleFunction;
@@ -40,7 +41,10 @@ import org.deeplearning4j.spark.impl.common.misc.*;
 import org.deeplearning4j.spark.impl.common.updater.UpdaterAggregatorCombinerCG;
 import org.deeplearning4j.spark.impl.common.updater.UpdaterElementCombinerCG;
 import org.deeplearning4j.spark.impl.computationgraph.dataset.DataSetToMultiDataSetFn;
+import org.deeplearning4j.spark.impl.computationgraph.dataset.PairDataSetToMultiDataSetFn;
 import org.deeplearning4j.spark.impl.computationgraph.gradientaccum.GradientAccumFlatMapCG;
+import org.deeplearning4j.spark.impl.computationgraph.scoring.ScoreExamplesFunction;
+import org.deeplearning4j.spark.impl.computationgraph.scoring.ScoreExamplesWithKeyFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -57,6 +61,7 @@ import java.util.List;
  */
 public class SparkComputationGraph implements Serializable {
 
+    public static final int DEFAULT_EVAL_SCORE_BATCH_SIZE = 50;
     private transient JavaSparkContext sc;
     private ComputationGraphConfiguration conf;
     private ComputationGraph network;
@@ -91,11 +96,15 @@ public class SparkComputationGraph implements Serializable {
 
 
     public SparkComputationGraph(SparkContext sparkContext, ComputationGraphConfiguration conf) {
-        sc = new JavaSparkContext(sparkContext);
+        this(new JavaSparkContext(sparkContext),conf);
+    }
+
+    public SparkComputationGraph(JavaSparkContext sparkContext, ComputationGraphConfiguration conf){
+        sc = sparkContext;
         this.conf = conf.clone();
         this.network = new ComputationGraph(conf);
         this.network.init();
-        this.averageEachIteration = sparkContext.conf().getBoolean(AVERAGE_EACH_ITERATION, false);
+        this.averageEachIteration = sparkContext.sc().conf().getBoolean(AVERAGE_EACH_ITERATION, false);
         this.updater = sc.broadcast(network.getUpdater());
     }
 
@@ -345,6 +354,89 @@ public class SparkComputationGraph implements Serializable {
         for(Double d : scoresList) sum += d;
         if(average) return sum / n;
         return sum;
+    }
+
+    /** DataSet version of {@link #scoreExamples(JavaRDD, boolean)}
+     */
+    public JavaDoubleRDD scoreExamplesDataSet(JavaRDD<DataSet> data, boolean includeRegularizationTerms) {
+        return scoreExamples(data.map(new DataSetToMultiDataSetFn()),includeRegularizationTerms);
+    }
+
+    /**DataSet version of {@link #scoreExamples(JavaPairRDD, boolean, int)}
+     */
+    public JavaDoubleRDD scoreExamplesDataSet(JavaRDD<DataSet> data, boolean includeRegularizationTerms, int batchSize) {
+        return scoreExamples(data.map(new DataSetToMultiDataSetFn()), includeRegularizationTerms, batchSize);
+    }
+
+    /**DataSet version of {@link #scoreExamples(JavaPairRDD, boolean)}
+     */
+    public <K> JavaPairRDD<K,Double> scoreExamplesDataSet(JavaPairRDD<K,DataSet> data, boolean includeRegularizationTerms){
+        return scoreExamples(data.mapToPair(new PairDataSetToMultiDataSetFn<K>()),includeRegularizationTerms,DEFAULT_EVAL_SCORE_BATCH_SIZE);
+    }
+
+    /**DataSet version of {@link #scoreExamples(JavaPairRDD, boolean,int)}
+     */
+    public <K> JavaPairRDD<K,Double> scoreExamplesDataSet(JavaPairRDD<K,DataSet> data, boolean includeRegularizationTerms, int batchSize){
+        return scoreExamples(data.mapToPair(new PairDataSetToMultiDataSetFn<K>()),includeRegularizationTerms,batchSize);
+    }
+
+    /** Score the examples individually, using the default batch size {@link #DEFAULT_EVAL_SCORE_BATCH_SIZE}. Unlike {@link #calculateScore(JavaRDD, boolean)},
+     * this method returns a score for each example separately. If scoring is needed for specific examples use either
+     * {@link #scoreExamples(JavaPairRDD, boolean)} or {@link #scoreExamples(JavaPairRDD, boolean, int)} which can have
+     * a key for each example.
+     * @param data Data to score
+     * @param includeRegularizationTerms If true: include the l1/l2 regularization terms with the score (if any)
+     * @return A JavaDoubleRDD containing the scores of each example
+     * @see ComputationGraph#scoreExamples(MultiDataSet, boolean)
+     */
+    public JavaDoubleRDD scoreExamples(JavaRDD<MultiDataSet> data, boolean includeRegularizationTerms) {
+        return scoreExamples(data,includeRegularizationTerms,DEFAULT_EVAL_SCORE_BATCH_SIZE);
+    }
+
+    /** Score the examples individually, using a specified batch size. Unlike {@link #calculateScore(JavaRDD, boolean)},
+     * this method returns a score for each example separately. If scoring is needed for specific examples use either
+     * {@link #scoreExamples(JavaPairRDD, boolean)} or {@link #scoreExamples(JavaPairRDD, boolean, int)} which can have
+     * a key for each example.
+     * @param data Data to score
+     * @param includeRegularizationTerms If true: include the l1/l2 regularization terms with the score (if any)
+     * @param batchSize Batch size to use when doing scoring
+     * @return A JavaDoubleRDD containing the scores of each example
+     * @see ComputationGraph#scoreExamples(MultiDataSet, boolean)
+     */
+    public JavaDoubleRDD scoreExamples(JavaRDD<MultiDataSet> data, boolean includeRegularizationTerms, int batchSize) {
+        return data.mapPartitionsToDouble(new ScoreExamplesFunction(sc.broadcast(network.params()), sc.broadcast(conf.toJson()),
+                includeRegularizationTerms, batchSize));
+    }
+
+    /** Score the examples individually, using the default batch size {@link #DEFAULT_EVAL_SCORE_BATCH_SIZE}. Unlike {@link #calculateScore(JavaRDD, boolean)},
+     * this method returns a score for each example separately<br>
+     * Note: The provided JavaPairRDD has a key that is associated with each example and returned score.<br>
+     * <b>Note:</b> The DataSet objects passed in must have exactly one example in them (otherwise: can't have a 1:1 association
+     * between keys and data sets to score)
+     * @param data Data to score
+     * @param includeRegularizationTerms If true: include the l1/l2 regularization terms with the score (if any)
+     * @param <K> Key type
+     * @return A {@code JavaPairRDD<K,Double>} containing the scores of each example
+     * @see MultiLayerNetwork#scoreExamples(DataSet, boolean)
+     */
+    public <K> JavaPairRDD<K,Double> scoreExamples(JavaPairRDD<K,MultiDataSet> data, boolean includeRegularizationTerms){
+        return scoreExamples(data,includeRegularizationTerms,DEFAULT_EVAL_SCORE_BATCH_SIZE);
+    }
+
+    /** Score the examples individually, using a specified batch size. Unlike {@link #calculateScore(JavaRDD, boolean)},
+     * this method returns a score for each example separately<br>
+     * Note: The provided JavaPairRDD has a key that is associated with each example and returned score.<br>
+     * <b>Note:</b> The DataSet objects passed in must have exactly one example in them (otherwise: can't have a 1:1 association
+     * between keys and data sets to score)
+     * @param data Data to score
+     * @param includeRegularizationTerms If true: include the l1/l2 regularization terms with the score (if any)
+     * @param <K> Key type
+     * @return A {@code JavaPairRDD<K,Double>} containing the scores of each example
+     * @see MultiLayerNetwork#scoreExamples(DataSet, boolean)
+     */
+    public <K> JavaPairRDD<K,Double> scoreExamples(JavaPairRDD<K,MultiDataSet> data, boolean includeRegularizationTerms, int batchSize ){
+        return data.mapPartitionsToPair(new ScoreExamplesWithKeyFunction<K>(sc.broadcast(network.params()), sc.broadcast(conf.toJson()),
+                includeRegularizationTerms, batchSize));
     }
 
 }

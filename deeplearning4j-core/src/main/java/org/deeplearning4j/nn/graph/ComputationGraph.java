@@ -1017,6 +1017,62 @@ public class ComputationGraph implements Serializable, Model {
         return score;
     }
 
+    /**Calculate the score for each example in a DataSet individually. Unlike {@link #score(DataSet)} and {@link #score(DataSet, boolean)}
+     * this method does not average/sum over examples. This method allows for examples to be scored individually (at test time only), which
+     * may be useful for example for autoencoder architectures and the like.<br>
+     * Each row of the output (assuming addRegularizationTerms == true) is equivalent to calling score(DataSet) with a single example.
+     * @param data The data to score
+     * @param addRegularizationTerms If true: add l1/l2 regularization terms (if any) to the score. If false: don't add regularization terms
+     * @return An INDArray (column vector) of size input.numRows(); the ith entry is the score (loss value) of the ith example
+     */
+    public INDArray scoreExamples(DataSet data, boolean addRegularizationTerms) {
+        if (numInputArrays != 1 || numOutputArrays != 1)
+            throw new UnsupportedOperationException("Cannot score ComputationGraph network with "
+                    + " DataSet: network does not have 1 input and 1 output arrays");
+        return scoreExamples(ComputationGraphUtil.toMultiDataSet(data),addRegularizationTerms);
+    }
+
+    /**Calculate the score for each example in a DataSet individually. Unlike {@link #score(MultiDataSet)} and {@link #score(MultiDataSet, boolean)}
+     * this method does not average/sum over examples. This method allows for examples to be scored individually (at test time only), which
+     * may be useful for example for autoencoder architectures and the like.<br>
+     * Each row of the output (assuming addRegularizationTerms == true) is equivalent to calling score(MultiDataSet) with a single example.
+     * @param data The data to score
+     * @param addRegularizationTerms If true: add l1/l2 regularization terms (if any) to the score. If false: don't add regularization terms
+     * @return An INDArray (column vector) of size input.numRows(); the ith entry is the score (loss value) of the ith example
+     */
+    public INDArray scoreExamples(MultiDataSet data, boolean addRegularizationTerms){
+        boolean hasMaskArray = data.hasMaskArrays();
+        if(hasMaskArray) setLayerMaskArrays(data.getFeaturesMaskArrays(),data.getLabelsMaskArrays());
+        feedForward(data.getFeatures(),false);
+        setLabels(data.getLabels());
+
+        INDArray out = null;
+
+        double l1 = (addRegularizationTerms ? calcL1() : 0.0);
+        double l2 = (addRegularizationTerms ? calcL2() : 0.0);
+        int i=0;
+        for(String s : configuration.getNetworkOutputs()){
+            Layer outLayer = verticesMap.get(s).getLayer();
+            if(outLayer == null || !(outLayer instanceof BaseOutputLayer<?>)){
+                throw new UnsupportedOperationException("Cannot calculate score: vertex \"" + s + "\" is not an output layer");
+            }
+
+            BaseOutputLayer<?> ol = (BaseOutputLayer<?>)outLayer;
+            ol.setLabels(labels[i++]);
+
+            INDArray scoreCurrLayer = ol.computeScoreForExamples(l1,l2);
+            if(out == null) out = scoreCurrLayer;
+            else out.addi(scoreCurrLayer);
+
+            //Only want to add l1/l2 once...
+            l1 = 0.0;
+            l2 = 0.0;
+        }
+
+        if(hasMaskArray) clearLayerMaskArrays();
+        return out;
+    }
+
 
 
     //------------------------------------------------------
