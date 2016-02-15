@@ -117,10 +117,10 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray x2 = Nd4j.create(data, new int[]{2,3,3});
         data = Nd4j.linspace(1, 12, 9).data();
         INDArray y2 = Nd4j.create(data, new int[]{3,3});
-        INDArray z2 = Nd4j.create(3,2);
+        INDArray z2 = Nd4j.create('f',3,2);
         z2.putColumn(0, y2.getColumn(0));
         z2.putColumn(1, y2.getColumn(1));
-        INDArray nofOffset = Nd4j.create(3,3);
+        INDArray nofOffset = Nd4j.create('f',3,3);
         nofOffset.assign(x2.slice(0));
         assertEquals(getFailureMessage(),nofOffset,x2.slice(0));
 
@@ -1048,8 +1048,8 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     @Test
     public void testTensorDot() {
-        INDArray oneThroughSixty = Nd4j.arange(60).reshape(3, 4, 5);
-        INDArray oneThroughTwentyFour = Nd4j.arange(24).reshape(4, 3, 2);
+        INDArray oneThroughSixty = Nd4j.arange(60).reshape('f',3, 4, 5);
+        INDArray oneThroughTwentyFour = Nd4j.arange(24).reshape('f',4, 3, 2);
         INDArray result = Nd4j.tensorMmul(oneThroughSixty, oneThroughTwentyFour, new int[][]{{1, 0}, {0, 1}});
         assertArrayEquals(new int[]{5, 2}, result.shape());
         INDArray assertion = Nd4j.create(new double[][]{
@@ -1236,7 +1236,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
                         default:
                             throw new RuntimeException();
                     }
-                    Nd4j.getExecutioner().exec(op);
+                    Nd4j.getExecutioner().exec(op,op.getDimension());
 
                     //Compare expected vs. actual:
                     NdIndexIterator iter = new NdIndexIterator(orig.shape());

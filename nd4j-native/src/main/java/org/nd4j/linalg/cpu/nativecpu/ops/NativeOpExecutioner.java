@@ -334,7 +334,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
             else {
                 if(op.y() != null) {
-                    if(op.x().elementWiseStride() >=1 && op.y().elementWiseStride() >= 1) {
+                    if(op.x().elementWiseStride() >=1 && op.y().elementWiseStride() >= 1 && op.x().ordering() == op.y().ordering()) {
                         loop.execPairwiseTransform
                                 (op.opNum(),
                                         op.x().data().asNioFloat(),

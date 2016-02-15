@@ -185,7 +185,7 @@ public class SoftMax extends BaseTransformOp {
             INDArray xMinusMax = x.subColumnVector(maxAlongDimension);
 
             INDArray exp;
-            if(z != null){
+            if(z != null) {
                 exp = Nd4j.getExecutioner().execAndReturn(new Exp(xMinusMax, z));
             } else {
                 exp = Nd4j.getExecutioner().execAndReturn(new Exp(xMinusMax));
