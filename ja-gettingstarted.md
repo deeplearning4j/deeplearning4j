@@ -2,208 +2,162 @@
 layout: ja-default
 ---
 
-# Deeplearning4jをはじめましょう
+# フルインストール
 
-コンテンツ ("日本語サイトは準備中です。英語サイトをご覧ください"。[English version](../gettingstarted.html))
+このインストールは複数の段階の手順に従って行います。質問やコメント等は、是非、[Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j)でお聞かせください。弊社のスタッフがお手伝いいたします。恥ずかしがる必要は全くありません。いつでも気軽にご連絡ください。また、deep-learningの初心者の方には、[deep-learningの初心者ガイド](../deeplearningforbeginners.html)もご用意いたしました。 
 
-* <a href="#quickstart">クイックスタート</a>
-* <a href="#all">Deeplearning4jのインストール方法(All OS)</a>
-    * <a href="#ide-for-java">IDE</a>
-    * <a href="#maven">Maven</a>
-    * <a href="#github">Github</a>
+exampleを簡単なステップで走らせるには、[クイックスタート](../quickstart.html)をお読みください。また、もしクイックスタートをまだ読まれていない方は、以下の説明をおお読みになる前に、是非そちらを読まれることをお勧めします。DL4Jを始めるごく簡単な方法をご紹介しているからです。 
+
+Deeplearning4jのインストールに必要なものは、[ND4Jを「はじめましょう」](http://nd4j.org/getstarted.html)でご紹介しています。ND4Jとは、DL4Jのニューラルネットワークが使用する線形代数の計算エンジンです。
+
+1.[Java 7、またはそれ以降のバージョン](http://nd4j.org/getstarted.html#java) 
+2.[統合開発環境：IntelliJ](http://nd4j.org/getstarted.html#ide-for-java) 
+3.[Maven](http://nd4j.org/getstarted.html#maven)
+
+上記をインストールした後、以下をお読みください。
+
+6.OS関連の説明ガイド
     * <a href="#linux">Linux</a>
     * <a href="#osx">OSX</a>
     * <a href="#windows">Windows</a>
-* <a href="#source">ソースの取得方法</a>
-* <a href="#eclipse">Eclipse</a>
-* <a href="#trouble">トラブルシューティング</a>
-* <a href="#next">Next Steps</a>
+8.[GitHub](http://nd4j.org/getstarted.html#github)
+9.<a href="#eclipse">Eclipse</a>
+10.<a href="#trouble">トラブルシューティング</a>
+11.<a href="#results">再現可能な結果</a>
+12.<a href="#next">次のステップ</a>
 
-## <a name="quickstart">クイックスタート</a>
+### <a name="linux">Linux</a>
 
-[クイックスタート](../ja-quickstart.html)の項目では、どのようにdeeplearning4jをスタートするか紹介しております。
-
-## <a name="all">インストール方法: All OS</a>
-
-DeepLearning4Jを実行するためには[Java 7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html) もしくはaboveが必要となります。Java7のダウンロード方法に関しては[ND4JのGet started](http://nd4j.org/ja-getstarted)の項目をご参照ください。
-
-## ND4J: Numpy for the JVM
-
-[ND4J](http://nd4j.org/ja-getstarted) は、Javaを基本にしたコンピューターエンジンです。また、DL4Jを実行するためには、ND4Jをダウンロードする必要があります。
-
-## <a id="ide-for-java">Integrated Development Environment</a>
-
-### Integrated Development Environmentとは
-
-Integrated Development Environment[IDE](https://ja.wikipedia.org/wiki/%E7%B5%B1%E5%90%88%E9%96%8B%E7%99%BA%E7%92%B0%E5%A2%83)とは、ソフトウェアの開発において用いられるエディタ、コンパイラ、リンカ、デバッガ、その他の支援ツールなどを統合・統一化した開発環境のことを指します。IDEには、ソフトウェア開発に必要な最低限のツールがすべて含まれているため、これを導入することで、インストールしたMavenとGitHubの操作を統一して行うことができます。 
-
-### なぜIDEが必要か
-
-IDSを活用することで、コードを入力するだけで簡単にシステムをセットアップができるようになります。IDEは一般的にMavenとセットで使われるため、Mavenのダウンロードをおすすめしております。
-
-### イントール状況の確認
-
-インストールプログラムをご確認ください。
-
-### インストール方法
-
-[intellij](https://www.jetbrains.com/idea/download/)のfree community editionをお勧めいたします。
-
-以下のIDEも同様にご活用いただけます。
-
-[Eclipse](http://books.sonatype.com/m2eclipse-book/reference/creating-sect-importing-projects.html) or [Netbeans](http://wiki.netbeans.org/MavenBestPractices).
-
-インストール後、以下のサイトからND4Jプロジェクトをダウンロードいただけます。
-
-[Intellijの場合](http://stackoverflow.com/questions/1051640/correct-way-to-add-lib-jar-to-an-intellij-idea-project)、
-[Eclipseの場合](http://stackoverflow.com/questions/3280353/how-to-import-a-jar-in-eclipse) 、 [Netbeansの場合](http://gpraveenkumar.wordpress.com/2009/06/17/abc-to-import-a-jar-file-in-netbeans-6-5/)
-
-## <a id="maven">Maven</a>
-
-### Mavenとは
- MavenとはJava用プロジェクト管理ツールです。([Mavenホームページ](http://maven.apache.org/what-is-maven.html)) Mavenをインストールすることで、最新版のND4Jの[JAR](http://ja.wikipedia.org/wiki/JAR_%28%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E3%83%95%E3%82%A9%E3%83%BC%E3%83%9E%E3%83%83%E3%83%88%29)を自動的にアップロードし続けることができます。
-
-### なぜ必要か
- Mavenを活用することで、より簡単にND4JとDeeplearning4j projectsをインストールすることができます。なお、最終的にダウンロードする[IDE](http://ja.wikipedia.org/wiki/%E7%B5%B1%E5%90%88%E9%96%8B%E7%99%BA%E7%92%B0%E5%A2%83)を操作するうえでも、Mavenは役立ちます。IDEまた、もしMavenの内容をご理解いただいている方は、[当社ホームページ](http://deeplearning4j.org/downloads.html) ページにアクセスいただくことで、この過程をスキップすることができます。
-
-### イントール状況の確認
-コマンドラインに、以下のコードをご入力ください。
-
-		mvn --version
-
-### インストール方法
-[Mavenホームページ](https://maven.apache.org/download.cgi)を通じて、無料でダウンロードいただけます
-
-![Alt text](../img/maven_downloads.png) 
-
-ページの下部にある、お使いのOperating Systemごとの説明に沿って、インストールを進めてください。
- “Unix-based Operating Systems (Linux, Solaris and Mac OS X).”はこのような形で表示されております。
- 
-![Alt text](../img/maven_OS_instructions.png) 
-
-ここまでの作業を完了すると、IDEを使って新しいプロジェクトを作ることができます。
-
-![Alt text](../img/new_maven_project.png) 
-
-IntelliJのWindowを通じて、下に表示されている画面が表示されます。まずはじめに名前を入力します。
-
-![Alt text](../img/maven2.png) 
-
- "Next"を押していただくと、次のウィンドウが表示されますので、"Deeplearning4j"と名前を入力してください。
- 
- ![Alt text](../img/maven4.png) 
- 
- これでIntelliJのpom.xml fileにアクセスでき、以下のよう表示されます。
- 
- ![Alt text](../img/pom_before.png) 
- 
- 次に<dependencies>セクションに[dependency](https://github.com/SkymindIO/deeplearning4j/tree/0.0.3.3)を加えていく必要があります。これはCPUsやGPUsによって異なりますので、それぞれに適応する形で"nd4j-api"と a linear-algebra backend like "[nd4j-jblas](http://search.maven.org/#search%7Cga%7C1%7Cnd4j-jblas)" か"nd4j-jcublas"を選択してください。これらはすべて <a href="http://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j-core">こちら</a>から取得できます。 
- 
- ![Alt text](../img/search_maven_latest_version.png) 
- 
- "latest version" を選択し、コピーを行ってください。
- 
- ![Alt text](../img/latest_version_dependency.png) 
- 
- コピーした内容を<dependencies>セクションにペーストすると、以下の表示内容になります。
- 
- ![Alt text](../img/pom_after.png) 
- 
- これで設定は完了になります。これ以降はIntelliJに新たなファイルを作ることも、 ND4Jの APIを利用することも可能になります。
- もし新たなアイデアが必要な場合には、[intro](http://nd4j.org/introduction.html)をご覧ください。
-
-# <a id="github">GitHub</a>
-
-## GitHubとは
-
-[Github](https://ja.wikipedia.org/wiki/GitHub) は [Revision Control System](http://ja.wikipedia.org/wiki/Revision_Control_System)に基づいた、ソフトウェア開発プロジェクトのための共有ウェブサービスであり, [open source](http://ja.wikipedia.org/wiki/オープンソース) projects向けの無料アカウントを提供しています。
-
-### なぜ必要か
- GitHubはこのシステムを使う上で必ずしも必要なものではありません。しかし、ND4Jファイルのダウンロードやプロジェクトの状況、バグの報告をチームメンバー間で共有する際には、GitHubが役立ちます。
-
-### イントール状況の確認
- インストールプログラムにて、ご確認いただけます。
-
-### インストール方法
- 以下のURLを通じて無料でダウンロードいただけます。
- 
-[Macはこちら](https://mac.github.com/), [Windowsはこちら](https://windows.github.com/)
-
-ND4Jのファイルを複製するためには以下の文章をterminal (Mac) もしくは Git Shell (Windows)へ入力してください。
-
-      git clone https://github.com/SkymindIO/nd4j
-
-## <a name="linux">Linux</a>
-
-*正常にインストールを完了するためには、Blasの初期設定が必要になります。
+* Deeplearning4jは、CPUに対応したBlasの様々な形態に依存しているため、 Blasへのネイティブバインディングが必要です。
 
         Fedora/RHEL
         yum -y install blas
-        
+
         Ubuntu
         apt-get install libblas* (credit to @sujitpal)
 
-* もしGPUが壊れていた場合、コマンド入力が必要になります。まずはじめに、下記のコマンドを入力し、Cudaがどこにインストールされているかを確認してください。
+OpenBlasに関する情報については、[こちらのセクション](#open)をお読みください。
+
+* GPUが壊れている場合は、コマンドを入力する必要があります。まず、Cudaがどこにインストールされるかを確認してください。以下のようになっているはずです。
 
          /usr/local/cuda/lib64
 
-次に*ldconfig* を調べていただく際のコマンドは、以下の通りになります。
+それから、ターミナルに*ldconfig*と入力し、続けてCudaへリンクされるファイルパスを入力します。つまり、コマンドは下記のようなものになります。
 
          ldconfig /usr/local/cuda/lib64
 
-もしJcublasがインストールできない場合には、以下のようにparameter -D をコードに入力いただく必要があります。 (これは一種のJVM になります。):
+それでもJcublasをロードできなければ、パラメータの-Dをコードに追加してください。(JVM引数です):
 
          java.library.path (settable via -Djava.librarypath=...) 
          // ^ for a writable directory, then 
          -D appended directly to "<OTHER ARGS>" 
 
-もしIDEとしてIntelliJをお使いの場合には、既にこの設定は完了しております。
+統合開発環境にIntelliJを使用している場合、既にこれは動作しているはずです。 
 
-## <a name="osx">OSX</a>
+### <a name="osx">OSX</a>
 
-* JblasはすでにOSXに対応しております。
+* Blasは既にOSXにインストールされています。  
 
-## <a name="windows">Windows</a>
+### <a name="windows">Windows</a>
 
-* [Maven](http://maven.apache.org/download.cgi)のダウンロードページで、どのようにwindows環境下でJavaとMavenをダウンロードすれば良いかという説明がされております。 この設定を完了するためには、[environment　variables](http://www.computerhope.com/issues/ch000549.htm)が適切な環境である必要があります。 
+* Windowsでのインストールは、常に簡単というわけではありません。しかし、Deeplearning4のように、オープンソースのdeep-learningプロジェクトで、Windows利用者向けのサポートに熱心なものは実際は数少ないのが現状です。詳細については[弊社のND4JページWindows用のセクション](http://nd4j.org/getstarted.html#windows)をお読みください。 
 
-* [Anaconda](http://docs.continuum.io/anaconda/install.html#windows-install)をインストールしてください。もしシステムが64-bit ない場合は、同じページにある32-bitをダウンロードしてください。 (Deeplearning4jはAnacondaを通じてmatplotlibを活用します。) 
+* お使いのコンピューターが64ビットでも[MinGW 32 bits](http://www.mingw.org/)をインストール(ダウンロードボタンは、右上に表示)し、[Prebuilt dynamic libraries using Mingw](http://icl.cs.utk.edu/lapack-for-windows/lapack/#libraries_mingw)をダウンロードします。 
 
-* [Lapack](http://icl.cs.utk.edu/lapack-for-windows/lapack/)をダウンロードしてください。(Lapackは)
+* [Lapack](http://icl.cs.utk.edu/lapack-for-windows/lapack/)をインストールします。(Intelコンパイラーがあるか質問が表示されますが、これはないはずです。)
 
-* これらの設定を完了するために、[MinGW　32bits](http://www.mingw.org/)をダウンロードしていただく必要があります。お使いのコンピューターが64-bitであっても、こちらをダウンロードしてください。続けて、[Prebuilt dynamic libraries using Mingw](http://icl.cs.utk.edu/lapack-for-windows/lapack/#libraries_mingw)をダウンロードしてください。 
+* Lapackは、[VS Studio Solution](http://icl.cs.utk.edu/lapack-for-windows/lapack/#lapacke)の代替を提供します。[Basic Linear Algebra Subprograms (BLAS)](http://www.netlib.org/blas/)についての解説も読んでおくと有用でしょう。 
 
-* Lapackは[VS Studio Solution](http://icl.cs.utk.edu/lapack-for-windows/lapack/#lapacke)も必要になります。 必要であれば、 [Basic Linear Algebra Subprograms (BLAS)](http://www.netlib.org/blas/)文章もご参照ください。
+* あるいは、MinGWでなく、Blas dllファイルをパスの中のフォルダーにコピーすることもできます。例えば、 MinGWのbinフォルダへのパスは、/usr/x86_64-w64-mingw32/sys-root/mingw/binです。Windowsのパスの変数についての詳細は、[こちらのStackOverflowサイトの上部にある回答](https://stackoverflow.com/questions/3402214/windows-7-maven-2-install)をお読みください。 
 
-* *DL4Jデヴェロッパーの方:*  [Github](https://windows.github.com/)をインストールしてください。. ファイルを複製するためには以下の文章をterminal (Mac) もしくは Git Shell (Windows)へ入力してください。
+* Cygwinには対応していません。**DOS Windows**からDL4Jをインストールする必要があります。  
 
-      git clone https://github.com/SkymindIO/nd4j
-      git clone https://github.com/SkymindIO/deeplearning4j
+* ファイルの[WindowsInfo.bat](https://gist.github.com/AlexDBlack/9f70c13726a3904a2100)を実行すると、Windowsのインストールでのデバッグができます。その正しい出力例は[こちら](https://gist.github.com/AlexDBlack/4a3995fea6dcd2105c5f)をご覧ください。最初にダウンロードし、コマンドウィンドウ/ターミナルを開きます。ダウンロードされたディレクトリに`cd`コマンドを入れます。`WindowsInfo`と入力し、Enterキーを押します。この出力をコピーするには、コマンドウィンドウ上で右クリックし、 [select all(すべて選択）]を選び、Enterキーを押します。すると、クリップボードに出力されます。
 
-##<a name="source">ソースの取得方法</a>
+**Windows**向けのOpenBlas(以下を参照)は、[こちらのファイル](https://www.dropbox.com/s/6p8yn3fcf230rxy/ND4J_Win64_OpenBLAS-v0.2.14.zip?dl=1)をダウンロードしてください。`C:/BLAS`など、どこか場所を決めて解凍してください。このディレクトリを、システムの環境変数`PATH`に追加します。
 
-DL4Jのソースを取得するためには [Github repo](https://github.com/SkymindIO/deeplearning4j/)にアクセスをしてください。DL4Jをよりご活用いただきたい方は、Githubをインストールしてください。[Macの方はこちら](https://mac.github.com/) or [Windowsの方はこちら](https://windows.github.com/). そしてgit cloneを行い、以下のコードをMavenに入力してください。
+### <a id="open"> OpenBlas </a>
 
-      mvn clean install -DskipTests -Dmaven.javadoc.skip=true
+x86のバックエンドにあるライブラリーが動作することを確認するには、システムパスの`/opt/OpenBLAS/lib`が必要です。その後で、以下のコマンドをプロンプトに入力してください。
 
-##<a name="eclipse">Eclipse</a> 
+			sudo cp libopenblas.so liblapack.so.3
+			sudo cp libopenblas.so libblas.so.3
 
- git cloneを行った後、以下のコマンドを入力してください。
+これは、[Spark](http://deeplearning4j.org/spark)がOpenBlasで使用できるようにするためです。
+
+OpenBlasが正しく動作していない場合は、次の手順に従ってください。
+
+* Openblasがインストール済みであれば、削除します。
+* `sudo apt-get remove libopenblas-base`を実行します。
+* OpenBLASの開発版をダウンロードします。
+* `git clone git://github.com/xianyi/OpenBLAS`
+* `cd OpenBLAS`
+* `make FC=gfortran`
+* `sudo make PREFIX=/usr/local/ install`
+* **Linux**の場合、`libblas.so.3`や`liblapack.so.3`のシンボリックリンクが`LD_LIBRARY_PATH`のどこでも存在することを再度確認してください。もし存在しなければ、`/usr/lib`へリンクを追加します。以下のように設定することができます（-sを入れるとリンクがシンボリックになります)。 
+
+		ln -s TARGET LINK_NAME
+		// interpretation: ln -s "to-here" <- "from-here"
+
+* "from-here"は、まだ存在しないシンボリックリンクを作成したものです。StackOverflowのシンボリックリンク作成方法ガイドがありますので、[こちら](https://stackoverflow.com/questions/1951742/how-to-symlink-a-file-in-linux)をお読みください。「Linux man page」は、[こちら](http://linux.die.net/man/1/ln)をお読みください。
+* 最後に統合開発環境を再起動します。 
+* ネイティブのBlasを **Centos 6**で作動させるための詳細は、[こちらのCentos 6](https://gist.github.com/jarutis/912e2a4693accee42a94)または [こちらのCentos 6.5](https://gist.github.com/sato-cloudian/a42892c4235e82c27d0d)をお読みください。
+
+**Ubuntu** (15.10)のOpenBlasについての説明ガイドは[こちら](http://pastebin.com/F0Rv2uEk)をお読みください。
+
+### <a name="eclipse">Eclipse</a> 
+
+`git clone`を実行してから、以下のコマンドを入力してください。
 
       mvn eclipse:eclipse 
   
-このコマンドを入力することで、ソースをインポートしすべてをセットアップすることができます。
+これにより、ソースがインポートされ、すべてがセットアップされます。 
 
-## <a name="trouble">トラブルシューティング</a>
+弊社は、何年にも渡りEclipseを使用しましたが、Eclipseと似たインターフェイスを持つIntelliJをお勧めします。Eclipseのモノリス型アーキテクチャだと、他社のものでも弊社のコードでも奇妙なエラーが発生することが度々あるからです。 
 
-*もしDL4Jを活用いただく中でトラブルが発生した場合は, [ND4J](http://nd4j.org/ja-getstarted.html)でgit　cloneを行ってください。次にND4Jでclean Maven installを行ってください。そして DL4Jを再度インストールしてください。最後にDL4Jでclean Maven installを行ってください。
+Eclipseを使う場合は、[Lombok plugin](https://projectlombok.org/)をインストールする必要があります。また、Eclipse用のMavenプラグインも必要になります。[eclipse.org/m2e/](https://eclipse.org/m2e/).
 
-      mvn clean install -DskipTests -Dmaven.javadoc.skip=true
+Michael Depies氏が、 [installing Deeplearning4j on Eclipse（EclipseでのDeeplearning4jのインストール）](https://depiesml.wordpress.com/2015/08/26/dl4j-gettingstarted/)にについてのガイドを作成し、提供しています。
 
-* サンプルを実行している時に、分類作業の精確さを示す[f1 score](../glossary.html#f1)という数値が低く表示されるかと思います。 このケースでは、低い数値が低い精確性を示している訳ではありません。なぜならば、動作確認作業をの効率を高める為に、少ない量のデータセットしか与えていないからです。少ない量のデータセットは、大きな量のデータセットに比べて精確性は劣ります。例として、非常に少ない量のデータセットから生まれる精確性は、0.32から1.0の間になります。
+### <a name="trouble">トラブルシューティング</a>
 
-* プログラミング内容のコピーをご覧になりたい方は、コチラ[Deeplearning4j's　classes　and　methods](http://deeplearning4j.org/doc/).をクリックしてください。
+* エラーメッセージについて質問があれば、[Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j)にお気軽にご連絡ください。また、質問の際には、以下の情報を準備しておいてください。（前もって準備していただきますと、より素早くご質問に対処できます。) :
 
-## <a name="next">Next Steps: MNISTとサンプルの実行方法</a>
+      * オペレーティング・システム(Windows、OSX、Linux) とそのバージョン 
+      * Javaバージョン(7、8) : ターミナル/コマンドプロンプトにjava -versionと入力すると分かります。 
+      * Maven のバージョン : ターミナル/コマンドプロンプトにmvn --versionと入力すると分かります。
+      * スタックトレース:gistのエラーコードをペーストし、リンクをお送りください。[https://gist.github.com/](https://gist.github.com/)
+* 既にDL4Jがインストールされており、exampleがエラーを多く送出させている場合、ライブラリをアップデートしてください。Mavenについては、[Maven Central]（ https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j)を使ってPOM.xmlファイルにあるバージョンを最新のものにアップデートしてください。ソースについては、3つのディレクトリである[ND4J](http://nd4j.org/getstarted.html)、Canova、DL4Jをこの順で`git clone`、次に`mvn clean install -Dskiptests=true -Dmaven.javadoc.skip=true`と実行してください。
+* exampleを実行するとき、[F1スコア](../glossary.html#f1)結果が低くなるかもしれません。F1スコアとは、ネットの分類作業の精確さを示すものです。しかし、この場合、 F1値が低い原因は、精確性が低いからではなく、小さいデータセットを使用しているためです。小さめのデータセットだと素早く走らせることができるからです。小さめのデータセットは、大きいものより代表的にはなりませんが、結果は様々に異なります。例えば、非常に小さいexampleのデータでは、弊社のdeep-belief networkのF1スコアは0.32から1.0にまで及びます。 
+* Deeplearning4jには**オートコンプリート機能**が含まれます。どのコマンドが使用可能か分からないときは、任意の文字を1つ打つと、ドロップダウンメニューが
+![Alt text](../img/dl4j_autocomplete.png)と表示されます。
+* すべてのDeeplearning4jのクラスとメソッドのための**Javadoc**は、[こちら](http://deeplearning4j.org/doc/)です。
+* コードベースが大きくなればなるほど、さらにメモリー量が必要になります。DL4J構築中に`Permgen error`が発生したら、さらに**ヒープ領域**を増やす必要があるかもしれません。これには、隠しファイル`.bash_profile`を見つけて修正し、環境変数がbashに設定される必要があります。さらに変数を見るには、コマンドラインに`env`と入力してください。さらにヒープ領域を増やすには、コンソールに以下のコマンドを入力してください。
+      echo "export MAVEN_OPTS="-Xmx512m -XX:MaxPermSize=512m"" > ~/.bash_profile
+* 3.0.4などのMavenの以前のバージョンは、NoSuchMethodErrorなどの例外を送出する傾向があります。このようなトラブルは、Mavenの最新バージョン（現在は3.3.x）にアップグレードすることによって解消されます。お使いのMavenバージョンを調べるには、コマンドラインに`mvn -v`と入力してください。
+* Mavenをインストールした後、`mvn is not recognised as an internal or external command, operable program or batch file.`と書かれたメッセージが表示される可能性があります。これは、他の環境変数と同様に変更可能な[PATH変数](https://www.java.com/en/download/help/path.xml)にMavenが必要であるということを意味します。  
+* エラーの`Invalid JDK version in profile 'java8-and-higher':Unbounded range:[1.8, for project com.github.jai-imageio:jai-imageio-core com.github.jai-imageio:jai-imageio-core:jar:1.3.0`が見つかった場合、Maven関連の問題が発生している可能性がありますので、Mavenのバージョンを3.3.xにアップデートしてください。
+* ND4Jの依存関係をコンパイルするには、CとC++の**開発ツール**をインストールする必要があります。[弊社のND4Jガイドをお読みください。](http://nd4j.org/getstarted.html#devtools)
+* [Java CPP](https://github.com/bytedeco/javacpp)のinclude pathは、常に**Windows**で動作するとは限りません。これを解決する1つの方法はVisual Studioのincludeディレクトリーからヘッダーファイルを取り、それらをJavaがインストールされたJava Run-Time Environment(JRE)のincludeディレクトリーに入れることです。これによりstandardio.h.などのファイルに影響が出ます。詳細については[こちら](http://nd4j.org/getstarted.html#windows)をお読みください。 
+* GPUのモニターに関する説明ガイドは、[こちら](http://nd4j.org/getstarted.html#gpu)をお読みください。
+* Javaを使用する主な理由の一つは、 **[JVisualVM](https://docs.oracle.com/javase/8/docs/technotes/tools/unix/jvisualvm.html)**に既に診断機能があるからです。Javaがインストールされていれば、コマンドラインに`jvisualvm`と入れさえすると、 CPU、ヒープ、PermGen、クラス、スレッドのビジュアル情報を見ることができます。例:右上の`サンプラ`タブをクリックし、CPU、またはメモリーボタンを押すとビジュアル情報が得られます。 
+![Alt text](../img/jvisualvm.png)
+* DL4Jを使用している際に発生する問題の原因は、ユーザーが機械学習に関する情報やテクニックに十分精通していないためである場合もあります。 Deeplearning4jのユーザー皆さんに、このサイト以外のリソースも利用して基礎を学習することをお勧めします。機械学習やdeep-learningの学習リソースのリストを準備しましたので、[こちら](../deeplearningpapers.html)をお読みください。弊社はDL4Jを一部ドキュメント化しましたが、deep-learning用に使用するには、コードの一部は生で、ドメイン固有言語のままです。
+* **Clojure**アプリケーションから`deeplearning4j-nlp`を使い、Leiningenでuberjarを構築するときは、akkaの`reference.conf`リソースファイルが適切にマージされるよう、`project.clj`に、`:uberjar-merge-with {#"\.properties$" [slurp str spit] "reference.conf" [slurp str spit]}`と指定してください。（.propertiesファイルのマップへの最初の入力は、通常のデフォルトであることにご注意ください。）この設定が行われていない場合、結果のuberjarから実行しようとすると、次のような例外が送出されます。`Exception in thread "main" com.typesafe.config.ConfigException$Missing:No configuration setting found for key 'akka.version'`.
+* OSXの浮動小数点のサポートにはバグが多くあります。examplsの実行でNaNが数多く表示される場合、データのタイプを`double`に切り替えてください。
+* Java 7のfork-joinにはバグがありますが、Java 8にアップデートすることにより修正されます。以下のようなOutofMemoryエラーが発生する場合は、fork-joinに問題があります。`java.util.concurrent.ExecutionException: java.lang.OutOfMemoryError`
+....`java.util.concurrent.ForkJoinTask.getThrowableException(ForkJoinTask.java:536)`
 
-[MNISTについて](../mnist-tutorial.html)をご覧ください。もうすでにdeep　learningの具体的な活用法が決定している場合には、[custom datasets](../customdatasets.html).をクリックしてください。
+### <a name="results">再現可能な結果</a>
+
+ニューラルネットの重みはランダムに初期化されます。つまり、モデルは、毎回、重み空間の異なる位置から学習を開始し、これにより局所的最適が変わります。再現性のある結果を求めるユーザーは、同じランダムの重みを使用する必要がありますが、モデルが作成される前に初期化する必要があります。以下のコマンドラインを使うと、同じランダムな重みで、再度、初期化することができます。
+
+      Nd4j.getRandom().setSeed(123);
+
+### <a name="next">次のステップ:IRISのexampleとニューラルネットワークの構築</a>
+
+ニューラルネットワークの構築を開始するには、[ニューラルネットワークの概要](http://deeplearning4j.org/neuralnet-overview.html)にて詳細をお読みください。
+
+素早く走らせるには[IRISのチュートリアル](../iris-flower-dataset-tutorial.html)をお読みください。 *deep-belief network*の基本的なメカニズムを理解するには、[制限付きボルツマン・マシン](../restrictedboltzmannmachine.html)をお読みください。
+
+新しいプロジェクトを開始して必要な[POMの依存関係](http://nd4j.org/dependencies.html)の入れるには、[ND4Jをはじめましょう](http://nd4j.org/getstarted.html)をお読みください。 
