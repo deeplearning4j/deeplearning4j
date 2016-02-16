@@ -380,6 +380,11 @@ public class AtomicAllocator implements Allocator {
     public void tickHostWrite(INDArray array) {
         AllocationPoint point = getAllocationPoint(array.data().originalDataBuffer(), AllocationUtils.buildAllocationShape(array));
 
+        if (point == null) {
+            log.info("tickHostWrite INDarray");
+            pickupSpan(array);
+        }
+
         point.tickHostWrite();
     }
 
@@ -398,8 +403,9 @@ public class AtomicAllocator implements Allocator {
     /**
      * This method returns actual device pointer valid for specified shape of current object
      *
-     * @param objectId
+     * @param buffer
      * @param shape
+     * @param isView
      */
     @Override
     public Pointer getDevicePointer(DataBuffer buffer, AllocationShape shape, boolean isView) {
@@ -425,12 +431,12 @@ public class AtomicAllocator implements Allocator {
                     PLEASE NOTE: Also, if this is a view - we allocate full underlying buffer on first call, not a shape
                 */
 
-                //AllocationShape internalShape = isView? AllocationUtils.buildAllocationShape(buffer) : shape;
+                AllocationShape internalShape = isView? AllocationUtils.buildAllocationShape(buffer) : shape;
 
                 /*
                     Before allocating anything, we must ensure that we have enough space left
                  */
-                long requiredMemory = AllocationUtils.getRequiredMemory(shape);
+                long requiredMemory = AllocationUtils.getRequiredMemory(internalShape);
                 while (zeroUseCounter.get() > configuration.getMaximumZeroAllocation() - (configuration.getMaximumZeroAllocation() / 10)) {
                         log.info("No free host memory available. Startig GC manually with [URGENT] agressiveness");
 //                    if (zeroUseCounter.get() > configuration.getMaximumZeroAllocation() - (configuration.getMaximumZeroAllocation() / 10)) {
@@ -442,14 +448,14 @@ public class AtomicAllocator implements Allocator {
                 /*
                     We intentionally update counter prior to allocation
                  */
-                zeroUseCounter.addAndGet(AllocationUtils.getRequiredMemory(shape));
+                zeroUseCounter.addAndGet(AllocationUtils.getRequiredMemory(internalShape));
 
                 /*
                     now it's ALMOST safe to allocate zero-copy memory.
                     Technically it's still possible to fail there, with oom or CUDA-originated exception
                  */
                 point.setAllocationStatus(AllocationStatus.ZERO);
-                DevicePointerInfo info = mover.alloc(AllocationStatus.ZERO, point, shape);
+                DevicePointerInfo info = mover.alloc(AllocationStatus.ZERO, point, internalShape);
                 long allocCnt = allocationsCounter.incrementAndGet();
                 zeroAllocations.get(Thread.currentThread().getId()).put(trackingPoint, trackingPoint);
                 //if (allocCnt % 1000 == 0)
@@ -538,6 +544,7 @@ public class AtomicAllocator implements Allocator {
             deviceShort.store(point.getTimerShort().getFrequencyOfEvents());
         }
 
+        //System.out.println("Pointer here: " + point.getCudaPointer());
         return point.getCudaPointer();
     }
 
@@ -606,7 +613,7 @@ public class AtomicAllocator implements Allocator {
 
     protected void synchronizeHostData(DataBuffer objectId, AllocationShape shape) {
         AllocationPoint point = getAllocationPoint(objectId, shape);
-        log.info("Synchronize called on buffer");
+    //    log.info("Synchronize called on buffer");
 
 
 
@@ -638,7 +645,7 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public void synchronizeHostData(INDArray array) {
-        log.info("Synchronize called on array");
+  //      log.info("Synchronize called on array");
         AllocationPoint point = getAllocationPoint(array.data().originalDataBuffer(), AllocationUtils.buildAllocationShape(array));
 
         if (point == null) {
@@ -754,6 +761,9 @@ public class AtomicAllocator implements Allocator {
     protected AllocationPoint getAllocationPoint(DataBuffer objectId, AllocationShape shape) {
         Long trackingPointer = objectId.getTrackingPoint();
 
+        if (trackingPointer == null) {
+            trackingPointer = pickupSpan(objectId, AllocationUtils.buildAllocationShape(objectId));
+        }
 
         // that's a temporary exception, we'll change that to re-ack later
         if (trackingPointer == null)

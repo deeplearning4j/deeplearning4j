@@ -170,6 +170,8 @@ public class AtomicAllocatorTest {
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
 
         Random rnd = new Random(42);
+        int trackingBefore =  allocator.getTotalTrackingPoints();
+        int zeroBefore =  allocator.getTotalZeroAllocations();
 
         INDArray array1 = Nd4j.create(100, 757);
         INDArray array2 = Nd4j.create(100, 757);
@@ -186,8 +188,11 @@ public class AtomicAllocatorTest {
             array2.putRow(y, Nd4j.create(srcArray2));
         }
 
-    //    assertEquals(2, allocator.getTotalTrackingPoints());
-    //    assertEquals(0, allocator.getTotalZeroAllocations());
+
+
+        assertEquals(trackingBefore + 2, allocator.getTotalTrackingPoints());
+        assertEquals(zeroBefore, allocator.getTotalZeroAllocations());
+
 /*
         for (int x = 0; x < 20; x++) {
             ((BaseCudaDataBuffer) array1.data()).getDevicePointer(array1.elementWiseStride(), array1.offset(), array1.length());
@@ -232,15 +237,26 @@ public class AtomicAllocatorTest {
             double dotWrapped = Nd4j.getBlasWrapper().dot(slice1, slice2);
 
 
+
+            log.info("Offset: " + slice1.offset());
             assertEquals(results[x], dotWrapped, 0.001d);
 
             log.info("Cycle [" + x + "] passed. Dot: " + dotWrapped);
         }
-        assertEquals(2, allocator.getTotalTrackingPoints());
-        assertEquals(2, allocator.getTotalZeroAllocations());
+
+
+
+
+        assertEquals(trackingBefore + 2, allocator.getTotalTrackingPoints());
+        assertEquals(zeroBefore + 2, allocator.getTotalZeroAllocations());
+
+
+
         log.info("Slice shape: " + AllocationUtils.buildAllocationShape(slice1));
 
-     //   assertEquals(AllocationStatus.ZERO, ((BaseCudaDataBuffer) array1.data()).getAllocationPoint().getAllocationStatus());
+        AllocationPoint point = allocator.getAllocationPoint(array1.data().originalDataBuffer().getTrackingPoint());
+
+        assertEquals(AllocationStatus.ZERO, point.getAllocationStatus());
 
 
 

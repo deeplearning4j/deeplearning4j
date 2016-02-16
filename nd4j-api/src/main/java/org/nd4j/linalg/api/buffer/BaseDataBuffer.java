@@ -90,8 +90,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
             // FIXME: please don't remove this comment, since there's probably a bug in current offset() impl, and this line will change originalOffset accroding to proper offset() impl
             // FIXME: raver119@gmail.com
             this.originalOffset = offset; // + underlyingBuffer.originalOffset();
-
-            System.out.println("Original offset: [" + underlyingBuffer.originalOffset() + "], this offset: ["+ offset +"] ");
         }
 
         if(underlyingBuffer.dataType() == Type.DOUBLE) {

@@ -52,9 +52,9 @@ public class JcublasLevel1 extends BaseLevel1 {
             JCublas2.cublasSdot(
                     ctx.getHandle(),
                     N,
-                    xCPointer.getDevicePointer().withByteOffset(X.offset() * X.data().getElementSize()),
+                    xCPointer.getDevicePointer().withByteOffset(X.originalOffset() * X.data().getElementSize()),
                     incX
-                    , yCPointer.getDevicePointer().withByteOffset(Y.offset() * Y.data().getElementSize()),
+                    , yCPointer.getDevicePointer().withByteOffset(Y.originalOffset() * Y.data().getElementSize()),
                     incY, result);
             ctx.syncOldStream();
 

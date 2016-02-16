@@ -548,12 +548,12 @@ public class JCublasNDArray extends BaseNDArray {
 
     @Override
     public INDArray put(INDArrayIndex[] indices, INDArray element) {
-   //     try {
-    //        allocator.synchronizeHostData(this);
+        try {
+            allocator.synchronizeHostData(this);
             return super.put(indices, element);
-  //      } finally {
-//            allocator.tickHostWrite(this);
- //       }
+        } finally {
+            allocator.tickHostWrite(this);
+        }
     }
 
     @Override
@@ -622,14 +622,14 @@ public class JCublasNDArray extends BaseNDArray {
      */
     @Override
     public INDArray putRow(int row, INDArray toPut) {
-   //     try {
-  //          allocator.synchronizeHostData(this);
+        try {
+            allocator.synchronizeHostData(this);
             return super.putRow(row, toPut);
-   //     } catch (Exception e) {
-    //        throw new IllegalStateException(e);
-    //    } finally {
-    //        allocator.tickHostWrite(this);
-     //   }
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        } finally {
+            allocator.tickHostWrite(this);
+        }
     }
 
     /**
