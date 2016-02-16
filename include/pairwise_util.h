@@ -45,7 +45,7 @@ void quickSort(StridePermutation *arr, int elements);
 
 /* Increment to the next n-dimensional coordinate for one raw array */
 #define ND4J_RAW_ITER_ONE_NEXT(idim, ndim, coord, shape, data, strides) \
-            for ((idim) = 1; (idim) < (ndim); ++(idim)) { \
+            for ((idim) = 0; (idim) < (ndim); ++(idim)) { \
                 if (++(coord)[idim] == (shape)[idim]) { \
                     (coord)[idim] = 0; \
                     (data) -= ((shape)[idim] - 1) * (strides)[idim]; \
@@ -60,7 +60,7 @@ void quickSort(StridePermutation *arr, int elements);
 /* Increment to the next n-dimensional coordinate for two raw arrays */
 #define ND4J_RAW_ITER_TWO_NEXT(idim, ndim, coord, shape, \
                               dataA, stridesA, dataB, stridesB) \
-            for ((idim) = 1; (idim) < (ndim); ++(idim)) { \
+            for ((idim) = 0; (idim) < (ndim); ++(idim)) { \
                 if (++(coord)[idim] == (shape)[idim]) { \
                     (coord)[idim] = 0; \
                     (dataA) -= ((shape)[idim] - 1) * (stridesA)[idim]; \
@@ -79,7 +79,7 @@ void quickSort(StridePermutation *arr, int elements);
                               dataA, stridesA, \
                               dataB, stridesB, \
                               dataC, stridesC) \
-            for ((idim) = 1; (idim) < (ndim); ++(idim)) { \
+            for ((idim) = 0; (idim) < (ndim); ++(idim)) { \
                 if (++(coord)[idim] == (shape)[idim]) { \
                     (coord)[idim] = 0; \
                     (dataA) -= ((shape)[idim] - 1) * (stridesA)[idim]; \
@@ -101,7 +101,7 @@ void quickSort(StridePermutation *arr, int elements);
                               dataB, stridesB, \
                               dataC, stridesC, \
                               dataD, stridesD) \
-            for ((idim) = 1; (idim) < (ndim); ++(idim)) { \
+            for ((idim) = 0; (idim) < (ndim); ++(idim)) { \
                 if (++(coord)[idim] == (shape)[idim]) { \
                     (coord)[idim] = 0; \
                     (dataA) -= ((shape)[idim] - 1) * (stridesA)[idim]; \

@@ -15,6 +15,7 @@
 #include <templatemath.h>
 #include <helper_cuda.h>
 #include <shape.h>
+#include <pairwise_util.h>
 namespace functions {
     namespace pairwise_transforms {
 #define MIN 1e-12
@@ -418,6 +419,7 @@ namespace functions {
 
 
                 else {
+                    int rank = shape::rank(xShapeBuffer);
                     int *xShape = shape::shapeOf(xShapeBuffer);
                     int *yShape = shape::shapeOf(yShapeBuffer);
                     int *resultShape = shape::shapeOf(resultShapeBuffer);
@@ -435,24 +437,71 @@ namespace functions {
                     char yOrder = shape::order(yShapeBuffer);
                     char resultOrder = shape::order(resultShapeBuffer);
 
-
-#pragma omp parallel for
-                    for (int i = 0; i < n; i++) {
-                        int *xIdx = shape::ind2subC(xRank, xShape, i);
-                        int *yIdx = shape::ind2subC(yRank, yShape, i);
-                        int *resultIdx = shape::ind2subC(resultRank, resultShape, i);
-
-                        int xOffset2 = shape::getOffset(0, xShape, xStride, xIdx, xRank);
-                        int yOffset2 = shape::getOffset(0, yShape, yStride, yIdx, yRank);
-                        int resultOffset2 = shape::getOffset(0, resultShape, resultStride, resultIdx, resultRank);
-                        printf("i: %d x %d y %d result %d\n",i,xOffset2,yOffset2,resultOffset2);
-                        result[resultOffset2] = op(dx[xOffset2],y[yOffset2], extraParams);
-
-                        free(xIdx);
-                        free(yIdx);
-                        free(resultIdx);
+                    if(xOrder != yOrder) {
+                        int shapeIter[MAX_RANK];
+                        int coord[MAX_RANK];
+                        int dim;
+                        int xStridesIter[MAX_RANK];
+                        int yStridesIter[MAX_RANK];
+                        int resultStridesIter[MAX_RANK];
+                        if(PrepareThreeRawArrayIter<T>(rank,
+                                                    xShape,
+                                                    dx,
+                                                    xStride,
+                                                    y,
+                                                    yStride,
+                                                    result,
+                                                    resultStride,
+                                                    &rank,
+                                                    shapeIter,
+                                                    &dx,
+                                                    xStridesIter,
+                                                    &y,
+                                                    yStridesIter,
+                                                    &result,
+                                                    resultStridesIter) >= 0) {
+                            ND4J_RAW_ITER_START(dim, rank, coord, shapeIter) {
+                                    /* Process the innermost dimension */
+                                    T *xIter = dx;
+                                    T *yIter = y;
+                                    T *resultIter = result;
+                                    resultIter[0] = op(xIter[0],yIter[0],extraParams);
+                                } ND4J_RAW_ITER_THREE_NEXT(dim,
+                                                           rank,
+                                                           coord,
+                                                           shapeIter,
+                                                           dx,
+                                                           xStridesIter,
+                                                           y,
+                                                           yStridesIter,
+                                                           result,
+                                                           resultStridesIter);
+                        }
+                        else {
+                            printf("Unable to prepare array\n");
+                        }
 
                     }
+                    else {
+#pragma omp parallel for
+                        for (int i = 0; i < n; i++) {
+                            int *xIdx = shape::ind2subC(xRank, xShape, i);
+                            int *yIdx = shape::ind2subC(yRank, yShape, i);
+                            int *resultIdx = shape::ind2subC(resultRank, resultShape, i);
+
+                            int xOffset2 = shape::getOffset(0, xShape, xStride, xIdx, xRank);
+                            int yOffset2 = shape::getOffset(0, yShape, yStride, yIdx, yRank);
+                            int resultOffset2 = shape::getOffset(0, resultShape, resultStride, resultIdx, resultRank);
+                            result[resultOffset2] = op(dx[xOffset2],y[yOffset2], extraParams);
+
+                            free(xIdx);
+                            free(yIdx);
+                            free(resultIdx);
+
+                        }
+
+                    }
+
 
 
 

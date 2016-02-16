@@ -6,6 +6,7 @@
 #define NATIVEOPERATIONS_PAIRWISEUTILTESTS_H
 #include "testhelpers.h"
 #include <pairwise_util.h>
+#include <pairwise_transform.h>
 TEST_GROUP(PairWiseUtil) {
 
     static int output_method(const char* output, ...) {
@@ -54,32 +55,6 @@ TEST(PairWiseUtil,IterationOne) {
     for(int i = 0; i < 4; i++)
         data[i] = i;
 
-    /*
-     *
-     *   int idim;
-    npy_intp shape_it[NPY_MAXDIMS], dst_strides_it[NPY_MAXDIMS];
-    npy_intp coord[NPY_MAXDIMS];
-
-    PyArray_StridedUnaryOp *stransfer = NULL;
-    NpyAuxData *transferdata = NULL;
-    int aligned, needs_api = 0;
-    npy_intp src_itemsize = src_dtype->elsize;
-
-    NPY_BEGIN_THREADS_DEF;
-
-    Check alignment
-    aligned = raw_array_is_aligned(ndim, dst_data, dst_strides,
-                                   dst_dtype->alignment);
-    if (!npy_is_aligned(src_data, src_dtype->alignment)) {
-        aligned = 0;
-    }
-
-    Use raw iteration with no heap allocation
-    if (PyArray_PrepareOneRawArrayIter(
-            ndim, shape,
-            dst_data, dst_strides,
-            &ndim, shape_it,
-            &dst_data, dst_strides_it) < 0)*/
     printf("Succeeded %d\n",PrepareOneRawArrayIter(rank,shape,data,strides,&rank,shapeIter,&data,dstStridesIter));
 
 
@@ -89,13 +64,127 @@ TEST(PairWiseUtil,IterationOne) {
             double *d = data;
 
             for (int i = 0; i < shape[0]; ++i, d += strides[0]) {
-               printf("Data %f\n",d[0]);
+                printf("Data %f\n",d[0]);
             }
         } ND4J_RAW_ITER_ONE_NEXT(dim, rank, coord, shapeIter, data, dstStridesIter);
 
+    free(data);
 }
 
 
+TEST(PairWiseUtil,DifferentOrderCopy) {
+    int shape[3] = {2,2,2};
+    int xStrides[3] = {4,2,1};
+    int yStrides[3] = {1,2,4};
+    int *resultStrides = xStrides;
+    int rank = 3;
+    double *data = (double *) malloc(sizeof(double) * 8);
+    for(int i = 0; i < 8; i++)
+        data[i] = i + 1;
+    double *yData = (double *) malloc(sizeof(double) * 8);
+    for(int i = 0; i < 8; i++) {
+        yData[i] = i + 1;
+    }
+
+    double *resultData = (double *) malloc(sizeof(double) * 48);
+    for(int i = 0; i < 8; i++) {
+        resultData[i] = 0.0;
+    }
+
+    using namespace functions::pairwise_transforms;
+    PairWiseTransform<double> *op  = new ops::Copy<double>();
+    int *xShapeBuffer = shape::shapeBuffer(3,shape);
+    int *yShapeBuffer = shape::shapeBuffer(3,shape);
+    op->exec(data,xShapeBuffer,yData,yShapeBuffer,resultData,xShapeBuffer,NULL,8);
+    for(int i = 0; i < 8; i++) {
+        CHECK_EQUAL(resultData[i],yData[i]);
+    }
+
+    delete op;
+
+}
+
+TEST(PairWiseUtil,IterationTwo) {
+    int shapeIter[MAX_RANK];
+    int coord[MAX_RANK];
+    int dim;
+    int xStridesIter[MAX_RANK];
+    int yStridesIter[MAX_RANK];
+    int resultStridesIter[MAX_RANK];
+
+    int shape[3] = {2,2,2};
+    int xStrides[3] = {4,2,1};
+    int yStrides[3] = {1,2,4};
+    int *resultStrides = xStrides;
+    int rank = 3;
+    double *data = (double *) malloc(sizeof(double) * 8);
+    for(int i = 0; i < 8; i++)
+        data[i] = i + 1;
+    double *yData = (double *) malloc(sizeof(double) * 8);
+    for(int i = 0; i < 8; i++) {
+        yData[i] = i + 1;
+    }
+
+    double *resultData = (double *) malloc(sizeof(double) * 48);
+    for(int i = 0; i < 8; i++) {
+        resultData[i] = 0.0;
+    }
+
+    printf("Succeeded %d\n",PrepareThreeRawArrayIter(rank,
+                                                     shape,
+                                                     data,
+                                                     xStrides,
+                                                     yData,
+                                                     yStrides,
+                                                     resultData,
+                                                     resultStrides,
+                                                     &rank,
+                                                     shapeIter,
+                                                     &data,
+                                                     xStridesIter,
+                                                     &yData,
+                                                     yStridesIter,
+                                                     &resultData,
+                                                     resultStridesIter));
+
+
+    double xAssertion[2][2][2] = {
+            {{1,2},{3,4}},{{5,6},{7,8}}
+    };
+
+    double yAssertion[2][2][2] = {
+            {{1,5},{3,7}},{{2,6},{4,8}}
+    };
+
+
+    ND4J_RAW_ITER_START(dim, rank, coord, shapeIter) {
+            /* Process the innermost dimension */
+            double *xIter = data;
+            double *yIter = yData;
+            double *resultIter = resultData;
+            printf("Processing dim %d\n",dim);
+            for(int i = 0;i < rank; i++) {
+                printf("Coord %d is %d\n",i,coord[i]);
+            }
+            CHECK_EQUAL(xAssertion[coord[0]][coord[1]][coord[2]],xIter[0]);
+            CHECK_EQUAL(yAssertion[coord[0]][coord[1]][coord[2]],yIter[0]);
+
+            printf("Value for x %f y %f result %f\n",xIter[0],yIter[0],resultIter[0]);
+        } ND4J_RAW_ITER_THREE_NEXT(dim,
+                                   rank,
+                                   coord,
+                                   shapeIter,
+                                   data,
+                                   xStridesIter,
+                                   yData,
+                                   yStridesIter,
+                                   resultData,
+                                   resultStridesIter);
+
+    free(data);
+    free(yData);
+    free(resultData);
+}
 
 
 #endif //NATIVEOPERATIONS_PAIRWISEUTILTESTS_H
