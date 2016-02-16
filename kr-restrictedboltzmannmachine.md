@@ -140,7 +140,70 @@ RBMs의 구조를 더 깊이 공부하는데 관심이 있는 경우, 그들은 
 
 RBM이 어떻게 단순히 더 많은 일반적인 클래스들로 공급된 파라미터인`NeuralNetConfiguration`에서 한 레이어로서 생성되는지 아래를 참고하십시오. 마찬가지로, RBM 객체는 보여지는 및 숨겨진 레이어들에 각각 적용되는 Gaussian과 Rectified Linear transforms와 같은 properties를 저장하는데 사용됩니다. 
 
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/rbm/RBMIrisExample.java?slice=37:87"></script>
+
+		public class RBMIrisExample {		
+ 		
+     private static Logger log = LoggerFactory.getLogger(RBMIrisExample.class);		
+ 		
+     public static void main(String[] args) throws IOException {		
+         // Customizing params		
+         Nd4j.MAX_SLICES_TO_PRINT = -1;		
+         Nd4j.MAX_ELEMENTS_PER_SLICE = -1;		
+         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;		
+         final int numRows = 4;		
+         final int numColumns = 1;		
+         int outputNum = 10;		
+         int numSamples = 150;		
+         int batchSize = 150;		
+         int iterations = 100;		
+         int seed = 123;		
+         int listenerFreq = iterations/2;		
+ 		
+         log.info("Load data....");		
+         DataSetIterator iter = new IrisDataSetIterator(batchSize, numSamples);		
+         // Loads data into generator and format consumable for NN		
+         DataSet iris = iter.next();		
+ 		
+         iris.normalizeZeroMeanZeroUnitVariance();		
+ 		
+         log.info("Build model....");		
+         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().regularization(true)		
+                 .miniBatch(true)		
+                 // Gaussian for visible; Rectified for hidden		
+                 // Set contrastive divergence to 1		
+                 .layer(new RBM.Builder().l2(1e-1).l1(1e-3)		
+                         .nIn(numRows * numColumns) // Input nodes		
+                         .nOut(outputNum) // Output nodes		
+                         .activation("relu") // Activation function type		
+                         .weightInit(WeightInit.RELU) // Weight initialization		
+                         .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).k(3)		
+                         .hiddenUnit(HiddenUnit.RECTIFIED).visibleUnit(VisibleUnit.GAUSSIAN)		
+                         .updater(Updater.ADAGRAD).gradientNormalization(GradientNormalization.ClipL2PerLayer)		
+                         .build())		
+                 .seed(seed) // Locks in weight initialization for tuning		
+                 .iterations(iterations)		
+                 .learningRate(1e-3) // Backprop step size		
+                 // Speed of modifying learning rate		
+                 .optimizationAlgo(OptimizationAlgorithm.LBFGS)		
+                         // ^^ Calculates gradients		
+                 .build();		
+         Layer model = LayerFactories.getFactory(conf.getLayer()).create(conf);		
+         model.setListeners(new ScoreIterationListener(listenerFreq));		
+ 		
+         log.info("Evaluate weights....");		
+         INDArray w = model.getParam(DefaultParamInitializer.WEIGHT_KEY);		
+         log.info("Weights: " + w);		
+         log.info("Scaling the dataset");		
+         iris.scale();		
+         log.info("Train model....");		
+         for(int i = 0; i < 20; i++) {		
+             log.info("Epoch "+i+":");		
+             model.fit(iris.getFeatureMatrix());		
+         }		
+     }		
+     // A single layer learns features unsupervised.	
+    }
+
 
 이것은 저희가 다른 튜토리얼에서 다룰 [RBM processing the Iris flower dataset](../iris-flower-dataset-tutorial.html)의 한 예제 입니다. 
 
