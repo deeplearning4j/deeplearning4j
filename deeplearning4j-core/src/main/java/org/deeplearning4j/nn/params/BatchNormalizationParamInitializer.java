@@ -35,14 +35,14 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
 
     protected INDArray createBeta(NeuralNetConfiguration conf) {
         BatchNormalization layer = (BatchNormalization) conf.getLayer();
-        INDArray ret = Nd4j.valueArrayOf(layer.getNOut(), 1, layer.getBeta());
+        INDArray ret = Nd4j.valueArrayOf(1, layer.getNOut(), layer.getBeta());
         ret.data().persist();
         return ret;
     }
 
     protected INDArray createGamma(NeuralNetConfiguration conf) {
         BatchNormalization layer = (BatchNormalization) conf.getLayer();
-        INDArray ret = Nd4j.valueArrayOf(layer.getNOut(), layer.getNIn(), layer.getGamma());
+        INDArray ret = Nd4j.valueArrayOf(1, layer.getNOut(), layer.getGamma());
         ret.data().persist();
         return ret;
     }

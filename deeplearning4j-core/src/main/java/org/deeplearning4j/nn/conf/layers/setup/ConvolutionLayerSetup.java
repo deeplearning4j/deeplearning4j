@@ -133,7 +133,7 @@ public class ConvolutionLayerSetup {
                         case "BatchNormalization":
                             feedForwardLayer = (FeedForwardLayer) outputLayer;
                             lastnOut = lastHeight * lastWidth * lastOutChannels;
-                            storeNInAndNOut(inLayerName, lastnOut); // required to be before inputPreProcessor to update lastHeight and lastWidth
+                            storeNInAndNOut(inLayerName, lastnOut);
                             feedForwardLayer.setNOut(lastnOut);
                             conf.inputPreProcessor(i + 1, new CnnToFeedForwardPreProcessor(lastHeight, lastWidth, lastOutChannels));
                             break;
@@ -244,6 +244,8 @@ public class ConvolutionLayerSetup {
                             feedForwardLayer.setNIn(lastnOut);
                             conf.inputPreProcessor(i + 1, new CnnToRnnPreProcessor(lastHeight, lastWidth, lastOutChannels));
                             break;
+                        case "BatchNormalization":
+                            throw new UnsupportedOperationException("BaseNormalization should not follow a LocalResponse layer.");
                     }
                     break;
             }
