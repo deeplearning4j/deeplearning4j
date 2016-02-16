@@ -9,6 +9,10 @@ import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -65,29 +69,25 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-        int numExamples = epsilon.size(0); // number examples in batch
+        int batchSize = epsilon.size(0); // number examples in batch
+        INDArray reshapeEp = epsilon.dup().reshape(batchSize, shape[1]);
 
         org.deeplearning4j.nn.conf.layers.BatchNormalization layerConf = layerConf();
-        INDArray gBeta = epsilon.sum(0).reshape(shape); // sum over examples in batch
+        INDArray gBeta = reshapeEp.sum(0); // sum over examples in batch
 
         if (trainingMode == TrainingMode.TRAIN && layerConf.isUseBatchMean()){
-            gGamma = epsilon.mul(xHat).sum(0).reshape(shape);
+            gGamma = reshapeEp.mul(xHat).sum(0);
         }
 
-        INDArray gamma = (layerConf.isLockGammaBeta())? Nd4j.onesLike(gBeta) : getParam(BatchNormalizationParamInitializer.GAMMA);
-        INDArray coefficients = gamma.div(std);
-        INDArray gXHat, tmpEp;
-        INDArray nextEpsilon = Nd4j.zerosLike(epsilon);
-        for(int i=0; i < epsilon.size(0); i++) {
-            gXHat = (xHat.get(NDArrayIndex.interval(i, i + 1)).reshape(shape).mul(gGamma).add(gBeta)).divi(numExamples);
-            tmpEp = epsilon.get(NDArrayIndex.interval(i, i + 1)).reshape(shape).mul(coefficients).sub(gXHat);
-            nextEpsilon.putRow(i, tmpEp);
-        }
+        INDArray gamma = (layerConf.isLockGammaBeta())? Nd4j.onesLike(reshapeEp) : getParam(BatchNormalizationParamInitializer.GAMMA);
+        INDArray coefficients =  Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(gamma, std, gamma, -1));
 
+        INDArray tmp = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(xHat, gGamma, xHat.dup(), -1));
+        INDArray gXHat = coefficients.sub(tmp.addRowVector(gBeta).div(batchSize));
+        INDArray nextEpsilon = reshapeEp.mul(gXHat).reshape(epsilon.shape());
+
+        // TODO gGamma and gBeta are used internally to this method and not applied like other gradient updates...
         Gradient retGradient = new DefaultGradient();
-        retGradient.setGradientFor(BatchNormalizationParamInitializer.GAMMA, gGamma);
-        retGradient.setGradientFor(BatchNormalizationParamInitializer.BETA, gBeta);
-
         return new Pair<>(retGradient,nextEpsilon);
     }
 
@@ -112,22 +112,17 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
     @Override
     public INDArray preOutput(INDArray x) {
-        shape = getShape(x);
-        return preOutput(x,TrainingMode.TRAIN, shape);
+        return preOutput(x,TrainingMode.TRAIN);
     }
 
-    @Override
-    public INDArray preOutput(INDArray x, TrainingMode training) {
-        shape = getShape(x);
-        return preOutput(x, training, shape);
-    }
-
-    public INDArray preOutput(INDArray x, TrainingMode training, int[] shape){
-        this.shape = shape; //new int[]{1, x.size(1), x.size(3), x.size(3)};
+    public INDArray preOutput(INDArray x, TrainingMode training){
         INDArray gamma, beta;
-        int numExamples  = x.size(0); // number examples in batch
-        trainingMode = training;
         org.deeplearning4j.nn.conf.layers.BatchNormalization layerConf = layerConf();
+        int batchSize = x.size(0); // number examples in batch
+        shape = getShape(x);
+        INDArray reshapeX = x.dup().reshape(batchSize, shape[1]);
+
+        trainingMode = training;
         if (setMeanVar){
             this.mean = this.mean == null? Nd4j.zeros(shape): this.mean;
             this.var = this.var == null? Nd4j.valueArrayOf(shape, layerConf.getEps()): this.var;
@@ -148,30 +143,21 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
         std = Transforms.sqrt(var);
         if(layerConf.isLockGammaBeta()){
-            gamma = Nd4j.onesLike(mean);
-            beta = Nd4j.zerosLike(mean);
+            gamma = Nd4j.onesLike(reshapeX);
+            beta = Nd4j.zeros(new int[]{batchSize, 1}); // 1 bias per output channel or output nodes which is defined in 1st position of x
         } else{
             gamma = getParam(BatchNormalizationParamInitializer.GAMMA);
             beta = getParam(BatchNormalizationParamInitializer.BETA);
+
         }
 
-        INDArray tmpX, tmpXhat;
-        INDArray activations = x.dup();
-        xHat = Nd4j.zerosLike(x);
-        for(int i=0; i < x.size(0); i++) {
-            tmpX = activations.get(NDArrayIndex.interval(i, i + 1)).reshape(shape);
-            // xHat = x-xmean / sqrt(var + epsilon)
-            tmpXhat = tmpX.subi(mean).divi(std);
-            xHat.putRow(i,tmpXhat);
-            // BN(xk) = γkxˆk + βk
-            tmpX.muli(gamma).addi(beta);
-        }
+        // xHat = x-xmean / sqrt(var + epsilon)
+        INDArray xMu = Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(reshapeX, mean, reshapeX, -1));
+        xHat = Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(xMu, std, xMu.dup(),-1));
 
-        // TODO below was using broadcast but issue being able to pass in index on 0 - need to add back when fixed for performance improvement
-//        INDArray xMu = Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(x, mean, x, 3));
-//        xHat = Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(xMu,std, xMu.dup(),-1));
-//        INDArray out = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(xHat,gamma,xHat.dup(),-1));
-//        out = Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(out,beta,out,-1));
+        // BN(xk) = γkxˆk + βk
+//        INDArray activations = Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(gamma, xHat, gamma));
+        INDArray activations =  xHat.dup().mul(gamma).addiRowVector(beta);
 
         // update mean and var if using batch mean while training
         double decay;
@@ -181,11 +167,12 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 //          decay =  1. / layerConf.getN();
 
             decay = layerConf.getDecay();
-            double adjust = numExamples / Math.max(numExamples - 1., 1.);
+            double adjust = batchSize / Math.max(batchSize - 1., 1.);
             this.mean = mean.mul(decay).add(this.mean.mul(1-decay));
             this.var = var.mul(decay).add(this.var.mul((1-decay)*adjust));
         }
-        return activations;
+
+        return activations.reshape(x.shape());
     }
 
     @Override
@@ -244,26 +231,19 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         if(x.rank() == 2)
             return new int[] {1, x.size(1)};
         if(x.rank() == 3) {
-            int leadDim = x.size(0);
-//            int cDim = getParam(BatchNormalizationParamInitializer.GAMMA).length();
-            int cDim = x.size(1);
-            int rdim = (int) Math.round(((double) x.length() / ((double) leadDim * (double) cDim)));
-            if(rdim < 1)
-                rdim = 1;
-            if(leadDim * cDim * rdim != x.length())
+            int wDim = x.size(1);
+            int hdim = x.size(2);
+            if(x.size(0) > 1 && wDim * hdim == x.length())
                 throw new IllegalArgumentException("Illegal input for batch size");
-            return new int[] {1, leadDim*cDim*rdim};
+            return new int[] {1, wDim * hdim};
         }
         else if(x.rank() == 4) {
-            int leadDim = x.size(0);
             int cDim = x.size(1);
             int wDim = x.size(2);
-            int rdim = x.size(3);
-            if(rdim < 1)
-                rdim = 1;
-            if(cDim * wDim * rdim == x.length())
+            int hdim = x.size(3);
+            if(x.size(0) > 1 && cDim * wDim * hdim == x.length())
                 throw new IllegalArgumentException("Illegal input for batch size");
-            return new int[] {1, cDim*wDim*rdim};
+            return new int[] {1, cDim * wDim * hdim};
         }
 
         else throw new IllegalStateException("Unable to process input of rank " + x.rank());
