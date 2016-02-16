@@ -194,13 +194,15 @@ void  SortStrideArray(int ndim, int *strides,
  *
  * Returns 0 on success, -1 on failure.
  */
+template <typename T>
+
 #ifdef __CUDACC__
 __host__
 #endif
 int PrepareOneRawArrayIter(int ndim, int *shape,
-                           char *data, int *strides,
+                           T *data, int *strides,
                            int *out_ndim, int *out_shape,
-                           char **out_data, int *out_strides) {
+                           T **out_data, int *out_strides) {
     StridePermutation strideperm[MAX_RANK];
     int i, j;
 
@@ -230,7 +232,7 @@ int PrepareOneRawArrayIter(int ndim, int *shape,
 
     /* Sort the axes based on the destination strides */
     SortStrideArray(ndim, strides, strideperm);
-    for (i = 0; i < ndim; ++i) {
+    for (i = 0; i < ndim; i++) {
         int iperm = strideperm[ndim - i - 1].perm;
         out_shape[i] = shape[iperm];
         out_strides[i] = strides[iperm];
@@ -345,16 +347,16 @@ void quickSort(StridePermutation *arr, int elements) {
             }
 
             arr[L] = piv;
-            beg[i+1]= L + 1;
-            end[i+1]= end[i];
+            beg[i + 1]= L + 1;
+            end[i + 1]= end[i];
             end[i++] = L;
-            if (end[i] - beg[i] > end[i-1] - beg[i-1]) {
+            if (end[i] - beg[i] > end[i - 1] - beg[i - 1]) {
                 swap = beg[i];
-                beg[i]= beg[i-1];
-                beg[i-1] = swap;
+                beg[i]= beg[i - 1];
+                beg[i - 1] = swap;
                 swap = end[i];
-                end[i] = end[i-1];
-                end[i-1] = swap;
+                end[i] = end[i - 1];
+                end[i - 1] = swap;
             }
         }
         else {
@@ -379,15 +381,16 @@ void quickSort(StridePermutation *arr, int elements) {
  *
  * Returns 0 on success, -1 on failure.
  */
+template <typename T>
 #ifdef __CUDACC__
 __host__
 #endif
 int PrepareTwoRawArrayIter(int ndim, int *shape,
-                           char *dataA, int *stridesA,
-                           char *dataB, int *stridesB,
+                           T *dataA, int *stridesA,
+                           T *dataB, int *stridesB,
                            int *out_ndim, int *out_shape,
-                           char **out_dataA, int *out_stridesA,
-                           char **out_dataB, int *out_stridesB)
+                           T **out_dataA, int *out_stridesA,
+                           T **out_dataB, int *out_stridesB)
 {
     StridePermutation strideperm[MAX_RANK];
     int i, j;
@@ -436,7 +439,8 @@ int PrepareTwoRawArrayIter(int ndim, int *shape,
     for (i = 0; i < ndim; ++i) {
         int stride_entryA = out_stridesA[i];
         int stride_entryB = out_stridesB[i];
-        int shape_entry = out_shape[i];
+        int shape_entry = out_shape
+        [i];
 
         if (stride_entryA < 0) {
             dataA += stride_entryA * (shape_entry - 1);
@@ -505,17 +509,18 @@ int PrepareTwoRawArrayIter(int ndim, int *shape,
  *
  * Returns 0 on success, -1 on failure.
  */
+template <typename T>
 #ifdef __CUDACC__
 __host__
 #endif
 int  PrepareThreeRawArrayIter(int ndim, int *shape,
-                              char *dataA, int *stridesA,
-                              char *dataB, int *stridesB,
-                              char *dataC, int *stridesC,
+                              T *dataA, int *stridesA,
+                              T *dataB, int *stridesB,
+                              T *dataC, int *stridesC,
                               int *out_ndim, int *out_shape,
-                              char **out_dataA, int *out_stridesA,
-                              char **out_dataB, int *out_stridesB,
-                              char **out_dataC, int *out_stridesC)
+                              T **out_dataA, int *out_stridesA,
+                              T **out_dataB, int *out_stridesB,
+                              T **out_dataC, int *out_stridesC)
 {
     StridePermutation strideperm[MAX_RANK];
     int i, j;
