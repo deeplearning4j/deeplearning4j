@@ -103,7 +103,7 @@ public class CudaContext {
      * to the given stream
      */
     public synchronized  void associateHandle() {
-        JCublas2.cublasGetStream(handle,oldStream);
+        JCublas2.cublasSetStream(handle,oldStream);
     }
 
     /**
