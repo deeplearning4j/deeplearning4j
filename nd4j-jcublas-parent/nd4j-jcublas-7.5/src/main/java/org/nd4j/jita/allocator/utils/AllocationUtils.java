@@ -51,4 +51,13 @@ public class AllocationUtils {
 
         return shape;
     }
+
+    /**
+     * This method returns byte offset based on AllocationShape
+     *
+     * @return
+     */
+    public static long getByteOffset(AllocationShape shape) {
+        return shape.getOffset() * getElementSize(shape);
+    }
 }

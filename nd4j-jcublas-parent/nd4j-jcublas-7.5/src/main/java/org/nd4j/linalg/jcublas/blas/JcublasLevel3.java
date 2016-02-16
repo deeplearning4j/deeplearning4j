@@ -42,12 +42,12 @@ public class JcublasLevel3 extends BaseLevel3 {
                     N,
                     K,
                     Pointer.to(new float[]{alpha}),
-                    cAPointer.getDevicePointer().withByteOffset(A.offset() * A.data().getElementSize()),
+                    cAPointer.getDevicePointer(),
                     lda,
-                    cBPointer.getDevicePointer().withByteOffset(B.offset() * B.data().getElementSize()),
+                    cBPointer.getDevicePointer(),
                     ldb,
                     Pointer.to(new float[]{beta}),
-                    cCPointer.getDevicePointer().withByteOffset(C.offset() * C.data().getElementSize()),
+                    cCPointer.getDevicePointer(),
                     ldc);
             ctx.syncOldStream();
      //       cCPointer.copyToHost();
@@ -84,12 +84,12 @@ public class JcublasLevel3 extends BaseLevel3 {
                     M,
                     N,
                     PointerUtil.getPointer(alpha),
-                    aPointer.getDevicePointer().withByteOffset(A.offset() * A.data().getElementSize())
+                    aPointer.getDevicePointer()
                     , lda,
-                    bPointer.getDevicePointer().withByteOffset(B.offset() * B.data().getElementSize())
+                    bPointer.getDevicePointer()
                     , ldb,
                     PointerUtil.getPointer(beta)
-                    , cPointer.getDevicePointer().withByteOffset(C.offset() * C.data().getElementSize())
+                    , cPointer.getDevicePointer()
                     , ldc);
             ctx.syncOldStream();
         //    cPointer.copyToHost();
@@ -154,9 +154,9 @@ public class JcublasLevel3 extends BaseLevel3 {
                     ,M,
                     N
                     ,PointerUtil.getPointer(alpha)
-                    ,aPointer.getDevicePointer().withByteOffset(A.offset() * A.data().getElementSize())
+                    ,aPointer.getDevicePointer()
                     ,lda
-                    ,bPointer.getDevicePointer().withByteOffset(B.offset() * B.data().getElementSize())
+                    ,bPointer.getDevicePointer()
                     ,ldb);
             ctx.syncOldStream();
         //    bPointer.copyToHost();
@@ -198,12 +198,12 @@ public class JcublasLevel3 extends BaseLevel3 {
                     N, // n
                     K, //k,
                     Pointer.to(new double[]{alpha}),
-                    cAPointer.getDevicePointer().withByteOffset(A.offset() * A.data().getElementSize()), // A
+                    cAPointer.getDevicePointer(), // A
                     lda,  // lda
-                    cBPointer.getDevicePointer().withByteOffset(B.offset() * B.data().getElementSize()), // x
+                    cBPointer.getDevicePointer(), // x
                     ldb, // ldb
                     Pointer.to(new double[]{beta}),
-                    cCPointer.getDevicePointer().withByteOffset(C.offset() * C.data().getElementSize()), // y
+                    cCPointer.getDevicePointer(), // y
                     ldc); // incy
             ctx.syncOldStream();
         //    cCPointer.copyToHost();
@@ -235,11 +235,11 @@ public class JcublasLevel3 extends BaseLevel3 {
                     , OpUtil.getOp(Uplo)
                     , M, N
                     , PointerUtil.getPointer(alpha)
-                    , aPointer.getDevicePointer().withByteOffset(A.offset() * A.data().getElementSize())
-                    , lda, bPointer.getDevicePointer().withByteOffset(B.offset() * B.data().getElementSize())
+                    , aPointer.getDevicePointer()
+                    , lda, bPointer.getDevicePointer()
                     , ldb
                     , PointerUtil.getPointer(beta)
-                    , cPointer.getDevicePointer().withByteOffset(C.offset() * C.data().getElementSize())
+                    , cPointer.getDevicePointer()
                     , ldc);
             ctx.syncOldStream();
         //    cPointer.copyToHost();
@@ -270,10 +270,10 @@ public class JcublasLevel3 extends BaseLevel3 {
                     , OpUtil.getOp(Trans),
                     N, K,
                     PointerUtil.getPointer(alpha)
-                    , aPointer.getDevicePointer().withByteOffset(A.offset() * A.data().getElementSize())
+                    , aPointer.getDevicePointer()
                     , lda
                     , PointerUtil.getPointer(beta)
-                    , cPointer.getDevicePointer().withByteOffset(C.offset() * C.data().getElementSize())
+                    , cPointer.getDevicePointer()
                     , ldc);
             ctx.syncOldStream();
         //    cPointer.copyToHost();
@@ -303,9 +303,9 @@ public class JcublasLevel3 extends BaseLevel3 {
                     , OpUtil.getOp(Order)
                     , OpUtil.getOp(Uplo)
                     , N, K, PointerUtil.getPointer(alpha)
-                    , aPointer.getDevicePointer().withByteOffset(A.offset() * A.data().getElementSize())
-                    , lda, bPointer.getDevicePointer().withByteOffset(B.offset() * B.data().getElementSize())
-                    , ldb, PointerUtil.getPointer(beta), cPointer.getDevicePointer().withByteOffset(C.offset() * C.data().getElementSize()), ldc);
+                    , aPointer.getDevicePointer()
+                    , lda, bPointer.getDevicePointer()
+                    , ldb, PointerUtil.getPointer(beta), cPointer.getDevicePointer(), ldc);
             ctx.syncOldStream();
         //    cPointer.copyToHost();
 
@@ -343,9 +343,9 @@ public class JcublasLevel3 extends BaseLevel3 {
                     , OpUtil.getOp(TransA)
                     , OpUtil.getOp(Diag), M, N
                     , PointerUtil.getPointer(alpha)
-                    , aPointer.getDevicePointer().withByteOffset(A.offset() * A.data().getElementSize())
+                    , aPointer.getDevicePointer()
                     , lda
-                    , bPointer.getDevicePointer().withByteOffset(B.offset() * B.data().getElementSize()), ldb);
+                    , bPointer.getDevicePointer(), ldb);
             ctx.syncOldStream();
          //   bPointer.copyToHost();
 

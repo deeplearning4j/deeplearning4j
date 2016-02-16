@@ -39,12 +39,12 @@ public class JcublasLevel2 extends BaseLevel2 {
                     M,
                     N,
                     Pointer.to(new float[]{alpha}),
-                    cAPointer.getDevicePointer().withByteOffset(A.offset() * A.data().getElementSize()),
+                    cAPointer.getDevicePointer(),
                     lda,
-                    cBPointer.getDevicePointer().withByteOffset(X.offset() * X.data().getElementSize()),
+                    cBPointer.getDevicePointer(),
                     incX,
                     Pointer.to(new float[]{beta}),
-                    cCPointer.getDevicePointer().withByteOffset(Y.offset() * Y.data().getElementSize()),
+                    cCPointer.getDevicePointer(),
                     incY);
             ctx.syncOldStream();
         //    cCPointer.copyToHost();
@@ -122,12 +122,12 @@ public class JcublasLevel2 extends BaseLevel2 {
                     M,
                     N,
                     Pointer.to(new double[]{alpha}),
-                    cAPointer.getDevicePointer().withByteOffset(A.offset() * A.data().getElementSize()),
+                    cAPointer.getDevicePointer(),
                     lda,
-                    cBPointer.getDevicePointer().withByteOffset(X.offset() * X.data().getElementSize()),
+                    cBPointer.getDevicePointer(),
                     incX,
                     Pointer.to(new double[]{beta}),
-                    cCPointer.getDevicePointer().withByteOffset(Y.offset() * Y.data().getElementSize()),
+                    cCPointer.getDevicePointer(),
                     incY);
             ctx.syncOldStream();
     //        cCPointer.copyToHost();

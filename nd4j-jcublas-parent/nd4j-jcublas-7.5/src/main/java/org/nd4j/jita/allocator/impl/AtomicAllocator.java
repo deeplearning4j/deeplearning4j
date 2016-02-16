@@ -520,7 +520,7 @@ public class AtomicAllocator implements Allocator {
            //     log.info("Starting promotion");
 
                 // moving memory from ZERO to DEVICE
-      //          promoteObject(trackingPoint, point, shape);
+                promoteObject(trackingPoint, point, shape);
 
                 point.getAccessState().releaseToe();
             }
@@ -544,8 +544,12 @@ public class AtomicAllocator implements Allocator {
             deviceShort.store(point.getTimerShort().getFrequencyOfEvents());
         }
 
-        //System.out.println("Pointer here: " + point.getCudaPointer());
-        return point.getCudaPointer();
+        /*
+            Now we should return pointer with proper offset
+         */
+        if (shape.getOffset() > 0) {
+            return point.getCudaPointer().withByteOffset(AllocationUtils.getByteOffset(shape));
+        } else return point.getCudaPointer();
     }
 
     /**
@@ -613,9 +617,7 @@ public class AtomicAllocator implements Allocator {
 
     protected void synchronizeHostData(DataBuffer objectId, AllocationShape shape) {
         AllocationPoint point = getAllocationPoint(objectId, shape);
-    //    log.info("Synchronize called on buffer");
-
-
+//        log.info("Synchronize called on buffer with shape: " + shape);
 
         /*
             We set memory state to Toe, and issue copyback if required
@@ -630,10 +632,10 @@ public class AtomicAllocator implements Allocator {
 
                 // update the timer for hostRead
                 point.tickHostRead();
-            } else log.info("Data is actual, skipping sync");
+            }; // else log.info("Data is actual, skipping sync");
 
             point.getAccessState().releaseToe();
-        }
+        }; // else log.info("Data is actual, skipping sync");
 
 
     }
@@ -645,11 +647,11 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public void synchronizeHostData(INDArray array) {
-  //      log.info("Synchronize called on array");
+//        log.info("Synchronize called on array");
         AllocationPoint point = getAllocationPoint(array.data().originalDataBuffer(), AllocationUtils.buildAllocationShape(array));
 
         if (point == null) {
-            log.info("sHD INDarray");
+            log.debug("synchronizeHostData(INDarray)");
             pickupSpan(array);
         }
 
@@ -1113,7 +1115,9 @@ public class AtomicAllocator implements Allocator {
 
 
     protected int getTotalZeroAllocations() {
-        return zeroAllocations.get(Thread.currentThread().getId()).size();
+        if (zeroAllocations.get(Thread.currentThread().getId()) != null) {
+            return zeroAllocations.get(Thread.currentThread().getId()).size();
+        } else return 0;
     }
 
     protected int getTotalTrackingPoints() {
