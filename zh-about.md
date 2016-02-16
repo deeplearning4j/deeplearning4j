@@ -3,16 +3,42 @@ title:
 layout: zh-default
 ---
 
-# 简介
+{% include JB/setup %}
 
-Deeplearning4j是Java的开源，分布式的深学习项目的人Skymind ，一个总部位于旧金山的商业智能和企业软件公司牵头。我们是一个团队的数据科学家，深学专家， Java程序员和半众生机器人。
+ND4J是Java编写的开源、分布式深度学习项目，由总部位于旧金山的商业智能和企业软件公司[Skymind](http://www.skymind.io/contact.html)牵头开发。团队成员包括数据专家、深度学习专家、Java程序员和具有一定感知力的机器人。
 
-每个人都听到了大数据。通过释放这些开源深的学习工具，我们希望迎来业务进入智能数据的时代，这就是为什么我们选择来实现他们的Java 。通过使用这些工具，数据科学家可以开始看到已经受雇于谷歌，Facebook ，微软，百度和Netflix ，所有这些都致力于深学习型团队的深学习算法的力量。
+通过科学计算，分析师能够从大数据中挖掘出价值。我们认为，业内对深入理解和挖掘数据之货币价值的旅程才刚刚起步。因此，我们决定在Java虚拟机（JVM）环境下运用科学计算。 
 
-这些深学习算法能够监督学习，消除琐碎的特征提取，从数据科学家的冲击，使他们能够专注于更有趣的工作。更一般地，我们相信他们将帮助我们创造一个更安全，更智能，更透明，更高效的社会。
+ND4J根据Apache 2.0许可协议进行分发。 
 
-有很多旋钮，当你训练的分布式深学习网络转。我们已经竭尽所能来解释他们，让Deeplearning4j可以作为DIY工具为[Java](https://zh.wikipedia.org/wiki/Java) ， [Scala](https://zh.wikipedia.org/wiki/Scala)和[Clojure](https://zh.wikipedia.org/wiki/Clojure)的程序员工作在[Hadoop](https://zh.wikipedia.org/wiki/Apache_Hadoop)和其他文件系统。如果您需要支持或定制超出这些教程，请联系我们[Skymind](mailto:chris@skymind.io) 。
+* [Github 信息库](https://github.com/deeplearning4j/nd4j/)
+* [Scala Github 信息库](https://github.com/deeplearning4j/nd4s/)
+* [Gitter线上交流群](https://gitter.im/deeplearning4j/deeplearning4j)
 
-Deeplearning4j已刊登在有线， GigaOm等，商业周刊， VentureBeat的和华尔街日报。 DL4J车间通过[GalvanizeU](http://www.galvanizeu.com/)在旧金山提供。
+## Skymind公司的工作机会
 
-[ND4J](http://nd4j.org/zh-getstarted.html)是Java科学计算引擎提供动力我们的矩阵操作。 （看到这里的[Github](https://github.com/SkymindIO/nd4j/)上回购。 ）
+我们从开源贡献者中择选聘用公司成员。若想申请获得工作机会，从而与我们一道，参与建设深度学习的未来，就请加入我们在[Gitter](https://gitter.im/deeplearning4j/deeplearning4j)的社区，在[Github](https://github.com/deeplearning4j)上fork（复制一份）我们的项目并与我们合作。我们会酌情聘选公司成员！共同开发比面试更能让我们了解您，而且很可能会更具乐趣。
+
+## 引用ND4J
+
+如果您计划发表学术论文，希望引用ND4J，则请使用以下格式：
+
+*ND4J开发团队（〈当前年份〉）。ND4J：JVM环境下的N维数组合科学计算，Apache软件基金会许可协议2.0。*[http://nd4j.org](http://nd4j.org)
+
+<!--MailChimp注册表格开头-->
+<link href="//cdn-images.mailchimp.com/embedcode/slim-081711.css" rel="stylesheet" type="text/css">
+<style type="text/css">
+	#mc_embed_signup{background:#fff; clear:left; font:14px Helvetica,Arial,sans-serif; }
+	/* 加入MailChimp注册表格样式，会替代网站样式表或本样式代码块中的内容。
+	   建议将此代码块和上面的CSS链接移动至HTML文件内。*/
+</style>
+<div id="mc_embed_signup">
+<form action="//skymind.us8.list-manage.com/subscribe/post?u=26a43400cdacd6b98b676f703&amp;id=1f5b16d539" method="post" id="mc-embedded-subscribe-form" name="mc-embedded-subscribe-form" class="validate" target="_blank" novalidate>
+	<label for="mce-EMAIL">Join our mailing list to learn more</label>
+	<input type="email" value="" name="EMAIL" class="email" id="mce-EMAIL" placeholder="email address" required>
+    <!--人类用户请勿填写此处――若删除可能产生自动程序注册的风险-->
+    <div style="position: absolute; left:-5000px;"><input type="text" name="b_26a43400cdacd6b98b676f703_1f5b16d539" tabindex="-1" value=""></div>
+    <div class="clear"><input type="submit" value="Subscribe" name="subscribe" id="mc-embedded-subscribe" class="button"></div>
+</form>
+</div>
+<!--End mc_embed_signup-->
