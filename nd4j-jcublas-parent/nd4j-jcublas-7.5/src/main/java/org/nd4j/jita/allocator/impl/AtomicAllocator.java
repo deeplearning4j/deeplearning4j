@@ -3,14 +3,9 @@ package org.nd4j.jita.allocator.impl;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import jcuda.Pointer;
-import jcuda.jcublas.JCublas;
-import jcuda.jcublas.JCublas2;
-import jcuda.jcublas.cublasHandle;
-import jcuda.runtime.JCuda;
 import lombok.NonNull;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.concurrency.DeviceAllocationsTracker;
-import org.nd4j.jita.allocator.concurrency.Lock;
 import org.nd4j.jita.allocator.enums.AccessState;
 import org.nd4j.jita.allocator.enums.Aggressiveness;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
@@ -24,8 +19,6 @@ import org.nd4j.jita.mover.Mover;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.jcublas.JCublasNDArray;
-import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.DevicePointerInfo;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.slf4j.Logger;
@@ -33,9 +26,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -155,7 +145,7 @@ public class AtomicAllocator implements Allocator {
         globalLock.writeLock().lock();
 
         this.mover = mover;
-        this.mover.init(configuration, environment);
+        this.mover.init(configuration, environment, this);
 
         globalLock.writeLock().unlock();
     }
@@ -233,7 +223,7 @@ public class AtomicAllocator implements Allocator {
      * @param buffer DataBuffer object to be picked & tracked
      */
 
-    protected Long pickupSpan(@NonNull DataBuffer buffer, AllocationShape shape) {
+    protected Long pickupSpan(DataBuffer buffer, AllocationShape shape) {
         //log.info("pickupSpan(BaseCudaDataBuffer)");
 //        if (1> 0) throw new RuntimeException("");
         try {
@@ -397,7 +387,7 @@ public class AtomicAllocator implements Allocator {
     @Override
     @Deprecated
     public Pointer getDevicePointer(DataBuffer objectId) {
-        throw new UnsupportedOperationException("getDevicePointer() method should be removed");
+        return getDevicePointer(objectId, AllocationUtils.buildAllocationShape(objectId), false);
     }
 
     /**

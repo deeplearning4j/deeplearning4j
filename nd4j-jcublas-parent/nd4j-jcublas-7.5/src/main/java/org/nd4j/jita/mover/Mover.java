@@ -1,6 +1,7 @@
 package org.nd4j.jita.mover;
 
 import jcuda.Pointer;
+import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
@@ -15,7 +16,7 @@ import org.nd4j.linalg.jcublas.buffer.DevicePointerInfo;
  */
 public interface Mover {
 
-    void init(Configuration configuration, CudaEnvironment environment);
+    void init(Configuration configuration, CudaEnvironment environment, Allocator allocator);
 
     /**
      * Allocate specified memory chunk on specified device/host

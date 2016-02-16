@@ -5,6 +5,7 @@ import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
 import lombok.NonNull;
 import org.apache.commons.lang3.tuple.Triple;
+import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
@@ -16,6 +17,7 @@ import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.DevicePointerInfo;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.buffer.allocation.HostDevicePointer;
+import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
 import org.nd4j.linalg.util.NioUtil;
 import org.slf4j.Logger;
@@ -39,13 +41,15 @@ import java.nio.ByteOrder;
 public class UmaMover implements Mover {
     private Configuration configuration;
     private CudaEnvironment environment;
+    private Allocator allocator;
 
     private static Logger log = LoggerFactory.getLogger(UmaMover.class);
 
     @Override
-    public void init(Configuration configuration, CudaEnvironment environment) {
+    public void init(@NonNull Configuration configuration, @NonNull CudaEnvironment environment, @NonNull Allocator allocator) {
         this.configuration = configuration;
         this.environment = environment;
+        this.allocator = allocator;
     }
 
     /**
@@ -56,7 +60,7 @@ public class UmaMover implements Mover {
      * @return
      */
     @Override
-    public DevicePointerInfo alloc(@NonNull AllocationStatus targetMode,@NonNull AllocationPoint point,  @NonNull AllocationShape shape) {
+    public DevicePointerInfo alloc(AllocationStatus targetMode, AllocationPoint point,  AllocationShape shape) {
      //   log.info("Alloc called for shape: " + shape);
         switch (targetMode) {
             case ZERO: {
@@ -102,6 +106,7 @@ public class UmaMover implements Mover {
                 Pointer devicePointer = new Pointer();
                 Pointer hostPointer = new Pointer();
 
+                CudaContext context = allocator.getCudaContext();
 
                 JCuda.cudaMalloc(devicePointer, AllocationUtils.getRequiredMemory(shape));
 
@@ -112,8 +117,15 @@ public class UmaMover implements Mover {
                     shape.getOffset(),
                     false);
 
-                // FIXME: async copy is required here
-                JCuda.cudaMemcpy(devicePointer, point.getHostPointer(), AllocationUtils.getRequiredMemory(shape), cudaMemcpyKind.cudaMemcpyHostToDevice);
+                JCuda.cudaMemcpyAsync(
+                        devicePointer,
+                        point.getHostPointer(),
+                        AllocationUtils.getRequiredMemory(shape),
+                        cudaMemcpyKind.cudaMemcpyHostToDevice,
+                        context.getOldStream()
+                        );
+
+                context.syncOldStream();
 
                 free(point, AllocationStatus.ZERO);
 
@@ -164,8 +176,17 @@ public class UmaMover implements Mover {
 
             Pointer devicePointer = point.getCudaPointer();
 
-            // FIXME: ASYNC should be here
-            JCuda.cudaMemcpy(PointerUtil.getHostPointer(targetBuffer), devicePointer, AllocationUtils.getRequiredMemory(shape), cudaMemcpyKind.cudaMemcpyDeviceToHost );
+            CudaContext context = allocator.getCudaContext();
+
+            JCuda.cudaMemcpyAsync(
+                    PointerUtil.getHostPointer(targetBuffer),
+                    devicePointer,
+                    AllocationUtils.getRequiredMemory(shape),
+                    cudaMemcpyKind.cudaMemcpyDeviceToHost,
+                    context.getOldStream()
+                    );
+
+            context.syncOldStream();
 
         } else if (currentStatus == AllocationStatus.HOST && targetStatus == AllocationStatus.ZERO) {
             // HOST -> ZERO
@@ -196,8 +217,17 @@ public class UmaMover implements Mover {
 
             Pointer devicePointer = point.getCudaPointer();
 
-            // FIXME: ASYNC should be here
-            JCuda.cudaMemcpy(devicePointer, PointerUtil.getHostPointer(hostBuffer), AllocationUtils.getRequiredMemory(shape), cudaMemcpyKind.cudaMemcpyHostToDevice );
+            CudaContext context = allocator.getCudaContext();
+
+            JCuda.cudaMemcpyAsync(
+                    devicePointer,
+                    PointerUtil.getHostPointer(hostBuffer),
+                    AllocationUtils.getRequiredMemory(shape),
+                    cudaMemcpyKind.cudaMemcpyHostToDevice,
+                    context.getOldStream()
+            );
+
+            context.syncOldStream();
 
         }  else throw new UnsupportedOperationException("Can't relocate data in requested direction: [" + currentStatus + "] -> [" + targetStatus + "]");
     }
@@ -246,7 +276,17 @@ public class UmaMover implements Mover {
 
         DevicePointerInfo info = alloc(AllocationStatus.ZERO, point, shape);
 
-        JCuda.cudaMemcpy(info.getPointers().getHostPointer(), point.getCudaPointer(), AllocationUtils.getRequiredMemory(shape), cudaMemcpyKind.cudaMemcpyDeviceToHost);
+        CudaContext context = allocator.getCudaContext();
+
+        JCuda.cudaMemcpyAsync(
+                info.getPointers().getHostPointer(),
+                point.getCudaPointer(),
+                AllocationUtils.getRequiredMemory(shape),
+                cudaMemcpyKind.cudaMemcpyDeviceToHost,
+                context.getOldStream()
+        );
+
+        context.syncOldStream();
 
         JCuda.cudaFree(point.getCudaPointer());
 
@@ -259,7 +299,7 @@ public class UmaMover implements Mover {
      * @param point Pointer
      */
     @Override
-    public void free(@NonNull AllocationPoint point, AllocationStatus target) {
+    public void free(AllocationPoint point, AllocationStatus target) {
         switch (target) {
             case ZERO: {
                     // cudaFreeHost call here
