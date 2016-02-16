@@ -15,6 +15,7 @@
 #include <helper_cuda.h>
 #include <sharedmem.h>
 #include <omp.h>
+#include <pairwise_util.h>
 #ifdef __JNI__
 #include <jni.h>
 #endif
@@ -547,68 +548,123 @@ namespace functions {
                     extraParamsVals[i] = startingVal;
                 }
 
+                char xOrder = shape::order(xShapeInfo);
+                char yOrder = shape::order(yShapeInfo);
+                if(xOrder == yOrder) {
 
-                if (xElementWiseStride == 1) {
-                    int i;
+                    if (xElementWiseStride == 1) {
+                        int i;
 #pragma omp parallel private(i)
-                    {
-                        T local = this->startingValue(x);
-                        T *localExtraParams = this->extraParamsLength() > 0 ? (T *) malloc(sizeof(T) * this->extraParamsLength()) : NULL;
-                        for(int extraParamsIdx = 0; extraParamsIdx < this->extraParamsLength(); extraParamsIdx++) {
-                            localExtraParams[extraParamsIdx] = startingVal;
-                        }
+                        {
+                            T local = this->startingValue(x);
+                            T *localExtraParams = this->extraParamsLength() > 0 ? (T *) malloc(sizeof(T) * this->extraParamsLength()) : NULL;
+                            for(int extraParamsIdx = 0; extraParamsIdx < this->extraParamsLength(); extraParamsIdx++) {
+                                localExtraParams[extraParamsIdx] = startingVal;
+                            }
 
 #pragma omp simd
-                        for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
-                            local = update(local, op(x[i], y[i], &localExtraParams),
-                                           &(localExtraParams));
-                        }
+                            for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
+                                local = update(local, op(x[i], y[i], &localExtraParams),
+                                               &(localExtraParams));
+                            }
 
 #pragma omp critical
-                        {
+                            {
+
+                                if(this->extraParamsLength() > 0)
+                                    this->aggregateExtraParams(&extraParamsVals,&localExtraParams);
+                                startingVal = update(local,startingVal,&extraParamsVals);
+                            }
 
                             if(this->extraParamsLength() > 0)
-                                this->aggregateExtraParams(&extraParamsVals,&localExtraParams);
-                            startingVal = update(local,startingVal,&extraParamsVals);
+                                free(localExtraParams);
+
                         }
 
-                        if(this->extraParamsLength() > 0)
-                            free(localExtraParams);
+                        return postProcess(startingVal, length,&(extraParamsVals));
 
                     }
 
-                    return postProcess(startingVal, length,&(extraParamsVals));
+                    else {
+                        int i;
+#pragma omp parallel private(i)
+                        {
+                            T local = this->startingValue(x);
+                            T *localExtraParams = this->extraParamsLength() > 0 ? (T *) malloc(sizeof(T) * this->extraParamsLength()) : NULL;
+#pragma omp simd
+                            for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
+                                local = update(local,
+                                               op(x[i * xElementWiseStride], y[i * yElementWiseStride],
+                                                  &localExtraParams), &(localExtraParams));
+                            }
+
+#pragma omp critical
+                            {
+                                if(this->extraParamsLength() > 0)
+                                    this->aggregateExtraParams(&extraParamsVals,&localExtraParams);
+                                startingVal = update(local,startingVal,&extraParamsVals);
+                            }
+
+                            if(this->extraParamsLength() > 0)
+                                free(localExtraParams);
+                        }
+
+
+                        return  postProcess(startingVal, length,&(extraParamsVals));
+
+                    }
 
                 }
+
 
                 else {
-                    int i;
-#pragma omp parallel private(i)
-                    {
-                        T local = this->startingValue(x);
-                        T *localExtraParams = this->extraParamsLength() > 0 ? (T *) malloc(sizeof(T) * this->extraParamsLength()) : NULL;
-#pragma omp simd
-                        for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
-                            local = update(local,
-                                           op(x[i * xElementWiseStride], y[i * yElementWiseStride],
-                                              &localExtraParams), &(localExtraParams));
-                        }
+                    int *xShape = shape::shapeOf(xShapeInfo);
+                    int *yShape = shape::shapeOf(yShapeInfo);
+                    int *xStride = shape::stride(xShapeInfo);
+                    int *yStride = shape::stride(yShapeInfo);
+                    T startingVal = this->startingValue(x);
 
-#pragma omp critical
-                        {
-                            if(this->extraParamsLength() > 0)
-                                this->aggregateExtraParams(&extraParamsVals,&localExtraParams);
-                            startingVal = update(local,startingVal,&extraParamsVals);
-                        }
+                    int shapeIter[MAX_RANK];
+                    int coord[MAX_RANK];
+                    int dim;
+                    int xStridesIter[MAX_RANK];
+                    int yStridesIter[MAX_RANK];
+                    int resultStridesIter[MAX_RANK];
+                    int rank = shape::rank(xShapeInfo);
+                    if(PrepareTwoRawArrayIter<T>(rank,
+                                                   xShape,
+                                                   x,
+                                                   xStride,
+                                                   y,
+                                                   yStride,
+                                                   &rank,
+                                                   shapeIter,
+                                                   &x,
+                                                   xStridesIter,
+                                                   &y,
+                                                   yStridesIter) >= 0) {
+                        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter) {
+                                /* Process the innermost dimension */
+                                T *xIter = x;
+                                T *yIter = y;
+                                startingVal = update(startingVal, op(xIter[0],yIter[0],&extraParamsVals),&extraParamsVals);
+                            } ND4J_RAW_ITER_TWO_NEXT(dim,
+                                                       rank,
+                                                       coord,
+                                                       shapeIter,
+                                                       x,
+                                                       xStridesIter,
+                                                       y,
+                                                       yStridesIter);
 
-                        if(this->extraParamsLength() > 0)
-                            free(localExtraParams);
+                        return startingVal;
+                    }
+                    else {
+                        printf("Unable to prepare array\n");
                     }
 
-
-                    return  postProcess(startingVal, length,&(extraParamsVals));
-
                 }
+
 
             }
             /**
@@ -658,22 +714,79 @@ namespace functions {
                     return;
                 }
 
-                T startingVal = this->startingValue(x);
+                char xOrder = shape::order(xShapeInfo);
+                char yOrder = shape::order(yShapeInfo);
+                if(xOrder != yOrder) {
+                    int shapeIter[MAX_RANK];
+                    int coord[MAX_RANK];
+                    int dim;
+                    int xStridesIter[MAX_RANK];
+                    int yStridesIter[MAX_RANK];
+                    int resultStridesIter[MAX_RANK];
 
-                shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo,dimension, dimensionLength);
-                int resultLength = shape::length(resultShapeInfoBuffer);
-                /**
-                 * The element wise stride belongs to a reduction index.
-                 * When used out of order, we can get rid of the data
-                 * dependencies and rely on using the max dimension
-                 * specified for stride instead.
-                 * Say we take the sum(0,1) along arr
-                 * we can use arr.stride(1) as a representation
-                 * along which to iterate.
-                 */
-                int tadElementWiseStride = dimensionLength > 1 ? shape::stride(xShapeInfo)[dimensionLength - 1] : shape::computeElementWiseStride(shape::rank(xShapeInfo),shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),shape::order(xShapeInfo) == 'f',dimension,dimensionLength);
-                int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
-                int tadLength = tadPermuteInfo.tensorShapeProd;
+                    int *xShape = shape::shapeOf(xShapeInfo);
+                    int *yShape = shape::shapeOf(yShapeInfo);
+
+                    int *xStride = shape::stride(xShapeInfo);
+                    int *yStride = shape::stride(yShapeInfo);
+                    int *resultStride = shape::stride(resultShapeInfoBuffer);
+
+                    if(PrepareThreeRawArrayIter<T>(rank,
+                                                   xShape,
+                                                   x,
+                                                   xStride,
+                                                   y,
+                                                   yStride,
+                                                   result,
+                                                   resultStride,
+                                                   &rank,
+                                                   shapeIter,
+                                                   &x,
+                                                   xStridesIter,
+                                                   &y,
+                                                   yStridesIter,
+                                                   &result,
+                                                   resultStridesIter) >= 0) {
+                        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter) {
+                                /* Process the innermost dimension */
+                                T *xIter = x;
+                                T *yIter = y;
+                                T *resultIter = result;
+
+                                resultIter[0] = op(xIter[0],yIter[0],extraParamsVals);
+                            } ND4J_RAW_ITER_THREE_NEXT(dim,
+                                                       rank,
+                                                       coord,
+                                                       shapeIter,
+                                                       x,
+                                                       xStridesIter,
+                                                       y,
+                                                       yStridesIter,
+                                                       result,
+                                                       resultStridesIter);
+                    }
+                    else {
+                        printf("Unable to prepare array\n");
+                    }
+
+                }
+                else {
+                    T startingVal = this->startingValue(x);
+
+                    shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo,dimension, dimensionLength);
+                    int resultLength = shape::length(resultShapeInfoBuffer);
+                    /**
+                     * The element wise stride belongs to a reduction index.
+                     * When used out of order, we can get rid of the data
+                     * dependencies and rely on using the max dimension
+                     * specified for stride instead.
+                     * Say we take the sum(0,1) along arr
+                     * we can use arr.stride(1) as a representation
+                     * along which to iterate.
+                     */
+                    int tadElementWiseStride = dimensionLength > 1 ? shape::stride(xShapeInfo)[dimensionLength - 1] : shape::computeElementWiseStride(shape::rank(xShapeInfo),shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),shape::order(xShapeInfo) == 'f',dimension,dimensionLength);
+                    int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
+                    int tadLength = tadPermuteInfo.tensorShapeProd;
 #pragma omp parallel for
                     for(int i = 0; i < resultLength; i++) {
                         T *localExtraParams = this->extraParamsLength() > 0 ? (T *) malloc(sizeof(T) * this->extraParamsLength()) : NULL;
@@ -697,7 +810,10 @@ namespace functions {
 
 
 
-                shape::freePermuteInfo(tadPermuteInfo);
+                    shape::freePermuteInfo(tadPermuteInfo);
+                }
+
+
             }
 
 

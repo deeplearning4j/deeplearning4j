@@ -7,6 +7,7 @@
 #include "testhelpers.h"
 #include <pairwise_util.h>
 #include <pairwise_transform.h>
+
 TEST_GROUP(PairWiseUtil) {
 
     static int output_method(const char* output, ...) {
