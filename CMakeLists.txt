@@ -19,11 +19,11 @@ ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 
 if (CUDA_FOUND)
     message("CUDA found!")
-    set( CUDA_ARCHITECTURE_MINIMUM "3.0" CACHE STRING "Minimum required CUDA compute capability" )
+    set( CUDA_ARCHITECTURE_MINIMUM "3.5" CACHE STRING "Minimum required CUDA compute capability" )
     SET(CUDA_VERBOSE_BUILD ON)
     SET(CUDA_SEPARABLE_COMPILATION OFF)
-    set(CUDA_COMPUTE_CAPABILITY "30")
-    list(APPEND CUDA_NVCC_FLAGS "-DVERBOSE;-lCppUTest;-G;-g;-gencode arch=compute_30,code=sm_30")
+    set(CUDA_COMPUTE_CAPABILITY "35")
+    list(APPEND CUDA_NVCC_FLAGS "-DVERBOSE;-lCppUTest;-G;-g;-gencode arch=compute_35,code=sm_35")
 endif()
 
 
