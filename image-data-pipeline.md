@@ -11,6 +11,10 @@ Deeplearning4j's examples run on benchmark datasets that don't present any obsta
 
 This tutorial will walk through how it loads *Labeled Faces in the Wild*, a supervised set of 13,233 photographs representing 5,749 relatively famous people. (The full code example [lives on Github](https://github.com/deeplearning4j/Canova-examples/blob/master/src/main/java/datapipelines/ImageClassifierExample.java).)
 
+## Introductory Video
+
+<iframe width="420" height="315" src="https://www.youtube.com/embed/EHHtyRKQIJ0" frameborder="0" allowfullscreen></iframe>
+
 ## Loading Labels
 
 Download the LFW dataset and place it in the right file path (i.e. location in your computer's directories). Use the following code to feed the path into a variable called labelPath. Now you're ready to read and load the data, and create an array to hold the images' labels.
