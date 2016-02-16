@@ -214,9 +214,6 @@ namespace functions {
                     exec(dx,xElementWiseStride,result,resultElementWiseStride,extraParams,n);
                 }
                 else {
-
-                    int i;
-
                     int *xShape = shape::shapeOf(xShapeInfo);
                     int *resultShape = shape::shapeOf(resultShapeInfo);
 
@@ -270,7 +267,7 @@ namespace functions {
                 else {
 #pragma omp parallel for
                     for (int i = 0; i < n; i++) {
-                        result[i * resultStride] = op(dx[i * resultStride],
+                        result[i * resultStride] = op(dx[i * xStride],
                                                       extraParams);
                     }
                 }

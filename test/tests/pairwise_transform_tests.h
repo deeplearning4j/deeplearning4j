@@ -152,6 +152,8 @@ Data<T> * getPairwiseData(T *assertion,int opNum) {
 }
 
 
+
+
 class DoublePairwiseTranformTest : public PairwiseTransformTest<double> {
 public:
 	DoublePairwiseTranformTest() {}

@@ -14,8 +14,13 @@
 #include <math.h>
 #include <buffer.h>
 
+
+#define MAX_RANK 32
+
 namespace nd4j {
     namespace array {
+
+
 
 #define EPSILON 1e-6
 

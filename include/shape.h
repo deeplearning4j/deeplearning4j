@@ -76,6 +76,14 @@ namespace shape {
     __host__ __device__
 #endif
     int *shapeBuffer(int rank, int *shape);
+    /**
+ * Get the shape info buffer
+ * for the given rank and shape.
+ */
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    int *shapeBufferFortran(int rank, int *shape);
 /**
  * Computes the standard packed array strides for a given shape.
  *
@@ -379,6 +387,18 @@ namespace shape {
 #endif
 
     int elementWiseStride(int *buffer);
+
+
+    /**
+ * Returns the element wise stride for this information
+ * buffer
+     * relative to a dimension and ordering for a reduction index
+ */
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    int reductionIndexElementWiseStride(int *buffer,int *dimension,int dimensionLength);
 
 /**
  * Returns whether
@@ -1359,6 +1379,31 @@ namespace shape {
         shapeInfo->rank = rank;
         int elementWiseStride = shape::computeElementWiseStride(rank, shape, stride,
                                                                 0);
+        shapeInfo->order = 'c';
+        shapeInfo->elementWiseStride = elementWiseStride;
+        int *shapeInfoBuffer = shape::toShapeBuffer(shapeInfo);
+        free(shapeInfo);
+        return shapeInfoBuffer;
+    }
+
+    /**
+ * Get the shape info buffer
+ * for the given rank and shape.
+ */
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    int *shapeBufferFortran(int rank, int *shape) {
+        int *stride = shape::calcStridesFortran(shape,rank);
+        shape::ShapeInformation * shapeInfo = (shape::ShapeInformation *) malloc(
+                sizeof(shape::ShapeInformation));
+        shapeInfo->shape = shape;
+        shapeInfo->stride = stride;
+        shapeInfo->offset = 0;
+        shapeInfo->rank = rank;
+        int elementWiseStride = shape::computeElementWiseStride(rank, shape, stride,
+                                                                0);
+        shapeInfo->order = 'f';
         shapeInfo->elementWiseStride = elementWiseStride;
         int *shapeInfoBuffer = shape::toShapeBuffer(shapeInfo);
         free(shapeInfo);
@@ -1869,6 +1914,44 @@ namespace shape {
     int elementWiseStride(int *buffer) {
         int length2 = shapeInfoLength(buffer[0]);
         return buffer[length2 - 2];
+    }
+
+    /**
+* Returns the element wise stride for this information
+* buffer relative to a dimension and reduction index
+*/
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    int reductionIndexElementWiseStride(int *buffer,int *dimension,int dimensionLength) {
+        char order = shape::order(buffer);
+        if(order == 'f') {
+            /**
+                    * The element wise stride belongs to a reduction index.
+                    * When used out of order, we can get rid of the data
+                    * dependencies and rely on using the max dimension
+                    * specified for stride instead.
+                    * Say we take the sum(0,1) along arr
+                    * we can use arr.stride(1) as a representation
+                    * along which to iterate.
+                    */
+            int tadElementWiseStride = shape::stride(buffer)[dimension[0]];
+            return tadElementWiseStride;
+        }
+        else {
+            /**
+                    * The element wise stride belongs to a reduction index.
+                    * When used out of order, we can get rid of the data
+                    * dependencies and rely on using the max dimension
+                    * specified for stride instead.
+                    * Say we take the sum(0,1) along arr
+                    * we can use arr.stride(1) as a representation
+                    * along which to iterate.
+                    */
+            int tadElementWiseStride = shape::stride(buffer)[dimension[dimensionLength - 1]];
+            return tadElementWiseStride;
+        }
     }
 
 /**
