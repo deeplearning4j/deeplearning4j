@@ -41,7 +41,6 @@ public class BatchNormalizationTest {
             -1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,
     },new int[]{2, 16});
 
-
     protected INDArray cnnInput = Nd4j.create(new double[] {
             4.,4.,4.,4.,8.,8.,8.,8.,4.,4.,4.,4.,8.,8.,8.,8.,4.,4.
             ,4.,4.,8.,8.,8.,8.,4.,4.,4.,4.,8.,8.,8.,8,
@@ -67,19 +66,52 @@ public class BatchNormalizationTest {
                 .iterations(1).layer(bN).build();
         return LayerFactories.getFactory(layerConf).create(layerConf);
     }
-
     @Test
-    public void testCnnBatchNormForward() {
-        Layer layer = setupActivations(2*4*4, 2);
-        INDArray cnnActivationsActual = layer.preOutput(cnnInput);
-        INDArray activationsExpected = cnnEpsilon;
-        assertEquals(activationsExpected, cnnActivationsActual);
-        assertArrayEquals(activationsExpected.shape(), cnnActivationsActual.shape());
+    public void testDnnShapeBatchNormForward() {
+        Layer layer = setupActivations(2, 16);
+        INDArray activationsActual = layer.preOutput(dnnInput);
+        INDArray activationsExpected = dnnEpsilon;
+        assertEquals(activationsExpected, activationsActual);
+        assertArrayEquals(activationsExpected.shape(), activationsActual.shape());
     }
 
     @Test
-    public void testCnnBatchNormBack(){
-        Layer layer = setupActivations(2*4*4, 2);
+    public void testDnnShapeBatchNormBack(){
+        Layer layer = setupActivations(2, 16);
+        layer.preOutput(dnnInput);
+        Pair<Gradient, INDArray> actualOut = layer.backpropGradient(dnnEpsilon);
+
+        INDArray dnnExpectedEpsilonOut = Nd4j.create(new double[] {
+                -0.00,-0.00,-0.00,-0.00,0.50,0.50,0.50,0.50,-0.00,-0.00,-0.00,-0.00,0.50,0.50,0.50,0.50,
+                2.00,2.00,2.00,2.00,1.50,1.50,1.50,1.50,2.00,2.00,2.00,2.00,1.50,1.50,1.50,1.50
+        },new int[]{2, 16});
+
+        INDArray expectedGGamma = Nd4j.create(new double[]
+                { 2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,
+                }, new int[] {1, 16});
+
+        INDArray expectedBeta = Nd4j.create(new double[]
+                { 0.,0.,0.,0.,0.,0.,0.,0., 0.,0.,0.,0.,0.,0.,0.,0.,
+                }, new int[] {1, 16});
+        // arrays are the same but assert does not see that
+        assertEquals(dnnExpectedEpsilonOut, actualOut.getSecond());
+        assertEquals(expectedGGamma, actualOut.getFirst().getGradientFor("gamma"));
+        assertEquals(expectedBeta, actualOut.getFirst().getGradientFor("beta"));
+    }
+
+
+    @Test
+    public void testCnnShapeBatchNormForward() {
+        Layer layer = setupActivations(2, 2*4*4);
+        INDArray activationsActual = layer.preOutput(cnnInput);
+        INDArray activationsExpected = cnnEpsilon;
+        assertEquals(activationsExpected, activationsActual);
+        assertArrayEquals(activationsExpected.shape(), activationsActual.shape());
+    }
+
+    @Test
+    public void testCnnShapeBatchNormBack(){
+        Layer layer = setupActivations(2, 2*4*4);
         layer.preOutput(cnnInput);
         Pair<Gradient, INDArray> actualOut = layer.backpropGradient(cnnEpsilon);
 
@@ -92,18 +124,19 @@ public class BatchNormalizationTest {
                 -1.5, -2. , -2. , -2. , -2. , -1.5, -1.5, -1.5, -1.5
         },new int[]{2, 2, 4, 4});
 
-//        INDArray expectedGGamma = Nd4j.create(new double[]
-//                { 2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,
-//                  2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.
-//                }, new int[] {1, 32});
-//
-//        INDArray expectedBeta = Nd4j.create(new double[]
-//                { 0.}, new int[] {1, 1});
+        INDArray expectedGGamma = Nd4j.create(new double[]
+                { 2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,
+                  2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.
+                }, new int[] {1, 32});
 
-        // arrays are the same assert does not see that
+        INDArray expectedBeta = Nd4j.create(new double[]
+                { 0.,0.,0.,0.,0.,0.,0.,0., 0.,0.,0.,0.,0.,0.,0.,0.,
+                  0.,0.,0.,0.,0.,0.,0.,0., 0.,0.,0.,0.,0.,0.,0.,0.,
+                }, new int[] {1, 32});
+        // arrays are the same but assert does not see that
         assertEquals(expectedEpsilonOut, actualOut.getSecond());
-//        assertEquals(expectedBeta, actualOut.getFirst().getGradientFor("beta"));
-//        assertEquals(expectedGGamma, actualOut.getFirst().getGradientFor("gamma"));
+        assertEquals(expectedGGamma, actualOut.getFirst().getGradientFor("gamma"));
+        assertEquals(expectedBeta, actualOut.getFirst().getGradientFor("beta"));
 
     }
 

@@ -27,12 +27,12 @@ import java.util.*;
  **/
 
 public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.layers.BatchNormalization> {
-    protected INDArray std;
     protected int index = 0;
     protected List<IterationListener> listeners = new ArrayList<>();
     protected int[] shape;
     protected INDArray mean;
     protected INDArray var;
+    protected INDArray std;
     protected INDArray xHat;
     protected INDArray gGamma;
     protected TrainingMode trainingMode;
@@ -83,11 +83,12 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         INDArray coefficients =  Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(gamma, std, gamma, -1));
 
         INDArray tmp = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(xHat, gGamma, xHat.dup(), -1));
-        INDArray gXHat = coefficients.sub(tmp.addRowVector(gBeta).div(batchSize));
+        tmp.addiColumnVector(gBeta).divi(batchSize);
+        INDArray gXHat =  Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(tmp, coefficients, tmp, -1));
         INDArray nextEpsilon = reshapeEp.mul(gXHat).reshape(epsilon.shape());
-
-        // TODO gGamma and gBeta are used internally to this method and not applied like other gradient updates...
         Gradient retGradient = new DefaultGradient();
+        retGradient.setGradientFor(BatchNormalizationParamInitializer.GAMMA, gGamma);
+        retGradient.setGradientFor(BatchNormalizationParamInitializer.BETA, gBeta);
         return new Pair<>(retGradient,nextEpsilon);
     }
 
@@ -120,7 +121,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         org.deeplearning4j.nn.conf.layers.BatchNormalization layerConf = layerConf();
         int batchSize = x.size(0); // number examples in batch
         shape = getShape(x);
-        INDArray reshapeX = x.dup().reshape(batchSize, shape[1]);
+        INDArray reshapeX = (x.rank() > 2)? x.dup().reshape(batchSize, shape[1]): x;
 
         trainingMode = training;
         if (setMeanVar){
@@ -143,8 +144,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
         std = Transforms.sqrt(var);
         if(layerConf.isLockGammaBeta()){
-            gamma = Nd4j.onesLike(reshapeX);
-            beta = Nd4j.zeros(new int[]{batchSize, 1}); // 1 bias per output channel or output nodes which is defined in 1st position of x
+            gamma = Nd4j.onesLike(mean);
+            beta = Nd4j.zerosLike(mean);
         } else{
             gamma = getParam(BatchNormalizationParamInitializer.GAMMA);
             beta = getParam(BatchNormalizationParamInitializer.BETA);
@@ -155,9 +156,10 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         INDArray xMu = Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(reshapeX, mean, reshapeX, -1));
         xHat = Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(xMu, std, xMu.dup(),-1));
 
-        // BN(xk) = γkxˆk + βk
+        // BN(xk) = γkxˆk + βk (applying gamma and beta for each activation/feature)
 //        INDArray activations = Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(gamma, xHat, gamma));
-        INDArray activations =  xHat.dup().mul(gamma).addiRowVector(beta);
+        INDArray activations =  Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(xHat, gamma, xHat.dup(), -1));
+        activations.addiColumnVector(beta);
 
         // update mean and var if using batch mean while training
         double decay;
