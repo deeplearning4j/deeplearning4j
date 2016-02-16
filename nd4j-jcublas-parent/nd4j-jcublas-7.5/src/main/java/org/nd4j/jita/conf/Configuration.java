@@ -14,6 +14,11 @@ import java.util.List;
 public class Configuration implements Serializable {
 
     /**
+     * Keep this value between 0.01 and 0.95 please
+     */
+    private double maxDeviceMemoryUsed = 0.85;
+
+    /**
      * Minimal number of activations for relocation threshold
      */
     private int minimumRelocationThreshold = 5;
@@ -35,7 +40,6 @@ public class Configuration implements Serializable {
      */
     private Aggressiveness gpuAllocAggressiveness = Aggressiveness.REASONABLE;
 
-    private Aggressiveness hostAllocAggressiveness = Aggressiveness.REASONABLE;
 
     /**
      * Maximum allocated per-device memory, in bytes
@@ -65,5 +69,18 @@ public class Configuration implements Serializable {
 
     public void setMinimumRelocationThreshold(int threshold) {
         this.maximumDeviceAllocation = Math.max(2, threshold);
+    }
+
+    /**
+     * This method allows you to specify max per-device memory use.
+     *
+     * PLEASE NOTE: Accepted value range is 0.01 > x < 0.95
+     *
+     * @param percentage
+     */
+    public void setMaxDeviceMemoryUsed(double percentage) {
+        if (percentage < 0.02 || percentage > 0.95) {
+            this.maxDeviceMemoryUsed = 0.85;
+        } else this.maxDeviceMemoryUsed = percentage;
     }
 }

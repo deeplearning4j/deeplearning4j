@@ -563,6 +563,10 @@ public class AtomicAllocatorTest {
 
                 if (cnt.incrementAndGet() % 10000 == 0) {
                     log.info("Axpy execution time: [" + (time2 - time1) + "] ns on device ["+ allocator.getDeviceId(array1)+"]");
+
+                    assertEquals(23.734994888305664, array2.getDouble(0), 0.00001);
+                    assertEquals(23.734994888305664, array2.getDouble(1), 0.00001);
+
                     try {
                         Thread.sleep(5000);
                     } catch (Exception e) {

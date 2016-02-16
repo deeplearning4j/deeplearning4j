@@ -137,6 +137,34 @@ public class UmaMover implements Mover {
     }
 
     /**
+     * This method checks if specified device has free memory
+     *
+     * @param deviceId
+     * @param requiredMemory
+     * @return
+     */
+    @Override
+    public boolean pingDeviceForFreeMemory(Integer deviceId, long requiredMemory) {
+        long[] totalMem = new long[1];
+        long[] freeMem = new long[1];
+
+        JCuda.cudaMemGetInfo(freeMem, totalMem);
+
+        long free = freeMem[0];
+        long total = totalMem[0];
+        long used = total - free;
+
+        /*
+            We don't want to allocate memory if it's too close to the end of available ram.
+         */
+        if (used > total * configuration.getMaxDeviceMemoryUsed()) return false;
+
+        if (free + requiredMemory < total * configuration.getMaxDeviceMemoryUsed())
+            return true;
+        else return false;
+    }
+
+    /**
      * Copies specific chunk of memory from one storage to another
      *
      * Possible directions:  DEVICE -> ZERO, ZERO -> DEVICE, ZERO -> HOST, DEVICE -> HOST

@@ -26,6 +26,12 @@ public interface Mover {
      */
     DevicePointerInfo alloc(AllocationStatus targetMode, AllocationPoint point, AllocationShape shape);
 
+    /**
+     * This method checks if specified device has free memory
+     *
+     * @return
+     */
+    boolean pingDeviceForFreeMemory(Integer deviceId, long requiredMemory);
 
     /**
      *  Relocates specific chunk of memory from one storage to another

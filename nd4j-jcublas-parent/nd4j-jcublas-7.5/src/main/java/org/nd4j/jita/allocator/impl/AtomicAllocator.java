@@ -190,7 +190,7 @@ public class AtomicAllocator implements Allocator {
             this.configuration = configuration;
             this.environment = new CudaEnvironment(this.configuration);
 
-            this.deviceMemoryTracker = new DeviceAllocationsTracker(this.environment);
+            this.deviceMemoryTracker = new DeviceAllocationsTracker(this.environment, this.configuration);
 
             globalLock.writeLock().unlock();
         }
@@ -222,7 +222,7 @@ public class AtomicAllocator implements Allocator {
         globalLock.writeLock().lock();
         this.environment = environment;
 
-        this.deviceMemoryTracker = new DeviceAllocationsTracker(this.environment);
+        this.deviceMemoryTracker = new DeviceAllocationsTracker(this.environment, this.configuration);
 
         globalLock.writeLock().unlock();
     }
@@ -535,15 +535,19 @@ public class AtomicAllocator implements Allocator {
         if (!isNewAllocation && !isView) {
             // we check promotion only for existant allocations. just ignore new allocations here :)
             // TODO: add memory check all the way here
-            if (point.getDeviceTicks() > configuration.getMinimumRelocationThreshold() && point.getAllocationStatus() == AllocationStatus.ZERO && AllocationUtils.getRequiredMemory(shape) < configuration.getMaximumSingleAllocation()) {
-                point.getAccessState().requestToe();
+            long requiredMemory = AllocationUtils.getRequiredMemory(shape);
+            if (point.getDeviceTicks() > configuration.getMinimumRelocationThreshold() && point.getAllocationStatus() == AllocationStatus.ZERO && requiredMemory < configuration.getMaximumSingleAllocation()) {
 
-           //     log.info("Starting promotion");
+                // before doing actual promotion, we check to our tracker, to minimize cuda driver calls as well
+                if (deviceMemoryTracker.reserveAllocationIfPossible(Thread.currentThread().getId(), point.getDeviceId(), requiredMemory) && mover.pingDeviceForFreeMemory(point.getDeviceId(), requiredMemory)) {
+                    point.getAccessState().requestToe();
+                    //     log.info("Starting promotion");
 
-                // moving memory from ZERO to DEVICE
-                promoteObject(trackingPoint, point, shape);
+                    // moving memory from ZERO to DEVICE
+                    promoteObject(trackingPoint, point, shape);
 
-                point.getAccessState().releaseToe();
+                    point.getAccessState().releaseToe();
+                }
             }
         }
 
@@ -603,6 +607,8 @@ public class AtomicAllocator implements Allocator {
      */
     protected boolean promoteObject(Long trackingPoint, AllocationPoint point, AllocationShape shape) {
         try {
+            long threadId = Thread.currentThread().getId();
+
             DevicePointerInfo newPointers = mover.alloc(AllocationStatus.DEVICE, point, shape);
 
             point.setAllocationStatus(AllocationStatus.DEVICE);
@@ -610,13 +616,13 @@ public class AtomicAllocator implements Allocator {
 
             deviceLock.readLock().lock();
 
-            deviceAllocations.get(Thread.currentThread().getId(), point.getDeviceId()).put(trackingPoint, trackingPoint);
+            deviceAllocations.get(threadId, point.getDeviceId()).put(trackingPoint, trackingPoint);
 
             deviceLock.readLock().unlock();
 
-            zeroAllocations.get(Thread.currentThread().getId()).remove(trackingPoint);
+            zeroAllocations.get(threadId).remove(trackingPoint);
 
-            deviceMemoryTracker.addToAllocation(Thread.currentThread().getId(), point.getDeviceId(), AllocationUtils.getRequiredMemory(shape));
+            deviceMemoryTracker.addToAllocation(threadId, point.getDeviceId(), AllocationUtils.getRequiredMemory(shape));
 
             zeroUseCounter.set(zeroUseCounter.get() - AllocationUtils.getRequiredMemory(point.getShape()));
 

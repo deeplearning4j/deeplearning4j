@@ -42,7 +42,8 @@ public class DeviceAllocationsTrackerTest {
 
     @Test
     public void testGetAllocatedSize1() throws Exception {
-        DeviceAllocationsTracker tracker = new DeviceAllocationsTracker(environment);
+        DeviceAllocationsTracker tracker = new DeviceAllocationsTracker(environment, configuration);
+
 
         tracker.addToAllocation(1L, 0, 100L);
 
@@ -55,7 +56,8 @@ public class DeviceAllocationsTrackerTest {
 
     @Test
     public void testGetAllocatedSize2() throws Exception {
-        DeviceAllocationsTracker tracker = new DeviceAllocationsTracker(environment);
+        DeviceAllocationsTracker tracker = new DeviceAllocationsTracker(environment, configuration);
+
 
         tracker.addToAllocation(1L, 0, 100L);
         tracker.addToAllocation(2L, 0, 100L);
@@ -69,7 +71,7 @@ public class DeviceAllocationsTrackerTest {
 
     @Test
     public void testGetAllocatedSize3() throws Exception {
-        DeviceAllocationsTracker tracker = new DeviceAllocationsTracker(environment);
+        DeviceAllocationsTracker tracker = new DeviceAllocationsTracker(environment, configuration);
 
         tracker.addToAllocation(1L, 0, 100L);
         tracker.addToAllocation(2L, 1, 100L);
@@ -85,7 +87,7 @@ public class DeviceAllocationsTrackerTest {
 
     @Test
     public void testGetAllocatedSize4() throws Exception {
-        DeviceAllocationsTracker tracker = new DeviceAllocationsTracker(environment);
+        DeviceAllocationsTracker tracker = new DeviceAllocationsTracker(environment, configuration);
 
         tracker.addToAllocation(1L, 0, 100L);
         tracker.addToAllocation(2L, 0, 150L);
@@ -98,5 +100,16 @@ public class DeviceAllocationsTrackerTest {
         tracker.subFromAllocation(1L, 0, 100L);
 
         assertEquals(150, tracker.getAllocatedSize(0));
+    }
+
+    @Test
+    public void testReservedSpace1() throws Exception {
+        DeviceAllocationsTracker tracker = new DeviceAllocationsTracker(environment, configuration);
+
+        tracker.addToReservedSpace(0, 1000L);
+        assertEquals(1000L, tracker.getReservedSpace(0));
+
+        tracker.subFromReservedSpace(0, 1000L);
+        assertEquals(0L, tracker.getReservedSpace(0));
     }
 }
