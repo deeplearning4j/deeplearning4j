@@ -345,7 +345,7 @@ public class KernelFunctionLoader {
             now we map each kernel into cuda driver
         */
         try {
-            loadModules();
+        //    loadModules();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

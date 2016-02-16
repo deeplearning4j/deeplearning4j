@@ -479,8 +479,8 @@ public class AtomicAllocator implements Allocator {
                 DevicePointerInfo info = mover.alloc(AllocationStatus.ZERO, point, internalShape);
                 long allocCnt = allocationsCounter.incrementAndGet();
                 zeroAllocations.get(Thread.currentThread().getId()).put(trackingPoint, trackingPoint);
-                if (allocCnt % 1000 == 0)
-                    log.info("Total zero allocations happened: [" + allocCnt + "]; active zero allocations: ["+ zeroAllocations.get(Thread.currentThread().getId()).size()+"]");
+                if (allocCnt % 10000 == 0)
+                    log.debug("Total zero allocations happened: [" + allocCnt + "]; active zero allocations: ["+ zeroAllocations.get(Thread.currentThread().getId()).size()+"]");
 
                 /*
                     it's safe to remove this check in production environment
@@ -796,9 +796,11 @@ public class AtomicAllocator implements Allocator {
                         deviceAllocations.put(threadId, device, new ConcurrentHashMap<Long, Long>());
                     }
 
+                    log.info("Mapping device [" + device + "] to thread [" + Thread.currentThread().getId() + "]");
+
                     initCudaContextForThread(threadId);
 
-                    log.info("Mapping device [" + device + "] to thread [" + Thread.currentThread().getId() + "]");
+
 
                     ZeroGarbageCollectorThread thread = new ZeroGarbageCollectorThread(threadId, device, shouldStop);
                     thread.start();
@@ -1076,7 +1078,7 @@ public class AtomicAllocator implements Allocator {
             }
         }
 
-        log.info("Device elements purged: [" + elementsDropped.get()+"]; Relocated: ["+ elementsMoved.get()+"]; Device objects left: ["+allocations.size()+"]");
+        log.info("Thread/Device ["+ threadId+"/"+deviceId+"] elements purged: [" + elementsDropped.get()+"]; Relocated: ["+ elementsMoved.get()+"]; Device objects left: ["+allocations.size()+"]");
 
         return freeSpace.get();
     }
@@ -1103,7 +1105,7 @@ public class AtomicAllocator implements Allocator {
                 /*
                     Check for zero-copy garbage
                  */
-                log.info("ZeroGC started...");
+             //   log.info("ZeroGC started...");
                 /*
                     We want allocations to take in account multiple things:
                     1. average access rates for last X objects
@@ -1155,7 +1157,7 @@ public class AtomicAllocator implements Allocator {
                 /*
                     Check for device garbage
                  */
-                log.info("DeviceGC started...");
+                //log.info("DeviceGC started...");
                 Aggressiveness aggressiveness = configuration.getHostDeallocAggressiveness();
 
                 // if we have too much objects, or total allocated memory has met 75% of max allocation - use urgent mode
