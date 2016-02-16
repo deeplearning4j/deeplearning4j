@@ -62,4 +62,8 @@ public class Configuration implements Serializable {
      * Maximum length of single memory chunk
      */
     private long maximumSingleAllocation = Long.MAX_VALUE;
+
+    public void setMinimumRelocationThreshold(int threshold) {
+        this.maximumDeviceAllocation = Math.max(2, threshold);
+    }
 }

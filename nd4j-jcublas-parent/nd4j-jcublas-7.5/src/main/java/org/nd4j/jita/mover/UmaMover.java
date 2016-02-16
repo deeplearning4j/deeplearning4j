@@ -147,7 +147,7 @@ public class UmaMover implements Mover {
      */
     @Override
     public void relocate(AllocationStatus currentStatus, AllocationStatus targetStatus, AllocationPoint point, AllocationShape shape) {
-        log.info("RELOCATE CALLED: [" +currentStatus+ "] -> ["+targetStatus+"]");
+        //log.info("RELOCATE CALLED: [" +currentStatus+ "] -> ["+targetStatus+"]");
         if (currentStatus == AllocationStatus.ZERO && targetStatus == AllocationStatus.DEVICE) {
             // ZERO -> DEVICE
         } else if (currentStatus == AllocationStatus.DEVICE && targetStatus == AllocationStatus.ZERO) {

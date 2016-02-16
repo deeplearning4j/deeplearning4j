@@ -448,7 +448,7 @@ public class AtomicAllocator implements Allocator {
                 DevicePointerInfo info = mover.alloc(AllocationStatus.ZERO, point, internalShape);
                 long allocCnt = allocationsCounter.incrementAndGet();
                 zeroAllocations.get(Thread.currentThread().getId()).put(trackingPoint, trackingPoint);
-                //if (allocCnt % 1000 == 0)
+                if (allocCnt % 1000 == 0)
                     log.info("Total zero allocations happened: [" + allocCnt + "]; active zero allocations: ["+ zeroAllocations.get(Thread.currentThread().getId()).size()+"]");
 
                 /*
@@ -504,7 +504,7 @@ public class AtomicAllocator implements Allocator {
         if (!isNewAllocation && !isView) {
             // we check promotion only for existant allocations. just ignore new allocations here :)
             // TODO: add memory check all the way here
-            if (point.getDeviceTicks() > 5 && point.getAllocationStatus() == AllocationStatus.ZERO && AllocationUtils.getRequiredMemory(shape) < configuration.getMaximumSingleAllocation()) {
+            if (point.getDeviceTicks() > configuration.getMinimumRelocationThreshold() && point.getAllocationStatus() == AllocationStatus.ZERO && AllocationUtils.getRequiredMemory(shape) < configuration.getMaximumSingleAllocation()) {
                 point.getAccessState().requestToe();
 
            //     log.info("Starting promotion");
