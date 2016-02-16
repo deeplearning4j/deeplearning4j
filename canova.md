@@ -18,7 +18,6 @@ Canova solves one of the most important obstacles to effective machine or deep l
 
 We're finishing up the command-line interface (CLI) system and running tests on basic datasets for converting stock CSV data that you'd export from a database or download from UCI. You can transform this data with a small conf file-based transform language (label, normalize, copy, etc). There's a <a href="#tutorial">brief tutorial below</a>.
 
-
 ## A Few Examples
 
  * Convert the CSV-based UCI Iris dataset into svmLight open vector text format
@@ -66,7 +65,7 @@ Then you'll want to build the stand-alone Canova jar to run the CLI from termina
 
       cd canova-cli/
       mvn -DskipTests=true -Dmaven.javadoc.skip=true package
--->
+
 
 ## Create the Configuration File
 
@@ -82,7 +81,7 @@ You'll need a file to tell the vectorization engine what to do. Create a text fi
     
     output.format=org.canova.api.formats.output.impl.SVMLightOutputFormat
 
-
+-->
 <!--## Run Canova From the Command Line
 
 Now we're going to take this [sample](https://github.com/deeplearning4j/Canova/blob/master/canova-cli/src/test/resources/csv/data/uci_iris_sample.txt) of [UCI's Iris dataset](https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data).
