@@ -1173,9 +1173,6 @@ struct SharedSummaryStatsData<double> {
                                 shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), shape::stride(xShapeInfo),
                                 shape::order(xShapeInfo) == 'f', dimension, dimensionLength);
                 int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
-                int tadLength = tadPermuteInfo.tensorShapeProd;
-
-
                 SummaryStatsData<T> *currStartingValue = (SummaryStatsData<T> *) malloc(
                         sizeof(SummaryStatsData<T>) * resultLength);
 #pragma omp parallel for

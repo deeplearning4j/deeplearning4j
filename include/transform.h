@@ -214,9 +214,6 @@ namespace functions {
                     exec(dx,xElementWiseStride,result,resultElementWiseStride,extraParams,n);
                 }
                 else {
-
-                    int i;
-
                     int *xShape = shape::shapeOf(xShapeInfo);
                     int *resultShape = shape::shapeOf(resultShapeInfo);
 
