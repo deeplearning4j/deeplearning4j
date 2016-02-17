@@ -66,6 +66,14 @@ else
            make && cd ..
            echo "FINISHING BUILD"
            mv ptxbuild/ptx/cuda_compile_ptx_generated_all.cu.ptx all.ptx
+     elif [ "$1" == "fatbin" ]; then
+           rm -rf fatbuild
+           mkdir fatbuild
+           cd fatbuild
+           cmake -DFATBIN=TRUE ..
+           make && cd ..
+           echo "FINISHING BUILD"
+           mv fatbuild/fatbin/cuda_compile_fatbin_generated_all.cu.fatbin all.fatbin
 fi
 
 fi
