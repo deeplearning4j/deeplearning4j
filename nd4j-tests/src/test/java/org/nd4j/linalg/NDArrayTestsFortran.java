@@ -51,6 +51,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 /**
@@ -108,35 +109,34 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
 
 
-
     @Test
     public void testColumnMmul() {
         DataBuffer data = Nd4j.linspace(1, 10, 18).data();
         INDArray x2 = Nd4j.create(data, new int[]{2,3,3});
         data = Nd4j.linspace(1, 12, 9).data();
         INDArray y2 = Nd4j.create(data, new int[]{3,3});
-        INDArray z2 = Nd4j.create('f',3,2);
+        INDArray z2 = Nd4j.create(new int[]{3,2},'f');
         z2.putColumn(0, y2.getColumn(0));
         z2.putColumn(1, y2.getColumn(1));
-        INDArray nofOffset = Nd4j.create('f',3,3);
+        INDArray nofOffset = Nd4j.create(new int[]{3,3},'f');
         nofOffset.assign(x2.slice(0));
-        assertEquals(getFailureMessage(),nofOffset,x2.slice(0));
+        assertEquals(nofOffset,x2.slice(0));
 
         INDArray slice = x2.slice(0);
         INDArray zeroOffsetResult = slice.mmul(z2);
         INDArray offsetResult = nofOffset.mmul(z2);
-        assertEquals(getFailureMessage(),zeroOffsetResult,offsetResult);
+        assertEquals(zeroOffsetResult,offsetResult);
 
 
         INDArray slice1 = x2.slice(1);
         INDArray noOffset2 = Nd4j.create(slice1.shape());
         noOffset2.assign(slice1);
-        assertEquals(getFailureMessage(),slice1,noOffset2);
+        assertEquals(slice1,noOffset2);
 
         INDArray noOffsetResult = noOffset2.mmul(z2);
         INDArray slice1OffsetResult = slice1.mmul(z2);
 
-        assertEquals(getFailureMessage(),noOffsetResult,slice1OffsetResult);
+        assertEquals(noOffsetResult,slice1OffsetResult);
     }
 
 
@@ -459,7 +459,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     @Test
     public void testVectorInit() {
         DataBuffer data = Nd4j.linspace(1, 4, 4).data();
-        INDArray arr = Nd4j.create(data, new int[]{4});
+        INDArray arr = Nd4j.create(data, new int[]{1,4});
         assertEquals(true, arr.isRowVector());
         INDArray arr2 = Nd4j.create(data, new int[]{1, 4});
         assertEquals(true, arr2.isRowVector());
@@ -629,7 +629,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray columnVector = Nd4j.create(data, new int[]{6, 1});
         assertEquals(6, columnVector.rows());
         assertEquals(1, columnVector.columns());
-        INDArray rowVector = Nd4j.create(data, new int[]{6});
+        INDArray rowVector = Nd4j.create(data, new int[]{1,6});
         assertEquals(1, rowVector.rows());
         assertEquals(6, rowVector.columns());
     }

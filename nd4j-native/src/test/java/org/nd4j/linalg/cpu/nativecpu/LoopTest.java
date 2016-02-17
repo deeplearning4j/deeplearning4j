@@ -1,15 +1,22 @@
 package org.nd4j.linalg.cpu.nativecpu;
 
+import org.apache.commons.math3.linear.BlockRealMatrix;
+import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.util.FastMath;
+import org.apache.commons.math3.util.Pair;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
+import org.nd4j.linalg.api.ops.BroadcastOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.*;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
+import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.convolution.OldConvolution;
 import org.nd4j.linalg.cpu.nativecpu.CBLAS;
@@ -22,6 +29,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.FloatBuffer;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -155,6 +163,150 @@ public class LoopTest {
 
 
     @Test
+    public void testTensorAlongDimension() {
+        int[] shape = new int[]{4,5,7};
+        int length = ArrayUtil.prod(shape);
+        INDArray arr = Nd4j.linspace(1, length, length).reshape(shape);
+
+
+        int[] dim0s = {0,1,2,0,1,2};
+        int[] dim1s = {1,0,0,2,2,1};
+
+        double[] sums = {1350.,  1350.,  1582,  1582,  630,  630};
+
+        for( int i = 0; i < dim0s.length; i++) {
+            int firstDim = dim0s[i];
+            int secondDim = dim1s[i];
+            INDArray tad = arr.tensorAlongDimension(0, firstDim, secondDim);
+            assertEquals("I " + i + " failed ",sums[i],tad.sumNumber().doubleValue(),1e-1);
+        }
+    }
+
+
+    @Test
+    public void testSubiRowVector() throws Exception {
+        INDArray oneThroughFour = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray row1 = oneThroughFour.getRow(1);
+        oneThroughFour.subiRowVector(row1);
+        INDArray result = Nd4j.create(new float[]{-2, -2, 0, 0}, new int[]{2, 2});
+        assertEquals( result, oneThroughFour);
+
+    }
+
+    @Test
+    public void testTensorDot2() {
+        INDArray oneThroughSixty = Nd4j.arange(60).reshape('f',3, 4, 5);
+        INDArray oneThroughTwentyFour = Nd4j.arange(24).reshape('f',4, 3, 2);
+        INDArray result = Nd4j.tensorMmul(oneThroughSixty, oneThroughTwentyFour, new int[][]{{1, 0}, {0, 1}});
+        assertArrayEquals(new int[]{5, 2}, result.shape());
+        INDArray assertion = Nd4j.create(new double[][]{
+                {440., 1232.},
+                {1232., 3752.},
+                {2024., 6272.},
+                {2816., 8792.},
+                {3608., 11312.}
+        });
+        assertEquals(assertion, result);
+
+    }
+
+    @Test
+    public void testPermuteReshape() {
+        INDArray arrTest = Nd4j.arange(60).reshape('c',3, 4, 5);
+        INDArray permute = arrTest.permute(2,1,0);
+        assertArrayEquals(new int[]{5,4,3},permute.shape());
+        assertArrayEquals(new int[]{1,5,20},permute.stride());
+        INDArray reshapedPermute = permute.reshape(-1, 12);
+        assertArrayEquals(new int[]{5,12},reshapedPermute.shape());
+        assertArrayEquals(new int[]{12,1}, reshapedPermute.stride());
+
+    }
+
+    @Test
+    public void testSum2dv2(){
+        INDArray arr = Nd4j.ones(10, 10);
+        INDArray sumBoth = arr.sum(0,1);
+        assertArrayEquals(sumBoth.shape(),new int[]{1,1});
+        assertTrue(sumBoth.getDouble(0) == 100);
+    }
+
+
+    @Test
+    public void testColumnMmul() {
+        DataBuffer data = Nd4j.linspace(1, 10, 18).data();
+        INDArray x2 = Nd4j.create(data, new int[]{2,3,3});
+        data = Nd4j.linspace(1, 12, 9).data();
+        INDArray y2 = Nd4j.create(data, new int[]{3,3});
+        INDArray z2 = Nd4j.create(new int[]{3,2},'f');
+        z2.putColumn(0, y2.getColumn(0));
+        z2.putColumn(1, y2.getColumn(1));
+        INDArray nofOffset = Nd4j.create(new int[]{3,3},'f');
+        nofOffset.assign(x2.slice(0));
+        assertEquals(nofOffset,x2.slice(0));
+
+        INDArray slice = x2.slice(0);
+        INDArray zeroOffsetResult = slice.mmul(z2);
+        INDArray offsetResult = nofOffset.mmul(z2);
+        assertEquals(zeroOffsetResult,offsetResult);
+
+
+        INDArray slice1 = x2.slice(1);
+        INDArray noOffset2 = Nd4j.create(slice1.shape());
+        noOffset2.assign(slice1);
+        assertEquals(slice1,noOffset2);
+
+        INDArray noOffsetResult = noOffset2.mmul(z2);
+        INDArray slice1OffsetResult = slice1.mmul(z2);
+
+        assertEquals(noOffsetResult,slice1OffsetResult);
+    }
+
+
+    @Test
+    public void testArgMax() {
+        INDArray toArgMax = Nd4j.linspace(1,24,24).reshape('c',4, 3, 2);
+       // INDArray  argMax = Nd4j.argMax(toArgMax, 1);
+        INDArray argMaxZero = Nd4j.argMax(toArgMax, 0);
+      //  INDArray argMaxTwo = Nd4j.argMax(toArgMax,2);
+       // INDArray valueArray = Nd4j.valueArrayOf(new int[]{4, 2}, 2.0);
+        INDArray valueArrayTwo = Nd4j.valueArrayOf(new int[]{3,2},3.0);
+        //INDArray valueArrayThree = Nd4j.valueArrayOf(new int[]{4,3},1.0);
+        //assertEquals(valueArray, argMax);
+        assertEquals(valueArrayTwo, argMaxZero);
+        //assertEquals(valueArrayThree,argMaxTwo);
+    }
+
+
+    @Test
+    public void testAssignNumber() {
+        int nRows = 10;
+        int nCols = 20;
+        INDArray in = Nd4j.linspace(1,nRows * nCols,nRows * nCols).reshape('c',new int[]{nRows,nCols});
+
+        INDArray subset1 = in.get(NDArrayIndex.interval(0, 1), NDArrayIndex.interval(0, nCols / 2));
+        subset1.assign(1.0);
+
+        INDArray subset2 = in.get(NDArrayIndex.interval(5,8), NDArrayIndex.interval(nCols / 2,nCols));
+        subset2.assign(2.0);
+        INDArray assertion = Nd4j.create(
+                new double[]{1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,11.0,12.0,13.0,14.0,15.0,16.0,17.0,18.0,19.0,20.0,
+                        21.0,22.0,23.0,24.0,25.0,26.0,27.0,28.0,29.0,30.0,31.0,32.0,33.0,34.0,35.0,36.0,37.0,38.0,39.0,
+                        40.0,41.0,42.0,43.0,44.0,45.0,46.0,47.0,48.0,49.0,50.0,51.0,52.0,53.0,54.0,55.0,56.0,57.0,58.0,59.0,
+                        60.0,61.0,62.0,63.0,64.0,65.0,66.0,67.0,68.0,69.0,70.0,71.0,72.0,73.0,74.0,75.0,76.0,77.0,78.0,79.0,
+                        80.0,81.0,82.0,83.0,84.0,85.0,86.0,87.0,88.0,89.0,90.0,91.0,92.0,93.0,94.0,95.0,96.0,97.0,98.0,99.0,
+                        100.0,101.0,102.0,103.0,104.0,105.0,106.0,107.0,108.0,109.0,110.0,
+                        2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,
+                        121.0,122.0,123.0,124.0,125.0,126.0,127.0,128.0,129.0,130.0,
+                        2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,141.0,142.0,
+                        143.0,144.0,145.0,146.0,147.0,148.0,149.0,150.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,161.0,162.0,163.0,164.0,
+                        165.0,166.0,167.0,168.0,169.0,
+                        170.0,171.0,172.0,173.0,174.0,175.0,176.0,177.0,178.0,179.0,180.0,181.0,182.0,183.0,184.0,185.0,186.0,187.0,188.0,189.0,
+                        190.0,191.0,192.0,193.0,
+                        194.0,195.0,196.0,197.0,198.0,199.0,200.0},in.shape(),0,'c');
+        assertEquals(assertion,in);
+    }
+
+    @Test
     public void testColumnVar() {
         INDArray twoByThree = Nd4j.linspace(1, 600, 600).reshape(150, 4);
         INDArray columnStd = twoByThree.var(0);
@@ -180,6 +332,176 @@ public class LoopTest {
         assertEquals(assertion,sum);
     }
 
+    @Test
+    public void testNdVectorOp() {
+        //Test 2d, 3d, ..., 6d vector ops
+
+        Nd4j.getRandom().setSeed(12345);
+        int[] maxShape = new int[]{5, 7, 9, 11, 13, 15};
+
+        for( int opNum = 0; opNum < 6; opNum++) {
+            for (int rank = 2; rank < maxShape.length; rank++) {
+                int[] shape = Arrays.copyOfRange(maxShape, 0, rank);
+                int len = ArrayUtil.prod(shape);
+                INDArray orig = Nd4j.linspace(1,len,len).reshape('c',shape);
+
+                for (int i = 0; i < rank; i++) {   //Test ops for each dimension
+                    INDArray arr = orig.dup();
+                    INDArray vector = Nd4j.linspace(1, shape[i],shape[i]);
+
+                    BroadcastOp op;
+                    switch(opNum) {
+                        case 0:
+                            op = new BroadcastAddOp(arr, vector, arr, i);
+                            break;
+                        case 1:
+                            op = new BroadcastCopyOp(arr, vector, arr, i);
+                            break;
+                        case 2:
+                            op = new BroadcastDivOp(arr, vector, arr, i);
+                            break;
+                        case 3:
+                            op = new BroadcastMulOp(arr, vector, arr, i);
+                            break;
+                        case 4:
+                            op = new BroadcastRDivOp(arr, vector, arr, i);
+                            break;
+                        case 5:
+                            op = new BroadcastRSubOp(arr, vector, arr, i);
+                            break;
+                        case 6:
+                            op = new BroadcastSubOp(arr, vector, arr, i);
+                            break;
+                        default:
+                            throw new RuntimeException();
+                    }
+                    Nd4j.getExecutioner().exec(op,op.getDimension());
+
+                    //Compare expected vs. actual:
+                    NdIndexIterator iter = new NdIndexIterator(orig.shape());
+                    while (iter.hasNext()) {
+                        int[] next = iter.next();
+                        double origValue = orig.getDouble(next);
+                        double vectorValue = vector.getDouble(next[i]);   //current index in vector
+                        double exp;
+                        switch(opNum){
+                            case 0:
+                                exp = origValue + vectorValue;
+                                break;
+                            case 1:
+                                exp = vectorValue;
+                                break;
+                            case 2:
+                                exp = origValue / vectorValue;
+                                break;
+                            case 3:
+                                exp = origValue * vectorValue;
+                                break;
+                            case 4:
+                                exp = vectorValue / origValue;
+                                break;
+                            case 5:
+                                exp = vectorValue - origValue;
+                                break;
+                            case 6:
+                                exp = origValue - vectorValue;
+                                break;
+                            default:
+                                throw new RuntimeException();
+                        }
+
+                        double actual = arr.getDouble(next);
+                        assertEquals(exp,actual,1e-3);
+                    }
+                }
+            }
+        }
+    }
+
+
+
+    @Test
+    public void testDupAndDupWithOrder() {
+        List<Pair<INDArray,String>> testInputs = NDArrayCreationUtil.getAllTestMatricesWithShape(4, 5, 123);
+
+        for(Pair<INDArray,String> pair : testInputs) {
+
+            String msg = pair.getSecond();
+            INDArray in = pair.getFirst();
+            INDArray dup = in.dup();
+            INDArray dupc = in.dup('c');
+            INDArray dupf = in.dup('f');
+
+            assertEquals(dup.ordering(),(char)Nd4j.order());
+            assertEquals(dupc.ordering(),'c');
+            assertEquals(dupf.ordering(),'f');
+            assertEquals(msg,in,dupc);
+            assertEquals(msg,in,dupf);
+        }
+    }
+
+    @Test
+    public void testGemvApacheCommons() {
+
+        int[] rowsArr = new int[]{4,4,4,8,8,8};
+        int[] colsArr = new int[]{2,1,10,2,1,10};
+
+        for( int x = 0; x < rowsArr.length; x++ ) {
+            int rows = rowsArr[x];
+            int cols = colsArr[x];
+
+            List<Pair<INDArray, String>> matrices = NDArrayCreationUtil.getAllTestMatricesWithShape(rows, cols, 12345);
+            List<Pair<INDArray, String>> vectors = NDArrayCreationUtil.getAllTestMatricesWithShape(cols, 1, 12345);
+
+            for (int i = 0; i < matrices.size(); i++) {
+                for (int j = 0; j < vectors.size(); j++) {
+
+                    Pair<INDArray, String> p1 = matrices.get(i);
+                    Pair<INDArray, String> p2 = vectors.get(j);
+                    String errorMsg = getTestWithOpsErrorMsg(i, j, "mmul", p1, p2);
+
+                    INDArray m = p1.getFirst();
+                    INDArray v = p2.getFirst();
+
+                    RealMatrix rm = new BlockRealMatrix(m.rows(), m.columns());
+                    for (int r = 0; r < m.rows(); r++) {
+                        for (int c = 0; c < m.columns(); c++) {
+                            double d = m.getDouble(r, c);
+                            rm.setEntry(r, c, d);
+                        }
+                    }
+
+                    RealMatrix rv = new BlockRealMatrix(cols, 1);
+                    for (int r = 0; r < v.rows(); r++) {
+                        double d = v.getDouble(r, 0);
+                        rv.setEntry(r, 0, d);
+                    }
+
+                    INDArray gemv = m.mmul(v);
+                    RealMatrix gemv2 = rm.multiply(rv);
+
+                    assertArrayEquals(new int[]{rows, 1}, gemv.shape());
+                    assertArrayEquals(new int[]{rows, 1}, new int[]{gemv2.getRowDimension(), gemv2.getColumnDimension()});
+
+                    //Check entries:
+                    for (int r = 0; r < rows; r++) {
+                        double exp = gemv2.getEntry(r, 0);
+                        double act = gemv.getDouble(r, 0);
+                        assertEquals(errorMsg, exp, act, 1e-5);
+                    }
+                }
+            }
+        }
+    }
+    private static String getTestWithOpsErrorMsg(int i, int j, String op, Pair<INDArray,String> first, Pair<INDArray,String> second) {
+        return i + "," + j + " - " + first.getSecond() + "." + op + "(" + second.getSecond() + ")";
+    }
+
+    private static String getGemmErrorMsg(int i, int j, boolean transposeA, boolean transposeB, double alpha, double beta,
+                                          Pair<INDArray,String> first, Pair<INDArray,String> second){
+        return i + "," + j + " - gemm(tA="+transposeA+",tB="+transposeB+",alpha="+alpha+",beta="+beta+"). A="
+                + first.getSecond() + ", B=" + second.getSecond();
+    }
 
     @Test
     public void testAdaDeltaCombining() {

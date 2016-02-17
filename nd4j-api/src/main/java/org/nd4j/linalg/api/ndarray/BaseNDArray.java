@@ -101,12 +101,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     protected Boolean isScalar = null;
     protected boolean isWrapAround = false;
     protected int linearStride = -1;
-    protected int elementWiseStride = -1;
     protected boolean attemptedToFindElementWiseStride = false;
-
-
-
-
 
 
     public BaseNDArray() {
@@ -693,15 +688,15 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public int elementWiseStride() {
-        if(elementWiseStride < 0 && !attemptedToFindElementWiseStride) {
+        if(Shape.elementWiseStride(shapeInfo()) < 0 && !attemptedToFindElementWiseStride) {
             INDArray reshapeAttempt = Shape.newShapeNoCopy(this,new int[]{1,length()}, ordering() == 'f');
             if(reshapeAttempt != null)
-                elementWiseStride = reshapeAttempt.stride(-1);
+                Shape.setElementWiseStride(shapeInfo(),reshapeAttempt.stride(-1));
             attemptedToFindElementWiseStride = true;
 
         }
 
-        return elementWiseStride;
+        return Shape.elementWiseStride(shapeInfo());
     }
 
     @Override
@@ -1881,6 +1876,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @return
      */
     protected INDArray doColumnWise(INDArray columnVector, char operation) {
+        if(columnVector.data().sameUnderlyingData(data()))
+            return doColumnWise(columnVector.dup(),operation);
         if(isVector()) {
             switch (operation) {
                 case 'a':
@@ -1951,6 +1948,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @return
      */
     protected INDArray doRowWise(final INDArray rowVector, final char operation) {
+        if(rowVector.data().sameUnderlyingData(data()))
+            return doRowWise(rowVector.dup(),operation);
+
         if(isVector()) {
             switch (operation) {
                 case 'a':

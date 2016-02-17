@@ -13,6 +13,16 @@ import static org.junit.Assert.assertArrayEquals;
  * @author Adam Gibson
  */
 public class IndexShapeTests2d extends BaseNd4jTest {
+    public IndexShapeTests2d() {
+    }
+
+    public IndexShapeTests2d(Nd4jBackend backend) {
+        super(backend);
+    }
+
+    public IndexShapeTests2d(String name) {
+        super(name);
+    }
 
     public IndexShapeTests2d(String name, Nd4jBackend backend) {
         super(name, backend);

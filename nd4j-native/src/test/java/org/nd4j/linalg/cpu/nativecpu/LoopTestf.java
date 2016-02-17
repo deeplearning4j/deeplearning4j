@@ -72,6 +72,43 @@ public class LoopTestf {
     }
 
     @Test
+    public void testRowsColumns() {
+        DataBuffer data = Nd4j.linspace(1, 6, 6).data();
+        INDArray rows = Nd4j.create(data, new int[]{2, 3});
+        assertEquals(2, rows.rows());
+        assertEquals(3, rows.columns());
+
+        INDArray columnVector = Nd4j.create(data, new int[]{6, 1});
+        assertEquals(6, columnVector.rows());
+        assertEquals(1, columnVector.columns());
+        INDArray rowVector = Nd4j.create(data, new int[]{1,6});
+        assertEquals(1, rowVector.rows());
+        assertEquals(6, rowVector.columns());
+    }
+
+
+    @Test
+    public void testDupAndDupWithOrder(){
+        List<Pair<INDArray,String>> testInputs = NDArrayCreationUtil.getAllTestMatricesWithShape(4, 5, 123);
+
+        for(Pair<INDArray,String> pair : testInputs) {
+
+            String msg = pair.getSecond();
+            INDArray in = pair.getFirst();
+            INDArray dup = in.dup();
+            INDArray dupc = in.dup('c');
+            INDArray dupf = in.dup('f');
+
+            assertEquals(dup.ordering(),Nd4j.order().charValue());
+            assertEquals(dupc.ordering(),'c');
+            assertEquals(dupf.ordering(),'f');
+            assertEquals(msg,in,dupc);
+            assertEquals(msg,in,dupf);
+        }
+    }
+
+
+    @Test
     public void testStdev() {
         INDArray arr = Nd4j.create(new float[]{0.9296161f, 0.31637555f, 0.1839188f}, new int[]{1, 3}, 'c');
         double stdev = arr.stdNumber().doubleValue();
