@@ -753,7 +753,7 @@ public class KernelLauncher {
                         "Name in module might be mangled. Try adding the line "+"\n"+
                         "extern \"C\""+"\n"+
                         "before the function you want to call, or open the " +
-                        "PTX/CUBIN "+"\n"+"file with a text editor to find out " +
+                        "PTX/CUBIN/FATBIN "+"\n"+"file with a text editor to find out " +
                         "the mangled function name";
         try
         {

@@ -291,7 +291,7 @@ public class AtomicAllocatorTest {
     @Test
     public void testGpuBlas7akaMultipleThreadsMultipleDevicesDifferentData() throws Exception {
 
-        GpuThreadInternalData[] threads = new GpuThreadInternalData[10];
+        GpuThreadInternalData[] threads = new GpuThreadInternalData[4];
         for (int x =0; x< threads.length; x++) {
             GpuThreadInternalData thread = new GpuThreadInternalData();
             thread.start();
@@ -325,7 +325,7 @@ public class AtomicAllocatorTest {
             array2.putRow(y, Nd4j.create(srcArray2));
         }
 
-        GpuThreadExternalData[] threads = new GpuThreadExternalData[10];
+        GpuThreadExternalData[] threads = new GpuThreadExternalData[4];
         for (int x =0; x< threads.length; x++) {
             GpuThreadExternalData thread = new GpuThreadExternalData(array1, array2);
             thread.start();

@@ -33,6 +33,8 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.Op;
@@ -55,6 +57,8 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.*;
 import java.util.regex.Pattern;
+
+import static jcuda.driver.JCudaDriver.cuDeviceGetCount;
 
 
 /**
@@ -81,8 +85,8 @@ public class KernelFunctionLoader {
 
     private Table<String, DataBuffer.Type, String> paths = HashBasedTable.create();
 
-    // Thread, <FunctionName, DataType>, KernelLauncher
-    private static Table<String, Pair<String, DataBuffer.Type>,KernelLauncher> launchers = HashBasedTable.create();
+    // DeviceID, <FunctionName, DataType>, KernelLauncher
+    private static Table<Integer, Pair<String, DataBuffer.Type>,KernelLauncher> launchers = HashBasedTable.create();
 
     private KernelFunctionLoader() {}
 
@@ -157,7 +161,7 @@ public class KernelFunctionLoader {
      */
     public KernelLauncher get(String functionName,DataBuffer.Type dataType) {
         String name = functionName;// + "_" + dataType;
-        if(!launchers.containsRow(Thread.currentThread().getName())) {
+        if(!launchers.containsRow(AtomicAllocator.getInstance().getDeviceId())) {
 
             try {
                 log.info("Loading modules for " + Thread.currentThread().getName());
@@ -168,7 +172,7 @@ public class KernelFunctionLoader {
 
         }
 
-        KernelLauncher launcher = launchers.get(Thread.currentThread().getName(), Pair.of(name, dataType));
+        KernelLauncher launcher = launchers.get(AtomicAllocator.getInstance().getDeviceId(), Pair.of(name, dataType));
         if(launcher == null) {
             throw new RuntimeException("Can't get module for name: " + name);
             /*
@@ -296,7 +300,7 @@ public class KernelFunctionLoader {
             We're loading PTX kernels from internal resource
          */
 
-        File kernelsPtx = new JarResource("/all.ptx").getFile();
+        File kernelsPtx = new JarResource("/all.fatbin").getFile();
 
 
         /*
@@ -345,7 +349,7 @@ public class KernelFunctionLoader {
             now we map each kernel into cuda driver
         */
         try {
-        //    loadModules();
+            loadModules();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -435,10 +439,11 @@ public class KernelFunctionLoader {
     }
 
     /**
-     * This method caches all kernels for current thread
+     * This method caches/registers all kernels for each device
      * @throws Exception
      */
     private void loadModules() throws Exception {
+
         for(String function: paths.rowKeySet()) {
 
             for (DataBuffer.Type dataType: DataBuffer.Type.values()) {
@@ -451,11 +456,20 @@ public class KernelFunctionLoader {
                 String functionName = function + StringUtils.capitalize(dataType.toString().toLowerCase());
                 log.info("Loading {}", functionName);
 
+                int count[] = new int[1];
+                cuDeviceGetCount(count);
 
-                KernelLauncher launch = KernelLauncher.load(path, functionName, dataType.toString());
-                launchers.put(Thread.currentThread().getName(), Pair.of(function, dataType), launch);
+                for (int x = 0; x< count[0]; x++) {
+                    JCuda.cudaSetDevice(x);
+
+                    KernelLauncher launch = KernelLauncher.load(path, functionName, dataType.toString());
+                    launchers.put(x, Pair.of(function, dataType), launch);
+                }
+
+                JCuda.cudaSetDevice(0);
             }
         }
+
     }
 
     @Deprecated
