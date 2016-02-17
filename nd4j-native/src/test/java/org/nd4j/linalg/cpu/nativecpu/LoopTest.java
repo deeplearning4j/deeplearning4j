@@ -130,12 +130,14 @@ public class LoopTest {
 
     @Test
     public void testEightTwo() {
-        INDArray baseArr = Nd4j.linspace(1,8,8).reshape(2,2,2);
+        INDArray baseArr = Nd4j.linspace(1,8,8).reshape('c',2,2,2);
         assertEquals(2,baseArr.tensorssAlongDimension(0,1));
-        INDArray columnVectorFirst = Nd4j.create(new double[]{1,3,2,4}, new int[]{2,2});
-        INDArray columnVectorSecond = Nd4j.create(new double[]{5,7,6,8},new int[]{2,2});
-        assertEquals(columnVectorFirst,baseArr.tensorAlongDimension(0,0,1));
-        assertEquals(columnVectorSecond,baseArr.tensorAlongDimension(1,0,1));
+        INDArray columnVectorFirst = Nd4j.create(new double[]{1,5,3,7}, new int[]{2,2},'c');
+        INDArray columnVectorSecond = Nd4j.create(new double[]{2,6,4,8},new int[]{2,2},'c');
+        INDArray firstTad = baseArr.tensorAlongDimension(0, 0, 1);
+        assertEquals(columnVectorFirst,firstTad);
+        INDArray secondTad = baseArr.tensorAlongDimension(1, 0, 1);
+        assertEquals(columnVectorSecond,secondTad);
 
     }
 
@@ -154,6 +156,15 @@ public class LoopTest {
         INDArray arr5s = arr5.sum(2,3);
         for( int i = 0; i < arr5s.length(); i++)
             assertEquals(arr5s.getDouble(i),16,0.0);
+    }
+
+    @Test
+    public void testPairWiseDifferentOrder() {
+        INDArray arr = Nd4j.linspace(1,4,4).reshape('c',2,2);
+        INDArray arr2 = Nd4j.linspace(1,4,4).reshape('f',2,2);
+        INDArray sum = arr.add(arr2);
+        INDArray assertion = Nd4j.create(new double[][]{{2,5},{5,8}});
+        assertEquals(assertion,sum);
     }
 
 
