@@ -66,9 +66,7 @@ namespace functions {
 			int *gpuInformation) {
 
 		int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-		int xOffset = shape::offset(xShapeInfo);
 		int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
-		int yOffset = shape::offset(yShapeInfo);
 
 		//length for the tad
 		int yLength = shape::length(yShapeInfo);
@@ -80,7 +78,7 @@ namespace functions {
 		for (int i = blockIdx.x * blockDim.x + threadIdx.x;
 				i < resultLength;
 				i += blockDim.x * gridDim.x) {
-			int yOffset2 = yOffset + ((i / xElementWiseStride) % yLength) * yElementWiseStride;
+			int yOffset2 = ((i / xElementWiseStride) % yLength) * yElementWiseStride;
 			result[i] = op(x[i],y[yOffset2]);
 
 		}
