@@ -23,11 +23,9 @@ package org.nd4j.linalg.ops;
 
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.exception.IllegalOpException;
-import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
@@ -35,23 +33,15 @@ import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
-import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarEquals;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarLessThan;
-import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarSetValue;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
-import java.lang.reflect.Constructor;
-import java.util.ArrayList;
-import java.util.List;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Created by agibsonccc on 2/22/15.
@@ -448,7 +438,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
         INDArray arr = Nd4j.create(new float[]{0.9296161f, 0.31637555f, 0.1839188f},new int[]{1,3},ordering());
         double stdev = arr.stdNumber().doubleValue();
         double stdev2 = arr.std(1).getDouble(0);
-        assertEquals(stdev,stdev2,0.0);
+        assertEquals(stdev,stdev2,1e-3);
 
         double exp = 0.397842772f;
         assertEquals(exp,stdev,1e-7f);
@@ -461,7 +451,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
         double var = arr.varNumber().doubleValue();
         INDArray temp = arr.var(1);
         double var2 = arr.var(1).getDouble(0);
-        assertEquals(var,var2,0.0);
+        assertEquals(var,var2,1e-3);
 
         double exp = 0.158278871f;
         assertEquals(exp,var,1e-7f);

@@ -377,13 +377,13 @@ public class ShapeTestsC extends BaseNd4jTest {
 
     @Test
     public void testPermuteReshape() {
-        INDArray arrTest = Nd4j.arange(60).reshape(3, 4, 5);
+        INDArray arrTest = Nd4j.arange(60).reshape('c',3, 4, 5);
         INDArray permute = arrTest.permute(2,1,0);
         assertArrayEquals(new int[]{5,4,3},permute.shape());
         assertArrayEquals(new int[]{1,5,20},permute.stride());
         INDArray reshapedPermute = permute.reshape(-1, 12);
         assertArrayEquals(new int[]{5,12},reshapedPermute.shape());
-        assertArrayEquals(new int[]{1,5}, reshapedPermute.stride());
+        assertArrayEquals(new int[]{12,1}, reshapedPermute.stride());
 
     }
 

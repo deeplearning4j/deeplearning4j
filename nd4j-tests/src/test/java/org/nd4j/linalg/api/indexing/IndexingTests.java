@@ -50,7 +50,7 @@ public class IndexingTests extends BaseNd4jTest {
 
     @Test
     public void testArangeMul() {
-        INDArray arange = Nd4j.arange(1,17).reshape(4, 4);
+        INDArray arange = Nd4j.arange(1,17).reshape('f',4, 4);
         INDArrayIndex index = NDArrayIndex.interval(0, 2);
         INDArray get = arange.get(index, index);
         INDArray zeroPointTwoFive = Nd4j.ones(2,2).mul(0.25);
@@ -58,7 +58,7 @@ public class IndexingTests extends BaseNd4jTest {
         INDArray assertion = Nd4j.create(new double[][]{
                 {0.25, 1.25},
                 {0.5, 1.5}
-        });
+        },'f');
         assertEquals(assertion, mul);
 
     }

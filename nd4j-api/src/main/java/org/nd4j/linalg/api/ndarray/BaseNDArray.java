@@ -101,12 +101,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     protected Boolean isScalar = null;
     protected boolean isWrapAround = false;
     protected int linearStride = -1;
-    protected int elementWiseStride = -1;
     protected boolean attemptedToFindElementWiseStride = false;
-
-
-
-
 
 
     public BaseNDArray() {
@@ -693,15 +688,15 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public int elementWiseStride() {
-        if(elementWiseStride < 0 && !attemptedToFindElementWiseStride) {
+        if(Shape.elementWiseStride(shapeInfo()) < 0 && !attemptedToFindElementWiseStride) {
             INDArray reshapeAttempt = Shape.newShapeNoCopy(this,new int[]{1,length()}, ordering() == 'f');
             if(reshapeAttempt != null)
-                elementWiseStride = reshapeAttempt.stride(-1);
+                Shape.setElementWiseStride(shapeInfo(),reshapeAttempt.stride(-1));
             attemptedToFindElementWiseStride = true;
 
         }
 
-        return elementWiseStride;
+        return Shape.elementWiseStride(shapeInfo());
     }
 
     @Override
@@ -1881,6 +1876,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @return
      */
     protected INDArray doColumnWise(INDArray columnVector, char operation) {
+        if(columnVector.data().sameUnderlyingData(data()))
+            return doColumnWise(columnVector.dup(),operation);
         if(isVector()) {
             switch (operation) {
                 case 'a':
@@ -1951,6 +1948,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @return
      */
     protected INDArray doRowWise(final INDArray rowVector, final char operation) {
+        if(rowVector.data().sameUnderlyingData(data()))
+            return doRowWise(rowVector.dup(),operation);
+
         if(isVector()) {
             switch (operation) {
                 case 'a':
@@ -1996,25 +1996,25 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             vector = vector.dup();
         switch(operation) {
             case 'a':
-                Nd4j.getExecutioner().exec(new BroadcastAddOp(this, vector, this, alongDimension));
+                Nd4j.getExecutioner().exec(new BroadcastAddOp(this, vector, this, alongDimension),alongDimension);
                 return;
             case 's':
-                Nd4j.getExecutioner().exec(new BroadcastSubOp(this, vector, this, alongDimension));
+                Nd4j.getExecutioner().exec(new BroadcastSubOp(this, vector, this,alongDimension),alongDimension);
                 return;
             case 'm':
-                Nd4j.getExecutioner().exec(new BroadcastMulOp(this, vector, this, alongDimension));
+                Nd4j.getExecutioner().exec(new BroadcastMulOp(this, vector, this, alongDimension),alongDimension);
                 return;
             case 'd':
-                Nd4j.getExecutioner().exec(new BroadcastDivOp(this, vector, this, alongDimension));
+                Nd4j.getExecutioner().exec(new BroadcastDivOp(this, vector, this, alongDimension),alongDimension);
                 return;
             case 'h':
-                Nd4j.getExecutioner().exec(new BroadcastRSubOp(this, vector, this, alongDimension));
+                Nd4j.getExecutioner().exec(new BroadcastRSubOp(this, vector, this, alongDimension),alongDimension);
                 return;
             case 't':
-                Nd4j.getExecutioner().exec(new BroadcastRDivOp(this, vector, this, alongDimension));
+                Nd4j.getExecutioner().exec(new BroadcastRDivOp(this, vector, this, alongDimension),alongDimension);
                 return;
             case 'p':
-                Nd4j.getExecutioner().exec(new BroadcastCopyOp(this, vector, this, alongDimension));
+                Nd4j.getExecutioner().exec(new BroadcastCopyOp(this, vector, this, alongDimension),alongDimension);
                 return;
             default:
                 throw new UnsupportedOperationException("Unknown operation: " + operation);
@@ -3235,7 +3235,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray reshape(int...shape) {
-        return reshape('c', shape);
+        return reshape(Nd4j.order(), shape);
     }
 
     @Override
