@@ -49,6 +49,16 @@ public class LoopTestf {
     }
 
     @Test
+    public void testSum() {
+        INDArray n = Nd4j.create(Nd4j.linspace(1, 8, 8).data(), new int[]{2, 2, 2});
+        INDArray test = Nd4j.create(new float[]{3, 7, 11, 15}, new int[]{2, 2});
+        INDArray sum = n.sum(-1);
+        assertEquals(test, sum);
+
+    }
+
+
+    @Test
     public void testPutSlice() {
         INDArray n = Nd4j.linspace(1,27,27).reshape(3, 3, 3);
         INDArray newSlice = Nd4j.zeros(3, 3);

@@ -31,12 +31,12 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected float sdot(int N, INDArray X, int incX, INDArray Y, int incY) {
-        return CBLAS.sdot(N,X.data().asNioDouble(),incX,Y.data().asNioDouble(),incY);
+        return CBLAS.sdot(N,X.data().asNioFloat(),incX,Y.data().asNioFloat(),incY);
     }
 
     @Override
     protected float sdot( int N, DataBuffer X, int offsetX, int incX, DataBuffer Y,  int offsetY, int incY){
-        return CBLAS.sdot(N, X.asNioDouble(), incX, Y.asNioDouble(), incY);
+        return CBLAS.sdot(N, X.asNioFloat(), incX, Y.asNioFloat(), incY);
     }
 
     @Override

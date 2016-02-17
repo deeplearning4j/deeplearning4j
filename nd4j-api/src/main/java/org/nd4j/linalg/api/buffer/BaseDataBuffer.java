@@ -920,8 +920,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
         if(offset() == 0) {
             return wrappedBuffer.asDoubleBuffer();
         }
-        else
-            return (DoubleBuffer) wrappedBuffer.asDoubleBuffer().position(offset());
+        else {
+            DoubleBuffer ret = (DoubleBuffer) wrappedBuffer.asDoubleBuffer().position(offset());
+            return ret.slice();
+        }
     }
 
     @Override
@@ -936,9 +938,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
         if(offset() == 0) {
             return wrappedBuffer.asFloatBuffer();
         }
-        else
+        else {
+            FloatBuffer ret = (FloatBuffer) wrappedBuffer.asFloatBuffer().position(offset());
+            return ret.slice();
+        }
 
-            return (FloatBuffer) wrappedBuffer.asFloatBuffer().position(offset());
     }
 
     @Override

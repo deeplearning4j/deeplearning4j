@@ -142,6 +142,19 @@ public class LoopTest {
     }
 
     @Test
+    public void testDot() {
+        INDArray vec1 = Nd4j.create(new float[]{1, 2, 3, 4});
+        INDArray vec2 = Nd4j.create(new float[]{1, 2, 3, 4});
+        assertEquals(30, Nd4j.getBlasWrapper().dot(vec1, vec2), 1e-1);
+
+        INDArray matrix = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray row = matrix.getRow(1);
+        assertEquals(25, Nd4j.getBlasWrapper().dot(row, row), 1e-1);
+
+    }
+
+
+    @Test
     public void testColumnVar() {
         INDArray twoByThree = Nd4j.linspace(1, 600, 600).reshape(150, 4);
         INDArray columnStd = twoByThree.var(0);
