@@ -138,6 +138,7 @@ public class CublasPointer  implements AutoCloseable {
         this.devicePointer = buffer.getDevicePointer(1, 0, buffer.length());
         this.cudaContext = context;
         context.initOldStream();
+
         DevicePointerInfo info = buffer.getPointersToContexts().get(Thread.currentThread().getName(), Triple.of(0, buffer.length(), 1));
         hostPointer = info.getPointers().getHostPointer();
         ContextHolder.getInstance().getMemoryStrategy().setData(devicePointer,0,1,buffer.length(),info.getPointers().getHostPointer());
@@ -175,8 +176,8 @@ public class CublasPointer  implements AutoCloseable {
                 throw new IllegalStateException("Unable to iterate over buffer");
         }
 
-        int compLength = arr instanceof IComplexNDArray ? arr.length() * 2 : arr.length();
-        int stride = arr instanceof IComplexNDArray ? BlasBufferUtil.getBlasStride(arr) / 2 : BlasBufferUtil.getBlasStride(arr);
+        //int compLength = arr instanceof IComplexNDArray ? arr.length() * 2 : arr.length();
+        ////int stride = arr instanceof IComplexNDArray ? BlasBufferUtil.getBlasStride(arr) / 2 : BlasBufferUtil.getBlasStride(arr);
         //no striding for upload if we are using the whole buffer
       //  System.out.println("Allocation offset: ["+array.offset()+"], length: ["+compLength+"], stride: ["+ stride+"]");
         this.devicePointer = AtomicAllocator.getInstance().getDevicePointer(array);

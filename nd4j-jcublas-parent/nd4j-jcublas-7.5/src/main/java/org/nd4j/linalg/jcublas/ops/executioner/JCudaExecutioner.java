@@ -20,6 +20,8 @@
 package org.nd4j.linalg.jcublas.ops.executioner;
 
 
+import org.nd4j.jita.allocator.Allocator;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -42,9 +44,15 @@ import java.util.Arrays;
  * <p/>
  * Runs ops directly on the gpu
  *
+ * If requested Op doesn't exist within GPU context, DefaultOpExecutioner will be used, with arrays/buffers updated after that.
+ *
  * @author Adam Gibson
+ * @author raver119@gmail.com
  */
 public class JCudaExecutioner extends DefaultOpExecutioner {
+
+    private static final Allocator allocator = AtomicAllocator.getInstance();
+
     public JCudaExecutioner() {
     }
 
@@ -229,9 +237,21 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     @Override
     public Op exec(Op op) {
         //linear views and oblong offsets can't be handled by the gpu (due to the way the buffers are interpreted as vectors)
-        if(op.x() instanceof IComplexNDArray
-                || executionMode() == ExecutionMode.JAVA || op.isPassThrough() || op instanceof CopyOp)
-            return super.exec(op);
+        if(op.x() instanceof IComplexNDArray || executionMode() == ExecutionMode.JAVA || op.isPassThrough() || op instanceof CopyOp) {
+            try {
+                if (op.x() != null) allocator.synchronizeHostData(op.x());
+                if (op.y() != null) allocator.synchronizeHostData(op.y());
+                if (op.z() != null) allocator.synchronizeHostData(op.z());
+
+                super.exec(op);
+                return null;
+            } finally {
+                // FIXME: we need to track which op field contains result, and tickHost only for it
+                if (op.x() != null) allocator.tickHostWrite(op.x());
+                if (op.y() != null) allocator.tickHostWrite(op.y());
+                if (op.z() != null) allocator.tickHostWrite(op.z());
+            }
+        }
 
         if (op instanceof TransformOp) {
             TransformOp t = (TransformOp) op;
@@ -249,7 +269,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         else if(op instanceof IndexAccumulation) {
             IndexAccumulation indexAccumulation = (IndexAccumulation) op;
             invoke(indexAccumulation,null,Nd4j.scalar(0));
-
         }
         return op;
     }
@@ -270,73 +289,162 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     private CudaContext invoke(BroadcastOp op) {
         if(!KernelFunctionLoader.getInstance().exists(op) || executionMode() == ExecutionMode.JAVA || op.isPassThrough() || op instanceof CopyOp) {
-         //   super.exec(op);
-         //   return null;
+            try {
+                if (op.x() != null) allocator.synchronizeHostData(op.x());
+                if (op.y() != null) allocator.synchronizeHostData(op.y());
+                if (op.z() != null) allocator.synchronizeHostData(op.z());
+
+                super.exec(op);
+                return null;
+            } finally {
+                // FIXME: we need to track which op field contains result, and tickHost only for it
+                if (op.x() != null) allocator.tickHostWrite(op.x());
+                if (op.y() != null) allocator.tickHostWrite(op.y());
+                if (op.z() != null) allocator.tickHostWrite(op.z());
+            }
         }
 
-        CudaContext ctx;
+        try {
+            CudaContext ctx;
 
-        //total number of times to repeat each value over an element wise stride on the gpu
-        int[] dimensions = op.getDimension() == null ? BroadcastDimensions.getDimensions(op.y().shape()) : op.getDimension();
-        GpuKernelCall kernelCall = GpuKernelCallFactories.getFactory(op).create(op,dimensions);
-        kernelCall.invoke();
-        return kernelCall.cudaContext();
+            //total number of times to repeat each value over an element wise stride on the gpu
+            int[] dimensions = op.getDimension() == null ? BroadcastDimensions.getDimensions(op.y().shape()) : op.getDimension();
+            GpuKernelCall kernelCall = GpuKernelCallFactories.getFactory(op).create(op, dimensions);
+            kernelCall.invoke();
+            return kernelCall.cudaContext();
+        } finally {
+            // FIXME: we need to track which op field contains result, and tackDeviceWrite only for it
+            if (op.x() != null) allocator.tackDevice(op.x());
+            if (op.y() != null) allocator.tackDevice(op.y());
+            if (op.z() != null) allocator.tackDevice(op.z());
+        }
     }
 
 
 
     private CudaContext invoke(IndexAccumulation op,int[] dimension,INDArray result)  {
         if(!KernelFunctionLoader.getInstance().exists(op) || executionMode() == ExecutionMode.JAVA) {
-          //  super.exec(op);
-        //    return null;
+            try {
+                if (op.x() != null) allocator.synchronizeHostData(op.x());
+                if (op.y() != null) allocator.synchronizeHostData(op.y());
+                if (op.z() != null) allocator.synchronizeHostData(op.z());
+
+                super.exec(op);
+                return null;
+            } finally {
+                // FIXME: we need to track which op field contains result, and tickHost only for it
+                if (op.x() != null) allocator.tickHostWrite(op.x());
+                if (op.y() != null) allocator.tickHostWrite(op.y());
+                if (op.z() != null) allocator.tickHostWrite(op.z());
+            }
         }
 
-        CudaContext ctx;
-        GpuKernelCall accKernelCall = GpuKernelCallFactories.getFactory(op).create(op, dimension, result);
-        accKernelCall.invoke();
-        ctx = accKernelCall.cudaContext();
-        if(result.isScalar())
-            result.putScalar(0,op.getFinalResult());
+        try {
+            CudaContext ctx;
+            GpuKernelCall accKernelCall = GpuKernelCallFactories.getFactory(op).create(op, dimension, result);
+            accKernelCall.invoke();
+            ctx = accKernelCall.cudaContext();
+            if (result.isScalar())
+                result.putScalar(0, op.getFinalResult());
 
-        return ctx;
+            return ctx;
+        } finally {
+            // FIXME: we need to track which op field contains result, and tackDeviceWrite only for it
+            if (op.x() != null) allocator.tackDevice(op.x());
+            if (op.y() != null) allocator.tackDevice(op.y());
+            if (op.z() != null) allocator.tackDevice(op.z());
+        }
     }
 
 
     private CudaContext invoke(Accumulation op,int[] dimension)  {
         if(!KernelFunctionLoader.getInstance().exists(op) || executionMode() == ExecutionMode.JAVA) {
-        //    super.exec(op);
-        //    return null;
+            try {
+                if (op.x() != null) allocator.synchronizeHostData(op.x());
+                if (op.y() != null) allocator.synchronizeHostData(op.y());
+                if (op.z() != null) allocator.synchronizeHostData(op.z());
+
+                super.exec(op);
+                return null;
+            } finally {
+                // FIXME: we need to track which op field contains result, and tickHost only for it
+                if (op.z() != null) allocator.tickHostWrite(op.z());
+            }
         }
 
-        CudaContext ctx;
-        GpuKernelCall accKernelCall = GpuKernelCallFactories.getFactory(op).create(op,dimension);
-        accKernelCall.invoke();
-        ctx = accKernelCall.cudaContext();
-        return ctx;
+        try {
+            CudaContext ctx;
+            GpuKernelCall accKernelCall = GpuKernelCallFactories.getFactory(op).create(op, dimension);
+            accKernelCall.invoke();
+            ctx = accKernelCall.cudaContext();
+            return ctx;
+        } finally {
+            // FIXME: we need to track which op field contains result, and tackDeviceWrite only for it
+            if (op.x() != null) allocator.tackDevice(op.x());
+            if (op.y() != null) allocator.tackDevice(op.y());
+            if (op.z() != null) allocator.tackDevice(op.z());
+        }
     }
 
 
     private CudaContext invoke(ScalarOp op) {
         if(!KernelFunctionLoader.getInstance().exists(op)  || executionMode() == ExecutionMode.JAVA) {
-         //   super.exec(op);
-         //   return null;
+            try {
+                if (op.x() != null) allocator.synchronizeHostData(op.x());
+                if (op.y() != null) allocator.synchronizeHostData(op.y());
+                if (op.z() != null) allocator.synchronizeHostData(op.z());
+
+                super.exec(op);
+                return null;
+            } finally {
+                // FIXME: we need to track which op field contains result, and tickHost only for it
+                if (op.x() != null) allocator.tickHostWrite(op.x());
+                if (op.y() != null) allocator.tickHostWrite(op.y());
+                if (op.z() != null) allocator.tickHostWrite(op.z());
+            }
         }
 
-        GpuKernelCall kernelCall = GpuKernelCallFactories.getFactory(op).create(op);
-        kernelCall.invoke();
-        return kernelCall.cudaContext();
-
+        try {
+            GpuKernelCall kernelCall = GpuKernelCallFactories.getFactory(op).create(op);
+            kernelCall.invoke();
+            return kernelCall.cudaContext();
+        } finally {
+            // FIXME: we need to track which op field contains result, and tackDeviceWrite only for it
+            if (op.x() != null) allocator.tackDevice(op.x());
+            if (op.y() != null) allocator.tackDevice(op.y());
+            if (op.z() != null) allocator.tackDevice(op.z());
+        }
     }
 
     private CudaContext invoke(TransformOp op) {
         if(!KernelFunctionLoader.getInstance().exists(op) || op.x() instanceof IComplexNDArray || op.isPassThrough()) {
-         //   super.exec(op);
+
           //  return null;
+            try {
+                if (op.x() != null) allocator.synchronizeHostData(op.x());
+                if (op.y() != null) allocator.synchronizeHostData(op.y());
+                if (op.z() != null) allocator.synchronizeHostData(op.z());
+
+                super.exec(op);
+                return null;
+            } finally {
+                // FIXME: we need to track which op field contains result, and tickHost only for it
+                if (op.x() != null) allocator.tickHostWrite(op.x());
+                if (op.y() != null) allocator.tickHostWrite(op.y());
+                if (op.z() != null) allocator.tickHostWrite(op.z());
+            }
         }
 
-        GpuKernelCall kernelCall = GpuKernelCallFactories.getFactory(op).create(op);
-        kernelCall.invoke();
-        return kernelCall.cudaContext();
+        try {
+            GpuKernelCall kernelCall = GpuKernelCallFactories.getFactory(op).create(op);
+            kernelCall.invoke();
+            return kernelCall.cudaContext();
+        } finally {
+            // FIXME: we need to track which op field contains result, and tackDeviceWrite only for it
+            if (op.x() != null) allocator.tackDevice(op.x());
+            if (op.y() != null) allocator.tackDevice(op.y());
+            if (op.z() != null) allocator.tackDevice(op.z());
+        }
     }
 }
 

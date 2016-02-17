@@ -205,6 +205,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     @Override
+    @Deprecated
     public void copyAtStride(DataBuffer buf, int n, int stride, int yStride, int offset, int yOffset) {
         super.copyAtStride(buf, n, stride, yStride, offset, yOffset);
         MemoryStrategy strategy = ContextHolder.getInstance().getMemoryStrategy();
@@ -212,6 +213,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     @Override
+    @Deprecated
     public boolean copied(String name) {
         Boolean copied = this.copied.get(name);
         if(copied == null)
@@ -644,6 +646,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     @Override
+    @Deprecated
     public boolean freeDevicePointer(int offset, int length, int stride) {
         /*
             actually this method should do nothing, since memory deallocation is handled with Allocator implementations
@@ -716,6 +719,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     @Override
+    @Deprecated
     public synchronized void copyToHost(CudaContext context, int offset, int length, int stride) {
         DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName(),Triple.of(offset,length,stride));
         if(devicePointerInfo == null)
@@ -735,6 +739,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     @Override
+    @Deprecated
     public synchronized  void copyToHost(int offset,int length) {
         DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName(),Triple.of(offset,length,1));
         if(devicePointerInfo == null)
@@ -811,10 +816,12 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
 
     @Override
+    @Deprecated
     public Table<String, Triple<Integer, Integer, Integer>, DevicePointerInfo> getPointersToContexts() {
         return pointersToContexts;
     }
 
+    @Deprecated
     public void setPointersToContexts( Table<String, Triple<Integer, Integer, Integer>, DevicePointerInfo> pointersToContexts) {
         this.pointersToContexts = pointersToContexts;
     }

@@ -48,7 +48,12 @@ import java.util.*;
  * , creating, copying
  * and destroying any cuda device allocations
  *
+ * Allocator Pass Note 17/02/2016:
+ * We don't destroy anything here anymore, since that mechanics was moved to new Allocator mechanics.
+ * However, we still can use AutoCloseable as a nice place for syncStream hook  :)
+ *
  * @author bam4d
+ * @author raver119@gmail.com
  *
  */
 public class KernelParamsWrapper implements AutoCloseable {
@@ -68,7 +73,7 @@ public class KernelParamsWrapper implements AutoCloseable {
     /**
      * The pointers that need to be freed as part of this closable resource
      */
-    final List<CublasPointer> pointersToFree;
+    //final List<CublasPointer> pointersToFree;
 
     /**
      * The pointers that have results that need to be passed back to host buffers
@@ -169,14 +174,14 @@ public class KernelParamsWrapper implements AutoCloseable {
 
         CudaArgs.ArgsAndReferences argsAndReferences = CudaArgs.argsAndReference(context,kernelParams);
         kernelParameters = argsAndReferences.getArgs();
-        arrayToPointer = argsAndReferences.getArrayToPointer();
-        pointersToFree = argsAndReferences.getPointersToFree();
 
-        context.initOldStream();
-        context.initStream();
-        this.closeContext = closeContext;
+        //arrayToPointer = argsAndReferences.getArrayToPointer();
+        //pointersToFree = argsAndReferences.getPointersToFree();
 
-
+        // This is not used anymore, since we're using external stream management
+//        context.initOldStream();
+//        context.initStream();
+  //      this.closeContext = closeContext;
     }
 
     /**
@@ -189,6 +194,8 @@ public class KernelParamsWrapper implements AutoCloseable {
         if(context.getStream() != null)
             context.syncStream();
 
+
+        /*
         for(CublasPointer cublasPointer : pointersToFree) {
             if(resultPointers.contains(cublasPointer)) {
                 //sets the result for the buffer
@@ -209,6 +216,7 @@ public class KernelParamsWrapper implements AutoCloseable {
 
         if(closeContext)
             context.destroy();
+        */
     }
 
     /**
@@ -216,6 +224,7 @@ public class KernelParamsWrapper implements AutoCloseable {
      * @param acc
      * @param devicePointer
      */
+    @Deprecated
     private void setResultForOp(Op acc, CublasPointer devicePointer) {
         if (devicePointer.getBuffer().dataType() == DataBuffer.Type.DOUBLE) {
             if(ContextHolder.getInstance().getMemoryStrategy() instanceof PinnedMemoryStrategy) {
