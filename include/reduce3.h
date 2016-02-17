@@ -623,7 +623,7 @@ namespace functions {
                     int *xStride = shape::stride(xShapeInfo);
                     int *yStride = shape::stride(yShapeInfo);
                     T startingVal = this->startingValue(x);
-
+                    int n = shape::length(xShapeInfo);
                     int shapeIter[MAX_RANK];
                     int coord[MAX_RANK];
                     int dim;
@@ -657,7 +657,7 @@ namespace functions {
                                                        y,
                                                        yStridesIter);
 
-                        return startingVal;
+                        return postProcess(startingVal,n,&extraParamsVals);
                     }
                     else {
                         printf("Unable to prepare array\n");
@@ -722,7 +722,6 @@ namespace functions {
                     int dim;
                     int xStridesIter[MAX_RANK];
                     int yStridesIter[MAX_RANK];
-                    int resultStridesIter[MAX_RANK];
 
                     int *xShape = shape::shapeOf(xShapeInfo);
                     int *yShape = shape::shapeOf(yShapeInfo);
@@ -731,39 +730,43 @@ namespace functions {
                     int *yStride = shape::stride(yShapeInfo);
                     int *resultStride = shape::stride(resultShapeInfoBuffer);
 
-                    if(PrepareThreeRawArrayIter<T>(rank,
+                    int rank = shape::rank(xShapeInfo);
+                    if(PrepareTwoRawArrayIter<T>(rank,
                                                    xShape,
                                                    x,
                                                    xStride,
                                                    y,
                                                    yStride,
-                                                   result,
-                                                   resultStride,
                                                    &rank,
                                                    shapeIter,
                                                    &x,
                                                    xStridesIter,
                                                    &y,
-                                                   yStridesIter,
-                                                   &result,
-                                                   resultStridesIter) >= 0) {
+                                                   yStridesIter) >= 0) {
+
+                        int resultLength = shape::length(resultShapeInfoBuffer);
+                        int tadLength = shape::tadLength(xShapeInfo,dimension,dimensionLength);
                         ND4J_RAW_ITER_START(dim, rank, coord, shapeIter) {
                                 /* Process the innermost dimension */
                                 T *xIter = x;
                                 T *yIter = y;
-                                T *resultIter = result;
-
-                                resultIter[0] = op(xIter[0],yIter[0],extraParamsVals);
-                            } ND4J_RAW_ITER_THREE_NEXT(dim,
+                                int xOffset = shape::getOffset(0,xShape,xStride,coord,rank);
+                                int yOffset = shape::getOffset(0,yShape,yStride,coord,rank);
+                                int reductionIndex = xOffset / resultLength;
+                                result[reductionIndex] = update(result[reductionIndex],op(xIter[0],yIter[0],&extraParamsVals),&extraParamsVals);
+                            } ND4J_RAW_ITER_TWO_NEXT(dim,
                                                        rank,
                                                        coord,
                                                        shapeIter,
                                                        x,
                                                        xStridesIter,
                                                        y,
-                                                       yStridesIter,
-                                                       result,
-                                                       resultStridesIter);
+                                                       yStridesIter);
+#pragma  omp parallel for
+                        for(int i = 0; i < resultLength ;i++) {
+                            result[i] = postProcess(result[i],tadLength,&extraParamsVals);
+                        }
+
                     }
                     else {
                         printf("Unable to prepare array\n");

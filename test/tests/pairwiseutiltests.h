@@ -7,7 +7,7 @@
 #include "testhelpers.h"
 #include <pairwise_util.h>
 #include <pairwise_transform.h>
-
+#include <reduce3.h>
 TEST_GROUP(PairWiseUtil) {
 
     static int output_method(const char* output, ...) {
@@ -102,6 +102,84 @@ TEST(PairWiseUtil,DifferentOrderCopy) {
     }
 
     delete op;
+
+}
+
+TEST(PairWiseUtil,PairWiseUtilEuclideanDistance) {
+    int shapeArr[2] = {2,2};
+    int xStrides[2] = {2,1};
+    int yStrides[2] = {1,2};
+    int *resultStrides = xStrides;
+    int rank = 2;
+    int length = 4;
+    double *data = (double *) malloc(sizeof(double) * length);
+    for(int i = 0; i < length; i++)
+        data[i] = i + 1;
+    double *yData = (double *) malloc(sizeof(double) * length);
+    for(int i = 0; i < length; i++) {
+        yData[i] = i + 1;
+    }
+
+    double assertion = 1.4142135623730951;
+
+    using namespace functions::reduce3;
+    Reduce3<double> *op  = new functions::reduce3::ops::EuclideanDistance<double>();
+    int *xShapeBuffer = shape::shapeBuffer(rank,shapeArr);
+    int *yShapeBuffer = shape::shapeBufferFortran(rank,shapeArr);
+    double result = op->execScalar(data,xShapeBuffer,NULL,yData,yShapeBuffer);
+    CHECK_EQUAL(assertion,result);
+    delete op;
+
+
+}
+
+TEST(PairWiseUtil,PairWiseUtilEuclideanDistanceDimension) {
+    int shapeArr[2] = {2,2};
+    int xStrides[2] = {2,1};
+    int yStrides[2] = {1,2};
+    int *resultStrides = xStrides;
+    int rank = 2;
+    int length = 4;
+    double *data = (double *) malloc(sizeof(double) * length);
+    for(int i = 0; i < length; i++)
+        data[i] = i + 1;
+    double *yData = (double *) malloc(sizeof(double) * length);
+    for(int i = 0; i < length; i++) {
+        yData[i] = i + 1;
+    }
+
+    double assertion = 1.4142135623730951;
+
+    using namespace functions::reduce3;
+    Reduce3<double> *op  = new functions::reduce3::ops::EuclideanDistance<double>();
+    int *xShapeBuffer = shape::shapeBuffer(rank,shapeArr);
+    int *yShapeBuffer = shape::shapeBufferFortran(rank,shapeArr);
+    double *result = (double *) malloc(sizeof(double) * 2);
+    int *resultShape = (int *) malloc(sizeof(int) * rank);
+    resultShape[0] = 1;
+    resultShape[1] = 2;
+
+    int dimensionLength = 1;
+
+    int *dimension = (int *) malloc(sizeof(int) * dimensionLength);
+    dimension[0] = 0;
+
+    int *resultShapeBuffer = shape::shapeBuffer(rank,resultShape);
+    op->exec(data,xShapeBuffer,NULL,yData,yShapeBuffer,result,resultShapeBuffer,dimension,dimensionLength);
+    for(int i = 0; i < 2; i++) {
+        printf("Result[%d] is %f\n",i,result[i]);
+    }
+
+    free(resultShape);
+    free(data);
+    free(yData);
+    free(result);
+    free(xShapeBuffer);
+    free(yShapeBuffer);
+    free(resultShapeBuffer);
+    free(dimension);
+    delete op;
+
 
 }
 

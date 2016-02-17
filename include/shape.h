@@ -451,19 +451,6 @@ namespace shape {
 #endif
     int tadOffset(shape::ShapeInformation *xInfo, int offset);
 
-/**
- * Returns a shape
- * forces the given length to be 2.
- * @param shape the shape to modify
- * @param dimension the dimension (row or column)
- * for the shape to be returned as
- * @return the new shape
- */
-#ifdef __CUDACC__
-    __host__ __device__
-#endif
-
-    int *ensureVectorShape(int *shape, int dimension);
 
 /**
  * Returns a shape
