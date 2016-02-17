@@ -81,7 +81,7 @@ public:
                          int *resultShapeInfoBuffer,
                          int *dimension, int dimensionLength) {
         functions::indexreduce::IndexReduce<T> *op = indexReduceOpFactory->getOp(opNum);
-        op->exec(x,xShapeInfo,extraParams,result,resultShapeInfoBuffer);
+        op->exec(x,xShapeInfo,extraParams,result,resultShapeInfoBuffer,dimension,dimensionLength);
         delete op;
     }
 

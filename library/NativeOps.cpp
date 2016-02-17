@@ -543,7 +543,14 @@ JNIEXPORT void JNICALL Java_org_nd4j_linalg_cpu_nativecpu_ops_NativeOps_execScal
     float *xBuff = (float *) env->GetDirectBufferAddress(x);
     float *extraParamsBuff = extraParams != NULL ? (float *) env->GetDirectBufferAddress(extraParams) : NULL;
     float *resultBuff = (float *) env->GetDirectBufferAddress(result);
-    FloatNativeOpExecutioner::getInstance().execScalar(opNum,xBuff,xStride,resultBuff,resultStride,scalar,extraParamsBuff,n);
+    FloatNativeOpExecutioner::getInstance().execScalar(opNum,
+                                                       xBuff,
+                                                       xStride,
+                                                       resultBuff,
+                                                       resultStride,
+                                                       scalar,
+                                                       extraParamsBuff,
+                                                       n);
 
 }
 

@@ -406,7 +406,7 @@ namespace functions {
                 int xElementWiseStride = shape::elementWiseStride(xShapeBuffer);
                 int yElementWiseStride = shape::elementWiseStride(yShapeBuffer);
                 int resultElementWiseStride = shape::elementWiseStride(resultShapeBuffer);
-                if(xElementWiseStride >= 1 && yElementWiseStride >= 1 && resultElementWiseStride >= 1 && shape::order(xShapeBuffer) == shape::order(yShapeBuffer)) {
+                if(xElementWiseStride >= 1 && yElementWiseStride >= 1 && resultElementWiseStride >= 1 && shape::order(xShapeBuffer) == shape::order(yShapeBuffer) && shape::order(resultShapeBuffer) == shape::order(xShapeBuffer)) {
                     exec(dx,
                          xElementWiseStride,
                          y,
@@ -437,7 +437,7 @@ namespace functions {
                     char yOrder = shape::order(yShapeBuffer);
                     char resultOrder = shape::order(resultShapeBuffer);
 
-                    if(xOrder != yOrder) {
+                    if(xOrder != yOrder || xOrder != resultOrder) {
                         int shapeIter[MAX_RANK];
                         int coord[MAX_RANK];
                         int dim;

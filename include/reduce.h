@@ -768,7 +768,47 @@ namespace functions {
             T execScalar(T *x, int *xShapeInfo,T *extraParams) {
                 const int length = shape::length(xShapeInfo);
                 int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-                return execScalar(x,xElementWiseStride,length,extraParams);
+                if(xElementWiseStride >= 1)
+                    return execScalar(x,xElementWiseStride,length,extraParams);
+                else {
+                    int shapeIter[MAX_RANK];
+                    int coord[MAX_RANK];
+                    int dim;
+                    int xStridesIter[MAX_RANK];
+                    int yStridesIter[MAX_RANK];
+
+                    int *xShape = shape::shapeOf(xShapeInfo);
+
+                    int *xStride = shape::stride(xShapeInfo);
+                    T start = this->startingValue(x);
+                    int rank = shape::rank(xShapeInfo);
+                    if(PrepareOneRawArrayIter<T>(rank,
+                                                 xShape,
+                                                 x,
+                                                 xStride,
+                                                 &rank,
+                                                 shapeIter,
+                                                 &x,
+                                                 xStridesIter) >= 0) {
+
+                        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter) {
+                                /* Process the innermost dimension */
+                                T *xIter = x;
+                                start = update(start,op(xIter[0],extraParams),extraParams);
+                            } ND4J_RAW_ITER_ONE_NEXT(dim,
+                                                     rank,
+                                                     coord,
+                                                     shapeIter,
+                                                     x,
+                                                     xStridesIter);
+                        start = postProcess(start,shape::length(xShapeInfo),extraParams);
+                        return start;
+                    }
+                    else {
+                        printf("Unable to prepare array\n");
+                    }
+
+                }
 
             }
 
@@ -815,7 +855,7 @@ namespace functions {
                     char order = shape::order(xShapeInfo);
 #pragma omp  parallel  for
                     for(int i = 0; i < resultLength; i++) {
-                        int offset =i;
+                        int offset = i;
                         result[i] = op(x[offset], extraParams);
                         for(int j = 1; j < elementsPerReductionIndex; j++) {
                             result[i] =  update(result[i],op(x[offset + tadElementWiseStride * j], extraParams), extraParams);

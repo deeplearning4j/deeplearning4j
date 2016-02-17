@@ -222,48 +222,98 @@ namespace functions {
          * neccssary
          * @param n the number of elements to loop over
          */
-            void transform(T *x, int *xShapeInfo, T *result, int *resultShapeInfo,
-                           T scalar, T *extraParams, const int n) {
+            void transform(T *x,
+                           int *xShapeInfo,
+                           T *result,
+                           int *resultShapeInfo,
+                           T scalar, T *extraParams,
+                           const int n) {
 
+                char xOrdering = shape::order(xShapeInfo);
+                char resultOrdering = shape::order(resultShapeInfo);
                 int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
                 int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
-                if(xElementWiseStride >= 1 && resultElementWiseStride >= 1) {
-                    transform(x,xElementWiseStride,result,resultElementWiseStride,scalar,extraParams,n);
+                if(xOrdering != resultOrdering || xElementWiseStride < 1 || resultElementWiseStride < 0) {
+                    int shapeIter[MAX_RANK];
+                    int coord[MAX_RANK];
+                    int dim;
+                    int xStridesIter[MAX_RANK];
+                    int yStridesIter[MAX_RANK];
+                    int resultStridesIter[MAX_RANK];
+                    int *xShape = shape::shapeOf(xShapeInfo);
+                    int *xStride = shape::stride(xShapeInfo);
+                    int *resultStride = shape::stride(resultShapeInfo);
+                    int rank = shape::rank(xShapeInfo);
+                    if(PrepareTwoRawArrayIter<T>(rank,
+                                                 xShape,
+                                                 x,
+                                                 xStride,
+                                                 result,
+                                                 resultStride,
+                                                 &rank,
+                                                 shapeIter,
+                                                 &x,
+                                                 xStridesIter,
+                                                 &result,
+                                                 resultStridesIter) >= 0) {
+                        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter) {
+                                /* Process the innermost dimension */
+                                T *xIter = x;
+                                T *yIter = result;
+                                T *resultIter = result;
+                                resultIter[0] = op(xIter[0],scalar,extraParams);
+                            } ND4J_RAW_ITER_TWO_NEXT(dim,
+                                                     rank,
+                                                     coord,
+                                                     shapeIter,
+                                                     x,
+                                                     xStridesIter,
+                                                     result,
+                                                     resultStridesIter);
+                    }
+                    else {
+                        printf("Unable to prepare array\n");
+                    }
+
                 }
                 else {
 
 
-                    int *xShape = shape::shapeOf(xShapeInfo);
-                    int *resultShape = shape::shapeOf(resultShapeInfo);
+                    if(xElementWiseStride >= 1 && resultElementWiseStride >= 1) {
+                        transform(x,xElementWiseStride,result,resultElementWiseStride,scalar,extraParams,n);
+                    }
+                    else {
+                        int *xShape = shape::shapeOf(xShapeInfo);
+                        int *resultShape = shape::shapeOf(resultShapeInfo);
 
-                    int *xStride = shape::stride(xShapeInfo);
-                    int *resultStride = shape::stride(resultShapeInfo);
-                    int xRank = shape::rank(xShapeInfo);
-                    int resultRank = shape::rank(resultShapeInfo);
+                        int *xStride = shape::stride(xShapeInfo);
+                        int *resultStride = shape::stride(resultShapeInfo);
+                        int xRank = shape::rank(xShapeInfo);
+                        int resultRank = shape::rank(resultShapeInfo);
 
-                    int xOffset = shape::offset(xShapeInfo);
-                    int resultOffset = shape::offset(resultShapeInfo);
+                        int xOffset = shape::offset(xShapeInfo);
+                        int resultOffset = shape::offset(resultShapeInfo);
 
-                    char xOrder = shape::order(xShapeInfo);
-                    char resultOrder = shape::order(xShapeInfo);
-                    int xElementWiseStride = shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
-                    int resultElementWiseStride = shape::computeElementWiseStride(resultRank,resultShape,resultStride,resultOrder == 'f');
+                        char xOrder = shape::order(xShapeInfo);
+                        char resultOrder = shape::order(xShapeInfo);
 
-                    int i;
+
 #pragma omp parallel for
-                    for (i = 0; i < n; i++) {
-                        int *xIdx = shape::ind2sub(xRank, xShape, i);
-                        int *resultIdx = shape::ind2sub(resultRank, resultShape, i);
-                        int xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
-                        int resultOffset2 = shape::getOffset(resultOffset, resultShape, resultStride, resultIdx, resultRank);
-                        result[resultOffset2] = op(x[xOffset2], scalar,extraParams);
+                        for (int i = 0; i < n; i++) {
+                            int *xIdx = shape::ind2sub(xRank, xShape, i);
+                            int *resultIdx = shape::ind2sub(resultRank, resultShape, i);
+                            int xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
+                            int resultOffset2 = shape::getOffset(resultOffset, resultShape, resultStride, resultIdx, resultRank);
+                            result[resultOffset2] = op(x[xOffset2], scalar,extraParams);
 
-                        free(xIdx);
-                        free(resultIdx);
+                            free(xIdx);
+                            free(resultIdx);
+
+                        }
 
                     }
-
                 }
+
 
             }
 

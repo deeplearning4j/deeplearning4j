@@ -19,6 +19,7 @@
 #ifdef __JNI__
 #include <jni.h>
 #endif
+#include <pairwise_util.h>
 
 
 namespace functions {
@@ -733,13 +734,57 @@ struct SharedIndexValue<double> {
             T execScalar(T *x,
                          int *xShapeInfo,
                          T *extraParams) {
+
                 T startingVal = this->startingValue(x);
                 IndexValue<T> startingIndex;
                 startingIndex.value = startingVal;
                 startingIndex.index = 0;
                 int length = shape::length(xShapeInfo);
                 int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-                if (xElementWiseStride == 1) {
+                if(xElementWiseStride < 1) {
+                    int shapeIter[MAX_RANK];
+                    int coord[MAX_RANK];
+                    int dim;
+                    int xStridesIter[MAX_RANK];
+                    int yStridesIter[MAX_RANK];
+
+                    int *xShape = shape::shapeOf(xShapeInfo);
+                    int *xStride = shape::stride(xShapeInfo);
+                    int rank = shape::rank(xShapeInfo);
+                    if(PrepareOneRawArrayIter<T>(rank,
+                                                 xShape,
+                                                 x,
+                                                 xStride,
+                                                 &rank,
+                                                 shapeIter,
+                                                 &x,
+                                                 xStridesIter) >= 0) {
+
+                        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter) {
+                                /* Process the innermost dimension */
+                                T *xIter = x;
+                                int i = shape::getOffset(0,xShape,xStride,coord,rank);
+                                IndexValue<T> curr;
+                                curr.value = x[i];
+                                curr.index = i;
+                                startingIndex = update(startingIndex, curr,
+                                                       extraParams);
+                            } ND4J_RAW_ITER_ONE_NEXT(dim,
+                                                     rank,
+                                                     coord,
+                                                     shapeIter,
+                                                     x,
+                                                     xStridesIter);
+                        return startingIndex.index;
+                    }
+                    else {
+                        printf("Unable to prepare array\n");
+                    }
+
+                }
+                else {
+
+                    if (xElementWiseStride == 1) {
 #pragma omp parallel for
                         for (int i = 0; i < length; i++) {
                             IndexValue<T> curr;
@@ -753,10 +798,8 @@ struct SharedIndexValue<double> {
 
 
                         }
-
-
-                    return startingIndex.index;
-                } else {
+                        return startingIndex.index;
+                    } else {
 #pragma omp parallel for
                         for (int i = 0; i < length; i++) {
                             IndexValue<T> curr;
@@ -771,7 +814,10 @@ struct SharedIndexValue<double> {
                         }
 
 
-                    return  startingIndex.index;
+                        return  startingIndex.index;
+
+                    }
+
 
                 }
 
@@ -826,28 +872,18 @@ struct SharedIndexValue<double> {
                       T *extraParams,
                       T *result,
                       int *resultShapeInfoBuffer,
-                      int *dimension, int dimensionLength) {
+                      int *dimension,
+                      int dimensionLength) {
+
                 if(shape::isScalar(resultShapeInfoBuffer)) {
                     result[0] = execScalar(x,xShapeInfo,extraParams);
                     return;
                 }
 
-                shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo,dimension, dimensionLength);
-                int resultLength = shape::length(resultShapeInfoBuffer);
-                /**
-                 * The element wise stride belongs to a reduction index.
-                 * When used out of order, we can get rid of the data
-                 * dependencies and rely on using the max dimension
-                 * specified for stride instead.
-                 * Say we take the sum(0,1) along arr
-                 * we can use arr.stride(1) as a representation
-                 * along which to iterate.
-                 */
+
+                const int resultLength = shape::length(resultShapeInfoBuffer);
                 IndexValue<T> *startingIndex = new IndexValue<T>[resultLength];
 
-                int tadElementWiseStride = dimensionLength > 1 ? shape::stride(xShapeInfo)[dimensionLength - 1] : shape::computeElementWiseStride(shape::rank(xShapeInfo),shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),shape::order(xShapeInfo) == 'f',dimension,dimensionLength);
-                int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
-                int tadLength = tadPermuteInfo.tensorShapeProd;
 #pragma omp parallel for
                 for (int i = 0; i < resultLength; i++) {
                     IndexValue<T> val;
@@ -857,26 +893,62 @@ struct SharedIndexValue<double> {
                 }
 
 
+                if(dimensionLength > 1) {
+                    /**
+                     * The element wise stride belongs to a reduction index.
+                     * When used out of order, we can get rid of the data
+                     * dependencies and rely on using the max dimension
+                     * specified for stride instead.
+                     * Say we take the sum(0,1) along arr
+                     * we can use arr.stride(1) as a representation
+                     * along which to iterate.
+                     */
 
-#pragma omp parallel for
-                for(int i = 0; i < resultLength; i++) {
-                    int offset = dimensionLength > 1 ? i : tadLength * i;
-                    startingIndex[i].value = x[offset];
-                    startingIndex[i].index = 0;
-                    for(int j = 1; j < elementsPerReductionIndex; j++) {
-                        IndexValue<T> comp2;
-                        comp2.value = x[offset + tadElementWiseStride * j];
-                        comp2.index = j;
-                        startingIndex[i] = update(startingIndex[i],comp2, extraParams);
-                        result[i] = startingIndex[i].index;
+
+                    int tadElementWiseStride = shape::reductionIndexElementWiseStride(xShapeInfo,dimension,dimensionLength);
+                    const int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
+                    char order = shape::order(xShapeInfo);
+#pragma omp  parallel  for
+                    for(int i = 0; i < resultLength; i++) {
+                        int offset = i;
+                        IndexValue<T> indexValue;
+                        indexValue.index = 0;
+                        indexValue.value = x[offset];
+                        for(int j = 1; j < elementsPerReductionIndex; j++) {
+                            IndexValue<T> comp;
+                            comp.index = j;
+                            comp.value = x[offset + tadElementWiseStride * j];
+                            indexValue =  update(indexValue,comp,extraParams);
+                        }
+
+                        result[i] = indexValue.index;
+
                     }
+                }
+
+                else {
+                    int tadElementWiseStride = shape::tadElementWiseStride(xShapeInfo, dimension, dimensionLength);
+                    int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+#pragma omp parallel for
+                    for(int i = 0;  i < resultLength; i++) {
+                        int baseOffset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
+                        IndexValue<T> indexValue;
+                        indexValue.index = 0;
+                        indexValue.value = x[baseOffset];
+                        for(int j = 1; j < tadLength; j++) {
+                            IndexValue<T> comp;
+                            comp.index = j;
+                            comp.value = x[baseOffset + tadElementWiseStride * j];
+                            indexValue =  update(indexValue,comp,extraParams);
+                        }
+
+                        result[i] = indexValue.index;
+                    }
+
 
 
                 }
 
-
-
-                shape::freePermuteInfo(tadPermuteInfo);
                 delete[] startingIndex;
             }
 
