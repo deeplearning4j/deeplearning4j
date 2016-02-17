@@ -107,7 +107,7 @@ namespace functions {
 #pragma unroll
 			for (; i < n; i+= totalThreads) {
 				int *xIdx = shape::ind2sub(xRank, xShape, i);
-				int xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
+				int xOffset2 = shape::getOffset(0, xShape, xStride, xIdx, xRank);
 				result[xOffset2] = op(dy[xOffset2],scalar, params);
 				free(xIdx);
 			}

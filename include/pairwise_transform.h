@@ -185,9 +185,9 @@ namespace functions {
                 int *yIdx = shape::ind2sub(yRank, yShape, i);
                 int *resultIdx = shape::ind2sub(resultRank, resultShape, i);
 
-                int xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
-                int yOffset2 = shape::getOffset(yOffset, yShape, yStride, yIdx, yRank);
-                int resultOffset2 = shape::getOffset(resultOffset, resultShape, resultStride, resultIdx, resultRank);
+                int xOffset2 = shape::getOffset(0, xShape, xStride, xIdx, xRank);
+                int yOffset2 = shape::getOffset(0, yShape, yStride, yIdx, yRank);
+                int resultOffset2 = shape::getOffset(0, resultShape, resultStride, resultIdx, resultRank);
                 result[resultOffset2] = op(dx[xOffset2],y[yOffset2], extraParams);
 
                 free(xIdx);
@@ -236,7 +236,7 @@ namespace functions {
             if ((blockIdx.x == 0) && (tid == 0)) {
 #pragma unroll
                 for (; i < n; i++) {
-                    result[resultOffset + i * incz] = op(dx[xOffset + i * incx], params);
+                    result[resultOffset + i * incz] = op(dx[i * incx], params);
                 }
 
             }
@@ -246,14 +246,14 @@ namespace functions {
                 /* both increments equal to 1 */
 #pragma unroll
                 for (; i < n; i += totalThreads) {
-                    result[resultOffset + i * incz] = op(dx[xOffset + i * incx], dy[yOffset + i * incy],
+                    result[i * incz] = op(dx[i * incx], dy[i * incy],
                             params);
                 }
             } else {
                 /* equal, positive, non-unit increments. */
 #pragma unroll
                 for (; i < n; i += totalThreads) {
-                    result[resultOffset + i * incz] = op(dx[xOffset + i * incx], dy[yOffset + i * incy],
+                    result[i * incz] = op(dx[i * incx], dy[i * incy],
                             params);
                 }
             }
@@ -261,7 +261,7 @@ namespace functions {
             /* unequal or nonpositive increments */
 #pragma unroll
             for (; i < n; i += totalThreads) {
-                result[resultOffset + i * incz] = op(dx[xOffset + i * incx], dy[yOffset + i * incy],
+                result[i * incz] = op(dx[i * incx], dy[i * incy],
                         params);
             }
         }
