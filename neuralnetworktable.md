@@ -11,7 +11,7 @@ The following table attempts to show the neural nets most useful for different p
 
 Start with [Neural Nets Overview](http://deeplearning4j.org/neuralnet-overview.html) for additional information on common structures and some code snipets:
 
-###[further reading](http://deeplearning4j.org/deeplearningpapers.html)
+### [Further reading](http://deeplearning4j.org/deeplearningpapers.html)
 
 [Natural Language Processing (Almost) from Scratch](https://static.googleusercontent.com/media/research.google.com/en/us/pubs/archive/35671.pdf); Ronan Collobert, Jason Weston, Leon Bottou, Michael Karlen, Koray Kavukcuoglu and Pavel Kuksa; NEC Laboratories America
 

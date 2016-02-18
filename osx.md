@@ -3,7 +3,7 @@ layout: default
 title: Getting Started on OSX
 ---
 
-#Getting Started on OSX
+# Getting Started on OSX
 
 * To run examples, go to our [quickstart](../quickstart.html).
 

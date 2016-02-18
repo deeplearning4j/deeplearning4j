@@ -15,13 +15,13 @@ Contents
 * <a href="#code">DL4J Code Sample</a>
 * <a href="#resource">Other Resources</a>
 
-##<a name="intro">Convolutional Net Introduction</a>
+## <a name="intro">Convolutional Net Introduction</a>
 
 Convolutional nets perform object recognition with images. They can identify faces, individuals, street signs, eggplants, platypuses and many other aspects of visual data. Convolutional nets overlap with text analysis via optical character recognition, but they are also useful when analyzing words as discrete textual units, as well as sound. 
 
 The efficacy of convolutional nets (ConvNets) in image recognition is one of the main reasons why the world has woken up to deep learning. They are powering major advances in machine vision, which has obvious applications for self-driving cars, robotics, drones, and treatments for the visually impaired. 
 
-##<a name="tensors">Images Are 4-D Tensors?</a>
+## <a name="tensors">Images Are 4-D Tensors?</a>
 
 Convolutional nets ingest and process images as tensors, and tensors are matrices of numbers with additional dimensions. 
 
@@ -48,7 +48,7 @@ The width and height of an image are easily understood. The depth is necessary b
 
 So instead of thinking of images as two-dimensional areas, in convolutional nets they are treated as four-dimensional volumes. These ideas will be explored more thoroughly below. 
 
-##<a name="define">Definition</a>
+## <a name="define">Definition</a>
 
 From the Latin *convolvere*, "to convolve" means to roll together. For mathematical purposes, a convolution is the integral measuring how much two functions overlap as one passes over the other. Think of a convolution as a way of mixing two functions by multiplying them. 
 
@@ -70,7 +70,7 @@ Convolutional nets perform more operations on input than just convolutions thems
 
 After a convolutional layer, input is passed through a nonlinear transform such as *tanh* or *rectified linear* unit, which will squash input values into a range between -1 and 1. 
 
-##<a name="work">How Convolutional Networks Work</a>
+## <a name="work">How Convolutional Networks Work</a>
 
 The first thing to know about convolutional networks is that they don't perceive images like humans do. Therefore, you are going to have to think in a different way about what an image means as it is fed to and processed by a convolutional network. 
 
@@ -111,7 +111,7 @@ What we just described is a convolution. You can think of Convolution as a fancy
 
 One of the main problems with images is that they are high-dimensional, which means they cost a lot of time and computing power to process. Convolutional networks are designed to reduce the dimensionality of images in a variety of ways. Filter stride is one way to reduce dimensionality. Another way is through downsampling. 
 
-##<a name="max">Max Pooling/Downsampling</a>
+## <a name="max">Max Pooling/Downsampling</a>
 
 The next layer in a convolutional network has three names: max pooling, downsampling and subsampling. The activation maps are fed into a downsampling layer, and like convolutions, this method is applied one patch at a time. In this case, max pooling simply takes the largest value from one patch of an image, places it in a new matrix next to the max values from other patches, and discards the rest of the information contained in the activation maps.
 
@@ -139,13 +139,13 @@ From left to right you see:
 
 As more and more information is lost, the patterns processed by the convolutional net become more abstract and grow more distant from visual patterns we recognize as humans. So forgive yourself, and us, if convolutional networks do not offer easy intuitions as they grow deeper. 
 
-##<a name="code">DL4J Code Example</a>
+## <a name="code">DL4J Code Example</a>
 
 Here's one example of how you might configure a ConvNet with Deeplearning4j:
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/convolution/CNNMnistExample.java?slice=36:109"></script>
 
-##<a name="resource">Other Resources</a>
+## <a name="resource">Other Resources</a>
 
 * [Yann LeCun](http://yann.lecun.com/exdb/publis/pdf/lecun-iscas-10.pdf), a professor at New York University and director of research at Facebook, has done much to advance and promote the use of convolutional nets, which are used heavily in machine vision tasks. 
 * [Andrej Karpathy's Stanford course](https://cs231n.github.io/) on Convolutional Nets is fantastic. We highly recommend it as an introduction to the major ideas. (*Exercises in Python.*)

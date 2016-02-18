@@ -15,7 +15,7 @@ Here's where you can ask questions, read our announcements and learn how others 
 
 Deeplearning4j is distributed under an Apache 2.0 license.
 
-###Contribute
+### Contribute
 
 We're looking for contributors to help us find bugs, add features and create better documentation and tutorials. 
 
@@ -25,11 +25,11 @@ Like the Deeplearining4j lib, this website is open source and we accept pull req
 *  [Issues](https://github.com/deeplearning4j/deeplearning4j/issues)
 *  [Contributors](https://github.com/orgs/deeplearning4j/people)
 
-###Learn the Tools
+### Learn the Tools
 
 DL4J workshops are offered through [GalvanizeU](http://www.galvanizeu.com/) in San Francisco.
 
-###Contact Us
+### Contact Us
 
 Get professional support from the team behind Deeplearning4j.
 
