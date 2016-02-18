@@ -143,7 +143,7 @@ ND4J和Deeplearning4j对`NDArray`和“张量”同义互换使用。张量的�
 
 以下是通过Deeplearning4j配置卷积网络的示例：
 
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/convolution/CNNMnistExample.java?slice=36:109"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/convolution/CNNLFWExample.java?slice=57:160"></script>
 
 ## <a name="resource">其他资源</a>
 
