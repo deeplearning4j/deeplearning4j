@@ -67,16 +67,24 @@ public class BatchNormalization extends FeedForwardLayer {
 
         public Builder(){}
 
-        public void gamma(double gamma){
+        public Builder gamma(double gamma){
             this.gamma = gamma;
+            return this;
         }
 
-        public void beta(double beta){
+        public Builder beta(double beta){
             this.beta = beta;
+            return this;
         }
 
-        public void lockGammaBeta(boolean lockGammaBeta){
+        public Builder decay(double decay){
+            this.decay = decay;
+            return this;
+        }
+
+        public Builder lockGammaBeta(boolean lockGammaBeta){
             this.lockGammaBeta = lockGammaBeta;
+            return this;
         }
 
         @Override
