@@ -270,6 +270,7 @@ public class ConvolutionLayerSetup {
                             feedForwardLayer2.setNIn(lastnOut);
                             conf.inputPreProcessor(i+1, new FeedForwardToRnnPreProcessor());
                             break;
+                        case "ActivationLayer":
                         case "BatchNormalization":
                             feedForwardLayer2 = (FeedForwardLayer) outputLayer;
                             lastnOut = feedForwardLayer.getNOut();
