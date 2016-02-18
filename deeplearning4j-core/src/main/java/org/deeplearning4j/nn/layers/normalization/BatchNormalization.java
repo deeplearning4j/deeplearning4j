@@ -118,9 +118,10 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     }
 
     public INDArray preOutput(INDArray x, TrainingMode training){
+// TODO setup BatchNorm for RNN http://arxiv.org/pdf/1510.01378v1.pdf
         INDArray gamma, beta;
 
-// TODO setup passing in layer...
+// TODO determine if passing in layer is a good approach
 //        Constructor c = getClass().getConstructor(NeuralNetConfiguration.class);
 //        layer = (Layer) c.newInstance(conf);
 
@@ -164,14 +165,13 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         xHat = Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(xMu, std, xMu.dup(),-1));
 
         // BN(xk) = γkxˆk + βk (applying gamma and beta for each activation/feature)
-//        INDArray activations = Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(gamma, xHat, gamma));
         INDArray activations =  Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(xHat, gamma, xHat.dup(), -1));
         activations.addiColumnVector(beta);
 
         // update mean and var if using batch mean while training
         double decay;
         if(training == TrainingMode.TRAIN && layerConf.isUseBatchMean()) {
-            // TODO figure out how to track finetune phase here to update decay for finetune
+            // TODO track finetune phase here to update decay for finetune
 //          layerConf.setN(layerConf.getN() + 1);
 //          decay =  1. / layerConf.getN();
 

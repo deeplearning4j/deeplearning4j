@@ -5,13 +5,22 @@ import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.ActivationLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
+import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
+import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+
+import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 
@@ -59,14 +68,17 @@ public class ActivationLayerTest {
                 .backprop(true).pretrain(false)
                 .build();
 
-        MultiLayerNetwork network2 = new MultiLayerNetwork(conf);
+        MultiLayerNetwork network2 = new MultiLayerNetwork(conf2);
         network2.init();
         network2.fit(next);
 
         assertEquals(network.getLayer(0).getParam("W"), network2.getLayer(0).getParam("W"));
-        assertEquals(network.getLayer(1).getParam("W"), network2.getLayer(1).getParam("W"));
+        assertEquals(network.getLayer(1).getParam("W"), network2.getLayer(2).getParam("W"));
         assertEquals(network.getLayer(0).getParam("b"), network2.getLayer(0).getParam("b"));
-        assertEquals(network.getLayer(1).getParam("b"), network2.getLayer(1).getParam("b"));
+        assertEquals(network.getLayer(1).getParam("b"), network2.getLayer(2).getParam("b"));
 
     }
+
+
+
 }

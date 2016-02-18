@@ -24,7 +24,7 @@ public class ActivationLayer extends FeedForwardLayer {
 
     @AllArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
-        
+
         @Override
         @SuppressWarnings("unchecked")
         public ActivationLayer build() {
