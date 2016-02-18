@@ -15,6 +15,7 @@ import org.nd4j.linalg.jcublas.ops.executioner.kernels.args.impl.IndexAccumulati
 import org.nd4j.linalg.jcublas.util.CudaArgs;
 import org.nd4j.linalg.jcublas.util.KernelParamsWrapper;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Arrays;
 
@@ -83,6 +84,35 @@ public class IndexAccumulationKernelCall extends BaseGpuKernelCall {
 
     @Override
     public void createArgs() {
+        for(int i = 0; i < dimension.length; i++) {
+            if(dimension[i] < 0)
+                dimension[i] += op.x().rank();
+        }
+        //do op along all dimensions
+        if (dimension.length == op.x().rank())
+            dimension = new int[]{Integer.MAX_VALUE};
+
+
+
+        int[] retShape = Shape.wholeArrayDimension(dimension) ? new int[] {1,1} : ArrayUtil.removeIndex(op.x().shape(), dimension);
+        //ensure vector is proper shape
+        if (retShape.length == 1) {
+            if (dimension[0] == 0)
+                retShape = new int[]{1, retShape[0]};
+            else
+                retShape = new int[]{retShape[0], 1};
+        } else if (retShape.length == 0) {
+            retShape = new int[]{1, 1};
+        }
+
+        INDArray ret = Nd4j.valueArrayOf(retShape,op.zeroDouble());
+        op.setZ(ret);
+        //do op along all dimensions
+        if (dimension.length == op.x().rank())
+            dimension = new int[]{Integer.MAX_VALUE};
+
+
+        /*
         if (op.y() != null) {
             metrics.setSharedMemoryNotOverMax(metrics.getSharedMemory() * 2);
             xStride = BlasBufferUtil.getBlasStride(dimension == null ? op.x() : op.x().tensorAlongDimension(0, dimension));
@@ -190,6 +220,8 @@ public class IndexAccumulationKernelCall extends BaseGpuKernelCall {
 
 
         }
+
+        */
     }
 
     /**
