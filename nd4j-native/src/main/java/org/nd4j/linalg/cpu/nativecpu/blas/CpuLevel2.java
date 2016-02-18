@@ -15,7 +15,7 @@ import org.nd4j.linalg.cpu.nativecpu.CBLAS;
 public class CpuLevel2 extends BaseLevel2 {
     @Override
     protected void sgemv(char order, char TransA, int M, int N, float alpha, INDArray A, int lda, INDArray X, int incX, float beta, INDArray Y, int incY) {
-        CBLAS.sgemv(order,TransA,M,N,alpha,A.data().asNioFloat(),lda,X.data().asNioFloat(),incX,beta,Y.data().asNioFloat(),incY);
+        CBLAS.sgemv('f',TransA,M,N,alpha,A.data().asNioFloat(),lda,X.data().asNioFloat(),incX,beta,Y.data().asNioFloat(),incY);
     }
 
     @Override
@@ -56,7 +56,7 @@ public class CpuLevel2 extends BaseLevel2 {
 
     @Override
     protected void dgemv(char order, char TransA, int M, int N, double alpha, INDArray A, int lda, INDArray X, int incX, double beta, INDArray Y, int incY) {
-        CBLAS.dgemv(order,TransA,M,N,alpha,A.data().asNioDouble(),lda,X.data().asNioDouble(),incX,beta,Y.data().asNioDouble(),incY);
+        CBLAS.dgemv('f',TransA,M,N,alpha,A.data().asNioDouble(),lda,X.data().asNioDouble(),incX,beta,Y.data().asNioDouble(),incY);
     }
 
     @Override

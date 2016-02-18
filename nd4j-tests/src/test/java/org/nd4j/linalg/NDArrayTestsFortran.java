@@ -20,18 +20,6 @@
 package org.nd4j.linalg;
 
 
-
-import java.io.*;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-
 import org.apache.commons.math3.util.Pair;
 import org.junit.After;
 import org.junit.Before;
@@ -41,19 +29,30 @@ import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.api.ops.impl.broadcast.*;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.executors.ExecutorServiceProvider;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.api.shape.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.Assert.*;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 /**
  * NDArrayTests for fortran ordering
@@ -110,35 +109,34 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
 
 
-
     @Test
     public void testColumnMmul() {
         DataBuffer data = Nd4j.linspace(1, 10, 18).data();
         INDArray x2 = Nd4j.create(data, new int[]{2,3,3});
         data = Nd4j.linspace(1, 12, 9).data();
         INDArray y2 = Nd4j.create(data, new int[]{3,3});
-        INDArray z2 = Nd4j.create(3,2);
+        INDArray z2 = Nd4j.create(new int[]{3,2},'f');
         z2.putColumn(0, y2.getColumn(0));
         z2.putColumn(1, y2.getColumn(1));
-        INDArray nofOffset = Nd4j.create(3,3);
+        INDArray nofOffset = Nd4j.create(new int[]{3,3},'f');
         nofOffset.assign(x2.slice(0));
-        assertEquals(getFailureMessage(),nofOffset,x2.slice(0));
+        assertEquals(nofOffset,x2.slice(0));
 
         INDArray slice = x2.slice(0);
         INDArray zeroOffsetResult = slice.mmul(z2);
         INDArray offsetResult = nofOffset.mmul(z2);
-        assertEquals(getFailureMessage(),zeroOffsetResult,offsetResult);
+        assertEquals(zeroOffsetResult,offsetResult);
 
 
         INDArray slice1 = x2.slice(1);
         INDArray noOffset2 = Nd4j.create(slice1.shape());
         noOffset2.assign(slice1);
-        assertEquals(getFailureMessage(),slice1,noOffset2);
+        assertEquals(slice1,noOffset2);
 
         INDArray noOffsetResult = noOffset2.mmul(z2);
         INDArray slice1OffsetResult = slice1.mmul(z2);
 
-        assertEquals(getFailureMessage(),noOffsetResult,slice1OffsetResult);
+        assertEquals(noOffsetResult,slice1OffsetResult);
     }
 
 
@@ -461,7 +459,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     @Test
     public void testVectorInit() {
         DataBuffer data = Nd4j.linspace(1, 4, 4).data();
-        INDArray arr = Nd4j.create(data, new int[]{4});
+        INDArray arr = Nd4j.create(data, new int[]{1,4});
         assertEquals(true, arr.isRowVector());
         INDArray arr2 = Nd4j.create(data, new int[]{1, 4});
         assertEquals(true, arr2.isRowVector());
@@ -631,7 +629,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray columnVector = Nd4j.create(data, new int[]{6, 1});
         assertEquals(6, columnVector.rows());
         assertEquals(1, columnVector.columns());
-        INDArray rowVector = Nd4j.create(data, new int[]{6});
+        INDArray rowVector = Nd4j.create(data, new int[]{1,6});
         assertEquals(1, rowVector.rows());
         assertEquals(6, rowVector.columns());
     }
@@ -1048,8 +1046,8 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     @Test
     public void testTensorDot() {
-        INDArray oneThroughSixty = Nd4j.arange(60).reshape(3, 4, 5);
-        INDArray oneThroughTwentyFour = Nd4j.arange(24).reshape(4, 3, 2);
+        INDArray oneThroughSixty = Nd4j.arange(60).reshape('f',3, 4, 5);
+        INDArray oneThroughTwentyFour = Nd4j.arange(24).reshape('f',4, 3, 2);
         INDArray result = Nd4j.tensorMmul(oneThroughSixty, oneThroughTwentyFour, new int[][]{{1, 0}, {0, 1}});
         assertArrayEquals(new int[]{5, 2}, result.shape());
         INDArray assertion = Nd4j.create(new double[][]{
@@ -1236,7 +1234,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
                         default:
                             throw new RuntimeException();
                     }
-                    Nd4j.getExecutioner().exec(op);
+                    Nd4j.getExecutioner().exec(op,op.getDimension());
 
                     //Compare expected vs. actual:
                     NdIndexIterator iter = new NdIndexIterator(orig.shape());

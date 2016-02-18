@@ -44,6 +44,7 @@ public interface DataBuffer extends Serializable {
         INT
     }
 
+
     /**
      * Direct (off heap) and heap allocation
      *
@@ -60,7 +61,14 @@ public interface DataBuffer extends Serializable {
     }
 
 
-
+    /**
+     * Returns true if the underlying data source
+     * is the same for both buffers (referential equals)
+     * @param buffer whether the buffer is the same underlying data or not
+     * @return true if both data buffers have the same
+     * underlying data SOURCE
+     */
+    boolean sameUnderlyingData(DataBuffer buffer);
 
     /**
      * Returns the backing array

@@ -79,10 +79,23 @@ public class IndexingTestsC extends BaseNd4jTest {
 
         INDArray individualElement = twoByTwo.get(NDArrayIndex.interval(1, 2), NDArrayIndex.interval(1, 2));
         assertEquals(Nd4j.create(new float[]{4}), individualElement);
-
-
     }
 
+    @Test
+    public void testGetRow(){
+        Nd4j.getRandom().setSeed(12345);
+        INDArray in = Nd4j.linspace(0,14,15).reshape(3,5);
+        int[] toGet = {0,1};
+        INDArray out = in.getRows(toGet);
+        assertEquals(in.getRow(0),out.getRow(0));
+        assertEquals(in.getRow(1),out.getRow(1));
+
+        int[] toGet2 = {0,1,2,0,1,2};
+        INDArray out2 = in.getRows(toGet2);
+        for( int i=0; i<toGet2.length; i++ ){
+            assertEquals(in.getRow(toGet2[i]),out2.getRow(i));
+        }
+    }
 
     @Test
     public void testConcatColumns() {

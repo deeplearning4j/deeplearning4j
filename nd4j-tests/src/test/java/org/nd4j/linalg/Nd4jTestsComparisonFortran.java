@@ -153,7 +153,7 @@ public  class Nd4jTestsComparisonFortran extends BaseNd4jTest {
     }
 
     @Test
-    public void testGemvApacheCommons(){
+    public void testGemvApacheCommons() {
 
         int[] rowsArr = new int[]{4,4,4,8,8,8};
         int[] colsArr = new int[]{2,1,10,2,1,10};
@@ -199,7 +199,6 @@ public  class Nd4jTestsComparisonFortran extends BaseNd4jTest {
                     for (int r = 0; r < rows; r++) {
                         double exp = gemv2.getEntry(r, 0);
                         double act = gemv.getDouble(r, 0);
-
                         assertEquals(errorMsg, exp, act, 1e-5);
                     }
                 }
@@ -226,7 +225,7 @@ public  class Nd4jTestsComparisonFortran extends BaseNd4jTest {
     }
 
     @Test
-    public void testMulDivOnCheckUtilMatrices(){
+    public void testMulDivOnCheckUtilMatrices() {
         List<Pair<INDArray,String>> first = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED);
         List<Pair<INDArray,String>> second = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED);
         for( int i=0; i<first.size(); i++ ){
