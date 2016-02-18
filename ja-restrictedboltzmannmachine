@@ -7,14 +7,14 @@ layout: ja-default
 
 目次
 
-定義と構造
-復元
-確率分布
-コードサンプル：Deeplearning4jを使ったIrisで制限付きボルツマンマシンを起動する
-パラメータ及びkについて
-連続的なRBM
-結論及び次のステップ
-定義と構造
+* <a href="#define">定義と構造</a>
+* <a href="#reconstruct">復元</a>
+* <a href="#probability">確率分布</a>
+* <a href="#code">コードサンプル：Deeplearning4jを使ったIrisで制限付きボルツマンマシンを起動する</a>
+* <a href="#params">パラメータ及びkについて</a>
+* <a href="#CRBM">連続的なRBM</a>
+* <a href="#next">結論及び次のステップ</a>
+* <a href="#resource">定義と構造</a>
 
 Geoff Hintonによって開発された制限付きボルツマンマシン（RBM）は、次元削減、分類、回帰、協調フィルタリング、特徴学習、トピックモデルなどに役立ちます。（RBMなどのニューラルネットワークがどのように使われるか、さらに具体的な例を知りたい方はユースケースのページをご覧ください。）
 
