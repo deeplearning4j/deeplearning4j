@@ -23,6 +23,7 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.Dot;
 import org.nd4j.linalg.api.ops.impl.accum.Norm2;
 import org.nd4j.linalg.factory.Nd4j;
@@ -45,22 +46,22 @@ public class CosineSimilarity extends BaseAccumulation {
 
     public CosineSimilarity(INDArray x, INDArray y, INDArray z, int n) {
         super(x, y, z, n);
-        passThrough = true;
+        passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
     }
 
     public CosineSimilarity(INDArray x, INDArray y, int n) {
         super(x, y, n);
-        passThrough = true;
+        passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
     }
 
     public CosineSimilarity(INDArray x) {
         super(x);
-        passThrough = true;
+        passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
     }
 
     public CosineSimilarity(INDArray x, INDArray y) {
         super(x, y);
-        passThrough = true;
+        passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
     }
 
 

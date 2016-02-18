@@ -1187,22 +1187,24 @@ public class AtomicAllocator implements Allocator {
                     Thread.sleep(Math.max(configuration.getMinimumTTLMilliseconds(), 5000));
                 } catch (Exception e) {
                     // we can have interruption here, to force gc
-                    ;
+
                 }
 
+                if(deviceMemoryTracker == null)
+                    continue;
 
                 //log.info("DeviceGC started...");
                 Aggressiveness aggressiveness = configuration.getGpuDeallocAggressiveness();
 
                 // if we have too much objects, or total allocated memory has met 75% of max allocation - use urgent mode
-                if ((deviceAllocations.get(threadId, deviceId).size() > 100000 || deviceMemoryTracker.getAllocatedSize(threadId, deviceId)> (configuration.getMaximumDeviceAllocation() * 0.75)) && aggressiveness.ordinal() < Aggressiveness.URGENT.ordinal())
+                if (deviceAllocations != null && deviceAllocations.contains(threadId,deviceId) && (deviceAllocations.get(threadId, deviceId).size() > 100000 || deviceMemoryTracker.getAllocatedSize(threadId, deviceId)> (configuration.getMaximumDeviceAllocation() * 0.75)) && aggressiveness.ordinal() < Aggressiveness.URGENT.ordinal())
                     aggressiveness = Aggressiveness.URGENT;
 
                 if (deviceMemoryTracker.getAllocatedSize(threadId, deviceId) > (configuration.getMaximumDeviceAllocation() * 0.85))
                     aggressiveness = Aggressiveness.IMMEDIATE;
 
                 if (deviceMemoryTracker.getAllocatedSize(threadId, deviceId) < (configuration.getMaximumDeviceAllocation() * 0.25) && (deviceAllocations.get(threadId, deviceId).size()  < 10000)) {
-                    ; // i don't want deallocation to be fired on lower thresholds. just no sense locking stuff
+                     // i don't want deallocation to be fired on lower thresholds. just no sense locking stuff
                 } else seekUnusedDevice(this.threadId, this.deviceId, aggressiveness);
 
 
