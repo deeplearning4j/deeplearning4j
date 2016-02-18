@@ -23,10 +23,13 @@ FIND_PACKAGE(LAPACK)
 if(NOT BLAS_FOUND)
     message("BLAS not found using openblas fallback")
     set(BLAS_LIBRARIES /usr/lib/libopenblas.a)
+    message("Using blas library ${BLAS_LIBRARIES}")
 endif()
 if(NOT LAPACK_FOUND)
     message("LAPACK not found using openblas fallback")
     set(LAPACK_LIBRARIES /usr/lib/libopenblas.a)
+    message("Using lapack library ${LAPACK_LIBRARIES}")
+
 endif()
 
 
