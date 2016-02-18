@@ -179,6 +179,10 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
             resultIndex = 4;
             resultShapeInfoIndex = resultIndex + 1;
 
+            // temp hook. to be removed.
+            if (dimension == null) scalarResult = true;
+
+
             //result index for the pointer to use when invoking the post process method
             args = new Object[] {
                     CudaArgs.getOpCode(op),
@@ -189,7 +193,7 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
                     op.z(),
                     KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.z())),
                     KernelFunctions.alloc(metrics.getGpuDefinitionInfo()),
-                    KernelFunctions.alloc(scalarResult ? new int[]{Integer.MAX_VALUE} : dimension),
+                    KernelFunctions.alloc(scalarResult  ? new int[]{Integer.MAX_VALUE} : dimension),
                     scalarResult ? 1 : dimension.length,
                     //if the whole buffer is to be used don't do final aggregation this happens
                     //by aggregating blocks on cpu first

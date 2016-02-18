@@ -49,7 +49,6 @@ public class TransformKernelCall extends BaseGpuKernelCall {
              * extraArgs,
              * result
              */
-            System.out.println("T1");
             args = new Object[] {
                     CudaArgs.getOpCode(op),
                     op.n(),
@@ -72,7 +71,6 @@ public class TransformKernelCall extends BaseGpuKernelCall {
 
 
         } else {
-            System.out.println("T2");
             args = new Object[] {
                     CudaArgs.getOpCode(op),
                     op.n(),

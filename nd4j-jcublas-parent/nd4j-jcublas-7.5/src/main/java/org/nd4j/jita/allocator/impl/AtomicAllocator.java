@@ -313,13 +313,16 @@ public class AtomicAllocator implements Allocator {
         //if (!(array.data() instanceof BaseCudaDataBuffer)) throw new IllegalStateException("Underlying buffer isn't instance of BaseCudaDataBuffer");
 
         // For buffer registration we're always using full underlying buffer
-        AllocationShape shape = new AllocationShape();
+        AllocationShape shape = AllocationUtils.buildAllocationShape(array); /*new AllocationShape();
         shape.setOffset(0);
         shape.setStride(1);
         shape.setLength(array.data().length());
         shape.setDataType(Nd4j.dataType());
+*/
 
-        return pickupSpan(array.data().originalDataBuffer(), AllocationUtils.buildAllocationShape(array.data().originalDataBuffer()));
+        DataBuffer buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
+
+        return pickupSpan(buffer, shape);
     }
 
     /**
@@ -362,8 +365,11 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public void tackDevice(INDArray array) {
-        log.info("tackDevice(INDArray)");
-        tackDevice(array.data().originalDataBuffer(), AllocationUtils.buildAllocationShape(array));
+//        log.info("tackDevice(INDArray)");
+
+        DataBuffer buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
+
+        tackDevice(buffer, AllocationUtils.buildAllocationShape(array));
     }
 
 
@@ -391,7 +397,9 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public void tickDeviceWrite(INDArray array) {
-        AllocationPoint point = getAllocationPoint(array.data().originalDataBuffer(), AllocationUtils.buildAllocationShape(array));
+        DataBuffer buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
+
+        AllocationPoint point = getAllocationPoint(buffer, AllocationUtils.buildAllocationShape(array));
 
         point.tickDeviceWrite();
     }
@@ -403,7 +411,9 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public void tickHostWrite(INDArray array) {
-        AllocationPoint point = getAllocationPoint(array.data().originalDataBuffer(), AllocationUtils.buildAllocationShape(array));
+        DataBuffer buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
+
+        AllocationPoint point = getAllocationPoint(buffer, AllocationUtils.buildAllocationShape(array));
 
         if (point == null) {
             log.info("tickHostWrite INDarray");
@@ -590,7 +600,7 @@ public class AtomicAllocator implements Allocator {
     public Pointer getDevicePointer(INDArray array) {
         AllocationShape shape = AllocationUtils.buildAllocationShape(array);
 
-        DataBuffer buffer = array.data().originalDataBuffer();
+        DataBuffer buffer = array.data().originalDataBuffer() != null ? array.data().originalDataBuffer() : array.data();
 
         if (buffer.getTrackingPoint() == null) {
             pickupSpan(array);
@@ -663,21 +673,21 @@ public class AtomicAllocator implements Allocator {
             We set memory state to Toe, and issue copyback if required
          */
 
-        log.info("Current state: " + point.getAccessState().getCurrentState());
+  //      log.info("Current state: " + point.getAccessState().getCurrentState());
         if (!point.isActualOnHostSide() || point.getAccessState().getCurrentState() != AccessState.TACK) {
 
             point.getAccessState().requestToe();
 
             if (!point.isActualOnHostSide()) {
-                log.info("Data isn't actual on host side, copyback() started");
+//                log.info("Data isn't actual on host side, copyback() started");
                 mover.copyback(point, shape);
 
                 // update the timer for hostRead
                 point.tickHostRead();
-            } else log.info("Data is actual, skipping sync");
+            }// else log.info("Data is actual, skipping sync");
 
             point.getAccessState().releaseToe();
-        } else log.info("Data is actual, skipping sync");
+        }// else log.info("Data is actual, skipping sync");
 
 
     }
@@ -690,14 +700,16 @@ public class AtomicAllocator implements Allocator {
     @Override
     public void synchronizeHostData(INDArray array) {
 //        log.info("Synchronize called on array");
-        AllocationPoint point = getAllocationPoint(array.data().originalDataBuffer(), AllocationUtils.buildAllocationShape(array));
+        DataBuffer buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
+
+        AllocationPoint point = getAllocationPoint(buffer, AllocationUtils.buildAllocationShape(array));
 
         if (point == null) {
-            log.debug("synchronizeHostData(INDarray)");
+//            log.debug("synchronizeHostData(INDarray)");
             pickupSpan(array);
         }
 
-        synchronizeHostData( array.data().originalDataBuffer(), AllocationUtils.buildAllocationShape(array));
+        synchronizeHostData(buffer, AllocationUtils.buildAllocationShape(array));
     }
 
     /**

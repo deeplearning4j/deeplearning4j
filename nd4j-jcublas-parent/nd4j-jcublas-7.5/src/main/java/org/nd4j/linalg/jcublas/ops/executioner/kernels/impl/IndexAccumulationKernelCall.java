@@ -48,6 +48,8 @@ public class IndexAccumulationKernelCall extends BaseGpuKernelCall {
         else
             this.result = result;
 
+        op.setZ(this.result);
+
         createArgs();
     }
 
@@ -169,11 +171,12 @@ public class IndexAccumulationKernelCall extends BaseGpuKernelCall {
             if (dimension == null && xStride == 1 && op.x().offset() == 0)
                 length = op.n();
 
+
             args = new Object[]{
                     CudaArgs.getOpCode(op),
                     length,
                     op.x(),
-                    KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.x(), dimension)),
+                    KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.x(), dimension == null ? new int[]{Integer.MAX_VALUE} : dimension)),
                     toArgs(op.extraArgs(), getType(op)),
                     result,
                     KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(result)),

@@ -120,8 +120,6 @@ public class CudaArgs {
             }
         } else if (op instanceof TransformOp) {
 
-            System.out.println("TRANSFORM OP SELECTOR");
-
             if (name.equals("abs")) {
                 code = 0;
             } else if (name.equals("ceil")) {
@@ -250,7 +248,7 @@ public class CudaArgs {
             }
         }
 
-        System.out.println("CALLING ["+getModuleNameFor(op)+"] -> ["+code+"]");
+       // System.out.println("CALLING ["+getModuleNameFor(op)+"] -> ["+code+"]");
 
         return code;
     }

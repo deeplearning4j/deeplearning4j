@@ -22,6 +22,7 @@ package org.nd4j.linalg.jcublas.ops.executioner;
 
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -325,6 +326,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     private CudaContext invoke(IndexAccumulation op,int[] dimension,INDArray result)  {
         if(!KernelFunctionLoader.getInstance().exists(op) || executionMode() == ExecutionMode.JAVA) {
+            System.out.println("Fallback to CPU happend");
             try {
                 if (op.x() != null) allocator.synchronizeHostData(op.x());
                 if (op.y() != null) allocator.synchronizeHostData(op.y());
@@ -340,20 +342,30 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             }
         }
 
+        System.out.println("Invoking IndexAccum on gpu");
+
         try {
             CudaContext ctx;
             GpuKernelCall accKernelCall = GpuKernelCallFactories.getFactory(op).create(op, dimension, result);
             accKernelCall.invoke();
             ctx = accKernelCall.cudaContext();
-            if (result.isScalar())
-                result.putScalar(0, op.getFinalResult());
 
-            return ctx;
-        } finally {
+            System.out.println("Invoke finished");
+
             // FIXME: we need to track which op field contains result, and tackDeviceWrite only for it
             if (op.x() != null) allocator.tackDevice(op.x());
             if (op.y() != null) allocator.tackDevice(op.y());
             if (op.z() != null) allocator.tackDevice(op.z());
+            //allocator.tackDevice(result);
+
+
+            if (result.isScalar())
+                result.putScalar(0, op.getFinalResult());
+
+
+            return ctx;
+        } finally {
+            ; // we need to tackDevice before calling for result
         }
     }
 
@@ -410,7 +422,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             kernelCall.invoke();
             return kernelCall.cudaContext();
         } finally {
-            System.out.println("Tacking device on scalar");
             // FIXME: we need to track which op field contains result, and tackDeviceWrite only for it
             if (op.x() != null) allocator.tackDevice(op.x());
             if (op.y() != null) allocator.tackDevice(op.y());
@@ -421,8 +432,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     private CudaContext invoke(TransformOp op) {
         if(!KernelFunctionLoader.getInstance().exists(op) || op.x() instanceof IComplexNDArray || op.isPassThrough()) {
 
-          //  return null;
-            System.out.println("Fallback to CPU opExecutor");
             try {
                 if (op.x() != null) allocator.synchronizeHostData(op.x());
                 if (op.y() != null) allocator.synchronizeHostData(op.y());

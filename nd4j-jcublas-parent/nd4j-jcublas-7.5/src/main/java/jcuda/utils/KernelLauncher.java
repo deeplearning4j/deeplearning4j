@@ -1123,8 +1123,8 @@ public class KernelLauncher {
 
         CudaContext context = AtomicAllocator.getInstance().getCudaContext();
 
-        System.out.println("Stream: " + context.getStream());
-        System.out.println("Function: " + function);
+//        System.out.println("Stream: " + context.getStream());
+//        System.out.println("Function: " + function);
 
         cuLaunchKernel(function,
                 gridSize.x, gridSize.y, gridSize.z,

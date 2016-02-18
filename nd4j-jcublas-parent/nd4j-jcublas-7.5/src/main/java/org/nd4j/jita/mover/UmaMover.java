@@ -62,7 +62,7 @@ public class UmaMover implements Mover {
      */
     @Override
     public DevicePointerInfo alloc(AllocationStatus targetMode, AllocationPoint point,  AllocationShape shape) {
-        log.info("Alloc called for shape: " + shape);
+      //  log.info("Alloc called for shape: " + shape);
         switch (targetMode) {
             case ZERO: {
                     /*
@@ -176,7 +176,7 @@ public class UmaMover implements Mover {
      */
     @Override
     public void relocate(AllocationStatus currentStatus, AllocationStatus targetStatus, AllocationPoint point, AllocationShape shape) {
-        log.info("RELOCATE CALLED: [" +currentStatus+ "] -> ["+targetStatus+"]");
+//        log.info("RELOCATE CALLED: [" +currentStatus+ "] -> ["+targetStatus+"]");
         if (currentStatus == AllocationStatus.ZERO && targetStatus == AllocationStatus.DEVICE) {
             // ZERO -> DEVICE
         } else if (currentStatus == AllocationStatus.DEVICE && targetStatus == AllocationStatus.ZERO) {
@@ -203,9 +203,12 @@ public class UmaMover implements Mover {
             if (targetBuffer == null)
                 throw new IllegalStateException("Target buffer is NULL!");
 
-            // FIXME: this is wrong. We MUST take AllocationShape into account, to avoid unneccessary copybacks, also breaking partial allocations
-            ByteBuffer pointer = hostPointer.getByteBuffer(0, targetBuffer.getElementSize() * targetBuffer.length()).order(ByteOrder.nativeOrder());
+
+
+            // FIXME: this is wrong. We MUST take AllocationShape into account, to avoid unneccessary copybacks, also breaking partial allocationsi
+            ByteBuffer pointer = hostPointer.getByteBuffer(0, AllocationUtils.getElementSize(shape) * targetBuffer.length()).order(ByteOrder.nativeOrder());
             ByteBuffer bufferNio = targetBuffer.asNio();
+
             NioUtil.copyAtStride(shape.getLength(),getBufferType(targetBuffer),pointer, 0,1,bufferNio,shape.getOffset(),1);
 
         } else if (currentStatus == AllocationStatus.DEVICE && targetStatus == AllocationStatus.HOST) {
@@ -241,7 +244,7 @@ public class UmaMover implements Mover {
 
             ByteBuffer pointer = hostPointer.getByteBuffer(0, AllocationUtils.getRequiredMemory(shape));
             pointer.order(ByteOrder.nativeOrder());
-            log.info("copyforward HOST->ZERO shape: " + shape);
+//            log.info("copyforward HOST->ZERO shape: " + shape);
             NioUtil.copyAtStride(
                     shape.getLength(), // copy length
                     getBufferType(point.getBuffer()),  // buffer type

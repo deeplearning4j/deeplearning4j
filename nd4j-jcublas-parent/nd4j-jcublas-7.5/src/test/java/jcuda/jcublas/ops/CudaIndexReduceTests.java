@@ -31,6 +31,7 @@ public class CudaIndexReduceTests {
 
 
         int idx =  ((IndexAccumulation) Nd4j.getExecutioner().exec(new IMax(array1))).getFinalResult();
+        System.out.println("Call happened");
 
         assertEquals(5, idx);
     }
