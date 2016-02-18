@@ -168,6 +168,27 @@ public class RecordReaderDataSetiteratorTest {
 
             assertEquals(features,labels);
         }
+
+        //Also test regression + reset from a single reader:
+        featureReader.reset();
+        iter = new SequenceRecordReaderDataSetIterator(featureReader, 1, 0, 2, true);
+        int count = 0;
+        while(iter.hasNext()){
+            DataSet ds = iter.next();
+            assertEquals(2,ds.getFeatureMatrix().size(1));
+            assertEquals(1,ds.getLabels().size(1));
+            count++;
+        }
+        assertEquals(3,count);
+
+
+        iter.reset();
+        count = 0;
+        while(iter.hasNext()){
+            iter.next();
+            count++;
+        }
+        assertEquals(3,count);
     }
 
     @Test
