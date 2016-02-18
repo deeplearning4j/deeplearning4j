@@ -15,38 +15,36 @@ import java.util.Map;
  *
  * @author Adam Gibson
  */
+
 public class BatchNormalizationParamInitializer implements ParamInitializer {
-    public final static String GAMMA = "gamma";
-    public final static String BETA = "beta";
-
-    public final static String AVG_MEAN = "avgMean";
-    public final static String AVG_VAR = "avgVar";
-
-    public final static String GAMMA_GRADIENT = "gammaGradient";
-    public final static String BETA_GRADIENT = "betaGradient";
-
-
+    public final static String GAMMA = "gamma"; // equivalent to weights
+    public final static String BETA = "beta"; // equivalent to bias
 
     @Override
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {
-        BatchNormalization normalization = (BatchNormalization) conf.getLayer();
-        int size = ArrayUtil.prod(normalization.getShape());
-
-        params.put(AVG_MEAN, Nd4j.zeros(1,size));
-        params.put(AVG_VAR,Nd4j.zerosLike(params.get(AVG_MEAN)));
-
-
-        params.put(GAMMA,Nd4j.onesLike(params.get(AVG_MEAN)));
-        params.put(GAMMA_GRADIENT,Nd4j.zerosLike(params.get(AVG_MEAN)));
-
-        params.put(BETA,Nd4j.zerosLike(params.get(AVG_MEAN)));
-        params.put(BETA_GRADIENT,Nd4j.zerosLike(params.get(AVG_MEAN)));
-
-
+        params.put(GAMMA,createGamma(conf));
+        conf.addVariable(GAMMA);
+        params.put(BETA, createBeta(conf));
+        conf.addVariable(BETA);
     }
 
     @Override
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf, Configuration extraConf) {
-
+        init(params,conf);
     }
+
+    protected INDArray createBeta(NeuralNetConfiguration conf) {
+        BatchNormalization layer = (BatchNormalization) conf.getLayer();
+        INDArray ret = Nd4j.valueArrayOf(1, layer.getNOut(), layer.getBeta());
+        ret.data().persist();
+        return ret;
+    }
+
+    protected INDArray createGamma(NeuralNetConfiguration conf) {
+        BatchNormalization layer = (BatchNormalization) conf.getLayer();
+        INDArray ret = Nd4j.valueArrayOf(1, layer.getNOut(), layer.getGamma());
+        ret.data().persist();
+        return ret;
+    }
+
 }
