@@ -38,11 +38,12 @@ public class ScalarKernelCall extends BaseGpuKernelCall {
                 op.setY(op.y().dup());
             }
 
+            System.out.println("S1");
             args = new Object[]{
                     CudaArgs.getOpCode(op),
                     op.n(),
-                    op.x().offset(),
-                    op.y().offset(),
+//                    op.x().offset(),
+//                    op.y().offset(),
                     op.x(),
                     op.y(),
                     BlasBufferUtil.getBlasStride(op.x()),
@@ -61,11 +62,11 @@ public class ScalarKernelCall extends BaseGpuKernelCall {
                 op.setX(op.x().dup());
             }
 
-
+            System.out.println("S2");
             args = new Object[]{
                     CudaArgs.getOpCode(op),
                     op.n(),
-                    op.x().offset(),
+                    //op.x().offset(),
                     PointerUtil.getPointer(scalarOp),
                     op.x(),
                     BlasBufferUtil.getBlasStride(op.x()),

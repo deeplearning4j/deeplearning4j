@@ -238,7 +238,7 @@ public class CudaArgs {
             }
         }
 
-        //System.out.println("CALLING ["+getModuleNameFor(op)+"] -> ["+code+"]");
+        System.out.println("CALLING ["+getModuleNameFor(op)+"] -> ["+code+"]");
 
         return code;
     }
@@ -280,7 +280,7 @@ public class CudaArgs {
   //      Map<Object, Object> idMap = new IdentityHashMap<>();
         Object[] kernelParameters = new Object[kernelParams.length];
 //        List<CublasPointer> pointersToFree = new ArrayList<>();
-//        Multimap<INDArray, CublasPointer> arrayToPointer = ArrayListMultimap.create();
+        Multimap<INDArray, CublasPointer> arrayToPointer = ArrayListMultimap.create();
         for (int i = 0; i < kernelParams.length; i++) {
             Object arg = kernelParams[i];
 
@@ -304,7 +304,7 @@ public class CudaArgs {
                     CublasPointer pointerToFree = new CublasPointer(array, context);
                     kernelParameters[i] = pointerToFree.getDevicePointer();
 //                    pointersToFree.add(pointerToFree);
-//                    arrayToPointer.put(array, pointerToFree);
+                    arrayToPointer.put(array, pointerToFree);
 //                    idMap.put(array, pointerToFree.getDevicePointer());
 //                } else {
 //                    Pointer pointer = (Pointer) idMap.get(array);
@@ -317,7 +317,7 @@ public class CudaArgs {
 
         }
 
-        return new ArgsAndReferences(kernelParameters);
+        return new ArgsAndReferences(kernelParameters, arrayToPointer);
         //return new ArgsAndReferences(kernelParameters,idMap,pointersToFree,arrayToPointer);
     }
 
@@ -331,7 +331,7 @@ public class CudaArgs {
         /**
          * conversion list of arrays to their assigned cublas pointer
          */
-     //   private Multimap<INDArray, CublasPointer> arrayToPointer;
+        private Multimap<INDArray, CublasPointer> arrayToPointer;
 
 
     }

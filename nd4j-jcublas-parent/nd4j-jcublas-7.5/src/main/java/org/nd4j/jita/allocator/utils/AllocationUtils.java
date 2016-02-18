@@ -5,6 +5,8 @@ import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
+import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
+import org.nd4j.linalg.jcublas.util.PointerUtil;
 
 /**
  * @author raver119@gmail.com
@@ -48,6 +50,22 @@ public class AllocationUtils {
         shape.setOffset(0);
         shape.setDataType(array.dataType());
         shape.setLength(array.length());
+
+        return shape;
+    }
+
+    /**
+     * This method returns AllocationShape for specific buffer, that takes in account its real shape: offset, length, etc
+     *
+     * @param buffer
+     * @return
+     */
+    public static AllocationShape buildAllocationShape(JCudaBuffer buffer) {
+        AllocationShape shape = new AllocationShape();
+        shape.setStride(1);
+        shape.setOffset(buffer.originalOffset());
+        shape.setDataType(buffer.dataType());
+        shape.setLength(buffer.length());
 
         return shape;
     }

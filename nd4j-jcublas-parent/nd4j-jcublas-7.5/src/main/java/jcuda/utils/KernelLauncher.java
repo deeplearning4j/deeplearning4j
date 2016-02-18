@@ -36,7 +36,9 @@ import jcuda.runtime.JCuda;
 import jcuda.runtime.dim3;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
+import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1119,10 +1121,15 @@ public class KernelLauncher {
             }
         }
 
+        CudaContext context = AtomicAllocator.getInstance().getCudaContext();
+
+        System.out.println("Stream: " + context.getStream());
+        System.out.println("Function: " + function);
+
         cuLaunchKernel(function,
                 gridSize.x, gridSize.y, gridSize.z,
                 blockSize.x, blockSize.y, blockSize.z,
-                sharedMemSize, stream,
+                sharedMemSize, context.getStream(),
                 Pointer.to(kernelParameters), null
         );
 

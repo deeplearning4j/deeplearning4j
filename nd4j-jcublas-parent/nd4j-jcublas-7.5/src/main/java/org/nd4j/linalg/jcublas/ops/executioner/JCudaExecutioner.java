@@ -409,6 +409,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             kernelCall.invoke();
             return kernelCall.cudaContext();
         } finally {
+            System.out.println("Tacking device on scalar");
             // FIXME: we need to track which op field contains result, and tackDeviceWrite only for it
             if (op.x() != null) allocator.tackDevice(op.x());
             if (op.y() != null) allocator.tackDevice(op.y());

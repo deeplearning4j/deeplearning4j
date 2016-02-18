@@ -202,9 +202,11 @@ public class KernelFunctionLoader {
      * @return the module associated with this
      * @throws Exception
      */
-    public void load() throws Exception {
+    public synchronized void load() throws Exception {
         if (init)
             return;
+
+        init = true;
 
         ClassPathResource res = new ClassPathResource("/cudafunctions.properties", KernelFunctionLoader.class.getClassLoader());
         if (!res.exists())
@@ -215,7 +217,7 @@ public class KernelFunctionLoader {
         //ensure imports for each file before compiling
         compileAndLoad(props);
 
-        init = true;
+
     }
 
     /**
@@ -460,13 +462,13 @@ public class KernelFunctionLoader {
                 cuDeviceGetCount(count);
 
                 for (int x = 0; x< count[0]; x++) {
-                    JCuda.cudaSetDevice(x);
+            //        JCuda.cudaSetDevice(x);
 
                     KernelLauncher launch = KernelLauncher.load(path, functionName, dataType.toString());
                     launchers.put(x, Pair.of(function, dataType), launch);
                 }
 
-                JCuda.cudaSetDevice(0);
+            //    JCuda.cudaSetDevice(0);
             }
         }
 

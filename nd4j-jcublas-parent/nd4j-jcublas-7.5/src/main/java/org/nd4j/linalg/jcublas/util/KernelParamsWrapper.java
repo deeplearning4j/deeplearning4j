@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.jcublas.util;
 
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import jcuda.Pointer;
 import jcuda.Sizeof;
@@ -175,7 +176,7 @@ public class KernelParamsWrapper implements AutoCloseable {
         CudaArgs.ArgsAndReferences argsAndReferences = CudaArgs.argsAndReference(context,kernelParams);
         kernelParameters = argsAndReferences.getArgs();
 
-        //arrayToPointer = argsAndReferences.getArrayToPointer();
+        arrayToPointer = argsAndReferences.getArrayToPointer();
         //pointersToFree = argsAndReferences.getPointersToFree();
 
         // This is not used anymore, since we're using external stream management

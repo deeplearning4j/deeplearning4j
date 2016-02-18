@@ -660,4 +660,13 @@ public class JCublasNDArray extends BaseNDArray {
             allocator.tickHostWrite(this);
         }
     }
+
+    /**
+     * Generate string representation of the matrix.
+     */
+    @Override
+    public String toString() {
+        allocator.synchronizeHostData(this);
+        return super.toString();
+    }
 }

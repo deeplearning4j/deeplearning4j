@@ -28,11 +28,6 @@ public class CudaScalarsTests {
         // simple way to stop test if we're not on CUDA backend here
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
 
-        // reset to default MemoryStrategy, most probable is Pinned
-        ContextHolder.getInstance().forceMemoryStrategyForThread(new PinnedMemoryStrategy());
-
-        assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
-
         INDArray array1 = Nd4j.create(new float[]{1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
         INDArray array2 = Nd4j.create(new float[]{2.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
 
@@ -47,10 +42,7 @@ public class CudaScalarsTests {
         // simple way to stop test if we're not on CUDA backend here
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
 
-        // reset to default MemoryStrategy, most probable is Pinned
-        ContextHolder.getInstance().forceMemoryStrategyForThread(new PinnedMemoryStrategy());
 
-        assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
 
         INDArray array1 = Nd4j.create(new float[]{1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
         INDArray array2 = Nd4j.create(new float[]{1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
@@ -65,11 +57,6 @@ public class CudaScalarsTests {
     public void testPinnedScalarSub() throws Exception {
         // simple way to stop test if we're not on CUDA backend here
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
-
-        // reset to default MemoryStrategy, most probable is Pinned
-        ContextHolder.getInstance().forceMemoryStrategyForThread(new PinnedMemoryStrategy());
-
-        assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
 
         INDArray array1 = Nd4j.create(new float[]{1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
         INDArray array2 = Nd4j.create(new float[]{2.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
@@ -86,11 +73,6 @@ public class CudaScalarsTests {
         // simple way to stop test if we're not on CUDA backend here
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
 
-        // reset to default MemoryStrategy, most probable is Pinned
-        ContextHolder.getInstance().forceMemoryStrategyForThread(new PinnedMemoryStrategy());
-
-        assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
-
         INDArray array1 = Nd4j.create(new float[]{1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
         INDArray array2 = Nd4j.create(new float[]{1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
 
@@ -104,11 +86,6 @@ public class CudaScalarsTests {
     public void testPinnedScalarRDiv() throws Exception {
         // simple way to stop test if we're not on CUDA backend here
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
-
-        // reset to default MemoryStrategy, most probable is Pinned
-        ContextHolder.getInstance().forceMemoryStrategyForThread(new PinnedMemoryStrategy());
-
-        assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
 
         INDArray array1 = Nd4j.create(new float[]{1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
         INDArray array2 = Nd4j.create(new float[]{2.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
@@ -124,11 +101,6 @@ public class CudaScalarsTests {
         // simple way to stop test if we're not on CUDA backend here
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
 
-        // reset to default MemoryStrategy, most probable is Pinned
-        ContextHolder.getInstance().forceMemoryStrategyForThread(new PinnedMemoryStrategy());
-
-        assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
-
         INDArray array1 = Nd4j.create(new float[]{1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
         INDArray array2 = Nd4j.create(new float[]{2.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
 
@@ -142,11 +114,6 @@ public class CudaScalarsTests {
     public void testPinnedScalarMax() throws Exception {
         // simple way to stop test if we're not on CUDA backend here
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
-
-        // reset to default MemoryStrategy, most probable is Pinned
-        ContextHolder.getInstance().forceMemoryStrategyForThread(new PinnedMemoryStrategy());
-
-        assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
 
         INDArray array1 = Nd4j.create(new float[]{1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
         INDArray array2 = Nd4j.create(new float[]{2.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
@@ -163,11 +130,6 @@ public class CudaScalarsTests {
         // simple way to stop test if we're not on CUDA backend here
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
 
-        // reset to default MemoryStrategy, most probable is Pinned
-        ContextHolder.getInstance().forceMemoryStrategyForThread(new PinnedMemoryStrategy());
-
-        assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
-
         INDArray array1 = Nd4j.create(new float[]{1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
         INDArray array2 = Nd4j.create(new float[]{2.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
 
@@ -181,11 +143,6 @@ public class CudaScalarsTests {
     public void testPinnedScalarGreaterOrEqual() throws Exception {
         // simple way to stop test if we're not on CUDA backend here
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
-
-        // reset to default MemoryStrategy, most probable is Pinned
-        ContextHolder.getInstance().forceMemoryStrategyForThread(new PinnedMemoryStrategy());
-
-        assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
 
         INDArray array1 = Nd4j.create(new float[]{1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
         INDArray array2 = Nd4j.create(new float[]{2.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
@@ -202,10 +159,6 @@ public class CudaScalarsTests {
         // simple way to stop test if we're not on CUDA backend here
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
 
-        // reset to default MemoryStrategy, most probable is Pinned
-        ContextHolder.getInstance().forceMemoryStrategyForThread(new PinnedMemoryStrategy());
-
-        assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
 
         INDArray array1 = Nd4j.create(new float[]{1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
         INDArray array2 = Nd4j.create(new float[]{2.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
@@ -222,10 +175,6 @@ public class CudaScalarsTests {
         // simple way to stop test if we're not on CUDA backend here
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
 
-        // reset to default MemoryStrategy, most probable is Pinned
-        ContextHolder.getInstance().forceMemoryStrategyForThread(new PinnedMemoryStrategy());
-
-        assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
 
         INDArray array1 = Nd4j.create(new float[]{1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
         INDArray array2 = Nd4j.create(new float[]{2.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});

@@ -24,6 +24,7 @@ import lombok.Data;
 import lombok.Getter;
 import org.apache.commons.lang3.tuple.Triple;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -135,14 +136,16 @@ public class CublasPointer  implements AutoCloseable {
      */
     public CublasPointer(JCudaBuffer buffer,CudaContext context) {
         this.buffer = buffer;
-        this.devicePointer = buffer.getDevicePointer(1, 0, buffer.length());
+        this.devicePointer = AtomicAllocator.getInstance().getDevicePointer((buffer.originalDataBuffer() == null ? buffer : buffer.originalDataBuffer()), AllocationUtils.buildAllocationShape(buffer), true);
         this.cudaContext = context;
+/*
         context.initOldStream();
 
         DevicePointerInfo info = buffer.getPointersToContexts().get(Thread.currentThread().getName(), Triple.of(0, buffer.length(), 1));
         hostPointer = info.getPointers().getHostPointer();
         ContextHolder.getInstance().getMemoryStrategy().setData(devicePointer,0,1,buffer.length(),info.getPointers().getHostPointer());
         buffer.setCopied(Thread.currentThread().getName());
+        */
     }
 
     /**

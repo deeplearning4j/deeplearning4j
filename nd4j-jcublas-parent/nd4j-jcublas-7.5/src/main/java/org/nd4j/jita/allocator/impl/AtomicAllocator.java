@@ -17,6 +17,7 @@ import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.mover.Mover;
+import org.nd4j.jita.mover.UmaMover;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -62,7 +63,7 @@ public class AtomicAllocator implements Allocator {
 
     private Configuration configuration = new Configuration();
     private CudaEnvironment environment;
-    private transient Mover mover;
+    private transient Mover mover = new UmaMover();
     private AtomicLong allocationsCounter = new AtomicLong(0);
 
     private AtomicLong objectsTracker = new AtomicLong(Long.MIN_VALUE);
@@ -361,6 +362,7 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public void tackDevice(INDArray array) {
+        log.info("tackDevice(INDArray)");
         tackDevice(array.data().originalDataBuffer(), AllocationUtils.buildAllocationShape(array));
     }
 
@@ -377,6 +379,8 @@ public class AtomicAllocator implements Allocator {
         AllocationPoint point = getAllocationPoint(buffer, shape);
 
         point.getAccessState().requestTack();
+
+        point.tickDeviceWrite();
     }
 
 
@@ -659,6 +663,7 @@ public class AtomicAllocator implements Allocator {
             We set memory state to Toe, and issue copyback if required
          */
 
+        log.info("Current state: " + point.getAccessState().getCurrentState());
         if (!point.isActualOnHostSide() || point.getAccessState().getCurrentState() != AccessState.TACK) {
 
             point.getAccessState().requestToe();
@@ -668,10 +673,10 @@ public class AtomicAllocator implements Allocator {
 
                 // update the timer for hostRead
                 point.tickHostRead();
-            }; // else log.info("Data is actual, skipping sync");
+            } else log.info("Data is actual, skipping sync");
 
             point.getAccessState().releaseToe();
-        }; // else log.info("Data is actual, skipping sync");
+        } else log.info("Data is actual, skipping sync");
 
 
     }
@@ -757,6 +762,7 @@ public class AtomicAllocator implements Allocator {
         CudaContext context = new CudaContext();
         context.initHandle();
         context.initOldStream();
+        context.initStream();
         context.associateHandle();
         contextPool.put(threadId, context);
     }
@@ -830,8 +836,8 @@ public class AtomicAllocator implements Allocator {
     protected AllocationPoint getAllocationPoint(DataBuffer objectId, AllocationShape shape) {
         Long trackingPointer = objectId.getTrackingPoint();
 
-        if (trackingPointer == null) {
-            trackingPointer = pickupSpan(objectId, AllocationUtils.buildAllocationShape(objectId));
+        if (trackingPointer == null) { // AllocationUtils.buildAllocationShape(objectId)
+            trackingPointer = pickupSpan(objectId, shape);
         }
 
         // that's a temporary exception, we'll change that to re-ack later
@@ -1164,7 +1170,7 @@ public class AtomicAllocator implements Allocator {
                     Check for device garbage
                  */
                 //log.info("DeviceGC started...");
-                Aggressiveness aggressiveness = configuration.getHostDeallocAggressiveness();
+                Aggressiveness aggressiveness = configuration.getGpuDeallocAggressiveness();
 
                 // if we have too much objects, or total allocated memory has met 75% of max allocation - use urgent mode
                 if ((deviceAllocations.get(threadId, deviceId).size() > 100000 || deviceMemoryTracker.getAllocatedSize(threadId, deviceId)> (configuration.getMaximumDeviceAllocation() * 0.75)) && aggressiveness.ordinal() < Aggressiveness.URGENT.ordinal())
