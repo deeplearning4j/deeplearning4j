@@ -206,7 +206,7 @@ Irsoy & Cardie. 2014. Uses Deep Recursive Neural Networks. Uses a parse tree.
 
 **[Improved Semantic Representations From Tree-Structured Long Short-Term Memory Networks](https://aclweb.org/anthology/P/P15/P15-1150.pdf)**; Tai et al. 2015  Introduces Tree LSTM. Uses a parse tree.
 
-##Dialog
+## Dialog
 
 **[A Neural Network Approach to Context-Sensitive Generation of Conversational Responses](http://arxiv.org/pdf/1506.06714v1.pdf)**; Sordoni 2015.  Generates responses to tweets. Uses [Recurrent Neural Network Language Model (RLM) architecture of (Mikolov et al., 2010).](http://www.fit.vutbr.cz/research/groups/speech/publi/2010/mikolov_interspeech2010_IS100722.pdf)    
 

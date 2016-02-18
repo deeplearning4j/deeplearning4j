@@ -30,7 +30,7 @@ Download the LFW dataset and place it in the right file path (i.e. location in y
             labels.add(f.getName());
         }
 
-##<a name="record">Reading Records, Iterating Over Data</a>
+## <a name="record">Reading Records, Iterating Over Data</a>
 
 The following code helps transform raw images into a format that will work well with DL4J and ND4J:
 

@@ -17,7 +17,7 @@ layout: ja-default
 * <a href="#dbn">Fine-tuning DBNs (with code!)</a>
 * <a href="#next">Next Steps</a>
 
-###<a name="intro">Word2Vec入門</a>
+### <a name="intro">Word2Vec入門</a>
 
 [Deeplearning4j](http://deeplearning4j.org/quickstart.html)では、分散表現である Word2vec を Java で実装しています。これは GPU 上でも動作します。 Word2vec は Tomas Mikolov 氏が率いる Google の研究チームによってに最初に生み出されました。
 
@@ -37,7 +37,7 @@ skip-gram 表現は Mikolov 氏によって普及され、DL4Jの実装でも利
 
 ![Alt text](../img/word2vec.png)
 
-###<a name="anatomy">Word2vecの構造</a>
+### <a name="anatomy">Word2vecの構造</a>
 
 私達が Word2vec について話す時、一体何を話すでしょうか？Deeplearning4j の 自然言語処理コンポーネントは、次のとおりです。
 
@@ -67,7 +67,7 @@ Word2Vec はRawテキストを学習します。 学習処理では、各単語�
 
 与えられた単語が語彙の中に含まれない場合、 Word2vec はゼロを返すだけです。
 
-###<a name="windows">移動ウィンドウ(Moving Windows)</a>
+### <a name="windows">移動ウィンドウ(Moving Windows)</a>
 
 Word2Vecは単語の出現を学習する為に移動ウィンドウモデルを使ったニューラルネットです。テキストから移動ウィンドウを得る方法は２つあります。
 

@@ -106,7 +106,7 @@ OpenBlasが正しく動作していない場合は、次の手順に従ってく
 
 **Ubuntu** (15.10)のOpenBlasについての説明ガイドは[こちら](http://pastebin.com/F0Rv2uEk)をお読みください。
 
-###<a name="eclipse">Eclipse</a> 
+### <a name="eclipse">Eclipse</a> 
 
 `git clone`を実行してから、以下のコマンドを入力してください。
 
