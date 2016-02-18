@@ -356,7 +356,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             if (op.x() != null) allocator.tackDevice(op.x());
             if (op.y() != null) allocator.tackDevice(op.y());
             if (op.z() != null) allocator.tackDevice(op.z());
-            //allocator.tackDevice(result);
+            allocator.tackDevice(result);
 
 
             if (result.isScalar())

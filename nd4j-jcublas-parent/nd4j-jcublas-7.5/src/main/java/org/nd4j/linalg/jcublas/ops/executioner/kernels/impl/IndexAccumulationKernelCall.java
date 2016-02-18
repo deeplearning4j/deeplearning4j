@@ -44,13 +44,14 @@ public class IndexAccumulationKernelCall extends BaseGpuKernelCall {
         //ensure dimensions are sorted
         Arrays.sort(dimension);
         IndexAccumulation acc = (IndexAccumulation) op;
+        /*
         if(result == null)
             this.result = Nd4j.scalar(acc.zeroDouble());
         else
             this.result = result;
 
-        op.setZ(this.result);
-
+        //op.setZ(this.result);
+*/
         createArgs();
     }
 
@@ -105,12 +106,33 @@ public class IndexAccumulationKernelCall extends BaseGpuKernelCall {
             retShape = new int[]{1, 1};
         }
 
-        INDArray ret = Nd4j.valueArrayOf(retShape,op.zeroDouble());
+
+        INDArray ret = Nd4j.valueArrayOf(retShape,((IndexAccumulation) op).zeroDouble());
         op.setZ(ret);
         //do op along all dimensions
         if (dimension.length == op.x().rank())
             dimension = new int[]{Integer.MAX_VALUE};
 
+
+        args = new Object[]{
+                CudaArgs.getOpCode(op),
+                op.n(),
+                op.x(),
+                KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.x())),
+//                op.y(),
+//                KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.y(), dimension)),
+                toArgs(op.extraArgs(),
+                        getType(op)),
+                op.z(),
+                KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.z())),
+                KernelFunctions.alloc(metrics.getGpuDefinitionInfo()),
+                KernelFunctions.alloc(dimension == null ? new int[]{Integer.MAX_VALUE} : dimension),
+                dimension == null ? 1 : dimension.length,
+                //if the whole buffer is to be used don't do final aggregation this happens
+                //by aggregating blocks on cpu first
+                toInt((dimension == null || dimension[0] == Integer.MAX_VALUE))
+
+        };
 
         /*
         if (op.y() != null) {
