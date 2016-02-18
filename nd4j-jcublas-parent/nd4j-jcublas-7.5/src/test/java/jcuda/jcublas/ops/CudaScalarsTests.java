@@ -32,6 +32,7 @@ public class CudaScalarsTests {
         INDArray array2 = Nd4j.create(new float[]{2.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
 
         array2.divi(0.5f);
+        System.out.println("Execution finished");
 
         System.out.println("Divi result: " + array2.getFloat(0));
         assertEquals(4.0f, array2.getFloat(0), 0.01f);
@@ -48,6 +49,7 @@ public class CudaScalarsTests {
         INDArray array2 = Nd4j.create(new float[]{1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
 
         array2.addi(0.5f);
+        System.out.println("Execution finished");
 
         System.out.println("Addi result: " + array2.getFloat(0));
         assertEquals(1.5f, array2.getFloat(0), 0.01f);
@@ -62,7 +64,10 @@ public class CudaScalarsTests {
         INDArray array2 = Nd4j.create(new float[]{2.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
 
         array2.subi(0.5f);
+        System.out.println("Execution finished");
 
+
+        System.out.println("Subi result: " + array2);
         System.out.println("Subi result: " + array2.getFloat(0));
         assertEquals(1.5f, array2.getFloat(0), 0.01f);
     }
@@ -77,6 +82,7 @@ public class CudaScalarsTests {
         INDArray array2 = Nd4j.create(new float[]{1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
 
         array2.muli(2.0f);
+        System.out.println("Execution finished");
 
         System.out.println("Mul result: " + array2.getFloat(0));
         assertEquals(2.0f, array2.getFloat(0), 0.01f);
@@ -91,6 +97,7 @@ public class CudaScalarsTests {
         INDArray array2 = Nd4j.create(new float[]{2.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
 
         array2.rdivi(0.5f);
+        System.out.println("Execution finished");
 
         System.out.println("RDiv result: " + array2.getFloat(0));
         assertEquals(0.25f, array2.getFloat(0), 0.01f);
@@ -105,6 +112,7 @@ public class CudaScalarsTests {
         INDArray array2 = Nd4j.create(new float[]{2.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
 
         array2.rsubi(0.5f);
+        System.out.println("Execution finished");
 
         System.out.println("RSub result: " + array2.getFloat(0));
         assertEquals(-1.5f, array2.getFloat(0), 0.01f);
@@ -119,6 +127,7 @@ public class CudaScalarsTests {
         INDArray array2 = Nd4j.create(new float[]{2.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
 
         INDArray max = Transforms.max(array2, 0.5f, true);
+        System.out.println("Execution finished");
 
         System.out.println("Max result: " + max);
         assertEquals(2.0f, array2.getFloat(0), 0.01f);
@@ -134,8 +143,10 @@ public class CudaScalarsTests {
         INDArray array2 = Nd4j.create(new float[]{2.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
 
         INDArray max = array2.lti(1.1f);
+        System.out.println("Execution finished");
 
         System.out.println("LTI result: " + max);
+        System.out.println("LTI result: " + array2);
         assertEquals(0.0, array2.getFloat(0), 0.01f);
     }
 
@@ -148,8 +159,9 @@ public class CudaScalarsTests {
         INDArray array2 = Nd4j.create(new float[]{2.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
 
         INDArray max = array2.gti(1.1f);
+        System.out.println("Execution finished");
 
-        System.out.println("LTI result: " + max);
+        System.out.println("GTI result: " + max);
         assertEquals(1.0, array2.getFloat(0), 0.01f);
         assertEquals(0.0, array2.getFloat(1), 0.01f);
     }
@@ -164,8 +176,10 @@ public class CudaScalarsTests {
         INDArray array2 = Nd4j.create(new float[]{2.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
 
         INDArray max = array2.eqi(2.0f);
+        System.out.println("Execution finished");
 
         System.out.println("EQI result: " + max);
+        System.out.println("EQI result: " + array2);
         assertEquals(1.0, array2.getFloat(0), 0.01f);
         assertEquals(0.0, array2.getFloat(1), 0.01f);
     }
@@ -180,6 +194,7 @@ public class CudaScalarsTests {
         INDArray array2 = Nd4j.create(new float[]{2.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
 
         INDArray max = array2.assign(3.0f);
+        System.out.println("Execution finished");
 
         System.out.println("EQI result: " + max);
         System.out.println("Array2 result: " + array2);

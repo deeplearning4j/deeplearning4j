@@ -9,6 +9,7 @@ import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
@@ -41,7 +42,7 @@ import java.nio.ByteOrder;
 public class UmaMover implements Mover {
     private Configuration configuration;
     private CudaEnvironment environment;
-    private Allocator allocator;
+    private Allocator allocator = AtomicAllocator.getInstance();
 
     private static Logger log = LoggerFactory.getLogger(UmaMover.class);
 
@@ -61,7 +62,7 @@ public class UmaMover implements Mover {
      */
     @Override
     public DevicePointerInfo alloc(AllocationStatus targetMode, AllocationPoint point,  AllocationShape shape) {
-     //   log.info("Alloc called for shape: " + shape);
+        log.info("Alloc called for shape: " + shape);
         switch (targetMode) {
             case ZERO: {
                     /*
@@ -175,7 +176,7 @@ public class UmaMover implements Mover {
      */
     @Override
     public void relocate(AllocationStatus currentStatus, AllocationStatus targetStatus, AllocationPoint point, AllocationShape shape) {
-        //log.info("RELOCATE CALLED: [" +currentStatus+ "] -> ["+targetStatus+"]");
+        log.info("RELOCATE CALLED: [" +currentStatus+ "] -> ["+targetStatus+"]");
         if (currentStatus == AllocationStatus.ZERO && targetStatus == AllocationStatus.DEVICE) {
             // ZERO -> DEVICE
         } else if (currentStatus == AllocationStatus.DEVICE && targetStatus == AllocationStatus.ZERO) {
@@ -183,6 +184,17 @@ public class UmaMover implements Mover {
         } else if (currentStatus == AllocationStatus.ZERO && targetStatus == AllocationStatus.HOST) {
             // ZERO -> HOST
             Pointer hostPointer = point.getHostPointer();
+
+            // FIXME: remove allocator initialization
+            if (allocator == null) {
+                this.allocator = AtomicAllocator.getInstance();
+            }
+
+            CudaContext context = allocator.getCudaContext();
+
+            // we must be sure, no calculations are pending within these streams before copyback
+            context.syncOldStream();
+            context.syncStream();
 
             if (hostPointer == null)
                 throw new IllegalStateException("HostPointer is null, can't relocate!");
@@ -205,6 +217,10 @@ public class UmaMover implements Mover {
             Pointer devicePointer = point.getCudaPointer();
 
             CudaContext context = allocator.getCudaContext();
+
+            // we must be sure, no calculations are pending within these streams before copyback
+            context.syncOldStream();
+            context.syncStream();
 
             JCuda.cudaMemcpyAsync(
                     PointerUtil.getHostPointer(targetBuffer),

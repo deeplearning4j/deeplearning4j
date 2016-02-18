@@ -104,8 +104,9 @@ public class KernelFunctions {
                 .setSharedMemSize(sharedMemSize)
                 .call(kernelParameters);
         cudaContext.startNewEvent();
-        if(sync)
-            cudaContext.syncStream();
+     //   if(sync)
+        // TODO: we always sync f
+        cudaContext.syncStream();
 
 
     }

@@ -51,13 +51,13 @@ public class AllocationPoint {
     private transient TimeProvider realTimeProvider = new MillisecondsProvider();
 
     // corresponding access times in TimeProvider quants
-    private AtomicLong accessHostRead = new AtomicLong(0);
-    private AtomicLong accessDeviceRead = new AtomicLong(0);
-    private AtomicLong accessHostWrite = new AtomicLong(0);
-    private AtomicLong accessDeviceWrite = new AtomicLong(0);
+    private final AtomicLong accessHostRead = new AtomicLong(0);
+    private final AtomicLong accessDeviceRead = new AtomicLong(0);
+    private final AtomicLong accessHostWrite = new AtomicLong(0);
+    private final AtomicLong accessDeviceWrite = new AtomicLong(0);
 
     // real time here
-    private AtomicLong deviceAccessTime = new AtomicLong(0);
+    private final AtomicLong deviceAccessTime = new AtomicLong(0);
 
     // TODO: timer should be instantiated externally
     @Getter private final RateTimer timerShort = new SimpleTimer(10, TimeUnit.SECONDS); //new BinaryTimer(5, TimeUnit.SECONDS);

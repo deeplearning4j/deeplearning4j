@@ -27,6 +27,7 @@ public class NioUtil {
      * @param toStride the to stride
      */
     public static void copyAtStride(int n, BufferType bufferType, ByteBuffer from, int fromOffset, int fromStride, ByteBuffer to, int toOffset, int toStride) {
+        // TODO: implement shape copy for cases where stride == 1
         ByteBuffer fromView = from;
         ByteBuffer toView = to;
         fromView.order(ByteOrder.nativeOrder());

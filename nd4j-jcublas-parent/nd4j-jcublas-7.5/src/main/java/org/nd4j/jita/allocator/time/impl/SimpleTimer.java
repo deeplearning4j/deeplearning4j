@@ -11,9 +11,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class SimpleTimer implements RateTimer {
     protected volatile long timeframe;
-    protected AtomicLong latestEvent = new AtomicLong(0);
+    protected final AtomicLong latestEvent = new AtomicLong(0);
     protected volatile long[] buckets;
-    protected ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+    protected final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     public SimpleTimer(long timeframe, TimeUnit timeUnit) {
         this.timeframe = TimeUnit.MILLISECONDS.convert(timeframe, timeUnit);

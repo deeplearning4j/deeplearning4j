@@ -669,6 +669,7 @@ public class AtomicAllocator implements Allocator {
             point.getAccessState().requestToe();
 
             if (!point.isActualOnHostSide()) {
+                log.info("Data isn't actual on host side, copyback() started");
                 mover.copyback(point, shape);
 
                 // update the timer for hostRead
@@ -1125,6 +1126,12 @@ public class AtomicAllocator implements Allocator {
                     3. total allocated memory size
                     4. desired aggressiveness
                 */
+                try {
+                    Thread.sleep(Math.max(configuration.getMinimumTTLMilliseconds(), 5000));
+                } catch (Exception e) {
+                    // we can have interruption here, to force gc
+                    ;
+                }
 
                 Aggressiveness aggressiveness = configuration.getHostDeallocAggressiveness();
 
@@ -1140,12 +1147,7 @@ public class AtomicAllocator implements Allocator {
                 } else seekUnusedZero(threadId, aggressiveness);
 
 
-                try {
-                    Thread.sleep(Math.max(configuration.getMinimumTTLMilliseconds(), 5000));
-                } catch (Exception e) {
-                    // we can have interruption here, to force gc
-                  ;
-                }
+
             }
         }
     }
@@ -1169,6 +1171,14 @@ public class AtomicAllocator implements Allocator {
                 /*
                     Check for device garbage
                  */
+                try {
+                    Thread.sleep(Math.max(configuration.getMinimumTTLMilliseconds(), 5000));
+                } catch (Exception e) {
+                    // we can have interruption here, to force gc
+                    ;
+                }
+
+
                 //log.info("DeviceGC started...");
                 Aggressiveness aggressiveness = configuration.getGpuDeallocAggressiveness();
 
@@ -1184,12 +1194,7 @@ public class AtomicAllocator implements Allocator {
                 } else seekUnusedDevice(this.threadId, this.deviceId, aggressiveness);
 
 
-                try {
-                    Thread.sleep(Math.max(configuration.getMinimumTTLMilliseconds(), 5000));
-                } catch (Exception e) {
-                    // we can have interruption here, to force gc
-                    ;
-                }
+
             }
         }
     }

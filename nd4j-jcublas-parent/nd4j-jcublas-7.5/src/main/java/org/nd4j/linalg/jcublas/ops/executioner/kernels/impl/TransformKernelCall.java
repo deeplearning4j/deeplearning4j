@@ -50,9 +50,9 @@ public class TransformKernelCall extends BaseGpuKernelCall {
             args = new Object[] {
                     CudaArgs.getOpCode(op),
                     op.n(),
-                    op.x().offset(),
-                    op.y().offset(),
-                    op.z().offset(),
+//                    op.x().offset(),
+//                    op.y().offset(),
+//                    op.z().offset(),
                     op.x(),
                     op.y(),
                     BlasBufferUtil.getBlasStride(op.x()),
@@ -69,7 +69,7 @@ public class TransformKernelCall extends BaseGpuKernelCall {
             args = new Object[] {
                     CudaArgs.getOpCode(op),
                     op.n(),
-                    op.x().offset(),
+//                    op.x().offset(),
                     op.x(),
                     BlasBufferUtil.getBlasStride(op.x()),
                     toArgs(op.extraArgs(), getType(op)),
