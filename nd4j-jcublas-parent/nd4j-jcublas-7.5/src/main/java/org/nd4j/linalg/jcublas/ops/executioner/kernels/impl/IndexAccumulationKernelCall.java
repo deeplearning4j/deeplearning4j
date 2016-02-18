@@ -44,14 +44,14 @@ public class IndexAccumulationKernelCall extends BaseGpuKernelCall {
         //ensure dimensions are sorted
         Arrays.sort(dimension);
         IndexAccumulation acc = (IndexAccumulation) op;
-        /*
+
         if(result == null)
             this.result = Nd4j.scalar(acc.zeroDouble());
         else
             this.result = result;
 
-        //op.setZ(this.result);
-*/
+        op.setZ(this.result);
+
         createArgs();
     }
 

@@ -390,12 +390,21 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             GpuKernelCall accKernelCall = GpuKernelCallFactories.getFactory(op).create(op, dimension);
             accKernelCall.invoke();
             ctx = accKernelCall.cudaContext();
-            return ctx;
-        } finally {
-            // FIXME: we need to track which op field contains result, and tackDeviceWrite only for it
+
             if (op.x() != null) allocator.tackDevice(op.x());
             if (op.y() != null) allocator.tackDevice(op.y());
             if (op.z() != null) allocator.tackDevice(op.z());
+
+            System.out.println("Z pass");
+
+            if (op.z().isScalar())
+                op.setFinalResult(op.z().getDouble(0));
+
+
+            return ctx;
+        } finally {
+            // FIXME: we need to track which op field contains result, and tackDeviceWrite only for it
+
         }
     }
 

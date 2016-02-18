@@ -105,7 +105,7 @@ public class KernelFunctions {
                 .call(kernelParameters);
         cudaContext.startNewEvent();
      //   if(sync)
-        // TODO: we always sync f
+        // TODO: we always sync for now, later sync will be removed from this place
         cudaContext.syncStream();
 
 

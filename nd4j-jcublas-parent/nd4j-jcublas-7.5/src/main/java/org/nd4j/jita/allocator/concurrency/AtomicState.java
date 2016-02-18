@@ -138,7 +138,7 @@ public class AtomicState {
         if (AccessState.values()[currentState.get()] == AccessState.TOE) {
             return AccessState.TOE;
         } else {
-            if (tickRequests.get() == tackRequests.get()) {
+            if (tickRequests.get() <= tackRequests.get()) {
 
                 // TODO: looks like this piece of code should be locked :/
                 tickRequests.set(0);

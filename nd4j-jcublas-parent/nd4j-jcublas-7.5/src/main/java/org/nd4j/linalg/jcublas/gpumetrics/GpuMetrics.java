@@ -168,6 +168,7 @@ public class GpuMetrics  {
         int sharedMemSize = blockSizeRet * (dataType.equals(DataBuffer.Type.FLOAT) ? Sizeof.FLOAT : Sizeof.DOUBLE);
         if(sharedMemSize > maxSharedMem)
             sharedMemSize = maxSharedMem;
+        log.info("Kernel launch params: <" +gridSizeRet+", "+blockSizeRet+", " + sharedMemSize+">");
         return new GpuMetrics(gridSizeRet,blockSizeRet,sharedMemSize);
     }
 

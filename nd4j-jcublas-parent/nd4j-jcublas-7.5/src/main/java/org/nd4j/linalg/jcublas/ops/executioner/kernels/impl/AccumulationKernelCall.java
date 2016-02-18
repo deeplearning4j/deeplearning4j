@@ -65,13 +65,13 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
             }
 
         }
-
+/*
         if(scalarResult)
             op.setZ(Nd4j.create(metrics.getGridSize()));
         else {
             op.setZ(Nd4j.create(ArrayUtil.removeIndex(op.x().shape(),dimension)));
         }
-
+*/
         createArgs();
 
     }
@@ -81,7 +81,7 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
     @Override
     public void createMetrics() {
         String functionName = CudaArgs.getModuleNameFor(op);
-        GpuMetrics metrics = GpuMetrics.blocksAndThreadsOccupancy(functionName, getType(op), op.n());
+        GpuMetrics metrics = GpuMetrics.blockAndThreads(getType(op), op.n()); // GpuMetrics.blocksAndThreadsOccupancy(functionName, getType(op), op.n());
         if (dimension != null && dimension.length >= 1 && dimension[0] != Integer.MAX_VALUE) {
             int length = op.x().tensorssAlongDimension(dimension);
             if (length > 1000)
@@ -164,11 +164,11 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
                         op.z(),
                         KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.z())),
                         KernelFunctions.alloc(metrics.getGpuDefinitionInfo()),
-                        KernelFunctions.alloc(scalarResult  ? new int[]{Integer.MAX_VALUE} : dimension),
-                        scalarResult ? 1 : dimension.length,
+                        KernelFunctions.alloc(scalarResult || dimension == null ? new int[]{Integer.MAX_VALUE} : dimension),
+                        scalarResult || dimension ==null ? 1 : dimension.length,
                         //if the whole buffer is to be used don't do final aggregation this happens
                         //by aggregating blocks on cpu first
-                        toInt(scalarResult)
+                        toInt((dimension == null || dimension[0] == Integer.MAX_VALUE))
                 };
         }
 
@@ -331,7 +331,7 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
             boolean collapseTad = multiDimension != null;
             if(collapseTad)
                 acc.setApplyFinalTransform(false);
-            KernelCallPointerArgs devicePointers = getPointers();
+            //KernelCallPointerArgs devicePointers = getPointers();
 
             if (multiDimension != null) for(int i = multiDimension.length - 1; i >= 0 ; i--) {
                 //invoke basic reduce
@@ -340,9 +340,9 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
                 super.invoke();
             }
 
+
             //invoke the collapse tad
             if(collapseTad) {
-                System.out.println("cTAD");
                 TadCollapseAccumulation collapseAccumulation = new TadCollapseAccumulation(this.op,multiDimension,this.dimension,false);
                 GpuKernelCall collapseKernelCall = new CollapseAccumuationKernelCall(
                         getPointers(),collapseAccumulation,metrics,cudaContext);
