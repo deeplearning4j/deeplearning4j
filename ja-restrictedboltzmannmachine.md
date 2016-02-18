@@ -28,7 +28,7 @@ RBMとは浅い2層のニューラルネットであり、ディープビリー�
 
 上記の図の各円はニューロンのようなユニットを表しており、ノードと呼ばれます。ノードとは、単に演算が行われる場所のことです。このノードは違う層のノードとのみ接続し、同じ層内のノード間では接続を持ちません。
 
-つまり層内での情報伝達はないのです。これが、制限付きボルツマンマシンの制限です。各ノードは入力を処理する演算の遺伝子であり、その入力を伝えるか否かの確率的決定を行うことから始めます。（確率的とは”ランダムに決定した”という意味で、この場合、入力値を調整する係数がランダムに決定されていることを指します。）
+つまり層内での情報伝達はないのです。これが、制限付きボルツマンマシンの制限です。各ノードは入力を処理する演算の遺伝子であり、その入力を伝えるか否かの[確率的](http://deeplearning4j.org/glossary.html#stochasticgradientdescent)決定を行うことから始めます。（確率的とは”ランダムに決定した”という意味で、この場合、入力値を調整する係数がランダムに決定されていることを指します。）
 
 各可視ノードは学習すべきデータセットの中のアイテムから低次元特徴を抽出します。例えば、グレースケールの画像のデータセットから、各可視ノードは1つの画像における各画素の画素値を受け取ります。（MNISTの画像は784画素なので、それを処理するニューラルネットには可視層に784の入力ノードがあるということです。）
 
@@ -71,35 +71,35 @@ RBMとは浅い2層のニューラルネットであり、ディープビリー�
 
 RBMの重みは乱数で初期化されているため、復元と元々の入力値の差異が大きくなることが多いです。復元の誤差はrの値と入力値の違いだと考えることができます。反復学習のプロセスの中で、この誤差は最小になるまでRBMの重みに対して繰り返し逆伝播します。
 
-逆伝播についてさらに詳細な説明を見たい方はこちら。
+逆伝播についてさらに詳細な説明を見たい方は[こちら](../neuralnet-overview.html#forward)。
 
-このように前方伝播では、RBMは、ノードの活性化つまり重み付けされた値xを与えられた時の出力値の確率の推測を行うのに、入力値を用います。つまりp(a|x; w)です。
+このように前方伝播では、RBMは、ノードの活性化つまり[重み付けされた値xを与えられた時の出力値の確率](https://ja.wikipedia.org/wiki/%E3%83%99%E3%82%A4%E3%82%BA%E3%81%AE%E5%AE%9A%E7%90%86)の推測を行うのに、入力値を用います。つまり`p(a|x; w)`です。
 
-しかし、後方伝播では、活性化が導入され、復元つまり元データの予測結果が吐き出されると、RBMは与えられた活性化aから入力値xの確率を算出しようとします。これらは前方伝播で用いられたのと同じ係数で重み付けされています。この2つ目のフェーズは、p(x|a; w) のように表現できます。
+しかし、後方伝播では、活性化が導入され、復元つまり元データの予測結果が吐き出されると、RBMは与えられた活性化`a`から入力値`x`の確率を算出しようとします。これらは前方伝播で用いられたのと同じ係数で重み付けされています。この2つ目のフェーズは、`p(x|a; w)` のように表現できます。
 
-互いに、これら2つの推定値は入力xと活性化aつまりp(x, a)の同時確率分布を導き出します。
+互いに、これら2つの推定値は入力xと活性化`a`つまり`p(x, a)`の同時確率分布を導き出します。
 
 復元は、多くの入力に基づいて連続値を算出する回帰や、与えられた入力例に当てはまる個々のラベルを推測する分類とは異なった動きをします。
 
-復元は元々の入力値の確率分布、つまり多くの異なる点の値を同時に推測するものです。これは生成型学習として知られるもので、分類で実行されるいわゆる識別学習とは区別しなければなりません。識別学習は、入力をラベルにマッピングし、データ点の集合の間に効果的に線を描く手法です。
+復元は元々の入力値の確率分布、つまり多くの異なる点の値を同時に推測するものです。これは[生成型学習](http://cs229.stanford.edu/notes/cs229-notes2.pdf)として知られるもので、分類で実行されるいわゆる識別学習とは区別しなければなりません。識別学習は、入力をラベルにマッピングし、データ点の集合の間に効果的に線を描く手法です。
 
 ここでは、入力データと復元はどちらも形の異なる正規曲線であり、部分的に重なるものと考えてみましょう。
 
-推定の確率分布と本当の入力値の分布の距離を測るために、RBMではKullback Leiblerダイバージェンスを使用します。数学的な詳しい説明はWikipediaを参照してください。
+推定の確率分布と本当の入力値の分布の距離を測るために、RBMでは[Kullback Leiblerダイバージェンス](https://www.quora.com/What-is-a-good-laymans-explanation-for-the-Kullback-Leibler-Divergence)を使用します。数学的な詳しい説明は[Wikipedia](https://ja.wikipedia.org/wiki/%E3%82%AB%E3%83%AB%E3%83%90%E3%83%83%E3%82%AF%E3%83%BB%E3%83%A9%E3%82%A4%E3%83%96%E3%83%A9%E3%83%BC%E6%83%85%E5%A0%B1%E9%87%8F)を参照してください。
 
 Kullback Leiblerダイバージェンスは、2つの曲線について、重ならずに相違（ダイバージェンス）している領域を測ります。RBMの最適化アルゴリズムは、共有の重みに隠れ層の活性化を乗じた場合に、本来の入力の近似値を算出できるよう、この2つの領域の差を最小化しようとします。グラフの左側が、実際の入力値による確率分布pで、その右が復元された分布qです。下のグラフはその差の積分です。
 
-Alt text
+![Alt text](../img/KL_divergence_RBM.png)
 
 2つの確率分布の差に基づいて重みを繰り返し調整することによって、RBMは、本来のデータに近似することを学習します。重みは次第に、最初の隠れ層の活性化でエンコードされた入力データの構造を反映するようになります。その学習過程は、2つの確率分布が徐々に1つのグラフに収束していく過程のように見えます。
 
-Alt text
+![Alt text](../img/KLD_update_RBM.png)
 
-確率分布
+## <a name="probability">確率分布</a> 
 
 ここで少し、確率分布についてお話ししましょう。2つのサイコロを振って出た目の合計について確率分布を作成すると、次のようになります。
 
-Alt text
+![Alt text](https://upload.wikimedia.org/wikipedia/commons/1/12/Dice_Distribution_%28bar%29.svg)
 
 最も出る確率の高い結果は7で、サイコロを振った結果を予測しようとする数式は全て、そのことを考慮に入れる必要があります。
 
@@ -107,11 +107,11 @@ Alt text
 
 同じように、どんな画像を含んでいるかによって、画素値が独自の確率分布を持つようなデータセットを思い浮かべてください。データセットがMNISTの手書きの数字を含むかどうかによって、画素値の分布は異なります。
 
-Alt text
+![Alt text](../img/mnist_render.png)
 
 もしくは、Labeled Faces in the Wildで入手できる顔の画像によっても、画素値の分布は異なります。
 
-Alt text
+![Alt text](../img/LFW_reconstruction.jpg)
 
 RBMが象と犬の画像だけを与えられたと想像してみましょう。出力ノードは象と犬、それぞれに対して1つずつです。RBMが前方伝播の際に考えるのは、「与えられたこれらの画素について、象と犬のどちらのノードにより重み付けをするべきか」ということです。後方伝播では、「象を与えられた時、どちらの画素の分布を予想するべきか」と考えます。
 
@@ -119,11 +119,11 @@ RBMが象と犬の画像だけを与えられたと想像してみましょう�
 
 復元を学習する過程とは、ある意味、与えられた一連の画像に対して、どちらの画素のグループが同時に起こりやすいかを学ぶことだと言えます。ネットワークの深部にある隠れ層のノードによって生成された活性化は、共起性が非常に高くなっています。例えば、”曲線的な灰色の管＋大きくてだらりと垂れた耳＋しわの多さ”などです。
 
-上記の2つのイメージについて、RBMを実装したDeeplearning4jによって学習される復元を見てみます。これらの復元が表しているのは、本来のデータがどのように見えるとRBMの活性化が”考える”のかということです。Geoff Hintonは、これを、マシンが”夢を見ている”ようなものだと言っています。ニューラルネットのトレーニング中にレンダリングされた際、RBMが本当に学習しているということを確認するには、そうした視覚化は非常に有効なヒューリスティックです。もし学習していない場合は、この後検討しますが、ハイパーパラメータの調整を行うべきです。
+上記の2つのイメージについて、RBMを実装した[Deeplearning4j](http://deeplearning4j.org/)によって学習される復元を見てみます。これらの復元が表しているのは、本来のデータがどのように見えるとRBMの活性化が”考える”のかということです。Geoff Hintonは、これを、マシンが”夢を見ている”ようなものだと言っています。ニューラルネットのトレーニング中にレンダリングされた際、RBMが本当に学習しているということを確認するには、そうした視覚化は非常に有効なヒューリスティックです。もし学習していない場合は、この後検討しますが、ハイパーパラメータの調整を行うべきです。
 
 最後にもう一点、RBMには、2つのバイアスがあることに気が付くと思います。これが、オートエンコーダとの相違点です。隠れたバイアスは、RBMが前方伝播を行う際に活性化を生成するのを助けます（データがどんなにわずかでも、少なくともいくつかのノードが活性化できるように底値を押し付けるからです）。可視層のバイアスはRBMが後方伝播する際に復元を学習する助けになります。
 
-多層構造
+### 多層構造
 
 このRBMがひとたび入力データの構造を学習して、最初の隠れ層の活性化に関連付けると、データはネットの下層に渡されます。すると今度は、最初の隠れ層が可視層の役割を担います。ここで出力結果は事実上の入力値となり、2層目の隠れ層のノードで重みを乗算します。そうして更に別の活性化が算出されます。
 
@@ -137,34 +137,34 @@ RBMには多くの利用方法がありますが、後の学習と分類を容�
 
 下の図は、RBMを1つのダイアグラムの中に合成した、双方向性を持つ対称二部グラフです。
 
-Alt text
-注釈
-重みを共有する、双方向性を持つ対称二部グラフ
+![Alt text](../img/sym_bipartite_graph_RBM.png)
+* *注釈*
+* *重みを共有する、双方向性を持つ対称二部グラフ*
 
-より深い層のRBMの構造に関する学習に興味のある方への参考までに言うと、これらは有向非巡回グラフ（DAG）の1タイプです。
+より深い層のRBMの構造に関する学習に興味のある方への参考までに言うと、これらは[有向非巡回グラフ（DAG）](https://ja.wikipedia.org/wiki/%E6%9C%89%E5%90%91%E9%9D%9E%E5%B7%A1%E5%9B%9E%E3%82%B0%E3%83%A9%E3%83%95)の1タイプです。
 
-コードサンプル：Deeplearning4jを使ったIrisで制限付きボルツマンマシンを起動する
+## コードサンプル：Deeplearning4jを使ったIrisで制限付きボルツマンマシンを起動する
 
-より一般的なクラスにパラメータが与えられたNeuralNetConfigurationの層として、RBMを簡単に作成できることに留意してください。同様に、RBMのオブジェクトは、可視層に適用されるガウス変換や、隠れ層に適用される修正線形変換のように、プロパティをストアするために利用されます。
+より一般的なクラスにパラメータが与えられた`NeuralNetConfiguration`の層として、RBMを簡単に作成できることに留意してください。同様に、RBMのオブジェクトは、可視層に適用されるガウス変換や、隠れ層に適用される修正線形変換のように、プロパティをストアするために利用されます。
 
-  final int numRows = 4;
-    final int numColumns = 1;
-    int outputNum = 3;
-    int numSamples = 150;
-    int batchSize = 150;
-    int iterations = 100;
-    int seed = 123;
-    int listenerFreq = iterations/5;
- 
-    log.info("Load data....");
-    DataSetIterator iter = new IrisDataSetIterator(batchSize, numSamples);
-    // Loads data into generator and format consumable for NN
-    DataSet iris = iter.next(); 
- 
-    iris.normalizeZeroMeanZeroUnitVariance();
- 
-    log.info("Build model....");
-    NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+      final int numRows = 4;
+        final int numColumns = 1;
+        int outputNum = 3;
+        int numSamples = 150;
+        int batchSize = 150;
+        int iterations = 100;
+        int seed = 123;
+        int listenerFreq = iterations/5;
+     
+        log.info("Load data....");
+        DataSetIterator iter = new IrisDataSetIterator(batchSize, numSamples);
+        // Loads data into generator and format consumable for NN
+        DataSet iris = iter.next(); 
+     
+        iris.normalizeZeroMeanZeroUnitVariance();
+     
+        log.info("Build model....");
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
         // Gaussian for visible; Rectified for hidden
         // Set contrastive divergence to 1
         .layer(new RBM.Builder(HiddenUnit.RECTIFIED, VisibleUnit.GAUSSIAN, 1)
@@ -187,12 +187,13 @@ Alt text
         .build();
     Layer model = LayerFactories.getFactory(conf.getLayer()).create(conf);
     model.setListeners(Arrays.asList((IterationListener) new ScoreIterationListener(listenerFreq)));
+
 このコードはgist-itから引用しました。こちらを参照してください。
-src/main/java/org/deeplearning4j/rbm/RBMIrisExample.java
+[src/main/java/org/deeplearning4j/examples/deepbelief/DBNMnistFullExample.java](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/deepbelief/DBNMnistFullExample.java)
 
-上記のコーディングは、Iris flowerのデータセットを処理するRBMのサンプルです。これについては、別にチュートリアルがあります。
+上記のコーディングは、[Iris flowerのデータセットを処理するRBM](http://deeplearning4j.org/iris-flower-dataset-tutorial.html)のサンプルです。これについては、別にチュートリアルがあります。
 
-パラメータ及びkについて
+## パラメータ及びkについて
 
 変数kはコントラスティブダイバージェンスを実行する回数です。コントラスティブダイバージェンスは、学習が起きない間に、勾配を計算する際に用いられる方法です（勾配はネットワーク間の重みと差異の関係を表しています）。
 
