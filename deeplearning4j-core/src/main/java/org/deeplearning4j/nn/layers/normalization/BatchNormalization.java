@@ -17,6 +17,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
+import java.lang.reflect.Constructor;
 import java.util.*;
 
 /**
@@ -118,6 +119,12 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
     public INDArray preOutput(INDArray x, TrainingMode training){
         INDArray gamma, beta;
+
+// TODO setup passing in layer...
+//        Constructor c = getClass().getConstructor(NeuralNetConfiguration.class);
+//        layer = (Layer) c.newInstance(conf);
+
+
         org.deeplearning4j.nn.conf.layers.BatchNormalization layerConf = layerConf();
         int batchSize = x.size(0); // number examples in batch
         shape = getShape(x);

@@ -5,12 +5,10 @@ import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.nn.conf.layers.BatchNormalization;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.BatchNormalization;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -141,7 +139,7 @@ public class BatchNormalizationTest {
     }
 
     @Test
-    public void testMultiCNNLayer() throws Exception {
+    public void testMultiCNNBNLayer() throws Exception {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                 .iterations(1)
@@ -171,6 +169,94 @@ public class BatchNormalizationTest {
         INDArray actualBetaParam = network.getLayer(1).getParam(BatchNormalizationParamInitializer.BETA);
         assertTrue(actualGammaParam != null);
         assertTrue(actualBetaParam != null);
+    }
+
+    @Test
+    public void testDBNBNMultiLayer() throws Exception {
+        DataSetIterator iter = new MnistDataSetIterator(2, 2);
+        DataSet next = iter.next();
+
+        // Run with separate activation layer
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
+                .iterations(2)
+                .seed(123)
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(28*28*1).nOut(10).weightInit(WeightInit.XAVIER).activation("relu").build())
+                .layer(1, new BatchNormalization.Builder().nOut(10).build())
+                .layer(2, new ActivationLayer.Builder().activation("relu").build())
+                .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .weightInit(WeightInit.XAVIER)
+                        .activation("softmax")
+                        .nIn(10).nOut(10).build())
+                .backprop(true).pretrain(false)
+                .build();
+
+        MultiLayerNetwork network = new MultiLayerNetwork(conf);
+        network.init();
+
+        network.setInput(next.getFeatureMatrix());
+        INDArray activationsActual = network.preOutput(next.getFeatureMatrix());
+        assertEquals(10, activationsActual.shape()[1], 1e-2);
+
+        network.fit(next);
+        INDArray actualGammaParam = network.getLayer(1).getParam(BatchNormalizationParamInitializer.GAMMA);
+        INDArray actualBetaParam = network.getLayer(1).getParam(BatchNormalizationParamInitializer.BETA);
+        assertTrue(actualGammaParam != null);
+        assertTrue(actualBetaParam != null);
+    }
+
+    @Test
+    public void testMultiActivationLayer() throws Exception {
+        DataSetIterator iter = new MnistDataSetIterator(2, 2);
+        DataSet next = iter.next();
+
+        // Run without separate activation layer
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
+                .iterations(2)
+                .seed(123)
+                .list()
+                .layer(0, new ConvolutionLayer.Builder().nIn(1).nOut(6).weightInit(WeightInit.XAVIER).activation("relu").build())
+                .layer(1, new BatchNormalization.Builder().build())
+                .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .weightInit(WeightInit.XAVIER)
+                        .activation("softmax")
+                        .nOut(10).build())
+                .backprop(true).pretrain(false)
+                .cnnInputSize(28,28,1)
+                .build();
+
+        MultiLayerNetwork network = new MultiLayerNetwork(conf);
+        network.init();
+        network.fit(next);
+
+
+        // Run with separate activation layer
+        MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
+                .iterations(2)
+                .seed(123)
+                .list()
+                .layer(0, new ConvolutionLayer.Builder().nIn(1).nOut(6).weightInit(WeightInit.XAVIER).activation("identity").build())
+                .layer(1, new BatchNormalization.Builder().build())
+                .layer(2, new ActivationLayer.Builder().activation("relu").build())
+                .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .weightInit(WeightInit.XAVIER)
+                        .activation("softmax")
+                        .nOut(10).build())
+                .backprop(true).pretrain(false)
+                .cnnInputSize(28,28,1)
+                .build();
+
+        MultiLayerNetwork network2 = new MultiLayerNetwork(conf);
+        network2.init();
+        network2.fit(next);
+
+        assertEquals(network.getLayer(0).getParam("W"), network2.getLayer(0).getParam("W"));
+        assertEquals(network.getLayer(1).getParam("W"), network2.getLayer(1).getParam("W"));
+        assertEquals(network.getLayer(0).getParam("b"), network2.getLayer(0).getParam("b"));
+        assertEquals(network.getLayer(1).getParam("b"), network2.getLayer(1).getParam("b"));
 
 
     }
