@@ -3,7 +3,7 @@ layout: default
 title: Getting Started on Linux
 ---
 
-#Getting Started on Linux
+# Getting Started on Linux
 
 * To run examples, go to our [quickstart](../quickstart.html).
 

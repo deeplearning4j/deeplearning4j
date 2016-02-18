@@ -13,13 +13,13 @@ Word vectors are used as features and serve as the basis of sequential classific
 
 Recursive neural tensor networks require external components like [Word2vec](http://deeplearning4j.org/word2vec.html), which is described below. To analyze text with neural nets, words can be represented as continuous vectors of parameters. Those word vectors contain information not only about the word in question, but about surrounding words; i.e. the word's context, usage and other semantic information. Deeplearning4j implements both recursive neural tensor networks and Word2vec. 
 
-###word2vec
+### Word2Vec
 
 The first step toward building a working RNTN is word vectorization, which can be accomplished with an algorithm known as Word2vec. Word2Vec converts a corpus of words into vectors, which can then be thrown into a vector space to measure the cosine distance between them; i.e. their similarity or lack of.
 
 Word2vec is a separate pipeline from NLP. It creates a lookup table that will supply word vectors once you are processing sentences. 
 
-###nlp
+### NLP
 
 Meanwhile, your natural-language-processing pipeline will ingest sentences, tokenize them, and tag the tokens as parts of speech. 
 
@@ -52,7 +52,7 @@ Instantiating an object of the RNTN class is simple:
 6. [NLP pipeline + Word2Vec pipeline] Combine word vectors with neural net.
 7. [NLP pipeline + Word2Vec pipeline] Do task (e.g. classify the sentence's sentiment)
 
-###further reading
+### Further reading
 
 [Recursive Deep Models for Semantic Compositionality over a Sentiment Treebank](http://nlp.stanford.edu/~socherr/EMNLP2013_RNTN.pdf); Richard Socher, Alex Perelygin, Jean Y. Wu, Jason Chuang,
 Christopher D. Manning, Andrew Y. Ng and Christopher Potts; 2013; Stanford University.
