@@ -335,14 +335,9 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public INDArray activate(boolean training) {
-        INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
-        INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
-        if(conf.isUseDropConnect() && training) {
-            W = Dropout.applyDropConnect(this,DefaultParamInitializer.WEIGHT_KEY);
-        }
-
-        INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(),
-                        input().mmul(W).addiRowVector(b)));
+        INDArray z = preOutput(training);
+        INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
+                conf.getLayer().getActivationFunction(), z));
 
         if(maskArray != null){
             ret.muliColumnVector(maskArray);
