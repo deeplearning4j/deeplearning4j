@@ -143,7 +143,7 @@ As more and more information is lost, the patterns processed by the convolutiona
 
 Here's one example of how you might configure a ConvNet with Deeplearning4j:
 
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/convolution/CNNMnistExample.java?slice=36:109"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/convolution/CNNLFWExample.java?slice=57:160"></script>
 
 ## <a name="resource">Other Resources</a>
 
