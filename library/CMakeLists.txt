@@ -17,20 +17,9 @@ if(Java_FOUND)
     endif(EXISTS "$ENV{JAVA_HOME}")
 endif()
 
-FIND_PACKAGE(BLAS)
-FIND_PACKAGE(LAPACK)
+FIND_PACKAGE(BLAS REQUIRED)
+FIND_PACKAGE(LAPACK REQUIRED)
 
-if(NOT BLAS_FOUND)
-    message("BLAS not found using openblas fallback")
-    set(BLAS_LIBRARIES /usr/lib/libopenblas.a)
-    message("Using blas library ${BLAS_LIBRARIES}")
-endif()
-if(NOT LAPACK_FOUND)
-    message("LAPACK not found using openblas fallback")
-    set(LAPACK_LIBRARIES /usr/lib/libopenblas.a)
-    message("Using lapack library ${LAPACK_LIBRARIES}")
-
-endif()
 
 
 SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O3 -ffast-math -ftree-vectorize -msse2 -ftree-vectorizer-verbose=2 -fopt-info-vec -fopt-info-vec-missed" )
