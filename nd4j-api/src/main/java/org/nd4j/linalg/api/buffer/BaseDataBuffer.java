@@ -76,7 +76,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         this.offset = offset;
         this.allocationMode = underlyingBuffer.allocationMode();
         this.elementSize = underlyingBuffer.getElementSize();
-        this.underlyingLength = underlyingBuffer.underlyingLength() - offset;
+        this.underlyingLength = underlyingBuffer.underlyingLength();
         this.wrappedDataBuffer = underlyingBuffer;
 
         // Adding link to original databuffer
@@ -924,6 +924,17 @@ public abstract class BaseDataBuffer implements DataBuffer {
         return dirty.get();
     }
 
+    @Override
+    public boolean sameUnderlyingData(DataBuffer buffer) {
+        if(allocationMode() != buffer.allocationMode())
+        return false;
+        if(allocationMode() == AllocationMode.HEAP) {
+            return array() == buffer.array();
+        }
+        else {
+            return buffer.asNio() == asNio();
+        }
+    }
 
     @Override
     public IntBuffer asNioInt() {
@@ -953,8 +964,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
         if(offset() == 0) {
             return wrappedBuffer.asDoubleBuffer();
         }
-        else
-            return (DoubleBuffer) wrappedBuffer.asDoubleBuffer().position(offset());
+        else {
+            ByteBuffer ret = (ByteBuffer) wrappedBuffer.slice().position(offset() * getElementSize());
+            ByteBuffer convert =  ret.slice();
+            return convert.asDoubleBuffer();
+        }
     }
 
     @Override
@@ -969,14 +983,17 @@ public abstract class BaseDataBuffer implements DataBuffer {
         if(offset() == 0) {
             return wrappedBuffer.asFloatBuffer();
         }
-        else
+        else {
+            ByteBuffer ret = (ByteBuffer) wrappedBuffer.slice().position(offset() * getElementSize());
+            ByteBuffer convert =  ret.slice();
+            return convert.asFloatBuffer();
+        }
 
-            return (FloatBuffer) wrappedBuffer.asFloatBuffer().position(offset());
     }
 
     @Override
     public ByteBuffer asNio() {
-        return wrappedBuffer;
+       return wrappedBuffer;
     }
 
     @Override

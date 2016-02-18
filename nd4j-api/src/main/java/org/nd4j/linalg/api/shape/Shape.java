@@ -634,8 +634,7 @@ public class Shape {
             newStrides[nk] = last_stride;
         }
         //returns the last element of the new stride array
-        int ret = last_stride;
-        return ret;
+        return newStrides[newShapeRank - 1];
     }
 
     /**
