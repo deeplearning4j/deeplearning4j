@@ -568,6 +568,17 @@ public  class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public INDArray exec(BroadcastOp broadcast, int... dimension) {
-       throw new UnsupportedOperationException();
+        if (dimension.length == broadcast.x().rank()) {
+            dimension = new int[]{Integer.MAX_VALUE};
+        }
+
+        if(broadcast.isPassThrough()){
+            broadcast.exec(dimension);
+            return broadcast.z();
+        }
+
+        Task<Void> task = taskFactory.getBroadcastOpAction(broadcast);
+        task.invokeBlocking();
+        return broadcast.z();
     }
 }
