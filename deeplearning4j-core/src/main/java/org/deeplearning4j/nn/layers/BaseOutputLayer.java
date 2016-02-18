@@ -86,7 +86,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         INDArray preOut = preOutput2d(training);
         //special case: softmax
         if (layerConf().getActivationFunction().equals("softmax")) {
-            setScoreWithZ(preOut);
+            setScore(null,preOut);
         } else {
             INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), preOut));
             setScoreWithZ(output);
