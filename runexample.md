@@ -3,7 +3,7 @@ title: How to Run Any DL4J Example
 layout: default
 ---
 
-#How to Run Any DL4J Example
+# How to Run Any DL4J Example
 
 Java involves deep and complex file systems, which you'll need to work with to run examples. After you cd into the directory where you want DL4J's examples to live, enter this in your command line:
 

@@ -389,7 +389,7 @@ You can shut down your Word2vec application and try to delete them.
 
 *A:* If you are using Ubuntu, the serialized data may not be getting loaded properly. This is a problem with Ubuntu. We recommend testing this version of Wordvec on another version of Linux.
 
-###<a name="use">Use Cases</a>
+### <a name="use">Use Cases</a>
 
 Google Scholar keeps a running tally of the papers citing [Deeplearning4j's implementation of Word2vec here](https://scholar.google.com/scholar?hl=en&q=deeplearning4j+word2vec&btnG=&as_sdt=1%2C5&as_sdtp=).
 
@@ -401,11 +401,11 @@ Word2Vec is especially useful in preparing text-based data for information retri
 
 Marketers might seek to establish relationships among products to build a recommendation engine. Investigators might analyze a social graph to surface members of a single group, or other relations they might have to location or financial sponsorship. 
 
-###<a name="patent">Google's Word2vec Patent</a>
+### <a name="patent">Google's Word2vec Patent</a>
 
 Word2vec is [a method of computing vector representations of words](http://arxiv.org/pdf/1301.3781.pdf) introduced by a team of researchers at Google led by Tomas Mikolov. Google [hosts an open-source version of Word2vec](https://code.google.com/p/word2vec/) released under an Apache 2.0 license. In 2014, Mikolov left Google for Facebook, and in May 2015, [Google was granted a patent for the method](http://patft.uspto.gov/netacgi/nph-Parser?Sect1=PTO2&Sect2=HITOFF&p=1&u=%2Fnetahtml%2FPTO%2Fsearch-bool.html&r=1&f=G&l=50&co1=AND&d=PTXT&s1=9037464&OS=9037464&RS=9037464), which does not abrogate the Apache license under which it has been released. 
 
-###<a name="foreign">Foreign Languages</a>
+### <a name="foreign">Foreign Languages</a>
 
 While words in all languages may be converted into vectors with Word2vec, and those vectors learned with Deeplearning4j, NLP preprocessing can be very language specific, and requires tools beyond our libraries. The [Stanford Natural Language Processing Group](http://nlp.stanford.edu/software/) has a number of Java-based tools for tokenization, part-of-speech tagging and  named-entity recognition for languages such as [Mandarin Chinese](http://nlp.stanford.edu/projects/chinese-nlp.shtml), Arabic, French, German and Spanish. For Japanese, NLP tools like [Kuromoji](http://www.atilika.org/) are useful. Other foreign-language resources, including [text corpora, are available here](http://www-nlp.stanford.edu/links/statnlp.html).
 

@@ -15,7 +15,7 @@ If you don't have one, download one of the zip, bz2 or tar files from the page l
 
 Next, let's tackle setup: We will be using the deeplearning4j-examples demonstration classes as the master nodes.
 
-###master node
+### Master node
 
 A master node coordinates the running of all of the work, and has the dataset iterator, which in turn has a handle on the dataset. This is the seed node for the Akka cluster. We will be setting this up using AWS.
 
