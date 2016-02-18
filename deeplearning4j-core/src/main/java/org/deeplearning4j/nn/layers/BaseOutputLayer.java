@@ -84,8 +84,13 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         this.fullNetworkL1 = fullNetworkL1;
         this.fullNetworkL2 = fullNetworkL2;
         INDArray preOut = preOutput2d(training);
-        INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), preOut.dup()));
-        setScore(output, preOut);
+        //special case: softmax
+        if (layerConf().getActivationFunction().equals("softmax")) {
+            setScoreWithZ(preOut);
+        } else {
+            INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), preOut));
+            setScoreWithZ(output);
+        }
         return score;
     }
 
