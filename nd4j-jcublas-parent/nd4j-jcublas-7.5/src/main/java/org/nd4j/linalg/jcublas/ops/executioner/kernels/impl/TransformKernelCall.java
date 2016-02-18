@@ -3,11 +3,13 @@ package org.nd4j.linalg.jcublas.ops.executioner.kernels.impl;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.jcublas.gpumetrics.GpuMetrics;
+import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
 import org.nd4j.linalg.jcublas.ops.executioner.kernels.BaseGpuKernelCall;
 import org.nd4j.linalg.jcublas.ops.executioner.kernels.args.KernelCallPointerArgs;
 import org.nd4j.linalg.jcublas.ops.executioner.kernels.args.impl.TransformKernelCallPointerArgs;
 import org.nd4j.linalg.jcublas.util.CudaArgs;
 import org.nd4j.linalg.jcublas.util.KernelParamsWrapper;
+import org.nd4j.linalg.jcublas.util.PointerUtil;
 
 /**
  * Kernel call for transform
@@ -47,6 +49,7 @@ public class TransformKernelCall extends BaseGpuKernelCall {
              * extraArgs,
              * result
              */
+            System.out.println("T1");
             args = new Object[] {
                     CudaArgs.getOpCode(op),
                     op.n(),
@@ -55,17 +58,21 @@ public class TransformKernelCall extends BaseGpuKernelCall {
 //                    op.z().offset(),
                     op.x(),
                     op.y(),
-                    BlasBufferUtil.getBlasStride(op.x()),
-                    BlasBufferUtil.getBlasStride(op.y()),
+//                    BlasBufferUtil.getBlasStride(op.x()),
+//                    BlasBufferUtil.getBlasStride(op.y()),
                     toArgs(op.extraArgs(), getType(op)),
                     op.z(),
-                    BlasBufferUtil.getBlasStride(op.z())
+                    KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.x())),
+                    KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.y())),
+                    KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.z()))
+//                    BlasBufferUtil.getBlasStride(op.z())
                     ,metrics.getBlockSize()
             };
 
 
 
         } else {
+            System.out.println("T2");
             args = new Object[] {
                     CudaArgs.getOpCode(op),
                     op.n(),

@@ -238,6 +238,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     public Op exec(Op op) {
         //linear views and oblong offsets can't be handled by the gpu (due to the way the buffers are interpreted as vectors)
         if(op.x() instanceof IComplexNDArray || executionMode() == ExecutionMode.JAVA || op.isPassThrough() || op instanceof CopyOp) {
+            System.out.println("Fallback to CPU opExecutor");
             try {
                 if (op.x() != null) allocator.synchronizeHostData(op.x());
                 if (op.y() != null) allocator.synchronizeHostData(op.y());
@@ -421,6 +422,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         if(!KernelFunctionLoader.getInstance().exists(op) || op.x() instanceof IComplexNDArray || op.isPassThrough()) {
 
           //  return null;
+            System.out.println("Fallback to CPU opExecutor");
             try {
                 if (op.x() != null) allocator.synchronizeHostData(op.x());
                 if (op.y() != null) allocator.synchronizeHostData(op.y());

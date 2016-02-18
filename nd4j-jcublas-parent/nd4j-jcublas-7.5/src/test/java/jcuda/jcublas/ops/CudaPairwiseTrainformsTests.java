@@ -111,6 +111,7 @@ public class CudaPairwiseTrainformsTests {
         INDArray array2 = Nd4j.create(new float[]{2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f});
 
         array1.rsubiRowVector(array2);
+        System.out.println("Execution finished");
 
         System.out.println("Array1: " + array1);
         System.out.println("Array2: " + array2);

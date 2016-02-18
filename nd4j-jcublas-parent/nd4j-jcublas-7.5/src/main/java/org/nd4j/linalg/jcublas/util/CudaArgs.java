@@ -119,6 +119,9 @@ public class CudaArgs {
                 code = 2;
             }
         } else if (op instanceof TransformOp) {
+
+            System.out.println("TRANSFORM OP SELECTOR");
+
             if (name.equals("abs")) {
                 code = 0;
             } else if (name.equals("ceil")) {
@@ -165,25 +168,34 @@ public class CudaArgs {
                 code = 1;
             } else if (name.equals("div")) {
                 code = 2;
-            } else if (name.equals("div")) {
-                code = 3;
             } else if (name.equals("eq")) {
-                code = 4;
+                code = 3;
             } else if (name.equals("gt")) {
-                code = 5;
+                code = 4;
             } else if (name.equals("lt")) {
-                code = 6;
+                code = 5;
             } else if (name.equals("mul")) {
+                code = 6;
+            } else if (name.equals("rdiv")) {
                 code = 7;
-            } else if (name.equals("div")) {
-                code = 8;
-            } else if (name.equals("driv")) {
-                code = 9;
             } else if (name.equals("rsub")) {
-                code = 10;
+                code = 8;
             } else if (name.equals("sub")) {
+                code = 9;
+            } else if (name.equals("eps")) {
+                code = 10;
+            } else if (name.equals("gte")) {
                 code = 11;
+            } else if (name.equals("lte")) {
+                code = 12;
+            } else if (name.equals("max")) {
+                code = 13;
+            } else if (name.equals("min")) {
+                code = 14;
+            } else if (name.equals("neq")) {
+                code = 15;
             }
+
         } else if (op instanceof ScalarOp) {
             if (name.startsWith("add")) {
                 code = 0;
