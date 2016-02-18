@@ -63,7 +63,9 @@ public class LayerFactories {
         else if(BatchNormalization.class.isAssignableFrom(clazz))
             return new BatchNormalizationLayerFactory(clazz);
         else if(LocalResponseNormalization.class.isAssignableFrom(clazz))
-            return new LocalResponseNormalizationFactory(clazz);
+            return new EmptyFactory(clazz);
+        else if(ActivationLayer.class.isAssignableFrom(clazz))
+            return new EmptyFactory(clazz);
         return new DefaultLayerFactory(clazz);
     }
 
@@ -73,6 +75,7 @@ public class LayerFactories {
      * @param conf the layer factory
      * @return the type
      */
+    @Deprecated
     public static org.deeplearning4j.nn.api.Layer.Type typeForFactory(NeuralNetConfiguration conf) {
         LayerFactory layerFactory = getFactory(conf);
         if(layerFactory instanceof ConvolutionLayerFactory || layerFactory instanceof SubsampleLayerFactory)
