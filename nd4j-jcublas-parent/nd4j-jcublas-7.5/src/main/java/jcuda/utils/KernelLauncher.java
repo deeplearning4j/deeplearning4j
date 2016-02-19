@@ -1024,7 +1024,7 @@ public class KernelLauncher {
                 Pointer argPointer = (Pointer)arg;
                 Pointer pointer = Pointer.to(argPointer);
                 kernelParameters[i] = pointer;
-                //logger.info("argument " + i + " type is Pointer");
+                //System.out.println("argument " + i + " type is Pointer");
             }
             else if (arg instanceof Byte)
             {
@@ -1045,7 +1045,7 @@ public class KernelLauncher {
                 Integer value = (Integer)arg;
                 Pointer pointer = Pointer.to(new int[]{value});
                 kernelParameters[i] = pointer;
-                //logger.info("argument " + i + " type is Integer");
+                //System.out.println("argument " + i + " type is Integer");
             }
             else if (arg instanceof Long)
             {
@@ -1123,15 +1123,16 @@ public class KernelLauncher {
 
         CudaContext context = AtomicAllocator.getInstance().getCudaContext();
 
+        Pointer pointer = Pointer.to(kernelParameters);
+        /*
         System.out.println("Stream: " + context.getStream());
         System.out.println("Function: " + function);
-
-        Pointer pointer = Pointer.to(kernelParameters);
 
         System.out.println("Launch params: {grid.x: ["+gridSize.x +"], grid.y: ["+gridSize.y +"], grid.z: ["+gridSize.z +"]}");
         System.out.println("Launch params: {block.x: ["+blockSize.x +"], block.y: ["+blockSize.y +"], block.z: ["+blockSize.z +"]}");
         System.out.println("Launch params: {sharedMem: ["+ sharedMemSize+"]}");
         System.out.println("Launch params: {pointer: ["+pointer+"]}");
+        */
 
         cuLaunchKernel(function,
                 gridSize.x, gridSize.y, gridSize.z,
@@ -1140,7 +1141,7 @@ public class KernelLauncher {
                 pointer, null
         );
 
-
+        //context.syncStream();
     }
 
     public CUfunction getFunction() {

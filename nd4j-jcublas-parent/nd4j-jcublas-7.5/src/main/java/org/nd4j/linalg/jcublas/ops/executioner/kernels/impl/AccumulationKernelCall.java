@@ -2,6 +2,7 @@ package org.nd4j.linalg.jcublas.ops.executioner.kernels.impl;
 
 import jcuda.jcublas.JCublas;
 import jcuda.runtime.JCuda;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
@@ -133,13 +134,27 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
         INDArray ret = Nd4j.valueArrayOf(retShape,((Accumulation)op).zeroDouble());
         op.setZ(ret);
 
+        op.z().putScalar(0, 189.3f);
 
         if (op.y() != null) {
             metrics.setSharedMemoryNotOverMax(metrics.getSharedMemory() * 2);
-
-
+/*
+            System.out.println("------------------------------------------------");
+            System.out.println("opCode: " + CudaArgs.getOpCode(op));
+            System.out.println("op.n: " + op.n());
+            System.out.println("op.x: " + op.x());
+            System.out.println("ShapeInfo x: " + Arrays.toString(PointerUtil.toShapeInfoBuffer(op.x(), dimension)));
+            System.out.println("op.y: " + op.y());
+            System.out.println("ShapeInfo y: " + Arrays.toString(PointerUtil.toShapeInfoBuffer(op.y(), dimension)));
+            System.out.println("Args: " + toArgs(op.extraArgs(), getType(op)));
+            System.out.println("op.z: " + op.z());
+            System.out.println("ShapeInfoBuffer z: " + Arrays.toString(PointerUtil.toShapeInfoBuffer(op.z())));
             System.out.println("GPU metrics: " + Arrays.toString(metrics.getGpuDefinitionInfo()));
-
+            System.out.println("dimension: " + Arrays.toString((dimension == null ? new int[]{Integer.MAX_VALUE} : dimension)));
+            System.out.println("dimension length: " + (dimension == null ? 1 : dimension.length));
+            System.out.println("PostProc: " + toInt((dimension == null || dimension[0] == Integer.MAX_VALUE)));
+            System.out.println("------------------------------------------------");
+*/
                 args = new Object[] {
                         CudaArgs.getOpCode(op),
                         op.n(),
@@ -317,7 +332,9 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
 
         JCudaBuffer tempResultInfo;
         //allocate the memory for the temp solution
+        // right now multiDeimension is always null
         if(multiDimension != null) {
+            System.out.println("multiDimension");
             tempResult = Nd4j.create(ArrayUtil.removeIndex(acc.x().shape(),dimension));
             args[resultIndex] = tempResult;
             op.setZ(tempResult);
@@ -348,6 +365,9 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
                 super.invoke();
             }
 
+            System.out.println("Invoke finished");
+            AtomicAllocator.getInstance().tackDevice(op.z());
+            System.out.println("op.z(): " + op.z());
 
             //invoke the collapse tad
             if(collapseTad) {

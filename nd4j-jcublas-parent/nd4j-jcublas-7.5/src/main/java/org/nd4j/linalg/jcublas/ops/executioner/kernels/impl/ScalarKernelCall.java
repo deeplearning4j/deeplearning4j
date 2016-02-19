@@ -60,7 +60,18 @@ public class ScalarKernelCall extends BaseGpuKernelCall {
             if(xStride < 0) {
                 op.setX(op.x().dup());
             }
-
+            /*
+            System.out.println("--------------------------------------------------------");
+            System.out.println("op.code: " +CudaArgs.getOpCode(op) );
+            System.out.println("op.n: " +op.n());
+            System.out.println("op.f: " +scalarOp.scalar().floatValue());
+            System.out.println("op.x: " +op.x());
+            System.out.println("op.x stride: " +BlasBufferUtil.getBlasStride(op.x()));
+            System.out.println("Args: " + toArgs(op.extraArgs(), getType(op)));
+            System.out.println("op.z: " +op.z());
+            System.out.println("blocksize: " +metrics.getBlockSize());
+            System.out.println("--------------------------------------------------------");
+*/
             args = new Object[]{
                     CudaArgs.getOpCode(op),
                     op.n(),
@@ -69,7 +80,8 @@ public class ScalarKernelCall extends BaseGpuKernelCall {
                     op.x(),
                     BlasBufferUtil.getBlasStride(op.x()),
                     toArgs(op.extraArgs(), getType(op)),
-                    op.z(),metrics.getBlockSize()
+                    op.z(),
+                    metrics.getBlockSize()
             };
 
         }

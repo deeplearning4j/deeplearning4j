@@ -98,6 +98,7 @@ public class KernelFunctions {
         if(launcher == null)
             throw new IllegalArgumentException("Launcher for function " + functionName + " and data type " + dataType + " does not exist!");
 
+        //System.out.println("Invoking functionName: ["+functionName+"]");
 
         launcher.forFunction(functionName)
                 .setBlockSize(metrics.getBlockSize(),1,1)
@@ -109,7 +110,7 @@ public class KernelFunctions {
         // TODO: we always sync for now, later sync will be removed from this place
         cudaContext.syncStream();
 
-        System.out.println("Finished");
+    //    System.out.println("Finished");
 
     }
 

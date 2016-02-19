@@ -50,7 +50,7 @@ public class IndexAccumulationKernelCall extends BaseGpuKernelCall {
         else
             this.result = result;
 
-        this.result.putScalar(0, 22f);
+        //this.result.putScalar(0, 22f);
 
    //     op.setZ(this.result);
 
@@ -110,14 +110,13 @@ public class IndexAccumulationKernelCall extends BaseGpuKernelCall {
 
 
         INDArray ret = Nd4j.valueArrayOf(retShape,((IndexAccumulation) op).zeroDouble());
-        ret.putScalar(0, 17f);
         op.setZ(ret);
 //        ((IndexAccumulation) op).setFinalResult(0);
         //do op along all dimensions
         if (dimension.length == op.x().rank())
             dimension = new int[]{Integer.MAX_VALUE};
 
-        System.out.println("Pew");
+        //System.out.println("ShapeInfoBuffer x: " + Arrays.toString(PointerUtil.toShapeInfoBuffer(op.x())));
 
         args = new Object[]{
                 CudaArgs.getOpCode(op),
