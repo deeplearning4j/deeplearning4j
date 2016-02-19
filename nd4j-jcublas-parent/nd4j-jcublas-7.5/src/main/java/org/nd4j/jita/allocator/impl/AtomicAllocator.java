@@ -382,7 +382,7 @@ public class AtomicAllocator implements Allocator {
      * @param shape
      */
     protected void tackDevice(DataBuffer buffer, AllocationShape shape) {
-        AllocationPoint point = getAllocationPoint(buffer, shape);
+        AllocationPoint point = getAllocationPoint(buffer, shape, true);
 
         point.getAccessState().requestTack();
 
@@ -399,7 +399,7 @@ public class AtomicAllocator implements Allocator {
     public void tickDeviceWrite(INDArray array) {
         DataBuffer buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
 
-        AllocationPoint point = getAllocationPoint(buffer, AllocationUtils.buildAllocationShape(array));
+        AllocationPoint point = getAllocationPoint(buffer, AllocationUtils.buildAllocationShape(array), true);
 
         point.tickDeviceWrite();
     }
@@ -413,7 +413,7 @@ public class AtomicAllocator implements Allocator {
     public void tickHostWrite(INDArray array) {
         DataBuffer buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
 
-        AllocationPoint point = getAllocationPoint(buffer, AllocationUtils.buildAllocationShape(array));
+        AllocationPoint point = getAllocationPoint(buffer, AllocationUtils.buildAllocationShape(array), true);
 
         if (point == null) {
             log.info("tickHostWrite INDarray");
@@ -448,7 +448,7 @@ public class AtomicAllocator implements Allocator {
         /*
             We assume that object is registered within allocator
          */
-        AllocationPoint point = getAllocationPoint(buffer, shape);
+        AllocationPoint point = getAllocationPoint(buffer, shape, true);
 
         boolean isNewAllocation = false;
 
@@ -666,7 +666,7 @@ public class AtomicAllocator implements Allocator {
      * @param buffer
      */
     protected void synchronizeHostData(DataBuffer buffer, AllocationShape shape) {
-        AllocationPoint point = getAllocationPoint(buffer, shape);
+        AllocationPoint point = getAllocationPoint(buffer, shape, true);
 //        log.info("Synchronize called on buffer with shape: " + shape);
 
         /*
@@ -688,8 +688,34 @@ public class AtomicAllocator implements Allocator {
 
             point.getAccessState().releaseToe();
         }// else log.info("Data is actual, skipping sync");
+    }
 
+    /**
+     * This method should be callsd to make sure that data on host side is actualized.
+     * However, this method only tries to lock data before synchronization.
+     * <p>
+     * PLEASE NOTE: This methos is considered UNSAFE.
+     *
+     * @param syncBuffer
+     */
+    @Override
+    public void trySynchronizeHostData(DataBuffer syncBuffer) {
+        DataBuffer buffer = syncBuffer.originalDataBuffer() == null ? syncBuffer : syncBuffer.originalDataBuffer();
 
+        AllocationPoint point = getAllocationPoint(buffer, AllocationUtils.buildAllocationShape(buffer), false);
+
+        if (!point.isActualOnHostSide() && point != null) {
+            //log.info("Try hit");
+            if (point.getAccessState().tryRequestToe()) {
+               // log.info("Try copyback");
+                mover.copyback(point, AllocationUtils.buildAllocationShape(buffer));
+
+                // update the timer for hostRead
+                point.tickHostRead();
+
+                point.getAccessState().releaseToe();
+            }// else log.info("Toe is busy, skipping");
+        }
     }
 
     /**
@@ -702,14 +728,32 @@ public class AtomicAllocator implements Allocator {
 //        log.info("Synchronize called on array");
         DataBuffer buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
 
-        AllocationPoint point = getAllocationPoint(buffer, AllocationUtils.buildAllocationShape(array));
+        AllocationPoint point = getAllocationPoint(buffer, AllocationUtils.buildAllocationShape(array), true);
 
         if (point == null) {
-//            log.debug("synchronizeHostData(INDarray)");
             pickupSpan(array);
         }
 
         synchronizeHostData(buffer, AllocationUtils.buildAllocationShape(array));
+    }
+
+    /**
+     * This method should be callsd to make sure that data on host side is actualized
+     *
+     * @param buffer
+     */
+
+    @Override
+    public void synchronizeHostData(DataBuffer buffer) {
+        DataBuffer fbuffer = buffer.originalDataBuffer() == null ? buffer : buffer.originalDataBuffer();
+
+        AllocationPoint point = getAllocationPoint(fbuffer, AllocationUtils.buildAllocationShape(fbuffer), true);
+
+        if (point == null) {
+            pickupSpan(fbuffer);
+        }
+
+        synchronizeHostData(fbuffer, AllocationUtils.buildAllocationShape(fbuffer));
     }
 
     /**
@@ -756,7 +800,7 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public Integer getDeviceId(INDArray array) {
-        AllocationPoint point = getAllocationPoint(array.data().originalDataBuffer(), AllocationUtils.buildAllocationShape(array));
+        AllocationPoint point = getAllocationPoint(array.data().originalDataBuffer(), AllocationUtils.buildAllocationShape(array), true);
 
         if (point == null || point.getDeviceId() == null)
             throw new IllegalStateException("deviceId for point is undefined");
@@ -846,11 +890,14 @@ public class AtomicAllocator implements Allocator {
 
 
 
-    protected AllocationPoint getAllocationPoint(DataBuffer objectId, AllocationShape shape) {
+    protected AllocationPoint getAllocationPoint(DataBuffer objectId, AllocationShape shape, boolean catchNewAllocations) {
         Long trackingPointer = objectId.getTrackingPoint();
 
         if (trackingPointer == null) { // AllocationUtils.buildAllocationShape(objectId)
-            trackingPointer = pickupSpan(objectId, shape);
+            if (catchNewAllocations) {
+                log.info("Registering");
+                trackingPointer = pickupSpan(objectId, shape);
+            } else return null;
         }
 
         // that's a temporary exception, we'll change that to re-ack later

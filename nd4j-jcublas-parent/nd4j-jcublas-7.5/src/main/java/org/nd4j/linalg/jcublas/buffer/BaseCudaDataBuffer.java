@@ -53,8 +53,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
+import java.nio.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -67,6 +66,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Adam Gibson
  */
 public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCudaBuffer {
+
+    private static AtomicAllocator allocator = AtomicAllocator.getInstance();
 
     static AtomicLong allocated = new AtomicLong();
     static AtomicLong totalAllocated = new AtomicLong();
@@ -208,8 +209,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     @Deprecated
     public void copyAtStride(DataBuffer buf, int n, int stride, int yStride, int offset, int yOffset) {
         super.copyAtStride(buf, n, stride, yStride, offset, yOffset);
-        MemoryStrategy strategy = ContextHolder.getInstance().getMemoryStrategy();
-        strategy.setData(buf,offset,stride,length());
+        //MemoryStrategy strategy = ContextHolder.getInstance().getMemoryStrategy();
+        //strategy.setData(buf,offset,stride,length());
     }
 
     @Override
@@ -276,6 +277,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     @Override
     public void put(int i, IComplexNumber result) {
 
+        /*
         modified.set(true);
         if (dataType() == DataBuffer.Type.FLOAT) {
             JCublas2.cublasSetVector(
@@ -295,15 +297,17 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                     , getHostPointer()
                     , 1);
         }
+        */
     }
 
 
 
 
     @Override
+    @Deprecated
     public Pointer getDevicePointer(int stride, int offset,int length) {
 
-        if (1 > 0) throw new RuntimeException("Brick wall found on primary getDevicePointer()");
+        if (1 > 0) throw new UnsupportedOperationException("getDevicePointer(stride, offset, length) shouldn't be used anymore");
 
         String name = Thread.currentThread().getName();
         DevicePointerInfo devicePointerInfo = pointersToContexts.get(name,Triple.of(offset,length,stride));
@@ -386,15 +390,17 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
 
 
+    @Deprecated
     public Pointer getHostPointer(INDArray arr,int stride, int offset,int length) {
         return null;
     }
 
     @Override
+    @Deprecated
     public Pointer getDevicePointer(INDArray arr,int stride, int offset,int length) {
 
 
-        if (1 > 0) throw new RuntimeException("Brick wall found on secondary getDevicePointer()");
+        if (1 > 0) throw new UnsupportedOperationException("getDevicePointer(INDArray, stride, offset, length) shouldn't be used");
 
         // FIXME: this is ugly hack that address double allocation over the same offset/length
         referenceCounter.incrementAndGet();
@@ -521,9 +527,12 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     @Override
+    @Deprecated
     public void set(Pointer pointer) {
-        modified.set(true);
+        throw new UnsupportedOperationException("set(Pointer) is not supported");
+        //modified.set(true);
 
+        /*
         if (dataType() == DataBuffer.Type.DOUBLE) {
             JCublas2.cublasDcopy(
                     ContextHolder.getInstance().getHandle(),
@@ -543,12 +552,11 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                     1
             );
         }
-
-
+        */
     }
 
 
-
+    @Deprecated
     private void copyOneElement(int i,double val) {
         if(pointersToContexts != null)
             for(DevicePointerInfo info : pointersToContexts.values()) {
@@ -571,8 +579,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     @Override
     public void put(int i, double element) {
         super.put(i, element);
-        copyOneElement(i, element);
-
+        //        copyOneElement(i, element);
     }
 
     @Override
@@ -854,4 +861,114 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
         return false;
     }
+/*
+    @Override
+    public byte[] asBytes() {
+        allocator.trySynchronizeHostData(this);
+        return super.asBytes();
+    }
+
+    @Override
+    public double[] asDouble() {
+        allocator.trySynchronizeHostData(this);
+        return super.asDouble();
+    }
+
+    @Override
+    public float[] asFloat() {
+        allocator.trySynchronizeHostData(this);
+        return super.asFloat();
+    }
+
+    @Override
+    public int[] asInt() {
+        allocator.trySynchronizeHostData(this);
+        return super.asInt();
+    }
+
+    @Override
+    public ByteBuf asNetty() {
+        allocator.trySynchronizeHostData(this);
+        return super.asNetty();
+    }
+
+    @Override
+    public ByteBuffer asNio() {
+//        allocator.trySynchronizeHostData(this);
+        return super.asNio();
+    }
+
+    @Override
+    public DoubleBuffer asNioDouble() {
+       // allocator.trySynchronizeHostData(this);
+        return super.asNioDouble();
+    }
+
+    @Override
+    public FloatBuffer asNioFloat() {
+        //allocator.trySynchronizeHostData(this);
+        return super.asNioFloat();
+    }
+
+    @Override
+    public IntBuffer asNioInt() {
+        //allocator.trySynchronizeHostData(this);
+        return super.asNioInt();
+    }
+
+    @Override
+    public DataBuffer dup() {
+        allocator.synchronizeHostData(this);
+        return super.dup();
+    }
+
+    @Override
+    public Number getNumber(int i) {
+        allocator.trySynchronizeHostData(this);
+        return super.getNumber(i);
+    }
+
+    @Override
+    public double getDouble(int i) {
+        allocator.trySynchronizeHostData(this);
+        return super.getDouble(i);
+    }
+
+    @Override
+    public double[] getDoublesAt(int offset, int inc, int length) {
+        allocator.trySynchronizeHostData(this);
+        return super.getDoublesAt(offset, inc, length);
+    }
+
+    @Override
+    public double[] getDoublesAt(int offset, int length) {
+        allocator.trySynchronizeHostData(this);
+        return super.getDoublesAt(offset, length);
+    }
+
+    @Override
+    public float getFloat(int i) {
+        allocator.trySynchronizeHostData(this);
+        return super.getFloat(i);
+    }
+
+    @Override
+    public float[] getFloatsAt(int offset, int inc, int length) {
+        allocator.trySynchronizeHostData(this);
+        return super.getFloatsAt(offset, inc, length);
+    }
+
+    @Override
+    public float[] getFloatsAt(int offset, int length) {
+        allocator.trySynchronizeHostData(this);
+        return super.getFloatsAt(offset, length);
+    }
+
+    @Override
+    public int getInt(int ix) {
+        allocator.trySynchronizeHostData(this);
+        return super.getInt(ix);
+    }
+*/
+
 }

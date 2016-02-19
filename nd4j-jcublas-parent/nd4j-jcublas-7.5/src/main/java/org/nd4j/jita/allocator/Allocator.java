@@ -156,6 +156,23 @@ public interface Allocator {
     void synchronizeHostData(INDArray array);
 
     /**
+     * This method should be calls to make sure that data on host side is actualized
+     *
+     * @param buffer
+     */
+    void synchronizeHostData(DataBuffer buffer);
+
+    /**
+     * This method should be callsd to make sure that data on host side is actualized.
+     * However, this method only tries to lock data before synchronization.
+     *
+     * PLEASE NOTE: This methos is considered non-safe.
+     *
+     * @param buffer
+     */
+    void trySynchronizeHostData(DataBuffer buffer);
+
+    /**
      * This method returns current host memory state
      *
      * @param array

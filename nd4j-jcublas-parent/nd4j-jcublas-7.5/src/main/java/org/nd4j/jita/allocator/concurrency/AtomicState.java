@@ -114,6 +114,27 @@ public class AtomicState {
     }
 
     /**
+     * This method requests to change state to Toe
+     *
+     * PLEASE NOTE: this method is non-blocking, if Toe request is impossible atm, it will return false.
+     *
+     * @return TRUE, if Toe state entered, FALSE otherwise
+     */
+    public boolean tryRequestToe() {
+        scheduleToe();
+        if (isToeWaiting.get() || getCurrentState() == AccessState.TOE) {
+            //System.out.println("discarding TOE");
+            discardScheduledToe();
+            return false;
+        } else {
+            //System.out.println("requesting TOE");
+            discardScheduledToe();
+            requestToe();
+            return true;
+        }
+    }
+
+    /**
      * This method requests release Toe status back to Tack.
      *
      * PLEASE NOTE: only the thread originally entered Toe state is able to release it.
