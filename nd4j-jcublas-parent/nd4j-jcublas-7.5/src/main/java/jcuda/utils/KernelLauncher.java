@@ -1123,14 +1123,21 @@ public class KernelLauncher {
 
         CudaContext context = AtomicAllocator.getInstance().getCudaContext();
 
-//        System.out.println("Stream: " + context.getStream());
-//        System.out.println("Function: " + function);
+        System.out.println("Stream: " + context.getStream());
+        System.out.println("Function: " + function);
+
+        Pointer pointer = Pointer.to(kernelParameters);
+
+        System.out.println("Launch params: {grid.x: ["+gridSize.x +"], grid.y: ["+gridSize.y +"], grid.z: ["+gridSize.z +"]}");
+        System.out.println("Launch params: {block.x: ["+blockSize.x +"], block.y: ["+blockSize.y +"], block.z: ["+blockSize.z +"]}");
+        System.out.println("Launch params: {sharedMem: ["+ sharedMemSize+"]}");
+        System.out.println("Launch params: {pointer: ["+pointer+"]}");
 
         cuLaunchKernel(function,
                 gridSize.x, gridSize.y, gridSize.z,
                 blockSize.x, blockSize.y, blockSize.z,
                 sharedMemSize, context.getStream(),
-                Pointer.to(kernelParameters), null
+                pointer, null
         );
 
 

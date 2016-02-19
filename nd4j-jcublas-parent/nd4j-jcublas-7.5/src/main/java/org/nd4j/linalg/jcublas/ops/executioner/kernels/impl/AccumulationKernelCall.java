@@ -42,7 +42,11 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
      */
     public AccumulationKernelCall(Op op,int[] dimension) {
         super(op);
+        if(dimension == null)
+            dimension = new int[] {Integer.MAX_VALUE};
 
+        this.dimension = dimension;
+/*
         if(dimension == null)
             dimension = new int[] {Integer.MAX_VALUE};
         this.dimension = dimension;
@@ -65,6 +69,7 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
             }
 
         }
+        */
 /*
         if(scalarResult)
             op.setZ(Nd4j.create(metrics.getGridSize()));
@@ -81,7 +86,7 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
     @Override
     public void createMetrics() {
         String functionName = CudaArgs.getModuleNameFor(op);
-        GpuMetrics metrics = GpuMetrics.blockAndThreads(getType(op), op.n()); // GpuMetrics.blocksAndThreadsOccupancy(functionName, getType(op), op.n());
+        GpuMetrics metrics =GpuMetrics.blocksAndThreadsOccupancy(functionName, getType(op), op.n());
         if (dimension != null && dimension.length >= 1 && dimension[0] != Integer.MAX_VALUE) {
             int length = op.x().tensorssAlongDimension(dimension);
             if (length > 1000)
@@ -128,8 +133,12 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
         INDArray ret = Nd4j.valueArrayOf(retShape,((Accumulation)op).zeroDouble());
         op.setZ(ret);
 
+
         if (op.y() != null) {
             metrics.setSharedMemoryNotOverMax(metrics.getSharedMemory() * 2);
+
+
+            System.out.println("GPU metrics: " + Arrays.toString(metrics.getGpuDefinitionInfo()));
 
                 args = new Object[] {
                         CudaArgs.getOpCode(op),
@@ -138,8 +147,7 @@ public class AccumulationKernelCall extends BaseGpuKernelCall {
                         KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.x(), dimension)),
                         op.y(),
                         KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.y(), dimension)),
-                        toArgs(op.extraArgs(),
-                                getType(op)),
+                        toArgs(op.extraArgs(), getType(op)),
                         op.z(),
                         KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.z())),
                         KernelFunctions.alloc(metrics.getGpuDefinitionInfo()),

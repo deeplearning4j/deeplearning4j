@@ -29,6 +29,7 @@ public class CudaReduce3Tests {
      * @throws Exception
      */
     @Test
+    @Ignore
     public void testPinnedCosineSim() throws Exception {
         // simple way to stop test if we're not on CUDA backend here
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
@@ -68,6 +69,7 @@ public class CudaReduce3Tests {
     }
 
     @Test
+    @Ignore
     public void testPinnedEuclideanDistance() throws Exception {
         // simple way to stop test if we're not on CUDA backend here
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());

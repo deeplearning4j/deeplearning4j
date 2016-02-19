@@ -98,16 +98,18 @@ public class KernelFunctions {
         if(launcher == null)
             throw new IllegalArgumentException("Launcher for function " + functionName + " and data type " + dataType + " does not exist!");
 
+
         launcher.forFunction(functionName)
                 .setBlockSize(metrics.getBlockSize(),1,1)
                 .setGridSize(metrics.getGridSize(),1,1).setStream(cudaContext.getStream())
                 .setSharedMemSize(sharedMemSize)
                 .call(kernelParameters);
-        cudaContext.startNewEvent();
+        //cudaContext.startNewEvent();
      //   if(sync)
         // TODO: we always sync for now, later sync will be removed from this place
         cudaContext.syncStream();
 
+        System.out.println("Finished");
 
     }
 

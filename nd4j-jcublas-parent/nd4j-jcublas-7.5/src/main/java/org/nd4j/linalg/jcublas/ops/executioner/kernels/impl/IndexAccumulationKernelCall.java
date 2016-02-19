@@ -50,7 +50,9 @@ public class IndexAccumulationKernelCall extends BaseGpuKernelCall {
         else
             this.result = result;
 
-        op.setZ(this.result);
+        this.result.putScalar(0, 22f);
+
+   //     op.setZ(this.result);
 
         createArgs();
     }
@@ -75,7 +77,7 @@ public class IndexAccumulationKernelCall extends BaseGpuKernelCall {
                 sharedMemBasedOnBlockSize = 1024;
             metrics.setSharedMemoryNotOverMax(sharedMemBasedOnBlockSize);
             //setup a number of threads = the number of blocks being launched
-            result = Nd4j.create(metrics.getGridSize());
+          //  result = Nd4j.create(metrics.getGridSize());
         }
 
         this.metrics = metrics;
@@ -108,21 +110,23 @@ public class IndexAccumulationKernelCall extends BaseGpuKernelCall {
 
 
         INDArray ret = Nd4j.valueArrayOf(retShape,((IndexAccumulation) op).zeroDouble());
+        ret.putScalar(0, 17f);
         op.setZ(ret);
+//        ((IndexAccumulation) op).setFinalResult(0);
         //do op along all dimensions
         if (dimension.length == op.x().rank())
             dimension = new int[]{Integer.MAX_VALUE};
 
+        System.out.println("Pew");
 
         args = new Object[]{
                 CudaArgs.getOpCode(op),
-                op.n(),
+                op.x().length(),
                 op.x(),
                 KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.x())),
 //                op.y(),
 //                KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.y(), dimension)),
-                toArgs(op.extraArgs(),
-                        getType(op)),
+                toArgs(op.extraArgs(), getType(op)),
                 op.z(),
                 KernelFunctions.alloc(PointerUtil.toShapeInfoBuffer(op.z())),
                 KernelFunctions.alloc(metrics.getGpuDefinitionInfo()),
@@ -271,7 +275,7 @@ public class IndexAccumulationKernelCall extends BaseGpuKernelCall {
     @Override
     public void invoke() {
         IndexAccumulation acc = (IndexAccumulation) op;
-        try(KernelParamsWrapper kParams = new KernelParamsWrapper(true,args).setResultOp(acc, result,dimension)) {
+        try(KernelParamsWrapper kParams = new KernelParamsWrapper(true,args).setResultOp(acc, acc.z(),dimension)) {
             this.args = kParams.getKernelParameters();
             this.cudaContext = kParams.getContext();
             //setup the kernel parameters such that super.invoke() will call the kernel with the given parameters

@@ -346,7 +346,15 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         try {
             CudaContext ctx;
+            System.out.println("op.z(): " + op.z());
+            System.out.println("result: " + result);
+
             GpuKernelCall accKernelCall = GpuKernelCallFactories.getFactory(op).create(op, dimension, result);
+            System.out.println("----------------");
+            System.out.println("op.x(): " + op.x());
+            System.out.println("op.z(): " + op.z());
+            System.out.println("result: " + result);
+
             accKernelCall.invoke();
             ctx = accKernelCall.cudaContext();
 
@@ -356,11 +364,16 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             if (op.x() != null) allocator.tackDevice(op.x());
             if (op.y() != null) allocator.tackDevice(op.y());
             if (op.z() != null) allocator.tackDevice(op.z());
-            allocator.tackDevice(result);
+            //allocator.tackDevice(result);
 
+            System.out.println("----------------");
+            System.out.println("op.x(): " + op.x());
+            System.out.println("op.z(): " + op.z());
+            System.out.println("result: " + result);
 
-            if (result.isScalar())
-                result.putScalar(0, op.getFinalResult());
+            op.setFinalResult((int) op.z().getDouble(0));
+
+            System.out.println("op.final: " + op.getFinalResult());
 
 
             return ctx;
