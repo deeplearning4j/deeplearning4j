@@ -239,18 +239,15 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     public Op exec(Op op) {
         //linear views and oblong offsets can't be handled by the gpu (due to the way the buffers are interpreted as vectors)
         if(op.x() instanceof IComplexNDArray || executionMode() == ExecutionMode.JAVA || op.isPassThrough() || op instanceof CopyOp) {
-            System.out.println("Fallback to CPU opExecutor");
             try {
+                // we dont' care about op.Z sync state, since it'll be overwritten
                 if (op.x() != null) allocator.synchronizeHostData(op.x());
                 if (op.y() != null) allocator.synchronizeHostData(op.y());
-                if (op.z() != null) allocator.synchronizeHostData(op.z());
 
                 super.exec(op);
                 return null;
             } finally {
-                // FIXME: we need to track which op field contains result, and tickHost only for it
-                if (op.x() != null) allocator.tickHostWrite(op.x());
-                if (op.y() != null) allocator.tickHostWrite(op.y());
+                // we notify allocator that op.Z was modified on host side
                 if (op.z() != null) allocator.tickHostWrite(op.z());
             }
         }
@@ -290,18 +287,18 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private CudaContext invoke(BroadcastOp op) {
+        //System.out.println("BroadcastOp called");
         if(!KernelFunctionLoader.getInstance().exists(op) || executionMode() == ExecutionMode.JAVA || op.isPassThrough() || op instanceof CopyOp) {
+            //System.out.println("Fallback to CPU");
             try {
+                // we dont' care about op.Z sync state, since it'll be overwritten
                 if (op.x() != null) allocator.synchronizeHostData(op.x());
                 if (op.y() != null) allocator.synchronizeHostData(op.y());
-                if (op.z() != null) allocator.synchronizeHostData(op.z());
 
                 super.exec(op);
                 return null;
             } finally {
-                // FIXME: we need to track which op field contains result, and tickHost only for it
-                if (op.x() != null) allocator.tickHostWrite(op.x());
-                if (op.y() != null) allocator.tickHostWrite(op.y());
+                // we notify allocator that op.Z was modified on host side
                 if (op.z() != null) allocator.tickHostWrite(op.z());
             }
         }
@@ -315,10 +312,12 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             kernelCall.invoke();
             return kernelCall.cudaContext();
         } finally {
-            // FIXME: we need to track which op field contains result, and tackDeviceWrite only for it
             if (op.x() != null) allocator.tackDevice(op.x());
             if (op.y() != null) allocator.tackDevice(op.y());
             if (op.z() != null) allocator.tackDevice(op.z());
+
+            // we notify allocator that op.Z was modified on device side
+            if (op.z() != null) allocator.tickDeviceWrite(op.z());
         }
     }
 
@@ -326,42 +325,52 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     private CudaContext invoke(IndexAccumulation op,int[] dimension,INDArray result)  {
         if(!KernelFunctionLoader.getInstance().exists(op) || executionMode() == ExecutionMode.JAVA) {
-            System.out.println("Fallback to CPU happened");
             try {
+                // we dont' care about op.Z sync state, since it'll be overwritten
                 if (op.x() != null) allocator.synchronizeHostData(op.x());
                 if (op.y() != null) allocator.synchronizeHostData(op.y());
-                if (op.z() != null) allocator.synchronizeHostData(op.z());
 
                 super.exec(op);
                 return null;
             } finally {
-                // FIXME: we need to track which op field contains result, and tickHost only for it
-                if (op.x() != null) allocator.tickHostWrite(op.x());
-                if (op.y() != null) allocator.tickHostWrite(op.y());
+                // we notify allocator that op.Z was modified on host side
                 if (op.z() != null) allocator.tickHostWrite(op.z());
             }
         }
 
-        System.out.println("Invoking IndexAccum on gpu");
+        //System.out.println("Invoking IndexAccum on gpu");
 
         try {
             CudaContext ctx;
             GpuKernelCall accKernelCall = GpuKernelCallFactories.getFactory(op).create(op, dimension, result);
+            /*
+            System.out.println("op.z(): " + op.z());
+            System.out.println("result: " + result);
+
+            System.out.println("----------------");
+            System.out.println("op.x(): " + op.x());
+            System.out.println("op.z(): " + op.z());
+            System.out.println("result: " + result);
+            */
+
             accKernelCall.invoke();
             ctx = accKernelCall.cudaContext();
 
-            System.out.println("Invoke finished");
-
-            // FIXME: we need to track which op field contains result, and tackDeviceWrite only for it
             if (op.x() != null) allocator.tackDevice(op.x());
             if (op.y() != null) allocator.tackDevice(op.y());
             if (op.z() != null) allocator.tackDevice(op.z());
-            allocator.tackDevice(result);
 
+            // we notify allocator that op.Z was modified on device side
+            if (op.z() != null) allocator.tickDeviceWrite(op.z());
 
-            if (result.isScalar())
-                result.putScalar(0, op.getFinalResult());
-
+            /*
+            System.out.println("----------------");
+            System.out.println("op.x(): " + op.x());
+            System.out.println("op.z(): " + op.z());
+            System.out.println("result: " + result);
+            */
+            if (op.z().isScalar())
+                op.setFinalResult((int) op.z().getDouble(0));
 
             return ctx;
         } finally {
@@ -373,19 +382,18 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     private CudaContext invoke(Accumulation op,int[] dimension)  {
         if(!KernelFunctionLoader.getInstance().exists(op) || executionMode() == ExecutionMode.JAVA) {
             try {
+                // we dont' care about op.Z sync state, since it'll be overwritten
                 if (op.x() != null) allocator.synchronizeHostData(op.x());
                 if (op.y() != null) allocator.synchronizeHostData(op.y());
-                if (op.z() != null) allocator.synchronizeHostData(op.z());
 
                 super.exec(op);
                 return null;
             } finally {
-                // FIXME: we need to track which op field contains result, and tickHost only for it
+                // we notify allocator that op.Z was modified on host side
                 if (op.z() != null) allocator.tickHostWrite(op.z());
             }
         }
 
-        try {
             CudaContext ctx;
             GpuKernelCall accKernelCall = GpuKernelCallFactories.getFactory(op).create(op, dimension);
             accKernelCall.invoke();
@@ -395,33 +403,28 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             if (op.y() != null) allocator.tackDevice(op.y());
             if (op.z() != null) allocator.tackDevice(op.z());
 
-            System.out.println("Z pass");
+            // we notify allocator that op.Z was modified on device side
+            if (op.z() != null) allocator.tickDeviceWrite(op.z());
 
             if (op.z().isScalar())
                 op.setFinalResult(op.z().getDouble(0));
 
 
             return ctx;
-        } finally {
-            // FIXME: we need to track which op field contains result, and tackDeviceWrite only for it
-
-        }
     }
 
 
     private CudaContext invoke(ScalarOp op) {
         if(!KernelFunctionLoader.getInstance().exists(op)  || executionMode() == ExecutionMode.JAVA) {
             try {
+                // we dont' care about op.Z sync state, since it'll be overwritten
                 if (op.x() != null) allocator.synchronizeHostData(op.x());
                 if (op.y() != null) allocator.synchronizeHostData(op.y());
-                if (op.z() != null) allocator.synchronizeHostData(op.z());
 
                 super.exec(op);
                 return null;
             } finally {
-                // FIXME: we need to track which op field contains result, and tickHost only for it
-                if (op.x() != null) allocator.tickHostWrite(op.x());
-                if (op.y() != null) allocator.tickHostWrite(op.y());
+                // we notify allocator that op.Z was modified on host side
                 if (op.z() != null) allocator.tickHostWrite(op.z());
             }
         }
@@ -431,10 +434,12 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             kernelCall.invoke();
             return kernelCall.cudaContext();
         } finally {
-            // FIXME: we need to track which op field contains result, and tackDeviceWrite only for it
             if (op.x() != null) allocator.tackDevice(op.x());
             if (op.y() != null) allocator.tackDevice(op.y());
             if (op.z() != null) allocator.tackDevice(op.z());
+
+            // we notify allocator that op.Z was modified on device side
+            if (op.z() != null) allocator.tickDeviceWrite(op.z());
         }
     }
 
@@ -442,16 +447,14 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         if(!KernelFunctionLoader.getInstance().exists(op) || op.x() instanceof IComplexNDArray || op.isPassThrough()) {
 
             try {
+                // we dont' care about op.Z sync state, since it'll be overwritten
                 if (op.x() != null) allocator.synchronizeHostData(op.x());
                 if (op.y() != null) allocator.synchronizeHostData(op.y());
-                if (op.z() != null) allocator.synchronizeHostData(op.z());
 
                 super.exec(op);
                 return null;
             } finally {
-                // FIXME: we need to track which op field contains result, and tickHost only for it
-                if (op.x() != null) allocator.tickHostWrite(op.x());
-                if (op.y() != null) allocator.tickHostWrite(op.y());
+                // we notify allocator that op.Z was modified on host side
                 if (op.z() != null) allocator.tickHostWrite(op.z());
             }
         }
@@ -461,10 +464,12 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             kernelCall.invoke();
             return kernelCall.cudaContext();
         } finally {
-            // FIXME: we need to track which op field contains result, and tackDeviceWrite only for it
             if (op.x() != null) allocator.tackDevice(op.x());
             if (op.y() != null) allocator.tackDevice(op.y());
             if (op.z() != null) allocator.tackDevice(op.z());
+
+            // we notify allocator that op.Z was modified on device side
+            if (op.z() != null) allocator.tickDeviceWrite(op.z());
         }
     }
 }

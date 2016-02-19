@@ -26,6 +26,7 @@ public class BroadcastKernelCall extends BaseGpuKernelCall {
 
     @Override
     public void createArgs() {
+        System.out.println("Broadcast kernel createArgs()");
         this.args = new Object[] {
                 CudaArgs.getOpCode(op),
                 op.x(),

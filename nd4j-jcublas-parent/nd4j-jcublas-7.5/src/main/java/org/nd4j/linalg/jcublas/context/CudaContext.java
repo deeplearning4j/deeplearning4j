@@ -140,7 +140,7 @@ public class CudaContext {
             }
 */
             stream = new CUstream();
-            JCudaDriver.cuStreamCreate(stream, CUstream_flags.CU_STREAM_NON_BLOCKING);
+            JCudaDriver.cuStreamCreate(stream, CUstream_flags.CU_STREAM_DEFAULT);
             streamFromPool = false;
             //cUevent = new CUevent();
             //JCudaDriver.cuEventCreate(cUevent,0);

@@ -248,7 +248,7 @@ public class CudaArgs {
             }
         }
 
-        System.out.println("CALLING ["+getModuleNameFor(op)+"] -> ["+code+"]");
+       // System.out.println("CALLING ["+getModuleNameFor(op)+"] -> ["+code+"]");
 
         return code;
     }

@@ -42,7 +42,7 @@ import java.nio.ByteOrder;
 public class UmaMover implements Mover {
     private Configuration configuration;
     private CudaEnvironment environment;
-    private Allocator allocator = AtomicAllocator.getInstance();
+    private static Allocator allocator = AtomicAllocator.getInstance();
 
     private static Logger log = LoggerFactory.getLogger(UmaMover.class);
 
@@ -62,7 +62,7 @@ public class UmaMover implements Mover {
      */
     @Override
     public DevicePointerInfo alloc(AllocationStatus targetMode, AllocationPoint point,  AllocationShape shape) {
-      //  log.info("Alloc called for shape: " + shape);
+        //log.info("Alloc called for shape: " + shape);
         switch (targetMode) {
             case ZERO: {
                     /*
@@ -187,11 +187,13 @@ public class UmaMover implements Mover {
 
             // FIXME: remove allocator initialization
             if (allocator == null) {
+                log.warn("Allocator is NULL");
                 this.allocator = AtomicAllocator.getInstance();
             }
 
             CudaContext context = allocator.getCudaContext();
 
+             // System.out.println("Stream at realloc: " + context.getStream());
             // we must be sure, no calculations are pending within these streams before copyback
             context.syncOldStream();
             context.syncStream();
@@ -244,7 +246,7 @@ public class UmaMover implements Mover {
 
             ByteBuffer pointer = hostPointer.getByteBuffer(0, AllocationUtils.getRequiredMemory(shape));
             pointer.order(ByteOrder.nativeOrder());
-//            log.info("copyforward HOST->ZERO shape: " + shape);
+            //log.info("copyforward HOST->ZERO shape: " + shape);
             NioUtil.copyAtStride(
                     shape.getLength(), // copy length
                     getBufferType(point.getBuffer()),  // buffer type

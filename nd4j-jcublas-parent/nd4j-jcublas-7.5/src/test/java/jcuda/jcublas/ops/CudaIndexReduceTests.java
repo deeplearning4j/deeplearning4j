@@ -46,13 +46,13 @@ public class CudaIndexReduceTests {
 
         assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
 
-        INDArray array1 = Nd4j.create(new float[]{6.0f, 0.1f, 2.0f, 3.0f, 4.0f, 5.0f});
+        INDArray array1 = Nd4j.create(new float[]{2.0f, 0.1f, 6.0f, 3.0f, 4.0f, 5.0f});
 
 
 
         int idx =  ((IndexAccumulation) Nd4j.getExecutioner().exec(new IMax(array1))).getFinalResult();
 
-        assertEquals(0, idx);
+        assertEquals(2, idx);
     }
 
     @Test
@@ -84,12 +84,12 @@ public class CudaIndexReduceTests {
 
         assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
 
-        INDArray array1 = Nd4j.create(new float[]{0.1f, 1.1f, 2.0f, 3.0f, 4.0f, 5.0f});
+        INDArray array1 = Nd4j.create(new float[]{2.1f, 1.1f, 2.0f, -0.2f, 4.0f, 5.0f});
 
 
 
         int idx =  ((IndexAccumulation) Nd4j.getExecutioner().exec(new IMin(array1))).getFinalResult();
 
-        assertEquals(0, idx);
+        assertEquals(3, idx);
     }
 }

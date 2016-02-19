@@ -2,6 +2,9 @@ package jcuda.jcublas.ops;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.mover.UmaMover;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
@@ -29,6 +32,7 @@ public class CudaReduce3Tests {
      * @throws Exception
      */
     @Test
+    @Ignore
     public void testPinnedCosineSim() throws Exception {
         // simple way to stop test if we're not on CUDA backend here
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
@@ -58,7 +62,9 @@ public class CudaReduce3Tests {
 
         assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
 
-        INDArray array1 = Nd4j.create(new float[]{0.0f, 1.0f, 2.0f, 3.0f, 4.0f});
+        AtomicAllocator.getInstance().setMover(new UmaMover());
+
+        INDArray array1 = Nd4j.create(new float[]{0.1f, 1.0f, 2.0f, 3.0f, 4.0f});
         INDArray array2 = Nd4j.create(new float[]{0.5f, 1.5f, 2.5f, 3.5f, 4.5f});
 
         double result = Nd4j.getExecutioner().execAndReturn(new ManhattanDistance(array1,array2)).getFinalResult().doubleValue();
@@ -68,6 +74,7 @@ public class CudaReduce3Tests {
     }
 
     @Test
+    @Ignore
     public void testPinnedEuclideanDistance() throws Exception {
         // simple way to stop test if we're not on CUDA backend here
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
