@@ -326,7 +326,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     private CudaContext invoke(IndexAccumulation op,int[] dimension,INDArray result)  {
         if(!KernelFunctionLoader.getInstance().exists(op) || executionMode() == ExecutionMode.JAVA) {
-            System.out.println("Fallback to CPU happend");
+            System.out.println("Fallback to CPU happened");
             try {
                 if (op.x() != null) allocator.synchronizeHostData(op.x());
                 if (op.y() != null) allocator.synchronizeHostData(op.y());

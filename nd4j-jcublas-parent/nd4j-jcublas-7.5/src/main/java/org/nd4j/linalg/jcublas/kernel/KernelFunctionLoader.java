@@ -72,6 +72,7 @@ public class KernelFunctionLoader {
     public final static String FLOAT = NAME_SPACE + ".float.functions";
     public final static String CACHE_COMPILED = NAME_SPACE + ".cache_compiled";
     public final static String FUNCTION_KEY = "org.nd4j.linalg.jcuda.jcublas.functions";
+    public final static String MODULE_RESOURCE_NAME = "/all.fatbin";
 
     private static KernelFunctionLoader INSTANCE;
     private boolean alreadyCompiled = false;
@@ -302,7 +303,7 @@ public class KernelFunctionLoader {
             We're loading PTX kernels from internal resource
          */
 
-        File kernelsPtx = new JarResource("/all.fatbin").getFile();
+        File kernelsPtx = new JarResource(MODULE_RESOURCE_NAME).getFile();
 
 
         /*
@@ -356,89 +357,10 @@ public class KernelFunctionLoader {
             throw new RuntimeException(e);
         }
 
-
-        if (1>0) return;
-        /*
-        TODO: legacy code, to be removed later
-
-        String f = props.getProperty(FUNCTION_KEY);
-        String tmpDir = System.getProperty("java.io.tmpdir");
-        StringBuffer dir = new StringBuffer();
-        this.kernelPath = dir.append(tmpDir)
-                .append(File.separator)
-                .append("nd4j-kernels")
-                .append(File.separator)
-                .append("output")
-                .append(File.separator)
-                .toString();
-        File tmpDir2 = new File(tmpDir + File.separator + "nd4j-kernels" + File.separatorChar + "output");
-
-        log.info("Kernels to be loaded: " + f);
-
-        boolean shouldCompile = !tmpDir2.exists() || tmpDir2.exists() && tmpDir2.listFiles().length <= 1 || alreadyCompiled;
-
-        String[] split = f.split(",");
-        this.modules = split;
-        if(shouldCompile) {
-            loadCudaKernels();
-        }
-
-        else {
-            log.info("Modules appear to already be compiled..attempting to use cache");
-            for (String module : split) {
-                String path = kernelPath + module   + ".cubin";
-                String nameDouble = module + "_double";
-                String nameFloat = module + "_float";
-                paths.put(nameDouble,path);
-                paths.put(nameFloat,path);
-
-            }
-        }
-
-        try {
-            loadModules(split,kernelPath);
-            alreadyCompiled = true;
-        }
-
-        catch (IOException e1) {
-            if(!shouldCompile && compiledAttempts < 3) {
-                log.warn("Error loading modules...attempting recompile");
-                FileUtils.deleteDirectory(new File(kernelPath));
-                props.setProperty(CACHE_COMPILED,String.valueOf(true));
-                compileAndLoad(props,compiledAttempts + 1);
-            }
-            else
-                throw new RuntimeException(e1);
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        */
     }
 
 
 
-
-    /**
-     * Print the given buffer
-     * @param buffer
-     * @param ctx
-     * @throws Exception
-     */
-    @Deprecated
-    public static void printBuffer(JCudaBuffer buffer,CudaContext ctx) throws Exception {
-        CublasPointer pointer = new CublasPointer(buffer,ctx);
-        pointer.copyToHost();
-        JCublas.printVector(buffer.length(),pointer.getDevicePointer());
-        buffer.asNio().rewind();
-        //JCublas.printVector(buffer.length(),pointer.getHostPointer());
-        ByteBuffer pointer2 = pointer.getHostPointer().getByteBuffer(0, buffer.getElementSize() * buffer.length());
-        FloatBuffer intBuffer = pointer2.asFloatBuffer();
-        for(int i = 0; i < buffer.length(); i++) {
-            System.out.println("Item " + i + " is " + intBuffer.get(i));
-        }
-        JCuda.cudaDeviceSynchronize();
-    }
 
     /**
      * This method caches/registers all kernels for each device
@@ -474,108 +396,6 @@ public class KernelFunctionLoader {
 
     }
 
-    @Deprecated
-    private void loadModules(String[] split,String kernelPath) throws Exception {
-        /*
-        ContextHolder.getInstance().setContext();
-        for (String module : split) {
-            log.debug("Loading " + module);
-            String path = kernelPath  +  module + ".cubin";
-            if(!new File(path).exists())
-                throw new IllegalStateException("Unable to find path " + path + ". Recompiling");
-            String name = module;
-            paths.put(name,path);
-            KernelLauncher launch = KernelLauncher.load(path, name,"float");
-            //reuse the module from the gpu but load the function instead
-            KernelLauncher doubleLauncher = KernelLauncher.load(name,"double",launch.getModule());
-            launchers.put(Thread.currentThread().getName(),name + "_double", doubleLauncher);
-            launchers.put(Thread.currentThread().getName(),name + "_float",launch);
-            if(printFunction == null) {
-                printFunction =  KernelLauncher.load(PRINT_KERNEL_NAME,launch.getModule());
-            }
-        }
-        */
-    }
-
-
-    private void loadCudaKernels() throws IOException {
-        Set<String> resources = new Reflections("org.nd4j.nd4j-kernels", new ResourcesScanner()).getResources(Pattern.compile(".*"));
-        for(String resource : resources) {
-            extract(resource);
-        }
-
-        File outputDir = new File(System.getProperty("java.io.tmpdir") + File.separator + "nd4j-kernels","output");
-        outputDir.mkdirs();
-        log.info("Compiling cuda kernels into: " + outputDir.getAbsolutePath());
-        String[] commands = {"bash","-c","make && /usr/bin/make install"};
-        ProcessBuilder probuilder = new ProcessBuilder(commands);
-        //You can set up your work directory
-        probuilder.directory(new File(System.getProperty("java.io.tmpdir") + File.separator + "nd4j-kernels"));
-
-        Process process = probuilder.start();
-        //Read out dir output
-        InputStream is = process.getInputStream();
-        try {
-            process.waitFor();
-            BufferedInputStream bis = new BufferedInputStream(is);
-            List<String> list = IOUtils.readLines(bis, "UTF-8");
-            for(String item : list) {
-                log.info(item);
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
-    }
-
-    /**
-     * Extract the resource ot the specified
-     * absolute path
-     *
-     * @param file     the file
-
-     * @throws IOException
-     */
-    public String extract(String file) throws IOException {
-        String tmpDir = System.getProperty("java.io.tmpdir");
-        String[] split = file.split("/");
-        //minus the first 2 and the last entry for the parent directory path
-        String[] newArray = new String[split.length - 2];
-        for(int i = 0,j = 2; j < split.length; i++,j++) {
-            newArray[i] = split[j];
-        }
-
-        String split2 = StringUtils.join(newArray,"/");
-        File dataDir = new File(tmpDir,split2);
-        if (!dataDir.getParentFile().exists())
-            dataDir.mkdirs();
-
-
-        return loadFile(file,dataDir);
-
-    }
-
-
-
-    private String loadFile(String file,File dataDir) throws IOException {
-        ClassPathResource resource = new ClassPathResource(file, KernelFunctionLoader.class.getClassLoader());
-
-        if (!resource.exists())
-            throw new IllegalStateException("Unable to find file " + resource);
-        File out = dataDir;
-        if (!out.getParentFile().exists())
-            out.getParentFile().mkdirs();
-        if (out.exists())
-            out.delete();
-        out.createNewFile();
-        BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(out));
-        IOUtils.copy(resource.getInputStream(), bos);
-        bos.flush();
-        bos.close();
-
-        return out.getAbsolutePath();
-
-    }
 
 
     /**
