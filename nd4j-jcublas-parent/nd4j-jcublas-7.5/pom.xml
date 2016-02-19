@@ -25,18 +25,18 @@
                     <environmentVariables>
                         <LD_LIBRARY_PATH>${env.LD_LIBRARY_PATH}:${user.dir}</LD_LIBRARY_PATH>
                     </environmentVariables>
-                    <includes>
+           <!--         <includes>
                         <include>**/Nd4jTestSuite.java</include>
                     </includes>
                     <excludes>
                         <exclude>**/Test*.java</exclude>
                         <exclude>**/*Test.java</exclude>
                         <exclude>**/*TestCase.java</exclude>
-                    </excludes>
-                    <systemPropertyVariables>
+                    </excludes>-->
+                <!--    <systemPropertyVariables>
                         <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.cpu.CpuBackend</org.nd4j.linalg.defaultbackend>
                         <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.cpu.CpuBackend</org.nd4j.linalg.tests.backendstorun>
-                    </systemPropertyVariables>
+                    </systemPropertyVariables>-->
                 </configuration>
             </plugin>
 
@@ -55,11 +55,11 @@
     </build>
 
     <dependencies>
-        <dependency>
+    <!--    <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-native</artifactId>
             <version>${project.version}</version>
-        </dependency>
+        </dependency>-->
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>

@@ -9,6 +9,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.jcublas.buffer.allocation.PinnedMemoryStrategy;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -19,6 +20,14 @@ import static org.junit.Assert.assertEquals;
  * @author raver119@gmail.com
  */
 public class CudaReduce3Tests {
+
+    static {
+        try {
+            Nd4jBackend.load();
+        } catch (Nd4jBackend.NoAvailableBackendException e) {
+            throw new RuntimeException("Unable to initialize backend");
+        }
+    }
 
     @Test
     @Ignore
