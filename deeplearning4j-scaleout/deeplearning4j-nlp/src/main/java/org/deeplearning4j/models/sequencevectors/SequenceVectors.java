@@ -61,6 +61,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                 .addSource(iterator, minWordFrequency)
                 .setTargetVocabCache(vocab)
                 .fetchLabels(trainSequenceVectors)
+                .setStopWords(stopWords)
                 .build();
 
         if (existingModel != null && lookupTable instanceof InMemoryLookupTable && existingModel.lookupTable() instanceof InMemoryLookupTable) {
