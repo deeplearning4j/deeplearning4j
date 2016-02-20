@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.api.ops.impl.accum;
 
+import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
@@ -103,6 +104,26 @@ public class Sum extends BaseAccumulation {
     @Override
     public String name() {
         return "sum";
+    }
+
+    @Override
+    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
+        return null;
+    }
+
+    @Override
+    public IComplexNumber op(IComplexNumber origin, float other) {
+        return null;
+    }
+
+    @Override
+    public IComplexNumber op(IComplexNumber origin, double other) {
+        return null;
+    }
+
+    @Override
+    public IComplexNumber op(IComplexNumber origin) {
+        return null;
     }
 
     @Override

@@ -20,6 +20,7 @@
 package org.nd4j.linalg.api.ops.impl.accum;
 
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
@@ -262,10 +263,11 @@ public class Variance extends BaseAccumulation {
 
     @Override
     public IComplexNumber getAndSetFinalResult(IComplexNumber accum) {
-        if (biasCorrected)
+   /*     if (biasCorrected)
             finalResultComplex = (accum.sub(ComplexUtil.pow(Nd4j.createComplexNumber(bias, 0), 2.0).div(Nd4j.createComplexNumber(n(), 0))).div(Nd4j.createComplexNumber(n() - 1.0, 0.0)));
         else finalResultComplex = accum.divi(n - 1);
-        return finalResultComplex;
+        return finalResultComplex;*/
+        throw new UnsupportedOperationException();
     }
 
     @Override

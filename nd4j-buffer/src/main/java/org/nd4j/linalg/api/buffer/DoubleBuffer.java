@@ -21,7 +21,8 @@ package org.nd4j.linalg.api.buffer;
 
 
 import io.netty.buffer.ByteBuf;
-import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.api.complex.IComplexDouble;
+import org.nd4j.linalg.api.complex.IComplexFloat;
 
 import java.nio.ByteBuffer;
 
@@ -61,7 +62,7 @@ public class DoubleBuffer extends BaseDataBuffer {
     }
 
     public DoubleBuffer(int[] data) {
-        this(data, Nd4j.copyOnOps);
+        this(data, true);
     }
 
     public DoubleBuffer(int[] data, boolean copyOnOps) {
@@ -73,7 +74,7 @@ public class DoubleBuffer extends BaseDataBuffer {
     }
 
     public DoubleBuffer(float[] data) {
-        this(data, Nd4j.copyOnOps);
+        this(data, true);
     }
 
     public DoubleBuffer(float[] data, boolean copyOnOps) {
@@ -99,6 +100,16 @@ public class DoubleBuffer extends BaseDataBuffer {
     @Override
     public DataBuffer create(ByteBuf buf,int length) {
         return new DoubleBuffer(buf,length);
+    }
+
+    @Override
+    public IComplexFloat getComplexFloat(int i) {
+        return null;
+    }
+
+    @Override
+    public IComplexDouble getComplexDouble(int i) {
+        return null;
     }
 
     public DoubleBuffer(double[] doubles, boolean copy) {

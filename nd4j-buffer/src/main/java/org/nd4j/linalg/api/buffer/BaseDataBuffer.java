@@ -21,6 +21,8 @@ package org.nd4j.linalg.api.buffer;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import org.bytedeco.javacpp.Pointer;
+import org.nd4j.linalg.api.buffer.unsafe.UnsafeHolder;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -37,7 +39,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Base class for a data buffer
- * handling basic byte operations among other things.
+ * handling basic byte operations
+ * among other things.
  *
  * @author Adam Gibson
  */
@@ -55,6 +58,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected double[] doubleData;
     protected int[] intData;
     protected float[] floatData;
+    protected Pointer pointer;
     protected AtomicBoolean dirty = new AtomicBoolean(false);
 
     // Allocator-related stuff. Moved down here to avoid type casting.
@@ -490,6 +494,59 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
 
     @Override
+    public long address() {
+        switch(allocationMode) {
+            case JAVACPP: return pointer.address();
+            case DIRECT:
+                if(wrappedBuffer.isDirect())
+                    try {
+                        return  UnsafeHolder.getUnsafe().objectFieldOffset(UnsafeHolder.getAddressField());
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                else {
+                    try {
+                        //http://stackoverflow.com/questions/8820164/is-there-a-way-to-get-a-reference-address
+                        int offset = UnsafeHolder.getUnsafe().arrayBaseOffset(array().getClass());
+                        int scale = UnsafeHolder.getUnsafe().arrayIndexScale(array().getClass());
+                        switch (scale) {
+                            case 4:
+                                long factor = UnsafeHolder.is64Bit() ? 8 : 1;
+                                final long i1 = (UnsafeHolder.getUnsafe().getInt(array(), offset) & 0xFFFFFFFFL) * factor;
+                                return i1;
+                            case 8:
+                                throw new AssertionError("Not supported");
+                        }
+                    }catch(Exception e) {
+
+
+
+                    }
+                }
+            case HEAP:
+                //http://stackoverflow.com/questions/8820164/is-there-a-way-to-get-a-reference-address
+                try {
+                    //http://stackoverflow.com/questions/8820164/is-there-a-way-to-get-a-reference-address
+                    int offset = UnsafeHolder.getUnsafe().arrayBaseOffset(array().getClass());
+                    int scale = UnsafeHolder.getUnsafe().arrayIndexScale(array().getClass());
+                    switch (scale) {
+                        case 4:
+                            long factor = UnsafeHolder.is64Bit() ? 8 : 1;
+                            final long i1 = (UnsafeHolder.getUnsafe().getInt(array(), offset) & 0xFFFFFFFFL) * factor;
+                            return i1;
+                        case 8:
+                            throw new AssertionError("Not supported");
+                    }
+                }catch(Exception e) {
+                    throw new IllegalStateException("Unable to detect pointer");
+
+                }
+
+        }
+        throw new IllegalStateException("Illegal pointer");
+    }
+
+    @Override
     public void addReferencing(String id) {
         referencing.add(id);
     }
@@ -888,7 +945,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void put(int i, double element) {
-          if(doubleData != null)
+        if(doubleData != null)
             doubleData[offset() + i] = element;
 
         else if(floatData != null)
@@ -920,7 +977,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     @Override
     public boolean sameUnderlyingData(DataBuffer buffer) {
         if(allocationMode() != buffer.allocationMode())
-        return false;
+            return false;
         if(allocationMode() == AllocationMode.HEAP) {
             return array() == buffer.array();
         }
@@ -986,7 +1043,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public ByteBuffer asNio() {
-       return wrappedBuffer;
+        return wrappedBuffer;
     }
 
     @Override

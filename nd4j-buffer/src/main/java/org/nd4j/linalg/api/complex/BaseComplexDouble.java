@@ -19,7 +19,6 @@
 
 package org.nd4j.linalg.api.complex;
 
-import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Base class for complex doubles
@@ -48,7 +47,9 @@ public abstract class BaseComplexDouble implements IComplexDouble {
 
     @Override
     public IComplexNumber dup() {
-        return Nd4j.createComplexNumber(real, imag);
+       // return Nd4j.createComplexNumber(real, imag);
+        throw new UnsupportedOperationException();
+
     }
 
 
@@ -58,14 +59,16 @@ public abstract class BaseComplexDouble implements IComplexDouble {
         double imag = num.imaginaryComponent().doubleValue();
         double otherVal = num.realComponent().doubleValue();
         double otherImag = num.imaginaryComponent().doubleValue();
-        if (val == otherVal)
+      /*  if (val == otherVal)
             return Nd4j.createComplexNumber(1, 0);
         else if (val != otherVal)
             return Nd4j.createComplexNumber(0, 0);
         else if (imag == otherImag)
             return Nd4j.createComplexNumber(1, 0);
         else
-            return Nd4j.createComplexNumber(0, 0);
+            return Nd4j.createComplexNumber(0, 0);*/
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -74,14 +77,16 @@ public abstract class BaseComplexDouble implements IComplexDouble {
         double imag = num.imaginaryComponent().doubleValue();
         double otherVal = num.realComponent().doubleValue();
         double otherImag = num.imaginaryComponent().doubleValue();
-        if (val != otherVal)
+       /* if (val != otherVal)
             return Nd4j.createComplexNumber(1, 0);
         else if (val == otherVal)
             return Nd4j.createComplexNumber(0, 0);
         else if (imag != otherImag)
             return Nd4j.createComplexNumber(1, 0);
         else
-            return Nd4j.createComplexNumber(0, 0);
+            return Nd4j.createComplexNumber(0, 0);*/
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -90,14 +95,16 @@ public abstract class BaseComplexDouble implements IComplexDouble {
         double imag = num.imaginaryComponent().doubleValue();
         double otherVal = num.realComponent().doubleValue();
         double otherImag = num.imaginaryComponent().doubleValue();
-        if (val > otherVal)
+     /*   if (val > otherVal)
             return Nd4j.createComplexNumber(1, 0);
         else if (val < otherVal)
             return Nd4j.createComplexNumber(0, 0);
         else if (imag > otherImag)
             return Nd4j.createComplexNumber(1, 0);
         else
-            return Nd4j.createComplexNumber(0, 0);
+            return Nd4j.createComplexNumber(0, 0);*/
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -106,14 +113,16 @@ public abstract class BaseComplexDouble implements IComplexDouble {
         double imag = num.imaginaryComponent().doubleValue();
         double otherVal = num.realComponent().doubleValue();
         double otherImag = num.imaginaryComponent().doubleValue();
-        if (val < otherVal)
+/*        if (val < otherVal)
             return Nd4j.createComplexNumber(1, 0);
         else if (val > otherVal)
             return Nd4j.createComplexNumber(0, 0);
         else if (imag < otherImag)
             return Nd4j.createComplexNumber(1, 0);
         else
-            return Nd4j.createComplexNumber(0, 0);
+            return Nd4j.createComplexNumber(0, 0);*/
+        throw new UnsupportedOperationException();
+
     }
 
     /**
@@ -147,8 +156,8 @@ public abstract class BaseComplexDouble implements IComplexDouble {
 
     @Override
     public IComplexNumber copy(IComplexNumber other) {
-        return Nd4j.createDouble(other.realComponent().doubleValue(), other.imaginaryComponent().doubleValue());
-
+        //   return Nd4j.createDouble(other.realComponent().doubleValue(), other.imaginaryComponent().doubleValue());
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -219,7 +228,8 @@ public abstract class BaseComplexDouble implements IComplexDouble {
 
     @Override
     public IComplexFloat asFloat() {
-        return Nd4j.createFloat(realComponent().floatValue(), imaginaryComponent().floatValue());
+        // return Nd4j.createFloat(realComponent().floatValue(), imaginaryComponent().floatValue());
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -231,7 +241,7 @@ public abstract class BaseComplexDouble implements IComplexDouble {
     @Override
     public IComplexNumber addi(IComplexNumber c, IComplexNumber result) {
         result.set(realComponent().doubleValue() + c.realComponent().doubleValue(),
-                    imaginaryComponent().doubleValue() + c.imaginaryComponent().doubleValue());
+                imaginaryComponent().doubleValue() + c.imaginaryComponent().doubleValue());
         return this;
     }
 
@@ -510,7 +520,7 @@ public abstract class BaseComplexDouble implements IComplexDouble {
         double s2 = Math.sqrt(2);
         double p = Math.sqrt(a + realComponent()) / s2;
         double q = Math.sqrt(a - realComponent()) / s2 * Math.signum(imaginaryComponent());
-        return Nd4j.createDouble(p, q);
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -520,9 +530,9 @@ public abstract class BaseComplexDouble implements IComplexDouble {
 
         IComplexNumber that = (IComplexNumber) o;
 
-        if (Math.abs(that.realComponent().doubleValue() - real) > Nd4j.EPS_THRESHOLD)
+        if (Math.abs(that.realComponent().doubleValue() - real) > 1e-12)
             return false;
-        if(Math.abs(that.imaginaryComponent().doubleValue() - imag) > Nd4j.EPS_THRESHOLD)
+        if(Math.abs(that.imaginaryComponent().doubleValue() - imag) > 1e-12)
             return false;
 
         return true;

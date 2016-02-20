@@ -2,6 +2,7 @@ package org.nd4j.linalg.api.blas;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
+import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -242,5 +243,5 @@ public interface Level1 {
 
 
     /** Can we use the axpy and copy methods that take a DataBuffer instead of an INDArray with this backend? */
-    public boolean supportsDataBufferL1Ops();
+     boolean supportsDataBufferL1Ops();
 }

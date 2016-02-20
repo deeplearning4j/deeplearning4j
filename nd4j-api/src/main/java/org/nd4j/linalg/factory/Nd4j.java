@@ -25,7 +25,10 @@ import com.google.common.primitives.Ints;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
 import org.nd4j.linalg.api.buffer.factory.DefaultDataBufferFactory;
+import org.nd4j.linalg.api.complex.IComplexDouble;
+import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
+import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.instrumentation.InMemoryInstrumentation;
 import org.nd4j.linalg.api.instrumentation.Instrumentation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -946,7 +949,6 @@ public class Nd4j {
      * that leverages the underlying storage of the buffer
      * with a new view
      * @param underlyingBuffer the underlying buffer
-     * @param length the length of the view
      * @param offset the offset for the view
      * @return the new view of the data buffer
      */

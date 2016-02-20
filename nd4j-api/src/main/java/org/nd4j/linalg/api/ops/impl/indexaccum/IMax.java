@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.api.ops.impl.indexaccum;
 
+import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseIndexAccumulation;
 import org.nd4j.linalg.api.ops.Op;

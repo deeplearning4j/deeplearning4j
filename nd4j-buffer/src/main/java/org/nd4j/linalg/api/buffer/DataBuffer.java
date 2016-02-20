@@ -57,9 +57,15 @@ public interface DataBuffer extends Serializable {
      */
     enum AllocationMode {
         DIRECT,
-        HEAP
+        HEAP,
+        JAVACPP
     }
 
+    /**
+     * Returns the address of the pointer
+     * @return the address of the pointer
+     */
+    long address();
 
     /**
      * Returns true if the underlying data source

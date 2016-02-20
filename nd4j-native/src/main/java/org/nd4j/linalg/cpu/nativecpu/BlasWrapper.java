@@ -20,7 +20,6 @@
 package org.nd4j.linalg.cpu.nativecpu;
 
 
-import org.nd4j.linalg.cpu.nativecpu.util.LibUtils;
 import org.nd4j.linalg.factory.BaseBlasWrapper;
 
 

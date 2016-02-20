@@ -20,6 +20,7 @@
 package org.nd4j.linalg.api.ops.impl.accum;
 
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
@@ -105,6 +106,27 @@ public class NormMax extends BaseAccumulation {
     @Override
     public String name() {
         return "normmax";
+    }
+
+    @Override
+    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public IComplexNumber op(IComplexNumber origin, float other) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public IComplexNumber op(IComplexNumber origin, double other) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public IComplexNumber op(IComplexNumber origin) {
+        throw new UnsupportedOperationException();
+
     }
 
     @Override

@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.api.ops.impl.accum.distances;
 
+import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;

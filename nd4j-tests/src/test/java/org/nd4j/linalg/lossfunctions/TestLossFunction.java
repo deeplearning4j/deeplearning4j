@@ -1,5 +1,6 @@
 package org.nd4j.linalg.lossfunctions;
 
+import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseLossFunction;
 import org.nd4j.linalg.api.ops.Op;

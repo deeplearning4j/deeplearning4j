@@ -19,7 +19,6 @@
 
 package org.nd4j.linalg.api.complex;
 
-import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Base complex float class
@@ -54,14 +53,16 @@ public abstract class BaseComplexFloat implements IComplexFloat {
         double imag = num.imaginaryComponent().doubleValue();
         double otherVal = num.realComponent().doubleValue();
         double otherImag = num.imaginaryComponent().doubleValue();
-        if (val == otherVal)
+      /*  if (val == otherVal)
             return Nd4j.createComplexNumber(1, 0);
         else if (val != otherVal)
             return Nd4j.createComplexNumber(0, 0);
         else if (imag == otherImag)
             return Nd4j.createComplexNumber(1, 0);
         else
-            return Nd4j.createComplexNumber(0, 0);
+            return Nd4j.createComplexNumber(0, 0);*/
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -70,14 +71,17 @@ public abstract class BaseComplexFloat implements IComplexFloat {
         double imag = num.imaginaryComponent().doubleValue();
         double otherVal = num.realComponent().doubleValue();
         double otherImag = num.imaginaryComponent().doubleValue();
-        if (val != otherVal)
+     /*   if (val != otherVal)
             return Nd4j.createComplexNumber(1, 0);
         else if (val == otherVal)
             return Nd4j.createComplexNumber(0, 0);
         else if (imag != otherImag)
             return Nd4j.createComplexNumber(1, 0);
         else
-            return Nd4j.createComplexNumber(0, 0);
+            return Nd4j.createComplexNumber(0, 0);*/
+        throw new UnsupportedOperationException();
+
+
     }
 
     @Override
@@ -86,14 +90,16 @@ public abstract class BaseComplexFloat implements IComplexFloat {
         double imag = num.imaginaryComponent().doubleValue();
         double otherVal = num.realComponent().doubleValue();
         double otherImag = num.imaginaryComponent().doubleValue();
-        if (val > otherVal)
+ /*       if (val > otherVal)
             return Nd4j.createComplexNumber(1, 0);
         else if (val < otherVal)
             return Nd4j.createComplexNumber(0, 0);
         else if (imag > otherImag)
             return Nd4j.createComplexNumber(1, 0);
         else
-            return Nd4j.createComplexNumber(0, 0);
+            return Nd4j.createComplexNumber(0, 0);*/
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -102,14 +108,16 @@ public abstract class BaseComplexFloat implements IComplexFloat {
         double imag = num.imaginaryComponent().doubleValue();
         double otherVal = num.realComponent().doubleValue();
         double otherImag = num.imaginaryComponent().doubleValue();
-        if (val < otherVal)
+      /*  if (val < otherVal)
             return Nd4j.createComplexNumber(1, 0);
         else if (val > otherVal)
             return Nd4j.createComplexNumber(0, 0);
         else if (imag < otherImag)
             return Nd4j.createComplexNumber(1, 0);
         else
-            return Nd4j.createComplexNumber(0, 0);
+            return Nd4j.createComplexNumber(0, 0);*/
+        throw new UnsupportedOperationException();
+
     }
 
 
@@ -186,7 +194,9 @@ public abstract class BaseComplexFloat implements IComplexFloat {
      */
     @Override
     public IComplexDouble asDouble() {
-        return Nd4j.createDouble(realComponent(), imaginaryComponent());
+        //return Nd4j.createDouble(realComponent(), imaginaryComponent());
+        throw new UnsupportedOperationException();
+
     }
 
     /**
@@ -220,7 +230,8 @@ public abstract class BaseComplexFloat implements IComplexFloat {
 
     @Override
     public IComplexNumber copy(IComplexNumber other) {
-        return Nd4j.createFloat(other.realComponent().floatValue(), other.imaginaryComponent().floatValue());
+       // return Nd4j.createFloat(other.realComponent().floatValue(), other.imaginaryComponent().floatValue());
+        throw new UnsupportedOperationException();
 
     }
 
@@ -494,7 +505,9 @@ public abstract class BaseComplexFloat implements IComplexFloat {
         float s2 = (float) Math.sqrt(2);
         float p = (float) Math.sqrt(a + realComponent()) / s2;
         float q = (float) Math.sqrt(a - realComponent()) / s2 * Math.signum(imaginaryComponent());
-        return Nd4j.createFloat(p, q);
+       // return Nd4j.createFloat(p, q);
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -506,7 +519,7 @@ public abstract class BaseComplexFloat implements IComplexFloat {
 
         if (Float.compare(that.real, real) != 0)
             return false;
-        if(Math.abs(that.imag - imag) > Nd4j.EPS_THRESHOLD)
+        if(Math.abs(that.imag - imag) > 1e-12)
             return false;
 
         return true;

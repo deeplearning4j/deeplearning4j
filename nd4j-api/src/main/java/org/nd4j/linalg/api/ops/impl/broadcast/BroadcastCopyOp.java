@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.ops.impl.broadcast;
 
+import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseBroadcastOp;
 import org.nd4j.linalg.factory.Nd4j;
