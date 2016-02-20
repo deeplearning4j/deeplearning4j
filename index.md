@@ -24,7 +24,6 @@ By following the [instructions on our Quick Start page](../quickstart.html), you
 ### Why Deeplearning4j? 
 
 * A versatile [n-dimensional array](http://nd4j.org/) class for Java and Scala
-* [GPU](http://nd4j.org/gpu_native_backends.html) integration
 * [Scalable](../spark.html) on [Hadoop](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/hadoop-yarn), [Spark](../gpu_aws.html)
 * [Canova](../canova.html): A General vectorization tool for Machine-Learning libs
 * [ND4J: A linear algebra library 2x as fast as Numpy](http://nd4j.org/benchmarking)
