@@ -145,6 +145,8 @@ public class AtomicAllocator implements Allocator {
 
     protected AtomicAllocator() {
         environment = new CudaEnvironment(configuration);
+
+        this.deviceMemoryTracker = new DeviceAllocationsTracker(this.environment, this.configuration);
     }
 
     /**
@@ -694,7 +696,7 @@ public class AtomicAllocator implements Allocator {
      * This method should be callsd to make sure that data on host side is actualized.
      * However, this method only tries to lock data before synchronization.
      * <p>
-     * PLEASE NOTE: This methos is considered UNSAFE.
+     * PLEASE NOTE: This method is considered UNSAFE.
      *
      * @param syncBuffer
      */
@@ -704,7 +706,7 @@ public class AtomicAllocator implements Allocator {
 
         AllocationPoint point = getAllocationPoint(buffer, AllocationUtils.buildAllocationShape(buffer), false);
 
-        if (!point.isActualOnHostSide() && point != null) {
+        if (point != null && !point.isActualOnHostSide()) {
             //log.info("Try hit");
             if (point.getAccessState().tryRequestToe()) {
                // log.info("Try copyback");
@@ -895,7 +897,7 @@ public class AtomicAllocator implements Allocator {
 
         if (trackingPointer == null) { // AllocationUtils.buildAllocationShape(objectId)
             if (catchNewAllocations) {
-                log.info("Registering");
+//                log.info("Registering");
                 trackingPointer = pickupSpan(objectId, shape);
             } else return null;
         }
@@ -1052,9 +1054,9 @@ public class AtomicAllocator implements Allocator {
 
 
 
-        log.info("Short average: ["+shortAverage+"], Long average: [" + longAverage + "]");
-        log.info("Aggressiveness: ["+ aggressiveness+"]; Short threshold: ["+shortThreshold+"]; Long threshold: [" + longThreshold + "]");
-        log.info("Zero elements deleted: " + elementsDropped.get());
+        log.debug("Short average: ["+shortAverage+"], Long average: [" + longAverage + "]");
+        log.debug("Aggressiveness: ["+ aggressiveness+"]; Short threshold: ["+shortThreshold+"]; Long threshold: [" + longThreshold + "]");
+        log.debug("Zero elements deleted: " + elementsDropped.get());
 
         /*
             o.n.j.a.i.AtomicAllocator - Short average: [2.29], Long average: [0.3816667]
@@ -1150,7 +1152,7 @@ public class AtomicAllocator implements Allocator {
             }
         }
 
-        log.info("Thread/Device ["+ threadId+"/"+deviceId+"] elements purged: [" + elementsDropped.get()+"]; Relocated: ["+ elementsMoved.get()+"]; Device objects left: ["+allocations.size()+"]");
+        log.debug("Thread/Device ["+ threadId+"/"+deviceId+"] elements purged: [" + elementsDropped.get()+"]; Relocated: ["+ elementsMoved.get()+"]; Device objects left: ["+allocations.size()+"]");
 
         return freeSpace.get();
     }
@@ -1230,6 +1232,7 @@ public class AtomicAllocator implements Allocator {
                 /*
                     Check for device garbage
                  */
+
                 try {
                     Thread.sleep(Math.max(configuration.getMinimumTTLMilliseconds(), 5000));
                 } catch (Exception e) {
@@ -1237,8 +1240,11 @@ public class AtomicAllocator implements Allocator {
 
                 }
 
+
+                /*
                 if(deviceMemoryTracker == null)
                     continue;
+                */
 
                 //log.info("DeviceGC started...");
                 Aggressiveness aggressiveness = configuration.getGpuDeallocAggressiveness();
@@ -1253,7 +1259,6 @@ public class AtomicAllocator implements Allocator {
                 if (deviceMemoryTracker.getAllocatedSize(threadId, deviceId) < (configuration.getMaximumDeviceAllocation() * 0.25) && (deviceAllocations.get(threadId, deviceId).size()  < 10000)) {
                      // i don't want deallocation to be fired on lower thresholds. just no sense locking stuff
                 } else seekUnusedDevice(this.threadId, this.deviceId, aggressiveness);
-
 
 
             }
@@ -1279,5 +1284,9 @@ public class AtomicAllocator implements Allocator {
      */
     protected int getTotalTrackingPoints() {
         return allocationsMap.size();
+    }
+
+    protected long getTotalAllocatedDeviceMemory(Integer deviceId) {
+        return deviceMemoryTracker.getAllocatedSize(deviceId);
     }
 }

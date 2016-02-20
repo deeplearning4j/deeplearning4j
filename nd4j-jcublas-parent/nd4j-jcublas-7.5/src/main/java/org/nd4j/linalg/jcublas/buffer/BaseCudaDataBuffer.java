@@ -861,28 +861,28 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
         return false;
     }
-/*
+
     @Override
     public byte[] asBytes() {
-        allocator.trySynchronizeHostData(this);
+        allocator.synchronizeHostData(this);
         return super.asBytes();
     }
 
     @Override
     public double[] asDouble() {
-        allocator.trySynchronizeHostData(this);
+        allocator.synchronizeHostData(this);
         return super.asDouble();
     }
 
     @Override
     public float[] asFloat() {
-        allocator.trySynchronizeHostData(this);
+        allocator.synchronizeHostData(this);
         return super.asFloat();
     }
 
     @Override
     public int[] asInt() {
-        allocator.trySynchronizeHostData(this);
+        allocator.synchronizeHostData(this);
         return super.asInt();
     }
 
@@ -894,25 +894,25 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public ByteBuffer asNio() {
-//        allocator.trySynchronizeHostData(this);
+        allocator.trySynchronizeHostData(this);
         return super.asNio();
     }
 
     @Override
     public DoubleBuffer asNioDouble() {
-       // allocator.trySynchronizeHostData(this);
+        allocator.trySynchronizeHostData(this);
         return super.asNioDouble();
     }
 
     @Override
     public FloatBuffer asNioFloat() {
-        //allocator.trySynchronizeHostData(this);
+        allocator.trySynchronizeHostData(this);
         return super.asNioFloat();
     }
 
     @Override
     public IntBuffer asNioInt() {
-        //allocator.trySynchronizeHostData(this);
+        allocator.trySynchronizeHostData(this);
         return super.asNioInt();
     }
 
@@ -924,51 +924,51 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public Number getNumber(int i) {
-        allocator.trySynchronizeHostData(this);
+        allocator.synchronizeHostData(this);
         return super.getNumber(i);
     }
 
     @Override
     public double getDouble(int i) {
-        allocator.trySynchronizeHostData(this);
+        allocator.synchronizeHostData(this);
         return super.getDouble(i);
     }
 
     @Override
     public double[] getDoublesAt(int offset, int inc, int length) {
-        allocator.trySynchronizeHostData(this);
+        allocator.synchronizeHostData(this);
         return super.getDoublesAt(offset, inc, length);
     }
 
     @Override
     public double[] getDoublesAt(int offset, int length) {
-        allocator.trySynchronizeHostData(this);
+        allocator.synchronizeHostData(this);
         return super.getDoublesAt(offset, length);
     }
 
     @Override
     public float getFloat(int i) {
-        allocator.trySynchronizeHostData(this);
+        allocator.synchronizeHostData(this);
         return super.getFloat(i);
     }
 
     @Override
     public float[] getFloatsAt(int offset, int inc, int length) {
-        allocator.trySynchronizeHostData(this);
+        allocator.synchronizeHostData(this);
         return super.getFloatsAt(offset, inc, length);
     }
 
     @Override
     public float[] getFloatsAt(int offset, int length) {
-        allocator.trySynchronizeHostData(this);
+        allocator.synchronizeHostData(this);
         return super.getFloatsAt(offset, length);
     }
 
     @Override
     public int getInt(int ix) {
-        allocator.trySynchronizeHostData(this);
+        allocator.synchronizeHostData(this);
         return super.getInt(ix);
     }
-*/
+
 
 }
