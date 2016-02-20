@@ -23,15 +23,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * A normal distribution.
- * @deprecated Use {@link NormalDistribution}
  */
-@Deprecated
-public class GaussianDistribution extends Distribution {
 
-    private double mean, std;
+public class GaussianDistribution extends NormalDistribution {
 
     /**
-     * Create a normal distribution
+     * Create a gaussian distribution (equivalent to normal)
      * with the given mean and std
      *
      * @param mean the mean
@@ -39,59 +36,6 @@ public class GaussianDistribution extends Distribution {
      */
     @JsonCreator
     public GaussianDistribution(@JsonProperty("mean") double mean, @JsonProperty("std") double std) {
-        this.mean = mean;
-        this.std = std;
-    }
-
-    public double getMean() {
-        return mean;
-    }
-
-    public void setMean(double mean) {
-        this.mean = mean;
-    }
-
-    public double getStd() {
-        return std;
-    }
-
-    public void setStd(double std) {
-        this.std = std;
-    }
-
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        long temp;
-        temp = Double.doubleToLongBits(mean);
-        result = prime * result + (int) (temp ^ (temp >>> 32));
-        temp = Double.doubleToLongBits(std);
-        result = prime * result + (int) (temp ^ (temp >>> 32));
-        return result;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        GaussianDistribution other = (GaussianDistribution) obj;
-        if (Double.doubleToLongBits(mean) != Double
-                .doubleToLongBits(other.mean))
-            return false;
-        if (Double.doubleToLongBits(std) != Double.doubleToLongBits(other.std))
-            return false;
-        return true;
-    }
-
-    public String toString() {
-        return "GaussianDistribution{" +
-                "mean=" + mean +
-                ", std=" + std +
-                '}';
+        super(mean, std);
     }
 }
