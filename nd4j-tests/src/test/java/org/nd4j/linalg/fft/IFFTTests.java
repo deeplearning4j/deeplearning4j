@@ -23,12 +23,8 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
-import org.nd4j.linalg.api.complex.IComplexNumber;
-import org.nd4j.linalg.api.ops.impl.transforms.VectorFFT;
-import org.nd4j.linalg.api.ops.impl.transforms.VectorIFFT;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.fft.FFT;
 
 
 import static org.junit.Assert.assertEquals;

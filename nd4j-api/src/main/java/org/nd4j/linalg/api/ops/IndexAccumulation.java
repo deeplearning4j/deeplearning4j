@@ -1,7 +1,6 @@
 package org.nd4j.linalg.api.ops;
 
 import org.apache.commons.math3.util.Pair;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 
 /**An index accumulation is an operation that returns an index within
  * a NDArray.<br>

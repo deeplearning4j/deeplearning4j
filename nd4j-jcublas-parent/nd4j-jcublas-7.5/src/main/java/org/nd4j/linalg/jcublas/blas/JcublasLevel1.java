@@ -5,19 +5,14 @@ import jcuda.jcublas.JCublas;
 import jcuda.jcublas.JCublas2;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
-import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.linalg.api.blas.impl.BaseLevel1;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexDouble;
-import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.DataTypeValidation;
 import org.nd4j.linalg.jcublas.CublasPointer;
-import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.context.CudaContext;
-import org.nd4j.linalg.jcublas.util.PointerUtil;
 
 /**
  * @author Adam Gibson

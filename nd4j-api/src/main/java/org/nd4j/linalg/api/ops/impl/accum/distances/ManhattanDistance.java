@@ -20,11 +20,9 @@
 package org.nd4j.linalg.api.ops.impl.accum.distances;
 
 import org.apache.commons.math3.util.FastMath;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ComplexUtil;
 
 /**

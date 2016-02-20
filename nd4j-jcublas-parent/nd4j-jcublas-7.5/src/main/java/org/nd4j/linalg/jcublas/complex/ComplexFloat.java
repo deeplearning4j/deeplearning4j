@@ -19,9 +19,6 @@
 
 package org.nd4j.linalg.jcublas.complex;
 
-import org.nd4j.linalg.api.complex.BaseComplexFloat;
-import org.nd4j.linalg.api.complex.IComplexNumber;
-
 /**
  * Complex float
  *

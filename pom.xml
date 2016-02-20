@@ -155,6 +155,7 @@
         <module>nd4j-bytebuddy</module>
         <module>nd4j-common</module>
         <module>nd4j-native</module>
+        <module>nd4j-buffer</module>
     </modules>
 
     <properties>

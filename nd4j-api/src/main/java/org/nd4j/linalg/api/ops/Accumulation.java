@@ -19,10 +19,6 @@
 
 package org.nd4j.linalg.api.ops;
 
-import org.nd4j.linalg.api.complex.IComplexNumber;
-
-import java.util.List;
-
 /**
  * An accumulation is an op that given:<br>
  * x -> the origin ndarray<br>

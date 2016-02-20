@@ -22,9 +22,7 @@ package org.nd4j.linalg.jcublas.ops.executioner;
 
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
-import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
@@ -36,8 +34,6 @@ import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
 import org.nd4j.linalg.jcublas.ops.executioner.kernels.GpuKernelCall;
 import org.nd4j.linalg.jcublas.ops.executioner.kernels.GpuKernelCallFactories;
 import org.nd4j.linalg.util.ArrayUtil;
-
-import java.util.Arrays;
 
 
 /**

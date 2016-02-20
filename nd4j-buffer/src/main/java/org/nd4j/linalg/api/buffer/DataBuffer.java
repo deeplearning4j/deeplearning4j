@@ -27,7 +27,7 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
-import java.nio.*;
+import java.nio.ByteBuffer;
 import java.util.Collection;
 
 /**
@@ -331,7 +331,7 @@ public interface DataBuffer extends Serializable {
      *
      * @return the data type of the buffer
      */
-    DataBuffer.Type dataType();
+    Type dataType();
 
     /**
      * Return the buffer as a float array

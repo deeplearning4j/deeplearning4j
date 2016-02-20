@@ -1,7 +1,6 @@
 package org.nd4j.linalg.api.ops;
 
 import org.apache.commons.math3.util.Pair;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 

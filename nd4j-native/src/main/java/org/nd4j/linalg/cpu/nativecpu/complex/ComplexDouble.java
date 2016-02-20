@@ -19,10 +19,6 @@
 
 package org.nd4j.linalg.cpu.nativecpu.complex;
 
-import org.nd4j.linalg.api.complex.BaseComplexDouble;
-import org.nd4j.linalg.api.complex.IComplexFloat;
-import org.nd4j.linalg.api.complex.IComplexNumber;
-
 /**
  * Double implementation of a complex number.
  * Based on the jblas api by mikio braun

@@ -21,14 +21,14 @@ public interface MemoryStrategy {
      * @param stride the stride to sue
      * @param length the length to go till
      */
-    void setData(DataBuffer buffer,int offset,int stride,int length);
+    void setData(DataBuffer buffer, int offset, int stride, int length);
 
     /**
      *
      * @param buffer
      * @param offset
      */
-    void setData(DataBuffer buffer,int offset);
+    void setData(DataBuffer buffer, int offset);
 
     /**
      * Copy data to native or gpu
@@ -46,7 +46,7 @@ public interface MemoryStrategy {
      *               on allocation
      * @param length length
      */
-    Object alloc(DataBuffer buffer, int stride, int offset,int length);
+    Object alloc(DataBuffer buffer, int stride, int offset, int length);
 
     /**
      * Free the buffer wrt the

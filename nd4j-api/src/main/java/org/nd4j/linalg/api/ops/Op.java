@@ -19,7 +19,6 @@
 
 package org.nd4j.linalg.api.ops;
 
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.nio.Buffer;

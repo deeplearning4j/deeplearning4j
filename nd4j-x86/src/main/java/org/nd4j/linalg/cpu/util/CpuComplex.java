@@ -2,8 +2,6 @@ package org.nd4j.linalg.cpu.util;
 
 import org.jblas.ComplexDouble;
 import org.jblas.ComplexFloat;
-import org.nd4j.linalg.api.complex.IComplexDouble;
-import org.nd4j.linalg.api.complex.IComplexFloat;
 
 /**
  * Complex number conversions

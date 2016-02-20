@@ -19,8 +19,6 @@
 
 package org.nd4j.linalg.api.ops;
 
-import org.nd4j.linalg.api.complex.IComplexNumber;
-
 /**
  * Applies a scalar
  * along a bigger input array.

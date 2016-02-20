@@ -42,7 +42,7 @@ public interface DataBufferFactory {
      * @param length the length of the buffer
      * @return the databuffer as a view
      */
-    DataBuffer create(DataBuffer underlyingBuffer,int offset,int length);
+    DataBuffer create(DataBuffer underlyingBuffer, int offset, int length);
 
     /**
      * Create int buffer
@@ -50,7 +50,7 @@ public interface DataBufferFactory {
      * @param length
      * @return
      */
-    DataBuffer createInt(int offset,ByteBuffer buffer, int length);
+    DataBuffer createInt(int offset, ByteBuffer buffer, int length);
 
     /**
      * Create a float data buffer
@@ -58,7 +58,7 @@ public interface DataBufferFactory {
      * @param length
      * @return
      */
-    DataBuffer createFloat(int offset,ByteBuffer buffer, int length);
+    DataBuffer createFloat(int offset, ByteBuffer buffer, int length);
 
     /**
      * Creates a double data buffer
@@ -66,14 +66,14 @@ public interface DataBufferFactory {
      * @param length
      * @return
      */
-    DataBuffer createDouble(int offset,ByteBuffer buffer, int length);
+    DataBuffer createDouble(int offset, ByteBuffer buffer, int length);
 
     /**
      * Create a double data buffer
      *
      * @return the new data buffer
      */
-    DataBuffer createDouble(int offset,int length);
+    DataBuffer createDouble(int offset, int length);
 
     /**
      * Create a float data buffer
@@ -81,7 +81,7 @@ public interface DataBufferFactory {
      * @param length the length of the buffer
      * @return the new data buffer
      */
-    DataBuffer createFloat(int offset,int length);
+    DataBuffer createFloat(int offset, int length);
 
     /**
      * Create an int data buffer
@@ -89,7 +89,7 @@ public interface DataBufferFactory {
      * @param length the length of the data buffer
      * @return the create data buffer
      */
-    DataBuffer createInt(int offset,int length);
+    DataBuffer createInt(int offset, int length);
 
 
     /**
@@ -98,7 +98,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createDouble(int offset,int[] data);
+    DataBuffer createDouble(int offset, int[] data);
 
     /**
      * Creates a double data buffer
@@ -106,7 +106,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createFloat(int offset,int[] data);
+    DataBuffer createFloat(int offset, int[] data);
 
     /**
      * Creates a double data buffer
@@ -114,7 +114,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createInt(int offset,int[] data);
+    DataBuffer createInt(int offset, int[] data);
 
     /**
      * Creates a double data buffer
@@ -122,7 +122,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createDouble(int offset,double[] data);
+    DataBuffer createDouble(int offset, double[] data);
 
 
     /**
@@ -131,7 +131,7 @@ public interface DataBufferFactory {
      * @param length
      * @return
      */
-    DataBuffer createDouble(int offset,byte[] data, int length);
+    DataBuffer createDouble(int offset, byte[] data, int length);
 
     /**
      * Create a double buffer
@@ -139,7 +139,7 @@ public interface DataBufferFactory {
      * @param length
      * @return
      */
-    DataBuffer createFloat(int offset,byte[] data, int length);
+    DataBuffer createFloat(int offset, byte[] data, int length);
 
     /**
      * Creates a float data buffer
@@ -147,7 +147,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createFloat(int offset,double[] data);
+    DataBuffer createFloat(int offset, double[] data);
 
     /**
      * Creates an int data buffer
@@ -155,7 +155,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createInt(int offset,double[] data);
+    DataBuffer createInt(int offset, double[] data);
 
     /**
      * Creates a double data buffer
@@ -163,7 +163,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createDouble(int offset,float[] data);
+    DataBuffer createDouble(int offset, float[] data);
 
     /**
      * Creates a float data buffer
@@ -171,7 +171,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createFloat(int offset,float[] data);
+    DataBuffer createFloat(int offset, float[] data);
 
     /**
      * Creates an int data buffer
@@ -179,7 +179,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createInt(int offset,float[] data);
+    DataBuffer createInt(int offset, float[] data);
 
 
     /**
@@ -188,7 +188,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createDouble(int offset,int[] data, boolean copy);
+    DataBuffer createDouble(int offset, int[] data, boolean copy);
 
     /**
      * Creates a double data buffer
@@ -196,7 +196,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createFloat(int offset,int[] data, boolean copy);
+    DataBuffer createFloat(int offset, int[] data, boolean copy);
 
     /**
      * Creates a double data buffer
@@ -204,7 +204,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createInt(int offset,int[] data, boolean copy);
+    DataBuffer createInt(int offset, int[] data, boolean copy);
 
     /**
      * Creates a double data buffer
@@ -212,7 +212,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createDouble(int offset,double[] data, boolean copy);
+    DataBuffer createDouble(int offset, double[] data, boolean copy);
 
     /**
      * Creates a float data buffer
@@ -220,7 +220,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createFloat(int offset,double[] data, boolean copy);
+    DataBuffer createFloat(int offset, double[] data, boolean copy);
 
     /**
      * Creates an int data buffer
@@ -228,7 +228,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createInt(int offset,double[] data, boolean copy);
+    DataBuffer createInt(int offset, double[] data, boolean copy);
 
     /**
      * Creates a double data buffer
@@ -236,7 +236,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createDouble(int offset,float[] data, boolean copy);
+    DataBuffer createDouble(int offset, float[] data, boolean copy);
 
     /**
      * Creates a float data buffer
@@ -244,7 +244,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createFloat(int offset,float[] data, boolean copy);
+    DataBuffer createFloat(int offset, float[] data, boolean copy);
 
     /**
      * Creates an int data buffer
@@ -252,7 +252,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createInt(int offset,float[] data, boolean copy);
+    DataBuffer createInt(int offset, float[] data, boolean copy);
 
 
     /**

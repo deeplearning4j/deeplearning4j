@@ -24,11 +24,10 @@ import io.netty.buffer.Unpooled;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNumber;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
+
 import java.io.*;
-import java.lang.ref.WeakReference;
 import java.nio.*;
 import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
@@ -51,7 +50,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected transient ByteBuffer wrappedBuffer;
     protected DataBuffer wrappedDataBuffer;
     protected Collection<String> referencing = Collections.synchronizedSet(new HashSet<String>());
-    protected transient WeakReference<DataBuffer> ref;
     protected boolean isPersist = false;
     protected AllocationMode allocationMode;
     protected double[] doubleData;
@@ -153,7 +151,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @param length
      */
     protected BaseDataBuffer(ByteBuf buf,int length) {
-        allocationMode = Nd4j.alloc;
+        allocationMode = AllocationMode.DIRECT;
         this.wrappedBuffer = buf.nioBuffer();
         this.length = length;
         this.underlyingLength = length;
@@ -177,7 +175,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @param copy
      */
     public BaseDataBuffer(float[] data, boolean copy) {
-        allocationMode = Nd4j.alloc;
+        allocationMode = AllocationMode.HEAP;
         if(allocationMode == AllocationMode.HEAP) {
             if(copy) {
                 floatData = ArrayUtil.copy(data);
@@ -219,7 +217,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @param copy
      */
     public BaseDataBuffer(double[] data, boolean copy) {
-        allocationMode = Nd4j.alloc;
+        allocationMode = AllocationMode.HEAP;
         if(allocationMode == AllocationMode.HEAP) {
             if(copy) {
                 doubleData = ArrayUtil.copy(data);
@@ -260,7 +258,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @param copy
      */
     public BaseDataBuffer(int[] data, boolean copy) {
-        allocationMode = Nd4j.alloc;
+        allocationMode = AllocationMode.HEAP;
         if(allocationMode == AllocationMode.HEAP) {
             if(copy)
                 intData = ArrayUtil.copy(data);
@@ -287,7 +285,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @param data
      */
     public BaseDataBuffer(double[] data) {
-        this(data,Nd4j.copyOnOps);
+        this(data,true);
     }
 
     /**
@@ -295,7 +293,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @param data
      */
     public BaseDataBuffer(int[] data) {
-        this(data, Nd4j.copyOnOps);
+        this(data, true);
     }
 
     /**
@@ -303,7 +301,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @param data
      */
     public BaseDataBuffer(float[] data) {
-        this(data,Nd4j.copyOnOps);
+        this(data,true);
     }
     /**
      *
@@ -324,7 +322,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @param elementSize
      */
     public BaseDataBuffer(int length, int elementSize) {
-        allocationMode = Nd4j.alloc;
+        allocationMode = AllocationMode.DIRECT;
         this.length = length;
         this.underlyingLength = length;
         this.elementSize = elementSize;
@@ -364,7 +362,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @param length
      */
     public BaseDataBuffer(ByteBuffer buffer,int length) {
-        allocationMode = Nd4j.alloc;
+        allocationMode = AllocationMode.DIRECT;
         this.length = length;
         this.underlyingLength = length;
         buffer.order(ByteOrder.nativeOrder());
@@ -446,11 +444,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected BaseDataBuffer(int length) {
         this.length = length;
         this.underlyingLength = length;
-        allocationMode = Nd4j.alloc;
+        allocationMode = AllocationMode.DIRECT;
         if(length < 0)
             throw new IllegalArgumentException("Unable to create a buffer of length <= 0");
 
-        ref = new WeakReference<DataBuffer>(this,Nd4j.bufferRefQueue());
         if(allocationMode == AllocationMode.HEAP) {
             if(length >= Integer.MAX_VALUE)
                 throw new IllegalArgumentException("Length of data buffer can not be > Integer.MAX_VALUE for heap (array based storage) allocation");
@@ -690,18 +687,14 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
 
     @Override
-    public IComplexFloat getComplexFloat(int i) {
-        return Nd4j.createFloat(getFloat(i), getFloat(i + 1));
-    }
+    public abstract IComplexFloat getComplexFloat(int i);
 
     @Override
-    public IComplexDouble getComplexDouble(int i) {
-        return Nd4j.createDouble(getDouble(i), getDouble(i + 1));
-    }
+    public abstract IComplexDouble getComplexDouble(int i);
 
     @Override
     public IComplexNumber getComplex(int i) {
-        return dataType() == DataBuffer.Type.FLOAT ? getComplexFloat(i) : getComplexDouble(i);
+        return dataType() == Type.FLOAT ? getComplexFloat(i) : getComplexDouble(i);
     }
 
 
@@ -1104,7 +1097,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 return false;
             for(int i = 0; i < length(); i++) {
                 double eps = Math.abs(getDouble(i) - d.getDouble(i));
-                if(eps > Nd4j.EPS_THRESHOLD)
+                if(eps > 1e-12)
                     return false;
             }
         }
@@ -1116,7 +1109,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         doReadObject(s);
     }
 
-    private void writeObject(java.io.ObjectOutputStream out)
+    private void writeObject(ObjectOutputStream out)
             throws IOException {
         out.defaultWriteObject();
         write(out);
@@ -1139,7 +1132,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     protected void read(DataInputStream s) {
         try {
-            ref = new WeakReference<DataBuffer>(this,Nd4j.bufferRefQueue());
             referencing = Collections.synchronizedSet(new HashSet<String>());
             dirty = new AtomicBoolean(false);
             allocationMode = AllocationMode.valueOf(s.readUTF());
@@ -1247,7 +1239,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public int hashCode() {
         int result = length;
         result = 31 * result + (referencing != null ? referencing.hashCode() : 0);
-        result = 31 * result + (ref != null ? ref.hashCode() : 0);
         result = 31 * result + (isPersist ? 1 : 0);
         result = 31 * result + (allocationMode != null ? allocationMode.hashCode() : 0);
         return result;
