@@ -21,6 +21,9 @@ package org.nd4j.linalg.api.buffer;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import org.bytedeco.javacpp.DoublePointer;
+import org.bytedeco.javacpp.FloatPointer;
+import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.unsafe.UnsafeHolder;
 import org.nd4j.linalg.api.complex.IComplexDouble;
@@ -89,7 +92,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
             this.originalBuffer = underlyingBuffer.originalDataBuffer();
 
-            // FIXME: please don't remove this comment, since there's probably a bug in current offset() impl, and this line will change originalOffset accroding to proper offset() impl
+            // FIXME: please don't remove this comment, since there's probably a bug in current offset() impl,
+            // and this line will change originalOffset accroding to proper offset() impl
             // FIXME: raver119@gmail.com
             this.originalOffset = offset; // + underlyingBuffer.originalOffset();
         }
@@ -98,6 +102,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
             if(underlyingBuffer.allocationMode() == AllocationMode.HEAP) {
                 double[] underlyingArray = (double[]) underlyingBuffer.array();
                 this.doubleData = underlyingArray;
+            }
+            else if(underlyingBuffer.allocationMode() == AllocationMode.JAVACPP) {
+                pointer = new DoublePointer(length());
+                this.wrappedBuffer = pointer.asByteBuffer();
             }
             else {
                 ByteBuffer underlyingBuff = underlyingBuffer.asNio();
@@ -109,6 +117,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 float[] underlyingArray = (float[]) underlyingBuffer.array();
                 this.floatData = underlyingArray;
             }
+            else if(underlyingBuffer.allocationMode() == AllocationMode.JAVACPP) {
+                pointer = underlyingBuffer.pointer();
+                wrappedBuffer = pointer.asByteBuffer();
+            }
             else {
                 ByteBuffer underlyingBuff = underlyingBuffer.asNio();
                 this.wrappedBuffer = underlyingBuff;
@@ -119,6 +131,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
             if(underlyingBuffer.allocationMode() == AllocationMode.HEAP) {
                 int[] underlyingArray = (int[]) underlyingBuffer.array();
                 this.intData = underlyingArray;
+            }
+            else if(underlyingBuffer.allocationMode() == AllocationMode.JAVACPP) {
+                pointer = underlyingBuffer.pointer();
+                wrappedBuffer = pointer.asByteBuffer();
             }
             else {
                 ByteBuffer underlyingBuff = underlyingBuffer.asNio();
@@ -188,6 +204,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 this.floatData = data;
             }
         }
+        else if(allocationMode == AllocationMode.JAVACPP) {
+            pointer = new FloatPointer(ArrayUtil.copy(data));
+            wrappedBuffer = pointer.asByteBuffer();
+        }
         else {
             wrappedBuffer =  ByteBuffer.allocateDirect(4 * data.length);
             wrappedBuffer.order(ByteOrder.nativeOrder());
@@ -230,6 +250,16 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 this.doubleData = data;
             }
         }
+        else if(allocationMode == AllocationMode.JAVACPP) {
+            if(copy) {
+                pointer = new DoublePointer(ArrayUtil.copy(data));
+            }
+            else {
+                pointer = new DoublePointer(data);
+            }
+
+            wrappedBuffer = pointer.asByteBuffer();
+        }
         else {
             wrappedBuffer =  ByteBuffer.allocateDirect(8 * data.length);
             wrappedBuffer.order(ByteOrder.nativeOrder());
@@ -269,6 +299,13 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
             else
                 this.intData = data;
+
+        }
+        else if(allocationMode == AllocationMode.JAVACPP) {
+            if(copy) {
+                pointer = new IntPointer(ArrayUtil.copy(data));
+                wrappedBuffer = pointer.asByteBuffer();
+            }
 
         }
         else {
@@ -460,6 +497,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
             else if(dataType() == Type.FLOAT)
                 floatData = new float[length];
         }
+        else if(allocationMode == AllocationMode.JAVACPP) {
+            pointer = new Pointer(ByteBuffer.allocate(length));
+            wrappedBuffer = pointer.asByteBuffer();
+        }
         else {
             if(length * getElementSize() < 0)
                 throw new IllegalArgumentException("Unable to create buffer of length " + length + " due to negative length specified");
@@ -518,9 +559,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                                 throw new AssertionError("Not supported");
                         }
                     }catch(Exception e) {
-
-
-
+                        throw new IllegalStateException("Unable to get address");
                     }
                 }
             case HEAP:
@@ -802,6 +841,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             return bos.toByteArray();
 
         }
+
         else {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             DataOutputStream dos = new DataOutputStream(bos);
@@ -886,6 +926,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             dirty.set(false);
             return (double) intData[offset() + i];
         }
+
 
         if(dataType() == Type.FLOAT) {
             dirty.set(false);
@@ -981,6 +1022,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
         if(allocationMode() == AllocationMode.HEAP) {
             return array() == buffer.array();
         }
+        else if(allocationMode() == AllocationMode.JAVACPP)
+            return pointer() == buffer.pointer();
         else {
             return buffer.asNio() == asNio();
         }

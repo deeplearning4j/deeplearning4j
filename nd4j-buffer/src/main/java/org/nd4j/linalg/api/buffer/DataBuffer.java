@@ -20,6 +20,7 @@
 package org.nd4j.linalg.api.buffer;
 
 import io.netty.buffer.ByteBuf;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -60,6 +61,12 @@ public interface DataBuffer extends Serializable {
         HEAP,
         JAVACPP
     }
+
+    /**
+     * Returns an underlying pointer if one exists
+     * @return
+     */
+    Pointer pointer();
 
     /**
      * Returns the address of the pointer
