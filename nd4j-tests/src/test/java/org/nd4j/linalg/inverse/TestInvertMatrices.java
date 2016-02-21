@@ -44,6 +44,24 @@ public class TestInvertMatrices extends BaseNd4jTest {
         }
     }
 
+    @Test
+    public void testInvalidMatrixInversion(){
+        try {
+            InvertMatrix.invert(Nd4j.create(5, 4), false);
+            fail("No exception thrown for invalid input");
+        }catch(Exception e){ }
+
+        try {
+            InvertMatrix.invert(Nd4j.create(5, 5, 5), false);
+            fail("No exception thrown for invalid input");
+        }catch(Exception e){ }
+
+        try {
+            InvertMatrix.invert(Nd4j.create(1, 5), false);
+            fail("No exception thrown for invalid input");
+        }catch(Exception e){ }
+    }
+
     @Override
     public char ordering() {
         return 'c';
