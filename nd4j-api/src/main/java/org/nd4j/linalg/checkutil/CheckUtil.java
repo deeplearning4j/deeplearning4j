@@ -235,6 +235,20 @@ public class CheckUtil {
 		return out;
 	}
 
+    public static INDArray convertFromApacheMatrix(RealMatrix matrix){
+        int[] shape = new int[]{matrix.getRowDimension(),matrix.getColumnDimension()};
+        INDArray out = Nd4j.create(shape);
+        for( int i=0; i<shape[0]; i++ ){
+            for( int j=0; j<shape[1]; j++ ){
+                double value = matrix.getEntry(i,j);
+                out.putScalar(new int[]{i,j}, value);
+            }
+        }
+        return out;
+    }
+
+
+
 	public static void printFailureDetails(INDArray first, INDArray second, RealMatrix expected, INDArray actual, INDArray onCopies, String op){
         System.out.println("\nFactory: " + Nd4j.factory().getClass() + "\n");
 
