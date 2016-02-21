@@ -10,16 +10,8 @@ IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     include_directories("/usr/local/include")
 ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 
-
-if(CPU_BLAS)
-    add_definitions(-D__CPUBLAS__=true)
-    FIND_PACKAGE(BLAS REQUIRED)
-    FIND_PACKAGE(LAPACK REQUIRED)
-    add_library(libnd4j cpu/NativeBlas.cpp SHARED)
-    target_link_libraries(libnd4j ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
-
-endif()
 if(CUDA_BLAS)
+    message("Build cublas")
     find_package(CUDA)
     add_definitions(-D__CUDABLAS__=true)
 
@@ -38,12 +30,20 @@ if(CUDA_BLAS)
         else()
             list(APPEND CUDA_NVCC_FLAGS "-DVERBOSE;-G;-g;-lcublas; -gencode arch=compute_35,code=sm_35")
         endif()
-        CUDA_ADD_LIRBRARY(libnd4j gpu/NativeBlas.cu)
+        CUDA_ADD_LIBRARY(libnd4j cuda/NativeBlas.cu)
         target_link_libraries(libnd4j cublas)
 
-    endif()
+    endif(CUDA_FOUND)
 
+elseif(CPU_BLAS)
+    message("CPU BLAS")
+    add_definitions(-D__CPUBLAS__=true)
+    FIND_PACKAGE(BLAS REQUIRED)
+    FIND_PACKAGE(LAPACK REQUIRED)
+    add_library(libnd4j SHARED cpu/NativeBlas.cpp )
+    target_link_libraries(libnd4j ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 endif()
+
 
 
 

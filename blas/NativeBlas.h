@@ -73,10 +73,7 @@ public:
 
     float sasum(long *extraParams,int N, long X, int incX);
 
-    double dasum(long *extraParams,int N, long X, int incX) {
-        double *xPointer = reinterpret_cast<double *>(X);
-
-    }
+    double dasum(long *extraParams,int N, long X, int incX);
 
     /*
      * ------------------------------------------------------
@@ -84,15 +81,9 @@ public:
      * ------------------------------------------------------
      */
 
-    int isamax(long *extraParams,int N, long X, int incX){
-        float *xPointer = reinterpret_cast<float *>(X);
+    int isamax(long *extraParams,int N, long X, int incX);
 
-    }
-
-    int idamax(long *extraParams,int N, long X, int incX) {
-        double *xPointer = reinterpret_cast<double *>(X);
-
-    }
+    int idamax(long *extraParams,int N, long X, int incX);
 
     /*
      * ======================================================
@@ -339,6 +330,7 @@ public:
                long A, int lda,
                long X, int incX);
     void dtrmv(long *extraParams,int Order, int Uplo, int TransA,
+               int Diag,
                int N, double alpha,
                long A, int lda,
                long X, int incX);

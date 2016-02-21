@@ -61,8 +61,8 @@ else
             rm -rf blasbuild
            mkdir blasbuild
            cd blasbuild
-           if [ "$#" -gt "2" ]; then
-              if [ "$2" == "gpu" ]; then
+           if [ "$#" -gt "1" ]; then
+              if [ "$2" == "cuda" ]; then
                    cmake -DCUDA_BLAS=true -DBLAS=TRUE ..
                    make && cd ..
                   echo "FINISHING BUILD"
