@@ -151,12 +151,37 @@ public class SparkDl4jMultiLayer implements Serializable {
 
     /**Train a multi layer network based on data loaded from a text file + {@link RecordReader}.
      * This method splits the data into approximately {@code examplesPerFit} sized splits, and trains on each split.
-     * one after the other. See {@link #fitDataSet(JavaRDD, int, int, int)} for further details.
+     * one after the other. See {@link #fitDataSet(JavaRDD, int, int, int)} for further details.<br>
+     * Note: Compared to {@link #fit(String, int, RecordReader, int, int, int)}, this method persists and then counts the data set
+     * size directly. This is usually OK, though if the data set does not fit in memory, this can result in some overhead due
+     * to the data being loaded multiple times (once for count, once for fitting), as compared to providing the data set
+     * size to the {@link #fit(String, int, RecordReader, int, int, int)} method
      * @param path the path to the text file
      * @param labelIndex the label index
      * @param recordReader the record reader to parse results
      * @param examplesPerFit Number of examples to fit on at each iteration
+     * @param numPartitions Number of partitions to divide each subset of the data into (for best results, this  should be
+     *                      equal to the number of executors)
      * @return {@link MultiLayerNetwork}
+     */
+    public MultiLayerNetwork fit(String path, int labelIndex, RecordReader recordReader, int examplesPerFit, int numPartitions){
+        JavaRDD<DataSet> points = loadFromTextFile(path, labelIndex, recordReader);
+        points.cache();
+        int count = (int)points.count();
+        return fitDataSet(points, examplesPerFit, count, numPartitions);
+    }
+
+    /**Train a multi layer network based on data loaded from a text file + {@link RecordReader}.
+     * This method splits the data into approximately {@code examplesPerFit} sized splits, and trains on each split.
+     * one after the other. See {@link #fitDataSet(JavaRDD, int, int, int)} for further details.
+     * @param path the path to the text file
+     * @param labelIndex the label index
+     * @param recordReader the record reader to parse results
+     * @param examplesPerFit Number of examples to fit on at each iteration (divided between all executors)
+     * @param numPartitions Number of partitions to divide each subset of the data into (for best results, this  should be
+     *                      equal to the number of executors)
+     * @return {@link MultiLayerNetwork}
+     * @see #fit(String, int, RecordReader, int, int)
      */
     public MultiLayerNetwork fit(String path,int labelIndex,RecordReader recordReader, int examplesPerFit, int totalExamples, int numPartitions ) {
         JavaRDD<DataSet> points = loadFromTextFile(path, labelIndex, recordReader);
@@ -223,6 +248,27 @@ public class SparkDl4jMultiLayer implements Serializable {
         return fitDataSet(MLLibUtil.fromLabeledPoint(sc, rdd, outputLayer.getNOut()));
     }
 
+    /** Equivalent to {@link #fitDataSet(JavaRDD, int, int, int)}, but persist and count the size of the data set first,
+     * instead of requiring the data set size to be provided externally.
+     * <b>Note</b>: In some cases, it may be more efficient to count the size of the data set earlier in the pipeline and
+     * provide this count to the {@link #fitDataSet(JavaRDD, int, int, int)} method, as counting on the {@code JavaRDD<DataSet>}
+     * requires a full pass of the data pipeline. In cases where the entire {@code JavaRDD<DataSet>} does not fit in memory, this
+     * approach can result in multiple passes being done over the data, potentially degrading performance
+     * @param rdd Data to train on
+     * @param examplesPerFit Number of examples to learn on (between averaging) across all executors. For example, if set to
+     *                       1000 and rdd.count() == 10k, then we do 10 sets of learning, each on 1000 examples.
+     *                       To use all examples, set maxExamplesPerFit to Integer.MAX_VALUE
+     * @param numPartitions number of partitions to divide the data in to. For  best results, this should be equal to the number
+     *                      of executors
+     * @return Trained network
+     */
+    public MultiLayerNetwork fitDataSet(JavaRDD<DataSet> rdd, int examplesPerFit, int numPartitions ){
+        rdd.cache();
+        int count = (int)rdd.count();
+
+        return fitDataSet(rdd, examplesPerFit, count, numPartitions);
+    }
+
     /**Fit the data, splitting into smaller data subsets if necessary. This allows large {@code JavaRDD<DataSet>}s)
      * to be trained as a set of smaller steps instead of all together.<br>
      * Using this method, training progresses as follows:<br>
@@ -238,7 +284,8 @@ public class SparkDl4jMultiLayer implements Serializable {
      *                       1000 and rdd.count() == 10k, then we do 10 sets of learning, each on 1000 examples.
      *                       To use all examples, set maxExamplesPerFit to Integer.MAX_VALUE
      * @param totalExamples total number of examples in the data RDD
-     * @param numPartitions number of partitions to divide the data in to
+     * @param numPartitions number of partitions to divide the data in to. For best results, this should be equal to the
+     *                      number of executors
      * @return Trained network
      */
     public MultiLayerNetwork fitDataSet(JavaRDD<DataSet> rdd, int examplesPerFit, int totalExamples, int numPartitions ){
