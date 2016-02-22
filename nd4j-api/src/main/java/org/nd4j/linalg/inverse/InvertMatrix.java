@@ -15,6 +15,10 @@ public class InvertMatrix {
      * @return the inverted matrix
      */
     public static INDArray invert(INDArray arr,boolean inPlace) {
+        if (arr.isSquare()) {
+            throw new IllegalArgumentException("invalid array: must be square matrix");
+        }
+
         int[] IPIV = new int[arr.length() + 1];
         int LWORK = arr.length() * arr.length();
         INDArray WORK = Nd4j.create(new double[LWORK]);
