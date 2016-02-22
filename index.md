@@ -17,8 +17,8 @@ By following the [instructions on our Quick Start page](../quickstart.html), you
 * Voice search
 * Speech-to-text (transcription)
 * Spam filtering (anomaly detection)
-* Fraud detection 
-* Recommender Systems (CRM, adtech, churn prevention)
+* [Fraud detection](http://www.skymind.io/finance/) 
+* [Recommender Systems (CRM, adtech, churn prevention)](http://www.skymind.io/commerce/)
 * [Regression](../linear-regression.html)
 
 ### Why Deeplearning4j? 
