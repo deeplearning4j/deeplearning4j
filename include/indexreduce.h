@@ -223,12 +223,11 @@ struct SharedIndexValue<double> {
 	 *                          1 is the number of vectors
 	 */
 	__inline__ __device__ void transform(
-			int n, T *dx,
+			T *dx,
 			int *xShapeInfo,
 			T *extraParams,
 			T *result,
 			int *resultShapeInfo,
-			int *gpuInformation,
 			int *dimension,
 			int dimensionLength,
 			int postProcessOrNot) {
@@ -244,7 +243,7 @@ struct SharedIndexValue<double> {
 		__shared__ int xOffset;
 		__shared__ int reductionIndexesPerBlock;
 
-		int numElements = gpuInformation[2] / sizeof(IndexValue <T>);
+		int numElements = gridDim.x;
 		//shared memory space for storing intermediate results
 		IndexValue<T> *sPartials;
 		functions::indexreduce::SharedIndexValue<T> holder;
@@ -1350,13 +1349,11 @@ struct SharedIndexValue<double> {
 template <typename T>
 __device__ void indexReduceGeneric(
 		int op,
-		int n,
 		T *dx,
 		int *xShapeInfo,
 		T *extraParams,
 		T *result,
 		int *resultShapeInfo,
-		int *gpuInformation,
 		int *dimension,
 		int dimensionLength, int postProcessOrNot) {
 	__shared__ functions::indexreduce::IndexReduce<T> *indexReduce;
@@ -1367,7 +1364,7 @@ __device__ void indexReduceGeneric(
 	if(threadIdx.x == 0)
 		indexReduce = newOpFactory->getOp(op);
 	__syncthreads();
-	indexReduce->transform(n,dx,xShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
+	indexReduce->transform(dx,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength,postProcessOrNot);
 	if(threadIdx.x == 0) {
 		free(indexReduce);
 		free(newOpFactory);
@@ -1389,11 +1386,11 @@ __device__ void indexReduceGeneric(
  * @param dimensionLength the length of the dimension buffer
  * @param postProcessOrNot whether to pre process or not
  */
-extern "C" __global__ void indexReduceDouble(int op,int n, double *dx, int *xShapeInfo, double *extraParams, double *result,
-		int *resultShapeInfo, int *gpuInformation,
+extern "C" __global__ void indexReduceDouble(int op, double *dx, int *xShapeInfo, double *extraParams, double *result,
+		int *resultShapeInfo,
 		int *dimension,
 		int dimensionLength, int postProcessOrNot) {
-	indexReduceGeneric<double>(op,n,dx,xShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
+	indexReduceGeneric<double>(op,dx,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength,postProcessOrNot);
 
 }
 
@@ -1413,10 +1410,10 @@ extern "C" __global__ void indexReduceDouble(int op,int n, double *dx, int *xSha
  * @param postProcessOrNot whether to pre process or not
  */
 extern "C" __global__ void indexReduceFloat(int op,int n, float *dx, int *xShapeInfo, float *extraParams, float *result,
-		int *resultShapeInfo, int *gpuInformation,
+		int *resultShapeInfo,
 		int *dimension,
 		int dimensionLength, int postProcessOrNot) {
-	indexReduceGeneric<float>(op,n,dx,xShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
+	indexReduceGeneric<float>(op,dx,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength,postProcessOrNot);
 
 }
 

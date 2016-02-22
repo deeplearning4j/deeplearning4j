@@ -160,7 +160,6 @@ namespace functions {
 			T *extraParams,
 			T *result,
 			int *resultShapeInfo,
-			int *gpuInformation,
 			int *dimension,
 			int dimensionLength,
 			int postProcessOrNot) {
@@ -178,7 +177,7 @@ namespace functions {
 		//shared memory space for storing intermediate results
 		SharedMemory <T> val;
 		volatile T *sPartials = val.getPointer();
-		int numElements = gpuInformation[2] / sizeof(T);
+		int numElements = gridDim.x;
 		T init = this->startingValue(dx);
 		for (int i = tid; i < numElements; i += blockDim.x)
 			sPartials[i] = init;
@@ -1980,13 +1979,11 @@ __device__ void initializeShared(T *extraParams, T **sPartials, int sMemSize) {
 template <typename T>
 __global__ void reduceGenericGlobal(
 		int op,
-		int n,
 		T *dx,
 		int *xShapeInfo,
 		T *extraParams,
 		T *result,
 		int *resultShapeInfo,
-		int *gpuInformation,
 		int *dimension,
 		int dimensionLength,
 		int postProcessOrNot) {
@@ -2002,13 +1999,11 @@ __global__ void reduceGenericGlobal(
 		reduceFunctionToInvoke = newOpFactory->create(op);
 	__syncthreads();
 	reduceFunctionToInvoke->transform(
-			n,
 			dx,
 			xShapeInfo
 			,extraParams,
 			result,
 			resultShapeInfo,
-			gpuInformation,
 			dimension,
 			dimensionLength,
 			postProcessOrNot);
@@ -2036,13 +2031,11 @@ __global__ void reduceGenericGlobal(
 template <typename T>
 __device__ void reduceGeneric(
 		int op,
-		int n,
 		T *dx,
 		int *xShapeInfo,
 		T *extraParams,
 		T *result,
 		int *resultShapeInfo,
-		int *gpuInformation,
 		int *dimension,
 		int dimensionLength,
 		int postProcessOrNot) {
@@ -2057,13 +2050,11 @@ __device__ void reduceGeneric(
 		reduceFunctionToInvoke = newOpFactory->create(op);
 	__syncthreads();
 	reduceFunctionToInvoke->transform(
-			n,
 			dx,
 			xShapeInfo
 			,extraParams,
 			result,
 			resultShapeInfo,
-			gpuInformation,
 			dimension,
 			dimensionLength,
 			postProcessOrNot);
@@ -2090,25 +2081,21 @@ __device__ void reduceGeneric(
  */
 extern "C" __global__ void reduceDouble(
 		int op,
-		int n,
 		double *dx,
 		int *xShapeInfo,
 		double *extraParams,
 		double *result,
 		int *resultShapeInfo,
-		int *gpuInformation,
 		int *dimension,
 		int dimensionLength,
 		int postProcessOrNot) {
 	reduceGeneric<double>(
 			op,
-			n,
 			dx,
 			xShapeInfo
 			,extraParams,
 			result,
 			resultShapeInfo,
-			gpuInformation,
 			dimension,
 			dimensionLength,
 			postProcessOrNot);
@@ -2131,25 +2118,21 @@ extern "C" __global__ void reduceDouble(
  */
 extern "C" __global__ void reduceFloat(
 		int op,
-		int n,
 		float *dx,
 		int *xShapeInfo,
 		float *extraParams,
 		float *result,
 		int *resultShapeInfo,
-		int *gpuInformation,
 		int *dimension,
 		int dimensionLength,
 		int postProcessOrNot) {
 	reduceGeneric<float>(
 			op,
-			n,
 			dx,
 			xShapeInfo
 			,extraParams,
 			result,
 			resultShapeInfo,
-			gpuInformation,
 			dimension,
 			dimensionLength,
 			postProcessOrNot);

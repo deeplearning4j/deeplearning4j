@@ -160,12 +160,11 @@ namespace functions {
 	 @param result where to store the result of the reduction
 	 */
 	virtual __inline__ __device__ void transform(
-			int n, T *dx, int *xShapeInfo,
+			T *dx, int *xShapeInfo,
 			T *dy,
 			int *yShapeInfo, T *extraParams,
 			T *result,
 			int *resultShapeInfo,
-			int *gpuInformation,
 			int *dimension,
 			int dimensionLength, int postProcessOrNot) {
 		/**
@@ -187,7 +186,7 @@ namespace functions {
 		T startingVal = this->startingValue(dx);
 
 
-		int numElements = gpuInformation[2] / sizeof(T);
+		int numElements = gridDim.x;
 		for (int i = tid; i < numElements; i += blockDim.x)
 			sPartials[i] = startingVal;
 		__syncthreads();
@@ -1448,7 +1447,7 @@ namespace functions {
 template <typename T>
 __device__ void reduce3Generic(
 		int opNum,
-		int n, T *dx, int *xShapeInfo,
+	  T *dx, int *xShapeInfo,
 		T *dy,
 		int *yShapeInfo, T *extraParams, T *result,
 		int *resultShapeInfo, int *gpuInformation,
@@ -1490,13 +1489,13 @@ __device__ void reduce3Generic(
  */
 extern "C" __global__ void reduce3Double(
 		int opNum,
-		int n, double *dx, int *xShapeInfo,
+		double *dx, int *xShapeInfo,
 		double *dy,
 		int *yShapeInfo, double *extraParams, double *result,
 		int *resultShapeInfo, int *gpuInformation,
 		int *dimension,
 		int dimensionLength, int postProcessOrNot) {
-	reduce3Generic<double>(opNum,n,dx,xShapeInfo,dy,yShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
+	reduce3Generic<double>(opNum,dx,xShapeInfo,dy,yShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
 
 }
 
@@ -1518,7 +1517,7 @@ extern "C" __global__ void reduce3Double(
  */
 extern "C" __global__ void reduce3Float(
 		int opNum,
-		int n, float *dx, int *xShapeInfo,
+		float *dx, int *xShapeInfo,
 		float *dy,
 		int *yShapeInfo, float *extraParams,
 		float *result,
@@ -1526,7 +1525,7 @@ extern "C" __global__ void reduce3Float(
 		int *gpuInformation,
 		int *dimension,
 		int dimensionLength, int postProcessOrNot) {
-	reduce3Generic<float>(opNum,n,dx,xShapeInfo,dy,yShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
+	reduce3Generic<float>(opNum,dx,xShapeInfo,dy,yShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
 
 }
 

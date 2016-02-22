@@ -1,6 +1,98 @@
 #include "../NativeOps.h"
 #include <cuda.h>
-#include <cuda_occupancy.h>
+#include <cuda_launch_config.h>
+
+#include <buffer.h>
+#include <shape.h>
+
+#include <reduce3.h>
+#include <reduce.h>
+#include <indexreduce.h>
+#include <pairwise_transform.h>
+#include <transform.h>
+#include <scalar.h>
+#include <broadcasting.h>
+#include <summarystatsreduce.h>
+
+
+dim3 getOptimalDimensions(int n,cudaFuncAttributes attributes) {
+    // next, get the cudaDeviceProp object corresponding to the current device
+    int device;
+    cudaGetDevice(&device);
+
+    cudaDeviceProp properties;
+    cudaGetDeviceProperties(&properties, device);
+
+    // we can combine the two to compute a block size
+    size_t num_threads = block_size_with_maximum_potential_occupancy(attributes, properties);
+
+    // compute the number of blocks of size num_threads to launch
+    size_t num_blocks = n / num_threads;
+
+    // check for partial block at the end
+    if(n % num_threads) ++num_blocks;
+
+    return dim3(num_blocks,num_threads,1);
+}
+
+nd4j::buffer::Buffer<int> * createScalarBuffer() {
+    int *scalarShapeInfo = shape::createScalarShapeInfo();
+    nd4j::buffer::Buffer<int> *buff = nd4j::buffer::createBuffer(scalarShapeInfo,shape::shapeInfoLength(2));
+    nd4j::buffer::copyDataToGpu(&buff);
+    return buff;
+}
+
+template <typename T>
+class ScalarInfo {
+    nd4j::buffer::Buffer<T> *scalarData;
+    nd4j::buffer::Buffer<int> scalarDimension;
+    nd4j::buffer::Buffer<int> *scalarShapeInfo;
+    T finalResult;
+public:
+    ScalarInfo() {
+        scalarShapeInfo = createScalarBuffer();
+        T *scalarResult = malloc(sizeof(T));
+        scalarData = nd4j::buffer::createBuffer(scalarResult,1);
+        nd4j::buffer::copyDataToGpu(&scalarData);
+        int *scalarDimensionBuff = malloc(sizeof(int));
+        scalarDimension[0] = shape::MAX_DIMENSION;
+        scalarDimension = nd4j::buffer::createBuffer(scalarDimensionBuff,1);
+        nd4j::buffer::copyDataToGpu(&scalarDimension);
+    }
+
+    T getFinalResultFromDevice() {
+        nd4j::buffer::copyDataFromGpu(&scalarData);
+        return scalarData[0];
+    }
+
+    /**
+     * Get the device shape information
+     * representinga scalar
+     */
+    int *getDeviceShapeInfo() {
+        return scalarShapeInfo->gData;
+    }
+
+    /**
+     * Get the result pointers
+     */
+    T *getDevicePointer() {
+        return scalarData->gData;
+    }
+
+    /**
+     * Get the infinite dimension device pointer
+     */
+    int *getDimensionDevicePointer() {
+        return scalarDimension.gData;
+    }
+
+    ~ScalarInfo() {
+        nd4j::buffer::freeBuffer(&scalarShapeInfo);
+        nd4j::buffer::freeBuffer(&scalarData);
+        nd4j::buffer::freeBuffer(&scalarDimension);
+    }
+};
 
 /**
      *
@@ -16,7 +108,25 @@ double   NativeOps::execIndexReduceScalarDouble(int opNum,
     double *xPointer = reinterpret_cast<double *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
-    return DoubleNativeOpExecutioner::getInstance()->execIndexReduceScalar(opNum,xPointer,xShapeInfoPointer,extraParamsPointer);
+    cudaFuncAttributes attributes;
+    cudaFuncGetAttributes(&attributes, indexReduceDouble);
+    dim3 launchDims = getOptimalDimensions(1,attributes);
+
+    ScalarInfo<double> *scalarInfo = new ScalarInfo<double>();
+    indexReduceDouble<<<launchDims.x,launchDims.y,launchDims.z>>>(
+                    opNum,
+                    xPointer,
+                    xShapeInfoPointer,
+                    extraParamsPointer,
+                    NULL,
+                    scalarInfo->getDevicePointer(),
+                    scalarInfo->getDimensionDevicePointer(),
+                    scalarInfo->getDimensionDevicePointer(),
+                    1,
+                    1);
+    cudaDeviceSynchronize();
+
+    return scalarInfo->getFinalResultFromDevice();
 
 }
 

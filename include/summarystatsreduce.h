@@ -546,12 +546,11 @@ struct SharedSummaryStatsData<double> {
 	 *                          1 is the number of vectors
 	 */
 	__inline__ __device__ void transform(
-			int n, T *dx,
+			T *dx,
 			int *xShapeInfo,
 			T *extraParams,
 			T *result,
 			int *resultShapeInfo,
-			int *gpuInformation,
 			int *dimension,
 			int dimensionLength,
 			int postProcessOrNot) {
@@ -567,7 +566,7 @@ struct SharedSummaryStatsData<double> {
 		__shared__ int xOffset;
 		__shared__ int reductionIndexesPerBlock;
 
-		int numElements = gpuInformation[2] / sizeof(SummaryStatsData <T>);
+		int numElements = gridDim.x;
 		//shared memory space for storing intermediate results
 		SummaryStatsData<T> *sPartials;
 		functions::summarystats::SharedSummaryStatsData<T> holder;
@@ -1597,13 +1596,11 @@ struct SharedSummaryStatsData<double> {
 template <typename T>
 __device__ void summaryStatsReduceGeneric(
 		int op,
-		int n,
 		T *dx,
 		int *xShapeInfo,
 		T *extraParams,
 		T *result,
 		int *resultShapeInfo,
-		int *gpuInformation,
 		int *dimension,
 		int dimensionLength, int postProcessOrNot) {
 	__shared__ functions::summarystats::SummaryStatsReduce<T> *indexReduce;
@@ -1614,7 +1611,7 @@ __device__ void summaryStatsReduceGeneric(
 	if(threadIdx.x == 0)
 		indexReduce = newOpFactory->getOp(op);
 	__syncthreads();
-	indexReduce->transform(n,dx,xShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
+	indexReduce->transform(dx,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength,postProcessOrNot);
 	if(threadIdx.x == 0) {
 		free(indexReduce);
 		free(newOpFactory);
@@ -1635,11 +1632,11 @@ __device__ void summaryStatsReduceGeneric(
  * @param dimensionLength the length of the dimension
  * @param postProcessOrNot whether to post process or not
  */
-extern "C" __global__ void summaryStatsReduceDouble(int op,int n, double *dx, int *xShapeInfo, double *extraParams, double *result,
-		int *resultShapeInfo, int *gpuInformation,
+extern "C" __global__ void summaryStatsReduceDouble(int op,double *dx, int *xShapeInfo, double *extraParams, double *result,
+		int *resultShapeInfo,
 		int *dimension,
 		int dimensionLength, int postProcessOrNot) {
-	summaryStatsReduceGeneric<double>(op,n,dx,xShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
+	summaryStatsReduceGeneric<double>(op,dx,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength,postProcessOrNot);
 
 }
 
@@ -1657,11 +1654,11 @@ extern "C" __global__ void summaryStatsReduceDouble(int op,int n, double *dx, in
  * @param dimensionLength the length of the dimension
  * @param postProcessOrNot whether to post process or not
  */
-extern "C" __global__ void summaryStatsReduceFloat(int op,int n, float *dx, int *xShapeInfo, float *extraParams, float *result,
-		int *resultShapeInfo, int *gpuInformation,
+extern "C" __global__ void summaryStatsReduceFloat(int op, float *dx, int *xShapeInfo, float *extraParams, float *result,
+		int *resultShapeInfo,
 		int *dimension,
 		int dimensionLength, int postProcessOrNot) {
-	summaryStatsReduceGeneric<float>(op,n,dx,xShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
+	summaryStatsReduceGeneric<float>(op,dx,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength,postProcessOrNot);
 
 }
 
