@@ -45,6 +45,12 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.heartbeat.Heartbeat;
+import org.nd4j.linalg.heartbeat.reports.Environment;
+import org.nd4j.linalg.heartbeat.reports.Event;
+import org.nd4j.linalg.heartbeat.reports.Task;
+import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
+import org.nd4j.linalg.heartbeat.utils.TaskUtils;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -463,6 +469,7 @@ public class ComputationGraph implements Serializable, Model {
         }
 
         if(configuration.isBackprop()){
+            update(TaskUtils.buildTask(dataSetIterator));
             while(dataSetIterator.hasNext()){
                 DataSet next = dataSetIterator.next();
                 if (next.getFeatureMatrix() == null || next.getLabels() == null)
@@ -563,6 +570,7 @@ public class ComputationGraph implements Serializable, Model {
         setInputs(inputs);
         setLabels(labels);
         setLayerMaskArrays(featureMaskArrays, labelMaskArrays);
+        update(TaskUtils.buildTask(inputs, labels));
 
         if(configuration.isPretrain()){
             throw new UnsupportedOperationException("Pretraining: Not yet implemented");
@@ -1086,6 +1094,13 @@ public class ComputationGraph implements Serializable, Model {
     @Override
     public void update(INDArray gradient, String paramType) {
         throw new UnsupportedOperationException("Not implemented");
+    }
+
+    private void update(Task task) {
+        Heartbeat heartbeat = Heartbeat.getInstance();
+
+        Environment env = EnvironmentUtils.buildEnvironment();
+        heartbeat.reportEvent(Event.TRAINING, env, task);
     }
 
     @Override

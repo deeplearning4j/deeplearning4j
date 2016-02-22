@@ -44,6 +44,12 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.heartbeat.Heartbeat;
+import org.nd4j.linalg.heartbeat.reports.Environment;
+import org.nd4j.linalg.heartbeat.reports.Event;
+import org.nd4j.linalg.heartbeat.reports.Task;
+import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
+import org.nd4j.linalg.heartbeat.utils.TaskUtils;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.FeatureUtil;
@@ -1145,6 +1151,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             if(layerWiseConfigurations.isPretrain())
                 iter.reset();
             while (iter.hasNext()) {
+                update(TaskUtils.buildTask(iter));
                 DataSet next = iter.next();
                 if (next.getFeatureMatrix() == null || next.getLabels() == null)
                     break;
@@ -1487,6 +1494,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public void fit(INDArray data, INDArray labels) {
         setInput(data.dup());
         setLabels(labels.dup());
+        update(TaskUtils.buildTask(data, labels));
 
         if (layerWiseConfigurations.isPretrain()) {
             pretrain(data);
@@ -1519,6 +1527,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     @Override
     public void fit(INDArray data) {
         setInput(data.dup());
+        update(TaskUtils.buildTask(data));
         pretrain(data);
     }
 
@@ -1536,9 +1545,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     @Override
     public void fit(org.nd4j.linalg.dataset.api.DataSet data) {
         if(layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
+            update(TaskUtils.buildTask(data));
             doTruncatedBPTT(data.getFeatureMatrix(),data.getLabels(),data.getFeaturesMaskArray(),data.getLabelsMaskArray());
         } else {
             //Standard training
+            update(TaskUtils.buildTask(data));
             boolean hasMaskArrays = data.hasMaskArrays();
             if(hasMaskArrays) setLayerMaskArrays(data.getFeaturesMaskArray(), data.getLabelsMaskArray());
             fit(data.getFeatureMatrix(), data.getLabels());
@@ -2385,5 +2396,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         for (Layer layer : layers) {
             layer.setMaskArray(null);
         }
+    }
+
+    private void update(Task task) {
+        Heartbeat heartbeat = Heartbeat.getInstance();
+
+        Environment env = EnvironmentUtils.buildEnvironment();
+        heartbeat.reportEvent(Event.TRAINING, env, task);
     }
 }
