@@ -8,7 +8,7 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
 /**
- * Native interface for 
+ * Native interface for
  * op execution on cpu
  * @author Adam Gibson
  */

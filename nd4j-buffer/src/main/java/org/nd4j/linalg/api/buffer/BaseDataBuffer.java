@@ -448,6 +448,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
 
     @Override
+    public Pointer pointer() {
+        return pointer;
+    }
+
+    @Override
     public DataBuffer underlyingDataBuffer() {
         return wrappedDataBuffer;
     }

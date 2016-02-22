@@ -12,6 +12,7 @@
 
     <name>nd4j-native-parent</name>
     <modules>
+        <module>nd4j-native</module>
         <module>nd4j-native-api</module>
     </modules>
 

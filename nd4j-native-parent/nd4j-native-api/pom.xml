@@ -22,12 +22,7 @@
         <javacpp.version>0.11</javacpp.version>
     </properties>
     <build>
-        <testSourceDirectory>../nd4j-tests/src/test</testSourceDirectory>
-        <testResources>
-            <testResource>
-                <directory>../nd4j-tests/src/test/resources</directory>
-            </testResource>
-        </testResources>
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -85,7 +80,7 @@
                                 <include>org/nd4j/*</include>
                                 <include>org/nd4j/</include>
                                 <include>*.properties</include>
-                                <include>org/nd4j/linalg/cpu/javacpp/*</include>
+                                <include>org/nd4j/nativeblas/*</include>
                             </includes>
                         </configuration>
                     </execution>
@@ -99,7 +94,7 @@
                             <classifier>${platform}</classifier>
                             <skipIfEmpty>true</skipIfEmpty>
                             <includes>
-                                <include>org/nd4j/linalg/cpu/javacpp/</include>
+                                <include>org/nd4j/nativeblas/</include>
                             </includes>
                         </configuration>
                     </execution>
@@ -131,9 +126,8 @@
                         </property>
                     </propertyKeysAndValues>
                     <classPath>${project.build.outputDirectory}</classPath>
-                    <includePath>${basedir}/src/main/resources/</includePath>
-                    <linkPath>${basedir}/cppbuild/${platform}/lib/</linkPath>
-                    <preloadPath>${basedir}/cppbuild/${platform}/bin/</preloadPath>
+                    <includePath>/home/agibsonccc/code/nativeoperations/blas/</includePath>
+                    <linkPath>/home/agibsonccc/code/nativeoperations/blasbuild/blas</linkPath>
                 </configuration>
                 <executions>
                     <execution>
@@ -145,7 +139,7 @@
                         <configuration>
                             <skip>${generate-sources.skip}</skip>
                             <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
-                            <classOrPackageName>org.nd4j.linalg.cpu.javacpp.*</classOrPackageName>
+                            <classOrPackageName>org.nd4j.nativeblas.Nd4jBlas</classOrPackageName>
                         </configuration>
                     </execution>
                     <execution>
