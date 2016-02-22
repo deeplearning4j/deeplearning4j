@@ -35,7 +35,7 @@ public:
      * @param xShapeInfo
      * @param extraParams
      */
-double   NativeOps::execIndexReduceScalarDouble(int opNum,
+double   NativeOps::execIndexReduceScalarDouble(long *extraPointers,int opNum,
                                                 long x,
                                                 long xShapeInfo,
                                                 long extraParams) {
@@ -57,7 +57,7 @@ double   NativeOps::execIndexReduceScalarDouble(int opNum,
  * @param dimension
  * @param dimensionLength
  */
-void   NativeOps::execIndexReduceDouble(int opNum,
+void   NativeOps::execIndexReduceDouble(long *extraPointers,int opNum,
                                         long x,
                                         long xShapeInfo,
                                         long extraParams,
@@ -86,7 +86,7 @@ void   NativeOps::execIndexReduceDouble(int opNum,
  * @param dimension
  * @param dimensionLength
  */
-void   NativeOps::execBroadcastDouble(int opNum,
+void   NativeOps::execBroadcastDouble(long *extraPointers,int opNum,
                                       long x,
                                       long xShapeInfo,
                                       long y,
@@ -120,7 +120,7 @@ void   NativeOps::execBroadcastDouble(int opNum,
  * @param extraParams
  * @param n
  */
-void   NativeOps::execPairwiseTransformDouble(int opNum,
+void   NativeOps::execPairwiseTransformDouble(long *extraPointers,int opNum,
                                               long dx,
                                               int xStride,
                                               long y,
@@ -150,7 +150,7 @@ void   NativeOps::execPairwiseTransformDouble(int opNum,
  * @param yIndexes
  * @param resultIndexes
  */
-void NativeOps::execPairwiseTransformDouble(int opNum,
+void NativeOps::execPairwiseTransformDouble(long *extraPointers,int opNum,
                                             long dx,
                                             long xShapeInfo,
                                             long y,
@@ -187,7 +187,7 @@ void NativeOps::execPairwiseTransformDouble(int opNum,
  * @param extraParams
  * @param n
  */
-void NativeOps::execPairwiseTransformDouble(int opNum,
+void NativeOps::execPairwiseTransformDouble(long *extraPointers,int opNum,
                                             long dx,
                                             long  xShapeInfo,
                                             long y,
@@ -214,7 +214,7 @@ void NativeOps::execPairwiseTransformDouble(int opNum,
  * @param result
  * @param resultShapeInfo
  */
-void   NativeOps::execReduceDouble(int opNum,
+void   NativeOps::execReduceDouble(long *extraPointers,int opNum,
                                    long x,
                                    long xShapeInfo,
                                    long extraParams,
@@ -238,7 +238,7 @@ void   NativeOps::execReduceDouble(int opNum,
  * @param result
  * @param resultShapeInfo
  */
-void   NativeOps::execReduceDouble(int opNum,
+void   NativeOps::execReduceDouble(long *extraPointers,int opNum,
                                    long x,
                                    long xShapeInfo,
                                    long extraParams,
@@ -263,7 +263,7 @@ void   NativeOps::execReduceDouble(int opNum,
  * @param extraParams
  * @return
  */
-double NativeOps::execReduceScalarDouble(int opNum,
+double NativeOps::execReduceScalarDouble(long *extraPointers,int opNum,
                                          long x,
                                          long xShapeInfo,
                                          long extraParams){
@@ -284,7 +284,7 @@ double NativeOps::execReduceScalarDouble(int opNum,
  * @param result
  * @param resultShapeInfo
  */
-void   NativeOps::execReduce3Double(int opNum,
+void   NativeOps::execReduce3Double(long *extraPointers,int opNum,
                                     long x,
                                     long xShapeInfo,
                                     long extraParamsVals,
@@ -311,7 +311,7 @@ void   NativeOps::execReduce3Double(int opNum,
  * @param y
  * @param yShapeInfo
  */
-double   NativeOps::execReduce3ScalarDouble(int opNum,
+double   NativeOps::execReduce3ScalarDouble(long *extraPointers,int opNum,
                                             long x,
                                             long xShapeInfo,
                                             long extraParamsVals,
@@ -337,7 +337,7 @@ double   NativeOps::execReduce3ScalarDouble(int opNum,
  * @param dimension
  * @param dimensionLength
  */
-void   NativeOps::execReduce3Double(int opNum,
+void   NativeOps::execReduce3Double(long *extraPointers,int opNum,
                                     long x,
                                     long xShapeInfo,
                                     long extraParamsVals,
@@ -369,7 +369,7 @@ void   NativeOps::execReduce3Double(int opNum,
  * @param extraParams
  * @param n
  */
-void   NativeOps::execScalarDouble(int opNum,
+void   NativeOps::execScalarDouble(long *extraPointers,int opNum,
                                    long x,
                                    int xStride,
                                    long result,
@@ -395,7 +395,7 @@ void   NativeOps::execScalarDouble(int opNum,
  * @param extraParams
  * @param n
  */
-void NativeOps::execScalarDouble(int opNum,
+void NativeOps::execScalarDouble(long *extraPointers,int opNum,
                                  long x,
                                  long xShapeInfo,
                                  long result,
@@ -424,7 +424,7 @@ void NativeOps::execScalarDouble(int opNum,
  * @param xIndexes
  * @param resultIndexes
  */
-void NativeOps::execScalarDouble(int opNum,
+void NativeOps::execScalarDouble(long *extraPointers,int opNum,
                                  long x,
                                  long xShapeInfo,
                                  long result,
@@ -451,7 +451,7 @@ void NativeOps::execScalarDouble(int opNum,
  * @param xShapeInfo
  * @param extraParams
  */
-double   NativeOps::execSummaryStatsScalarDouble(int opNum,long x,
+double   NativeOps::execSummaryStatsScalarDouble(long *extraPointers,int opNum,long x,
                                                  long xShapeInfo,
                                                  long extraParams){
     double *xPointer = reinterpret_cast<double *>(dx);
@@ -468,7 +468,7 @@ double   NativeOps::execSummaryStatsScalarDouble(int opNum,long x,
  * @param result
  * @param resultShapeInfo
  */
-void   NativeOps::execSummaryStatsDouble(int opNum,
+void   NativeOps::execSummaryStatsDouble(long *extraPointers,int opNum,
                                          long x,
                                          long xShapeInfo,
                                          long extraParams,
@@ -492,7 +492,7 @@ void   NativeOps::execSummaryStatsDouble(int opNum,
  * @param dimension
  * @param dimensionLength
  */
-void   NativeOps::execSummaryStatsDouble(int opNum,long x,
+void   NativeOps::execSummaryStatsDouble(long *extraPointers,int opNum,long x,
                                          long xShapeInfo,
                                          long extraParams,
                                          long result,
@@ -519,7 +519,7 @@ void   NativeOps::execSummaryStatsDouble(int opNum,long x,
  * @param extraParams
  * @param n
  */
-void   NativeOps::execTransformDouble(int opNum,
+void   NativeOps::execTransformDouble(long *extraPointers,int opNum,
                                       long dx,
                                       int xStride,
                                       long result,
@@ -541,7 +541,7 @@ void   NativeOps::execTransformDouble(int opNum,
  * @param extraParams
  * @param n
  */
-void   NativeOps::execTransformDouble(int opNum,
+void   NativeOps::execTransformDouble(long *extraPointers,int opNum,
                                       long dx,
                                       long xShapeInfo,
                                       long result,
@@ -565,7 +565,7 @@ void   NativeOps::execTransformDouble(int opNum,
  * @param extraParams
  * @param n
  */
-void   NativeOps::execTransformDouble(int opNum,
+void   NativeOps::execTransformDouble(long *extraPointers,int opNum,
                                       long dx,
                                       long xShapeInfo,
                                       long result,
@@ -592,7 +592,7 @@ void   NativeOps::execTransformDouble(int opNum,
 * @param xShapeInfo
 * @param extraParams
 */
-double   NativeOps::execIndexReduceScalarFloat(int opNum,
+double   NativeOps::execIndexReduceScalarFloat(long *extraPointers,int opNum,
                                                long x,
                                                long xShapeInfo,
                                                long extraParams){
@@ -613,7 +613,7 @@ double   NativeOps::execIndexReduceScalarFloat(int opNum,
  * @param dimension
  * @param dimensionLength
  */
-void   NativeOps::execIndexReduceFloat(int opNum,
+void   NativeOps::execIndexReduceFloat(long *extraPointers,int opNum,
                                        long x,
                                        long xShapeInfo,
                                        long extraParams,
@@ -642,7 +642,7 @@ void   NativeOps::execIndexReduceFloat(int opNum,
  * @param dimension
  * @param dimensionLength
  */
-void   NativeOps::execBroadcastFloat(int opNum,
+void   NativeOps::execBroadcastFloat(long *extraPointers,int opNum,
                                      long x,
                                      long xShapeInfo,
                                      long y,
@@ -676,7 +676,7 @@ void   NativeOps::execBroadcastFloat(int opNum,
  * @param extraParams
  * @param n
  */
-void   NativeOps::execPairwiseTransformFloat(int opNum,
+void   NativeOps::execPairwiseTransformFloat(long *extraPointers,int opNum,
                                              long dx,
                                              int xStride,
                                              long y,
@@ -706,7 +706,7 @@ void   NativeOps::execPairwiseTransformFloat(int opNum,
  * @param yIndexes
  * @param resultIndexes
  */
-void NativeOps::execPairwiseTransformFloat(int opNum,
+void NativeOps::execPairwiseTransformFloat(long *extraPointers,int opNum,
                                            long dx,
                                            long xShapeInfo,
                                            long y,
@@ -744,7 +744,7 @@ void NativeOps::execPairwiseTransformFloat(int opNum,
  * @param extraParams
  * @param n
  */
-void NativeOps::execPairwiseTransformFloat(int opNum,
+void NativeOps::execPairwiseTransformFloat(long *extraPointers,int opNum,
                                            long dx,
                                            long  xShapeInfo,
                                            long y,
@@ -772,7 +772,7 @@ void NativeOps::execPairwiseTransformFloat(int opNum,
  * @param result
  * @param resultShapeInfo
  */
-void   NativeOps::execReduceFloat(int opNum,
+void   NativeOps::execReduceFloat(long *extraPointers,int opNum,
                                   long x,
                                   long xShapeInfo,
                                   long extraParams,
@@ -795,7 +795,7 @@ void   NativeOps::execReduceFloat(int opNum,
  * @param result
  * @param resultShapeInfo
  */
-void   NativeOps::execReduceFloat(int opNum,
+void   NativeOps::execReduceFloat(long *extraPointers,int opNum,
                                   long x,
                                   long xShapeInfo,
                                   long extraParams,
@@ -820,7 +820,7 @@ void   NativeOps::execReduceFloat(int opNum,
  * @param extraParams
  * @return
  */
-double NativeOps::execReduceScalarFloat(int opNum,
+double NativeOps::execReduceScalarFloat(long *extraPointers,int opNum,
                                         long x,
                                         long xShapeInfo,
                                         long extraParams){
@@ -841,7 +841,7 @@ double NativeOps::execReduceScalarFloat(int opNum,
  * @param result
  * @param resultShapeInfo
  */
-void   NativeOps::execReduce3Float(int opNum,
+void   NativeOps::execReduce3Float(long *extraPointers,int opNum,
                                    long x,
                                    long xShapeInfo,
                                    long extraParamsVals,
@@ -869,7 +869,7 @@ void   NativeOps::execReduce3Float(int opNum,
  * @param y
  * @param yShapeInfo
  */
-double   NativeOps::execReduce3ScalarFloat(int opNum,
+double   NativeOps::execReduce3ScalarFloat(long *extraPointers,int opNum,
                                            long x,
                                            long xShapeInfo,
                                            long extraParamsVals,
@@ -895,7 +895,7 @@ double   NativeOps::execReduce3ScalarFloat(int opNum,
  * @param dimension
  * @param dimensionLength
  */
-void   NativeOps::execReduce3Float(int opNum,
+void   NativeOps::execReduce3Float(long *extraPointers,int opNum,
                                    long x,
                                    long xShapeInfo,
                                    long extraParamsVals,
@@ -927,7 +927,7 @@ void   NativeOps::execReduce3Float(int opNum,
  * @param extraParams
  * @param n
  */
-void   NativeOps::execScalarFloat(int opNum,
+void   NativeOps::execScalarFloat(long *extraPointers,int opNum,
                                   long x,
                                   int xStride,
                                   long result,
@@ -953,7 +953,7 @@ void   NativeOps::execScalarFloat(int opNum,
  * @param extraParams
  * @param n
  */
-void NativeOps::execScalarFloat(int opNum,
+void NativeOps::execScalarFloat(long *extraPointers,int opNum,
                                 long x,
                                 long xShapeInfo,
                                 long result,
@@ -983,7 +983,7 @@ void NativeOps::execScalarFloat(int opNum,
  * @param xIndexes
  * @param resultIndexes
  */
-void NativeOps::execScalarFloat(int opNum,
+void NativeOps::execScalarFloat(long *extraPointers,int opNum,
                                 long x,
                                 long xShapeInfo,
                                 long result,
@@ -1010,7 +1010,7 @@ void NativeOps::execScalarFloat(int opNum,
  * @param xShapeInfo
  * @param extraParams
  */
-double   NativeOps::execSummaryStatsScalarFloat(int opNum,long x,
+double   NativeOps::execSummaryStatsScalarFloat(long *extraPointers,int opNum,long x,
                                                 long xShapeInfo,
                                                 long extraParams){
     float *xPointer = reinterpret_cast<float *>(dx);
@@ -1027,7 +1027,7 @@ double   NativeOps::execSummaryStatsScalarFloat(int opNum,long x,
  * @param result
  * @param resultShapeInfo
  */
-void   NativeOps::execSummaryStatsFloat(int opNum,
+void   NativeOps::execSummaryStatsFloat(long *extraPointers,int opNum,
                                         long x,
                                         long xShapeInfo,
                                         long extraParams,
@@ -1051,7 +1051,7 @@ void   NativeOps::execSummaryStatsFloat(int opNum,
  * @param dimension
  * @param dimensionLength
  */
-void   NativeOps::execSummaryStatsFloat(int opNum,long x,
+void   NativeOps::execSummaryStatsFloat(long *extraPointers,int opNum,long x,
                                         long xShapeInfo,
                                         long extraParams,
                                         long result,
@@ -1078,7 +1078,7 @@ void   NativeOps::execSummaryStatsFloat(int opNum,long x,
  * @param extraParams
  * @param n
  */
-void   NativeOps::execTransformFloat(int opNum,
+void   NativeOps::execTransformFloat(long *extraPointers,int opNum,
                                      long dx,
                                      int xStride,
                                      long result,
@@ -1100,7 +1100,7 @@ void   NativeOps::execTransformFloat(int opNum,
  * @param extraParams
  * @param n
  */
-void   NativeOps::execTransformFloat(int opNum,
+void   NativeOps::execTransformFloat(long *extraPointers,int opNum,
                                      long dx,
                                      long xShapeInfo,
                                      long result,
@@ -1124,7 +1124,7 @@ void   NativeOps::execTransformFloat(int opNum,
  * @param extraParams
  * @param n
  */
-void   NativeOps::execTransformFloat(int opNum,
+void   NativeOps::execTransformFloat(long *extraPointers,int opNum,
                                      long dx,
                                      long xShapeInfo,
                                      long result,
