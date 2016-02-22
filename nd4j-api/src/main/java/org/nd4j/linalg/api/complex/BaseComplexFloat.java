@@ -357,9 +357,7 @@ public abstract class BaseComplexFloat implements IComplexFloat {
     }
 
     @Override
-    public IComplexNumber mul(Number v) {
-        return dup().muli(v);
-    }
+    public IComplexNumber mul(Number v) { return dup().muli(v); }
 
     @Override
     public IComplexNumber muli(Number v, IComplexNumber result) {
@@ -371,6 +369,37 @@ public abstract class BaseComplexFloat implements IComplexFloat {
         return muli(v, this);
     }
 
+    @Override
+    public IComplexNumber exp() {
+        IComplexNumber result = dup();
+        double realExp = Math.exp(realComponent());
+        return result.set(realExp * Math.cos(imaginaryComponent()), realExp * Math.sin(imaginaryComponent()));
+    }
+    @Override
+    public IComplexNumber powi(IComplexNumber c, IComplexNumber result) {
+        IComplexNumber eval = log().muli(c).exp();
+        result.set(eval.realComponent(), eval.imaginaryComponent());
+        return result;
+    }
+
+    @Override
+    public IComplexNumber pow(Number v) { return dup().powi(v); }
+
+    @Override
+    public IComplexNumber pow(IComplexNumber c) { return dup().powi(c); }
+
+    @Override
+    public IComplexNumber powi(IComplexNumber c) { return dup().powi(c, this); }
+
+    @Override
+    public IComplexNumber powi(Number v) { return dup().powi(v, this); }
+
+    @Override
+    public IComplexNumber powi(Number v, IComplexNumber result) {
+        IComplexNumber eval = log().muli(v).exp();
+        result.set(eval.realComponent(), eval.imaginaryComponent());
+        return result;
+    }
     /**
      * Divide two complex numbers
      *
@@ -486,6 +515,16 @@ public abstract class BaseComplexFloat implements IComplexFloat {
     public IComplexFloat negi() {
         set(-realComponent(), -imaginaryComponent());
         return this;
+    }
+
+    @Override
+    public IComplexNumber log() {
+        IComplexNumber result = dup();
+        float real = (float) result.realComponent();
+        float imaginary = (float) result.imaginaryComponent();
+        double modulus = Math.sqrt(real*real + imaginary*imaginary);
+        double arg = Math.atan2(imaginary,real);
+        return result.set(Math.log(modulus), arg);
     }
 
     @Override

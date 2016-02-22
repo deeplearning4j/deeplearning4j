@@ -99,6 +99,28 @@ public  class ComplexNumberTests  extends BaseNd4jTest {
         assertEquals(-0.25d, test.imaginaryComponent(), 1e-1);
     }
 
+    @Test
+    public void testExponentFloat() {
+        IComplexFloat test = Nd4j.createFloat(1, 1);
+        assertEquals(test.realComponent(), 1.468694);
+        assertEquals(test.imaginaryComponent(), 2.2873552);
+    }
+
+    @Test
+    public void testExponentDouble() {
+        IComplexDouble test = Nd4j.createDouble(1, 1);
+        assertEquals(test.realComponent(), 1.4686939399158851);
+        assertEquals(test.imaginaryComponent(), 2.2873552871788423);
+    }
+
+    @Test
+    public void testPowerFloat() {
+        IComplexDouble test = Nd4j.createDouble(1, 1);
+        IComplexDouble test2 = Nd4j.createDouble(1, 1);
+        assertEquals(test.realComponent(), 1.4686939399158851);
+        assertEquals(test.imaginaryComponent(), 2.2873552871788423);
+    }
+
     @Override
     public char ordering() {
         return 'f';

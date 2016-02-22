@@ -156,7 +156,20 @@ public interface IComplexNumber {
 
     public IComplexNumber div(Number v);
 
+    /**
+     * Power two complex numbers
+     */
+    public IComplexNumber powi(IComplexNumber c, IComplexNumber result);
 
+    public IComplexNumber powi(Number v, IComplexNumber result);
+
+    public IComplexNumber powi(IComplexNumber c);
+
+    public IComplexNumber powi(Number v);
+
+    public IComplexNumber pow(IComplexNumber c);
+
+    public IComplexNumber pow(Number v);
     /**
      * Divide two complex numbers
      */
@@ -189,6 +202,21 @@ public interface IComplexNumber {
 
     public IComplexNumber inv();
 
+
+    /**
+     * The exponent of this complex number
+     *
+     * @return
+     */
+    public IComplexNumber exp();
+
+    /**
+     * The logarithm of this complex number
+     *
+     * @return
+     */
+    public IComplexNumber log();
+
     /**
      * The negation of this complex number
      *
@@ -219,6 +247,7 @@ public interface IComplexNumber {
      */
     public IComplexNumber conj();
 
+
     /**
      * The  sqrt of this
      * number
@@ -226,7 +255,6 @@ public interface IComplexNumber {
      * @return
      */
     public IComplexNumber sqrt();
-
 
     public boolean eq(IComplexNumber c);
 
@@ -327,5 +355,4 @@ public interface IComplexNumber {
      * @return the result
      */
     IComplexNumber rsubi(IComplexNumber a, IComplexNumber result);
-
 }

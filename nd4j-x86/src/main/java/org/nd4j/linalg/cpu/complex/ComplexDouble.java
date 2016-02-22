@@ -406,6 +406,32 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
     }
 
     @Override
+    public IComplexNumber powi(IComplexNumber c, IComplexNumber result) {
+        IComplexNumber eval = log().muli(c).exp();
+        result.set(eval.realComponent(), eval.imaginaryComponent());
+        return result;
+    }
+
+    @Override
+    public IComplexNumber pow(Number v) { return dup().powi(v); }
+
+    @Override
+    public IComplexNumber pow(IComplexNumber c) { return dup().powi(c); }
+
+    @Override
+    public IComplexNumber powi(IComplexNumber c) { return dup().powi(c, this); }
+
+    @Override
+    public IComplexNumber powi(Number v) { return dup().powi(v, this); }
+
+    @Override
+    public IComplexNumber powi(Number v, IComplexNumber result) {
+        IComplexNumber eval = log().muli(v).exp();
+        result.set(eval.realComponent(), eval.imaginaryComponent());
+        return result;
+    }
+
+    @Override
     public IComplexNumber rdiv(IComplexNumber c) {
         return dup().rdivi(c);
     }
@@ -697,6 +723,23 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
     @Override
     public ComplexDouble inv() {
         return dup().invi();
+    }
+
+    @Override
+    public IComplexNumber exp() {
+        IComplexNumber result = dup();
+        double realExp = Math.exp(realComponent());
+        return result.set(realExp * Math.cos(imaginaryComponent()), realExp * Math.sin(imaginaryComponent()));
+    }
+
+    @Override
+    public IComplexNumber log() {
+        IComplexNumber result = dup();
+        double real = (double) result.realComponent();
+        double imaginary = (double) result.imaginaryComponent();
+        double modulus = Math.sqrt(real*real + imaginary*imaginary);
+        double arg = Math.atan2(imaginary,real);
+        return result.set(Math.log(modulus), arg);
     }
 
     @Override
