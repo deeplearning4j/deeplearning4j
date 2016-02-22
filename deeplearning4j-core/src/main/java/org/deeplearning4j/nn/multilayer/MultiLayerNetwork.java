@@ -2402,6 +2402,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         Heartbeat heartbeat = Heartbeat.getInstance();
 
         Environment env = EnvironmentUtils.buildEnvironment();
-        heartbeat.reportEvent(Event.TRAINING, env, task);
+        heartbeat.reportEvent(Event.STANDALONE, env, task);
     }
 }
