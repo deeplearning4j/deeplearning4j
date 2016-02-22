@@ -5,30 +5,32 @@ layout: kr-default
 
 # Deeplearning4j란 무엇인가요?
 
-Deeplearning4j는 자바(Java)와 스칼라(Scala)를 위해 작성된 최초의 상용 등급 오픈 소스의 배포된(distributed) 딥 러닝(deep-learning) 라이브러리입니다. 하둡(Hadoop)과 스파크([Spark](../gpu_aws.html))와 통합된 DL4J는 리서치 도구이기 보다는 비즈니스 환경에서 사용할 수 있도록 설계되었습니다. 스카이마인드([Skymind](http://skymind.io))는 이의 상업적인 지원 도구 입니다.
+Deeplearning4j는 자바(Java)와 스칼라(Scala)를 위해 작성된 최초의 상용 수준 오픈소스 딥러닝 라이브러리입니다. 연구 목적으로 쓰여진 다른 라이브러리와 달리 Deeplearning4j는 상용 서비스를 위해 하둡(Hadoop)/스파크([Spark](../gpu_aws.html))와 통합해 사용할 수 있도록 설계되었습니다. 스카이마인드([Skymind](http://skymind.io))는 Deeplearning4j의 유료 사용자를 지원하는 회사입니다.
 
-Deeplearning4j는 구성(configuration)이기보다는 규칙(convention)을 겨냥한 최첨단 플러그 앤 플레이(plug and play)로 비연구자들에게 빠른 프로토 타이핑을 가능하게 합니다. DL4J는 규모면에서 사용자 지정이 가능합니다. 아파치(Apache) 2.0 라이센스를 사용해 배포된 DL4J의 모든 파생 상품들은 그 저자에 속합니다.
+Deeplearning4j는 최신 기술을 간편하게 사용하는데 초점을 두었습니다. 특히, 설치와 활용에 있어서 일반적인 문법과 규칙을 사용하였기 때문에 머신 러닝에 대한 깊은 지식이 없는 사람도 빠르게 시제품을 만들 수 있도록 하고 있습니다. 확장성에도 초점을 두어 어떠한 규모의 데이타에도 사용할 수 있습니다. Deeplearning4j는 아파치 2.0 라이센스로 배포되기 때문에 파생된 모든 소스 코드는 저작권이 코드의 작성자에게 귀속됩니다.
 
-저희의 [퀵 스타트(Quick Start) 페이지의 설명](http://deeplearning4j.org/quickstart.html)에 따라 여러분은 학습된 신경망의 첫번째 예제들을 실행할 수 있습니다.
+지금 바로 Deeplearning4j 예제 코드를 실행해보세요. [빠른 설치 페이지의 안내](http://deeplearning4j.org/quickstart.html)를 따르면 인공 신경망 예제를 실행할 수 있습니다.
 
 ### [딥 러닝 활용 사례](http://deeplearning4j.org/use_cases.html)
 
 * [얼굴/이미지 인식](../facial-reconstruction-tutorial.html)
 * 음성 검색
-* 음성-텍스트 전환 (전사)
-* 스팸 필터링 (이상 탐지)
+* 음성 인식 및 음성-문자 변환
+* 스팸 메일 필터링 (비정상 행위 탐지)
 * 전자 상거래 사기 탐지
-* [회귀](http://deeplearning4j.org/linear-regression.html)
+* 추천 시스템 (고객관리, 고객 유지, 광고 기술)
+* [회귀 분석](http://deeplearning4j.org/linear-regression.html)
 
-### DL4J의 주요 특징
+### DL4J의 강점
 
-* 다기능의 N 차원 배열 클래스([n-dimensional array class](http://nd4j.org/))
+* 다목적 N차원 배열 클래스([n-dimensional array class](http://nd4j.org/))
 * [GPU](http://nd4j.org/gpu_native_backends.html) 통합
-* [하둡](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/hadoop-yarn) 및 [스파크](http://deeplearning4j.org/gpu_aws.html) 상 [확장 가능성](http://deeplearning4j.org/spark.html)
-* [Canova](http://deeplearning4j.org/canova.html): 기계 학습 라이브러리를 위한 일반적인 벡터화 도구
-* [ND4J: Numpy보다 두 배가 빠른 선형 대수 라이브러리](http://nd4j.org/benchmarking)
+* [하둡](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/hadoop-yarn) 및 [스파크](http://deeplearning4j.org/gpu_aws.html)로 쉽게 [확장 가능](http://deeplearning4j.org/spark.html)
+* [카노바(Canova)](http://deeplearning4j.org/canova.html): 기계 학습을 위한 벡터 처리 기술
+* [ND4J: Numpy의 두 배 속도를 자랑하는 선형 대수 라이브러리](http://nd4j.org/benchmarking)
 
-Deeplearning4j는 배포된 멀티 스레드 딥 러닝 프레임 워크와 일반 단일 스레드 딥 러닝 프레임 워크를 모두 포함합니다. 학습은 군집(cluster)으로 이뤄지며, 이는 신속하게 대량의 데이터를 처리할 수 있슴을 의미합니다. 망들(nets)은 [반복 감소](http://deeplearning4j.org/iterativereduce.html)를 통해 병렬로 학습되며, 자바, [스칼라](http://nd4j.org/scala.html) 및 [Clojure](https://github.com/wildermuthn/d4lj-iris-example-clj/blob/master/src/dl4j_clj_example/core.clj)와 균일하게 호환 가능합니다. 오픈 스택의 모듈식 구성 요소로서의 Deeplearning4j의 역할이 [마이크로 서비스 아키텍처](http://microservices.io/patterns/microservices.html)에 적합한 최초의 딥 러닝 프레임 워크를 가능하게 합니다.
+Deeplearning4j는 분산 처리와 단일 스레드 처리를 모두 포함합니다. 분산 처리의 경우 동시에 여러 서버 클러스터에서 학습을 할 수 있으며 결과적으로 대량의 데이터를 신속하게 처리할 수 있습니다. //from here
+망들(nets)은 [반복 감소](http://deeplearning4j.org/iterativereduce.html)를 통해 병렬로 학습되며, 자바, [스칼라](http://nd4j.org/scala.html) 및 [Clojure](https://github.com/wildermuthn/d4lj-iris-example-clj/blob/master/src/dl4j_clj_example/core.clj)와 균일하게 호환 가능합니다. 오픈 스택의 모듈식 구성 요소로서의 Deeplearning4j의 역할이 [마이크로 서비스 아키텍처](http://microservices.io/patterns/microservices.html)에 적합한 최초의 딥 러닝 프레임 워크를 가능하게 합니다.
 
 ### DL4J의 신경망(Neural Networks)
 
