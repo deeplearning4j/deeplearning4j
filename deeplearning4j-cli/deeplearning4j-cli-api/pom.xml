@@ -76,12 +76,6 @@
             <groupId>org.nd4j</groupId>
             <artifactId>canova-api</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-x86</artifactId>
-            <version>${nd4j.version}</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
 
@@ -127,6 +121,24 @@
                     </additionalClasspathElements>
                 </configuration>
             </plugin>
+
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-assembly-plugin</artifactId>
+              <configuration>
+                <descriptor>src/assembly/bin.xml</descriptor>
+                <finalName>deeplearning4j-cli-${project.version}</finalName>
+              </configuration>
+              <executions>
+                <execution>
+                  <phase>package</phase>
+                  <goals>
+                    <goal>single</goal>
+                  </goals>
+                </execution>
+              </executions>
+            </plugin>
+
         </plugins>
     </build>
 
