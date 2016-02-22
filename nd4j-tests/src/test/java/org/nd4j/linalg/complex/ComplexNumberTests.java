@@ -25,10 +25,9 @@ import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
+import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-
-import static org.junit.Assert.assertEquals;
 
 /**
  * Tests for complex numbers
@@ -114,12 +113,41 @@ public  class ComplexNumberTests  extends BaseNd4jTest {
     }
 
     @Test
+    public void testPowerDouble() {
+        IComplexDouble test = Nd4j.createDouble(1, 1);
+        IComplexDouble test2 = Nd4j.createDouble(1, 1);
+        IComplexNumber result = test.pow(test2);
+        assertEquals(result.realComponent(), 0.273957253830121);
+        assertEquals(result.imaginaryComponent(), 0.5837007587586147);
+    }
+
+    @Test
     public void testPowerFloat() {
         IComplexDouble test = Nd4j.createDouble(1, 1);
         IComplexDouble test2 = Nd4j.createDouble(1, 1);
-        assertEquals(test.realComponent(), 1.4686939399158851);
-        assertEquals(test.imaginaryComponent(), 2.2873552871788423);
+        IComplexNumber result = test.pow(test2);
+        assertEquals(result.realComponent(), 0.2739572);
+        assertEquals(result.imaginaryComponent(), 0.583700);
     }
+
+    @Test
+    public void testLogarithmFloat() {
+        IComplexDouble test = Nd4j.createDouble(1, 1);
+        IComplexDouble test2 = Nd4j.createDouble(1, 1);
+        IComplexNumber result = test.pow(test2);
+        assertEquals(result.realComponent(), 0.3465736);
+        assertEquals(result.imaginaryComponent(), 0.7853982);
+    }
+
+    @Test
+    public void testLogarithmDouble() {
+        IComplexDouble test = Nd4j.createDouble(1, 1);
+        IComplexDouble test2 = Nd4j.createDouble(1, 1);
+        IComplexNumber result = test.pow(test2);
+        assertEquals(result.realComponent(), 0.3465735902799727);
+        assertEquals(result.imaginaryComponent(), 0.7853981633974483);
+    }
+
 
     @Override
     public char ordering() {
