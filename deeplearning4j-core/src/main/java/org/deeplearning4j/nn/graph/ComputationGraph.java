@@ -1100,7 +1100,7 @@ public class ComputationGraph implements Serializable, Model {
         Heartbeat heartbeat = Heartbeat.getInstance();
 
         Environment env = EnvironmentUtils.buildEnvironment();
-        heartbeat.reportEvent(Event.TRAINING, env, task);
+        heartbeat.reportEvent(Event.SPARK, env, task);
     }
 
     @Override
