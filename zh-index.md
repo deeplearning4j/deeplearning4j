@@ -9,7 +9,7 @@ Deeplearning4j（简称DL4J）是为Java和Scala编写的首个商业级开源�
 
 Deeplearning4j技术先进，以即插即用为目标，通过更多预设的使用，避免太多配置，让非研究人员也能够进行快速的原型制作。DL4J同时可以规模化定制。DL4J遵循Apache 2.0许可协议，一切以其为基础的衍生作品均属于衍生作品的作者。
 
-您可以根据我们[在快速入门页上的说明](../zh-quickstart.html)，在几分钟内运行您首个定型神经网络示例。
+您可以根据我们[在快速入门页上的说明](../zh-quickstart.html)，在几分钟内运行您的首个定型神经网络示例。
 
 ### [神经网络使用情景](../use_cases.html)
 
@@ -64,14 +64,14 @@ Deeplearning4j包括了分布式、多线程的深度学习框架，以及普通
 * [针对LFW人脸图像数据集进行人脸重构](../facial-reconstruction-tutorial.html)
 * [通过Canova库自定义数据准备工作](../image-data-pipeline.html)
 * [受限玻尔兹曼机](../zh-restrictedboltzmannmachine.html)
-* [本征向量、PCA和熵](../eigenvector.html)
+* [本征向量、主成分分析（PCA）和熵](../eigenvector.html)
 * [深度学习词汇表](../glossary.html)
 
 ### 用户反馈
 
-      “我感觉自己像是弗兰肯斯坦。像是小说里的弗兰肯斯坦博士……”――史蒂夫・D． 
+      “我感觉自己像是弗兰肯斯坦，玛丽·雪莱小说里的那个弗兰肯斯坦博士……”――史蒂夫・D． 
       
-      “我对在生产中使用Deeplearning4j非常感兴趣。这里蕴藏着价值百亿英镑的巨大商机。”－约翰・M．
+      “我对在生产中使用Deeplearning4j非常感兴趣。这里蕴藏着价值百亿英镑的巨大商机。”――约翰・M．
 
 ### 为Deeplearning4j做出贡献
 
