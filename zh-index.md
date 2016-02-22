@@ -9,7 +9,7 @@ Deeplearning4j（简称DL4J）是为Java和Scala编写的首个商业级开源�
 
 Deeplearning4j技术先进，以即插即用为目标，通过更多预设的使用，避免太多配置，让非研究人员也能够进行快速的原型制作。DL4J同时可以规模化定制。DL4J遵循Apache 2.0许可协议，一切以其为基础的衍生作品均属于衍生作品的作者。
 
-您可以根据我们[在快速入门页上的说明](../quickstart.html)，在几分钟内运行您首个定型神经网络示例。
+您可以根据我们[在快速入门页上的说明](../zh-quickstart.html)，在几分钟内运行您首个定型神经网络示例。
 
 ### [神经网络使用情景](../use_cases.html)
 
@@ -23,7 +23,7 @@ Deeplearning4j技术先进，以即插即用为目标，通过更多预设的使
 
 ### 为何选择Deeplearning4j？ 
 
-* 功能多样的[N维数组](http://nd4j.org/)类，为Java和Scala设计
+* 功能多样的[N维数组](http://nd4j.org/zh-getstarted)类，为Java和Scala设计
 * 与[GPU](http://nd4j.org/gpu_native_backends.html)集合
 * 可在[Hadoop](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/hadoop-yarn)、[Spark](../gpu_aws.html)上实现扩缩
 * [Canova](../canova.html)：机器学习库的通用向量化工具
@@ -33,8 +33,8 @@ Deeplearning4j包括了分布式、多线程的深度学习框架，以及普通
 
 ### DL4J神经网络
 
-* [受限玻尔兹曼机](../restrictedboltzmannmachine.html)
-* [卷积网络](../convolutionalnets.html) （图像）
+* [受限玻尔兹曼机](../zh-restrictedboltzmannmachine.html)
+* [卷积网络](../zh-convolutionalnets.html) （图像）
 * [递归网络](../usingrnns.html)/[LSTMs](../lstm.html)（时间序列和传感器数据）
 * [递归自动编码器](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers/feedforward/autoencoder/recursive/RecursiveAutoEncoder.java)
 * [深度置信网络](../deepbeliefnetwork.html)
@@ -56,14 +56,14 @@ Deeplearning4j包括了分布式、多线程的深度学习框架，以及普通
 ### Deeplearning4j教程
 
 * [深度神经网络简介](../neuralnet-overview.html)
-* [卷积网络教程](../convolutionalnets.html)
+* [卷积网络教程](../zh-convolutionalnets.html)
 * [LSTM和递归网络教程](../lstm.html)
 * [通过DL4J使用递归网络](../usingrnns.html)
 * [深度置信网络和MNIST](../mnist-tutorial.html)
 * [鸢尾花数据组教程](../iris-flower-dataset-tutorial.html)
 * [针对LFW人脸图像数据集进行人脸重构](../facial-reconstruction-tutorial.html)
 * [通过Canova库自定义数据准备工作](../image-data-pipeline.html)
-* [受限玻尔兹曼机](../restrictedboltzmannmachine.html)
+* [受限玻尔兹曼机](../zh-restrictedboltzmannmachine.html)
 * [本征向量、PCA和熵](../eigenvector.html)
 * [深度学习词汇表](../glossary.html)
 
