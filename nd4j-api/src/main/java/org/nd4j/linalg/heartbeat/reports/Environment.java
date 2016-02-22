@@ -1,6 +1,7 @@
 package org.nd4j.linalg.heartbeat.reports;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 
@@ -10,6 +11,7 @@ import java.io.Serializable;
  * @author raver119@gmail.com
  */
 @Data
+@NoArgsConstructor
 public class Environment implements Serializable {
     private long serialVersionID;
 
