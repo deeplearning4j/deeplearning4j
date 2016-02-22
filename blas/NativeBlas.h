@@ -11,20 +11,6 @@
 
 class Nd4jBlas {
 public:
-    int ORDER_ROW_MAJOR = 101;
-    int ORDER_COLUMN_MAJOR = 102;
-    int TRANSPOSE_NO_TRANS = 111;
-    int TRANSPOSE_TRANS = 112;
-    int TRANSPOSE_CONJ_TRANS = 113;
-    int TRANSPOSE_ATLAS_CONJ = 114;
-    int UPLO_UPPER = 121;
-    int UPLO_LOWER = 122;
-    int DIAG_NON_UNIT = 131;
-    int DIAG_UNIT = 132;
-    int SIDE_LEFT = 141;
-    int SIDE_RIGHT = 142;
-
-
 
     /*
      * ======================================================
