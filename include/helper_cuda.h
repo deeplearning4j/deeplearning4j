@@ -19,7 +19,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#ifdef __CUDACC__
 #include <cuda.h>
+#endif
 #include "helper_string.h"
 
 //#include <string>

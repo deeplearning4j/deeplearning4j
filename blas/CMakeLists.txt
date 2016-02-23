@@ -9,6 +9,13 @@ IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     include_directories("/usr/include")
     include_directories("/usr/local/include")
 ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+if(!CUDA_BLAS)
+    if(!CPU_BLAS)
+        set(CUDA_BLAS FALSE)
+        set(CPU_BLAS TRUE)
+    endif()
+endif()
+
 
 if(CUDA_BLAS)
     message("Build cublas")
@@ -32,7 +39,7 @@ if(CUDA_BLAS)
         endif()
         CUDA_ADD_LIBRARY(libnd4j cuda/NativeBlas.cu cuda/NativeOps.cu)
         target_link_libraries(libnd4j cublas)
-
+        add_executable(libnd4jexec libnd4j)
     endif(CUDA_FOUND)
 
 elseif(CPU_BLAS)
