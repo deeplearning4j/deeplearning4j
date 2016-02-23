@@ -269,6 +269,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             if (configuration.getSequenceLearningAlgorithm() != null && !configuration.getSequenceLearningAlgorithm().isEmpty()) {
                 this.sequenceLearningAlgorithm(configuration.getSequenceLearningAlgorithm());
             }
+
+            if (configuration.getStopList() != null) this.stopWords.addAll(configuration.getStopList());
         }
 
         /**
@@ -683,6 +685,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             this.configuration.setUseAdaGrad(useAdaGrad);
             this.configuration.setNegative(negative);
             this.configuration.setEpochs(this.numEpochs);
+            this.configuration.setStopList(this.stopWords);
 
             vectors.configuration = this.configuration;
 

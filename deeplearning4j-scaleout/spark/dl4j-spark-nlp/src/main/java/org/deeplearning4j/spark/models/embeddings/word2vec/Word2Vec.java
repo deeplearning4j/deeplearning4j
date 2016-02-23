@@ -277,6 +277,7 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
             this.negative = configuration.getNegative();
             this.minWordFrequency = configuration.getMinWordFrequency();
             this.seed = configuration.getSeed();
+//            this.stopWords = configuration.get
 
             //  TODO: investigate this
             //this.hugeModelExpected = configuration.isHugeModelExpected();
@@ -287,6 +288,8 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
           //  this.learningRateDecayWords = configuration.getLearningRateDecayWords();
             this.useAdaGrad = configuration.isUseAdaGrad();
             this.windowSize = configuration.getWindow();
+
+            if (configuration.getStopList() != null) this.stopWords.addAll(configuration.getStopList());
         }
 
         /**
@@ -410,11 +413,13 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
          * @return
          */
         public Builder tokenizerFactory(@NonNull TokenizerFactory factory) {
-            this.tokenizer = this.tokenizerFactory.getClass().getCanonicalName();
+            this.tokenizer = factory.getClass().getCanonicalName();
 
-            if (tokenizerFactory.getTokenPreProcessor() != null) {
-                this.tokenPreprocessor = this.tokenizerFactory.getTokenPreProcessor().getClass().getCanonicalName();
-            } else this.tokenPreprocessor = "";
+            if (factory.getTokenPreProcessor() != null) {
+                this.tokenPreprocessor = factory.getTokenPreProcessor().getClass().getCanonicalName();
+            } else {
+                this.tokenPreprocessor = "";
+            }
 
             return this;
         }
@@ -515,6 +520,7 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
             this.configuration.setNegative(negative);
             this.configuration.setEpochs(this.numEpochs);
             this.configuration.setBatchSize(this.batchSize);
+            this.configuration.setStopList(this.stopWords);
 
             ret.configuration = this.configuration;
 

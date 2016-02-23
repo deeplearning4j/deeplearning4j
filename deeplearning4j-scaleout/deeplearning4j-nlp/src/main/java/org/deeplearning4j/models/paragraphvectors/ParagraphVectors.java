@@ -418,6 +418,7 @@ public class ParagraphVectors extends Word2Vec {
             this.configuration.setUseAdaGrad(useAdaGrad);
             this.configuration.setNegative(negative);
             this.configuration.setEpochs(this.numEpochs);
+            this.configuration.setStopList(this.stopWords);
 
             ret.configuration = this.configuration;
 
