@@ -93,7 +93,7 @@
         // A formatter for counts.
      //   if (id != "modelb") return;
 
-//        console.log("selector: " + selector + " id: " + id);
+        console.log("selector: " + selector + " id: " + id + " > " +values);
 
         var formatCount = d3.format(",.0f");
         var data = [];
@@ -631,8 +631,8 @@ var timed = function() {
                                                 $(selectorGradient).append(divGradient);
                                             }
 
-                                            appendHistogram(model[key],selectorModel + ' .' + key, "model"+ key );
-                                            appendHistogram(gradient[key],selectorGradient + ' .' + key, "gradient"+ key );
+                                            if (model[key] != undefined) appendHistogram(model[key],selectorModel + ' .' + key, "model"+ key );
+                                            if (gradient[key] != undefined) appendHistogram(gradient[key],selectorGradient + ' .' + key, "gradient"+ key );
                                             /*
                                                 update selector box if needed
                                             */

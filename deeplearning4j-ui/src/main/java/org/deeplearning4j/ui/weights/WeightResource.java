@@ -30,6 +30,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 
 /**
@@ -43,6 +44,8 @@ public class WeightResource {
     private CompactModelAndGradient current;
     String path = "weights";
     private boolean updated = true;
+    private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+
     @GET
     @Produces(MediaType.TEXT_HTML)
     public View get() {
@@ -61,16 +64,22 @@ public class WeightResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response data() {
         //initialized with empty data
-        if(current == null) {
-            //initialize with empty
+        try {
+            lock.readLock().lock();
+
+            if (current == null) {
+                //initialize with empty
+                updated = false;
+                return Response.ok(new HashMap<>()).build();
+
+            }
+
+            //cache response; don't refetch data
             updated = false;
-            return Response.ok(new HashMap<>()).build();
-
+            return Response.ok(current).build();
+        } finally {
+            lock.readLock().unlock();
         }
-
-        //cache response; don't refetch data
-        updated = false;
-        return Response.ok(current).build();
     }
 
 
@@ -80,10 +89,16 @@ public class WeightResource {
     @Produces(MediaType.APPLICATION_JSON)
     @ExceptionMetered
     public Response update(CompactModelAndGradient modelAndGrad, @PathParam("path") String path) {
-        this.current = modelAndGrad;
-        this.path = modelAndGrad.getPath();
-        updated = true;
-        return Response.ok(Collections.singletonMap("status","ok")).build();
+        try {
+            lock.writeLock().lock();
+
+            this.current = modelAndGrad;
+            this.path = modelAndGrad.getPath();
+            updated = true;
+            return Response.ok(Collections.singletonMap("status","ok")).build();
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
 
 

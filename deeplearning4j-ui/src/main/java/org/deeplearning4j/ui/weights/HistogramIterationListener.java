@@ -58,6 +58,8 @@ public class HistogramIterationListener implements IterationListener {
         }
 
         this.iterations = iterations;
+        if (this.iterations  < 1) this.iterations = 1;
+
         target = client.target("http://localhost:" + port ).path(subPath).path("update");
         this.openBrowser = openBrowser;
         this.path = "http://localhost:" + port + "/" + subPath;
@@ -80,6 +82,8 @@ public class HistogramIterationListener implements IterationListener {
     public void iterationDone(Model model, int iteration) {
         if(iteration % iterations == 0) {
             Map<String,INDArray> grad = model.gradient().gradientForVariable();
+
+//            log.warn("Starting report building...");
 
             if(meanMagHistoryParams.size() == 0){
                 //Initialize:
@@ -108,8 +112,17 @@ public class HistogramIterationListener implements IterationListener {
                 newGrad.put(newName,histogram.getData());
                 //CSS identifier can't start with digit http://www.w3.org/TR/CSS21/syndata.html#value-def-identifier
 
+
+                int idx = indexFromString(newName);
+                if (idx >= meanMagHistoryUpdates.size()) {
+                    //log.info("Can't find idx for update ["+newName+"]");
+                    meanMagHistoryUpdates.add(new LinkedHashMap<String,List<Double>>());
+                    idx = indexFromString(newName);
+                }
+
+
                 //Work out layer index:
-                Map<String,List<Double>> map = meanMagHistoryUpdates.get(indexFromString(param));
+                Map<String,List<Double>> map = meanMagHistoryUpdates.get(idx);
                 List<Double> list = map.get(newName);
                 if(list==null){
                     list = new ArrayList<>();
@@ -135,7 +148,14 @@ public class HistogramIterationListener implements IterationListener {
                 newParams.put(newName, histogram.getData());
                 //dup() because params might be a view
 
-                Map<String,List<Double>> map = meanMagHistoryParams.get(indexFromString(param));
+                int idx = indexFromString(newName);
+                if (idx >= meanMagHistoryParams.size()) {
+                    //log.info("Can't find idx for param ["+newName+"]");
+                    meanMagHistoryParams.add(new LinkedHashMap<String,List<Double>>());
+                    idx = indexFromString(newName);
+                }
+
+                Map<String,List<Double>> map = meanMagHistoryParams.get(idx);
                 List<Double> list = map.get(newName);
                 if(list==null){
                     list = new ArrayList<>();
@@ -145,8 +165,10 @@ public class HistogramIterationListener implements IterationListener {
                 list.add(meanMag);
             }
 
+
             double score = model.score();
             scoreHistory.add(score);
+            //log.info("Saving score: " + score);
 
             CompactModelAndGradient g = new CompactModelAndGradient();
             g.setGradients(newGrad);
