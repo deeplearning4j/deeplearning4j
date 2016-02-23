@@ -61,27 +61,7 @@ public:
 		T *ret = (T *) malloc(sizeof(T) * this->getExtraParamsLength());
 		return ret;
 	}
-	virtual
-#ifdef __CUDACC__
-	__host__
-#endif
-	T * generateExtraParams(T *input,int *shapeInfo) {
-		T *ret = createExtraParams();
-		ReduceFunction<T> **functions = this->extraParamsFunctions();
-		for(int i = 0; i < getExtraParamsLength(); i++) {
-			ReduceFunction<T> *r = functions[i];
-			//assume the param ordering is composed
-			//of the previous parameters
-			//the most prominent example being
-			//variance and std which requires
-			//mean followed by bias
-			T val = r->execScalar(input,shapeInfo,ret);
-			ret[i] = val;
-			delete functions[i];
-		}
 
-		return ret;
-	}
 
 #ifdef __CUDACC__
 	virtual __host__ __device__
@@ -328,7 +308,7 @@ public:
 
 						i += gridSize;
 					}
-				}}
+				}
 
 			// each thread puts its local sum into shared memory
 			sPartials[tid] = reduction;

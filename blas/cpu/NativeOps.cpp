@@ -541,12 +541,14 @@ void   NativeOps::execTransformDouble(long *extraPointers,int opNum,
  * @param extraParams
  * @param n
  */
-void   NativeOps::execTransformDouble(long *extraPointers,int opNum,
+void   NativeOps::execTransformDouble(
+		long *extraPointers
+		,int opNum,
 		long dx,
 		long xShapeInfo,
 		long result,
 		long resultShapeInfo,
-		long extraParams, int n) {
+		long extraParams) {
 	double *xPointer = reinterpret_cast<double *>(dx);
 	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
 	double *resultPointer = reinterpret_cast<double *>(result);
@@ -1087,7 +1089,9 @@ void   NativeOps::execSummaryStatsFloat(long *extraPointers,int opNum,long x,
  * @param extraParams
  * @param n
  */
-void   NativeOps::execTransformFloat(long *extraPointers,int opNum,
+void   NativeOps::execTransformFloat(
+        long *extraPointers,
+        int opNum,
 		long dx,
 		int xStride,
 		long result,
@@ -1116,13 +1120,13 @@ void   NativeOps::execTransformFloat(
 		long xShapeInfo,
 		long result,
 		long resultShapeInfo,
-		long extraParams, int n) {
+		long extraParams) {
 	float *xPointer = reinterpret_cast<float *>(dx);
 	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
 	float *resultPointer = reinterpret_cast<float *>(result);
 	int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
 	float *extraParamsPointer = reinterpret_cast<float *>(extraParamsVals);
-	FloatNativeOpExecutioner::getInstance()->execTransform(opNum,xPointer,xShapeInfoPointer,resultPointer,resultShapeInfoPointer,extraParamsPointer,n);
+	FloatNativeOpExecutioner::getInstance()->execTransform(opNum,xPointer,xShapeInfoPointer,resultPointer,resultShapeInfoPointer,extraParamsPointer);
 }
 
 /**

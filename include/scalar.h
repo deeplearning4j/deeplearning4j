@@ -56,7 +56,6 @@ namespace functions {
 			int n,
 			T scalar,
 			T *dy,
-			int *shapeInfo,
 			T *params,
 			T *result,
 			int *indexes) {
@@ -1326,10 +1325,89 @@ extern "C" __global__ void scalarFloat(int opNum,
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+template <typename T>
+__device__ void scalarGenericIndexes(
+        int opNum,
+        int n,
+        T dx,
+        T *dy,
+        T *params,
+        T *result,int *indexes) {
+    __shared__ functions::scalar::ScalarTransform<T> *op;
+    __shared__  functions::scalar::ScalarOpFactory<T> *scalarDoubleOpFactory;
+    if(threadIdx.x == 0)
+        scalarDoubleOpFactory = new functions::scalar::ScalarOpFactory<T>();
+
+    __syncthreads();
+    if(threadIdx.x == 0)
+        op = scalarDoubleOpFactory->getOp(opNum);
+    __syncthreads();
+
+
+
+
+    op->transform(n,dx,dy,params,result,indexes);
+    if(threadIdx.x == 0)
+        free(op);
+}
+
+extern "C" __global__ void scalarDoubleIndexes(
+        int opNum,
+        int n,
+        double dx,
+        double *dy,
+        double *params,
+        double *result,int *indexes) {
+    scalarGenericIndexes<double>(opNum,
+                                 n,
+                                 dx,
+                                 dy,
+                                 params,
+                                 result,
+                                 indexes);
+}
+
+extern "C" __global__ void scalarFloatIndexe(
+        int opNum,
+        int n,
+        float dx,
+        float *dy,
+        float *params,
+        float *result,
+        int *indexes) {
+    scalarGenericIndexes<float>(opNum,
+                                 n,
+                                 dx,
+                                 dy,
+                                 params,
+                                 result,
+                                 indexes);
+}
+
+
+
+
+
+
+
+
+
 template <typename T>
 __device__ void scalarGeneric(
 		int opNum,
-		int n,
 		T dx,
 		T *dy,
 		int *shapeInfo,
@@ -1353,16 +1431,14 @@ __device__ void scalarGeneric(
 		free(op);
 }
 
-extern "C" __global__ void scalarDoubleIndex(
+extern "C" __global__ void scalarDouble(
 		int opNum,
-		int n,
 		double dx,
 		double *dy,
 		int *shapeInfo, double *params,
 		double *result) {
 	scalarGeneric<double>(
 			opNum,
-			n,
 			dx,
 			dy,
 			shapeInfo,
@@ -1370,9 +1446,8 @@ extern "C" __global__ void scalarDoubleIndex(
 			result);
 }
 
-extern "C" __global__ void scalarFloatIndex(
+extern "C" __global__ void scalarFloat(
 		int opNum,
-		int n,
 		float dx,
 		float *dy,
 		int *shapeInfo,
@@ -1380,7 +1455,6 @@ extern "C" __global__ void scalarFloatIndex(
 		float *result) {
 	scalarGeneric<float>(
 			opNum,
-			n,
 			dx,
 			dy,
 			shapeInfo,

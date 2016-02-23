@@ -131,7 +131,7 @@ public:
                                long  yShapeInfo,
                                long result,
                                long  resultShapeInfo,
-                               long extraParams, int n);
+                               long extraParams);
 
     /**
      *
@@ -374,7 +374,7 @@ public:
                          long xShapeInfo,
                          long result,
                          long resultShapeInfo,
-                         long extraParams, int n);
+                         long extraParams);
 
     /**
      *
@@ -517,7 +517,7 @@ public:
                                     long  yShapeInfo,
                                     long result,
                                     long  resultShapeInfo,
-                                    long extraParams, int n);
+                                    long extraParams);
 
     /**
      *

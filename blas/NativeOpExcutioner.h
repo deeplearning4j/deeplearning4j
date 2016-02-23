@@ -539,14 +539,13 @@ public:
                        int *xShapeInfo,
                        T *result,
                        int *resultShapeInfo,
-                       T *extraParams, int n) {
+                       T *extraParams) {
         functions::transform::Transform<T> *transform = transformOpFactory->getOp(opNum);
         transform->exec(dx,
                         xShapeInfo,
                         result,
                         resultShapeInfo,
-                        extraParams,
-                        n);
+                        extraParams);
         delete transform;
 
     }
@@ -566,7 +565,7 @@ public:
                        int *xShapeInfo,
                        T *result,
                        int *resultShapeInfo,
-                       T *extraParams, int n,
+                       T *extraParams,
                        int *xIndexes,
                        int *resultIndexes) {
         functions::transform::Transform<T> *transform = transformOpFactory->getOp(opNum);
@@ -575,7 +574,6 @@ public:
                         result,
                         resultShapeInfo,
                         extraParams,
-                        n,
                         xIndexes,
                         resultIndexes);
         delete transform;
