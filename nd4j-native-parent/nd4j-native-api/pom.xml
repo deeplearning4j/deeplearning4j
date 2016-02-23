@@ -19,7 +19,7 @@
         <platform.root />            <!--              -Dplatform.root=/path/to/android-ndk/                         -->
         <platform.compiler />    <!--              -Dplatform.compiler=/path/to/arm-linux-androideabi-g++        -->
         <platform.properties>${platform}</platform.properties>
-        <javacpp.version>0.11</javacpp.version>
+        <javacpp.version>1.1</javacpp.version>
     </properties>
     <build>
 
@@ -139,7 +139,7 @@
                         <configuration>
                             <skip>${generate-sources.skip}</skip>
                             <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
-                            <classOrPackageName>org.nd4j.nativeblas.Nd4jBlas</classOrPackageName>
+                            <classOrPackageName>org.nd4j.nativeblas</classOrPackageName>
                         </configuration>
                     </execution>
                     <execution>

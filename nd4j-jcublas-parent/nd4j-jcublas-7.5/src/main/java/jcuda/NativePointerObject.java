@@ -69,7 +69,7 @@ public abstract class NativePointerObject
      *
      * @return The native pointer value
      */
-    protected long getNativePointer()
+    public long getNativePointer()
     {
         return nativePointer;
     }
@@ -103,5 +103,7 @@ public abstract class NativePointerObject
             return false;
         return true;
     }
+
+
 
 }
