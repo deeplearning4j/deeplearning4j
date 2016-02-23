@@ -34,13 +34,13 @@ public class CommandLineInterfaceDriver {
      * Print the usage for the command.
      */
 	public static void printUsage() {
-        log.info( "Usage: " );
-		log.info( "\tdl4j [command] [params] " );
-		log.info( "Commands: " );
-		log.info( "\ttrain\tbuild a deep learning model " );
-		log.info( "\ttest\ttest a deep learning model " );
-		log.info( "\tpredict\tscore new records against a deep learning model " );
-		log.info( "" );
+        System.out.println( "Usage: " );
+		System.out.println( "\tdl4j [command] [params] " );
+		System.out.println( "Commands: " );
+		System.out.println( "\ttrain\tbuild a deep learning model " );
+		System.out.println( "\ttest\ttest a deep learning model " );
+		System.out.println( "\tpredict\tscore new records against a deep learning model " );
+		System.out.println( "" );
 
 	}
 
@@ -51,6 +51,7 @@ public class CommandLineInterfaceDriver {
             subCommand.execute();
         } catch( CmdLineException e ) {
             System.err.println(e.getMessage());
+            printUsage();
             return;
         }
     }
