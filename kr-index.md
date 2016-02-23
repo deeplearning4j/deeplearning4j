@@ -5,7 +5,7 @@ layout: kr-default
 
 # Deeplearning4j란?
 
-Deeplearning4j는 자바(Java)와 스칼라(Scala)를 위해 작성된 최초의 상용 수준 오픈소스 딥러닝 라이브러리입니다. 연구 목적으로 쓰여진 다른 라이브러리와 달리, Deeplearning4j는 상용 서비스를 위해 설계되었고 하둡(Hadoop)/스파크([Spark](../gpu_aws.html))와 통합해 사용할 수 있습니다. 스카이마인드([Skymind](http://skymind.io))는 Deeplearning4j의 유료 사용자를 지원하는 회사입니다.
+Deeplearning4j는 자바(Java)와 스칼라(Scala)를 위해 작성된 세계 최초의 상용 수준 오픈소스 딥러닝 라이브러리입니다. 연구 목적으로 쓰여진 다른 라이브러리와 달리, Deeplearning4j는 상용 서비스를 위해 설계되었고 하둡(Hadoop)/스파크([Spark](../gpu_aws.html))와 통합해 사용할 수 있습니다. 스카이마인드([Skymind](http://skymind.io))는 Deeplearning4j의 유료 사용자를 지원하는 회사입니다.
 
 Deeplearning4j는 최신 기술을 간편하게 사용하는데 초점을 두었습니다. 특히, 설치와 활용에 있어서 일반적인 문법과 규칙을 사용하였기 때문에 머신 러닝에 대한 깊은 지식이 없는 사람도 빠르게 시제품을 만들 수 있도록 하고 있습니다. 확장성에도 초점을 두어 어떠한 규모의 데이타에도 사용할 수 있습니다. Deeplearning4j는 아파치 2.0 라이센스로 배포되기 때문에 파생된 모든 소스 코드는 저작권이 코드의 작성자에게 귀속됩니다.
 
