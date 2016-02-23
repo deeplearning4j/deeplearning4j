@@ -436,6 +436,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             this.configuration.setUseAdaGrad(useAdaGrad);
             this.configuration.setNegative(negative);
             this.configuration.setEpochs(this.numEpochs);
+            this.configuration.setStopList(this.stopWords);
 
             ret.configuration = this.configuration;
 
