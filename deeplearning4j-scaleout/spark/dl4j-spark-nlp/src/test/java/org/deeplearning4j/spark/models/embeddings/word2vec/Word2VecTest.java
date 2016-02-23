@@ -24,6 +24,8 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.canova.api.util.ClassPathResource;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
+import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
+import org.deeplearning4j.models.embeddings.reader.impl.FlatModelUtils;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
@@ -50,13 +52,14 @@ public class Word2VecTest {
     @Test
     public void testConcepts() throws Exception {
         // These are all default values for word2vec
-       SparkConf sparkConf = new SparkConf().setMaster("local[4]").setAppName("sparktest");
+       SparkConf sparkConf = new SparkConf().setMaster("local[8]").setAppName("sparktest");
 
         // Set SparkContext
         JavaSparkContext sc = new JavaSparkContext(sparkConf);
 
-        // Path of data
+        // Path of data part-00000
         String dataPath = new ClassPathResource("/big/raw_sentences.txt").getFile().getAbsolutePath();
+//        dataPath = "/ext/Temp/part-00000";
 //        String dataPath = new ClassPathResource("spark_word2vec_test.txt").getFile().getAbsolutePath();
 
         // Read in data
@@ -87,12 +90,26 @@ public class Word2VecTest {
 
         word2Vec.train(corpus);
 
+        //word2Vec.setModelUtils(new FlatModelUtils());
+
         System.out.println("UNK: " + word2Vec.getWordVectorMatrix("UNK"));
 
         InMemoryLookupTable<VocabWord> table = (InMemoryLookupTable<VocabWord>) word2Vec.lookupTable();
 
         double sim = word2Vec.similarity("day", "night");
         System.out.println("day/night similarity: " + sim);
+/*
+        System.out.println("Hornjo: " + word2Vec.getWordVectorMatrix("hornjoserbsce"));
+        System.out.println("carro: " + word2Vec.getWordVectorMatrix("carro"));
+
+        Collection<String> portu = word2Vec.wordsNearest("carro", 10);
+        printWords("carro", portu, word2Vec);
+
+        portu = word2Vec.wordsNearest("davi", 10);
+        printWords("davi", portu, word2Vec);
+
+        System.out.println("---------------------------------------");
+        */
 
         Collection<String> words = word2Vec.wordsNearest("day", 10);
         printWords("day", words, word2Vec);
@@ -144,7 +161,20 @@ public class Word2VecTest {
         assertEquals(array1, array2);
     }
 
-    private static void printWords(String target, Collection<String> list, Word2Vec vec) {
+    @Test
+    @Ignore
+    public void testPortugeseW2V() throws Exception {
+        WordVectors word2Vec = WordVectorSerializer.loadTxtVectors(new File("/ext/Temp/para.txt"));
+        word2Vec.setModelUtils(new FlatModelUtils());
+
+        Collection<String> portu = word2Vec.wordsNearest("carro", 10);
+        printWords("carro", portu, word2Vec);
+
+        portu = word2Vec.wordsNearest("davi", 10);
+        printWords("davi", portu, word2Vec);
+    }
+
+    private static void printWords(String target, Collection<String> list, WordVectors vec) {
         System.out.println("Words close to ["+target+"]:");
         for (String word: list) {
             double sim = vec.similarity(target, word);
