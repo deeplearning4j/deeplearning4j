@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.cpu.complex;
 
+import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -728,8 +729,8 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
     @Override
     public IComplexNumber exp() {
         IComplexNumber result = dup();
-        double realExp = Math.exp(realComponent());
-        return result.set(realExp * Math.cos(imaginaryComponent()), realExp * Math.sin(imaginaryComponent()));
+        double realExp = FastMath.exp(realComponent());
+        return result.set(realExp * FastMath.cos(imaginaryComponent()), realExp * FastMath.sin(imaginaryComponent()));
     }
 
     @Override
@@ -737,9 +738,9 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
         IComplexNumber result = dup();
         double real = (double) result.realComponent();
         double imaginary = (double) result.imaginaryComponent();
-        double modulus = Math.sqrt(real*real + imaginary*imaginary);
-        double arg = Math.atan2(imaginary,real);
-        return result.set(Math.log(modulus), arg);
+        double modulus = FastMath.sqrt(real*real + imaginary*imaginary);
+        double arg = FastMath.atan2(imaginary,real);
+        return result.set(FastMath.log(modulus), arg);
     }
 
     @Override

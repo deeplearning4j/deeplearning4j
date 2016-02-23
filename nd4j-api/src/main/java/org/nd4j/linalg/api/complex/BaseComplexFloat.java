@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.api.complex;
 
+import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
@@ -372,8 +373,8 @@ public abstract class BaseComplexFloat implements IComplexFloat {
     @Override
     public IComplexNumber exp() {
         IComplexNumber result = dup();
-        double realExp = Math.exp(realComponent());
-        return result.set(realExp * Math.cos(imaginaryComponent()), realExp * Math.sin(imaginaryComponent()));
+        double realExp = FastMath.exp(realComponent());
+        return result.set(realExp * FastMath.cos(imaginaryComponent()), realExp * FastMath.sin(imaginaryComponent()));
     }
     @Override
     public IComplexNumber powi(IComplexNumber c, IComplexNumber result) {
