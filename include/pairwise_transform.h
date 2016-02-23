@@ -288,7 +288,7 @@ namespace functions {
                     int *yShapeBuffer,
                     T *result,
                     int *resultShapeBuffer,
-                    T *extraParams, int n,
+                    T *extraParams,
                     int *indexes,
                     int *yIndexes) {
                 exec(dx,
@@ -298,7 +298,6 @@ namespace functions {
                      result,
                      resultShapeBuffer,
                      extraParams,
-                     n,
                      indexes,
                      yIndexes,
                      indexes);
@@ -327,10 +326,10 @@ namespace functions {
                     T *result,
                     int *resultShapeBuffer,
                     T *extraParams,
-                    const int n,
                     int *indexes,
                     int *yIndexes,
                     int *resultIndexes) {
+                int n = shape::length(xShapeBuffer);
 #pragma omp parallel for
                 for (int i = 0; i < n; i++) {
                     result[resultIndexes[i]] = op(dx[indexes[i]], y[yIndexes[i]], extraParams);
@@ -364,9 +363,8 @@ namespace functions {
                     T *result,
                     int *resultShapeBuffer,
                     T *extraParams,
-                    const int n,
                     int *indexes) {
-
+                int n = shape::length(xShapeBuffer);
 #pragma omp parallel for
                 for (int i = 0; i < n; i++) {
                     result[indexes[i]] = op(dx[indexes[i]],y[indexes[i]], extraParams);
@@ -396,9 +394,9 @@ namespace functions {
                     int *yShapeBuffer,
                     T *result,
                     int *resultShapeBuffer,
-                    T *extraParams, const int n) {
+                    T *extraParams) {
 
-
+                int n = shape::length(xShapeBuffer);
                 int xElementWiseStride = shape::elementWiseStride(xShapeBuffer);
                 int yElementWiseStride = shape::elementWiseStride(yShapeBuffer);
                 int resultElementWiseStride = shape::elementWiseStride(resultShapeBuffer);

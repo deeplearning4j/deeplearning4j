@@ -397,7 +397,9 @@ void   NativeOps::execReduce3Double(long *extraPointers,int opNum,
                                                           yPointer,
                                                           yShapeInfoPointer,
                                                           resultPointer,
-                                                          resultShapeInfoPointer);
+                                                          resultShapeInfoPointer,
+                                                          dimensionPointer,
+                                                          dimensionLength);
 
 }
 /**
@@ -461,7 +463,14 @@ void NativeOps::execScalarDouble(
 	double *resultPointer = reinterpret_cast<double *>(result);
 	int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
 	double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
-	DoubleNativeOpExecutioner::getInstance()->execScalar(opNum,xPointer,xShapeInfoPointer,resultPointer,resultShapeInfoPointer,scalar,extraParamsPointer);
+	DoubleNativeOpExecutioner::getInstance()->execScalar(
+            opNum,
+            xPointer,
+            xShapeInfoPointer,
+            resultPointer,
+            resultShapeInfoPointer,
+            scalar,
+            extraParamsPointer);
 }
 
 /**
@@ -896,20 +905,31 @@ void   NativeOps::execReduceFloat(long *extraPointers,int opNum,
  * @param result
  * @param resultShapeInfo
  */
-void   NativeOps::execReduceFloat(long *extraPointers,int opNum,
+void   NativeOps::execReduceFloat(
+        long *extraPointers,
+        int opNum,
 		long x,
 		long xShapeInfo,
 		long extraParams,
 		long result,
 		long resultShapeInfo,
-		long dimension,int dimensionLength) {
+		long dimension,
+        int dimensionLength) {
 	float *xPointer = reinterpret_cast<float *>(x);
 	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
 	float *resultPointer = reinterpret_cast<float *>(result);
 	int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
 	float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
 	int *dimensionPointer = reinterpret_cast<int *>(dimension);
-	FloatNativeOpExecutioner::getInstance()->execReduce(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,resultPointer,resultShapeInfoPointer,dimensionPointer,dimensionLength);
+	FloatNativeOpExecutioner::getInstance()->execReduce(
+            opNum,
+            xPointer,
+            xShapeInfoPointer,
+            extraParamsPointer,
+            resultPointer,
+            resultShapeInfoPointer,
+            dimensionPointer,
+            dimensionLength);
 
 }
 
@@ -1026,7 +1046,17 @@ void   NativeOps::execReduce3Float(long *extraPointers,int opNum,
 	int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfoBuffer);
 	float *extraParamsPointer = reinterpret_cast<float *>(extraParamsVals);
 	int *dimensionPointer = reinterpret_cast<int *>(dimension);
-	FloatNativeOpExecutioner::getInstance()->execReduce3(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,yPointer,yShapeInfoPointer,resultPointer,resultShapeInfoPointer);
+	FloatNativeOpExecutioner::getInstance()->execReduce3(
+            opNum,
+            xPointer,
+            xShapeInfoPointer,
+            extraParamsPointer,
+            yPointer,
+            yShapeInfoPointer,
+            resultPointer,
+            resultShapeInfoPointer,
+            dimensionPointer,
+            dimensionLength);
 
 }
 /**
@@ -1076,7 +1106,6 @@ void NativeOps::execScalarFloat(
 		float scalar,
 		long extraParams) {
 	float *xPointer = reinterpret_cast<float *>(x);
-	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
 	float *resultPointer = reinterpret_cast<float *>(result);
 	int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
 	float *extraParamsPointer = reinterpret_cast<float *>(extraParams);

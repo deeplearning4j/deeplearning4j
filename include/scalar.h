@@ -176,9 +176,9 @@ namespace functions {
                            int *resultShapeInfo,
                            T scalar,
                            T *extraParams,
-                           const int n,
                            int *indexes,
                            int *resultIndexes) {
+                int n = shape::length(xShapeInfo);
 #pragma omp parallel for
                 for (int i = 0; i < n; i++) {
                     result[resultIndexes[i]] = op(x[indexes[i]], scalar,extraParams);
@@ -200,14 +200,13 @@ namespace functions {
          * @param n the number of elements to loop over
          */
             void transform(T *x, int *xShapeInfo, T *result, int *resultShapeInfo,
-                           T scalar, T *extraParams, const int n,int *indexes) {
+                           T scalar, T *extraParams,int *indexes) {
                 transform(x,
                           xShapeInfo,
                           result,
                           resultShapeInfo,
                           scalar,
                           extraParams,
-                          n,
                           indexes,
                           indexes);
             }
@@ -228,8 +227,7 @@ namespace functions {
                            int *xShapeInfo,
                            T *result,
                            int *resultShapeInfo,
-                           T scalar, T *extraParams,
-                           const int n) {
+                           T scalar, T *extraParams) {
 
                 char xOrdering = shape::order(xShapeInfo);
                 char resultOrdering = shape::order(resultShapeInfo);
@@ -279,6 +277,7 @@ namespace functions {
 
                 }
                 else {
+                    int n = shape::length(xShapeInfo);
 
 
                     if(xElementWiseStride >= 1 && resultElementWiseStride >= 1) {
