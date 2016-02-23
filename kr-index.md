@@ -29,7 +29,7 @@ Deeplearning4j는 최신 기술을 간편하게 사용하는데 초점을 두었
 * [카노바(Canova)](http://deeplearning4j.org/canova.html): 기계 학습을 위한 벡터 처리 기술
 * [ND4J: Numpy의 두 배 속도를 자랑하는 선형 대수 라이브러리](http://nd4j.org/benchmarking)
 
-Deeplearning4j는 분산 처리와 단일 스레드 처리를 모두 포함합니다. 분산 처리의 경우 동시에 여러 서버 클러스터에서 학습을 할 수 있으며 결과적으로 대량의 데이터를 신속하게 처리할 수 있습니다.
+Deeplearning4j는 분산 처리와 단일 스레드 처리를 모두 지원합니다. 분산 시스템에서 학습하는 경우 동시에 여러 서버 클러스터에서 학습을 진행할 수 있으며, 결과적으로 대량의 데이터를 신속하게 처리할 수 있습니다.
 인공 신경망은 [Iterative Reduce (반복적인 리듀스 작업)](http://deeplearning4j.org/iterativereduce.html)를 통해 병렬로 학습되는데, 이 학습 작업은 자바, [스칼라](http://nd4j.org/scala.html) 및 [Clojure](https://github.com/wildermuthn/d4lj-iris-example-clj/blob/master/src/dl4j_clj_example/core.clj)와 모두 호환됩니다. 이렇게 오픈 스택에서 편하게 사용할 수 있도록 모듈화된 구조 덕분에 Deeplearning4j를 이용해 [마이크로 서비스 아키텍처](http://microservices.io/patterns/microservices.html)에 최초로 딥러닝 기술을 적용하고 있습니다.
 
 ### DL4J의 인공 신경망(Neural Networks)
