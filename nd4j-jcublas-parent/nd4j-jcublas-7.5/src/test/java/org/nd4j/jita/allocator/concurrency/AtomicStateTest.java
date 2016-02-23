@@ -63,4 +63,34 @@ public class AtomicStateTest {
         assertEquals(0, ticker.getTickRequests());
         assertEquals(0, ticker.getTackRequests());
     }
+
+    /**
+     * This test addresses reentrance for Toe state
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testRequestTick4() throws Exception {
+        AtomicState ticker = new AtomicState();
+
+        ticker.requestTick();
+
+        assertEquals(AccessState.TICK, ticker.getCurrentState());
+
+        ticker.requestTack();
+
+        assertEquals(AccessState.TACK, ticker.getCurrentState());
+
+        ticker.requestToe();
+        assertEquals(AccessState.TOE, ticker.getCurrentState());
+
+        ticker.requestToe();
+        assertEquals(AccessState.TOE, ticker.getCurrentState());
+
+        ticker.releaseToe();
+        assertEquals(AccessState.TOE, ticker.getCurrentState());
+
+        ticker.releaseToe();
+        assertEquals(AccessState.TACK, ticker.getCurrentState());
+    }
 }

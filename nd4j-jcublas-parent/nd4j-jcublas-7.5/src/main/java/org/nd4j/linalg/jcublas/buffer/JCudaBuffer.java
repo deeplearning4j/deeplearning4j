@@ -40,12 +40,14 @@ public interface JCudaBuffer extends DataBuffer {
 	 * Set the underlying host buffer, very fast method of copying on RAM side and not using cublas (SLOW)
      * @param hostBuffer
      */
+    @Deprecated
 	void setHostBuffer(ByteBuffer hostBuffer);
 	
 	/**
 	 * Get the underlying host bytebuffer
 	 * @return
 	 */
+    @Deprecated
 	Buffer getHostBuffer();
 	
     /**
@@ -53,6 +55,7 @@ public interface JCudaBuffer extends DataBuffer {
      *
      * @return the pointer for this buffer
      */
+    @Deprecated
     Pointer getHostPointer();
 
     /**
@@ -63,6 +66,7 @@ public interface JCudaBuffer extends DataBuffer {
      * @param offset the offset (NOT MULTIPLIED BY ELEMENT SIZE) to index in to the pointer at
      * @return the pointer at the given byte offset
      */
+    @Deprecated
     Pointer getHostPointer(int offset);
 
 
@@ -93,6 +97,7 @@ public interface JCudaBuffer extends DataBuffer {
      *
      * @param pointer the pointer to set
      */
+    @Deprecated
     void set(Pointer pointer);
 
 
@@ -103,6 +108,7 @@ public interface JCudaBuffer extends DataBuffer {
      * @return true if the pointer was freed,
      * false other wise
      */
+    @Deprecated
     boolean freeDevicePointer(int offset, int length, int stride);
 
 
@@ -114,6 +120,7 @@ public interface JCudaBuffer extends DataBuffer {
      * @param length the length to copy
      * @param stride
      */
+    @Deprecated
     void copyToHost(CudaContext context, int offset, int length, int stride);
 
     /**
@@ -121,6 +128,7 @@ public interface JCudaBuffer extends DataBuffer {
      * @param offset the offset for the buffer (one buffer may have multiple pointers
      * @param length the length of the pointer (one buffer may have different lengths)
      */
+    @Deprecated
     void copyToHost(int offset, int length);
 
     /**
@@ -129,6 +137,7 @@ public interface JCudaBuffer extends DataBuffer {
      * mapping thread name to offset
      * @return the pointer info containing allocated pointers
      */
+    @Deprecated
     Table<String, Triple<Integer, Integer, Integer>, DevicePointerInfo> getPointersToContexts();
 
     /**
@@ -138,6 +147,7 @@ public interface JCudaBuffer extends DataBuffer {
      * has already been copied to the device
      * false otherwise
      */
+    @Deprecated
     boolean copied(String name);
 
 
@@ -148,6 +158,7 @@ public interface JCudaBuffer extends DataBuffer {
      *             check for whether it's been copied or not
      *
      */
+    @Deprecated
     void setCopied(String name);
 
 

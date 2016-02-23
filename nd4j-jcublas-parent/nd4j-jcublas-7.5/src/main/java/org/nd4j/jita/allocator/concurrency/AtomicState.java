@@ -21,6 +21,7 @@ public class AtomicState {
 
     protected final AtomicLong tickRequests = new AtomicLong(0);
     protected final AtomicLong tackRequests = new AtomicLong(0);
+    protected final AtomicLong toeRequests = new AtomicLong(0);
 
     protected final AtomicLong waitingTicks = new AtomicLong(0);
 
@@ -101,8 +102,14 @@ public class AtomicState {
         try {
 
             while (getCurrentState() != AccessState.TACK) {
-                Thread.sleep(10);
+                // now we make TOE reentrant
+                if (getCurrentState() == AccessState.TOE && toeThread.get() == Thread.currentThread().getId()) {
+                    break;
+                }
+                Thread.sleep(20);
             }
+
+            toeRequests.incrementAndGet();
             currentState.set(AccessState.TOE.ordinal());
 
             toeThread.set(Thread.currentThread().getId());
@@ -114,6 +121,27 @@ public class AtomicState {
     }
 
     /**
+     * This method requests to change state to Toe
+     *
+     * PLEASE NOTE: this method is non-blocking, if Toe request is impossible atm, it will return false.
+     *
+     * @return TRUE, if Toe state entered, FALSE otherwise
+     */
+    public boolean tryRequestToe() {
+        scheduleToe();
+        if (isToeWaiting.get() || getCurrentState() == AccessState.TOE) {
+            //System.out.println("discarding TOE");
+            discardScheduledToe();
+            return false;
+        } else {
+            //System.out.println("requesting TOE");
+            discardScheduledToe();
+            requestToe();
+            return true;
+        }
+    }
+
+    /**
      * This method requests release Toe status back to Tack.
      *
      * PLEASE NOTE: only the thread originally entered Toe state is able to release it.
@@ -121,10 +149,12 @@ public class AtomicState {
     public void releaseToe() {
         if (getCurrentState() == AccessState.TOE) {
             if (toeThread.get() == Thread.currentThread().getId()) {
-                tickRequests.set(0);
-                tackRequests.set(0);
+                if (toeRequests.decrementAndGet() == 0) {
+                    tickRequests.set(0);
+                    tackRequests.set(0);
 
-                currentState.set(AccessState.TACK.ordinal());
+                    currentState.set(AccessState.TACK.ordinal());
+                }
             } else throw new IllegalStateException("releaseToe() is called from different thread.");
         } else throw new IllegalStateException("Object is NOT in Toe state!");
     }
