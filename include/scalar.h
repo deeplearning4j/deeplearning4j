@@ -12,6 +12,10 @@
 #endif
 #include <op.h>
 #include <templatemath.h>
+#ifdef __CUDACC__
+#include <cuda.h>
+#include <cuda_runtime.h>
+#endif
 namespace functions {
     namespace scalar {
 /**

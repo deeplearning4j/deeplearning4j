@@ -594,7 +594,7 @@ public:
      * @param y
      * @param yShapeInfo
      */
-    double   execReduce3ScalarFloat(long *extraPointers,int opNum,
+    float   execReduce3ScalarFloat(long *extraPointers,int opNum,
                                     long x,
                                     long xShapeInfo,
                                     long extraParamsVals,
@@ -693,7 +693,7 @@ public:
      * @param xShapeInfo
      * @param extraParams
      */
-    double   execSummaryStatsScalarFloat(long *extraPointers,int opNum,long x,
+    float   execSummaryStatsScalarFloat(long *extraPointers,int opNum,long x,
                                          long xShapeInfo,
                                          long extraParams);
     /**

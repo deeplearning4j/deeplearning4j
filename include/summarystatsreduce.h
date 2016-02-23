@@ -12,6 +12,10 @@
 #include <shape.h>
 #include <op.h>
 #ifdef __CUDACC__
+#include <cuda.h>
+#include <cuda_runtime.h>
+#endif
+#ifdef __CUDACC__
 #include <helper_cuda.h>
 #endif
 #ifdef __JNI__
@@ -842,7 +846,7 @@ struct SharedSummaryStatsData<double> {
 	 * linspace(1,24,24).reshape(2,2,3,2)
 	 *
 	 * The tad for reduction:
-	 * 2,3 doesn't have an element wise stride.
+	 * 2,3 doesn't have an element wise stride
 	 *
 	 * However, the tad for reduction:
 	 * 3 does
@@ -1632,11 +1636,26 @@ __device__ void summaryStatsReduceGeneric(
  * @param dimensionLength the length of the dimension
  * @param postProcessOrNot whether to post process or not
  */
-extern "C" __global__ void summaryStatsReduceDouble(int op,double *dx, int *xShapeInfo, double *extraParams, double *result,
+extern "C" __global__ void summaryStatsReduceDouble(
+		int op,
+		double *dx,
+		int *xShapeInfo,
+		double *extraParams,
+		double *result,
 		int *resultShapeInfo,
 		int *dimension,
-		int dimensionLength, int postProcessOrNot) {
-	summaryStatsReduceGeneric<double>(op,dx,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength,postProcessOrNot);
+		int dimensionLength,
+		int postProcessOrNot) {
+	summaryStatsReduceGeneric<double>(
+			op,
+			dx,
+			xShapeInfo,
+			extraParams,
+			result,
+			resultShapeInfo,
+			dimension,
+			dimensionLength,
+			postProcessOrNot);
 
 }
 
@@ -1654,11 +1673,26 @@ extern "C" __global__ void summaryStatsReduceDouble(int op,double *dx, int *xSha
  * @param dimensionLength the length of the dimension
  * @param postProcessOrNot whether to post process or not
  */
-extern "C" __global__ void summaryStatsReduceFloat(int op, float *dx, int *xShapeInfo, float *extraParams, float *result,
+extern "C" __global__ void summaryStatsReduceFloat(
+		int op,
+		float *dx,
+		int *xShapeInfo,
+		float *extraParams,
+		float *result,
 		int *resultShapeInfo,
 		int *dimension,
-		int dimensionLength, int postProcessOrNot) {
-	summaryStatsReduceGeneric<float>(op,dx,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength,postProcessOrNot);
+		int dimensionLength,
+		int postProcessOrNot) {
+	summaryStatsReduceGeneric<float>(
+			op,
+			dx,
+			xShapeInfo,
+			extraParams,
+			result,
+			resultShapeInfo,
+			dimension,
+			dimensionLength,
+			postProcessOrNot);
 
 }
 

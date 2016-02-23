@@ -16,8 +16,14 @@
 #include <sharedmem.h>
 #include <omp.h>
 #include <pairwise_util.h>
+
 #ifdef __JNI__
 #include <jni.h>
+#endif
+
+#ifdef __CUDACC__
+#include <cuda.h>
+#include <cuda_runtime.h>
 #endif
 
 namespace functions {
@@ -148,7 +154,32 @@ namespace functions {
 			__syncthreads();
 		}
 	}
+	/**
 
+	 Perform a reduction
+	 @param n the number of elements
+	 @param xOffset the starting offset
+	 @param dx the data to perform the reduction on
+	 @param incx the increment on which to perform the reduction
+	 @param extraParams extra parameters used for calculations
+	 @param result where to store the result of the reduction
+	 */
+	virtual __inline__ __device__ void transformNoElementWiseStride(
+			T *dx,
+			int *xShapeInfo,
+			T *dy,
+			int *yShapeInfo,
+			T *extraParams,
+			T *result,
+			int *resultShapeInfo,
+			int postProcessOrNot) {
+		int n = shape::length(xShapeInfo);
+		for(unsigned int i = blockIdx.x * xElementWiseStride + tid;i < n; i += gridDim.x * blockDim.x) {
+
+		}
+
+
+	}
 	/**
 
 	 Perform a reduction
@@ -160,13 +191,16 @@ namespace functions {
 	 @param result where to store the result of the reduction
 	 */
 	virtual __inline__ __device__ void transform(
-			T *dx, int *xShapeInfo,
+			T *dx,
+			int *xShapeInfo,
 			T *dy,
-			int *yShapeInfo, T *extraParams,
+			int *yShapeInfo,
+			T *extraParams,
 			T *result,
 			int *resultShapeInfo,
 			int *dimension,
-			int dimensionLength, int postProcessOrNot) {
+			int dimensionLength,
+			int postProcessOrNot) {
 		/**
 		 * Gpu information for the problem
 		 */
@@ -175,10 +209,7 @@ namespace functions {
 		__shared__ volatile int resultScalar;
 
 		__shared__ int xElementWiseStride;
-		__shared__ int xOffset;
-
 		__shared__ int yElementWiseStride;
-		__shared__ int yOffset;
 
 		//shared memory space for storing intermediate results
 		SharedMemory <T> val;
@@ -231,18 +262,15 @@ namespace functions {
 				resultScalar = 0;
 			tensorsForDimension = shape::tensorsAlongDimension(xShapeInfo, dimension, dimensionLength);
 
-			xOffset = shape::offset(xShapeInfo);
 			xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 			xLength = shape::length(xShapeInfo);
 
 
 			resultLength = shape::prod(shape::shapeOf(resultShapeInfo), shape::rank(resultShapeInfo));
-			xOffset = shape::offset(xShapeInfo);
 			xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 			elementsPerTad = xLength / resultLength;
 
 			yElementWiseStride = shape::elementWiseStride(yShapeInfo);
-			yOffset = shape::offset(yShapeInfo);
 			if (gridDim.x >= resultLength) {
 				reductionIndexesPerBlock = 1;
 			}
@@ -323,8 +351,8 @@ namespace functions {
 		else if (resultScalar) {
 			if(blockIdx.x >= resultLength)
 				return;
-			unsigned int i = xOffset + blockIdx.x * xElementWiseStride + tid;
-			unsigned int j = yOffset + blockIdx.x * yElementWiseStride + tid;
+			unsigned int i = blockIdx.x * xElementWiseStride + tid;
+			unsigned int j = blockIdx.x * yElementWiseStride + tid;
 			unsigned int gridSize = blockDim.x * gridDim.x * xElementWiseStride;
 			unsigned int gridSizeY = blockDim.x * gridDim.x * yElementWiseStride;
 			if(tid == 0) {
@@ -336,7 +364,7 @@ namespace functions {
 
 			__syncthreads();
 
-			if(xOffset == 0 && yOffset == 0 && xElementWiseStride == 1 && yElementWiseStride == 1) {
+			if(xElementWiseStride == 1 && yElementWiseStride == 1) {
 #pragma unroll
 				while (i  < n && j  < n) {
 					curr = dx[i];
@@ -535,7 +563,8 @@ namespace functions {
                     T *x,
                     int *xShapeInfo,
                     T *extraParamsVals,
-                    T *y, int *yShapeInfo) {
+                    T *y,
+                    int *yShapeInfo) {
 
 
                 T startingVal = this->startingValue(x);
@@ -631,30 +660,30 @@ namespace functions {
                     int resultStridesIter[MAX_RANK];
                     int rank = shape::rank(xShapeInfo);
                     if(PrepareTwoRawArrayIter<T>(rank,
-                                                   xShape,
-                                                   x,
-                                                   xStride,
-                                                   y,
-                                                   yStride,
-                                                   &rank,
-                                                   shapeIter,
-                                                   &x,
-                                                   xStridesIter,
-                                                   &y,
-                                                   yStridesIter) >= 0) {
+                                                 xShape,
+                                                 x,
+                                                 xStride,
+                                                 y,
+                                                 yStride,
+                                                 &rank,
+                                                 shapeIter,
+                                                 &x,
+                                                 xStridesIter,
+                                                 &y,
+                                                 yStridesIter) >= 0) {
                         ND4J_RAW_ITER_START(dim, rank, coord, shapeIter) {
                                 /* Process the innermost dimension */
                                 T *xIter = x;
                                 T *yIter = y;
                                 startingVal = update(startingVal, op(xIter[0],yIter[0],&extraParamsVals),&extraParamsVals);
                             } ND4J_RAW_ITER_TWO_NEXT(dim,
-                                                       rank,
-                                                       coord,
-                                                       shapeIter,
-                                                       x,
-                                                       xStridesIter,
-                                                       y,
-                                                       yStridesIter);
+                                                     rank,
+                                                     coord,
+                                                     shapeIter,
+                                                     x,
+                                                     xStridesIter,
+                                                     y,
+                                                     yStridesIter);
 
                         return postProcess(startingVal,n,&extraParamsVals);
                     }
@@ -686,7 +715,7 @@ namespace functions {
                     T *y, int *yShapeInfo,
                     T *result, int *resultShapeInfo) {
 
-               result[0] = execScalar(x,xShapeInfo,extraParamsVals,y,yShapeInfo);
+                result[0] = execScalar(x,xShapeInfo,extraParamsVals,y,yShapeInfo);
             }
 
             /**
@@ -731,17 +760,17 @@ namespace functions {
 
                     int rank = shape::rank(xShapeInfo);
                     if(PrepareTwoRawArrayIter<T>(rank,
-                                                   xShape,
-                                                   x,
-                                                   xStride,
-                                                   y,
-                                                   yStride,
-                                                   &rank,
-                                                   shapeIter,
-                                                   &x,
-                                                   xStridesIter,
-                                                   &y,
-                                                   yStridesIter) >= 0) {
+                                                 xShape,
+                                                 x,
+                                                 xStride,
+                                                 y,
+                                                 yStride,
+                                                 &rank,
+                                                 shapeIter,
+                                                 &x,
+                                                 xStridesIter,
+                                                 &y,
+                                                 yStridesIter) >= 0) {
 
                         int resultLength = shape::length(resultShapeInfoBuffer);
                         int tadLength = shape::tadLength(xShapeInfo,dimension,dimensionLength);
@@ -754,13 +783,13 @@ namespace functions {
                                 int reductionIndex = xOffset / resultLength;
                                 result[reductionIndex] = update(result[reductionIndex],op(xIter[0],yIter[0],&extraParamsVals),&extraParamsVals);
                             } ND4J_RAW_ITER_TWO_NEXT(dim,
-                                                       rank,
-                                                       coord,
-                                                       shapeIter,
-                                                       x,
-                                                       xStridesIter,
-                                                       y,
-                                                       yStridesIter);
+                                                     rank,
+                                                     coord,
+                                                     shapeIter,
+                                                     x,
+                                                     xStridesIter,
+                                                     y,
+                                                     yStridesIter);
 #pragma  omp parallel for
                         for(int i = 0; i < resultLength ;i++) {
                             result[i] = postProcess(result[i],tadLength,&extraParamsVals);
@@ -1442,17 +1471,21 @@ namespace functions {
  * @param gpuInformation the gpu information
  * @param dimension the dimension to reduce along
  * @param dimensionLength the dimension length
- * @param postProcessOrNot whether to post [
+ * @param postProcessOrNot whether to post
  */
 template <typename T>
 __device__ void reduce3Generic(
 		int opNum,
-	  T *dx, int *xShapeInfo,
+		T *dx,
+		int *xShapeInfo,
 		T *dy,
-		int *yShapeInfo, T *extraParams, T *result,
-		int *resultShapeInfo, int *gpuInformation,
+		int *yShapeInfo,
+		T *extraParams,
+		T *result,
+		int *resultShapeInfo,
 		int *dimension,
-		int dimensionLength, int postProcessOrNot) {
+		int dimensionLength,
+		int postProcessOrNot) {
 	__shared__ functions::reduce3::Reduce3<T> * op;
 	__shared__ functions::reduce3::Reduce3OpFactory<T> *reduce3OpFactory;
 
@@ -1482,20 +1515,35 @@ __device__ void reduce3Generic(
  * @param extraParams the extra parameters in the operation
  * @param result where to store the result
  * @param resultShapeInfo the shape information
- * @param gpuInformation the gpu information
  * @param dimension the dimension to reduce along
  * @param dimensionLength the dimension length
  * @param postProcessOrNot whether to post [
  */
-extern "C" __global__ void reduce3Double(
+extern "C"
+__global__ void reduce3Double(
 		int opNum,
-		double *dx, int *xShapeInfo,
+		double *dx,
+		int *xShapeInfo,
 		double *dy,
-		int *yShapeInfo, double *extraParams, double *result,
-		int *resultShapeInfo, int *gpuInformation,
+		int *yShapeInfo,
+		double *extraParams,
+		double *result,
+		int *resultShapeInfo,
 		int *dimension,
-		int dimensionLength, int postProcessOrNot) {
-	reduce3Generic<double>(opNum,dx,xShapeInfo,dy,yShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
+		int dimensionLength,
+		int postProcessOrNot) {
+	reduce3Generic<double>(
+			opNum,
+			dx,
+			xShapeInfo,
+			dy,
+			yShapeInfo,
+			extraParams,
+			result,
+			resultShapeInfo,
+			dimension,
+			dimensionLength,
+			postProcessOrNot);
 
 }
 
@@ -1515,17 +1563,31 @@ extern "C" __global__ void reduce3Double(
  * @param dimensionLength the dimension length
  * @param postProcessOrNot whether to post [
  */
-extern "C" __global__ void reduce3Float(
+extern "C"
+__global__ void reduce3Float(
 		int opNum,
-		float *dx, int *xShapeInfo,
+		float *dx,
+		int *xShapeInfo,
 		float *dy,
-		int *yShapeInfo, float *extraParams,
+		int *yShapeInfo,
+		float *extraParams,
 		float *result,
 		int *resultShapeInfo,
-		int *gpuInformation,
 		int *dimension,
-		int dimensionLength, int postProcessOrNot) {
-	reduce3Generic<float>(opNum,dx,xShapeInfo,dy,yShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
+		int dimensionLength,
+		int postProcessOrNot) {
+	reduce3Generic<float>(
+			opNum,
+			dx,
+			xShapeInfo,
+			dy,
+			yShapeInfo,
+			extraParams,
+			result,
+			resultShapeInfo,
+			dimension,
+			dimensionLength,
+			postProcessOrNot);
 
 }
 
