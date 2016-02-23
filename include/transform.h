@@ -2287,7 +2287,7 @@ __device__ void transformGeneric(
  * @param result the result storage
  * @param blockSize the block size for the problem
  */
-extern "C" __global__ void transformDouble(
+__global__ void transformDouble(
         int opNum,
         int n,
         double *dy,
@@ -2317,8 +2317,9 @@ extern "C" __global__ void transformDouble(
  * @param result the result storage
  * @param blockSize the block size for the problem
  */
-extern "C" __global__ void transformFloat(
+ __global__ void transformFloat(
         int opNum,
+        int n,
         float *dy,
         int incy,
         float *params,

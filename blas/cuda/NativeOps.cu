@@ -40,6 +40,26 @@ dim3 getOptimalDimensions(int n,cudaFuncAttributes attributes) {
     return dim3(num_blocks,num_threads,num_threads * sizeof(T));
 }
 
+/**
+ * Returns optimal launch parameters
+ * given the extra pointers passed in.
+ * The extra pointer should be
+ * the host pointer for the shape information
+ * associated with the data.
+ * From there it is used to obtain the length
+ * from which we can derive the optimal launch parameters.
+ *
+ */
+template <typename T>
+dim3 getOptimalLaunchParameters(long *extraPointers) {
+    cudaFuncAttributes attributes;
+    cudaFuncGetAttributes(&attributes, indexReduceDouble);
+    int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+    int n = shape::length(hostXShapeInfo);
+    dim3 launchDims = getOptimalDimensions<T>(n,attributes);
+    return launchDims;
+}
+
 nd4j::buffer::Buffer<int> * createScalarBuffer() {
     int *scalarShapeInfo = shape::createScalarShapeInfo();
     nd4j::buffer::Buffer<int> *buff = nd4j::buffer::createBuffer(scalarShapeInfo,shape::shapeInfoLength(2));
@@ -56,7 +76,7 @@ private:
 
 public:
     ScalarShapeInformation() {
-        int *scalarDimensionBuff = malloc(sizeof(int));
+        int *scalarDimensionBuff = (int *) malloc(sizeof(int));
         scalarDimensionBuff[0] = shape::MAX_DIMENSION;
         scalarDimension = nd4j::buffer::createBuffer(scalarDimensionBuff,1);
         scalarShapeInfo = createScalarBuffer();
@@ -87,31 +107,14 @@ public:
 
 };
 
-/**
- * Returns optimal launch parameters
- * given the extra pointers passed in.
- * The extra pointer should be
- * the host pointer for the shape information
- * associated with the data.
- * From there it is used to obtain the length
- * from which we can derive the optimal launch parameters.
- * 
- */
-dim3 getOptinmalLaunchParameters(long *extraPointers) {
-    cudaFuncAttributes attributes;
-    cudaFuncGetAttributes(&attributes, indexReduceDouble);
-    int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-    int n = shape::length(hostXShapeInfo);
-    dim3 launchDims = getOptimalDimensions(n,attributes);
-    return launchDims;
-}
+
 
 
 
 template <typename T>
 class ScalarInfo {
     nd4j::buffer::Buffer<T> *scalarData;
-    thread_local ScalarShapeInformation shapeInfo;
+    static thread_local ScalarShapeInformation shapeInfo;
     T finalResult;
 public:
     ScalarInfo() {
@@ -122,7 +125,7 @@ public:
 
     T getFinalResultFromDevice() {
         nd4j::buffer::copyDataFromGpu(&scalarData);
-        return scalarData[0];
+        return scalarData->data[0];
     }
 
     /**
@@ -148,9 +151,7 @@ public:
     }
 
     ~ScalarInfo() {
-        nd4j::buffer::freeBuffer(&scalarShapeInfo);
         nd4j::buffer::freeBuffer(&scalarData);
-        nd4j::buffer::freeBuffer(&scalarDimension);
     }
 };
 
@@ -168,16 +169,16 @@ double   NativeOps::execIndexReduceScalarDouble(long *extraPointers,int opNum,
     double *xPointer = reinterpret_cast<double *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
+    dim3 launchDims = getOptimalLaunchParameters<double>(extraPointers);
     ScalarInfo<double> *scalarInfo = new ScalarInfo<double>();
 
-    indexReduceDouble<<<launchDims>>>(
+    indexReduceDouble<<<launchDims.x,launchDims.y,launchDims.z>>>(
             opNum,
                     xPointer,
                     xShapeInfoPointer,
                     extraParamsPointer,
                     scalarInfo->getDevicePointer(),
-                    scalarInfo->getResultShapeInfoDevicePointer(),
+                    scalarInfo->getDeviceShapeInfo(),
                     scalarInfo->getDimensionDevicePointer(),
                     1,
                     1);
@@ -214,15 +215,14 @@ void   NativeOps::execIndexReduceDouble(
     double *resultPointer = reinterpret_cast<double *>(result);
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfoBuffer);
     int *dimensionPointer = reinterpret_cast<int *>(dimension);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
+    dim3 launchDims = getOptimalLaunchParameters<double>(extraPointers);
 
-    indexReduceDouble<<<launchDims>>>(
+    indexReduceDouble<<<launchDims.x,launchDims.y,launchDims.z>>>(
             opNum,
                     xPointer,
                     xShapeInfoPointer,
                     extraParamsPointer,
                     resultPointer,
-                    result,
                     resultShapeInfoPointer,
                     dimensionPointer,
                     dimensionLength,
@@ -253,15 +253,14 @@ void   NativeOps::execBroadcastDouble(long *extraPointers,
                                       long dimension, int dimensionLength){
     double *xPointer = reinterpret_cast<double *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
-    double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
     double *yPointer = reinterpret_cast<double *>(y);
     int *yShapeInfoPointer = reinterpret_cast<int *>(yShapeInfo);
     double *resultPointer = reinterpret_cast<double *>(result);
-    int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfoBuffer);
+    int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
     int *dimensionPointer = reinterpret_cast<int *>(dimension);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
+    dim3 launchDims = getOptimalLaunchParameters<double>(extraPointers);
 
-    broadcastDouble<<<launchDims>>>(
+    broadcastDouble<<<launchDims.x,launchDims.y,launchDims.z>>>(
             opNum,
                     xPointer,
                     xShapeInfoPointer,
@@ -302,16 +301,18 @@ void   NativeOps::execPairwiseTransformDouble(
     double *yPointer = reinterpret_cast<double *>(y);
     double *resultPointer = reinterpret_cast<double *>(result);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
-    pairWiseTransformStridedDouble<<<launchDims>>>(
-            opNum,
-                    n,
-                    xPointer,
-                    yPointer,
-                    xStride,
-                    yStride,
-                    resultPointer,
-                    resultStride);
+    dim3 launchDims = getOptimalLaunchParameters<double>(extraPointers);
+    pairWiseTransformStridedDouble<<<launchDims.x,launchDims.y,launchDims.z>>>
+                                                               (
+                                                                       opNum,
+                                                                               n,
+                                                                               xPointer,
+                                                                               yPointer,
+                                                                               xStride,
+                                                                               yStride,
+                                                                               extraParamsPointer,
+                                                                               resultPointer,
+                                                                               resultStride);
 }
 
 /**
@@ -342,7 +343,7 @@ void NativeOps::execPairwiseTransformDouble(
         int n,
         long xIndexes,
         long yIndexes,
-        long resultIndexes){
+        long resultIndexes) {
     double *xPointer = reinterpret_cast<double *>(dx);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     double *yPointer = reinterpret_cast<double *>(y);
@@ -353,8 +354,8 @@ void NativeOps::execPairwiseTransformDouble(
     int *xIndexesPointer = reinterpret_cast<int *>(xIndexes);
     int *yIndexesPointer = reinterpret_cast<int *>(yIndexes);
     int *resultIndexesPointer = reinterpret_cast<int *>(resultIndexes);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
-    pairWiseTransformDouble<<<launchDims>>>(
+    dim3 launchDims = getOptimalLaunchParameters<double>(extraPointers);
+    pairWiseTransformDoubleIndex <<<launchDims.x, launchDims.y, launchDims.z>>>(
             opNum,
                     xPointer,
                     yPointer,
@@ -367,7 +368,6 @@ void NativeOps::execPairwiseTransformDouble(
                     yIndexesPointer,
                     resultIndexesPointer);
 }
-
 /**
  *
  * @param opNum
@@ -397,15 +397,16 @@ void NativeOps::execPairwiseTransformDouble(
     double *resultPointer = reinterpret_cast<double *>(result);
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
-    pairWiseTransformDouble<<<launchDims>>>(
+    dim3 launchDims = getOptimalLaunchParameters<double>(extraPointers);
+    pairWiseTransformDouble<<<launchDims.x,launchDims.y,launchDims.z>>>(
             opNum,
-                    dx,
-                    dy,
-                    params,
-                    result,
-                    xShapeInfo,
-                    yShapeInfo,
-                    resultShapeInfo);
+                    xPointer,
+                    yPointer,
+                    extraParamsPointer,
+                    resultPointer,
+                    xShapeInfoPointer,
+                    yShapeInfoPointer,
+                    resultShapeInfoPointer);
 
 
 }
@@ -427,16 +428,16 @@ void   NativeOps::execReduceDouble(
         long extraParams,
         long result,
         long resultShapeInfo) {
-    double *xPointer = reinterpret_cast<double *>(dx);
+    double *xPointer = reinterpret_cast<double *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     double *resultPointer = reinterpret_cast<double *>(result);
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
+    dim3 launchDims = getOptimalLaunchParameters<double>(extraPointers);
     ScalarInfo<double> *scalarInfo = new ScalarInfo<double>();
 
-    reduceDouble<<<launchDims>>>(
-            op,
+    reduceDouble<<<launchDims.x,launchDims.y,launchDims.z>>>(
+            opNum,
                     xPointer,
                     xShapeInfoPointer
                     ,extraParamsPointer,
@@ -470,15 +471,15 @@ void   NativeOps::execReduceDouble(
         long resultShapeInfo,
         long dimension,
         int dimensionLength) {
-    double *xPointer = reinterpret_cast<double *>(dx);
+    double *xPointer = reinterpret_cast<double *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     double *resultPointer = reinterpret_cast<double *>(result);
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
     int *dimensionPointer = reinterpret_cast<int *>(dimension);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
-    reduceDouble<<<launchDims>>>(
-            op,
+    dim3 launchDims = getOptimalLaunchParameters<double>(extraPointers);
+    reduceDouble<<<launchDims.x,launchDims.y,launchDims.z>>>(
+            opNum,
                     xPointer,
                     xShapeInfoPointer
                     ,extraParamsPointer,
@@ -504,22 +505,22 @@ double NativeOps::execReduceScalarDouble(
         long x,
         long xShapeInfo,
         long extraParams){
-    double *xPointer = reinterpret_cast<double *>(dx);
+    double *xPointer = reinterpret_cast<double *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
+    dim3 launchDims = getOptimalLaunchParameters<double>(extraPointers);
     ScalarInfo<double> *scalarInfo = new ScalarInfo<double>();
-    reduceDouble<<<launchDims>>>(
-            op,
+    reduceDouble<<<launchDims.x,launchDims.y,launchDims.z>>>(
+            opNum,
                     xPointer,
                     xShapeInfoPointer
                     ,extraParamsPointer,
                     scalarInfo->getDevicePointer(),
-                    scalarInfo->getResultShapeInfoDevicePointer(),
+                    scalarInfo->getDeviceShapeInfo(),
                     scalarInfo->getDimensionDevicePointer(),
                     1,
                     1);
-    cudaDeviceSychronize();
+    cudaDeviceSynchronize();
     double result =  scalarInfo->getFinalResultFromDevice();
     delete scalarInfo;
     return result;
@@ -546,16 +547,16 @@ void   NativeOps::execReduce3Double(
         long yShapeInfo,
         long result,
         long resultShapeInfo) {
-    double *xPointer = reinterpret_cast<double *>(dx);
+    double *xPointer = reinterpret_cast<double *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     double *yPointer = reinterpret_cast<double *>(y);
     int *yShapeInfoPointer = reinterpret_cast<int *>(yShapeInfo);
     double *resultPointer = reinterpret_cast<double *>(result);
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParamsVals);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
+    dim3 launchDims = getOptimalLaunchParameters<double>(extraPointers);
     ScalarInfo<double> *scalarInfo = new ScalarInfo<double>();
-    reduce3Double<<<launchDims>>>(opNum,
+    reduce3Double<<<launchDims.x,launchDims.y,launchDims.z>>>(opNum,
             xPointer,
             xShapeInfoPointer,
             yPointer,
@@ -586,21 +587,21 @@ double   NativeOps::execReduce3ScalarDouble(
         long extraParamsVals,
         long y,
         long yShapeInfo){
-    double *xPointer = reinterpret_cast<double *>(dx);
+    double *xPointer = reinterpret_cast<double *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     double *yPointer = reinterpret_cast<double *>(y);
     int *yShapeInfoPointer = reinterpret_cast<int *>(yShapeInfo);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParamsVals);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
+    dim3 launchDims = getOptimalLaunchParameters<double>(extraPointers);
     ScalarInfo<double> *scalarInfo = new ScalarInfo<double>();
-    reduce3Double<<<launchDims>>>(opNum,
+    reduce3Double<<<launchDims.x,launchDims.y,launchDims.z>>>(opNum,
             xPointer,
             xShapeInfoPointer,
             yPointer,
             yShapeInfoPointer,
             extraParamsPointer,
-            resultPointer,
-            resultShapeInfoPointer,
+            scalarInfo->getDevicePointer(),
+            scalarInfo->getDeviceShapeInfo(),
             scalarInfo->getDimensionDevicePointer(),
             1,
             1);
@@ -634,16 +635,16 @@ void   NativeOps::execReduce3Double(
         long resultShapeInfoBuffer,
         long dimension,
         int dimensionLength){
-    double *xPointer = reinterpret_cast<double *>(dx);
+    double *xPointer = reinterpret_cast<double *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     double *yPointer = reinterpret_cast<double *>(y);
     int *yShapeInfoPointer = reinterpret_cast<int *>(yShapeInfo);
     double *resultPointer = reinterpret_cast<double *>(result);
-    int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
-    double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
+    int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfoBuffer);
+    double *extraParamsPointer = reinterpret_cast<double *>(extraParamsVals);
     int *dimensionPointer = reinterpret_cast<int *>(dimension);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
-    reduce3Double<<<launchDims>>>(opNum,
+    dim3 launchDims = getOptimalLaunchParameters<double>(extraPointers);
+    reduce3Double<<<launchDims.x,launchDims.y,launchDims.z>>>(opNum,
             xPointer,
             xShapeInfoPointer,
             yPointer,
@@ -677,11 +678,11 @@ void   NativeOps::execScalarDouble(
         double scalar,
         long extraParams,
         int n) {
-    double *xPointer = reinterpret_cast<double *>(dx);
+    double *xPointer = reinterpret_cast<double *>(x);
     double *resultPointer = reinterpret_cast<double *>(result);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
-    scalarDouble<<<launchDims>>>(
+    dim3 launchDims = getOptimalLaunchParameters<double>(extraPointers);
+    scalarDouble<<<launchDims.x,launchDims.y,launchDims.z>>>(
             opNum,
                     n,
                     scalar,
@@ -712,13 +713,12 @@ void NativeOps::execScalarDouble(
         double scalar,
         long extraParams,
         int n){
-    double *xPointer = reinterpret_cast<double *>(dx);
+    double *xPointer = reinterpret_cast<double *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     double *resultPointer = reinterpret_cast<double *>(result);
-    int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
-    double *extraParamsPointer = reinterpret_cast<double *>(extraParamsVals);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
-    scalarDouble<<<launchDims>>>(
+    double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
+    dim3 launchDims = getOptimalLaunchParameters<double>(extraPointers);
+    scalarDouble<<<launchDims.x,launchDims.y,launchDims.z>>>(
             opNum,
                     scalar,
                     xPointer,
@@ -753,15 +753,12 @@ void NativeOps::execScalarDouble(
         int n,
         long xIndexes,
         long resultIndexes){
-    double *xPointer = reinterpret_cast<double *>(dx);
-    int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
+    double *xPointer = reinterpret_cast<double *>(x);
     double *resultPointer = reinterpret_cast<double *>(result);
-    int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
-    double *extraParamsPointer = reinterpret_cast<double *>(extraParamsVals);
-    int *xIndexesPointer = reinterpret_cast<int *>(xIndexes);
+    double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
     int *resultIndexesPointer = reinterpret_cast<int *>(resultIndexes);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
-    scalarDoubleIndexes<<<launchDims>>>(opNum, n,scalar,xPointer,extraParamsPointer,result,resultIndexes);
+    dim3 launchDims = getOptimalLaunchParameters<double>(extraPointers);
+    scalarDoubleIndexes<<<launchDims.x,launchDims.y,launchDims.z>>>(opNum, n,scalar,xPointer,extraParamsPointer,resultPointer,resultIndexesPointer);
 
 
 }
@@ -778,18 +775,18 @@ double   NativeOps::execSummaryStatsScalarDouble(
         long x,
         long xShapeInfo,
         long extraParams){
-    double *xPointer = reinterpret_cast<double *>(dx);
+    double *xPointer = reinterpret_cast<double *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
-    double *extraParamsPointer = reinterpret_cast<double *>(extraParamsVals);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
+    double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
+    dim3 launchDims = getOptimalLaunchParameters<double>(extraPointers);
     ScalarInfo<double> *scalarShapeInformation = new ScalarInfo<double>();
-    summaryStatsReduceDouble<<<launchDims>>>(opNum,
+    summaryStatsReduceDouble<<<launchDims.x,launchDims.y,launchDims.z>>>(opNum,
             xPointer,
             xShapeInfoPointer,
             extraParamsPointer,
-            resultPointer,
-            resultShapeInfoPointer,
-            scalarShapeInformation->getDimensionGpuPointer(),
+            scalarShapeInformation->getDevicePointer(),
+            scalarShapeInformation->getDeviceShapeInfo(),
+            scalarShapeInformation->getDimensionDevicePointer(),
             1,
             1);
     cudaDeviceSynchronize();
@@ -815,23 +812,23 @@ void   NativeOps::execSummaryStatsDouble(
         long extraParams,
         long result,
         long resultShapeInfo) {
-    double *xPointer = reinterpret_cast<double *>(dx);
+    double *xPointer = reinterpret_cast<double *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     double *resultPointer = reinterpret_cast<double *>(result);
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
-    double *extraParamsPointer = reinterpret_cast<double *>(extraParamsVals);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
+    double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
+    dim3 launchDims = getOptimalLaunchParameters<double>(extraPointers);
     ScalarInfo<double> *scalarShapeInformation = new ScalarInfo<double>();
-    summaryStatsReduceDouble<<<launchDims>>>(
+    summaryStatsReduceDouble<<<launchDims.x,launchDims.y,launchDims.z>>>(
             opNum,
-            xPointer,
-            xShapeInfoPointer,
-            extraParamsPointer,
-            resultPointer,
-            resultShapeInfoPointer,
-            scalarShapeInformation->getDimensionGpuPointer(),
-            1,
-            1);
+                    xPointer,
+                    xShapeInfoPointer,
+                    extraParamsPointer,
+                    resultPointer,
+                    resultShapeInfoPointer,
+                    scalarShapeInformation->getDimensionDevicePointer(),
+                    1,
+                    1);
     delete scalarShapeInformation;
 }
 /**
@@ -854,16 +851,14 @@ void   NativeOps::execSummaryStatsDouble(
         long result,
         long resultShapeInfoBuffer,
         long dimension, int dimensionLength){
-    double *xPointer = reinterpret_cast<double *>(dx);
+    double *xPointer = reinterpret_cast<double *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
-    double *yPointer = reinterpret_cast<double *>(y);
-    int *yShapeInfoPointer = reinterpret_cast<int *>(yShapeInfo);
     double *resultPointer = reinterpret_cast<double *>(result);
-    int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
+    int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfoBuffer);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
     int *dimensionPointer = reinterpret_cast<int *>(dimension);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
-    summaryStatsReduceDouble<<<launchDims>>>(
+    dim3 launchDims = getOptimalLaunchParameters<double>(extraPointers);
+    summaryStatsReduceDouble<<<launchDims.x,launchDims.y,launchDims.z>>>(
             opNum,
                     xPointer,
                     xShapeInfoPointer,
@@ -897,8 +892,8 @@ void   NativeOps::execTransformDouble(
     double *xPointer = reinterpret_cast<double *>(dx);
     double *resultPointer = reinterpret_cast<double *>(result);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
-    transformDouble<<<launchDims>>>(opNum,n,xPointer,xStride,extraParamsPointer,resultPointer);
+    dim3 launchDims = getOptimalLaunchParameters<double>(extraPointers);
+    transformDouble<<<launchDims.x,launchDims.y,launchDims.z>>>(opNum,n,xPointer,xStride,extraParamsPointer,resultPointer);
 }
 
 /**
@@ -922,10 +917,9 @@ void   NativeOps::execTransformDouble(
     double *xPointer = reinterpret_cast<double *>(dx);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     double *resultPointer = reinterpret_cast<double *>(result);
-    int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
-    double *extraParamsPointer = reinterpret_cast<double *>(extraParamsVals);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
-    transformDouble<<<launchDims>>>(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,resultPointer);
+    double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
+    dim3 launchDims = getOptimalLaunchParameters<double>(extraPointers);
+    transformDouble<<<launchDims.x,launchDims.y,launchDims.z>>>(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,resultPointer);
 }
 
 /**
@@ -952,12 +946,10 @@ void   NativeOps::execTransformDouble(
     double *xPointer = reinterpret_cast<double *>(dx);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     double *resultPointer = reinterpret_cast<double *>(result);
-    int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
-    double *extraParamsPointer = reinterpret_cast<double *>(extraParamsVals);
-    int *xIndexesPointer = reinterpret_cast<int *>(xIndexes);
+    double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
     int *resultIndexesPointer = reinterpret_cast<int *>(resultIndexes);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
-    transformDoubleIndexes<<<launchDims>>>(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,resultPointer,resultIndexesPointer);
+    dim3 launchDims = getOptimalLaunchParameters<double>(extraPointers);
+    transformDoubleIndexes<<<launchDims.x,launchDims.y,launchDims.z>>>(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,resultPointer,resultIndexesPointer);
 
 }
 
@@ -977,16 +969,16 @@ float   NativeOps::execIndexReduceScalarFloat(
     float *xPointer = reinterpret_cast<float *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
+    dim3 launchDims = getOptimalLaunchParameters<float>(extraPointers);
     ScalarInfo<float> *scalarInfo = new ScalarInfo<float>();
 
-    indexReduceFloat<<<launchDims>>>(
+    indexReduceFloat<<<launchDims.x,launchDims.y,launchDims.z>>>(
             opNum,
                     xPointer,
                     xShapeInfoPointer,
                     extraParamsPointer,
                     scalarInfo->getDevicePointer(),
-                    scalarInfo->getResultShapeInfoDevicePointer(),
+                    scalarInfo->getDeviceShapeInfo(),
                     scalarInfo->getDimensionDevicePointer(),
                     1,
                     1);
@@ -1024,14 +1016,13 @@ void   NativeOps::execIndexReduceFloat(
     float *resultPointer = reinterpret_cast<float *>(result);
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfoBuffer);
     int *dimensionPointer = reinterpret_cast<int *>(dimension);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
-    indexReduceFloat<<<launchDims>>>(
+    dim3 launchDims = getOptimalLaunchParameters<float>(extraPointers);
+    indexReduceFloat<<<launchDims.x,launchDims.y,launchDims.z>>>(
             opNum,
                     xPointer,
                     xShapeInfoPointer,
                     extraParamsPointer,
                     resultPointer,
-                    result,
                     resultShapeInfoPointer,
                     dimensionPointer,
                     dimensionLength,
@@ -1062,15 +1053,14 @@ void   NativeOps::execBroadcastFloat(
         long dimension, int dimensionLength){
     float *xPointer = reinterpret_cast<float *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
-    float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
-    float *yPointer = reinterpret_cast<double *>(y);
+    float *yPointer = reinterpret_cast<float *>(y);
     int *yShapeInfoPointer = reinterpret_cast<int *>(yShapeInfo);
     float *resultPointer = reinterpret_cast<float *>(result);
-    int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfoBuffer);
+    int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
     int *dimensionPointer = reinterpret_cast<int *>(dimension);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
+    dim3 launchDims = getOptimalLaunchParameters<float>(extraPointers);
 
-    broadcastFloat<<<launchDims>>>(
+    broadcastFloat<<<launchDims.x,launchDims.y,launchDims.z>>>(
             opNum,
                     xPointer,
                     xShapeInfoPointer,
@@ -1110,17 +1100,8 @@ void   NativeOps::execPairwiseTransformFloat(
     float *yPointer = reinterpret_cast<float *>(y);
     float *resultPointer = reinterpret_cast<float *>(result);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
-    pairWiseTransformStridedFloat<<<launchDims>>>(
-            opNum,
-                    n,
-                    xPointer,
-                    yPointer,
-                    xStride,
-                    yStride,
-                    resultPointer,
-                    resultStride);
-
+    dim3 launchDims = getOptimalLaunchParameters<float>(extraPointers);
+    pairWiseTransformStridedFloat<<<launchDims.x,launchDims.y,launchDims.z>>>(opNum,n,xPointer,yPointer,xStride,yStride,extraParamsPointer,resultPointer,resultStride);
 }
 
 /**
@@ -1162,8 +1143,8 @@ void NativeOps::execPairwiseTransformFloat(
     int *xIndexesPointer = reinterpret_cast<int *>(xIndexes);
     int *yIndexesPointer = reinterpret_cast<int *>(yIndexes);
     int *resultIndexesPointer = reinterpret_cast<int *>(resultIndexes);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
-    pairWiseTransformFloat<<<launchDims>>>(
+    dim3 launchDims = getOptimalLaunchParameters<float>(extraPointers);
+    pairWiseTransformFloatIndex<<<launchDims.x,launchDims.y,launchDims.z>>>(
             opNum,
                     xPointer,
                     yPointer,
@@ -1206,16 +1187,16 @@ void NativeOps::execPairwiseTransformFloat(
     float *resultPointer = reinterpret_cast<float *>(result);
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
-    pairWiseTransformFloat<<<launchDims>>>(
+    dim3 launchDims = getOptimalLaunchParameters<float>(extraPointers);
+    pairWiseTransformFloat<<<launchDims.x,launchDims.y,launchDims.z>>>(
             opNum,
-                    dx,
-                    dy,
-                    params,
-                    result,
-                    xShapeInfo,
-                    yShapeInfo,
-                    resultShapeInfo);
+                    xPointer,
+                    yPointer,
+                    extraParamsPointer,
+                    resultPointer,
+                    xShapeInfoPointer,
+                    yShapeInfoPointer,
+                    resultShapeInfoPointer);
 }
 
 /**
@@ -1235,14 +1216,14 @@ void   NativeOps::execReduceFloat(
         long extraParams,
         long result,
         long resultShapeInfo) {
-    float *xPointer = reinterpret_cast<float *>(dx);
+    float *xPointer = reinterpret_cast<float *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     float *resultPointer = reinterpret_cast<float *>(result);
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
+    dim3 launchDims = getOptimalLaunchParameters<float>(extraPointers);
     ScalarInfo<float> *scalarInfo = new ScalarInfo<float>();
-    reduceFloat<<<launchDims>>>(
+    reduceFloat<<<launchDims.x,launchDims.y,launchDims.z>>>(
             opNum,
                     xPointer,
                     xShapeInfoPointer
@@ -1274,15 +1255,15 @@ void   NativeOps::execReduceFloat(
         long result,
         long resultShapeInfo,
         long dimension,int dimensionLength){
-    float *xPointer = reinterpret_cast<float *>(dx);
+    float *xPointer = reinterpret_cast<float *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     float *resultPointer = reinterpret_cast<float *>(result);
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
     int *dimensionPointer = reinterpret_cast<int *>(dimension);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
-    reduceFloat<<<launchDims>>>(
-            op,
+    dim3 launchDims = getOptimalLaunchParameters<float>(extraPointers);
+    reduceFloat<<<launchDims.x,launchDims.y,launchDims.z>>>(
+            opNum,
                     xPointer,
                     xShapeInfoPointer
                     ,extraParamsPointer,
@@ -1309,22 +1290,22 @@ float NativeOps::execReduceScalarFloat(
         long x,
         long xShapeInfo,
         long extraParams){
-    float *xPointer = reinterpret_cast<float *>(dx);
+    float *xPointer = reinterpret_cast<float *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
+    dim3 launchDims = getOptimalLaunchParameters<float>(extraPointers);
     ScalarInfo<float> *scalarInfo = new ScalarInfo<float>();
-    reduceFloat<<<launchDims>>>(
-            op,
+    reduceFloat<<<launchDims.x,launchDims.y,launchDims.z>>>(
+            opNum,
                     xPointer,
                     xShapeInfoPointer
                     ,extraParamsPointer,
                     scalarInfo->getDevicePointer(),
-                    scalarInfo->getResultShapeInfoDevicePointer(),
+                    scalarInfo->getDeviceShapeInfo(),
                     scalarInfo->getDimensionDevicePointer(),
                     1,
                     1);
-    cudaDeviceSychronize();
+    cudaDeviceSynchronize();
     double result =  scalarInfo->getFinalResultFromDevice();
     delete scalarInfo;
     return result;
@@ -1351,16 +1332,16 @@ void   NativeOps::execReduce3Float(
         long yShapeInfo,
         long result,
         long resultShapeInfo){
-    float *xPointer = reinterpret_cast<float *>(dx);
+    float *xPointer = reinterpret_cast<float *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     float *yPointer = reinterpret_cast<float *>(y);
     int *yShapeInfoPointer = reinterpret_cast<int *>(yShapeInfo);
     float *resultPointer = reinterpret_cast<float *>(result);
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParamsVals);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
+    dim3 launchDims = getOptimalLaunchParameters<float>(extraPointers);
     ScalarInfo<float> *scalarInfo = new ScalarInfo<float>();
-    reduce3Float<<<launchDims>>>(opNum,
+    reduce3Float<<<launchDims.x,launchDims.y,launchDims.z>>>(opNum,
             xPointer,
             xShapeInfoPointer,
             yPointer,
@@ -1392,21 +1373,21 @@ float   NativeOps::execReduce3ScalarFloat(
         long extraParamsVals,
         long y,
         long yShapeInfo) {
-    float *xPointer = reinterpret_cast<float *>(dx);
+    float *xPointer = reinterpret_cast<float *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     float *yPointer = reinterpret_cast<float *>(y);
     int *yShapeInfoPointer = reinterpret_cast<int *>(yShapeInfo);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
+    dim3 launchDims = getOptimalLaunchParameters<float>(extraPointers);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParamsVals);
     ScalarInfo<float> *scalarInfo = new ScalarInfo<float>();
-    reduce3Float<<<launchDims>>>(opNum,
+    reduce3Float<<<launchDims.x,launchDims.y,launchDims.z>>>(opNum,
             xPointer,
             xShapeInfoPointer,
             yPointer,
             yShapeInfoPointer,
             extraParamsPointer,
-            resultPointer,
-            resultShapeInfoPointer,
+            scalarInfo->getDevicePointer(),
+            scalarInfo->getDeviceShapeInfo(),
             scalarInfo->getDimensionDevicePointer(),
             1,
             1);
@@ -1441,16 +1422,16 @@ void   NativeOps::execReduce3Float(
         long resultShapeInfoBuffer,
         long dimension,
         int dimensionLength){
-    float *xPointer = reinterpret_cast<float *>(dx);
+    float *xPointer = reinterpret_cast<float *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     float *yPointer = reinterpret_cast<float *>(y);
     int *yShapeInfoPointer = reinterpret_cast<int *>(yShapeInfo);
     float *resultPointer = reinterpret_cast<float *>(result);
-    int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
-    float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
+    int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfoBuffer);
+    float *extraParamsPointer = reinterpret_cast<float *>(extraParamsVals);
     int *dimensionPointer = reinterpret_cast<int *>(dimension);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
-    reduce3Float<<<launchDims>>>(opNum,
+    dim3 launchDims = getOptimalLaunchParameters<float>(extraPointers);
+    reduce3Float<<<launchDims.x,launchDims.y,launchDims.z>>>(opNum,
             xPointer,
             xShapeInfoPointer,
             yPointer,
@@ -1484,11 +1465,11 @@ void   NativeOps::execScalarFloat(
         double scalar,
         long extraParams,
         int n){
-    float *xPointer = reinterpret_cast<double *>(dx);
-    float *resultPointer = reinterpret_cast<double *>(result);
-    float *extraParamsPointer = reinterpret_cast<double *>(extraParams);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
-    scalarFloat<<<launchDims>>>(
+    float *xPointer = reinterpret_cast<float *>(x);
+    float *resultPointer = reinterpret_cast<float *>(result);
+    float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
+    dim3 launchDims = getOptimalLaunchParameters<float>(extraPointers);
+    scalarFloat<<<launchDims.x,launchDims.y,launchDims.z>>>(
             opNum,
                     n,
                     scalar,
@@ -1520,13 +1501,12 @@ void NativeOps::execScalarFloat(
         float scalar,
         long extraParams,
         int n){
-    float *xPointer = reinterpret_cast<float *>(dx);
+    float *xPointer = reinterpret_cast<float *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     float *resultPointer = reinterpret_cast<float *>(result);
-    int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
-    float *extraParamsPointer = reinterpret_cast<float *>(extraParamsVals);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
-    scalarFloat<<<launchDims>>>(
+    float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
+    dim3 launchDims = getOptimalLaunchParameters<float>(extraPointers);
+    scalarFloat<<<launchDims.x,launchDims.y,launchDims.z>>>(
             opNum,
                     scalar,
                     xPointer,
@@ -1561,15 +1541,19 @@ void NativeOps::execScalarFloat(
         int n,
         long xIndexes,
         long resultIndexes){
-    float *xPointer = reinterpret_cast<float *>(dx);
-    int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
+    float *xPointer = reinterpret_cast<float *>(x);
     float *resultPointer = reinterpret_cast<float *>(result);
-    int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
-    float *extraParamsPointer = reinterpret_cast<float *>(extraParamsVals);
-    int *xIndexesPointer = reinterpret_cast<int *>(xIndexes);
+    float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
     int *resultIndexesPointer = reinterpret_cast<int *>(resultIndexes);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
-    scalarFloatIndexes<<<launchDims>>>(opNum, n,scalar,xPointer,extraParamsPointer,result,resultIndexes);
+    dim3 launchDims = getOptimalLaunchParameters<float>(extraPointers);
+    scalarFloatIndexes<<<launchDims.x,launchDims.y,launchDims.z>>>(
+            opNum,
+                    n,
+                    scalar,
+                    xPointer,
+                    extraParamsPointer,
+                    resultPointer,
+                    resultIndexesPointer);
 
 }
 /**
@@ -1585,17 +1569,18 @@ float   NativeOps::execSummaryStatsScalarFloat(
         long x,
         long xShapeInfo,
         long extraParams){
-    float *xPointer = reinterpret_cast<float *>(dx);
+    float *xPointer = reinterpret_cast<float *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
-    float *extraParamsPointer = reinterpret_cast<float *>(extraParamsVals);
+    float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
     ScalarInfo<float> *scalarShapeInformation = new ScalarInfo<float>();
-    summaryStatsReduceFloat<<<launchDims>>>(opNum,
+    dim3 launchDims = getOptimalLaunchParameters<float>(extraPointers);
+    summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z>>>(opNum,
             xPointer,
             xShapeInfoPointer,
             extraParamsPointer,
-            resultPointer,
-            resultShapeInfoPointer,
-            scalarShapeInformation->getDimensionGpuPointer(),
+            xPointer,
+            xShapeInfoPointer,
+            scalarShapeInformation->getDimensionDevicePointer(),
             1,
             1);
     cudaDeviceSynchronize();
@@ -1620,21 +1605,21 @@ void   NativeOps::execSummaryStatsFloat(
         long extraParams,
         long result,
         long resultShapeInfo){
-    float *xPointer = reinterpret_cast<float *>(dx);
+    float *xPointer = reinterpret_cast<float *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     float *resultPointer = reinterpret_cast<float *>(result);
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
-    float *extraParamsPointer = reinterpret_cast<float *>(extraParamsVals);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
+    float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
+    dim3 launchDims = getOptimalLaunchParameters<float>(extraPointers);
     ScalarInfo<float> *scalarShapeInformation = new ScalarInfo<float>();
-    summaryStatsReduceFloat<<<launchDims>>>(
+    summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z>>>(
             opNum,
                     xPointer,
                     xShapeInfoPointer,
                     extraParamsPointer,
                     resultPointer,
                     resultShapeInfoPointer,
-                    scalarShapeInformation->getDimensionGpuPointer(),
+                    scalarShapeInformation->getDimensionDevicePointer(),
                     1,
                     1);
     delete scalarShapeInformation;
@@ -1660,16 +1645,14 @@ void   NativeOps::execSummaryStatsFloat(
         long resultShapeInfoBuffer,
         long dimension,
         int dimensionLength){
-    float *xPointer = reinterpret_cast<float *>(dx);
+    float *xPointer = reinterpret_cast<float *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
-    float *yPointer = reinterpret_cast<float *>(y);
-    int *yShapeInfoPointer = reinterpret_cast<int *>(yShapeInfo);
     float *resultPointer = reinterpret_cast<float *>(result);
-    int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
+    int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfoBuffer);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
     int *dimensionPointer = reinterpret_cast<int *>(dimension);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
-    summaryStatsReduceFloat<<<launchDims>>>(
+    dim3 launchDims = getOptimalLaunchParameters<float>(extraPointers);
+    summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z>>>(
             opNum,
                     xPointer,
                     xShapeInfoPointer,
@@ -1703,8 +1686,8 @@ void   NativeOps::execTransformFloat(
     float *xPointer = reinterpret_cast<float *>(dx);
     float *resultPointer = reinterpret_cast<float *>(result);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
-    transformFloat<<<launchDims>>>(opNum,n,xPointer,xStride,extraParamsPointer,resultPointer);
+    dim3 launchDims = getOptimalLaunchParameters<float>(extraPointers);
+    transformFloat<<<launchDims.x,launchDims.y,launchDims.z>>>(opNum,n,xPointer,xStride,extraParamsPointer,resultPointer);
 
 }
 
@@ -1727,10 +1710,9 @@ void   NativeOps::execTransformFloat(long *extraPointers,int opNum,
     float *xPointer = reinterpret_cast<float *>(dx);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     float *resultPointer = reinterpret_cast<float *>(result);
-    int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
-    float *extraParamsPointer = reinterpret_cast<float *>(extraParamsVals);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
-    transformFloat<<<launchDims>>>(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,resultPointer);
+    float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
+    dim3 launchDims = getOptimalLaunchParameters<float>(extraPointers);
+    transformFloat<<<launchDims.x,launchDims.y,launchDims.z>>>(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,resultPointer);
 
 }
 
@@ -1758,12 +1740,10 @@ void   NativeOps::execTransformFloat(
     float *xPointer = reinterpret_cast<float *>(dx);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     float *resultPointer = reinterpret_cast<float *>(result);
-    int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
-    float *extraParamsPointer = reinterpret_cast<float *>(extraParamsVals);
-    int *xIndexesPointer = reinterpret_cast<int *>(xIndexes);
+    float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
     int *resultIndexesPointer = reinterpret_cast<int *>(resultIndexes);
-    dim3 launchDims = getOptimalLaunchParameters(extraPointers);
-    transformFloatIndexes<<<launchDims>>>(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,resultPointer,resultIndexesPointer);
+    dim3 launchDims = getOptimalLaunchParameters<float>(extraPointers);
+    transformFloatIndexes<<<launchDims.x,launchDims.y,launchDims.z>>>(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,resultPointer,resultIndexesPointer);
 
 
 }

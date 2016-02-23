@@ -81,7 +81,6 @@ namespace functions {
 	 * @param n
 	 */
 	virtual __inline__ __device__ void transform(
-			int n,
 			T scalar,
 			T *dy,
 			int *shapeInfo,
@@ -93,7 +92,7 @@ namespace functions {
 		int xRank = shape::rank(shapeInfo);
 		int xOffset = shape::offset(shapeInfo);
 		int xElementWiseStride = shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
-
+       int n = shape::length(shapeInfo);
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = threadIdx.x;
 		int i = blockIdx.x * blockDim.x + tid;
@@ -1292,7 +1291,7 @@ __device__ void scalarGeneric(
 		free(op);
 }
 
-extern "C" __global__ void scalarDouble(
+__global__ void scalarDouble(
 		int opNum,
 		int n,
 		double dx,
@@ -1309,7 +1308,7 @@ extern "C" __global__ void scalarDouble(
 			result);
 }
 
-extern "C" __global__ void scalarFloat(int opNum,
+ __global__ void scalarFloat(int opNum,
 		int n,float dx, float *dy, int incy, float *params, float *result) {
 	scalarGeneric<float>(
 			opNum,
@@ -1320,22 +1319,6 @@ extern "C" __global__ void scalarFloat(int opNum,
 			params,
 			result);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 template <typename T>
@@ -1364,7 +1347,7 @@ __device__ void scalarGenericIndexes(
         free(op);
 }
 
-extern "C" __global__ void scalarDoubleIndexes(
+ __global__ void scalarDoubleIndexes(
         int opNum,
         int n,
         double dx,
@@ -1380,7 +1363,7 @@ extern "C" __global__ void scalarDoubleIndexes(
                                  indexes);
 }
 
-extern "C" __global__ void scalarFloatIndexe(
+ __global__ void scalarFloatIndexes(
         int opNum,
         int n,
         float dx,
@@ -1426,7 +1409,7 @@ __device__ void scalarGeneric(
 
 
 
-	op->transform(n,dx,dy,shapeInfo,params,result);
+	op->transform(dx,dy,shapeInfo,params,result);
 	if(threadIdx.x == 0)
 		free(op);
 }

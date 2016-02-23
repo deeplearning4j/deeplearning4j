@@ -402,6 +402,7 @@ namespace functions {
                     }
 
                     __syncthreads();
+                    int n = shape::length(xShapeInfo);
 
                     if(xElementWiseStride == 1 && yElementWiseStride == 1) {
 #pragma unroll
@@ -1525,7 +1526,7 @@ __inline__ __device__ void reduce3NoElementWiseStrideGeneric(
 }
 
 
-__inline__ __global__ void reduce3NoElementWiseStrideDouble(
+ __global__ void reduce3NoElementWiseStrideDouble(
         int opNum,
         double *dx,
         int *xShapeInfo,
@@ -1549,7 +1550,7 @@ __inline__ __global__ void reduce3NoElementWiseStrideDouble(
 }
 
 
-__inline__ __global__ void reduce3NoElementWiseStrideFloat(
+ __global__ void reduce3NoElementWiseStrideFloat(
         int opNum,
         float *dx,
         int *xShapeInfo,

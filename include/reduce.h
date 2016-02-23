@@ -138,7 +138,6 @@ public:
 	 * @param postProcessOrNot whether to reduce or not
 	 */
 	__inline__ __device__ virtual void transform(
-			int n,
 			T *dx,
 			int *xShapeInfo,
 			T *extraParams,
@@ -209,6 +208,7 @@ public:
 			elementsPerTad = xLength / resultLength;
 		}
 		__syncthreads();
+        int n = xLength;
 
 		if (!resultScalar) {
 			if(tid == 0) {
@@ -725,7 +725,6 @@ T execScalar(T *x, int *xShapeInfo,T *extraParams) {
 		int coord[MAX_RANK];
 		int dim;
 		int xStridesIter[MAX_RANK];
-		int yStridesIter[MAX_RANK];
 
 		int *xShape = shape::shapeOf(xShapeInfo);
 
@@ -752,11 +751,13 @@ T execScalar(T *x, int *xShapeInfo,T *extraParams) {
 					x,
 					xStridesIter);
 			start = postProcess(start,shape::length(xShapeInfo),extraParams);
-			return start;
 		}
 		else {
 			printf("Unable to prepare array\n");
 		}
+
+		return start;
+
 
 	}
 

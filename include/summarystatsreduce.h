@@ -567,7 +567,6 @@ struct SharedSummaryStatsData<double> {
 		__shared__ volatile int resultScalar;
 
 		__shared__ int xElementWiseStride;
-		__shared__ int xOffset;
 		__shared__ int reductionIndexesPerBlock;
 
 		int numElements = gridDim.x;
@@ -616,7 +615,6 @@ struct SharedSummaryStatsData<double> {
 
 			if (resultLength == 1)
 				resultScalar = 1;
-			xOffset = shape::offset(xShapeInfo);
 			xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 			xLength = shape::length(xShapeInfo);
 			elementsPerTad = xLength / resultLength;
@@ -682,29 +680,16 @@ struct SharedSummaryStatsData<double> {
 
 			unsigned int i = blockIdx.x * xElementWiseStride + tid;
 			unsigned int gridSize = blockDim.x * gridDim.x * xElementWiseStride;
-			if(xOffset == 0) {
-				// we reduce multiple elements per thread.  The number is determined by the
-				// number of active thread blocks (via gridDim).  More blocks will result
-				// in a larger gridSize and therefore fewer elements per thread
+			int n = shape::length(xShapeInfo);
+			// we reduce multiple elements per thread.  The number is determined by the
+			// number of active thread blocks (via gridDim).  More blocks will result
+			// in a larger gridSize and therefore fewer elements per thread
 #pragma unroll
-				while (i < n) {
-					SummaryStatsData <T> indexVal;
-					indexVal.initWithValue(dx[i]);
-					reduction = update(reduction, indexVal, extraParams);
-					i += gridSize;
-				}
-			}
-			else {
-				// we reduce multiple elements per thread.  The number is determined by the
-				// number of active thread blocks (via gridDim).  More blocks will result
-				// in a larger gridSize and therefore fewer elements per thread
-#pragma unroll
-				while (xOffset + i < n) {
-					SummaryStatsData <T> indexVal;
-					indexVal.initWithValue(dx[xOffset + i]);
-					reduction = update(reduction, indexVal, extraParams);
-					i += gridSize;
-				}
+			while (i < n) {
+				SummaryStatsData <T> indexVal;
+				indexVal.initWithValue(dx[i]);
+				reduction = update(reduction, indexVal, extraParams);
+				i += gridSize;
 			}
 
 			// each thread puts its local sum into shared memory
