@@ -6,6 +6,9 @@ import org.apache.commons.math3.util.FastMath;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.models.word2vec.VocabWord;
+import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -39,9 +42,14 @@ public class FirstIterationFunction
     private Map<Integer, INDArray> pointSyn1VecMap;
     private AtomicLong nextRandom = new AtomicLong(5);
 
+    private volatile VocabCache<VocabWord> vocab;
+    private volatile NegativeHolder negativeHolder;
+
+
+
 
     public FirstIterationFunction(Broadcast<Map<String, Object>> word2vecVarMapBroadcast,
-                                  Broadcast<double[]> expTableBroadcast) {
+                                  Broadcast<double[]> expTableBroadcast, Broadcast<VocabCache<VocabWord>> vocabCacheBroadcast) {
 
         Map<String, Object> word2vecVarMap = word2vecVarMapBroadcast.getValue();
         this.expTable = expTableBroadcast.getValue();
@@ -58,7 +66,17 @@ public class FirstIterationFunction
         this.batchSize = (int) word2vecVarMap.get("batchSize");
         this.indexSyn0VecMap = new HashMap<>();
         this.pointSyn1VecMap = new HashMap<>();
+        this.vocab = vocabCacheBroadcast.getValue();
+
+        if (this.vocab == null) throw new RuntimeException("VocabCache is null");
+
+        if (negative > 0) {
+            negativeHolder = NegativeHolder.getInstance();
+            negativeHolder.initHolder(vocab, expTable, this.vectorLength);
+        }
     }
+
+
 
     @Override
     public Iterable<Entry<Integer, INDArray>> call(Iterator<Tuple2<List<VocabWord>, Long>> pairIter) {
@@ -170,6 +188,49 @@ public class FirstIterationFunction
             Nd4j.getBlasWrapper().level1().axpy(vectorLength, g, syn1, neu1e);
             Nd4j.getBlasWrapper().level1().axpy(vectorLength, g, l1, syn1);
         }
+
+        int target = w1.getIndex();
+        int label;
+        //negative sampling
+        if(negative > 0)
+            for (int d = 0; d < negative + 1; d++) {
+                if (d == 0)
+                    label = 1;
+                else {
+                    nextRandom.set(nextRandom.get() * 25214903917L + 11);
+                    int idx = Math.abs((int) (nextRandom.get() >> 16) % negativeHolder.getTable().length());
+
+                    target = negativeHolder.getTable().getInt(idx);
+                    if (target <= 0)
+                        target = (int) nextRandom.get() % (vocab.numWords() - 1) + 1;
+
+                    if (target == w1.getIndex())
+                        continue;
+                    label = 0;
+                }
+
+                if(target >= negativeHolder.getSyn1Neg().rows() || target < 0)
+                    continue;
+
+                double f = Nd4j.getBlasWrapper().dot(l1,negativeHolder.getSyn1Neg().slice(target));
+                double g;
+                if (f > maxExp)
+                    g = useAdaGrad ? w1.getGradient(target, (label - 1), alpha) : (label - 1) *  alpha;
+                else if (f < -maxExp)
+                    g = label * (useAdaGrad ?  w1.getGradient(target, alpha, alpha) : alpha);
+                else {
+                    int idx = (int) ((f + maxExp) * (expTable.length / maxExp / 2));
+                    if (idx >= expTable.length)
+                        continue;
+
+                    g = useAdaGrad ? w1.getGradient(target, label - expTable[idx], alpha) : (label - expTable[idx]) * alpha;
+                }
+
+                    Nd4j.getBlasWrapper().axpy((float) g,negativeHolder.getSyn1Neg().slice(target),neu1e);
+
+                    Nd4j.getBlasWrapper().axpy((float) g,l1,negativeHolder.getSyn1Neg().slice(target));
+            }
+
 
         // Updated the Syn0 vector based on gradient. Syn0 is not random anymore.
         Nd4j.getBlasWrapper().level1().axpy(vectorLength, 1.0f, neu1e, l1);

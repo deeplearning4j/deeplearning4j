@@ -19,11 +19,12 @@
 package org.deeplearning4j.plot;
 
 import org.apache.commons.io.IOUtils;
+import org.canova.api.util.ClassPathResource;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.io.ClassPathResource;
+
 
 import java.io.File;
 import java.util.List;
