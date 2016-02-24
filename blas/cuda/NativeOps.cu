@@ -340,7 +340,6 @@ void NativeOps::execPairwiseTransformDouble(
         long result,
         long resultShapeInfo,
         long extraParams,
-        int n,
         long xIndexes,
         long yIndexes,
         long resultIndexes) {
@@ -711,8 +710,7 @@ void NativeOps::execScalarDouble(
         long result,
         long resultShapeInfo,
         double scalar,
-        long extraParams,
-        int n){
+        long extraParams){
     double *xPointer = reinterpret_cast<double *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     double *resultPointer = reinterpret_cast<double *>(result);
@@ -940,7 +938,6 @@ void   NativeOps::execTransformDouble(
         long result,
         long resultShapeInfo,
         long extraParams,
-        int n,
         long xIndexes,
         long resultIndexes) {
     double *xPointer = reinterpret_cast<double *>(dx);
@@ -1129,7 +1126,6 @@ void NativeOps::execPairwiseTransformFloat(
         long result,
         long resultShapeInfo,
         long extraParams,
-        int n,
         long xIndexes,
         long yIndexes,
         long resultIndexes){
@@ -1499,8 +1495,7 @@ void NativeOps::execScalarFloat(
         long result,
         long resultShapeInfo,
         float scalar,
-        long extraParams,
-        int n){
+        long extraParams){
     float *xPointer = reinterpret_cast<float *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     float *resultPointer = reinterpret_cast<float *>(result);
@@ -1538,7 +1533,6 @@ void NativeOps::execScalarFloat(
         long resultShapeInfo,
         double scalar,
         long extraParams,
-        int n,
         long xIndexes,
         long resultIndexes){
     float *xPointer = reinterpret_cast<float *>(x);
@@ -1546,6 +1540,8 @@ void NativeOps::execScalarFloat(
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
     int *resultIndexesPointer = reinterpret_cast<int *>(resultIndexes);
     dim3 launchDims = getOptimalLaunchParameters<float>(extraPointers);
+    int *hostShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+    int n = shape::length(hostShapeInfo);
     scalarFloatIndexes<<<launchDims.x,launchDims.y,launchDims.z>>>(
             opNum,
                     n,
@@ -1706,7 +1702,7 @@ void   NativeOps::execTransformFloat(long *extraPointers,int opNum,
                                      long xShapeInfo,
                                      long result,
                                      long resultShapeInfo,
-                                     long extraParams, int n) {
+                                     long extraParams) {
     float *xPointer = reinterpret_cast<float *>(dx);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     float *resultPointer = reinterpret_cast<float *>(result);
@@ -1734,7 +1730,6 @@ void   NativeOps::execTransformFloat(
         long result,
         long resultShapeInfo,
         long extraParams,
-        int n,
         long xIndexes,
         long resultIndexes) {
     float *xPointer = reinterpret_cast<float *>(dx);
