@@ -75,7 +75,7 @@ public class Word2VecTest {
            //     .setRemoveStop(false)
                 .tokenizerFactory(t)
                 .seed(42L)
-                .negative(0)
+                .negative(10)
                 .useAdaGrad(false)
                 .layerSize(150)
                 .windowSize(5)

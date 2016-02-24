@@ -133,7 +133,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
             for(String s : vocab.words()) {
                 plot.add(s);
             }
-            tsne.plot(syn0, 2, plot);
+            tsne.plot(syn0, 2, plot, "coordsX.csv");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
