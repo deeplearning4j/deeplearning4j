@@ -192,7 +192,7 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
 
         /////////////////////////////////////
         log.info("Training word2vec sentences ...");
-        FlatMapFunction firstIterFunc = new FirstIterationFunction(word2vecVarMapBroadcast, expTableBroadcast);
+        FlatMapFunction firstIterFunc = new FirstIterationFunction(word2vecVarMapBroadcast, expTableBroadcast, vocabCacheBroadcast);
         @SuppressWarnings("unchecked")
         JavaRDD< Pair<Integer, INDArray> > indexSyn0UpdateEntryRDD =
                 vocabWordListSentenceCumSumRDD.mapPartitions(firstIterFunc)
