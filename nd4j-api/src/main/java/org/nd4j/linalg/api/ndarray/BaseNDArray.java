@@ -92,7 +92,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     protected int rows, columns;
     protected int length = -1;
     protected boolean cleanedUp = false;
-    protected transient WeakReference<INDArray> ref;
     protected int numLeadingOnes = -1;
     protected int numTrailingOnes = -1;
     protected int majorStride = -1;
@@ -3681,6 +3680,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         return true;
 
+    }
+
+    @Override
+    public DataBuffer shapeInfoDataBuffer() {
+        return shapeInformation;
     }
 
     @Override

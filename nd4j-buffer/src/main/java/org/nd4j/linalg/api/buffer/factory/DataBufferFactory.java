@@ -20,6 +20,7 @@
 package org.nd4j.linalg.api.buffer.factory;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.IntBuffer;
 
 import java.nio.ByteBuffer;
 

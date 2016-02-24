@@ -158,10 +158,10 @@ public class AtomicAllocator implements Allocator {
     public CudaContext getCudaContext() {
         // FIXME: proper lock avoidance required here
 
-            if (!contextPool.containsKey(Thread.currentThread().getId())) {
-                initCudaContextForThread(Thread.currentThread().getId());
-            }
-            return contextPool.get(Thread.currentThread().getId());
+        if (!contextPool.containsKey(Thread.currentThread().getId())) {
+            initCudaContextForThread(Thread.currentThread().getId());
+        }
+        return contextPool.get(Thread.currentThread().getId());
     }
 
     /**
@@ -446,7 +446,7 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public Pointer getDevicePointer(DataBuffer buffer, AllocationShape shape, boolean isView) {
-      //  log.info("requesting pointer for: [" + shape + "]; isView: [" + isView +"]");
+        //  log.info("requesting pointer for: [" + shape + "]; isView: [" + isView +"]");
         /*
             We assume that object is registered within allocator
          */
@@ -475,9 +475,9 @@ public class AtomicAllocator implements Allocator {
                  */
                 long requiredMemory = AllocationUtils.getRequiredMemory(internalShape);
                 while (zeroUseCounter.get() > configuration.getMaximumZeroAllocation() - (configuration.getMaximumZeroAllocation() / 10)) {
-                        log.info("No free host memory available. Startig GC manually with [URGENT] agressiveness");
+                    log.info("No free host memory available. Startig GC manually with [URGENT] agressiveness");
 //                    if (zeroUseCounter.get() > configuration.getMaximumZeroAllocation() - (configuration.getMaximumZeroAllocation() / 10)) {
-                        long freedMemory = seekUnusedZero(Thread.currentThread().getId(), Aggressiveness.URGENT);
+                    long freedMemory = seekUnusedZero(Thread.currentThread().getId(), Aggressiveness.URGENT);
 //                    } else {
 
 //                    }
@@ -659,7 +659,17 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public Pointer getHostPointer(INDArray array) {
-        return null;
+        if(array.data().allocationMode() == DataBuffer.AllocationMode.DIRECT || array.data().allocationMode() == DataBuffer.AllocationMode.JAVACPP)
+            return Pointer.to(array.data().asNio());
+        else {
+           switch(array.data().dataType()) {
+               case INT: return Pointer.to(array.data().asInt());
+               case DOUBLE: return Pointer.to(array.data().asDouble());
+               case FLOAT: return Pointer.to(array.data().asFloat());
+           }
+        }
+
+        throw new IllegalStateException("Unable to obtain host pointer");
     }
 
     /**
@@ -675,7 +685,7 @@ public class AtomicAllocator implements Allocator {
             We set memory state to Toe, and issue copyback if required
          */
 
-  //      log.info("Current state: " + point.getAccessState().getCurrentState());
+        //      log.info("Current state: " + point.getAccessState().getCurrentState());
         if (!point.isActualOnHostSide() || point.getAccessState().getCurrentState() != AccessState.TACK) {
 
             point.getAccessState().requestToe();
@@ -709,7 +719,7 @@ public class AtomicAllocator implements Allocator {
         if (point != null && !point.isActualOnHostSide()) {
             //log.info("Try hit");
             if (point.getAccessState().tryRequestToe()) {
-               // log.info("Try copyback");
+                // log.info("Try copyback");
                 mover.copyback(point, AllocationUtils.buildAllocationShape(buffer));
 
                 // update the timer for hostRead
@@ -1179,7 +1189,7 @@ public class AtomicAllocator implements Allocator {
                 /*
                     Check for zero-copy garbage
                  */
-             //   log.info("ZeroGC started...");
+                //   log.info("ZeroGC started...");
                 /*
                     We want allocations to take in account multiple things:
                     1. average access rates for last X objects
@@ -1257,7 +1267,7 @@ public class AtomicAllocator implements Allocator {
                     aggressiveness = Aggressiveness.IMMEDIATE;
 
                 if (deviceMemoryTracker.getAllocatedSize(threadId, deviceId) < (configuration.getMaximumDeviceAllocation() * 0.25) && (deviceAllocations.get(threadId, deviceId).size()  < 10000)) {
-                     // i don't want deallocation to be fired on lower thresholds. just no sense locking stuff
+                    // i don't want deallocation to be fired on lower thresholds. just no sense locking stuff
                 } else seekUnusedDevice(this.threadId, this.deviceId, aggressiveness);
 
 

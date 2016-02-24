@@ -22,19 +22,20 @@ package org.nd4j.linalg.jcublas.ops.executioner;
 
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
-import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDimensions;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.CopyOp;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
 import org.nd4j.linalg.jcublas.context.CudaContext;
-import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
-import org.nd4j.linalg.jcublas.ops.executioner.kernels.GpuKernelCall;
-import org.nd4j.linalg.jcublas.ops.executioner.kernels.GpuKernelCallFactories;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.nativeblas.DefaultPointerConverter;
+import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.PointerConverter;
 
 
 /**
@@ -50,7 +51,8 @@ import org.nd4j.linalg.util.ArrayUtil;
 public class JCudaExecutioner extends DefaultOpExecutioner {
 
     private static final Allocator allocator = AtomicAllocator.getInstance();
-
+    private static NativeOps nativeOps = new NativeOps();
+    private static PointerConverter pointerConverter = new DefaultPointerConverter();
     public JCudaExecutioner() {
     }
 
@@ -205,9 +207,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             if(ArrayUtil.prod(retShape) == op.x().length())
                 return op.x();
 
-            INDArray retArray = Nd4j.create(retShape);
-            invoke(op,dimension,retArray);
-            return retArray;
+            invoke(op,dimension);
+            return op.z();
         }
 
 
@@ -264,7 +265,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         }
         else if(op instanceof IndexAccumulation) {
             IndexAccumulation indexAccumulation = (IndexAccumulation) op;
-            invoke(indexAccumulation,null,Nd4j.scalar(0));
+            invoke(indexAccumulation,null);
         }
         return op;
     }
@@ -284,190 +285,224 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private CudaContext invoke(BroadcastOp op) {
-        //System.out.println("BroadcastOp called");
-        if(!KernelFunctionLoader.getInstance().exists(op) || executionMode() == ExecutionMode.JAVA || op.isPassThrough() || op instanceof CopyOp) {
-            //System.out.println("Fallback to CPU");
-            try {
-                // we dont' care about op.Z sync state, since it'll be overwritten
-                if (op.x() != null) allocator.synchronizeHostData(op.x());
-                if (op.y() != null) allocator.synchronizeHostData(op.y());
+        long x = AtomicAllocator.getInstance().getDevicePointer(op.x()).getNativePointer();
+        long xShapeInfo = AddressRetriever.retrieveDeviceAddress(op.x().shapeInfoDataBuffer());
+        long[] xShapeInfoHostPointer = new long[]{AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer())};
 
-                super.exec(op);
-                return null;
-            } finally {
-                // we notify allocator that op.Z was modified on host side
-                if (op.z() != null) allocator.tickHostWrite(op.z());
-            }
+        long y = AtomicAllocator.getInstance().getDevicePointer(op.y()).getNativePointer();
+        long yShapeInfo = AddressRetriever.retrieveDeviceAddress(op.y().shapeInfoDataBuffer());
+
+        long z = AtomicAllocator.getInstance().getDevicePointer(op.z()).getNativePointer();
+        long zShapeInfo = AddressRetriever.retrieveDeviceAddress(op.z().shapeInfoDataBuffer());
+        long dimensionPointer = AddressRetriever.retrieveDeviceAddress(Nd4j.createBuffer(op.getDimension()));
+
+        if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+            nativeOps.execBroadcastDouble(xShapeInfoHostPointer,op.opNum(),x,xShapeInfo,y,yShapeInfo,z,zShapeInfo,dimensionPointer,op.getDimension().length);
+        }
+        else {
+            nativeOps.execBroadcastFloat(xShapeInfoHostPointer,op.opNum(),x,xShapeInfo,y,yShapeInfo,z,zShapeInfo,dimensionPointer,op.getDimension().length);
+
         }
 
-        try {
-            CudaContext ctx;
+        if (op.x() != null) allocator.tackDevice(op.x());
+        if (op.y() != null) allocator.tackDevice(op.y());
+        if (op.z() != null) allocator.tackDevice(op.z());
 
-            //total number of times to repeat each value over an element wise stride on the gpu
-            int[] dimensions = op.getDimension() == null ? BroadcastDimensions.getDimensions(op.y().shape()) : op.getDimension();
-            GpuKernelCall kernelCall = GpuKernelCallFactories.getFactory(op).create(op, dimensions);
-            kernelCall.invoke();
-            return kernelCall.cudaContext();
-        } finally {
-            if (op.x() != null) allocator.tackDevice(op.x());
-            if (op.y() != null) allocator.tackDevice(op.y());
-            if (op.z() != null) allocator.tackDevice(op.z());
-
-            // we notify allocator that op.Z was modified on device side
-            if (op.z() != null) allocator.tickDeviceWrite(op.z());
-        }
+        // we notify allocator that op.Z was modified on device side
+        if (op.z() != null) allocator.tickDeviceWrite(op.z());
+        return null;
     }
 
 
 
-    private CudaContext invoke(IndexAccumulation op,int[] dimension,INDArray result)  {
-        if(!KernelFunctionLoader.getInstance().exists(op) || executionMode() == ExecutionMode.JAVA) {
-            try {
-                // we dont' care about op.Z sync state, since it'll be overwritten
-                if (op.x() != null) allocator.synchronizeHostData(op.x());
-                if (op.y() != null) allocator.synchronizeHostData(op.y());
+    private CudaContext invoke(IndexAccumulation op,int[] dimension)  {
+        long x = AtomicAllocator.getInstance().getDevicePointer(op.x()).getNativePointer();
+        long xShapeInfo = AddressRetriever.retrieveDeviceAddress(op.x().shapeInfoDataBuffer());
+        long extraArgs = op.extraArgs() != null ? AddressRetriever.retrieveDeviceAddress(op.extraArgsDataBuff()) : 0;
+        long[] xShapeInfoHostPointer = new long[]{AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer())};
+        if(op.z().isScalar()) {
+            if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+                double result = nativeOps.execIndexReduceScalarDouble(xShapeInfoHostPointer,op.opNum(),x,xShapeInfo,extraArgs);
+                op.setFinalResult((int) result);
+            }
+            else {
+                float result = nativeOps.execIndexReduceScalarFloat(xShapeInfoHostPointer, op.opNum(), x, xShapeInfo, extraArgs);
+                op.setFinalResult((int) result);
+            }
+        }
+        else {
+            long z = AtomicAllocator.getInstance().getDevicePointer(op.z()).getNativePointer();
+            long zShapeInfo = AddressRetriever.retrieveDeviceAddress(op.z().shapeInfoDataBuffer());
+            long dimensionPointer = AddressRetriever.retrieveDeviceAddress(Nd4j.createBuffer(dimension));
+            if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+                nativeOps.execIndexReduceDouble(xShapeInfoHostPointer, op.opNum(), x, xShapeInfo, extraArgs, z, zShapeInfo, dimensionPointer, dimension.length);
+            }
+            else {
+                nativeOps.execIndexReduceFloat(xShapeInfoHostPointer, op.opNum(), x, xShapeInfo, extraArgs, z, zShapeInfo, dimensionPointer, dimension.length);
 
-                super.exec(op);
-                return null;
-            } finally {
-                // we notify allocator that op.Z was modified on host side
-                if (op.z() != null) allocator.tickHostWrite(op.z());
             }
         }
 
-        //System.out.println("Invoking IndexAccum on gpu");
+        return null;
 
-        try {
-            CudaContext ctx;
-            GpuKernelCall accKernelCall = GpuKernelCallFactories.getFactory(op).create(op, dimension, result);
-            /*
-            System.out.println("op.z(): " + op.z());
-            System.out.println("result: " + result);
-
-            System.out.println("----------------");
-            System.out.println("op.x(): " + op.x());
-            System.out.println("op.z(): " + op.z());
-            System.out.println("result: " + result);
-            */
-
-            accKernelCall.invoke();
-            ctx = accKernelCall.cudaContext();
-
-            if (op.x() != null) allocator.tackDevice(op.x());
-            if (op.y() != null) allocator.tackDevice(op.y());
-            if (op.z() != null) allocator.tackDevice(op.z());
-
-            // we notify allocator that op.Z was modified on device side
-            if (op.z() != null) allocator.tickDeviceWrite(op.z());
-
-            /*
-            System.out.println("----------------");
-            System.out.println("op.x(): " + op.x());
-            System.out.println("op.z(): " + op.z());
-            System.out.println("result: " + result);
-            */
-            if (op.z().isScalar())
-                op.setFinalResult((int) op.z().getDouble(0));
-
-            return ctx;
-        } finally {
-            ; // we need to tackDevice before calling for result
-        }
     }
 
 
-    private CudaContext invoke(Accumulation op,int[] dimension)  {
-        if(!KernelFunctionLoader.getInstance().exists(op) || executionMode() == ExecutionMode.JAVA) {
-            try {
-                // we dont' care about op.Z sync state, since it'll be overwritten
-                if (op.x() != null) allocator.synchronizeHostData(op.x());
-                if (op.y() != null) allocator.synchronizeHostData(op.y());
+    private CudaContext invoke(Accumulation op, int[] dimension) {
+        CudaContext ctx = null;
+        long[] xShapeInfoHostPointer = new long[]{AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer())};
+        if(op.y() != null) {
+            long x = AtomicAllocator.getInstance().getDevicePointer(op.x()).getNativePointer();
+            long xShapeInfo = AddressRetriever.retrieveDeviceAddress(op.x().shapeInfoDataBuffer());
+            long y = AtomicAllocator.getInstance().getDevicePointer(op.y()).getNativePointer();
+            long yShapeInfo = AddressRetriever.retrieveDeviceAddress(op.y().shapeInfoDataBuffer());
+            long extraArgs = op.extraArgs() != null ? AddressRetriever.retrieveDeviceAddress(op.extraArgsDataBuff()) : 0;
+            if(op.z().isScalar()) {
+                if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+                    double result = nativeOps.execReduce3ScalarDouble(
+                            xShapeInfoHostPointer,
+                            op.opNum()
+                            ,x,
+                            xShapeInfo,
+                            extraArgs,
+                            y,
+                            yShapeInfo);
+                    op.setFinalResult(result);
 
-                super.exec(op);
-                return null;
-            } finally {
-                // we notify allocator that op.Z was modified on host side
-                if (op.z() != null) allocator.tickHostWrite(op.z());
+                }
+                else {
+                    float result = nativeOps.execReduce3ScalarFloat(xShapeInfoHostPointer,
+                            op.opNum()
+                            , x,
+                            xShapeInfo,
+                            extraArgs,
+                            y,
+                            yShapeInfo);
+                    op.setFinalResult(result);
+                }
+            }
+            else {
+                long z = AtomicAllocator.getInstance().getDevicePointer(op.z()).getNativePointer();
+                long zShapeInfo = AddressRetriever.retrieveDeviceAddress(op.z().shapeInfoDataBuffer());
+                if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+                    nativeOps.execReduce3Double(xShapeInfoHostPointer,op.opNum(),x,xShapeInfo,extraArgs,y,yShapeInfo,z,zShapeInfo);
+                }
+                else {
+                    nativeOps.execReduce3Float(xShapeInfoHostPointer,op.opNum(),x,xShapeInfo,extraArgs,y,yShapeInfo,z,zShapeInfo);
+
+                }
+
             }
         }
+        else {
+            long x = AtomicAllocator.getInstance().getDevicePointer(op.x()).getNativePointer();
+            long xShapeInfo = AddressRetriever.retrieveDeviceAddress(op.x().shapeInfoDataBuffer());
+            long extraArgs = op.extraArgs() != null ? AddressRetriever.retrieveDeviceAddress(op.extraArgsDataBuff()) : 0;
+            if(op.z().isScalar()) {
+                if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+                    double result = nativeOps.execReduceScalarDouble(xShapeInfoHostPointer, op.opNum(), x, xShapeInfo,extraArgs);
+                    op.setFinalResult(result);
+                }
+                else {
+                    float result = nativeOps.execReduceScalarFloat(xShapeInfoHostPointer, op.opNum(), x, xShapeInfo, extraArgs);
+                    op.setFinalResult(result);
+                }
+            }
+            else {
+                long z = AtomicAllocator.getInstance().getDevicePointer(op.z()).getNativePointer();
+                long zShapeInfo = AddressRetriever.retrieveDeviceAddress(op.z().shapeInfoDataBuffer());
+                long dimensionPointer = AddressRetriever.retrieveDeviceAddress(Nd4j.createBuffer(dimension));
+                if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+                    nativeOps.execReduceDouble(xShapeInfoHostPointer,op.opNum(),x,xShapeInfo,extraArgs,z,zShapeInfo,dimensionPointer,dimension.length);
+                }
+                else {
+                    nativeOps.execReduceFloat(xShapeInfoHostPointer, op.opNum(), x, xShapeInfo, extraArgs, z, zShapeInfo,dimensionPointer,dimension.length);
 
-            CudaContext ctx;
-            GpuKernelCall accKernelCall = GpuKernelCallFactories.getFactory(op).create(op, dimension);
-            accKernelCall.invoke();
-            ctx = accKernelCall.cudaContext();
+                }
+            }
 
-            if (op.x() != null) allocator.tackDevice(op.x());
-            if (op.y() != null) allocator.tackDevice(op.y());
-            if (op.z() != null) allocator.tackDevice(op.z());
+        }
+        if (op.x() != null)
+            allocator.tackDevice(op.x());
+        if (op.y() != null)
+            allocator.tackDevice(op.y());
+        if (op.z() != null)
+            allocator.tackDevice(op.z());
 
-            // we notify allocator that op.Z was modified on device side
-            if (op.z() != null) allocator.tickDeviceWrite(op.z());
+        // we notify allocator that op.Z was modified on device side
+        if (op.z() != null)
+            allocator.tickDeviceWrite(op.z());
 
-            if (op.z().isScalar())
-                op.setFinalResult(op.z().getDouble(0));
+        if (op.z().isScalar())
+            op.setFinalResult(op.z().getDouble(0));
 
 
-            return ctx;
+        return ctx;
     }
 
 
     private CudaContext invoke(ScalarOp op) {
-        if(!KernelFunctionLoader.getInstance().exists(op)  || executionMode() == ExecutionMode.JAVA) {
-            try {
-                // we dont' care about op.Z sync state, since it'll be overwritten
-                if (op.x() != null) allocator.synchronizeHostData(op.x());
-                if (op.y() != null) allocator.synchronizeHostData(op.y());
+        long x = AtomicAllocator.getInstance().getDevicePointer(op.x()).getNativePointer();
+        long xShapeInfo = AddressRetriever.retrieveDeviceAddress(op.x().shapeInfoDataBuffer());
+        long extraArgs = op.extraArgs() != null ? AddressRetriever.retrieveDeviceAddress(op.extraArgsDataBuff()) : 0;
 
-                super.exec(op);
-                return null;
-            } finally {
-                // we notify allocator that op.Z was modified on host side
-                if (op.z() != null) allocator.tickHostWrite(op.z());
-            }
+        long z = AtomicAllocator.getInstance().getDevicePointer(op.z()).getNativePointer();
+        long zShapeInfo = AddressRetriever.retrieveDeviceAddress(op.z().shapeInfoDataBuffer());
+        long[] xShapeInfoHostPointer = new long[]{AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer())};
+
+        if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+            nativeOps.execScalarDouble(xShapeInfoHostPointer,op.opNum(),x,xShapeInfo,z,zShapeInfo,op.scalar().doubleValue(),extraArgs);
         }
+        else {
+            nativeOps.execScalarFloat(xShapeInfoHostPointer, op.opNum(), x, xShapeInfo, z, zShapeInfo, op.scalar().floatValue(), extraArgs);
 
-        try {
-            GpuKernelCall kernelCall = GpuKernelCallFactories.getFactory(op).create(op);
-            kernelCall.invoke();
-            return kernelCall.cudaContext();
-        } finally {
-            if (op.x() != null) allocator.tackDevice(op.x());
-            if (op.y() != null) allocator.tackDevice(op.y());
-            if (op.z() != null) allocator.tackDevice(op.z());
-
-            // we notify allocator that op.Z was modified on device side
-            if (op.z() != null) allocator.tickDeviceWrite(op.z());
         }
+        if (op.x() != null) allocator.tackDevice(op.x());
+        if (op.y() != null) allocator.tackDevice(op.y());
+        if (op.z() != null) allocator.tackDevice(op.z());
+
+        // we notify allocator that op.Z was modified on device side
+        if (op.z() != null) allocator.tickDeviceWrite(op.z());
+        return  null;
     }
 
     private CudaContext invoke(TransformOp op) {
-        if(!KernelFunctionLoader.getInstance().exists(op) || op.x() instanceof IComplexNDArray || op.isPassThrough()) {
+        long x = AtomicAllocator.getInstance().getDevicePointer(op.x()).getNativePointer();
+        long xShapeInfo = AddressRetriever.retrieveDeviceAddress(op.x().shapeInfoDataBuffer());
+        long extraArgs = op.extraArgs() != null ? AddressRetriever.retrieveDeviceAddress(op.extraArgsDataBuff()) : 0;
 
-            try {
-                // we dont' care about op.Z sync state, since it'll be overwritten
-                if (op.x() != null) allocator.synchronizeHostData(op.x());
-                if (op.y() != null) allocator.synchronizeHostData(op.y());
+        long z = AtomicAllocator.getInstance().getDevicePointer(op.z()).getNativePointer();
+        long zShapeInfo = AddressRetriever.retrieveDeviceAddress(op.z().shapeInfoDataBuffer());
+        long[] xShapeInfoHostPointer = new long[]{AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer())};
 
-                super.exec(op);
-                return null;
-            } finally {
-                // we notify allocator that op.Z was modified on host side
-                if (op.z() != null) allocator.tickHostWrite(op.z());
+
+        if(op.y() != null) {
+            long y = AtomicAllocator.getInstance().getDevicePointer(op.y()).getNativePointer();
+            long yShapeInfo = AddressRetriever.retrieveDeviceAddress(op.y().shapeInfoDataBuffer());
+            if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+                nativeOps.execPairwiseTransformDouble(xShapeInfoHostPointer,op.opNum(),x,xShapeInfo,y,yShapeInfo,z,zShapeInfo, extraArgs);
+            } else {
+                nativeOps.execPairwiseTransformFloat(xShapeInfoHostPointer,op.opNum(),x,xShapeInfo,y,yShapeInfo,z,zShapeInfo,extraArgs);
+
             }
         }
+        else {
+            if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+                nativeOps.execTransformDouble(xShapeInfoHostPointer, op.opNum(), x, xShapeInfo, z, zShapeInfo, extraArgs);
 
-        try {
-            GpuKernelCall kernelCall = GpuKernelCallFactories.getFactory(op).create(op);
-            kernelCall.invoke();
-            return kernelCall.cudaContext();
-        } finally {
-            if (op.x() != null) allocator.tackDevice(op.x());
-            if (op.y() != null) allocator.tackDevice(op.y());
-            if (op.z() != null) allocator.tackDevice(op.z());
+            }
+            else {
+                nativeOps.execTransformFloat(xShapeInfoHostPointer,op.opNum(),x,xShapeInfo,z,zShapeInfo,extraArgs);
 
-            // we notify allocator that op.Z was modified on device side
-            if (op.z() != null) allocator.tickDeviceWrite(op.z());
+            }
         }
+        if (op.x() != null) allocator.tackDevice(op.x());
+        if (op.y() != null) allocator.tackDevice(op.y());
+        if (op.z() != null) allocator.tackDevice(op.z());
+
+        // we notify allocator that op.Z was modified on device side
+        if (op.z() != null) allocator.tickDeviceWrite(op.z());
+        return null;
     }
 }
 

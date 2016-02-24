@@ -36,7 +36,11 @@ import java.util.List;
  * @author Adam Gibson
  */
 public interface INDArray extends Serializable  {
-
+    /**
+     * Shape info
+     * @return
+     */
+    DataBuffer shapeInfoDataBuffer();
     /**
      * Shape info
      * @return
