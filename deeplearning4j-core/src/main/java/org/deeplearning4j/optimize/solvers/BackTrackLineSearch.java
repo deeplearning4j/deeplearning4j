@@ -96,7 +96,7 @@ public class BackTrackLineSearch implements LineOptimizer {
      */
     public BackTrackLineSearch(Model optimizable, ConvexOptimizer optimizer) {
         this(optimizable, new NegativeDefaultStepFunction(), optimizer);
-        log.warn("Objective function automatically set to minimize. Set stepFunction in neural net configuration to change default settings.");
+        log.debug("Objective function automatically set to minimize. Set stepFunction in neural net configuration to change default settings.");
     }
 
 
