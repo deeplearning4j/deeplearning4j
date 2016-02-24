@@ -7,13 +7,12 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
-import org.nd4j.linalg.api.ops.impl.transforms.Floor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.nativeblas.NativeOps;
 
-import java.nio.DoubleBuffer;
-import java.nio.FloatBuffer;
+
 
 
 /**
@@ -87,23 +86,33 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             dimension = new int[]{Integer.MAX_VALUE};
 
 
-        java.nio.IntBuffer dimensionBuffer = Shape.toBuffer(dimension);
+        long dimensionAddress = Nd4j.createBuffer(dimension).address();
+        long[] dummy = new long[1];
+        long x = op.x().data().address();
+        long z = op.z().data().address();
+
         if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
-            loop.execIndexReduce(op.opNum(),
-                    op.x().data().asNioDouble(),
-                    op.x().shapeInfo(), (DoubleBuffer) op.extraArgsBuff(),
-                    op.z().data().asNioDouble(),
-                    op.z().shapeInfo(),
-                    dimensionBuffer, dimension.length);
+            loop.execIndexReduceDouble(
+                    dummy,
+                    op.opNum(),
+                    x,
+                    op.x().shapeInfoDataBuffer().address(),
+                    op.extraArgsDataBuff().address(),
+                    z,
+                    op.z().shapeInfoDataBuffer().address(),
+                    dimensionAddress, dimension.length);
 
         }
         else {
-            loop.execIndexReduce(op.opNum(),
-                    op.x().data().asNioFloat(),
-                    op.x().shapeInfo(), (FloatBuffer) op.extraArgsBuff(),
-                    op.z().data().asNioFloat(),
-                    op.z().shapeInfo(),
-                    dimensionBuffer, dimension.length);
+            loop.execIndexReduceFloat(
+                    dummy,
+                    op.opNum(),
+                    op.x().data().address(),
+                    op.x().shapeInfoDataBuffer().address(),
+                    op.extraArgsDataBuff().address(),
+                    op.z().data().address(),
+                    op.z().shapeInfoDataBuffer().address(),
+                    dimensionAddress, dimension.length);
 
         }
         return op.z();
@@ -158,64 +167,76 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         INDArray ret = Nd4j.valueArrayOf(retShape,op.zeroDouble());
         op.setZ(ret);
-
-        java.nio.IntBuffer dimensionBuffer = Shape.toBuffer(dimension);
+        long[] dummy = new long[1];
+        long dimensionAddress = Nd4j.createBuffer(dimension).address();
         if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
             if(op instanceof Variance) {
                 if(ret.isScalar()) {
-                    ret.putScalar(0,loop.execSummaryStatsScalar(
+                    ret.putScalar(0,loop.execSummaryStatsScalarDouble(
+                            dummy,
                             op.opNum()
-                            ,op.x().data().asNioDouble(),
-                            op.x().shapeInfo(),
-                            (DoubleBuffer) op.extraArgsBuff()));
+                            , op.x().data().address(),
+                            op.x().shapeInfoDataBuffer().address(),
+                            op.extraArgsDataBuff().address()));
                 }
                 else {
-                    loop.execSummaryStats(op.opNum(),
-                            op.x().data().asNioDouble(),
-                            op.x().shapeInfo(), (DoubleBuffer) op.extraArgsBuff(),
-                            op.z().data().asNioDouble(),
-                            op.z().shapeInfo(),
-                            dimensionBuffer, dimension.length);
+                    loop.execSummaryStatsDouble(
+                            dummy,
+                            op.opNum(),
+                            op.x().data().address(),
+                            op.x().shapeInfoDataBuffer().address(),
+                            op.extraArgsDataBuff().address(),
+                            op.z().data().address(),
+                            op.z().shapeInfoDataBuffer().address(),
+                            dimensionAddress, dimension.length);
                 }
 
             }
 
             else if(op.y() != null) {
                 if(ret.isScalar()) {
-                    ret.putScalar(0,loop.execReduce3Scalar(op.opNum(),
-                            op.x().data().asNioDouble(),
-                            op.x().shapeInfo(),
-                            (DoubleBuffer)op.extraArgsBuff(),
-                            op.y().data().asNioDouble(),
-                            op.y().shapeInfo()));
+                    ret.putScalar(0,loop.execReduce3ScalarDouble(
+                            dummy,
+                            op.opNum(),
+                            op.x().data().address(),
+                            op.x().shapeInfoDataBuffer().address(),
+                            op.extraArgsDataBuff().address(),
+                            op.y().data().address(),
+                            op.y().shapeInfoDataBuffer().address()));
                 }
                 else {
-                    loop.execReduce3(op.opNum(),
-                            op.x().data().asNioDouble(),
-                            op.x().shapeInfo(), (DoubleBuffer) op.extraArgsBuff(),
-                            op.y().data().asNioDouble(),
-                            op.y().shapeInfo(),
-                            op.z().data().asNioDouble(),
-                            op.z().shapeInfo(),
-                            dimensionBuffer,dimension.length);
+                    loop.execReduce3Float(
+                            dummy,
+                            op.opNum(),
+                            op.x().data().address(),
+                            op.x().shapeInfoDataBuffer().address(),
+                            op.extraArgsDataBuff().address(),
+                            op.y().data().address(),
+                            op.y().shapeInfoDataBuffer().address(),
+                            op.z().data().address(),
+                            op.z().shapeInfoDataBuffer().address(),
+                            dimensionAddress, dimension.length);
                 }
 
             }
             else {
                 if(ret.isScalar()) {
-                    ret.putScalar(0,loop.execReduceScalar(
+                    ret.putScalar(0,loop.execReduceScalarDouble(
+                            dummy,
                             op.opNum(),
-                            op.x().data().asNioDouble(),
-                            op.x().shapeInfo(),
-                            (DoubleBuffer) op.extraArgsBuff()));
+                            op.x().data().address(),
+                            op.x().shapeInfoDataBuffer().address(),
+                            op.extraArgsDataBuff().address()));
                 }
                 else {
-                    loop.execReduce(op.opNum(),
-                            op.x().data().asNioDouble(),
-                            op.x().shapeInfo(), (DoubleBuffer) op.extraArgsBuff(),
-                            op.z().data().asNioDouble(),
-                            op.z().shapeInfo(),
-                            dimensionBuffer, dimension.length);
+                    loop.execReduceFloat(
+                            dummy,
+                            op.opNum(),
+                            op.x().data().address(),
+                            op.x().shapeInfoDataBuffer().address(), op.extraArgsDataBuff().address(),
+                            op.z().data().address(),
+                            op.z().shapeInfoDataBuffer().address(),
+                            dimensionAddress, dimension.length);
                 }
 
             }
@@ -223,59 +244,70 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         else {
             if(op instanceof Variance) {
                 if(ret.isScalar()) {
-                    ret.putScalar(0,loop.execSummaryStatsScalar(
+                    ret.putScalar(0,loop.execSummaryStatsScalarFloat(
+                            dummy,
                             op.opNum()
-                            ,op.x().data().asNioFloat(),
-                            op.x().shapeInfo(),
-                            (FloatBuffer) op.extraArgsBuff()));
+                            , op.x().data().address(),
+                            op.x().shapeInfoDataBuffer().address(),
+                            op.extraArgsDataBuff().address()));
                 }
                 else {
-                    loop.execSummaryStats(op.opNum(),
-                            op.x().data().asNioFloat(),
-                            op.x().shapeInfo(), (FloatBuffer) op.extraArgsBuff(),
-                            op.z().data().asNioFloat(),
-                            op.z().shapeInfo(),
-                            dimensionBuffer, dimension.length);
+                    loop.execSummaryStatsFloat(
+                            dummy,
+                            op.opNum(),
+                            op.x().data().address(),
+                            op.x().shapeInfoDataBuffer().address(), op.extraArgsDataBuff().address(),
+                            op.z().data().address(),
+                            op.z().shapeInfoDataBuffer().address(),
+                            dimensionAddress, dimension.length);
                 }
 
             }
 
             else if(op.y() != null) {
                 if(ret.isScalar()) {
-                    ret.putScalar(0,loop.execReduce3Scalar(op.opNum(),
-                            op.x().data().asNioFloat(),
-                            op.x().shapeInfo(),
-                            (FloatBuffer)op.extraArgsBuff(),
-                            op.y().data().asNioFloat(),
-                            op.y().shapeInfo()));
+                    ret.putScalar(0,loop.execReduce3ScalarFloat(
+                            dummy,
+                            op.opNum(),
+                            op.x().data().address(),
+                            op.x().shapeInfoDataBuffer().address(),
+                            op.extraArgsDataBuff().address(),
+                            op.y().data().address(),
+                            op.y().shapeInfoDataBuffer().address()));
                 }
                 else {
-                    loop.execReduce3(op.opNum(),
-                            op.x().data().asNioFloat(),
-                            op.x().shapeInfo(), (FloatBuffer) op.extraArgsBuff(),
-                            op.y().data().asNioFloat(),
-                            op.y().shapeInfo(),
-                            op.z().data().asNioFloat(),
-                            op.z().shapeInfo(),
-                            dimensionBuffer,dimension.length);
+                    loop.execReduce3Float(
+                            dummy,
+                            op.opNum(),
+                            op.x().data().address(),
+                            op.x().shapeInfoDataBuffer().address(), op.extraArgsDataBuff().address(),
+                            op.y().data().address(),
+                            op.y().shapeInfoDataBuffer().address(),
+                            op.z().data().address(),
+                            op.z().shapeInfoDataBuffer().address(),
+                            dimensionAddress, dimension.length);
                 }
 
             }
             else {
                 if(ret.isScalar()) {
-                    ret.putScalar(0,loop.execReduceScalar(
+                    ret.putScalar(0,loop.execReduceScalarFloat(
+                            dummy,
                             op.opNum(),
-                            op.x().data().asNioFloat(),
-                            op.x().shapeInfo(),
-                            (FloatBuffer) op.extraArgsBuff()));
+                            op.x().data().address(),
+                            op.x().shapeInfoDataBuffer().address(),
+                            op.extraArgsDataBuff().address()));
                 }
                 else {
-                    loop.execReduce(op.opNum(),
-                            op.x().data().asNioFloat(),
-                            op.x().shapeInfo(), (FloatBuffer) op.extraArgsBuff(),
-                            op.z().data().asNioFloat(),
-                            op.z().shapeInfo(),
-                            dimensionBuffer, dimension.length);
+                    loop.execReduceFloat(
+                            dummy,
+                            op.opNum(),
+                            op.x().data().address(),
+                            op.x().shapeInfoDataBuffer().address(),
+                            op.extraArgsDataBuff().address(),
+                            op.z().data().address(),
+                            op.z().shapeInfoDataBuffer().address(),
+                            dimensionAddress, dimension.length);
                 }
 
             }
@@ -289,27 +321,28 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             super.exec(op);
         }
         else {
+            long[] dummy = new long[1];
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
-                loop.execScalar(
+                loop.execScalarDouble(
+                        dummy,
                         op.opNum()
-                        ,op.x().data().asNioDouble(),
-                        op.x().shapeInfo(),
-                        op.z().data().asNioDouble(),
-                        op.z().shapeInfo(),
+                        , op.x().data().address(),
+                        op.x().shapeInfoDataBuffer().address(),
+                        op.z().data().address(),
+                        op.z().shapeInfoDataBuffer().address(),
                         op.scalar().doubleValue(),
-                        (DoubleBuffer) op.extraArgsBuff(),
-                        op.n());
+                        op.extraArgsDataBuff().address());
             }
             else {
-                loop.execScalar(
+                loop.execScalarFloat(
+                        dummy,
                         op.opNum()
-                        ,op.x().data().asNioFloat(),
-                        op.x().shapeInfo(),
-                        op.z().data().asNioFloat(),
-                        op.z().shapeInfo(),
+                        , op.x().data().address(),
+                        op.x().shapeInfoDataBuffer().address(),
+                        op.z().data().address(),
+                        op.z().shapeInfoDataBuffer().address(),
                         op.scalar().floatValue(),
-                        (FloatBuffer) op.extraArgsBuff(),
-                        op.n());
+                        op.extraArgsDataBuff().address());
 
             }
         }
@@ -320,52 +353,57 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             super.exec(op);
         }
         else {
-
+            long[] dummy = new long[1];
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 if(op.y() != null) {
                     if(op.x().elementWiseStride() >=1 && op.y().elementWiseStride() >= 1 && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) {
-                        loop.execPairwiseTransform
-                                (op.opNum(),
-                                        op.x().data().asNioDouble(),
-                                        op.x().elementWiseStride(),
-                                        op.y().data().asNioDouble(),
-                                        op.y().elementWiseStride(),
-                                        op.z().data().asNioDouble(),
-                                        op.z().elementWiseStride(),
-                                        (DoubleBuffer) op.extraArgsBuff(),
-                                        op.n());
+                        loop.execPairwiseTransformDouble(
+                                dummy,
+                                op.opNum(),
+                                op.x().data().address(),
+                                op.x().elementWiseStride(),
+                                op.y().data().address(),
+                                op.y().elementWiseStride(),
+                                op.z().data().address(),
+                                op.z().elementWiseStride(),
+                                op.extraArgsDataBuff().address(),
+                                op.n());
 
                     }
                     else {
-                        loop.execPairwiseTransform
-                                (op.opNum(),
-                                        op.x().data().asNioDouble(),
-                                        op.x().shapeInfo(),
-                                        op.y().data().asNioDouble(),
-                                        op.y().shapeInfo(),
-                                        op.z().data().asNioDouble(),
-                                        op.z().shapeInfo(),
-                                        (DoubleBuffer) op.extraArgsBuff(),
-                                        op.n());
+                        loop.execPairwiseTransformDouble(
+                                dummy,
+                                op.opNum(),
+                                op.x().data().address(),
+                                op.x().shapeInfoDataBuffer().address(),
+                                op.y().data().address(),
+                                op.y().shapeInfoDataBuffer().address(),
+                                op.z().data().address(),
+                                op.z().shapeInfoDataBuffer().address(),
+                                op.extraArgsDataBuff().address());
                     }
 
                 }
                 else {
                     if(op.x().elementWiseStride() >= 1) {
-                        loop.execTransform(op.opNum(),
-                                op.x().data().asNioDouble(),
+                        loop.execTransformDouble(
+                                dummy,
+                                op.opNum(),
+                                op.x().data().address(),
                                 op.x().elementWiseStride(),
-                                op.z().data().asNioDouble(),
+                                op.z().data().address(),
                                 op.z().elementWiseStride(),
-                                (DoubleBuffer) op.extraArgsBuff(), op.n());
+                                op.extraArgsDataBuff().address(), op.n());
                     }
                     else {
-                        loop.execTransform(op.opNum(),
-                                op.x().data().asNioDouble(),
-                                op.x().shapeInfo(),
-                                op.z().data().asNioDouble(),
-                                op.z().shapeInfo(),
-                                (DoubleBuffer) op.extraArgsBuff(), op.n());
+                        loop.execTransformDouble(
+                                dummy,
+                                op.opNum(),
+                                op.x().data().address(),
+                                op.x().shapeInfoDataBuffer().address(),
+                                op.z().data().address(),
+                                op.z().shapeInfoDataBuffer().address(),
+                                op.extraArgsDataBuff().address());
                     }
 
                 }
@@ -373,48 +411,50 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             else {
                 if(op.y() != null) {
                     if(op.x().elementWiseStride() >=1 && op.y().elementWiseStride() >= 1 && op.x().ordering() == op.y().ordering()) {
-                        loop.execPairwiseTransform
-                                (op.opNum(),
-                                        op.x().data().asNioFloat(),
+                        loop.execPairwiseTransformFloat
+                                (dummy,op.opNum(),
+                                        op.x().data().address(),
                                         op.x().elementWiseStride(),
-                                        op.y().data().asNioFloat(),
+                                        op.y().data().address(),
                                         op.y().elementWiseStride(),
-                                        op.z().data().asNioFloat(),
+                                        op.z().data().address(),
                                         op.z().elementWiseStride(),
-                                        (FloatBuffer) op.extraArgsBuff(),
+                                        op.extraArgsDataBuff().address(),
                                         op.n());
 
                     }
                     else {
-                        loop.execPairwiseTransform
-                                (op.opNum(),
-                                        op.x().data().asNioFloat(),
-                                        op.x().shapeInfo(),
-                                        op.y().data().asNioFloat(),
-                                        op.y().shapeInfo(),
-                                        op.z().data().asNioFloat(),
-                                        op.z().shapeInfo(),
-                                        (FloatBuffer) op.extraArgsBuff(),
-                                        op.n());
+                        loop.execPairwiseTransformFloat(
+                                dummy,
+                                op.opNum(),
+                                op.x().data().address(),
+                                op.x().shapeInfoDataBuffer().address(),
+                                op.y().data().address(),
+                                op.y().shapeInfoDataBuffer().address(),
+                                op.z().data().address(),
+                                op.z().shapeInfoDataBuffer().address(),
+                                op.extraArgsDataBuff().address());
                     }
 
                 }
                 else {
                     if(op.x().elementWiseStride() >= 1) {
-                        loop.execTransform(op.opNum(),
-                                op.x().data().asNioFloat(),
+                        loop.execTransformFloat(dummy,op.opNum(),
+                                op.x().data().address(),
                                 op.x().elementWiseStride(),
-                                op.z().data().asNioFloat(),
+                                op.z().data().address(),
                                 op.z().elementWiseStride(),
-                                (FloatBuffer) op.extraArgsBuff(), op.n());
+                                op.extraArgsDataBuff().address(), op.n());
                     }
                     else {
-                        loop.execTransform(op.opNum(),
-                                op.x().data().asNioFloat(),
-                                op.x().shapeInfo(),
-                                op.z().data().asNioFloat(),
-                                op.z().shapeInfo(),
-                                (FloatBuffer) op.extraArgsBuff(), op.n());
+                        loop.execTransformFloat(
+                                dummy,
+                                op.opNum(),
+                                op.x().data().address(),
+                                op.x().shapeInfoDataBuffer().address(),
+                                op.z().data().address(),
+                                op.z().shapeInfoDataBuffer().address(),
+                                op.extraArgsDataBuff().address());
                     }
 
                 }
@@ -424,22 +464,25 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(BroadcastOp op,int...dimension) {
+        long[] dummy = new long[1];
         java.nio.IntBuffer dimensionBuffer = Shape.toBuffer(dimension);
+        long dimensionAddress = Nd4j.createBuffer(dimensionBuffer).address();
         if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
-            loop.execBroadcast(op.opNum(),
-                    op.x().data().asNioDouble()
-                    ,op.x().shapeInfo(),
-                    op.y().data().asNioDouble(),op.y().shapeInfo()
-                    ,op.z().data().asNioDouble(),op.z().shapeInfo(),
-                    dimensionBuffer,dimension.length);
+            loop.execBroadcastDouble(dummy,op.opNum(),
+                    op.x().data().address()
+                    ,op.x().shapeInfoDataBuffer().address(),
+                    op.y().data().address(), op.y().shapeInfoDataBuffer().address()
+                    , op.z().data().address(), op.z().shapeInfoDataBuffer().address(),
+                    dimensionAddress, dimension.length);
         }
         else {
-            loop.execBroadcast(op.opNum(),
-                    op.x().data().asNioFloat()
-                    ,op.x().shapeInfo(),
-                    op.y().data().asNioFloat(),op.y().shapeInfo()
-                    ,op.z().data().asNioFloat(),op.z().shapeInfo(),
-                    dimensionBuffer,dimension.length);
+            loop.execBroadcastFloat(dummy,op.opNum(),
+                    op.x().data().address()
+                    ,op.x().shapeInfoDataBuffer().address(),
+                    op.y().data().address(),
+                    op.y().shapeInfoDataBuffer().address()
+                    , op.z().data().address(), op.z().shapeInfoDataBuffer().address(),
+                    dimensionAddress, dimension.length);
         }
 
         return op.z();
@@ -451,18 +494,22 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         }
         else {
+            long[] dummy = new long[1];
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
-                op.setFinalResult((int) loop.execIndexReduceScalar(
+                op.setFinalResult((int) loop.execIndexReduceScalarDouble(
+                        dummy,
                         op.opNum(),
-                        op.x().data().asNioDouble()
-                        , op.x().shapeInfo(), (DoubleBuffer) op.extraArgsBuff()));
+                        op.x().data().address()
+                        ,op.x().shapeInfoDataBuffer().address(), op.extraArgsDataBuff().address()));
 
             }
             else {
-                op.setFinalResult((int) loop.execIndexReduceScalar(
+                op.setFinalResult((int) loop.execIndexReduceScalarFloat(
+                        dummy,
                         op.opNum(),
-                        op.x().data().asNioFloat()
-                        ,op.x().shapeInfo(), (FloatBuffer) op.extraArgsBuff()));
+                        op.x().data().address()
+                        ,op.x().shapeInfoDataBuffer().address(),
+                        op.extraArgsDataBuff().address()));
             }
 
         }
@@ -474,46 +521,53 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         }
         else {
+            long[] dummy = new long[1];
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 if(op instanceof Variance) {
-                    op.setFinalResult(loop.execSummaryStatsScalar(
+                    op.setFinalResult(loop.execSummaryStatsScalarDouble(
+                            dummy,
                             op.opNum(),
-                            op.x().data().asNioDouble()
-                            , op.x().shapeInfo(), (DoubleBuffer) op.extraArgsBuff()));
+                            op.x().data().address()
+                            ,op.x().shapeInfoDataBuffer().address(), op.extraArgsDataBuff().address()));
                 }
                 else if(op.y() != null) {
-                    op.setFinalResult(loop.execReduce3Scalar(
+                    op.setFinalResult(loop.execReduce3ScalarDouble(
+                            dummy,
                             op.opNum(),
-                            op.x().data().asNioDouble()
-                            ,op.x().shapeInfo(), (DoubleBuffer) op.extraArgsBuff(),
-                            op.y().data().asNioDouble(),op.y().shapeInfo()));
+                            op.x().data().address()
+                            ,op.x().shapeInfoDataBuffer().address(), op.extraArgsDataBuff().address(),
+                            op.y().data().address(), op.y().shapeInfoDataBuffer().address()));
                 }
                 else {
-                    op.setFinalResult(loop.execReduceScalar(
+                    op.setFinalResult(loop.execReduceScalarDouble(
+                            dummy,
                             op.opNum(),
-                            op.x().data().asNioDouble()
-                            , op.x().shapeInfo(), (DoubleBuffer) op.extraArgsBuff()));
+                            op.x().data().address()
+                            ,op.x().shapeInfoDataBuffer().address(), op.extraArgsDataBuff().address()));
                 }
             }
             else {
                 if(op instanceof Variance) {
-                    op.setFinalResult(loop.execSummaryStatsScalar(
+                    op.setFinalResult(loop.execSummaryStatsScalarFloat(
+                            dummy,
                             op.opNum(),
-                            op.x().data().asNioFloat()
-                            , op.x().shapeInfo(), null));
+                            op.x().data().address()
+                            ,op.x().shapeInfoDataBuffer().address(), 0));
                 }
                 else if(op.y() != null) {
-                    op.setFinalResult(loop.execReduce3Scalar(
+                    op.setFinalResult(loop.execReduce3ScalarFloat(
+                            dummy,
                             op.opNum(),
-                            op.x().data().asNioFloat()
-                            ,op.x().shapeInfo(),null,
-                            op.y().data().asNioFloat(),op.y().shapeInfo()));
+                            op.x().data().address()
+                            ,op.x().shapeInfoDataBuffer().address(), 0,
+                            op.y().data().address(), op.y().shapeInfoDataBuffer().address()));
                 }
                 else {
-                    op.setFinalResult(loop.execReduceScalar(
+                    op.setFinalResult(loop.execReduceScalarFloat(
+                            dummy,
                             op.opNum(),
-                            op.x().data().asNioFloat()
-                            ,op.x().shapeInfo(),null));
+                            op.x().data().address()
+                            ,op.x().shapeInfoDataBuffer().address(), 0));
                 }
             }
         }
