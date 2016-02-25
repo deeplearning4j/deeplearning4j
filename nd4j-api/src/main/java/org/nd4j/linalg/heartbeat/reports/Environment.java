@@ -46,4 +46,18 @@ public class Environment implements Serializable {
         Nd4j backend being used within current JVM session
     */
     private String backendUsed;
+
+
+    public String toCompactString() {
+        StringBuilder builder = new StringBuilder();
+
+        builder.append(numCores).append("cores/");
+        builder.append(availableMemory / 1024 / 1024 / 1024).append("GB/");
+        builder.append("jvm").append(javaVersion).append("/");
+        builder.append(osName).append("/");
+        builder.append(osArch).append("/");
+        builder.append(backendUsed).append(" ");
+
+        return builder.toString();
+    }
 }

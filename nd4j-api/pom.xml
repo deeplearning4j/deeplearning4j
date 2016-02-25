@@ -131,9 +131,9 @@
         </dependency>
 
         <dependency>
-            <groupId>com.dmurph</groupId>
-            <artifactId>JGoogleAnalyticsTracker</artifactId>
-            <version>1.2.0</version>
+            <groupId>com.brsanthu</groupId>
+            <artifactId>google-analytics-java</artifactId>
+            <version>1.1.2</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.slf4j</groupId>

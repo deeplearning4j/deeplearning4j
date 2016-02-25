@@ -1,10 +1,13 @@
 package org.nd4j.linalg.heartbeat;
 
-import com.dmurph.tracking.AnalyticsConfigData;
-import com.dmurph.tracking.JGoogleAnalyticsTracker;
+import com.brsanthu.googleanalytics.GoogleAnalytics;
+import com.brsanthu.googleanalytics.GoogleAnalyticsRequest;
+import com.brsanthu.googleanalytics.PageViewHit;
 import org.nd4j.linalg.heartbeat.reports.Environment;
 import org.nd4j.linalg.heartbeat.reports.Event;
 import org.nd4j.linalg.heartbeat.reports.Task;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -21,16 +24,16 @@ public class Heartbeat {
     private AtomicLong lastReport = new AtomicLong(0);
     private AtomicBoolean enabled = new AtomicBoolean(true);
     private long cId;
-    private volatile JGoogleAnalyticsTracker tracker;
+    private volatile GoogleAnalytics tracker;
+    private static Logger logger = LoggerFactory.getLogger(Heartbeat.class);
 
 
     protected Heartbeat() {
         try {
-            AnalyticsConfigData config = new AnalyticsConfigData("MyTrackingCode");
-            tracker = new JGoogleAnalyticsTracker(config, JGoogleAnalyticsTracker.GoogleAnalyticsVersion.V_4_7_2);
-            tracker.setEnabled(true);
+            tracker = new GoogleAnalytics("UA-48811288-4");
         } catch (Exception e) {
             ; // do nothing here
+            throw new RuntimeException(e);
         }
     }
 
@@ -53,9 +56,9 @@ public class Heartbeat {
         if (lastReport.get() == 0) {
             lastReport.set(currentTime);
 
-            RepoThread thread = new RepoThread(environment, task);
+            RepoThread thread = new RepoThread(event, environment, task);
             thread.start();
-        }
+        } else System.out.println("Skipping report");
     }
 
     public synchronized void derivedId(long id) {
@@ -77,23 +80,56 @@ public class Heartbeat {
          */
         private final Environment environment;
         private final Task task;
+        private final Event event;
 
 
-        public RepoThread(Environment environment, Task task) {
+        public RepoThread(Event event, Environment environment, Task task) {
             this.environment = environment;
             this.task = task;
+            this.event = event;
         }
 
         @Override
         public void run() {
             try {
-                //tracker.trackEvent();
+                /*
+                 now we just should pack everything environment/task into single line
+                 */
+                String lid = this.event.toString();
+                String argAction = serialVersionID != 0 ? String.valueOf(serialVersionID) : String.valueOf(environment.getSerialVersionID());
+                String argLabel = buildEvent(environment, task);
+
+                System.out.println("tracking event: [" + lid + ", " + argAction+ "," + argLabel +"]");
+                //tracker.trackEvent(lid, argAction, argLabel);
+                GoogleAnalyticsRequest request = new GoogleAnalyticsRequest();
+/*
+                request.userId(lid);
+                request.applicationName(environment.getBackendUsed());
+                request.applicationVersion("0.4-rc3.9");
+                */
+
+
+          //      PageViewHit hit = new PageViewHit("http://www.nd4j.org/ast", "Direct Hit");
+
+
+            //    tracker.post(hit);
+
+
+                System.out.println("Request sent");
             } catch (Exception e) {
                 // keep quiet on exceptions here
                 ;
+                throw new RuntimeException(e);
             } finally {
                 ;
             }
         }
+    }
+
+    private String buildEvent(Environment environment, Task task) {
+        StringBuilder builder = new StringBuilder(environment.toCompactString());
+        builder.append(task.toCompactString());
+
+        return builder.toString();
     }
 }
