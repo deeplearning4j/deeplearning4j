@@ -72,7 +72,7 @@ public class UnsafeHolder {
 			PERC : m_unsafe_instance
 			Android: THE_ONE
 			*/
-            for ( Field field : fields ) {
+            for (Field field : fields) {
                 if ( !field.getType().equals(Unsafe.class) )
                     continue;
 
@@ -89,7 +89,6 @@ public class UnsafeHolder {
                 break;
             }
 
-            throw new UnsupportedOperationException();
 
         }
 

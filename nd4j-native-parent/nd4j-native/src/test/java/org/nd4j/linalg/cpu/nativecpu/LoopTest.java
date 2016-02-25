@@ -4,6 +4,7 @@ import org.apache.commons.math3.linear.BlockRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.util.FastMath;
 import org.apache.commons.math3.util.Pair;
+import org.bytedeco.javacpp.Loader;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -38,9 +39,7 @@ import static org.junit.Assert.*;
  */
 public class LoopTest {
     private static Logger log = LoggerFactory.getLogger(LoopTest.class);
-    static {
-        LibUtils.loadLibrary("libnd4j");
-    }
+
     @Test
     public void testLoop() {
         INDArray linspace = Nd4j.linspace(1,4,4);

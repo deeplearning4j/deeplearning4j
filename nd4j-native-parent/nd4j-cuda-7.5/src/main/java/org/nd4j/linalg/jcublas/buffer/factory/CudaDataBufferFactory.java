@@ -38,6 +38,16 @@ import java.nio.ByteBuffer;
  */
 public class CudaDataBufferFactory implements DataBufferFactory {
     @Override
+    public void setAllocationMode(DataBuffer.AllocationMode allocationMode) {
+
+    }
+
+    @Override
+    public DataBuffer.AllocationMode allocationMode() {
+        return null;
+    }
+
+    @Override
     public DataBuffer create(DataBuffer underlyingBuffer, int offset, int length) {
         if(underlyingBuffer.dataType() == DataBuffer.Type.DOUBLE) {
            return new CudaDoubleDataBuffer(underlyingBuffer,length,offset);

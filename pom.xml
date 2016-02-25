@@ -156,6 +156,7 @@
         <module>nd4j-common</module>
         <module>nd4j-buffer</module>
         <module>nd4j-native-parent</module>
+        <module>nd4j-context</module>
     </modules>
 
     <properties>

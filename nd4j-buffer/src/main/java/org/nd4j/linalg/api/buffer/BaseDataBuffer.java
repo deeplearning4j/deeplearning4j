@@ -25,6 +25,7 @@ import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.context.Nd4jContext;
 import org.nd4j.linalg.api.buffer.unsafe.UnsafeHolder;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
@@ -171,7 +172,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @param length
      */
     protected BaseDataBuffer(ByteBuf buf,int length) {
-        allocationMode = AllocationMode.DIRECT;
+        allocationMode = getAllocationModeFromContext();
         this.wrappedBuffer = buf.nioBuffer();
         this.length = length;
         this.underlyingLength = length;
@@ -195,7 +196,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @param copy
      */
     public BaseDataBuffer(float[] data, boolean copy) {
-        allocationMode = AllocationMode.HEAP;
+        allocationMode = getAllocationModeFromContext();
         if(allocationMode == AllocationMode.HEAP) {
             if(copy) {
                 floatData = ArrayUtil.copy(data);
@@ -241,7 +242,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @param copy
      */
     public BaseDataBuffer(double[] data, boolean copy) {
-        allocationMode = AllocationMode.HEAP;
+        allocationMode = getAllocationModeFromContext();
         if(allocationMode == AllocationMode.HEAP) {
             if(copy) {
                 doubleData = ArrayUtil.copy(data);
@@ -292,7 +293,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @param copy
      */
     public BaseDataBuffer(int[] data, boolean copy) {
-        allocationMode = AllocationMode.HEAP;
+        allocationMode = getAllocationModeFromContext();
         if(allocationMode == AllocationMode.HEAP) {
             if(copy)
                 intData = ArrayUtil.copy(data);
@@ -363,7 +364,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @param elementSize
      */
     public BaseDataBuffer(int length, int elementSize) {
-        allocationMode = AllocationMode.DIRECT;
+        allocationMode = getAllocationModeFromContext();
         this.length = length;
         this.underlyingLength = length;
         this.elementSize = elementSize;
@@ -403,7 +404,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @param length
      */
     public BaseDataBuffer(ByteBuffer buffer,int length) {
-        allocationMode = AllocationMode.DIRECT;
+        allocationMode = getAllocationModeFromContext();
         this.length = length;
         this.underlyingLength = length;
         buffer.order(ByteOrder.nativeOrder());
@@ -445,6 +446,20 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     public BaseDataBuffer(byte[] data, int length) {
         this(Unpooled.wrappedBuffer(data),length);
+    }
+
+
+    /**
+     * Get the allocation mode from the context
+     * @return
+     */
+    public AllocationMode getAllocationModeFromContext() {
+        switch(Nd4jContext.getInstance().getConf().getProperty("alloc")) {
+            case "heap": return AllocationMode.HEAP;
+            case "javacpp": return AllocationMode.JAVACPP;
+            case "direct": return AllocationMode.DIRECT;
+            default: return AllocationMode.JAVACPP;
+        }
     }
 
     @Override
@@ -490,7 +505,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected BaseDataBuffer(int length) {
         this.length = length;
         this.underlyingLength = length;
-        allocationMode = AllocationMode.DIRECT;
+        allocationMode = getAllocationModeFromContext();
         if(length < 0)
             throw new IllegalArgumentException("Unable to create a buffer of length <= 0");
 

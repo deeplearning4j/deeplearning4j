@@ -8,8 +8,7 @@ import org.bytedeco.javacpp.annotation.Platform;
 /**
  * CBlas bindings
  *
- * Original credit:
- * https://github.com/uncomplicate/neanderthal-atlas
+ *
  *
  *
  */

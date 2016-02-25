@@ -4690,7 +4690,12 @@ public class Nd4j {
             String otherDtype = System.getProperty(DTYPE, props.get(DTYPE).toString());
             String otherAlloc = System.getProperty(ALLOC,props.getProperty(ALLOC,"heap"));
             dtype = otherDtype.equals("float") ? DataBuffer.Type.FLOAT : DataBuffer.Type.DOUBLE;
-            alloc = otherAlloc.equals("heap") ? DataBuffer.AllocationMode.HEAP : DataBuffer.AllocationMode.DIRECT;
+            if(otherAlloc.equals("heap"))
+                alloc = DataBuffer.AllocationMode.HEAP;
+            else if(otherAlloc.equals("direct"))
+                alloc = DataBuffer.AllocationMode.DIRECT;
+            else if(otherAlloc.equals("javacpp"))
+                alloc = DataBuffer.AllocationMode.JAVACPP;
             copyOnOps = Boolean.parseBoolean(props.getProperty(COPY_OPS, "true"));
             shouldInstrument = Boolean.parseBoolean(props.getProperty(INSTRUMENTATION, "false"));
             resourceManagerOn = Boolean.parseBoolean(props.getProperty(RESOURCE_MANGER_ON,"false"));

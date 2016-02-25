@@ -32,6 +32,17 @@ import java.nio.ByteBuffer;
  */
 public interface DataBufferFactory {
 
+    /**
+     * Setter for the allocation mode
+     * @param allocationMode
+     */
+    void setAllocationMode(DataBuffer.AllocationMode allocationMode);
+
+    /**
+     * Allocation mode for the data buffer
+     * @return
+     */
+    DataBuffer.AllocationMode allocationMode();
 
     /**
      * Create a databuffer wrapping another one

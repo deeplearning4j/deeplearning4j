@@ -22,6 +22,7 @@ package org.nd4j.linalg.factory;
 import java.io.IOException;
 import java.util.*;
 
+import org.nd4j.context.Nd4jContext;
 import org.nd4j.linalg.io.Resource;
 import org.reflections.Reflections;
 import org.slf4j.Logger;
@@ -40,7 +41,7 @@ public abstract class Nd4jBackend {
 
     private static final Logger log = LoggerFactory.getLogger(Nd4jBackend.class);
 
-    private Properties props;
+
 
     /**
      * Returns true if the
@@ -115,6 +116,12 @@ public abstract class Nd4jBackend {
                 continue;
             }
 
+            try {
+                Nd4jContext.getInstance().updateProperties(backend.getConfigurationResource().getInputStream());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
             log.trace("Loaded [{}] backend", backend.getClass().getSimpleName());
             return backend;
         }
@@ -149,6 +156,13 @@ public abstract class Nd4jBackend {
                 continue;
             }
 
+            try {
+                Nd4jContext.getInstance().updateProperties(backend.getConfigurationResource().getInputStream());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+
             log.info("Loaded [{}] backend", backend.getClass().getSimpleName());
             return backend;
         }
@@ -156,12 +170,14 @@ public abstract class Nd4jBackend {
         throw new NoAvailableBackendException();
     }
 
+
     public Properties getProperties() throws IOException {
-        if(props != null)
-            return props;
-        props = new Properties();
-        props.load(getConfigurationResource().getInputStream());
-        return props;
+        return getContext().getConf();
+    }
+
+
+    public Nd4jContext getContext() throws IOException {
+        return Nd4jContext.getInstance();
     }
 
     @SuppressWarnings("serial")
