@@ -1,8 +1,10 @@
 package org.nd4j.linalg.heartbeat;
 
+import com.brsanthu.googleanalytics.EventHit;
 import com.brsanthu.googleanalytics.GoogleAnalytics;
 import com.brsanthu.googleanalytics.GoogleAnalyticsRequest;
 import com.brsanthu.googleanalytics.PageViewHit;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.heartbeat.reports.Environment;
 import org.nd4j.linalg.heartbeat.reports.Event;
 import org.nd4j.linalg.heartbeat.reports.Task;
@@ -30,7 +32,7 @@ public class Heartbeat {
 
     protected Heartbeat() {
         try {
-            tracker = new GoogleAnalytics("UA-48811288-4");
+            tracker = new GoogleAnalytics("UA-48811288-4", "nd4j", "rc3.9-SNAPSHOT");
         } catch (Exception e) {
             ; // do nothing here
             throw new RuntimeException(e);
@@ -52,13 +54,13 @@ public class Heartbeat {
             Basically we need to start background thread here, but only if lastReport was long ago, to avoid spam.
          */
         long currentTime = System.currentTimeMillis();
-        // set to one-time message for now
-        if (lastReport.get() == 0) {
+        // set to one message per hour for now
+        if (lastReport.get() < currentTime - (60 * 60 * 1000)) {
             lastReport.set(currentTime);
 
             RepoThread thread = new RepoThread(event, environment, task);
             thread.start();
-        } else System.out.println("Skipping report");
+        };// else System.out.println("Skipping report");
     }
 
     public synchronized void derivedId(long id) {
@@ -97,22 +99,14 @@ public class Heartbeat {
                  */
                 String lid = this.event.toString();
                 String argAction = serialVersionID != 0 ? String.valueOf(serialVersionID) : String.valueOf(environment.getSerialVersionID());
-                String argLabel = buildEvent(environment, task);
-
-                System.out.println("tracking event: [" + lid + ", " + argAction+ "," + argLabel +"]");
-                //tracker.trackEvent(lid, argAction, argLabel);
-                GoogleAnalyticsRequest request = new GoogleAnalyticsRequest();
-/*
-                request.userId(lid);
-                request.applicationName(environment.getBackendUsed());
-                request.applicationVersion("0.4-rc3.9");
-                */
+//                String argLabel = buildEvent(environment, task);
 
 
-          //      PageViewHit hit = new PageViewHit("http://www.nd4j.org/ast", "Direct Hit");
 
+                EventHit eventHit = buildEvent(event, environment, task);
+                eventHit.userId(argAction);
 
-            //    tracker.post(hit);
+                tracker.post(eventHit);
 
 
                 System.out.println("Request sent");
@@ -126,10 +120,25 @@ public class Heartbeat {
         }
     }
 
-    private String buildEvent(Environment environment, Task task) {
-        StringBuilder builder = new StringBuilder(environment.toCompactString());
-        builder.append(task.toCompactString());
+    private EventHit buildEvent(Event event, Environment environment, Task task) {
+        /*
+            So, here's the mapping:
+            event category: either standalone/spark/export
 
-        return builder.toString();
+            event action: NetworkType/ArchitectureType
+
+            event label: static > Total Memory GB
+
+            event value: size of memory in GB
+         */
+        String eventAction = task.getNetworkType() + "/" + task.getArchitectureType();
+        int mm = Math.max((int) (environment.getAvailableMemory() / 1024 / 1024 / 1024), 1);
+
+        EventHit hit  = new EventHit(event.toString(), eventAction,  "Total memory (GB)", mm );
+
+        System.out.println("Reporting: {"+ event.toString()+", " + eventAction + ", " +mm+ "}" );
+        System.out.println("Environment: " + environment.toCompactString());
+
+        return hit;
     }
 }

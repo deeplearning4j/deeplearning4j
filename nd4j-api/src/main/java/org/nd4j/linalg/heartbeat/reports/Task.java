@@ -9,6 +9,23 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 public class Task {
+    public enum NetworkType {
+        MultilayerNetwork,
+        ComputationalGraph,
+        DenseNetwork
+    }
+
+    public enum ArchitectureType  {
+        CONVOLUTION,
+        RECURRENT,
+        RBM,
+        WORDVECTORS,
+        UNKNOWN
+    }
+
+    private NetworkType networkType;
+    private ArchitectureType architectureType;
+
     private int numFeatures;
     private int numLabels;
     private int numSamples;
