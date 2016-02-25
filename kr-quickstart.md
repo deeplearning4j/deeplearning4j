@@ -7,32 +7,32 @@ layout: kr-default
 
 ## 설치를 위한 필요사항 (Prerequisites)
 
-퀵 스타트 가이드를 따라하시려면 먼저 아래의 네 가지 소프트웨어를 설치하셔야 합니다.
+이 퀵 스타트 가이드를 따라하시려면 먼저 아래의 네 가지 소프트웨어를 설치하셔야 합니다.
 
 1. Java 7 혹은 상위 버전
 2. IntelliJ (또는 다른 Java 통합 개발 환경)
 3. Maven (빌드 자동화 도구)
 4. Github
 
-자세한 설치 안내는 [ND4J 시작하기](http://nd4j.org/kr-getstarted.html)를 참조하십시오. (ND4J는 DL4J의 딥러닝 작업에 사용되는 연산 엔진이며, ND4J 시작하기에 있는 안내는 ND4J와 DL4J에 모두 적용됩니다.) 여기에서 소개된 예제 실행이 목적이라면 ND4J 시작하기 페이지에 열거된 소프트웨어 중 위의 네 가지만 설치하시면 됩니다.
+자세한 설치 안내는 [ND4J 시작하기](http://nd4j.org/kr-getstarted.html)를 참조하십시오 (ND4J는 DL4J의 딥러닝 작업에 사용되는 연산 엔진이며, ND4J 시작하기에 있는 안내는 ND4J와 DL4J에 모두 적용됩니다). 여기에서 소개된 예제를 실행하려면 ND4J 시작하기 페이지에 열거된 소프트웨어 중 위의 네 가지만 골라서 설치하시면 됩니다.
 
-저희가 운영하는 [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) 페이지에서는 쉽게고 빠르게 저희에게 질문이나 피드백을 하실 수 있습니다. 채팅 페이지에서 다른 사람들의 질문/대화를 보는 것 만으로도 DL4J에 대한 여러 가지를 배울 수 있을 겁니다. 만일 딥 러닝에 대해 전혀 아는 내용이 없으시면, [시작하실때 무엇을 배워야 할지를 보여주는 로드맵](http://deeplearning4j.org/deeplearningforbeginners.html) 페이지를 참고하시기 바랍니다.
+저희가 운영하는 [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) 페이지에서는 쉽고 빠르게 저희에게 질문이나 피드백을 하실 수 있습니다. 채팅 페이지에서 다른 사람들의 질문/대화를 읽어보는 것 만으로도 DL4J에 대한 여러 가지를 배울 수 있을 겁니다. 만일 딥 러닝에 대해 전혀 아는 내용이 없으시면, [시작하실때 무엇을 배워야 할지를 보여주는 로드맵](http://deeplearning4j.org/deeplearningforbeginners.html) 페이지를 참고하시기 바랍니다.
 
-Deeplearning4j는 IntelliJ나 Maven과 같은 IDE와 빌드 자동화 도구 사용에 익숙한 전문 자바 개발자를 대상으로 하는 오픈 소스 프로젝트 입니다. 만약 여러분이 이미 이런 소프트웨어의 사용에 익숙하시다면 DL4J를 사용하실 준비를 완벽하게 갖춘 셈 입니다.
+Deeplearning4j는 IntelliJ나 Maven과 같은 IDE와 빌드 자동화 도구 사용에 익숙한 고급 자바 개발자를 대상으로 합니다. 만약 여러분이 이미 이런 소프트웨어의 사용에 익숙하시다면 DL4J를 사용하실 준비를 완벽하게 갖춘 셈 입니다.
 
 ## 빠르게 둘러보는 DL4J
 
 위 소프트웨어를 설치한 뒤엔 아래의 단계를 따라 하시면 바로 딥러닝 코드를 실행하실 수 있습니다. (아래의 내용은 맥 사용을 가정하고 쓰여졌습니다. 윈도우 사용자들은 아래 [Walkthrough](http://deeplearning4j.org/quickstart.html#walk) 섹션을 참고하시기 바랍니다.):
 
 * 터미널을 열고 `git clone https://github.com/deeplearning4j/dl4j-0.4-examples.git`을 입력 합니다. (예제의 현재 버전은 0.0.4.x 입니다.)
-* IntelliJ에서 File/New/Project from Existing Sources로 가셔서 위에서 클론한 폴더의 최상위 폴더로 가서 프로젝트를 엽니다.
-* 이제부터 안내해드리는 코드를 복사/붙여넣기 하시면 여러분의 POM.xml이 [이 xml 문서](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml)와 같은 지 확인하게 됩니다.
+* IntelliJ에서 File/New/Project from Existing Sources로 가서 위에서 클론한 폴더의 최상위 폴더로 가서 프로젝트를 엽니다.
+* 이제부터 안내해드리는 코드를 복사/붙여넣기 하시면 여러분의 `POM.xml`이 [이 xml 문서](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml)와 같은 지 확인하게 됩니다.
 * [윈도우 사용자를 위한 추가 안내는 여기](http://deeplearning4j.org/gettingstarted.html#windows)를 참고하세요.
 * 화면 왼쪽의 파일 트리에서 DBNIrisExample.java를 선택하십시오.
-* 실행!을 누르세요 (소스 파일 위에서 마우스 우클릭 후 나타나는 녹색 버튼을 누르시면 됩니다).
+* 실행을 누르세요 (소스 파일 위에서 마우스 우클릭 후 나타나는 녹색 버튼을 누르시면 됩니다).
 
 ## 환경 설정
-만일 Databricks, Domino, Sense.io같은 환경을 사용하신다면 추가적으로 아래의 코드를 터미널에서 실행해야 합니다. 우선 예제 디렉토리로 간 뒤,
+만일 Databricks, Domino, Sense.io같은 환경을 사용하신다면 추가적으로 아래의 코드를 터미널에서 실행해야 합니다. 터미널의 예제 디렉토리에서
 
 ```
 mvn clean package 
@@ -41,19 +41,19 @@ mvn clean package
 를 실행하세요. 그러면 사용중인 환경에 JAR파일을 업로드할 수 있습니다.
 
 ## 몇 가지 주의사항
-* 다른 버전이나 fork된 git 저장소를 복제하지 않도록 주의하세요. Deeplearning4j 저장소는 지속적으로 업데이트되고 있기 때문에 최신 버전의 코드는 이 예제와 호환되지 않을 수 있습니다.
+* 예제를 실행하는 경우엔 다른 브랜치나 버전의 git 저장소를 복제하지 않도록 주의하세요. Deeplearning4j 저장소는 지속적으로 업데이트되고 있기 때문에 최신 버전의 코드는 이 예제와 호환되지 않을 수 있습니다.
 * 반드시 Maven을 사용해서 모든 필요한 패키지(dependencies)를 다운받아야 합니다. `(rm -rf ls ~/.m2/repository/org/deeplearning4j)`
 * 제대로 설치되어 있는지 확인하려면 dl4j-0.4-examples 디렉토리에서 `mvn clean pack clean install -DskipTests=true -Dmaven.javadoc.skip=true`를 실행하십시오.
-* TSNE 예제 혹은 다른 예제를 실행하려면 `mvn exec:java -Dexec.mainClass="org.deeplearning4j.examples.tsne.TSNEStandardExample" -Dexec.cleanupDaemonThreads=false` 를 입력하십시오. 실행이 실패하거나 Maven이 종료 시 데몬 스레드를 멈출 수 없는 경우 마지막 매개변수를 입력하고 실행해 보십시오.
+* TSNE 예제 혹은 다른 예제를 실행하려면 `mvn exec:java -Dexec.mainClass="org.deeplearning4j.examples.tsne.TSNEStandardExample" -Dexec.cleanupDaemonThreads=false` 를 입력하십시오. 실행이 실패하거나 Maven 종료 후 데몬 스레드를 멈출 수 없는 경우 마지막 매개변수 `-Dexec.cleanupDaemonThreads=false`가 필요할 수 있습니다.
 * TSNE 학습을 1000회 반복한 결과는 `dl4j-0.4-examples/target/archive-tmp/`의 `tsne-standard-coords.csv`를 확인하세요.
 
-Iris 같은 작은 데이터 셋을 사용할 경우 약 0.66의 F1-Score가 나와야 정상입니다. 이 예제의 보다 자세한 설명은 [Iris DBN 튜토리얼](http://deeplearning4j.org/iris-flower-dataset-tutorial.html)을 참조하시기 바랍니다.
+Iris 같은 작은 데이터 셋을 사용할 경우 F1-Score가 0.66정도 나와야 정상입니다. Iris 예제에 대한 더 자세한 설명은 [Iris DBN 튜토리얼](http://deeplearning4j.org/iris-flower-dataset-tutorial.html)을 참조하시기 바랍니다.
 
 만일 실행중에 문제가 생기면 우선 여러분의 POM.xml파일을 확인해 보세요. 정상적인 경우라면 [이 파일](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml)과 비슷해야 합니다.
 
 ## 디펜던시와 백엔드(Dependencies and Backends)
 
-백엔드는 DL4J 신경망 내부에 필요한 선형 대수 및 행렬 연산을 실제로 구현하는 역할을 합니다. 백엔드의 성능은 실제로 연산에 사용되는 하드웨어에 따라 달라집니다. CPU를 사용한 연산은 x86 백엔드를, GPU를 사용한 연산은 Jcublas를 사용할 경우 가장 빠르게 작동합니다. [Maven Central 페이지](https://search.maven.org)를 방문하시면 사용 가능한 백엔드 목록을 볼 수 있습니다; “Latest Version" 에 링크된 가장 최신 버전을 클릭하고 그 다음에 나오는 화면의 좌측의 디펜던시 코드를 복사한 뒤 그 코드를 IntelliJ에서 여러분의 프로젝트 루트의 pom.xml 파일에 붙여 넣으십시오.
+백엔드의 역할은 DL4J 신경망 내부에 필요한 선형 대수 및 행렬 연산을 실제로 수행하는 것 입니다. 백엔드의 성능은 실제로 연산에 사용되는 하드웨어에 따라 달라집니다. CPU를 사용한 연산은 x86 백엔드를, GPU를 사용한 연산은 Jcublas를 사용할 경우 가장 빠르게 작동합니다. [Maven Central 페이지](https://search.maven.org)를 방문하시면 사용 가능한 백엔드 목록을 볼 수 있습니다; “Latest Version" 에 링크된 가장 최신 버전을 클릭하고 그 다음에 나오는 화면의 좌측의 디펜던시 코드를 복사한 뒤 그 코드를 IntelliJ에서 여러분의 프로젝트 루트의 pom.xml 파일에 붙여 넣으십시오.
 
 nd4j-x86 백엔드는 아래과 같이 쓰여있습니다.
 
@@ -67,11 +67,11 @@ nd4j-x86 백엔드는 아래과 같이 쓰여있습니다.
 ```
 
 
-*nd4j-x86*은 모든 예제들과 작동합니다. 추가적인 디펜던시를 설치하기 위해서, OpenBlas, 윈도우, 리눅스 사용자께서는 [Deeplearning4j Getting Started page](http://deeplearning4j.org/kr-gettingstarted.html)를 참조하셔야 합니다.
+*nd4j-x86*은 모든 예제들과 작동합니다. 추가적인 디펜던시를 설치하기 위해서, OpenBlas, 윈도우, 리눅스 사용자는 [Deeplearning4j Getting Started page](http://deeplearning4j.org/kr-gettingstarted.html)를 참조하셔야 합니다.
 
 ## 고급: AWS의 커맨드 라인(Command Line) 사용 하기
 
-만약 AWS에서 Linux OS를 사용해 Deeplearning4j를 설치하는 경우 커맨드 라인을에서 예제를 실행할 수 있습니다. 우선 위의 설명에 따라 `*git clones*` 및 `*mvn clean installs*`를 실행하십시오. 설치가 완료되면  커맨드 라인에서 아래와 같은 명령어로 예제를 실행할 수 있습니다. 명령어는 repo 버전과 실행하고자 하는 예제에 따라 조금씩 달라질 수 있습니다.
+만약 AWS에서 Linux OS를 사용해 Deeplearning4j를 설치하는 경우 커맨드 라인에서 예제를 실행할 수 있습니다. 우선 위의 설명에 따라 `*git clones*` 및 `*mvn clean installs*`를 실행하십시오. 설치가 완료되면  커맨드 라인에서 아래와 같은 명령어로 예제를 실행할 수 있습니다 (명령어는 repo 버전과 실행하고자 하는 예제에 따라 조금씩 달라질 수 있습니다).
 
 명령어 템플릿은 다음과 같습니다:
 
