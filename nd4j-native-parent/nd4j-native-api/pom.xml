@@ -108,54 +108,6 @@
                     <createChecksum>true</createChecksum>
                 </configuration>
             </plugin>
-
-            <plugin>
-                <groupId>org.bytedeco</groupId>
-                <artifactId>javacpp</artifactId>
-                <version>${javacpp.version}</version>
-                <configuration>
-                    <properties>${platform.properties}</properties>
-                    <propertyKeysAndValues>
-                        <property>
-                            <name>platform.root</name>
-                            <value>${platform.root}</value>
-                        </property>
-                        <property>
-                            <name>platform.compiler</name>
-                            <value>${platform.compiler}</value>
-                        </property>
-                    </propertyKeysAndValues>
-                    <classPath>${project.build.outputDirectory}</classPath>
-                    <includePath>/home/agibsonccc/code/nativeoperations/blas/</includePath>
-                    <linkPath>/home/agibsonccc/code/nativeoperations/blasbuild/blas</linkPath>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>generate-sources</id>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>build</goal>
-                        </goals>
-                        <configuration>
-                            <skip>${generate-sources.skip}</skip>
-                            <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
-                            <classOrPackageName>org.nd4j.nativeblas</classOrPackageName>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>process-classes</id>
-                        <phase>process-classes</phase>
-                        <goals>
-                            <goal>build</goal>
-                        </goals>
-                        <configuration>
-                            <skip>${process-classes.skip}</skip>
-                            <classOrPackageName>org.nd4j.linalg.cpu.javacpp.*</classOrPackageName>
-                            <copyLibs>true</copyLibs>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
 
 

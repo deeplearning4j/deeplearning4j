@@ -52,7 +52,10 @@
                         <configuration>
                             <skip>${generate-sources.skip}</skip>
                             <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
-                            <classOrPackageName>org.nd4j.nativeblas</classOrPackageName>
+                            <classOrPackageNames>
+                                <classOrPackageName>org.nd4j.nativeblas.Nd4jBlas</classOrPackageName>
+                                <classOrPackageName>org.nd4j.nativeblas.NativeOps</classOrPackageName>
+                            </classOrPackageNames>
                         </configuration>
                     </execution>
                     <execution>
@@ -63,7 +66,10 @@
                         </goals>
                         <configuration>
                             <skip>${process-classes.skip}</skip>
-                            <classOrPackageName>org.nd4j.linalg.cpu.javacpp.*</classOrPackageName>
+                            <classOrPackageNames>
+                                <classOrPackageName>org.nd4j.nativeblas.Nd4jBlas</classOrPackageName>
+                                <classOrPackageName>org.nd4j.nativeblas.NativeOps</classOrPackageName>
+                            </classOrPackageNames>
                             <copyLibs>true</copyLibs>
                         </configuration>
                     </execution>

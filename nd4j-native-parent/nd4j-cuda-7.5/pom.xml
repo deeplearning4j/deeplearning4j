@@ -1,0 +1,188 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>nd4j-native-parent</artifactId>
+        <groupId>org.nd4j</groupId>
+        <version>0.4-rc3.9-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>nd4j-cuda-7.5</artifactId>
+    <packaging>jar</packaging>
+
+    <name>nd4j-cuda-7.5</name>
+
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <generate-sources.skip>false</generate-sources.skip> <!-- To skip header file parsing phase: -Dgenerate-sources.skip=true  -->
+        <process-classes.skip> false</process-classes.skip>  <!-- To skip native compilation phase: -Dprocess-classes.skip=true    -->
+        <platform>${os.name}-${os.arch}</platform> <!-- For Android: -Dplatform=android-arm                                        -->
+        <platform.root />            <!--              -Dplatform.root=/path/to/android-ndk/                         -->
+        <platform.compiler />    <!--              -Dplatform.compiler=/path/to/arm-linux-androideabi-g++        -->
+        <platform.properties>${platform}</platform.properties>
+        <javacpp.version>1.1</javacpp.version>
+    </properties>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.bytedeco</groupId>
+                <artifactId>javacpp</artifactId>
+                <version>${javacpp.version}</version>
+                <configuration>
+                    <properties>${platform.properties}</properties>
+                    <propertyKeysAndValues>
+                        <property>
+                            <name>platform.root</name>
+                            <value>${platform.root}</value>
+                        </property>
+                        <property>
+                            <name>platform.compiler</name>
+                            <value>${platform.compiler}</value>
+                        </property>
+                    </propertyKeysAndValues>
+                    <classPaths>
+                        <classPath>${project.build.outputDirectory}</classPath>
+                        <classPath>/home/agibsonccc/code/nd4j/nd4j-native-parent/nd4j-api/target</classPath>
+                    </classPaths>
+                    <includePath>/home/agibsonccc/code/nativeoperations/blas/</includePath>
+                    <linkPath>/home/agibsonccc/code/nativeoperations/blasbuild/blas</linkPath>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>generate-sources</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>build</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${generate-sources.skip}</skip>
+                            <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
+                            <classOrPackageNames>
+                                <classOrPackageName>org.nd4j.nativeblas.Nd4jBlas</classOrPackageName>
+                                <classOrPackageName>org.nd4j.nativeblas.NativeOps</classOrPackageName>
+                            </classOrPackageNames>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>process-classes</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>build</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${process-classes.skip}</skip>
+                            <classOrPackageNames>
+                                <classOrPackageName>org.nd4j.nativeblas.Nd4jBlas</classOrPackageName>
+                                <classOrPackageName>org.nd4j.nativeblas.NativeOps</classOrPackageName>
+                            </classOrPackageNames>
+                            <copyLibs>true</copyLibs>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.4</version>
+                <executions>
+                    <execution>
+                        <id>default-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <archive>
+                                <manifest>
+                                    <addClasspath>true</addClasspath>
+                                </manifest>
+                                <manifestEntries>
+                                    <Name>org/nd4j/linalg/</Name>
+                                    <Implementation-Title>${project.name}</Implementation-Title>
+                                    <Implementation-Vendor>Skymind</Implementation-Vendor>
+                                    <Implementation-Version>${project.version}</Implementation-Version>
+                                    <Specification-Title>${project.name}</Specification-Title>
+                                    <Specification-Vendor>Skymind</Specification-Vendor>
+                                    <Specification-Version>${project.version}</Specification-Version>
+                                </manifestEntries>
+                            </archive>
+                            <includes>
+                                <include>META-INF/*</include>
+                                <include>META-INF/services/*</include>
+                                <include>org/nd4j/*</include>
+                                <include>org/nd4j/</include>
+                                <include>*.properties</include>
+                                <include>org/nd4j/*</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>${platform}</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>${platform}</classifier>
+                            <skipIfEmpty>true</skipIfEmpty>
+                            <includes>
+                                <include>META-INF/*</include>
+                                <include>META-INF/services/*</include>
+                                <include>org/nd4j/*</include>
+                                <include>org/nd4j/</include>
+                                <include>*.properties</include>
+                                <include>org/nd4j/*</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-install-plugin</artifactId>
+                <version>2.3</version>
+                <configuration>
+                    <createChecksum>true</createChecksum>
+                </configuration>
+            </plugin>
+        </plugins>
+
+
+    </build>
+
+
+    <dependencies>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-pool2</artifactId>
+            <version>2.4.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-native-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+            <version>${logback.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>
