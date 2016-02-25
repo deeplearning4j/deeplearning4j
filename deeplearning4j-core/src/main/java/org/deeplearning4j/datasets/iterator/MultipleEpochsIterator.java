@@ -152,7 +152,7 @@ public class MultipleEpochsIterator implements DataSetIterator {
 
     @Override
     public List<String> getLabels() {
-        return null;
+        return iter.getLabels();
     }
 
 
@@ -165,7 +165,7 @@ public class MultipleEpochsIterator implements DataSetIterator {
      */
     @Override
     public boolean hasNext() {
-        return iter.hasNext() && passes < numPasses;
+        return iter.hasNext() || passes < numPasses;
     }
 
     /**
