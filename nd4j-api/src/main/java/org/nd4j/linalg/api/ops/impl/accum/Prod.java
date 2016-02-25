@@ -57,6 +57,11 @@ public class Prod extends BaseAccumulation {
     }
 
     @Override
+    public IComplexNumber op(IComplexNumber origin) {
+        return null;
+    }
+
+    @Override
     public float op(float origin, float other) {
         return origin * other;
     }
@@ -114,6 +119,21 @@ public class Prod extends BaseAccumulation {
     @Override
     public String name() {
         return "prod";
+    }
+
+    @Override
+    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
+        return null;
+    }
+
+    @Override
+    public IComplexNumber op(IComplexNumber origin, float other) {
+        return null;
+    }
+
+    @Override
+    public IComplexNumber op(IComplexNumber origin, double other) {
+        return null;
     }
 
     @Override

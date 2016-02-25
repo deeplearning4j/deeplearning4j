@@ -59,6 +59,7 @@ import java.io.*;
 import java.lang.ref.ReferenceQueue;
 import java.lang.reflect.Constructor;
 import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 import java.util.*;
 
 /**
@@ -949,7 +950,6 @@ public class Nd4j {
      * that leverages the underlying storage of the buffer
      * with a new view
      * @param underlyingBuffer the underlying buffer
-     * @param length the length of the view
      * @param offset the offset for the view
      * @return the new view of the data buffer
      */
@@ -958,7 +958,12 @@ public class Nd4j {
         return DATA_BUFFER_FACTORY_INSTANCE.create(underlyingBuffer,offset,length);
     }
 
+    public static DataBuffer createBuffer(IntBuffer intBuffer) {
+        return null;
+    }
+
     /**
+     *
      * Create a buffer equal of length prod(shape)
      *
      * @param shape the shape of the buffer to create

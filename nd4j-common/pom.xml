@@ -12,9 +12,6 @@
 
     <name>nd4j-common</name>
 
-    <properties>
-        <spring.version>3.2.5.RELEASE</spring.version>
-    </properties>
 
     <dependencies>
         <dependency>

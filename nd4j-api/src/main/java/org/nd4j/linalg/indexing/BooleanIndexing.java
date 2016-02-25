@@ -20,7 +20,6 @@
 package org.nd4j.linalg.indexing;
 
 import com.google.common.base.Function;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;

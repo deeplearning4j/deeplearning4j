@@ -25,7 +25,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.util.ComplexUtil;
 
 /**
  * The max absolute value
@@ -107,6 +106,27 @@ public class NormMax extends BaseAccumulation {
     @Override
     public String name() {
         return "normmax";
+    }
+
+    @Override
+    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public IComplexNumber op(IComplexNumber origin, float other) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public IComplexNumber op(IComplexNumber origin, double other) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public IComplexNumber op(IComplexNumber origin) {
+        throw new UnsupportedOperationException();
+
     }
 
     @Override

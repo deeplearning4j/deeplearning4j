@@ -21,8 +21,6 @@ package org.nd4j.linalg.api.ops;
 
 import org.nd4j.linalg.api.complex.IComplexNumber;
 
-import java.util.List;
-
 /**
  * An accumulation is an op that given:<br>
  * x -> the origin ndarray<br>
@@ -178,6 +176,14 @@ public interface Accumulation extends Op {
     /** @see #calculateFinalResult(double, int) */
     float calculateFinalResult(float accum, int n);
 
+
+    IComplexNumber op(IComplexNumber origin, double other);
+
+    IComplexNumber op(IComplexNumber origin, float other);
+
+    IComplexNumber op(IComplexNumber origin, IComplexNumber other);
+
+    IComplexNumber op(IComplexNumber origin);
 
     /**Initial value (used to initialize the accumulation op)
      * @return the initial value

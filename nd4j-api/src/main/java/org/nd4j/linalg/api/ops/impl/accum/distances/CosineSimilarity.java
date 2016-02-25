@@ -24,8 +24,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
-import org.nd4j.linalg.api.ops.impl.accum.Dot;
-import org.nd4j.linalg.api.ops.impl.accum.Norm2;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
