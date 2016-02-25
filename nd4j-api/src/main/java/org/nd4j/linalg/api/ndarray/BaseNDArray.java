@@ -1672,9 +1672,19 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return other.sub(this).sum(Integer.MAX_VALUE).getDouble(0);
     }
 
+
     @Override
     public INDArray put(INDArrayIndex[] indices, INDArray element) {
-        return get(indices).assign(element);
+        if (indices[0] instanceof SpecifiedIndex && element.isVector()) {
+            indices[0].reset();
+            int cnt = 0;
+            while(indices[0].hasNext()) {
+                int idx = indices[0].next();
+                putScalar(idx, element.getDouble(cnt));
+                cnt++;
+            }
+            return this;
+        } else return get(indices).assign(element);
     }
 
     @Override
