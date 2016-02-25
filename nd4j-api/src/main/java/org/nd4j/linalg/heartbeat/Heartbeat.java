@@ -105,11 +105,12 @@ public class Heartbeat {
 
                 EventHit eventHit = buildEvent(event, environment, task);
                 eventHit.userId(argAction);
+                eventHit.userAgent(environment.toCompactString());
 
                 tracker.post(eventHit);
 
 
-                System.out.println("Request sent");
+                //System.out.println("Request sent");
             } catch (Exception e) {
                 // keep quiet on exceptions here
                 ;
@@ -136,8 +137,8 @@ public class Heartbeat {
 
         EventHit hit  = new EventHit(event.toString(), eventAction,  "Total memory (GB)", mm );
 
-        System.out.println("Reporting: {"+ event.toString()+", " + eventAction + ", " +mm+ "}" );
-        System.out.println("Environment: " + environment.toCompactString());
+        //System.out.println("Reporting: {"+ event.toString()+", " + eventAction + ", " +mm+ "}" );
+        //System.out.println("Environment: " + environment.toCompactString());
 
         return hit;
     }
