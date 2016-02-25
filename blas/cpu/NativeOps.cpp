@@ -4,28 +4,32 @@
 
 #include "../NativeOps.h"
 #include "../NativeOpExcutioner.h"
-#include <shape.h>
 class DoubleNativeOpExecutioner : public NativeOpExcutioner<double> {
 private:
-	static DoubleNativeOpExecutioner *INSTANCE;
+	static DoubleNativeOpExecutioner *DOUBLE_INSTANCE;
 public:
 	static DoubleNativeOpExecutioner * getInstance() {
-		if(INSTANCE == NULL)
-			INSTANCE = new DoubleNativeOpExecutioner();
-		return INSTANCE;
+		if(DOUBLE_INSTANCE == NULL)
+            DOUBLE_INSTANCE = new DoubleNativeOpExecutioner();
+		return DOUBLE_INSTANCE;
 	}
 };
 
 class FloatNativeOpExecutioner : public NativeOpExcutioner<float> {
 private:
-	static FloatNativeOpExecutioner *INSTANCE;
+	static FloatNativeOpExecutioner *FLOAT_INSTANCE ;
 public:
 	static FloatNativeOpExecutioner * getInstance() {
-		if(INSTANCE == NULL)
-			INSTANCE = new FloatNativeOpExecutioner();
-		return INSTANCE;
+		if(FLOAT_INSTANCE == NULL)
+            FLOAT_INSTANCE = new FloatNativeOpExecutioner();
+		return FLOAT_INSTANCE;
 	}
 };
+
+
+FloatNativeOpExecutioner *FloatNativeOpExecutioner::FLOAT_INSTANCE = NULL;
+DoubleNativeOpExecutioner *DoubleNativeOpExecutioner::DOUBLE_INSTANCE = NULL;
+
 
 
 /**
