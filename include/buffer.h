@@ -7,7 +7,10 @@
 
 #ifndef BUFFER_H_
 #define BUFFER_H_
-
+#ifdef __CUDACC__
+#include <cuda.h>
+#include <cuda_runtime.h>
+#endif
 #include <helper_string.h>
 #include <helper_cuda.h>
 #include <stddef.h>

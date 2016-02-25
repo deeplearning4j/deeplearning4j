@@ -1,0 +1,55 @@
+if(LINUX)
+    link_directories(/usr/local/lib)
+    link_directories(/usr/lib)
+endif()
+
+include_directories(../include)
+SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O3 -ffast-math -ftree-vectorize -msse2 -ftree-vectorizer-verbose=2 -fopt-info-vec -fopt-info-vec-missed" )
+IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    include_directories("/usr/include")
+    include_directories("/usr/local/include")
+ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+if(!CUDA_BLAS)
+    if(!CPU_BLAS)
+        set(CUDA_BLAS FALSE)
+        set(CPU_BLAS TRUE)
+    endif()
+endif()
+
+
+if(CUDA_BLAS)
+    message("Build cublas")
+    find_package(CUDA)
+    add_definitions(-D__CUDABLAS__=true)
+
+
+    if (CUDA_FOUND)
+        message("CUDA found!")
+        set( CUDA_ARCHITECTURE_MINIMUM "3.5" CACHE STRING "Minimum required CUDA compute capability" )
+        if(LINUX)
+            include_directories(/usr/local/cuda/include)
+        endif()
+        SET(CUDA_VERBOSE_BUILD ON)
+        SET(CUDA_SEPARABLE_COMPILATION OFF)
+        set(CUDA_COMPUTE_CAPABILITY "35")
+        if (FATBIN)
+            list(APPEND CUDA_NVCC_FLAGS "-DVERBOSE;-G;-g;-lcublas; -gencode arch=compute_20,code=sm_20 -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_52,code=sm_52")
+        else()
+            list(APPEND CUDA_NVCC_FLAGS "-DVERBOSE;-G;-g;-lcublas; -gencode arch=compute_35,code=sm_35")
+        endif()
+        CUDA_ADD_LIBRARY(libnd4j SHARED cuda/NativeBlas.cu cuda/NativeOps.cu)
+        target_link_libraries(libnd4j cublas cuda cudadevrt)
+    endif(CUDA_FOUND)
+
+elseif(CPU_BLAS)
+    message("CPU BLAS")
+    add_definitions(-D__CPUBLAS__=true)
+    FIND_PACKAGE(BLAS REQUIRED)
+    FIND_PACKAGE(LAPACK REQUIRED)
+    add_library(libnd4j SHARED cpu/NativeBlas.cpp cpu/NativeOps.cpp)
+    target_link_libraries(libnd4j ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+endif()
+
+
+
+

@@ -12,6 +12,10 @@
 #include <shape.h>
 #include <op.h>
 #ifdef __CUDACC__
+#include <cuda.h>
+#include <cuda_runtime.h>
+#endif
+#ifdef __CUDACC__
 #include <helper_cuda.h>
 #endif
 #ifdef __JNI__
@@ -546,12 +550,11 @@ struct SharedSummaryStatsData<double> {
 	 *                          1 is the number of vectors
 	 */
 	__inline__ __device__ void transform(
-			int n, T *dx,
+			T *dx,
 			int *xShapeInfo,
 			T *extraParams,
 			T *result,
 			int *resultShapeInfo,
-			int *gpuInformation,
 			int *dimension,
 			int dimensionLength,
 			int postProcessOrNot) {
@@ -564,10 +567,9 @@ struct SharedSummaryStatsData<double> {
 		__shared__ volatile int resultScalar;
 
 		__shared__ int xElementWiseStride;
-		__shared__ int xOffset;
 		__shared__ int reductionIndexesPerBlock;
 
-		int numElements = gpuInformation[2] / sizeof(SummaryStatsData <T>);
+		int numElements = gridDim.x;
 		//shared memory space for storing intermediate results
 		SummaryStatsData<T> *sPartials;
 		functions::summarystats::SharedSummaryStatsData<T> holder;
@@ -613,7 +615,6 @@ struct SharedSummaryStatsData<double> {
 
 			if (resultLength == 1)
 				resultScalar = 1;
-			xOffset = shape::offset(xShapeInfo);
 			xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 			xLength = shape::length(xShapeInfo);
 			elementsPerTad = xLength / resultLength;
@@ -679,29 +680,16 @@ struct SharedSummaryStatsData<double> {
 
 			unsigned int i = blockIdx.x * xElementWiseStride + tid;
 			unsigned int gridSize = blockDim.x * gridDim.x * xElementWiseStride;
-			if(xOffset == 0) {
-				// we reduce multiple elements per thread.  The number is determined by the
-				// number of active thread blocks (via gridDim).  More blocks will result
-				// in a larger gridSize and therefore fewer elements per thread
+			int n = shape::length(xShapeInfo);
+			// we reduce multiple elements per thread.  The number is determined by the
+			// number of active thread blocks (via gridDim).  More blocks will result
+			// in a larger gridSize and therefore fewer elements per thread
 #pragma unroll
-				while (i < n) {
-					SummaryStatsData <T> indexVal;
-					indexVal.initWithValue(dx[i]);
-					reduction = update(reduction, indexVal, extraParams);
-					i += gridSize;
-				}
-			}
-			else {
-				// we reduce multiple elements per thread.  The number is determined by the
-				// number of active thread blocks (via gridDim).  More blocks will result
-				// in a larger gridSize and therefore fewer elements per thread
-#pragma unroll
-				while (xOffset + i < n) {
-					SummaryStatsData <T> indexVal;
-					indexVal.initWithValue(dx[xOffset + i]);
-					reduction = update(reduction, indexVal, extraParams);
-					i += gridSize;
-				}
+			while (i < n) {
+				SummaryStatsData <T> indexVal;
+				indexVal.initWithValue(dx[i]);
+				reduction = update(reduction, indexVal, extraParams);
+				i += gridSize;
 			}
 
 			// each thread puts its local sum into shared memory
@@ -843,7 +831,7 @@ struct SharedSummaryStatsData<double> {
 	 * linspace(1,24,24).reshape(2,2,3,2)
 	 *
 	 * The tad for reduction:
-	 * 2,3 doesn't have an element wise stride.
+	 * 2,3 doesn't have an element wise stride
 	 *
 	 * However, the tad for reduction:
 	 * 3 does
@@ -1597,13 +1585,11 @@ struct SharedSummaryStatsData<double> {
 template <typename T>
 __device__ void summaryStatsReduceGeneric(
 		int op,
-		int n,
 		T *dx,
 		int *xShapeInfo,
 		T *extraParams,
 		T *result,
 		int *resultShapeInfo,
-		int *gpuInformation,
 		int *dimension,
 		int dimensionLength, int postProcessOrNot) {
 	__shared__ functions::summarystats::SummaryStatsReduce<T> *indexReduce;
@@ -1614,7 +1600,7 @@ __device__ void summaryStatsReduceGeneric(
 	if(threadIdx.x == 0)
 		indexReduce = newOpFactory->getOp(op);
 	__syncthreads();
-	indexReduce->transform(n,dx,xShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
+	indexReduce->transform(dx,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength,postProcessOrNot);
 	if(threadIdx.x == 0) {
 		free(indexReduce);
 		free(newOpFactory);
@@ -1635,11 +1621,26 @@ __device__ void summaryStatsReduceGeneric(
  * @param dimensionLength the length of the dimension
  * @param postProcessOrNot whether to post process or not
  */
-extern "C" __global__ void summaryStatsReduceDouble(int op,int n, double *dx, int *xShapeInfo, double *extraParams, double *result,
-		int *resultShapeInfo, int *gpuInformation,
+extern "C" __global__ void summaryStatsReduceDouble(
+		int op,
+		double *dx,
+		int *xShapeInfo,
+		double *extraParams,
+		double *result,
+		int *resultShapeInfo,
 		int *dimension,
-		int dimensionLength, int postProcessOrNot) {
-	summaryStatsReduceGeneric<double>(op,n,dx,xShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
+		int dimensionLength,
+		int postProcessOrNot) {
+	summaryStatsReduceGeneric<double>(
+			op,
+			dx,
+			xShapeInfo,
+			extraParams,
+			result,
+			resultShapeInfo,
+			dimension,
+			dimensionLength,
+			postProcessOrNot);
 
 }
 
@@ -1657,11 +1658,26 @@ extern "C" __global__ void summaryStatsReduceDouble(int op,int n, double *dx, in
  * @param dimensionLength the length of the dimension
  * @param postProcessOrNot whether to post process or not
  */
-extern "C" __global__ void summaryStatsReduceFloat(int op,int n, float *dx, int *xShapeInfo, float *extraParams, float *result,
-		int *resultShapeInfo, int *gpuInformation,
+extern "C" __global__ void summaryStatsReduceFloat(
+		int op,
+		float *dx,
+		int *xShapeInfo,
+		float *extraParams,
+		float *result,
+		int *resultShapeInfo,
 		int *dimension,
-		int dimensionLength, int postProcessOrNot) {
-	summaryStatsReduceGeneric<float>(op,n,dx,xShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
+		int dimensionLength,
+		int postProcessOrNot) {
+	summaryStatsReduceGeneric<float>(
+			op,
+			dx,
+			xShapeInfo,
+			extraParams,
+			result,
+			resultShapeInfo,
+			dimension,
+			dimensionLength,
+			postProcessOrNot);
 
 }
 

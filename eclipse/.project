@@ -139,6 +139,11 @@
 			<location>/home/agibsonccc/code/nativeoperations/library/blasimpl.cpp</location>
 		</link>
 		<link>
+			<name>[Targets]/[lib] libnd4j/Source Files/NativeOps.cpp</name>
+			<type>1</type>
+			<location>/home/agibsonccc/code/nativeoperations/library/NativeOps.cpp</location>
+		</link>
+		<link>
 			<name>[Targets]/[lib] libnd4j/Header Files</name>
 			<type>2</type>
 			<locationURI>virtual:/virtual</locationURI>

@@ -12,6 +12,10 @@
 #endif
 #include <op.h>
 #include <templatemath.h>
+#ifdef __CUDACC__
+#include <cuda.h>
+#include <cuda_runtime.h>
+#endif
 namespace functions {
     namespace scalar {
 /**
@@ -52,7 +56,6 @@ namespace functions {
 			int n,
 			T scalar,
 			T *dy,
-			int *shapeInfo,
 			T *params,
 			T *result,
 			int *indexes) {
@@ -78,7 +81,6 @@ namespace functions {
 	 * @param n
 	 */
 	virtual __inline__ __device__ void transform(
-			int n,
 			T scalar,
 			T *dy,
 			int *shapeInfo,
@@ -90,7 +92,7 @@ namespace functions {
 		int xRank = shape::rank(shapeInfo);
 		int xOffset = shape::offset(shapeInfo);
 		int xElementWiseStride = shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
-
+       int n = shape::length(shapeInfo);
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = threadIdx.x;
 		int i = blockIdx.x * blockDim.x + tid;
@@ -174,9 +176,9 @@ namespace functions {
                            int *resultShapeInfo,
                            T scalar,
                            T *extraParams,
-                           const int n,
                            int *indexes,
                            int *resultIndexes) {
+                int n = shape::length(xShapeInfo);
 #pragma omp parallel for
                 for (int i = 0; i < n; i++) {
                     result[resultIndexes[i]] = op(x[indexes[i]], scalar,extraParams);
@@ -198,14 +200,13 @@ namespace functions {
          * @param n the number of elements to loop over
          */
             void transform(T *x, int *xShapeInfo, T *result, int *resultShapeInfo,
-                           T scalar, T *extraParams, const int n,int *indexes) {
+                           T scalar, T *extraParams,int *indexes) {
                 transform(x,
                           xShapeInfo,
                           result,
                           resultShapeInfo,
                           scalar,
                           extraParams,
-                          n,
                           indexes,
                           indexes);
             }
@@ -226,8 +227,7 @@ namespace functions {
                            int *xShapeInfo,
                            T *result,
                            int *resultShapeInfo,
-                           T scalar, T *extraParams,
-                           const int n) {
+                           T scalar, T *extraParams) {
 
                 char xOrdering = shape::order(xShapeInfo);
                 char resultOrdering = shape::order(resultShapeInfo);
@@ -277,6 +277,7 @@ namespace functions {
 
                 }
                 else {
+                    int n = shape::length(xShapeInfo);
 
 
                     if(xElementWiseStride >= 1 && resultElementWiseStride >= 1) {
@@ -1289,7 +1290,7 @@ __device__ void scalarGeneric(
 		free(op);
 }
 
-extern "C" __global__ void scalarDouble(
+__global__ void scalarDouble(
 		int opNum,
 		int n,
 		double dx,
@@ -1306,7 +1307,7 @@ extern "C" __global__ void scalarDouble(
 			result);
 }
 
-extern "C" __global__ void scalarFloat(int opNum,
+ __global__ void scalarFloat(int opNum,
 		int n,float dx, float *dy, int incy, float *params, float *result) {
 	scalarGeneric<float>(
 			opNum,
@@ -1319,13 +1320,76 @@ extern "C" __global__ void scalarFloat(int opNum,
 }
 
 
+template <typename T>
+__device__ void scalarGenericIndexes(
+        int opNum,
+        int n,
+        T dx,
+        T *dy,
+        T *params,
+        T *result,int *indexes) {
+    __shared__ functions::scalar::ScalarTransform<T> *op;
+    __shared__  functions::scalar::ScalarOpFactory<T> *scalarDoubleOpFactory;
+    if(threadIdx.x == 0)
+        scalarDoubleOpFactory = new functions::scalar::ScalarOpFactory<T>();
+
+    __syncthreads();
+    if(threadIdx.x == 0)
+        op = scalarDoubleOpFactory->getOp(opNum);
+    __syncthreads();
+
+
+
+
+    op->transform(n,dx,dy,params,result,indexes);
+    if(threadIdx.x == 0)
+        free(op);
+}
+
+ __global__ void scalarDoubleIndexes(
+        int opNum,
+        int n,
+        double dx,
+        double *dy,
+        double *params,
+        double *result,int *indexes) {
+    scalarGenericIndexes<double>(opNum,
+                                 n,
+                                 dx,
+                                 dy,
+                                 params,
+                                 result,
+                                 indexes);
+}
+
+ __global__ void scalarFloatIndexes(
+        int opNum,
+        int n,
+        float dx,
+        float *dy,
+        float *params,
+        float *result,
+        int *indexes) {
+    scalarGenericIndexes<float>(opNum,
+                                 n,
+                                 dx,
+                                 dy,
+                                 params,
+                                 result,
+                                 indexes);
+}
+
+
+
+
+
+
 
 
 
 template <typename T>
 __device__ void scalarGeneric(
 		int opNum,
-		int n,
 		T dx,
 		T *dy,
 		int *shapeInfo,
@@ -1344,21 +1408,19 @@ __device__ void scalarGeneric(
 
 
 
-	op->transform(n,dx,dy,shapeInfo,params,result);
+	op->transform(dx,dy,shapeInfo,params,result);
 	if(threadIdx.x == 0)
 		free(op);
 }
 
-extern "C" __global__ void scalarDoubleIndex(
+extern "C" __global__ void scalarDouble(
 		int opNum,
-		int n,
 		double dx,
 		double *dy,
 		int *shapeInfo, double *params,
 		double *result) {
 	scalarGeneric<double>(
 			opNum,
-			n,
 			dx,
 			dy,
 			shapeInfo,
@@ -1366,9 +1428,8 @@ extern "C" __global__ void scalarDoubleIndex(
 			result);
 }
 
-extern "C" __global__ void scalarFloatIndex(
+extern "C" __global__ void scalarFloat(
 		int opNum,
-		int n,
 		float dx,
 		float *dy,
 		int *shapeInfo,
@@ -1376,7 +1437,6 @@ extern "C" __global__ void scalarFloatIndex(
 		float *result) {
 	scalarGeneric<float>(
 			opNum,
-			n,
 			dx,
 			dy,
 			shapeInfo,

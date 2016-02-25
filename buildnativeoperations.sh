@@ -24,13 +24,12 @@ else
             mv eclipse/.cproject .
             mv eclipse/.project .
      elif [ "$1" ==  "lib" ]; then
-         rm -rf librarybuild
+         rm -rf library  build
          mkdir librarybuild
          cd librarybuild
          cmake -DLIBRARY=TRUE ..
          make && cd ..
      elif [ "$1" ==  "test" ]; then
-           numargs="$#"
            if [ "$#" -gt "1" ]; then
                 rm -rf testbuild
                 mkdir testbuild
@@ -58,6 +57,32 @@ else
            make && cd ..
            echo "FINISHING BUILD"
            mv cubinbuild/cubin/cuda_compile_cubin_generated_all.cu.cubin all.cubin
+     elif [ "$1" == "blas" ]; then
+            rm -rf blasbuild
+           mkdir blasbuild
+           cd blasbuild
+           if [ "$#" -gt "1" ]; then
+              if [ "$2" == "cuda" ]; then
+                   cmake -DCUDA_BLAS=true -DBLAS=TRUE ..
+                   make && cd ..
+                  echo "FINISHING BUILD"
+              elif [ "$2" == "cpu" ]; then
+                   cmake -DCPU_BLAS=true -DBLAS=TRUE ..
+                   make && cd ..
+                   echo "FINISHING BUILD"
+              else
+                   echo "Please specify cpu or gpu"
+
+              fi
+
+            else
+
+                  cmake  -DCPU_BLAS=true -DBLAS=TRUE ..
+                  make && cd ..
+                  echo "FINISHING BUILD"
+           fi
+
+
       elif [ "$1" == "ptx" ]; then
            rm -rf ptxbuild
            mkdir ptxbuild

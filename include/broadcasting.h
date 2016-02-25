@@ -13,6 +13,10 @@
 #include <op.h>
 #include <templatemath.h>
 #include <helper_cuda.h>
+#ifdef __CUDACC__
+#include <cuda.h>
+#include <cuda_runtime.h>
+#endif
 #ifdef __JNI__
 #include <jni.h>
 #endif
@@ -60,10 +64,14 @@ namespace functions {
 
 #ifdef __CUDACC__
 			__inline__ __device__ void transform(
-			T *x, int *xShapeInfo, T *y, int *yShapeInfo, T *result, int *resultShapeInfo,
+			T *x,
+			int *xShapeInfo,
+			T *y,
+			int *yShapeInfo,
+			T *result,
+			int *resultShapeInfo,
 			int *dimension,
-			int dimensionLength,
-			int *gpuInformation) {
+			int dimensionLength) {
 
 		int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 		int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
@@ -612,12 +620,14 @@ namespace functions {
 template <typename T>
 __device__ void broadcastGeneric(
 		int opNum,
-		T *x, int *xShapeInfo,
-		T *y, int *yShapeInfo,
-		T *result, int *resultShapeInfo,
+		T *x,
+		int *xShapeInfo,
+		T *y,
+		int *yShapeInfo,
+		T *result,
+		int *resultShapeInfo,
 		int *dimension,
-		int dimensionLength,
-		int *gpuInformation) {
+		int dimensionLength) {
 
 	//TODO: Reduce object creation
 	__shared__ functions::broadcast::Broadcast<T> *op;
@@ -639,8 +649,7 @@ __device__ void broadcastGeneric(
 			result,
 			resultShapeInfo,
 			dimension,
-			dimensionLength,
-			gpuInformation);
+			dimensionLength);
 
 	if(threadIdx.x == 0) {
 		free(op);
@@ -669,11 +678,17 @@ extern "C" __global__ void broadcastDouble(
 		double *y, int *yShapeInfo,
 		double *result, int *resultShapeInfo,
 		int *dimension,
-		int dimensionLength,
-		int *gpuInformation) {
+		int dimensionLength) {
 	broadcastGeneric<double>(
 			opNum,
-			x,xShapeInfo,y,yShapeInfo,result,resultShapeInfo,dimension,dimensionLength,gpuInformation);
+			x,
+			xShapeInfo,
+			y,
+			yShapeInfo,
+			result,
+			resultShapeInfo,
+			dimension,
+			dimensionLength);
 
 }
 
@@ -699,9 +714,17 @@ extern "C" __global__ void broadcastFloat(
 		float *y, int *yShapeInfo,
 		float *result, int *resultShapeInfo,
 		int *dimension,
-		int dimensionLength,
-		int *gpuInformation) {
-	broadcastGeneric<float>(opNum,x,xShapeInfo,y,yShapeInfo,result,resultShapeInfo,dimension,dimensionLength,gpuInformation);
+		int dimensionLength) {
+	broadcastGeneric<float>(
+			opNum,
+			x,
+			xShapeInfo,
+			y,
+			yShapeInfo,
+			result,
+			resultShapeInfo,
+			dimension,
+			dimensionLength);
 
 }
 

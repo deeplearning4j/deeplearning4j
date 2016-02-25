@@ -17,6 +17,10 @@
 #ifdef __JNI__
 #include <jni.h>
 #endif
+#ifdef __CUDACC__
+#include <cuda.h>
+#include <cuda_runtime.h>
+#endif
 namespace functions {
     namespace transform {
 
@@ -50,93 +54,93 @@ namespace functions {
 	 * @param extraParams
 	 * @param n
 	 */
-	virtual __inline__ __device__ void transform(
-			T *dy,
-			int *shapeInfo,
-			T *params,
-			T *result,
-			int *indexes) {
+            virtual __inline__ __device__ void transform(
+                    T *dy,
+                    int *shapeInfo,
+                    T *params,
+                    T *result,
+                    int *indexes) {
 
-		int n = shape::length(shapeInfo);
-		int totalThreads = gridDim.x * blockDim.x;
-		int tid = threadIdx.x;
-		int i = blockIdx.x * blockDim.x + tid;
+                int n = shape::length(shapeInfo);
+                int totalThreads = gridDim.x * blockDim.x;
+                int tid = threadIdx.x;
+                int i = blockIdx.x * blockDim.x + tid;
 
-		/* equal, positive, non-unit increments. */
+                /* equal, positive, non-unit increments. */
 #pragma unroll
-		for (; i < n; i+= totalThreads) {
-			result[indexes[i]] = op(dy[indexes[i]], params);
-		}
+                for (; i < n; i+= totalThreads) {
+                    result[indexes[i]] = op(dy[indexes[i]], params);
+                }
 
-	}
+            }
 
 
-	/**
-	 * Cuda implementation of transform
-	 * @param dx
-	 * @param xShapeInfo
-	 * @param result
-	 * @param resultShapeInfo
-	 * @param extraParams
-	 * @param n
-	 */
-	virtual __inline__ __device__ void transform(
-			T *dy,
-			int *shapeInfo,
-			T *params,
-			T *result) {
-		int *xShape = shape::shapeOf(shapeInfo);
-		int *xStride = shape::stride(shapeInfo);
-		char xOrder = shape::order(shapeInfo);
-		int n = shape::length(shapeInfo);
-		int xRank = shape::rank(shapeInfo);
-		int xOffset = shape::offset(shapeInfo);
+            /**
+             * Cuda implementation of transform
+             * @param dx
+             * @param xShapeInfo
+             * @param result
+             * @param resultShapeInfo
+             * @param extraParams
+             * @param n
+             */
+            virtual __inline__ __device__ void transform(
+                    T *dy,
+                    int *shapeInfo,
+                    T *params,
+                    T *result) {
+                int *xShape = shape::shapeOf(shapeInfo);
+                int *xStride = shape::stride(shapeInfo);
+                char xOrder = shape::order(shapeInfo);
+                int n = shape::length(shapeInfo);
+                int xRank = shape::rank(shapeInfo);
+                int xOffset = shape::offset(shapeInfo);
 
-		int xElementWiseStride = shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
+                int xElementWiseStride = shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
 
-		int totalThreads = gridDim.x * blockDim.x;
-		int tid = threadIdx.x;
-		int i = blockIdx.x * blockDim.x + tid;
-		__shared__ int length;
-		if(tid == 0)
-			length = shape::length(shapeInfo);
-		__syncthreads();
+                int totalThreads = gridDim.x * blockDim.x;
+                int tid = threadIdx.x;
+                int i = blockIdx.x * blockDim.x + tid;
+                __shared__ int length;
+                if(tid == 0)
+                    length = shape::length(shapeInfo);
+                __syncthreads();
 
-		if(xElementWiseStride >= 1) {
-			transform(length,dy,xElementWiseStride,params,result);
-		}
-		else {
-			/* equal, positive, non-unit increments. */
+                if(xElementWiseStride >= 1) {
+                    transform(length,dy,xElementWiseStride,params,result);
+                }
+                else {
+                    /* equal, positive, non-unit increments. */
 #pragma unroll
-			for (; i < n; i+= totalThreads) {
-				int *xIdx = shape::ind2sub(xRank, xShape, i);
-				int xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
-				result[xOffset2] = op(dy[xOffset2], params);
-				free(xIdx);
-			}
-		}
-	}
+                    for (; i < n; i+= totalThreads) {
+                        int *xIdx = shape::ind2sub(xRank, xShape, i);
+                        int xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
+                        result[xOffset2] = op(dy[xOffset2], params);
+                        free(xIdx);
+                    }
+                }
+            }
 
-	/**
-	 * Cuda implementation of transform
-	 * @param dx
-	 * @param xShapeInfo
-	 * @param result
-	 * @param resultShapeInfo
-	 * @param extraParams
-	 * @param n
-	 */
-	virtual  __inline__ __device__ void transform(int n, T *dy, int incy, T *params, T *result) {
-		int totalThreads = gridDim.x * blockDim.x;
-		int tid = threadIdx.x;
-		int i = blockIdx.x * blockDim.x + tid;
-		/* equal, positive, non-unit increments. */
+            /**
+             * Cuda implementation of transform
+             * @param dx
+             * @param xShapeInfo
+             * @param result
+             * @param resultShapeInfo
+             * @param extraParams
+             * @param n
+             */
+            virtual  __inline__ __device__ void transform(int n, T *dy, int incy, T *params, T *result) {
+                int totalThreads = gridDim.x * blockDim.x;
+                int tid = threadIdx.x;
+                int i = blockIdx.x * blockDim.x + tid;
+                /* equal, positive, non-unit increments. */
 #pragma unroll
-		for (; i < n; i += totalThreads) {
-			result[i * incy] = op(dy[i * incy], params);
-		}
+                for (; i < n; i += totalThreads) {
+                    result[i * incy] = op(dy[i * incy], params);
+                }
 
-	}
+            }
 #endif
 
             /**
@@ -155,8 +159,8 @@ namespace functions {
                     T *result,
                     int *resultShapeInfo,
                     T *extraParams,
-                    const int n,
                     int *indexes) {
+                int n = shape::length(xShapeInfo);
 #pragma omp simd
                 for (int i = 0; i < n; i++) {
                     result[indexes[i]] = op(dx[indexes[i]], extraParams);
@@ -179,9 +183,9 @@ namespace functions {
                     T *result,
                     int *resultShapeInfo,
                     T *extraParams,
-                    const int n,
                     int *indexes,
                     int *resultIndexes) {
+                int n = shape::length(xShapeInfo);
 #pragma omp parallel for
                 for (int i = 0; i < n; i++) {
                     result[resultIndexes[i]] = op(dx[indexes[i]], extraParams);
@@ -204,10 +208,9 @@ namespace functions {
                     int *xShapeInfo,
                     T *result,
                     int *resultShapeInfo,
-                    T *extraParams,
-                    const int n) {
+                    T *extraParams) {
 
-
+                int n = shape::length(xShapeInfo);
                 int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
                 int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
                 if(xElementWiseStride >= 1 && resultElementWiseStride >= 1) {
@@ -224,7 +227,6 @@ namespace functions {
 
                     int xOffset = shape::offset(xShapeInfo);
                     int resultOffset = shape::offset(resultShapeInfo);
-
 #pragma omp parallel for
                     for (int i = 0; i < n; i++) {
                         int *xIdx = shape::ind2sub(xRank, xShape, i);
@@ -254,8 +256,12 @@ namespace functions {
              * @param extraParams the extra parameters
              * @param n the number of elements to iterate on
              */
-            virtual void exec(T *dx, int xStride, T *result, int resultStride,
-                              T *extraParams, const int n) {
+            virtual void exec(T *dx,
+                              int xStride,
+                              T *result,
+                              int resultStride,
+                              T *extraParams,
+                              const int n) {
                 if (xStride == 1 && resultStride == 1) {
 #pragma omp parallel  for
                     for (int i = 0; i < n; i++) {
@@ -423,7 +429,7 @@ namespace functions {
 
 #ifdef __CUDACC__
                 inline __host__
-	virtual
+                virtual
 #elif defined(__GNUC__)
 
                 __always_inline
@@ -2220,51 +2226,6 @@ namespace functions {
 			int *indexes
  */
 
-/**
- * The c and driver interface
- *  for th kernels
- * @param opNum the op number
- * @param n the length of the problem
- * @param idx
- * the start index
- * @param dy the vector to transform
- * @param incy the stride for the vector
- * @param params the extra parameters for the problem
- * @param result the result storage
- * @param blockSize the block size for the problem
- */
-template <typename T>
-__device__ void transformGeneric(
-		int opNum,
-		int n,
-		T *dy,
-		int *shapeInfo,
-		T *params,
-		T *result) {
-
-	__shared__ functions::transform::Transform<T> *op;
-	__shared__ functions::transform::TransformOpFactory<T> *doubleTransformFactory;
-
-	if(threadIdx.x == 0) {
-		doubleTransformFactory = new functions::transform::TransformOpFactory<T>();
-
-	}
-
-	__syncthreads();
-
-
-	if(threadIdx.x == 0) {
-		op = doubleTransformFactory->getOp(opNum);
-	}
-	__syncthreads();
-
-
-	op->transform(dy,shapeInfo,params,result);
-	if(threadIdx.x == 0) {
-		free(op);
-		free(doubleTransformFactory);
-	}
-}
 
 
 /**
@@ -2282,36 +2243,144 @@ __device__ void transformGeneric(
  */
 template <typename T>
 __device__ void transformGeneric(
-		int opNum,
-		int n,
-		T *dy,
-		int incy,
-		T *params,
-		T *result) {
+        int opNum,
+        int n,
+        T *dy,
+        int incy,
+        T *params,
+        T *result) {
 
-	__shared__ functions::transform::Transform<T> *op;
-	__shared__ functions::transform::TransformOpFactory<T> *doubleTransformFactory;
+    __shared__ functions::transform::Transform<T> *op;
+    __shared__ functions::transform::TransformOpFactory<T> *doubleTransformFactory;
 
-	if(threadIdx.x == 0) {
-		doubleTransformFactory = new functions::transform::TransformOpFactory<T>();
+    if(threadIdx.x == 0) {
+        doubleTransformFactory = new functions::transform::TransformOpFactory<T>();
 
-	}
+    }
 
-	__syncthreads();
-
-
-	if(threadIdx.x == 0) {
-		op = doubleTransformFactory->getOp(opNum);
-	}
-	__syncthreads();
+    __syncthreads();
 
 
-	op->transform(n,dy,incy,params,result);
-	if(threadIdx.x == 0) {
-		free(op);
-		free(doubleTransformFactory);
-	}
+    if(threadIdx.x == 0) {
+        op = doubleTransformFactory->getOp(opNum);
+    }
+    __syncthreads();
+
+
+    op->transform(n,dy,incy,params,result);
+    if(threadIdx.x == 0) {
+        free(op);
+        free(doubleTransformFactory);
+    }
 }
+
+/**
+ * The c and driver interface
+ *  for th kernels
+ * @param opNum the op number
+ * @param n the length of the problem
+ * @param idx
+ * the start index
+ * @param dy the vector to transform
+ * @param incy the stride for the vector
+ * @param params the extra parameters for the problem
+ * @param result the result storage
+ * @param blockSize the block size for the problem
+ */
+__global__ void transformDouble(
+        int opNum,
+        int n,
+        double *dy,
+        int incy,
+        double *params,
+        double *result) {
+
+    transformGeneric<double>(
+            opNum,
+            n,
+            dy,
+            incy,
+            params,
+            result);
+}
+
+/**
+ * The c and driver interface
+ *  for th kernels
+ * @param opNum the op number
+ * @param n the length of the problem
+ * @param idx
+ * the start index
+ * @param dy the vector to transform
+ * @param incy the stride for the vector
+ * @param params the extra parameters for the problem
+ * @param result the result storage
+ * @param blockSize the block size for the problem
+ */
+ __global__ void transformFloat(
+        int opNum,
+        int n,
+        float *dy,
+        int incy,
+        float *params,
+        float *result) {
+
+    transformGeneric<float>(
+            opNum,
+            n,
+            dy,
+            incy,
+            params,
+            result);
+
+}
+
+/**
+ * The c and driver interface
+ *  for th kernels
+ * @param opNum the op number
+ * @param n the length of the problem
+ * @param idx
+ * the start index
+ * @param dy the vector to transform
+ * @param incy the stride for the vector
+ * @param params the extra parameters for the problem
+ * @param result the result storage
+ * @param blockSize the block size for the problem
+ */
+template <typename T>
+__device__ void transformGeneric(
+        int opNum,
+        T *dy,
+        int *shapeInfo,
+        T *params,
+        T *result) {
+
+    __shared__ functions::transform::Transform<T> *op;
+    __shared__ functions::transform::TransformOpFactory<T> *doubleTransformFactory;
+
+    if(threadIdx.x == 0) {
+        doubleTransformFactory = new functions::transform::TransformOpFactory<T>();
+
+    }
+
+    __syncthreads();
+
+
+    if(threadIdx.x == 0) {
+        op = doubleTransformFactory->getOp(opNum);
+    }
+    __syncthreads();
+
+
+    op->transform(dy,shapeInfo,params,result);
+    if(threadIdx.x == 0) {
+        free(op);
+        free(doubleTransformFactory);
+    }
+}
+
+
 
 /**
  * The c and driver interface
@@ -2327,20 +2396,18 @@ __device__ void transformGeneric(
  * @param blockSize the block size for the problem
  */
 extern "C" __global__ void transformDouble(
-		int opNum,
-		int n,
-		double *dy,
-		int incy,
-		double *params,
-		double *result) {
+        int opNum,
+        double *dy,
+        int *shapeInfo,
+        double *params,
+        double *result) {
 
-	transformGeneric<double>(
-			opNum,
-			n,
-			dy,
-			incy,
-			params,
-			result);
+    transformGeneric<double>(
+            opNum,
+            dy,
+            shapeInfo,
+            params,
+            result);
 }
 
 /**
@@ -2357,22 +2424,68 @@ extern "C" __global__ void transformDouble(
  * @param blockSize the block size for the problem
  */
 extern "C" __global__ void transformFloat(
-		int opNum,
-		int n,
-		float *dy,
-		int incy,
-		float *params,
-		float *result) {
+        int opNum,
+        float *dy,
+        int *shapeInfo,
+        float *params,
+        float *result) {
 
-	transformGeneric<float>(
-			opNum,
-			n,
-			dy,
-			incy,
-			params,
-			result);
+    transformGeneric<float>(
+            opNum,
+            dy,
+            shapeInfo,
+            params,
+            result);
 
 }
+
+
+
+/**
+ * The c and driver interface
+ *  for th kernels
+ * @param opNum the op number
+ * @param n the length of the problem
+ * @param idx
+ * the start index
+ * @param dy the vector to transform
+ * @param incy the stride for the vector
+ * @param params the extra parameters for the problem
+ * @param result the result storage
+ * @param blockSize the block size for the problem
+ */
+template <typename T>
+__device__ void transformGenericIndexes(
+        int opNum,
+        T *dy,
+        int *shapeInfo,
+        T *params,
+        T *result,int *indexes) {
+
+    __shared__ functions::transform::Transform<T> *op;
+    __shared__ functions::transform::TransformOpFactory<T> *doubleTransformFactory;
+
+    if(threadIdx.x == 0) {
+        doubleTransformFactory = new functions::transform::TransformOpFactory<T>();
+
+    }
+
+    __syncthreads();
+
+
+    if(threadIdx.x == 0) {
+        op = doubleTransformFactory->getOp(opNum);
+    }
+    __syncthreads();
+
+
+    op->transform(dy,shapeInfo,params,result,indexes);
+    if(threadIdx.x == 0) {
+        free(op);
+        free(doubleTransformFactory);
+    }
+}
+
 
 
 /**
@@ -2389,20 +2502,18 @@ extern "C" __global__ void transformFloat(
  * @param blockSize the block size for the problem
  */
 extern "C" __global__ void transformDoubleIndexes(
-		int opNum,
-		int n,
-		double *dy,
-		int *shapeInfo,
-		double *params,
-		double *result) {
+        int opNum,
+        double *dy,
+        int *shapeInfo,
+        double *params,
+        double *result,int *indexes) {
 
-	transformGeneric<double>(
-			opNum,
-			n,
-			dy,
-			shapeInfo,
-			params,
-			result);
+    transformGenericIndexes<double>(
+            opNum,
+            dy,
+            shapeInfo,
+            params,
+            result,indexes);
 }
 
 /**
@@ -2419,22 +2530,21 @@ extern "C" __global__ void transformDoubleIndexes(
  * @param blockSize the block size for the problem
  */
 extern "C" __global__ void transformFloatIndexes(
-		int opNum,
-		int n,
-		float *dy,
-		int *shapeInfo,
-		float *params,
-		float *result) {
+        int opNum,
+        float *dy,
+        int *shapeInfo,
+        float *params,
+        float *result,int *indexes) {
 
-	transformGeneric<float>(
-			opNum,
-			n,
-			dy,
-			shapeInfo,
-			params,
-			result);
+    transformGenericIndexes<float>(
+            opNum,
+            dy,
+            shapeInfo,
+            params,
+            result,indexes);
 
 }
+
 
 #endif
 

@@ -16,6 +16,10 @@
 #include <helper_cuda.h>
 #include <shape.h>
 #include <pairwise_util.h>
+#ifdef __CUDACC__
+#include <cuda.h>
+#include <cuda_runtime.h>
+#endif
 namespace functions {
     namespace pairwise_transforms {
 #define MIN 1e-12
@@ -44,228 +48,220 @@ namespace functions {
 
 #ifdef __CUDACC__
             /**
-     *
-     */
-    virtual __inline__ __device__ void transform(
-            T *dx,
-            int *xShapeBuffer,
-            T *y,
-            int *yShapeBuffer,
-            T *result,
-            int *resultShapeBuffer,
-            T *extraParams,
-            int n,
-            int *indexes) {
-        transform(dx,
-                xShapeBuffer,
-                y,
-                yShapeBuffer,
-                result,
-                resultShapeBuffer,
-                extraParams,
-                n,
-                indexes,
-                indexes,
-                indexes);
-    }
-
-    /**
-     *
-     */
-    virtual __inline__ __device__ void transform(
-            T *dx,
-            int *xShapeBuffer,
-            T *y,
-            int *yShapeBuffer,
-            T *result,
-            int *resultShapeBuffer,
-            T *extraParams,
-            int n,
-            int *indexes,
-            int *yIndexes,
-            int *resultIndexes) {
-
-        int totalThreads = gridDim.x * blockDim.x;
-        int tid = threadIdx.x;
-        int i = blockIdx.x * blockDim.x + tid;
-        for (; i < n; i += totalThreads) {
-            result[resultIndexes[i]] = op(dx[indexes[i]],y[yIndexes[i]], extraParams);
-        }
-    }
-
-
-    /**
-     *
-     */
-    virtual __inline__ __device__ void transform(
-            T *dx,
-            int *xShapeBuffer,
-            T *y,
-            int *yShapeBuffer,
-            T *result,
-            int *resultShapeBuffer,
-            T *extraParams,
-            int n,
-            int *indexes,
-            int *yIndexes) {
-        transform(dx,
-                xShapeBuffer,
-                y,
-                yShapeBuffer,
-                result,
-                resultShapeBuffer,
-                extraParams,
-                n,
-                indexes,
-                yIndexes,
-                indexes);
-    }
-
-    /**
-     *
-     */
-    virtual __inline__ __device__ void transform(
-            T *dx,
-            int *xShapeBuffer,
-            T *y,
-            int *yShapeBuffer,
-            T *result,
-            int *resultShapeBuffer,
-            T *extraParams,
-            int n) {
-
-        int totalThreads = gridDim.x * blockDim.x;
-        int tid = threadIdx.x;
-        int i = blockIdx.x * blockDim.x + tid;
-
-
-        int *xShape = shape::shapeOf(xShapeBuffer);
-        int *yShape = shape::shapeOf(yShapeBuffer);
-        int *resultShape = shape::shapeOf(resultShapeBuffer);
-
-        int *xStride = shape::stride(xShapeBuffer);
-        int *yStride = shape::stride(yShapeBuffer);
-        int *resultStride = shape::stride(resultShapeBuffer);
-
-        int xRank = shape::rank(xShapeBuffer);
-        int yRank = shape::rank(yShapeBuffer);
-        int resultRank = shape::rank(resultShapeBuffer);
-
-        int xOffset = shape::offset(xShapeBuffer);
-        int yOffset = shape::offset(yShapeBuffer);
-        int resultOffset = shape::offset(resultShapeBuffer);
-
-
-        char xOrder = shape::order(xShapeBuffer);
-        char yOrder = shape::order(yShapeBuffer);
-        char resultOrder = shape::order(resultShapeBuffer);
-
-        int xElementWiseStride = shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
-        int yElementWiseStride = shape::computeElementWiseStride(yRank,yShape,resultShape,resultOrder == 'f');
-        int resultElementWiseStride = shape::computeElementWiseStride(resultRank,resultShape,resultStride,resultOrder == 'f');
-
-        if(xElementWiseStride >= 1 && yElementWiseStride >= 1 && resultElementWiseStride >= 1) {
-            transform(
-                    n,
-                    xOffset,
-                    yOffset,
-                    resultOffset,
-                    dx,
-                    y,
-                    xElementWiseStride,
-                    yElementWiseStride,
-                    extraParams,
-                    result,
-                    resultElementWiseStride);
-        }
-
-        else {
-            for (; i < n; i += totalThreads) {
-                int *xIdx = shape::ind2sub(xRank, xShape, i);
-                int *yIdx = shape::ind2sub(yRank, yShape, i);
-                int *resultIdx = shape::ind2sub(resultRank, resultShape, i);
-
-                int xOffset2 = shape::getOffset(0, xShape, xStride, xIdx, xRank);
-                int yOffset2 = shape::getOffset(0, yShape, yStride, yIdx, yRank);
-                int resultOffset2 = shape::getOffset(0, resultShape, resultStride, resultIdx, resultRank);
-                result[resultOffset2] = op(dx[xOffset2],y[yOffset2], extraParams);
-
-                free(xIdx);
-                free(yIdx);
-                free(resultIdx);
+             *
+             */
+            virtual __inline__ __device__ void transform(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *y,
+                    int *yShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams,
+                    int n,
+                    int *indexes) {
+                transform(dx,
+                          xShapeBuffer,
+                          y,
+                          yShapeBuffer,
+                          result,
+                          resultShapeBuffer,
+                          extraParams,
+                          indexes,
+                          indexes,
+                          indexes);
             }
-        }
 
+            /**
+             *
+             */
+            virtual __inline__ __device__ void transform(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *y,
+                    int *yShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams,
+                    int *indexes,
+                    int *yIndexes,
+                    int *resultIndexes) {
 
-
-
-    }
-
-    /**
-     *
-     * @param n
-     * @param xOffset
-     * @param yOffset
-     * @param resultOffset
-     * @param dx
-     * @param dy
-     * @param incx
-     * @param incy
-     * @param params
-     * @param result
-     * @param incz
-     * @param blockSize
-     */
-    virtual __inline__ __device__ void transform(
-            int n,
-            int xOffset,
-            int yOffset,
-            int resultOffset,
-            T *dx,
-            T *dy,
-            int incx,
-            int incy,
-            T *params,
-            T *result, int incz) {
-
-        int totalThreads = gridDim.x * blockDim.x;
-        int tid = threadIdx.x;
-        int i = blockIdx.x * blockDim.x + tid;
-
-        if (incy == 0) {
-            if ((blockIdx.x == 0) && (tid == 0)) {
-#pragma unroll
-                for (; i < n; i++) {
-                    result[resultOffset + i * incz] = op(dx[i * incx], params);
-                }
-
-            }
-        } else if ((incx == incy) && (incx > 0)) {
-            /* equal, positive, increments */
-            if (incx == 1) {
-                /* both increments equal to 1 */
-#pragma unroll
+                int totalThreads = gridDim.x * blockDim.x;
+                int tid = threadIdx.x;
+                int i = blockIdx.x * blockDim.x + tid;
+                int n = shape::length(xShapeBuffer);
                 for (; i < n; i += totalThreads) {
-                    result[i * incz] = op(dx[i * incx], dy[i * incy],
-                            params);
-                }
-            } else {
-                /* equal, positive, non-unit increments. */
-#pragma unroll
-                for (; i < n; i += totalThreads) {
-                    result[i * incz] = op(dx[i * incx], dy[i * incy],
-                            params);
+                    result[resultIndexes[i]] = op(dx[indexes[i]],y[yIndexes[i]], extraParams);
                 }
             }
-        } else {
-            /* unequal or nonpositive increments */
-#pragma unroll
-            for (; i < n; i += totalThreads) {
-                result[i * incz] = op(dx[i * incx], dy[i * incy],
-                        params);
+
+
+            /**
+             *
+             */
+            virtual __inline__ __device__ void transform(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *y,
+                    int *yShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams,
+                    int *indexes,
+                    int *yIndexes) {
+                transform(dx,
+                          xShapeBuffer,
+                          y,
+                          yShapeBuffer,
+                          result,
+                          resultShapeBuffer,
+                          extraParams,
+                          indexes,
+                          yIndexes,
+                          indexes);
             }
-        }
-    }
+
+            /**
+             *
+             */
+            virtual __inline__ __device__ void transform(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *y,
+                    int *yShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {
+
+                int totalThreads = gridDim.x * blockDim.x;
+                int tid = threadIdx.x;
+                int i = blockIdx.x * blockDim.x + tid;
+
+
+                int *xShape = shape::shapeOf(xShapeBuffer);
+                int *yShape = shape::shapeOf(yShapeBuffer);
+                int *resultShape = shape::shapeOf(resultShapeBuffer);
+
+                int *xStride = shape::stride(xShapeBuffer);
+                int *yStride = shape::stride(yShapeBuffer);
+                int *resultStride = shape::stride(resultShapeBuffer);
+
+                int xRank = shape::rank(xShapeBuffer);
+                int yRank = shape::rank(yShapeBuffer);
+                int resultRank = shape::rank(resultShapeBuffer);
+
+                int xOffset = shape::offset(xShapeBuffer);
+                int yOffset = shape::offset(yShapeBuffer);
+                int resultOffset = shape::offset(resultShapeBuffer);
+
+
+                char xOrder = shape::order(xShapeBuffer);
+                char yOrder = shape::order(yShapeBuffer);
+                char resultOrder = shape::order(resultShapeBuffer);
+
+                int xElementWiseStride = shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
+                int yElementWiseStride = shape::computeElementWiseStride(yRank,yShape,resultShape,resultOrder == 'f');
+                int resultElementWiseStride = shape::computeElementWiseStride(resultRank,resultShape,resultStride,resultOrder == 'f');
+
+                int n = shape::length(xShapeBuffer);
+                if(xElementWiseStride >= 1 && yElementWiseStride >= 1 && resultElementWiseStride >= 1) {
+                    transform(
+                            n,
+                            dx,
+                            y,
+                            xElementWiseStride,
+                            yElementWiseStride,
+                            extraParams,
+                            result,
+                            resultElementWiseStride);
+                }
+
+                else {
+                    for (; i < n; i += totalThreads) {
+                        int *xIdx = shape::ind2sub(xRank, xShape, i);
+                        int *yIdx = shape::ind2sub(yRank, yShape, i);
+                        int *resultIdx = shape::ind2sub(resultRank, resultShape, i);
+
+                        int xOffset2 = shape::getOffset(0, xShape, xStride, xIdx, xRank);
+                        int yOffset2 = shape::getOffset(0, yShape, yStride, yIdx, yRank);
+                        int resultOffset2 = shape::getOffset(0, resultShape, resultStride, resultIdx, resultRank);
+                        result[resultOffset2] = op(dx[xOffset2],y[yOffset2], extraParams);
+
+                        free(xIdx);
+                        free(yIdx);
+                        free(resultIdx);
+                    }
+                }
+
+
+
+
+            }
+
+            /**
+             *
+             * @param n
+             * @param xOffset
+             * @param yOffset
+             * @param resultOffset
+             * @param dx
+             * @param dy
+             * @param incx
+             * @param incy
+             * @param params
+             * @param result
+             * @param incz
+             * @param blockSize
+             */
+            virtual __inline__ __device__ void transform(
+                    int n,
+                    T *dx,
+                    T *dy,
+                    int incx,
+                    int incy,
+                    T *params,
+                    T *result,
+                    int incz) {
+
+                int totalThreads = gridDim.x * blockDim.x;
+                int tid = threadIdx.x;
+                int i = blockIdx.x * blockDim.x + tid;
+
+                if (incy == 0) {
+                    if ((blockIdx.x == 0) && (tid == 0)) {
+#pragma unroll
+                        for (; i < n; i++) {
+                            result[i * incz] = op(dx[i * incx], params);
+                        }
+
+                    }
+                } else if ((incx == incy) && (incx > 0)) {
+                    /* equal, positive, increments */
+                    if (incx == 1) {
+                        /* both increments equal to 1 */
+#pragma unroll
+                        for (; i < n; i += totalThreads) {
+                            result[i * incz] = op(dx[i * incx], dy[i * incy],
+                                                  params);
+                        }
+                    } else {
+                        /* equal, positive, non-unit increments. */
+#pragma unroll
+                        for (; i < n; i += totalThreads) {
+                            result[i * incz] = op(dx[i * incx], dy[i * incy],
+                                                  params);
+                        }
+                    }
+                } else {
+                    /* unequal or nonpositive increments */
+#pragma unroll
+                    for (; i < n; i += totalThreads) {
+                        result[i * incz] = op(dx[i * incx], dy[i * incy],
+                                              params);
+                    }
+                }
+            }
 
 #endif
         public:
@@ -292,7 +288,7 @@ namespace functions {
                     int *yShapeBuffer,
                     T *result,
                     int *resultShapeBuffer,
-                    T *extraParams, int n,
+                    T *extraParams,
                     int *indexes,
                     int *yIndexes) {
                 exec(dx,
@@ -302,7 +298,6 @@ namespace functions {
                      result,
                      resultShapeBuffer,
                      extraParams,
-                     n,
                      indexes,
                      yIndexes,
                      indexes);
@@ -331,10 +326,10 @@ namespace functions {
                     T *result,
                     int *resultShapeBuffer,
                     T *extraParams,
-                    const int n,
                     int *indexes,
                     int *yIndexes,
                     int *resultIndexes) {
+                int n = shape::length(xShapeBuffer);
 #pragma omp parallel for
                 for (int i = 0; i < n; i++) {
                     result[resultIndexes[i]] = op(dx[indexes[i]], y[yIndexes[i]], extraParams);
@@ -368,9 +363,8 @@ namespace functions {
                     T *result,
                     int *resultShapeBuffer,
                     T *extraParams,
-                    const int n,
                     int *indexes) {
-
+                int n = shape::length(xShapeBuffer);
 #pragma omp parallel for
                 for (int i = 0; i < n; i++) {
                     result[indexes[i]] = op(dx[indexes[i]],y[indexes[i]], extraParams);
@@ -400,9 +394,9 @@ namespace functions {
                     int *yShapeBuffer,
                     T *result,
                     int *resultShapeBuffer,
-                    T *extraParams, const int n) {
+                    T *extraParams) {
 
-
+                int n = shape::length(xShapeBuffer);
                 int xElementWiseStride = shape::elementWiseStride(xShapeBuffer);
                 int yElementWiseStride = shape::elementWiseStride(yShapeBuffer);
                 int resultElementWiseStride = shape::elementWiseStride(resultShapeBuffer);
@@ -445,21 +439,21 @@ namespace functions {
                         int yStridesIter[MAX_RANK];
                         int resultStridesIter[MAX_RANK];
                         if(PrepareThreeRawArrayIter<T>(rank,
-                                                    xShape,
-                                                    dx,
-                                                    xStride,
-                                                    y,
-                                                    yStride,
-                                                    result,
-                                                    resultStride,
-                                                    &rank,
-                                                    shapeIter,
-                                                    &dx,
-                                                    xStridesIter,
-                                                    &y,
-                                                    yStridesIter,
-                                                    &result,
-                                                    resultStridesIter) >= 0) {
+                                                       xShape,
+                                                       dx,
+                                                       xStride,
+                                                       y,
+                                                       yStride,
+                                                       result,
+                                                       resultStride,
+                                                       &rank,
+                                                       shapeIter,
+                                                       &dx,
+                                                       xStridesIter,
+                                                       &y,
+                                                       yStridesIter,
+                                                       &result,
+                                                       resultStridesIter) >= 0) {
                             ND4J_RAW_ITER_START(dim, rank, coord, shapeIter) {
                                     /* Process the innermost dimension */
                                     T *xIter = dx;
@@ -1596,29 +1590,28 @@ namespace functions {
  */
 template <typename T>
 __device__ void pairWiseTransformGeneric(
-		int opNum,
-		int n,
-		T *dx,
-		T *dy,
-		T *params,
-		T *result,
-		int *xShapeInfo,
-		int *yShapeInfo,
-		int *resultShapeInfo) {
-	__shared__ functions::pairwise_transforms::PairWiseTransform<T> *op;
-	__shared__ functions::pairwise_transforms::PairWiseTransformOpFactory<T> *newOpFactory;
-	if(threadIdx.x == 0)
-		newOpFactory = new functions::pairwise_transforms::PairWiseTransformOpFactory<T>();
-	__syncthreads();
-	if(threadIdx.x == 0)
-		op = newOpFactory->getOp(opNum);
-	__syncthreads();
+        int opNum,
+        T *dx,
+        T *dy,
+        T *params,
+        T *result,
+        int *xShapeInfo,
+        int *yShapeInfo,
+        int *resultShapeInfo) {
+    __shared__ functions::pairwise_transforms::PairWiseTransform<T> *op;
+    __shared__ functions::pairwise_transforms::PairWiseTransformOpFactory<T> *newOpFactory;
+    if(threadIdx.x == 0)
+        newOpFactory = new functions::pairwise_transforms::PairWiseTransformOpFactory<T>();
+    __syncthreads();
+    if(threadIdx.x == 0)
+        op = newOpFactory->getOp(opNum);
+    __syncthreads();
 
-	op->transform(dx,xShapeInfo,dy,yShapeInfo,result,resultShapeInfo,params,n);
-	if(threadIdx.x == 0) {
-		free(op);
-		free(newOpFactory);
-	}
+    op->transform(dx,xShapeInfo,dy,yShapeInfo,result,resultShapeInfo,params);
+    if(threadIdx.x == 0) {
+        free(op);
+        free(newOpFactory);
+    }
 
 }
 
@@ -1640,25 +1633,23 @@ __device__ void pairWiseTransformGeneric(
  * @param blockSize the block size
  */
 extern "C" __global__ void pairWiseTransformDouble(
-		int opNum,
-		int n,
-		double *dx,
-		double *dy,
-		double *params,
-		double *result,
-		int *xShapeInfo,
-		int *yShapeInfo,
-		int *resultShapeInfo) {
-	pairWiseTransformGeneric<double>(
-			opNum,
-			n,
-			dx,
-			dy,
-			params,
-			result,
-			xShapeInfo,
-			yShapeInfo,
-			resultShapeInfo);
+        int opNum,
+        double *dx,
+        double *dy,
+        double *params,
+        double *result,
+        int *xShapeInfo,
+        int *yShapeInfo,
+        int *resultShapeInfo) {
+    pairWiseTransformGeneric<double>(
+            opNum,
+            dx,
+            dy,
+            params,
+            result,
+            xShapeInfo,
+            yShapeInfo,
+            resultShapeInfo);
 
 }
 
@@ -1681,25 +1672,23 @@ extern "C" __global__ void pairWiseTransformDouble(
  * @param blockSize the block size
  */
 extern "C" __global__ void pairWiseTransformFloat(
-		int opNum,
-		int n,
-		float *dx,
-		float *dy,
-		float *params,
-		float *result,
-		int *xShapeInfo,
-		int *yShapeInfo,
-		int *resultShapeInfo) {
-	pairWiseTransformGeneric<float>(
-			opNum,
-			n,
-			dx,
-			dy,
-			params,
-			result,
-			xShapeInfo,
-			yShapeInfo,
-			resultShapeInfo);
+        int opNum,
+        float *dx,
+        float *dy,
+        float *params,
+        float *result,
+        int *xShapeInfo,
+        int *yShapeInfo,
+        int *resultShapeInfo) {
+    pairWiseTransformGeneric<float>(
+            opNum,
+            dx,
+            dy,
+            params,
+            result,
+            xShapeInfo,
+            yShapeInfo,
+            resultShapeInfo);
 
 }
 
@@ -1723,56 +1712,42 @@ extern "C" __global__ void pairWiseTransformFloat(
  */
 template <typename T>
 __device__ void pairWiseTransformGeneric(
-		int opNum,
-		int n,
-		T *dx,
-		T *dy,
-		T *params,
-		T *result,
-		int *xShapeInfo,
-		int *yShapeInfo,
-		int *resultShapeInfo,
-		int *xIndexes,
-		int *yIndexes,
-		int *resultIndexes) {
-	__shared__ functions::pairwise_transforms::PairWiseTransform<T> *op;
-	__shared__ functions::pairwise_transforms::PairWiseTransformOpFactory<T> *newOpFactory;
-	if(threadIdx.x == 0)
-		newOpFactory = new functions::pairwise_transforms::PairWiseTransformOpFactory<T>();
-	__syncthreads();
-	if(threadIdx.x == 0)
-		op = newOpFactory->getOp(opNum);
-	__syncthreads();
-	/*
-	 * 	T *dx,
-			int *xShapeBuffer,
-			T *y,
-			int *yShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams,
-			int n,
-			int *indexes,
-			int *yIndexes,
-			int *resultIndexes
-	 */
-	op->transform(
-			dx,
-			xShapeInfo,
-			dy,
-			yShapeInfo,
-			result,
-			resultShapeInfo,
-			params,
-			n,
-			xIndexes,
-			yIndexes,
-			resultIndexes);
+        int opNum,
+        T *dx,
+        T *dy,
+        T *params,
+        T *result,
+        int *xShapeInfo,
+        int *yShapeInfo,
+        int *resultShapeInfo,
+        int *xIndexes,
+        int *yIndexes,
+        int *resultIndexes) {
+    __shared__ functions::pairwise_transforms::PairWiseTransform<T> *op;
+    __shared__ functions::pairwise_transforms::PairWiseTransformOpFactory<T> *newOpFactory;
+    if(threadIdx.x == 0)
+        newOpFactory = new functions::pairwise_transforms::PairWiseTransformOpFactory<T>();
+    __syncthreads();
+    if(threadIdx.x == 0)
+        op = newOpFactory->getOp(opNum);
+    __syncthreads();
 
-	if(threadIdx.x == 0) {
-		free(op);
-		free(newOpFactory);
-	}
+    op->transform(
+            dx,
+            xShapeInfo,
+            dy,
+            yShapeInfo,
+            result,
+            resultShapeInfo,
+            params,
+            xIndexes,
+            yIndexes,
+            resultIndexes);
+
+    if(threadIdx.x == 0) {
+        free(op);
+        free(newOpFactory);
+    }
 
 }
 
@@ -1793,32 +1768,30 @@ __device__ void pairWiseTransformGeneric(
  * @param incz the result stride
  * @param blockSize the block size
  */
-extern "C" __global__ void pairWiseTransformDoubleIndex(
-		int opNum,
-		int n,
-		double *dx,
-		double *dy,
-		double *params,
-		double *result,
-		int *xShapeInfo,
-		int *yShapeInfo,
-		int *resultShapeInfo,
-		int *xIndexes,
-		int *yIndexes,
-		int *resultIndexes) {
-	pairWiseTransformGeneric<double>(
-			opNum,
-			n,
-			dx,
-			dy,
-			params,
-			result,
-			xShapeInfo,
-			yShapeInfo,
-			resultShapeInfo,
-			xIndexes,
-			yIndexes,
-			resultIndexes);
+__global__ void pairWiseTransformDoubleIndex(
+        int opNum,
+        double *dx,
+        double *dy,
+        double *params,
+        double *result,
+        int *xShapeInfo,
+        int *yShapeInfo,
+        int *resultShapeInfo,
+        int *xIndexes,
+        int *yIndexes,
+        int *resultIndexes) {
+    pairWiseTransformGeneric<double>(
+            opNum,
+            dx,
+            dy,
+            params,
+            result,
+            xShapeInfo,
+            yShapeInfo,
+            resultShapeInfo,
+            xIndexes,
+            yIndexes,
+            resultIndexes);
 
 }
 
@@ -1840,34 +1813,154 @@ extern "C" __global__ void pairWiseTransformDoubleIndex(
  * @param incz the result stride
  * @param blockSize the block size
  */
-extern "C" __global__ void pairWiseTransformFloatIndex(
-		int opNum,
-		int n,
-		float *dx,
-		float *dy,
-		float *params,
-		float *result,
-		int *xShapeInfo,
-		int *yShapeInfo,
-		int *resultShapeInfo,
-		int *xIndexes,
-		int *yIndexes,
-		int *resultIndexes) {
-	pairWiseTransformGeneric<float>(
-			opNum,
-			n,
-			dx,
-			dy,
-			params,
-			result,
-			xShapeInfo,
-			yShapeInfo,
-			resultShapeInfo,
-			xIndexes,
-			yIndexes,
-			resultIndexes);
-
+__global__ void pairWiseTransformFloatIndex(
+        int opNum,
+        float *dx,
+        float *dy,
+        float *params,
+        float *result,
+        int *xShapeInfo,
+        int *yShapeInfo,
+        int *resultShapeInfo,
+        int *xIndexes,
+        int *yIndexes,
+        int *resultIndexes) {
+    pairWiseTransformGeneric<float>(
+            opNum,
+            dx,
+            dy,
+            params,
+            result,
+            xShapeInfo,
+            yShapeInfo,
+            resultShapeInfo,
+            xIndexes,
+            yIndexes,
+            resultIndexes);
 }
+
+    /**
+     * The api for the driver interface
+     * @param opNum the op number
+     * @param n the length of the problem
+     * @param xOffset the offset for x
+     * @param yOffset the offset for y
+     * @param resultOffset the offset for result
+     * @param dx the input
+     * @param dy the pair wise array
+     * @param incx the stride for x
+     * @param incy the stride for y
+     * @param params the parameters for the problem
+     * @param result the result buffer
+     * @param incz the result stride
+     * @param blockSize the block size
+     */
+    template<typename T>
+    __device__ void pairWiseTransformStridedGeneric(
+            int opNum,
+            int n,
+            T *dx,
+            T *dy,
+            int incx,
+            int incy,
+            T *params,
+            T *result,
+            int incz) {
+        __shared__ functions::pairwise_transforms::PairWiseTransform<T> *op;
+        __shared__ functions::pairwise_transforms::PairWiseTransformOpFactory<T> *newOpFactory;
+        if (threadIdx.x == 0)
+            newOpFactory = new functions::pairwise_transforms::PairWiseTransformOpFactory<T>();
+        __syncthreads();
+        if (threadIdx.x == 0)
+            op = newOpFactory->getOp(opNum);
+        __syncthreads();
+        op->transform(n, dx, dy, incx, incy, params, result, incz);
+
+        if (threadIdx.x == 0) {
+            free(op);
+            free(newOpFactory);
+        }
+
+    }
+
+
+
+    /**
+     * The api for the driver interface
+     * @param opNum the op number
+     * @param n the length of the problem
+     * @param xOffset the offset for x
+     * @param yOffset the offset for y
+     * @param resultOffset the offset for result
+     * @param dx the input
+     * @param dy the pair wise array
+     * @param incx the stride for x
+     * @param incy the stride for y
+     * @param params the parameters for the problem
+     * @param result the result buffer
+     * @param incz the result stride
+     * @param blockSize the block size
+     */
+    __global__ void pairWiseTransformStridedDouble(
+            int opNum,
+            int n,
+            double *dx,
+            double *dy,
+            int incx,
+            int incy,
+            double *params,
+            double *result,
+            int incz) {
+        pairWiseTransformStridedGeneric<double>(
+                opNum,
+                n,
+                dx,
+                dy,
+                incx,
+                incy,
+                params,
+                result,
+                incz);
+    }
+    /**
+     * The api for the driver interface
+     * @param opNum the op number
+     * @param n the length of the problem
+     * @param xOffset the offset for x
+     * @param yOffset the offset for y
+     * @param resultOffset the offset for result
+     * @param dx the input
+     * @param dy the pair wise array
+     * @param incx the stride for x
+     * @param incy the stride for y
+     * @param params the parameters for the problem
+     * @param result the result buffer
+     * @param incz the result stride
+     * @param blockSize the block size
+     */
+    __global__ void pairWiseTransformStridedFloat(
+            int opNum,
+            int n,
+            float *dx,
+            float *dy,
+            int incx,
+            int incy,
+            float *params,
+            float *result,
+            int incz) {
+        pairWiseTransformStridedGeneric<float>(
+                opNum,
+                n,
+                dx,
+                dy,
+                incx,
+                incy,
+                params,
+                result,
+                incz);
+    }
+
+
 
 #endif
 
