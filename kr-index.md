@@ -34,17 +34,17 @@ Deeplearning4j는 분산 처리와 단일 스레드 처리를 모두 지원합�
 
 ### DL4J의 인공 신경망(Neural Networks)
 
-* 제한된 볼츠만 머신([Restricted Boltzmann machines](../restrictedboltzmannmachine.html))
-* 컨볼루션 네트워크([Convolutional Networks](../convolutionalnets.html)) (이미지에 적용)
-* 리커런트 네트워크([Recurrent Nets)/LSTMs](../recurrentnetwork.html) (시계열 데이터, 센서 데이터에 적용)
+* RBM ([Restricted Boltzmann machines](../restrictedboltzmannmachine.html))
+* 컨볼루션 네트워크([CNNs, Convolutional Networks](../convolutionalnets.html)) (이미지에 적용)
+* [RNNs/LSTMs](../recurrentnetwork.html) (시계열 데이터, 센서 데이터에 적용)
 * 재귀 오토인코더([Recursive autoencoders](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers/feedforward/autoencoder/recursive/RecursiveAutoEncoder.java))
-* 심층 신뢰 네트워크([Deep-belief networks](../deepbeliefnetwork.html))
-* 심층 오토인코더([Deep autoencoders](http://deeplearning4j.org/deepautoencoder.html)) (자동 질의응답, 데이터 압축에 적용)
+* [Deep-belief networks](../deepbeliefnetwork.html)
+* 딥 오토인코더([Deep autoencoders](http://deeplearning4j.org/deepautoencoder.html)) (자동 질의응답, 데이터 압축에 적용)
 * 재귀 뉴럴 텐서 네트워크(Recursive Neural Tensor Networks) (영상, 자연어 분석에 적용)
 * 누적 디노이징 오토인코더([Stacked Denoising Autoencoders](http://deeplearning4j.org/stackeddenoisingautoencoder.html))
 * 더 자세한 내용은 "[적절한 인공 신경망을 선택하는 방법](http://deeplearning4j.org/neuralnetworktable.html)"을 참고하십시오.
 
-심층 신경망은 여러 가지 머신러닝 작업에서 [최고의 정확도](http://deeplearning4j.org/accuracy.html)를 자랑합니다. 심층 신경망에 관한 자세한 소개는 [개요](http://deeplearning4j.org/neuralnet-overview.html) 페이지를 참고하세요. Deeplearning4j를 이용하면 여러 레이어를 조합하여 다양한 깊이와 종류의 인공 신경망을 쉽게 만들 수 있습니다 (레이어를 조합하는 방법에 따라 제한된 볼츠만 머신, 오토 인코더, 컨불루션 네트워크, 리커런트 네트트워크 등을 구현할 수 있습니다). 또, 모든 인공 신경망은 CPU 혹은 GPU기반의 하둡/스파크로 분산 처리할 수 있습니다.
+심층 신경망은 여러 가지 머신러닝 작업에서 [최고의 정확도](http://deeplearning4j.org/accuracy.html)를 자랑합니다. 심층 신경망에 관한 자세한 소개는 [개요](http://deeplearning4j.org/neuralnet-overview.html) 페이지를 참고하세요. Deeplearning4j를 이용하면 여러 레이어를 조합하여 다양한 깊이와 종류의 인공 신경망을 쉽게 만들 수 있습니다 (레이어를 조합하는 방법에 따라 RBM, 오토 인코더, CNNs, RNNs 등을 구현할 수 있습니다). 또, 모든 인공 신경망은 CPU 혹은 GPU기반의 하둡/스파크로 분산 처리할 수 있습니다.
 
 저희가 그동안 개발한 라이브러리와 그 적용 방법은 아래와 같습니다.
 
@@ -56,12 +56,5 @@ Deeplearning4j는 분산 처리와 단일 스레드 처리를 모두 지원합�
 
 [ND4J는 저희가 사용하는 자바 기반 연산 엔진입니다](http://nd4j.org/). 크기가 큰 행렬을 다루는 경우 벤치마크에서 [ND4J는 Numpy 대비 대략 두 배 가까이 빠른 연산성능](http://nd4j.org/benchmarking)을 보여줍니다. <!-- Comment: BUT WHAT IS THE CONTEXT OF THESE SENTENCES? -->
 
-### Deeplearning4j 후기
-"마치 내가 프랑켄슈타인이라도 된 것 같은 기분이다." - 스티브 D.
-"Deeplearning4j를 사용하게 되어 기분이 매우 짜릿하다. 이 프레임 워크는 수십억달러짜리 시장성을 가지고 있다." - 존. M
- 
- <!-- Comment: I'm not sure if this testmonial would be effective. First, mention Frankenstein doesn't make much sense for Koreans.
- I'm also not understanding what Steven.D is talking about. Seconds, without more details Koreans wouldn't care what testimonial say, especially without any reference or who is the speaker. Who is John. M for example? It may not do any harm, but it doesn't seem either effective or natural for me.
- -   -->
 
 ![Alt text](../img/logos_8.png)
