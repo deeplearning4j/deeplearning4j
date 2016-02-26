@@ -18,7 +18,7 @@ import java.util.Map;
 
 public class BatchNormalizationParamInitializer implements ParamInitializer {
     public final static String GAMMA = "gamma"; // equivalent to weights
-    public final static String BETA = "beta"; // equivalent to bias
+    public final static String BETA = DefaultParamInitializer.BIAS_KEY; // equivalent to bias
 
     @Override
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {

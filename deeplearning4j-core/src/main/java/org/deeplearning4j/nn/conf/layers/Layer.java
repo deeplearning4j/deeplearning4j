@@ -66,6 +66,7 @@ public abstract class Layer implements Serializable, Cloneable {
     protected double biasInit;
     protected Distribution dist;
     protected double learningRate;
+    protected double biasLearningRate;
     //learning rate after n iterations
     protected Map<Integer,Double> learningRateAfter;
     protected double lrScoreBasedDecay;
@@ -74,6 +75,8 @@ public abstract class Layer implements Serializable, Cloneable {
     protected Map<Integer,Double> momentumAfter;
     protected double l1;
     protected double l2;
+    protected double biasL1;
+    protected double biasL2;
     protected double dropOut;
     protected Updater updater;
     //adadelta - weight for how much to consider previous history
@@ -91,6 +94,7 @@ public abstract class Layer implements Serializable, Cloneable {
         this.biasInit = builder.biasInit;
     	this.dist = builder.dist;
         this.learningRate = builder.learningRate;
+        this.biasLearningRate = builder.biasLearningRate;
         this.learningRateAfter = builder.learningRateAfter;
         this.lrScoreBasedDecay = builder.lrScoreBasedDecay;
         this.momentum = builder.momentum;
@@ -128,6 +132,7 @@ public abstract class Layer implements Serializable, Cloneable {
         protected double biasInit = Double.NaN;
         protected Distribution dist = null;
         protected double learningRate = Double.NaN;
+        protected double biasLearningRate = Double.NaN;
         protected Map<Integer,Double> learningRateAfter = null;
         protected double lrScoreBasedDecay = Double.NaN;
         protected double momentum = Double.NaN;
@@ -187,6 +192,12 @@ public abstract class Layer implements Serializable, Cloneable {
         /** Learning rate. Defaults to 1e-1*/
         public T learningRate(double learningRate){
             this.learningRate = learningRate;
+            return (T)this;
+        }
+
+        /** Bias learning rate. Set this to apply a different learning rate to the bias*/
+        public T biasLearningRate(double biasLearningRate){
+            this.biasLearningRate = biasLearningRate;
             return (T)this;
         }
 

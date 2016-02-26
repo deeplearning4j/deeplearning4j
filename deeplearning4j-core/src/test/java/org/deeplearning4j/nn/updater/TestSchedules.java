@@ -116,7 +116,6 @@ public class TestSchedules {
         Map<Integer,Double> learningRateAfter = new HashMap<>();
         learningRateAfter.put(1, 0.2);
         int iterations = 2;
-        int nLayers = 2;
         int[] nIns = {4,2};
         int[] nOuts = {2,3};
 
@@ -126,7 +125,7 @@ public class TestSchedules {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                     .learningRate(lr).learningRateAfter(learningRateAfter).schedules(true).iterations(iterations)
                     .updater(updaterFunc)
-                    .list(nLayers)
+                    .list()
                     .layer(0, new DenseLayer.Builder().nIn(nIns[0]).nOut(nOuts[0]).build())
                     .layer(1, new OutputLayer.Builder().nIn(nIns[1]).nOut(nOuts[1]).build())
                     .backprop(true).pretrain(false)
@@ -138,22 +137,15 @@ public class TestSchedules {
             Updater updater = UpdaterCreator.getUpdater(net);
             String wKey, bKey;
             Gradient gradientActual = new DefaultGradient();
-            for (int k = 0; k < nLayers; k++) {
+            Gradient gradientExpected = new DefaultGradient();
+            for (int k = 0; k < net.getnLayers(); k++) {
                 wKey = String.valueOf(k) + "_" + DefaultParamInitializer.WEIGHT_KEY;
                 gradientActual.setGradientFor(wKey, weightGradient);
-                bKey = String.valueOf(k) + "_" + DefaultParamInitializer.BIAS_KEY;
-                gradientActual.setGradientFor(bKey, biasGradient);
-            }
-
-
-            Gradient gradientExpected = new DefaultGradient();
-            for (int k = 0; k < nLayers; k++) {
-                wKey = String.valueOf(k) + "_" + DefaultParamInitializer.WEIGHT_KEY;
                 gradientExpected.setGradientFor(wKey, weightGradient);
                 bKey = String.valueOf(k) + "_" + DefaultParamInitializer.BIAS_KEY;
+                gradientActual.setGradientFor(bKey, biasGradient);
                 gradientExpected.setGradientFor(bKey, biasGradient);
             }
-
 
             for (int i = 0; i < 2; i++) {
                 updater.update(net, gradientActual, i, 1);

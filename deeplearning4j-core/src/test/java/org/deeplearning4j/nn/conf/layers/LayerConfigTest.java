@@ -9,7 +9,12 @@ import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.api.ConvexOptimizer;
+import org.deeplearning4j.optimize.solvers.StochasticGradientDescent;
+import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -349,7 +354,7 @@ public class LayerConfigTest {
         conf = new NeuralNetConfiguration.Builder()
                 .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
                 .gradientNormalizationThreshold(10)
-                .list(2)
+                .list()
                 .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
                 .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).gradientNormalization(GradientNormalization.None)
                         .gradientNormalizationThreshold(2.5).build() )
@@ -363,5 +368,6 @@ public class LayerConfigTest {
         assertEquals(10, conf.getConf(0).getLayer().getGradientNormalizationThreshold(), 0.0);
         assertEquals(2.5, conf.getConf(1).getLayer().getGradientNormalizationThreshold(), 0.0);
     }
+
 
 }
