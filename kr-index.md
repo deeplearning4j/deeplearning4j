@@ -54,7 +54,6 @@ Deeplearning4j는 분산 처리와 단일 스레드 처리를 모두 지원합�
 
 간략한 질문이 있다면 [Gitter](https://gitter.im/deeplearning4j/deeplearning4j)를 이용해주세요. 프리미엄 서비스를 원하시면 [Skymind](http://www.skymind.io/contact/)로 연락을 주시기 바랍니다.
 
-[ND4J는 저희가 사용하는 자바 기반 연산 엔진입니다](http://nd4j.org/). 크기가 큰 행렬을 다루는 경우 벤치마크에서 [ND4J는 Numpy 대비 대략 두 배 가까이 빠른 연산성능](http://nd4j.org/benchmarking)을 보여줍니다. <!-- Comment: BUT WHAT IS THE CONTEXT OF THESE SENTENCES? -->
-
+[ND4J는 저희가 사용하는 자바 기반 연산 엔진입니다](http://nd4j.org/). 크기가 큰 행렬을 다루는 경우 벤치마크에서 [ND4J는 Numpy 대비 대략 두 배 가까이 빠른 연산성능](http://nd4j.org/benchmarking)을 보여줍니다. 
 
 ![Alt text](../img/logos_8.png)
