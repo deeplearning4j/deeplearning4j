@@ -20,7 +20,6 @@
 package org.nd4j.linalg.jcublas.buffer;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import jcuda.Pointer;
 import jcuda.Sizeof;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -157,6 +156,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
     protected DataBuffer create(int length) {
         return new CudaDoubleDataBuffer(length);
     }
+
 
 
     @Override

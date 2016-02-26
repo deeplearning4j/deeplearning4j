@@ -74,8 +74,8 @@ public class ComplexNDArrayUtil {
             if (shape[i] < 1)
                 shape[i] = 1;
 
-        INDArray shapeMatrix = ArrayUtil.toNDArray(shape);
-        INDArray currShape = ArrayUtil.toNDArray(arr.shape());
+        INDArray shapeMatrix = NDArrayUtil.toNDArray(shape);
+        INDArray currShape = NDArrayUtil.toNDArray(arr.shape());
 
         INDArray startIndex = Transforms.floor(currShape.sub(shapeMatrix).divi(Nd4j.scalar(2)));
         INDArray endIndex = startIndex.add(shapeMatrix);

@@ -21,11 +21,12 @@ package org.nd4j.linalg.api.buffer;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import org.bytedeco.javacpp.DoublePointer;
-import org.bytedeco.javacpp.FloatPointer;
-import org.bytedeco.javacpp.IntPointer;
-import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.*;
+import org.bytedeco.javacpp.annotation.Platform;
 import org.nd4j.context.Nd4jContext;
+import org.nd4j.linalg.api.buffer.pointer.JavaCppDoublePointer;
+import org.nd4j.linalg.api.buffer.pointer.JavaCppFloatPointer;
+import org.nd4j.linalg.api.buffer.pointer.JavaCppIntPointer;
 import org.nd4j.linalg.api.buffer.unsafe.UnsafeHolder;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
@@ -70,7 +71,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected transient int originalOffset = 0;
     protected transient Long trackingPoint;
 
-
     /**
      * Meant for creating another view of a buffer
      * @param underlyingBuffer the underlying buffer to create a view from
@@ -105,7 +105,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 this.doubleData = underlyingArray;
             }
             else if(underlyingBuffer.allocationMode() == AllocationMode.JAVACPP) {
-                pointer = new DoublePointer(length());
+                pointer = new JavaCppDoublePointer(length());
                 this.wrappedBuffer = pointer.asByteBuffer();
             }
             else {
@@ -206,7 +206,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             }
         }
         else if(allocationMode == AllocationMode.JAVACPP) {
-            pointer = new FloatPointer(ArrayUtil.copy(data));
+            pointer = new JavaCppFloatPointer(ArrayUtil.copy(data));
             wrappedBuffer = pointer.asByteBuffer();
         }
         else {
@@ -253,7 +253,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         }
         else if(allocationMode == AllocationMode.JAVACPP) {
             if(copy) {
-                pointer = new DoublePointer(ArrayUtil.copy(data));
+                pointer = new JavaCppDoublePointer(ArrayUtil.copy(data));
             }
             else {
                 pointer = new DoublePointer(data);
@@ -304,7 +304,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         }
         else if(allocationMode == AllocationMode.JAVACPP) {
             if(copy) {
-                pointer = new IntPointer(ArrayUtil.copy(data));
+                pointer = new JavaCppIntPointer(ArrayUtil.copy(data));
                 wrappedBuffer = pointer.asByteBuffer();
             }
 
@@ -518,7 +518,15 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 floatData = new float[length];
         }
         else if(allocationMode == AllocationMode.JAVACPP) {
-            pointer = new Pointer(ByteBuffer.allocate(length));
+            if(dataType() == Type.DOUBLE) {
+                pointer = new JavaCppDoublePointer(length());
+            }
+            else if(dataType() == Type.FLOAT) {
+                pointer = new JavaCppFloatPointer(length());
+            }
+            else if(dataType() == Type.INT) {
+                pointer = new JavaCppIntPointer(length());
+            }
             wrappedBuffer = pointer.asByteBuffer();
         }
         else {

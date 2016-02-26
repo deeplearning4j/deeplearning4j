@@ -1,9 +1,6 @@
 package org.nd4j.linalg.jcublas.ops.executioner.kernels.impl;
 
-import jcuda.jcublas.JCublas;
-import jcuda.runtime.JCuda;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
-import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.shape.Shape;
@@ -19,8 +16,6 @@ import org.nd4j.linalg.jcublas.util.CudaArgs;
 import org.nd4j.linalg.jcublas.util.KernelParamsWrapper;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
 import org.nd4j.linalg.util.ArrayUtil;
-
-import java.util.Arrays;
 
 /**
  * Kernel call

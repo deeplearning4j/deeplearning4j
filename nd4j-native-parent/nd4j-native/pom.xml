@@ -41,10 +41,10 @@
                     </propertyKeysAndValues>
                     <classPaths>
                         <classPath>${project.build.outputDirectory}</classPath>
-                       <classPath>/home/agibsonccc/code/nd4j/nd4j-native-parent/nd4j-api/target</classPath>
+                       <classPath>../nd4j-native-api/target/classes</classPath>
                     </classPaths>
-                    <includePath>/home/agibsonccc/code/nativeoperations/blas/</includePath>
-                    <linkPath>/home/agibsonccc/code/nativeoperations/blasbuild/blas</linkPath>
+                    <includePath>${env.LIBND4J_HOME}/blas/</includePath>
+                    <linkPath>${env.LIBND4J_HOME}/blasbuild/blas</linkPath>
                 </configuration>
                 <executions>
                     <execution>

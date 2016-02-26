@@ -2,8 +2,8 @@ package org.nd4j.linalg.indexing;
 
 import com.google.common.primitives.Ints;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -451,7 +451,7 @@ public class ShapeOffsetResolution implements Serializable {
 
         }
         else
-            this.offset = ArrayUtil.calcOffset(accumShape,accumOffsets,accumStrides);
+            this.offset = ArrayUtil.calcOffset(accumShape, accumOffsets, accumStrides);
     }
 
 

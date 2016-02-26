@@ -11,12 +11,82 @@
     <packaging>jar</packaging>
 
     <name>nd4j-buffer</name>
-
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <netty.version>4.0.28.Final</netty.version>
+        <generate-sources.skip>false</generate-sources.skip> <!-- To skip header file parsing phase: -Dgenerate-sources.skip=true  -->
+        <process-classes.skip> false</process-classes.skip>  <!-- To skip native compilation phase: -Dprocess-classes.skip=true    -->
+        <platform>${os.name}-${os.arch}</platform> <!-- For Android: -Dplatform=android-arm                                        -->
+        <platform.root />            <!--              -Dplatform.root=/path/to/android-ndk/                         -->
+        <platform.compiler />    <!--              -Dplatform.compiler=/path/to/arm-linux-androideabi-g++        -->
+        <platform.properties>${platform}</platform.properties>
         <javacpp.version>1.1</javacpp.version>
+        <netty.version>4.0.28.Final</netty.version>
+
     </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.bytedeco</groupId>
+                <artifactId>javacpp</artifactId>
+                <version>${javacpp.version}</version>
+                <configuration>
+                    <properties>${platform.properties}</properties>
+                    <propertyKeysAndValues>
+                        <property>
+                            <name>platform.root</name>
+                            <value>${platform.root}</value>
+                        </property>
+                        <property>
+                            <name>platform.compiler</name>
+                            <value>${platform.compiler}</value>
+                        </property>
+                    </propertyKeysAndValues>
+                    <classPaths>
+                        <classPath>${project.build.outputDirectory}</classPath>
+                    </classPaths>
+                    <includePath>${env.LIBND4J_HOME}/buffer/</includePath>
+                    <linkPath>${env.LIBND4J_HOME}/bufferbuild/buffer</linkPath>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>generate-sources</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>build</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${generate-sources.skip}</skip>
+                            <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
+                            <classOrPackageNames>
+                                <classOrPackageName>org.nd4j.linalg.api.buffer.pointer.JavaCppDoublePointer</classOrPackageName>
+                                <classOrPackageName>org.nd4j.linalg.api.buffer.pointer.JavaCppFloatPointer</classOrPackageName>
+                                <classOrPackageName>org.nd4j.linalg.api.buffer.pointer.JavaCppIntPointer</classOrPackageName>
+                            </classOrPackageNames>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>process-classes</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>build</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${process-classes.skip}</skip>
+                            <classOrPackageNames>
+                                <classOrPackageName>org.nd4j.linalg.api.buffer.pointer.JavaCppDoublePointer</classOrPackageName>
+                                <classOrPackageName>org.nd4j.linalg.api.buffer.pointer.JavaCppFloatPointer</classOrPackageName>
+                                <classOrPackageName>org.nd4j.linalg.api.buffer.pointer.JavaCppIntPointer</classOrPackageName>
+                            </classOrPackageNames>
+                            <copyLibs>true</copyLibs>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+
+        </plugins>
+    </build>
 
     <dependencies>
         <dependency>

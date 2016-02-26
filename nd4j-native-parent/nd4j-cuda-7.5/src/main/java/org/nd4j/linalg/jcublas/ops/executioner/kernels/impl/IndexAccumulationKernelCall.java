@@ -1,7 +1,6 @@
 package org.nd4j.linalg.jcublas.ops.executioner.kernels.impl;
 
 import org.apache.commons.math3.util.Pair;
-import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.IndexAccumulation;
 import org.nd4j.linalg.api.ops.Op;

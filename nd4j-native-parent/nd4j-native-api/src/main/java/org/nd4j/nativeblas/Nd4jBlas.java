@@ -13,12 +13,12 @@ import org.bytedeco.javacpp.annotation.Platform;
  *
  *
  */
-@Platform(include="NativeBlas.h",link = "libnd4j")
+@Platform(include="NativeBlas.h",link = "nd4j")
 public class Nd4jBlas extends Pointer {
-    public Nd4jBlas() {
-        super();
+    static {
         Loader.load();
     }
+
 
 /*
      * ======================================================

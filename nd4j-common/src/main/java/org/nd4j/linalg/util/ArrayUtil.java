@@ -21,12 +21,6 @@ package org.nd4j.linalg.util;
 
 import com.google.common.primitives.Ints;
 
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.factory.Nd4j;
-
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -100,41 +94,6 @@ public class ArrayUtil {
         return result;
     }
 
-    public static INDArray toNDArray(int[][] nums) {
-        if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
-            double[] doubles = toDoubles(nums);
-            INDArray create = Nd4j.create(doubles, new int[]{1, nums.length});
-            return create;
-        } else {
-            float[] doubles = toFloats(nums);
-            INDArray create = Nd4j.create(doubles, new int[]{1, nums.length});
-            return create;
-        }
-
-    }
-
-    public static INDArray toNDArray(int[] nums) {
-        if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
-            double[] doubles = toDoubles(nums);
-            INDArray create = Nd4j.create(doubles, new int[]{1, nums.length});
-            return create;
-        } else {
-            float[] doubles = toFloats(nums);
-            INDArray create = Nd4j.create(doubles, new int[]{1, nums.length});
-            return create;
-        }
-    }
-
-
-    public static int[] toInts(INDArray n) {
-        if (n instanceof IComplexNDArray)
-            throw new IllegalArgumentException("Unable to convert complex array");
-        n = n.linearView();
-        int[] ret = new int[n.length()];
-        for (int i = 0; i < n.length(); i++)
-            ret[i] = (int) n.getFloat(i);
-        return ret;
-    }
 
     public static int[] toInts(float[] data) {
         int[] ret = new int[data.length];
@@ -816,7 +775,7 @@ public class ArrayUtil {
      * @return the strides for a matrix of n dimensions
      */
     public static int[] calcStridesFortran(int[] shape, int startNum) {
-        if(Shape.isVector(shape)) {
+        if(shape.length == 2 && shape[0] == 1 || shape[1] == 1) {
             int[] ret = new int[2];
             Arrays.fill(ret,startNum);
             return ret;
@@ -853,7 +812,7 @@ public class ArrayUtil {
      * @return the strides for a matrix of n dimensions
      */
     public static int[] calcStrides(int[] shape, int startValue) {
-        if(Shape.isVector(shape)) {
+        if(shape.length == 2 && shape[0] == 1 || shape[1] == 1) {
             int[] ret = new int[2];
             Arrays.fill(ret,startValue);
             return ret;

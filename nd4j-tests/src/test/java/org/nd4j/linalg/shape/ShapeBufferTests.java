@@ -10,8 +10,6 @@ import org.nd4j.linalg.util.ArrayUtil;
 
 import java.nio.IntBuffer;
 
-import static org.junit.Assert.*;
-
 /**
  * Created by agibsoncccc on 1/30/16.
  */
@@ -53,7 +51,7 @@ public class ShapeBufferTests extends BaseNd4jTest {
         INDArray arr = Nd4j.linspace(1,4,4).reshape(2,2);
         for(int i = 0; i < 2; i++)
             assertEquals(2,arr.size(i));
-        int[] stride = ArrayUtil.calcStrides(new int[]{2,2});
+        int[] stride = ArrayUtil.calcStrides(new int[]{2, 2});
         for(int i = 0; i < stride.length; i++) {
             assertEquals(stride[i],arr.stride(i));
         }

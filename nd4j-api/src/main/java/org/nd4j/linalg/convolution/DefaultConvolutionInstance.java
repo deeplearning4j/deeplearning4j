@@ -24,9 +24,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.fft.FFT;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.ComplexNDArrayUtil;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.util.NDArrayUtil;
 
 import java.util.Arrays;
 
@@ -52,8 +52,8 @@ public class DefaultConvolutionInstance extends BaseConvolution {
         if (kernel.isScalar() && input.isScalar())
             return kernel.mul(input);
 
-        INDArray shape = ArrayUtil.toNDArray(Shape.sizeForAxes(axes, input.shape())).add(ArrayUtil.toNDArray(Shape.sizeForAxes(axes, kernel.shape()))).subi(1);
-        int[] intShape = ArrayUtil.toInts(shape);
+        INDArray shape = NDArrayUtil.toNDArray(Shape.sizeForAxes(axes, input.shape())).add(NDArrayUtil.toNDArray(Shape.sizeForAxes(axes, kernel.shape()))).subi(1);
+        int[] intShape = NDArrayUtil.toInts(shape);
 
         IComplexNDArray ret = FFT.rawifftn(FFT.rawfftn(input, intShape, axes).muli(FFT.rawfftn(kernel, intShape, axes)), intShape, axes);
 
@@ -64,7 +64,7 @@ public class DefaultConvolutionInstance extends BaseConvolution {
             case SAME:
                 return ComplexNDArrayUtil.center(ret, input.shape());
             case VALID:
-                return ComplexNDArrayUtil.center(ret, ArrayUtil.toInts(Transforms.abs(ArrayUtil.toNDArray(input.shape()).sub(ArrayUtil.toNDArray(kernel.shape())).addi(1))));
+                return ComplexNDArrayUtil.center(ret, NDArrayUtil.toInts(Transforms.abs(NDArrayUtil.toNDArray(input.shape()).sub(NDArrayUtil.toNDArray(kernel.shape())).addi(1))));
 
         }
 
@@ -105,9 +105,9 @@ public class DefaultConvolutionInstance extends BaseConvolution {
 
         if (kernel.isScalar() && input.isScalar())
             return kernel.mul(input);
-        INDArray shape = ArrayUtil.toNDArray(input.shape()).add(ArrayUtil.toNDArray(kernel.shape())).subi(1);
+        INDArray shape = NDArrayUtil.toNDArray(input.shape()).add(NDArrayUtil.toNDArray(kernel.shape())).subi(1);
 
-        int[] intShape = ArrayUtil.toInts(shape);
+        int[] intShape = NDArrayUtil.toInts(shape);
 
 
         IComplexNDArray fftedInput = FFT.rawfftn(Nd4j.createComplex(input), intShape, axes);
@@ -131,7 +131,7 @@ public class DefaultConvolutionInstance extends BaseConvolution {
             case SAME:
                 return ComplexNDArrayUtil.center(convolution, input.shape()).getReal();
             case VALID:
-                int[] shape2 = ArrayUtil.toInts(Transforms.abs(ArrayUtil.toNDArray(input.shape()).sub(ArrayUtil.toNDArray(kernel.shape())).addi(1)));
+                int[] shape2 = NDArrayUtil.toInts(Transforms.abs(NDArrayUtil.toNDArray(input.shape()).sub(NDArrayUtil.toNDArray(kernel.shape())).addi(1)));
                 return ComplexNDArrayUtil.center(convolution, shape2).getReal();
 
         }

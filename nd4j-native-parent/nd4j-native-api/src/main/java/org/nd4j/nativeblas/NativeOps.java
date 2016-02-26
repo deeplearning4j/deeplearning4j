@@ -1,6 +1,7 @@
 package org.nd4j.nativeblas;
 
 
+import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.annotation.Platform;
 
@@ -11,8 +12,11 @@ import org.bytedeco.javacpp.annotation.Platform;
  * op execution on cpu
  * @author Adam Gibson
  */
-@Platform(include="NativeOps.h",link = "libnd4j")
+@Platform(include="NativeOps.h",link = "nd4j")
 public class NativeOps extends Pointer {
+   static {
+       Loader.load();
+   }
     /**
      *
      * @param opNum
@@ -97,7 +101,6 @@ public class NativeOps extends Pointer {
      * @param result
      * @param resultShapeInfo
      * @param extraParams
-     * @param n
      * @param xIndexes
      * @param yIndexes
      * @param resultIndexes
