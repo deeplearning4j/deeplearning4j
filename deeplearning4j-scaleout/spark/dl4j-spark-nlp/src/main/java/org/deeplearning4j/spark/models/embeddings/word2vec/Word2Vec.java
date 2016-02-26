@@ -143,6 +143,7 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
         final JavaPairRDD<List<VocabWord>, Long> vocabWordListSentenceCumSumRDD;
         final VocabCache<VocabWord> vocabCache;
         final JavaRDD<Long> sentenceCumSumCountRDD;
+        int maxRep = 1;
 
         // Start Training //
         //////////////////////////////////////
@@ -218,6 +219,7 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
         // Updating syn0 second pass: average obtained vectors
         for (Map.Entry<Integer, AtomicInteger> entry: updates.entrySet()) {
             if (entry.getValue().get() > 1) {
+                if (entry.getValue().get() > maxRep) maxRep = entry.getValue().get();
                 syn0.getRow(entry.getKey()).divi(entry.getValue().get());
             }
         }
