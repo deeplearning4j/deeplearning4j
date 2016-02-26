@@ -317,7 +317,6 @@ public class TestUpdaters {
     public void testLearningRateScoreDecay(){
         double lr = 0.01;
         double lrScoreDecay = 0.10;
-        int nLayers = 2;
         int[] nIns = {4,2};
         int[] nOuts = {2,3};
 		int oldScore = 1;
@@ -327,7 +326,7 @@ public class TestUpdaters {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .learningRate(lr).learningRateScoreBasedDecayRate(lrScoreDecay)
-                .list(nLayers)
+                .list()
                 .layer(0, new DenseLayer.Builder().nIn(nIns[0]).nOut(nOuts[0]).updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
                 .layer(1, new OutputLayer.Builder().nIn(nIns[1]).nOut(nOuts[1]).updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
 				.backprop(true).pretrain(false)
@@ -339,7 +338,7 @@ public class TestUpdaters {
 		ConvexOptimizer opt = new StochasticGradientDescent(net.getDefaultConfiguration(), new NegativeDefaultStepFunction(), null, net);
         opt.checkTerminalConditions(gradientW, oldScore, newScore, iteration);
 		assertEquals(lrScoreDecay, net.getLayer(0).conf().getLayer().getLrScoreBasedDecay(), 1e-4);
-		assertEquals(lr*(lrScoreDecay + Nd4j.EPS_THRESHOLD), net.getLayer(0).conf().getLayer().getLearningRate(), 1e-4);
+		assertEquals(lr*(lrScoreDecay + Nd4j.EPS_THRESHOLD), net.getLayer(0).conf().getLearningRateByParam("W"), 1e-4);
 
 	}
 
@@ -358,7 +357,7 @@ public class TestUpdaters {
 				.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
 				.updater(org.deeplearning4j.nn.conf.Updater.SGD)
 				.seed(12345L)
-				.list(2)
+				.list()
 				.layer(0, new DenseLayer.Builder()
 						.nIn(4).nOut(3)
 						.activation("sigmoid")
@@ -389,13 +388,12 @@ public class TestUpdaters {
 	@Test
 	public void testMultiLayerUpdater() throws Exception {
 		Nd4j.getRandom().setSeed(12345L);
-		int nLayers = 4;
 		double lr = 0.03;
 		
 		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
 			.learningRate(lr)
 			.momentum(0.6)
-			.list(nLayers)
+			.list()
 			.layer(0, new DenseLayer.Builder().nIn(4).nOut(5).updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
 			.layer(1, new DenseLayer.Builder().nIn(5).nOut(6).updater(org.deeplearning4j.nn.conf.Updater.NONE).build())
 			.layer(2, new DenseLayer.Builder().nIn(6).nOut(7).updater(org.deeplearning4j.nn.conf.Updater.ADAGRAD).build())
@@ -413,7 +411,7 @@ public class TestUpdaters {
 		f.setAccessible(true);
 		Updater[] updaters = (Updater[])f.get(updater);
 		assertNotNull(updaters);
-		assertTrue(updaters.length == nLayers);
+		assertTrue(updaters.length == net.getnLayers());
 		assertTrue(updaters[0] instanceof SgdUpdater );
 		assertTrue(updaters[1] instanceof NoOpUpdater );
 		assertTrue(updaters[2] instanceof AdaGradUpdater );
@@ -432,7 +430,7 @@ public class TestUpdaters {
 			Gradient gradient = new DefaultGradient();
 			Map<String,INDArray> expectedGradient = new HashMap<>();
 			
-			for( int j=0; j<nLayers; j++ ){
+			for( int j=0; j< net.getnLayers(); j++ ){
 				//Generate test gradient:
 				INDArray wGrad = Nd4j.rand(nIns[j],nOuts[j]);
 				INDArray bGrad = Nd4j.rand(1,nOuts[j]);
@@ -552,7 +550,7 @@ public class TestUpdaters {
 					.optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
 					.iterations(1)
 					.updater(arr[i])
-					.list(2)
+					.list()
 					.layer(0,new DenseLayer.Builder().nIn(10).nOut(10).build())
 					.layer(1,new OutputLayer.Builder().nIn(10).nOut(10).build())
 					.backprop(true).pretrain(false).build();

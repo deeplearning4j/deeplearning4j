@@ -61,10 +61,10 @@ public abstract class BaseUpdater implements Updater {
     public void postApply(Layer layer, INDArray gradient, String param, int miniBatchSize) {
         NeuralNetConfiguration conf = layer.conf();
         INDArray params = layer.getParam(param);
-        if (conf.isUseRegularization() && conf.getLayer().getL2() > 0 && !(param.startsWith(DefaultParamInitializer.BIAS_KEY)))
-            gradient.addi(params.mul(conf.getLayer().getL2()));    //dC/dw = dC0/dw + lambda/n * w where C0 is pre-l2 cost function
-        if (conf.isUseRegularization() && conf.getLayer().getL1() > 0 && !(param.startsWith(DefaultParamInitializer.BIAS_KEY)))
-            gradient.addi(Transforms.sign(params).muli(conf.getLayer().getL1()));
+        if (conf.isUseRegularization() && conf.getL2ByParam(param) > 0)
+            gradient.addi(params.mul(conf.getL2ByParam(param)));    //dC/dw = dC0/dw + lambda/n * w where C0 is pre-l2 cost function
+        if (conf.isUseRegularization() && conf.getL1ByParam(param) > 0)
+            gradient.addi(Transforms.sign(params).muli(conf.getL1ByParam(param)));
         if (conf.isMiniBatch())
             gradient.divi(miniBatchSize);
 
@@ -84,7 +84,7 @@ public abstract class BaseUpdater implements Updater {
         if (conf.getLayer().getMomentumAfter().containsKey(iteration)) {
             conf.getLayer().setMomentum(conf.getLayer().getMomentumAfter().get(iteration));
             if(updaterForVariable.get(param) != null)
-                updaterForVariable.get(param).update(conf.getLayer().getLearningRate(), conf.getLayer().getMomentumAfter().get(iteration));
+                updaterForVariable.get(param).update(conf.getLearningRateByParam(param), conf.getLayer().getMomentumAfter().get(iteration));
         }
 
     }

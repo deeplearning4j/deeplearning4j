@@ -23,7 +23,7 @@ public class SgdUpdater extends BaseUpdater {
     public GradientUpdater init(String variable, INDArray gradient, Layer layer) {
         org.nd4j.linalg.learning.Sgd updater = (org.nd4j.linalg.learning.Sgd) updaterForVariable.get(variable);
         if(updater == null) {
-            updater = new org.nd4j.linalg.learning.Sgd(layer.conf().getLayer().getLearningRate());
+            updater = new org.nd4j.linalg.learning.Sgd(layer.conf().getLearningRateByParam(variable));
             updaterForVariable.put(variable,updater);
         }
 
