@@ -138,6 +138,7 @@ Consider for example a simple network used for both classification and regressio
 ![Computation Graph for MultiTask Learning](../img/compgraph_multitask.png)
 
 In this case, the network configuration is:
+
 ```
 ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
         .learningRate(0.01)
@@ -211,8 +212,8 @@ rr.initialize(new FileSplit(new File(csvPath)));
 int batchSize = 4;
 MultiDataSetIterator iterator = new RecordReaderMultiDataSetIterator.Builder(batchSize)
         .addReader("myReader",rr)
-        .addInput("myReader",0,2)     //Input: columns 0 to 2 inclusive
-        .addOutput("myReader",3,4)    //Output: columns 3 to 4 inclusive
+        .addInput("myReader",0,2)  //Input: columns 0 to 2 inclusive
+        .addOutput("myReader",3,4) //Output: columns 3 to 4 inclusive
         .build();
 ```
 
@@ -238,7 +239,7 @@ String featuresCsvPath = "/path/to/my/myInput.csv";
 featuresReader.initialize(new FileSplit(new File(featuresCsvPath)));
 
 RecordReader labelsReader = new CSVRecordReader(numLinesToSkip,fileDelimiter);
-String labelsCsvPath = "/path/to/my/myLabels.csv";
+String labelsCsvPath = "/path/to/my/myOutput.csv";
 labelsReader.initialize(new FileSplit(new File(labelsCsvPath)));
 
 int batchSize = 4;
@@ -246,8 +247,8 @@ int numClasses = 3;
 MultiDataSetIterator iterator = new RecordReaderMultiDataSetIterator.Builder(batchSize)
         .addReader("csvInput", featuresReader)
         .addReader("csvLabels", labelsReader)
-        .addInput("csvInput")     //Input: all columns from input reader
-        .addOutput("csvLabels", 0, 3)         //Output 1: columns 0 to 3 inclusive
+        .addInput("csvInput") //Input: all columns from input reader
+        .addOutput("csvLabels", 0, 3) //Output 1: columns 0 to 3 inclusive
         .addOutputOneHot("csvLabels", 4, numClasses)   //Output 2: column 4 -> convert to one-hot for classification
         .build();
 ```
