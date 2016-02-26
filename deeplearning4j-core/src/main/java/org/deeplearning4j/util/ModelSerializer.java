@@ -2,15 +2,18 @@ package org.deeplearning4j.util;
 
 import lombok.NonNull;
 import org.apache.commons.io.FileUtils;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.heartbeat.reports.Task;
 
 import java.io.*;
 import java.util.zip.ZipEntry;
@@ -247,4 +250,60 @@ public class ModelSerializer {
         } else throw new IllegalStateException("Model wasnt found within file: gotConfig: ["+ gotConfig+"], gotCoefficients: ["+ gotCoefficients+"], gotUpdater: ["+gotUpdater+"]");
     }
 
+    public static Task taskByModel(Model model) {
+        Task task = new Task();
+        try {
+            task.setArchitectureType(Task.ArchitectureType.RECURRENT);
+            if (model instanceof ComputationGraph) {
+                task.setNetworkType(Task.NetworkType.ComputationalGraph);
+                ComputationGraph network = (ComputationGraph) model;
+                try {
+                    if (network.getLayers() != null && network.getLayers().length > 0) {
+                        for (Layer layer : network.getLayers()) {
+                            if (layer instanceof RBM || layer instanceof org.deeplearning4j.nn.layers.feedforward.rbm.RBM) {
+                                task.setArchitectureType(Task.ArchitectureType.RBM);
+                                break;
+                            }
+                            if (layer.type().equals(Layer.Type.CONVOLUTIONAL)) {
+                                task.setArchitectureType(Task.ArchitectureType.CONVOLUTION);
+                                break;
+                            } else if (layer.type().equals(Layer.Type.RECURRENT) || layer.type().equals(Layer.Type.RECURSIVE)) {
+                                task.setArchitectureType(Task.ArchitectureType.RECURRENT);
+                                break;
+                            }
+                        }
+                    } else task.setArchitectureType(Task.ArchitectureType.UNKNOWN);
+                } catch (Exception e) {
+                    ; // do nothing here
+                }
+            } else if (model instanceof MultiLayerNetwork) {
+                task.setNetworkType(Task.NetworkType.MultilayerNetwork);
+                MultiLayerNetwork network = (MultiLayerNetwork) model;
+                try {
+                    if (network.getLayers() != null && network.getLayers().length > 0) {
+                        for (Layer layer : network.getLayers()) {
+                            if (layer instanceof RBM || layer instanceof org.deeplearning4j.nn.layers.feedforward.rbm.RBM) {
+                                task.setArchitectureType(Task.ArchitectureType.RBM);
+                                break;
+                            }
+                            if (layer.type().equals(Layer.Type.CONVOLUTIONAL)) {
+                                task.setArchitectureType(Task.ArchitectureType.CONVOLUTION);
+                                break;
+                            } else if (layer.type().equals(Layer.Type.RECURRENT) || layer.type().equals(Layer.Type.RECURSIVE)) {
+                                task.setArchitectureType(Task.ArchitectureType.RECURRENT);
+                                break;
+                            }
+                        }
+                    } else task.setArchitectureType(Task.ArchitectureType.UNKNOWN);
+                } catch (Exception e) {
+                    ; // do nothing here
+                }
+            }
+            return task;
+        } catch (Exception e) {
+            task.setArchitectureType(Task.ArchitectureType.UNKNOWN);
+            task.setNetworkType(Task.NetworkType.DenseNetwork);
+            return task;
+        }
+    }
 }
