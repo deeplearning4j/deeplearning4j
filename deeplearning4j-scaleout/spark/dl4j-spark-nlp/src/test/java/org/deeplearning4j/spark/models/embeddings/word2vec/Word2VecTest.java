@@ -59,7 +59,7 @@ public class Word2VecTest {
 
         // Path of data part-00000
         String dataPath = new ClassPathResource("/big/raw_sentences.txt").getFile().getAbsolutePath();
-//        dataPath = "/ext/Temp/part-00000";
+        dataPath = "/ext/Temp/part-00000";
 //        String dataPath = new ClassPathResource("spark_word2vec_test.txt").getFile().getAbsolutePath();
 
         // Read in data

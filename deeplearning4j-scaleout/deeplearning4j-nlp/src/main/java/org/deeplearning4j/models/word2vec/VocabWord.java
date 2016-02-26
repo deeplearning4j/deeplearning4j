@@ -41,6 +41,7 @@ public  class VocabWord extends SequenceElement implements Serializable {
         Used for Joint/Distributed vocabs mechanics
      */
 	@Getter @Setter protected Long vocabId;
+	@Getter @Setter protected Long affinityId;
 
 	public static VocabWord none() {
 		return new VocabWord(0,"none");
