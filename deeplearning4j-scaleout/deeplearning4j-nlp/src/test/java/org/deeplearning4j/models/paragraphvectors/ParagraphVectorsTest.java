@@ -24,9 +24,11 @@ import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.text.documentiterator.FileLabelAwareIterator;
 import org.deeplearning4j.text.documentiterator.LabelAwareIterator;
+import org.deeplearning4j.text.documentiterator.LabelledDocument;
 import org.deeplearning4j.text.documentiterator.LabelsSource;
 import org.deeplearning4j.text.sentenceiterator.*;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator;
@@ -51,6 +53,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -291,7 +294,8 @@ public class ParagraphVectorsTest {
         File file = resource.getFile();
         SentenceIterator iter = new BasicLineIterator(file);
 
-        InMemoryLookupCache cache = new InMemoryLookupCache(false);
+//        InMemoryLookupCache cache = new InMemoryLookupCache(false);
+        AbstractCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
 
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
@@ -367,6 +371,12 @@ public class ParagraphVectorsTest {
         double similarityX = vec.similarity("DOC_3720", "DOC_9852");
         log.info("3720/9852 similarity: " + similarityX);
         assertTrue(similarityX < 0.5d);
+
+
+        double sim119 = vec.similarityToLabel("This is my case .", "DOC_6347");
+        double sim120 = vec.similarityToLabel("This is my case .", "DOC_3720");
+        log.info("1/2: " + sim119 + "/" + sim120);
+        assertEquals(similarity3, sim119, 0.001);
     }
 
 
@@ -458,10 +468,12 @@ public class ParagraphVectorsTest {
         Word2Vec wordVectors = new Word2Vec.Builder()
                 .minWordFrequency(1)
                 .batchSize(250)
-                .iterations(1)
-                .epochs(2)
+                .iterations(3)
+                .epochs(1)
                 .learningRate(0.025)
+                .layerSize(150)
                 .minLearningRate(0.001)
+                .windowSize(5)
                 .iterate(iter)
                 .tokenizerFactory(t)
                 .build();
@@ -469,9 +481,6 @@ public class ParagraphVectorsTest {
         wordVectors.fit();
 
         INDArray vector_day1 = wordVectors.getWordVectorMatrix("day").dup();
-        double similarityD = wordVectors.similarity("day", "night");
-        log.info("day/night similarity: " + similarityD);
-        assertTrue(similarityD > 0.5d);
 
         // At this moment we have ready w2v model. It's time to use it for ParagraphVectors
 
@@ -489,25 +498,76 @@ public class ParagraphVectorsTest {
         // we're building classifier now, with pre-built w2v model passed in
         ParagraphVectors paragraphVectors = new ParagraphVectors.Builder()
                 .iterate(labelAwareIterator)
+                .learningRate(0.025)
+                .minLearningRate(0.001)
                 .iterations(1)
                 .epochs(10)
+                .layerSize(150)
                 .tokenizerFactory(t)
-                .trainWordVectors(false)
+                .trainWordVectors(true)
                 .useExistingWordVectors(wordVectors)
                 .build();
 
         paragraphVectors.fit();
 
+
+        /*
+        double similarityD = wordVectors.similarity("day", "night");
+        log.info("day/night similarity: " + similarityD);
+        assertTrue(similarityD > 0.5d);
+        */
+
         INDArray vector_day2 = paragraphVectors.getWordVectorMatrix("day").dup();
         double crossDay = arraysSimilarity(vector_day1, vector_day2);
-
+/*
         log.info("Day1: " + vector_day1);
         log.info("Day2: " + vector_day2);
         log.info("Cross-Day similarity: " + crossDay);
         log.info("Cross-Day similiarity 2: " + Transforms.cosineSim(vector_day1, vector_day2));
 
         assertTrue(crossDay > 0.9d);
+*/
+        /**
+         *
+         * Here we're checking cross-vocabulary equality
+         *
+         */
+        /*
+        Random rnd = new Random();
+        VocabCache<VocabWord> cacheP = paragraphVectors.getVocab();
+        VocabCache<VocabWord> cacheW = wordVectors.getVocab();
+        for (int x = 0; x < 1000; x++) {
+            int idx = rnd.nextInt(cacheW.numWords());
 
+            String wordW = cacheW.wordAtIndex(idx);
+            String wordP = cacheP.wordAtIndex(idx);
+
+            assertEquals(wordW, wordP);
+
+            INDArray arrayW = wordVectors.getWordVectorMatrix(wordW);
+            INDArray arrayP = paragraphVectors.getWordVectorMatrix(wordP);
+
+            double simWP = Transforms.cosineSim(arrayW, arrayP);
+            assertTrue(simWP >= 0.9);
+        }
+        */
+
+        log.info("Zfinance: " + paragraphVectors.getWordVectorMatrix("Zfinance"));
+        log.info("Zhealth: " + paragraphVectors.getWordVectorMatrix("Zhealth"));
+        log.info("Zscience: " + paragraphVectors.getWordVectorMatrix("Zscience"));
+
+        LabelledDocument document = unlabeledIterator.nextDocument();
+
+        log.info("Results for document '" + document.getLabel() + "'");
+
+        List<String> results = new ArrayList<>(paragraphVectors.predictSeveral(document, 3));
+        for (String result: results) {
+            double sim = paragraphVectors.similarityToLabel(document, result);
+            log.info("Similarity to ["+result+"] is ["+ sim +"]");
+        }
+
+        String topPrediction = paragraphVectors.predict(document);
+        assertEquals("Zhealth", topPrediction);
     }
 
     /*
