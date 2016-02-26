@@ -25,7 +25,8 @@ Deeplearning4j는 IntelliJ나 Maven과 같은 IDE와 빌드 자동화 도구 사
 위 소프트웨어를 설치한 뒤엔 아래의 단계를 따라 하시면 바로 딥러닝 코드를 실행하실 수 있습니다. 아래의 내용은 맥 사용을 가정하고 쓰여졌습니다. 윈도우 사용자들은 아래 [Walkthrough](http://deeplearning4j.org/quickstart.html#walk) 섹션을 참고하시기 바랍니다
 
 * 터미널을 열고 `git clone https://github.com/deeplearning4j/dl4j-0.4-examples.git`을 입력 합니다. (예제의 현재 버전은 0.0.4.x 입니다.)
-* IntelliJ에서 File/New/Project from Existing Sources로 가서 위에서 클론한 폴더의 최상위 폴더로 가서 프로젝트를 엽니다.
+* IntelliJ에서 `File/New/Project from Existing Sources`로 가서 위에서 클론한 폴더의 최상위 폴더로 가서 프로젝트를 엽니다.
+![Alt text](../img/IntelliJ_New_Project.png)
 * 이제부터 안내해드리는 코드를 복사/붙여넣기 하시면 여러분의 `POM.xml`이 [이 xml 문서](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml)와 같은 지 확인하게 됩니다.
 * [윈도우 사용자를 위한 추가 안내는 여기](http://deeplearning4j.org/gettingstarted.html#windows)를 참고하세요.
 * 화면 왼쪽의 파일 트리에서 DBNIrisExample.java를 선택하십시오.
