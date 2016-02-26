@@ -24,6 +24,47 @@
 # endif
 #endif
 
+
+class JavaCppDoublePointer {
+private:
+    double *buffer;
+
+public:
+    JavaCppDoublePointer(int length);
+
+    ~JavaCppDoublePointer();
+
+    long bufferAddress();
+
+    double *bufferRef();
+
+};
+
+class JavaCppFloatPointer {
+private:
+    float *buffer;
+public:
+    JavaCppFloatPointer(int length);
+    ~JavaCppFloatPointer();
+    long bufferAddress();
+
+    float *bufferRef();
+};
+
+class JavaCppIntPointer {
+private:
+    int *buffer;
+public:
+    JavaCppIntPointer(int length);
+
+    ~JavaCppIntPointer();
+
+    long bufferAddress();
+
+    int *bufferRef();
+};
+
+
 class NativeOps {
 
 
