@@ -45,9 +45,15 @@ import org.deeplearning4j.spark.impl.computationgraph.dataset.PairDataSetToMulti
 import org.deeplearning4j.spark.impl.computationgraph.gradientaccum.GradientAccumFlatMapCG;
 import org.deeplearning4j.spark.impl.computationgraph.scoring.ScoreExamplesFunction;
 import org.deeplearning4j.spark.impl.computationgraph.scoring.ScoreExamplesWithKeyFunction;
+import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
+import org.nd4j.linalg.heartbeat.Heartbeat;
+import org.nd4j.linalg.heartbeat.reports.Environment;
+import org.nd4j.linalg.heartbeat.reports.Event;
+import org.nd4j.linalg.heartbeat.reports.Task;
+import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple3;
@@ -68,6 +74,7 @@ public class SparkComputationGraph implements Serializable {
     private Broadcast<INDArray> params;
     private Broadcast<ComputationGraphUpdater> updater;
     private boolean averageEachIteration = false;
+    private boolean initDone = false;
     public final static String AVERAGE_EACH_ITERATION = "org.deeplearning4j.spark.iteration.average";
     public final static String ACCUM_GRADIENT = "org.deeplearning4j.spark.iteration.accumgrad";
     public final static String DIVIDE_ACCUM_GRADIENT = "org.deeplearning4j.spark.iteration.dividegrad";
@@ -239,6 +246,7 @@ public class SparkComputationGraph implements Serializable {
     protected void runIteration(JavaRDD<MultiDataSet> rdd) {
 
         log.info("Broadcasting initial parameters of length " + network.numParams(false));
+        int maxRep = 0;
         INDArray valToBroadcast = network.params(false);
         this.params = sc.broadcast(valToBroadcast);
         ComputationGraphUpdater updater = network.getUpdater();
@@ -264,8 +272,10 @@ public class SparkComputationGraph implements Serializable {
             resultsGradient.foreach(a);
             INDArray accumulatedGradient = a.getAccumulator().value();
             boolean divideGrad = sc.getConf().getBoolean(DIVIDE_ACCUM_GRADIENT,false);
-            if(divideGrad)
-                accumulatedGradient.divi(results.partitions().size());
+            if(divideGrad) {
+                maxRep = results.partitions().size();
+                accumulatedGradient.divi(maxRep);
+            }
             log.info("Accumulated parameters");
             log.info("Summed gradients.");
             network.setParams(network.params(false).addi(accumulatedGradient));
@@ -303,7 +313,8 @@ public class SparkComputationGraph implements Serializable {
             resultsParams.foreach(a);
 
             INDArray newParams = a.getAccumulator().value();
-            newParams.divi(a.getCounter().value());
+            maxRep = a.getCounter().value();
+            newParams.divi(maxRep);
 
             network.setParams(newParams);
             log.info("Accumulated and set parameters");
@@ -327,6 +338,10 @@ public class SparkComputationGraph implements Serializable {
             network.setUpdater(combinedUpdater);
 
             log.info("Processed and set updater");
+        }
+        if (!initDone) {
+            initDone = true;
+            update(maxRep, 0);
         }
     }
 
@@ -421,6 +436,14 @@ public class SparkComputationGraph implements Serializable {
      */
     public <K> JavaPairRDD<K,Double> scoreExamples(JavaPairRDD<K,MultiDataSet> data, boolean includeRegularizationTerms){
         return scoreExamples(data,includeRegularizationTerms,DEFAULT_EVAL_SCORE_BATCH_SIZE);
+    }
+
+    private void update(int mr, long mg) {
+        Environment env = EnvironmentUtils.buildEnvironment();
+        env.setNumCores(mr);
+        env.setAvailableMemory(mg);
+        Task task = ModelSerializer.taskByModel(network);
+        Heartbeat.getInstance().reportEvent(Event.SPARK, env, task);
     }
 
     /** Score the examples individually, using a specified batch size. Unlike {@link #calculateScore(JavaRDD, boolean)},
