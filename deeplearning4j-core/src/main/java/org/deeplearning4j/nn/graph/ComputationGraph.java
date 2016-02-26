@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
@@ -71,6 +72,7 @@ public class ComputationGraph implements Serializable, Model {
     protected transient Solver solver;	//Used to call optimizers during backprop
     protected Gradient gradient;
     protected double score;
+    private boolean initDone = false;
 
     /** All GraphVertex objects in the network. */
     protected GraphVertex[] vertices;
@@ -1097,10 +1099,36 @@ public class ComputationGraph implements Serializable, Model {
     }
 
     private void update(Task task) {
-        Heartbeat heartbeat = Heartbeat.getInstance();
+        if (!initDone) {
+            initDone = true;
+            Heartbeat heartbeat = Heartbeat.getInstance();
 
-        Environment env = EnvironmentUtils.buildEnvironment();
-        heartbeat.reportEvent(Event.SPARK, env, task);
+            task.setNetworkType(Task.NetworkType.ComputationalGraph);
+
+            task.setArchitectureType(Task.ArchitectureType.RECURRENT);
+            try {
+                if (this.getLayers() != null && this.getLayers().length > 0) {
+                    for (Layer layer : this.getLayers()) {
+                        if (layer instanceof RBM || layer instanceof org.deeplearning4j.nn.layers.feedforward.rbm.RBM) {
+                            task.setArchitectureType(Task.ArchitectureType.RBM);
+                            break;
+                        }
+                        if (layer.type().equals(Layer.Type.CONVOLUTIONAL)) {
+                            task.setArchitectureType(Task.ArchitectureType.CONVOLUTION);
+                            break;
+                        } else if (layer.type().equals(Layer.Type.RECURRENT) || layer.type().equals(Layer.Type.RECURSIVE)) {
+                            task.setArchitectureType(Task.ArchitectureType.RECURRENT);
+                            break;
+                        }
+                    }
+                } else task.setArchitectureType(Task.ArchitectureType.UNKNOWN);
+            } catch (Exception e) {
+                ; // do nothing here
+            }
+
+            Environment env = EnvironmentUtils.buildEnvironment();
+            heartbeat.reportEvent(Event.STANDALONE, env, task);
+        }
     }
 
     @Override
