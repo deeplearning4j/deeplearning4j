@@ -27,56 +27,6 @@ public:
 };
 
 
-JavaCppDoublePointer::JavaCppDoublePointer(int length) {
-    buffer = (double *) malloc(sizeof(double) * length);
-}
-
-JavaCppDoublePointer::~JavaCppDoublePointer() {
-    free(buffer);
-}
-
-long JavaCppDoublePointer::bufferAddress() {
-    return reinterpret_cast<long>(buffer);
-}
-
-double * JavaCppDoublePointer::bufferRef() {
-    return buffer;
-}
-
-
-
-
-JavaCppFloatPointer::JavaCppFloatPointer(int length) {
-    buffer = (float *) malloc(sizeof(float) * length);
-}
-JavaCppFloatPointer::~JavaCppFloatPointer() {
-    free(buffer);
-}
-long JavaCppFloatPointer::bufferAddress() {
-    return reinterpret_cast<long>(buffer);
-}
-
-float * JavaCppFloatPointer::bufferRef() {
-    return buffer;
-}
-
-
-
-JavaCppIntPointer::JavaCppIntPointer(int length) {
-    buffer = (int *) malloc(sizeof(int) * length);
-}
-
-JavaCppIntPointer::~JavaCppIntPointer(){
-    free(buffer);
-}
-
-long JavaCppIntPointer::bufferAddress() {
-    return reinterpret_cast<long>(buffer);
-}
-
-int * JavaCppIntPointer::bufferRef() {
-    return buffer;
-}
 
 
 FloatNativeOpExecutioner *FloatNativeOpExecutioner::FLOAT_INSTANCE = NULL;

@@ -57,6 +57,14 @@ else
            make && cd ..
            echo "FINISHING BUILD"
            mv cubinbuild/cubin/cuda_compile_cubin_generated_all.cu.cubin all.cubin
+      elif [ "$1" == "buffer" ]; then
+            rm -rf bufferbuild
+           mkdir bufferbuild
+           cd bufferbuild
+           cmake -DBUFFER=TRUE ..
+           make && cd ..
+           echo "FINISHING BUILD"
+           mv bufferbuild/buffer/libbuffer.so .
      elif [ "$1" == "blas" ]; then
             rm -rf blasbuild
            mkdir blasbuild
