@@ -248,6 +248,10 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
     }
 
     protected void update() {
+        update(EnvironmentUtils.buildEnvironment(), Event.STANDALONE);
+    }
+
+    protected void update(Environment env, Event event) {
         if (!initDone) {
             initDone = true;
 
@@ -258,8 +262,7 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
             task.setNetworkType(Task.NetworkType.DenseNetwork);
             task.setArchitectureType(Task.ArchitectureType.WORDVECTORS);
 
-            Environment env = EnvironmentUtils.buildEnvironment();
-            heartbeat.reportEvent(Event.STANDALONE, env, task);
+            heartbeat.reportEvent(event, env, task);
         }
     }
 }
