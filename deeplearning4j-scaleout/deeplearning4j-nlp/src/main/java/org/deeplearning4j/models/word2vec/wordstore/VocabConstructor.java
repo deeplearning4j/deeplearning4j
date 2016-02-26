@@ -98,8 +98,9 @@ public class VocabConstructor<T extends SequenceElement> {
             // skip this element if it's a label, and user don't want labels to be merged
             if (!fetchLabels && element.isLabel()) continue;
 
+            //element.setIndex(t);
             cache.addToken(element);
-            cache.addWordToIndex(cache.numWords() - 1, element.getLabel());
+            cache.addWordToIndex(element.getIndex(), element.getLabel());
 
             // backward compatibility code
             cache.putVocabWord(element.getLabel());
@@ -110,6 +111,9 @@ public class VocabConstructor<T extends SequenceElement> {
         /*
             Now, when we have transferred vocab, we should roll over iterator, and  gather labels, if any
          */
+
+        log.info("Vocab size before labels: " + cache.numWords());
+
         if (fetchLabels) {
             for(VocabSource<T> source: sources) {
                 SequenceIterator<T> iterator = source.getIterator();
@@ -121,16 +125,25 @@ public class VocabConstructor<T extends SequenceElement> {
 
                     for (T label: sequence.getSequenceLabels()) {
                         if (!cache.containsWord(label.getLabel())) {
+                            label.markAsLabel(true);
+                            label.setSpecial(true);
+
+                            label.setIndex(cache.numWords());
+
                             cache.addToken(label);
-                            cache.addWordToIndex(cache.numWords() - 1, label.getLabel());
+                            cache.addWordToIndex(label.getIndex(), label.getLabel());
 
                             // backward compatibility code
                             cache.putVocabWord(label.getLabel());
-                        }
+
+                            log.info("Adding label ["+label.getLabel()+"]: " + cache.wordFor(label.getLabel()));
+                        } else log.info("Label ["+label.getLabel()+"] already exists: " + cache.wordFor(label.getLabel()));
                     }
                 }
             }
         }
+
+        log.info("Vocab size after labels: " + cache.numWords());
 
         return cache;
     }

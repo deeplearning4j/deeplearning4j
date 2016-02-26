@@ -9,6 +9,8 @@ import lombok.Data;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
@@ -42,6 +44,7 @@ public class VectorsConfiguration implements Serializable {
     private String elementsLearningAlgorithm;
     private String sequenceLearningAlgorithm;
 
+    private List<String> stopList = new ArrayList<>();
 
     // overall model info
     private int vocabSize;

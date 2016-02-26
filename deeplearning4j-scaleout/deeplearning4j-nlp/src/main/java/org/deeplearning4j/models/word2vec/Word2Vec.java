@@ -81,7 +81,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
          * @return
          */
         @Override
-        public Builder useExistingWordVectors(@NonNull WordVectors vec) {
+        protected Builder useExistingWordVectors(@NonNull WordVectors vec) {
             return this;
         }
 
@@ -436,6 +436,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             this.configuration.setUseAdaGrad(useAdaGrad);
             this.configuration.setNegative(negative);
             this.configuration.setEpochs(this.numEpochs);
+            this.configuration.setStopList(this.stopWords);
 
             ret.configuration = this.configuration;
 
