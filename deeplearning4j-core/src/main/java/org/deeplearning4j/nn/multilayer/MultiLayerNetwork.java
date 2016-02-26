@@ -951,7 +951,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
     }
 
-
     /**
      * Returns a 1 x m vector where the vector is composed of
      * a flattened vector of all of the weights for the
@@ -1063,6 +1062,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      *
      * @return whether the training should converge or not
      */
+    @Deprecated
     protected List<Pair<Pair<INDArray, INDArray>, Pair<INDArray, INDArray>>> backPropGradient2() {
         //feedforward to compute activations
         //initial error
@@ -1937,9 +1937,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     public void applyLearningRateScoreDecay() {
         for (Layer layer: layers) {
-            if(!(layer instanceof SubsamplingLayer)) {
-                layer.conf().getLayer().setLearningRate(
-                        layer.conf().getLayer().getLearningRate() * (layer.conf().getLayer().getLrScoreBasedDecay() + Nd4j.EPS_THRESHOLD));
+            if (!layer.conf().getLearningRateByParam().isEmpty()) {
+                for (Map.Entry<String, Double> lrPair : layer.conf().getLearningRateByParam().entrySet())
+                    layer.conf().setLearningRateByParam(lrPair.getKey(),
+                            lrPair.getValue() * (layer.conf().getLayer().getLrScoreBasedDecay() + Nd4j.EPS_THRESHOLD));
             }
         }
     }
@@ -1980,6 +1981,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @param v the v in gaussian newton vector g * v
      * @return whether the training should converge or not
      */
+    @Deprecated
     protected List<Pair<INDArray, INDArray>> backPropGradientR(INDArray v) {
         //feedforward to compute activations
         //initial error

@@ -33,6 +33,7 @@ import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -69,6 +70,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected boolean useSchedules = false;
     //minimize or maximize objective
     protected boolean minimize = true;
+    protected Map<String,Double> learningRateByParam = new HashMap<>();
+    protected Map<String,Double> l1ByParam = new HashMap<>();
+    protected Map<String,Double> l2ByParam = new HashMap<>();
     // Graves LSTM & RNN
     @Deprecated
     private int timeSeriesLength = 1;
@@ -83,6 +87,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             if(clone.layer != null) clone.layer = clone.layer.clone();
             if(clone.stepFunction != null) clone.stepFunction = clone.stepFunction.clone();
             if(clone.variables != null ) clone.variables = new ArrayList<>(clone.variables);
+            if(clone.learningRateByParam != null ) clone.learningRateByParam = new HashMap<>(clone.learningRateByParam);
+            if(clone.l1ByParam != null ) clone.l1ByParam = new HashMap<>(clone.l1ByParam);
+            if(clone.l2ByParam != null ) clone.l2ByParam = new HashMap<>(clone.l2ByParam);
             return clone;
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);
@@ -94,12 +101,34 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     }
 
     public void addVariable(String variable) {
-        if(!variables.contains(variable))
+        if(!variables.contains(variable)) {
             variables.add(variable);
+            double lr = (variable.substring(0, 1) == DefaultParamInitializer.BIAS_KEY && !Double.isNaN(layer.getBiasLearningRate()))? layer.getBiasLearningRate(): layer.getLearningRate();
+            double l1 = (variable.substring(0, 1) == DefaultParamInitializer.BIAS_KEY)? 0.0: layer.getL1();
+            double l2 = (variable.substring(0, 1) == DefaultParamInitializer.BIAS_KEY)? 0.0: layer.getL2();
+            learningRateByParam.put(variable, lr);
+            l1ByParam.put(variable, l1);
+            l2ByParam.put(variable, l2);
+        }
     }
     
     public void clearVariables(){
     	variables.clear();
+    }
+
+    public double getLearningRateByParam(String variable){
+        return learningRateByParam.get(variable);
+    }
+
+    public void setLearningRateByParam(String variable, double rate){
+        learningRateByParam.put(variable, rate);
+    }
+    public double getL1ByParam(String variable ){
+        return l1ByParam.get(variable);
+    }
+
+    public double getL2ByParam(String variable ){
+        return l2ByParam.get(variable);
     }
 
     /**
@@ -655,6 +684,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
             if(layer != null ) {
                 if (Double.isNaN(layer.getLearningRate())) layer.setLearningRate(learningRate);
+                if (Double.isNaN(layer.getBiasLearningRate())) layer.setBiasLearningRate(learningRate);
                 if (layer.getLearningRateAfter() == null) layer.setLearningRateAfter(learningRateAfter);
                 if (Double.isNaN(layer.getLrScoreBasedDecay())) layer.setLrScoreBasedDecay(lrScoreBasedDecay);
                 if (Double.isNaN(layer.getL1())) layer.setL1(l1);
