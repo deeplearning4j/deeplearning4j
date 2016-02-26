@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.api.complex;
 
+import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
@@ -371,6 +372,39 @@ public abstract class BaseComplexDouble implements IComplexDouble {
         return muli(v, this);
     }
 
+    @Override
+    public IComplexNumber exp() {
+        IComplexNumber result = dup();
+        double realExp = FastMath.exp(realComponent());
+        return result.set(realExp * FastMath.cos(imaginaryComponent()), realExp * FastMath.sin(imaginaryComponent()));
+    }
+
+    @Override
+    public IComplexNumber powi(IComplexNumber c, IComplexNumber result) {
+        IComplexNumber eval = log().muli(c).exp();
+        result.set(eval.realComponent(), eval.imaginaryComponent());
+        return result;
+    }
+
+    @Override
+    public IComplexNumber pow(Number v) { return dup().powi(v); }
+
+    @Override
+    public IComplexNumber pow(IComplexNumber c) { return dup().powi(c); }
+
+    @Override
+    public IComplexNumber powi(IComplexNumber c) { return dup().powi(c, this); }
+
+    @Override
+    public IComplexNumber powi(Number v) { return dup().powi(v, this); }
+
+    @Override
+    public IComplexNumber powi(Number v, IComplexNumber result) {
+        IComplexNumber eval = log().muli(v).exp();
+        result.set(eval.realComponent(), eval.imaginaryComponent());
+        return result;
+    }
+
     /**
      * Divide two complex numbers
      *
@@ -486,6 +520,16 @@ public abstract class BaseComplexDouble implements IComplexDouble {
         double d = realComponent() * realComponent() + imaginaryComponent() * imaginaryComponent();
         set(realComponent() / d, -imaginaryComponent() / d);
         return this;
+    }
+
+    @Override
+    public IComplexNumber log() {
+        IComplexNumber result = dup();
+        double real = (double) result.realComponent();
+        double imaginary = (double) result.imaginaryComponent();
+        double modulus = FastMath.sqrt(real*real + imaginary*imaginary);
+        double arg = FastMath.atan2(imaginary,real);
+        return result.set(FastMath.log(modulus), arg);
     }
 
     @Override
