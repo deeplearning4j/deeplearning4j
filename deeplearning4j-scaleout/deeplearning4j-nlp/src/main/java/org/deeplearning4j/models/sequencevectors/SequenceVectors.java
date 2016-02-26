@@ -20,6 +20,11 @@ import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.VocabConstructor;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
+import org.nd4j.linalg.heartbeat.Heartbeat;
+import org.nd4j.linalg.heartbeat.reports.Environment;
+import org.nd4j.linalg.heartbeat.reports.Event;
+import org.nd4j.linalg.heartbeat.reports.Task;
+import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -716,6 +721,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
                 // if buffered level is below limitLower, we're going to fetch limitUpper number of strings from fetcher
                 if (buffer.size() < limitLower) {
+                    update();
                     AtomicInteger linesLoaded = new AtomicInteger(0);
                     while (linesLoaded.getAndIncrement() < limitUpper && this.iterator.hasMoreSequences() ) {
                         Sequence<T> document = this.iterator.nextSequence();
