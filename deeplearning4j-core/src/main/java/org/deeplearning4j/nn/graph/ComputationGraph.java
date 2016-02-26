@@ -40,6 +40,7 @@ import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.util.ModelSerializer;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -1102,30 +1103,7 @@ public class ComputationGraph implements Serializable, Model {
         if (!initDone) {
             initDone = true;
             Heartbeat heartbeat = Heartbeat.getInstance();
-
-            task.setNetworkType(Task.NetworkType.ComputationalGraph);
-
-            task.setArchitectureType(Task.ArchitectureType.RECURRENT);
-            try {
-                if (this.getLayers() != null && this.getLayers().length > 0) {
-                    for (Layer layer : this.getLayers()) {
-                        if (layer instanceof RBM || layer instanceof org.deeplearning4j.nn.layers.feedforward.rbm.RBM) {
-                            task.setArchitectureType(Task.ArchitectureType.RBM);
-                            break;
-                        }
-                        if (layer.type().equals(Layer.Type.CONVOLUTIONAL)) {
-                            task.setArchitectureType(Task.ArchitectureType.CONVOLUTION);
-                            break;
-                        } else if (layer.type().equals(Layer.Type.RECURRENT) || layer.type().equals(Layer.Type.RECURSIVE)) {
-                            task.setArchitectureType(Task.ArchitectureType.RECURRENT);
-                            break;
-                        }
-                    }
-                } else task.setArchitectureType(Task.ArchitectureType.UNKNOWN);
-            } catch (Exception e) {
-                ; // do nothing here
-            }
-
+            task = ModelSerializer.taskByModel(this);
             Environment env = EnvironmentUtils.buildEnvironment();
             heartbeat.reportEvent(Event.STANDALONE, env, task);
         }
