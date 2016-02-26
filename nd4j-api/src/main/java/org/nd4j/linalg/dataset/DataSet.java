@@ -686,10 +686,12 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      */
     @Override
     public SplitTestAndTrain splitTestAndTrain(int numHoldout, Random rng) {
-        if (numHoldout >= numExamples())
-            throw new IllegalArgumentException("Unable to split on size larger than the number of rows");
+        int numExamples = numExamples();
+        if(numExamples <= 1) throw new IllegalStateException("Cannot split DataSet with <= 1 rows (data set has " + numExamples + " example)");
+        if (numHoldout >= numExamples)
+            throw new IllegalArgumentException("Unable to split on size equal or larger than the number of rows (# rows=" + numExamples + ", numHoldout=" + numHoldout + ")");
         DataSet first = new DataSet(getFeatureMatrix().get(NDArrayIndex.interval(0,numHoldout)),getLabels().get(NDArrayIndex.interval(0,numHoldout)));
-        DataSet second = new DataSet(getFeatureMatrix().get(NDArrayIndex.interval(numHoldout,numExamples())),getLabels().get(NDArrayIndex.interval(numHoldout,numExamples())));
+        DataSet second = new DataSet(getFeatureMatrix().get(NDArrayIndex.interval(numHoldout,numExamples())),getLabels().get(NDArrayIndex.interval(numHoldout,numExamples)));
         return new SplitTestAndTrain(first, second);
     }
 
@@ -960,6 +962,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     @Override
     public SplitTestAndTrain splitTestAndTrain(double percentTrain) {
         int numPercent = (int) (percentTrain * numExamples());
+        if(numPercent <= 0) numPercent = 1;
         return splitTestAndTrain(numPercent);
     }
 
