@@ -76,6 +76,10 @@
                                 <classOrPackageName>org.nd4j.nativeblas.Nd4jBlas</classOrPackageName>
                                 <classOrPackageName>org.nd4j.nativeblas.NativeOps</classOrPackageName>
                             </classOrPackageNames>
+                            <classPaths>
+                                <classPath>${project.build.outputDirectory}</classPath>
+                                <classPath>../nd4j-native-api/target/classes</classPath>
+                            </classPaths>
                             <copyLibs>true</copyLibs>
                         </configuration>
                     </execution>
