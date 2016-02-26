@@ -22,7 +22,9 @@ import java.util.*;
 
 /**
  * Batch normalization layer.
- * http://arxiv.org/pdf/1410.7455v8.pdf
+ * Rerences:
+ *  http://arxiv.org/pdf/1502.03167v3.pdf
+ *  http://arxiv.org/pdf/1410.7455v8.pdf
  *
  * ideal to apply this between linear and non-linear transformations in layers it follows
  **/
