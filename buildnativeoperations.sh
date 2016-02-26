@@ -64,7 +64,6 @@ else
            cmake -DBUFFER=TRUE ..
            make && cd ..
            echo "FINISHING BUILD"
-           mv bufferbuild/buffer/libbuffer.so .
      elif [ "$1" == "blas" ]; then
             rm -rf blasbuild
            mkdir blasbuild
