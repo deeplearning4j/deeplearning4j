@@ -82,7 +82,7 @@ nd4j-x86后端应如下所示：
 
 ## 后续步骤
 
-运行示例后，请访问[完整安装页面](../gettingstarted.html)进行进一步的了解。
+运行示例后，请访问[完全安装页面](../gettingstarted.html)作进一步了解。
 
 ## <a name="walk">逐步说明</a>
 
