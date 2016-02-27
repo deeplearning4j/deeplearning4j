@@ -1,6 +1,6 @@
----
-title: Deeplearning 4 j のクイックスタートガイド
-layout: ja-default
+- - -
+title:Deeplearning 4 j のクイックスタートガイド
+layout: default
 ---
 
 クイック・スタート・ガイド
@@ -11,14 +11,14 @@ layout: ja-default
 このクイックスタートガイドには、次のものがすでにインストールされていることを前提としています。
 
 1. Java 7、またはそれ以降
-2.　IntelliJ (または別の種類のIDE)
-3.　Maven (自動ビルドツール)
+2.　IntelliJ （または別の種類のIDE）
+3.　Maven （自動ビルドツール）
 4.　Github
  
-上記のどれかを新たにインストールする必要があれば、ガイドの[ND4Jを「はじめましょう」](http://nd4j.org/getstarted.html)をご参照ください。（ND4Jは、deep-learningを実行させるために使う科学的計算エンジンで、上記のガイドは、DL4Jにもお使いいただけるものです。）ガイドにリストされたものをインストールすれば、それで十分でそれ以外をインストールする必要はありません。 
+上記のどれかを新たにインストールする必要があれば、ガイドの[ND4Jを「はじめましょう」](http://nd4j.org/getstarted.html)をご参照ください。（ND4Jは、ディープラーニングを実行させるために使う科学的計算エンジンで、上記のガイドは、DL4Jにもお使いいただけるものです。）ガイドにリストされたものをインストールすれば、それで十分でそれ以外をインストールする必要はありません。 
 
 
-質問やコメントなどございましたら、弊社の[Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j)に是非お問合せください。恥ずかしがる必要は全くありません。いつでも気軽にご連絡ください。また、deep-learningの初心者の方には、「deep-learning初心者ガイド」も[こちら](../deeplearningforbeginners.html)にご用意いたしました。 
+質問やコメントなどございましたら、弊社の[Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j)に是非お問合せください。恥ずかしがる必要は全くありません。いつでも気軽にご連絡ください。また、ディープラーニングの初心者の方には、「ディープラーニング初心者ガイド」も[こちら](../deeplearningforbeginners.html)にご用意いたしました。 
 
 Deeplearning4jは、プロのJava開発者向けのオープンソースプロジェクトで、製品展開、Intellijなどの統合開発環境（IDE）、Mavenのような自動ビルドツールなどに精通した方々を対象としています。既にこれらのツールをお持ちの方には、弊社のツールは、非常に役に立ちます。
 
@@ -48,7 +48,7 @@ Databricks、Domino、 Sense.ioなどの管理された環境で作業してい�
 * exampleのすべての依存関係は、ローカルでなくMavenからダウンロードするようにしてください。`(rm -rf  ls ~/.m2/repository/org/deeplearning4j)`
 * dl4j-0.4-exampleのディレクトリで`mvn clean install -DskipTests=true -Dmaven.javadoc.skip=true`を実行し、正常にインストールされているか確認してください。
 * TSNEについては、`mvn exec:java -Dexec.mainClass="org.deeplearning4j.examples.tsne.TSNEStandardExample" -Dexec.cleanupDaemonThreads=false`と実行し、TSNE、または他のexampleを実行します。実行に失敗し、 Mavenのデーモンスレッドが終了時に停止しない場合には、最後に引数が必要になる場合があります。
-* 1000回のループは、`dl4j-0.4-examples/target/archive-tmp/`に配置された`tsne-standard-coords.csv`に出力されるはずです。
+* 1000回のイテレーションは、`dl4j-0.4-examples/target/archive-tmp/`に配置された`tsne-standard-coords.csv`に出力されるはずです。
 
 F１スコアは、約0.66と出るはずですが、Irisのような小さなデータベースでは問題ありません。exampleのステップごとの手順は、弊社の[Iris DBNチュートリアル](../iris-flower-dataset-tutorial.html)をお読みください。
 
@@ -68,7 +68,7 @@ nd4j-x86のバックエンドは、以下のようになります。
 
 *nd4j-x86*はすべてのexampleで動作します。さらに依存関係をインストールするには、OpenBlas、Windows、Linuxのユーザーは[Deepelearining4jをはじめましょう](../gettingstarted.html#open)をお読みください。
 
-## 上級： AWSでのコマンドラインの使用
+## 上級レベル： AWSでのコマンドラインの使用
 
 AWSサーバーでLinux OSにDeeplearningをインストールし、最初のexampleを実行させるためにIDEに頼らず、コマンドラインを使用したい場合は、 上述の指示に従って、*git clone*、*mvn clean install*を実行してください。インストールが完了すると、実際のexampleをコマンドラインに1行のコードで実行できます。コマンドラインは、レポジトリバージョンや特定のexmpleによって異なります。 
 
@@ -101,7 +101,7 @@ exampleを実行し終えた後は、 [フルインストール・ページ](../
 		git --version 
 
 * gitがまだインストールされていない場合は、[git](https://git-scm.herokuapp.com/book/en/v2/Getting-Started-Installing-Git)をインストールします。 
-* また、[Githubのアカウント]( https://github.com/join)を作成し、GitHubの[Mac版](https://mac.github.com/)、または[Windows版]( https://windows.github.com/)をダウンロードします。 
+* また、[Githubのアカウント]( https://github.com/join)を作成し、GitHubの[Mac版](https://mac.github.com/)、または[Windows版](https://windows.github.com/)をダウンロードします。 
 * Windowsをご使用の場合、スタートアップメニューで「Git Bash」を探して開きます。Git Bashターミナルは、cmd.exeのようなものです。
 * DL4Jのexampleを配置したいディレクトリに`cd`コマンドを実行します。新しいものを`mkdir dl4j-examples`で作成し、`cd`コマンドをそこに入力します。そして以下を実行します。
 
