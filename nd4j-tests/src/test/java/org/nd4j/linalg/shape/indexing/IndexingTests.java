@@ -1,6 +1,6 @@
 package org.nd4j.linalg.shape.indexing;
 
-import org.apache.commons.lang3.ArrayUtils;
+import static org.junit.Assert.*;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;

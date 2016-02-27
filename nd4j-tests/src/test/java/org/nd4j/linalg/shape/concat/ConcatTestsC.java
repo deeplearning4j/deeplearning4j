@@ -8,6 +8,9 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.util.Arrays;
 
+import static org.junit.Assert.*;
+
+
 /**
  * @author Adam Gibson
  */

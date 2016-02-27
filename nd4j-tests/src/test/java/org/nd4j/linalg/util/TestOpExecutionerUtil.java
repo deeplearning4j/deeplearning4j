@@ -1,5 +1,6 @@
 package org.nd4j.linalg.util;
 
+import static org.junit.Assert.*;
 
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;

@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg;
 
+import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestResult;
 import org.junit.After;
@@ -36,9 +37,10 @@ import java.util.UUID;
  * Base Nd4j test
  * @author Adam Gibson
  */
-public abstract class BaseNd4jTest  extends TestCase {
+public abstract class BaseNd4jTest  implements Test {
     private static Logger log = LoggerFactory.getLogger(BaseNd4jTest.class);
     protected Nd4jBackend backend;
+    protected String name;
     public final static String DEFAULT_BACKEND = "org.nd4j.linalg.defaultbackend";
 
     public BaseNd4jTest() {
@@ -50,8 +52,8 @@ public abstract class BaseNd4jTest  extends TestCase {
     }
 
     public BaseNd4jTest(String name, Nd4jBackend backend) {
-        super(name);
         this.backend = backend;
+        this.name = name;
     }
 
     public BaseNd4jTest(Nd4jBackend backend) {
@@ -59,10 +61,6 @@ public abstract class BaseNd4jTest  extends TestCase {
 
     }
 
-    @Override
-    protected TestResult createResult() {
-        return new Nd4jTestResult();
-    }
 
     /**
      * Get the default backend (jblas)
@@ -84,28 +82,11 @@ public abstract class BaseNd4jTest  extends TestCase {
     }
 
 
-    @Override
-    protected void tearDown() throws Exception {
-        after();
-    }
 
-    @Override
-    protected void setUp() throws Exception {
-        before();
-    }
-
-    @Override
-    public void runBare() throws Throwable {
-        try {
-            super.runBare();
-        }catch(UnsupportedOperationException e) {
-            log.warn("Un supported operation ",e);
-        }
-    }
 
     @Before
     public void before() {
-        log.info("Running " + getName() + " on backend " + backend.getClass().getName());
+        log.info("Running " + getClass().getName() + " on backend " + backend.getClass().getName());
         Nd4j nd4j = new Nd4j();
         nd4j.initWithBackend(backend);
         Nd4j.factory().setOrder(ordering());
@@ -115,7 +96,7 @@ public abstract class BaseNd4jTest  extends TestCase {
 
     @After
     public void after() {
-        log.info("Ending " + getName());
+        log.info("Ending " + getClass().getName());
         Nd4j nd4j = new Nd4j();
         nd4j.initWithBackend(backend);
         Nd4j.factory().setOrder(ordering());
@@ -145,9 +126,12 @@ public abstract class BaseNd4jTest  extends TestCase {
 
 
     @Override
-    public String getName() {
-        return getClass().getName();
+    public int countTestCases() {
+        return 0;
     }
 
+    @Override
+    public void run(TestResult result) {
 
+    }
 }

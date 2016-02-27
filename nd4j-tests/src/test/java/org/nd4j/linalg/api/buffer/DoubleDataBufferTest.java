@@ -22,7 +22,9 @@ package org.nd4j.linalg.api.buffer;
 import io.netty.buffer.ByteBuf;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.Nd4jTestSuite;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -42,23 +44,14 @@ import static org.junit.Assert.assertEquals;
  *
  * @author Adam Gibson
  */
+@RunWith(Nd4jTestSuite.class)
 public  class DoubleDataBufferTest extends BaseNd4jTest {
 
-    public DoubleDataBufferTest(Nd4jBackend backend) {
-        super(backend);
-    }
 
 
-
-    public DoubleDataBufferTest(String name, Nd4jBackend backend) {
-        super(name, backend);
-    }
-
-    public DoubleDataBufferTest(String name) {
-        super(name);
-    }
 
     public DoubleDataBufferTest() {
+        super(getDefaultBackend());
     }
 
     @Before
@@ -84,6 +77,7 @@ public  class DoubleDataBufferTest extends BaseNd4jTest {
         rand.data().asBytes();
 
     }
+
     @Test
     public void testSerialization2() throws Exception {
 

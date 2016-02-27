@@ -19,6 +19,7 @@
 
 
 package org.nd4j.linalg.ops;
+import static org.junit.Assert.*;
 
 
 import org.junit.Test;

@@ -29,6 +29,9 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
+
+import static org.junit.Assert.*;
+
 /**
  * Tests for complex numbers
  *
@@ -101,15 +104,15 @@ public  class ComplexNumberTests  extends BaseNd4jTest {
     @Test
     public void testExponentFloat() {
         IComplexFloat test = Nd4j.createFloat(1, 1);
-        assertEquals(test.realComponent(), 1.468694);
-        assertEquals(test.imaginaryComponent(), 2.2873552);
+        assertEquals(test.realComponent(), 1.468694,1e-3);
+        assertEquals(test.imaginaryComponent(), 2.2873552,1e-3);
     }
 
     @Test
     public void testExponentDouble() {
         IComplexDouble test = Nd4j.createDouble(1, 1);
-        assertEquals(test.realComponent(), 1.4686939399158851);
-        assertEquals(test.imaginaryComponent(), 2.2873552871788423);
+        assertEquals(test.realComponent(), 1.4686939399158851,1e-3);
+        assertEquals(test.imaginaryComponent(), 2.2873552871788423,1e-3);
     }
 
     @Test
