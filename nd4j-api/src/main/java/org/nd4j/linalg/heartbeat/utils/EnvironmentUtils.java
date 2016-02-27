@@ -58,7 +58,7 @@ public class EnvironmentUtils {
             }
 
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            ; // do nothing here
         }
 
         return ret ;

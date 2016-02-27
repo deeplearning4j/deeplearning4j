@@ -3151,6 +3151,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     /**
      *
      * Return transposed version of this matrix.
+     *
+     * PLEASE NOTE: This method is NOT inplace, it will return transposed copy instead.
      */
     @Override
     public INDArray transposei() {
