@@ -21,6 +21,7 @@ package org.deeplearning4j.ui.api;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.math.stat.descriptive.rank.Percentile;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.ui.providers.ObjectMapperProvider;
 import org.deeplearning4j.ui.storage.HistoryStorage;
@@ -38,6 +39,7 @@ import javax.ws.rs.core.Response;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -88,7 +90,7 @@ public class ApiResource extends FileResource {
 
     @GET
     @Path("/coords")
-    public Response coords() {
+    public Response coords(@QueryParam("filter") boolean filterExtrems) {
         /*
             TODO: here we should have ad-hoc for HistoryStorage.
 
@@ -103,7 +105,63 @@ public class ApiResource extends FileResource {
         */
         HistoryStorage storage = HistoryStorage.getInstance();
         List<String> something = (List<String>) storage.getLatest("TSNE");
-        return Response.ok(something).build();
+        if (1>0 && something != null) {
+            List<String> filtered = new ArrayList<>();
+
+            Percentile percentile = new Percentile();
+            double[] axisX = new double[something.size()];
+            double[] axisY = new double[something.size()];
+            int cnt = 0;
+            for (String line: something) {
+                try {
+                    String split[] = line.split(",");
+                    // scan along X dimension
+                    axisX[cnt] = Double.valueOf(split[0]);
+
+                    // scan along Y dimension
+                    axisY[cnt] = Double.valueOf(split[1]);
+                } catch (Exception e) {
+                    ; //
+                }
+                cnt++;
+            }
+
+            double x85 = percentile.evaluate(axisX, 95);
+            double y85 = percentile.evaluate(axisY, 95);
+
+            double x15 = percentile.evaluate(axisX, 5);
+            double y15 = percentile.evaluate(axisY, 5);
+
+            /*
+                logger.info("X 85: " + x85);
+                logger.info("Y 85: " + y85);
+
+                logger.info("X 15: " + x15);
+                logger.info("Y 15: " + y15);
+            */
+
+            // filter out everything that doesn't fits into original 85 quantile
+            for (String line: something) {
+                try {
+                    String split[] = line.split(",");
+                    // scan along X dimension
+                    double x = Double.valueOf(split[0]);
+
+                    // scan along Y dimension
+                    double y = Double.valueOf(split[1]);
+
+                    if (x >= x15 && x <= x85 ) {
+                        if (y >= y15 && y <= y85) {
+                            filtered.add(line);
+                        }
+                    }
+                } catch (Exception e) {
+                    ; //
+                }
+            }
+
+            return Response.ok(filtered).build();
+        } else return Response.ok(something).build();
     }
 
     public void setPath(String path) throws IOException {

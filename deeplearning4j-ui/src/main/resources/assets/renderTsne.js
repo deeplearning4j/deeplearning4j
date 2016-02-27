@@ -40,6 +40,7 @@ var xAxis;
 var yAxis;
 
 function zoomHandler() {
+
   svg.select(".x.axis").call(xAxis);
   svg.select(".y.axis").call(yAxis);
 
@@ -59,6 +60,7 @@ function zoomHandler() {
                                               ((x[i]*20*ss + tx) + 400) + "," +
                                               ((y[i]*20*ss + ty) + 400) + ")";
                                               });
+
 }
 
 
@@ -183,6 +185,11 @@ function drawTsne() {
         yMax = d3.max(y);
         yMin = d3.min(y);
 
+        console.log("xMin: " + xMin);
+        console.log("xMax: " + xMax);
+
+        console.log("yMin: " + yMin);
+        console.log("yMax: " + yMax);
 
         drawEmbedding();
       } else {
