@@ -66,7 +66,6 @@
 
     <modules>
         <module>nd4j-jcublas-6.5</module>
-        <module>nd4j-jcublas-5.5</module>
         <module>nd4j-jcublas-6.0</module>
         <module>nd4j-jcublas-7.0</module>
         <module>nd4j-jcublas-7.5</module>

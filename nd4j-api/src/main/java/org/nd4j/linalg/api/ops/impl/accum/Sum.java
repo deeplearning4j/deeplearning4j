@@ -107,6 +107,26 @@ public class Sum extends BaseAccumulation {
     }
 
     @Override
+    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
+        return null;
+    }
+
+    @Override
+    public IComplexNumber op(IComplexNumber origin, float other) {
+        return null;
+    }
+
+    @Override
+    public IComplexNumber op(IComplexNumber origin, double other) {
+        return null;
+    }
+
+    @Override
+    public IComplexNumber op(IComplexNumber origin) {
+        return null;
+    }
+
+    @Override
     public Op opForDimension(int index, int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 

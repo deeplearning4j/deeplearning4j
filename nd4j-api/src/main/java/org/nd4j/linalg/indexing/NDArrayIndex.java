@@ -23,6 +23,7 @@ import com.google.common.primitives.Ints;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.util.NDArrayUtil;
 
 import java.nio.IntBuffer;
 import java.util.ArrayList;
@@ -134,7 +135,7 @@ public class NDArrayIndex implements INDArrayIndex {
         }
         else {
             if(numNewAxes > 0) {
-                int[] newShape = Ints.concat(ArrayUtil.nTimes(numNewAxes,1),arr.shape());
+                int[] newShape = Ints.concat(ArrayUtil.nTimes(numNewAxes, 1),arr.shape());
                 int[] newStrides = Ints.concat(new int[numNewAxes],arr.stride());
                 arr.setShape(newShape);
                 arr.setStride(newStrides);
@@ -514,7 +515,7 @@ public class NDArrayIndex implements INDArrayIndex {
             return ret;
 
         } else if (index.isVector()) {
-            int[] indices = ArrayUtil.toInts(index);
+            int[] indices = NDArrayUtil.toInts(index);
             return new NDArrayIndex[]{new NDArrayIndex(indices)};
         }
 

@@ -23,7 +23,6 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
@@ -37,7 +36,11 @@ import java.util.List;
  * @author Adam Gibson
  */
 public interface INDArray extends Serializable  {
-
+    /**
+     * Shape info
+     * @return
+     */
+    DataBuffer shapeInfoDataBuffer();
     /**
      * Shape info
      * @return
@@ -1679,6 +1682,13 @@ public interface INDArray extends Serializable  {
      * @return the starting offset
      */
     int offset();
+
+
+    /**
+     * Returns the start of where the ndarray is for the original data buffer
+     * @return
+     */
+    int originalOffset();
 
 
     /**

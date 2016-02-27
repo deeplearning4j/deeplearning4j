@@ -54,7 +54,6 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.ref.WeakReference;
 import java.lang.Iterable;
 import java.nio.IntBuffer;
 import java.util.*;
@@ -92,7 +91,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     protected int rows, columns;
     protected int length = -1;
     protected boolean cleanedUp = false;
-    protected transient WeakReference<INDArray> ref;
     protected int numLeadingOnes = -1;
     protected int numTrailingOnes = -1;
     protected int majorStride = -1;
@@ -3694,6 +3692,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
+    public DataBuffer shapeInfoDataBuffer() {
+        return shapeInformation;
+    }
+
+    @Override
     public IntBuffer shapeInfo() {
         return shapeInformation.asNioInt();
     }
@@ -4260,5 +4263,15 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public Iterator<Object> iterator() {
         return new FirstAxisIterator(this);
+    }
+
+    /**
+     * Returns the start of where the ndarray is for the original data buffer
+     *
+     * @return
+     */
+    @Override
+    public int originalOffset() {
+        return data().originalOffset();
     }
 }

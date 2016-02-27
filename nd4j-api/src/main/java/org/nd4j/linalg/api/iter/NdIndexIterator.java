@@ -1,8 +1,8 @@
 package org.nd4j.linalg.api.iter;
 
 import org.apache.commons.math3.util.Pair;
-import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.HashMap;
 import java.util.Iterator;

@@ -36,7 +36,7 @@ public class FeatureUtil {
     public static INDArray toOutcomeVector(int index, int numOutcomes) {
         int[] nums = new int[numOutcomes];
         nums[index] = 1;
-        return ArrayUtil.toNDArray(nums);
+        return NDArrayUtil.toNDArray(nums);
     }
 
 
@@ -52,7 +52,7 @@ public class FeatureUtil {
         for (int i = 0; i < ret.rows(); i++) {
             int[] nums = new int[numOutcomes];
             nums[index[i]] = 1;
-            ret.putRow(i, ArrayUtil.toNDArray(nums));
+            ret.putRow(i, NDArrayUtil.toNDArray(nums));
         }
 
         return ret;

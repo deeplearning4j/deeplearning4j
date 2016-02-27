@@ -198,7 +198,7 @@ public class TadCollapseAccumulation extends BaseOp {
          * Now combine the results based on
          * the final dimension.
          */
-        INDArray aggregated = Nd4j.create(ArrayUtil.removeIndex(accum.x().shape(),originalDimension));
+        INDArray aggregated = Nd4j.create(ArrayUtil.removeIndex(accum.x().shape(), originalDimension));
         int smallerProblem = accum.x().tensorssAlongDimension(smallerDimension);
         int biggerProblem = accum.x().tensorssAlongDimension(originalDimension);
         if(accum instanceof Accumulation) {

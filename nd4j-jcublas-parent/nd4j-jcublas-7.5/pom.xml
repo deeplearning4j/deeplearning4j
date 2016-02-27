@@ -10,12 +10,71 @@
     <packaging>jar</packaging>
 
     <name>nd4j-jcublas-7.5</name>
-
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <generate-sources.skip>false</generate-sources.skip> <!-- To skip header file parsing phase: -Dgenerate-sources.skip=true  -->
+        <process-classes.skip> false</process-classes.skip>  <!-- To skip native compilation phase: -Dprocess-classes.skip=true    -->
+        <platform>${os.name}-${os.arch}</platform> <!-- For Android: -Dplatform=android-arm                                        -->
+        <platform.root />            <!--              -Dplatform.root=/path/to/android-ndk/                         -->
+        <platform.compiler />    <!--              -Dplatform.compiler=/path/to/arm-linux-androideabi-g++        -->
+        <platform.properties>${platform}</platform.properties>
+        <javacpp.version>1.1</javacpp.version>
     </properties>
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.bytedeco</groupId>
+                <artifactId>javacpp</artifactId>
+                <version>${javacpp.version}</version>
+                <configuration>
+                    <properties>${platform.properties}</properties>
+                    <propertyKeysAndValues>
+                        <property>
+                            <name>platform.root</name>
+                            <value>${platform.root}</value>
+                        </property>
+                        <property>
+                            <name>platform.compiler</name>
+                            <value>${platform.compiler}</value>
+                        </property>
+                    </propertyKeysAndValues>
+                    <classPath>${project.build.outputDirectory}</classPath>
+                    <includePath>/home/agibsonccc/code/nativeoperations/blas/</includePath>
+                    <linkPath>/home/agibsonccc/code/nativeoperations/blasbuild/blas</linkPath>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>generate-sources</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>build</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${generate-sources.skip}</skip>
+                            <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
+                            <classOrPackageNames>
+                                <classOrPackageName>org.nd4j.nativeblas.Nd4jBlas</classOrPackageName>
+                                <classOrPackageName>org.nd4j.nativeblas.NativeOps</classOrPackageName>
+                            </classOrPackageNames>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>process-classes</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>build</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${process-classes.skip}</skip>
+                            <classOrPackageNames>
+                                <classOrPackageName>org.nd4j.nativeblas.Nd4jBlas</classOrPackageName>
+                                <classOrPackageName>org.nd4j.nativeblas.NativeOps</classOrPackageName>
+                            </classOrPackageNames>
+                            <copyLibs>true</copyLibs>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -25,18 +84,18 @@
                     <environmentVariables>
                         <LD_LIBRARY_PATH>${env.LD_LIBRARY_PATH}:${user.dir}</LD_LIBRARY_PATH>
                     </environmentVariables>
-                    <includes>
+           <!--         <includes>
                         <include>**/Nd4jTestSuite.java</include>
                     </includes>
                     <excludes>
                         <exclude>**/Test*.java</exclude>
                         <exclude>**/*Test.java</exclude>
                         <exclude>**/*TestCase.java</exclude>
-                    </excludes>
-                    <systemPropertyVariables>
+                    </excludes>-->
+                <!--    <systemPropertyVariables>
                         <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.cpu.CpuBackend</org.nd4j.linalg.defaultbackend>
                         <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.cpu.CpuBackend</org.nd4j.linalg.tests.backendstorun>
-                    </systemPropertyVariables>
+                    </systemPropertyVariables>-->
                 </configuration>
             </plugin>
 
@@ -55,6 +114,11 @@
     </build>
 
     <dependencies>
+    <!--    <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-native</artifactId>
+            <version>${project.version}</version>
+        </dependency>-->
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
@@ -70,7 +134,11 @@
             <artifactId>nd4j-api</artifactId>
             <version>${project.version}</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-native-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
@@ -82,6 +150,11 @@
             <artifactId>logback-core</artifactId>
             <version>${logback.version}</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-native-api</artifactId>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
 </project>

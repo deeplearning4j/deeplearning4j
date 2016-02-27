@@ -34,6 +34,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.util.NDArrayUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -215,7 +216,7 @@ public class Transforms {
             idx.add(put.sub(1));
         }
 
-        INDArray ret = Nd4j.create(ArrayUtil.toInts(ArrayUtil.toNDArray(d.shape()).muli(scale)));
+        INDArray ret = Nd4j.create(NDArrayUtil.toInts(NDArrayUtil.toNDArray(d.shape()).muli(scale)));
         INDArray retLinear = ret.linearView();
         for(int i = 0; i < retLinear.length(); i++) {
             for(int j = 0; j < idx.get(0).length(); j++) {

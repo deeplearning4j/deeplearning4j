@@ -30,7 +30,7 @@ public class TensorCalculator1d implements TensorCalculator {
             tensorDim += shape.length;
         this.tensorDim = tensorDim;
 
-        this.shapeMinusTensorDim = ArrayUtil.removeIndex(shape,tensorDim);
+        this.shapeMinusTensorDim = ArrayUtil.removeIndex(shape, tensorDim);
 
         elementWiseStride = stride[tensorDim];
         tensorShape = new int[]{1,shape[tensorDim]};

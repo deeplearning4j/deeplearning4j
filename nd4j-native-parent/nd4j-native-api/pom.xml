@@ -1,0 +1,133 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>nd4j-native-parent</artifactId>
+        <groupId>org.nd4j</groupId>
+        <version>0.4-rc3.9-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>nd4j-native-api</artifactId>
+    <packaging>jar</packaging>
+
+    <name>nd4j-native-api</name>
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <generate-sources.skip>false</generate-sources.skip> <!-- To skip header file parsing phase: -Dgenerate-sources.skip=true  -->
+        <process-classes.skip> false</process-classes.skip>  <!-- To skip native compilation phase: -Dprocess-classes.skip=true    -->
+        <platform>${os.name}-${os.arch}</platform> <!-- For Android: -Dplatform=android-arm                                        -->
+        <platform.root />            <!--              -Dplatform.root=/path/to/android-ndk/                         -->
+        <platform.compiler />    <!--              -Dplatform.compiler=/path/to/arm-linux-androideabi-g++        -->
+        <platform.properties>${platform}</platform.properties>
+        <javacpp.version>1.1</javacpp.version>
+    </properties>
+    <build>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.12.4</version>
+                <configuration>
+                    <argLine>-Xmx1024m</argLine>
+                    <environmentVariables>
+                        <LD_LIBRARY_PATH>${env.LD_LIBRARY_PATH}:${user.dir}</LD_LIBRARY_PATH>
+                    </environmentVariables>
+                    <includes>
+                        <include>**/Nd4jTestSuite.java</include>
+                    </includes>
+                    <excludes>
+                        <exclude>**/Test*.java</exclude>
+                        <exclude>**/*Test.java</exclude>
+                        <exclude>**/*TestCase.java</exclude>
+                    </excludes>
+                    <systemPropertyVariables>
+                        <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.cpu.CpuBackend</org.nd4j.linalg.defaultbackend>
+                        <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.cpu.CpuBackend</org.nd4j.linalg.tests.backendstorun>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.4</version>
+                <executions>
+                    <execution>
+                        <id>default-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <archive>
+                                <manifest>
+                                    <addClasspath>true</addClasspath>
+                                </manifest>
+                                <manifestEntries>
+                                    <!-- <addClasspath /> is broken: http://jira.codehaus.org/browse/MJAR-61 -->
+                                    <Class-Path>./javacpp.jar ${project.artifactId}.jar</Class-Path>
+                                    <Name>org/nd4j/linalg/cpu/javacpp</Name>
+                                    <Implementation-Title>${project.name}</Implementation-Title>
+                                    <Implementation-Vendor>Skymind</Implementation-Vendor>
+                                    <Implementation-Version>${project.version}</Implementation-Version>
+                                    <Specification-Title>${project.name}</Specification-Title>
+                                    <Specification-Vendor>Skymind</Specification-Vendor>
+                                    <Specification-Version>${project.version}</Specification-Version>
+                                </manifestEntries>
+                            </archive>
+                            <includes>
+                                <include>META-INF/*</include>
+                                <include>META-INF/services/*</include>
+                                <include>org/nd4j/*</include>
+                                <include>org/nd4j/</include>
+                                <include>*.properties</include>
+                                <include>org/nd4j/nativeblas/*</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>${platform}</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>${platform}</classifier>
+                            <skipIfEmpty>true</skipIfEmpty>
+                            <includes>
+                                <include>org/nd4j/nativeblas/</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-install-plugin</artifactId>
+                <version>2.3</version>
+                <configuration>
+                    <createChecksum>true</createChecksum>
+                </configuration>
+            </plugin>
+        </plugins>
+
+
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-buffer</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>javacpp</artifactId>
+            <version>1.1</version>
+        </dependency>
+    </dependencies>
+</project>

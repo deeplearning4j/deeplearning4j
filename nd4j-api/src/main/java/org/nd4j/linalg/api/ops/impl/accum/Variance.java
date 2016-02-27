@@ -27,7 +27,6 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.linalg.util.ComplexUtil;
 
 /**
  * Variance with bias correction.
@@ -263,10 +262,11 @@ public class Variance extends BaseAccumulation {
 
     @Override
     public IComplexNumber getAndSetFinalResult(IComplexNumber accum) {
-        if (biasCorrected)
+   /*     if (biasCorrected)
             finalResultComplex = (accum.sub(ComplexUtil.pow(Nd4j.createComplexNumber(bias, 0), 2.0).div(Nd4j.createComplexNumber(n(), 0))).div(Nd4j.createComplexNumber(n() - 1.0, 0.0)));
         else finalResultComplex = accum.divi(n - 1);
-        return finalResultComplex;
+        return finalResultComplex;*/
+        throw new UnsupportedOperationException();
     }
 
     @Override
