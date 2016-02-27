@@ -5,6 +5,7 @@ import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.GradientNormalization;
+import org.deeplearning4j.nn.conf.LearningRateDecayPolicy;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
@@ -40,10 +41,11 @@ public abstract class BaseUpdater implements Updater {
         for (Map.Entry<String, INDArray> gradientPair : gradient.gradientForVariable().entrySet()) {
             paramName = gradientPair.getKey();
             paramVal = gradientPair.getValue();
+            LearningRateDecayPolicy decay = layer.conf().getLearningRateDecayPolicy();
+            if (decay != null || decay != LearningRateDecayPolicy.None)
+                applyLrDecayPolicy(decay, layer, iteration, paramName);
 
-            if(layer.conf().isUseSchedules())
-                checkSchedules(layer, iteration, paramName);
-
+            applyMomentumDecayPolicy(layer, iteration, paramName);
             updater = init(paramName, paramVal, layer);
             gradient2 = updater.getGradient(paramVal, iteration);
             postApply(layer, gradient2, paramName, miniBatchSize);
@@ -73,20 +75,38 @@ public abstract class BaseUpdater implements Updater {
     /**
      *  Update learningRate and/or momentum if schedules exist
      */
-    public void checkSchedules(Layer layer, int iteration, String param){
+    public void applyMomentumDecayPolicy(Layer layer, int iteration, String variable){
         NeuralNetConfiguration conf = layer.conf();
 
-        if (conf.getLayer().getLearningRateAfter().containsKey(iteration)) {
-            conf.getLayer().setLearningRate(conf.getLayer().getLearningRateAfter().get(iteration));
-            if(updaterForVariable.get(param) != null)
-                updaterForVariable.get(param).update(conf.getLayer().getLearningRateAfter().get(iteration));
-        }
         if (conf.getLayer().getMomentumAfter().containsKey(iteration)) {
             conf.getLayer().setMomentum(conf.getLayer().getMomentumAfter().get(iteration));
-            if(updaterForVariable.get(param) != null)
-                updaterForVariable.get(param).update(conf.getLearningRateByParam(param), conf.getLayer().getMomentumAfter().get(iteration));
+            if(updaterForVariable.get(variable) != null)
+                updaterForVariable.get(variable).update(conf.getLearningRateByParam(variable), conf.getLayer().getMomentumAfter().get(iteration));
         }
 
+    }
+
+    public void applyLrDecayPolicy(LearningRateDecayPolicy decay, Layer layer, int iteration, String variable){
+        NeuralNetConfiguration conf = layer.conf();
+        double decayRate = layer.conf().getLrDecayRate();
+        double lr = conf.getLearningRateByParam(variable);
+        switch(decay){
+            case Exponential:
+                conf.setLearningRateByParam(variable, lr * Math.pow(decayRate, conf.getLrDecayNumBatches()));
+                break;
+            case Inverse:
+                conf.setLearningRateByParam(variable, lr / Math.pow((1+decayRate * conf.getLrDecayNumBatches()), conf.getLrDecayPower()));
+                break;
+            case Step:
+                conf.setLearningRateByParam(variable, lr * Math.pow(decayRate, Math.floor(conf.getLrDecayNumBatches()/conf.getLrDecayNumSteps())));
+                break;
+            case Schedule:
+                if (conf.getLayer().getLearningRateAfter().containsKey(iteration))
+                    conf.getLayer().setLearningRate(conf.getLayer().getLearningRateAfter().get(iteration));
+                break;
+        }
+        if (updaterForVariable.get(variable) != null)
+            updaterForVariable.get(variable).update(conf.getLearningRateByParam(variable));
     }
 
     /**

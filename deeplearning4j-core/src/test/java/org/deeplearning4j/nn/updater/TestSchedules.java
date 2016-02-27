@@ -199,13 +199,12 @@ public class TestSchedules {
         Map<Integer,Double> momentumAfter = new HashMap<>();
         momentumAfter.put(1, 0.2);
         int iterations = 2;
-        int nLayers = 2;
         int[] nIns = {4,2};
         int[] nOuts = {2,3};
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .learningRate(lr).momentum(mu).momentumAfter(momentumAfter).schedules(true).iterations(iterations)
-                .list(nLayers)
+                .list()
                 .layer(0, new DenseLayer.Builder().nIn(nIns[0]).nOut(nOuts[0]).updater(org.deeplearning4j.nn.conf.Updater.NESTEROVS).build())
                 .layer(1, new OutputLayer.Builder().nIn(nIns[1]).nOut(nOuts[1]).updater(org.deeplearning4j.nn.conf.Updater.NESTEROVS).build())
                 .backprop(true).pretrain(false)
@@ -219,7 +218,7 @@ public class TestSchedules {
         String wKey, bKey;
 
         Gradient gradientExpected = new DefaultGradient();
-        for (int k=0; k < nLayers; k++){
+        for (int k=0; k < net.getnLayers(); k++){
             wKey = String.valueOf(k) + "_" + DefaultParamInitializer.WEIGHT_KEY;
             gradientExpected.setGradientFor(wKey, weightGradient);
             bKey = String.valueOf(k) + "_" + DefaultParamInitializer.BIAS_KEY ;

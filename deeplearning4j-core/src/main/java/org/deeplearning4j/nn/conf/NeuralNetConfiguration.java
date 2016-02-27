@@ -67,15 +67,21 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected StepFunction stepFunction;
     protected boolean useRegularization = false;
     protected boolean useDropConnect = false;
+    @Deprecated
     protected boolean useSchedules = false;
     //minimize or maximize objective
     protected boolean minimize = true;
-    protected Map<String,Double> learningRateByParam = new HashMap<>();
-    protected Map<String,Double> l1ByParam = new HashMap<>();
-    protected Map<String,Double> l2ByParam = new HashMap<>();
     // Graves LSTM & RNN
     @Deprecated
     private int timeSeriesLength = 1;
+    protected Map<String,Double> learningRateByParam = new HashMap<>();
+    protected Map<String,Double> l1ByParam = new HashMap<>();
+    protected Map<String,Double> l2ByParam = new HashMap<>();
+    protected LearningRateDecayPolicy learningRateDecayPolicy = LearningRateDecayPolicy.None;
+    protected double lrDecayRate;
+    protected double lrDecayNumBatches;
+    protected double lrDecayNumSteps;
+    protected double lrDecayPower;
 
     /**
      * Creates and returns a deep copy of the configuration.
@@ -103,17 +109,23 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     public void addVariable(String variable) {
         if(!variables.contains(variable)) {
             variables.add(variable);
-            double lr = (variable.substring(0, 1) == DefaultParamInitializer.BIAS_KEY && !Double.isNaN(layer.getBiasLearningRate()))? layer.getBiasLearningRate(): layer.getLearningRate();
-            double l1 = (variable.substring(0, 1) == DefaultParamInitializer.BIAS_KEY)? 0.0: layer.getL1();
-            double l2 = (variable.substring(0, 1) == DefaultParamInitializer.BIAS_KEY)? 0.0: layer.getL2();
-            learningRateByParam.put(variable, lr);
-            l1ByParam.put(variable, l1);
-            l2ByParam.put(variable, l2);
+            setLayerParamLR(variable);
         }
     }
     
     public void clearVariables(){
     	variables.clear();
+    }
+
+
+    public void setLayerParamLR(String variable){
+        double lr = (variable.substring(0, 1) == DefaultParamInitializer.BIAS_KEY && !Double.isNaN(layer.getBiasLearningRate()))? layer.getBiasLearningRate(): layer.getLearningRate();
+        double l1 = (variable.substring(0, 1) == DefaultParamInitializer.BIAS_KEY)? 0.0: layer.getL1();
+        double l2 = (variable.substring(0, 1) == DefaultParamInitializer.BIAS_KEY)? 0.0: layer.getL2();
+        learningRateByParam.put(variable, lr);
+        l1ByParam.put(variable, l1);
+        l2ByParam.put(variable, l2);
+
     }
 
     public double getLearningRateByParam(String variable){
@@ -130,6 +142,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     public double getL2ByParam(String variable ){
         return l2ByParam.get(variable);
     }
+
 
     /**
      * Fluent interface for building a list of configurations
@@ -316,38 +329,42 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         protected WeightInit weightInit = WeightInit.XAVIER;
         protected double biasInit = 0.0;
         protected Distribution dist = new NormalDistribution(1e-3,1);
-        private double learningRate = 1e-1;
-        private Map<Integer, Double> learningRateAfter = new HashMap<>();
-        private double lrScoreBasedDecay;
-        private double momentum = 0.5;
-        private Map<Integer, Double> momentumAfter = new HashMap<>();
-        private double l1 = 0.0;
-        private double l2 = 0.0;
+        protected double learningRate = 1e-1;
+        protected Map<Integer, Double> learningRateAfter = new HashMap<>();
+        protected double lrScoreBasedDecay;
+        protected double momentum = 0.5;
+        protected Map<Integer, Double> momentumAfter = new HashMap<>();
+        protected double l1 = 0.0;
+        protected double l2 = 0.0;
         protected double dropOut = 0;
         protected Updater updater = Updater.SGD;
-        private double rho;
-        private double rmsDecay = 0.95;
-        private double adamMeanDecay = 0.9;
-        private double adamVarDecay = 0.999;
-        private Layer layer;
-        private boolean miniBatch = true;
-        private int numIterations = 5;
-        private int maxNumLineSearchIterations = 5;
-        private long seed = System.currentTimeMillis();
-        private boolean useRegularization = false;
-        private boolean useSchedules = false;
-        private OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
+        protected double rho;
+        protected double rmsDecay = 0.95;
+        protected double adamMeanDecay = 0.9;
+        protected double adamVarDecay = 0.999;
+        protected Layer layer;
+        protected boolean miniBatch = true;
+        protected int numIterations = 5;
+        protected int maxNumLineSearchIterations = 5;
+        protected long seed = System.currentTimeMillis();
+        protected boolean useRegularization = false;
         @Deprecated
-        private boolean constrainGradientToUnitNorm = false;
-        private StepFunction stepFunction = null;
-        private boolean useDropConnect = false;
-        private boolean minimize = true;
+        protected boolean useSchedules = false;
+        protected OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
         @Deprecated
-        private int timeSeriesLength = 1;
-        private GradientNormalization gradientNormalization = GradientNormalization.None;
-        private double gradientNormalizationThreshold = 1.0;
-
-
+        protected boolean constrainGradientToUnitNorm = false;
+        protected StepFunction stepFunction = null;
+        protected boolean useDropConnect = false;
+        protected boolean minimize = true;
+        @Deprecated
+        protected int timeSeriesLength = 1;
+        protected GradientNormalization gradientNormalization = GradientNormalization.None;
+        protected double gradientNormalizationThreshold = 1.0;
+        protected LearningRateDecayPolicy learningRateDecayPolicy = LearningRateDecayPolicy.None;
+        protected double lrDecayRate;
+        protected double lrDecayNumBatches;
+        protected double lrDecayNumSteps;
+        protected double lrDecayPower;
 
         /**Deprecated.
          +         * Time series length
@@ -504,6 +521,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         }
 
         /** Whether to use schedules, learningRateAfter and momentumAfter*/
+        @Deprecated
         public Builder schedules(boolean schedules) {
             this.useSchedules = schedules;
             return this;
@@ -557,6 +575,30 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         /** Learning rate. Defaults to 1e-1*/
         public Builder learningRate(double learningRate) {
             this.learningRate = learningRate;
+            return this;
+        }
+
+        /** Learning decay rate used when applying a policy.*/
+        public Builder lrDecayRate(double lrDecayRate) {
+            this.lrDecayRate = lrDecayRate;
+            return this;
+        }
+
+        /** Number of batches are used in learning decay policies: exponential, inverse and step.*/
+        public Builder lrDecayNumBatches(double lrDecayNumBatches) {
+            this.lrDecayNumBatches = lrDecayNumBatches;
+            return this;
+        }
+
+        /** Number of steps used for learning decay step policy.*/
+        public Builder lrDecayNumSteps(double lrDecayNumSteps) {
+            this.lrDecayNumSteps = lrDecayNumSteps;
+            return this;
+        }
+
+        /** Power is used in learning decay inverse policy.*/
+        public Builder lrDecayPower(double lrDecayPower) {
+            this.lrDecayPower = lrDecayPower;
             return this;
         }
 
@@ -659,6 +701,16 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+        /** Learning rate decay policy. Used to adapt learning rate based on policy.
+         * @param policy Type of policy to use. Defaults to None.
+         * @see org.deeplearning4j.nn.conf.GradientNormalization
+         */
+        public Builder learningRateDecayPolicy(LearningRateDecayPolicy policy){
+            this.learningRateDecayPolicy = policy;
+            return this;
+        }
+
+
         /**
          * Return a configuration based on this builder
          *
@@ -680,7 +732,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             conf.stepFunction = stepFunction;
             conf.useDropConnect = useDropConnect;
             conf.miniBatch = miniBatch;
-
+            conf.learningRateDecayPolicy = learningRateDecayPolicy;
+            conf.lrDecayRate = lrDecayRate;
+            conf.lrDecayNumBatches = lrDecayNumBatches;
+            conf.lrDecayNumSteps = lrDecayNumSteps;
+            conf.lrDecayPower = lrDecayPower;
 
             if(layer != null ) {
                 if (Double.isNaN(layer.getLearningRate())) layer.setLearningRate(learningRate);
