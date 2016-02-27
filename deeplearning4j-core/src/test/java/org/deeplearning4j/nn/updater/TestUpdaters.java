@@ -461,7 +461,6 @@ public class TestUpdaters {
 	public void testSetGetUpdater(){
 
 		Nd4j.getRandom().setSeed(12345L);
-		int nLayers = 4;
 		double lr = 0.03;
 
 		int nIn = 4;
@@ -470,7 +469,7 @@ public class TestUpdaters {
 		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
 				.learningRate(lr)
 				.momentum(0.6)
-				.list(nLayers)
+				.list()
 				.layer(0, new DenseLayer.Builder().nIn(nIn).nOut(5).updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
 				.layer(1, new DenseLayer.Builder().nIn(5).nOut(6).updater(org.deeplearning4j.nn.conf.Updater.NONE).build())
 				.layer(2, new DenseLayer.Builder().nIn(6).nOut(7).updater(org.deeplearning4j.nn.conf.Updater.ADAGRAD).build())
@@ -494,16 +493,14 @@ public class TestUpdaters {
 	public void testSetGetUpdater2(){
 		//Same as above test, except that we are doing setUpdater on a new network
 		Nd4j.getRandom().setSeed(12345L);
-		int nLayers = 4;
 		double lr = 0.03;
-
 		int nIn = 4;
 		int nOut = 8;
 
 		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
 				.learningRate(lr)
 				.momentum(0.6)
-				.list(nLayers)
+				.list()
 				.layer(0, new DenseLayer.Builder().nIn(nIn).nOut(5).updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
 				.layer(1, new DenseLayer.Builder().nIn(5).nOut(6).updater(org.deeplearning4j.nn.conf.Updater.NONE).build())
 				.layer(2, new DenseLayer.Builder().nIn(6).nOut(7).updater(org.deeplearning4j.nn.conf.Updater.ADAGRAD).build())
