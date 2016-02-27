@@ -16,9 +16,74 @@
         <module>nd4j-native-api</module>
         <module>nd4j-cuda-7.5</module>
     </modules>
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>javacpp</artifactId>
+                    <version>${javacpp.version}</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.nd4j</groupId>
+                            <artifactId>nd4j-native-api</artifactId>
+                            <version>${project.version}</version>
+                        </dependency>
+                    </dependencies>
+                    <configuration>
+                        <properties>${platform.properties}</properties>
+                        <propertyKeysAndValues>
+                            <property>
+                                <name>platform.root</name>
+                                <value>${platform.root}</value>
+                            </property>
+                            <property>
+                                <name>platform.compiler</name>
+                                <value>${platform.compiler}</value>
+                            </property>
+                        </propertyKeysAndValues>
+                        <classPaths>
+                            <classPath>${project.build.outputDirectory}</classPath>
+                        </classPaths>
+                        <includePath>${env.LIBND4J_HOME}/blas</includePath>
+                        <linkPath>${env.LIBND4J_HOME}/blasbuild/blas</linkPath>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>generate-sources</id>
+                            <phase>generate-sources</phase>
+                            <goals>
+                                <goal>build</goal>
+                            </goals>
+                            <configuration>
+                                <skip>${generate-sources.skip}</skip>
+                                <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
+                                <classOrPackageNames>
+                                    <classOrPackageName>org.nd4j.nativeblas.Nd4jBlas</classOrPackageName>
+                                    <classOrPackageName>org.nd4j.nativeblas.NativeOps</classOrPackageName>
+                                </classOrPackageNames>
+                            </configuration>
+                        </execution>
+                        <execution>
+                            <id>process-classes</id>
+                            <phase>process-classes</phase>
+                            <goals>
+                                <goal>build</goal>
+                            </goals>
+                            <configuration>
+                                <outputDirectory>${project.basedir}/src/main/resources/lib/linux-x86_64</outputDirectory>
+                                <skip>${process-classes.skip}</skip>
+                                <classOrPackageNames>
+                                    <classOrPackageName>org.nd4j.nativeblas.Nd4jBlas</classOrPackageName>
+                                    <classOrPackageName>org.nd4j.nativeblas.NativeOps</classOrPackageName>
+                                </classOrPackageNames>
 
-    <properties>
-        <main.basedir>${project.parent.basedir}</main.basedir>
-    </properties>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
 
 </project>

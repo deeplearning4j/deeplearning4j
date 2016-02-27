@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.api.buffer;
 
+import static org.junit.Assert.*;
 
 import io.netty.buffer.ByteBuf;
 import org.junit.Before;

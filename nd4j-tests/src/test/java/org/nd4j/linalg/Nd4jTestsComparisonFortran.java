@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg;
 
+import static org.junit.Assert.*;
 
 import org.apache.commons.math3.linear.BlockRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;

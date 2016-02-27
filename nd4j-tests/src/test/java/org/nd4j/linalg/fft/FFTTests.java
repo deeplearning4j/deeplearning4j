@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.VectorFFT;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
+import static org.junit.Assert.*;
 
 /**
  * Base class for FFTs

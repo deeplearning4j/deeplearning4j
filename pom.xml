@@ -131,8 +131,8 @@
         </profile>
     </profiles>
     <scm>
-        <connection>scm:git@github.com:SkymindIO/nd4j.git</connection>
-        <developerConnection>scm:git:git@github.com:SkymindIO/nd4j.git</developerConnection>
+        <connection>scm:git@github.com:deeplearning4j/nd4j.git</connection>
+        <developerConnection>scm:git:git@github.com:deeplearning4j/nd4j.git</developerConnection>
         <url>git@github.com:deeplearning4j/nd4j.git</url>
         <tag> HEAD</tag>
     </scm>
@@ -164,7 +164,13 @@
         <junit.version>4.12</junit.version>
         <slf4j.version>1.7.10</slf4j.version>
         <logback.version>1.1.2</logback.version>
-
+        <javacpp.version>1.1</javacpp.version>
+        <generate-sources.skip>false</generate-sources.skip> <!-- To skip header file parsing phase: -Dgenerate-sources.skip=true  -->
+        <process-classes.skip> false</process-classes.skip>  <!-- To skip native compilation phase: -Dprocess-classes.skip=true    -->
+        <platform>${os.name}-${os.arch}</platform> <!-- For Android: -Dplatform=android-arm                                        -->
+        <platform.root />            <!--              -Dplatform.root=/path/to/android-ndk/                         -->
+        <platform.compiler />    <!--              -Dplatform.compiler=/path/to/arm-linux-androideabi-g++        -->
+        <platform.properties>${platform}</platform.properties>
     </properties>
     <developers>
         <developer>

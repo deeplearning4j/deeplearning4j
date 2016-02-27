@@ -8,6 +8,11 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.util.ArrayUtil;
 
+
+
+import static org.junit.Assert.*;
+
+
 import java.nio.IntBuffer;
 
 /**

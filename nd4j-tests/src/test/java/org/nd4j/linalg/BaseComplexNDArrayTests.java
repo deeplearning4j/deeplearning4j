@@ -10,6 +10,10 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.api.shape.Shape;
 
+
+import static org.junit.Assert.*;
+
+
 import java.util.Arrays;
 
 /**

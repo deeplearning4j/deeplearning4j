@@ -20,7 +20,6 @@
         <platform.root />            <!--              -Dplatform.root=/path/to/android-ndk/                         -->
         <platform.compiler />    <!--              -Dplatform.compiler=/path/to/arm-linux-androideabi-g++        -->
         <platform.properties>${platform}</platform.properties>
-        <javacpp.version>0.11</javacpp.version>
     </properties>
     <build>
         <testSourceDirectory>../nd4j-tests/src/test</testSourceDirectory>
@@ -267,10 +266,6 @@
             <artifactId>nd4j-api</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.bytedeco</groupId>
-            <artifactId>javacpp</artifactId>
-            <version>${javacpp.version}</version>
-        </dependency>
+
     </dependencies>
 </project>

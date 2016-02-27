@@ -8,6 +8,8 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
+import static org.junit.Assert.*;
+
 /**
  * @author Adam Gibson
  */
