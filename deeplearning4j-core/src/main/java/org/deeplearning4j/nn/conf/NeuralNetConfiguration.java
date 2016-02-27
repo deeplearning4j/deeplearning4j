@@ -703,10 +703,42 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
         /** Learning rate decay policy. Used to adapt learning rate based on policy.
          * @param policy Type of policy to use. Defaults to None.
-         * @see org.deeplearning4j.nn.conf.GradientNormalization
          */
         public Builder learningRateDecayPolicy(LearningRateDecayPolicy policy){
             this.learningRateDecayPolicy = policy;
+            return this;
+        }
+
+        /** Set the decay rate for the learning rate decay policy.
+         * @param lrDecayRate rate.
+         */
+        public Builder lrPolicyDecayRate(double lrDecayRate){
+            this.lrDecayRate = lrDecayRate;
+            return this;
+        }
+
+        /** Set the number of batches of examples that will be passed into the model
+         *  Used for learning rate policies.
+         * @param lrDecayNumBatches number of batches passed into the model
+         */
+        public Builder lrPolicyDecayNumBatches(double lrDecayNumBatches){
+            this.lrDecayNumBatches = lrDecayNumBatches;
+            return this;
+        }
+
+        /** Set the number of steps used for learning rate steps policy.
+         * @param lrDecayNumSteps number of steps
+         */
+        public Builder lrPolicyDecayNumSteps(double lrDecayNumSteps){
+            this.lrDecayNumSteps = lrDecayNumSteps;
+            return this;
+        }
+
+        /** Set the power used for learning rate inverse policy.
+         * @param lrDecayPower power
+         */
+        public Builder lrPolicyDecayPower(double lrDecayPower){
+            this.lrDecayPower = lrDecayPower;
             return this;
         }
 
