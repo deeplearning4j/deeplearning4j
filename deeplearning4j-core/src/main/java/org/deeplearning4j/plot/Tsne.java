@@ -7,6 +7,7 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.api.rng.distribution.impl.NormalDistribution;
+import org.nd4j.linalg.dimensionalityreduction.PCA;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -36,6 +37,7 @@ import static org.nd4j.linalg.ops.transforms.Transforms.*;
  * DECOMPOSED VERSION, DO NOT USE IT EVER
  *
  * @author raver119@gmail.com
+ * @author Adam Gibson
  */
 public class Tsne {
     protected int maxIter = 1000;
@@ -70,13 +72,13 @@ public class Tsne {
     public INDArray calculate(INDArray X, int targetDimensions, double perplexity) {
         // pca hook
         if (usePca) {
-
+            X = PCA.pca(X, Math.min(50,X.columns()),normalize);
+        } else if(normalize) {
+            X.subi(X.min(Integer.MAX_VALUE));
+            X = X.divi(X.max(Integer.MAX_VALUE));
+            X = X.subiRowVector(X.mean(0));
         }
 
-        // normalization hook
-        if (normalize) {
-
-        }
 
         int n = X.rows();
         // FIXME: this is wrong, another distribution required here
@@ -86,7 +88,7 @@ public class Tsne {
         INDArray gains = Nd4j.ones(n, targetDimensions);
 
         boolean stopLying = false;
-        System.out.println("Y:Shape is = " + Arrays.toString(Y.shape()));
+        logger.debug("Y:Shape is = " + Arrays.toString(Y.shape()));
 
         // compute P-values
         INDArray P = x2p(X, tolerance, perplexity);
@@ -95,14 +97,6 @@ public class Tsne {
         for (int i = 0; i < maxIter; i++) {
             INDArray sumY =  pow(Y, 2).sum(1).transpose();
 
-            /*
-            INDArray num = Y.mmul(Y.transpose()).mul(-2)
-                    .addRowVector(sumY)
-                    .transpose()
-                    .addRowVector(sumY)
-                    .addi(1)
-                    .rdiv(1);
-            */
             //Student-t distribution
             //also un normalized q
             // also known as num in original implementation
@@ -120,8 +114,8 @@ public class Tsne {
 
             INDArray PQ = P.sub(Q).muli(qu);
 
-            //System.out.println("PQ shape is: " + Arrays.toString(PQ.shape()));
-            //System.out.println("PQ.sum(1) shape is: " + Arrays.toString(PQ.sum(1).shape()));
+            logger.debug("PQ shape is: " + Arrays.toString(PQ.shape()));
+            logger.debug("PQ.sum(1) shape is: " + Arrays.toString(PQ.sum(1).shape()));
 
             dY = diag(PQ.sum(1)).subi(PQ).mmul(Y).muli(4);
 
@@ -216,17 +210,6 @@ public class Tsne {
         write.close();
     }
 
-    private INDArray square(INDArray X) {
-        INDArray F = X.dup();
-        for (int y = 0; y< F.rows(); y++) {
-            INDArray slice = F.slice(y);
-            for (int x = 0; x < F.columns(); x++) {
-                slice.putScalar(x, Math.pow(slice.getDouble(x), 2));
-            }
-        }
-        return F;
-    }
-
     /**
      * Computes a gaussian kernel
      * given a vector of squared distance distances
@@ -260,32 +243,25 @@ public class Tsne {
 
         INDArray sumX =  pow(X, 2).sum(1);
 
-        logger.info("sumX shape: " + Arrays.toString(sumX.shape()));
+        logger.debug("sumX shape: " + Arrays.toString(sumX.shape()));
 
         INDArray times = X.mmul(X.transpose()).muli(-2);
 
-        logger.info("times shape: " + Arrays.toString(times.shape()));
+        logger.debug("times shape: " + Arrays.toString(times.shape()));
 
         INDArray prodSum = times.transpose().addiColumnVector(sumX);
 
-        logger.info("prodSum shape: " + Arrays.toString(prodSum.shape()));
+        logger.debug("prodSum shape: " + Arrays.toString(prodSum.shape()));
 
         INDArray D = X.mmul(X.transpose()).mul(-2) // thats times
                 .transpose().addColumnVector(sumX) // thats prodSum
                 .addRowVector(sumX.transpose()); // thats D
-/*
-        double dot = Nd4j.getBlasWrapper().dot(X, x_T);
 
-        INDArray D = X.mmul(X.transpose()).muli(-2)
-                .addRowVector(sumX)
-                .transpose()
-                .addRowVector(sumX);
-*/
         logger.info("Calculating probabilities of data similarities...");
-        logger.info("Tolerance: " + tolerance);
+        logger.debug("Tolerance: " + tolerance);
         for(int i = 0; i < n; i++) {
             if(i % 500 == 0 && i > 0)
-                logger.info("Handled " + i + " records");
+                logger.info("Handled [" + i + "] records out of ["+ n +"]");
 
             double betaMin = Double.NEGATIVE_INFINITY;
             double betaMax = Double.POSITIVE_INFINITY;
