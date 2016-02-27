@@ -27,9 +27,8 @@ Here's a non-exhaustive list of Deeplearning4j's features. We'll be updating it 
 
 * [Restricted Boltzmann machines](../restrictedboltzmannmachine.html)
 * [Convolutional nets](../convolutionalnets.html)
-* [Recursive neural tensor networks](http://nlp.stanford.edu/sentiment/)
 * [Recursive autoencoders](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/models/featuredetectors/autoencoder/recursive/RecursiveAutoEncoderTest.java)
-* [Recurrent nets: Long Short-Term Memory (LSTM)](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/models/classifiers/lstm/LSTMTest.java)
+* [Recurrent nets: Long Short-Term Memory (LSTM)](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/models/classifiers/lstm/LSTMTest.java) (including bi-directional LSTMs)
 * [Deep-belief networks](../deepbeliefnetwork.html)
 * [Denoising and Stacked Denoising autoencoders](../denoisingautoencoder.html)
 * [Deep autoencoders](../deepautoencoder.html)
@@ -47,33 +46,54 @@ DL4J contains the following built-in vectorization algorithms:
 * [Word2Vec](../word2vec.html)
 * [Bag-of-Words encoding for word count and TF-IDF](../bagofwords-tf-idf.html)
 * Constituency parsing
+* [DeepWalk](http://arxiv.org/abs/1403.6652)
 
-DL4J supports two kinds of back propagation (optimization algorithms):
+DL4J supports the following type of optimization algorithms:
 
-* Normal stochastic gradient descent
+* Stochastic gradient descent
+* Stochastic gradient descent with line search
 * Conjugate gradient line search (c.f. [Hinton 2006](http://www.cs.toronto.edu/~hinton/science.pdf))
+* L-BFGS
+
+Each of these optimization algorithms may be paired with training features (known as 'updaters' in DL4J) such as:
+
+* SGD (learning rate only)
+* Nesterovs momentum
+* Adagrad
+* RMSProp
+* Adam
+* AdaDelta
 
 ### Hyperparameters
 
 * Dropout (random ommission of feature detectors to prevent overfitting)
 * Sparsity (force activations of sparse/rare inputs)
 * Adagrad (feature-specific learning-rate optimization)
-* L2 regularization (weight decay)
+* L1 and L2 regularization (weight decay)
 * Weight transforms (useful for deep autoencoders)
 * Probability distribution manipulation for initial weight generation
+* Gradient normalization and clipping
 
 ### Loss/objective functions
 
 * Reconstruction entropy
 * Squared loss
-* MC class cross entropy for classification
+* Mean squared error
+* Multi-class cross entropy for classification
 * Negative log likelihood
-* Momentum
+* RMSE_XENT
 
 ### Activation functions 
 
+Activations functions are defined in ND4J [here](https://github.com/deeplearning4j/nd4j/tree/master/nd4j-api/src/main/java/org/nd4j/linalg/api/ops/impl/transforms)
+
+* ReLU
+* Leaky ReLU
 * Tanh
 * Sigmoid
-* HardTanh
+* Hard Tanh
 * Softmax
-* Linear
+* Identity
+* [ELU](http://arxiv.org/abs/1511.07289): Exponential Linear Units
+* Softsign
+* Softplus
