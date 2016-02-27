@@ -12,6 +12,7 @@ import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.api.Updater;
+import org.deeplearning4j.nn.conf.LearningRateDecayPolicy;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -325,7 +326,9 @@ public class TestUpdaters {
         INDArray gradientW = Nd4j.ones(nIns[0], nOuts[0]);
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .learningRate(lr).learningRateScoreBasedDecayRate(lrScoreDecay)
+                .learningRate(lr)
+				.learningRateDecayPolicy(LearningRateDecayPolicy.Score)
+				.lrPolicyDecayRate(lrScoreDecay)
                 .list()
                 .layer(0, new DenseLayer.Builder().nIn(nIns[0]).nOut(nOuts[0]).updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
                 .layer(1, new OutputLayer.Builder().nIn(nIns[1]).nOut(nOuts[1]).updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
@@ -337,7 +340,7 @@ public class TestUpdaters {
 
 		ConvexOptimizer opt = new StochasticGradientDescent(net.getDefaultConfiguration(), new NegativeDefaultStepFunction(), null, net);
         opt.checkTerminalConditions(gradientW, oldScore, newScore, iteration);
-		assertEquals(lrScoreDecay, net.getLayer(0).conf().getLayer().getLrScoreBasedDecay(), 1e-4);
+		assertEquals(lrScoreDecay, net.getLayer(0).conf().getLrDecayRate(), 1e-4);
 		assertEquals(lr*(lrScoreDecay + Nd4j.EPS_THRESHOLD), net.getLayer(0).conf().getLearningRateByParam("W"), 1e-4);
 
 	}
@@ -354,6 +357,8 @@ public class TestUpdaters {
 				.regularization(false)
 				.optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
 				.learningRate(1.0)
+				.learningRateDecayPolicy(LearningRateDecayPolicy.Score)
+				.lrPolicyDecayRate(0.10)
 				.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
 				.updater(org.deeplearning4j.nn.conf.Updater.SGD)
 				.seed(12345L)
