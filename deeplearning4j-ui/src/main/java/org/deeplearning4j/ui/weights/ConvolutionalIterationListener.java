@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.layers.convolution.ConvolutionLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.ui.UiConnectionInfo;
 import org.deeplearning4j.ui.UiServer;
 import org.deeplearning4j.ui.UiUtils;
 import org.deeplearning4j.ui.activation.PathUpdate;
@@ -53,6 +54,9 @@ public class ConvolutionalIterationListener implements IterationListener {
     private Color borderColor = new Color(140,140,140);
     private Color bgColor = new Color(255,255,255);
 
+    public ConvolutionalIterationListener(UiConnectionInfo connectionInfo, int visualizationFrequency) {
+
+    }
 
     public ConvolutionalIterationListener(int visualizationFrequency) {
         this(visualizationFrequency, true);
