@@ -84,11 +84,12 @@ public class BooleanIndexing {
         Shape.iterate(n, new CoordinateFunction() {
             @Override
             public void process(int[]... coord) {
-                a.set(a.get() && cond.apply(n.getFloat(coord[0])));
+                if (a.get())
+                    a.compareAndSet(true, a.get() && cond.apply(n.getFloat(coord[0])));
             }
         });
 
-        return ret;
+        return a.get();
     }
 
     /**
@@ -104,11 +105,12 @@ public class BooleanIndexing {
         Shape.iterate(n, new CoordinateFunction() {
             @Override
             public void process(int[]... coord) {
-                a.set(a.get() || cond.apply(n.getFloat(coord[0])));
+                if (!a.get())
+                    a.compareAndSet(false, a.get() || cond.apply(n.getFloat(coord[0])));
             }
         });
 
-        return ret;
+        return a.get();
     }
 
     /**
@@ -128,7 +130,6 @@ public class BooleanIndexing {
 
             }
         });
-
     }
 
     /**

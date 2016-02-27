@@ -19,7 +19,9 @@
 
 package org.nd4j.linalg.indexing.conditions;
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Created by agibsonccc on 10/8/14.
@@ -35,7 +37,10 @@ public class EqualsCondition extends BaseCondition {
 
     @Override
     public Boolean apply(Number input) {
-        return input.equals(value);
+        if (Nd4j.dtype == DataBuffer.Type.DOUBLE)
+            return input.doubleValue() == value.doubleValue();
+        else
+            return input.floatValue() == value.floatValue();
     }
 
     @Override
