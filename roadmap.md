@@ -10,9 +10,9 @@ These priorities have been set by what the Skymind has seen demand for among cli
 High priority:
 
 * CUDA rewrite for ND4J (under way)
-* Hyperparameter optimization (underway: [Arbiter](https://github.com/deeplearning4j/Arbiter))
+* CPU optimizations (C++ backend)
+* Hyperparameter optimization (underway, basics done: [Arbiter](https://github.com/deeplearning4j/Arbiter))
 * Parameter server
-* Computation graph
 * Sparse support for ND4J
 * Performance tests for network training vs. other platforms (and where necessary: optimizations)
 * Performance tests for Spark vs. local (ditto)
@@ -39,4 +39,4 @@ Low priority:
 * Other RNN types: multi-dimensional; attention models, Neural Turing Machine, etc.
 * 3D CNNs
 
-This is a work in progress. Last updated Jan. 14 2016.
+This is a work in progress. Last updated Feb. 27 2016.

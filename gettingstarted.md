@@ -3,29 +3,30 @@ title: Full Installation of Deeplearning4j
 layout: default
 ---
 
-# Full Installation
+# DL4J Comprehensive Setup Guide
+
+This page builds on the instructions in the [Quick Start Guide](http://deeplearning4j.org/quickstart), and provides additional details and some troubleshooting steps. Seriously, go and read that page first before you proceed with this. It's the easy way to start with DL4J.
 
 This is a multistep install. We highly recommend you join our [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) if you have questions or feedback, so we can walk you through it. If you're feeling anti-social or brashly independent, you're still invited to lurk and learn. In addition, if you are utterly new to deep learning, we've got [a road map of what to learn when you're starting out](../deeplearningforbeginners.html). 
 
-To run our examples in a few steps, please go to the [quickstart page](../quickstart.html) now. Seriously, go do that before you do this. It's the easy way to start with DL4J. 
 
-The prerequisite installs for Deeplearning4j are documented on the [ND4J "Getting Started" page](http://nd4j.org/getstarted.html) of ND4J, the linear algebra engine powering DL4J's neural nets:
+After following the steps in the [Quick Start Guide](http://deeplearning4j.org/quickstart), please read the following:
 
-1. [Java 7 or above](http://nd4j.org/getstarted.html#java) 
-2. [Integrated Development Environment: IntelliJ](http://nd4j.org/getstarted.html#ide-for-java) 
-3. [Maven](http://nd4j.org/getstarted.html#maven)
-
-After those installs, please read the following:
-
-6. OS-specific instructions
+1. Accelerating CPU Training: Installing Native BLAS Libraries
     * <a href="#linux">Linux</a>
     * <a href="#osx">OSX</a>
     * <a href="#windows">Windows</a>
-8. [GitHub](http://nd4j.org/getstarted.html#github)
-9. <a href="#eclipse">Eclipse</a>
-10. <a href="#trouble">Troubleshooting</a>
-11. <a href="#results">Reproducible Results</a>
-12. <a href="#next">Next Steps</a>
+2. [GitHub](http://nd4j.org/getstarted.html#github)
+3. <a href="#eclipse">Eclipse</a>
+4. <a href="#trouble">Troubleshooting</a>
+5. <a href="#results">Reproducible Results</a>
+6. <a href="#next">Next Steps</a>
+
+
+## Accelerating CPU Training Performance: Installing Native BLAS Libraries
+
+Neural network training is computationally expensive. In order to obtain high computational performance, ND4J makes use of native (c/fortran) basic linear algebra subpgropgams (BLAS) libraries, such as [OpenBLAS](http://www.openblas.net/). Though ND4J will operate correctly without it, training performance in DL4J will suffer.
+
 
 ### <a name="linux">Linux</a>
 
@@ -57,25 +58,18 @@ If you're using IntelliJ as your IDE, this should work already.
 
 ### <a name="osx">OSX</a>
 
-* Blas is already installed on OSX.  
+* OSX ships with a fast native BLAS library, [vecLib](https://developer.apple.com/library/mac/documentation/Performance/Conceptual/vecLib/). In most cases, this is sufficient for users, and is quite fast.
 
 ### <a name="windows">Windows</a>
 
-* While our Windows install is not always easy, Deeplearning4j is one of the few open-source deep learning projects that actually cares about trying to support the Windows community. Please see the [Windows section of our ND4J page](http://nd4j.org/getstarted.html#windows) for more instructions. 
+To install native binaries (OpenBLAS) on Windows, you have two options.
 
-* Install [MinGW 32 bits](http://www.mingw.org/) even if you have a 64-bit computer (the download button is on the upper right), and then download the [Prebuilt dynamic libraries using Mingw](http://icl.cs.utk.edu/lapack-for-windows/lapack/#libraries_mingw). 
+- Option 1: Use a pre-compiled version of OpenBLAS, as described below (recommended)
+- Option 2: Compile OpenBLAS from source. This may result in faster execution due to machine-specific optimizations possible during compilation, but is *considerably* more complicated than using the precompiled binaries.
 
-* Install [Lapack](http://icl.cs.utk.edu/lapack-for-windows/lapack/). (Lapack will ask if you have Intel compilers. You do not.)
+For the *precompiled* version of OpenBlas (see below) on **Windows**, download [this file](https://www.dropbox.com/s/6p8yn3fcf230rxy/ND4J_Win64_OpenBLAS-v0.2.14.zip?dl=1). Extract to somewhere such as `C:/BLAS`. Add that directory to your system's `PATH` environment variable, and then restart your IDE (and, ideally your computer too). If that doesn't work, please refer to this [Github issue](https://github.com/deeplearning4j/deeplearning4j/issues/1168).
 
-* Lapack offers the alternative of [VS Studio Solution](http://icl.cs.utk.edu/lapack-for-windows/lapack/#lapacke). You'll also want to look at the documentation for [Basic Linear Algebra Subprograms (BLAS)](http://www.netlib.org/blas/). 
-
-* Alternatively, you can bypass MinGW and copy the Blas dll files to a folder in your PATH. For example, the path to the MinGW bin folder is: /usr/x86_64-w64-mingw32/sys-root/mingw/bin. To read more about the PATH variable in Windows, please read the [top answer on this StackOverflow page](https://stackoverflow.com/questions/3402214/windows-7-maven-2-install). 
-
-* Cygwin is not supported. You must install DL4J from **DOS Windows**.  
-
-* Running this file, [WindowsInfo.bat](https://gist.github.com/AlexDBlack/9f70c13726a3904a2100), can help debug your Windows install. Here's one [example of its output](https://gist.github.com/AlexDBlack/4a3995fea6dcd2105c5f) that shows what to expect. First download it, then open a command window / terminal. `cd` to the directory to which it was dowloaded. Enter `WindowsInfo` and hit enter. To copy its output, right click on command window -> select all -> hit enter. Output is then on clipboard.
-
-For OpenBlas (see below) on **Windows**, download this [file](https://www.dropbox.com/s/6p8yn3fcf230rxy/ND4J_Win64_OpenBLAS-v0.2.14.zip?dl=1). Extract to somewhere such as `C:/BLAS`. Add that directory to your system's `PATH` environment variable. If that doesn't work, please refer to this [Github issue](https://github.com/deeplearning4j/deeplearning4j/issues/1168).
+To build OpenBLAS from source on Windows, see [this link](https://gist.github.com/AlexDBlack/c34e95fd08c0e9b3891b).
 
 ### <a id="open"> OpenBlas </a>
 
@@ -106,21 +100,46 @@ If OpenBlas is not working correctly, follow these steps:
 
 For OpenBlas on **Ubuntu** (15.10), please see [these instructions](http://pastebin.com/F0Rv2uEk).
 
-###<a name="eclipse">Eclipse</a> 
+## <a name="walk">DL4J Examples: A More Details Step-by-Step Walkthrough</a>
 
-After running a `git clone`, enter this command
+This section provides a more comprehensive version of the steps contained in the [quickstart guide](http://deeplearning4j.org/quickstart).
+
+* Type the following into your command line to see if you have Git.
+
+		git --version 
+
+* If you do not, install [git](https://git-scm.herokuapp.com/book/en/v2/Getting-Started-Installing-Git). 
+* In addition, set up a [Github account](https://github.com/join) and download GitHub for [Mac](https://mac.github.com/) or [Windows](https://windows.github.com/). 
+* For Windows, find "Git Bash" in your Startup Menu and open it. The Git Bash terminal should look like cmd.exe.
+* `cd` into the directory where you want to place the DL4J examples. You may want to create a new one with `mkdir dl4j-examples` and then `cd` into that. Then run:
+
+    `git clone https://github.com/deeplearning4j/dl4j-0.4-examples`
+* Make sure the files were downloaded by entering `ls`. 
+* Now open IntelliJ. 
+* Click on the "File" menu, and then on "Import Project" or "New Project from Existing Sources". This will give you a local file menu. 
+* Select the directory that contains the DL4J examples. 
+* In the next window, you will be presented with a choice of build tools. Select Maven. 
+* Check the boxes for "Search for projects recursively" and "Import Maven projects automatically" and click "Next." 
+* Make sure your JDK/SDK is set up, and if it's not, click on the plus sign at the bottom of the SDK window to add it. 
+* Then click through until you are asked to name the project. The default project name should do, so hit "Finish".
+
+## <a name="eclipse">Using DL4J Examples in Eclipse</a> 
+
+In IntelliJ, it is simply sufficient to import the examples as described in the quickstart guide. In order to use the example in Eclipse, an additional step is required. 
+
+After running a `git clone`, run the following command in your command line:
 
       mvn eclipse:eclipse 
   
-which will import the source and set everything up. 
+This will create an Eclipse project that you can then import.
 
 After many years using Eclipse, we recommend IntelliJ, which has a similar interface. Eclipse's monolithic architecture has a tendency to cause strange errors in our code and others'. 
 
-If you use Eclipse, you will need to install the [Lombok plugin](https://projectlombok.org/). You will also need the Maven plugin for Eclipse: [eclipse.org/m2e/](https://eclipse.org/m2e/).
+If you use Eclipse, you will need to install the Maven plugin for Eclipse: [eclipse.org/m2e/](https://eclipse.org/m2e/).
 
 Michael Depies has written this guide to [installing Deeplearning4j on Eclipse](https://depiesml.wordpress.com/2015/08/26/dl4j-gettingstarted/).
 
-### <a name="trouble">Troubleshooting</a>
+## <a name="trouble">Troubleshooting</a>
 
 * Please feel free to ask us about error messages on our [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j). When you post your question, please have the following information ready (it will really speed things up!):
 
@@ -154,6 +173,39 @@ Michael Depies has written this guide to [installing Deeplearning4j on Eclipse](
 Neural net weights are initialized randomly, which means the model begins learning from a different position in the weight space each time, which may lead it to different local optima. Users seeking reproducible results will need to use the same random weights, which they must initialize before the model is created. They can reinitialize with the same random weight with this line:
 
       Nd4j.getRandom().setSeed(123);
+      
+## Scala 
+
+A [Scala version of the examples is here](https://github.com/kogecoo/dl4j-0.4-examples-scala).
+      
+### Managed Environments
+
+If you are working in a managed environment like Databricks, Domino or Sense.io, you'll need to take an additional step. After you've followed the local setup above, just run 
+
+		mvn clean package
+
+in the command line from within the examples directory. Then you can upload the JAR file to the managed environment you've chosen.
+
+## Advanced: Using the Command Line on AWS
+
+If you install Deeplearning4j on an AWS server with a Linux OS, you may want to use the command line to run your first examples, rather than relying on an IDE. In that case, run the *git clone*s and *mvn clean install*s according to the instruction above. With the installs completed, you can run an actual example with one line of code in the command line. The line will vary depending on the repo version and the specific example you choose. 
+
+Here is a template:
+
+    java -cp target/nameofjar.jar fully.qualified.class.name
+
+And here is a concrete example, to show you roughly what your command should look like:
+
+    java -cp target/dl4j-0.4-examples.jar org.deeplearning4j.MLPBackpropIrisExample
+
+That is, there are two wild cards that will change as we update and you go through the examples:
+
+    java -cp target/*.jar org.deeplearning4j.*
+
+To make changes to the examples from the command line and run that changed file, you could, for example, tweak *MLPBackpropIrisExample* in *src/main/java/org/deeplearning4j/multilayer* and then maven-build the examples again. 
+
+
+
 
 ### <a name="next">Next Steps: IRIS Example & Building NNs</a>
 

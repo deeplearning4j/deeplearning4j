@@ -15,6 +15,8 @@ DeepLearning4j is perhaps the more visible project, there are a number of other 
 * [Arbiter](https://github.com/deeplearning4j/Arbiter): Arbiter is a package for (amongst other things) hyperparameter optimization of neural networks. Hyperparameter optimization refers to the process of automating the selection of network hyperparameters (learning rate, number of layers, etc) in order to obtain good performance.
 * [DL4J Examples](https://github.com/deeplearning4j/dl4j-0.4-examples)
 
+Deeplearning4j and ND4J are distributed under an Apache 2.0 license.
+
 ## Ways to Contribute
 
 There are numerous ways to contribute to to DeepLearning4J (and related projects), depending on your interests and experince. Here's some ideas:
