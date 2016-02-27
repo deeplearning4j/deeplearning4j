@@ -29,9 +29,10 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.util.SerializationUtils;
 
 
-import java.io.File;
+import java.io.*;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Double data buffer tests
@@ -82,6 +83,31 @@ public  class DoubleDataBufferTest extends BaseNd4jTest {
         INDArray rand = Nd4j.rand(3,3);
         rand.data().asBytes();
 
+    }
+    @Test
+    public void testSerialization2() throws Exception {
+
+        INDArray[] arr = new INDArray[]{
+                Nd4j.ones(1,10),
+                Nd4j.ones(5,10).getRow(2)
+        };
+
+        for( INDArray a : arr ){
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            try(ObjectOutputStream oos = new ObjectOutputStream(baos)){
+                oos.writeObject(a);
+            }
+
+            byte[] bytes = baos.toByteArray();
+
+            ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+            ObjectInputStream ois = new ObjectInputStream(bais);
+
+            INDArray aDeserialized = (INDArray)ois.readObject();
+
+            System.out.println(aDeserialized);
+            assertEquals(Nd4j.ones(1,10),aDeserialized);
+        }
     }
 
 

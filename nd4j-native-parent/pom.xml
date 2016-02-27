@@ -18,8 +18,7 @@
     </modules>
 
     <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <main.basedir>${project.parent.basedir}</main.basedir>
     </properties>
-
 
 </project>

@@ -29,7 +29,15 @@
                 <groupId>org.bytedeco</groupId>
                 <artifactId>javacpp</artifactId>
                 <version>${javacpp.version}</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.nd4j</groupId>
+                        <artifactId>nd4j-native-api</artifactId>
+                        <version>${project.version}</version>
+                    </dependency>
+                </dependencies>
                 <configuration>
+                    <outputDirectory>${project.basedir}/src/main/resources</outputDirectory>
                     <properties>${platform.properties}</properties>
                     <propertyKeysAndValues>
                         <property>
@@ -43,7 +51,7 @@
                     </propertyKeysAndValues>
                     <classPaths>
                         <classPath>${project.build.outputDirectory}</classPath>
-                        <classPath>../nd4j-native-api/target/classes</classPath>
+                        <classPath>${project.parent.relativePath}/nd4j-native-api/target/classes</classPath>
                     </classPaths>
                     <includePath>${env.LIBND4J_HOME}/blas/</includePath>
                     <linkPath>${env.LIBND4J_HOME}/blasbuild/blas</linkPath>
@@ -78,7 +86,7 @@
                             </classOrPackageNames>
                             <classPaths>
                                 <classPath>${project.build.outputDirectory}</classPath>
-                                <classPath>../nd4j-native-api/target/classes</classPath>
+                                <classPath>${{project.basedir}/nd4j-native-parent/nd4j-native-api/target/classes</classPath>
                             </classPaths>
                             <copyLibs>true</copyLibs>
                         </configuration>
