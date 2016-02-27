@@ -1,11 +1,11 @@
 ---
-title: Deeplearning4jのフルインストール
-layout: ja-default
+タイトル：Deeplearning4jのフルインストール
+レイアウト : デフォルト
 ---
 
 # フルインストール
 
-このインストールは複数の段階の手順に従って行います。質問やコメント等は、是非、[Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j)でお聞かせください。弊社のスタッフがお手伝いいたします。恥ずかしがる必要は全くありません。いつでも気軽にご連絡ください。また、deep-learningの初心者の方には、[deep-learningの初心者ガイド](../deeplearningforbeginners.html)もご用意いたしました。 
+このインストールは複数の段階の手順に従って行います。質問やコメント等は、是非、[Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j)でお聞かせください。弊社のスタッフがお手伝いいたします。恥ずかしがる必要は全くありません。いつでも気軽にご連絡ください。また、ディープラーニングの初心者の方には、[ディープラーニングの初心者ガイド](../deeplearningforbeginners.html)もご用意いたしました。 
 
 exampleを簡単なステップで走らせるには、[クイックスタート](../quickstart.html)をお読みください。また、もしクイックスタートをまだ読まれていない方は、以下の説明をおお読みになる前に、是非そちらを読まれることをお勧めします。DL4Jを始めるごく簡単な方法をご紹介しているからです。 
 
@@ -50,7 +50,7 @@ OpenBlasに関する情報については、[こちらのセクション](#open)
 それでもJcublasをロードできなければ、パラメータの-Dをコードに追加してください（JVM引数です）。
 
          java.library.path (settable via -Djava.librarypath=...) 
-         // ^ for a writable directory, then 
+         // ^ は書き込み可能なディレクトリ、そして、
          -D appended directly to "<OTHER ARGS>" 
 
 統合開発環境にIntelliJを使用している場合、既にこれは動作しているはずです。 
@@ -61,7 +61,7 @@ OpenBlasに関する情報については、[こちらのセクション](#open)
 
 ### <a name="windows">Windows</a>
 
-* Windowsでのインストールは、常に簡単というわけではありません。しかし、Deeplearning4のように、オープンソースのdeep-learningプロジェクトで、実際にWindows利用者向けのサポートに熱心なものは、数少ないのが現状です。詳細については、弊社のND4Jページにある[Windows用のセクション](http://nd4j.org/getstarted.html#windows)をお読みください。 
+* Windowsでのインストールは、常に簡単というわけではありません。しかし、Deeplearning4のように、オープンソースのディープラーニングプロジェクトで、実際にWindows利用者向けのサポートに熱心なものは、数少ないのが現状です。詳細については、弊社のND4Jページにある[Windows用のセクション](http://nd4j.org/getstarted.html#windows)をお読みください。 
 
 * お使いのコンピューターが64ビットでも[MinGW 32 bits](http://www.mingw.org/)をインストール（ダウンロードボタンは、右上に表示）し、[Prebuilt dynamic libraries using Mingw](http://icl.cs.utk.edu/lapack-for-windows/lapack/#libraries_mingw)をダウンロードします。 
 
@@ -98,7 +98,7 @@ OpenBlasが正しく動作していない場合は、次の手順に従ってく
 * **Linux**の場合、`libblas.so.3`や`liblapack.so.3`のシンボリックリンクが`LD_LIBRARY_PATH`のどこでも存在することを再度確認してください。もし存在しなければ、`/usr/lib`へリンクを追加します。以下のように設定することができます（-sを入れるとリンクがシンボリックになります）。 
 
 		ln -s TARGET LINK_NAME
-		// interpretation: ln -s "to-here" <- "from-here"
+		// 解釈: ln -s "to-here" <- "from-here"
 
 * 「from-here」は、まだ存在しないシンボリックリンクを作成したものです。StackOverflowのシンボリックリンク作成方法ガイドがありますので、[こちら](https://stackoverflow.com/questions/1951742/how-to-symlink-a-file-in-linux)をお読みください。「Linux man page」は、[こちら](http://linux.die.net/man/1/ln)をお読みください。
 * 最後に統合開発環境を再起動します。 
@@ -106,7 +106,7 @@ OpenBlasが正しく動作していない場合は、次の手順に従ってく
 
 **Ubuntu** (15.10)のOpenBlasについての説明ガイドは[こちら](http://pastebin.com/F0Rv2uEk)をお読みください。
 
-### <a name="eclipse">Eclipse</a> 
+###<a name="eclipse">Eclipse</a> 
 
 `git clone`を実行してから、以下のコマンドを入力してください。
 
@@ -122,14 +122,14 @@ Michael Depies氏が、 [EclipseでのDeeplearning4jのインストールガイ�
 
 ### <a name="trouble">トラブルシューティング</a>
 
-* エラーメッセージについて質問があれば、[Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j)にお気軽にご連絡ください。また、質問の際には、以下の情報を準備しておいてください。（前もって準備していただきますと、より素早くご質問に対処できます。) 
+* エラーメッセージについて質問があれば、[Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j)にお気軽にご連絡ください。また、質問の際には、以下の情報を準備しておいてください。（前もって準備していただきますと、より素早くご質問に対処できます。） 
 
       * オペレーティング・システム（Windows、OSX、Linux）とそのバージョン 
       * Javaバージョン（7、8） : ターミナル/コマンドプロンプトにjava -versionと入力すると分かります。 
       * Maven のバージョン : ターミナル/コマンドプロンプトにmvn --versionと入力すると分かります。
       * スタックトレース:gistのエラーコードをペーストし、リンクをお送りください。[https://gist.github.com/](https://gist.github.com/)
 * 既にDL4Jがインストールされており、exampleがエラーを多く送出させている場合、ライブラリをアップデートしてください。Mavenについては、[Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j)を使ってPOM.xmlファイルにあるバージョンを最新のものにアップデートしてください。ソースについては、3つのディレクトリである[ND4J](http://nd4j.org/getstarted.html)、Canova、DL4Jをこの順で`git clone`、次に`mvn clean install -Dskiptests=true -Dmaven.javadoc.skip=true`と実行してください。
-* exampleを実行するとき、[F1スコア](../glossary.html#f1)結果が低くなるかもしれません。F1スコアとは、ネットの分類作業の精確さを示すものです。しかし、この場合、 F1値が低い原因は、精確性が低いからではなく、小さいデータセットを使用しているためです。小さめのデータセットだと素早く走らせることができるからです。小さめのデータセットは、大きいものより代表的にはなりませんが、結果は様々に異なります。例えば、非常に小さいexampleのデータでは、弊社のdeep-belief networkのF1スコアは0.32から1.0にまで及びます。 
+* exampleを実行するとき、[F1スコア](../glossary.html#f1)結果が低くなるかもしれません。F1スコアとは、ネットの分類作業の精確さを示すものです。しかし、この場合、 F1値が低い原因は、精確性が低いからではなく、小さいデータセットを使用しているためです。小さめのデータセットだと素早く走らせることができるからです。小さめのデータセットは、大きいものより代表的にはなりませんが、結果は様々に異なります。例えば、非常に小さいexampleのデータでは、弊社のディープ・ビリーフ・ネットワークのF1スコアは0.32から1.0にまで及びます。 
 * Deeplearning4jには**オートコンプリート機能**が含まれます。どのコマンドが使用可能か分からないときは、任意の文字を1つ打つと、ドロップダウンメニューが下記のように
 ![Alt text](../img/dl4j_autocomplete.png)表示されます。
 * すべてのDeeplearning4jのクラスとメソッドのための**Javadoc**は、[こちら](http://deeplearning4j.org/doc/)です。
@@ -143,7 +143,7 @@ Michael Depies氏が、 [EclipseでのDeeplearning4jのインストールガイ�
 * GPUのモニターに関する説明ガイドは、[こちら](http://nd4j.org/getstarted.html#gpu)をお読みください。
 * Javaを使用する主な理由の一つは、 **[JVisualVM](https://docs.oracle.com/javase/8/docs/technotes/tools/unix/jvisualvm.html)**に既に診断機能があるからです。Javaがインストールされていれば、コマンドラインに`jvisualvm`と入れさえすると、 CPU、ヒープ、PermGen、クラス、スレッドのビジュアル情報を見ることができます。例えば、以下の例をご覧ください。右上の`サンプラ`タブをクリックし、CPU、またはメモリーボタンを押します。すると、ビジュアル情報が得られます。 
 ![Alt text](../img/jvisualvm.png)
-* DL4Jを使用している際に発生する問題の原因は、ユーザーが機械学習に関する情報やテクニックに十分精通していないためである場合もあります。 Deeplearning4jのユーザー皆さんに、このサイト以外のリソースも利用して基礎を学習することをお勧めします。機械学習やdeep-learningの学習リソースのリストを準備しましたので、[こちら](../deeplearningpapers.html)をお読みください。弊社はDL4Jを一部ドキュメント化しましたが、deep-learning用に使用するには、コードの一部は生で、ドメイン固有言語のままです。
+* DL4Jを使用している際に発生する問題の原因は、ユーザーが機械学習に関する情報やテクニックに十分精通していないためである場合もあります。 Deeplearning4jのユーザー皆さんに、このサイト以外のリソースも利用して基礎を学習することをお勧めします。機械学習やディープラーニングの学習リソースのリストを準備しましたので、[こちら](../deeplearningpapers.html)をお読みください。弊社はDL4Jを一部ドキュメント化しましたが、ディープラーニング用に使用するには、コードの一部は生で、ドメイン固有言語のままです。
 * **Clojure**アプリケーションから`deeplearning4j-nlp`を使い、Leiningenでuberjarを構築するときは、akkaの`reference.conf`リソースファイルが適切にマージされるよう、`project.clj`に、`:uberjar-merge-with {#"\.properties$" [slurp str spit] "reference.conf" [slurp str spit]}`と指定してください。（.propertiesファイルのマップへの最初の入力は、通常のデフォルトであることにご注意ください）。この設定が行われていない場合、結果のuberjarから実行しようとすると、次のような例外が送出されます。`Exception in thread "main" com.typesafe.config.ConfigException$Missing:No configuration setting found for key 'akka.version'`
 * OSXの浮動小数点のサポートにはバグが多くあります。examplsの実行でNaNが数多く表示される場合、データのタイプを`double`に切り替えてください。
 * Java 7のfork-joinにはバグがありますが、Java 8にアップデートすることにより修正されます。以下のようなOutofMemoryエラーが発生する場合は、fork-joinに問題があります。`java.util.concurrent.ExecutionException: java.lang.OutOfMemoryError`
@@ -159,6 +159,6 @@ Michael Depies氏が、 [EclipseでのDeeplearning4jのインストールガイ�
 
 ニューラルネットワークの構築を開始するには、[ニューラルネットワークの概要](http://deeplearning4j.org/neuralnet-overview.html)にて詳細をお読みください。
 
-素早く走らせるには[IRISのチュートリアル](../iris-flower-dataset-tutorial.html)をお読みください。 *deep-belief network*の基本的なメカニズムを理解するには、[制限付きボルツマン・マシン](../restrictedboltzmannmachine.html)をお読みください。
+素早く走らせるには[IRISのチュートリアル](../iris-flower-dataset-tutorial.html)をお読みください。 *ディープ・ビリーフ・ネットワーク*の基本的なメカニズムを理解するには、[制限付きボルツマン・マシン](../restrictedboltzmannmachine.html)をお読みください。
 
 新しいプロジェクトを開始して必要な[POMの依存関係](http://nd4j.org/dependencies.html)を入れるには、[ND4Jをはじめましょう](http://nd4j.org/getstarted.html)をお読みください。 
