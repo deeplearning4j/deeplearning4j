@@ -13,6 +13,7 @@ Content
 * <a href="#theano">Theano, Pylearn2 & Ecosystem</a>
 * <a href="#torch">Torch</a>
 * <a href="#caffe">Caffe</a>
+* <a href="#cntk">CNTK</a>
 * <a href="#licensing">Licensing</a>
 * <a href="#speed">Speed</a>
 * <a href="#java">DL4J: Why Java?</a>
@@ -23,17 +24,17 @@ Content
 
 ### <a name="tensorflow">TensorFlow</a>
 
-* For the moment, TensorFlow does not support so-called “inline” matrix operations, but forces you to copy a matrix in order to perform an operation on it. Copying very large matrices is costly in every sense. TF takes 4x as long as the state of the art deep learning tools. Google says it’s working on the problem. 
+* For the moment, **TensorFlow** does not support so-called “inline” matrix operations, but forces you to copy a matrix in order to perform an operation on it. Copying very large matrices is costly in every sense. TF takes 4x as long as the state of the art deep learning tools. Google says it’s working on the problem. 
 * Like most deep-learning frameworks, TensorFlow is written with a Python API over a C/C++ engine that makes it run fast. It is not a solution for the Java and Scala communities. 
 * TensorFlow is about more than deep learning. TensorFlow actually has tools to support reinforcement learning and other algos.
-* Google's goal with TF seems to be recruiting. As you know, they recently announced the Google Brain yearlong residency. A smart move.
+* Google's acknowledged goal with TF seems to be recruiting. As you know, they recently announced the Google Brain yearlong residency. A smart move.
 * TensorFlow is not commercially supported, and it’s unlikely that Google will go into the business of supporting open-source enterprise software. It's giving a new tool to researchers. 
 * Like Theano, TensforFlow generates a computational graph (e.g. a series of matrix operations such as z = simoid(x) where x and z are matrices) and performs automatic differentiation. Automatic differentiation is important because you don't want to have to hand-code a new variation of backpropagation every time you're experimenting with a new arrangement of neural networks. In Google's ecosystem, the computational graph is then used by Google Brain for the heavy lifting, but Google hasn’t open-sourced those tools yet. TensorFlow is one half of Google's in-house DL solution. 
 * From an enterprise perspective, the question some companies will need to answer is whether they want to depend upon Google for these tools. 
 
 ### <a name="theano">Theano, PyLearn2 and Ecosystem</a>
 
-Most academic researchers in the field of deep learning rely on [Theano](http://deeplearning.net/software/theano/), the grand-daddy of deep-learning frameworks, which is written in Python. Pylearn2 is a machine-learning library, while Theano is a library that handles multidimensional arrays, like Numpy. Both are powerful tools widely used for research purposes and serving the large Python community. They are well suited to data exploration and explicitly state that they are intended for research. 
+Most academic researchers in the field of deep learning rely on [**Theano**](http://deeplearning.net/software/theano/), the grand-daddy of deep-learning frameworks, which is written in Python. Pylearn2 is a machine-learning library, while Theano is a library that handles multidimensional arrays, like Numpy. Both are powerful tools widely used for research purposes and serving the large Python community. They are well suited to data exploration and explicitly state that they are intended for research. 
 
 Pylearn2 is a normal (non-distributed) framework that includes everything necessary to conduct experiments with multilayer Perceptrons, [restricted Boltzmann machines](../restrictedboltzmannmachine.html), Stacked Denoising Autoencoders and [Convolutional nets](../convolutionalnets.html). We recommend it for precisely those use cases. 
 
@@ -49,7 +50,11 @@ Torch7, while powerful, [was not designed to be widely accessible](https://news.
 
 ### <a name="caffe">Caffe</a>
 
-[Caffe](http://caffe.berkeleyvision.org/) is a well-known and widely used machine-vision library that ported Matlab's implementation of fast convolutional nets to C and C++ ([see Steve Yegge's rant about porting C++ from chip to chip if you want to consider the tradeoffs between speed and this particular form of technical debt](https://sites.google.com/site/steveyegge2/google-at-delphi)). Caffe is not intended for other deep-learning applications such as text, sound or time series data. Both Deeplearning4j and Caffe perform image classification with convolutional nets, which represent the state of the art. In contrast to Caffe, Deeplearning4j offers parallel GPU *support* for an arbitrary number of chips, as well as many, seemingly trivial, features that make deep learning run more smoothly on multiple GPU clusters in parallel. While it is widely cited in papers, Caffe is chiefly used as a source of pre-trained models hosted on its Model Zoo site. Deeplearning4j is [building a parser](https://github.com/deeplearning4j/deeplearning4j/pull/480) to import Caffe models to Spark.
+**Caffe** is a well-known and widely used machine-vision library that ported Matlab's implementation of fast convolutional nets to C and C++ ([see Steve Yegge's rant about porting C++ from chip to chip if you want to consider the tradeoffs between speed and this particular form of technical debt](https://sites.google.com/site/steveyegge2/google-at-delphi)). Caffe is not intended for other deep-learning applications such as text, sound or time series data. Both Deeplearning4j and Caffe perform image classification with convolutional nets, which represent the state of the art. In contrast to Caffe, Deeplearning4j offers parallel GPU *support* for an arbitrary number of chips, as well as many, seemingly trivial, features that make deep learning run more smoothly on multiple GPU clusters in parallel. While it is widely cited in papers, Caffe is chiefly used as a source of pre-trained models hosted on its Model Zoo site. Deeplearning4j is [building a parser](https://github.com/deeplearning4j/deeplearning4j/pull/480) to import Caffe models to Spark.
+
+### <a name="cntk">CNTK</a>
+
+**CNTK** is Microsoft's open-source deep-learning framework. The acronym stands for "Computational Network Toolkit." The library includes feed-forward DNNs, convolutional nets and recurrent networks. 
 
 ### <a name="licensing">Licensing</a>
 
