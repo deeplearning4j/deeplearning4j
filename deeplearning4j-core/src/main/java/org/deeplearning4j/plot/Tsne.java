@@ -67,7 +67,7 @@ public class Tsne {
 
     }
 
-    public void calculate(INDArray X, int targetDimensions, double perplexity) {
+    public INDArray calculate(INDArray X, int targetDimensions, double perplexity) {
         // pca hook
         if (usePca) {
 
@@ -159,6 +159,7 @@ public class Tsne {
                 stopLying = true;
             }
         }
+        return Y;
     }
 
     public INDArray diag(INDArray ds) {
