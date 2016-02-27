@@ -1940,7 +1940,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             if (!layer.conf().getLearningRateByParam().isEmpty()) {
                 for (Map.Entry<String, Double> lrPair : layer.conf().getLearningRateByParam().entrySet())
                     layer.conf().setLearningRateByParam(lrPair.getKey(),
-                            lrPair.getValue() * (layer.conf().getLayer().getLrScoreBasedDecay() + Nd4j.EPS_THRESHOLD));
+                            lrPair.getValue() * (layer.conf().getLrDecayRate() + Nd4j.EPS_THRESHOLD));
             }
         }
     }
