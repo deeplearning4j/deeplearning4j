@@ -31,8 +31,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import org.deeplearning4j.nn.conf.GradientNormalization;
+import org.deeplearning4j.nn.conf.LearningRateDecayPolicy;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
+import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 
 /**
@@ -69,6 +71,7 @@ public abstract class Layer implements Serializable, Cloneable {
     protected double biasLearningRate;
     //learning rate after n iterations
     protected Map<Integer,Double> learningRateAfter;
+    @Deprecated
     protected double lrScoreBasedDecay;
     protected double momentum;
     //momentum after n iterations
@@ -86,6 +89,7 @@ public abstract class Layer implements Serializable, Cloneable {
     protected double adamVarDecay = 0.999;
     protected GradientNormalization gradientNormalization = GradientNormalization.None; //Clipping, rescale based on l2 norm, etc
     protected double gradientNormalizationThreshold = 1.0;   //Threshold for l2 and element-wise gradient clipping
+
 
     public Layer(Builder builder) {
         this.layerName = builder.layerName;
@@ -147,6 +151,7 @@ public abstract class Layer implements Serializable, Cloneable {
         protected double adamVarDecay = Double.NaN;
         protected GradientNormalization gradientNormalization = null;
         protected double gradientNormalizationThreshold = Double.NaN;
+        protected LearningRateDecayPolicy learningRateDecayPolicy = null;
 
 
         /**Layer name assigns layer string name.
@@ -209,6 +214,7 @@ public abstract class Layer implements Serializable, Cloneable {
 
         /** Rate to decrease learningRate by when the score stops improving.
          * Learning rate is multiplied by this rate so ideally keep between 0 and 1. */
+        @Deprecated
         public T learningRateScoreBasedDecayRate(double lrScoreBasedDecay) {
             this.lrScoreBasedDecay = lrScoreBasedDecay;
             return (T) this;
@@ -298,6 +304,16 @@ public abstract class Layer implements Serializable, Cloneable {
             this.gradientNormalizationThreshold = threshold;
             return (T) this;
         }
+
+        /** Learning rate decay policy. Used to adapt learning rate based on policy.
+         * @param policy Type of policy to use. Defaults to None.
+         * @see org.deeplearning4j.nn.conf.GradientNormalization
+         */
+        public T learningRateDecayPolicy(LearningRateDecayPolicy policy){
+            this.learningRateDecayPolicy = policy;
+            return (T) this;
+        }
+
 
         public abstract <E extends Layer> E build();
     }
