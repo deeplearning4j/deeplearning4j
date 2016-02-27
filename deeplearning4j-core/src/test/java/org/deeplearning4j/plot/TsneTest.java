@@ -37,7 +37,7 @@ public class TsneTest {
 
     @Test
     public void testTsne() throws Exception {
-        Tsne calculation = new Tsne.Builder()
+        LegacyTsne calculation = new LegacyTsne.Builder()
                 .setMaxIter(10)
                 .usePca(false)
                 .setSwitchMomentumIteration(20)
@@ -61,8 +61,8 @@ public class TsneTest {
     @Test
     @Ignore
     public void testExternalTsne() throws Exception {
-        ProperTsne calculation = new ProperTsne.Builder()
-                .setMaxIter(20)
+        Tsne calculation = new Tsne.Builder()
+                .setMaxIter(500)
                 .usePca(false)
                 .setSwitchMomentumIteration(20)
                 .normalize(false)
