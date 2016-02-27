@@ -26,11 +26,9 @@ import java.io.DataInputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.lang3.time.StopWatch;
 import org.junit.Ignore;
@@ -53,7 +51,6 @@ import org.nd4j.linalg.executors.ExecutorServiceProvider;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.io.ClassPathResource;
-import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
 

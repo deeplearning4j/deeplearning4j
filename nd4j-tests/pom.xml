@@ -61,18 +61,8 @@
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>-->
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-jocl-1.9</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-common</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
+
+
         <dependency>
             <groupId>org.easymock</groupId>
             <artifactId>easymock</artifactId>

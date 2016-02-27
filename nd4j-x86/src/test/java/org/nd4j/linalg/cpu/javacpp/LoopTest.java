@@ -16,6 +16,10 @@ import org.nd4j.linalg.convolution.OldConvolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -36,6 +40,32 @@ public class LoopTest {
         System.out.println((TimeUnit.MILLISECONDS.convert(Math.abs(end - start),TimeUnit.NANOSECONDS)));
         loop.execScalarFloat(add1,add1,add1.length,0,0,1,1,"div_scalar",new float[]{1});
 
+    }
+
+    @Test
+    public void testSerialization() throws Exception {
+
+        INDArray[] arr = new INDArray[]{
+                Nd4j.ones(1,10),
+                Nd4j.ones(5,10).getRow(2)
+        };
+
+        for( INDArray a : arr ){
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            try(ObjectOutputStream oos = new ObjectOutputStream(baos)){
+                oos.writeObject(a);
+            }
+
+            byte[] bytes = baos.toByteArray();
+
+            ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+            ObjectInputStream ois = new ObjectInputStream(bais);
+
+            INDArray aDeserialized = (INDArray)ois.readObject();
+
+            System.out.println(aDeserialized);
+            assertEquals(Nd4j.ones(1,10),aDeserialized);
+        }
     }
 
     @Test

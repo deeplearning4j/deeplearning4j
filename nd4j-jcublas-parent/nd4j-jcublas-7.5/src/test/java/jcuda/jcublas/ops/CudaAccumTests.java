@@ -17,30 +17,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class CudaAccumTests {
 
-    /**
-     * Norm2 + cuBlas dot call
-     *
-     * @throws Exception
-     */
-    @Test
-    public void testPinnedCosineSim() throws Exception {
-        // simple way to stop test if we're not on CUDA backend here
-        assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
 
-        // reset to default MemoryStrategy, most probable is Pinned
-        ContextHolder.getInstance().forceMemoryStrategyForThread(new PinnedMemoryStrategy());
-
-        assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
-
-        INDArray array1 = Nd4j.create(new float[]{2.01f, 2.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
-        INDArray array2 = Nd4j.create(new float[]{1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
-
-
-        double similarity = Transforms.cosineSim(array1, array2);
-
-        System.out.println("Cosine similarity: " + similarity);
-        assertEquals(0.95f, similarity, 0.01f);
-    }
 
     /**
      * Sum call

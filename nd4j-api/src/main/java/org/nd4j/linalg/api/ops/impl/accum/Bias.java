@@ -65,6 +65,22 @@ public class Bias extends BaseAccumulation {
     }
 
     @Override
+    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public IComplexNumber op(IComplexNumber origin, float other) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public IComplexNumber op(IComplexNumber origin, double other) {
+        throw new UnsupportedOperationException();
+
+    }
+
+    @Override
     public Op opForDimension(int index, int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
         if (y() != null)

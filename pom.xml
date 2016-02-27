@@ -154,7 +154,9 @@
         <module>nd4j-serde</module>
         <module>nd4j-bytebuddy</module>
         <module>nd4j-common</module>
-        <module>nd4j-native</module>
+        <module>nd4j-buffer</module>
+        <module>nd4j-native-parent</module>
+        <module>nd4j-context</module>
     </modules>
 
     <properties>
@@ -173,11 +175,11 @@
     </developers>
 
     <licenses>
-      <license>
-        <name>Apache License, Version 2.0</name>
-        <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-        <distribution>repo</distribution>
-      </license>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
     </licenses>
 
     <build>

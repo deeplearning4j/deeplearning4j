@@ -1,0 +1,24 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>nd4j</artifactId>
+        <groupId>org.nd4j</groupId>
+        <version>0.4-rc3.9-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>nd4j-native-parent</artifactId>
+    <packaging>pom</packaging>
+
+    <name>nd4j-native-parent</name>
+    <modules>
+        <module>nd4j-native</module>
+        <module>nd4j-native-api</module>
+        <module>nd4j-cuda-7.5</module>
+    </modules>
+
+    <properties>
+        <main.basedir>${project.parent.basedir}</main.basedir>
+    </properties>
+
+</project>

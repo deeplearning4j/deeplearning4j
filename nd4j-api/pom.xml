@@ -61,7 +61,6 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junit.version>4.12</junit.version>
-        <netty.version>4.0.28.Final</netty.version>
         <lombok.version>1.16.4</lombok.version>
     </properties>
 
@@ -88,6 +87,7 @@
 
 
     <dependencies>
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
@@ -114,19 +114,21 @@
         </dependency>
 
 
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-buffer</artifactId>
-            <version>${netty.version}</version>
-        </dependency>
+
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>${lombok.version}</version>
         </dependency>
+
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-common</artifactId>
+            <artifactId>nd4j-buffer</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-context</artifactId>
             <version>${project.version}</version>
         </dependency>
 

@@ -52,13 +52,14 @@ import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.functions.Value;
 import org.nd4j.linalg.io.Resource;
-import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.*;
 import java.lang.ref.ReferenceQueue;
 import java.lang.reflect.Constructor;
 import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 import java.util.*;
 
 /**
@@ -949,7 +950,6 @@ public class Nd4j {
      * that leverages the underlying storage of the buffer
      * with a new view
      * @param underlyingBuffer the underlying buffer
-     * @param length the length of the view
      * @param offset the offset for the view
      * @return the new view of the data buffer
      */
@@ -958,7 +958,12 @@ public class Nd4j {
         return DATA_BUFFER_FACTORY_INSTANCE.create(underlyingBuffer,offset,length);
     }
 
+    public static DataBuffer createBuffer(IntBuffer intBuffer) {
+        return null;
+    }
+
     /**
+     *
      * Create a buffer equal of length prod(shape)
      *
      * @param shape the shape of the buffer to create
@@ -4685,7 +4690,12 @@ public class Nd4j {
             String otherDtype = System.getProperty(DTYPE, props.get(DTYPE).toString());
             String otherAlloc = System.getProperty(ALLOC,props.getProperty(ALLOC,"heap"));
             dtype = otherDtype.equals("float") ? DataBuffer.Type.FLOAT : DataBuffer.Type.DOUBLE;
-            alloc = otherAlloc.equals("heap") ? DataBuffer.AllocationMode.HEAP : DataBuffer.AllocationMode.DIRECT;
+            if(otherAlloc.equals("heap"))
+                alloc = DataBuffer.AllocationMode.HEAP;
+            else if(otherAlloc.equals("direct"))
+                alloc = DataBuffer.AllocationMode.DIRECT;
+            else if(otherAlloc.equals("javacpp"))
+                alloc = DataBuffer.AllocationMode.JAVACPP;
             copyOnOps = Boolean.parseBoolean(props.getProperty(COPY_OPS, "true"));
             shouldInstrument = Boolean.parseBoolean(props.getProperty(INSTRUMENTATION, "false"));
             resourceManagerOn = Boolean.parseBoolean(props.getProperty(RESOURCE_MANGER_ON,"false"));

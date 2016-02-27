@@ -20,9 +20,6 @@
 package org.nd4j.linalg.jcublas.buffer.factory;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.DoubleBuffer;
-import org.nd4j.linalg.api.buffer.FloatBuffer;
-import org.nd4j.linalg.api.buffer.IntBuffer;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
 import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
@@ -37,6 +34,17 @@ import java.nio.ByteBuffer;
  * @author Adam Gibson
  */
 public class CudaDataBufferFactory implements DataBufferFactory {
+    protected DataBuffer.AllocationMode allocationMode;
+    @Override
+    public void setAllocationMode(DataBuffer.AllocationMode allocationMode) {
+        this.allocationMode = allocationMode;
+    }
+
+    @Override
+    public DataBuffer.AllocationMode allocationMode() {
+        return allocationMode;
+    }
+
     @Override
     public DataBuffer create(DataBuffer underlyingBuffer, int offset, int length) {
         if(underlyingBuffer.dataType() == DataBuffer.Type.DOUBLE) {

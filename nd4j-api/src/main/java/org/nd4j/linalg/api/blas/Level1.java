@@ -243,5 +243,5 @@ public interface Level1 {
 
 
     /** Can we use the axpy and copy methods that take a DataBuffer instead of an INDArray with this backend? */
-    public boolean supportsDataBufferL1Ops();
+     boolean supportsDataBufferL1Ops();
 }

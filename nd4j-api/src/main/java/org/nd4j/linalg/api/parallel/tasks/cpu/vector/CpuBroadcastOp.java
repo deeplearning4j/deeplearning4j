@@ -12,7 +12,6 @@ import org.nd4j.linalg.api.parallel.tasks.cpu.BaseCPUAction;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.RecursiveAction;
 

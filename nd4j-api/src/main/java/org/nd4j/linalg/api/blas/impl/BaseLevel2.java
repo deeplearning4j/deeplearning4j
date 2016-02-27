@@ -1,6 +1,5 @@
 package org.nd4j.linalg.api.blas.impl;
 
-import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.blas.Level2;
 import org.nd4j.linalg.api.blas.params.GemvParameters;
 import org.nd4j.linalg.api.buffer.DataBuffer;

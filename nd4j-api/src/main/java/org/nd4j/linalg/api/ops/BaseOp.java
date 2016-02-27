@@ -39,9 +39,36 @@ public abstract class BaseOp implements Op {
     protected Object[] extraArgs;
     protected boolean passThrough;
 
+
     public BaseOp() {
     }
 
+
+    @Override
+    public DataBuffer extraArgsDataBuff() {
+        if(extraArgs != null) {
+            DataBuffer retBuff;
+            if(x.data().dataType() == DataBuffer.Type.FLOAT) {
+                retBuff = Nd4j.createBuffer(new float[extraArgs.length]);
+                for(int i = 0; i < extraArgs.length; i++) {
+                    float val = (float) extraArgs[i];
+                    retBuff.put(i,val);
+                }
+                return retBuff;
+            }
+            else {
+                retBuff = Nd4j.createBuffer(new double[extraArgs.length]);
+                for(int i = 0; i < extraArgs.length; i++) {
+                    double val = (double) extraArgs[i];
+                    retBuff.put(i, val);
+                }
+                return retBuff;
+            }
+
+
+        }
+        return null;
+    }
 
     @Override
     public Buffer extraArgsBuff() {
