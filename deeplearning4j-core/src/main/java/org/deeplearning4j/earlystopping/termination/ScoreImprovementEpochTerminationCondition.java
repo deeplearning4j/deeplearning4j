@@ -18,15 +18,26 @@
 
 package org.deeplearning4j.earlystopping.termination;
 
-/** Terminate training if best model score does not improve for N epochs*/
-public class ScoreImprovementEpochTerminationCondition implements EpochTerminationCondition {
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+/**
+ * Terminate training if best model score does not improve for N epochs
+ */
+public class ScoreImprovementEpochTerminationCondition implements EpochTerminationCondition {
+    private static Logger log = LoggerFactory.getLogger(ScoreImprovementEpochTerminationCondition.class);
     private int maxEpochsWithNoImprovement;
     private int bestEpoch = -1;
     private double bestScore;
+    private double minImprovement = 0.0;
 
     public ScoreImprovementEpochTerminationCondition(int maxEpochsWithNoImprovement) {
         this.maxEpochsWithNoImprovement = maxEpochsWithNoImprovement;
+    }
+
+    public ScoreImprovementEpochTerminationCondition(int maxEpochsWithNoImprovement, double minImprovement) {
+        this.maxEpochsWithNoImprovement = maxEpochsWithNoImprovement;
+        this.minImprovement = minImprovement;
     }
 
     @Override
@@ -36,12 +47,16 @@ public class ScoreImprovementEpochTerminationCondition implements EpochTerminati
 
     @Override
     public boolean terminate(int epochNum, double score) {
-        if(bestEpoch == -1){
+        if (bestEpoch == -1) {
             bestEpoch = epochNum;
             bestScore = score;
             return false;
         } else {
-            if(score < bestScore){
+            double improvement = bestScore - score;
+            if (improvement > minImprovement) {
+                if (minImprovement > 0){
+                    log.info("Epoch with score greater than threshold * * *");
+                }
                 bestScore = score;
                 bestEpoch = epochNum;
                 return false;
@@ -52,7 +67,7 @@ public class ScoreImprovementEpochTerminationCondition implements EpochTerminati
     }
 
     @Override
-    public String toString(){
-        return "ScoreImprovementEpochTerminationCondition(maxEpochsWithNoImprovement="+maxEpochsWithNoImprovement+")";
+    public String toString() {
+        return "ScoreImprovementEpochTerminationCondition(maxEpochsWithNoImprovement=" + maxEpochsWithNoImprovement + ", minImprovement="+minImprovement+")";
     }
 }
