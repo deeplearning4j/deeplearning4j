@@ -28,7 +28,6 @@ Content
 * TensorFlow is about more than deep learning. TensorFlow actually has tools to support reinforcement learning and other algos.
 * Google's goal with TF seems to be recruiting. As you know, they recently announced the Google Brain yearlong residency. A smart move.
 * TensorFlow is not commercially supported, and it’s unlikely that Google will go into the business of supporting open-source enterprise software. It's giving a new tool to researchers. 
-* TensorFlow only runs on a single box, rather than distributed. In a single box, you can have up to 4 GPUs. 
 * Like Theano, TensforFlow generates a computational graph (e.g. a series of matrix operations such as z = simoid(x) where x and z are matrices) and performs automatic differentiation. Automatic differentiation is important because you don't want to have to hand-code a new variation of backpropagation every time you're experimenting with a new arrangement of neural networks. In Google's ecosystem, the computational graph is then used by Google Brain for the heavy lifting, but Google hasn’t open-sourced those tools yet. TensorFlow is one half of Google's in-house DL solution. 
 * From an enterprise perspective, the question some companies will need to answer is whether they want to depend upon Google for these tools. 
 
@@ -44,7 +43,7 @@ In contrast, Deeplearning4j intends to be the equivalent of Scikit-learn in the 
 
 ### <a name="torch">Torch</a>
 
-[**Torch**](http://torch.ch/) is a computational framework written in Lua that supports machine-learning algorithms. Some version of it is used by large tech companies such as Google and Facebook, which devote in-house teams to customizing their deep learning platforms. Lua is a multi-paradigm scripting language that was developed in Brazil in the early 1990s. 
+[**Torch**](http://torch.ch/) is a computational framework written in Lua that supports machine-learning algorithms. Some version of it is used by large tech companies such as Google DeepMind and Facebook, which devote in-house teams to customizing their deep learning platforms. Lua is a multi-paradigm scripting language that was developed in Brazil in the early 1990s. 
 
 Torch7, while powerful, [was not designed to be widely accessible](https://news.ycombinator.com/item?id=7929216) to the Python-based academic community, nor to corporate software engineers, whose lingua franca is Java. Deeplearning4j was written in Java to reflect our focus on industry and ease of use. We believe usability is the limiting parameter that inhibits more widespread deep-learning implementations. We believe scalability ought to be automated with open-source distributed run-times like Hadoop and Spark. And we believe that a commercially supported open-source framework is the appropriate solution to ensure working tools and building a community.
 
@@ -54,11 +53,11 @@ Torch7, while powerful, [was not designed to be widely accessible](https://news.
 
 ### <a name="licensing">Licensing</a>
 
-Licensing is another distinction among these open-source projects: Theano, Torch and Caffe employ a BSD License, which does not address patents or patent disputes. Deeplearning4j and ND4J are distributed under an **[Apache 2.0 License](http://en.swpat.org/wiki/Patent_clauses_in_software_licences#Apache_License_2.0)**, which contains both a patent grant and a litigation retaliation clause. That is, anyone is free to make and patent derivative works based on Apache 2.0-licensed code, but if they sue someone else over patent claims regarding the original code (DL4J in this case), they immediately lose all patent claim to it. (In other words, you are given resources to defend yourself in litigation, and discouraged from attacking others.) BSD doesn't address the issue. 
+Licensing is another distinction among these open-source projects: Theano, Torch and Caffe employ a BSD License, which does not address patents or patent disputes. Deeplearning4j and ND4J are distributed under an **[Apache 2.0 License](http://en.swpat.org/wiki/Patent_clauses_in_software_licences#Apache_License_2.0)**, which contains both a patent grant and a litigation retaliation clause. That is, anyone is free to make and patent derivative works based on Apache 2.0-licensed code, but if they sue someone else over patent claims regarding the original code (DL4J in this case), they immediately lose all patent claim to it. (In other words, you are given resources to defend yourself in litigation, and discouraged from attacking others.) BSD doesn't typically address this issue. 
 
 ### <a name="speed">Speed</a>
 
-Deeplearning4j's underlying linear algebra computations, performed with ND4J, have been shown to run [at least twice as fast](http://nd4j.org/benchmarking) as Numpy on very large matrix multiplies. That's one reasons why we've been adopted by teams at NASA's Jet Propulsion Laboratory. Moreover, Deeplearning4j has been optimized to run on various chips including x86 and GPUs with CUDA C.
+Deeplearning4j's underlying linear algebra computations, performed with ND4J, have been shown to run [at least twice as fast as Numpy](http://nd4j.org/benchmarking) on very large matrix multiplies. That's one reasons why we've been adopted by teams at NASA's Jet Propulsion Laboratory. Moreover, Deeplearning4j has been optimized to run on various chips including x86 and GPUs with CUDA C.
 
 While both Torch7 and DL4J employ parallelism, DL4J's **parallelism is automatic**. That is, we automate the setting up of worker nodes and connections, allowing users to bypass libs while creating a massively parallel network on [Spark](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/spark), [Hadoop](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/hadoop-yarn), or with [Akka and AWS](http://deeplearning4j.org/scaleout.html). Deeplearning4j is best suited for solving specific problems, and doing so quickly. 
 
@@ -88,9 +87,9 @@ Finally, we are building the basic applications of Numpy, including ND-Array, in
 
 ### <a name="scala">Scala</a>
 
-We have paid special attention to [Scala](http://deeplearning4j.org/scala.html) in building Deeplearning4j and ND4J, because we believe Scala has the potential to become the dominant language in data science. Writing numerical computing, vectorization and deep-learning libraries for the JVM with a [Scala API](http://nd4j.org/scala.html) moves the community toward that goal. 
+We have paid special attention to [Scala](../scala) in building Deeplearning4j and ND4J, because we believe Scala has the potential to become the dominant language in data science. Writing numerical computing, vectorization and deep-learning libraries for the JVM with a [Scala API](http://nd4j.org/scala.html) moves the community toward that goal. 
 
-To really understand the differences between DL4J and other frameworks, you may just have to [try us out](http://deeplearning4j.org/quickstart.html).
+To really understand the differences between DL4J and other frameworks, you may just have to [try us out](../quickstart).
 
 ### <a name="ml">Machine-learning frameworks</a>
 
@@ -108,7 +107,6 @@ The deep-learning frameworks listed above are more specialized than general mach
 * [LSTM and Recurrent Network Tutorial](../lstm.html)
 * [Using Recurrent Nets With DL4J](../usingrnns.html)
 * [Deep-Belief Networks With MNIST](../mnist-tutorial.html)
-* [IRIS Flower Dataset Tutorial](../iris-flower-dataset-tutorial.html)
 * [Facial Reconstruction With Labeled Faces in the Wild](../facial-reconstruction-tutorial.html)
 * [Customizing Data Pipelines With Canova](../image-data-pipeline.html)
 * [Restricted Boltzmann machines](../restrictedboltzmannmachine.html)
