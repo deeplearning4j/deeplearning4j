@@ -29,7 +29,7 @@ To start running the DL4J examples, follow these instructions:
 
 * Enter `git clone https://github.com/deeplearning4j/dl4j-0.4-examples.git` in your command line
 * In IntelliJ, create a new project using Maven by going to `File/New/Project from Existing Sources` in the menu tree. Point to the root directory of the examples above, and that will open them in your IDE. 
-![Alt text](../img/IntelliJ_New_Project.png)
+![creating a new project in IntelliJ](../img/IntelliJ_New_Project.png)
 * Wait for IntelliJ to download all the dependencies. (You’ll see the horizontal bar working on the lower right.)
 * Select an example from the lefthand file tree.
 * Hit run! (It's the green button that appears when you right-click on the source file...)
@@ -41,7 +41,7 @@ To run DL4J in your own projects, we highly recommend using Apache Maven for Jav
 
 - deeplearning4j-core, which contains the neural network implementations
 - nd4j-x86, the CPU version of the ND4J library that powers DL4J
-- canova-api - the core project used for loading data
+- canova-api - Canova is our library vectorizing and loading data
 
 
 ```
@@ -87,6 +87,7 @@ Optional dependencies you might want include:
 
 - deeplearning4j-ui: contains the browser-based user-interface ([details here](http://deeplearning4j.org/visualization))
 - deeplearning4j-nlp: contains the [Word2Vec](http://deeplearning4j.org/word2vec) implementation
+- dl4j-spark: contains code for distributed training of neural networks on Apache Spark
 - canova-nd4j-image: contains code for loading images
 - canova-nd4j-codec: contains code for loading video files
 
