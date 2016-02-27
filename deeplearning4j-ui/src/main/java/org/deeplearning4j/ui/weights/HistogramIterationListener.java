@@ -4,6 +4,7 @@ package org.deeplearning4j.ui.weights;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.ui.UiConnectionInfo;
 import org.deeplearning4j.ui.UiServer;
 import org.deeplearning4j.ui.UiUtils;
 import org.deeplearning4j.ui.providers.ObjectMapperProvider;
@@ -43,6 +44,11 @@ public class HistogramIterationListener implements IterationListener {
     private boolean firstIteration = true;
     private String path;
     private String subPath;
+    private UiConnectionInfo connectionInfo;
+
+    public HistogramIterationListener(UiConnectionInfo connection, int iterations) {
+
+    }
 
     public HistogramIterationListener(int iterations) {
         this(iterations, true, "weights");
