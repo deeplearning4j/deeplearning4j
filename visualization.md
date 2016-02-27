@@ -7,51 +7,54 @@ layout: default
 
 The deeplearning4j-ui repository can display T-SNE, histograms, filters, error and activations. 
 
-Here's an example of an weight visualization during neural net training with DL4J.
+Contents
+
+* [Visualizing Network Training with HistogramIterationListener](#histogram)
+* [Using the UI to Tune Your Network](#usingui)
+* [TSNE and Word2Vec](#tsne)
+
+
+## <a name="histogram">Visualizing Network Training with HistogramIterationListener</a>
+
+DL4J provides the HistogramIterationListener as a method of visualizing in your  browser (in real time) the progress of network training. You can add a histogram iteration listener using the following code:
+
+
+    MultiLayerNetwork model = new MultiLayerNetwork(conf);
+    model.init();
+    model.setListeners(new HistogramIterationListener(1)));
+
+Once network training starts (specifically, after the first parameter update) your browser should automatically open to display the network. (If the browser does not open: check the console output for an address, and go to that address manually.)
+
+Once the UI opens, you will be presented with a display as follows:
+
 
 ![Alt text](../img/DL4J_UI.png)
+(Versions of DL4J before 0.4-rc3.9 will have a less sophisticated display).
 
-Here's an example of an error visualization with D3.
 
-![Alt text](../img/error_d3.png)
+There are four components to this display:
+
+- Top left: score (loss function) of the current minibatch vs. iteration
+- Top right: histogram of parameter values, for each parameter type
+- Bottom left: histogram of updates (updates are the gradient values after applying learning rate, momentum, etc)
+- Bottom right: line chart of the absolute value of parameters and updates, for each parameter type
+
+## <a name="usingui">Using the UI to Tune Your Network</a>
 
 And here's an excellent [web page by Andrej Karpathy](http://cs231n.github.io/neural-networks-3/#baby) about visualizing neural net training.
 
-To support visualizations that will help you monitor neural networks as they learn, and therefore debug them, you must set up an iteration listener. This is done when you instantiate and initialize any new MultiLayerNetwork.
+Here's some basics to get you started:
 
-        MultiLayerNetwork model = new MultiLayerNetwork(conf);
-        model.init();
-        model.setListeners(Arrays.asList((IterationListener) new ScoreIterationListener(listenerFreq)));
+- Score vs. iteration should (overall) go down over time. If the score increases, your learning rate may be set too high
+- The histograms of parameters (top right) and the updates (bottom left) should  have an approximately Gaussian (normal) distribution. Keep an eye out for parameters that are diverging to +/- infinity: this may be due to too high a learning rate, or insufficient regularization (try adding some L2 regularization to your network).
+- For tuning the learning rate, the ratio of parameters to updates should be somewhere in the order of 1000:1 - but note that is is a rough guide only, and may not be appropriate for all networks.
+  - If the ratio diverges significantly from this, your parameters may be too unstabe to learn useful features, or may change too slowly to learn useful features
+  - To change this ratio, adjust your learning rate (or sometimes, parameter initialization). In some networks, you may need to set the learning rate differently for different layers.
 
-The first line above passes a configuration you will have specified previously into an instance of a MultiLayerNetwork model. The second initializes the model. The third sets iteration listeners. Remember, an iteration is simply one update of a network's weights: you may decide to update the weights after a batch of examples is processed, or you may update them after a full pass through the dataset, known as an epoch.
 
-An *iterationListener* is a hook, a plugin, which monitors the iterations and reacts to what's happening. 
+## <a name="tsne">TSNE and Word2vec</a>
 
-A typical pattern for an iterationListener would be asking it to do something every two to five iterations. For example, you might ask it to print the error associated with your net's latest guess. You might ask it to plot either the latest weight distribution or the latest reconstructions that your RBM imagines match the input data, or the activations in the net itself. In addition, an iterationListener logs activity associated with the iteration, and helps you debug. 
-
-        model.setListeners(Collections.singletonList((IterationListener) new ScoreIterationListener(listenerFreq)));
-
-In this line of code, the ScoreIterationListener is passed the parameter specifying a number of iterations -- let's say you specify two -- and after every two iterations, it will print out the error or cost. (Caveat: The more often you call iterationListener, the slower your training will run...).
-
-### UI in the Browser
-
-A [UI server](https://github.com/deeplearning4j/deeplearning4j/blob/f0688a59bb712dc9d3b9eefa191a5f521bab27d0/deeplearning4j-ui/src/main/java/org/deeplearning4j/ui/UiServer.java) should start automatically with [Jetty](https://en.wikipedia.org/wiki/Jetty_(web_server)) and the results will appear here: [http://localhost:8080/weights](http://localhost:8080/weights). 
-
-(If you need to change something manually, you can run the server as a main class in Intellij or Eclipse. Alternatively, you can use `java -cp` with the right classpath and specify: `org.deeplearning4j.ui.UiServer`. That starts a Jetty server with UI functionality.)
-
-You can see the code for the [HistogramIterationListener here](https://github.com/deeplearning4j/deeplearning4j/blob/9ca18d8f0b4828a55f381d50e32b6eebcb3444e0/deeplearning4j-ui/src/main/java/org/deeplearning4j/ui/weights/HistogramIterationListener.java#L35-34). Histograms roughly in the shape of a normal curve indicate that the network is learning as it should. Normally, you might say. Histograms skewed to one side or the other, or serrated, indicate the opposite. 
-
-You would specify `HistogramIterationListener` rather than `ScoreIterationListener`, as in the line of code below:
-
-        model.setListeners(Arrays.asList(new ScoreIterationListener(listenerFreq), new HistogramIterationListener(listenerFreq)));
-
-You'll want to get familiar with the `HistogramIterationListener` in the deeplearning4j-ui repo: 
-
-* deeplearning4j-ui/src/main/java/org/deeplearning4j/ui/weights/HistogramIterationListener.java
-
-### TSNE and Word2vec
-
-We rely on [TSNE](https://lvdmaaten.github.io/tsne/) to reduce the dimensionality of [word feature vectors](../word2vec.html) and project words into a two or three-dimensional space. 
+We rely on [TSNE](https://lvdmaaten.github.io/tsne/) to reduce the dimensionality of [word feature vectors](../word2vec.html) and project words into a two or three-dimensional space. Here's some code for using TSNE with Word2Vec:
 
         log.info("Plot TSNE....");
         BarnesHutTsne tsne = new BarnesHutTsne.Builder()

@@ -143,14 +143,13 @@ As more and more information is lost, the patterns processed by the convolutiona
 
 Here's one example of how you might configure a ConvNet with Deeplearning4j:
 
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/convolution/CNNLFWExample.java?slice=57:160"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/convolution/LenetMnistExample.java?slice=42:73"></script>
 
 ## <a name="resource">Other Resources</a>
 
 * [Yann LeCun](http://yann.lecun.com/exdb/publis/pdf/lecun-iscas-10.pdf), a professor at New York University and director of research at Facebook, has done much to advance and promote the use of convolutional nets, which are used heavily in machine vision tasks. 
 * [Andrej Karpathy's Stanford course](https://cs231n.github.io/) on Convolutional Nets is fantastic. We highly recommend it as an introduction to the major ideas. (*Exercises in Python.*)
-* [Here's our Github test for ConvNets](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/models/layers/ConvolutionDownSampleLayerTest.java).
-* To see DL4J convolutional networks in action, please run our [examples](https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/tree/master/src/main/java/org/deeplearning4j/convolution) after folling the instructions on the [Quickstart page](http://deeplearning4j.org/quickstart.html). 
+* To see DL4J convolutional networks in action, please run our [examples](https://github.com/deeplearning4j/dl4j-0.4-examples/tree/master/src/main/java/org/deeplearning4j/examples/convolution) after following the instructions on the [Quickstart page](http://deeplearning4j.org/quickstart.html). 
 * [Intro to Recurrent Networks](../recurrentnet.html)
 * [Guide to Restricted Boltzmann Machines](../restrictedboltzmannmachine.html)
 * [Intro to Neural Networks](../neuralnet-overview.html)
