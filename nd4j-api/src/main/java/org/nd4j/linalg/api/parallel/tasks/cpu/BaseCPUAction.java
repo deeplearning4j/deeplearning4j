@@ -52,26 +52,27 @@ public abstract class BaseCPUAction extends RecursiveAction implements Task<Void
         this.incrY = (op.y() != null ? op.y().elementWiseStride() : 0);
         this.incrZ = (op.z() != null ? op.z().elementWiseStride() : 0);
         doTensorFirst = false;
-
-        if (incrX == -1) {
-            //Edge case: sometimes NDArray.elementWiseStride() returns -1, due to weird strides,
-            //but every element is still separated by same amount in buffer
-            //For example, a TransformOp with x.length() == x.data.length(), but x.stride() is not ascending/descending
-            INDArray reshapeX = op.x().reshape(new int[]{1, ArrayUtil.prod(op.x().shape())});
-            incrX = reshapeX.stride(1);
-        }
-        if (incrY == -1) {
-            if (op.y() == op.x()) incrY = incrX;
-            else {
-                INDArray reshapeY = op.y().reshape(new int[]{1, ArrayUtil.prod(op.y().shape())});
-                incrY = reshapeY.stride(1);
+        if(incrX < 1 || incrY < 1 || incrZ < 1) {
+            if (incrX == -1) {
+                //Edge case: sometimes NDArray.elementWiseStride() returns -1, due to weird strides,
+                //but every element is still separated by same amount in buffer
+                //For example, a TransformOp with x.length() == x.data.length(), but x.stride() is not ascending/descending
+                INDArray reshapeX = op.x().reshape(new int[]{1, ArrayUtil.prod(op.x().shape())});
+                incrX = reshapeX.stride(1);
             }
-        }
-        if (incrZ == -1) {
-            if (op.z() == op.x()) incrZ = incrX;
-            else {
-                INDArray reshapeZ = op.z().reshape(new int[]{1, ArrayUtil.prod(op.z().shape())});
-                incrY = reshapeZ.stride(1);
+            if (incrY == -1) {
+                if (op.y() == op.x()) incrY = incrX;
+                else {
+                    INDArray reshapeY = op.y().reshape(new int[]{1, ArrayUtil.prod(op.y().shape())});
+                    incrY = reshapeY.stride(1);
+                }
+            }
+            if (incrZ == -1) {
+                if (op.z() == op.x()) incrZ = incrX;
+                else {
+                    INDArray reshapeZ = op.z().reshape(new int[]{1, ArrayUtil.prod(op.z().shape())});
+                    incrY = reshapeZ.stride(1);
+                }
             }
         }
     }

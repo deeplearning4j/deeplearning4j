@@ -145,7 +145,8 @@ public class CPUTaskFactory implements TaskFactory {
 
         //If can do directly...
         boolean canDoDirectly;
-        if(x==z) canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x);
+        if(x == z)
+            canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x);
         else{
             canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x,z);
             if(!Arrays.equals(x.shape(), z.shape())) {
