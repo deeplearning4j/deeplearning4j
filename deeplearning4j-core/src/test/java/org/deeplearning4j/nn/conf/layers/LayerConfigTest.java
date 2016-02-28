@@ -3,15 +3,9 @@ package org.deeplearning4j.nn.conf.layers;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.api.ConvexOptimizer;
-import org.deeplearning4j.optimize.solvers.StochasticGradientDescent;
-import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
 import org.junit.Test;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -222,8 +216,8 @@ public class LayerConfigTest {
 
         assertEquals(1.0, conf.getConf(0).getLayer().getMomentum(), 0.0);
         assertEquals(1.0, conf.getConf(1).getLayer().getMomentum(), 0.0);
-        assertEquals(0.1, conf.getConf(0).getLayer().getMomentumAfter().get(0), 0.0);
-        assertEquals(0.1, conf.getConf(1).getLayer().getMomentumAfter().get(0), 0.0);
+        assertEquals(0.1, conf.getConf(0).getLayer().getMomentumSchedule().get(0), 0.0);
+        assertEquals(0.1, conf.getConf(1).getLayer().getMomentumSchedule().get(0), 0.0);
 
         Map<Integer, Double> testMomentumAfter2 = new HashMap<>();
         testMomentumAfter2.put(0, 0.2);
@@ -241,8 +235,8 @@ public class LayerConfigTest {
 
         assertEquals(1.0, conf.getConf(0).getLayer().getMomentum(), 0.0);
         assertEquals(2.0, conf.getConf(1).getLayer().getMomentum(), 0.0);
-        assertEquals(0.1, conf.getConf(0).getLayer().getMomentumAfter().get(0), 0.0);
-        assertEquals(0.2, conf.getConf(1).getLayer().getMomentumAfter().get(0), 0.0);
+        assertEquals(0.1, conf.getConf(0).getLayer().getMomentumSchedule().get(0), 0.0);
+        assertEquals(0.2, conf.getConf(1).getLayer().getMomentumSchedule().get(0), 0.0);
 
     }
 
@@ -364,7 +358,7 @@ public class LayerConfigTest {
         double lr = 2;
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .learningRate(lr)
-                .learningRateDecayPolicy(LearningRateDecayPolicy.None)
+                .learningRateDecayPolicy(LearningRatePolicy.None)
                 .list()
                 .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build() )
                 .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build() )
@@ -372,8 +366,8 @@ public class LayerConfigTest {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        assertEquals(LearningRateDecayPolicy.None, conf.getConf(0).getLearningRateDecayPolicy());
-        assertEquals(LearningRateDecayPolicy.None, conf.getConf(1).getLearningRateDecayPolicy());
+        assertEquals(LearningRatePolicy.None, conf.getConf(0).getLearningRatePolicy());
+        assertEquals(LearningRatePolicy.None, conf.getConf(1).getLearningRatePolicy());
 
     }
 
@@ -382,11 +376,11 @@ public class LayerConfigTest {
     public void testLearningRatePolicyExponential(){
         double lr = 2;
         double lrDecayRate = 5;
-        double numBatches = 10;
+        int iterations = 1;
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .iterations(iterations)
                 .learningRate(lr)
-                .learningRateDecayPolicy(LearningRateDecayPolicy.Exponential)
-                .lrPolicyDecayNumBatches(numBatches)
+                .learningRateDecayPolicy(LearningRatePolicy.Exponential)
                 .lrPolicyDecayRate(lrDecayRate)
                 .list()
                 .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build() )
@@ -395,26 +389,24 @@ public class LayerConfigTest {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        assertEquals(LearningRateDecayPolicy.Exponential, conf.getConf(0).getLearningRateDecayPolicy());
-        assertEquals(LearningRateDecayPolicy.Exponential, conf.getConf(1).getLearningRateDecayPolicy());
-        assertEquals(lrDecayRate, conf.getConf(0).getLrDecayRate(), 0.0);
-        assertEquals(lrDecayRate, conf.getConf(1).getLrDecayRate(), 0.0);
-        assertEquals(numBatches, conf.getConf(0).getLrDecayNumBatches(), 0.0);
-        assertEquals(numBatches, conf.getConf(1).getLrDecayNumBatches(), 0.0);
+        assertEquals(LearningRatePolicy.Exponential, conf.getConf(0).getLearningRatePolicy());
+        assertEquals(LearningRatePolicy.Exponential, conf.getConf(1).getLearningRatePolicy());
+        assertEquals(lrDecayRate, conf.getConf(0).getLrPolicyDecayRate(), 0.0);
+        assertEquals(lrDecayRate, conf.getConf(1).getLrPolicyDecayRate(), 0.0);
     }
 
     @Test
     public void testLearningRatePolicyInverse(){
         double lr = 2;
         double lrDecayRate = 5;
-        double numBatches = 10;
         double power = 3;
+        int iterations = 1;
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .iterations(iterations)
                 .learningRate(lr)
-                .learningRateDecayPolicy(LearningRateDecayPolicy.Inverse)
-                .lrPolicyDecayNumBatches(numBatches)
+                .learningRateDecayPolicy(LearningRatePolicy.Inverse)
                 .lrPolicyDecayRate(lrDecayRate)
-                .lrDecayPower(power)
+                .lrPolicyPower(power)
                 .list()
                 .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build() )
                 .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build() )
@@ -422,14 +414,12 @@ public class LayerConfigTest {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        assertEquals(LearningRateDecayPolicy.Inverse, conf.getConf(0).getLearningRateDecayPolicy());
-        assertEquals(LearningRateDecayPolicy.Inverse, conf.getConf(1).getLearningRateDecayPolicy());
-        assertEquals(lrDecayRate, conf.getConf(0).getLrDecayRate(), 0.0);
-        assertEquals(lrDecayRate, conf.getConf(1).getLrDecayRate(), 0.0);
-        assertEquals(numBatches, conf.getConf(0).getLrDecayNumBatches(), 0.0);
-        assertEquals(numBatches, conf.getConf(1).getLrDecayNumBatches(), 0.0);
-        assertEquals(power, conf.getConf(0).getLrDecayPower(), 0.0);
-        assertEquals(power, conf.getConf(1).getLrDecayPower(), 0.0);
+        assertEquals(LearningRatePolicy.Inverse, conf.getConf(0).getLearningRatePolicy());
+        assertEquals(LearningRatePolicy.Inverse, conf.getConf(1).getLearningRatePolicy());
+        assertEquals(lrDecayRate, conf.getConf(0).getLrPolicyDecayRate(), 0.0);
+        assertEquals(lrDecayRate, conf.getConf(1).getLrPolicyDecayRate(), 0.0);
+        assertEquals(power, conf.getConf(0).getLrPolicyPower(), 0.0);
+        assertEquals(power, conf.getConf(1).getLrPolicyPower(), 0.0);
     }
 
 
@@ -437,14 +427,14 @@ public class LayerConfigTest {
     public void testLearningRatePolicySteps(){
         double lr = 2;
         double lrDecayRate = 5;
-        double numBatches = 10;
         double steps = 4;
+        int iterations = 1;
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .iterations(iterations)
                 .learningRate(lr)
-                .learningRateDecayPolicy(LearningRateDecayPolicy.Step)
+                .learningRateDecayPolicy(LearningRatePolicy.Step)
                 .lrPolicyDecayRate(lrDecayRate)
-                .lrPolicyDecayNumBatches(numBatches)
-                .lrDecayNumSteps(steps)
+                .lrPolicySteps(steps)
                 .list()
                 .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build() )
                 .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build() )
@@ -452,14 +442,66 @@ public class LayerConfigTest {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        assertEquals(LearningRateDecayPolicy.Step, conf.getConf(0).getLearningRateDecayPolicy());
-        assertEquals(LearningRateDecayPolicy.Step, conf.getConf(1).getLearningRateDecayPolicy());
-        assertEquals(lrDecayRate, conf.getConf(0).getLrDecayRate(), 0.0);
-        assertEquals(lrDecayRate, conf.getConf(1).getLrDecayRate(), 0.0);
-        assertEquals(numBatches, conf.getConf(0).getLrDecayNumBatches(), 0.0);
-        assertEquals(numBatches, conf.getConf(1).getLrDecayNumBatches(), 0.0);
-        assertEquals(steps, conf.getConf(0).getLrDecayNumSteps(), 0.0);
-        assertEquals(steps, conf.getConf(1).getLrDecayNumSteps(), 0.0);
+        assertEquals(LearningRatePolicy.Step, conf.getConf(0).getLearningRatePolicy());
+        assertEquals(LearningRatePolicy.Step, conf.getConf(1).getLearningRatePolicy());
+        assertEquals(lrDecayRate, conf.getConf(0).getLrPolicyDecayRate(), 0.0);
+        assertEquals(lrDecayRate, conf.getConf(1).getLrPolicyDecayRate(), 0.0);
+        assertEquals(steps, conf.getConf(0).getLrPolicySteps(), 0.0);
+        assertEquals(steps, conf.getConf(1).getLrPolicySteps(), 0.0);
+    }
+
+    @Test
+    public void testLearningRatePolicyPoly(){
+        double lr = 2;
+        double lrDecayRate = 5;
+        double power = 3;
+        int iterations = 1;
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .iterations(iterations)
+                .learningRate(lr)
+                .learningRateDecayPolicy(LearningRatePolicy.Poly)
+                .lrPolicyDecayRate(lrDecayRate)
+                .lrPolicyPower(power)
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build() )
+                .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build() )
+                .build();
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        assertEquals(LearningRatePolicy.Poly, conf.getConf(0).getLearningRatePolicy());
+        assertEquals(LearningRatePolicy.Poly, conf.getConf(1).getLearningRatePolicy());
+        assertEquals(lrDecayRate, conf.getConf(0).getLrPolicyDecayRate(), 0.0);
+        assertEquals(lrDecayRate, conf.getConf(1).getLrPolicyDecayRate(), 0.0);
+        assertEquals(power, conf.getConf(0).getLrPolicyPower(), 0.0);
+        assertEquals(power, conf.getConf(1).getLrPolicyPower(), 0.0);
+    }
+
+    @Test
+    public void testLearningRatePolicySigmoid(){
+        double lr = 2;
+        double lrDecayRate = 5;
+        double steps = 4;
+        int iterations = 1;
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .iterations(iterations)
+                .learningRate(lr)
+                .learningRateDecayPolicy(LearningRatePolicy.Sigmoid)
+                .lrPolicyDecayRate(lrDecayRate)
+                .lrPolicySteps(steps)
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build() )
+                .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build() )
+                .build();
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        assertEquals(LearningRatePolicy.Sigmoid, conf.getConf(0).getLearningRatePolicy());
+        assertEquals(LearningRatePolicy.Sigmoid, conf.getConf(1).getLearningRatePolicy());
+        assertEquals(lrDecayRate, conf.getConf(0).getLrPolicyDecayRate(), 0.0);
+        assertEquals(lrDecayRate, conf.getConf(1).getLrPolicyDecayRate(), 0.0);
+        assertEquals(steps, conf.getConf(0).getLrPolicySteps(), 0.0);
+        assertEquals(steps, conf.getConf(1).getLrPolicySteps(), 0.0);
     }
 
 }

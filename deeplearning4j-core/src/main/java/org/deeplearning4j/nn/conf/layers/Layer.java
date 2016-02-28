@@ -31,10 +31,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import org.deeplearning4j.nn.conf.GradientNormalization;
-import org.deeplearning4j.nn.conf.LearningRateDecayPolicy;
+import org.deeplearning4j.nn.conf.LearningRatePolicy;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
-import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 
 /**
@@ -70,12 +69,12 @@ public abstract class Layer implements Serializable, Cloneable {
     protected double learningRate;
     protected double biasLearningRate;
     //learning rate after n iterations
-    protected Map<Integer,Double> learningRateAfter;
+    protected Map<Integer,Double> learningRateSchedule;
     @Deprecated
     protected double lrScoreBasedDecay;
     protected double momentum;
     //momentum after n iterations
-    protected Map<Integer,Double> momentumAfter;
+    protected Map<Integer,Double> momentumSchedule;
     protected double l1;
     protected double l2;
     protected double biasL1;
@@ -99,10 +98,10 @@ public abstract class Layer implements Serializable, Cloneable {
     	this.dist = builder.dist;
         this.learningRate = builder.learningRate;
         this.biasLearningRate = builder.biasLearningRate;
-        this.learningRateAfter = builder.learningRateAfter;
+        this.learningRateSchedule = builder.learningRateAfter;
         this.lrScoreBasedDecay = builder.lrScoreBasedDecay;
         this.momentum = builder.momentum;
-        this.momentumAfter = builder.momentumAfter;
+        this.momentumSchedule = builder.momentumAfter;
         this.l1 = builder.l1;
         this.l2 = builder.l2;
         this.dropOut = builder.dropOut;
@@ -120,8 +119,8 @@ public abstract class Layer implements Serializable, Cloneable {
         try {
             Layer clone = (Layer) super.clone();
             if(clone.dist != null) clone.dist = clone.dist.clone();
-            if(clone.learningRateAfter != null) clone.learningRateAfter = new HashMap<>(clone.learningRateAfter);
-            if(clone.momentumAfter != null) clone.momentumAfter = new HashMap<>(clone.momentumAfter);
+            if(clone.learningRateSchedule != null) clone.learningRateSchedule = new HashMap<>(clone.learningRateSchedule);
+            if(clone.momentumSchedule != null) clone.momentumSchedule = new HashMap<>(clone.momentumSchedule);
             return clone;
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);
@@ -151,7 +150,7 @@ public abstract class Layer implements Serializable, Cloneable {
         protected double adamVarDecay = Double.NaN;
         protected GradientNormalization gradientNormalization = null;
         protected double gradientNormalizationThreshold = Double.NaN;
-        protected LearningRateDecayPolicy learningRateDecayPolicy = null;
+        protected LearningRatePolicy learningRatePolicy = null;
 
 
         /**Layer name assigns layer string name.
@@ -309,8 +308,8 @@ public abstract class Layer implements Serializable, Cloneable {
          * @param policy Type of policy to use. Defaults to None.
          * @see org.deeplearning4j.nn.conf.GradientNormalization
          */
-        public T learningRateDecayPolicy(LearningRateDecayPolicy policy){
-            this.learningRateDecayPolicy = policy;
+        public T learningRateDecayPolicy(LearningRatePolicy policy){
+            this.learningRatePolicy = policy;
             return (T) this;
         }
 

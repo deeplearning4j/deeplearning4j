@@ -12,7 +12,7 @@ import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.api.Updater;
-import org.deeplearning4j.nn.conf.LearningRateDecayPolicy;
+import org.deeplearning4j.nn.conf.LearningRatePolicy;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -315,82 +315,6 @@ public class TestUpdaters {
 	}
 
 	@Test
-    public void testLearningRateScoreDecay(){
-        double lr = 0.01;
-        double lrScoreDecay = 0.10;
-        int[] nIns = {4,2};
-        int[] nOuts = {2,3};
-		int oldScore = 1;
-		int newScore = 1;
-		int iteration = 3;
-        INDArray gradientW = Nd4j.ones(nIns[0], nOuts[0]);
-
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .learningRate(lr)
-				.learningRateDecayPolicy(LearningRateDecayPolicy.Score)
-				.lrPolicyDecayRate(lrScoreDecay)
-                .list()
-                .layer(0, new DenseLayer.Builder().nIn(nIns[0]).nOut(nOuts[0]).updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
-                .layer(1, new OutputLayer.Builder().nIn(nIns[1]).nOut(nOuts[1]).updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
-				.backprop(true).pretrain(false)
-                .build();
-
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
-
-		ConvexOptimizer opt = new StochasticGradientDescent(net.getDefaultConfiguration(), new NegativeDefaultStepFunction(), null, net);
-        opt.checkTerminalConditions(gradientW, oldScore, newScore, iteration);
-		assertEquals(lrScoreDecay, net.getLayer(0).conf().getLrDecayRate(), 1e-4);
-		assertEquals(lr*(lrScoreDecay + Nd4j.EPS_THRESHOLD), net.getLayer(0).conf().getLearningRateByParam("W"), 1e-4);
-
-	}
-
-	@Test
-	public void testLearningRateScoreDecayLearningRateUnchanged() {
-
-		DataSet ds = new IrisDataSetIterator(150,150).next();
-		ds.normalizeZeroMeanZeroUnitVariance();
-
-		Nd4j.getRandom().setSeed(12345);
-
-		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-				.regularization(false)
-				.optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-				.learningRate(1.0)
-				.learningRateDecayPolicy(LearningRateDecayPolicy.Score)
-				.lrPolicyDecayRate(0.10)
-				.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
-				.updater(org.deeplearning4j.nn.conf.Updater.SGD)
-				.seed(12345L)
-				.list()
-				.layer(0, new DenseLayer.Builder()
-						.nIn(4).nOut(3)
-						.activation("sigmoid")
-						.build())
-				.layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
-						.activation("tanh")
-						.nIn(3).nOut(3)
-						.build())
-				.pretrain(false).backprop(true)
-				.build();
-		MultiLayerNetwork mln = new MultiLayerNetwork(conf);
-		mln.init();
-
-		//Run a number of iterations of learning
-		mln.setInput(ds.getFeatureMatrix());
-		mln.setLabels(ds.getLabels());
-		mln.computeGradientAndScore();
-		for( int j=0; j<1; j++ ) mln.fit(ds);
-		mln.computeGradientAndScore();
-
-		double lr0 = mln.getLayer(0).conf().getLayer().getLearningRate();
-		double lr1 = mln.getLayer(1).conf().getLayer().getLearningRate();
-		assertEquals(1.0, lr0, 0.0);
-		assertEquals(1.0, lr1, 0.0);
-	}
-
-
-	@Test
 	public void testMultiLayerUpdater() throws Exception {
 		Nd4j.getRandom().setSeed(12345L);
 		double lr = 0.03;
@@ -579,5 +503,7 @@ public class TestUpdaters {
 			assertEquals(updater,ag2.getUpdater());
 		}
 	}
+
+
 
 }
