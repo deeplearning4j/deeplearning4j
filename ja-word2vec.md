@@ -1,6 +1,6 @@
 ---
-タイトル："Word2vec” 
-レイアウト：デフォルト
+title："Word2vec” 
+layout：ja-default
 ---
 
 # Word2Vec
