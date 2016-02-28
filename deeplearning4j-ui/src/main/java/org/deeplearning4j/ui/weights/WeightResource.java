@@ -56,7 +56,7 @@ public class WeightResource {
     @GET
     @Path("/updated")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response updated(@QueryParam("sid") long sessionId) {
+    public Response updated(@QueryParam("sid") int sessionId) {
         CompactModelAndGradient model = (CompactModelAndGradient) storage.getObject(sessionId, ObjectType.HISTOGRAM);
         if (model == null) {
             return Response.noContent().build();
@@ -66,7 +66,7 @@ public class WeightResource {
     @GET
     @Path("/data")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response data(@QueryParam("sid") long sessionId) {
+    public Response data(@QueryParam("sid") int sessionId) {
         //initialized with empty data
         CompactModelAndGradient model = (CompactModelAndGradient) storage.getObject(sessionId, ObjectType.HISTOGRAM);
 
@@ -84,7 +84,7 @@ public class WeightResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @ExceptionMetered
-    public Response update(CompactModelAndGradient modelAndGrad, @PathParam("path") String path, @QueryParam("sid") long sessionId) {
+    public Response update(CompactModelAndGradient modelAndGrad, @PathParam("path") String path, @QueryParam("sid") int sessionId) {
 
             storage.putObject(sessionId, ObjectType.HISTOGRAM, modelAndGrad);
 

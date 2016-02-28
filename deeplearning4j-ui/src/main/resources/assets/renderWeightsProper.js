@@ -547,6 +547,10 @@
     }
 
 var timed = function() {
+
+                    var sid = getParameterByName("sid");
+                    if (sid == undefined) sid = 0;
+
                     $.ajax({
                         url:"/weights" + "/updated",
                         async: true,
@@ -567,7 +571,7 @@ var timed = function() {
                                     /*
                                         /weights/data should be changed to /weights/data/{time} and only delta should be passed over network
                                     */
-                                    d3.json("/weights"+'/data',function(error,json) {
+                                    d3.json("/weights"+'/data?sid=' + sid,function(error,json) {
 
                                         //Get last update time; do nothing if not a new update
                                         var updateTime = json['lastUpdateTime'];
@@ -746,4 +750,14 @@ setTimeout(timed,2000);
         $("#" + visibleMagnitude).css("visibility","visible");
         $("#" + visibleMagnitude).css("display","block");
     //    console.log("Switching on magnitude view:" + visibleMagnitude);
+    }
+
+    function getParameterByName(name) {
+        url = window.location.href;
+        name = name.replace(/[\[\]]/g, "\\$&");
+        var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+            results = regex.exec(url);
+        if (!results) return null;
+        if (!results[2]) return '';
+        return decodeURIComponent(results[2].replace(/\+/g, " "));
     }

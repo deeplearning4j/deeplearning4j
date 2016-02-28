@@ -12,7 +12,7 @@ import java.util.Random;
  */
 @Data
 public class UiConnectionInfo {
-    private long sessionId;
+    private int sessionId;
     private String login;
     private String password;
     private String address = "localhost";
@@ -21,7 +21,11 @@ public class UiConnectionInfo {
     private boolean useHttps;
 
     public UiConnectionInfo() {
-        this.sessionId = new Random().nextLong();
+        this.sessionId = new Random().nextInt();
+    }
+
+    public void setSessionId(int sessionId) {
+        this.sessionId = sessionId;
     }
 
     /**
@@ -75,7 +79,7 @@ public class UiConnectionInfo {
          * @param sessionId
          * @return
          */
-        public Builder setSessionId(long sessionId) {
+        public Builder setSessionId(int sessionId) {
             info.setSessionId(sessionId);
             return this;
         }

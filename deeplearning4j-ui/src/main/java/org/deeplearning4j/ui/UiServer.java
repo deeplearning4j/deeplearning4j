@@ -79,6 +79,17 @@ public class UiServer extends Application<UIConfiguration> {
         return env;
     }
 
+
+    public UiConnectionInfo getConnectionInfo() {
+        UiConnectionInfo info = new UiConnectionInfo.Builder()
+                .setPort(getPort())
+                .setAddress("localhost")
+                .enableHttps(false)
+                .build();
+
+        return info;
+    }
+
     @Override
     public void run(UIConfiguration uiConfiguration, Environment environment) throws Exception {
         this.conf = uiConfiguration;
