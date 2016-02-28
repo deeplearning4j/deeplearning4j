@@ -15,13 +15,53 @@ public class UiConnectionInfo {
     private long sessionId;
     private String login;
     private String password;
-    private String address;
-    private int port;
+    private String address = "localhost";
+    private int port = 8080;
     private String path;
     private boolean useHttps;
 
     public UiConnectionInfo() {
         this.sessionId = new Random().nextLong();
+    }
+
+    /**
+     * This method returns scheme, address and port for this UiConnectionInfo
+     *
+     * i.e: https://localhost:8080
+     *
+     * @return
+     */
+    public String getFirstPart() {
+        StringBuilder builder = new StringBuilder();
+
+        builder
+                .append(useHttps ? "https" : "http").append("://")
+                .append(address).append(":")
+                .append(port).append("");
+
+        return builder.toString();
+    }
+
+    public String getSecondPart() {
+        return getSecondPart("");
+    }
+
+    public String getSecondPart(@NonNull String nPath) {
+        StringBuilder builder = new StringBuilder();
+
+        if (path != null && !path.isEmpty()) {
+            builder.append(path.startsWith("/") ? path : ("/" + path)).append("/");
+        }
+
+        nPath = nPath.replaceFirst("^/", "");
+        builder.append(path.endsWith("/") ? nPath : ("/" + nPath)).append("/");
+
+
+        return builder.toString().replaceAll("\\/{2,}","/");
+    }
+
+    public String getFullAddress() {
+        return getFirstPart() + getSecondPart();
     }
 
     public static class Builder {
