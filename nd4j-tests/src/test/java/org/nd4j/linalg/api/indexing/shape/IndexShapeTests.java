@@ -1,6 +1,8 @@
 package org.nd4j.linalg.api.indexing.shape;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -12,21 +14,14 @@ import static org.junit.Assert.*;
 /**
  * @author Adam Gibson
  */
+@RunWith(Parameterized.class)
 public class IndexShapeTests extends BaseNd4jTest {
-    public IndexShapeTests(String name, Nd4jBackend backend) {
-        super(name, backend);
-    }
 
     public IndexShapeTests(Nd4jBackend backend) {
         super(backend);
     }
 
-    public IndexShapeTests() {
-    }
 
-    public IndexShapeTests(String name) {
-        super(name);
-    }
 
     private  int[] shape = {1,1,2,1,3,4,5,1};
 

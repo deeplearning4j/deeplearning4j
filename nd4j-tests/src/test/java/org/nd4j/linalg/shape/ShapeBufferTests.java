@@ -1,6 +1,8 @@
 package org.nd4j.linalg.shape;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
@@ -18,18 +20,8 @@ import java.nio.IntBuffer;
 /**
  * Created by agibsoncccc on 1/30/16.
  */
+@RunWith(Parameterized.class)
 public class ShapeBufferTests extends BaseNd4jTest {
-    public ShapeBufferTests() {
-        super();
-    }
-
-    public ShapeBufferTests(String name) {
-        super(name);
-    }
-
-    public ShapeBufferTests(String name, Nd4jBackend backend) {
-        super(name, backend);
-    }
 
     public ShapeBufferTests(Nd4jBackend backend) {
         super(backend);

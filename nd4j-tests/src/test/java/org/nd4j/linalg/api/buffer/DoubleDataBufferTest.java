@@ -23,6 +23,7 @@ import io.netty.buffer.ByteBuf;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.Nd4jTestSuite;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -44,15 +45,13 @@ import static org.junit.Assert.assertEquals;
  *
  * @author Adam Gibson
  */
-@RunWith(Nd4jTestSuite.class)
+@RunWith(Parameterized.class)
 public  class DoubleDataBufferTest extends BaseNd4jTest {
-
-
-
-
-    public DoubleDataBufferTest() {
-        super(getDefaultBackend());
+    public DoubleDataBufferTest(Nd4jBackend backend) {
+        super(backend);
     }
+
+
 
     @Before
     public void before() {

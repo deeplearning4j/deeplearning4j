@@ -7,6 +7,8 @@ import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.util.Pair;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.checkutil.CheckUtil;
@@ -19,6 +21,7 @@ import java.util.List;
 /**
  * Created by agibsoncccc on 12/7/15.
  */
+@RunWith(Parameterized.class)
 public class TestInvertMatrices extends BaseNd4jTest {
     public TestInvertMatrices() {
     }
@@ -26,15 +29,6 @@ public class TestInvertMatrices extends BaseNd4jTest {
     public TestInvertMatrices(Nd4jBackend backend) {
         super(backend);
     }
-
-    public TestInvertMatrices(String name) {
-        super(name);
-    }
-
-    public TestInvertMatrices(String name, Nd4jBackend backend) {
-        super(name, backend);
-    }
-
     @Test
     public void testInverse() {
         RealMatrix matrix = new Array2DRowRealMatrix(new double[][]{

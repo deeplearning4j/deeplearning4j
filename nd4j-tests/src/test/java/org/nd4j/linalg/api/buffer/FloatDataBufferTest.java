@@ -49,17 +49,6 @@ public  class FloatDataBufferTest  extends BaseNd4jTest {
         super(backend);
     }
 
-    public FloatDataBufferTest(String name, Nd4jBackend backend) {
-        super(name, backend);
-    }
-
-    public FloatDataBufferTest(String name) {
-        super(name);
-    }
-
-    public FloatDataBufferTest() {
-    }
-
     @Before
     public void before() {
         Nd4j.dtype = DataBuffer.Type.FLOAT;

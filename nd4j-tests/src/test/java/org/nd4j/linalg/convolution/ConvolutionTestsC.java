@@ -21,6 +21,8 @@ package org.nd4j.linalg.convolution;
 import static org.junit.Assert.*;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -32,21 +34,13 @@ import java.util.Arrays;
 /**
  * Created by agibsonccc on 9/6/14.
  */
+@RunWith(Parameterized.class)
 public  class ConvolutionTestsC extends BaseNd4jTest {
-    public ConvolutionTestsC(String name, Nd4jBackend backend) {
-        super(name, backend);
-    }
 
     public ConvolutionTestsC(Nd4jBackend backend) {
         super(backend);
     }
 
-    public ConvolutionTestsC(String name) {
-        super(name);
-    }
-
-    public ConvolutionTestsC() {
-    }
 
     @Test
     public void testConvOutWidthAndHeight() {

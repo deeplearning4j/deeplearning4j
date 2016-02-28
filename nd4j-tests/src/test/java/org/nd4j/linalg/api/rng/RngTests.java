@@ -2,6 +2,8 @@ package org.nd4j.linalg.api.rng;
 import static org.junit.Assert.*;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -10,19 +12,9 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 /**
  * @author Adam Gibson
  */
+@RunWith(Parameterized.class)
 public class RngTests extends BaseNd4jTest {
-    public RngTests() {
-    }
-
-    public RngTests(String name) {
-        super(name);
-    }
-
-    public RngTests(String name, Nd4jBackend backend) {
-        super(name, backend);
-    }
-
-    public RngTests(Nd4jBackend backend) {
+   public RngTests(Nd4jBackend backend) {
         super(backend);
     }
 

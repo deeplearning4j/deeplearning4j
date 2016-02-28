@@ -22,6 +22,8 @@ package org.nd4j.linalg.complex;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
@@ -38,21 +40,12 @@ import static org.junit.Assert.*;
  * @author Adam Gibson
  */
 @Ignore
+@RunWith(Parameterized.class)
 public  class ComplexNumberTests  extends BaseNd4jTest {
     public ComplexNumberTests(Nd4jBackend backend) {
         super(backend);
     }
 
-    public ComplexNumberTests(String name, Nd4jBackend backend) {
-        super(name, backend);
-    }
-
-    public ComplexNumberTests(String name) {
-        super(name);
-    }
-
-    public ComplexNumberTests() {
-    }
 
     @Test
     public void testScalar() {

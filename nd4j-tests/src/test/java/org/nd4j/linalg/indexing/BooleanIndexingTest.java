@@ -2,9 +2,12 @@ package org.nd4j.linalg.indexing;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.conditions.Condition;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.functions.Value;
 
@@ -15,9 +18,12 @@ import static org.junit.Assert.*;
 /**
  * @author raver119@gmail.com
  */
-public class BooleanIndexingTest {
-
-    /*
+@RunWith(Parameterized.class)
+public class BooleanIndexingTest extends BaseNd4jTest {
+    public BooleanIndexingTest(Nd4jBackend backend) {
+        super(backend);
+    }
+/*
         1D array checks
      */
 
