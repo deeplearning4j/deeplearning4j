@@ -6,7 +6,7 @@ export OMP_NUM_THREADS=1
 if [ "$(uname)" == "Darwin" ]; then
     echo "RUNNING OSX CLANG" 
     # Do something under Mac OS X platform
-    export CC=clang-omp++
+    #export CC=clang-omp++
     export CXX=clang-omp++
     elif [ "$(expr substr $(uname -s) 1 10)" == "MINGW32_NT" ]; then
     # Do something under Windows NT platform
