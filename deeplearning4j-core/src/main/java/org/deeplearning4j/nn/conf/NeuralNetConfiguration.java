@@ -329,10 +329,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         protected double biasInit = 0.0;
         protected Distribution dist = new NormalDistribution(1e-3,1);
         protected double learningRate = 1e-1;
-        protected Map<Integer, Double> learningRateAfter = new HashMap<>();
+        protected double biasLearningRate;
+        protected Map<Integer, Double> learningRateSchedule = new HashMap<>();
         protected double lrScoreBasedDecay;
         protected double momentum = 0.5;
-        protected Map<Integer, Double> momentumAfter = new HashMap<>();
+        protected Map<Integer, Double> momentumSchedule = new HashMap<>();
         protected double l1 = 0.0;
         protected double l2 = 0.0;
         protected double dropOut = 0;
@@ -576,9 +577,15 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+        /** Bias learning rate. Set this to apply a different learning rate to the bias*/
+        public Builder biasLearningRate(double biasLearningRate){
+            this.biasLearningRate = biasLearningRate;
+            return this;
+        }
+
         /** Learning rate schedule. Map of the iteration to the learning rate to apply at that iteration. */
-        public Builder learningRateAfter(Map<Integer, Double> learningRateAfter) {
-            this.learningRateAfter = learningRateAfter;
+        public Builder learningRateSchedule(Map<Integer, Double> learningRateSchedule) {
+            this.learningRateSchedule = learningRateSchedule;
             return this;
         }
 
@@ -614,7 +621,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
         /** Momentum schedule. Map of the iteration to the momentum rate to apply at that iteration. */
         public Builder momentumAfter(Map<Integer, Double> momentumAfter) {
-            this.momentumAfter = momentumAfter;
+            this.momentumSchedule = momentumAfter;
             return this;
         }
 
@@ -736,7 +743,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             if(layer != null ) {
                 if (Double.isNaN(layer.getLearningRate())) layer.setLearningRate(learningRate);
                 if (Double.isNaN(layer.getBiasLearningRate())) layer.setBiasLearningRate(learningRate);
-                if (layer.getLearningRateSchedule() == null) layer.setLearningRateSchedule(learningRateAfter);
+                if (layer.getLearningRateSchedule() == null) layer.setLearningRateSchedule(learningRateSchedule);
                 if (Double.isNaN(layer.getLrScoreBasedDecay())) layer.setLrScoreBasedDecay(lrScoreBasedDecay);
                 if (Double.isNaN(layer.getL1())) layer.setL1(l1);
                 if (Double.isNaN(layer.getL2())) layer.setL2(l2);
@@ -747,7 +754,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 if (Double.isNaN(layer.getDropOut())) layer.setDropOut(dropOut);
                 if (layer.getUpdater() == null) layer.setUpdater(updater);
                 if (Double.isNaN(layer.getMomentum())) layer.setMomentum(momentum);
-                if (layer.getMomentumSchedule() == null) layer.setMomentumSchedule(momentumAfter);
+                if (layer.getMomentumSchedule() == null) layer.setMomentumSchedule(momentumSchedule);
                 if (Double.isNaN(layer.getRho())) layer.setRho(rho);
                 if (Double.isNaN(layer.getRmsDecay())) layer.setRmsDecay(rmsDecay);
                 if (Double.isNaN(layer.getAdamMeanDecay())) layer.setAdamMeanDecay(adamMeanDecay);
