@@ -34,7 +34,7 @@ namespace functions {
 #ifdef __CUDACC__
             inline __host__ __device__
 #elif defined(__GNUC__)
-            __always_inline
+            
 #endif
             T op(T d1, T d2, T *params) = 0;
 
@@ -42,7 +42,7 @@ namespace functions {
 #ifdef __CUDACC__
             inline __host__ __device__
 #elif defined(__GNUC__)
-            __always_inline
+            
 #endif
             T op(T d1, T *params) = 0;
 
@@ -551,7 +551,7 @@ namespace functions {
 #ifdef __CUDACC__
             inline __host__ __device__
 #elif defined(__GNUC__)
-            __always_inline
+            
 
 #endif
             virtual ~PairWiseTransform() {
@@ -559,7 +559,7 @@ namespace functions {
 #ifdef __CUDACC__
             inline __host__ __device__
 #elif defined(__GNUC__)
-            __always_inline
+            
 
 #endif
             PairWiseTransform() {
@@ -592,7 +592,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 T op(T d1, T d2, T *params) {
                     return d1 + d2;
@@ -602,7 +602,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 T op(T d1, T *params) {
                     return d1;
@@ -610,7 +610,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 virtual ~Add() {
@@ -618,7 +618,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 Add() {
@@ -649,7 +649,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 T op(T d1, T d2, T *params) {
                     return d2;
@@ -659,7 +659,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 T op(T d1, T *params) {
                     return d1;
@@ -667,7 +667,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 virtual ~Copy() {
@@ -675,7 +675,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 Copy() {
@@ -707,7 +707,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 T op(T d1, T d2, T *params) {
                     return d1 / d2;
@@ -717,7 +717,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 T op(T d1, T *params) {
                     return d1;
@@ -725,7 +725,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 virtual ~Divide() {
@@ -733,7 +733,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 Divide() {
@@ -765,7 +765,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 T op(T d1, T d2, T *params) {
                     T diff = d1 - d2;
@@ -779,7 +779,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 T op(T d1, T *params) {
                     return d1;
@@ -787,7 +787,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 virtual ~Epsilon() {
@@ -795,7 +795,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 Epsilon() {
@@ -826,7 +826,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 T op(T d1, T d2, T *params) {
                     return d1 == d2;
@@ -836,7 +836,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 T op(T d1, T *params) {
                     return d1;
@@ -844,7 +844,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 virtual ~EqualTo() {
@@ -852,7 +852,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 EqualTo() {
@@ -883,7 +883,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 T op(T d1, T d2, T *params) {
                     return d1 != d2;
@@ -893,7 +893,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 T op(T d1, T *params) {
                     return d1;
@@ -901,7 +901,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 virtual ~NotEqualTo() {
@@ -909,7 +909,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 NotEqualTo() {
@@ -942,7 +942,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 T op(T d1, T d2, T *params) {
                     return d1 >= d2;
@@ -952,7 +952,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 T op(T d1, T *params) {
                     return d1;
@@ -960,7 +960,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 virtual ~GreaterThanOrEqual() {
@@ -968,7 +968,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 GreaterThanOrEqual() {
@@ -1000,7 +1000,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 T op(T d1, T d2, T *params) {
                     return d1 > d2;
@@ -1010,7 +1010,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 T op(T d1, T *params) {
                     return d1;
@@ -1018,7 +1018,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 virtual ~GreaterThan() {
@@ -1026,7 +1026,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 GreaterThan() {
@@ -1057,7 +1057,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 T op(T d1, T d2, T *params) {
                     return d1 < d2;
@@ -1067,7 +1067,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 T op(T d1, T *params) {
                     return d1;
@@ -1075,7 +1075,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 virtual ~LessThan() {
@@ -1083,7 +1083,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 LessThan() {
@@ -1114,7 +1114,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 T op(T d1, T d2, T *params) {
                     return d1 <= d2;
@@ -1124,7 +1124,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 T op(T d1, T *params) {
                     return d1;
@@ -1132,7 +1132,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 virtual ~LessThanOrEqual() {
@@ -1140,7 +1140,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 LessThanOrEqual() {
@@ -1171,7 +1171,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 T op(T d1, T d2, T *params) {
                     return d1 * d2;
@@ -1181,7 +1181,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 T op(T d1, T *params) {
                     return d1;
@@ -1190,7 +1190,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 virtual ~Multiply() {
@@ -1198,7 +1198,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 Multiply() {
@@ -1229,7 +1229,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 T op(T d1, T d2, T *params) {
                     return d2 / d1;
@@ -1239,7 +1239,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 T op(T d1, T *params) {
                     return d1;
@@ -1247,7 +1247,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 virtual ~ReverseDivide() {
@@ -1255,7 +1255,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 ReverseDivide() {
@@ -1286,7 +1286,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 T op(T d1, T d2, T *params) {
                     return d2 - d2;
@@ -1296,7 +1296,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 T op(T d1, T *params) {
                     return d1;
@@ -1304,7 +1304,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 virtual ~ReverseSubtraction() {
@@ -1312,7 +1312,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 ReverseSubtraction() {
@@ -1343,7 +1343,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 T op(T d1, T d2, T *params) {
                     return d1 - d2;
@@ -1353,7 +1353,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 T op(T d1, T *params) {
                     return d1;
@@ -1361,7 +1361,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 virtual ~Subtract() {
@@ -1369,7 +1369,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 Subtract() {
@@ -1401,7 +1401,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 T op(T d1, T d2, T *params) {
                     return nd4j::math::nd4j_max<T>(d1,d2);
@@ -1411,7 +1411,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 T op(T d1, T *params) {
                     return d1;
@@ -1419,7 +1419,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 virtual ~Max() {
@@ -1427,7 +1427,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 Max() {
@@ -1460,7 +1460,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 T op(T d1, T d2, T *params) {
                     return nd4j::math::nd4j_min(d1,d2);
@@ -1470,7 +1470,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 T op(T d1, T *params) {
                     return d1;
@@ -1478,7 +1478,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 virtual ~Min() {
@@ -1486,7 +1486,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 Min() {
