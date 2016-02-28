@@ -1,6 +1,6 @@
 ---
-タイトル：Deeplearning4jのフルインストール
-レイアウト : デフォルト
+layout: ja-default
+title: "Deeplearning4jのフルインストール"
 ---
 
 # フルインストール
