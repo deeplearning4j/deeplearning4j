@@ -1,6 +1,6 @@
 ---
-タイトル:Deeplearning4jチームについて
-レイアウト: デフォルト
+layout: ja-default
+title: "デフォルト"
 ---
 
 # Skymindについて
