@@ -49,7 +49,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 
 #endif
             SummaryStatsData() {
@@ -62,7 +62,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 
 #endif
             void initialize() {
@@ -73,7 +73,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 
 #endif
             void initWithValue(T val) {
@@ -89,7 +89,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 
 #endif
             void setValues(SummaryStatsData<T> *target) {
@@ -106,7 +106,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 
 #endif
             T variance()   {
@@ -119,7 +119,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 
 #endif
             T variance_n() {
@@ -132,7 +132,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 
 #endif
             T skewness()   { return nd4j::math::nd4j_sqrt<int>(n) * M3 / nd4j::math::nd4j_pow(M2, (T) 1.5); }
@@ -141,7 +141,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 
 #endif
             T kurtosis()   { return n * M4 / (M2 * M2); }
@@ -150,7 +150,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 
 #endif
             T getM2() const {
@@ -161,7 +161,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 
 #endif
             void setM2(T m2) {
@@ -172,7 +172,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 
 #endif
             T getM3() const {
@@ -183,7 +183,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 
 #endif
             void setM3(T m3) {
@@ -194,7 +194,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 
 #endif
             T getM4() const {
@@ -205,7 +205,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 
 #endif
             void setM4(T m4) {
@@ -216,7 +216,7 @@ namespace functions {
             __inline__ __host__  __device__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 
 #endif
             T getMax() const {
@@ -227,7 +227,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 
 #endif
             void setMax(T max) {
@@ -238,7 +238,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 
 #endif
             T getMean() const {
@@ -249,7 +249,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 
 #endif
             void setMean(T mean) {
@@ -260,7 +260,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 
 #endif
             T getMin() const {
@@ -271,7 +271,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 
 #endif
             void setMin(T min) {
@@ -282,7 +282,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 
 #endif
             T getN() const {
@@ -293,7 +293,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 
 #endif
             void setN(T n) {
@@ -362,7 +362,7 @@ struct SharedSummaryStatsData<double> {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 
 #endif
             SummaryStatsData<T> op(SummaryStatsData<T> val, T *extraParams) {
@@ -382,7 +382,7 @@ struct SharedSummaryStatsData<double> {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 
 #endif
             SummaryStatsData<T> update(SummaryStatsData<T> x, SummaryStatsData<T> y,
@@ -436,7 +436,7 @@ struct SharedSummaryStatsData<double> {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 
 #endif
             SummaryStatsData<T> merge(SummaryStatsData<T> f1, SummaryStatsData<T> f2, T *extraParams) = 0;
@@ -446,7 +446,7 @@ struct SharedSummaryStatsData<double> {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 
 #endif
             T getValue(SummaryStatsData<T> val) = 0;
@@ -468,7 +468,7 @@ struct SharedSummaryStatsData<double> {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 
 #endif
             SummaryStatsData<T> postProcess(SummaryStatsData<T> reduction, int n, int xOffset,
@@ -486,7 +486,7 @@ struct SharedSummaryStatsData<double> {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 
 #endif
             SummaryStatsData<T> op(SummaryStatsData<T> d1, SummaryStatsData<T> d2, T *extraParams) = 0;
@@ -1045,7 +1045,7 @@ struct SharedSummaryStatsData<double> {
             inline __host__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 #endif
             void exec(T *x,
                       int *xShapeInfo,
@@ -1070,7 +1070,7 @@ struct SharedSummaryStatsData<double> {
             inline __host__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 #endif
             T execScalar(T *x,
                          int *xShapeInfo,
@@ -1131,7 +1131,7 @@ struct SharedSummaryStatsData<double> {
             inline __host__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 #endif
             void exec(T *x,
                       int *xShapeInfo,
@@ -1251,14 +1251,14 @@ struct SharedSummaryStatsData<double> {
 #ifdef __CUDACC__
             __host__ __device__
 #elif defined(__GNUC__)
-            __always_inline
+            
 #endif
             virtual ~SummaryStatsReduce() {
             }
 #ifdef __CUDACC__
             __host__ __device__
 #elif defined(__GNUC__)
-            __always_inline
+            
 #endif
             SummaryStatsReduce() {
             }
@@ -1296,7 +1296,7 @@ struct SharedSummaryStatsData<double> {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 functions::summarystats::SummaryStatsData<T> op(
@@ -1309,7 +1309,7 @@ struct SharedSummaryStatsData<double> {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T getValue(SummaryStatsData<T> val) {
@@ -1330,7 +1330,7 @@ struct SharedSummaryStatsData<double> {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 functions::summarystats::SummaryStatsData<T> merge(
@@ -1356,7 +1356,7 @@ struct SharedSummaryStatsData<double> {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 functions::summarystats::SummaryStatsData<T> postProcess(
@@ -1377,7 +1377,7 @@ struct SharedSummaryStatsData<double> {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 SummaryStatsData<T> op(functions::summarystats::SummaryStatsData<T> d1,
@@ -1387,14 +1387,14 @@ struct SharedSummaryStatsData<double> {
 #ifdef __CUDACC__
                 __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 virtual ~Variance() {
                 }
 #ifdef __CUDACC__
                 __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 Variance() {
                 }
@@ -1424,7 +1424,7 @@ struct SharedSummaryStatsData<double> {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T getValue(SummaryStatsData<T> val) {
@@ -1443,7 +1443,7 @@ struct SharedSummaryStatsData<double> {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 functions::summarystats::SummaryStatsData<T> op(
@@ -1465,7 +1465,7 @@ struct SharedSummaryStatsData<double> {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 functions::summarystats::SummaryStatsData<T> merge(
@@ -1491,7 +1491,7 @@ struct SharedSummaryStatsData<double> {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 functions::summarystats::SummaryStatsData<T> postProcess(
@@ -1512,7 +1512,7 @@ struct SharedSummaryStatsData<double> {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 SummaryStatsData<T> op(functions::summarystats::SummaryStatsData<T> d1,
@@ -1523,14 +1523,14 @@ struct SharedSummaryStatsData<double> {
 #ifdef __CUDACC__
                 __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 virtual ~StandardDeviation() {
                 }
 #ifdef __CUDACC__
                 __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 StandardDeviation() {
                 }
