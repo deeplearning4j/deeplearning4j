@@ -87,10 +87,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     private static final long serialVersionUID = 3285982317165542614L;
 
-    protected DataBuffer shapeInformation;
-    protected DataBuffer data;
+    protected transient  DataBuffer shapeInformation;
+    protected transient  DataBuffer data;
     protected int rows, columns;
     protected int length = -1;
+    protected int rank;
     protected boolean cleanedUp = false;
     protected int numLeadingOnes = -1;
     protected int numTrailingOnes = -1;
@@ -1855,7 +1856,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             Shape.setOrder(shapeInfo(),Nd4j.order());
 
         this.length = ArrayUtil.prod(shape);
-
+        rank = shape.length;
     }
 
 
@@ -4293,12 +4294,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
     protected void write(ObjectOutputStream out) throws IOException {
-        shapeInformation.dup().write(out);
+        shapeInformation.write(out);
         data().write(out);
     }
 
     protected void read(ObjectInputStream s) {
+        shapeInformation = Nd4j.createBuffer(new int[Shape.shapeInfoLength(rank)],0);
         shapeInformation.read(s);
+        data = Nd4j.createBuffer(length());
         data().read(s);
     }
 
