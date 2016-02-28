@@ -169,7 +169,7 @@ public  class FloatDataBufferTest  extends BaseNd4jTest {
     }
 
     @Test
-    public void testReadWrite() {
+    public void testReadWrite() throws Exception {
         DataBuffer assertion = Nd4j.createBuffer(new double[]{1, 2, 3});
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);

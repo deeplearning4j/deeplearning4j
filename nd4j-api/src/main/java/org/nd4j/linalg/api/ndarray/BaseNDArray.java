@@ -54,6 +54,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.*;
 import java.lang.Iterable;
 import java.nio.IntBuffer;
 import java.util.*;
@@ -93,7 +94,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     protected boolean cleanedUp = false;
     protected int numLeadingOnes = -1;
     protected int numTrailingOnes = -1;
-    protected int majorStride = -1;
     protected Boolean isVector = null;
     protected Boolean isMatrix = null;
     protected Boolean isScalar = null;
@@ -127,7 +127,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param ordering
      */
     public BaseNDArray(DataBuffer buffer, int[] shape, int[] stride, int offset, char ordering) {
-        this.data = Nd4j.createBuffer(buffer,offset);
+        this.data = Nd4j.createBuffer(buffer,offset,ArrayUtil.prod(shape));
         this.shapeInformation = Shape.createShapeInformation(shape,stride,offset,stride[stride.length - 1],ordering);
         init(shape,stride);
         Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, ordering == 'f'));
@@ -349,7 +349,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param offset
      */
     public BaseNDArray(DataBuffer data, int[] shape, int[] stride, int offset) {
-        this.data = Nd4j.createBuffer(data,offset);
+        this.data = Nd4j.createBuffer(data,offset,ArrayUtil.prod(shape));
         this.shapeInformation = Shape.createShapeInformation(shape,stride,offset,stride[stride.length - 1],Nd4j.order());
         init(shape,stride);
         Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, Nd4j.order() == 'f'));
@@ -384,7 +384,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param offset
      */
     public BaseNDArray(DataBuffer buffer, int[] shape, int offset) {
-        this(Nd4j.createBuffer(buffer, offset), shape, Nd4j.getStrides(shape), offset, Nd4j.order());
+        this(Nd4j.createBuffer(buffer, offset,ArrayUtil.prod(shape)), shape, Nd4j.getStrides(shape), offset, Nd4j.order());
     }
 
     /**
@@ -4274,4 +4274,40 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public int originalOffset() {
         return data().originalOffset();
     }
+
+    private void readObject(ObjectInputStream s) {
+        try {
+            s.defaultReadObject();
+            read(s);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    private void writeObject(ObjectOutputStream out)
+            throws IOException {
+        out.defaultWriteObject();
+        write(out);
+    }
+
+
+    protected void write(ObjectOutputStream out) throws IOException {
+        shapeInformation.dup().write(out);
+        data().write(out);
+    }
+
+    protected void read(ObjectInputStream s) {
+        shapeInformation.read(s);
+        data().read(s);
+    }
+
+
+
+
+
+
+
+
+
 }
