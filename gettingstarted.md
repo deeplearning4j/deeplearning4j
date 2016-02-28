@@ -18,9 +18,10 @@ After following the steps in the [Quick Start Guide](http://deeplearning4j.org/q
     * <a href="#windows">Windows</a>
 2. [GitHub](http://nd4j.org/getstarted.html#github)
 3. <a href="#eclipse">Eclipse</a>
-4. <a href="#trouble">Troubleshooting</a>
-5. <a href="#results">Reproducible Results</a>
-6. <a href="#next">Next Steps</a>
+4. <a href="#cli">Command-Line Interface</a>
+5. <a href="#trouble">Troubleshooting</a>
+6. <a href="#results">Reproducible Results</a>
+7. <a href="#next">Next Steps</a>
 
 
 ## Accelerating CPU Training Performance: Installing Native BLAS Libraries
@@ -139,6 +140,26 @@ If you use Eclipse, you will need to install the Maven plugin for Eclipse: [ecli
 
 Michael Depies has written this guide to [installing Deeplearning4j on Eclipse](https://depiesml.wordpress.com/2015/08/26/dl4j-gettingstarted/).
 
+## <a name="cli">Command-Line Interface</a>
+
+`deeplearning4j-cli` can now be installed these two ways:
+
+On Centos/Redhat, you can do:
+
+		# install
+		sudo yum install https://s3-us-west-2.amazonaws.com/skymind/bin/deeplearning4j-cli.rpm
+		# run
+		dl4j
+
+On non-rpm systems, do:
+
+		# download
+		curl -O https://s3-us-west-2.amazonaws.com/skymind/bin/deeplearning4j-cli.tar.gz
+		# untar
+		tar -zxvf deeplearning4j-cli.tar.gz
+		# run
+		cd deeplearning4j-cli-0.4-rc3.9-SNAPSHOT ; ./bin/dl4j
+
 ## <a name="trouble">Troubleshooting</a>
 
 * Please feel free to ask us about error messages on our [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j). When you post your question, please have the following information ready (it will really speed things up!):
@@ -203,9 +224,6 @@ That is, there are two wild cards that will change as we update and you go throu
     java -cp target/*.jar org.deeplearning4j.*
 
 To make changes to the examples from the command line and run that changed file, you could, for example, tweak *MLPBackpropIrisExample* in *src/main/java/org/deeplearning4j/multilayer* and then maven-build the examples again. 
-
-
-
 
 ### <a name="next">Next Steps: IRIS Example & Building NNs</a>
 
