@@ -595,7 +595,8 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public void applyLearningRateScoreDecay() {
-        conf.getLayer().setLearningRate(conf.getLayer().getLearningRate() * (conf.getLayer().getLrScoreBasedDecay() + Nd4j.EPS_THRESHOLD));
+        for (Map.Entry<String, Double> lrPair : conf.getLearningRateByParam().entrySet())
+            conf.setLearningRateByParam(lrPair.getKey(), lrPair.getValue() * (conf.getLrPolicyDecayRate() + Nd4j.EPS_THRESHOLD));
     }
 
     @Override

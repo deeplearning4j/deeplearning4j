@@ -20,7 +20,14 @@ package org.deeplearning4j.nn.conf;
 
 import static org.junit.Assert.*;
 
+import org.deeplearning4j.nn.conf.layers.BatchNormalization;
+import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.stepfunctions.DefaultStepFunction;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.optimize.api.ConvexOptimizer;
+import org.deeplearning4j.optimize.solvers.StochasticGradientDescent;
+import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
 import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -90,14 +97,14 @@ public class NeuralNetConfigurationTest {
     @Test
     public void testClone() {
         NeuralNetConfiguration conf = getRBMConfig(1, 1, WeightInit.UNIFORM);
-        conf.getLayer().setMomentumAfter(new HashMap<Integer,Double>());
+        conf.getLayer().setMomentumSchedule(new HashMap<Integer,Double>());
         conf.setStepFunction(new DefaultStepFunction());
 
         NeuralNetConfiguration conf2 = conf.clone();
 
         assertEquals(conf, conf2);
         assertNotSame(conf, conf2);
-        assertNotSame(conf.getLayer().getMomentumAfter(), conf2.getLayer().getMomentumAfter());
+        assertNotSame(conf.getLayer().getMomentumSchedule(), conf2.getLayer().getMomentumSchedule());
         assertNotSame(conf.getLayer(), conf2.getLayer());
         assertNotSame(conf.getLayer().getDist(), conf2.getLayer().getDist());
         assertNotSame(conf.getStepFunction(), conf2.getStepFunction());
@@ -227,6 +234,74 @@ public class NeuralNetConfigurationTest {
         NeuralNetConfiguration conf = getRBMConfig(nIn, nOut, weightInit);
         return LayerFactories.getFactory(conf).create(conf);
 
+    }
+
+
+    @Test
+    public void testLearningRateByParam(){
+        double lr = 0.01;
+        double biasLr = 0.02;
+        int[] nIns = {4,3,3};
+        int[] nOuts = {3,3,3};
+        int oldScore = 1;
+        int newScore = 1;
+        int iteration = 3;
+        INDArray gradientW = Nd4j.ones(nIns[0], nOuts[0]);
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(nIns[0]).nOut(nOuts[0]).updater(org.deeplearning4j.nn.conf.Updater.SGD).learningRate(lr).biasLearningRate(biasLr).build())
+                .layer(1, new BatchNormalization.Builder().nIn(nIns[1]).nOut(nOuts[1]).learningRate(0.7).build())
+                .layer(2, new OutputLayer.Builder().nIn(nIns[2]).nOut(nOuts[2]).updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
+                .backprop(true).pretrain(false)
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        ConvexOptimizer opt = new StochasticGradientDescent(net.getDefaultConfiguration(), new NegativeDefaultStepFunction(), null, net);
+        opt.checkTerminalConditions(gradientW, oldScore, newScore, iteration);
+        assertEquals(lr, net.getLayer(0).conf().getLearningRateByParam("W"), 1e-4);
+        assertEquals(biasLr, net.getLayer(0).conf().getLearningRateByParam("b"), 1e-4);
+        assertEquals(0.7, net.getLayer(1).conf().getLearningRateByParam("gamma"), 1e-4);
+        assertEquals(0.1, net.getLayer(1).conf().getLearningRateByParam("b"), 1e-4);
+    }
+
+
+    @Test
+    public void testL1L2ByParam(){
+        double l1 = 0.01;
+        double l2 = 0.07;
+        int[] nIns = {4,3,3};
+        int[] nOuts = {3,3,3};
+        int oldScore = 1;
+        int newScore = 1;
+        int iteration = 3;
+        INDArray gradientW = Nd4j.ones(nIns[0], nOuts[0]);
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .learningRate(8)
+                .regularization(true)
+                .l1(l1)
+                .l2(l2)
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(nIns[0]).nOut(nOuts[0]).updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
+                .layer(1, new BatchNormalization.Builder().nIn(nIns[1]).nOut(nOuts[1]).l2(0.5).build())
+                .layer(2, new OutputLayer.Builder().nIn(nIns[2]).nOut(nOuts[2]).updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
+                .backprop(true).pretrain(false)
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        ConvexOptimizer opt = new StochasticGradientDescent(net.getDefaultConfiguration(), new NegativeDefaultStepFunction(), null, net);
+        opt.checkTerminalConditions(gradientW, oldScore, newScore, iteration);
+        assertEquals(l1, net.getLayer(0).conf().getL1ByParam("W"), 1e-4);
+        assertEquals(0.0, net.getLayer(0).conf().getL1ByParam("b"), 1e-4);
+        assertEquals(0.5, net.getLayer(1).conf().getL2ByParam("gamma"), 1e-4);
+        assertEquals(0.0, net.getLayer(1).conf().getL2ByParam("b"), 1e-4);
+        assertEquals(l2, net.getLayer(2).conf().getL2ByParam("W"), 1e-4);
+        assertEquals(0.0, net.getLayer(2).conf().getL2ByParam("b"), 1e-4);
     }
 
 
