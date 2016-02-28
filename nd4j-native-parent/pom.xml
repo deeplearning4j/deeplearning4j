@@ -131,15 +131,6 @@
                                         <Specification-Version>${project.version}</Specification-Version>
                                     </manifestEntries>
                                 </archive>
-                                <includes>
-                                    <include>META-INF/**</include>
-                                    <include>META-INF/services/**</include>
-                                    <include>org/nd4j/**</include>
-                                    <include>org/nd4j/**</include>
-                                    <include>*.properties</include>
-                                    <include>org/nd4j/nativeblas/**</include>
-                                    <include>org/nd4j/nativeblas/${javacpp.platform}/</include>
-                                </includes>
                             </configuration>
                         </execution>
                         <execution>
@@ -152,7 +143,11 @@
                                 <classifier>${javacpp.platform}</classifier>
                                 <skipIfEmpty>true</skipIfEmpty>
                                 <includes>
-                                    <include>org/nd4j/nativeblas/**</include>
+                                    <include>org/nd4j/nativeblas/*</include>
+                                    <include>*.so</include>
+                                    <include>*.dll</include>
+                                    <include>*.dylib</include>
+                                    <include>*.a</include>
                                 </includes>
                             </configuration>
                         </execution>

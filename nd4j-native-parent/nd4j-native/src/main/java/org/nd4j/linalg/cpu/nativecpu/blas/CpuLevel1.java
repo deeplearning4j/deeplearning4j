@@ -9,13 +9,7 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.cpu.nativecpu.CBLAS;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.nativeblas.DefaultPointerConverter;
 import org.nd4j.nativeblas.Nd4jBlas;
-import org.nd4j.nativeblas.PointerConverter;
-
-
-import java.nio.DoubleBuffer;
-import java.nio.FloatBuffer;
 
 
 
