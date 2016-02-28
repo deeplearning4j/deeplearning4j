@@ -31,6 +31,7 @@
                         </dependency>
                     </dependencies>
                     <configuration>
+                        <copyLibs>true</copyLibs>
                         <properties>${platform.properties}</properties>
                         <propertyKeysAndValues>
                             <property>
