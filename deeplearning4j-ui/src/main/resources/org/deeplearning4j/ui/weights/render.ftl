@@ -125,7 +125,9 @@
     <tr>
         <td style="width: 48px;"><a href="/"><img src="/assets/deeplearning4j.img"  border="0"/></a></td>
         <td>DeepLearning4j UI</td>
-        <td style="width: 384px; text-align: right;" class="hd-small">&nbsp; Available sessions: <select id="sessionSelector" onselect="window.location.href = 'weights?sid='+ this.options[this.selectedIndex].value ;" style="color: #000000;"></select>&nbsp;&nbsp;
+        <td style="width: 384px; text-align: right;" class="hd-small">&nbsp; Available sessions: <select id="sessionSelector" onchange="window.location.href = 'weights?sid='+ this.options[this.selectedIndex].value ;" style="color: #000000;">
+            <option value="0" selected="selected">Pick a session to track</option>
+        </select>&nbsp;&nbsp;
 <script>
     buildSessionSelector("HISTOGRAM");
 </script>

@@ -44,6 +44,9 @@
                 }
         </style>
 
+        <!-- Booststrap Notify plugin-->
+        <script src="/assets/bootstrap-notify.min.js"></script>
+
         <script src="/assets/default.js"></script>
     </head>
     <body>
@@ -87,7 +90,7 @@
 
     <div class="block">
         <b>Activations</b><br/><br/>
-        <a href="/activations"><img src="/assets/i_ladder.img" border="0" /></a><br/><br/>
+        <a href="#"  onclick="trackSessionHandle('ACTIVATIONS','activations'); return false;"><img src="/assets/i_ladder.img" border="0"  style="opacity: 0.2" id="ACTIVATIONS" /></a><br/><br/>
         <div style="text-align: left; margin: 5px;">
             &nbsp;Activations retrieved from Convolution Neural network.
         </div>
@@ -96,7 +99,7 @@
     <div class="block">
         <!-- Histogram block. It's session-dependant block -->
         <b>Histo</b><br/><br/>
-        <a href="#" onclick="trackSessionHandle('HISTOGRAM','weights');"><img src="/assets/i_histo.img" border="0" /></a><br/><br/>
+        <a href="#" onclick="trackSessionHandle('HISTOGRAM','weights'); return false;"><img id="HISTOGRAM" src="/assets/i_histo.img" border="0" style="opacity: 0.2"/></a><br/><br/>
         <div style="text-align: left; margin: 5px;">
             &nbsp;Neural network scores retrieved from DL4j during training.
         </div>

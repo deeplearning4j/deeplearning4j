@@ -77,12 +77,14 @@ public class HistogramIterationListener implements IterationListener {
                 .setPort(port)
                 .build();
 
+        this.connectionInfo = connectionInfo;
+
         target = client.target(connectionInfo.getFirstPart()).path(subPath).path("update").queryParam("sid", connectionInfo.getSessionId());
         this.openBrowser = openBrowser;
         this.path = "http://localhost:" + port + "/" + subPath;
         this.subPath = subPath;
 
-        System.out.println("UI Histogram URL: " + this.path);
+        System.out.println("UI Histogram URL: " + this.path + "?sid=" + connectionInfo.getSessionId());
     }
 
     @Override
@@ -203,7 +205,9 @@ public class HistogramIterationListener implements IterationListener {
             log.info("{}",resp);
 
             if(openBrowser && firstIteration){
-                UiUtils.tryOpenBrowser(path,log);
+                StringBuilder builder = new StringBuilder(connectionInfo.getFullAddress());
+                builder.append(subPath).append("?sid=").append(connectionInfo.getSessionId());
+                UiUtils.tryOpenBrowser(builder.toString(),log);
                 firstIteration = false;
             }
         }
