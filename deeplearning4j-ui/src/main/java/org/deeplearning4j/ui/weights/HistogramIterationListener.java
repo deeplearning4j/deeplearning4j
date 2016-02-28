@@ -2,6 +2,7 @@ package org.deeplearning4j.ui.weights;
 
 
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import lombok.NonNull;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.ui.UiConnectionInfo;
@@ -46,13 +47,17 @@ public class HistogramIterationListener implements IterationListener {
     private String subPath;
     private UiConnectionInfo connectionInfo;
 
-    public HistogramIterationListener(UiConnectionInfo connection, int iterations) {
+    public HistogramIterationListener(@NonNull UiConnectionInfo connection, int iterations) {
+        target = client.target(connection.getFirstPart()).path(connection.getSecondPart(subPath)).path("update").queryParam("sid", connection.getSessionId());
+        this.connectionInfo = connection;
 
+        System.out.println("UI Histogram URL: " + connection.getFullAddress());
     }
 
     public HistogramIterationListener(int iterations) {
         this(iterations, true, "weights");
     }
+
     public HistogramIterationListener(int iterations, boolean openBrowser, String subPath){
         int port = -1;
         try{
@@ -66,12 +71,18 @@ public class HistogramIterationListener implements IterationListener {
         this.iterations = iterations;
         if (this.iterations  < 1) this.iterations = 1;
 
-        target = client.target("http://localhost:" + port ).path(subPath).path("update");
+        UiConnectionInfo connectionInfo = new UiConnectionInfo.Builder()
+                .enableHttps(false)
+                .setAddress("localhost")
+                .setPort(port)
+                .build();
+
+        target = client.target(connectionInfo.getFirstPart()).path(subPath).path("update").queryParam("sid", connectionInfo.getSessionId());
         this.openBrowser = openBrowser;
         this.path = "http://localhost:" + port + "/" + subPath;
         this.subPath = subPath;
 
-        System.out.println("UI Histogram: " + this.path);
+        System.out.println("UI Histogram URL: " + this.path);
     }
 
     @Override
