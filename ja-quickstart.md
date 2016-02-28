@@ -1,5 +1,5 @@
-- - -
-title:Deeplearning 4 j のクイックスタートガイド
+---
+title: "Deeplearning 4 j のクイックスタートガイド"
 layout: default
 ---
 
