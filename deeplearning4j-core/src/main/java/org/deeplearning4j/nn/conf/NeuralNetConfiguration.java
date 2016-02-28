@@ -77,11 +77,10 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected Map<String,Double> learningRateByParam = new HashMap<>();
     protected Map<String,Double> l1ByParam = new HashMap<>();
     protected Map<String,Double> l2ByParam = new HashMap<>();
-    protected LearningRateDecayPolicy learningRateDecayPolicy = LearningRateDecayPolicy.None;
-    protected double lrDecayRate;
-    protected double lrDecayNumBatches;
-    protected double lrDecayNumSteps;
-    protected double lrDecayPower;
+    protected LearningRatePolicy learningRatePolicy = LearningRatePolicy.None;
+    protected double lrPolicyDecayRate;
+    protected double lrPolicySteps;
+    protected double lrPolicyPower;
 
     /**
      * Creates and returns a deep copy of the configuration.
@@ -360,11 +359,10 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         protected int timeSeriesLength = 1;
         protected GradientNormalization gradientNormalization = GradientNormalization.None;
         protected double gradientNormalizationThreshold = 1.0;
-        protected LearningRateDecayPolicy learningRateDecayPolicy = LearningRateDecayPolicy.None;
-        protected double lrDecayRate;
-        protected double lrDecayNumBatches;
-        protected double lrDecayNumSteps;
-        protected double lrDecayPower;
+        protected LearningRatePolicy learningRatePolicy = LearningRatePolicy.None;
+        protected double lrPolicyDecayRate;
+        protected double lrPolicySteps;
+        protected double lrPolicyPower;
 
         /**Deprecated.
          +         * Time series length
@@ -520,7 +518,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        /** Whether to use schedules, learningRateAfter and momentumAfter*/
+        /** Whether to use schedules, learningRateSchedule and momentumSchedule*/
         @Deprecated
         public Builder schedules(boolean schedules) {
             this.useSchedules = schedules;
@@ -575,30 +573,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         /** Learning rate. Defaults to 1e-1*/
         public Builder learningRate(double learningRate) {
             this.learningRate = learningRate;
-            return this;
-        }
-
-        /** Learning decay rate used when applying a policy.*/
-        public Builder lrDecayRate(double lrDecayRate) {
-            this.lrDecayRate = lrDecayRate;
-            return this;
-        }
-
-        /** Number of batches are used in learning decay policies: exponential, inverse and step.*/
-        public Builder lrDecayNumBatches(double lrDecayNumBatches) {
-            this.lrDecayNumBatches = lrDecayNumBatches;
-            return this;
-        }
-
-        /** Number of steps used for learning decay step policy.*/
-        public Builder lrDecayNumSteps(double lrDecayNumSteps) {
-            this.lrDecayNumSteps = lrDecayNumSteps;
-            return this;
-        }
-
-        /** Power is used in learning decay inverse policy.*/
-        public Builder lrDecayPower(double lrDecayPower) {
-            this.lrDecayPower = lrDecayPower;
             return this;
         }
 
@@ -704,44 +678,34 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         /** Learning rate decay policy. Used to adapt learning rate based on policy.
          * @param policy Type of policy to use. Defaults to None.
          */
-        public Builder learningRateDecayPolicy(LearningRateDecayPolicy policy){
-            this.learningRateDecayPolicy = policy;
+        public Builder learningRateDecayPolicy(LearningRatePolicy policy){
+            this.learningRatePolicy = policy;
             return this;
         }
 
         /** Set the decay rate for the learning rate decay policy.
-         * @param lrDecayRate rate.
+         * @param lrPolicyDecayRate rate.
          */
-        public Builder lrPolicyDecayRate(double lrDecayRate){
-            this.lrDecayRate = lrDecayRate;
+        public Builder lrPolicyDecayRate(double lrPolicyDecayRate){
+            this.lrPolicyDecayRate = lrPolicyDecayRate;
             return this;
         }
 
-        /** Set the number of batches of examples that will be passed into the model
-         *  Used for learning rate policies.
-         * @param lrDecayNumBatches number of batches passed into the model
+        /** Set the number of steps used for learning decay rate steps policy.
+         * @param lrPolicySteps number of steps
          */
-        public Builder lrPolicyDecayNumBatches(double lrDecayNumBatches){
-            this.lrDecayNumBatches = lrDecayNumBatches;
-            return this;
-        }
-
-        /** Set the number of steps used for learning rate steps policy.
-         * @param lrDecayNumSteps number of steps
-         */
-        public Builder lrPolicyDecayNumSteps(double lrDecayNumSteps){
-            this.lrDecayNumSteps = lrDecayNumSteps;
+        public Builder lrPolicySteps(double lrPolicySteps){
+            this.lrPolicySteps = lrPolicySteps;
             return this;
         }
 
         /** Set the power used for learning rate inverse policy.
-         * @param lrDecayPower power
+         * @param lrPolicyPower power
          */
-        public Builder lrPolicyDecayPower(double lrDecayPower){
-            this.lrDecayPower = lrDecayPower;
+        public Builder lrPolicyPower(double lrPolicyPower){
+            this.lrPolicyPower = lrPolicyPower;
             return this;
         }
-
 
         /**
          * Return a configuration based on this builder
@@ -764,16 +728,15 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             conf.stepFunction = stepFunction;
             conf.useDropConnect = useDropConnect;
             conf.miniBatch = miniBatch;
-            conf.learningRateDecayPolicy = learningRateDecayPolicy;
-            conf.lrDecayRate = lrDecayRate;
-            conf.lrDecayNumBatches = lrDecayNumBatches;
-            conf.lrDecayNumSteps = lrDecayNumSteps;
-            conf.lrDecayPower = lrDecayPower;
+            conf.learningRatePolicy = learningRatePolicy;
+            conf.lrPolicyDecayRate = lrPolicyDecayRate;
+            conf.lrPolicySteps = lrPolicySteps;
+            conf.lrPolicyPower = lrPolicyPower;
 
             if(layer != null ) {
                 if (Double.isNaN(layer.getLearningRate())) layer.setLearningRate(learningRate);
                 if (Double.isNaN(layer.getBiasLearningRate())) layer.setBiasLearningRate(learningRate);
-                if (layer.getLearningRateAfter() == null) layer.setLearningRateAfter(learningRateAfter);
+                if (layer.getLearningRateSchedule() == null) layer.setLearningRateSchedule(learningRateAfter);
                 if (Double.isNaN(layer.getLrScoreBasedDecay())) layer.setLrScoreBasedDecay(lrScoreBasedDecay);
                 if (Double.isNaN(layer.getL1())) layer.setL1(l1);
                 if (Double.isNaN(layer.getL2())) layer.setL2(l2);
@@ -784,7 +747,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 if (Double.isNaN(layer.getDropOut())) layer.setDropOut(dropOut);
                 if (layer.getUpdater() == null) layer.setUpdater(updater);
                 if (Double.isNaN(layer.getMomentum())) layer.setMomentum(momentum);
-                if (layer.getMomentumAfter() == null) layer.setMomentumAfter(momentumAfter);
+                if (layer.getMomentumSchedule() == null) layer.setMomentumSchedule(momentumAfter);
                 if (Double.isNaN(layer.getRho())) layer.setRho(rho);
                 if (Double.isNaN(layer.getRmsDecay())) layer.setRmsDecay(rmsDecay);
                 if (Double.isNaN(layer.getAdamMeanDecay())) layer.setAdamMeanDecay(adamMeanDecay);
