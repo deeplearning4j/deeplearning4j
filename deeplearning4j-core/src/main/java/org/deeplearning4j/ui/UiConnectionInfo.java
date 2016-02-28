@@ -17,7 +17,7 @@ public class UiConnectionInfo {
     private String password;
     private String address = "localhost";
     private int port = 8080;
-    private String path;
+    private String path = "";
     private boolean useHttps;
 
     public UiConnectionInfo() {
@@ -84,7 +84,7 @@ public class UiConnectionInfo {
             return this;
         }
 
-        public Builder setLogin(String login) {
+        public Builder setLogin(@NonNull String login) {
             info.setLogin(login);
             return this;
         }
