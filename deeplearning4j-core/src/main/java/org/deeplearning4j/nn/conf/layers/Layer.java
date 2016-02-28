@@ -98,7 +98,7 @@ public abstract class Layer implements Serializable, Cloneable {
     	this.dist = builder.dist;
         this.learningRate = builder.learningRate;
         this.biasLearningRate = builder.biasLearningRate;
-        this.learningRateSchedule = builder.learningRateAfter;
+        this.learningRateSchedule = builder.learningRateSchedule;
         this.lrScoreBasedDecay = builder.lrScoreBasedDecay;
         this.momentum = builder.momentum;
         this.momentumSchedule = builder.momentumAfter;
@@ -136,7 +136,7 @@ public abstract class Layer implements Serializable, Cloneable {
         protected Distribution dist = null;
         protected double learningRate = Double.NaN;
         protected double biasLearningRate = Double.NaN;
-        protected Map<Integer,Double> learningRateAfter = null;
+        protected Map<Integer,Double> learningRateSchedule = null;
         protected double lrScoreBasedDecay = Double.NaN;
         protected double momentum = Double.NaN;
         protected Map<Integer,Double> momentumAfter = null;
@@ -206,8 +206,8 @@ public abstract class Layer implements Serializable, Cloneable {
         }
 
         /** Learning rate schedule. Map of the iteration to the learning rate to apply at that iteration. */
-        public T learningRateAfter(Map<Integer, Double> learningRateAfter) {
-            this.learningRateAfter = learningRateAfter;
+        public T learningRateSchedule(Map<Integer, Double> learningRateSchedule) {
+            this.learningRateSchedule = learningRateSchedule;
             return (T) this;
         }
 

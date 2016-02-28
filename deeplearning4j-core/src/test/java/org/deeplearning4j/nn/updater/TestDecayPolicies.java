@@ -249,7 +249,7 @@ public class TestDecayPolicies {
         for (org.deeplearning4j.nn.conf.Updater updaterFunc : updaters) {
             double lr = 1e-2;
             NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                    .learningRate(lr).learningRateAfter(learningRateAfter)
+                    .learningRate(lr).learningRateSchedule(learningRateAfter)
                     .learningRateDecayPolicy(LearningRatePolicy.Schedule)
                     .iterations(iterations)
                     .layer(new DenseLayer.Builder()
@@ -297,7 +297,7 @@ public class TestDecayPolicies {
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                     .learningRate(lr).learningRateDecayPolicy(LearningRatePolicy.Schedule)
-                    .learningRateAfter(learningRateAfter).iterations(iterations)
+                    .learningRateSchedule(learningRateAfter).iterations(iterations)
                     .updater(updaterFunc)
                     .list()
                     .layer(0, new DenseLayer.Builder().nIn(nIns[0]).nOut(nOuts[0]).build())
