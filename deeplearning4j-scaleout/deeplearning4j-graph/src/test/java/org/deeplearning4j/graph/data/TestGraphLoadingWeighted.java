@@ -82,7 +82,7 @@ public class TestGraphLoadingWeighted {
         boolean directed = true;
         String[] ignoreLinesStartingWith = new String[]{"//"};  //Comment lines start with "//"
 
-        IGraph<String,Double> graph = GraphLoader.loadWeightedEdgeListFile(path,numVertices,delim,directed,ignoreLinesStartingWith);
+        IGraph<String,Double> graph = GraphLoader.loadWeightedEdgeListFile(path,numVertices,delim,directed,false,ignoreLinesStartingWith);
 
         assertEquals(numVertices, graph.numVertices());
 
