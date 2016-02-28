@@ -4,6 +4,7 @@ import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.annotation.Platform;
+import org.nd4j.linalg.api.buffer.util.LibUtils;
 
 
 /**
@@ -12,9 +13,19 @@ import org.bytedeco.javacpp.annotation.Platform;
 @Platform(include="NativeBuffer.h",link = "buffer")
 public class JavaCppIntPointer  extends IntPointer {
 
+
     static {
-        Loader.load();
+        try {
+            LibUtils.addLibraryPath(System.getProperty("java.io.tmpdir"));
+            LibUtils.loadTempBinaryFile("buffer");
+            LibUtils.loadTempBinaryFile("jniJavaCppIntPointer");
+            Loader.load();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
+
 
     public JavaCppIntPointer(int... array) {
         super((Pointer) null);

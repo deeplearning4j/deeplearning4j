@@ -11,18 +11,7 @@
     <packaging>jar</packaging>
 
     <name>nd4j-buffer</name>
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <generate-sources.skip>false</generate-sources.skip> <!-- To skip header file parsing phase: -Dgenerate-sources.skip=true  -->
-        <process-classes.skip> false</process-classes.skip>  <!-- To skip native compilation phase: -Dprocess-classes.skip=true    -->
-        <platform>${os.name}-${os.arch}</platform> <!-- For Android: -Dplatform=android-arm                                        -->
-        <platform.root />            <!--              -Dplatform.root=/path/to/android-ndk/                         -->
-        <platform.compiler />    <!--              -Dplatform.compiler=/path/to/arm-linux-androideabi-g++        -->
-        <platform.properties>${platform}</platform.properties>
-        <javacpp.version>1.1</javacpp.version>
-        <netty.version>4.0.28.Final</netty.version>
 
-    </properties>
 
     <build>
         <plugins>
@@ -31,15 +20,15 @@
                 <artifactId>javacpp</artifactId>
                 <version>${javacpp.version}</version>
                 <configuration>
-                    <properties>${platform.properties}</properties>
+                    <properties>${javacpp.platform.properties}</properties>
                     <propertyKeysAndValues>
                         <property>
-                            <name>platform.root</name>
-                            <value>${platform.root}</value>
+                            <name>javacpp.platform.root</name>
+                            <value>${javacpp.platform.root}</value>
                         </property>
                         <property>
-                            <name>platform.compiler</name>
-                            <value>${platform.compiler}</value>
+                            <name>javacpp.platform.compiler</name>
+                            <value>${javacpp.platform.compiler}</value>
                         </property>
                     </propertyKeysAndValues>
                     <classPaths>
@@ -72,6 +61,8 @@
                             <goal>build</goal>
                         </goals>
                         <configuration>
+                            <outputDirectory>${project.build.outputDirectory}</outputDirectory>
+                            <jarPrefix>lib/</jarPrefix>
                             <skip>${process-classes.skip}</skip>
                             <classOrPackageNames>
                                 <classOrPackageName>org.nd4j.linalg.api.buffer.pointer.JavaCppDoublePointer</classOrPackageName>
@@ -87,6 +78,94 @@
 
         </plugins>
     </build>
+
+
+    <profiles>
+        <!-- If someone knows a better way to do this, please do let me know! -->
+        <profile>
+            <id>linux</id>
+            <activation>
+                <os><name>linux</name></os>
+            </activation>
+            <properties>
+                <os.name>linux</os.name>
+            </properties>
+        </profile>
+        <profile>
+            <id>macosx</id>
+            <activation>
+                <os><name>mac os x</name></os>
+            </activation>
+            <properties>
+                <os.name>macosx</os.name>
+            </properties>
+        </profile>
+        <profile>
+            <id>windows</id>
+            <activation>
+                <os><family>windows</family></os>
+            </activation>
+            <properties>
+                <os.name>windows</os.name>
+            </properties>
+        </profile>
+        <profile>
+            <id>i386</id>
+            <activation>
+                <os><arch>i386</arch></os>
+            </activation>
+            <properties>
+                <os.arch>x86</os.arch>
+            </properties>
+        </profile>
+        <profile>
+            <id>i486</id>
+            <activation>
+                <os><arch>i486</arch></os>
+            </activation>
+            <properties>
+                <os.arch>x86</os.arch>
+            </properties>
+        </profile>
+        <profile>
+            <id>i586</id>
+            <activation>
+                <os><arch>i586</arch></os>
+            </activation>
+            <properties>
+                <os.arch>x86</os.arch>
+            </properties>
+        </profile>
+        <profile>
+            <id>i686</id>
+            <activation>
+                <os><arch>i686</arch></os>
+            </activation>
+            <properties>
+                <os.arch>x86</os.arch>
+            </properties>
+        </profile>
+        <profile>
+            <id>amd64</id>
+            <activation>
+                <os><arch>amd64</arch></os>
+            </activation>
+            <properties>
+                <os.arch>x86_64</os.arch>
+            </properties>
+        </profile>
+        <profile>
+            <id>x86-64</id>
+            <activation>
+                <os><arch>x86-64</arch></os>
+            </activation>
+            <properties>
+                <os.arch>x86_64</os.arch>
+            </properties>
+        </profile>
+    </profiles>
+
+
 
     <dependencies>
         <dependency>

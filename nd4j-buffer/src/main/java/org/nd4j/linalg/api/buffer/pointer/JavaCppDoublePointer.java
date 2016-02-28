@@ -4,6 +4,7 @@ import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.annotation.Platform;
+import org.nd4j.linalg.api.buffer.util.LibUtils;
 
 
 /**
@@ -13,7 +14,15 @@ import org.bytedeco.javacpp.annotation.Platform;
 public class JavaCppDoublePointer extends DoublePointer {
 
     static {
-        Loader.load();
+        try {
+            LibUtils.addLibraryPath(System.getProperty("java.io.tmpdir"));
+            LibUtils.loadTempBinaryFile("buffer");
+            LibUtils.loadTempBinaryFile("jniJavaCppDoublePointer");
+            Loader.load();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public JavaCppDoublePointer() {

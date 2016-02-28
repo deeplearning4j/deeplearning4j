@@ -4,6 +4,7 @@ import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.annotation.Platform;
+import org.nd4j.linalg.api.buffer.util.LibUtils;
 
 
 /**
@@ -13,9 +14,19 @@ import org.bytedeco.javacpp.annotation.Platform;
  */
 @Platform(include="NativeBuffer.h",link = "buffer")
 public class JavaCppFloatPointer extends FloatPointer {
+
     static {
-        Loader.load();
+        try {
+            LibUtils.addLibraryPath(System.getProperty("java.io.tmpdir"));
+            LibUtils.loadTempBinaryFile("buffer");
+            LibUtils.loadTempBinaryFile("jniJavaCppFloatPointer");
+            Loader.load();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
+
 
     public JavaCppFloatPointer(float... array) {
         super((Pointer) null);
