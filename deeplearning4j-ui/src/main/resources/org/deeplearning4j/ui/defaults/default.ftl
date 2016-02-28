@@ -98,7 +98,7 @@
 
     <div class="block">
         <!-- Histogram block. It's session-dependant block -->
-        <b>Histo</b><br/><br/>
+        <b>Histograms &amp; Score</b><br/><br/>
         <a href="#" onclick="trackSessionHandle('HISTOGRAM','weights'); return false;"><img id="HISTOGRAM" src="/assets/i_histo.img" border="0" style="opacity: 0.2"/></a><br/><br/>
         <div style="text-align: left; margin: 5px;">
             &nbsp;Neural network scores retrieved from DL4j during training.
@@ -106,8 +106,16 @@
     </div>
 </div>
 
-    <div id="sessionSelector" style="position: fixed; bottom: 0px; left:0px; right: 0px; z-index: 100;   background-color: rgba(0, 0, 0, 0.3); height: 120px;">
-            alpha
+    <div  id="sessionSelector" style="position: fixed; top: 0px; bottom: 0px; left: 0px; right: 0px; z-index: 95; display: none;">
+        <div style="position: fixed; top: 50%; left: 50%; -webkit-transform: translate(-50%, -50%); transform: translate(-50%, -50%); z-index: 100;   background-color: rgba(225, 225, 234,255); border: 1px solid #CECECE; height: 400px; width: 300px; overflow-y: auto;">
+            <center><strong>Choose SessionID to track:</strong></center>
+            <div id="sessionList" style="display: block; margin-left: 50px; margin-right: 50px; margin-top: 20px; margin-bottom: 20px;">
+
+            </div>
+            <div style="display: inline-block; position: fixed; bottom: 3px; left: 50%;  -webkit-transform: translate(-50%); transform: translate(-50%); ">
+                <input type="button" class="btn btn-default" style="" value=" Cancel " onclick="$('#sessionSelector').css('display','none');"/>
+            </div>
+        </div>
     </div>
     </body>
 </html>

@@ -9,6 +9,17 @@ function trackSessionHandle(event, url) {
    var sessions = events[event];
     if (sessions == undefined || sessions == null) {
         console.log("No events");
+        $.notify({
+            title: '<strong>No data available!</strong>',
+            message: 'No sessions for ' + event + ' were registered yet...'
+        },{
+            type: 'warning',
+            placement: {
+                from: "top",
+                align: "center"
+            },
+        });
+
         return false;
     }
 
@@ -25,6 +36,12 @@ function trackSessionHandle(event, url) {
 
 function showSessionSelector(sessions, url) {
 
+    var html = "";
+    for (var i = 0; i < sessions.length; i++) {
+        html = html + "<a href='" + url + "?sid="+sessions[i]+"'>"+ sessions[i]+"</a>";
+    }
+    $("#sessionList").html(html);
+    $("#sessionSelector").css("display","block");
 }
 
 
