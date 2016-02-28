@@ -148,7 +148,7 @@ public final class LibUtils
      * @param libName The library name
      * @throws Throwable If the library could not be loaded
      */
-    public static void loadTempBinaryFile(String libName) throws Throwable
+    public static void loadTempBinaryFile(String libName) throws Exception
     {
         String libPrefix = createLibPrefix();
         String libExtension = createLibExtension();
@@ -162,7 +162,7 @@ public final class LibUtils
                     "No resource found with name '" + resourceName + "'");
         }
 
-        File tempFile = new File(System.getProperty("java.io.tmpdir"),fullName+ "."+libExtension);
+        File tempFile = new File(System.getProperty("java.io.tmpdir"),fullName+ "." + libExtension);
         tempFile.deleteOnExit();
         OutputStream outputStream = null;
         try
@@ -251,7 +251,7 @@ public final class LibUtils
      * @param pathToAdd the path to add
      * @throws Exception
      */
-    public static void addLibraryPath(String pathToAdd) throws Exception{
+    public static void addLibraryPath(String pathToAdd) throws Exception {
         final Field usrPathsField = ClassLoader.class.getDeclaredField("usr_paths");
         usrPathsField.setAccessible(true);
 
