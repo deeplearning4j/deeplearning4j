@@ -4,11 +4,12 @@ import static org.junit.Assert.assertEquals;
 
 import java.util.Collection;
 
+import org.canova.api.util.ClassPathResource;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.core.io.ClassPathResource;
+
 
 public class Word2VecTestsSmall
 {

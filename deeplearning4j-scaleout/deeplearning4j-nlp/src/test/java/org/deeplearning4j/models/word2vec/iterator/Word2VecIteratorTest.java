@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.models.word2vec.iterator;
 
+import org.canova.api.util.ClassPathResource;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.word2vec.Word2Vec;
@@ -30,7 +31,6 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactor
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.DataSet;
-import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
 import java.util.ArrayList;
