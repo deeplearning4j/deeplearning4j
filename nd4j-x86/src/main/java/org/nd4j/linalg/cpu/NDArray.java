@@ -28,6 +28,9 @@ import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.List;
 
 
@@ -344,5 +347,20 @@ public class NDArray extends BaseNDArray {
         super(shape,buffer);
     }
 
+    private void readObject(ObjectInputStream s) {
+        try {
+            s.defaultReadObject();
+            read(s);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    private void writeObject(ObjectOutputStream out)
+            throws IOException {
+        out.defaultWriteObject();
+        write(out);
+    }
 
 }

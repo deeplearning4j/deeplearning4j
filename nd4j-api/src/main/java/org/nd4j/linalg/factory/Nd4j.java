@@ -954,14 +954,10 @@ public class Nd4j {
      * @param offset the offset for the view
      * @return the new view of the data buffer
      */
-    public static DataBuffer createBuffer(DataBuffer underlyingBuffer,int offset) {
-        int length = underlyingBuffer.underlyingLength() - offset;
+    public static DataBuffer createBuffer(DataBuffer underlyingBuffer,int offset,int length) {
         return DATA_BUFFER_FACTORY_INSTANCE.create(underlyingBuffer,offset,length);
     }
 
-    public static DataBuffer createBuffer(IntBuffer intBuffer) {
-        return null;
-    }
 
     /**
      *

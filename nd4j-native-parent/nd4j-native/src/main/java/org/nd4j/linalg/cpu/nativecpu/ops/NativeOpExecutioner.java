@@ -471,8 +471,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     @Override
     public INDArray exec(BroadcastOp op,int...dimension) {
         long[] dummy = new long[1];
-        java.nio.IntBuffer dimensionBuffer = Shape.toBuffer(dimension);
-        long dimensionAddress = Nd4j.createBuffer(dimensionBuffer).address();
+        long dimensionAddress = Nd4j.createBuffer(dimension).address();
         if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
             loop.execBroadcastDouble(dummy,op.opNum(),
                     op.x().data().address()
