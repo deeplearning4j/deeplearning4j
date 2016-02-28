@@ -3,6 +3,11 @@ if(LINUX)
     link_directories(/usr/lib)
 endif()
 
+
+if(APPLE)
+    link_directories(/usr/local/lib)
+    link_directories(/usr/lib)
+endif()
 include_directories(../include)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -ffast-math -ftree-vectorize -msse2")
