@@ -46,11 +46,28 @@ function timedCall() {
                                          align: "center"
                                          },
                                  });
+
+                                 var keys = Object.keys(events);
+                                 for (var i = 0; i < keys.length; i++) {
+                                        $("#"+keys[i]).fadeTo(1,0.2);
+                                 }
+
+                                 events = [];
+
                                  setTimeout(timedCall, 5000);
                              },
                              success: function( data ) {
+                                if (data ==undefined)
+                                    setTimeout(timedCall, 3000);
+
                                 events = data;
-                                setTimeout(timedCall, 2000);
+
+                                var keys = Object.keys(data);
+                                for (var i = 0; i < keys.length; i++) {
+                                    $("#"+keys[i]).fadeTo(1,1);
+                                }
+
+                                setTimeout(timedCall, 3000);
                              }
     });
 }
