@@ -24,6 +24,7 @@ import java.util.Collection;
 
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
+import org.canova.api.util.ClassPathResource;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
@@ -34,7 +35,6 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.spark.text.BaseSparkTest;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.springframework.core.io.ClassPathResource;
 
 /**
  * Created by agibsonccc on 1/31/15.

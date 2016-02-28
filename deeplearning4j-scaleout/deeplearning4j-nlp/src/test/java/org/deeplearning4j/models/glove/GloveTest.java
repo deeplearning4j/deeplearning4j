@@ -19,6 +19,7 @@
 package org.deeplearning4j.models.glove;
 import static org.junit.Assert.*;
 
+import org.canova.api.util.ClassPathResource;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -36,7 +37,7 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.io.ClassPathResource;
+
 
 import java.io.File;
 import java.util.Collection;

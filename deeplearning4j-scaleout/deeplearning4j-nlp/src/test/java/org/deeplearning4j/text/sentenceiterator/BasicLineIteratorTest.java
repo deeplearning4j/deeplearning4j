@@ -1,8 +1,8 @@
 package org.deeplearning4j.text.sentenceiterator;
 
+import org.canova.api.util.ClassPathResource;
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -10,7 +10,7 @@ import java.io.FileInputStream;
 import static org.junit.Assert.*;
 
 /**
- * Created by fartovii on 28.11.15.
+ * @author raver119@gmail.com
  */
 public class BasicLineIteratorTest {
 

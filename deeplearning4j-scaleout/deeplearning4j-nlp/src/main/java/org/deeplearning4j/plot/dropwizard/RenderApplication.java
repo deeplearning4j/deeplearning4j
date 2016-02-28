@@ -25,9 +25,10 @@ import io.dropwizard.setup.Environment;
 import io.dropwizard.views.ViewBundle;
 
 import org.apache.commons.compress.utils.IOUtils;
-import org.springframework.core.io.ClassPathResource;
+
 
 import com.google.common.collect.ImmutableMap;
+import org.canova.api.util.ClassPathResource;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
