@@ -34,7 +34,6 @@ import static org.junit.Assert.*;
  * @author Adam Gibson
  */
 public class LoopTest {
-    private static Logger log = LoggerFactory.getLogger(LoopTest.class);
 
     @Test
     public void testLoop() {
