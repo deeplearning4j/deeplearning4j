@@ -4,7 +4,7 @@ export OMP_NUM_THREADS=1
 
 
 if [ "$(uname)" == "Darwin" ]; then
-    echo "RUNNING OSX CLANG" 
+    echo "RUNNING OSX CLANG"
     # Do something under Mac OS X platform
     export CC=clang-omp++
     export CXX=clang-omp++
