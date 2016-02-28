@@ -31,6 +31,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import org.deeplearning4j.nn.conf.GradientNormalization;
+import org.deeplearning4j.nn.conf.LearningRatePolicy;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -66,14 +67,18 @@ public abstract class Layer implements Serializable, Cloneable {
     protected double biasInit;
     protected Distribution dist;
     protected double learningRate;
+    protected double biasLearningRate;
     //learning rate after n iterations
-    protected Map<Integer,Double> learningRateAfter;
+    protected Map<Integer,Double> learningRateSchedule;
+    @Deprecated
     protected double lrScoreBasedDecay;
     protected double momentum;
     //momentum after n iterations
-    protected Map<Integer,Double> momentumAfter;
+    protected Map<Integer,Double> momentumSchedule;
     protected double l1;
     protected double l2;
+    protected double biasL1;
+    protected double biasL2;
     protected double dropOut;
     protected Updater updater;
     //adadelta - weight for how much to consider previous history
@@ -84,6 +89,7 @@ public abstract class Layer implements Serializable, Cloneable {
     protected GradientNormalization gradientNormalization = GradientNormalization.None; //Clipping, rescale based on l2 norm, etc
     protected double gradientNormalizationThreshold = 1.0;   //Threshold for l2 and element-wise gradient clipping
 
+
     public Layer(Builder builder) {
         this.layerName = builder.layerName;
     	this.activationFunction = builder.activationFunction;
@@ -91,10 +97,11 @@ public abstract class Layer implements Serializable, Cloneable {
         this.biasInit = builder.biasInit;
     	this.dist = builder.dist;
         this.learningRate = builder.learningRate;
-        this.learningRateAfter = builder.learningRateAfter;
+        this.biasLearningRate = builder.biasLearningRate;
+        this.learningRateSchedule = builder.learningRateSchedule;
         this.lrScoreBasedDecay = builder.lrScoreBasedDecay;
         this.momentum = builder.momentum;
-        this.momentumAfter = builder.momentumAfter;
+        this.momentumSchedule = builder.momentumAfter;
         this.l1 = builder.l1;
         this.l2 = builder.l2;
         this.dropOut = builder.dropOut;
@@ -112,8 +119,8 @@ public abstract class Layer implements Serializable, Cloneable {
         try {
             Layer clone = (Layer) super.clone();
             if(clone.dist != null) clone.dist = clone.dist.clone();
-            if(clone.learningRateAfter != null) clone.learningRateAfter = new HashMap<>(clone.learningRateAfter);
-            if(clone.momentumAfter != null) clone.momentumAfter = new HashMap<>(clone.momentumAfter);
+            if(clone.learningRateSchedule != null) clone.learningRateSchedule = new HashMap<>(clone.learningRateSchedule);
+            if(clone.momentumSchedule != null) clone.momentumSchedule = new HashMap<>(clone.momentumSchedule);
             return clone;
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);
@@ -128,7 +135,8 @@ public abstract class Layer implements Serializable, Cloneable {
         protected double biasInit = Double.NaN;
         protected Distribution dist = null;
         protected double learningRate = Double.NaN;
-        protected Map<Integer,Double> learningRateAfter = null;
+        protected double biasLearningRate = Double.NaN;
+        protected Map<Integer,Double> learningRateSchedule = null;
         protected double lrScoreBasedDecay = Double.NaN;
         protected double momentum = Double.NaN;
         protected Map<Integer,Double> momentumAfter = null;
@@ -142,6 +150,7 @@ public abstract class Layer implements Serializable, Cloneable {
         protected double adamVarDecay = Double.NaN;
         protected GradientNormalization gradientNormalization = null;
         protected double gradientNormalizationThreshold = Double.NaN;
+        protected LearningRatePolicy learningRatePolicy = null;
 
 
         /**Layer name assigns layer string name.
@@ -190,14 +199,21 @@ public abstract class Layer implements Serializable, Cloneable {
             return (T)this;
         }
 
+        /** Bias learning rate. Set this to apply a different learning rate to the bias*/
+        public T biasLearningRate(double biasLearningRate){
+            this.biasLearningRate = biasLearningRate;
+            return (T)this;
+        }
+
         /** Learning rate schedule. Map of the iteration to the learning rate to apply at that iteration. */
-        public T learningRateAfter(Map<Integer, Double> learningRateAfter) {
-            this.learningRateAfter = learningRateAfter;
+        public T learningRateSchedule(Map<Integer, Double> learningRateSchedule) {
+            this.learningRateSchedule = learningRateSchedule;
             return (T) this;
         }
 
         /** Rate to decrease learningRate by when the score stops improving.
          * Learning rate is multiplied by this rate so ideally keep between 0 and 1. */
+        @Deprecated
         public T learningRateScoreBasedDecayRate(double lrScoreBasedDecay) {
             this.lrScoreBasedDecay = lrScoreBasedDecay;
             return (T) this;
@@ -287,6 +303,16 @@ public abstract class Layer implements Serializable, Cloneable {
             this.gradientNormalizationThreshold = threshold;
             return (T) this;
         }
+
+        /** Learning rate decay policy. Used to adapt learning rate based on policy.
+         * @param policy Type of policy to use. Defaults to None.
+         * @see org.deeplearning4j.nn.conf.GradientNormalization
+         */
+        public T learningRateDecayPolicy(LearningRatePolicy policy){
+            this.learningRatePolicy = policy;
+            return (T) this;
+        }
+
 
         public abstract <E extends Layer> E build();
     }
