@@ -22,6 +22,7 @@ package org.nd4j.linalg.factory;
 import com.google.common.base.Function;
 import com.google.common.primitives.Ints;
 
+import org.nd4j.context.Nd4jContext;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
 import org.nd4j.linalg.api.buffer.factory.DefaultDataBufferFactory;
@@ -4682,20 +4683,9 @@ public class Nd4j {
      */
     public void initWithBackend(Nd4jBackend backend) {
         try {
-            Resource c = backend.getConfigurationResource();
-            props = new Properties();
-            props.load(c.getInputStream());
-            for (String key : props.stringPropertyNames())
-                System.setProperty(key, props.getProperty(key));
+            props = Nd4jContext.getInstance().getConf();
             String otherDtype = System.getProperty(DTYPE, props.get(DTYPE).toString());
-            String otherAlloc = System.getProperty(ALLOC,props.getProperty(ALLOC,"heap"));
             dtype = otherDtype.equals("float") ? DataBuffer.Type.FLOAT : DataBuffer.Type.DOUBLE;
-            if(otherAlloc.equals("heap"))
-                alloc = DataBuffer.AllocationMode.HEAP;
-            else if(otherAlloc.equals("direct"))
-                alloc = DataBuffer.AllocationMode.DIRECT;
-            else if(otherAlloc.equals("javacpp"))
-                alloc = DataBuffer.AllocationMode.JAVACPP;
             copyOnOps = Boolean.parseBoolean(props.getProperty(COPY_OPS, "true"));
             shouldInstrument = Boolean.parseBoolean(props.getProperty(INSTRUMENTATION, "false"));
             resourceManagerOn = Boolean.parseBoolean(props.getProperty(RESOURCE_MANGER_ON,"false"));

@@ -594,7 +594,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 //http://stackoverflow.com/questions/8820164/is-there-a-way-to-get-a-reference-address
                 try {
                     //http://stackoverflow.com/questions/8820164/is-there-a-way-to-get-a-reference-address
-                    int offset = UnsafeHolder.getUnsafe().arrayBaseOffset(array().getClass());
                     int scale = UnsafeHolder.getUnsafe().arrayIndexScale(array().getClass());
                     switch (scale) {
                         case 4:
@@ -602,9 +601,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
                             final long i1 = (UnsafeHolder.getUnsafe().getInt(array(), offset) & 0xFFFFFFFFL) * factor;
                             return i1;
                         case 8:
-                            throw new AssertionError("Not supported");
+                            long addressOfObject	= UnsafeHolder.getUnsafe().getLong(array(), offset);
+                            return addressOfObject;
                     }
-                }catch(Exception e) {
+                }
+                catch(Exception e) {
                     throw new IllegalStateException("Unable to detect pointer");
 
                 }
