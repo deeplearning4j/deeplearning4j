@@ -59,6 +59,27 @@ Search for [canova](https://search.maven.org/#search%7Cga%7C1%7CCanova) on Maven
 
 Add the dependency information into your pom.xml.
 
+## Run Canova From the Command Line
+
+`canova-cli` can now be installed in two 'new' ways:
+
+On Centos/Redhat, you can do: 
+
+      # install
+      sudo yum install https://s3-us-west-2.amazonaws.com/skymind/bin/canova-cli.rpm
+      # run
+      canova
+
+On non-RPM systems, do:
+
+      # download
+      curl -O https://s3-us-west-2.amazonaws.com/skymind/bin/canova-cli.tar.gz
+      # untar
+      tar -zxvf canova-cli.tar.gz
+      # run
+      cd canova-cli-0.0.0.15-SNAPSHOT; ./bin/canova
+
+
 <!-- You'll need to do a *git clone* from [Canova's Github repo](https://github.com/deeplearning4j/Canova), and then build the dependencies with [Maven](http://nd4j.org/getstarted.html#maven). 
 
       mvn -DskipTests=true -Dmaven.javadoc.skip=true install
