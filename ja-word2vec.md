@@ -1,6 +1,6 @@
 ---
 layout：ja-default
-title："Word2vec” 
+title：Word2vec
 ---
 
 # Word2Vec
