@@ -17,8 +17,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class SessionStorage {
     private static final SessionStorage INSTANCE = new SessionStorage();
 
-    private Table<Long, ObjectType, Object> storage = HashBasedTable.create();
-    private ConcurrentHashMap<Long, AtomicLong> accessTime = new ConcurrentHashMap<>();
+    private Table<Integer, ObjectType, Object> storage = HashBasedTable.create();
+    private ConcurrentHashMap<Integer, AtomicLong> accessTime = new ConcurrentHashMap<>();
 
     private ReentrantReadWriteLock singleLock = new ReentrantReadWriteLock();
 
@@ -30,7 +30,7 @@ public class SessionStorage {
         return INSTANCE;
     }
 
-    public Object getObject(Long sessionId, ObjectType type) {
+    public Object getObject(Integer sessionId, ObjectType type) {
         try {
             singleLock.readLock().lock();
 
@@ -45,7 +45,7 @@ public class SessionStorage {
         }
     }
 
-    public void putObject(Long sessionId, ObjectType type, Object object) {
+    public void putObject(Integer sessionId, ObjectType type, Object object) {
         try {
             singleLock.writeLock().lock();
 
@@ -66,10 +66,10 @@ public class SessionStorage {
      * This method removes all references that were not used within some timeframe
      */
     protected void truncateUnused() {
-        List<Long> sessions = Collections.list(accessTime.keys());
-        List<Pair<Long, ObjectType>> removals = new ArrayList<>();
+        List<Integer> sessions = Collections.list(accessTime.keys());
+        List<Pair<Integer, ObjectType>> removals = new ArrayList<>();
 
-        for (Long session: sessions) {
+        for (Integer session: sessions) {
             long time = accessTime.get(session).get();
             if (time < System.currentTimeMillis() - (30 * 60 * 1000L)) {
                 accessTime.remove(session);
@@ -92,11 +92,71 @@ public class SessionStorage {
         try {
             singleLock.writeLock().lock();
 
-            for (Pair<Long, ObjectType> objects : removals) {
+            for (Pair<Integer, ObjectType> objects : removals) {
                 storage.remove(objects.getFirst(), objects.getSecond());
             }
         } finally {
             singleLock.writeLock().unlock();
+        }
+    }
+
+    public Map<Integer, List<ObjectType>> getSessions() {
+        Map<Integer, List<ObjectType>> result = new ConcurrentHashMap<>();
+        try {
+            singleLock.readLock().lock();
+
+            Set<Integer> sessions = storage.rowKeySet();
+            for (Integer session : sessions) {
+                Map<ObjectType, Object> map = storage.row(session);
+                for (ObjectType type : map.keySet()) {
+                    if (!result.containsKey(session)) {
+                        result.put(session, new ArrayList<ObjectType>());
+                    }
+                    result.get(session).add(type);
+                }
+            }
+
+            return result;
+        } finally {
+            singleLock.readLock().unlock();
+        }
+    }
+
+    public List<Integer> getSessions(ObjectType type) {
+        List<Integer> results = new ArrayList<>();
+        try {
+            singleLock.readLock().lock();
+
+            Map<Integer, Object> map = storage.column(type);
+            for (Integer session: map.keySet()) {
+                results.add(session);
+            }
+        } finally {
+            singleLock.readLock().unlock();
+        }
+
+        return results;
+    }
+
+    public Map<ObjectType, List<Integer>> getEvents() {
+        Map<ObjectType, List<Integer>> result = new ConcurrentHashMap<>();
+        try {
+            singleLock.readLock().lock();
+
+            Set<ObjectType> events = storage.columnKeySet();
+            for (ObjectType type: events) {
+                Map<Integer, Object> map = storage.column(type);
+                for (Integer session: map.keySet()) {
+                    if (!result.containsKey(type)) {
+                        result.put(type, new ArrayList<Integer>());
+                    }
+                    result.get(type).add(session);
+                }
+            }
+
+            return result;
+        } finally {
+            singleLock.readLock().unlock();
         }
     }
 }

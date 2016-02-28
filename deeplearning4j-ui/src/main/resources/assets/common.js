@@ -1,0 +1,32 @@
+function buildSessionSelector(event) {
+  $.ajax({
+                              url:"/sessions?event=" + event,
+                              async: true,
+                              error: function (query, status, error) {
+                                  /*$.notify({
+                                      title: '<strong>No connection!</strong>',
+                                      message: 'DeepLearning4j UiServer seems to be down!'
+                                  },{
+                                      type: 'danger',
+                                      placement: {
+                                          from: "top",
+                                          align: "center"
+                                          },
+                                  });
+                                  setTimeout(buildSessionSelector(event), 2000);
+                                  */
+                              },
+                              success: function( data ) {
+                                 if (data == undefined || data.length == 0) {
+                                    $("#sessionSelector").append("<option value='0' selected>No sessions available</option>");
+                                    return;
+                                 }
+
+
+
+                                 for (var i = 0; i < data.length; i++ ) {
+                                    $("#sessionSelector").append("<option value='"+ data[0]+"'>ID: "+data[0]+"</option>");
+                                 }
+                              }
+     });
+}
