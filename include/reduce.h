@@ -82,7 +82,7 @@ public:
 	inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T merge(T old, T opOutput, T *extraParams) = 0;
@@ -98,7 +98,7 @@ public:
 	inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T op(T d1, T *extraParams) = 0;
@@ -116,7 +116,7 @@ public:
 	inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T update(T old, T opOutput, T *extraParams) = 0;
@@ -592,7 +592,7 @@ virtual
 inline __host__  __device__
 
 #elif defined(__GNUC__)
-__always_inline
+
 
 #endif
 T postProcess(T reduction, int n, T *extraParams)  {
@@ -910,7 +910,7 @@ public:
 	inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T merge(T old, T opOutput, T *extraParams) override {
@@ -921,7 +921,7 @@ public:
 	inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T update(T old, T opOutput, T *extraParams) override {
@@ -932,7 +932,7 @@ public:
 	inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T op(T d1, T *extraParams) override {
@@ -944,7 +944,7 @@ public:
 	inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T postProcess(T reduction, int n,T *extraParams) override {
@@ -991,7 +991,7 @@ public:
 	inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T merge(T old, T opOutput, T *extraParams) override {
@@ -1002,7 +1002,7 @@ public:
 	inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T update(T old, T opOutput, T *extraParams) override {
@@ -1013,7 +1013,7 @@ public:
 	__host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T op(T d1, T *extraParams) override {
@@ -1025,7 +1025,7 @@ public:
 	inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T postProcess(T reduction, int n,T *extraParams) override {
@@ -1088,7 +1088,7 @@ public:
 	__host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T merge(T old, T opOutput, T *extraParams) override {
@@ -1100,7 +1100,7 @@ public:
 	inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T update(T old, T opOutput, T *extraParams) override {
@@ -1111,7 +1111,7 @@ public:
 	__host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T op(T d1, T *extraParams) override {
@@ -1123,7 +1123,7 @@ public:
 	inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T postProcess(T reduction, int n,T *extraParams) override {
@@ -1179,7 +1179,7 @@ public:
 	inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T merge(T old, T opOutput, T *extraParams) override {
@@ -1191,7 +1191,7 @@ public:
 	inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T update(T old, T opOutput, T *extraParams) override {
@@ -1204,7 +1204,7 @@ public:
 	__host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T op(T d1, T *extraParams) override {
@@ -1218,7 +1218,7 @@ public:
 	inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T postProcess(T reduction, int n,T *extraParams) override {
@@ -1267,7 +1267,7 @@ public:
 	inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T merge(T old, T opOutput, T *extraParams) override {
@@ -1278,7 +1278,7 @@ public:
 	inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T update(T old, T opOutput, T *extraParams) override {
@@ -1290,7 +1290,7 @@ public:
 	inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T op(T d1, T *extraParams) override {
@@ -1302,7 +1302,7 @@ public:
 	inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T postProcess(T reduction, int n,T *extraParams) override {
@@ -1360,7 +1360,7 @@ public:
 	inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T merge(T old, T opOutput, T *extraParams) override {
@@ -1372,7 +1372,7 @@ public:
 	inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T update(T old, T opOutput, T *extraParams) override {
@@ -1383,7 +1383,7 @@ public:
 	inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T op(T d1, T *extraParams) override {
@@ -1395,7 +1395,7 @@ public:
 	inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T postProcess(T reduction, int n,T *extraParams) override {
@@ -1458,7 +1458,7 @@ public:
 	inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T merge(T old, T opOutput, T *extraParams) override {
@@ -1470,7 +1470,7 @@ public:
 	inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T update(T old, T opOutput, T *extraParams) override {
@@ -1482,7 +1482,7 @@ public:
 	inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T op(T d1, T *extraParams) override {
@@ -1494,7 +1494,7 @@ public:
 	__host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T postProcess(T reduction, int n,T *extraParams) override {
@@ -1546,7 +1546,7 @@ public:
 	inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T merge(T old, T opOutput, T *extraParams) override {
@@ -1559,7 +1559,7 @@ public:
 	inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T update(T old, T opOutput, T *extraParams) override {
@@ -1572,7 +1572,7 @@ public:
 	inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T op(T d1, T *extraParams) override {
@@ -1584,7 +1584,7 @@ public:
 	inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T postProcess(T reduction, int n,T *extraParams) override {
@@ -1638,7 +1638,7 @@ public:
 	inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T merge(T old, T opOutput, T *extraParams) override {
@@ -1651,7 +1651,7 @@ public:
 	__host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T update(T old, T opOutput, T *extraParams) override {
@@ -1664,7 +1664,7 @@ public:
 	__host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T op(T d1, T *extraParams) override {
@@ -1676,7 +1676,7 @@ public:
 	inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T postProcess(T reduction, int n,T *extraParams) override {
@@ -1733,7 +1733,7 @@ public:
 	inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T merge(T old, T opOutput, T *extraParams) override {
@@ -1745,7 +1745,7 @@ public:
 	inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T update(T old, T opOutput, T *extraParams) override {
@@ -1759,7 +1759,7 @@ public:
 
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T op(T d1, T *extraParams) override {
@@ -1773,7 +1773,7 @@ public:
 	inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T postProcess(T reduction, int n,T *extraParams) override {
@@ -1816,7 +1816,7 @@ public:
 	inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+	
 
 #endif
 	T postProcess(T reduction, int n,T *extraParams) override {

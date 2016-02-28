@@ -39,7 +39,7 @@ namespace functions {
             inline __device__ __host__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 
 #endif
             T op(T d1, T *params) = 0;
@@ -290,7 +290,7 @@ namespace functions {
             inline __host__ __device__
 #elif defined(__GNUC__)
 
-            __always_inline
+            
 #endif
             virtual ~Transform() {
             }
@@ -298,7 +298,7 @@ namespace functions {
             __host__ __device__
 #elif defined(__GNUC__)
 
-            __always_inline
+            
 #endif
             Transform() {
             }
@@ -324,7 +324,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T op(T d1, T *params) {
@@ -346,7 +346,7 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 virtual ~Abs() {
                 }
@@ -370,7 +370,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T op(T d1, T *params) {
@@ -392,7 +392,7 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 virtual ~Ceiling() {
                 }
@@ -416,7 +416,7 @@ namespace functions {
                 __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T op(T d1, T *params) {
@@ -432,7 +432,7 @@ namespace functions {
                 virtual
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 std::string name() {
                     return std::string("cos_strided");
@@ -441,7 +441,7 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 virtual ~Cosine() {
                 }
@@ -465,7 +465,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T op(T d1, T *params) {
@@ -480,7 +480,7 @@ namespace functions {
                 inline __host__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 std::string name() {
@@ -490,7 +490,7 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 virtual ~Exp() {
                 }
@@ -514,7 +514,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T op(T d1, T *params) {
@@ -536,7 +536,7 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 virtual ~HardTanhDerivative() {
                 }
@@ -560,7 +560,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T op(T d1, T *params) {
@@ -582,7 +582,7 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 virtual ~HardTanh() {
                 }
@@ -606,7 +606,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T op(T d1, T *params) {
@@ -628,7 +628,7 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 virtual ~Floor() {
                 }
@@ -652,7 +652,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T op(T d1, T *params) {
@@ -667,7 +667,7 @@ namespace functions {
                 inline __host__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 std::string name() {
@@ -677,7 +677,7 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 virtual ~Log() {
                 }
@@ -701,7 +701,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T op(T d1, T *params) {
@@ -723,7 +723,7 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 virtual ~Neg() {
                 }
@@ -747,7 +747,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T op(T d1, T *params) {
@@ -769,7 +769,7 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 virtual ~Pow() {
                 }
@@ -777,7 +777,7 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 Pow() {
                 }
@@ -800,7 +800,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T op(T d1, T *params) {
@@ -822,7 +822,7 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 virtual ~Round() {
                 }
@@ -846,7 +846,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T op(T d1, T *params) {
@@ -868,7 +868,7 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 virtual ~Sigmoid() {
                 }
@@ -894,7 +894,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T op(T d1, T *params) {
@@ -916,7 +916,7 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 virtual ~SigmoidDerivative() {
                 }
@@ -942,7 +942,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T op(T d1, T *params) {
@@ -967,7 +967,7 @@ namespace functions {
                 inline __host__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 std::string name() {
@@ -977,7 +977,7 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 virtual ~SetRange() {
                 }
@@ -1001,7 +1001,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T op(T d1, T *params) {
@@ -1023,7 +1023,7 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 virtual ~Sin() {
                 }
@@ -1047,7 +1047,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T op(T d1, T *params) {
@@ -1069,7 +1069,7 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 virtual ~Sqrt() {
                 }
@@ -1093,7 +1093,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T op(T d1, T *params) {
@@ -1115,7 +1115,7 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 virtual ~SoftPlus() {
                 }
@@ -1140,7 +1140,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T op(T d1, T *params) {
@@ -1162,7 +1162,7 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 virtual ~Sign() {
                 }
@@ -1187,7 +1187,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T op(T d1, T *params) {
@@ -1209,7 +1209,7 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 virtual ~TimesOneMinus() {
                 }
@@ -1234,7 +1234,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T op(T d1, T *params) {
@@ -1256,7 +1256,7 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 virtual ~Tanh() {
                 }
@@ -1280,7 +1280,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T op(T d1, T *params) {
@@ -1302,7 +1302,7 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 virtual ~TanhDerivative() {
                 }
@@ -1326,7 +1326,7 @@ namespace functions {
                 __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T op(T d1, T *params) {
@@ -1341,7 +1341,7 @@ namespace functions {
                 inline __host__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 std::string name() {
@@ -1351,7 +1351,7 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 virtual ~ACos() {
                 }
@@ -1376,7 +1376,7 @@ namespace functions {
                 __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T op(T d1, T *params) {
@@ -1392,7 +1392,7 @@ namespace functions {
                 inline __host__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 std::string name() {
@@ -1402,7 +1402,7 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 virtual ~Ones() {
                 }
@@ -1427,7 +1427,7 @@ namespace functions {
                 __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T op(T d1, T *params) {
@@ -1443,7 +1443,7 @@ namespace functions {
                 inline __host__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 std::string name() {
@@ -1453,7 +1453,7 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 virtual ~SoftSign() {
                 }
@@ -1478,7 +1478,7 @@ namespace functions {
                 __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T op(T d1, T *params) {
@@ -1494,7 +1494,7 @@ namespace functions {
                 inline __host__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 std::string name() {
@@ -1504,7 +1504,7 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 virtual ~SoftSignDerivative() {
                 }
@@ -1528,7 +1528,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T op(T d1, T *params) {
@@ -1550,7 +1550,7 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 virtual ~ELU() {
                 }
@@ -1578,7 +1578,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T op(T d1, T *params) {
@@ -1600,7 +1600,7 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 virtual ~ELUDerivative() {
                 }
@@ -1626,7 +1626,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T op(T d1, T *params) {
@@ -1648,7 +1648,7 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 virtual ~RELU() {
                 }
@@ -1674,7 +1674,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T op(T d1, T *params) {
@@ -1696,7 +1696,7 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 virtual ~LeakyRELU() {
                 }
@@ -1722,7 +1722,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T op(T d1, T *params) {
@@ -1744,7 +1744,7 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 virtual ~LeakyRELUDerivative() {
                 }
@@ -1769,7 +1769,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T op(T d1, T *params) {
@@ -1791,7 +1791,7 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 virtual ~ASin() {
                 }
@@ -1814,7 +1814,7 @@ namespace functions {
                 __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T op(T d1, T *params) {
@@ -1838,7 +1838,7 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 virtual ~ATan() {
                 }
@@ -1861,7 +1861,7 @@ namespace functions {
                 __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T op(T d1, T *params) {
@@ -1885,7 +1885,7 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 virtual ~Identity() {
                 }
@@ -1911,7 +1911,7 @@ namespace functions {
                 __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T op(T d1, T *params) {
@@ -1940,7 +1940,7 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 virtual ~Stabilize() {
                 }
@@ -1965,7 +1965,7 @@ namespace functions {
                 __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T op(T d1, T *params) {
@@ -1989,7 +1989,7 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 virtual ~Step() {
                 }
@@ -2015,7 +2015,7 @@ namespace functions {
                 __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 T op(T d1, T *params) {
@@ -2039,7 +2039,7 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                __always_inline
+                
 #endif
                 virtual ~OneMinus() {
                 }

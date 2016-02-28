@@ -43,7 +43,7 @@ namespace functions {
 			inline __device__  __host__
 
 #elif defined(__GNUC__)
-			__always_inline
+			
 
 #endif
 			T op(T d1, T d2) = 0;
@@ -57,7 +57,7 @@ namespace functions {
 			inline __device__  __host__
 
 #elif defined(__GNUC__)
-			__always_inline
+			
 
 #endif
 			T op(T d1) = 0;
@@ -148,14 +148,14 @@ namespace functions {
 #ifdef __CUDACC__
 			inline __host__ __device__
 #elif defined(__GNUC__)
-			__always_inline
+			
 #endif
 			virtual ~Broadcast() {
 			}
 #ifdef __CUDACC__
 			inline __host__ __device__
 #elif defined(__GNUC__)
-			__always_inline
+			
 #endif
 			Broadcast() {
 			}
@@ -186,7 +186,7 @@ namespace functions {
 				inline __host__  __device__
 
 #elif defined(__GNUC__)
-				__always_inline
+				
 
 #endif
 				T op(T d1, T d2) {
@@ -202,7 +202,7 @@ namespace functions {
 				inline __host__  __device__
 
 #elif defined(__GNUC__)
-				__always_inline
+				
 
 #endif
 				T op(T d1) {
@@ -211,7 +211,7 @@ namespace functions {
 #ifdef __CUDACC__
 				inline __host__ __device__
 #elif defined(__GNUC__)
-				__always_inline
+				
 #endif
 				virtual ~Add() {
 				}
@@ -240,7 +240,7 @@ namespace functions {
 				__host__  __device__
 
 #elif defined(__GNUC__)
-				__always_inline
+				
 
 #endif
 				T op(T d1, T d2) {
@@ -256,7 +256,7 @@ namespace functions {
 				inline __host__  __device__
 
 #elif defined(__GNUC__)
-				__always_inline
+				
 
 #endif
 				T op(T d1) {
@@ -265,7 +265,7 @@ namespace functions {
 #ifdef __CUDACC__
 				inline __host__ __device__
 #elif defined(__GNUC__)
-				__always_inline
+				
 #endif
 				virtual ~Copy() {
 				}
@@ -295,7 +295,7 @@ namespace functions {
 				inline __host__  __device__
 
 #elif defined(__GNUC__)
-				__always_inline
+				
 
 #endif
 				T op(T d1, T d2) {
@@ -311,7 +311,7 @@ namespace functions {
 				inline __host__  __device__
 
 #elif defined(__GNUC__)
-				__always_inline
+				
 
 #endif
 				T op(T d1) {
@@ -320,7 +320,7 @@ namespace functions {
 #ifdef __CUDACC__
 				inline __host__ __device__
 #elif defined(__GNUC__)
-				__always_inline
+				
 #endif
 				virtual ~Divide() {
 				}
@@ -350,7 +350,7 @@ namespace functions {
 				inline __host__  __device__
 
 #elif defined(__GNUC__)
-				__always_inline
+				
 
 #endif
 				T op(T d1, T d2) {
@@ -366,7 +366,7 @@ namespace functions {
 				inline __host__  __device__
 
 #elif defined(__GNUC__)
-				__always_inline
+				
 
 #endif
 				T op(T d1) {
@@ -375,7 +375,7 @@ namespace functions {
 #ifdef __CUDACC__
 				inline __host__ __device__
 #elif defined(__GNUC__)
-				__always_inline
+				
 #endif
 				virtual ~Multiply() {
 				}
@@ -405,7 +405,7 @@ namespace functions {
 				inline __host__  __device__
 
 #elif defined(__GNUC__)
-				__always_inline
+				
 
 #endif
 				T op(T d1, T d2) {
@@ -421,7 +421,7 @@ namespace functions {
 				inline __host__  __device__
 
 #elif defined(__GNUC__)
-				__always_inline
+				
 
 #endif
 				T op(T d1) {
@@ -430,7 +430,7 @@ namespace functions {
 #ifdef __CUDACC__
 				inline __host__ __device__
 #elif defined(__GNUC__)
-				__always_inline
+				
 #endif
 				virtual ~ReverseDivide() {
 				}
@@ -460,7 +460,7 @@ namespace functions {
 				inline __host__  __device__
 
 #elif defined(__GNUC__)
-				__always_inline
+				
 
 #endif
 				T op(T d1, T d2) {
@@ -476,7 +476,7 @@ namespace functions {
 				inline __host__  __device__
 
 #elif defined(__GNUC__)
-				__always_inline
+				
 
 #endif
 				T op(T d1) {
@@ -485,7 +485,7 @@ namespace functions {
 #ifdef __CUDACC__
 				inline __host__ __device__
 #elif defined(__GNUC__)
-				__always_inline
+				
 #endif
 				virtual ~ReverseSubtract() {
 				}
@@ -515,7 +515,7 @@ namespace functions {
 				inline __host__  __device__
 
 #elif defined(__GNUC__)
-				__always_inline
+				
 
 #endif
 				T op(T d1, T d2) {
@@ -531,7 +531,7 @@ namespace functions {
 				inline __host__  __device__
 
 #elif defined(__GNUC__)
-				__always_inline
+				
 
 #endif
 				T op(T d1) {
@@ -540,7 +540,7 @@ namespace functions {
 #ifdef __CUDACC__
 				inline __host__ __device__
 #elif defined(__GNUC__)
-				__always_inline
+				
 #endif
 				virtual ~Subtract() {
 				}

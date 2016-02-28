@@ -85,7 +85,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 
 #endif
             IndexValue<T> op(IndexValue<T> val, T *extraParams) = 0;
@@ -103,7 +103,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 
 #endif
             IndexValue<T> update(IndexValue<T> old, IndexValue<T> opOutput,
@@ -122,7 +122,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 
 #endif
             IndexValue<T> merge(IndexValue<T> f1, IndexValue<T> f2, T *extraParams) = 0;
@@ -144,7 +144,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 
 #endif
             IndexValue<T> postProcess(IndexValue<T> reduction, int n, int xOffset,
@@ -162,7 +162,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 
 #endif
             IndexValue<T> op(IndexValue<T> d1, IndexValue<T> d2, T *extraParams) = 0;
@@ -732,7 +732,7 @@ namespace functions {
             inline __host__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 #endif
             T execScalar(T *x,
                          int *xShapeInfo,
@@ -839,7 +839,7 @@ namespace functions {
             inline __host__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 #endif
             void exec(T *x,
                       int *xShapeInfo,
@@ -866,7 +866,7 @@ namespace functions {
             inline __host__
 
 #elif defined(__GNUC__)
-            __always_inline
+            
 #endif
             void exec(T *x,
                       int *xShapeInfo,
@@ -972,14 +972,14 @@ namespace functions {
 #ifdef __CUDACC__
             __host__ __device__
 #elif defined(__GNUC__)
-            __always_inline
+            
 #endif
             virtual ~IndexReduce() {
             }
 #ifdef __CUDACC__
             __host__ __device__
 #elif defined(__GNUC__)
-            __always_inline
+            
 #endif
             IndexReduce() {
             }
@@ -1018,7 +1018,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 functions::indexreduce::IndexValue<T> op(
@@ -1039,7 +1039,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 functions::indexreduce::IndexValue<T> update(
@@ -1063,7 +1063,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 functions::indexreduce::IndexValue<T> merge(
@@ -1091,7 +1091,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 functions::indexreduce::IndexValue<T> postProcess(
@@ -1119,7 +1119,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
@@ -1129,14 +1129,14 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 virtual ~IMax() {
                 }
 #ifdef __CUDACC__
                 __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 IMax() {
                 }
@@ -1173,7 +1173,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 functions::indexreduce::IndexValue<T> op(
@@ -1200,7 +1200,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 functions::indexreduce::IndexValue<T> update(
@@ -1227,7 +1227,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 functions::indexreduce::IndexValue<T> merge(
@@ -1255,7 +1255,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 functions::indexreduce::IndexValue<T> postProcess(
@@ -1276,7 +1276,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                __always_inline
+                
 
 #endif
                 IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
@@ -1287,14 +1287,14 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 virtual ~IMin() {
                 }
 #ifdef __CUDACC__
                 __host__ __device__
 #elif defined(__GNUC__)
-                __always_inline
+                
 #endif
                 IMin() {
                 }
