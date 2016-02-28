@@ -142,13 +142,6 @@
                             <configuration>
                                 <classifier>${javacpp.platform}</classifier>
                                 <skipIfEmpty>true</skipIfEmpty>
-                                <includes>
-                                    <include>org/nd4j/nativeblas/*</include>
-                                    <include>*.so</include>
-                                    <include>*.dll</include>
-                                    <include>*.dylib</include>
-                                    <include>*.a</include>
-                                </includes>
                             </configuration>
                         </execution>
                     </executions>
@@ -206,12 +199,14 @@
                                 <goal>build</goal>
                             </goals>
                             <configuration>
-                                <outputDirectory>${project.basedir}/src/main/resources/lib/linux-x86_64</outputDirectory>
+                                <outputDirectory>${project.build.outputDirectory}</outputDirectory>
+                                <jarPrefix>lib/</jarPrefix>
                                 <skip>${process-classes.skip}</skip>
                                 <classOrPackageNames>
                                     <classOrPackageName>org.nd4j.nativeblas.Nd4jBlas</classOrPackageName>
                                     <classOrPackageName>org.nd4j.nativeblas.NativeOps</classOrPackageName>
                                 </classOrPackageNames>
+                                <copyLibs>true</copyLibs>
 
                             </configuration>
                         </execution>

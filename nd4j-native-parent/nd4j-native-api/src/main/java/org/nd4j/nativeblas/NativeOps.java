@@ -14,9 +14,16 @@ import java.io.File;
  * op execution on cpu
  * @author Adam Gibson
  */
-@Platform(include="NativeOps.h",link = "nd4j")
+@Platform(include="NativeOps.h",preload = "nd4j",link = "nd4j")
 public class NativeOps extends Pointer {
     static {
+        try {
+            LibUtils.addLibraryPath(System.getProperty("java.io.tmpdir"));
+            LibUtils.loadTempBinaryFile("nd4j");
+            LibUtils.loadTempBinaryFile("jniNativeOps");
+        } catch (Throwable throwable) {
+            throwable.printStackTrace();
+        }
         Loader.load();
     }
     /**
