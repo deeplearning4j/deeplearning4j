@@ -20,6 +20,8 @@
 package org.nd4j.linalg.lossfunctions;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer.Type;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -36,24 +38,14 @@ import static org.junit.Assert.assertEquals;
  *
  * @author Adam Gibson
  */
+@RunWith(Parameterized.class)
 public  class LossFunctionTests extends BaseNd4jTest {
 
-    private static Logger log = LoggerFactory.getLogger(LossFunctionTests.class);
-
-    public LossFunctionTests() {
-    }
-
-    public LossFunctionTests(String name) {
-        super(name);
-    }
 
     public LossFunctionTests(Nd4jBackend backend) {
         super(backend);
     }
 
-    public LossFunctionTests(String name, Nd4jBackend backend) {
-        super(name, backend);
-    }
 
     @Test
     public void testCreateLossFunction() {

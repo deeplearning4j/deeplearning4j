@@ -1,6 +1,8 @@
 package org.nd4j.linalg.shape.concat;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -14,17 +16,8 @@ import static org.junit.Assert.*;
 /**
  * @author Adam Gibson
  */
+@RunWith(Parameterized.class)
 public class ConcatTestsC extends BaseNd4jTest {
-    public ConcatTestsC() {
-    }
-
-    public ConcatTestsC(String name) {
-        super(name);
-    }
-
-    public ConcatTestsC(String name, Nd4jBackend backend) {
-        super(name, backend);
-    }
 
     public ConcatTestsC(Nd4jBackend backend) {
         super(backend);

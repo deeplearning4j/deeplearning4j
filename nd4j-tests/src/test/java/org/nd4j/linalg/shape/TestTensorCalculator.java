@@ -2,6 +2,8 @@ package org.nd4j.linalg.shape;
 
 import org.apache.commons.math3.util.Pair;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -15,22 +17,14 @@ import java.util.List;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-
+@RunWith(Parameterized.class)
 public class TestTensorCalculator extends BaseNd4jTest {
-    public TestTensorCalculator() {
-    }
 
     public TestTensorCalculator(Nd4jBackend backend) {
         super(backend);
     }
 
-    public TestTensorCalculator(String name) {
-        super(name);
-    }
 
-    public TestTensorCalculator(String name, Nd4jBackend backend) {
-        super(name, backend);
-    }
 
     @Test
     public void testTensorCalculator1d() throws Exception {

@@ -3,6 +3,9 @@ package org.nd4j.linalg.parallel.tasks.cpu;
 import org.apache.commons.math3.util.Pair;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
@@ -30,15 +33,28 @@ import java.lang.reflect.Constructor;
 import java.util.*;
 
 import static org.junit.Assert.*;
-
-public class CPUTaskFactoryTest {
+@RunWith(Parameterized.class)
+public class CPUTaskFactoryTest extends BaseNd4jTest {
+    public CPUTaskFactoryTest(Nd4jBackend backend) {
+        super(backend);
+    }
 
     @Before
-    public void before() throws Exception {
+    public void before()  {
         Nd4j nd4j = new Nd4j();
-        Nd4jBackend backend = (Nd4jBackend)Class.forName("org.nd4j.linalg.cpu.CpuBackend").newInstance();
-        nd4j.initWithBackend(backend);
-        Nd4j.factory().setOrder('c');
+        Nd4jBackend backend = null;
+        try {
+            backend = (Nd4jBackend)Class.forName("org.nd4j.linalg.cpu.CpuBackend").newInstance();
+            nd4j.initWithBackend(backend);
+            Nd4j.factory().setOrder('c');
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
     }
 
     @Test

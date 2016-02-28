@@ -2,6 +2,8 @@ package org.nd4j.linalg.shape.ones;
 import static org.junit.Assert.*;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -11,17 +13,8 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 /**
  * @author Adam Gibson
  */
+@RunWith(Parameterized.class)
 public class LeadingAndTrailingOnesC extends BaseNd4jTest  {
-    public LeadingAndTrailingOnesC() {
-    }
-
-    public LeadingAndTrailingOnesC(String name) {
-        super(name);
-    }
-
-    public LeadingAndTrailingOnesC(String name, Nd4jBackend backend) {
-        super(name, backend);
-    }
 
     public LeadingAndTrailingOnesC(Nd4jBackend backend) {
         super(backend);

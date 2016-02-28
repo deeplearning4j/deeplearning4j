@@ -19,25 +19,25 @@
 
 package org.nd4j.linalg;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestResult;
+
 import org.junit.After;
 import org.junit.Before;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.UUID;
-
+import java.util.*;
 
 
 /**
  * Base Nd4j test
  * @author Adam Gibson
  */
-public abstract class BaseNd4jTest  implements Test {
+@RunWith(Parameterized.class)
+public abstract class BaseNd4jTest  {
     private static Logger log = LoggerFactory.getLogger(BaseNd4jTest.class);
     protected Nd4jBackend backend;
     protected String name;
@@ -48,7 +48,7 @@ public abstract class BaseNd4jTest  implements Test {
     }
 
     public BaseNd4jTest(String name) {
-       this(name,getDefaultBackend());
+        this(name,getDefaultBackend());
     }
 
     public BaseNd4jTest(String name, Nd4jBackend backend) {
@@ -61,6 +61,28 @@ public abstract class BaseNd4jTest  implements Test {
 
     }
 
+    private static List<Nd4jBackend> backends;
+    static {
+        ServiceLoader<Nd4jBackend> loadedBackends = ServiceLoader.load(Nd4jBackend.class);
+        Iterator<Nd4jBackend> backendIterator = loadedBackends.iterator();
+        backends = new ArrayList<>();
+        List<String> backendsToRun = Nd4jTestSuite.backendsToRun();
+
+        while(backendIterator.hasNext()) {
+            Nd4jBackend backend = backendIterator.next();
+            if(backend.canRun() && backendsToRun.contains(backend.getClass().getName()) || backendsToRun.isEmpty())
+                backends.add(backendIterator.next());
+        }
+
+    }
+
+    @Parameterized.Parameters(name = "{index}: backend({0})={1}")
+    public static Collection<Object[]> configs() {
+        List<Object[]> ret = new ArrayList<>();
+        for(Nd4jBackend backend : backends)
+            ret.add(new Object[]{backend});
+        return ret;
+    }
 
     /**
      * Get the default backend (jblas)
@@ -118,20 +140,10 @@ public abstract class BaseNd4jTest  implements Test {
 
 
 
-   public String getFailureMessage() {
-       return "Failed with backend " + backend.getClass().getName() + " and ordering " + ordering();
-   }
-
-
-
-
-    @Override
-    public int countTestCases() {
-        return 0;
+    public String getFailureMessage() {
+        return "Failed with backend " + backend.getClass().getName() + " and ordering " + ordering();
     }
 
-    @Override
-    public void run(TestResult result) {
 
-    }
+
 }

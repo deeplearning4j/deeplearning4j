@@ -23,6 +23,8 @@ package org.nd4j.linalg;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer.Type;
 import org.nd4j.linalg.api.complex.IComplexDouble;
@@ -46,23 +48,14 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
+@RunWith(Parameterized.class)
 public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
 
-
-    public ComplexNDArrayTestsFortran() {
-    }
-
-    public ComplexNDArrayTestsFortran(String name) {
-        super(name);
-    }
 
     public ComplexNDArrayTestsFortran(Nd4jBackend backend) {
         super(backend);
     }
 
-    public ComplexNDArrayTestsFortran(String name, Nd4jBackend backend) {
-        super(name, backend);
-    }
 
 
 

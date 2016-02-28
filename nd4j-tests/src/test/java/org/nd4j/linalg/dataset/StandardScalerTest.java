@@ -1,14 +1,22 @@
 package org.nd4j.linalg.dataset;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.StandardScaler;
+import org.nd4j.linalg.factory.Nd4jBackend;
 
 /**
  * Created by agibsonccc on 9/12/15.
  */
-public class StandardScalerTest {
+@RunWith(Parameterized.class)
+public class StandardScalerTest extends BaseNd4jTest {
+    public StandardScalerTest(Nd4jBackend backend) {
+        super(backend);
+    }
 
     @Test
     public void testScale() {

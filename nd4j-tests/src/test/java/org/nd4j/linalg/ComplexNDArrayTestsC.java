@@ -27,7 +27,8 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 
-
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -56,6 +57,7 @@ import java.util.List;
  * @author Adam Gibson
  */
 @Ignore
+@RunWith(Parameterized.class)
 public  class ComplexNDArrayTestsC extends BaseComplexNDArrayTests  {
 
     private static Logger log = LoggerFactory.getLogger(ComplexNDArrayTestsC.class);
@@ -63,16 +65,9 @@ public  class ComplexNDArrayTestsC extends BaseComplexNDArrayTests  {
     public ComplexNDArrayTestsC() {
     }
 
-    public ComplexNDArrayTestsC(String name) {
-        super(name);
-    }
 
     public ComplexNDArrayTestsC(Nd4jBackend backend) {
         super(backend);
-    }
-
-    public ComplexNDArrayTestsC(String name, Nd4jBackend backend) {
-        super(name, backend);
     }
 
     @Before

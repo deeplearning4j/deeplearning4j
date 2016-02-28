@@ -26,6 +26,8 @@ import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -61,19 +63,10 @@ import static org.junit.Assert.assertNotEquals;
  *
  * @author Adam Gibson
  */
+@RunWith(Parameterized.class)
 public  class NDArrayTestsFortran  extends BaseNd4jTest {
     private static Logger log = LoggerFactory.getLogger(NDArrayTestsFortran.class);
 
-    public NDArrayTestsFortran() {
-    }
-
-    public NDArrayTestsFortran(String name) {
-        super(name);
-    }
-
-    public NDArrayTestsFortran(String name, Nd4jBackend backend) {
-        super(name, backend);
-    }
 
     public NDArrayTestsFortran(Nd4jBackend backend) {
         super(backend);

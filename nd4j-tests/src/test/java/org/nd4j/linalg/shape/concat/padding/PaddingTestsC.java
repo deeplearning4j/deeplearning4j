@@ -1,6 +1,8 @@
 package org.nd4j.linalg.shape.concat.padding;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.convolution.Convolution;
@@ -12,16 +14,10 @@ import static org.junit.Assert.*;
 /**
  * @author Adam Gibson
  */
+@RunWith(Parameterized.class)
 public class PaddingTestsC extends BaseNd4jTest {
-    public PaddingTestsC() {
-    }
-
-    public PaddingTestsC(String name) {
-        super(name);
-    }
-
-    public PaddingTestsC(String name, Nd4jBackend backend) {
-        super(name, backend);
+    public PaddingTestsC(Nd4jBackend backend) {
+        super(backend);
     }
 
     @Override

@@ -1,6 +1,8 @@
 package org.nd4j.linalg.factory;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.Sum;
@@ -12,19 +14,8 @@ import static org.junit.Assert.assertEquals;
 
 /**
  */
+@RunWith(Parameterized.class)
 public class Nd4jTest extends BaseNd4jTest {
-    public Nd4jTest() {
-        super();
-    }
-
-    public Nd4jTest(String name) {
-        super(name);
-    }
-
-    public Nd4jTest(String name, Nd4jBackend backend) {
-        super(name, backend);
-    }
-
     public Nd4jTest(Nd4jBackend backend) {
         super(backend);
     }

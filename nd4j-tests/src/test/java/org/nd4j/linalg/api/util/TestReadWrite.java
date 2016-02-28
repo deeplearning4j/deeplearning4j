@@ -7,6 +7,8 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
@@ -14,17 +16,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
+@RunWith(Parameterized.class)
 public class TestReadWrite extends BaseNd4jTest {
-    public TestReadWrite() {
-    }
-
-    public TestReadWrite(Nd4jBackend backend) {
-        super(backend);
-    }
-
-    public TestReadWrite(String name) {
-        super(name);
-    }
 
     public TestReadWrite(String name, Nd4jBackend backend) {
         super(name, backend);

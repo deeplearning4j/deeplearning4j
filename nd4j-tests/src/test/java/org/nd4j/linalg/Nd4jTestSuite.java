@@ -19,20 +19,9 @@
 
 package org.nd4j.linalg;
 
-import junit.framework.TestResult;
-import junit.framework.TestSuite;
 import org.junit.Ignore;
-import org.junit.runner.Description;
-import org.junit.runner.Result;
-import org.junit.runner.RunWith;
-import org.junit.runner.manipulation.Filter;
-import org.junit.runner.manipulation.NoTestsRemainException;
-import org.junit.runner.manipulation.Sorter;
-import org.junit.runner.notification.RunNotifier;
-import org.junit.runners.AllTests;
 import org.junit.runners.BlockJUnit4ClassRunner;
 import org.junit.runners.model.FrameworkMethod;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.reflections.Reflections;
 import org.slf4j.Logger;
@@ -43,6 +32,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
+import java.util.List;
 
 /**
  * Test suite for nd4j.
@@ -59,9 +49,18 @@ public class Nd4jTestSuite extends BlockJUnit4ClassRunner {
     public final static String BACKENDS_TO_LOAD = "org.nd4j.linalg.tests.backendstorun";
     public final static String METHODS_TO_RUN = "org.nd4j.linalg.tests.methods";
     private static Logger log = LoggerFactory.getLogger(Nd4jTestSuite.class);
-    private List<BaseNd4jTest> tests;
     private int curr;
+    private List<FrameworkMethod> methods;
+    private static List<Nd4jBackend> backends;
+    static {
+        ServiceLoader<Nd4jBackend> loadedBackends = ServiceLoader.load(Nd4jBackend.class);
+        Iterator<Nd4jBackend> backendIterator = loadedBackends.iterator();
+        backends = new ArrayList<>();
+        while(backendIterator.hasNext())
+            backends.add(backendIterator.next());
 
+
+    }
     /**
      * Only called reflectively. Do not use programmatically.
      *
@@ -69,23 +68,9 @@ public class Nd4jTestSuite extends BlockJUnit4ClassRunner {
      */
     public Nd4jTestSuite(Class<?> klass) throws Throwable {
         super(klass);
+        methods = computeTestMethods();
     }
 
-    @Override
-    protected List<FrameworkMethod> computeTestMethods() {
-        try {
-            return testsToRunFramework();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-
-
-    @Override
-    public int testCount() {
-        return tests.size();
-    }
 
     /**
      * Based on the jvm arguments, an empty list is returned
@@ -265,7 +250,7 @@ public class Nd4jTestSuite extends BlockJUnit4ClassRunner {
                             BaseNd4jTest test = constructor.newInstance(method.getName(),backend);
                             //backout if the test ordering and backend ordering dont line up
                             //unless the ordering is a (the default) which means all
-                             ret.add(test);
+                            ret.add(test);
 
                         }catch(InstantiationException e) {
                             throw new RuntimeException("Failed to construct backend " + backend.getClass() + " with method " + method.getName() + " with class " + clazz.getName(),e);
@@ -283,16 +268,5 @@ public class Nd4jTestSuite extends BlockJUnit4ClassRunner {
 
     }
 
-
-    public static TestSuite suite() throws Exception  {
-        TestSuite testSuite = new TestSuite();
-        //iterate over the backends
-        List<BaseNd4jTest> tests = testsToRun();
-        for(BaseNd4jTest test : tests)
-            testSuite.addTest(test);
-        return testSuite;
-
-
-    }
 
 }
