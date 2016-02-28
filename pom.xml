@@ -167,10 +167,10 @@
         <javacpp.version>1.1</javacpp.version>
         <generate-sources.skip>false</generate-sources.skip> <!-- To skip header file parsing phase: -Dgenerate-sources.skip=true  -->
         <process-classes.skip> false</process-classes.skip>  <!-- To skip native compilation phase: -Dprocess-classes.skip=true    -->
-        <platform>${os.name}-${os.arch}</platform> <!-- For Android: -Dplatform=android-arm                                        -->
-        <platform.root />            <!--              -Dplatform.root=/path/to/android-ndk/                         -->
-        <platform.compiler />    <!--              -Dplatform.compiler=/path/to/arm-linux-androideabi-g++        -->
-        <platform.properties>${platform}</platform.properties>
+        <javacpp.platform>${os.name}-${os.arch}</javacpp.platform> <!-- For Android: -Dplatform=android-arm                                        -->
+        <javacpp.platform.root />            <!--              -Dplatform.root=/path/to/android-ndk/                         -->
+        <javacpp.platform.compiler />    <!--              -Dplatform.compiler=/path/to/arm-linux-androideabi-g++        -->
+        <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
     </properties>
     <developers>
         <developer>

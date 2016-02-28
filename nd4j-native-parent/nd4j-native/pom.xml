@@ -32,6 +32,9 @@
                 <groupId>org.bytedeco</groupId>
                 <artifactId>javacpp</artifactId>
             </plugin>
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+            </plugin>
         </plugins>
     </build>
 </project>

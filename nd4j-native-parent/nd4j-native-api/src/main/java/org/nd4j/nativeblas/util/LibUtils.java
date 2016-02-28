@@ -27,7 +27,11 @@
 
 package org.nd4j.nativeblas.util;
 
+import org.nd4j.linalg.io.ClassPathResource;
+
 import java.io.*;
+import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.Locale;
 
 /**
@@ -135,6 +139,136 @@ public final class LibUtils
                 "Could not load the native library.\n"+
                 sw.toString());
         }
+    }
+
+    /**
+     * Load the library with the given name from a resource.
+     * The extension for the current OS will be appended.
+     *
+     * @param libName The library name
+     * @throws Throwable If the library could not be loaded
+     */
+    public static void loadTempBinaryFile(String libName) throws Exception
+    {
+        String libPrefix = createLibPrefix();
+        String libExtension = createLibExtension();
+        String fullName = libPrefix + libName;
+        String resourceName = fullName + "." + libExtension;
+        ClassPathResource resource = new ClassPathResource(resourceName);
+        InputStream inputStream = resource.getInputStream();
+        if (inputStream == null)
+        {
+            throw new NullPointerException(
+                    "No resource found with name '" + resourceName + "'");
+        }
+
+        File tempFile = new File(System.getProperty("java.io.tmpdir"),fullName+ "." + libExtension);
+        tempFile.deleteOnExit();
+        OutputStream outputStream = null;
+        try
+        {
+            outputStream = new FileOutputStream(tempFile);
+            byte[] buffer = new byte[8192];
+            while (true)
+            {
+                int read = inputStream.read(buffer);
+                if (read < 0)
+                {
+                    break;
+                }
+                outputStream.write(buffer, 0, read);
+            }
+            outputStream.flush();
+            outputStream.close();
+            outputStream = null;
+
+            System.load(tempFile.toString());
+        }
+        finally
+        {
+            if (outputStream != null)
+            {
+                outputStream.close();
+            }
+        }
+    }
+
+
+    /**
+     * Load the library with the given name from a resource.
+     * The extension for the current OS will be appended.
+     *
+     * @param libName The library name
+     * @throws Throwable If the library could not be loaded
+     */
+    public static void loadJavaCppResource(String libName) throws Throwable
+    {
+        String libPrefix = createLibPrefix();
+        String libExtension = createLibExtension();
+        String fullName = libPrefix + libName;
+        String resourceName = fullName + "." + libExtension;
+        ClassPathResource resource = new ClassPathResource(resourceName);
+        InputStream inputStream = resource.getInputStream();
+        if (inputStream == null)
+        {
+            throw new NullPointerException(
+                    "No resource found with name '" + resourceName + "'");
+        }
+        File tempFile = File.createTempFile(fullName, "."+libExtension);
+        tempFile.deleteOnExit();
+        OutputStream outputStream = null;
+        try
+        {
+            outputStream = new FileOutputStream(tempFile);
+            byte[] buffer = new byte[8192];
+            while (true)
+            {
+                int read = inputStream.read(buffer);
+                if (read < 0)
+                {
+                    break;
+                }
+                outputStream.write(buffer, 0, read);
+            }
+            outputStream.flush();
+            outputStream.close();
+            outputStream = null;
+            System.load(tempFile.toString());
+        }
+        finally
+        {
+            if (outputStream != null)
+            {
+                outputStream.close();
+            }
+        }
+    }
+
+
+    /**
+     * Adds the specified path to the java library path
+     *
+     * @param pathToAdd the path to add
+     * @throws Exception
+     */
+    public static void addLibraryPath(String pathToAdd) throws Exception {
+        final Field usrPathsField = ClassLoader.class.getDeclaredField("usr_paths");
+        usrPathsField.setAccessible(true);
+
+        //get array of paths
+        final String[] paths = (String[])usrPathsField.get(null);
+
+        //check if the path to add is already present
+        for(String path : paths) {
+            if(path.equals(pathToAdd)) {
+                return;
+            }
+        }
+
+        //add the new path
+        final String[] newPaths = Arrays.copyOf(paths, paths.length + 1);
+        newPaths[newPaths.length-1] = pathToAdd;
+        usrPathsField.set(null, newPaths);
     }
 
     /**

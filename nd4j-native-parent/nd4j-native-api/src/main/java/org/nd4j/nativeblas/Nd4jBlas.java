@@ -4,6 +4,7 @@ package org.nd4j.nativeblas;
 import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.annotation.Platform;
+import org.nd4j.nativeblas.util.LibUtils;
 
 /**
  * CBlas bindings
@@ -13,9 +14,16 @@ import org.bytedeco.javacpp.annotation.Platform;
  *
  *
  */
-@Platform(include="NativeBlas.h",link = "nd4j")
+@Platform(include="NativeBlas.h",preload = "nd4j",link = "nd4j")
 public class Nd4jBlas extends Pointer {
     static {
+        try {
+            LibUtils.addLibraryPath(System.getProperty("java.io.tmpdir"));
+            LibUtils.loadTempBinaryFile("nd4j");
+            LibUtils.loadTempBinaryFile("jniNativeOps");
+        }catch(Exception e) {
+            throw new RuntimeException(e);
+        }
         Loader.load();
     }
 
