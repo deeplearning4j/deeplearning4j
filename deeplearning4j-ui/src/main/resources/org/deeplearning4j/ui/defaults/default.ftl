@@ -43,6 +43,8 @@
                     color: #FFFFFF;
                 }
         </style>
+
+        <script src="/assets/default.js"></script>
     </head>
     <body>
     <table style="width: 100%; padding: 5px;" class="hd">
@@ -66,7 +68,7 @@
  -->
 <div style="width: 100%; text-align: center">
     <div class="block">
-        <!-- TSNE block -->
+        <!-- TSNE block. It's not session-dependant. -->
         <b>T-SNE</b><br/><br/>
         <a href="/tsne"><img src="/assets/i_plot.img" border="0" /></a><br/><br/>
         <div style="text-align: left; margin: 5px;">
@@ -92,14 +94,17 @@
     </div>
 
     <div class="block">
-        <!-- Histogram block -->
+        <!-- Histogram block. It's session-dependant block -->
         <b>Histo</b><br/><br/>
-        <a href="/weights"><img src="/assets/i_histo.img" border="0" /></a><br/><br/>
+        <a href="#" onclick="trackSessionHandle('HISTOGRAM','weights');"><img src="/assets/i_histo.img" border="0" /></a><br/><br/>
         <div style="text-align: left; margin: 5px;">
             &nbsp;Neural network scores retrieved from DL4j during training.
         </div>
     </div>
 </div>
 
+    <div id="sessionSelector" style="position: fixed; bottom: 0px; left:0px; right: 0px; z-index: 100;   background-color: rgba(0, 0, 0, 0.3); height: 120px;">
+            alpha
+    </div>
     </body>
 </html>

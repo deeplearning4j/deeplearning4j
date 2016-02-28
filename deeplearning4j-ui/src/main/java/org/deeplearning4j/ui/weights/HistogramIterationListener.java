@@ -200,7 +200,7 @@ public class HistogramIterationListener implements IterationListener {
 
 
             Response resp = target.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).post(Entity.entity(g,MediaType.APPLICATION_JSON));
-            log.debug("{}",resp);
+            log.info("{}",resp);
 
             if(openBrowser && firstIteration){
                 UiUtils.tryOpenBrowser(path,log);
