@@ -101,7 +101,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
         if(underlyingBuffer.dataType() == Type.DOUBLE) {
             if(underlyingBuffer.allocationMode() == AllocationMode.HEAP) {
-                this.offset = 0;
                 double[] underlyingArray = (double[]) underlyingBuffer.array();
                 this.doubleData = underlyingArray;
             }
@@ -116,7 +115,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
         }
         else if(underlyingBuffer.dataType() == Type.FLOAT) {
             if(underlyingBuffer.allocationMode() == AllocationMode.HEAP) {
-                this.offset = 0;
                 float[] underlyingArray = (float[]) underlyingBuffer.array();
                 this.floatData = underlyingArray;
             }
@@ -132,7 +130,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
         }
         else if(underlyingBuffer.dataType() == Type.INT) {
             if(underlyingBuffer.allocationMode() == AllocationMode.HEAP) {
-                this.offset = 0;
                 int[] underlyingArray = (int[]) underlyingBuffer.array();
                 this.intData = underlyingArray;
             }
@@ -1271,18 +1268,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             Type t = Type.valueOf(s.readUTF());
             if(t == Type.DOUBLE) {
                 if(allocationMode == AllocationMode.HEAP) {
-                    if (this.dataType() == Type.FLOAT) { //DataBuffer type
-                        // double -> float
-                        floatData = new float[length()];
-
-                    } else if (this.dataType() == Type.DOUBLE) {
-                        //double -> double
-                        doubleData = new double[length()];
-                    } else {
-                        //double -> int
-                        intData = new int[length()];
-
-                    }
+                    doubleData = new double[length()];
                     for(int i = 0; i < length(); i++) {
                         put(i,s.readDouble());
                     }
@@ -1298,18 +1284,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             }
             else if(t == Type.FLOAT) {
                 if(allocationMode == AllocationMode.HEAP) {
-                    if (this.dataType() == Type.FLOAT) { //DataBuffer type
-                        // double -> float
-                        floatData = new float[length()];
-
-                    } else if (this.dataType() == Type.DOUBLE) {
-                        //double -> double
-                        doubleData = new double[length()];
-                    } else {
-                        //double -> int
-                        intData = new int[length()];
-
-                    }
+                    floatData = new float[length()];
                     for(int i = 0; i < length(); i++) {
                         put(i,s.readFloat());
                     }
@@ -1325,16 +1300,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             }
             else {
                 if(allocationMode == AllocationMode.HEAP) {
-                    if (this.dataType() == Type.FLOAT) { //DataBuffer type
-                        // float -> float
-                        floatData = new float[length()];
-                    } else if (this.dataType() == Type.DOUBLE) {
-                        //float -> double
-                        doubleData = new double[length()];
-                    } else {
-                        //float-> int
-                        intData = new int[length()];
-                    }
+                    intData = new int[length()];
                     for(int i = 0; i < length(); i++) {
                         put(i,s.readInt());
                     }
