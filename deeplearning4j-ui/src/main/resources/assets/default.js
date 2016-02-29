@@ -23,14 +23,13 @@ function trackSessionHandle(event, url) {
         return false;
     }
 
-    console.log("Number of events: " + sessions.length);
-    console.log("Session[0]: " + sessions[0])
-/*
+    console.log("Number of events for [" + event + "]: " + sessions.length);
+
     if (sessions.length == 1) {
         window.location.href = (url + "?sid=" + sessions[0]);
+    } else {
+        showSessionSelector(sessions, url);
     }
-    */
-    showSessionSelector(sessions, url);
 }
 
 
@@ -38,8 +37,9 @@ function showSessionSelector(sessions, url) {
 
     var html = "";
     for (var i = 0; i < sessions.length; i++) {
-        html = html + "<a href='" + url + "?sid="+sessions[i]+"'>"+ sessions[i]+"</a>";
+        html = html + "<tr><td style='width: 100%;'><a href='" + url + "?sid="+encodeURIComponent(sessions[i])+"'>"+ sessions[i]+"</a></td></tr>";
     }
+
     $("#sessionList").html(html);
     $("#sessionSelector").css("display","block");
 }
