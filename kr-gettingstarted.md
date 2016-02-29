@@ -30,7 +30,7 @@ Deeplearning4j를 위한 필수 사항 설치는 DL4J가 사용하는 자바 기
 
 ### <a name="linux">Linux</a>
 
-* CPU 연산을 위한 다양한 종류의 Blas를 지원하려면 Blas와 CPU의 네이티브 바인딩(native bindings)이 필요합니다.
+* Deeplearning4j는 효율적인 CPU 연산을 위해 다양한 종류의 Blas를 지원합니다. 따라서 각 Blas와 CPU의 네이티브 바인딩(native bindings)이 필요합니다.
 
         Fedora/RHEL
         yum -y install blas
