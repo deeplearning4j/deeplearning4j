@@ -38,7 +38,7 @@ To perform regression with a neural network in Deeplearning4j, you would [set up
 
 `nOut` is the number of nodes in any layer. `nIn` is the number of features being passed from the previous layer -- in the diagram above it would be 4. `activationFunction` should be set to `'identity'`.
 
-Here's a more complete example of [using a neural network for regression](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/regression/RegressionMathFunctions.java) in order to approximate simple mathematical functions. 
+Here's a more complete example of [using a neural network for regression](https://github.com/deeplearning4j/dl4j-0.4-examples/tree/master/src/main/java/org/deeplearning4j/examples/feedforward/regression) in order to approximate simple mathematical functions. 
 
 ### Other Resources
 

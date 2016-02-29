@@ -15,26 +15,25 @@ Loading the network is also done in two (or three) steps.
 
 ## <a name="vector">Save an Interoperable Vector of All Weights</a>
 
-Please see [this code sample](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/deepbelief/DBNIrisExample.java#L127) for an example of how to save and reload a model.
+See the code sample below, for an example of how to save and reload a model.
 
         //Write the network parameters:
-        OutputStream fos = Files.newOutputStream(Paths.get("coefficients.bin"));
-        DataOutputStream dos = new DataOutputStream(fos);
-        Nd4j.write(model.params(), dos);
-        dos.flush();
-        dos.close();
-        
+        try(DataOutputStream dos = new DataOutputStream(Files.newOutputStream(Paths.get("coefficients.bin")))){
+            Nd4j.write(net.params(),dos);
+        }
+
         //Write the network configuration:
-        FileUtils.write(new File("conf.json"), model.getLayerWiseConfigurations().toJson());
-        
+        FileUtils.write(new File("conf.json"), net.getLayerWiseConfigurations().toJson());
+
         //Load network configuration from disk:
         MultiLayerConfiguration confFromJson = MultiLayerConfiguration.fromJson(FileUtils.readFileToString(new File("conf.json")));
-        
+
         //Load parameters from disk:
-        DataInputStream dis = new DataInputStream(new FileInputStream("coefficients.bin"));
-        INDArray newParams = Nd4j.read(dis);
-        dis.close();
-        
+        INDArray newParams;
+        try(DataInputStream dis = new DataInputStream(new FileInputStream("coefficients.bin"))){
+            newParams = Nd4j.read(dis);
+        }
+
         //Create a MultiLayerNetwork from the saved configuration and parameters
         MultiLayerNetwork savedNetwork = new MultiLayerNetwork(confFromJson);
         savedNetwork.init();

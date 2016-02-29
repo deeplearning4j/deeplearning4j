@@ -121,6 +121,6 @@ final int numRows = 28;
             DataSet next = iter.next();
             model.fit(new DataSet(next.getFeatureMatrix(),next.getFeatureMatrix()));
 
-To construct a deep autoencoder, please make sure you have the most recent version of [Deeplearning4j and its examples](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/deepbelief/DeepAutoEncoderExample.java), which are at 0.4.x.
+To construct a deep autoencoder, please make sure you have the most recent version of [Deeplearning4j and its examples](https://github.com/deeplearning4j/dl4j-0.4-examples/tree/master/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief), which are at 0.4.x.
 
 For questions about Deep Autoencoders, contact us on [Gitter](https://gitter.im/deeplearning4j/deeplearning4j). 

@@ -192,22 +192,22 @@ Suppose we have 10 time series in our training data, represented by 20 files: 10
 
 To use the [SequenceRecordReaderDataSetIterator](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/datasets/canova/SequenceRecordReaderDataSetIterator.java) and [CSVSequenceRecordReader](https://github.com/deeplearning4j/Canova/blob/master/canova-api/src/main/java/org/canova/api/records/reader/impl/CSVSequenceRecordReader.java) approaches, we first create two CSVSequenceRecordReader objects, one for input and one for labels:
 
-   SequenceRecordReader featureReader = new CSVSequenceRecordReader(1, ",");
-   SequenceRecordReader labelReader = new CSVSequenceRecordReader(1, ",");
+	SequenceRecordReader featureReader = new CSVSequenceRecordReader(1, ",");
+	SequenceRecordReader labelReader = new CSVSequenceRecordReader(1, ",");
 
 This particular constructor takes the number of lines to skip (1 row skipped here), and the delimiter (comma character used here).
 
 Second, we need to initialize these two readers, by telling them where to get the data from. We do this with an InputSplit object.
 Suppose that our time series are numbered, with file names "myInput_0.csv", "myInput_1.csv", ..., "myLabels_0.csv", etc. One approach is to use the [NumberedFileInputSplit](https://github.com/deeplearning4j/Canova/blob/master/canova-api/src/main/java/org/canova/api/split/NumberedFileInputSplit.java):
 
-   featureReader.initialize(new NumberedFileInputSplit("/path/to/data/myInput_%d.csv", 0, 9));
-   labelReader.initialize(new NumberedFileInputSplit(/path/to/data/myLabels_%d.csv", 0, 9));
+	featureReader.initialize(new NumberedFileInputSplit("/path/to/data/myInput_%d.csv", 0, 9));
+	labelReader.initialize(new NumberedFileInputSplit(/path/to/data/myLabels_%d.csv", 0, 9));
 
 In this particular approach, the "%d" is replaced by the corresponding number, and the numbers 0 to 9 (both inclusive) are used.
 
 Finally, we can create our SequenceRecordReaderdataSetIterator:
 
-   DataSetIterator iter = new SequenceRecordReaderDataSetIterator(featureReader, labelReader, miniBatchSize, numPossibleLabels, regression);
+	DataSetIterator iter = new SequenceRecordReaderDataSetIterator(featureReader, labelReader, miniBatchSize, numPossibleLabels, regression);
 
 This DataSetIterator can then be passed to MultiLayerNetwork.fit() to train the network.
 
@@ -230,15 +230,15 @@ As of DL4J 0.4-rc3.8, this approach has the restriction of a single column for t
 
 In this case, we create and initialize a single reader. Again, we are skipping one header row, and specifying the format as comma delimited, and assuming our data files are named "myData_0.csv", ..., "myData_9.csv":
 
-   SequenceRecordReader reader = new CSVSequenceRecordReader(1, ",");
-   reader.initialize(new NumberedFileInputSplit("/path/to/data/myData_%d.csv", 0, 9));
-   DataSetIterator iterClassification = new SequenceRecordReaderDataSetIterator(reader, miniBatchSize, numPossibleLabels, labelIndex, false);
+	SequenceRecordReader reader = new CSVSequenceRecordReader(1, ",");
+	reader.initialize(new NumberedFileInputSplit("/path/to/data/myData_%d.csv", 0, 9));
+	DataSetIterator iterClassification = new SequenceRecordReaderDataSetIterator(reader, miniBatchSize, numPossibleLabels, labelIndex, false);
 
 `miniBatchSize` and `numPossibleLabels` are the same as the previous example. Here, `labelIndex` specifies which column the labels are in. For example, if the labels are in the fifth column, use labelIndex = 4 (i.e., columns are indexed 0 to numColumns-1).
 
 For regression on a single output value, we use:
 
-  DataSetIterator iterRegression = new SequenceRecordReaderDataSetIterator(reader, miniBatchSize, -1, labelIndex, true);
+	DataSetIterator iterRegression = new SequenceRecordReaderDataSetIterator(reader, miniBatchSize, -1, labelIndex, true);
 
 Again, the numPossibleLabels argument is not used for regression.
 
@@ -248,7 +248,7 @@ Following on from the previous two examples, suppose that for each example indiv
 
 We can use the same approach (CSVSequenceRecordReader and SequenceRecordReaderDataSetIterator), though with a different constructor:
 
-   DataSetIterator variableLengthIter = new SequenceRecordReaderDataSetIterator(featureReader, labelReader, miniBatchSize, numPossibleLabels, regression, SequenceRecordReaderDataSetIterator.AlignmentMode.ALIGN_END);
+	DataSetIterator variableLengthIter = new SequenceRecordReaderDataSetIterator(featureReader, labelReader, miniBatchSize, numPossibleLabels, regression, SequenceRecordReaderDataSetIterator.AlignmentMode.ALIGN_END);
 
 The argument here are the same as in the previous example, with the exception of the AlignmentMode.ALIGN_END addition. This alignment mode input tells the SequenceRecordReaderDataSetIterator to expect two things:
 
@@ -270,7 +270,7 @@ We can also use the AlignmentMode functionality in example 3 to implement a many
 
 In fact, the same approach as in example 3 can do this:
 
-   DataSetIterator variableLengthIter = new SequenceRecordReaderDataSetIterator(featureReader, labelReader, miniBatchSize, numPossibleLabels, regression, SequenceRecordReaderDataSetIterator.AlignmentMode.ALIGN_END);
+	DataSetIterator variableLengthIter = new SequenceRecordReaderDataSetIterator(featureReader, labelReader, miniBatchSize, numPossibleLabels, regression, SequenceRecordReaderDataSetIterator.AlignmentMode.ALIGN_END);
 
 Alignment modes are relatively straightforward. They specify whether to pad the start or the end of the shorter time series. The diagram below shows how this works, along with the masking arrays (as discussed earlier in this document):
 
@@ -291,9 +291,9 @@ For example of this approach in practice, see the the iterator for the [tex/char
 
 ## <a name="examples">Examples</a>
 
-DL4J currently has three recurrent neural network examples:
+DL4J currently has the following [recurrent neural network examples](https://github.com/deeplearning4j/dl4j-0.4-examples/tree/master/src/main/java/org/deeplearning4j/examples/recurrent):
 
-* A [character modelling example](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/rnn/GravesLSTMCharModellingExample.java), which generates Shakespearean prose, one character at a time
-* A [basic video frame classification example](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/video/VideoClassificationExample.java), that imports videos (.mp4 format) and classifies the shapes present in each frame
-* A [word2vec sequence classification example](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/word2vec/sentiment/Word2VecSentimentRNN.java) that uses pre-trained word vectors and a RNN to classify movie reviews as either positive or negative.
+* A [character modelling example](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java), which generates Shakespearean prose, one character at a time
+* A [basic video frame classification example](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/video/VideoClassificationExample.java), that imports videos (.mp4 format) and classifies the shapes present in each frame
+* A [word2vec sequence classification example](https://github.com/deeplearning4j/dl4j-0.4-examples/tree/master/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment) that uses pre-trained word vectors and a RNN to classify movie reviews as either positive or negative.
 

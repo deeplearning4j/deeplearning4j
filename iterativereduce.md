@@ -7,7 +7,7 @@ layout: default
 
 Understanding Iterative Reduce is easier if you start with its simpler predecessor, MapReduce. 
 
-## MadReduce
+## MapReduce
 
 MapReduce is a technique for processing very large datasets simultaneously over many cores. Jeff Dean of Google introduced the method in a [2004 research paper](https://static.googleusercontent.com/media/research.google.com/en/us/archive/mapreduce-osdi04.pdf), and Doug Cutting implemented a similar structure a year later at Yahoo. Cutting's project would eventually become [Apache Hadoop](https://hadoop.apache.org/). Both projects were created to batch index the Web, and have since found many other applications. 
 
