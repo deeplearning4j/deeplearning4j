@@ -11,7 +11,7 @@ The main difference in updaters is how they treat the learning rate.
 
 ## Stochastic Gradient Descent
 
-θt+1=θt−αδL(θt)θt+1=θt−αδL(θt)
+![Alt text](../img/udpater_math1.png)
 
 `Theta` (weights) is getting changed according to the gradient of the loss with respect to theta.
 
