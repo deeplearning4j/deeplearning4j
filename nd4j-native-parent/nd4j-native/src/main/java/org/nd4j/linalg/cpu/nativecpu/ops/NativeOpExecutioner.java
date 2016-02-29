@@ -177,7 +177,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             op.opNum()
                             , op.x().data().address(),
                             op.x().shapeInfoDataBuffer().address(),
-                            op.extraArgsDataBuff().address()));
+                            getAddressForExtraArgs(op)));
                 }
                 else {
                     loop.execSummaryStatsDouble(
@@ -226,7 +226,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             op.opNum(),
                             op.x().data().address(),
                             op.x().shapeInfoDataBuffer().address(),
-                            op.extraArgsDataBuff().address()));
+                            getAddressForExtraArgs(op)));
                 }
                 else {
                     loop.execReduceFloat(
@@ -249,7 +249,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             op.opNum()
                             , op.x().data().address(),
                             op.x().shapeInfoDataBuffer().address(),
-                            op.extraArgsDataBuff().address()));
+                            getAddressForExtraArgs(op)));
                 }
                 else {
                     loop.execSummaryStatsFloat(
@@ -296,7 +296,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             op.opNum(),
                             op.x().data().address(),
                             op.x().shapeInfoDataBuffer().address(),
-                            op.extraArgsDataBuff().address()));
+                            getAddressForExtraArgs(op)));
                 }
                 else {
                     loop.execReduceFloat(
@@ -331,7 +331,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         op.z().data().address(),
                         op.z().shapeInfoDataBuffer().address(),
                         op.scalar().doubleValue(),
-                        op.extraArgsDataBuff().address());
+                        getAddressForExtraArgs(op));
             }
             else {
                 loop.execScalarFloat(
@@ -342,7 +342,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         op.z().data().address(),
                         op.z().shapeInfoDataBuffer().address(),
                         op.scalar().floatValue(),
-                        op.extraArgsDataBuff().address());
+                        getAddressForExtraArgs(op));
 
             }
         }
@@ -386,7 +386,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                 op.y().shapeInfoDataBuffer().address(),
                                 op.z().data().address(),
                                 op.z().shapeInfoDataBuffer().address(),
-                                op.extraArgsDataBuff().address());
+                                getAddressForExtraArgs(op));
                     }
 
                 }
@@ -409,7 +409,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                 op.x().shapeInfoDataBuffer().address(),
                                 op.z().data().address(),
                                 op.z().shapeInfoDataBuffer().address(),
-                                op.extraArgsDataBuff().address());
+                                getAddressForExtraArgs(op));
                     }
 
                 }
@@ -439,7 +439,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                 op.y().shapeInfoDataBuffer().address(),
                                 op.z().data().address(),
                                 op.z().shapeInfoDataBuffer().address(),
-                                op.extraArgsDataBuff().address());
+                                getAddressForExtraArgs(op));
                     }
 
                 }
@@ -460,7 +460,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                 op.x().shapeInfoDataBuffer().address(),
                                 op.z().data().address(),
                                 op.z().shapeInfoDataBuffer().address(),
-                                op.extraArgsDataBuff().address());
+                                getAddressForExtraArgs(op));
                     }
 
                 }
@@ -505,7 +505,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         dummy,
                         op.opNum(),
                         op.x().data().address()
-                        ,op.x().shapeInfoDataBuffer().address(), op.extraArgsDataBuff().address()));
+                        ,op.x().shapeInfoDataBuffer().address(), getAddressForExtraArgs(op)));
 
             }
             else {
@@ -514,7 +514,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         op.opNum(),
                         op.x().data().address()
                         ,op.x().shapeInfoDataBuffer().address(),
-                        op.extraArgsDataBuff().address()));
+                        getAddressForExtraArgs(op)));
             }
 
         }
@@ -533,7 +533,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             dummy,
                             op.opNum(),
                             op.x().data().address()
-                            ,op.x().shapeInfoDataBuffer().address(), op.extraArgsDataBuff().address()));
+                            ,op.x().shapeInfoDataBuffer().address(), getAddressForExtraArgs(op)));
                 }
                 else if(op.y() != null) {
                     op.setFinalResult(loop.execReduce3ScalarDouble(
@@ -548,7 +548,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             dummy,
                             op.opNum(),
                             op.x().data().address()
-                            ,op.x().shapeInfoDataBuffer().address(), op.extraArgsDataBuff().address()));
+                            ,op.x().shapeInfoDataBuffer().address(), getAddressForExtraArgs(op)));
                 }
             }
             else {
