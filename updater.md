@@ -25,8 +25,7 @@ Now, the gradient of the loss (L) changes quickly after each iteration due to th
 
 To overcome this, we introduce `momentum`. Basically taking knowledge from previous steps about where we should be heading. We are introducing a new hyperparameter μμ
 
-vt+1=μvt−αδL(θt)vt+1=μvt−αδL(θt)
-θt+1=θt+vt+1θt+1=θt+vt+1
+![Alt text](../img/udpater_math2.png)
 
 We will use the concept of momentum again later.  (Don't confuse it with moment, which is also used later.)
 
@@ -38,8 +37,7 @@ This is the image of SGD equipped with momentum.
 
 Adagrad scales alpha for each parameter according to the history of gradients (previous steps) for that parameter which is basically done by dividing current gradient in update rule by the sum of previous gradients. As a result, what happens is that when the gradient is very large, alpha is reduced and vice-versa.
 
-gt+1=gt+δL(θt)2gt+1=gt+δL(θt)2
-θt+1=θt−αδL(θ)2gt+1‾‾‾‾√+ϵθt+1=θt−αδL(θ)2gt+1+ϵ
+![Alt text](../img/udpater_math3.png)
 
 ## RMSProp
 
