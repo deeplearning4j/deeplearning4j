@@ -48,7 +48,7 @@ Deeplearning4j는 자바(Java)와 스칼라(Scala)를 위해 작성된 오픈소
 
 # 스카이마인드의 인력 채용
 
-저희는 각종 오픈 소스 프로젝트에 기여한 개발자를 주로 채용합니다. 저희와 함께 딥러닝의 미래를 만들고 싶으신 분은 [Gitter](https://gitter.im/deeplearning4j/deeplearning4j)에서 저희의 커뮤니티에 가입하시고, [Github](https://github.com/deeplearning4j)에서 저희를 프로젝트를 fork한 뒤, 저희와 함께 작업할 수 있는 문제를 찾으면서 서로를 이해할 수 있을 것 입니다. 같이 일을 해 보는 것은 어떤 인터뷰보다도 정확합니다. 심지어 종종 재미있기도 하구요 :)
+저희는 저희가 관리하는 오픈 소스 프로젝트에 기여한 개발자를 채용합니다. 저희와 함께 딥러닝의 미래를 만들고 싶으신 분은 [Gitter](https://gitter.im/deeplearning4j/deeplearning4j)에서 저희의 커뮤니티에 가입하시고, [Github](https://github.com/deeplearning4j)에서 저희를 프로젝트를 fork한 뒤, 저희와 함께 작업할 수 있는 문제를 찾으면서 서로를 이해할 수 있을 것 입니다. 같이 일을 해 보는 것은 어떤 인터뷰보다도 정확합니다. 심지어 종종 재미있기도 하구요 :)
 
 ## Deeplearning4j 인용 방법
 
