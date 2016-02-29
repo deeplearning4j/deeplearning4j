@@ -12,9 +12,9 @@ title : "Deeplearning4j: Open-source, distributed deep learning for the JVM"
 tagline: Deep Learning for Java
 author :
   name : Skymind Inc.
-  email : chris@skymind.io
-  github : SkymindIO/deeplearning4j
-  twitter : dl4j1
+  email : help@skymind.io
+  github : deeplearning4j/deeplearning4j
+  twitter : deeplearning4j
   feedburner : feedname
 
 # The production_url is only used when full-domain names are needed
