@@ -52,6 +52,10 @@ public class TsneResource extends FileResource {
         super(filePath);
     }
 
+    public TsneResource() {
+
+    }
+
     @GET
     public View get() {
         return new TsneView();
