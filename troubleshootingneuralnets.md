@@ -61,7 +61,7 @@ Regularization methods can help to avoid overfitting during training. Overfittin
 Common types of regularization include:
 
 - l1 and l2 regularization penalizes large network weights, and avoids weights becoming too large. Some level of l2 regularization is commonly used in practice. However, note that if the l1 or l2 regularization coefficients are too high, they may over-penalize the network, and stop it from learning. Common values for l2 regularization are 1e-3 to 1e-6.
-- [Dropout](../glossary.html#dropout), is a frequently used regularization method can be very effective
+- [Dropout](../glossary.html#dropout), is a frequently used regularization method can be very effective. Dropout is most commoly used with a dropout rate of 0.5.
 - Dropconnect (conceptually similar to dropout, but used much less frequently)
 - Restricting the total number of network size (i.e., limit the number of layers and size of each layer)
 - [Early stopping](http://deeplearning4j.org/earlystopping)

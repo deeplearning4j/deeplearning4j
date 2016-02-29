@@ -41,7 +41,7 @@ There are four components to this display:
 
 ## <a name="usingui">Using the UI to Tune Your Network</a>
 
-And here's an excellent [web page by Andrej Karpathy](http://cs231n.github.io/neural-networks-3/#baby) about visualizing neural net training.
+Here's an excellent [web page by Andrej Karpathy](http://cs231n.github.io/neural-networks-3/#baby) about visualizing neural net training.
 
 Here's some basics to get you started:
 

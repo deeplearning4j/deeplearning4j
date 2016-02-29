@@ -9,7 +9,7 @@ Deeplearning4j's examples run on benchmark datasets that don't present any obsta
 
 *Canova* is our machine-learning vectorization library, and it is useful for customizing how you prepare data that a neural net can learn. (The [Canova Javadoc is here](http://deeplearning4j.org/canovadoc/).)
 
-This tutorial will walk through how it loads *Labeled Faces in the Wild*, a supervised set of 13,233 photographs representing 5,749 relatively famous people. (The full code example [lives on Github](https://github.com/deeplearning4j/Canova-examples/blob/master/src/main/java/datapipelines/ImageClassifierExample.java).)
+This tutorial will walk through how it loads *Labeled Faces in the Wild*, a supervised set of 13,233 photographs representing 5,749 relatively famous people.
 
 ## Introductory Video
 
@@ -42,7 +42,7 @@ The following code helps transform raw images into a format that will work well 
 
 The RecordReader is a class in Canova that helps convert the byte-oriented input into data that's oriented toward a record; i.e. a collection of elements that are fixed in number and indexed with a unique ID. Converting data to records is the process of vectorization. The record itself is a vector, each element of which is a feature.
 
-The [ImageRecordReader](https://github.com/deeplearning4j/Canova/blob/f03f32dd42f14af762bf443a04c4cfdcc172ac83/canova-nd4j/canova-nd4j-image/src/main/java/org/canova/image/recordreader/ImageRecordReader.java) is a subclass of the RecordReader and is built to automatically take in 28 x 28 pixel images. Thus, LFW images are scaled to 28 pixels x 28 pixels. You can change dimensions to match your custom images by changing the parameters fed to the ImageRecordReader, as long as you make sure to adjust the `nIn` hyperparameter, which will be equal to the product of image height x image width. 
+The [ImageRecordReader](https://github.com/deeplearning4j/Canova/blob/master/canova-nd4j/canova-nd4j-image/src/main/java/org/canova/image/recordreader/ImageRecordReader.java) is a subclass of the RecordReader and is built to automatically take in 28 x 28 pixel images. Thus, LFW images are scaled to 28 pixels x 28 pixels. You can change dimensions to match your custom images by changing the parameters fed to the ImageRecordReader, as long as you make sure to adjust the `nIn` hyperparameter, which will be equal to the product of image height x image width. 
 
 Other parameters shown above include `true`, which instructs the reader to append a label to the record, and `labels`, which is the array of supervised values (e.g. targets) used to validate neural net model results. Here are all the RecordReader extensions that come pre-built with Canova (you can find them by right-clicking on `RecordReader` in IntelliJ, clicking `Go To` in the drop-down menu, and selection `Implementations`):
 
@@ -53,7 +53,7 @@ The DataSetIterator is a Deeplearning4J class that traverses the elements of a l
         // Canova to DL4J
         DataSetIterator iter = new RecordReaderDataSetIterator(recordReader, 784, labels.size());
 
-The DataSetIterator iterates through input datasets, fetching one or more new examples with each iteration, and loading those examples into a DataSet object that neural nets can work with. The line above also tells the [RecordReaderDataSetIterator](https://github.com/deeplearning4j/deeplearning4j/blob/3e5c6a942864ced574c7715ae548d5e3cb22982c/deeplearning4j-core/src/main/java/org/deeplearning4j/datasets/canova/RecordReaderDataSetIterator.java) to convert the image to a straight line (e.g. vector) of elements, rather than a 28 x 28 grid (e.g. matrix); it also specifies the number of labels possible.
+The DataSetIterator iterates through input datasets, fetching one or more new examples with each iteration, and loading those examples into a DataSet object that neural nets can work with. The line above also tells the [RecordReaderDataSetIterator](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/datasets/canova/RecordReaderDataSetIterator.java) to convert the image to a straight line (e.g. vector) of elements, rather than a 28 x 28 grid (e.g. matrix); it also specifies the number of labels possible.
 
 `RecordReaderDataSetIterator` can take as parameters the specific recordReader you want (for images, sound, etc.) and the batch size. For supervised learning, it will also take a label index and the number of possible labels that can be applied to the input (for LFW, the number of labels is 5,749). 
 
@@ -116,5 +116,3 @@ An alternative approach to apply cross validation in this effort, would be to lo
         DataSet test = testAndTrain.getTest();
 
 To split test and train on large datasets, you'll have to iterate through both the test and training datasets. For the moment, we'll leave that to you. 
-
-To load two types of images, just put each kind in its own folder, following [this example](https://github.com/deeplearning4j/Canova-examples/blob/master/src/main/java/datapipelines/ImageClassifierExample.java).

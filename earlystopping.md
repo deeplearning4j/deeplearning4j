@@ -85,6 +85,7 @@ You can of course implement your own iteration and epoch termination conditions.
 
 Final notes:
 
+* Here's a [very simple example using early stopping](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/misc/earlystopping/EarlyStoppingMNIST.java)
 * [These unit tests](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/earlystopping/TestEarlyStopping.java) may also be useful.
 * Conducting early stopping training on Spark is also possible. The network configuration is the same; however, instead of using the EarlyStoppingTrainer as above, use the [SparkEarlyStoppingTrainer](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-scaleout/spark/dl4j-spark/src/main/java/org/deeplearning4j/spark/earlystopping/SparkEarlyStoppingTrainer.java)
   *  [These unit tests](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-scaleout/spark/dl4j-spark/src/test/java/org/deeplearning4j/spark/TestEarlyStoppingSpark.java) may also be useful for using early stopping on Spark.

@@ -64,7 +64,7 @@ Given a series of letters, a recurrent *will* use the first character to help de
 
 Since recurrent nets span time, they are probably best illustrated with animation (the first vertical line of nodes to appear can be thought of as a feedforward network, which becomes recurrent as it unfurls over time). 
 
-<iframe src="https://i.imgur.com/6Uak4vF.gifv" width="100%" height="630px;" style="border:none;"></iframe>
+<iframe src="https://i.imgur.com/6Uak4vF.gif" width="100%" height="630px;" style="border:none;"></iframe>
 
 In the [diagram above](https://i.imgur.com/6Uak4vF.gifv), each `x` is an input example, `w` is the weights that filter inputs, `a` is the activation of the hidden layer (a combination of weighted input and the previous hidden state), and `b` is the output of the hidden layer after it has been transformed, or squashed, using a rectified linear or sigmoid unit. 
 
@@ -162,7 +162,7 @@ A gated recurrent unit (GRU) is basically an LSTM without an output gate, which 
 
 ## <a name="code">Code Sample</a>
 
-A [commented example of a Graves LSTM](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/rnn/GravesLSTMCharModellingExample.java) learning how to replicate Shakespearian drama, and implemented with Deeplearning4j, can be found here. The API is commented where it's not self-explanatory. If you have questions, please join us on [Gitter](https://gitter.im/deeplearning4j/deeplearning4j).
+A [commented example of a Graves LSTM](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java) learning how to replicate Shakespearian drama, and implemented with Deeplearning4j, can be found here. The API is commented where it's not self-explanatory. If you have questions, please join us on [Gitter](https://gitter.im/deeplearning4j/deeplearning4j).
 
 ## <a name="tuning">LSTM Hyperparameter Tuning</a>
 
