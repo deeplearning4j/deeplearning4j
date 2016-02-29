@@ -4680,6 +4680,9 @@ public class Nd4j {
     public void initWithBackend(Nd4jBackend backend) {
         try {
             props = Nd4jContext.getInstance().getConf();
+            InputStream is = backend.getConfigurationResource().getInputStream();
+            Nd4jContext.getInstance().updateProperties(is);
+            is.close();
             String otherDtype = System.getProperty(DTYPE, props.get(DTYPE).toString());
             dtype = otherDtype.equals("float") ? DataBuffer.Type.FLOAT : DataBuffer.Type.DOUBLE;
             copyOnOps = Boolean.parseBoolean(props.getProperty(COPY_OPS, "true"));
