@@ -71,6 +71,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected transient int originalOffset = 0;
     protected transient Long trackingPoint;
 
+    public BaseDataBuffer() {
+    }
+
     /**
      * Meant for creating another view of a buffer
      * @param underlyingBuffer the underlying buffer to create a view from
@@ -102,7 +105,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
         if(underlyingBuffer.dataType() == Type.DOUBLE) {
             if(underlyingBuffer.allocationMode() == AllocationMode.HEAP) {
                 double[] underlyingArray = (double[]) underlyingBuffer.array();
-                this.doubleData = underlyingArray;
+                if(underlyingArray != null)
+                    this.doubleData = underlyingArray;
+                else
+                    this.wrappedBuffer = underlyingBuffer.asNio();
             }
             else if(underlyingBuffer.allocationMode() == AllocationMode.JAVACPP) {
                 pointer = new JavaCppDoublePointer(length());
@@ -116,7 +122,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
         else if(underlyingBuffer.dataType() == Type.FLOAT) {
             if(underlyingBuffer.allocationMode() == AllocationMode.HEAP) {
                 float[] underlyingArray = (float[]) underlyingBuffer.array();
-                this.floatData = underlyingArray;
+                if(underlyingArray != null)
+                    this.floatData = underlyingArray;
+                else
+                    this.wrappedBuffer = underlyingBuffer.asNio();
             }
             else if(underlyingBuffer.allocationMode() == AllocationMode.JAVACPP) {
                 pointer = underlyingBuffer.pointer();
@@ -131,7 +140,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
         else if(underlyingBuffer.dataType() == Type.INT) {
             if(underlyingBuffer.allocationMode() == AllocationMode.HEAP) {
                 int[] underlyingArray = (int[]) underlyingBuffer.array();
-                this.intData = underlyingArray;
+                if(underlyingArray != null)
+                    this.intData = underlyingArray;
+                else
+                    this.wrappedBuffer = underlyingBuffer.asNio();
             }
             else if(underlyingBuffer.allocationMode() == AllocationMode.JAVACPP) {
                 pointer = underlyingBuffer.pointer();
@@ -1350,7 +1362,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
             return floatData;
         if(doubleData != null)
             return doubleData;
-        throw new UnsupportedOperationException();
+        else if (intData != null)
+            return intData;
+        return null;
     }
 
     @Override
