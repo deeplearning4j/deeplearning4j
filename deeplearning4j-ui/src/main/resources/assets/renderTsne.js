@@ -143,7 +143,7 @@ function drawEmbedding() {
     var zoomListener = d3.behavior.zoom()
         .x(fx)
         .y(fy)
-        .scaleExtent([0.000001, 1000])
+        .scaleExtent([0.00000001, 100000])
         .center([0,0])
         .on("zoom", zoomHandler);
     zoomListener(svg);
