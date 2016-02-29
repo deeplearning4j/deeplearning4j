@@ -19,7 +19,7 @@ The main difference in updaters is how they treat the learning rate.
 
 Now, the gradient of the loss (L) changes quickly after each iteration due to the diversity of each training example. Have a look at the convergence below. We are taking small steps but they are quite zig-zag (even though we slowly reach to a loss minima).
 
-IMAGE
+![Alt text](../img/udpater_1.png)
 
 ## Momentum
 
@@ -30,7 +30,7 @@ vt+1=μvt−αδL(θt)vt+1=μvt−αδL(θt)
 
 We will use the concept of momentum again later.  (Don't confuse it with moment, which is also used later.)
 
-IMAGE
+![Alt text](../img/udpater_2.png)
 
 This is the image of SGD equipped with momentum.
 
