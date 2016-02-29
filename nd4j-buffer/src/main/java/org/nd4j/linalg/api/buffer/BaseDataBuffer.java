@@ -577,11 +577,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
     @Override
     public long address() {
         switch(allocationMode) {
-            case JAVACPP: return pointer.address();
+            case JAVACPP: return pointer.address() + getElementSize() * offset();
             case DIRECT:
                 if(wrappedBuffer.isDirect())
                     try {
-                        return  UnsafeHolder.getUnsafe().objectFieldOffset(UnsafeHolder.getAddressField());
+                        return  UnsafeHolder.getUnsafe().objectFieldOffset(UnsafeHolder.getAddressField()) + getElementSize() * offset();
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
