@@ -54,17 +54,16 @@ If you have any questions, please join [us on Gitter](https://gitter.im/deeplear
 
 ### Deeplearning4j Tutorials
 
-* [Introduction to Deep Neural Networks](../neuralnet-overview.html)
-* [Convolutional Networks Tutorial](../convolutionalnets.html)
-* [LSTM and Recurrent Network Tutorial](../lstm.html)
-* [Using Recurrent Nets With DL4J](../usingrnns.html)
-* [Deep-Belief Networks With MNIST](../mnist-tutorial.html)
-* [IRIS Flower Dataset Tutorial](../iris-flower-dataset-tutorial.html)
-* [Facial Reconstruction With Labeled Faces in the Wild](../facial-reconstruction-tutorial.html)
-* [Customizing Data Pipelines With Canova](../image-data-pipeline.html)
-* [Restricted Boltzmann machines](../restrictedboltzmannmachine.html)
-* [Eigenvectors, PCA and Entropy](../eigenvector.html)
-* [A Glossary of Deep-Learning Terms](../glossary.html)
+* [Introduction to Deep Neural Networks](../neuralnet-overview)
+* [Convolutional Networks Tutorial](../convolutionalnets)
+* [LSTM and Recurrent Network Tutorial](../lstm)
+* [Using Recurrent Nets With DL4J](../usingrnns)
+* [Deep-Belief Networks With MNIST](../mnist-tutorial)
+* [Facial Reconstruction With Labeled Faces in the Wild](../facial-reconstruction-tutorial)
+* [Customizing Data Pipelines With Canova](../image-data-pipeline)
+* [Restricted Boltzmann machines](../restrictedboltzmannmachine)
+* [Eigenvectors, PCA and Entropy](../eigenvector)
+* [A Glossary of Deep-Learning Terms](../glossary)
 
 ### User Testimonial
 
@@ -74,8 +73,9 @@ If you have any questions, please join [us on Gitter](https://gitter.im/deeplear
 
 ### Contributing to Deeplearning4j
 
-Developers who would like to contribute to Deeplearning4j can get started by reading our [Developer's Guide](../devguide.html).
+Developers who would like to contribute to Deeplearning4j can get started by reading our [Developer's Guide](../devguide).
 
 ### Research With Deeplearning4j
 
+* University of Massachusets "[RandomOut: Using a convolutional gradient norm to win The Filter Lottery](http://arxiv.org/abs/1602.05931)"
 * Stanford NLP: "[Large-Scale Language Classification](http://nlp.stanford.edu/courses/cs224n/2015/reports/24.pdf)"
