@@ -1,10 +1,14 @@
 package org.deeplearning4j.ui;
 
+import org.canova.api.util.ClassPathResource;
 import org.canova.image.loader.LFWLoader;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
+import org.deeplearning4j.models.word2vec.VocabWord;
+import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -16,6 +20,11 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
+import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
+import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.deeplearning4j.ui.activation.UpdateActivationIterationListener;
 import org.deeplearning4j.ui.flow.FlowIterationListener;
 import org.deeplearning4j.ui.weights.HistogramIterationListener;
@@ -423,6 +432,40 @@ public class ManualTests {
     @Test
     public void testFlowActivationsCG1() throws Exception {
 
+    }
+
+    @Test
+    public void testWord2VecPlot() throws Exception {
+        File inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
+        SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
+
+        TokenizerFactory t = new DefaultTokenizerFactory();
+        t.setTokenPreProcessor(new CommonPreprocessor());
+
+        Word2Vec vec = new Word2Vec.Builder()
+                .minWordFrequency(5)
+                .iterations(2)
+                .batchSize(1000)
+                .learningRate(0.025)
+                .layerSize(100)
+                .seed(42)
+                .sampling(0)
+                .negativeSample(0)
+                .windowSize(5)
+                .modelUtils(new BasicModelUtils<VocabWord>())
+                .useAdaGrad(false)
+                .iterate(iter)
+                .workers(10)
+                .tokenizerFactory(t)
+                .build();
+
+        vec.fit();
+
+        UiConnectionInfo connectionInfo = UiServer.getInstance().getConnectionInfo();
+
+        vec.getLookupTable().plotVocab(100, connectionInfo);
+
+        Thread.sleep(10000000000L);
     }
 
     @Test

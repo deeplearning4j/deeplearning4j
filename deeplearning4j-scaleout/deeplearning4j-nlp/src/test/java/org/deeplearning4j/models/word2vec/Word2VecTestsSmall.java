@@ -50,6 +50,6 @@ public class Word2VecTestsSmall
     @Test
     public void testPlot()
     {
-        word2vec.lookupTable().plotVocab();
+        //word2vec.lookupTable().plotVocab();
     }
 }
