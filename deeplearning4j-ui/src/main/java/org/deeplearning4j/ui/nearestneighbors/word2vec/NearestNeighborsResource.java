@@ -59,10 +59,15 @@ public class NearestNeighborsResource extends FileResource {
         super(filePath);
     }
 
+    public NearestNeighborsResource() {
+
+    }
+
     @GET
     public View get() {
         return new NearestNeighborsView();
     }
+
 
     @POST
     @Path("/vocab")

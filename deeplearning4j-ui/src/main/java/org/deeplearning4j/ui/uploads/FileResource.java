@@ -62,6 +62,10 @@ public abstract class FileResource {
         }
     }
 
+    public FileResource() {
+
+    }
+
     /**
      * The file path for uploads
      * @param filePath the file path for uploads
