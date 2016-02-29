@@ -111,7 +111,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                     this.wrappedBuffer = underlyingBuffer.asNio();
             }
             else if(underlyingBuffer.allocationMode() == AllocationMode.JAVACPP) {
-                pointer = new JavaCppDoublePointer(length());
+                pointer = underlyingBuffer.pointer();
                 this.wrappedBuffer = pointer.asByteBuffer();
             }
             else {
@@ -218,7 +218,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             }
         }
         else if(allocationMode == AllocationMode.JAVACPP) {
-            pointer = new JavaCppFloatPointer(ArrayUtil.copy(data));
+            pointer = new FloatPointer(ArrayUtil.copy(data));
             wrappedBuffer = pointer.asByteBuffer();
         }
         else {
@@ -265,7 +265,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         }
         else if(allocationMode == AllocationMode.JAVACPP) {
             if(copy) {
-                pointer = new JavaCppDoublePointer(ArrayUtil.copy(data));
+                pointer = new DoublePointer(ArrayUtil.copy(data));
             }
             else {
                 pointer = new DoublePointer(data);
@@ -316,7 +316,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         }
         else if(allocationMode == AllocationMode.JAVACPP) {
             if(copy) {
-                pointer = new JavaCppIntPointer(ArrayUtil.copy(data));
+                pointer = new IntPointer(ArrayUtil.copy(data));
                 wrappedBuffer = pointer.asByteBuffer();
             }
 
@@ -531,13 +531,13 @@ public abstract class BaseDataBuffer implements DataBuffer {
         }
         else if(allocationMode == AllocationMode.JAVACPP) {
             if(dataType() == Type.DOUBLE) {
-                pointer = new JavaCppDoublePointer(length());
+                pointer = new DoublePointer(length());
             }
             else if(dataType() == Type.FLOAT) {
-                pointer = new JavaCppFloatPointer(length());
+                pointer = new FloatPointer(length());
             }
             else if(dataType() == Type.INT) {
-                pointer = new JavaCppIntPointer(length());
+                pointer = new IntPointer(length());
             }
             wrappedBuffer = pointer.asByteBuffer();
         }

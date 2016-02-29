@@ -19,8 +19,6 @@ public class JavaCppIntPointer  extends IntPointer {
             LibUtils.addLibraryPath(System.getProperty("java.io.tmpdir"));
             LibUtils.loadTempBinaryFile("buffer");
             LibUtils.loadTempBinaryFile("jniJavaCppIntPointer");
-            Loader.load();
-
         } catch (Exception e) {
             e.printStackTrace();
         }

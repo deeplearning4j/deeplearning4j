@@ -27,6 +27,7 @@
 
 package org.nd4j.linalg.api.buffer.util;
 
+import org.apache.commons.io.IOUtils;
 import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.*;
@@ -123,21 +124,21 @@ public final class LibUtils
             if (throwable != null)
             {
                 pw.println(
-                    "Stack trace from the attempt to " +
-                    "load the library as a resource:");
+                        "Stack trace from the attempt to " +
+                                "load the library as a resource:");
                 throwable.printStackTrace(pw);
             }
 
             pw.println(
-                "Stack trace from the attempt to " +
-                "load the library as a file:");
+                    "Stack trace from the attempt to " +
+                            "load the library as a file:");
             t.printStackTrace(pw);
 
             pw.flush();
             pw.close();
             throw new UnsatisfiedLinkError(
-                "Could not load the native library.\n"+
-                sw.toString());
+                    "Could not load the native library.\n"+
+                            sw.toString());
         }
     }
 
@@ -164,33 +165,13 @@ public final class LibUtils
 
         File tempFile = new File(System.getProperty("java.io.tmpdir"),fullName+ "." + libExtension);
         tempFile.deleteOnExit();
-        OutputStream outputStream = null;
-        try
-        {
-            outputStream = new FileOutputStream(tempFile);
-            byte[] buffer = new byte[8192];
-            while (true)
-            {
-                int read = inputStream.read(buffer);
-                if (read < 0)
-                {
-                    break;
-                }
-                outputStream.write(buffer, 0, read);
-            }
-            outputStream.flush();
-            outputStream.close();
-            outputStream = null;
+        BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tempFile));
+        IOUtils.copy(inputStream,bos);
+        bos.flush();
+        inputStream.close();
+        bos.close();
+        System.load(tempFile.getAbsolutePath());
 
-            System.load(tempFile.toString());
-        }
-        finally
-        {
-            if (outputStream != null)
-            {
-                outputStream.close();
-            }
-        }
     }
 
 
@@ -285,7 +266,7 @@ public final class LibUtils
         String fullName = libPrefix + libName;
         String resourceName = "/lib/" + fullName + "." + libExtension;
         InputStream inputStream =
-            LibUtils.class.getResourceAsStream(resourceName);
+                LibUtils.class.getResourceAsStream(resourceName);
         if (inputStream == null)
         {
             throw new NullPointerException(
@@ -430,8 +411,8 @@ public final class LibUtils
         String osArch = System.getProperty("os.arch");
         osArch = osArch.toLowerCase(Locale.ENGLISH);
         if (osArch.equals("i386") ||
-            osArch.equals("x86")  ||
-            osArch.equals("i686"))
+                osArch.equals("x86")  ||
+                osArch.equals("i686"))
         {
             return ARCHType.X86;
         }

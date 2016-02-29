@@ -73,7 +73,7 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected float snrm2(int N, INDArray X, int incX) {
-        return CBLAS.snrm2(N,X.data().asNioFloat(),incX);
+        return nd4jBlas.snrm2(DUMMY,N,X.data().address(),incX);
 
     }
 
