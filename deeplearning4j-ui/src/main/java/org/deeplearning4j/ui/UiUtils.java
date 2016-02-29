@@ -11,7 +11,7 @@ public class UiUtils {
         try{
             UiUtils.openBrowser(new URI(path));
         }catch(Exception e ){
-            log.error("Could not open browser",e);
+         //   log.error("Could not open browser",e);
             System.out.println("Browser could not be launched automatically.\nUI path: " + path);
         }
     }

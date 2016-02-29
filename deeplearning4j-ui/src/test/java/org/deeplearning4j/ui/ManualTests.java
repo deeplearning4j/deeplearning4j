@@ -112,7 +112,7 @@ public class ManualTests {
 
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
         model.init();
-        model.setListeners(Arrays.asList((IterationListener) new ScoreIterationListener(listenerFreq),(IterationListener) new HistogramIterationListener(connectionInfo, listenerFreq)));
+        model.setListeners(Arrays.asList((IterationListener) new ScoreIterationListener(listenerFreq),(IterationListener) new HistogramIterationListener(connectionInfo, listenerFreq), new FlowIterationListener(connectionInfo, listenerFreq)));
 
         log.info("Train model....");
         model.fit(iter); // achieves end to end pre-training
