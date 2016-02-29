@@ -24,10 +24,15 @@
         <!-- Booststrap Notify plugin-->
         <script src="/assets/bootstrap-notify.min.js"></script>
 
+        <!-- DateTime formatter-->
+        <script src="/assets/DateTimeFormat.js"></script>
+
 
         <script src="/assets/Connection.js"></script>
         <script src="/assets/Layer.js"></script>
         <script src="/assets/Layers.js"></script>
+
+        <script src="/assets/common.js"></script>
 
         <script src="/assets/renderFlow.js"></script>
         <style>
@@ -66,7 +71,14 @@
                 <tr>
                     <td style="width: 48px;"><a href="/"><img src="/assets/deeplearning4j.img"  border="0"/></a></td>
                     <td>DeepLearning4j UI</td>
-                    <td style="width: 128px;">&nbsp; <!-- placeholder for future use --></td>
+                    <td style="width: 512px; text-align: right;" class="hd-small">&nbsp; Available sessions: <select class="selectpicker" id="sessionSelector" onchange="window.location.href = 'flow?sid='+ this.options[this.selectedIndex].value ;" style="color: #000000; display: inline-block; width: 256px;">
+                        <option value="0" selected="selected">Pick a session to track</option>
+                    </select>&nbsp;&nbsp;
+                        <script>
+                            buildSessionSelector("FLOW");
+                        </script>
+                    </td>
+                    <td style="width: 256px;" class="hd-small">&nbsp;Updated at: <b><span id="updatetime">No updates so far</span></b>&nbsp;</td>
                 </tr>
             </tbody>
         </table>

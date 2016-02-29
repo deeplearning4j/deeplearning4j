@@ -66,6 +66,14 @@ public class UiConnectionInfo {
         return builder.toString().replaceAll("\\/{2,}","/");
     }
 
+    public String getFullAddress(String nPath) {
+        if (nPath == null || nPath.isEmpty()) {
+            return getFullAddress();
+        } else {
+            return getFirstPart() + getSecondPart(nPath) + "?sid=" + this.getSessionId();
+        }
+    }
+
     public String getFullAddress() {
         return getFirstPart() + getSecondPart();
     }
