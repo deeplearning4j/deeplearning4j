@@ -206,7 +206,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
 
             Response resp = target.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).post(Entity.entity(list,MediaType.APPLICATION_JSON));
 
-            log.info("{}",resp);
+            log.debug("{}",resp);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
