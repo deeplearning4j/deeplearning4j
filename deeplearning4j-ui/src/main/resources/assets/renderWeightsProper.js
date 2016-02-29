@@ -552,7 +552,7 @@ var timed = function() {
                     if (sid == undefined) sid = 0;
 
                     $.ajax({
-                        url:"/weights" + "/updated",
+                        url:"/weights" + "/updated?sid=" + sid,
                         async: true,
                         error: function (query, status, error) {
                             $.notify({

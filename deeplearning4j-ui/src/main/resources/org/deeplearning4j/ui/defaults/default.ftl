@@ -104,14 +104,40 @@
             &nbsp;Neural network scores retrieved from DL4j during training.
         </div>
     </div>
+
+    <div class="block">
+        <!-- Flow  block. It's session-dependant block -->
+        <b>Model flow</b><br/><br/>
+        <a href="#" onclick="trackSessionHandle('FLOW','flow'); return false;"><img id="FLOW" src="/assets/i_flow.img" border="0" style="opacity: 0.2"/></a><br/><br/>
+        <div style="text-align: left; margin: 5px;">
+            &nbsp;MLN/CG model state rendered per node/layer.
+        </div>
+    </div>
+
+    <div class="block">
+        <!-- Arbiter block. It's session-dependant block -->
+        <b>Arbiter </b><br/><br/>
+        <a href="#" onclick="trackSessionHandle('ARBITER','arbiter'); return false;"><img id="ARBITER" src="/assets/i_arbiter.img" border="0" style="opacity: 0.2"/></a><br/><br/>
+        <div style="text-align: left; margin: 5px;">
+            &nbsp;State & management for Arbiter processes.
+        </div>
+    </div>
 </div>
 
     <div  id="sessionSelector" style="position: fixed; top: 0px; bottom: 0px; left: 0px; right: 0px; z-index: 95; display: none;">
-        <div style="position: fixed; top: 50%; left: 50%; -webkit-transform: translate(-50%, -50%); transform: translate(-50%, -50%); z-index: 100;   background-color: rgba(225, 225, 234,255); border: 1px solid #CECECE; height: 400px; width: 300px; overflow-y: auto;">
-            <center><strong>Choose SessionID to track:</strong></center>
-            <div id="sessionList" style="display: block; margin-left: 50px; margin-right: 50px; margin-top: 20px; margin-bottom: 20px;">
+        <div style="position: fixed; top: 50%; left: 50%; -webkit-transform: translate(-50%, -50%); transform: translate(-50%, -50%); z-index: 100;   background-color: rgba(255, 255, 255,255); border: 1px solid #CECECE; height: 400px; width: 300px; -moz-box-shadow: 0 0 3px #ccc; -webkit-box-shadow: 0 0 3px #ccc; box-shadow: 0 0 3px #ccc;">
 
-            </div>
+                <table class="table table-hover" style="margin-left: 10px; margin-right: 10px; margin-top: 5px; margin-bottom: 5px;">
+                    <thead style="display: block; margin-bottom: 3px; width: 100%;">
+                        <tr style="width: 100%">
+                            <th style="width: 100%">Available sessions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sessionList" style="display: block; width: 95%; height: 300px; overflow-y: auto; overflow-x: hidden;">
+
+                    </tbody>
+                </table>
+
             <div style="display: inline-block; position: fixed; bottom: 3px; left: 50%;  -webkit-transform: translate(-50%); transform: translate(-50%); ">
                 <input type="button" class="btn btn-default" style="" value=" Cancel " onclick="$('#sessionSelector').css('display','none');"/>
             </div>

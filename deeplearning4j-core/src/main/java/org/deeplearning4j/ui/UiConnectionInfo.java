@@ -12,7 +12,7 @@ import java.util.Random;
  */
 @Data
 public class UiConnectionInfo {
-    private int sessionId;
+    private String sessionId;
     private String login;
     private String password;
     private String address = "localhost";
@@ -21,10 +21,10 @@ public class UiConnectionInfo {
     private boolean useHttps;
 
     public UiConnectionInfo() {
-        this.sessionId = new Random().nextInt();
+        this.sessionId = java.util.UUID.randomUUID().toString();
     }
 
-    public void setSessionId(int sessionId) {
+    public void setSessionId(@NonNull String sessionId) {
         this.sessionId = sessionId;
     }
 
@@ -50,15 +50,17 @@ public class UiConnectionInfo {
         return getSecondPart("");
     }
 
-    public String getSecondPart(@NonNull String nPath) {
+    public String getSecondPart(String nPath) {
         StringBuilder builder = new StringBuilder();
 
         if (path != null && !path.isEmpty()) {
             builder.append(path.startsWith("/") ? path : ("/" + path)).append("/");
         }
 
-        nPath = nPath.replaceFirst("^/", "");
-        builder.append(path.endsWith("/") ? nPath : ("/" + nPath)).append("/");
+        if (nPath != null) {
+            nPath = nPath.replaceFirst("^/", "");
+            builder.append(path.endsWith("/") ? nPath : ("/" + nPath)).append("/");
+        }
 
 
         return builder.toString().replaceAll("\\/{2,}","/");
@@ -79,7 +81,7 @@ public class UiConnectionInfo {
          * @param sessionId
          * @return
          */
-        public Builder setSessionId(int sessionId) {
+        public Builder setSessionId(@NonNull String sessionId) {
             info.setSessionId(sessionId);
             return this;
         }

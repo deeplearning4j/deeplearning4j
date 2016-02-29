@@ -44,7 +44,7 @@ public class HistogramIterationListener implements IterationListener {
     private boolean openBrowser;
     private boolean firstIteration = true;
     private String path;
-    private String subPath;
+    private String subPath = "weights";
     private UiConnectionInfo connectionInfo;
 
     public HistogramIterationListener(@NonNull UiConnectionInfo connection, int iterations) {
@@ -55,10 +55,10 @@ public class HistogramIterationListener implements IterationListener {
     }
 
     public HistogramIterationListener(int iterations) {
-        this(iterations, true, "weights");
+        this(iterations, true);
     }
 
-    public HistogramIterationListener(int iterations, boolean openBrowser, String subPath){
+    public HistogramIterationListener(int iterations, boolean openBrowser){
         int port = -1;
         try{
             UiServer server = UiServer.getInstance();
@@ -82,7 +82,6 @@ public class HistogramIterationListener implements IterationListener {
         target = client.target(connectionInfo.getFirstPart()).path(subPath).path("update").queryParam("sid", connectionInfo.getSessionId());
         this.openBrowser = openBrowser;
         this.path = "http://localhost:" + port + "/" + subPath;
-        this.subPath = subPath;
 
         System.out.println("UI Histogram URL: " + this.path + "?sid=" + connectionInfo.getSessionId());
     }
@@ -202,7 +201,7 @@ public class HistogramIterationListener implements IterationListener {
 
 
             Response resp = target.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).post(Entity.entity(g,MediaType.APPLICATION_JSON));
-            log.info("{}",resp);
+            log.debug("{}",resp);
 
             if(openBrowser && firstIteration){
                 StringBuilder builder = new StringBuilder(connectionInfo.getFullAddress());
