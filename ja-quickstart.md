@@ -1,6 +1,6 @@
 ---
 title: "Deeplearning 4 j のクイックスタートガイド"
-layout: default
+layout: ja-default
 ---
 
 クイック・スタート・ガイド
