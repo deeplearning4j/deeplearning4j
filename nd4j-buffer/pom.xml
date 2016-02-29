@@ -12,6 +12,7 @@
 
     <name>nd4j-buffer</name>
 
+<!--
 
     <build>
         <plugins>
@@ -79,6 +80,7 @@
         </plugins>
     </build>
 
+-->
 
     <profiles>
         <!-- If someone knows a better way to do this, please do let me know! -->

@@ -7,6 +7,7 @@ import org.bytedeco.javacpp.annotation.Platform;
 import org.nd4j.nativeblas.util.LibUtils;
 
 import java.io.File;
+import java.lang.annotation.Native;
 
 
 /**
@@ -19,13 +20,19 @@ public class NativeOps extends Pointer {
     static {
         try {
             LibUtils.addLibraryPath(System.getProperty("java.io.tmpdir"));
-            LibUtils.loadTempBinaryFile("nd4j");
             LibUtils.loadTempBinaryFile("jniNativeOps");
         } catch (Throwable throwable) {
             throwable.printStackTrace();
         }
         Loader.load();
     }
+
+    public NativeOps() {
+        allocate();
+    }
+    private native void allocate();
+
+
     /**
      *
      * @param opNum

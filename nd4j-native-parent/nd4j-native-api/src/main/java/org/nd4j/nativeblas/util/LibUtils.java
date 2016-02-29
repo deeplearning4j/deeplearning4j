@@ -182,7 +182,7 @@ public final class LibUtils
             outputStream.close();
             outputStream = null;
 
-            System.load(tempFile.toString());
+            System.load(tempFile.getAbsolutePath());
         }
         finally
         {

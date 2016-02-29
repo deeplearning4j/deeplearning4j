@@ -19,14 +19,18 @@ public class Nd4jBlas extends Pointer {
     static {
         try {
             LibUtils.addLibraryPath(System.getProperty("java.io.tmpdir"));
-            LibUtils.loadTempBinaryFile("nd4j");
-            LibUtils.loadTempBinaryFile("jniNativeOps");
+            LibUtils.loadTempBinaryFile("jniNd4jBlas");
         }catch(Exception e) {
             throw new RuntimeException(e);
         }
         Loader.load();
     }
 
+    public Nd4jBlas() {
+        allocate();
+    }
+
+    private native void allocate();
 
 /*
      * ======================================================
