@@ -17,8 +17,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class SessionStorage {
     private static final SessionStorage INSTANCE = new SessionStorage();
 
-    private Table<Integer, ObjectType, Object> storage = HashBasedTable.create();
-    private ConcurrentHashMap<Integer, AtomicLong> accessTime = new ConcurrentHashMap<>();
+    private Table<String, ObjectType, Object> storage = HashBasedTable.create();
+    private ConcurrentHashMap<String, AtomicLong> accessTime = new ConcurrentHashMap<>();
 
     private ReentrantReadWriteLock singleLock = new ReentrantReadWriteLock();
 
@@ -30,7 +30,7 @@ public class SessionStorage {
         return INSTANCE;
     }
 
-    public Object getObject(Integer sessionId, ObjectType type) {
+    public Object getObject(String sessionId, ObjectType type) {
         try {
             singleLock.readLock().lock();
 
@@ -45,7 +45,7 @@ public class SessionStorage {
         }
     }
 
-    public void putObject(Integer sessionId, ObjectType type, Object object) {
+    public void putObject(String sessionId, ObjectType type, Object object) {
         try {
             singleLock.writeLock().lock();
 
@@ -66,10 +66,10 @@ public class SessionStorage {
      * This method removes all references that were not used within some timeframe
      */
     protected void truncateUnused() {
-        List<Integer> sessions = Collections.list(accessTime.keys());
-        List<Pair<Integer, ObjectType>> removals = new ArrayList<>();
+        List<String> sessions = Collections.list(accessTime.keys());
+        List<Pair<String, ObjectType>> removals = new ArrayList<>();
 
-        for (Integer session: sessions) {
+        for (String session: sessions) {
             long time = accessTime.get(session).get();
             if (time < System.currentTimeMillis() - (30 * 60 * 1000L)) {
                 accessTime.remove(session);
@@ -92,7 +92,7 @@ public class SessionStorage {
         try {
             singleLock.writeLock().lock();
 
-            for (Pair<Integer, ObjectType> objects : removals) {
+            for (Pair<String, ObjectType> objects : removals) {
                 storage.remove(objects.getFirst(), objects.getSecond());
             }
         } finally {
@@ -100,13 +100,13 @@ public class SessionStorage {
         }
     }
 
-    public Map<Integer, List<ObjectType>> getSessions() {
-        Map<Integer, List<ObjectType>> result = new ConcurrentHashMap<>();
+    public Map<String, List<ObjectType>> getSessions() {
+        Map<String, List<ObjectType>> result = new ConcurrentHashMap<>();
         try {
             singleLock.readLock().lock();
 
-            Set<Integer> sessions = storage.rowKeySet();
-            for (Integer session : sessions) {
+            Set<String> sessions = storage.rowKeySet();
+            for (String session : sessions) {
                 Map<ObjectType, Object> map = storage.row(session);
                 for (ObjectType type : map.keySet()) {
                     if (!result.containsKey(session)) {
@@ -122,13 +122,13 @@ public class SessionStorage {
         }
     }
 
-    public List<Integer> getSessions(ObjectType type) {
-        List<Integer> results = new ArrayList<>();
+    public List<String> getSessions(ObjectType type) {
+        List<String> results = new ArrayList<>();
         try {
             singleLock.readLock().lock();
 
-            Map<Integer, Object> map = storage.column(type);
-            for (Integer session: map.keySet()) {
+            Map<String, Object> map = storage.column(type);
+            for (String session: map.keySet()) {
                 results.add(session);
             }
         } finally {
@@ -138,17 +138,17 @@ public class SessionStorage {
         return results;
     }
 
-    public Map<ObjectType, List<Integer>> getEvents() {
-        Map<ObjectType, List<Integer>> result = new ConcurrentHashMap<>();
+    public Map<ObjectType, List<String>> getEvents() {
+        Map<ObjectType, List<String>> result = new ConcurrentHashMap<>();
         try {
             singleLock.readLock().lock();
 
             Set<ObjectType> events = storage.columnKeySet();
             for (ObjectType type: events) {
-                Map<Integer, Object> map = storage.column(type);
-                for (Integer session: map.keySet()) {
+                Map<String, Object> map = storage.column(type);
+                for (String session: map.keySet()) {
                     if (!result.containsKey(type)) {
-                        result.put(type, new ArrayList<Integer>());
+                        result.put(type, new ArrayList<String>());
                     }
                     result.get(type).add(session);
                 }

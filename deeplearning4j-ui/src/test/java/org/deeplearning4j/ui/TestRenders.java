@@ -133,7 +133,7 @@ public class TestRenders extends BaseUiServerTest {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        net.setListeners(Arrays.<IterationListener>asList(new ScoreIterationListener(1),new HistogramIterationListener(1,true,"myweightpath")));
+        net.setListeners(Arrays.<IterationListener>asList(new ScoreIterationListener(1),new HistogramIterationListener(1,true)));
 
         fetcher.fetch(100);
         DataSet d2 = fetcher.next();
