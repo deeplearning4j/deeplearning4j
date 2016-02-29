@@ -8,6 +8,7 @@ var events = [];
 function trackSessionHandle(event, url) {
    var sessions = events[event];
     if (sessions == undefined || sessions == null) {
+        if (event == "TSNE") window.location.href = url;
         console.log("No events");
         $.notify({
             title: '<strong>No data available!</strong>',

@@ -71,9 +71,9 @@
  -->
 <div style="width: 100%; text-align: center">
     <div class="block">
-        <!-- TSNE block. It's not session-dependant. -->
+        <!-- TSNE block. It's session-dependant. -->
         <b>T-SNE</b><br/><br/>
-        <a href="/tsne"><img src="/assets/i_plot.img" border="0" /></a><br/><br/>
+        <a href="#"  onclick="trackSessionHandle('TSNE','tsne'); return false;"><img src="/assets/i_plot.img" border="0" style="opacity: 1.0" id="TSNE"/></a><br/><br/>
         <div style="text-align: left; margin: 5px;">
             &nbsp;Plot T-SNE data uploaded by user or retrieved from DL4j.
         </div>
@@ -110,7 +110,7 @@
         <b>Model flow</b><br/><br/>
         <a href="#" onclick="trackSessionHandle('FLOW','flow'); return false;"><img id="FLOW" src="/assets/i_flow.img" border="0" style="opacity: 0.2"/></a><br/><br/>
         <div style="text-align: left; margin: 5px;">
-            &nbsp;MLN/CG model state rendered per node/layer.
+            &nbsp;MultiLayerNetwork/ComputationalGraph model state rendered.
         </div>
     </div>
 
@@ -119,7 +119,7 @@
         <b>Arbiter </b><br/><br/>
         <a href="#" onclick="trackSessionHandle('ARBITER','arbiter'); return false;"><img id="ARBITER" src="/assets/i_arbiter.img" border="0" style="opacity: 0.2"/></a><br/><br/>
         <div style="text-align: left; margin: 5px;">
-            &nbsp;State & management for Arbiter processes.
+            &nbsp;State &amp; management for Arbiter optimization processes.
         </div>
     </div>
 </div>

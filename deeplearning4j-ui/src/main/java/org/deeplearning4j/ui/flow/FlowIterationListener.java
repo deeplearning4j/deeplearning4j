@@ -13,6 +13,7 @@ import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.layers.recurrent.BaseRecurrentLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.ui.UiConnectionInfo;
 import org.deeplearning4j.ui.UiServer;
 import org.deeplearning4j.ui.UiUtils;
 import org.deeplearning4j.ui.flow.beans.Description;
@@ -51,6 +52,7 @@ public class FlowIterationListener implements IterationListener {
     private int frequency = 1;
     private boolean firstIteration = true;
     private String path;
+    private UiConnectionInfo connectionInfo;
 
     private static final List<String> colors = Collections.unmodifiableList(Arrays.asList("#9966ff", "#ff9933", "#ffff99", "#3366ff", "#0099cc", "#669999", "#66ffff"));
 
@@ -86,18 +88,19 @@ public class FlowIterationListener implements IterationListener {
         this.remoteAddr = address;
         this.remotePort = port;
         this.frequency = frequency;
+        UiConnectionInfo info = null;
 
-        if (address.equals("localhost") || address.equals("127.0.0.1")) {
+        if (address.equals("localhost") || address.equals("127.0.0.1") || address.isEmpty()) {
             try {
+                this.remoteAddr = "localhost";
                 this.remotePort = UiServer.getInstance().getPort();
+                info = UiServer.getInstance().getConnectionInfo();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
 
-
-
-        setup();
+        setup(info);
     }
 
 
@@ -112,22 +115,29 @@ public class FlowIterationListener implements IterationListener {
      */
     public FlowIterationListener(@NonNull String login, @NonNull String password, @NonNull String address, int port, int frequency) {
         this(address, port, frequency);
+        this.connectionInfo.setLogin(login);
+        this.connectionInfo.setPassword(password);
         this.login = login;
         this.password = password;
-
-        setup();
     }
 
-    private void setup() {
+    public FlowIterationListener(@NonNull UiConnectionInfo connectionInfo, int frequency) {
+        setup(connectionInfo);
+    }
+
+    private void setup(@NonNull UiConnectionInfo connectionInfo) {
         // TODO: add auth option
+
+        this.connectionInfo = connectionInfo;
 
         java.util.logging.Logger logger =  java.util.logging.Logger.getGlobal();
         login = null;
         password = null;
        // client.register(new LoggingFilter(logger, true));
-        if (login == null || password == null) target = client.target("http://"+ remoteAddr + ":" + remotePort ).path("flow").path("state");
+        if (login == null || password == null) target = client.target(connectionInfo.getFirstPart()).path(connectionInfo.getSecondPart("flow")).path("state").queryParam("sid", connectionInfo.getSessionId());
 
-        this.path = "http://" + remoteAddr + ":" + remotePort + "/flow";
+        this.path = connectionInfo.getFullAddress("flow");
+
         log.info("Flow UI address: " + this.path);
     }
 
@@ -180,13 +190,17 @@ public class FlowIterationListener implements IterationListener {
             // send ModelInfo to UiServer
             Response resp = target.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).post(Entity.entity(info, MediaType.APPLICATION_JSON));
         //    log.info("ModelInfo:" + Entity.entity(info, MediaType.APPLICATION_JSON));
-       //     log.info("Response: " + resp);
+            log.debug("Response: " + resp);
         /*
             TODO: it would be nice to send updates of nodes as well
          */
 
             if(firstIteration){
-                UiUtils.tryOpenBrowser(path,log);
+                try {
+                    UiUtils.tryOpenBrowser(path, log);
+                } catch (Exception e) {
+                    ;
+                }
                 firstIteration = false;
             }
         }
@@ -327,7 +341,7 @@ public class FlowIterationListener implements IterationListener {
             LayerInfo layerInfo = modelInfo.getLayerInfoByCoords(x, y - 1);
             layerInfo.dropConnections();
 
-        } else throw new IllegalStateException("Model ["+model.getClass().getCanonicalName()+"] doesn't looks like supported one.");
+        }// else throw new IllegalStateException("Model ["+model.getClass().getCanonicalName()+"] doesn't looks like supported one.");
 
         // find layers without connections, and mark them as output layers
         for (LayerInfo layerInfo: modelInfo.getLayers()) {

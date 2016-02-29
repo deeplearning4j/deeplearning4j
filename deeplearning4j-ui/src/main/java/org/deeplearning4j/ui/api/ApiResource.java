@@ -25,6 +25,8 @@ import org.apache.commons.math.stat.descriptive.rank.Percentile;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.ui.providers.ObjectMapperProvider;
 import org.deeplearning4j.ui.storage.HistoryStorage;
+import org.deeplearning4j.ui.storage.SessionStorage;
+import org.deeplearning4j.ui.storage.def.ObjectType;
 import org.deeplearning4j.ui.uploads.FileResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,6 +57,7 @@ public class ApiResource extends FileResource {
     private static final Logger logger = LoggerFactory.getLogger(FileResource.class);
     private List<String> coords;
     private Client client = ClientBuilder.newClient().register(JacksonJsonProvider.class).register(new ObjectMapperProvider());
+    private volatile SessionStorage storage = SessionStorage.getInstance();
 
     /**
      * The file path for uploads
@@ -78,19 +81,21 @@ public class ApiResource extends FileResource {
     @POST
     @Path("/update")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response update(UrlResource resource) throws IOException {
-        String content = client.target(resource.getUrl()).request(MediaType.TEXT_PLAIN_TYPE).get(String.class);
+    public Response update() throws IOException {
+        //String content = client.target(resource.getUrl()).request(MediaType.TEXT_PLAIN_TYPE).get(String.class);
 
-        List<String> testLines = IOUtils.readLines(new ByteArrayInputStream(content.getBytes()));
+        //List<String> testLines = IOUtils.readLines(new ByteArrayInputStream(content.getBytes()));
 
-        HistoryStorage.getInstance().put("TSNE", Pair.makePair(1, 0), testLines);
+        //HistoryStorage.getInstance().put("TSNE", Pair.makePair(1, 0), testLines);
+
+        List<String> testLines = (List<String>) storage.getObject("UploadedFile", ObjectType.TSNE);
 
         return Response.ok(testLines).build();
     }
 
     @GET
     @Path("/coords")
-    public Response coords(@QueryParam("filter") boolean filterExtrems) {
+    public Response coords(@QueryParam("filter") boolean filterExtrems, @QueryParam("sid") String sessionId) {
         /*
             TODO: here we should have ad-hoc for HistoryStorage.
 
@@ -103,8 +108,8 @@ public class ApiResource extends FileResource {
         if(coords.isEmpty())
             throw new IllegalStateException("Unable to get coordinates; empty list");
         */
-        HistoryStorage storage = HistoryStorage.getInstance();
-        List<String> something = (List<String>) storage.getLatest("TSNE");
+
+        List<String> something = (List<String>) storage.getObject(sessionId, ObjectType.TSNE);
         if (1>0 && something != null) {
             List<String> filtered = new ArrayList<>();
 
@@ -168,18 +173,26 @@ public class ApiResource extends FileResource {
         coords = FileUtils.readLines(new File(path));
     }
 
+    @POST
+    @Path("coords")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response postCoordinates(List<String> list, @QueryParam("sid") String sessionId) {
+        storage.putObject(sessionId, ObjectType.TSNE, list);
+
+        return Response.ok().build();
+    }
 
     @Override
     public void handleUpload(File path) {
         /*
             TODO: this code should put new coords into HistoryStorage
          */
-        HistoryStorage storage = HistoryStorage.getInstance();
 
+        //logger.info("Calling handleUpload");
         List<String> testLines = null;
         try {
             testLines = FileUtils.readLines(path);
-            storage.put("TSNE", Pair.makePair(1, 0), testLines);
+            storage.putObject("UploadedFile", ObjectType.TSNE, testLines);
         } catch (IOException e) {
             e.printStackTrace();
         }

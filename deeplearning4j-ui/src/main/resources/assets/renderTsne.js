@@ -152,8 +152,12 @@ function drawEmbedding() {
 
 
 function drawTsne() {
+    var sid = getParameterByName("sid");
+    if (sid == undefined) sid = "UploadedFile";
+
+
  $.ajax({
-    url: "/api/coords",
+    url: "/api/coords?sid=" + sid,
     cache: false
   })
     .done(function( data ) {
