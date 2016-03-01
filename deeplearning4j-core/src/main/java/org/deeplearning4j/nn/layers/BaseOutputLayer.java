@@ -84,9 +84,35 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         this.fullNetworkL1 = fullNetworkL1;
         this.fullNetworkL2 = fullNetworkL2;
         INDArray preOut = preOutput2d(training);
-        INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), preOut.dup()));
-        setScore(output,preOut);
+        //special case: softmax
+        if (layerConf().getActivationFunction().equals("softmax")) {
+            setScore(null,preOut);
+        } else {
+            INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), preOut));
+            setScoreWithZ(output);
+        }
         return score;
+    }
+
+    /**Compute the score for each example individually, after labels and input have been set.
+     *
+     * @param fullNetworkL1 L1 regularization term for the entire network (or, 0.0 to not include regularization)
+     * @param fullNetworkL2 L2 regularization term for the entire network (or, 0.0 to not include regularization)
+     * @return A column INDArray of shape [numExamples,1], where entry i is the score of the ith example
+     */
+    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2){
+        if( input == null || labels == null )
+            throw new IllegalStateException("Cannot calculate score without input and labels");
+        INDArray preOut = preOutput2d(false);
+        INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), preOut.dup()));
+
+        return LossCalculation.builder()
+                .l1(fullNetworkL1).l2(fullNetworkL2)
+                .labels(getLabels2d()).z(output)
+                .preOut(preOut).activationFn(conf().getLayer().getActivationFunction())
+                .lossFunction(layerConf().getLossFunction())
+                .useRegularization(conf.isUseRegularization())
+                .mask(maskArray).build().scoreExamples();
     }
 
     @Override

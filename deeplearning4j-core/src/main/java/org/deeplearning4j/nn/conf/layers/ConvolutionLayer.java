@@ -23,8 +23,10 @@ public class ConvolutionLayer extends FeedForwardLayer {
             throw new IllegalArgumentException("Kernel size of should be rows x columns (a 2d array)");
         this.kernelSize = builder.kernelSize;
         if(builder.stride.length != 2)
-            throw new IllegalArgumentException("Invalid stride, must be length 2");
+            throw new IllegalArgumentException("Stride should include stride for rows and columns (a 2d array)");
         this.stride = builder.stride;
+        if(builder.padding.length != 2)
+            throw new IllegalArgumentException("Padding should include padding for rows and columns (a 2d array)");
         this.padding = builder.padding;
     }
 
@@ -40,7 +42,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
     @AllArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
         private Convolution.Type convolutionType = Convolution.Type.VALID;
-        private int[] kernelSize = new int[] {5, 5};
+        private int[] kernelSize = new int[] {5,5};
         private int[] stride = new int[] {1,1};
         private int[] padding = new int[] {0, 0};
 

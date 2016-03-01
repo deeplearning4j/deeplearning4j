@@ -26,7 +26,7 @@ public class AdaGradUpdater extends BaseUpdater {
     public GradientUpdater init(String variable, INDArray gradient, Layer layer) {
         AdaGrad adaGrad = (AdaGrad) updaterForVariable.get(variable);
         if(adaGrad == null) {
-            adaGrad = new AdaGrad(layer.conf().getLayer().getLearningRate());
+            adaGrad = new AdaGrad(layer.conf().getLearningRateByParam(variable));
             updaterForVariable.put(variable, adaGrad);
         }
 

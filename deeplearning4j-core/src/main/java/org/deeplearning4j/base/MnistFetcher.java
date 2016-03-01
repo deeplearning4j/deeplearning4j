@@ -41,7 +41,6 @@ public class MnistFetcher {
 	protected static final String LOCAL_DIR_NAME = "MNIST";
 	protected File FILE_DIR = new File(BASE_DIR, LOCAL_DIR_NAME);
 
-
 	private File fileDir;
 	private static final String trainingFilesURL = "http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz";
 	private static final String trainingFilesFilename = "images-idx3-ubyte.gz";
@@ -63,15 +62,11 @@ public class MnistFetcher {
 		if (fileDir != null) {
 			return fileDir;
 		}
-		// mac gives unique tmp each run and we want to store this persist
-		// this data across restarts
-		File tmpDir = new File(System.getProperty("user.home"));
 
-		File baseDir = new File(tmpDir, LOCAL_DIR_NAME);
+		File baseDir = FILE_DIR;
 		if (!(baseDir.isDirectory() || baseDir.mkdir())) {
 			throw new IOException("Could not mkdir " + baseDir);
 		}
-
 
 		log.info("Downloading mnist...");
 		// getFromOrigin training records

@@ -81,6 +81,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     protected NeuralNetConfiguration defaultConfiguration;
     protected MultiLayerConfiguration layerWiseConfigurations;
     protected Gradient gradient;
+    protected INDArray epsilon;
     protected double score;
     private INDArray params;
     /*
@@ -719,6 +720,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         return gradient;
     }
 
+    public INDArray epsilon() {
+        return epsilon;
+    }
+
     @Override
     public Pair<Gradient, Double> gradientAndScore() {
         return new Pair<>(gradient(), score());
@@ -951,7 +956,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
     }
 
-
     /**
      * Returns a 1 x m vector where the vector is composed of
      * a flattened vector of all of the weights for the
@@ -1063,6 +1067,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      *
      * @return whether the training should converge or not
      */
+    @Deprecated
     protected List<Pair<Pair<INDArray, INDArray>, Pair<INDArray, INDArray>>> backPropGradient2() {
         //feedforward to compute activations
         //initial error
@@ -1150,12 +1155,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                     break;
 
                 boolean hasMaskArrays = next.hasMaskArrays();
-                if(hasMaskArrays) setLayerMaskArrays(next.getFeaturesMaskArray(), next.getLabelsMaskArray());
 
                 if(layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
-                    doTruncatedBPTT(next.getFeatureMatrix(),next.getLabels());
+                    doTruncatedBPTT(next.getFeatureMatrix(),next.getLabels(),next.getFeaturesMaskArray(),next.getLabelsMaskArray());
                 }
                 else {
+                    if(hasMaskArrays) setLayerMaskArrays(next.getFeaturesMaskArray(), next.getLabelsMaskArray());
                     setInput(next.getFeatureMatrix());
                     setLabels(next.getLabels());
                     if( solver == null ){
@@ -1176,6 +1181,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     protected void backprop() {
         Pair<Gradient,INDArray> pair = calcBackpropGradients(null, true);
         this.gradient = (pair == null ? null : pair.getFirst());
+        this.epsilon = (pair == null ? null : pair.getSecond());
     }
 
     /** Calculate gradients and errors. Used in two places:
@@ -1259,9 +1265,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         return new Pair<>(gradient,currPair.getSecond());
     }
 
-    protected void doTruncatedBPTT(INDArray input, INDArray labels) {
+    protected void doTruncatedBPTT(INDArray input, INDArray labels, INDArray featuresMaskArray, INDArray labelsMaskArray) {
         if( input.rank() != 3 || labels.rank() != 3 ){
-            log.warn("Cannot do truncated BPTT with non-3d inputs or labels. Expect input with shape [miniBatchSize,nIn,timeSeriesLength]");
+            log.warn("Cannot do truncated BPTT with non-3d inputs or labels. Expect input with shape [miniBatchSize,nIn,timeSeriesLength], got "
+                    + Arrays.toString(input.shape()) + "\t" + Arrays.toString(labels.shape()));
             return;
         }
         if( input.size(2) != labels.size(2) ){
@@ -1289,6 +1296,16 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             setInput(inputSubset);
             setLabels(labelSubset);
 
+            INDArray featuresMaskSubset = null;
+            INDArray labelsMaskSubset = null;
+            if(featuresMaskArray != null){
+                 featuresMaskSubset = featuresMaskArray.get(NDArrayIndex.all(), NDArrayIndex.interval(startTimeIdx,endTimeIdx));
+            }
+            if(labelsMaskArray != null){
+                labelsMaskSubset = labelsMaskArray.get(NDArrayIndex.all(), NDArrayIndex.interval(startTimeIdx,endTimeIdx));
+            }
+            if(featuresMaskSubset != null || labelsMaskSubset != null) setLayerMaskArrays(featuresMaskSubset,labelsMaskSubset);
+
             if(solver == null) {
                 solver = new Solver.Builder()
                         .configure(conf())
@@ -1302,6 +1319,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
         rnnClearPreviousState();
+        if(featuresMaskArray != null || labelsMaskArray != null) clearLayerMaskArrays();
     }
 
     public void updateRnnStateWithTBPTTState() {
@@ -1483,7 +1501,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         if(layerWiseConfigurations.isBackprop()) {
             if(layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
-                doTruncatedBPTT(data,labels);
+                doTruncatedBPTT(data,labels,null,null);
             }
             else {
                 if( solver == null) {
@@ -1523,10 +1541,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     @Override
     public void fit(org.nd4j.linalg.dataset.api.DataSet data) {
-        boolean hasMaskArrays = data.hasMaskArrays();
-        if(hasMaskArrays) setLayerMaskArrays(data.getFeaturesMaskArray(), data.getLabelsMaskArray());
-        fit(data.getFeatureMatrix(), data.getLabels());
-        if(hasMaskArrays) clearLayerMaskArrays();
+        if(layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
+            doTruncatedBPTT(data.getFeatureMatrix(),data.getLabels(),data.getFeaturesMaskArray(),data.getLabelsMaskArray());
+        } else {
+            //Standard training
+            boolean hasMaskArrays = data.hasMaskArrays();
+            if(hasMaskArrays) setLayerMaskArrays(data.getFeaturesMaskArray(), data.getLabelsMaskArray());
+            fit(data.getFeatureMatrix(), data.getLabels());
+            if(hasMaskArrays) clearLayerMaskArrays();
+        }
     }
 
     /**
@@ -1717,7 +1740,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public double score(DataSet data, boolean training){
         boolean hasMaskArray = data.hasMaskArrays();
         if(hasMaskArray) setLayerMaskArrays(data.getFeaturesMaskArray(),data.getLabelsMaskArray());
-        feedForward(data.getFeatureMatrix(),training);
+        // activation for output layer is calculated in computeScore
+        feedForwardToLayer(layers.length - 2, data.getFeatureMatrix(),training);
         setLabels(data.getLabels());
         if( getOutputLayer() instanceof BaseOutputLayer ){
             BaseOutputLayer<?> ol = (BaseOutputLayer<?>)getOutputLayer();
@@ -1730,6 +1754,34 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
         if(hasMaskArray) clearLayerMaskArrays();
         return score();
+    }
+
+    /**Calculate the score for each example in a DataSet individually. Unlike {@link #score(DataSet)} and {@link #score(DataSet, boolean)}
+     * this method does not average/sum over examples. This method allows for examples to be scored individually (at test time only), which
+     * may be useful for example for autoencoder architectures and the like.<br>
+     * Each row of the output (assuming addRegularizationTerms == true) is equivalent to calling score(DataSet) with a single example.
+     * @param data The data to score
+     * @param addRegularizationTerms If true: add l1/l2 regularization terms (if any) to the score. If false: don't add regularization terms
+     * @return An INDArray (column vector) of size input.numRows(); the ith entry is the score (loss value) of the ith example
+     */
+    public INDArray scoreExamples(DataSet data, boolean addRegularizationTerms){
+        boolean hasMaskArray = data.hasMaskArrays();
+        if(hasMaskArray) setLayerMaskArrays(data.getFeaturesMaskArray(),data.getLabelsMaskArray());
+        feedForward(data.getFeatureMatrix(),false);
+        setLabels(data.getLabels());
+
+        INDArray out;
+        if( getOutputLayer() instanceof BaseOutputLayer ){
+            BaseOutputLayer<?> ol = (BaseOutputLayer<?>)getOutputLayer();
+            ol.setLabels(data.getLabels());
+            double l1 = (addRegularizationTerms ? calcL1() : 0.0);
+            double l2 = (addRegularizationTerms ? calcL2() : 0.0);
+            out = ol.computeScoreForExamples(l1,l2);
+        } else {
+            throw new UnsupportedOperationException("Cannot calculate score wrt labels without an OutputLayer");
+        }
+        if(hasMaskArray) clearLayerMaskArrays();
+        return out;
     }
 
 
@@ -1891,14 +1943,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     public void applyLearningRateScoreDecay() {
         for (Layer layer: layers) {
-            if(!(layer instanceof SubsamplingLayer)) {
-                layer.conf().getLayer().setLearningRate(
-                        layer.conf().getLayer().getLearningRate() * (layer.conf().getLayer().getLrScoreBasedDecay() + Nd4j.EPS_THRESHOLD));
+            if (!layer.conf().getLearningRateByParam().isEmpty()) {
+                for (Map.Entry<String, Double> lrPair : layer.conf().getLearningRateByParam().entrySet()) {
+                    layer.conf().setLearningRateByParam(lrPair.getKey(),
+                            lrPair.getValue() * (layer.conf().getLrPolicyDecayRate() + Nd4j.EPS_THRESHOLD));
+                }
             }
         }
     }
-
-
 
     /**
      * Feed forward with the r operator
@@ -1934,6 +1986,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @param v the v in gaussian newton vector g * v
      * @return whether the training should converge or not
      */
+    @Deprecated
     protected List<Pair<INDArray, INDArray>> backPropGradientR(INDArray v) {
         //feedforward to compute activations
         //initial error
