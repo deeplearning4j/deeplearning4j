@@ -23,6 +23,7 @@ package org.deeplearning4j.ui.uploads;
 
 
 import org.apache.commons.io.FileUtils;
+import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.slf4j.Logger;
