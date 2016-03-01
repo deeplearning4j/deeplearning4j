@@ -258,7 +258,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testAddiRowVectorWithScalar(){
-        INDArray colVector = Nd4j.create(5, 1);
+        INDArray colVector = Nd4j.create(5, 1).assign(0.0);
         INDArray scalar = Nd4j.create(1, 1).assign(0.0);
         scalar.putScalar(0, 1);
 
@@ -871,16 +871,13 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertArrayEquals(tad.shape(), new int[]{7, 5});
 
 
-        INDArray copy = Nd4j.zeros(7,5);
-        for( int i = 0; i < 7; i++ ){
-            for( int j = 0; j < 5; j++ ){
+        INDArray copy = Nd4j.zeros(7,5).assign(0.0);
+        for( int i = 0; i < 7; i++) {
+            for( int j = 0; j < 5; j++) {
                 copy.putScalar(new int[]{i,j},tad.getDouble(i,j));
             }
         }
 
-//        System.out.println(tad);
-//        System.out.println("\n");
-//        System.out.println(copy);
 
         assertTrue(tad.equals(copy));
 
