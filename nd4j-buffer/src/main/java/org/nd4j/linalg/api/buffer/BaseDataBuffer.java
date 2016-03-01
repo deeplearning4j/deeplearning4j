@@ -532,12 +532,18 @@ public abstract class BaseDataBuffer implements DataBuffer {
         else if(allocationMode == AllocationMode.JAVACPP) {
             if(dataType() == Type.DOUBLE) {
                 pointer = new DoublePointer(length());
+                pointer.fill(0);
+
             }
             else if(dataType() == Type.FLOAT) {
                 pointer = new FloatPointer(length());
+                pointer.fill(0);
+
             }
             else if(dataType() == Type.INT) {
                 pointer = new IntPointer(length());
+                pointer.fill(0);
+
             }
             wrappedBuffer = pointer.asByteBuffer();
         }

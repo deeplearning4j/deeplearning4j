@@ -1298,7 +1298,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray muli(Number n, INDArray result) {
-
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
         Nd4j.getExecutioner().exec(new ScalarMultiplication(this, null, result, result.length(), n));

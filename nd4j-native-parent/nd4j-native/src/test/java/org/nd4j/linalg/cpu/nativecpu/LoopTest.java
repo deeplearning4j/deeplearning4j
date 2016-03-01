@@ -436,7 +436,6 @@ public class LoopTest {
 
     @Test
     public void testGemvApacheCommons() {
-
         int[] rowsArr = new int[]{4,4,4,8,8,8};
         int[] colsArr = new int[]{2,1,10,2,1,10};
 
@@ -1096,7 +1095,7 @@ public class LoopTest {
 
         //ReLU:
         //f(x) = max(0,x)
-        //Piecewise differentiable; choose f'(0) = 0
+        //Piecewise diffteserentiable; choose f'(0) = 0
         //f'(x) = 1 if x > 0
         //f'(x) = 0 if x <= 0
 
