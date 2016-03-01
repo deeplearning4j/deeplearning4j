@@ -5,7 +5,7 @@ title: Deeplearning4j Updaters Explained
 
 # Deeplearning4j Updaters Explained
 
-We assume here that readers know how Stochastic Gradient Descent works.
+This page and the explanations that follow assume that readers know how [Stochastic Gradient Descent](../glossary.html#stochasticgradientdescent) works.
 
 The main difference in updaters is how they treat the learning rate.
 
