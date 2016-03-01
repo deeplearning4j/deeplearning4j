@@ -55,17 +55,16 @@ Deeplearning4j包括了分布式、多线程的深度学习框架，以及普通
 
 ### Deeplearning4j教程
 
-* [深度神经网络简介](../neuralnet-overview.html)
-* [卷积网络教程](../zh-convolutionalnets.html)
-* [LSTM和递归网络教程](../lstm.html)
-* [通过DL4J使用递归网络](../usingrnns.html)
-* [深度置信网络和MNIST](../mnist-tutorial.html)
-* [鸢尾花数据组教程](../iris-flower-dataset-tutorial.html)
-* [针对LFW人脸图像数据集进行人脸重构](../facial-reconstruction-tutorial.html)
-* [通过Canova库自定义数据准备工作](../image-data-pipeline.html)
-* [受限玻尔兹曼机](../zh-restrictedboltzmannmachine.html)
-* [本征向量、主成分分析（PCA）和熵](../eigenvector.html)
-* [深度学习词汇表](../glossary.html)
+* [深度神经网络简介](../neuralnet-overview)
+* [卷积网络教程](../zh-convolutionalnets)
+* [LSTM和递归网络教程](../lstm)
+* [通过DL4J使用递归网络](../usingrnns)
+* [深度置信网络和MNIST](../mnist-tutorial)
+* [针对LFW人脸图像数据集进行人脸重构](../facial-reconstruction-tutorial)
+* [通过Canova库自定义数据准备工作](../image-data-pipeline)
+* [受限玻尔兹曼机](../zh-restrictedboltzmannmachine)
+* [本征向量、主成分分析（PCA）和熵](../eigenvector)
+* [深度学习词汇表](../glossary)
 
 ### 用户反馈
 
